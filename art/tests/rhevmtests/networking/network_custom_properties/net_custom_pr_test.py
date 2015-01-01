@@ -5,39 +5,38 @@ Testing Network Custom properties feature.
 It will cover scenarios for VM/non-VM networks.
 """
 
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 import logging
 from art.test_handler.exceptions import NetworkException
 from rhevmtests.networking import config
-from art.rhevm_api.tests_lib.high_level.networks import(
+from art.rhevm_api.tests_lib.high_level.networks import (
     createAndAttachNetworkSN, update_network_host, remove_net_from_setup
 )
-from art.rhevm_api.tests_lib.low_level.networks import(
+from art.rhevm_api.tests_lib.low_level.networks import (
     check_bridge_file_exist, check_bridge_opts, check_ethtool_opts
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("Network_Custom_Properties_Cases")
 HOST_NICS = None  # filled in setup module
 
 # #######################################################################
 
-########################################################################
+# #######################################################################
 #                             Test Cases                               #
 ########################################################################
 
 
 def setup_module():
     """
-    obtain host IP
+    Obtain Host Nics
     """
     global HOST_NICS
     HOST_NICS = config.VDS_HOSTS[0].nics
 
 
-class NCPTestCaseBase(TestCase):
+class TestNCPCaseBase(TestCase):
     """
     base class which provides teardown class method for each test case
     """
@@ -53,11 +52,11 @@ class NCPTestCaseBase(TestCase):
             data_center=config.DC_NAME[0], all_net=True,
             mgmt_network=config.MGMT_BRIDGE
         ):
-            raise NetworkException("Cannot remove networks from setup")
+            logger.error("Cannot remove networks from setup")
 
 
 @attr(tier=1)
-class NetCustPrCase01(NCPTestCaseBase):
+class TestNetCustPrCase01(TestNCPCaseBase):
     """
     Verify bridge_opts doesn't exist for the non-VM network
     Verify bridge_opts exists for VM network
@@ -88,9 +87,8 @@ class NetCustPrCase01(NCPTestCaseBase):
                 (config.NETWORKS[0], config.NETWORKS[1])
             )
 
-    @istest
     @tcms(13967, 372428)
-    def check_bridge_opts_exist(self):
+    def test_check_bridge_opts_exist(self):
         """
         Check bridge_opts exists for VM network only
         """
@@ -119,7 +117,7 @@ class NetCustPrCase01(NCPTestCaseBase):
 
 
 @attr(tier=1)
-class NetCustPrCase02(NCPTestCaseBase):
+class TestNetCustPrCase02(TestNCPCaseBase):
     """
     Verify bridge_opts doesn't exist for the VLAN non-VM network over bond
     Verify bridge_opts exists for VLAN VM network over bond
@@ -152,9 +150,8 @@ class NetCustPrCase02(NCPTestCaseBase):
                 (config.NETWORKS[0], config.NETWORKS[1])
             )
 
-    @istest
     @tcms(13967, 372468)
-    def check_bridge_opts_exist_bond(self):
+    def test_check_bridge_opts_exist_bond(self):
         """
         Check bridge_opts exists for VLAN VM network only over Bond
         """
@@ -183,7 +180,7 @@ class NetCustPrCase02(NCPTestCaseBase):
 
 
 @attr(tier=1)
-class NetCustPrCase03(NCPTestCaseBase):
+class TestNetCustPrCase03(TestNCPCaseBase):
     """
     Configure bridge_opts with non-default value
     Verify bridge_opts were updated
@@ -215,9 +212,8 @@ class NetCustPrCase03(NCPTestCaseBase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @istest
     @tcms(13967, 372628)
-    def update_bridge_opts(self):
+    def test_update_bridge_opts(self):
         """
         1) Verify bridge_opts have updated value for priority opts
         2) Update bridge_opts with the default value
@@ -263,7 +259,7 @@ class NetCustPrCase03(NCPTestCaseBase):
 
 
 @attr(tier=1)
-class NetCustPrCase04(NCPTestCaseBase):
+class TestNetCustPrCase04(TestNCPCaseBase):
     """
     Configure bridge_opts with non-default value
     Verify bridge_opts was updated
@@ -297,9 +293,8 @@ class NetCustPrCase04(NCPTestCaseBase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @istest
     @tcms(13967, 372701)
-    def check_several_bridge_opts_exist_nic(self):
+    def test_check_several_bridge_opts_exist_nic(self):
         """
         1) Update bridge_opts with additional parameter (multicast_querier)
         2) Verify bridge_opts have updated value for Priority and
@@ -364,7 +359,7 @@ class NetCustPrCase04(NCPTestCaseBase):
 
 
 @attr(tier=1)
-class NetCustPrCase05(NCPTestCaseBase):
+class TestNetCustPrCase05(TestNCPCaseBase):
     """
     Configure bridge_opts with non-default value over bond
     Verify bridge_opts were updated
@@ -398,9 +393,8 @@ class NetCustPrCase05(NCPTestCaseBase):
         ):
             raise NetworkException("Cannot create and attach network")
 
-    @istest
     @tcms(13967, 372788)
-    def check_several_bridge_opts_exist_bond(self):
+    def test_check_several_bridge_opts_exist_bond(self):
         """
         1) Update bridge_opts with additional parameter (multicast_querier)
         2) Veify bridge_opts have updated value for Priority and
@@ -466,7 +460,7 @@ class NetCustPrCase05(NCPTestCaseBase):
 
 
 @attr(tier=1)
-class NetCustPrCase06(NCPTestCaseBase):
+class TestNetCustPrCase06(TestNCPCaseBase):
     """
     Configure bridge_opts with non-default value for VLAN network over NIC
     Configure bridge_opts with non-default value for network over bond
@@ -485,17 +479,13 @@ class NetCustPrCase06(NCPTestCaseBase):
         untagged one is attached to the bond and tagged one is attached to
         the host interface (bridge_opts is configured for both)
         """
-        local_dict = {config.NETWORKS[0]: {"nic": config.BOND[0],
-                                           "slaves": [2, 3],
-                                           "required": "false",
-                                           "properties": {"bridge_opts":
-                                                          config.PRIORITY}},
-                      config.VLAN_NETWORKS[0]: {"nic": 1,
-                                                'vlan_id': config.VLAN_ID[0],
-                                                "required": "false",
-                                                "properties": {
-                                                    "bridge_opts":
-                                                    config.PRIORITY}}}
+        local_dict = {config.NETWORKS[0]: {
+            "nic": config.BOND[0], "slaves": [2, 3], "required": "false",
+            "properties": {"bridge_opts": config.PRIORITY}
+        }, config.VLAN_NETWORKS[0]: {
+            "nic": 1, 'vlan_id': config.VLAN_ID[0], "required": "false",
+            "properties": {"bridge_opts": config.PRIORITY}}
+        }
         logger.info("Create 2 logical VM networks on DC, Cluster and Host when"
                     " the untagged %s is attached to the bond %s and tagged "
                     "%s is attached to the host interface %s"
@@ -512,9 +502,8 @@ class NetCustPrCase06(NCPTestCaseBase):
                 (config.NETWORKS[0], config.VLAN_NETWORKS[0])
             )
 
-    @istest
     @tcms(13967, 372857)
-    def check_reattach_network(self):
+    def test_check_reattach_network(self):
         """
         1) Verify bridge_opts have updated values for both networks
         2) Detach networks from the Host
@@ -538,7 +527,7 @@ class NetCustPrCase06(NCPTestCaseBase):
             config.VLAN_NETWORKS[0]
         )
         if not createAndAttachNetworkSN(
-                host=config.VDS_HOSTS[0], network_dict={}, auto_nics=[0]
+            host=config.VDS_HOSTS[0], network_dict={}, auto_nics=[0]
         ):
             raise NetworkException("Cannot detach networks from setup")
 
@@ -575,7 +564,7 @@ class NetCustPrCase06(NCPTestCaseBase):
 
 
 @attr(tier=1)
-class NetCustPrCase07(NCPTestCaseBase):
+class NetCustPrCase07(TestNCPCaseBase):
     """
     Configure ethtool with non-default value
     Verify ethtool_opts were updated
@@ -609,9 +598,8 @@ class NetCustPrCase07(NCPTestCaseBase):
                 "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
             )
 
-    @istest
     @tcms(13967, 372880)
-    def update_ethtool_opts(self):
+    def test_update_ethtool_opts(self):
         """
         1) Verify ethtool_opts have updated value for tx_checksum opts
         2) Update ethtool_opts with the default value
@@ -647,7 +635,7 @@ class NetCustPrCase07(NCPTestCaseBase):
 
 
 @attr(tier=1)
-class NetCustPrCase08(NCPTestCaseBase):
+class TestNetCustPrCase08(TestNCPCaseBase):
     """
     Configure ethtool_opts with non-default value
     Verify ethtool_opts was updated
@@ -681,9 +669,8 @@ class NetCustPrCase08(NCPTestCaseBase):
             raise NetworkException("Cannot create and attach network %s" %
                                    config.NETWORKS[0])
 
-    @istest
     @tcms(13967, 372881)
-    def check_several_ethtool_opts_exist_nic(self):
+    def test_check_several_ethtool_opts_exist_nic(self):
         """
         1) Update ethtool_opts with additional parameter (autoneg)
         2) Verify ethtool_opts have updated value for tx_checksum and autoneg
@@ -694,8 +681,9 @@ class NetCustPrCase08(NCPTestCaseBase):
             nic=HOST_NICS[1], state="on"), config.AUTONEG.format(
                 nic=HOST_NICS[1], state="on")])
         non_default_ethtool_opts = " ".join([config.TX_CHECKSUM.format(
-            nic=HOST_NICS[1], state="off"),
-            config.AUTONEG.format(nic=HOST_NICS[1], state="off")])
+            nic=HOST_NICS[1], state="off"), config.AUTONEG.format(
+                nic=HOST_NICS[1], state="off")]
+        )
         kwargs1 = {"properties": {"ethtool_opts": non_default_ethtool_opts}}
         kwargs2 = {"properties": {"ethtool_opts": default_ethtool_opts}}
         logger.info("Update ethtool_opts with additional parameter for "
@@ -733,7 +721,7 @@ class NetCustPrCase08(NCPTestCaseBase):
 
 
 @attr(tier=1)
-class NetCustPrCase09(NCPTestCaseBase):
+class TestNetCustPrCase09(TestNCPCaseBase):
     """
     Configure ethtool with non-default value for the NIC with network
     Verify ethtool_opts were updated
@@ -774,9 +762,8 @@ class NetCustPrCase09(NCPTestCaseBase):
             raise NetworkException("tx-checksum value of ethtool_opts was not "
                                    "updated correctly")
 
-    @istest
     @tcms(13967, 372886)
-    def reattach_network(self):
+    def test_reattach_network(self):
         """
         1) Detach the network from the Host NIC
         2) Verify ethtool_opts has non default value on the NIC
@@ -830,22 +817,24 @@ class NetCustPrCase09(NCPTestCaseBase):
                     "checksum value ")
         if not update_network_host(config.HOSTS[0], HOST_NICS[1],
                                    auto_nics=[HOST_NICS[0]], **kwargs2):
-            raise NetworkException("Couldn't update ethtool_opts with default "
-                                   "parameter")
+            logger.error(
+                "Couldn't update ethtool_opts with default parameter"
+            )
 
         logger.info("Check that ethtool_opts parameters have an updated "
                     "default value for checksum")
         if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
                                   config.HOSTS_PW, HOST_NICS[1],
                                   "tx-checksumming", "on"):
-            raise NetworkException("tx-checksum value of ethtool_opts was "
-                                   "not updated correctly with default "
-                                   "value")
-        super(NetCustPrCase09, cls).teardown_class()
+            logger.error(
+                "tx-checksum value of ethtool_opts was not updated correctly"
+                " with default value"
+            )
+        super(TestNetCustPrCase09, cls).teardown_class()
 
 
 @attr(tier=1)
-class NetCustPrCase10(NCPTestCaseBase):
+class TestNetCustPrCase10(TestNCPCaseBase):
     """
     Configure ethtool and bridge opts with non-default value
     Verify ethtool and bridge_opts were updated with non-default values
@@ -861,9 +850,11 @@ class NetCustPrCase10(NCPTestCaseBase):
         and bridge_opts having non-default values
         """
 
-        prop_dict = {"ethtool_opts": config.TX_CHECKSUM.format(
-            nic=HOST_NICS[1], state="off"),
-            "bridge_opts": config.PRIORITY}
+        prop_dict = {
+            "ethtool_opts": config.TX_CHECKSUM.format(
+                nic=HOST_NICS[1], state="off"
+            ), "bridge_opts": config.PRIORITY
+        }
         network_param_dict = {"nic": 1,
                               "required": "false",
                               "properties": prop_dict}
@@ -880,9 +871,8 @@ class NetCustPrCase10(NCPTestCaseBase):
             raise NetworkException("Cannot create and attach network %s" %
                                    config.NETWORKS[0])
 
-    @istest
     @tcms(13967, 373094)
-    def update_ethtool_bridge_opts(self):
+    def test_update_ethtool_bridge_opts(self):
         """
         1) Verify ethtool_and bridge opts have updated values
         2) Update ethtool and bridge_opts with the default value
@@ -907,9 +897,11 @@ class NetCustPrCase10(NCPTestCaseBase):
 
         logger.info("Update ethtool_opts for tx_checksum and bridge_opts "
                     "for priority with the default parameters ")
-        kwargs = {"properties": {"ethtool_opts": config.TX_CHECKSUM.format(
-            nic=HOST_NICS[1], state="on"),
-            "bridge_opts": config.DEFAULT_PRIORITY}}
+        kwargs = {"properties": {
+            "ethtool_opts": config.TX_CHECKSUM.format(
+                nic=HOST_NICS[1], state="on"
+            ), "bridge_opts": config.DEFAULT_PRIORITY}
+        }
         if not update_network_host(config.HOSTS[0], HOST_NICS[1],
                                    auto_nics=[HOST_NICS[0]], **kwargs):
             raise NetworkException("Couldn't update ethtool and bridge_opts "
@@ -935,7 +927,7 @@ class NetCustPrCase10(NCPTestCaseBase):
 
 
 @attr(tier=1)
-class NetCustPrCase11(NCPTestCaseBase):
+class TestNetCustPrCase11(TestNCPCaseBase):
     """
     Create a network without ethtool or bridge opts configured
     Configure ethtool and bridge opts with non-default value
@@ -964,9 +956,8 @@ class NetCustPrCase11(NCPTestCaseBase):
             raise NetworkException("Cannot create and attach network %s" %
                                    config.NETWORKS[0])
 
-    @istest
     @tcms(13967, 373096)
-    def update_bridge_ethtool_opts(self):
+    def test_update_bridge_ethtool_opts(self):
         """
         1) Update existing network with non-default values for bridge and
         ethtool opts
@@ -976,9 +967,11 @@ class NetCustPrCase11(NCPTestCaseBase):
         """
         logger.info("Update ethtool and bridge opts for tx_checksum and "
                     "priority appropriately with the default parameters ")
-        kwargs = {"properties": {"ethtool_opts": config.TX_CHECKSUM.format(
-            nic=HOST_NICS[1], state="off"),
-            "bridge_opts": config.PRIORITY}}
+        kwargs = {"properties": {
+            "ethtool_opts": config.TX_CHECKSUM.format(
+                nic=HOST_NICS[1], state="off"
+            ), "bridge_opts": config.PRIORITY}
+        }
         if not update_network_host(config.HOSTS[0], HOST_NICS[1],
                                    auto_nics=[HOST_NICS[0]], **kwargs):
             raise NetworkException("Couldn't update ethtool and bridge opts "
@@ -1003,9 +996,11 @@ class NetCustPrCase11(NCPTestCaseBase):
 
         logger.info("Update ethtool and bridge opts for tx_checksum and "
                     "priority appropriately with the default parameters ")
-        kwargs = {"properties": {"ethtool_opts": config.TX_CHECKSUM.format(
-            nic=HOST_NICS[1], state="on"),
-            "bridge_opts": config.DEFAULT_PRIORITY}}
+        kwargs = {"properties": {
+            "ethtool_opts": config.TX_CHECKSUM.format(
+                nic=HOST_NICS[1], state="on"
+            ), "bridge_opts": config.DEFAULT_PRIORITY}
+        }
         if not update_network_host(config.HOSTS[0], HOST_NICS[1],
                                    auto_nics=[HOST_NICS[0]], **kwargs):
             raise NetworkException("Couldn't update ethtool and bridge_opts "
@@ -1031,7 +1026,7 @@ class NetCustPrCase11(NCPTestCaseBase):
 
 
 @attr(tier=1)
-class NetCustPrCase12(NCPTestCaseBase):
+class TestNetCustPrCase12(TestNCPCaseBase):
     """
     Configure several ethtool_opts  with non-default value for the NIC with
      attached Network (different key:value)
@@ -1058,9 +1053,8 @@ class NetCustPrCase12(NCPTestCaseBase):
             raise NetworkException("Cannot create and attach network %s" %
                                    config.NETWORKS[0])
 
-    @istest
     @tcms(13967, 373097)
-    def check_several_bridge_ethtool_opts_exist(self):
+    def test_check_several_bridge_ethtool_opts_exist(self):
         """
         1) Configure several ethtool_opts  with non-default value for the
         NIC with attached Network (different key:value)
@@ -1070,11 +1064,12 @@ class NetCustPrCase12(NCPTestCaseBase):
         4) Test on the Host that bridge_opts values were updated correctly
         """
         default_ethtool_opts = " ".join([config.TX_CHECKSUM.format(
-            nic=HOST_NICS[1], state="on"),
-            config.AUTONEG.format(nic=HOST_NICS[1], state="on")])
+            nic=HOST_NICS[1], state="on"), config.AUTONEG.format(
+                nic=HOST_NICS[1], state="on")])
         non_default_ethtool_opts = " ".join([config.TX_CHECKSUM.format(
-            nic=HOST_NICS[1], state="off"),
-            config.AUTONEG.format(nic=HOST_NICS[1], state="off")])
+            nic=HOST_NICS[1], state="off"), config.AUTONEG.format(
+                nic=HOST_NICS[1], state="off")]
+        )
         default_bridge_opts = " ".join(
             [config.DEFAULT_PRIORITY, config.DEFAULT_MULT_QUERIER]
         )
@@ -1104,8 +1099,8 @@ class NetCustPrCase12(NCPTestCaseBase):
         logger.info("Check that bridge_opts parameter has an updated value ")
         for key, value in config.BRIDGE_OPTS.iteritems():
             if not check_bridge_opts(
-                    config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
-                    config.NETWORKS[0], key, value[1]
+                config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+                config.NETWORKS[0], key, value[1]
             ):
                 raise NetworkException(
                     "Value of bridge opts key %s was not updated correctly "
@@ -1134,8 +1129,8 @@ class NetCustPrCase12(NCPTestCaseBase):
         )
         for key, value in config.BRIDGE_OPTS.items():
             if not check_bridge_opts(
-                    config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
-                    config.NETWORKS[0], key, value[0]
+                config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+                config.NETWORKS[0], key, value[0]
             ):
                 raise NetworkException(
                     "Priority value of bridge opts key %s was not updated "
@@ -1144,7 +1139,7 @@ class NetCustPrCase12(NCPTestCaseBase):
 
 
 @attr(tier=1)
-class NetCustPrCase13(NCPTestCaseBase):
+class TestNetCustPrCase13(TestNCPCaseBase):
     """
     Create several ethtool and bridge opts while adding network to the Host
     Configure several ethtool_opts  with non-default value for the NIC with
@@ -1187,9 +1182,8 @@ class NetCustPrCase13(NCPTestCaseBase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @istest
     @tcms(13967, 373098)
-    def check_several_bridge_ethtool_opts_exist(self):
+    def test_check_several_bridge_ethtool_opts_exist(self):
         """
         1) Update several ethtool_opts for the NIC with attached Network
         with additional parameter and non-default value (different key:value)
@@ -1249,8 +1243,8 @@ class NetCustPrCase13(NCPTestCaseBase):
         )
         for key, value in config.BRIDGE_OPTS.iteritems():
             if not check_bridge_opts(
-                    config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
-                    config.NETWORKS[0], key, value[1]
+                config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+                config.NETWORKS[0], key, value[1]
             ):
                 raise NetworkException(
                     "Value of bridge opts key %s was not updated correctly "
@@ -1282,17 +1276,31 @@ class NetCustPrCase13(NCPTestCaseBase):
         )
         for key, value in config.BRIDGE_OPTS.items():
             if not check_bridge_opts(
-                    config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
-                    config.NETWORKS[0], key, value[0]
+                config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+                config.NETWORKS[0], key, value[0]
             ):
                 raise NetworkException(
                     "Priority value of bridge opts key %s was not updated "
                     "correctly with value %s" % (key, value[0])
                 )
 
+    def tearDown(self):
+        """
+        Removing custom properties from host NIC
+        """
+        kwargs = {"properties": {
+            "ethtool_opts": None, "bridge_opts": None}
+        }
+        logger.info("Update ethtool_opts and bridge_opts to None (clear)")
+        if not update_network_host(
+            config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]], **kwargs
+        ):
+            logger.error("Couldn't clear ethtool_optsbridge_opts")
+        super(TestNetCustPrCase13, self).tearDown()
+
 
 @attr(tier=1)
-class NetCustPrCase14(NCPTestCaseBase):
+class TestNetCustPrCase14(TestNCPCaseBase):
     """
     Configure ethtool with non-default value over bond
     Verify ethtool_opts were updated for each slave of the bond
@@ -1326,9 +1334,8 @@ class NetCustPrCase14(NCPTestCaseBase):
                 (config.NETWORKS[0], config.BOND[0])
             )
 
-    @istest
     @tcms(13967, 421935)
-    def update_ethtool_opts_bond(self):
+    def test_update_ethtool_opts_bond(self):
         """
         1) Configure ethtool_opts tx_checksum value to be non-default on Bond
         1) Verify ethtool_opts have updated value for tx_checksum opts for
@@ -1393,7 +1400,7 @@ class NetCustPrCase14(NCPTestCaseBase):
 
 
 @attr(tier=1)
-class NetCustPrCase15(NCPTestCaseBase):
+class TestNetCustPrCase15(TestNCPCaseBase):
     """
     Configure ethtool_opts with non-default value
     Verify ethtool_opts was updated
@@ -1428,9 +1435,8 @@ class NetCustPrCase15(NCPTestCaseBase):
                 (config.NETWORKS[0], config.BOND[0])
             )
 
-    @istest
     @tcms(13967, 372883)
-    def check_several_ethtool_opts_exist_bond(self):
+    def test_check_several_ethtool_opts_exist_bond(self):
         """
         1) Update ethtool_opts with non-default parameter (tx_checksum)
         2) Verify ethtool_opts have updated value for tx_checksum
@@ -1526,7 +1532,7 @@ class NetCustPrCase15(NCPTestCaseBase):
 
 
 @attr(tier=1)
-class NetCustPrCase16(NCPTestCaseBase):
+class TestNetCustPrCase16(TestNCPCaseBase):
     """
     Configure ethtool and bridge opts with non-default value over Bond
     Verify ethtool and bridge_opts were updated with non-default values
@@ -1565,9 +1571,8 @@ class NetCustPrCase16(NCPTestCaseBase):
                 (config.NETWORKS[0], config.BOND[0])
             )
 
-    @istest
     @tcms(13967, 373100)
-    def update_ethtool_bridge_opts_bond(self):
+    def test_update_ethtool_bridge_opts_bond(self):
         """
         1) Verify ethtool_and bridge opts have updated values over Bond
         2) Update ethtool and bridge_opts with the default value over Bond
@@ -1605,9 +1610,11 @@ class NetCustPrCase16(NCPTestCaseBase):
         logger.info(
             "Update ethtool_opts for tx_checksum and bridge_opts for "
             "priority with the default parameters ")
-        kwargs = {"properties": {"ethtool_opts": config.TX_CHECKSUM.format(
-            nic="*", state="on"), "bridge_opts":
-            config.DEFAULT_PRIORITY}}
+        kwargs = {"properties": {
+            "ethtool_opts": config.TX_CHECKSUM.format(
+                nic="*", state="on"
+            ), "bridge_opts": config.DEFAULT_PRIORITY}
+        }
         if not update_network_host(config.HOSTS[0], config.BOND[0],
                                    auto_nics=[HOST_NICS[0]], **kwargs):
             raise NetworkException(

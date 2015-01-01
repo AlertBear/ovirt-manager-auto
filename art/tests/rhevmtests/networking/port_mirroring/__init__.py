@@ -3,6 +3,7 @@ Port Mirroring test
 """
 
 import logging
+from utilities import machine
 from rhevmtests.networking import config, network_cleanup
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.rhevm_api.tests_lib.low_level.vms import (
@@ -14,16 +15,12 @@ from art.rhevm_api.tests_lib.high_level.networks import (
 )
 from art.rhevm_api.tests_lib.low_level.networks import addVnicProfile
 from art.test_handler.exceptions import NetworkException
-
 from art.rhevm_api.tests_lib.low_level.vms import addNic
 from rhevmtests.networking.port_mirroring.utils import(
     ge_seal_vm, set_port_mirroring
 )
-from utilities import machine
 
-logger = logging.getLogger("PortMirroring")
-
-# ################################################
+logger = logging.getLogger("Port_Mirroring_Init")
 
 
 def setup_package():
@@ -31,30 +28,26 @@ def setup_package():
     Prepare environment
     """
     if config.GOLDEN_ENV:
-        logger.info("Running on GE. Calling network_cleanup()")
+        logger.info("Running on GE. No setup")
         network_cleanup()
 
     if not config.GOLDEN_ENV:
         logger.info(
             "Create DC, Cluster, attach hosts and create VM and template"
         )
-        if not prepareSetup(hosts=config.VDS_HOSTS,
-                            cpuName=config.CPU_NAME,
-                            username=config.HOSTS_USER,
-                            password=config.HOSTS_PW,
-                            datacenter=config.DC_NAME[0],
-                            storageDomainName=config.STORAGE_NAME[0],
-                            storage_type=config.STORAGE_TYPE,
-                            cluster=config.CLUSTER_NAME[0],
-                            auto_nics=[0],
-                            lun_address=config.LUN_ADDRESS[0],
-                            lun_target=config.LUN_TARGET[0],
-                            luns=config.LUN[0], version=config.COMP_VERSION,
-                            vm_password=config.VMS_LINUX_PW,
-                            placement_host=config.HOSTS[0],
-                            vmName=config.VM_NAME[0],
-                            mgmt_network=config.MGMT_BRIDGE,
-                            template_name=config.TEMPLATE_NAME[0]):
+        if not prepareSetup(
+            hosts=config.VDS_HOSTS, cpuName=config.CPU_NAME,
+            username=config.HOSTS_USER, password=config.HOSTS_PW,
+            datacenter=config.DC_NAME[0],
+            storageDomainName=config.STORAGE_NAME[0],
+            storage_type=config.STORAGE_TYPE, cluster=config.CLUSTER_NAME[0],
+            auto_nics=[0], lun_address=config.LUN_ADDRESS[0],
+            lun_target=config.LUN_TARGET[0], luns=config.LUN[0],
+            version=config.COMP_VERSION, vm_password=config.VMS_LINUX_PW,
+            placement_host=config.HOSTS[0], vmName=config.VM_NAME[0],
+            mgmt_network=config.MGMT_BRIDGE,
+            template_name=config.TEMPLATE_NAME[0]
+        ):
             raise NetworkException("Cannot create setup")
 
         logger.info(
@@ -81,16 +74,14 @@ def setup_package():
             [config.BOND[0], config.VLAN_NETWORKS[1]]),
         config.DC_NAME[0], config.CLUSTER_NAME[0], config.HOSTS[:2]
     )
-    network_params = {None: {'nic': config.BOND[0], 'mode': 1,
-                             'slaves': [2, 3]},
-                      config.VLAN_NETWORKS[0]: {
-                          'vlan_id': config.VLAN_ID[0],
-                          'nic': 1,
-                          'required': 'false'},
-                      config.VLAN_NETWORKS[1]: {
-                          'vlan_id': config.VLAN_ID[1],
-                          'nic': config.BOND[0],
-                          'required': 'false'}}
+    network_params = {None: {
+        "nic": config.BOND[0], "mode": 1, "slaves": [2, 3]
+    }, config.VLAN_NETWORKS[0]: {
+        "vlan_id": config.VLAN_ID[0], "nic": 1, "required": "false"
+    }, config.VLAN_NETWORKS[1]: {
+        "vlan_id": config.VLAN_ID[1], "nic": config.BOND[0],
+        "required": "false"}
+    }
 
     if not createAndAttachNetworkSN(
         data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
@@ -142,7 +133,7 @@ def setup_package():
                 network=config.VLAN_NETWORKS[i],
                 vnic_profile=vnic_profile
             ):
-                raise NetworkException('Failed to add nic to %s' % vmName)
+                raise NetworkException("Failed to add nic to %s" % vmName)
 
     logger.info("Configure IPs for each VM")
     for i, vm in enumerate(config.VM_NAME[:config.NUM_VMS]):
@@ -195,13 +186,13 @@ def teardown_package():
     if config.GOLDEN_ENV:
         logger.info("Running on GE")
         for vm in config.VM_NAME[:config.NUM_VMS]:
-            logger.info("Getting mgmt network IP for %s.", vm)
+            logger.info("Getting MGMT network IP for %s.", vm)
             rc, out = waitForIP(vm=vm, timeout=180, sleep=10)
 
             if not rc:
-                raise NetworkException('Failed to get VM IP on mgmt network')
+                logger.error("Failed to get VM IP on MGMT network")
 
-            local_mgmt_ip = out['ip']
+            local_mgmt_ip = out["ip"]
             vm_obj = machine.Machine(
                 local_mgmt_ip, config.VMS_LINUX_USER,
                 config.VMS_LINUX_PW).util(machine.LINUX)
@@ -217,7 +208,7 @@ def teardown_package():
         for vm in config.VM_NAME:
             vm_nics = get_vm_nics_obj(vm)
             for nic in vm_nics:
-                if nic.name == "nic1":
+                if nic.name == config.NIC_NAME[0]:
                     logger.info(
                         "Setting %s profile on %s in %s",
                         config.MGMT_BRIDGE, nic.name, vm
@@ -228,11 +219,11 @@ def teardown_package():
                             vnic_profile=config.MGMT_BRIDGE
                     ):
                         logger.error(
-                            "Failed to update %s in %s  to profile "
+                            "Failed to update %s in %s to profile "
                             "without port mirroring", config.NIC_NAME[0], vm
                         )
                 logger.info("Removing %s from %s", nic.name, vm)
-                if not removeNic(True, vm, nic):
+                if not removeNic(True, vm, nic.name):
                     logger.error(
                         "Failed to remove %s from %s", nic, vm
                     )
@@ -245,12 +236,10 @@ def teardown_package():
         ):
             logger.error("Cannot remove network from setup")
 
-        logger.info("Running on GE. Calling network_cleanup()")
-        network_cleanup()
-
     else:
         logger.info("Clean the environment")
-        if not cleanDataCenter(positive=True, datacenter=config.DC_NAME[0],
-                               vdc=config.VDC_HOST,
-                               vdc_password=config.VDC_ROOT_PASSWORD):
+        if not cleanDataCenter(
+            positive=True, datacenter=config.DC_NAME[0], vdc=config.VDC_HOST,
+            vdc_password=config.VDC_ROOT_PASSWORD
+        ):
             raise NetworkException("Cannot remove setup")

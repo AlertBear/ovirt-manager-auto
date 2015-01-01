@@ -18,7 +18,7 @@ from art.rhevm_api.tests_lib.low_level.networks import (
     isNetworkRequired, updateClusterNetwork
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("Required_Network_Cases")
 HOST_NICS = None  # filled in setup module
 
 ########################################################################
@@ -49,9 +49,10 @@ class TearDownRequiredNetwork(TestCase):
                 password=config.HOSTS_PW, nic=nic, status="up"
             ):
                 logger.info("Set %s up", nic)
-                if not ifupNic(host=config.HOSTS_IP[0],
-                               root_password=config.HOSTS_PW,
-                               nic=nic, wait=False):
+                if not ifupNic(
+                    host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
+                    nic=nic, wait=False
+                ):
                     logger.error("Failed to turn %s up", nic)
 
         logger.info("Set %s status to UP if not up", config.HOSTS[0])
@@ -59,20 +60,19 @@ class TearDownRequiredNetwork(TestCase):
             logger.error("Failed to activate %s", config.HOSTS[0])
 
         logger.info("Remove all networks from setup")
-        if not (remove_all_networks(datacenter=config.DC_NAME[0],
-                                    mgmt_network=config.MGMT_BRIDGE,
-                                    cluster=config.CLUSTER_NAME[0]) and
-                createAndAttachNetworkSN(host=config.VDS_HOSTS[0],
-                                         network_dict={},
-                                         auto_nics=[0])):
+        if not (remove_all_networks(
+            datacenter=config.DC_NAME[0], mgmt_network=config.MGMT_BRIDGE,
+            cluster=config.CLUSTER_NAME[0]) and createAndAttachNetworkSN(
+                host=config.VDS_HOSTS[0], network_dict={}, auto_nics=[0])
+        ):
             logger.error("Cannot remove networks from setup")
 
 
 @attr(tier=1)
-class RequiredNetwork01(TearDownRequiredNetwork):
+class TestRequiredNetwork01(TearDownRequiredNetwork):
     """
-    VM-Network
-    Check that mgmt network is required by default and try to set it to
+    VM Network
+    Check that MGMT network is required by default and try to set it to
     non required.
     """
     __test__ = True
@@ -87,20 +87,23 @@ class RequiredNetwork01(TearDownRequiredNetwork):
     @tcms(5868, 166462)
     def test_mgmt(self):
         """
-        Check that mgmt network is required by default and try to set it to
+        Check that MGMT network is required by default and try to set it to
         non required.
         """
-        logger.info("Checking that %s is required by default",
-                    config.MGMT_BRIDGE)
-        if not isNetworkRequired(network=config.MGMT_BRIDGE,
-                                 cluster=config.CLUSTER_NAME[0]):
-            raise NetworkException("%s is not required by default" %
-                                   config.MGMT_BRIDGE)
+        logger.info(
+            "Checking that %s is required by default", config.MGMT_BRIDGE
+        )
+        if not isNetworkRequired(
+            network=config.MGMT_BRIDGE, cluster=config.CLUSTER_NAME[0]
+        ):
+            raise NetworkException(
+                "%s is not required by default" % config.MGMT_BRIDGE
+            )
 
         logger.info("Editing %s to be non-required", config.MGMT_BRIDGE)
         if updateClusterNetwork(
                 positive=True, cluster=config.CLUSTER_NAME[0],
-                network=config.MGMT_BRIDGE, required='false'
+                network=config.MGMT_BRIDGE, required="false"
         ):
             raise NetworkException(
                 "%s is set to non required" % config.MGMT_BRIDGE
@@ -117,9 +120,9 @@ class RequiredNetwork01(TearDownRequiredNetwork):
 
 
 @attr(tier=1)
-class RequiredNetwork02(TearDownRequiredNetwork):
+class TestRequiredNetwork02(TearDownRequiredNetwork):
     """
-    VM-Network
+    VM Network
     Add sw1 as non-required, attach it to the host and check that sw1 status is
     operational.
     Check that host is operational after ifdown non-required network eth1
@@ -131,8 +134,9 @@ class RequiredNetwork02(TearDownRequiredNetwork):
         """
         Create sw1 network as non-required and attach it to the host.
         """
-        local_dict = {config.NETWORKS[0]: {"nic": 1,
-                                           "required": "false"}}
+        local_dict = {config.NETWORKS[0]: {
+            "nic": 1, "required": "false"}
+        }
         logger.info(
             "Attach %s to DC/Cluster/Host(%s)", config.NETWORKS[0],
             HOST_NICS[1]
@@ -152,7 +156,7 @@ class RequiredNetwork02(TearDownRequiredNetwork):
         logger.info("Check that %s status is operational", config.NETWORKS[0])
         if not validateNetwork(
                 positive=True, cluster=config.CLUSTER_NAME[0],
-                network=config.NETWORKS[0], tag='status', val='operational'
+                network=config.NETWORKS[0], tag="status", val="operational"
         ):
             raise NetworkException(
                 "%s status is not operational" % config.NETWORKS[0]
@@ -183,9 +187,9 @@ class RequiredNetwork02(TearDownRequiredNetwork):
 
 
 @attr(tier=1)
-class RequiredNetwork03(TearDownRequiredNetwork):
+class TestRequiredNetwork03(TearDownRequiredNetwork):
     """
-    VM-Network
+    VM Network
     Set sw1 as required, turn eth1 down and check that host status is
     non-operational
     """
@@ -196,8 +200,9 @@ class RequiredNetwork03(TearDownRequiredNetwork):
         """
         Create sw1 as required and turn eth1 down
         """
-        local_dict = {config.NETWORKS[0]: {"nic": 1,
-                                           "required": "true"}}
+        local_dict = {config.NETWORKS[0]: {
+            "nic": 1, "required": "true"}
+        }
 
         logger.info(
             "Attach %s to DC/Cluster/Host(%s)", config.NETWORKS[0],
@@ -238,9 +243,9 @@ class RequiredNetwork03(TearDownRequiredNetwork):
 
 
 @attr(tier=1)
-class RequiredNetwork04(TearDownRequiredNetwork):
+class TestRequiredNetwork04(TearDownRequiredNetwork):
     """
-    VLAN-OVER-BOND
+    VLAN over BOND
     Add sw162 as required, attach it to the host and check that sw162 status is
     operational.
     Check that host is non-operational after ifdown required networks eth2
@@ -257,11 +262,13 @@ class RequiredNetwork04(TearDownRequiredNetwork):
             "Create and attach %s over %s(%s,%s)", config.VLAN_NETWORKS[0],
             config.BOND[0], HOST_NICS[2], HOST_NICS[3]
         )
-        local_dict = {None: {"nic": config.BOND[0],
-                             "slaves": [2, 3]},
-                      config.VLAN_NETWORKS[0]: {"nic": config.BOND[0],
-                                                "required": "true",
-                                                "vlan_id": config.VLAN_ID[0]}}
+        local_dict = {
+            None: {"nic": config.BOND[0], "slaves": [2, 3]},
+            config.VLAN_NETWORKS[0]: {
+                "nic": config.BOND[0], "required": "true",
+                "vlan_id": config.VLAN_ID[0]
+            }
+        }
 
         if not createAndAttachNetworkSN(
                 data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
@@ -320,9 +327,9 @@ class RequiredNetwork04(TearDownRequiredNetwork):
 
 
 @attr(tier=1)
-class RequiredNetwork05(TearDownRequiredNetwork):
+class TestRequiredNetwork05(TearDownRequiredNetwork):
     """
-    VLAN-Network
+    VLAN Network
     Add sw162 as required, attach it to the host and check that sw1 status is
     operational.
     Check that host is non-operational after ifdown required network eth1
@@ -334,9 +341,9 @@ class RequiredNetwork05(TearDownRequiredNetwork):
         """
         Create sw162 network as required and attach it to the host.
         """
-        local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.VLAN_ID[0],
-                                                'nic': 1,
-                                                'required': 'true'}}
+        local_dict = {config.VLAN_NETWORKS[0]: {
+            "vlan_id": config.VLAN_ID[0], "nic": 1, "required": "true"}
+        }
         logger.info(
             "Attach %s network to DC/Cluster/Host(%s)",
             config.VLAN_NETWORKS[0], HOST_NICS[1]
@@ -376,9 +383,9 @@ class RequiredNetwork05(TearDownRequiredNetwork):
 
 
 @attr(tier=1)
-class RequiredNetwork06(TearDownRequiredNetwork):
+class TestRequiredNetwork06(TearDownRequiredNetwork):
     """
-    Non-VM-Network
+    Non-VM Network
     Add sw1 as required, attach it to the host.
     Check that host is non-operational after ifdown required network eth1
     """
@@ -389,9 +396,9 @@ class RequiredNetwork06(TearDownRequiredNetwork):
         """
         Create sw1 network as non-required and attach it to the host.
         """
-        local_dict = {config.NETWORKS[0]: {'nic': 1,
-                                           'usages': "",
-                                           'required': 'true'}}
+        local_dict = {config.NETWORKS[0]: {
+            "nic": 1, "usages": "", "required": "true"}
+        }
         logger.info(
             "Attach %s network to DC/Cluster/Host(%s)", config.NETWORKS[0],
             HOST_NICS[1]
