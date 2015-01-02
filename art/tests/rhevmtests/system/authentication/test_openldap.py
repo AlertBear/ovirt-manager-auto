@@ -151,7 +151,7 @@ class LDAPCase289069(TestCase):
 
     @istest
     @tcms(config.LDAP_TCMS_PLAN_ID, 289069)
-    @bz(1125161)
+    @bz({'1177367': {'engine': ['cli'], 'version': ['3.5']}})
     def searchForUsersAndGroups(self):
         """ Search within domain for users and groups """
         self.assertTrue(

@@ -201,7 +201,7 @@ class BaseSearchForUsersAndGroups(TestCase):
         self.query = '/api/domains/' + domainID + '/%s?search={query}'
 
     @istest
-    @bz(1125161)
+    @bz({'1177367': {'engine': ['cli'], 'version': ['3.5']}})
     def searchForUsersAndGroups(self):
         """ Search within domain for users and groups """
         self.assertTrue(
