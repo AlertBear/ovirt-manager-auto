@@ -318,7 +318,7 @@ class CaseRoleActions(TestCase):
                 },
                 config.USER_CLUSTER: {
                     mla.addVMPermissionsToUser: [
-                        config.RUNNING_VM, config.DELETE_VM,
+                        config.RUNNING_VM, config.DELETE_VM, config.CREATE_VM,
                     ],
                 },
                 config.USER_STORAGE: {
