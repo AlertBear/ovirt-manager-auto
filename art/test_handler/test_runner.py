@@ -394,6 +394,12 @@ class TestRunner(object):
                 raise job.exception
         # TODO: check whether something finished with exception
 
+    def copy_statuses(self, test_elm, test_group):
+        test_group.error = test_elm.error
+        test_group.failed = test_elm.failed
+        test_group.skipped = test_elm.skipped
+        test_group.passed = test_elm.passed
+
     def _report_test_case_status(self, test_elm, test_group):
         if isinstance(test_elm, TestCase):
             if test_elm.status == _TestElm.TEST_STATUS_PASSED:
@@ -407,3 +413,5 @@ class TestRunner(object):
             else:
                 assert False, ("status has to be defined for "
                                "each TestElement: %s" % test_elm.status)
+        elif isinstance(test_elm, TestGroup):
+            self.copy_statuses(test_elm, test_group)
