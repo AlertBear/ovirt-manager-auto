@@ -2493,50 +2493,68 @@ def waitForVmDiskStatus(vm, active, diskAlias=None, diskId=None,
 
 
 @is_action()
-def checkVMConnectivity(positive, vm, osType, attempt=1, interval=1,
-                        nic='nic1', user=None, password=None, ip=False,):
-    '''
-    Description: check VM Connectivity
-    Author: tomer
-    Editor: atal
-    Parameters:
-       * vm - vm name
-       * osType - os type element rhel/windows.
-       * attempt - number of attempts to connect .
-       * interval - interval between attempts
-       * ip - if supplied, check VM connectivity by this IP.
-    Return: status (True if succeed to connect to VM, False otherwise).
-    '''
+def checkVMConnectivity(
+    positive, vm, osType, attempt=1, interval=1, nic='nic1', user=None,
+    password=None, ip=False, timeout=1800
+):
+    """
+    Check VM Connectivity
+    :param positive: Expected result
+    :type positive: bool
+    :param vm: vm name
+    :type vm: str
+    :param osType: os type element rhel/windows.
+    :type osType: str
+    :param attempt: number of attempts to connect
+    :type attempt: int
+    :param interval:  interval between attempts
+    :type interval: int
+    :param nic: NIC to get IP from
+    :type nic: str
+    :param user: Username
+    :type user: str
+    :param password: Password for Username
+    :type password: str
+    :param ip:  if supplied, check VM connectivity by this IP.
+    :type ip: str
+    :param timeout: timeout to wait for IP
+    :type timeout: int
+    :return: True if succeed to connect to VM, False otherwise).
+    :rtype: bool
+    """
     vlan = None
     if re.search('rhel', osType, re.I):
         osType = 'linux'
     elif re.search('win', osType, re.I):
         osType = 'windows'
     else:
-        VM_API.logger.error('Wrong value for osType: Should be rhel or '
-                            'windows ')
+        VM_API.logger.error(
+            'Wrong value for osType: Should be rhel or windows')
         return False
 
     if not ip:
-        agent_status, ip = waitForIP(vm)
+        agent_status, ip = waitForIP(vm=vm, timeout=timeout)
+        # agent should be installed so convertMacToIpAddress is irrelevant
         if not agent_status:
             status, mac = getVmMacAddress(positive, vm, nic=nic)
             if not status:
                 return False
             status, vlan = getVmNicVlanId(vm, nic)
-            status, ip = convertMacToIpAddress(positive, mac=mac['macAddress'],
-                                               vlan=vlan['vlan_id'])
+            status, ip = convertMacToIpAddress(
+                positive, mac=mac['macAddress'], vlan=vlan['vlan_id']
+            )
             if not status:
                 return False
         ip = ip['ip']
 
-    status, res = checkHostConnectivity(positive, ip,
-                                        user=user, password=password,
-                                        osType=osType, attempt=attempt,
-                                        interval=interval)
+    status, res = checkHostConnectivity(
+        positive, ip,  user=user, password=password, osType=osType,
+        attempt=attempt, interval=interval
+    )
     VM_API.logger.info(
         "VM: %s TYPE: %s, IP: %s, VLAN: %s, NIC: %s Connectivity Status: %s",
-        vm, osType, ip, vlan, nic, status)
+        vm, osType, ip, vlan, nic, status
+    )
     return status
 
 

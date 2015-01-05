@@ -74,27 +74,30 @@ def shutdown_vm_if_up(vm_name):
     return vms.waitForVMState(vm_name, state=ENUMS['vm_state_down'])
 
 
-def check_vm_migration(vm_names, orig_host, vm_user, host_password,
-                       vm_password, os_type, dest_host=None, nic=None,
-                       nic_down=True):
-    '''
+def check_vm_migration(
+    vm_names, orig_host, vm_user, host_password,
+    vm_password, os_type, dest_host=None, nic=None, timeout=300
+):
+    """
         Function that tests migration in 2 scenarios
         1) By turning down NIC with required network
         2) By calling migrateVm function
-        **Author**: gcheresh
-        **Parameters**:
-            *  *vm_names* - vm/vms to be migrated
-            *  *orig_host* - host from where the vm should migrate
-            *  *dest_host* - host where the vm should be migrated to
-            *  *vm_user* - user for the VM machine
-            *  *host_password* - password for the host machine
-            *  *vm_password* - password for the vm machine
-            *  *os_type* - type of the OS of VM (for example 'rhel')
-            *  *nic* - NIC with required network.
-            *  *nic_down* -flag for calling helper setHostToNonOperational
-                Will start the migration when turned down
-        **Returns**: True if vm migration succeeded, otherwise False
-    '''
+        :param vm_names: vm/vms to be migrated
+        :type vm_names: list or str
+        :param orig_host: host from where the vm should migrate
+        :type orig_host: str
+        :param dest_host: host where the vm should be migrated to
+        :type dest_host: str
+        :param vm_user: user for the VM machine
+        :type vm_user: str
+        :param vm_password: password for the vm machine
+        :type vm_password: str
+        :param os_type: type of the OS of VM
+        :type os_type: str
+        :param nic: NIC with required network.
+        :type nic: str
+        :returns: True/False
+    """
 
     # Anyone using this function should take care of checking that all the VMs
     # are located on the same physical host before the test
@@ -104,13 +107,12 @@ def check_vm_migration(vm_names, orig_host, vm_user, host_password,
 
     # causes VM migration by turning down NIC with required network
     if nic:
-        if nic_down:
-            if not hosts.setHostToNonOperational(orig_host=orig_host,
-                                                 host_password=host_password,
-                                                 nic=nic):
-                LOGGER.error("Coudn't start migration by disconnecting the NIC"
-                             " with required network on  it")
-            LOGGER.info("Wait till VM/VMs come UP after migration")
+        if not hosts.setHostToNonOperational(orig_host=orig_host,
+                                             host_password=host_password,
+                                             nic=nic):
+            LOGGER.error("Coudn't start migration by disconnecting the NIC"
+                         " with required network on  it")
+        LOGGER.info("Wait till VM/VMs come UP after migration")
         for vm in vm_names:
             if not vms.waitForVMState(vm=vm, state='up', sleep=INTERVAL,
                                       timeout=TIMEOUT):
@@ -157,9 +159,10 @@ def check_vm_migration(vm_names, orig_host, vm_user, host_password,
     # check VM connectivity for both cases
     LOGGER.info("Check VM connectivity after migration finished")
     for vm in vm_names:
-        if not vms.checkVMConnectivity(True, vm=vm, osType=os_type,
-                                       attempt=ATTEMPTS, interval=INTERVAL,
-                                       user=vm_user, password=vm_password):
+        if not vms.checkVMConnectivity(
+            True, vm=vm, osType=os_type, attempt=ATTEMPTS, interval=INTERVAL,
+            user=vm_user, password=vm_password, timeout=timeout
+        ):
             LOGGER.error("Check connectivity to %s failed", vm)
             return False
     return True
