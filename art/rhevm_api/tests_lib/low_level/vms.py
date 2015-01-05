@@ -1342,10 +1342,19 @@ def _getVmSnapshots(vm, get_href=True):
     return SNAPSHOT_API.getElemFromLink(vmObj, get_href=get_href)
 
 
-def _getVmSnapshot(vm, snap):
-    vmObj = VM_API.find(vm)
-    return SNAPSHOT_API.getElemFromElemColl(vmObj, snap, 'snapshots',
-                                            'snapshot', prop='description')
+def _getVmSnapshot(vm, snap, all_content=False):
+    if all_content:
+        backup_header = SNAPSHOT_API.api.headers['All-content']
+        SNAPSHOT_API.api.headers['All-content'] = True
+    vm_obj = VM_API.find(vm)
+    returned_object = SNAPSHOT_API.getElemFromElemColl(vm_obj, snap,
+                                                       'snapshots',
+                                                       'snapshot',
+                                                       prop='description')
+
+    if all_content:
+        SNAPSHOT_API.api.headers['All-content'] = backup_header
+    return returned_object
 
 
 @is_action()
@@ -3546,7 +3555,7 @@ def get_vm_snapshot_ovf_obj(vm, snapshot):
 
     Return: ovf configuration object, or raise EntityNotFound exception
     """
-    snap_obj = _getVmSnapshot(vm, snapshot)
+    snap_obj = _getVmSnapshot(vm, snapshot, all_content=True)
     return snap_obj.get_initialization()
 
 
