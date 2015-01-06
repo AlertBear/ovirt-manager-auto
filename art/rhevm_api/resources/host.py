@@ -102,10 +102,10 @@ class Host(Resource):
             user = self.root_user
         return RemoteExecutor(user, self.ip)
 
-    def _create_service(self, name):
+    def _create_service(self, name, timeout):
         for provider in self.default_service_providers:
             try:
-                service = provider(self, name)
+                service = provider(self, name, timeout=timeout)
             except provider.CanNotHandle:
                 pass
             else:
@@ -123,28 +123,30 @@ class Host(Resource):
             raise Exception(msg)
         return service
 
-    def service(self, name):
+    def service(self, name, timeout=None):
         """
         Create service provider for desired service
 
         :param name: service name
         :type name: string
+        :param timeout: expected time to complete operations
+        :type timeout: int
         :return: service provider for desired service
         :rtype: instance of SystemService
         """
         if self._service_provider is None:
             # we need to pick up service provider,
             # assume same provider for all next services.
-            service = self._create_service(name)
+            service = self._create_service(name, timeout)
             self._service_provider = service.__class__
             return service
         try:
-            return self._service_provider(self, name)
+            return self._service_provider(self, name, timeout=timeout)
         except self._service_provider.CanNotHandle:
             # it may happen there is some special service
             # which needs different provider.
             # try to select different one
-            service = self._create_service(name)
+            service = self._create_service(name, timeout)
             self._service_provider = service.__class__
             return service
 

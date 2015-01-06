@@ -12,6 +12,7 @@ class SystemService(Service):
     Read https://fedoraproject.org/wiki/SysVinit_to_Systemd_Cheatsheet
     for more info / differences between Systemd and SysVinit
     """
+    default_timeout = 30
     cmd = None
 
     class CanNotHandle(Exception):
@@ -20,9 +21,12 @@ class SystemService(Service):
     class Error(Exception):
         pass
 
-    def __init__(self, host, name):
+    def __init__(self, host, name, timeout=None):
         super(SystemService, self).__init__(host)
         self.name = name
+        if timeout is None:
+            timeout = self.default_timeout
+        self.timeout = timeout
         self._can_handle()
 
     def is_enabled(self):
@@ -54,7 +58,10 @@ class SystemService(Service):
         :raises: CanNotHandle
         """
         executor = self.host.executor()
-        rc, _, _ = executor.run_cmd(['which', self.cmd])
+        rc, _, _ = executor.run_cmd(
+            ['which', self.cmd],
+            io_timeout=self.timeout,
+        )
         if rc:
             raise self.CanNotHandle("Missing %s" % self.cmd)
 
@@ -73,7 +80,7 @@ class SysVinit(SystemService):
         init_script = '/etc/init.d/%s' % self.name
         executor = self.host.executor()
         cmd = ('[', '-e', init_script, ']')
-        rc, _, _ = executor.run_cmd(cmd)
+        rc, _, _ = executor.run_cmd(cmd, io_timeout=self.timeout)
         if rc:
             raise self.CanNotHandle(
                 "there is missing init script %s" % init_script
@@ -86,7 +93,7 @@ class SysVinit(SystemService):
             action,
         ]
         executor = self.host.executor()
-        rc, _, _ = executor.run_cmd(cmd)
+        rc, _, _ = executor.run_cmd(cmd, io_timeout=self.timeout)
         return rc == 0
 
     def _manage(self, action):
@@ -96,7 +103,7 @@ class SysVinit(SystemService):
             action,
         ]
         executor = self.host.executor()
-        rc, _, _ = executor.run_cmd(cmd)
+        rc, _, _ = executor.run_cmd(cmd, io_timeout=self.timeout)
         return rc == 0
 
     def is_enabled(self):
@@ -105,7 +112,7 @@ class SysVinit(SystemService):
             self.name,
         ]
         executor = self.host.executor()
-        rc, _, _ = executor.run_cmd(cmd)
+        rc, _, _ = executor.run_cmd(cmd, io_timeout=self.timeout)
         return rc == 0
 
     def enable(self):
@@ -142,7 +149,7 @@ class Systemd(SystemService):
             'sort', '|', 'uniq',
         )
         executor = self.host.executor()
-        rc, out, _ = executor.run_cmd(cmd)
+        rc, out, _ = executor.run_cmd(cmd, io_timeout=self.timeout)
         out = out.strip().splitlines()
         if rc or self.name not in out:
             raise self.CanNotHandle(
@@ -156,7 +163,7 @@ class Systemd(SystemService):
             self.name + ".service",
         ]
         executor = self.host.executor()
-        rc, _, _ = executor.run_cmd(cmd)
+        rc, _, _ = executor.run_cmd(cmd, io_timeout=self.timeout)
         return rc == 0
 
     def is_enabled(self):
@@ -195,7 +202,7 @@ class InitCtl(SystemService):
             'cut', '-d', ' ', '-f1', '|',
             'sort', '|', 'uniq',
         ]
-        rc, out, _ = executor.run_cmd(cmd)
+        rc, out, _ = executor.run_cmd(cmd, io_timeout=self.timeout)
         out = out.strip().splitlines()
         if rc or self.name not in out:
             raise self.CanNotHandle(
@@ -209,7 +216,7 @@ class InitCtl(SystemService):
             self.name,
         ]
         executor = self.host.executor()
-        rc, out, err = executor.run_cmd(cmd)
+        rc, out, err = executor.run_cmd(cmd, io_timeout=self.timeout)
         if rc:
             raise self.Error(err)
         return out.strip()

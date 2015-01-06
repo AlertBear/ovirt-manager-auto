@@ -93,12 +93,15 @@ class RemoteExecutor(Resource):
             self._ssh.close()
 
         def _update_timeout_exception(self, ex, timeout=None):
+            if getattr(ex, '_updated', False):
+                return
             if timeout is None:
                 timeout = self._timeout
             message = "%s: timeout(%s)" % (
                 self._h.address, timeout
             )
             ex.args = (message,)
+            ex._updated = True
 
         def command(self, cmd):
             return RemoteExecutor.Command(cmd, self)
@@ -172,14 +175,17 @@ class RemoteExecutor(Resource):
                     get_pty=get_pty,
                 )
                 yield self._in, self._out, self._err
+                self.get_rc(True)
             except socket.timeout as ex:
                 self._ss._update_timeout_exception(ex, timeout)
                 raise
             finally:
-                self.get_rc(True)
-                self._in.close()
-                self._out.close()
-                self._err.close()
+                if self._in is not None:
+                    self._in.close()
+                if self._out is not None:
+                    self._out.close()
+                if self._err is not None:
+                    self._err.close()
                 self.logger.debug("Results of command: %s", self.cmd)
                 self.logger.debug("  OUT: %s", self.out)
                 self.logger.debug("  ERR: %s", self.err)
