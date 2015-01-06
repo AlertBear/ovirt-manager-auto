@@ -323,6 +323,10 @@ def _prepareVmObject(**kwargs):
     # timezone
     vm.timezone = kwargs.pop('timezone', None)
 
+    # cpu_profile
+    cpu_profile_id = kwargs.pop('cpu_profile', None)
+    if cpu_profile_id:
+        vm.set_cpu_profile(data_st.CpuProfile(id=cpu_profile_id))
     return vm
 
 
@@ -394,6 +398,7 @@ def addVm(positive, wait=True, **kwargs):
        * copy_permissions - True if perms should be copied from template
        * timeout - waiting timeout
        * protected - true if VM is delete protected
+       * cpu_profile_id - id of cpu profile
     Return: status (True if vm was added properly, False otherwise)
     '''
     kwargs.update(add=True)
@@ -464,6 +469,7 @@ def updateVm(positive, vm, **kwargs):
        * timezone - set to timezone out of product possible timezones.
                     There must be a match between timezone and OS.
        * compare - disable or enable validation for update
+       * cpu_profile_id - cpu profile id
     Return: status (True if vm was updated properly, False otherwise)
     '''
     vm_obj = VM_API.find(vm)
@@ -2157,7 +2163,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
              highly_available=None, availablity_priority=None, vm_quota=None,
              disk_quota=None, plugged='true', linked='true', protected=None,
              copy_permissions=False, custom_properties=None,
-             watchdog_model=None, watchdog_action=None):
+             watchdog_model=None, watchdog_action=None, cpu_profile_id=None):
     '''
     Description: The function createStartVm adding new vm with nic,disk
                  and started new created vm.
@@ -2207,6 +2213,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
                        for the network specified above).
         watchdog_model - model of watchdog card
         watchdog_action - action of watchdog card
+        cpu_profile_id - cpu profile id
     return values : Boolean value (True/False )
                     True in case of success otherwise False
     '''
@@ -2222,7 +2229,8 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
                  availablity_priority=availablity_priority, quota=vm_quota,
                  protected=protected, cpu_mode=cpu_mode,
                  copy_permissions=copy_permissions,
-                 custom_properties=custom_properties):
+                 custom_properties=custom_properties,
+                 cpu_profile_id=cpu_profile_id):
         return False
 
     if nic:

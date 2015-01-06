@@ -16,11 +16,12 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 from collections import namedtuple
-from art.core_api.apis_utils import getDS
+from art.core_api import is_action
 from art.core_api import validator
+from art.core_api.apis_utils import getDS
+import art.test_handler.exceptions as exceptions
 from art.rhevm_api.utils.test_utils import get_api
 from art.rhevm_api.utils.xpath_utils import XPathMatch
-from art.core_api import is_action
 
 util = get_api('', '')
 vmUtil = get_api('vm', 'vms')
@@ -292,3 +293,22 @@ def checkProductName(name):
 
     util.logger.info("Product name is correct: '%s'" % name)
     return True
+
+
+def prepare_ds_object(object_name, **kwargs):
+    """
+    Create new data structure object
+
+    :param object_name: name of instance to create
+    :param kwargs: parameters of instance
+    :return: data structure object or raise exceptions
+    """
+    ds_object = getDS(object_name)()
+    for key, val in kwargs.iteritems():
+        if hasattr(ds_object, key):
+            setattr(ds_object, key, val)
+        else:
+            raise exceptions.RHEVMEntityException(
+                "%s object has no attribute: %s" % (object_name, key)
+            )
+    return ds_object

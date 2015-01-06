@@ -44,17 +44,18 @@ class Affinity(TestCase):
         Create new affinity group and populate it with vms
         """
         logger.info("Create new affinity group %s", cls.affinity_group_name)
-        if not cluster_api.create_affinity_group(cls.affinity_group_name,
-                                                 config.CLUSTER_NAME[0],
-                                                 positive=cls.positive,
-                                                 enforcing=cls.hard):
+        if not cluster_api.create_affinity_group(
+            config.CLUSTER_NAME[0], name=cls.affinity_group_name,
+            positive=cls.positive, enforcing=cls.hard
+        ):
             raise errors.ClusterException("Failed to create new "
                                           "affinity group")
         logger.info("Populate affinity group %s with vms",
                     cls.affinity_group_name)
-        if not cluster_api.populate_affinity_with_vms(cls.affinity_group_name,
-                                                      config.CLUSTER_NAME[0],
-                                                      config.VM_NAME[:2]):
+        if not cluster_api.populate_affinity_with_vms(
+                cls.affinity_group_name, config.CLUSTER_NAME[0],
+                config.VM_NAME[:2]
+        ):
             raise errors.ClusterException("Failed to populate "
                                           "affinity group with vms")
 
@@ -553,10 +554,10 @@ class AdditionalAffinityGroup(StartVms):
         """
         logger.info("Create new affinity group %s",
                     cls.additional_name)
-        if not cluster_api.create_affinity_group(cls.additional_name,
-                                                 config.CLUSTER_NAME[0],
-                                                 cls.additional_positive,
-                                                 cls.additional_hard):
+        if not cluster_api.create_affinity_group(
+            config.CLUSTER_NAME[0], name=cls.additional_name,
+            positive=cls.additional_positive, enforcing=cls.additional_hard
+        ):
             raise errors.ClusterException("Failed to create new "
                                           "affinity group")
         logger.info("Populate affinity group %s with vms",
@@ -656,10 +657,10 @@ class TwoDifferentAffinitiesScenario3(Affinity):
         """
         logger.info("Create new affinity group %s",
                     cls.additional_name)
-        if not cluster_api.create_affinity_group(cls.additional_name,
-                                                 config.CLUSTER_NAME[0],
-                                                 cls.additional_positive,
-                                                 cls.additional_hard):
+        if not cluster_api.create_affinity_group(
+            config.CLUSTER_NAME[0], name=cls.additional_name,
+            positive=cls.additional_positive, enforcing=cls.additional_hard
+        ):
             raise errors.ClusterException("Failed to create new "
                                           "affinity group")
         logger.info("Populate affinity group %s with vms",

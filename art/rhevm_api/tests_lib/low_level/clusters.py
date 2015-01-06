@@ -21,14 +21,17 @@ import time
 from Queue import Queue
 from threading import Thread
 
+from art.core_api import is_action
 from art.core_api.apis_utils import getDS
-from art.rhevm_api.utils.test_utils import get_api, split
+import art.test_handler.exceptions as exceptions
 from art.core_api.apis_exceptions import EntityNotFound
+from art.rhevm_api.utils.test_utils import get_api, split
+from art.rhevm_api.tests_lib.low_level.general import prepare_ds_object
 from art.rhevm_api.tests_lib.low_level.hosts import activateHost, \
     deactivateHost, updateHost
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.rhevm_api.utils.test_utils import searchForObj
-from art.core_api import is_action
+
 
 ELEMENT = 'cluster'
 COLLECTION = 'clusters'
@@ -48,6 +51,7 @@ CPU = getDS('CPU')
 KSM = getDS('KSM')
 CLUSTER_API = get_api('cluster', 'clusters')
 AFFINITY_API = get_api('affinity_group', 'affinity_groups')
+CPU_PROFILE_API = get_api('cpu_profile', 'cpu_profiles')
 VM_API = get_api('vm', 'vms')
 
 xpathMatch = is_action('xpathClusters', id_name='xpathMatch')(XPathMatch(util))
@@ -570,6 +574,18 @@ def get_cluster_object(cluster_name):
     return cluster_obj
 
 
+def _prepare_affinity_group_object(**kwargs):
+    """
+    Prepare affinity group data structure object
+
+    :param kwargs: name: type=str
+                   positive: type=str
+                   enforcing: type=str
+    :return: AffinityGroup instance or raise exception
+    """
+    return prepare_ds_object('AffinityGroup', **kwargs)
+
+
 def get_affinity_group_obj(affinity_name, cluster_name):
     """
     Get affinity group object by name.
@@ -581,41 +597,62 @@ def get_affinity_group_obj(affinity_name, cluster_name):
     :returns: affinity group object if exist, otherwise None
     """
     cluster_obj = get_cluster_object(cluster_name)
-    affinity_groups = CLUSTER_API.getElemFromLink(cluster_obj,
-                                                  link_name='affinitygroups',
-                                                  attr='affinity_group')
+    affinity_groups = CLUSTER_API.getElemFromLink(
+        cluster_obj, link_name='affinitygroups', attr='affinity_group'
+    )
     for affinity_group in affinity_groups:
         if affinity_group.get_name() == affinity_name:
             return affinity_group
     return None
 
 
-def create_affinity_group(affinity_name, cluster_name,
-                          positive=True, enforcing=True):
+def create_affinity_group(cluster_name, **kwargs):
     """
     Create new affinity group under given cluster.
 
-    :param affinity_name name of affinity group
-    :type affinity_name: str
-    :param cluster_name: cluster name
+    :param cluster_name: name of cluster where to create affinity group
     :type cluster_name: str
-    :param positive: affinity positive or negative
-    :type positive: bool
-    :param enforcing: affinity hard or soft
-    :type enforcing: bool
-    :returns: True, if affinity creation success, else False
+    :param kwargs: name: type=str
+                   description: type=str
+                   positive: type=str
+                   enforcing: type=str
+    :return: True, if affinity creation success, else False
     """
     link_name = 'affinitygroups'
     cluster_obj = get_cluster_object(cluster_name)
-    affinity_groups_obj = CLUSTER_API.getElemFromLink(cluster_obj,
-                                                      link_name=link_name,
-                                                      get_href=True)
-    affinity_group_obj = getDS('AffinityGroup')(name=affinity_name,
-                                                cluster=cluster_obj,
-                                                positive=positive,
-                                                enforcing=enforcing)
-    return AFFINITY_API.create(affinity_group_obj, True,
-                               collection=affinity_groups_obj)[1]
+    affinity_groups_obj = CLUSTER_API.getElemFromLink(
+        cluster_obj, link_name=link_name, get_href=True
+    )
+    try:
+        affinity_group_obj = _prepare_affinity_group_object(**kwargs)
+    except exceptions.RHEVMEntityException:
+        return False
+    return AFFINITY_API.create(
+        affinity_group_obj, True, collection=affinity_groups_obj)[1]
+
+
+def update_affinity_group(cluster_name, affinity_name, **kwargs):
+    """
+    Update affinity group
+
+    :param cluster_name: name of cluster where affinity group
+    :param affinity_name: name of affinity group
+    :param kwargs: name: type=str
+                   description: type=str
+                   positive: type=str
+                   enforcing: type=str
+    :return: True, if affinity group update success, else False
+    """
+    old_aff_group_obj = get_affinity_group_obj(cluster_name, affinity_name)
+    if not old_aff_group_obj:
+        return False
+    try:
+        new_aff_group_obj = _prepare_affinity_group_object(**kwargs)
+    except exceptions.RHEVMEntityException:
+        return False
+
+    return AFFINITY_API.update(
+        old_aff_group_obj, new_aff_group_obj, True)[1]
 
 
 def remove_affinity_group(affinity_name, cluster_name):
@@ -645,14 +682,15 @@ def populate_affinity_with_vms(affinity_name, cluster_name, vms):
     :returns: True, if affinity group populated successfully, otherwise False
     """
     affinity_group_obj = get_affinity_group_obj(affinity_name, cluster_name)
-    affinity_vms_obj = AFFINITY_API.getElemFromLink(affinity_group_obj,
-                                                    link_name='vms',
-                                                    get_href=True)
+    affinity_vms_obj = AFFINITY_API.getElemFromLink(
+        affinity_group_obj, link_name='vms', get_href=True
+    )
     for vm in vms:
         vm_id = VM_API.find(vm).get_id()
         vm_id_obj = getDS('VM')(id=vm_id)
-        out, status = VM_API.create(vm_id_obj, True, async=True,
-                                    collection=affinity_vms_obj)
+        out, status = VM_API.create(
+            vm_id_obj, True, async=True, collection=affinity_vms_obj
+        )
         if not status:
             return False
     return True
@@ -672,10 +710,111 @@ def check_vm_affinity_group(affinity_name, cluster_name, vm_name):
     """
     vm_id = VM_API.find(vm_name).get_id()
     affinity_group_obj = get_affinity_group_obj(affinity_name, cluster_name)
-    affinity_vms_obj = AFFINITY_API.getElemFromLink(affinity_group_obj,
-                                                    link_name='vms',
-                                                    attr='vm')
+    affinity_vms_obj = AFFINITY_API.getElemFromLink(
+        affinity_group_obj, link_name='vms', attr='vm'
+    )
     for vm in affinity_vms_obj:
         if vm_id == vm.get_id():
             return True
     return False
+
+
+def _prepare_cpu_profile_object(**kwargs):
+    """
+    Prepare cpu profile object
+
+    :param kwargs: name: type=str
+                   description: type=str
+                   qos: type=QoS Instance
+    :return: CpuProfile object or raise exception
+    """
+    return prepare_ds_object('CpuProfile', **kwargs)
+
+
+def get_cpu_profile_obj(cluster_name, cpu_prof_name):
+    """
+    Get cpu profile by name from specific cluster
+
+    :param cluster_name: cpu profile cluster
+    :param cpu_prof_name: name of cpu profile to get
+    :return: CpuProfile instance or None
+    """
+    cluster_obj = get_cluster_object(cluster_name)
+    cpu_profiles = CLUSTER_API.getElemFromLink(
+        cluster_obj, link_name='cpuprofiles', attr='cpu_profile'
+    )
+    for cpu_profile in cpu_profiles:
+        if cpu_profile.get_name() == cpu_prof_name:
+            return cpu_profile
+    return None
+
+
+def add_cpu_profile(cluster_name, **kwargs):
+    """
+    Add new cpu profile to cluster
+
+    :param cluster_name: cluster to create cpu profile
+    :param kwargs: name: type=str
+                   description: type=str
+                   qos: type=QOS instance
+    :return: True, if creation success, otherwise False
+    """
+    cluster_obj = get_cluster_object(cluster_name)
+    cpu_profiles_obj = CLUSTER_API.getElemFromLink(
+        cluster_obj, link_name='cpuprofiles', get_href=True
+    )
+    try:
+        cpu_profile_obj = _prepare_cpu_profile_object(**kwargs)
+    except exceptions.RHEVMEntityException:
+        return False
+
+    return CPU_PROFILE_API.create(
+        cpu_profile_obj, True, collection=cpu_profiles_obj)[1]
+
+
+def update_cpu_profile(cluster_name, cpu_prof_name, **kwargs):
+    """
+
+    :param cluster_name: cpu profile cluster
+    :param cpu_prof_name: name of cpu profile to update
+    :param kwargs: name: type=str
+                   description: type=str
+                   qos: type=QOS instance
+    :return: True, if cpu profile updated, otherwise False
+    """
+    old_cpu_profile_obj = get_cpu_profile_obj(cluster_name, cpu_prof_name)
+    if not old_cpu_profile_obj:
+        return False
+    try:
+        new_cpu_profile_obj = _prepare_cpu_profile_object(**kwargs)
+    except exceptions.RHEVMEntityException:
+        return False
+
+    return CPU_PROFILE_API.update(
+        old_cpu_profile_obj, new_cpu_profile_obj, True)[1]
+
+
+def remove_cpu_profile(cluster_name, cpu_prof_name):
+    """
+    Remove cpu profile from cluster
+
+    :param cluster_name: cpu profile cluster
+    :param cpu_prof_name: name of cpu profile to remove
+    :return: True, if cpu profile removed, otherwise False
+    """
+    cpu_profile_obj = get_cpu_profile_obj(cluster_name, cpu_prof_name)
+    if not cpu_profile_obj:
+        return False
+    return CPU_PROFILE_API.delete(cpu_profile_obj, True)
+
+
+def get_cpu_profile_id_by_name(cluster_name, cpu_profile_name):
+    """
+    Get Cpu Profile id by name
+
+    :param cluster_name: cpu profile cluster
+    :param cpu_profile_name: cpu profile name
+    :return: cpu profile id or None
+    """
+    cpu_profile_obj = get_cpu_profile_obj(cluster_name, cpu_profile_name).id
+    return cpu_profile_obj.id if cpu_profile_obj else None
