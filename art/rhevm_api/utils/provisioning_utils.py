@@ -22,6 +22,11 @@ class ProvisioningAPI(object):
 
     __metaclass__ = ABCMeta
 
+    STATUS_BUILD = "build"
+    STATUS_READY = "ready"
+    STATUS_ERROR = "error"
+    STATUS_UNKNOWN = "unknown"
+
     @staticmethod
     @abstractmethod
     def provisioning_api_access(*args, **kwargs):
@@ -54,12 +59,34 @@ class ProvisioningAPI(object):
         Author: imeerovi
         """
 
+    @staticmethod
+    @abstractmethod
+    def get_system_status(*args, **kwargs):
+        """
+        This method gets status of system
+        :author: lbednar
+        :return: status of system
+        :rtype: one of ProvisioningAPI.STATUS_* constant
+        """
+
 
 class ForemanProvisioning(ProvisioningAPI):
     """
     Description: class that implements ProvisioningAPI interfaces for Foreman
     Author: imeerovi
     """
+
+    status_map = {
+        ProvisioningAPI.STATUS_UNKNOWN: ('No reports', 'Alerts disabled',),
+        ProvisioningAPI.STATUS_BUILD: ('Pending Installation',),
+        ProvisioningAPI.STATUS_READY: (
+            'Out of sync',
+            'Active',
+            'No Changes',
+            'Pending',
+        ),
+        ProvisioningAPI.STATUS_ERROR: ('Error',),
+    }
 
     @staticmethod
     def provisioning_api_access(api_access_point, api_user, api_passwd):
@@ -115,6 +142,30 @@ class ForemanProvisioning(ProvisioningAPI):
         Author: imeerovi
         """
         return True
+
+    @staticmethod
+    def get_system_status(api, mac):
+        """
+        This method gets status of system
+        :author: lbednar
+        :param api: provisioning provider
+        :param mac: mac address of system
+        :type mac: str
+        :return: status of system
+        :rtype: one of ProvisioningAPI.STATUS_* constant
+        """
+        status = api.get_host_status(mac)
+        if status is None:
+            logger.warn(
+                "Status can not be obtation for %s because host doesn't exist",
+                mac,
+            )
+            return ProvisioningAPI.STATUS_UNKNOWN
+        for name, statuses in ForemanProvisioning.status_map.iteritems():
+            if status in statuses:
+                return name
+        logger.warn("Unknow status of system '%s' for %s", status, mac)
+        return ProvisioningAPI.STATUS_UNKNOWN
 
 
 class CobblerProvisioning(ProvisioningAPI):
@@ -173,6 +224,14 @@ class CobblerProvisioning(ProvisioningAPI):
         """
         return api.setSystemHostName(name=name, hostname=hostname)
 
+    @staticmethod
+    def get_system_status(api, mac):
+        """
+        Just stub for cobbler interface
+        """
+        # FIXME: need to find out how to get status of system for cobbler
+        return ProvisioningAPI.STATUS_READY
+
 
 class ProvisionProvidersType(type):
     """
@@ -228,6 +287,11 @@ class ProvisionProvider(object):
 
     __metaclass__ = ProvisionProvidersType
 
+    STATUS_BUILD = ProvisioningAPI.STATUS_BUILD
+    STATUS_READY = ProvisioningAPI.STATUS_READY
+    STATUS_ERROR = ProvisioningAPI.STATUS_ERROR
+    STATUS_UNKNOWN = ProvisioningAPI.STATUS_UNKNOWN
+
     class Context(object):
         """
         This wrapper cache systems which were managed via this interface.
@@ -243,7 +307,11 @@ class ProvisionProvider(object):
         """
         def __init__(self):
             super(ProvisionProvider.Context, self).__init__()
-            self.systems = {}
+            self.systems = {}  # FIXME: here can be problem with parallel runs
+            self.STATUS_BUILD = ProvisionProvider.STATUS_BUILD
+            self.STATUS_READY = ProvisionProvider.STATUS_READY
+            self.STATUS_ERROR = ProvisionProvider.STATUS_ERROR
+            self.STATUS_UNKNOWN = ProvisionProvider.STATUS_UNKNOWN
 
         def __enter__(self):
             return self
@@ -287,6 +355,9 @@ class ProvisionProvider(object):
 
         def set_host_name(self, *args, **kwargs):
             return ProvisionProvider.set_host_name(*args, **kwargs)
+
+        def get_system_status(self, mac):
+            return ProvisionProvider.get_system_status(mac)
 
     @classmethod
     @contextmanager
@@ -392,3 +463,23 @@ class ProvisionProvider(object):
                                 kwargs) as api:
             return getattr(cls.provisioning_tool,
                            'set_host_name')(api, args, kwargs)
+
+    @classmethod
+    def get_system_status(cls, mac):
+        """
+        This method gets status of system
+        :author: lbednar
+        :param api: provisioning provider
+        :param mac: mac address of system
+        :type mac: str
+        :return: status of system
+        :rtype: one of ProvisioningAPI.STATUS_* constant
+        """
+        with cls.api_connection(
+            cls.get_system_status.__func__.__name__,
+            mac,
+        ) as api:
+            return getattr(
+                cls.provisioning_tool,
+                'get_system_status',
+            )(api, mac)
