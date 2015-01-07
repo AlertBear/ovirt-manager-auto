@@ -69,6 +69,7 @@ VM_ACTION_TIMEOUT = 600
 VM_REMOVE_SNAPSHOT_TIMEOUT = 1200
 VM_DISK_CLONE_TIMEOUT = 720
 VM_IMAGE_OPT_TIMEOUT = 900
+VM_INSTALL_TIMEOUT = 1800
 CLONE_FROM_SNAPSHOT = 1500
 VM_SAMPLING_PERIOD = 3
 
@@ -2251,6 +2252,36 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
             mac = getVmMacAddress(positive, vmName, nic=nic)
             if not mac[0]:
                 return False
+            mac = mac[1]['macAddress']
+
+            logger.info(
+                "Wait until %s has status != %s, checking every %s",
+                vmName,
+                ProvisionContext.STATUS_BUILD,
+                interval,
+            )
+            try:
+                for status in TimeoutingSampler(
+                    VM_INSTALL_TIMEOUT, interval,
+                    ProvisionContext.get_system_status, mac,
+                ):
+                    logger.info(
+                        "Status of system %s (%s) is %s", vmName, mac, status
+                    )
+                    if status == ProvisionContext.STATUS_ERROR:
+                        logger.error("Status of system is error, aborting ...")
+                        return False
+                    elif status != ProvisionContext.STATUS_BUILD:
+                        # NOTE: It can happen that guest doesn't provide
+                        # reports, so can not test on STATUS_READY
+                        break
+            except APITimeout:
+                logger.error(
+                    "System %s (%s) doesn't have desired status != %s "
+                    "in timeout %s", vmName, mac,
+                    ProvisionContext.STATUS_BUILD, VM_INSTALL_TIMEOUT,
+                )
+                return False
 
             if useAgent:
                 ip = waitForIP(vmName)[1]['ip']
@@ -2262,6 +2293,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
             ):
                 return False
         finally:
+            # FIXME: it doesn't work when it runs in parallel
             ProvisionContext.clear()
         return True
     else:
