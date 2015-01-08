@@ -10,6 +10,7 @@ CLI Options:
 ------------
     --with-cleanup   Enable the plugin and clean all
 """
+import re
 from itertools import cycle, izip
 from utilities import machine
 from art.test_handler.plmanagement import PluginError
@@ -117,6 +118,17 @@ def restartServices(hostObj):
             logger.warning("{0} is not installed, Skipping restart of {0}".
                            format(service))
             continue
+
+        logger.info("Restarting %s", service)
+        if service == 'nfslock':
+            res, osType = hostObj.getHostOsType()
+            if res and osType:
+                if re.search('7[.]1', osType) is not None:
+                    logger.info("Host os is 7.1; service name is nfs-lock")
+                    service = 'nfs-lock'
+            else:
+                logger.info("Unknown osType ; skip restarting %s", service)
+                continue
 
         logger.info("Restarting %s", service)
         if not hostObj.restartService(service):
