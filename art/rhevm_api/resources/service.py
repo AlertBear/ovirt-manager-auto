@@ -136,7 +136,7 @@ class Systemd(SystemService):
     def _can_handle(self):
         super(Systemd, self)._can_handle()
         cmd = (
-            'systemctl', '--all', '|',
+            'systemctl', 'list-unit-files', '|',
             'grep', '-o', '^[^.][^.]*.service', '|',
             'cut', '-d.', '-f1', '|',
             'sort', '|', 'uniq',
