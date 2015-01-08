@@ -6,13 +6,15 @@ import logging
 from utilities.machine import Machine
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.tests_lib.low_level.disks import waitForDisksState
-from art.rhevm_api.tests_lib.low_level.vms import activateVmDisk,\
-    get_vm_ip, waitForVMState, start_vms
+from art.rhevm_api.tests_lib.low_level.vms import (
+    activateVmDisk, waitForVMState, start_vms,
+)
 
 from art.rhevm_api.tests_lib.low_level import disks
 from art.test_handler import exceptions
 import shlex
 from art.test_handler.exceptions import CanNotFindIP
+from rhevmtests.storage.helpers import get_vm_ip
 
 import config
 

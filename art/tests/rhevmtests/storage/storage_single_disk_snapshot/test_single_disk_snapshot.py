@@ -23,12 +23,13 @@ from art.rhevm_api.utils.storage_api import (
 )
 
 from art.rhevm_api.utils.test_utils import restartVdsmd, restartOvirtEngine
+from rhevmtests.storage.helpers import get_vm_ip
 from rhevmtests.storage.storage_single_disk_snapshot import helpers
 
 from art.unittest_lib import StorageTest as BaseTestCase
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level.vms import (
-    addSnapshot, stop_vms_safely, preview_snapshot, get_vm_ip, createVm,
+    addSnapshot, stop_vms_safely, preview_snapshot, createVm,
     start_vms, waitForVMState, suspendVm, startVm, commit_snapshot,
     get_vm_bootable_disk, undo_snapshot_preview, cloneVmFromSnapshot, addNic,
     removeNic, get_snapshot_disks, shutdownVm, removeSnapshot,

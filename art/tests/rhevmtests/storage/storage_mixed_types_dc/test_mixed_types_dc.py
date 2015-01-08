@@ -21,8 +21,10 @@ import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 
 from art.rhevm_api.utils import test_utils
-from art.rhevm_api.utils.storage_api import blockOutgoingConnection, \
-    unblockOutgoingConnection
+from art.rhevm_api.utils.storage_api import (
+    blockOutgoingConnection, unblockOutgoingConnection,
+)
+from rhevmtests.storage.helpers import get_vm_ip
 
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.test_handler.settings import opts
@@ -755,7 +757,7 @@ class TestCase336526(IscsiNfsSD):
         helpers.add_disk_to_sd("vm_second_disk", self.nfs,
                                attach_to_vm=self.vm_name)
 
-        vm_ip = ll_vms.get_vm_ip(self.vm_name)
+        vm_ip = get_vm_ip(self.vm_name)
         linux_machine = Machine(
             host=vm_ip, user=config.VM_USER,
             password=config.VM_PASSWORD).util('linux')

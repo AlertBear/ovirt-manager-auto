@@ -3392,7 +3392,7 @@ def run_cmd_on_vm(vm_name, cmd, user, password, timeout=15):
         * user - username used to login to vm
         * password - password for the user
     """
-    vm_ip = get_vm_ip(vm_name)
+    vm_ip = waitForIP(vm_name)[1]['ip']
     rc, out = runMachineCommand(
         True, ip=vm_ip, user=user, password=password, cmd=cmd, timeout=timeout)
     logger.debug("cmd output: %s, exit code: %s", out, rc)
@@ -3587,18 +3587,6 @@ def create_vm_from_ovf(new_vm_name, cluster_name, ovf, compare=False):
                                        initialization=ovf)
     _, status = VM_API.create(restored_vm_obj, True, compare=compare)
     return status
-
-
-def get_vm_ip(vm_name):
-    """
-    Description: get vm ip by name
-    Author: ratamir
-    Parameters:
-        * vm_name - vm name
-    Return: ip address of a vm, or raise EntityNotFound exception
-    """
-    vm_ip = LookUpVMIpByName('', '').get_ip(vm_name)
-    return vm_ip
 
 
 def stop_vms_safely(vms_list, async=False, max_workers=2):
@@ -4085,7 +4073,7 @@ def get_vm_storage_devices(vm_name, username, password,
     if ensure_vm_on:
         start_vms([vm_name], 1, wait_for_ip=False)
         waitForVMState(vm_name)
-    vm_ip = get_vm_ip(vm_name)
+    vm_ip = waitForIP(vm_name)[1]['ip']
     vm_machine = Machine(host=vm_ip, user=username,
                          password=password).util(LINUX)
     output = vm_machine.get_boot_storage_device()

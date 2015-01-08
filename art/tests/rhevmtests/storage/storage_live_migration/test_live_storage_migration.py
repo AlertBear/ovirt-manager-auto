@@ -7,37 +7,47 @@ import logging
 from time import sleep
 from utilities.machine import Machine
 from utilities.utils import getIpAddressByHostName
-from art.rhevm_api.tests_lib.low_level.disks import waitForDisksState,\
-    get_other_storage_domain, attachDisk,\
-    deleteDisk, getVmDisk, get_disk_storage_domain_name
+
+from art.rhevm_api.tests_lib.low_level.disks import (
+    waitForDisksState, get_other_storage_domain, attachDisk,
+    deleteDisk, getVmDisk, get_disk_storage_domain_name,
+    getObjDisks, detachDisk, addDisk,
+)
+from art.rhevm_api.tests_lib.low_level.storagedomains import (
+    get_master_storage_domain_name, cleanDataCenter, deactivateStorageDomain,
+    waitForStorageDomainStatus, activateStorageDomain, extendStorageDomain,
+    getDomainAddress, get_free_space,
+)
+from art.rhevm_api.tests_lib.low_level.vms import (
+    createVm, stop_vms_safely, waitForVMState, deactivateVmDisk, removeDisk,
+    start_vms, live_migrate_vm, remove_all_vm_lsm_snapshots, addVm,
+    suspendVm, removeSnapshot, live_migrate_vm_disk, move_vm_disk,
+    waitForVmsStates, getVmDisks, stopVm, migrateVm, verify_vm_disk_moved,
+    updateVm, getVmHost, removeVms, shutdownVm, runVmOnce, startVm,
+    get_vm_snapshots, get_vm_state,
+    waitForVmsDisks, wait_for_vm_snapshots, addSnapshot, removeVm,
+    activateVmDisk,
+)
+from art.rhevm_api.tests_lib.low_level.hosts import (
+    getSPMHost, rebootHost, getHSMHost,
+)
+from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
+from art.rhevm_api.tests_lib.high_level.datacenters import (
+    build_setup, clean_all_disks_from_dc,
+)
 from art.rhevm_api.utils.log_listener import watch_logs
-from art.rhevm_api.utils.storage_api import blockOutgoingConnection, \
-    unblockOutgoingConnection
+from art.rhevm_api.utils.storage_api import (
+    blockOutgoingConnection, unblockOutgoingConnection,
+)
+from rhevmtests.storage.helpers import get_vm_ip
 from rhevmtests.storage.storage_live_migration import helpers
 from art.unittest_lib.common import StorageTest as BaseTestCase
-from art.rhevm_api.tests_lib.high_level.datacenters import build_setup,\
-    clean_all_disks_from_dc
 
-from art.rhevm_api.tests_lib.low_level import disks
-from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost, rebootHost,\
-    getHSMHost
-from art.rhevm_api.tests_lib.low_level import vms
-from art.rhevm_api.tests_lib.low_level import templates
-from art.rhevm_api.tests_lib.low_level.storagedomains import \
-    get_master_storage_domain_name, cleanDataCenter, deactivateStorageDomain,\
-    waitForStorageDomainStatus, activateStorageDomain, extendStorageDomain,\
-    getDomainAddress, get_free_space
-from art.rhevm_api.tests_lib.low_level.vms import createVm, stop_vms_safely,\
-    waitForVMState, deactivateVmDisk, removeDisk, start_vms, live_migrate_vm,\
-    remove_all_vm_lsm_snapshots, addVm, suspendVm, removeSnapshot, \
-    live_migrate_vm_disk, move_vm_disk, waitForVmsStates, getVmDisks,\
-    stopVm, migrateVm, verify_vm_disk_moved, updateVm, getVmHost, removeVms,\
-    shutdownVm, runVmOnce, startVm, get_vm_snapshots, get_vm_state
-from art.rhevm_api.utils.test_utils import get_api, setPersistentNetwork, \
-    restartVdsmd
+from art.rhevm_api.utils.test_utils import (
+    get_api, setPersistentNetwork, restartVdsmd,
+)
 from art.test_handler import exceptions
-
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 import config
 
@@ -160,7 +170,7 @@ class CommonUsage(BaseTestCase):
 
         for disk in disks_names:
             logger.info("Deleting disk %s", disk)
-            if not disks.deleteDisk(True, disk):
+            if not deleteDisk(True, disk):
                 logger.error("Failed to remove disk %s", disk)
 
 
@@ -336,11 +346,11 @@ class TestCase166090(BaseTestCase):
         """
         start_vms([self.base_vm], 1, wait_for_ip=False)
         waitForVMState(self.base_vm)
-        ip_addr = vms.get_vm_ip(self.base_vm)
+        ip_addr = get_vm_ip(self.base_vm)
         setPersistentNetwork(ip_addr, config.VM_PASSWORD)
         stop_vms_safely([self.base_vm])
 
-        disks_objs = disks.getObjDisks(self.base_vm, get_href=False)
+        disks_objs = getObjDisks(self.base_vm, get_href=False)
 
         target_domain = get_disk_storage_domain_name(
             disks_objs[0].get_alias(), self.base_vm)
@@ -351,7 +361,7 @@ class TestCase166090(BaseTestCase):
             True, True, vm=self.base_vm, name=self.test_templates[0],
             cluster=config.CLUSTER_NAME, storagedomain=target_domain)
 
-        second_domain = disks.get_other_storage_domain(
+        second_domain = get_other_storage_domain(
             disks_objs[0].get_alias())
 
         target_domain = SD_NAME_1 if (second_domain == SD_NAME_0) \
@@ -380,14 +390,14 @@ class TestCase166090(BaseTestCase):
         """
         self._prepare_templates()
         for template, vm_name in zip(self.test_templates, vm_names):
-            dsks = disks.getObjDisks(
+            dsks = getObjDisks(
                 template, get_href=False, is_template=True)
 
             target_sd = dsks[0].storage_domains.storage_domain[0].get_name()
 
-            if not vms.addVm(True, name=vm_name, cluster=config.CLUSTER_NAME,
-                             storagedomain=target_sd,
-                             template=template):
+            if not addVm(True, name=vm_name, cluster=config.CLUSTER_NAME,
+                         storagedomain=target_sd,
+                         template=template):
                 raise exceptions.VMException(
                     "Cannot create vm %s from template %s on storage "
                     "domain %s" % (vm_name, template, target_sd))
@@ -420,7 +430,7 @@ class TestCase166090(BaseTestCase):
         Removes vms and templates
         """
         for vm in self.vm_names:
-            if not vms.removeVm(True, vm, stopVM='true'):
+            if not removeVm(True, vm, stopVM='true'):
                 raise exceptions.VMException(
                     "Cannot remove or stop vm %s" % vm)
 
@@ -445,11 +455,10 @@ class TestCase166137(BaseTestCase):
             """
             stop_vms_safely([vm_name])
             logger.info("Add snapshot to vm %s", vm_name)
-            if not vms.addSnapshot(True, vm_name, self.snapshot_desc):
+            if not addSnapshot(True, vm_name, self.snapshot_desc):
                 raise exceptions.VMException(
                     "Add snapshot to vm %s failed" % vm_name)
-            vms.wait_for_vm_snapshots(vm_name,
-                                      ENUMS['snapshot_state_ok'])
+            wait_for_vm_snapshots(vm_name, ENUMS['snapshot_state_ok'])
             start_vms([vm_name], 1,  wait_for_ip=False)
             waitForVMState(vm_name)
 
@@ -476,7 +485,7 @@ class TestCase166137(BaseTestCase):
         """
         stop_vms_safely([config.VM_NAME])
         logger.info("Deleting snapshot %s", self.snapshot_desc)
-        if not vms.removeSnapshot(True, config.VM_NAME, self.snapshot_desc):
+        if not removeSnapshot(True, config.VM_NAME, self.snapshot_desc):
             raise exceptions.VMException("Cannot delete snapshot %s "
                                          "of vm %s" %
                                          (self.snapshot_desc, config.VM_NAME))
@@ -539,12 +548,12 @@ class TestCase166166(BaseTestCase):
         stop_vms_safely([config.VM_NAME, self.test_vm_name])
         waitForVmsStates(True, [config.VM_NAME, self.test_vm_name],
                          config.VM_DOWN)
-        if not vms.removeDisk(True, config.VM_NAME, helpers.DISKS_NAMES[0]):
+        if not removeDisk(True, config.VM_NAME, helpers.DISKS_NAMES[0]):
             raise exceptions.DiskException("Cannot remove disk %s "
                                            "of vm %s"
                                            % (helpers.DISKS_NAMES[0],
                                               config.VM_NAME))
-        if not vms.removeVm(True, self.test_vm_name):
+        if not removeVm(True, self.test_vm_name):
             raise exceptions.VMException("Cannot remove vm %s"
                                          % config.VM_NAME)
         remove_all_vm_lsm_snapshots(config.VM_NAME)
@@ -647,11 +656,10 @@ class TestCase166170(AllPermutationsDisks):
         start_vms([vm_name], 1, wait_for_ip=False)
         waitForVMState(vm_name)
         logger.info("Creating new snapshot for vm %s", vm_name)
-        if not vms.addSnapshot(True, vm_name, self.snapshot_desc):
+        if not addSnapshot(True, vm_name, self.snapshot_desc):
             raise exceptions.VMException(
                 "Add snapshot to vm %s failed" % vm_name)
-        vms.wait_for_vm_snapshots(vm_name,
-                                  ENUMS['snapshot_state_ok'])
+        wait_for_vm_snapshots(vm_name, ENUMS['snapshot_state_ok'])
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_lsm_before_snapshot(self):
@@ -832,29 +840,29 @@ class TestCase166180(CommonUsage):
         """
         disk_name = self.disk_name_pattern
         logger.info("Attaching disk %s to vm %s", disk_name, vm_name)
-        if not disks.attachDisk(True, disk_name, vm_name, active=activate):
+        if not attachDisk(True, disk_name, vm_name, active=activate):
             raise exceptions.DiskException(
                 "Cannot attach floating disk %s to vm %s" %
                 (disk_name, vm_name))
-        inactive_disk = disks.getVmDisk(vm_name, disk_name)
+        inactive_disk = getVmDisk(vm_name, disk_name)
         if activate and not inactive_disk.get_active():
             logger.warning("Disk %s in vm %s is not active after attaching",
                            disk_name, vm_name)
-            assert vms.activateVmDisk(True, vm_name, disk_name)
+            assert activateVmDisk(True, vm_name, disk_name)
 
         elif not activate and inactive_disk.get_active():
             logger.warning("Disk %s in vm %s is active after attaching",
                            disk_name, vm_name)
-            assert vms.deactivateVmDisk(True, vm_name, disk_name)
+            assert deactivateVmDisk(True, vm_name, disk_name)
         logger.info("%s disks active: %s %s", disk_name,
                     inactive_disk.get_active(),
                     type(inactive_disk.get_active()))
-        vms.waitForVmsDisks(vm_name)
-        vms.live_migrate_vm(vm_name, LIVE_MIGRATION_TIMEOUT)
+        waitForVmsDisks(vm_name)
+        live_migrate_vm(vm_name, LIVE_MIGRATION_TIMEOUT)
         logger.info("Migration completed, cleaning snapshots")
         remove_all_vm_lsm_snapshots(vm_name)
         wait_for_jobs()
-        if not disks.detachDisk(True, disk_name, vm_name):
+        if not detachDisk(True, disk_name, vm_name):
             raise exceptions.DiskException(
                 "Cannot detach floating disk %s from vm %s" %
                 (disk_name, vm_name))
@@ -1003,12 +1011,12 @@ class TestCase174424(CommonUsage):
                 disk_params['alias'] = self.disk_name % (index,
                                                          self.tcms_test_case)
                 disk_params['storagedomain'] = self.sd_list[index]
-                if not disks.addDisk(True, **disk_params):
+                if not addDisk(True, **disk_params):
                     raise exceptions.DiskException(
                         "Can't create disk with params: %s" % disk_params)
                 logger.info("Waiting for disk %s to be ok",
                             disk_params['alias'])
-                disks.waitForDisksState(disk_params['alias'])
+                waitForDisksState(disk_params['alias'])
                 self.disks_names.append(disk_params['alias'])
                 assert attachDisk(True, disk_params['alias'], vm_name)
 
@@ -1870,12 +1878,12 @@ class TestCase174426(CommonUsage):
                 disk_params['storagedomain'] = self.sd_list[index]
                 if index == 2:
                     disk_params['active'] = False
-                if not disks.addDisk(True, **disk_params):
+                if not addDisk(True, **disk_params):
                     raise exceptions.DiskException(
                         "Can't create disk with params: %s" % disk_params)
                 logger.info("Waiting for disk %s to be ok",
                             disk_params['alias'])
-                disks.waitForDisksState(disk_params['alias'])
+                waitForDisksState(disk_params['alias'])
                 self.disks_names.append(disk_params['alias'])
                 assert attachDisk(True, disk_params['alias'], vm_name,
                                   active=disk_params['active'])

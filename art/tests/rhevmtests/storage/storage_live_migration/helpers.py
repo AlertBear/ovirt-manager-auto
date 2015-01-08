@@ -5,11 +5,14 @@ Live Storage Migration test helpers functions
 import logging
 from utilities.machine import Machine
 from art.core_api.apis_exceptions import EntityNotFound
-from art.rhevm_api.tests_lib.low_level.disks import waitForDisksState,\
-    addDisk, get_all_disk_permutation, attachDisk
+from art.rhevm_api.tests_lib.low_level.disks import (
+    waitForDisksState, addDisk, get_all_disk_permutation, attachDisk,
+)
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-from art.rhevm_api.tests_lib.low_level.vms import activateVmDisk,\
-    get_vm_ip, waitForVMState, start_vms
+from art.rhevm_api.tests_lib.low_level.vms import (
+    activateVmDisk, waitForVMState, start_vms,
+)
+from rhevmtests.storage.helpers import get_vm_ip
 
 from art.test_handler import exceptions
 import shlex

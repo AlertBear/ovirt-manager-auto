@@ -5,12 +5,15 @@ Read Only Disk test helpers functions
 import logging
 from utilities.machine import Machine
 from art.core_api.apis_exceptions import EntityNotFound
-from art.rhevm_api.tests_lib.low_level.disks import waitForDisksState,\
-    addDisk, get_all_disk_permutation, attachDisk, check_disk_visibility
+from art.rhevm_api.tests_lib.low_level.disks import (
+    waitForDisksState, addDisk, get_all_disk_permutation, attachDisk,
+    check_disk_visibility,
+)
 from art.rhevm_api.tests_lib.low_level.storagedomains import addStorageDomain
-from art.rhevm_api.tests_lib.low_level.vms import activateVmDisk,\
-    getVmDisks, get_vm_ip, waitForVMState, start_vms
-
+from art.rhevm_api.tests_lib.low_level.vms import (
+    activateVmDisk, getVmDisks, waitForVMState, start_vms,
+)
+from rhevmtests.storage.helpers import get_vm_ip
 
 from art.test_handler import exceptions
 import shlex

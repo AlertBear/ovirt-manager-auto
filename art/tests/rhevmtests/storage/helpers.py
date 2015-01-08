@@ -11,8 +11,8 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainObj,
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
-    stop_vms_safely, get_vm_snapshots, removeSnapshot, activateVmDisk,
-    get_vm_ip, get_vm_disk_logical_name,
+    get_vm_disk_logical_name, stop_vms_safely, get_vm_snapshots,
+    removeSnapshot, activateVmDisk, waitForIP,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.test_handler import exceptions
@@ -195,3 +195,16 @@ def perform_dd_to_disk(vm_name, disk_alias, protect_boot_device=True):
     ecode, out = vm_machine.runCmd(shlex.split(command), timeout=DD_TIMEOUT)
 
     return ecode, out
+
+
+def get_vm_ip(vm_name):
+    """
+    Get vm ip by name
+
+    __author__ = "ratamir"
+    :param vm_name: vm name
+    :type: str
+    :return: ip address of a vm, or raise EntityNotFound exception
+    :rtype: str or EntityNotFound exception
+    """
+    return waitForIP(vm_name)[1]['ip']

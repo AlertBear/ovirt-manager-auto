@@ -3,33 +3,46 @@
 https://tcms.engineering.redhat.com/plan/12049
 """
 import logging
-from art.rhevm_api.tests_lib.low_level.datacenters import addDataCenter,\
-    removeDataCenter
-from art.rhevm_api.tests_lib.low_level.hosts import updateHost,\
-    deactivateHost, activateHost, kill_qemu_process
-from art.rhevm_api.utils.test_utils import setPersistentNetwork, wait_for_tasks
 from art.unittest_lib.common import StorageTest as TestCase
 from utilities.utils import getIpAddressByHostName
+
+from art.rhevm_api.tests_lib.low_level.datacenters import (
+    addDataCenter, removeDataCenter,
+)
+from art.rhevm_api.tests_lib.low_level.hosts import (
+    updateHost, deactivateHost, activateHost, kill_qemu_process,
+)
+from art.rhevm_api.tests_lib.low_level.clusters import (
+    addCluster, removeCluster,
+)
+from art.rhevm_api.tests_lib.low_level.disks import (
+    updateDisk, getVmDisk, getStorageDomainDisks, waitForDisksState, addDisk,
+    attachDisk,
+)
+from art.rhevm_api.tests_lib.low_level.storagedomains import (
+    cleanDataCenter, getDomainAddress, get_master_storage_domain_name,
+    attachStorageDomain, deactivateStorageDomain, findExportStorageDomains,
+)
+from art.rhevm_api.tests_lib.low_level.vms import (
+    createVm, addSnapshot, getVmDisks, removeDisk, start_vms,
+    deactivateVmDisk, waitForVMState, removeSnapshot,
+    migrateVm, suspendVm, startVm, exportVm, importVm, get_snapshot_disks,
+    cloneVmFromSnapshot, removeVm, cloneVmFromTemplate, stop_vms_safely,
+    removeVms, move_vm_disk, waitForVmsStates, preview_snapshot,
+    undo_snapshot_preview, commit_snapshot, addVm,
+    removeVmFromExportDomain,
+)
+from art.rhevm_api.tests_lib.low_level.templates import (
+    removeTemplate, createTemplate, waitForTemplatesStates,
+)
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
-from art.rhevm_api.tests_lib.low_level.clusters import addCluster,\
-    removeCluster
-from art.rhevm_api.tests_lib.low_level.disks import updateDisk, getVmDisk,\
-    getStorageDomainDisks, waitForDisksState, addDisk, attachDisk
-from art.rhevm_api.tests_lib.low_level.storagedomains import \
-    cleanDataCenter, getDomainAddress, get_master_storage_domain_name,\
-    attachStorageDomain, deactivateStorageDomain, findExportStorageDomains
-from art.rhevm_api.tests_lib.low_level.templates import removeTemplate,\
-    createTemplate, waitForTemplatesStates
-from art.rhevm_api.tests_lib.low_level.vms import createVm, addSnapshot, \
-    getVmDisks, removeDisk, start_vms,\
-    deactivateVmDisk, waitForVMState, removeSnapshot, \
-    migrateVm, suspendVm, startVm, exportVm, importVm, get_snapshot_disks,\
-    cloneVmFromSnapshot, removeVm, cloneVmFromTemplate, stop_vms_safely,\
-    removeVms, move_vm_disk, waitForVmsStates, preview_snapshot,\
-    undo_snapshot_preview, commit_snapshot, addVm, get_vm_ip,\
-    removeVmFromExportDomain
-from art.rhevm_api.utils.storage_api import blockOutgoingConnection,\
-    unblockOutgoingConnection
+from art.rhevm_api.utils.test_utils import (
+    setPersistentNetwork, wait_for_tasks,
+)
+from art.rhevm_api.utils.storage_api import (
+    blockOutgoingConnection, unblockOutgoingConnection,
+)
+from rhevmtests.storage.helpers import get_vm_ip
 
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.test_handler import exceptions

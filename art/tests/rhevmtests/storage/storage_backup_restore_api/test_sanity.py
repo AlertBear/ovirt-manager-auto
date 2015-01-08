@@ -13,6 +13,7 @@ from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.low_level import templates, hosts
 from art.rhevm_api.tests_lib.low_level.datacenters import get_data_center
 from art.unittest_lib import attr
+from rhevmtests.storage.helpers import get_vm_ip
 
 import art.rhevm_api.utils.storage_api as st_api
 
@@ -25,7 +26,6 @@ from art.test_handler import exceptions
 
 import helpers
 import config
-
 
 logger = logging.getLogger(__name__)
 
@@ -702,7 +702,7 @@ class TestCase304197(TestCase):
         self.vm_names = VM_NAMES[TestCase.storage]
         vms.start_vms(self.vm_names, 2, wait_for_ip=False)
         vms.waitForVmsStates(True, self.vm_names)
-        self.vm_machine_ip = vms.get_vm_ip(self.vm_names[1])
+        self.vm_machine_ip = get_vm_ip(self.vm_names[1])
         self.storage_domains = storagedomains.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)
 
