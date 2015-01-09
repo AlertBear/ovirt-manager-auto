@@ -2254,33 +2254,11 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
                 return False
             mac = mac[1]['macAddress']
 
-            logger.info(
-                "Wait until %s has status != %s, checking every %s",
-                vmName,
-                ProvisionContext.STATUS_BUILD,
-                interval,
-            )
-            try:
-                for status in TimeoutingSampler(
-                    VM_INSTALL_TIMEOUT, interval,
-                    ProvisionContext.get_system_status, mac,
-                ):
-                    logger.info(
-                        "Status of system %s (%s) is %s", vmName, mac, status
-                    )
-                    if status == ProvisionContext.STATUS_ERROR:
-                        logger.error("Status of system is error, aborting ...")
-                        return False
-                    elif status != ProvisionContext.STATUS_BUILD:
-                        # NOTE: It can happen that guest doesn't provide
-                        # reports, so can not test on STATUS_READY
-                        break
-            except APITimeout:
-                logger.error(
-                    "System %s (%s) doesn't have desired status != %s "
-                    "in timeout %s", vmName, mac,
-                    ProvisionContext.STATUS_BUILD, VM_INSTALL_TIMEOUT,
-                )
+            if not waitForSystemIsReady(
+                mac,
+                interval=interval,
+                timeout=VM_INSTALL_TIMEOUT
+            ):
                 return False
 
             if useAgent:
@@ -2378,6 +2356,35 @@ def check_vnic_on_vm_nic(vm, nic='nic1', vnic='rhevm'):
     # for NIC that doesn't have VNIC profile on it
     else:
         return vnic is None
+
+
+@is_action()
+def waitForSystemIsReady(mac, interval=60, timeout=VM_INSTALL_TIMEOUT):
+    logger.info(
+        "Wait until system %s has status != %s, checking every %s",
+        mac, ProvisionContext.STATUS_BUILD, interval,
+    )
+    try:
+        for status in TimeoutingSampler(
+            timeout, interval, ProvisionContext.get_system_status, mac,
+        ):
+            logger.info(
+                "Status of system %s is %s", mac, status,
+            )
+            if status == ProvisionContext.STATUS_ERROR:
+                logger.error("Status of system is error, aborting ...")
+                return False
+            elif status != ProvisionContext.STATUS_BUILD:
+                # NOTE: It can happen that guest doesn't provide reports,
+                # so can not test on STATUS_READY
+                break
+    except APITimeout:
+        logger.error(
+            "System %s doesn't have desired status != %s in timeout %s", mac,
+            ProvisionContext.STATUS_BUILD, VM_INSTALL_TIMEOUT,
+        )
+        return False
+    return True
 
 
 @is_action()
