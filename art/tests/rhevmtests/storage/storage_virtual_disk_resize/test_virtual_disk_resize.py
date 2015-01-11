@@ -76,7 +76,7 @@ vmArgs = {'positive': True,
           'storageDomainName': None,
           'installation': True,
           'size': config.DISK_SIZE,
-          'nic': config.HOST_NICS[0],
+          'nic': config.NIC_NAME[0],
           'image': config.COBBLER_PROFILE,
           'useAgent': True,
           'os_type': config.OS_TYPE,
@@ -195,8 +195,8 @@ class BasicResize(BaseTestCase):
     host_ip = None
     disk_name = ''
     block_cmd = "iptables -I OUTPUT -d %s -p tcp -j DROP"
-    stop_libvirt = "stop libvirtd"
-    start_libvirt = "start libvirtd"
+    stop_libvirt = "service libvirtd stop"
+    start_libvirt = "service libvirtd start"
     disk_args = {}
 
     @classmethod
@@ -343,6 +343,7 @@ class TestCase336099(DisksPermutationEnvironment):
     snap_description = 'snap_%s' % tcms_test_case
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
+    @bz({'1178499': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     def test_virtual_disk_resize_after_snapshot_creation(self):
         """
         - VM with 6G disk and OS
@@ -395,7 +396,7 @@ class TestCase336100(DisksPermutationEnvironment):
     is_preview = False
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
-    @bz('1101405')
+    @bz({'1178499': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     def test_Commit_snapshot_after_disk_resize(self):
         """
         - VM with 6G disk and OS

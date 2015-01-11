@@ -3952,9 +3952,9 @@ def extend_vm_disk_size(positive, vm, disk, **kwargs):
         # async so the returned object is not the updated one. The returned
         # object in this case is a locked disk with the original size (i.e
         # before the resize).
-        # To pass this, I send OK codes (200, 201) as negative codes.
-        disk, status = DISKS_API.update(disk_obj, new_disk, False,
-                                        expected_neg_status=[200, 201])
+        # To bypass the object comparison, use compare=False
+        disk, status = DISKS_API.update(disk_obj, new_disk, True,
+                                        compare=False)
     else:
         # Expecting to fail: in this case the validator is disabled so no
         # further manipulation is needed
