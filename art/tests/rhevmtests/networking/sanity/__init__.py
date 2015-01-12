@@ -11,7 +11,7 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.rhevm_api.tests_lib.high_level.networks import prepareSetup
 from art.test_handler.exceptions import NetworkException
 from rhevmtests.networking.arbitrary_vlan_device_name.helper import(
-    set_libvirtd_sasl, passwordless_ssh
+    set_libvirtd_sasl
 )
 
 logger = logging.getLogger("Sanity_Init")
@@ -35,12 +35,6 @@ def setup_package():
     ]
     if not set_engine_properties(engine_obj=config.ENGINE, param=param):
         raise NetworkException("Failed to enable queue via engine-config")
-
-    logger.info("Setting passwordless ssh to %s", config.VDS_HOSTS[0].fqdn)
-    if not passwordless_ssh(config.ENGINE_HOST, config.VDS_HOSTS[0]):
-        raise NetworkException(
-            "Failed to set passwordless SSH to %s" % config.VDS_HOSTS[0].fqdn
-        )
 
     if not config.GOLDEN_ENV:
         logger.info("Creating data center, cluster, adding host and storage")
