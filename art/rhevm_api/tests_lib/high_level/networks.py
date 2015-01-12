@@ -372,19 +372,16 @@ def remove_net_from_setup(host, auto_nics=[0], network=[], data_center=None,
 
 
 @is_action()
-def prepareSetup(hosts, cpuName, username, password, datacenter,
-                 cluster, version, storage_type, local=False,
-                 storageDomainName=None, lun_address='', lun_target='',
-                 luns='', lun_port=LUN_PORT,
-                 diskType='system', auto_nics=[0],
-                 vm_user='root', vm_password=None,
-                 vmName=None, vmDescription='linux vm',
-                 nicType='virtio', display_type='spice',
-                 os_type='RHEL6x64', image=RHEL_IMAGE,
-                 nic='nic1', size=DISK_SIZE, useAgent=True,
-                 template_name=None, attempt=ATTEMPTS,
-                 interval=INTERVAL, placement_host=None,
-                 mgmt_network=MGMT_NETWORK, vnic_profile=None):
+def prepareSetup(
+    hosts, cpuName, username, password, datacenter, cluster, version,
+    storage_type, local=False, storageDomainName=None, lun_address='',
+    lun_target='', luns='', lun_port=LUN_PORT, diskType='system',
+    auto_nics=[0], vm_user='root', vm_password=None, vmName=None,
+    vmDescription='linux vm', nicType='virtio', display_type='spice',
+    os_type='RHEL6x64', image=RHEL_IMAGE, nic='nic1', size=DISK_SIZE,
+    useAgent=True, template_name=None, attempt=ATTEMPTS, interval=INTERVAL,
+    placement_host=None, mgmt_network=MGMT_NETWORK, vnic_profile=None
+):
     """
     Function that creates DC, Cluster, Storage, Hosts
     It creates VM with a NIC connected to default network and Template if
@@ -425,7 +422,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
     :return: True if creation of the setup succeeded, otherwise False
     """
     hosts_obj = [hosts] if not isinstance(hosts, list) else hosts
-    hosts_fqdn = [h.fqdn for h in hosts_obj]
+    hosts_ip = [h.ip for h in hosts_obj]
 
     if not addDataCenter(
         True, name=datacenter, storage_type=storage_type,
@@ -452,7 +449,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
         )
     logger.info("Cluster %s was created successfully", cluster)
 
-    add_hosts(hosts_fqdn, [password] * len(hosts_fqdn), cluster)
+    add_hosts(hosts_ip, [password] * len(hosts_ip), cluster)
     host_array = [get_host_name_from_engine(h.ip) for h in hosts_obj]
 
     # setting up cpu_model
@@ -485,32 +482,30 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
 
         try:
             logger.info("Cleaning %s interfaces", host_name)
-            sendSNRequest(True, host=host_name,
-                          auto_nics=host_auto_nics,
-                          check_connectivity='true',
-                          connectivity_timeout=CONNECTIVITY_TIMEOUT,
-                          force='false')
+            sendSNRequest(
+                True, host=host_name, auto_nics=host_auto_nics,
+                check_connectivity='true',
+                connectivity_timeout=CONNECTIVITY_TIMEOUT, force='false'
+            )
             commitNetConfig(True, host=host_name)
 
         except Exception as ex:
-            logger.error("Cleaning host interfaces failed %s", ex,
-                         exc_info=True)
+            logger.error(
+                "Cleaning host interfaces failed %s", ex, exc_info=True
+            )
             return False
 
     if vmName:
-        if not createVm(True, vmName=vmName,
-                        vmDescription='linux vm', cluster=cluster,
-                        nic=nic, storageDomainName=storageDomainName,
-                        size=size, diskInterface="virtio",
-                        nicType=nicType,
-                        display_type=display_type, os_type=os_type,
-                        image=image, user=vm_user,
-                        password=vm_password, installation=True,
-                        network=mgmt_network,
-                        useAgent=True, diskType=diskType,
-                        attempt=attempt, interval=interval,
-                        placement_host=placement_host,
-                        vnic_profile=vnic_profile):
+        if not createVm(
+            True, vmName=vmName, vmDescription='linux vm', cluster=cluster,
+            nic=nic, storageDomainName=storageDomainName, size=size,
+            diskInterface="virtio", nicType=nicType,
+            display_type=display_type, os_type=os_type, image=image,
+            user=vm_user, password=vm_password, installation=True,
+            network=mgmt_network, useAgent=True, diskType=diskType,
+            attempt=attempt, interval=interval,
+            placement_host=placement_host, vnic_profile=vnic_profile
+        ):
             logger.error("Cannot create VM")
             return False
 
@@ -539,8 +534,9 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
         if not startVm(True, vm=vmName):
             logger.error("Can't start VM")
             return False
-        if not waitForVmsStates(True, names=vmName, timeout=TIMEOUT,
-                                states='up'):
+        if not waitForVmsStates(
+            True, names=vmName, timeout=TIMEOUT, states='up'
+        ):
             logger.error("VM status is not up in the predefined timeout")
 
     return True
