@@ -50,7 +50,9 @@ def copyDataToVm(ip, user, password, osType, src, dest):
     '''
     try:
         machine = Machine(ip, user, password).util(osType)
-        return machine.copyTo(src, dest, 300)
+        res = machine.copyTo(src, dest, 300)
+        machine.runCmd(['sync'])  # sync FS
+        return res
     except Exception as err:
         logger.error("copy data to %s: %s", ip, err)
     return False
