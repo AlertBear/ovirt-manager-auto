@@ -8,36 +8,48 @@ from art.rhevm_api.tests_lib.low_level import (
 
 def setup_package():
     """ Prepare environment """
-    version = config.PARAMETERS.get('compatibility_version')
-    assert datacenters.addDataCenter(
-        True,
-        name=config.MAIN_DC_NAME,
-        storage_type=config.MAIN_STORAGE_TYPE,
-        version=version,
+    if not config.GOLDEN_ENV:
+        assert datacenters.addDataCenter(
+            True,
+            name=config.DC_NAME[0],
+            storage_type=config.STORAGE_TYPE,
+            version=config.COMP_VERSION,
+        )
+        assert clusters.addCluster(
+            True,
+            name=config.CLUSTER_NAME[0],
+            cpu=config.CPU_NAME,
+            data_center=config.DC_NAME[0],
+            version=config.COMP_VERSION,
+        )
+        assert hosts.addHost(
+            True,
+            config.HOSTS[0],
+            root_password=config.HOSTS_PW,
+            address=config.HOSTS_IP[0],
+            cluster=config.CLUSTER_NAME[0],
+        )
+        assert h_sd.addNFSDomain(
+            config.HOSTS[0],
+            config.STORAGE_NAME[0],
+            config.DC_NAME[0],
+            config.ADDRESS[0],
+            config.PATH[0],
+        )
+
+    config.MASTER_STORAGE = storagedomains.get_master_storage_domain_name(
+        config.DC_NAME[0]
     )
-    assert clusters.addCluster(
-        True,
-        name=config.MAIN_CLUSTER_NAME,
-        cpu=config.PARAMETERS.get('cpu_name'),
-        data_center=config.MAIN_DC_NAME,
-        version=version,
-    )
-    assert hosts.addHost(
-        True,
-        config.MAIN_HOST_NAME,
-        root_password=config.HOST_ROOT_PASSWORD,
-        address=config.HOST_ADDRESS,
-        cluster=config.MAIN_CLUSTER_NAME,
-    )
-    assert h_sd.addNFSDomain(
-        config.MAIN_HOST_NAME,
-        config.MAIN_STORAGE_NAME,
-        config.MAIN_DC_NAME,
-        config.NFS_STORAGE_ADDRESS,
-        config.NFS_STORAGE_PATH,
-    )
+    if config.GOLDEN_ENV:
+        config.STORAGE_NAME = storagedomains.getStorageDomainNamesForType(
+            config.DC_NAME[0],
+            config.STORAGE_TYPE_NFS,
+        )
+    else:
+        config.STORAGE_NAME = [config.MASTER_STORAGE, 'nfs_1']
 
 
 def teardown_package():
     """ Clean environment """
-    storagedomains.cleanDataCenter(True, config.MAIN_DC_NAME)
+    if not config.GOLDEN_ENV:
+        storagedomains.cleanDataCenter(True, config.MAIN_DC_NAME)

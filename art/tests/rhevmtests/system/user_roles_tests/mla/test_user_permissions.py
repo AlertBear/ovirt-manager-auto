@@ -6,18 +6,20 @@ Tests if permissions are correctly inherited/viewed/assigned/removed.
 
 __test__ = True
 
+import logging
+import time
+
 from rhevmtests.system.user_roles_tests import config
 from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import attr, CoreSystemTest as TestCase
 from art.rhevm_api.tests_lib.high_level import storagedomains as h_sd
 from art.rhevm_api.utils import test_utils
-from art.rhevm_api.tests_lib.low_level import \
-    users, vms, disks, vmpools, templates, mla, clusters, datacenters, hosts,\
+from art.rhevm_api.tests_lib.low_level import (
+    users, vms, disks, vmpools, templates, mla, clusters, datacenters, hosts,
     storagedomains
-import logging
-import time
+)
 
 LOGGER = logging.getLogger(__name__)
 TCMS_PLAN_ID = 2602
@@ -31,13 +33,15 @@ TEMPLATE_PREDEFINED = role.TemplateOwner
 
 def loginAsUser(user_name, filter=True):
     users.loginAsUser(
-        user_name, config.USER_DOMAIN, config.USER_PASSWORD, filter=filter)
+        user_name, config.USER_DOMAIN, config.USER_PASSWORD, filter=filter
+    )
 
 
 def loginAsAdmin():
     users.loginAsUser(
         config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
-        config.VDC_PASSWORD, filter=False)
+        config.VDC_PASSWORD, filter=False
+    )
 
 
 def setUpModule():
@@ -46,25 +50,24 @@ def setUpModule():
     users.addUser(True, user_name=config.USER_NAME3, domain=config.USER_DOMAIN)
 
     vms.createVm(
-        True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-        storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
-        network=config.MGMT_BRIDGE)
+        True, config.VM_NAME, '', cluster=config.CLUSTER_NAME[0],
+        storageDomainName=config.MASTER_STORAGE, size=config.GB,
+        network=config.MGMT_BRIDGE
+    )
     templates.createTemplate(
         True, vm=config.VM_NAME, name=config.TEMPLATE_NAME,
-        cluster=config.MAIN_CLUSTER_NAME)
+        cluster=config.CLUSTER_NAME[0]
+    )
     vmpools.addVmPool(
         True, name=config.VMPOOL_NAME, size=1,
-        cluster=config.MAIN_CLUSTER_NAME, template=config.TEMPLATE_NAME)
+        cluster=config.CLUSTER_NAME[0], template=config.TEMPLATE_NAME
+    )
     vms.waitForVMState('%s-%s' % (config.VMPOOL_NAME, 1), state='down')
     disks.addDisk(
         True, alias=config.DISK_NAME, interface='virtio', format='cow',
-        provisioned_size=config.GB, storagedomain=config.MAIN_STORAGE_NAME)
-    disks.wait_for_disks_status(config.DISK_NAME)
-    h_sd.addNFSDomain(
-        config.MAIN_HOST_NAME, config.ALT2_STORAGE_NAME,
-        config.MAIN_DC_NAME, config.ALT2_STORAGE_ADDRESS,
-        config.ALT2_STORAGE_PATH
+        provisioned_size=config.GB, storagedomain=config.MASTER_STORAGE
     )
+    disks.wait_for_disks_status(config.DISK_NAME)
 
 
 def tearDownModule():
@@ -77,16 +80,13 @@ def tearDownModule():
     disks.waitForDisksGone(True, config.DISK_NAME)
     vmpools.detachVms(True, config.VMPOOL_NAME)
     vm_name = '%s-1' % config.VMPOOL_NAME
-    vms.wait_for_vm_to_be_detached(True, vm_name)
     vms.waitForVMState(vm_name, state='down')
     vms.removeVm(True, vm_name)
     vmpools.removeVmPool(True, config.VMPOOL_NAME)
     templates.removeTemplate(True, config.TEMPLATE_NAME)
-    test_utils.wait_for_tasks(config.VDC_HOST, config.VDC_ROOT_PASSWORD,
-                              config.MAIN_DC_NAME)
-    storagedomains.remove_storage_domain(config.ALT2_STORAGE_NAME,
-                                         config.MAIN_DC_NAME,
-                                         config.MAIN_HOST_NAME)
+    test_utils.wait_for_tasks(
+        config.VDC_HOST, config.VDC_ROOT_PASSWORD, config.DC_NAME[0]
+    )
 
 
 class PermissionsCase54408(TestCase):
@@ -96,14 +96,16 @@ class PermissionsCase54408(TestCase):
     @classmethod
     def setUpClass(cls):
         # Test these object for adding/removing/viewving perms on it
-        cls.OBJS = {config.VM_NAME: vms.VM_API,
-                    config.TEMPLATE_NAME: templates.TEMPLATE_API,
-                    config.DISK_NAME: disks.DISKS_API,
-                    config.VMPOOL_NAME: vmpools.util,
-                    config.MAIN_CLUSTER_NAME: clusters.util,
-                    config.MAIN_DC_NAME: datacenters.util,
-                    config.MAIN_HOST_NAME: hosts.HOST_API,
-                    config.MAIN_STORAGE_NAME: storagedomains.util}
+        cls.OBJS = {
+            config.VM_NAME: vms.VM_API,
+            config.TEMPLATE_NAME: templates.TEMPLATE_API,
+            config.DISK_NAME: disks.DISKS_API,
+            config.VMPOOL_NAME: vmpools.util,
+            config.CLUSTER_NAME[0]: clusters.util,
+            config.DC_NAME[0]: datacenters.util,
+            config.HOSTS[0]: hosts.HOST_API,
+            config.MASTER_STORAGE: storagedomains.util
+        }
 
     # Check that there are two types of Permissions sub-tabs in the system:
     # for objects on which you can define permissions and for users.
@@ -133,31 +135,40 @@ class PermissionsCase54409(TestCase):
         loginAsAdmin()
         users.removeUser(True, config.USER_NAME)
         users.addUser(
-            True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+            True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
+        )
 
     @istest
     @tcms(TCMS_PLAN_ID, 54409)
     def permissionsInheritence(self):
         """ permissions inheritence """
         loginAsUser(config.USER_NAME, filter=False)
-        self.assertTrue(vms.createVm(
-            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
-            network=config.MGMT_BRIDGE))
+        self.assertTrue(
+            vms.createVm(
+                True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
+                network=config.MGMT_BRIDGE
+            )
+        )
         self.assertTrue(vms.removeVm(True, config.VM_NAME1))
         LOGGER.info("User can create/remove vm with vm permissions.")
 
         loginAsAdmin()
         users.removeUser(True, config.USER_NAME)
         users.addUser(
-            True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+            True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
+        )
         # To be able login
         mla.addClusterPermissionsToUser(
-            True, config.USER_NAME, config.MAIN_CLUSTER_NAME, role.UserRole)
+            True, config.USER_NAME, config.CLUSTER_NAME[0], role.UserRole
+        )
 
         loginAsUser(config.USER_NAME)
-        self.assertTrue(vms.createVm(
-            False, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
-            network=config.MGMT_BRIDGE))
+        self.assertTrue(
+            vms.createVm(
+                False, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
+                network=config.MGMT_BRIDGE
+            )
+        )
         LOGGER.info("User can't create/remove vm without vm permissions.")
 
 
@@ -179,13 +190,15 @@ class PermissionsCase5441054414(TestCase):
         u1 = users.util.find(config.USER_NAME)
         u2 = users.util.find(config.USER_NAME2)
         LOGGER.info("Testing object %s" % config.VM_NAME)
-        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME,
-                                   role=role.UserRole)
-        mla.addVMPermissionsToUser(True, config.USER_NAME2, config.VM_NAME,
-                                   role=role.UserRole)
+        mla.addVMPermissionsToUser(
+            True, config.USER_NAME, config.VM_NAME, role=role.UserRole
+        )
+        mla.addVMPermissionsToUser(
+            True, config.USER_NAME2, config.VM_NAME, role=role.UserRole
+        )
         vm = vms.VM_API.find(config.VM_NAME)
         rolePermits = mla.permisUtil.getElemFromLink(vm,  get_href=False)
-        users_id = [perm.user.get_id() for perm in rolePermits]
+        users_id = [perm.user.get_id() for perm in rolePermits if perm.user]
         assert u1.get_id() in users_id and u2.get_id() in users_id
         LOGGER.info(msg)
         mla.removeUserPermissionsFromVm(True, config.VM_NAME, config.USER1)
@@ -215,13 +228,13 @@ class PermissionsCase5441854419(TestCase):
     @tcms(TCMS_PLAN_ID, 54419)
     def removalOfSuperUser(self):
         """ test removal of SuperUser """
-        msg = "Unable to remove admin@internal or his SuperUser permissions."
-        admin = '%s@%s' % (config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN)
-        assert users.removeUser(
-            False, config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN)
+        assert users.removeUser(False, 'admin@internal', 'internal')
         assert mla.removeUserRoleFromDataCenter(
-            False, config.MAIN_DC_NAME, admin, role.SuperUser)
-        LOGGER.info(msg)
+            False, config.DC_NAME[0], 'admin@internal', role.SuperUser
+        )
+        LOGGER.info(
+            'Unable to remove admin@internal or his SuperUser permissions.'
+        )
 
 
 # Try to add a permission associated with an
@@ -236,8 +249,9 @@ class PermissionsCase54425(TestCase):
     @classmethod
     def setUpClass(cls):
         vms.createVm(
-            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
+            network=config.MGMT_BRIDGE
+        )
 
     @classmethod
     def tearDownClass(cls):
@@ -245,7 +259,8 @@ class PermissionsCase54425(TestCase):
         vms.removeVm(True, config.VM_NAME1)
         users.removeUser(True, config.USER_NAME)
         users.addUser(
-            True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+            True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
+        )
 
     @istest
     @tcms(TCMS_PLAN_ID, 54425)
@@ -258,7 +273,8 @@ class PermissionsCase54425(TestCase):
             # Get roles perms, to check for manipulate_permissions
             role_obj = mla.util.find(r)  # multi user switching hack
             rolePermits = mla.util.getElemFromLink(
-                role_obj, link_name='permits', attr='permit', get_href=False)
+                role_obj, link_name='permits', attr='permit', get_href=False
+            )
             perms = [p.get_name() for p in rolePermits]
             if 'login' not in perms:
                 LOGGER.info("User not tested, because don't have login perms.")
@@ -266,7 +282,8 @@ class PermissionsCase54425(TestCase):
 
             users.addRoleToUser(True, config.USER_NAME, r)
             mla.addVMPermissionsToUser(
-                True, config.USER_NAME, config.VM_NAME1, r)
+                True, config.USER_NAME, config.VM_NAME1, r
+            )
 
             # For know if login as User/Admin
             filt = not role_obj.administrative
@@ -276,28 +293,39 @@ class PermissionsCase54425(TestCase):
             if 'manipulate_permissions' in perms:
                 if filt or role.SuperUser != r:
                     try:
-                        mla.addVMPermissionsToUser(False, config.USER_NAME,
-                                                   config.VM_NAME1,
-                                                   role.TemplateAdmin)
+                        mla.addVMPermissionsToUser(
+                            False, config.USER_NAME, config.VM_NAME1,
+                            role.TemplateAdmin
+                        )
                     except:  # Ignore, user should not add perms
                         pass
                     LOGGER.info("'%s' can't add admin permissions." % r)
-                    self.assertTrue(mla.addVMPermissionsToUser(
-                        True, config.USER_NAME, config.VM_NAME1))
+                    self.assertTrue(
+                        mla.addVMPermissionsToUser(
+                            True, config.USER_NAME, config.VM_NAME1
+                        )
+                    )
                     LOGGER.info("'%s' can add user permissions." % r)
                 else:
-                    self.assertTrue(mla.addVMPermissionsToUser(
-                        True, config.USER_NAME, config.VM_NAME1,
-                        role.UserRole))
+                    self.assertTrue(
+                        mla.addVMPermissionsToUser(
+                            True, config.USER_NAME, config.VM_NAME1,
+                            role.UserRole
+                        )
+                    )
                     LOGGER.info("'%s' can add user permissions." % r)
-                    self.assertTrue(mla.addVMPermissionsToUser(
-                        True, config.USER_NAME, config.VM_NAME1,
-                        role.TemplateAdmin))
+                    self.assertTrue(
+                        mla.addVMPermissionsToUser(
+                            True, config.USER_NAME, config.VM_NAME1,
+                            role.TemplateAdmin
+                        )
+                    )
                     LOGGER.info("'%s' can add admin permissions." % r)
             else:
                 try:
-                    mla.addVMPermissionsToUser(False, config.USER_NAME,
-                                               config.VM_NAME1, role.UserRole)
+                    mla.addVMPermissionsToUser(
+                        False, config.USER_NAME, config.VM_NAME1, role.UserRole
+                    )
                 except:  # Ignore, user should not add perms
                     pass
                 LOGGER.info("'%s' can't manipulate permisisons." % r)
@@ -305,7 +333,8 @@ class PermissionsCase54425(TestCase):
             loginAsAdmin()
             users.removeUser(True, config.USER_NAME)
             users.addUser(
-                True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+                True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
+            )
 
     # in order ro add new object you will need the appropriate permission on
     # the ancestor (e.g. to create a new storage domain you'll need a "add
@@ -331,9 +360,9 @@ class PermissionsCase54446(TestCase):
             config.GROUP_NAME,
             config.USER_DOMAIN
         )
-        mla.addClusterPermissionsToGroup(True, config.GROUP_NAME,
-                                         config.MAIN_CLUSTER_NAME,
-                                         role.UserVmManager)
+        mla.addClusterPermissionsToGroup(
+            True, config.GROUP_NAME, config.CLUSTER_NAME[0], role.UserVmManager
+        )
 
     @classmethod
     def tearDownClass(self):
@@ -347,12 +376,18 @@ class PermissionsCase54446(TestCase):
     def usersPermissions(self):
         """ users permissions """
         loginAsUser(config.GROUP_USER)
-        self.assertTrue(vms.createVm(
-            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
-            network=config.MGMT_BRIDGE))
-        self.assertTrue(templates.createTemplate(
-            False, vm=config.VM_NAME1, name=config.TEMPLATE_NAME2,
-            cluster=config.MAIN_CLUSTER_NAME))
+        self.assertTrue(
+            vms.createVm(
+                True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
+                network=config.MGMT_BRIDGE
+            )
+        )
+        self.assertTrue(
+            templates.createTemplate(
+                False, vm=config.VM_NAME1, name=config.TEMPLATE_NAME2,
+                cluster=config.CLUSTER_NAME[0]
+            )
+        )
 
 
 # Creating object from user API and admin API should be different:
@@ -381,47 +416,56 @@ class PermissionsCase54420(TestCase):
             loginAsAdmin()
             role_obj = users.rlUtil.find(rr)
             rolePermits = mla.util.getElemFromLink(
-                role_obj, link_name='permits', attr='permit', get_href=False)
+                role_obj, link_name='permits', attr='permit', get_href=False
+            )
             r_permits = [p.get_name() for p in rolePermits]
 
             users.addRoleToUser(True, config.USER_NAME, rr)
-            mla.addClusterPermissionsToUser(True, config.USER_NAME,
-                                            config.MAIN_CLUSTER_NAME,
-                                            role.UserRole)
+            mla.addClusterPermissionsToUser(
+                True, config.USER_NAME, config.CLUSTER_NAME[0], role.UserRole
+            )
             loginAsUser(config.USER_NAME, filter=not role_obj.administrative)
 
             LOGGER.info("Testing role - " + role_obj.get_name())
             # Create vm,template, disk and check permissions of it
             if 'create_vm' in r_permits:
                 LOGGER.info("Testing create_vm.")
-                vms.createVm(True, config.VM_NAME1, '',
-                             cluster=config.MAIN_CLUSTER_NAME,
-                             network=config.MGMT_BRIDGE)
-                b = b or checkIfObjectHasRole(vms.VM_API.find(config.VM_NAME1),
-                                              VM_PREDEFINED,
-                                              role_obj.administrative)
+                vms.createVm(
+                    True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
+                    network=config.MGMT_BRIDGE
+                )
+                b = b or checkIfObjectHasRole(
+                    vms.VM_API.find(config.VM_NAME1),
+                    VM_PREDEFINED,
+                    role_obj.administrative
+                )
                 loginAsAdmin()
                 vms.removeVm(True, config.VM_NAME1)
             if 'create_template' in r_permits:
                 LOGGER.info("Testing create_template.")
                 templates.createTemplate(
                     True, vm=config.VM_NAME, name=config.TEMPLATE_NAME2,
-                    cluster=config.MAIN_CLUSTER_NAME)
+                    cluster=config.CLUSTER_NAME[0]
+                )
                 b = b or checkIfObjectHasRole(
                     templates.TEMPLATE_API.find(config.TEMPLATE_NAME2),
-                    TEMPLATE_PREDEFINED, role_obj.administrative)
+                    TEMPLATE_PREDEFINED, role_obj.administrative
+                )
                 loginAsAdmin()
                 templates.removeTemplate(True, config.TEMPLATE_NAME2)
             if 'create_disk' in r_permits:
                 LOGGER.info("Testing create_disk.")
-                disks.addDisk(True, alias=config.DISK_NAME1,
-                              interface='virtio', format='cow',
-                              provisioned_size=config.GB,
-                              storagedomain=config.MAIN_STORAGE_NAME)
+                disks.addDisk(
+                    True, alias=config.DISK_NAME1,
+                    interface='virtio', format='cow',
+                    provisioned_size=config.GB,
+                    storagedomain=config.MASTER_STORAGE
+                )
                 disks.wait_for_disks_status(config.DISK_NAME1)
                 b = b or checkIfObjectHasRole(
                     disks.DISKS_API.find(config.DISK_NAME1),
-                    DISK_PREDEFINED, role_obj.administrative)
+                    DISK_PREDEFINED, role_obj.administrative
+                )
 
                 loginAsAdmin()
                 disks.deleteDisk(True, config.DISK_NAME1)
@@ -429,7 +473,8 @@ class PermissionsCase54420(TestCase):
 
             users.removeUser(True, config.USER_NAME)
             users.addUser(
-                True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+                True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
+            )
         if b:
             raise AssertionError
 
@@ -449,9 +494,9 @@ class PermissionsCase108233(TestCase):
             config.GROUP_NAME,
             config.USER_DOMAIN
         )
-        mla.addClusterPermissionsToGroup(True, config.GROUP_NAME,
-                                         config.MAIN_CLUSTER_NAME,
-                                         role.UserRole)
+        mla.addClusterPermissionsToGroup(
+            True, config.GROUP_NAME, config.CLUSTER_NAME[0], role.UserRole
+        )
 
     @classmethod
     def tearDownClass(self):
@@ -481,16 +526,17 @@ class PermissionsCase109086(TestCase):
     @classmethod
     def setUpClass(self):
         mla.addPermissionsForDataCenter(
-            True, config.USER_NAME, config.MAIN_DC_NAME, role.UserRole)
+            True, config.USER_NAME, config.DC_NAME[0], role.UserRole
+        )
 
     @classmethod
     def tearDownClass(self):
         loginAsAdmin()
         mla.removeUserPermissionsFromDatacenter(
-            True, config.MAIN_DC_NAME, config.USER1)
+            True, config.DC_NAME[0], config.USER1
+        )
 
     @istest
-    @bz(990985)
     @tcms(TCMS_PLAN_ID, 109086)
     def permsInhForVmPools(self):
         """ Permission inheritance for desktop pools """
@@ -508,6 +554,7 @@ class PermissionsCase109086(TestCase):
 # create a StorageDomain with templates and VMs
 # grant permissions for user X to some VMs & templates on that SD
 # destroy the SD take a look in the user under permission tab
+@attr(tier=1, extra_reqs={'datacenters_count': 2})
 class PermissionsCase111082(TestCase):
     """ Test if perms removed after object is removed """
     __test__ = True
@@ -516,20 +563,29 @@ class PermissionsCase111082(TestCase):
 
     @classmethod
     def setUpClass(self):
+        h_sd.addNFSDomain(
+            config.HOSTS[0], config.STORAGE_NAME[1],
+            config.DC_NAME[0], config.ADDRESS[1],
+            config.PATH[1]
+        )
         vms.createVm(
-            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.ALT2_STORAGE_NAME, size=config.GB,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.STORAGE_NAME[1], size=config.GB,
+            network=config.MGMT_BRIDGE
+        )
         templates.createTemplate(
             True, vm=config.VM_NAME1, name=config.TEMPLATE_NAME2,
-            cluster=config.MAIN_CLUSTER_NAME)
+            cluster=config.CLUSTER_NAME[0]
+        )
         disks.addDisk(
             True, alias=config.DISK_NAME1, interface='virtio', format='cow',
-            provisioned_size=config.GB, storagedomain=config.ALT2_STORAGE_NAME)
+            provisioned_size=config.GB, storagedomain=config.STORAGE_NAME[1]
+        )
         disks.wait_for_disks_status(config.DISK_NAME1)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME1)
         mla.addPermissionsForTemplate(
-            True, config.USER_NAME, config.TEMPLATE_NAME2, role.TemplateOwner)
+            True, config.USER_NAME, config.TEMPLATE_NAME2, role.TemplateOwner
+        )
         mla.addPermissionsForDisk(True, config.USER_NAME, config.DISK_NAME1)
 
     @classmethod
@@ -537,7 +593,13 @@ class PermissionsCase111082(TestCase):
         loginAsAdmin()
         users.removeUser(True, config.USER_NAME)
         users.addUser(
-            True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+            True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
+        )
+        storagedomains.remove_storage_domain(
+            config.STORAGE_NAME[1],
+            config.DC_NAME[0],
+            config.HOSTS[0]
+        )
 
     @istest
     @tcms(TCMS_PLAN_ID, 111082)
@@ -549,11 +611,12 @@ class PermissionsCase111082(TestCase):
             perm_ids = [perm.get_role().get_id() for perm in objPermits]
             return roleNAid in perm_ids
 
-        storagedomains.deactivateStorageDomain(True, config.MAIN_DC_NAME,
-                                               config.ALT2_STORAGE_NAME)
+        storagedomains.deactivateStorageDomain(
+            True, config.DC_NAME[0], config.STORAGE_NAME[1]
+        )
         storagedomains.removeStorageDomain(
-            True, config.ALT2_STORAGE_NAME,
-            config.MAIN_HOST_NAME, destroy=True)
+            True, config.STORAGE_NAME[1], config.HOSTS[0], destroy=True
+        )
         # When destroying SD, then also vm is destroyed
         # vms.removeVm(True, config.VM_NAME1)
 

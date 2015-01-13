@@ -7,18 +7,20 @@ if he has not permissions.
 
 __test__ = True
 
+import logging
+
 from rhevmtests.system.user_roles_tests import config
 from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
-import logging
 from art.test_handler.tools import tcms
-from art.rhevm_api.tests_lib.low_level import \
-    users, vms, templates, mla, clusters, datacenters, hosts,\
+from art.rhevm_api.tests_lib.low_level import (
+    users, vms, templates, mla, clusters, datacenters, hosts,
     storagedomains, networks, events
-from art.rhevm_api.tests_lib.high_level import storagedomains as \
-    h_storagedomains
-from art.unittest_lib import BaseTestCase as TestCase
-
+)
+from art.rhevm_api.tests_lib.high_level import (
+    storagedomains as h_storagedomains
+)
+from art.unittest_lib import attr, CoreSystemTest as TestCase
 from art.core_api.apis_exceptions import EntityNotFound
 
 TCMS_PLAN_ID = 6283
@@ -28,77 +30,86 @@ ALT_HOST_ID = None
 
 def setUpModule():
     users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
-    clusters.addCluster(
-        True, name=config.ALT_CLUSTER_NAME,
-        cpu=config.PARAMETERS.get('cpu_name'),
-        data_center=config.MAIN_DC_NAME,
-        version=config.PARAMETERS.get('compatibility_version'))
 
-    datacenters.addDataCenter(
-        True, name=config.DC_NAME_B, storage_type=config.MAIN_STORAGE_TYPE,
-        version=config.PARAMETERS.get('compatibility_version'))
-    clusters.addCluster(
-        True, name=config.CLUSTER_NAME_B,
-        cpu=config.PARAMETERS.get('cpu_name'), data_center=config.DC_NAME_B,
-        version=config.PARAMETERS.get('compatibility_version'))
-    hosts.addHost(
-        True, config.ALT1_HOST_ADDRESS,
-        root_password=config.ALT1_HOST_ROOT_PASSWORD,
-        address=config.ALT1_HOST_ADDRESS, cluster=config.CLUSTER_NAME_B)
-    h_storagedomains.addNFSDomain(
-        config.ALT1_HOST_ADDRESS, config.ALT1_STORAGE_NAME,
-        config.DC_NAME_B, config.ALT1_STORAGE_ADDRESS,
-        config.ALT1_STORAGE_PATH)
-    global ALT_HOST_ID
-    ALT_HOST_ID = hosts.HOST_API.find(config.ALT1_HOST_ADDRESS).get_id()
+    if not config.GOLDEN_ENV:
+        clusters.addCluster(
+            True, name=config.CLUSTER_NAME[1],
+            cpu=config.CPU_NAME,
+            data_center=config.DC_NAME[0],
+            version=config.COMP_VERSION
+        )
+
+        datacenters.addDataCenter(
+            True, name=config.DC_NAME_B,
+            storage_type=config.STORAGE_TYPE,
+            version=config.COMP_VERSION
+        )
+        clusters.addCluster(
+            True, name=config.CLUSTER_NAME_B,
+            cpu=config.CPU_NAME,
+            data_center=config.DC_NAME_B,
+            version=config.COMP_VERSION
+        )
+        hosts.addHost(
+            True, config.HOSTS_IP[1],
+            root_password=config.HOSTS_PW,
+            address=config.HOSTS_IP[1],
+            cluster=config.CLUSTER_NAME_B
+        )
+        h_storagedomains.addNFSDomain(
+            config.HOSTS_IP[1], config.STORAGE_NAME[1],
+            config.DC_NAME_B, config.ADDRESS[1],
+            config.PATH[1]
+        )
+        global ALT_HOST_ID
+        ALT_HOST_ID = hosts.HOST_API.find(config.HOSTS_IP[1]).get_id()
 
 
 def tearDownModule():
     users.removeUser(True, config.USER_NAME)
-    clusters.removeCluster(True, config.ALT_CLUSTER_NAME)
-    storagedomains.cleanDataCenter(True, config.DC_NAME_B)
+
+    if not config.GOLDEN_ENV:
+        clusters.removeCluster(True, config.CLUSTER_NAME[1])
+        storagedomains.cleanDataCenter(True, config.DC_NAME_B)
 
 
 def loginAsUser(**kwargs):
     users.loginAsUser(
         config.USER_NAME, config.USER_DOMAIN, config.USER_PASSWORD,
-        filter=True)
+        filter=True
+    )
 
 
 def loginAsAdmin():
     users.loginAsUser(
         config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
-        config.VDC_PASSWORD, filter=False)
+        config.VDC_PASSWORD, filter=False
+    )
 
 
+@attr(tier=1, extra_reqs={'datacenters_count': 2})
 class VmUserInfoTests(TestCase):
     """ Test if user can see correct events """
     __test__ = True
 
-    CHECK_OBJ = {
-        'vm': {'name': config.VM_NAME2, 'api': vms.VM_API},
-        'cluster': {'name': config.CLUSTER_NAME_B, 'api': clusters.util},
-        'data_center': {'name': config.DC_NAME_B, 'api': datacenters.util},
-        'template': {'name': config.TEMPLATE_NAME2,
-                     'api': templates.TEMPLATE_API},
-        'storage_domain': {'name': config.ALT1_STORAGE_NAME,
-                           'api': storagedomains.util},
-    }
-
     @classmethod
     def setUpClass(self):
         vms.createVm(
-            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.MASTER_STORAGE, size=config.GB,
+            network=config.MGMT_BRIDGE
+        )
         vms.createVm(
             True, config.VM_NAME2, '', cluster=config.CLUSTER_NAME_B,
-            network=config.MGMT_BRIDGE)
+            network=config.MGMT_BRIDGE
+        )
         templates.createTemplate(
             True, vm=config.VM_NAME2, name=config.TEMPLATE_NAME2,
-            cluster=config.CLUSTER_NAME_B)
-        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME1,
-                                   role.UserRole)
+            cluster=config.CLUSTER_NAME_B
+        )
+        mla.addVMPermissionsToUser(
+            True, config.USER_NAME, config.VM_NAME1, role.UserRole
+        )
         loginAsUser()
 
     @classmethod
@@ -112,16 +123,40 @@ class VmUserInfoTests(TestCase):
     @tcms(TCMS_PLAN_ID, 171856)
     def eventFilter_parentObjectEvents(self):
         """ testEventFilter_parentObjectEvents """
+        CHECK_OBJ = {
+            'vm': {
+                'name': config.VM_NAME2,
+                'api': vms.VM_API,
+            },
+            'cluster': {
+                'name': config.CLUSTER_NAME_B,
+                'api': clusters.util,
+            },
+            'data_center': {
+                'name': config.DC_NAME_B,
+                'api': datacenters.util,
+            },
+            'template': {
+                'name': config.TEMPLATE_NAME2,
+                'api': templates.TEMPLATE_API,
+            },
+            'storage_domain': {
+                'name': config.STORAGE_NAME[1],
+                'api': storagedomains.util,
+            },
+        }
+
         for e in events.util.get(absLink=False):
             if e is None:
                 continue
 
             LOGGER.info(e.get_description())
-            for obj_name in ['vm', 'storage_domain', 'cluster',
-                             'data_center', 'template']:
+            for obj_name in [
+                'vm', 'storage_domain', 'cluster', 'data_center', 'template'
+            ]:
                 obj = getattr(e, obj_name)
                 if obj:
-                    obj_dict = self.CHECK_OBJ[obj_name]
+                    obj_dict = CHECK_OBJ[obj_name]
                     api_obj = obj_dict['api'].find(obj.get_id(), 'id')
                     assert api_obj != obj_dict['name']
 
@@ -130,6 +165,7 @@ class VmUserInfoTests(TestCase):
                 assert host.get_id() != ALT_HOST_ID
 
 
+@attr(tier=1, extra_reqs={'datacenters_count': 2})
 class VmUserInfoTests2(TestCase):
     """ Test if user can see correct objects """
     __test__ = True
@@ -138,20 +174,27 @@ class VmUserInfoTests2(TestCase):
     # Cli - RHEVM-1758
     apis = TestCase.apis - set(['java', 'sdk', 'cli'])
 
+    def setUp(self):
+        loginAsUser()
+
     @classmethod
     def setUpClass(self):
         vms.createVm(
-            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.MASTER_STORAGE, size=config.GB,
+            network=config.MGMT_BRIDGE
+        )
         vms.createVm(
-            True, config.VM_NAME2, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
-            network=config.MGMT_BRIDGE)
-        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME1,
-                                   role.UserRole)
-        mla.addPermissionsForTemplate(True, config.USER_NAME, 'Blank',
-                                      role=role.TemplateOwner)
+            True, config.VM_NAME2, '', cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.MASTER_STORAGE, size=config.GB,
+            network=config.MGMT_BRIDGE
+        )
+        mla.addVMPermissionsToUser(
+            True, config.USER_NAME, config.VM_NAME1, role.UserRole
+        )
+        mla.addPermissionsForTemplate(
+            True, config.USER_NAME, 'Blank', role=role.TemplateOwner
+        )
 
         self.id1 = vms.VM_API.find(config.VM_NAME1).get_id()
         self.id2 = vms.VM_API.find(config.VM_NAME2).get_id()
@@ -162,17 +205,14 @@ class VmUserInfoTests2(TestCase):
         vms.removeVm(True, config.VM_NAME1)
         vms.removeVm(True, config.VM_NAME2)
 
-    def setUp(self):
-        loginAsUser()
-
     @istest
     @tcms(TCMS_PLAN_ID, 171878)
     def filter_parentObjects(self):
         """ filter_parentObjects """
         # TODO: Extend with /templates, /storagedomains, /users, ...
         # Consulted what should be visible to users
-        DC = config.MAIN_DC_NAME
-        CLUSTER = config.MAIN_CLUSTER_NAME
+        DC = config.DC_NAME[0]
+        CLUSTER = config.CLUSTER_NAME[0]
 
         msgBlind = "User cannot see %s '%s' where he has permission."
         msgVisible = "User can see %s where he has no permissions. Can see %s"
@@ -188,14 +228,15 @@ class VmUserInfoTests2(TestCase):
         LOGGER.info("User can see object where he has permissions.")
 
         # is user forbidden to see other objects?
-        self.assertRaises(EntityNotFound, datacenters.util.find,
-                          config.DC_NAME_B)
-        self.assertRaises(EntityNotFound, clusters.util.find,
-                          config.ALT_CLUSTER_NAME)
+        self.assertRaises(
+            EntityNotFound, datacenters.util.find, config.DC_NAME_B
+        )
+        self.assertRaises(
+            EntityNotFound, clusters.util.find, config.CLUSTER_NAME[1]
+        )
         LOGGER.info("User can't see object where he has permissions.")
 
-        assert len(dcs) == 1, \
-            msgVisible % ('datacenters', dcs)
+        assert len(dcs) == 1, msgVisible % ('datacenters', dcs)
         assert len(cls) == 2, msgVisible % ('clusters', cls)
 
     @istest
@@ -221,8 +262,9 @@ class VmUserInfoTests2(TestCase):
         LOGGER.info(msg_info)
 
         loginAsAdmin()
-        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME1,
-                                   role.UserRole)
+        mla.addVMPermissionsToUser(
+            True, config.USER_NAME, config.VM_NAME1, role.UserRole
+        )
 
     @istest
     @tcms(TCMS_PLAN_ID, 171077)
@@ -286,8 +328,9 @@ class VmUserInfoTests2(TestCase):
     @tcms(TCMS_PLAN_ID, 175445)
     def hostInfo(self):
         """ testHostPowerManagementInfo """
-        self.assertRaises(EntityNotFound, hosts.HOST_API.find,
-                          config.MAIN_HOST_NAME)
+        self.assertRaises(
+            EntityNotFound, hosts.HOST_API.find, config.HOSTS[0]
+        )
         LOGGER.info("User can't see any host info")
         vms.startVm(True, config.VM_NAME1)
         vm = vms.VM_API.find(config.VM_NAME1)
@@ -307,20 +350,25 @@ class ViewviewChildrenInfoTests(TestCase):
 
     # Could change in the future, probably no way how to get it from API.
     # So should be changed if behaviour will change.
-    roles_cant = [role.PowerUserRole,
-                  role.TemplateCreator,
-                  role.VmCreator,
-                  role.DiskCreator]
-    roles_can = [role.UserRole,
-                 role.UserVmManager,
-                 role.DiskOperator,
-                 role.TemplateOwner]
+    roles_cant = [
+        role.PowerUserRole,
+        role.TemplateCreator,
+        role.VmCreator,
+        role.DiskCreator,
+    ]
+    roles_can = [
+        role.UserRole,
+        role.UserVmManager,
+        role.DiskOperator,
+        role.TemplateOwner,
+    ]
 
     @classmethod
     def setUpClass(self):
         vms.createVm(
-            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
+            network=config.MGMT_BRIDGE
+        )
 
     @classmethod
     def tearDownClass(self):
@@ -334,14 +382,15 @@ class ViewviewChildrenInfoTests(TestCase):
         err_msg = "User can't see vms"
         for role_can in self.roles_can:
             LOGGER.info("Testing role: %s", role_can)
-            mla.addClusterPermissionsToUser(True, config.USER_NAME,
-                                            config.MAIN_CLUSTER_NAME,
-                                            role_can)
+            mla.addClusterPermissionsToUser(
+                True, config.USER_NAME, config.CLUSTER_NAME[0], role_can
+            )
             loginAsUser()
-            assert len(vms.VM_API.get(absLink=False)) == 1, err_msg
+            assert len(vms.VM_API.get(absLink=False)) > 0, err_msg
             loginAsAdmin()
             mla.removeUserPermissionsFromCluster(
-                True, config.MAIN_CLUSTER_NAME, config.USER1)
+                True, config.CLUSTER_NAME[0], config.USER1
+            )
             LOGGER.info("%s can see children", role_can)
 
     @istest
@@ -350,14 +399,15 @@ class ViewviewChildrenInfoTests(TestCase):
         """ CantViewChildren """
         for role_can in self.roles_cant:
             LOGGER.info("Testing role: %s", role_can)
-            mla.addClusterPermissionsToUser(True, config.USER_NAME,
-                                            config.MAIN_CLUSTER_NAME,
-                                            role_can)
+            mla.addClusterPermissionsToUser(
+                True, config.USER_NAME, config.CLUSTER_NAME[0], role_can
+            )
             loginAsUser()
             assert len(vms.VM_API.get(absLink=False)) == 0, "User can see vms"
             loginAsAdmin()
             mla.removeUserPermissionsFromCluster(
-                True, config.MAIN_CLUSTER_NAME, config.USER1)
+                True, config.CLUSTER_NAME[0], config.USER1
+            )
             LOGGER.info("%s can see children", role_can)
 
 
@@ -367,24 +417,28 @@ class VmCreatorClusterAdminInfoTests(TestCase):
 
     @classmethod
     def setUpClass(self):
-        mla.addClusterPermissionsToUser(True, config.USER_NAME,
-                                        config.MAIN_CLUSTER_NAME,
-                                        role.UserRole)
-        mla.addClusterPermissionsToUser(True, config.USER_NAME,
-                                        config.MAIN_CLUSTER_NAME,
-                                        role.VmCreator)
+        mla.addClusterPermissionsToUser(
+            True, config.USER_NAME, config.CLUSTER_NAME[0], role.UserRole
+        )
+        mla.addClusterPermissionsToUser(
+            True, config.USER_NAME, config.CLUSTER_NAME[0], role.VmCreator
+        )
         vms.createVm(
-            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
+            network=config.MGMT_BRIDGE
+        )
         vms.createVm(
-            True, config.VM_NAME2, '', cluster=config.MAIN_CLUSTER_NAME,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NAME2, '', cluster=config.CLUSTER_NAME[0],
+            network=config.MGMT_BRIDGE
+        )
         vms.createVm(
-            True, config.VM_NAME3, '', cluster=config.ALT_CLUSTER_NAME,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NAME3, '', cluster=config.CLUSTER_NAME[1],
+            network=config.MGMT_BRIDGE
+        )
         vms.createVm(
-            True, config.VM_NAME4, '', cluster=config.ALT_CLUSTER_NAME,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NAME4, '', cluster=config.CLUSTER_NAME[1],
+            network=config.MGMT_BRIDGE
+        )
 
     @classmethod
     def tearDownClass(self):
@@ -393,8 +447,9 @@ class VmCreatorClusterAdminInfoTests(TestCase):
         vms.removeVm(True, config.VM_NAME2)
         vms.removeVm(True, config.VM_NAME3)
         vms.removeVm(True, config.VM_NAME4)
-        mla.removeUserPermissionsFromCluster(True, config.MAIN_CLUSTER_NAME,
-                                             config.USER1)
+        mla.removeUserPermissionsFromCluster(
+            True, config.CLUSTER_NAME[0], config.USER1
+        )
 
     @istest
     @tcms(TCMS_PLAN_ID, 174404)
@@ -417,20 +472,22 @@ class VmCreatorInfoTests(TestCase):
 
     @classmethod
     def setUpClass(self):
-        mla.addClusterPermissionsToUser(True, config.USER_NAME,
-                                        config.MAIN_CLUSTER_NAME,
-                                        role.VmCreator)
+        mla.addClusterPermissionsToUser(
+            True, config.USER_NAME, config.CLUSTER_NAME[0], role.VmCreator
+        )
         vms.createVm(
-            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
+            network=config.MGMT_BRIDGE
+        )
 
     @classmethod
     def tearDownClass(self):
         loginAsAdmin()
         vms.removeVm(True, config.VM_NAME1)
         vms.removeVm(True, config.VM_NAME2)
-        mla.removeUserPermissionsFromCluster(True, config.MAIN_CLUSTER_NAME,
-                                             config.USER1)
+        mla.removeUserPermissionsFromCluster(
+            True, config.CLUSTER_NAME[0], config.USER1
+        )
 
     @istest
     @tcms(TCMS_PLAN_ID, 171080)
@@ -444,8 +501,9 @@ class VmCreatorInfoTests(TestCase):
         LOGGER.info("User can't see vms where he has not perms. %s" % myvms)
 
         vms.createVm(
-            True, config.VM_NAME2, '', cluster=config.MAIN_CLUSTER_NAME,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NAME2, '', cluster=config.CLUSTER_NAME[0],
+            network=config.MGMT_BRIDGE
+        )
         myvms = [vm.get_name() for vm in vms.VM_API.get(absLink=False)]
         assert len(myvms) == 1, msg % myvms
         LOGGER.info("User can see only his vms %s" % myvms)
@@ -458,22 +516,27 @@ class TemplateCreatorInfoTests(TestCase):
     @classmethod
     def setUpClass(self):
         vms.createVm(
-            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
+            network=config.MGMT_BRIDGE
+        )
         vms.createVm(
-            True, config.VM_NAME2, '', cluster=config.MAIN_CLUSTER_NAME,
-            network=config.MGMT_BRIDGE)
-        mla.addPermissionsForDataCenter(True, config.USER_NAME,
-                                        config.MAIN_DC_NAME,
-                                        role.TemplateCreator)
-        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME1,
-                                   role.UserRole)
+            True, config.VM_NAME2, '', cluster=config.CLUSTER_NAME[0],
+            network=config.MGMT_BRIDGE
+        )
+        mla.addPermissionsForDataCenter(
+            True, config.USER_NAME, config.DC_NAME[0], role.TemplateCreator
+        )
+        mla.addVMPermissionsToUser(
+            True, config.USER_NAME, config.VM_NAME1, role.UserRole
+        )
         templates.createTemplate(
             True, vm=config.VM_NAME2, name=config.TEMPLATE_NAME,
-            cluster=config.MAIN_CLUSTER_NAME)
+            cluster=config.CLUSTER_NAME[0]
+        )
         templates.createTemplate(
             True, vm=config.VM_NAME1, name=config.TEMPLATE_NAME2,
-            cluster=config.MAIN_CLUSTER_NAME)
+            cluster=config.CLUSTER_NAME[0]
+        )
 
     @classmethod
     def tearDownClass(self):
@@ -484,7 +547,8 @@ class TemplateCreatorInfoTests(TestCase):
         templates.removeTemplate(True, config.TEMPLATE_NAME2)
         templates.removeTemplate(True, config.TEMPLATE_NAME3)
         mla.removeUserPermissionsFromDatacenter(
-            True, config.MAIN_DC_NAME, config.USER1)
+            True, config.DC_NAME[0], config.USER1
+        )
 
     @istest
     @tcms(TCMS_PLAN_ID, 174403)
@@ -511,7 +575,8 @@ class TemplateCreatorInfoTests(TestCase):
 
         templates.createTemplate(
             True, vm=config.VM_NAME1, name=config.TEMPLATE_NAME3,
-            cluster=config.MAIN_CLUSTER_NAME)
+            cluster=config.CLUSTER_NAME[0]
+        )
         LOGGER.info("Checking right permission for %s" % config.TEMPLATE_NAME3)
         tms = [t.get_name() for t in templates.TEMPLATE_API.get(absLink=False)]
         # tms == 2(blank + newly created)
@@ -526,28 +591,34 @@ class TemplateCreatorInfoTests(TestCase):
 # Create some templates in Datacenter2.
 # - Check /api/templates
 # Should see all templates in Datacenter1, but none in Datacenter2.
+@attr(tier=1, extra_reqs={'datacenters_count': 2})
 class TemplateCreatorAndDCAdminInfoTest(TestCase):
     __test__ = True
 
     @classmethod
     def setUpClass(self):
         vms.createVm(
-            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
+            network=config.MGMT_BRIDGE
+        )
         templates.createTemplate(
             True, vm=config.VM_NAME1, name=config.TEMPLATE_NAME,
-            cluster=config.MAIN_CLUSTER_NAME)
-        mla.addPermissionsForDataCenter(True, config.USER_NAME,
-                                        config.MAIN_DC_NAME,
-                                        role.TemplateCreator)
-        mla.addPermissionsForDataCenter(True, config.USER_NAME,
-                                        config.MAIN_DC_NAME,
-                                        role.TemplateOwner)
-        vms.createVm(True, config.VM_NAME2, '', cluster=config.CLUSTER_NAME_B,
-                     network=config.MGMT_BRIDGE)
+            cluster=config.CLUSTER_NAME[0]
+        )
+        mla.addPermissionsForDataCenter(
+            True, config.USER_NAME, config.DC_NAME[0], role.TemplateCreator
+        )
+        mla.addPermissionsForDataCenter(
+            True, config.USER_NAME, config.DC_NAME[0], role.TemplateOwner
+        )
+        vms.createVm(
+            True, config.VM_NAME2, '', cluster=config.CLUSTER_NAME_B,
+            network=config.MGMT_BRIDGE
+        )
         templates.createTemplate(
             True, vm=config.VM_NAME2, name=config.TEMPLATE_NAME2,
-            cluster=config.CLUSTER_NAME_B)
+            cluster=config.CLUSTER_NAME_B
+        )
 
     @classmethod
     def tearDownClass(self):
@@ -557,7 +628,8 @@ class TemplateCreatorAndDCAdminInfoTest(TestCase):
         templates.removeTemplate(True, config.TEMPLATE_NAME)
         templates.removeTemplate(True, config.TEMPLATE_NAME2)
         mla.removeUserPermissionsFromDatacenter(
-            True, config.MAIN_DC_NAME, config.USER1)
+            True, config.DC_NAME[0], config.USER1
+        )
 
     @istest
     @tcms(TCMS_PLAN_ID, 174405)
@@ -565,10 +637,12 @@ class TemplateCreatorAndDCAdminInfoTest(TestCase):
         """ Template creator with datacenter admin filter templates """
         loginAsUser()
         templates.TEMPLATE_API.find(config.TEMPLATE_NAME)
-        self.assertRaises(EntityNotFound, templates.TEMPLATE_API.find,
-                          config.TEMPLATE_NAME2)
+        self.assertRaises(
+            EntityNotFound, templates.TEMPLATE_API.find, config.TEMPLATE_NAME2
+        )
 
 
+@attr(tier=1, extra_reqs={'datacenters_count': 2})
 class ComplexCombinationTest(TestCase):
     """ Test that user can see correct object regargin its permissions """
     __test__ = True
@@ -576,45 +650,56 @@ class ComplexCombinationTest(TestCase):
     @classmethod
     def setUpClass(self):
         vms.createVm(
-            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.MASTER_STORAGE, size=config.GB,
+            network=config.MGMT_BRIDGE
+        )
         vms.createVm(
-            True, config.VM_NAME2, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NAME2, '', cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.MASTER_STORAGE, size=config.GB,
+            network=config.MGMT_BRIDGE
+        )
         templates.createTemplate(
             True, vm=config.VM_NAME1, name=config.TEMPLATE_NAME,
-            cluster=config.MAIN_CLUSTER_NAME)
+            cluster=config.CLUSTER_NAME[0]
+        )
         templates.createTemplate(
             True, vm=config.VM_NAME2, name=config.TEMPLATE_NAME2,
-            cluster=config.MAIN_CLUSTER_NAME)
+            cluster=config.CLUSTER_NAME[0]
+        )
         vms.createVm(
             True, config.VM_NAME3, '', cluster=config.CLUSTER_NAME_B,
-            storageDomainName=config.ALT1_STORAGE_NAME, size=config.GB,
-            network=config.MGMT_BRIDGE)
+            storageDomainName=config.STORAGE_NAME[1], size=config.GB,
+            network=config.MGMT_BRIDGE
+        )
         vms.createVm(
-            True, config.VM_NAME4, '', cluster=config.ALT_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NAME4, '', cluster=config.CLUSTER_NAME[1],
+            storageDomainName=config.MASTER_STORAGE, size=config.GB,
+            network=config.MGMT_BRIDGE
+        )
         templates.createTemplate(
             True, vm=config.VM_NAME3, name=config.TEMPLATE_NAME3,
-            cluster=config.CLUSTER_NAME_B)
+            cluster=config.CLUSTER_NAME_B
+        )
         templates.createTemplate(
             True, vm=config.VM_NAME4, name=config.TEMPLATE_NAME4,
-            cluster=config.ALT_CLUSTER_NAME)
-
-        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME1,
-                                   role.UserRole)
-        mla.addPermissionsForTemplate(True, config.USER_NAME,
-                                      config.TEMPLATE_NAME2)
-        mla.addClusterPermissionsToUser(True, config.USER_NAME,
-                                        config.CLUSTER_NAME_B, role.VmCreator)
-        mla.addPermissionsForDataCenter(True, config.USER_NAME,
-                                        config.DC_NAME_B, role.TemplateCreator)
-        mla.addClusterPermissionsToUser(True, config.USER_NAME,
-                                        config.ALT_CLUSTER_NAME,
-                                        role.ClusterAdmin)
+            cluster=config.CLUSTER_NAME[1]
+        )
+        mla.addVMPermissionsToUser(
+            True, config.USER_NAME, config.VM_NAME1, role.UserRole
+        )
+        mla.addPermissionsForTemplate(
+            True, config.USER_NAME, config.TEMPLATE_NAME2
+        )
+        mla.addClusterPermissionsToUser(
+            True, config.USER_NAME, config.CLUSTER_NAME_B, role.VmCreator
+        )
+        mla.addPermissionsForDataCenter(
+            True, config.USER_NAME, config.DC_NAME_B, role.TemplateCreator
+        )
+        mla.addClusterPermissionsToUser(
+            True, config.USER_NAME, config.CLUSTER_NAME[1], role.ClusterAdmin
+        )
 
     # Check BZ 881109 - behaviour could be changed in future.
     @istest
@@ -628,20 +713,30 @@ class ComplexCombinationTest(TestCase):
         self.assertRaises(EntityNotFound, vms.VM_API.find, config.VM_NAME3)
         self.assertRaises(EntityNotFound, vms.VM_API.find, config.VM_NAME4)
         LOGGER.info("User can see %s" % config.VM_NAME1)
-        LOGGER.info("User can't see %s, %s, %s" % (config.VM_NAME1,
-                    config.VM_NAME2, config.VM_NAME3))
+        LOGGER.info(
+            "User can't see %s, %s, %s" % (
+                config.VM_NAME1, config.VM_NAME2, config.VM_NAME3
+            )
+        )
 
-        self.assertRaises(EntityNotFound, templates.TEMPLATE_API.find,
-                          config.TEMPLATE_NAME)
-        self.assertRaises(EntityNotFound, templates.TEMPLATE_API.find,
-                          config.TEMPLATE_NAME2)
-        self.assertRaises(EntityNotFound, templates.TEMPLATE_API.find,
-                          config.TEMPLATE_NAME3)
-        self.assertRaises(EntityNotFound, templates.TEMPLATE_API.find,
-                          config.TEMPLATE_NAME4)
-        LOGGER.info("User can't see %s, %s, %s, %s" % (config.TEMPLATE_NAME,
-                    config.TEMPLATE_NAME2, config.TEMPLATE_NAME3,
-                    config.TEMPLATE_NAME4))
+        self.assertRaises(
+            EntityNotFound, templates.TEMPLATE_API.find, config.TEMPLATE_NAME
+        )
+        self.assertRaises(
+            EntityNotFound, templates.TEMPLATE_API.find, config.TEMPLATE_NAME2
+        )
+        self.assertRaises(
+            EntityNotFound, templates.TEMPLATE_API.find, config.TEMPLATE_NAME3
+        )
+        self.assertRaises(
+            EntityNotFound, templates.TEMPLATE_API.find, config.TEMPLATE_NAME4
+        )
+        LOGGER.info(
+            "User can't see %s, %s, %s, %s" % (
+                config.TEMPLATE_NAME, config.TEMPLATE_NAME2,
+                config.TEMPLATE_NAME3, config.TEMPLATE_NAME4
+            )
+        )
 
     @classmethod
     def tearDownClass(self):
@@ -655,5 +750,6 @@ class ComplexCombinationTest(TestCase):
         templates.removeTemplate(True, config.TEMPLATE_NAME3)
         templates.removeTemplate(True, config.TEMPLATE_NAME4)
         users.removeUser(True, config.USER_NAME)
-        users.addUser(True, user_name=config.USER_NAME,
-                      domain=config.USER_DOMAIN)
+        users.addUser(
+            True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
+        )

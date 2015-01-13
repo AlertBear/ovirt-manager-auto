@@ -14,7 +14,7 @@ from art.core_api.apis_exceptions import EntityNotFound
 from rhevmtests.system.user_roles_tests import config
 from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import CoreSystemTest as TestCase
 
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.high_level import storagedomains
@@ -30,27 +30,39 @@ TCMS_PLAN_ID = 5767
 
 def loginAsAdmin():
     users.loginAsUser(
-        config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
-        config.VDC_PASSWORD, filter=False)
+        config.VDC_ADMIN_USER,
+        config.VDC_ADMIN_DOMAIN,
+        config.VDC_PASSWORD,
+        filter=False
+    )
 
 
 def setUpModule():
     users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
-    storagedomains.addNFSDomain(config.MAIN_HOST_NAME,
-                                config.ALT1_STORAGE_NAME,
-                                config.MAIN_DC_NAME,
-                                config.ALT1_STORAGE_ADDRESS,
-                                config.ALT1_STORAGE_PATH)
+    if not config.GOLDEN_ENV:
+        storagedomains.addNFSDomain(
+            config.HOSTS[0],
+            config.STORAGE_NAME[1],
+            config.DC_NAME[0],
+            config.ADDRESS[1],
+            config.PATH[1],
+        )
 
 
 def tearDownModule():
     loginAsAdmin()
     users.removeUser(True, config.USER_NAME)
-    test_utils.wait_for_tasks(config.VDC_HOST, config.VDC_ROOT_PASSWORD,
-                              config.MAIN_DC_NAME)
-    storagedomains.remove_storage_domain(config.ALT1_STORAGE_NAME,
-                                         config.MAIN_DC_NAME,
-                                         config.MAIN_HOST_NAME)
+    if not config.GOLDEN_ENV:
+        test_utils.wait_for_tasks(
+            config.VDC_HOST,
+            config.VDC_ROOT_PASSWORD,
+            config.DC_NAME[0],
+        )
+        storagedomains.remove_storage_domain(
+            config.STORAGE_NAME[1],
+            config.DC_NAME[0],
+            config.HOSTS[0],
+        )
 
 
 class DPCase147121(TestCase):
@@ -62,16 +74,20 @@ class DPCase147121(TestCase):
     __test__ = True
 
     def setUp(self):
-        disks.addDisk(True, alias=config.DISK_NAME, interface='virtio',
-                      format='cow', provisioned_size=config.GB,
-                      storagedomain=config.MAIN_STORAGE_NAME)
+        disks.addDisk(
+            True, alias=config.DISK_NAME, interface='virtio',
+            format='cow', provisioned_size=config.GB,
+            storagedomain=config.MASTER_STORAGE
+        )
         disks.wait_for_disks_status(config.DISK_NAME)
-        mla.addStoragePermissionsToUser(True, config.USER_NAME,
-                                        config.MAIN_STORAGE_NAME,
-                                        role=role.DiskOperator)
+        mla.addStoragePermissionsToUser(
+            True, config.USER_NAME, config.MASTER_STORAGE,
+            role=role.DiskOperator
+        )
         vms.createVm(
-            True, config.VM_NO_DISK, '', cluster=config.MAIN_CLUSTER_NAME,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NO_DISK, '', cluster=config.CLUSTER_NAME[0],
+            network=config.MGMT_BRIDGE
+        )
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NO_DISK)
 
     @tcms(TCMS_PLAN_ID, 147121)
@@ -79,29 +95,39 @@ class DPCase147121(TestCase):
     def diskInheritedPermissions(self):
         """ Check inheritance of disk permissions """
         # Check inheritance from SD
-        self.assertTrue(mla.hasUserPermissionsOnObject(
-            config.USER1, disks.DISKS_API.find(config.DISK_NAME),
-            role=role.DiskOperator),
-            "Permissions from SD was not delegated to disk.")
+        self.assertTrue(
+            mla.hasUserPermissionsOnObject(
+                config.USER1, disks.DISKS_API.find(config.DISK_NAME),
+                role=role.DiskOperator
+            ),
+            "Permissions from SD was not delegated to disk."
+        )
         LOGGER.info("Disk inherit permissions from SD.")
         # Check inheritance from vm
         disk_name = "%s%s" % (config.VM_NO_DISK, '_Disk1')
-        self.assertTrue(vms.addDisk(
-            True, config.VM_NO_DISK, config.GB,
-            storagedomain=config.MAIN_STORAGE_NAME,
-            interface='virtio', format='cow'), "Unable to attach disk to vm.")
         self.assertTrue(
-            mla.hasUserPermissionsOnObject(config.USER1,
-                                           disks.DISKS_API.find(disk_name),
-                                           role=role.UserVmManager),
-            "Permissions from vm was not delegated to disk.")
+            vms.addDisk(
+                True, config.VM_NO_DISK, config.GB,
+                storagedomain=config.MASTER_STORAGE,
+                interface='virtio', format='cow'
+            ),
+            "Unable to attach disk to vm."
+        )
+        self.assertTrue(
+            mla.hasUserPermissionsOnObject(
+                config.USER1, disks.DISKS_API.find(disk_name),
+                role=role.UserVmManager
+            ),
+            "Permissions from vm was not delegated to disk."
+        )
         LOGGER.info("Disk inherit permissions from vm.")
 
     def tearDown(self):
         vms.removeVm(True, config.VM_NO_DISK)
         h_disks.delete_disks([config.DISK_NAME])
-        mla.removeUserPermissionsFromSD(True, config.MAIN_STORAGE_NAME,
-                                        config.USER1)
+        mla.removeUserPermissionsFromSD(
+            True, config.MASTER_STORAGE, config.USER1
+        )
 
 
 class DPCase14722_2(TestCase):
@@ -112,11 +138,13 @@ class DPCase14722_2(TestCase):
 
     @classmethod
     def setup_class(cls):
-        mla.addStoragePermissionsToUser(True, config.USER_NAME,
-                                        config.MAIN_STORAGE_NAME,
-                                        role=role.UserRole)
-        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter=True)
+        mla.addStoragePermissionsToUser(
+            True, config.USER_NAME, config.MASTER_STORAGE, role=role.UserRole
+        )
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_PASSWORD, filter=True
+        )
 
     @istest
     @tcms(TCMS_PLAN_ID, 147122)
@@ -124,10 +152,13 @@ class DPCase14722_2(TestCase):
         """ Create disk without permissions """
         # Check if user has not StorageAdmin perms on SD he can't create Disk
         self.assertTrue(
-            disks.addDisk(False, alias=config.DISK_NAME, interface='virtio',
-                          format='cow', provisioned_size=config.GB,
-                          storagedomain=config.MAIN_STORAGE_NAME),
-            "User without StorageAdmin permissions can create disk.")
+            disks.addDisk(
+                False, alias=config.DISK_NAME, interface='virtio',
+                format='cow', provisioned_size=config.GB,
+                storagedomain=config.MASTER_STORAGE
+            ),
+            "User without StorageAdmin permissions can create disk."
+        )
         LOGGER.info("User without StorageAdmin perms on SD can't create disk.")
 
     def tearDown(self):
@@ -136,8 +167,9 @@ class DPCase14722_2(TestCase):
             h_disks.delete_disks([config.DISK_NAME])
         except EntityNotFound:
             pass
-        mla.removeUserPermissionsFromSD(True, config.MAIN_STORAGE_NAME,
-                                        config.USER1)
+        mla.removeUserPermissionsFromSD(
+            True, config.MASTER_STORAGE, config.USER1
+        )
 
 
 class DPCase147122(TestCase):
@@ -152,13 +184,16 @@ class DPCase147122(TestCase):
 
     @classmethod
     def setup_class(cls):
-        mla.addStoragePermissionsToUser(True, config.USER_NAME,
-                                        config.MAIN_STORAGE_NAME,
-                                        role=role.StorageAdmin)
+        mla.addStoragePermissionsToUser(
+            True, config.USER_NAME, config.MASTER_STORAGE,
+            role=role.StorageAdmin
+        )
 
     def setUp(self):
-        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter=False)
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_PASSWORD, filter=False
+        )
 
     @tcms(TCMS_PLAN_ID, 147122)
     @istest
@@ -166,10 +201,13 @@ class DPCase147122(TestCase):
         """ Create disk with permissions """
         # Check if user has StorageAdmin perms on SD he can create Disk
         self.assertTrue(
-            disks.addDisk(True, alias=config.DISK_NAME, interface='virtio',
-                          format='cow', provisioned_size=config.GB,
-                          storagedomain=config.MAIN_STORAGE_NAME),
-            "User with StorageAdmin permissions can't create disk.")
+            disks.addDisk(
+                True, alias=config.DISK_NAME, interface='virtio',
+                format='cow', provisioned_size=config.GB,
+                storagedomain=config.MASTER_STORAGE
+            ),
+            "User with StorageAdmin permissions can't create disk."
+        )
         h_disks.delete_disks([config.DISK_NAME])
         LOGGER.info("User with StorageAdmin perms on SD can create disk.")
 
@@ -178,8 +216,9 @@ class DPCase147122(TestCase):
         loginAsAdmin()
         if disks.checkDiskExists(True, config.DISK_NAME):
             h_disks.delete_disks([config.DISK_NAME])
-        mla.removeUserPermissionsFromSD(True, config.MAIN_STORAGE_NAME,
-                                        config.USER1)
+        mla.removeUserPermissionsFromSD(
+            True, config.MASTER_STORAGE, config.USER1
+        )
 
 
 class DPCase147123(TestCase):
@@ -190,39 +229,51 @@ class DPCase147123(TestCase):
     pos = None
 
     def setUp(self):
-        disks.addDisk(True, alias=config.DISK_NAME, interface='virtio',
-                      format='cow', provisioned_size=config.GB,
-                      storagedomain=config.MAIN_STORAGE_NAME)
+        disks.addDisk(
+            True, alias=config.DISK_NAME, interface='virtio',
+            format='cow', provisioned_size=config.GB,
+            storagedomain=config.MASTER_STORAGE
+        )
         disks.wait_for_disks_status(config.DISK_NAME)
-        mla.addStoragePermissionsToUser(True, config.USER_NAME,
-                                        config.MAIN_STORAGE_NAME,
-                                        role=self.disk_role)
+        mla.addStoragePermissionsToUser(
+            True, config.USER_NAME, config.MASTER_STORAGE, role=self.disk_role
+        )
         vms.createVm(
-            True, config.VM_NO_DISK, '', cluster=config.MAIN_CLUSTER_NAME,
-            network=config.MGMT_BRIDGE)
-        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NO_DISK,
-                                   role=self.vm_role)
+            True, config.VM_NO_DISK, '', cluster=config.CLUSTER_NAME[0],
+            network=config.MGMT_BRIDGE
+        )
+        mla.addVMPermissionsToUser(
+            True, config.USER_NAME, config.VM_NO_DISK, role=self.vm_role
+        )
 
     @tcms(TCMS_PLAN_ID, 147123)
     @istest
     def attachDiskToVM(self):
         """ Attach disk to vm """
         # Attach disk need perm on disk and on VM.
-        msg = "User with UserVmManager on vm and DiskOperator on disk can " \
-              "attach disk."
-        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter=True)
+        msg = (
+            'User with UserVmManager on vm and DiskOperator on disk can'
+            'attach disk.'
+        )
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_PASSWORD, filter=True
+        )
         self.assertTrue(
-            disks.attachDisk(self.pos, config.DISK_NAME, config.VM_NO_DISK),
-            "Unable to attach disk to vm.")
+            disks.attachDisk(
+                self.pos, config.DISK_NAME, config.VM_NO_DISK
+            ),
+            "Unable to attach disk to vm."
+        )
         LOGGER.info(msg)
 
     def tearDown(self):
         loginAsAdmin()
         h_disks.delete_disks([config.DISK_NAME])
         vms.removeVm(True, config.VM_NO_DISK)
-        mla.removeUserPermissionsFromSD(True, config.MAIN_STORAGE_NAME,
-                                        config.USER1)
+        mla.removeUserPermissionsFromSD(
+            True, config.MASTER_STORAGE, config.USER1
+        )
 
 
 class DPCase147123_1(DPCase147123):
@@ -267,21 +318,28 @@ class DPCase147124(TestCase):
     def setUp(self):
         self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
         vms.createVm(
-            True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
-            network=config.MGMT_BRIDGE)
-        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME,
-                                   role=self.tested_role)
+            True, config.VM_NAME, '', cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.MASTER_STORAGE, size=config.GB,
+            network=config.MGMT_BRIDGE
+        )
+        mla.addVMPermissionsToUser(
+            True, config.USER_NAME, config.VM_NAME, role=self.tested_role
+        )
 
     @tcms(TCMS_PLAN_ID, 147124)
     @istest
     def detachDisk(self):
         """ Detach disk from vm """
-        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter=True)
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_PASSWORD, filter=True
+        )
         self.assertTrue(
-            disks.detachDisk(self.pos, self.disk_name, config.VM_NAME),
-            "User with UserVmManager can't detach disk from VM.")
+            disks.detachDisk(
+                self.pos, self.disk_name, config.VM_NAME
+            ),
+            "User with UserVmManager can't detach disk from VM."
+        )
         LOGGER.info("User who has UserVmManager perms on vm can detach disk.")
 
     def tearDown(self):
@@ -320,25 +378,33 @@ class DPCase147125(TestCase):
     def setUp(self):
         self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
         vms.createVm(
-            True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NAME, '', cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.MASTER_STORAGE, size=config.GB,
+            network=config.MGMT_BRIDGE
+        )
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME)
 
     @istest
     @tcms(TCMS_PLAN_ID, 147125)
     def activateDeactivateDisk(self):
         """ ActivateDeactivateDisk """
-        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter=True)
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_PASSWORD, filter=True
+        )
         self.assertTrue(
-            vms.deactivateVmDisk(True, config.VM_NAME,
-                                 diskAlias=self.disk_name),
-            "User with UserVmManager role can't deactivate vm disk")
+            vms.deactivateVmDisk(
+                True, config.VM_NAME, diskAlias=self.disk_name
+            ),
+            "User with UserVmManager role can't deactivate vm disk"
+        )
         LOGGER.info("User with UserVmManager perms can deactivate vm disk.")
         self.assertTrue(
-            vms.activateVmDisk(True, config.VM_NAME, diskAlias=self.disk_name),
-            "User with UserVmManager role can't activate vm disk")
+            vms.activateVmDisk(
+                True, config.VM_NAME, diskAlias=self.disk_name
+            ),
+            "User with UserVmManager role can't activate vm disk"
+        )
         LOGGER.info("User with UserVmManager permissions can active vm disk.")
 
     def tearDown(self):
@@ -353,35 +419,43 @@ class DPCase147126(TestCase):
     __test__ = True
 
     def setUp(self):
-        disks.addDisk(True, alias=config.DISK_NAME, interface='virtio',
-                      format='cow', provisioned_size=config.GB,
-                      storagedomain=config.MAIN_STORAGE_NAME)
+        disks.addDisk(
+            True, alias=config.DISK_NAME, interface='virtio',
+            format='cow', provisioned_size=config.GB,
+            storagedomain=config.MASTER_STORAGE
+        )
         disks.wait_for_disks_status(config.DISK_NAME)
-        mla.addStoragePermissionsToUser(True, config.USER_NAME,
-                                        config.MAIN_STORAGE_NAME,
-                                        role=role.UserRole)
+        mla.addStoragePermissionsToUser(
+            True, config.USER_NAME, config.MASTER_STORAGE, role=role.UserRole
+        )
 
     @tcms(TCMS_PLAN_ID, 147126)
     @istest
     def removeDisk(self):
         """ Remove disk as user with and without permissions """
-        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter=True)
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_PASSWORD, filter=True
+        )
         self.assertTrue(
             disks.deleteDisk(False, config.DISK_NAME),
-            "User without delete_disk action group can remove disk.")
+            "User without delete_disk action group can remove disk."
+        )
         LOGGER.info("User without delete_disk action group can't remove disk.")
 
         loginAsAdmin()
-        mla.addStoragePermissionsToUser(True, config.USER_NAME,
-                                        config.MAIN_STORAGE_NAME,
-                                        role=role.DiskOperator)
-
-        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter=True)
+        mla.addStoragePermissionsToUser(
+            True, config.USER_NAME, config.MASTER_STORAGE,
+            role=role.DiskOperator
+        )
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_PASSWORD, filter=True
+        )
         self.assertTrue(
             disks.deleteDisk(True, config.DISK_NAME),
-            "User with delete_disk action group can't remove disk.")
+            "User with delete_disk action group can't remove disk."
+        )
         LOGGER.info("User with delete_disk action group can remove disk.")
 
     def tearDown(self):
@@ -389,8 +463,9 @@ class DPCase147126(TestCase):
         if disks.checkDiskExists(True, config.DISK_NAME):
             disks.deleteDisk(True, config.DISK_NAME)
         disks.waitForDisksGone(True, config.DISK_NAME)
-        mla.removeUserPermissionsFromSD(True, config.MAIN_STORAGE_NAME,
-                                        config.USER1)
+        mla.removeUserPermissionsFromSD(
+            True, config.MASTER_STORAGE, config.USER1
+        )
 
 
 class DPCase147127(TestCase):
@@ -402,21 +477,26 @@ class DPCase147127(TestCase):
     def setUp(self):
         self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
         vms.createVm(
-            True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NAME, '', cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.MASTER_STORAGE, size=config.GB,
+            network=config.MGMT_BRIDGE
+        )
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME)
 
     @tcms(TCMS_PLAN_ID, 147127)
     @istest
     def updateVmDisk(self):
         """ Update vm disk """
-        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter=True)
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_PASSWORD, filter=True
+        )
         self.assertTrue(
-            vms.updateVmDisk(True, config.VM_NAME, self.disk_name,
-                             interface='ide'),
-            "User can't update vm disk.")
+            vms.updateVmDisk(
+                True, config.VM_NAME, self.disk_name, interface='ide'
+            ),
+            "User can't update vm disk."
+        )
         LOGGER.info("User can update vm disk.")
 
     def tearDown(self):
@@ -433,66 +513,85 @@ class DPCase147128(TestCase):
     def setUp(self):
         self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
         vms.createVm(
-            True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
-            network=config.MGMT_BRIDGE)
-        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME,
-                                   role=role.StorageAdmin)
+            True, config.VM_NAME, '', cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.MASTER_STORAGE, size=config.GB,
+            network=config.MGMT_BRIDGE
+        )
+        mla.addVMPermissionsToUser(
+            True, config.USER_NAME, config.VM_NAME, role=role.StorageAdmin
+        )
 
     @tcms(TCMS_PLAN_ID, 147128)
     @istest
     def moveDisk(self):
         """ Move disk with and without having permissions on sds """
         # Move disk without permissions
-        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter=False)
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_PASSWORD, filter=False
+        )
 
         try:
             vms.move_vm_disk(
-                config.VM_NAME, self.disk_name, config.ALT1_STORAGE_NAME)
+                config.VM_NAME, self.disk_name, config.STORAGE_NAME[1]
+            )
         except errors.DiskException:
             LOGGER.info("User without perms on sds can't move disk.")
         # Move disk with permissions only on destination sd
         loginAsAdmin()
-        mla.addStoragePermissionsToUser(True, config.USER_NAME,
-                                        config.MAIN_STORAGE_NAME,
-                                        role=role.StorageAdmin)
-        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter=False)
+        mla.addStoragePermissionsToUser(
+            True, config.USER_NAME, config.MASTER_STORAGE,
+            role=role.StorageAdmin
+        )
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_PASSWORD, filter=False
+        )
         try:
             vms.move_vm_disk(
-                config.VM_NAME, self.disk_name, config.ALT1_STORAGE_NAME)
+                config.VM_NAME, self.disk_name, config.STORAGE_NAME[1]
+            )
         except errors.DiskException:
             LOGGER.info("User without perms on target sd can't move disk.")
 
         # Move disk with permissions on both sds
         loginAsAdmin()
-        mla.addStoragePermissionsToUser(True, config.USER_NAME,
-                                        config.ALT1_STORAGE_NAME,
-                                        role=role.DiskCreator)
+        mla.addStoragePermissionsToUser(
+            True, config.USER_NAME, config.STORAGE_NAME[1],
+            role=role.DiskCreator
+        )
 
-        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter=False)
-        vms.move_vm_disk(config.VM_NAME, self.disk_name,
-                         config.ALT1_STORAGE_NAME)
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_PASSWORD, filter=False
+        )
+        vms.move_vm_disk(
+            config.VM_NAME, self.disk_name,
+            config.STORAGE_NAME[1]
+        )
         time.sleep(5)
         disks.wait_for_disks_status(self.disk_name)
-        test_utils.wait_for_tasks(config.VDC_HOST, config.VDC_ROOT_PASSWORD,
-                                  config.MAIN_DC_NAME)
+        test_utils.wait_for_tasks(
+            config.VDC_HOST, config.VDC_ROOT_PASSWORD, config.DC_NAME[0]
+        )
         LOGGER.info("User with perms on target sd and disk can move disk.")
 
     def tearDown(self):
         loginAsAdmin()
-        low_sd.waitForStorageDomainStatus(True, config.MAIN_DC_NAME,
-                                          config.ALT1_STORAGE_NAME, 'active')
+        low_sd.waitForStorageDomainStatus(
+            True, config.DC_NAME[0], config.STORAGE_NAME[1], 'active'
+        )
         h_disks.delete_disks([self.disk_name])
         vms.removeVm(True, config.VM_NAME)
-        mla.removeUserPermissionsFromSD(True, config.MAIN_STORAGE_NAME,
-                                        config.USER1)
-        mla.removeUserPermissionsFromSD(True, config.ALT1_STORAGE_NAME,
-                                        config.USER1)
-        test_utils.wait_for_tasks(config.VDC_HOST, config.VDC_ROOT_PASSWORD,
-                                  config.MAIN_DC_NAME)
+        mla.removeUserPermissionsFromSD(
+            True, config.MASTER_STORAGE, config.USER1
+        )
+        mla.removeUserPermissionsFromSD(
+            True, config.STORAGE_NAME[1], config.USER1
+        )
+        test_utils.wait_for_tasks(
+            config.VDC_HOST, config.VDC_ROOT_PASSWORD, config.DC_NAME[0]
+        )
 
 
 class DPCase147129(TestCase):
@@ -503,57 +602,76 @@ class DPCase147129(TestCase):
 
     def setUp(self):
         vms.createVm(
-            True, config.VM_NO_DISK, '', cluster=config.MAIN_CLUSTER_NAME,
-            network=config.MGMT_BRIDGE)
-        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NO_DISK,
-                                   role=role.UserRole)
+            True, config.VM_NO_DISK, '', cluster=config.CLUSTER_NAME[0],
+            network=config.MGMT_BRIDGE
+        )
+        mla.addVMPermissionsToUser(
+            True, config.USER_NAME, config.VM_NO_DISK, role=role.UserRole
+        )
 
     @tcms(TCMS_PLAN_ID, 147129)
     @istest
     @bz(1153043)
     def addDiskToVm(self):
         """ add disk to vm with and without permissions """
-        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter=True)
-        self.assertTrue(vms.addDisk(
-            False, config.VM_NO_DISK, config.GB,
-            storagedomain=config.MAIN_STORAGE_NAME,
-            interface='virtio', format='cow'), "UserRole can add disk to vm.")
-        LOGGER.info("User without permissions on vm, can't add disk to vm.")
-
-        loginAsAdmin()
-        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NO_DISK,
-                                   role=role.UserVmManager)
-        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter=True)
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_PASSWORD, filter=True
+        )
         self.assertTrue(
             vms.addDisk(
                 False, config.VM_NO_DISK, config.GB,
-                storagedomain=config.MAIN_STORAGE_NAME,
-                interface='virtio', format='cow'),
-            "User without permissions on sd can add disk to vm.")
+                storagedomain=config.MASTER_STORAGE,
+                interface='virtio', format='cow'
+            ),
+            "UserRole can add disk to vm."
+        )
+        LOGGER.info("User without permissions on vm, can't add disk to vm.")
+
+        loginAsAdmin()
+        mla.addVMPermissionsToUser(
+            True, config.USER_NAME, config.VM_NO_DISK, role=role.UserVmManager
+        )
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_PASSWORD, filter=True
+        )
+        self.assertTrue(
+            vms.addDisk(
+                False, config.VM_NO_DISK, config.GB,
+                storagedomain=config.MASTER_STORAGE,
+                interface='virtio', format='cow'
+            ),
+            "User without permissions on sd can add disk to vm."
+        )
         LOGGER.info("User without permissions on sd, can't add disk to vm.")
 
         loginAsAdmin()
-        mla.addStoragePermissionsToUser(True, config.USER_NAME,
-                                        config.MAIN_STORAGE_NAME,
-                                        role=role.DiskCreator)
+        mla.addStoragePermissionsToUser(
+            True, config.USER_NAME, config.MASTER_STORAGE,
+            role=role.DiskCreator
+        )
 
-        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter=True)
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_PASSWORD, filter=True
+        )
         self.assertTrue(
             vms.addDisk(
                 True, config.VM_NO_DISK, config.GB,
-                storagedomain=config.MAIN_STORAGE_NAME,
-                interface='virtio', format='cow'),
-            "User with permissions on sd and vm can't add disk to vm.")
+                storagedomain=config.MASTER_STORAGE,
+                interface='virtio', format='cow'
+            ),
+            "User with permissions on sd and vm can't add disk to vm."
+        )
         LOGGER.info("User with permissions on sd and vm, can add disk to vm.")
 
     def tearDown(self):
         loginAsAdmin()
         vms.removeVm(True, config.VM_NO_DISK)
-        mla.removeUserPermissionsFromSD(True, config.MAIN_STORAGE_NAME,
-                                        config.USER1)
+        mla.removeUserPermissionsFromSD(
+            True, config.MASTER_STORAGE, config.USER1
+        )
 
 
 class DPCase147130(TestCase):
@@ -568,40 +686,51 @@ class DPCase147130(TestCase):
 
     def setUp(self):
         vms.createVm(
-            True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
-            network=config.MGMT_BRIDGE)
-        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME,
-                                   role=role.DiskOperator)
-        mla.addClusterPermissionsToUser(True, config.USER_NAME,
-                                        config.MAIN_CLUSTER_NAME,
-                                        role=role.UserRole)
+            True, config.VM_NAME, '', cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.MASTER_STORAGE, size=config.GB,
+            network=config.MGMT_BRIDGE
+        )
+        mla.addVMPermissionsToUser(
+            True, config.USER_NAME, config.VM_NAME, role=role.DiskOperator
+        )
+        mla.addClusterPermissionsToUser(
+            True, config.USER_NAME, config.CLUSTER_NAME[0], role=role.UserRole
+        )
 
     def tearDown(self):
         loginAsAdmin()
-        mla.removeUserPermissionsFromCluster(True, config.MAIN_CLUSTER_NAME,
-                                             config.USER1)
+        vms.waitForVmsGone(True, config.VM_NAME)
+        mla.removeUserPermissionsFromCluster(
+            True, config.CLUSTER_NAME[0], config.USER1
+        )
 
     @tcms(TCMS_PLAN_ID, 147130)
     @istest
     def removeVm(self):
         """ remove vm with disk without/with having apprirate permissions """
-        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter=True)
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_PASSWORD, filter=True
+        )
         self.assertTrue(
             vms.removeVm(False, config.VM_NAME),
-            "User can remove vm as DiskOperator.")
+            "User can remove vm as DiskOperator."
+        )
         LOGGER.info("User can't remove vm as DiskOperator.")
 
         loginAsAdmin()
-        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME,
-                                   role=role.UserVmManager)
+        mla.addVMPermissionsToUser(
+            True, config.USER_NAME, config.VM_NAME, role=role.UserVmManager
+        )
 
-        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter=True)
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_PASSWORD, filter=True
+        )
         self.assertTrue(
-            vms.removeVm(True, config.VM_NAME),
-            "User can't remove vm as DiskOperator and UserVmManager on vm.")
+            vms.removeVm(True, config.VM_NAME, wait=False),
+            "User can't remove vm as DiskOperator and UserVmManager on vm."
+        )
         LOGGER.info("User can remove vm as UserVmManager, DiskOperator on vm")
 
 
@@ -612,44 +741,56 @@ class DPCase147137(TestCase):
     __test__ = True
 
     def setUp(self):
-        disks.addDisk(True, alias=config.DISK_NAME, interface='virtio',
-                      format='raw', provisioned_size=config.GB,
-                      storagedomain=config.MAIN_STORAGE_NAME,
-                      shareable=True)
+        disks.addDisk(
+            True, alias=config.DISK_NAME, interface='virtio',
+            format='raw', provisioned_size=config.GB,
+            storagedomain=config.MASTER_STORAGE,
+            shareable=True
+        )
         disks.wait_for_disks_status(config.DISK_NAME)
-        mla.addStoragePermissionsToUser(True, config.USER_NAME,
-                                        config.MAIN_STORAGE_NAME,
-                                        role=role.DiskOperator)
+        mla.addStoragePermissionsToUser(
+            True, config.USER_NAME, config.MASTER_STORAGE,
+            role=role.DiskOperator
+        )
 
         vms.createVm(
-            True, config.VM_NO_DISK, '', cluster=config.MAIN_CLUSTER_NAME,
-            network=config.MGMT_BRIDGE)
+            True, config.VM_NO_DISK, '', cluster=config.CLUSTER_NAME[0],
+            network=config.MGMT_BRIDGE
+        )
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NO_DISK)
 
     @tcms(TCMS_PLAN_ID, 147137)
     @istest
     def sharedDisk(self):
         """ Basic operations with shared disk """
-        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter=True)
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_PASSWORD, filter=True
+        )
         self.assertTrue(
             disks.attachDisk(True, config.DISK_NAME, config.VM_NO_DISK),
-            "Unable to attach disk to vm.")
+            "Unable to attach disk to vm."
+        )
         LOGGER.info("Shared disk was attached by user.")
 
         self.assertTrue(
-            vms.updateVmDisk(True, config.VM_NO_DISK, config.DISK_NAME,
-                             interface='ide'),
-            "User can't update vm shared disk.")
+            vms.updateVmDisk(
+                True, config.VM_NO_DISK, config.DISK_NAME, interface='ide'
+            ),
+            "User can't update vm shared disk."
+        )
         LOGGER.info("User can update vm shared disk.")
 
-        self.assertTrue(disks.deleteDisk(True, config.DISK_NAME),
-                        "User can't remove shared disk.")
+        self.assertTrue(
+            disks.deleteDisk(True, config.DISK_NAME),
+            "User can't remove shared disk."
+        )
         LOGGER.info("User can remove shared disk.")
 
     def tearDown(self):
         loginAsAdmin()
         disks.waitForDisksGone(True, config.DISK_NAME)
         vms.removeVm(True, config.VM_NO_DISK),
-        mla.removeUserPermissionsFromSD(True, config.MAIN_STORAGE_NAME,
-                                        config.USER1)
+        mla.removeUserPermissionsFromSD(
+            True, config.MASTER_STORAGE, config.USER1
+        )

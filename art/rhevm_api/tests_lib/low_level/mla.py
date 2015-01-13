@@ -549,10 +549,12 @@ def removeUserRoleFromObject(positive, obj, user_name, role_name):
 
     user = user.get_id()
     for perm in permits:
-        if perm.get_user().get_id() == user and \
-                perm.get_role().get_id() == role_id and \
-                not permisUtil.delete(perm, positive):
-                    status = False
+        if (
+            perm.get_user() and perm.get_user().get_id() == user
+            and perm.get_role().get_id() == role_id
+            and not permisUtil.delete(perm, positive)
+        ):
+            status = False
 
     return status
 
@@ -572,9 +574,11 @@ def removeUsersPermissionsFromObject(positive, obj, user_names):
                 for user in user_names]
 
     for perm in permits:
-        if perm.get_user().get_id() in user_ids and \
-                not permisUtil.delete(perm, positive):
-                    status = False
+        if (
+            perm.get_user() and perm.get_user().get_id() in user_ids
+            and not permisUtil.delete(perm, positive)
+        ):
+            status = False
 
     return status
 
