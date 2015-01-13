@@ -1,8 +1,12 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 MultiHost networking feature test
 """
+
 import logging
-from rhevmtests.networking import config
+from rhevmtests.networking import config, network_cleanup
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.rhevm_api.tests_lib.low_level.vms import addVm
 from art.test_handler.exceptions import NetworkException
@@ -19,8 +23,8 @@ def setup_package():
     """
     Prepare environment
     """
-
     if config.GOLDEN_ENV:
+        network_cleanup()
         logger.info(
             "Running on golden env, only starting VM %s at host %s",
             config.VM_NAME[0], config.HOSTS[0])
@@ -36,7 +40,6 @@ def setup_package():
             raise NetworkException(
                 "VM %s did not come up" % config.VM_NAME[0]
             )
-
     else:
         if not prepareSetup(
             hosts=config.VDS_HOSTS, cpuName=config.CPU_NAME,
@@ -68,13 +71,12 @@ def teardown_package():
     """
     Cleans the environment
     """
-
     if config.GOLDEN_ENV:
         logger.info(
             "Running on golden env, stopping VM %s", config.VM_NAME[0])
         if not vms.stopVm(True, vm=config.VM_NAME[0]):
             logger.error(
-                "Failed to stop VM: %s" % config.VM_NAME[0]
+                "Failed to stop VM: %s", config.VM_NAME[0]
             )
     else:
         if not cleanDataCenter(
