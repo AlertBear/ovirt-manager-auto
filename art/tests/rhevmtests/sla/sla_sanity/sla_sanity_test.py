@@ -458,7 +458,7 @@ class BasicThreadSlaClass(BasicSlaClass):
         """
         logger.info("Update cluster with threads_as_cores=%s", cls.thread_on)
         if not clusters.updateCluster(True, config.CLUSTER_NAME[0],
-                                      threads_as_cores=cls.thread_on):
+                                      threads_as_cores=False):
             raise errors.ClusterException("Failed to update cluster")
         super(BasicThreadSlaClass, cls).teardown_class()
 

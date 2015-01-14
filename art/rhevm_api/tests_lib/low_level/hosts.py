@@ -85,6 +85,7 @@ FIND_QEMU = 'ps aux |grep qemu | grep -e "-name %s"'
 MOM_CONF = '/etc/vdsm/mom.conf'
 MOM_SCRIPT_LOCAL = 'tests/rhevmtests/sla/mom/momStats.py'
 MOM_SCRIPT_PATH = '/tmp/momStats.py'
+MOM_DEFAULT_PORT = 8080
 
 virsh_cmd = ['nwfilter-dumpxml', 'vdsm-no-mac-spoofing']
 search_for = ["<filterref filter='no-mac-spoofing'/>",
@@ -2016,86 +2017,92 @@ def kill_qemu_process(vm_name, host, user, password):
     return linux_machine.runCmd(['kill', '-9', qemu_pid])
 
 
-@is_action()
-def change_mom_rpc_port(host, host_user, host_pwd, port=8080):
+def change_mom_rpc_port(host_resource, port=MOM_DEFAULT_PORT):
     """
     Change port for mom rpc communication
 
-    :param host: ip of host
-    :param host_user: user on host machine (root)
-    :param host_pwd: password for host_user user
+    :param host_resource: Host instance
+    :type host_resource: VDS instance
     :param port: port for xmlrpc communication
-    :return: return code, output
-    :rtype: tuple
+    :type port: int
+    :returns: True if function success, otherwise False
+    :rtype: bool
     """
-    host_machine = get_linux_machine_obj(host, host_user, host_pwd)
-    rc, out = host_machine.runCmd(['sed', '-i',
-                                   's/rpc-port: [-0-9]\\+/rpc-port: ' +
-                                   str(port) + '/',
-                                   MOM_CONF])
-    if not rc:
+    rc, out, err = host_resource.executor().run_cmd(
+        [
+            'sed', '-i', 's/rpc-port: [-0-9]\\+/rpc-port: %s/' % str(port),
+            MOM_CONF
+        ]
+    )
+    if rc:
         HOST_API.logger.error(
-            "Failed to edit rpc port for mom on host %s ", host)
+            "Failed to edit rpc port for mom on host %s, output: %s",
+            host_resource.ip, err
+        )
         return False
-    return host_machine.restartService("vdsmd")
+    return host_resource.service("vdsmd").restart()
 
 
-def set_mom_script(host, host_user, host_pwd, path=MOM_SCRIPT_PATH):
+def set_mom_script(
+        engine_resource, host_resource,
+        src=MOM_SCRIPT_LOCAL, dst=MOM_SCRIPT_PATH
+):
     """
     Set script for xmlrpc communication with mom
 
-    :param host: ip of host
-    :param host_user: user on host machine (root)
-    :param host_pwd: password for host_user user
-    :param path: path to mom script
-    :return: return code, output
-    :rtype: tuple
+    :param engine_resource: Host instance of engine
+    :type engine_resource: VDS instance
+    :param host_resource: Host instance
+    :type host_resource: VDS instance
+    :param src: path to source file
+    :type src: str
+    :param dst: path to destination file
+    :type dst: str
     """
-    host_machine = get_linux_machine_obj(host, host_user, host_pwd)
-    return host_machine.copyTo(find_test_file(MOM_SCRIPT_LOCAL),
-                               path)
+    host_resource.copy_to(engine_resource, find_test_file(src), dst)
 
 
-def remove_mom_script(host, host_user, host_pwd, path=MOM_SCRIPT_PATH):
+def remove_mom_script(host_resource, path=MOM_SCRIPT_PATH):
     """
     Remove script for xmlrpc communication with mom
 
-    :param host: ip of host
-    :param host_user: user on host machine (root)
-    :param host_pwd: password for host_user user
-    :param path: path to mom script
-    :return: return code, output
-    :rtype: tuple
+    :param host_resource: Host instance
+    :type host_resource: VDS instance
+    :param path: path to destination file
+    :type path: str
+    :returns: True if operation success, otherwise False
+    :rtype: bool
     """
-    host_machine = get_linux_machine_obj(host, host_user, host_pwd)
-    return host_machine.runCmd(['rm', '-f', path])
+    return host_resource.fs.remove(path)
 
 
-@is_action()
-def get_mom_statistics(host, host_user, host_pwd, port=8080,
-                       path=MOM_SCRIPT_PATH):
+def get_mom_statistics(
+        host_resource, port=MOM_DEFAULT_PORT, path=MOM_SCRIPT_PATH
+):
     """
     Get statistics from mom through xmlrpc
     first need to set the script for usage by setMomScript()
 
-    :param host: ip of host
-    :param host_user: user on host machine (root)
-    :param host_pwd: password for host_user user
+    :param host_resource: Host instance
+    :type host_resource: VDS instance
     :param port: port for xmlrpc communication
+    :type port: int
     :param path: path to mom script
-    :return: True, dictionary of stats on success
-             otherwise False and output of run commands
+    :type path: str
+    :returns: True, dictionary of stats on success
+     otherwise False and output of run commands
     :rtype: tuple
     """
-    host_machine = get_linux_machine_obj(host, host_user, host_pwd)
-    rc, out = host_machine.runCmd(['python', path, str(port)])
-    if rc:
+    rc, out, err = host_resource.executor().run_cmd(
+        ['python', path, str(port)]
+    )
+    if not rc:
         try:
             stats_dict = json.loads(out.replace('\'', '"'))
         except TypeError:
-            return rc, out
-        return rc, stats_dict
-    return rc, out
+            return True, out, err
+        return True, stats_dict, err
+    return False, out, err
 
 
 def get_host_object(host_name):

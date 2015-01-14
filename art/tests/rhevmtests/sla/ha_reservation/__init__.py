@@ -78,7 +78,7 @@ def teardown_package():
         logger.info("Update cluster %s memory over commitment to %d percent",
                     config.CLUSTER_NAME[0], 200)
         if not clusters.updateCluster(
-            True, config.CLUSTER_NAME[0], ha_reservation=True,
+            True, config.CLUSTER_NAME[0], ha_reservation=False,
             mem_ovrcmt_prc=200
         ):
             raise errors.ClusterException("Failed to update cluster")

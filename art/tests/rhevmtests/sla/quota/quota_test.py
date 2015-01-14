@@ -106,6 +106,9 @@ def setup_module():
     dbname = config.RHEVM_UTILS_ENUMS['RHEVM_DB_NAME']
     db.setup = Setup(config.VDC_HOST, config.VDC_ROOT_USER,
                      config.VDC_ROOT_PASSWORD, dbname=dbname)
+    # Clear all event before test
+    sql = "DELETE FROM audit_log"
+    db.setup.psql(sql)
 
     with ui_setup(quota_ui):
         quota_ui.create_quota(config.DC_NAME[0], QUOTA_NAME)
@@ -187,7 +190,7 @@ class QuotaTestCRUD(TestCase):
         self.assertFalse(db.check_quota_exists(QUOTA3_NAME))
 
 
-@attr(tier=0)
+@attr(tier=1)
 class QuotaTestMode(TestCase):
     """
     This unittest class tests quota enforced/audit mode.
@@ -548,7 +551,7 @@ class QuotaTestAuditWithOutQuota(QuotaTestObjectWithoutQuota):
     positive = True
 
 
-@attr(tier=1)
+@attr(tier=0)
 class QuotaConsumptionCalc(TestCase):
     """
     This class tests if quota consumption is calculated right,

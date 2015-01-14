@@ -247,6 +247,7 @@ UNCOMP_CL_NAME = ["".join([CLUSTER_NAME[0], "CL3", str(i)]) for i in range(2)]
 
 VERSION = ["3.0", "3.1", "3.2", "3.3", "3.4", "3.5"]
 
+SAMPLER_SLEEP = 10
 SAMPLER_TIMEOUT = 210
 CONNECT_TIMEOUT = 60
 ENGINE_RESTART_TIMEOUT = 120  # seconds

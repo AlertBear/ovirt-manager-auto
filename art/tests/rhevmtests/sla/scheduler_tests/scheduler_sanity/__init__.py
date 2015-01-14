@@ -1,5 +1,5 @@
 """
-Scheduler Sanity Test - test initialization
+Scheduler Sanity Test - Test Initialization
 """
 
 import os
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 def setup_package():
     """
-    Prepare environment for Even Vm Count Distribution Test
+    Prepare environment for Scheduler Sanity Test
     """
     if os.environ.get("JENKINS_URL") and not config.GOLDEN_ENV:
         logger.info("Building setup...")

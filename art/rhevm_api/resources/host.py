@@ -102,6 +102,23 @@ class Host(Resource):
             user = self.root_user
         return RemoteExecutor(user, self.ip)
 
+    def copy_to(self, resource, src, dst):
+        """
+        Copy to host from another resource
+
+        :param resource: resource to copy from
+        :type resource: instance of Host
+        :param src: path to source
+        :type src: str
+        :param dst: path to destination
+        :type dst: str
+        """
+        with resource.executor().session() as resource_session:
+            with self.executor().session() as host_session:
+                with resource_session.open_file(src, 'rb') as resource_file:
+                    with host_session.open_file(dst, 'wb') as host_file:
+                        host_file.write(resource_file.read())
+
     def _create_service(self, name, timeout):
         for provider in self.default_service_providers:
             try:

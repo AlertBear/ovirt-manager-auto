@@ -47,7 +47,7 @@ HOST_VM_MAP = {
 ########################################################################
 
 
-@attr(tier=1)
+@attr(tier=3)
 class PowerSavingWithPM(TestCase):
     """
     Base class for power saving with power management test

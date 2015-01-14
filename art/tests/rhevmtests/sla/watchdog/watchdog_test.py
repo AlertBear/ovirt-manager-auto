@@ -56,7 +56,7 @@ ENGINE_LOG = '/var/log/ovirt-engine/engine.log'
 ########################################################################
 
 
-@attr(tier=0)
+@attr(tier=1)
 class WatchdogVM(TestCase):
     """
     Base class for vm watchdog operations
@@ -231,6 +231,7 @@ def run_watchdog_service(vm):
 ########################################################################
 
 
+@attr(tier=0)
 class WatchdogCRUD(WatchdogVM):
     """
     Create Vm with watchdog
@@ -576,7 +577,6 @@ class WatchdogTestDump(WatchdogVM):
 ######################################################################
 
 
-@attr(tier=1)
 class WatchdogGeneralVMSubtab(TestCase):
     """
     Watchdog info in generat subtab
@@ -595,7 +595,6 @@ class WatchdogGeneralVMSubtab(TestCase):
 #######################################################################
 
 
-@attr(tier=1)
 class WatchdogMigration(TestCase):
     """
     Test watchdog with migration of vm
@@ -648,7 +647,6 @@ class WatchdogMigration(TestCase):
 #######################################################################
 
 
-@attr(tier=1)
 class WatchdogHighAvailability(WatchdogVM):
     """
     Action poweroff with vm that is highly available

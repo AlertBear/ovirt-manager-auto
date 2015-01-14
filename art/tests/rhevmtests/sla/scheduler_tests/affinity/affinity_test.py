@@ -5,6 +5,7 @@ or in the same affinities groups(soft/hard, positive/negative)
 """
 
 import logging
+from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.unittest_lib import attr
 from rhevmtests.sla import config
 
@@ -27,7 +28,7 @@ VM_DOWN = ENUMS['vm_state_down']
 TCMS_PLAN_ID = '12145'
 
 
-@attr(tier=0)
+@attr(tier=1)
 class Affinity(TestCase):
     """
     Base class for affinity test
@@ -96,6 +97,7 @@ class StartVms(Affinity):
         super(StartVms, cls).teardown_class()
 
 
+@attr(tier=0)
 class StartVmsUnderHardPositiveAffinity(StartVms):
     """
     Start vms that placed into the same hard, positive affinity group,
@@ -140,6 +142,7 @@ class StartVmsUnderSoftPositiveAffinity(StartVms):
                          "vms not run on the same host")
 
 
+@attr(tier=0)
 class StartVmsUnderHardNegativeAffinity(StartVms):
     """
     Start vms that placed into the same hard, negative affinity group,
@@ -214,6 +217,7 @@ class MigrateVm(Affinity):
         super(MigrateVm, cls).teardown_class()
 
 
+@attr(tier=0)
 class MigrateVmUnderHardPositiveAffinity(MigrateVm):
     """
     Migrate vm under hard positive affinity,
@@ -264,6 +268,7 @@ class MigrateVmUnderSoftPositiveAffinity(MigrateVm):
                          "vms not run on the same host")
 
 
+@attr(tier=0)
 class MigrateVmUnderHardNegativeAffinity(MigrateVm):
     """
     Migrate vm under hard negative affinity,
@@ -699,8 +704,7 @@ class TwoDifferentAffinitiesScenario3(Affinity):
 
 class FailedToStartHAVmUnderHardNegativeAffinity(MigrateVm):
     """
-    Create additional vm and deactivate one of hosts,
-    kill HA vm and check that vm failed to start,
+    Kill HA vm and check that vm failed to start,
     because hard negative affinity
     """
     __test__ = True
@@ -714,6 +718,12 @@ class FailedToStartHAVmUnderHardNegativeAffinity(MigrateVm):
         """
         Create additional HA vm and deactivate one of hosts
         """
+        logger.info(
+            "Wait until all tasks gone on datacenter %s", config.DC_NAME[0]
+        )
+        wait_for_tasks(
+            config.VDC_HOST, config.VDC_ROOT_PASSWORD, config.DC_NAME[0]
+        )
         logger.info("Deactivate host %s", config.HOSTS[2])
         if not host_api.deactivateHost(True, config.HOSTS[2]):
             raise errors.HostException("Failed to deactivate host")

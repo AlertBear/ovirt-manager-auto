@@ -33,6 +33,7 @@ RESERVATION_TIMEOUT = 300
 ########################################################################
 
 
+@attr(tier=1)
 class HAReservation(TestCase):
     """
     Base class for operations
@@ -158,7 +159,6 @@ class Maintenance(HAReservation):
         logger.info("VM %s successfully removed", cls.vm_name)
 
 
-@attr(tier=1)
 class NotCompatibleHost(HAReservation):
     """
     Cluster failing HA reservation check based on
@@ -214,7 +214,6 @@ class NotCompatibleHost(HAReservation):
             )
 
 
-@attr(tier=1)
 class MultiVM(HAReservation):
     """
     Create 8 Ha Vms in HA safe cluster and make

@@ -1,4 +1,6 @@
 import sys
 from xmlrpclib import ServerProxy
-mom = ServerProxy("http://localhost:"+sys.argv[1])
-print(mom.getStatistics())
+
+if __name__ == "__main__":
+    mom = ServerProxy("http://localhost:%s" % sys.argv[1])
+    print(mom.getStatistics())
