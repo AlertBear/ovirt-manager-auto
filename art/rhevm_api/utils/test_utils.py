@@ -17,6 +17,7 @@
 # License along with this software; if not, write to the Free
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+import threading
 
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
@@ -89,56 +90,62 @@ class PSQLException(Exception):
 class GetApi(object):
 
     _util_cache = {}
+    rlock = threading.RLock()
 
     def __init__(self, element, collection):
         self._element = element
         self._collection = collection
 
-    #setter is not needed since _util_cache.__setitem__ is doing all the job
+    # setter is not needed since _util_cache.__setitem__ is doing all the job
     @property
     def util_cache(self):
         return self.__class__._util_cache
 
     @classmethod
+    def update_util_cache(cls, key, value):
+        with cls.rlock:
+            cls._util_cache[key] = value
+
+    @classmethod
+    def clear_util_cache(cls):
+        with cls.rlock:
+            cls._util_cache.clear()
+
+    @classmethod
     def logoff_api(cls):
-        from art.core_api.rest_utils import RestUtil
-        from art.core_api.ovirtsdk_utils import SdkUtil
-        from art.core_api.ovirtcli_utils import CliUtil
-        from art.core_api.ovirtsdk_java_utils import JavaSdkUtil
-
-        RestUtil.logout()
-        SdkUtil.logout()
-        CliUtil.logout()
-        JavaSdkUtil.logout()
-
-        # cleaning cache (I can add clean by api type but in most cases all
-        # apis will run so all of them will be cleaned eventually)
-        cls._util_cache = {}
-        logger.debug("logout from succeeded")
+        with cls.rlock:
+            for api in set([api.__class__ for api in
+                            cls._util_cache.values()]):
+                api.logout()
+            # cleaning all apis since we doing the setup and teardown by
+            # rest so it will be good to do logoff by api just with scenarios
+            # which all the steps in the test otherwise if login in setup or
+            # teardown the logoff will be from rest
+            cls.clear_util_cache()
 
     def __getattr__(self, opcode):
-        engine = settings.opts.get('engine')
-        key = (self._element, self._collection, engine)
-        # checking in cache
-        if key in self.util_cache:
-            api = self.util_cache[key]
-        else:
-            if engine == 'rest':
-                from art.core_api.rest_utils import RestUtil
-                api = RestUtil(self._element, self._collection)
-            elif engine == 'sdk':
-                from art.core_api.ovirtsdk_utils import SdkUtil
-                api = SdkUtil(self._element, self._collection)
-            elif engine == 'cli':
-                from art.core_api.ovirtcli_utils import CliUtil
-                api = CliUtil(self._element, self._collection)
-            elif engine == 'java':
-                from art.core_api.ovirtsdk_java_utils import JavaSdkUtil
-                api = JavaSdkUtil(self._element, self._collection)
-            # adding to cache
-            self.util_cache[key] = api
-
-        return getattr(self.util_cache[key], opcode)
+        with self.rlock:
+            engine = settings.opts.get('engine')
+            key = (self._element, self._collection, engine)
+            # checking in cache
+            if key in self._util_cache:
+                api = self._util_cache[key]
+            else:
+                if engine == 'rest':
+                    from art.core_api.rest_utils import RestUtil
+                    api = RestUtil(self._element, self._collection)
+                elif engine == 'sdk':
+                    from art.core_api.ovirtsdk_utils import SdkUtil
+                    api = SdkUtil(self._element, self._collection)
+                elif engine == 'cli':
+                    from art.core_api.ovirtcli_utils import CliUtil
+                    api = CliUtil(self._element, self._collection)
+                elif engine == 'java':
+                    from art.core_api.ovirtsdk_java_utils import JavaSdkUtil
+                    api = JavaSdkUtil(self._element, self._collection)
+                # adding to cache
+                self.update_util_cache(key, api)
+            return getattr(api, opcode)
 
 
 get_api = GetApi
