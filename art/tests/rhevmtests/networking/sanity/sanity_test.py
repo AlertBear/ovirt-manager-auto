@@ -47,15 +47,6 @@ from art.rhevm_api.utils.test_utils import checkMTU
 from rhevmtests.networking.multiple_queue_nics.helper import(
     check_queues_from_qemu
 )
-from rhevmtests.networking.arbitrary_vlan_device_name.helper import (
-    check_if_nic_in_hostnics, add_bridge_on_host_and_virsh,
-    delete_bridge_on_host_and_virsh, add_vlan_and_refresh_capabilities,
-    VLAN_NAMES, BRIDGE_NAMES, VLAN_IDS, check_if_nic_in_vdscaps,
-    remove_vlan_and_refresh_capabilities, job_tear_down
-)
-from rhevmtests.networking.int_fault_event.helper import(
-    nic_fault, if_up_nic
-)
 from rhevmtests.networking.network_qos.helper import(
     add_qos_profile_to_nic, build_dict, compare_qos
 )
@@ -1590,7 +1581,7 @@ class TestSanityCase20(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase22(TestCase):
+class TestSanityCase21(TestCase):
     """
     List all networks under datacenter.
     """
@@ -1669,121 +1660,7 @@ class TestSanityCase22(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase23(TestCase):
-    """
-    1. Create VLAN entity with name on the host
-    2. Check that the VLAN network exists on host via engine
-    3. Attach the vlan to bridge
-    4. Add the bridge with VLAN to virsh
-    5. Remove the VLAN using setupNetwork
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create VLAN entity with name on the host
-        """
-        logger.info("Stopping %s", config.VM_NAME[0])
-        if not stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Failed to stop %s" % config.VM_NAME[0])
-
-        add_vlan_and_refresh_capabilities(
-            host_obj=config.VDS_HOSTS[0], nic=1, vlan_id=VLAN_IDS[0],
-            vlan_name=VLAN_NAMES[0]
-        )
-
-    @tcms(16421, 448123)
-    def test_vlan_on_nic(self):
-        """
-        Check that the VLAN network exists on host via engine
-        Attach the vlan to bridge
-        Add the bridge with VLAN to virsh
-        Check that the bridge is in getVdsCaps
-        """
-        check_if_nic_in_hostnics(nic=VLAN_NAMES[0], host=HOST_NAME0)
-
-        add_bridge_on_host_and_virsh(
-            host_obj=config.VDS_HOSTS[0], bridge=BRIDGE_NAMES[0],
-            network=VLAN_NAMES[0]
-        )
-        check_if_nic_in_vdscaps(
-            host_obj=config.VDS_HOSTS[0], nic=BRIDGE_NAMES[0]
-        )
-        delete_bridge_on_host_and_virsh(
-            host_obj=config.VDS_HOSTS[0], bridge=BRIDGE_NAMES[0]
-        )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove the VLAN from the host
-        """
-        remove_vlan_and_refresh_capabilities(
-            host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[0]
-        )
-        job_tear_down()
-
-        logger.info("Starting %s", config.VM_NAME[0])
-        if not startVm(
-            positive=True, vm=config.VM_NAME[0], wait_for_ip=True,
-            placement_host=config.HOSTS[0]
-        ):
-            raise NetworkException("Failed to start %s" % config.VM_NAME[0])
-
-
-@attr(tier=0)
-class TestSanityCase24(TestCase):
-    """
-    1. Attach non-required network to host NIC
-    2. ip link set down the host NIC
-    3. ip link set up the host NIC
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Attach non-required network to host NIC
-        """
-        local_dict = {
-            config.NETWORKS[0]: {"nic": 1, "required": "false"}
-        }
-
-        logger.info("Attach %s network to DC/Cluster/Host", config.NETWORKS[0])
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
-        ):
-            raise NetworkException("Cannot create and attach networks")
-
-    @tcms(16421, 448124)
-    def test_non_required_nic_fault(self):
-        """
-        Check NIC fault
-        """
-        nic_fault()
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup.
-        """
-        logger.info("Removing all networks from setup")
-        if not remove_net_from_setup(
-            host=config.VDS_HOSTS[0], data_center=config.DC_NAME[0],
-            all_net=True, mgmt_network=config.MGMT_BRIDGE
-        ):
-            logger.error("Cannot remove network from setup")
-
-        logger.info("Setting all %s interfaces UP", HOST_NAME0)
-        for nic in config.VDS_HOSTS[0].nics[1:]:
-            if not if_up_nic(nic=nic):
-                logger.error("Couldn't set %s up", nic)
-
-
-@attr(tier=0)
-class TestSanityCase25(TestCase):
+class TestSanityCase22(TestCase):
     """
     Update VM network to be non-VM network
     Update non-VM network to be VM network
@@ -1891,7 +1768,7 @@ class TestSanityCase25(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase26(TestCase):
+class TestSanityCase23(TestCase):
     """
     Verify you can configure additional VLAN network with static IP and gateway
     """
@@ -1948,7 +1825,7 @@ class TestSanityCase26(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase27(TestCase):
+class TestSanityCase24(TestCase):
     """
     1) Put label on Host NIC of one Host
     2) Check network is attached to Host
@@ -2027,7 +1904,7 @@ class TestSanityCase27(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase28(TestCase):
+class TestSanityCase25(TestCase):
     """
     Add new network QOS
     """
@@ -2137,7 +2014,7 @@ class TestSanityCase28(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase29(TestCase):
+class TestSanityCase26(TestCase):
     """
     Negative: Create more than 5 BONDS using dummy interfaces
     """

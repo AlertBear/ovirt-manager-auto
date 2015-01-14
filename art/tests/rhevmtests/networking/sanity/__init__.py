@@ -5,14 +5,11 @@ Sanity Test
 import logging
 from art.rhevm_api.tests_lib.low_level.vms import startVm
 from art.rhevm_api.utils.test_utils import set_engine_properties
-from rhevmtests.networking import config, network_cleanup
+from rhevmtests.networking import config
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.rhevm_api.tests_lib.high_level.networks import prepareSetup
 from art.test_handler.exceptions import NetworkException
-from rhevmtests.networking.arbitrary_vlan_device_name.helper import(
-    set_libvirtd_sasl
-)
 
 logger = logging.getLogger("Sanity_Init")
 
@@ -52,6 +49,7 @@ def setup_package():
             raise NetworkException("Cannot create setup")
 
     else:
+        from rhevmtests.networking import network_cleanup
         network_cleanup()
         logger.info(
             "Running on golden env, starting VM %s", config.VM_NAME[0]
@@ -61,10 +59,6 @@ def setup_package():
             placement_host=config.HOSTS[0]
         ):
             raise NetworkException("Failed to start %s" % config.VM_NAME[0])
-
-    logger.info("Disabling sasl in libvirt")
-    if not set_libvirtd_sasl(host_obj=config.VDS_HOSTS[0], sasl=False):
-        raise NetworkException("Failed to disable sasl on %s", config.HOSTS[0])
 
 
 def teardown_package():
@@ -82,7 +76,3 @@ def teardown_package():
         logger.info("Running on golden env, stopping VM %s", config.VM_NAME[0])
         if not vms.stopVm(True, vm=config.VM_NAME[0]):
             logger.error("Failed to stop VM: %s", config.VM_NAME[0])
-
-        logger.info("Enabling sasl in libvirt")
-        if not set_libvirtd_sasl(host_obj=config.VDS_HOSTS[0]):
-            logger.error("Failed to enable sasl on %s", config.HOSTS[0])

@@ -33,7 +33,7 @@ DC_NAMES = [config.DC_NAME[0], "DC_NET_DC2"]
 ########################################################################
 
 
-@attr(tier=0)
+@attr(tier=1)
 class DataCenterNetworksCase1(TestCase):
     """
     List all networks under datacenter.
@@ -85,7 +85,7 @@ class DataCenterNetworksCase1(TestCase):
                 raise NetworkException("Fail to delete all networks from DC")
 
 
-@attr(tier=0)
+@attr(tier=1)
 class DataCenterNetworksCase2(TestCase):
     """
     Create network under datacenter.
@@ -145,7 +145,7 @@ class DataCenterNetworksCase2(TestCase):
             raise NetworkException("Fail to delete all networks from DC")
 
 
-@attr(tier=0)
+@attr(tier=1)
 class DataCenterNetworksCase3(TestCase):
     """
     Update network under datacenter.
@@ -199,7 +199,7 @@ class DataCenterNetworksCase3(TestCase):
             raise NetworkException("Fail to delete all networks from DC")
 
 
-@attr(tier=0)
+@attr(tier=1)
 class DataCenterNetworksCase4(TestCase):
     """
     Delete networks under datacenter.
