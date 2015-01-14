@@ -229,7 +229,7 @@ class MultiVM(HAReservation):
         """
         Create 8 VMs and run them on 1st host
         """
-        if is_bz_state('1107992'):
+        if is_bz_state('1182007'):
             config.GENERAL_VM_PARAMS['memory'] = config.GB / 2
             config.INSTALL_VM_PARAMS['installation'] = False
             config.GENERAL_VM_PARAMS.update(config.INSTALL_VM_PARAMS)
@@ -250,7 +250,7 @@ class MultiVM(HAReservation):
                 cls.vm_list
             )
 
-    @bz({'1107992': {'engine': None, 'version': None}})
+    @bz({'1182007': {'engine': None, 'version': None}})
     @tcms('12344', '339926')
     def test_multi_vms(self):
         """
@@ -281,7 +281,7 @@ class MultiVM(HAReservation):
         Activate host and remove all created VMs
         """
         logger.info("MultiVM teardown")
-        if is_bz_state('1107992'):
+        if is_bz_state('1182007'):
             if not vms.safely_remove_vms(cls.vm_list):
                 raise errors.VMException("Failed to remove VMs")
             logger.info("All VMs removed")
