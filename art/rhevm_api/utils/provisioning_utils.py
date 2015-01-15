@@ -3,6 +3,7 @@ import logging
 import socket
 from contextlib import contextmanager
 from abc import ABCMeta, abstractmethod
+from threading import RLock
 
 from utilities.utils import generateShortGuid
 from utilities.cobblerApi import Cobbler
@@ -307,6 +308,7 @@ class ProvisionProvider(object):
         """
         def __init__(self):
             super(ProvisionProvider.Context, self).__init__()
+            self.lock = RLock()
             self.systems = {}  # FIXME: here can be problem with parallel runs
             self.STATUS_BUILD = ProvisionProvider.STATUS_BUILD
             self.STATUS_READY = ProvisionProvider.STATUS_READY
@@ -324,34 +326,39 @@ class ProvisionProvider(object):
             return ''.join(x for x in mac.lower() if x not in [':', '-'])
 
         def add_system(self, mac, os_name):
-            umac = self.unify_mac(mac)
-            if umac in self.systems:
-                logger.info("The mac %s is already managed -> removing", mac)
-                try:
-                    self.remove_system(mac)
-                except Exception as ex:
-                    logger.error(
-                        "The mac %s couldn't be unmanaged: %s", mac, ex
+            with self.lock:
+                umac = self.unify_mac(mac)
+                if umac in self.systems:
+                    logger.info(
+                        "The mac %s is already managed -> removing", mac,
                     )
-            result = ProvisionProvider.add_system(mac, os_name)
-            self.systems[umac] = mac
-            return result
+                    try:
+                        self.remove_system(mac)
+                    except Exception as ex:
+                        logger.error(
+                            "The mac %s couldn't be unmanaged: %s", mac, ex
+                        )
+                result = ProvisionProvider.add_system(mac, os_name)
+                self.systems[umac] = mac
+                return result
 
         def remove_system(self, mac):
-            umac = self.unify_mac(mac)
-            self.systems.pop(umac, None)
-            return ProvisionProvider.remove_system(mac)
+            with self.lock:
+                umac = self.unify_mac(mac)
+                self.systems.pop(umac, None)
+                return ProvisionProvider.remove_system(mac)
 
         def clear(self):
             """
             Removes all systems which were intrumented in this context
             """
-            while self.systems:
-                umac, mac = self.systems.popitem()
-                try:
-                    self.remove_system(mac)
-                except Exception as ex:
-                    logger.error("Can not remove system %s: %s", umac, ex)
+            with self.lock:
+                while self.systems:
+                    umac, mac = self.systems.popitem()
+                    try:
+                        self.remove_system(mac)
+                    except Exception as ex:
+                        logger.error("Can not remove system %s: %s", umac, ex)
 
         def set_host_name(self, *args, **kwargs):
             return ProvisionProvider.set_host_name(*args, **kwargs)
