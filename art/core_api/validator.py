@@ -21,7 +21,7 @@ import sys
 import re
 from cStringIO import StringIO
 from art.core_api.apis_utils import data_st_validate as ds
-from art.core_api.apis_utils import settings
+from art.generateDS.generateds_config import NameTable
 
 ATTR_IGNORE_LIST = ['href', 'link', 'rel']
 
@@ -309,10 +309,21 @@ def compareElements(expElm, actElm, logger, root, equal=True,
 
     attrList = getObjAttributes(elmInstance, elmInstance)
 
+    # the list of changed attributes
+    attr_changed_list = NameTable.values()
+
     for attr in attrList:
         if attr in ignore_list:
             continue
 
+        # check if we changed this attribute as part of generate DS process
+        attr_changed = False
+        if attr in attr_changed_list:
+            orig_attr = NameTable.keys()[attr_changed_list.index(attr)]
+            logger.info('Attribute: {0} changed to: {1}'.format(
+                        attr, orig_attr))
+            attr = orig_attr
+            attr_changed = True
         try:
             attrExpVal = getAttibuteValue(expElm, attr)
             attrActVal = getAttibuteValue(actElm, attr)
@@ -342,6 +353,8 @@ def compareElements(expElm, actElm, logger, root, equal=True,
                     equal = False
             continue
 
+        if attr_changed:
+            attr = NameTable[attr]
         attrType = elmInstance.member_data_items_[attr].get_data_type()
         attrContainer = elmInstance.member_data_items_[attr].get_container()
 
