@@ -40,7 +40,7 @@ DS_CLASS_MAPPER = {
     'hostniclabels': 'Labels',
 }
 
-primitive = (int, str, bool, float, long)
+primitive = (int, bool, float, long, basestring)
 
 
 def is_primitive(obj):
@@ -121,19 +121,22 @@ def cli_entity(elm, node_name, level=0, collection=False, start=False):
                 nodeName = "{0}-{1}".format(node_name, attr)
 
             # checking if recursion reached its stopping case
-            if attrType.startswith('xs:'):
+            if attrType.startswith('xs:') or is_primitive(attrVal):
                 if attrContainer and isinstance(attrVal, list):
                     attrVal = attrVal[0]
 
-                if re.search('boolean', attrType):
+                if (
+                    re.search('boolean', attrType) or
+                    isinstance(attrVal, bool)
+                ):
                     attrVal = str(attrVal).lower()
 
-                if re.search('int', attrType) or re.search('long', attrType)\
-                    or re.search('unsignedShort', attrType):
+                elif (re.search('(int|long|unsignedShort)', attrType) or
+                      isinstance(attrVal, (int, long))):
                     attrVal = "%d" % attrVal
 
-                if re.search('string', attrType) or\
-                   re.search('dateTime', attrType):
+                elif (re.search('(string|dateTime)', attrType) or
+                      isinstance(attrVal, basestring)):
                     if collection:
                         attrVal = "%s" % attrVal
                     else:
