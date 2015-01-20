@@ -3,7 +3,6 @@ Testing Topologies feature.
 1 DC, 1 Cluster, 1 Hosts and 1 VM will be created for testing.
 """
 import logging
-from nose.tools import istest
 from rhevmtests.networking import config
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import attr
@@ -20,7 +19,7 @@ from rhevmtests.networking.topologies.helper import(
     check_vm_connect_and_log, update_vnic_driver, create_and_attach_bond
 )
 
-logger = logging.getLogger("topologies_cases")
+logger = logging.getLogger("Topologies_Cases")
 
 ########################################################################
 
@@ -30,7 +29,7 @@ logger = logging.getLogger("topologies_cases")
 
 
 @attr(tier=1)
-class TopologiesCase01(TestCase):
+class TestTopologiesCase01(TestCase):
     """
     Check connectivity to VM with VLAN network
     Check virtIO, e1000 and rtl8139 drivers
@@ -58,7 +57,7 @@ class TopologiesCase01(TestCase):
 
         logger.info("Update vNIC to VLAN network on VM %s", config.VM_NAME[0])
         if not updateNic(
-            positive=True, vm=config.VM_NAME[0], nic="nic1",
+            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
             network=config.VLAN_NETWORKS[0],
             vnic_profile=config.VLAN_NETWORKS[0]
         ):
@@ -75,17 +74,15 @@ class TopologiesCase01(TestCase):
                 (config.VM_NAME[0], config.HOSTS[0])
             )
 
-    @istest
     @tcms(4139, 385829)
-    def vlan_network_01_virtio(self):
+    def test_vlan_network_01_virtio(self):
         """
         Check connectivity to VLAN network with virtIO driver
         """
         check_vm_connect_and_log(driver=config.NIC_TYPE_VIRTIO, vlan=True)
 
-    @istest
     @tcms(4139, 385831)
-    def vlan_network_02_e1000(self):
+    def test_vlan_network_02_e1000(self):
         """
         Check connectivity to VLAN network with e1000 driver
         """
@@ -95,9 +92,8 @@ class TopologiesCase01(TestCase):
 
         check_vm_connect_and_log(driver=config.NIC_TYPE_E1000, vlan=True)
 
-    @istest
     @tcms(4139, 385834)
-    def vlan_network_03_rtl8139(self):
+    def test_vlan_network_03_rtl8139(self):
         """
         Check connectivity to VLAN network with rtl8139 driver
         """
@@ -114,16 +110,16 @@ class TopologiesCase01(TestCase):
         """
         logger.info("Stop VM %s", config.VM_NAME[0])
         if not stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Fail to stop VM %s" % config.VM_NAME[0])
+            logger.error("Fail to stop VM %s", config.VM_NAME[0])
 
         logger.info("Update vNIC to RHEVM network on VM %s", config.VM_NAME[0])
         if not updateNic(
-            positive=True, vm=config.VM_NAME[0], nic="nic1",
-            network=config.MGMT_BRIDGE, interface="virtio",
+            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
+            network=config.MGMT_BRIDGE, interface=config.NIC_TYPE_VIRTIO,
             vnic_profile=config.MGMT_BRIDGE
         ):
-            raise NetworkException(
-                "Fail to update vNIC to RHEVM network on VM %s" %
+            logger.error(
+                "Fail to update vNIC to RHEVM network on VM %s",
                 config.VM_NAME[0]
             )
 
@@ -132,9 +128,8 @@ class TopologiesCase01(TestCase):
             host=config.VDS_HOSTS[0], auto_nics=[0],
             network=[config.VLAN_NETWORKS[0]]
         ):
-            raise NetworkException(
-                "Cannot remove network %s from setup" %
-                config.VLAN_NETWORKS[0]
+            logger.error(
+                "Cannot remove network %s from setup", config.VLAN_NETWORKS[0]
             )
 
 
@@ -142,7 +137,7 @@ class TopologiesCase01(TestCase):
 
 
 @attr(tier=1)
-class TopologiesCase02(TestCase):
+class TestTopologiesCase02(TestCase):
     """
     Check connectivity to VM with VLAN over BOND mode 1 network
     Check virtIO, e1000 and rtl8139 drivers
@@ -170,7 +165,7 @@ class TopologiesCase02(TestCase):
 
         logger.info("Update vNIC to VLAN over BOND mode 1 network on VM")
         if not updateNic(
-            positive=True, vm=config.VM_NAME[0], nic="nic1",
+            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
             network=config.VLAN_NETWORKS[0],
             vnic_profile=config.VLAN_NETWORKS[0]
         ):
@@ -186,9 +181,8 @@ class TopologiesCase02(TestCase):
                 (config.VM_NAME[0], config.HOSTS[0])
             )
 
-    @istest
     @tcms(4139, 385844)
-    def vlan_over_bond_network_01_virtio(self):
+    def test_vlan_over_bond_network_01_virtio(self):
         """
         Check connectivity to VLAN over BOND mode 1 network with virtIO driver
         """
@@ -197,9 +191,8 @@ class TopologiesCase02(TestCase):
             mode=config.BOND_MODES[1]
         )
 
-    @istest
     @tcms(4139, 386258)
-    def vlan_over_bond_network_02_e1000(self):
+    def test_vlan_over_bond_network_02_e1000(self):
         """
         Check connectivity to VLAN over BOND mode 1 network with e1000 driver
         """
@@ -211,9 +204,8 @@ class TopologiesCase02(TestCase):
             mode=config.BOND_MODES[1]
         )
 
-    @istest
     @tcms(4139, 386260)
-    def vlan_over_bond_network_03_rtl8139(self):
+    def test_vlan_over_bond_network_03_rtl8139(self):
         """
         Check connectivity to VLAN over BOND mode 1 network with rtl8139
         driver
@@ -233,31 +225,29 @@ class TopologiesCase02(TestCase):
         """
         logger.info("Stop VM %s", config.VM_NAME[0])
         if not stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Failed to stop VM %s" % config.VM_NAME[0])
+            logger.error("Failed to stop VM %s", config.VM_NAME[0])
 
         logger.info("Update vNIC to RHEVM network on VM")
         if not updateNic(
-            positive=True, vm=config.VM_NAME[0], nic="nic1",
-            network=config.MGMT_BRIDGE, interface="virtio",
+            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
+            network=config.MGMT_BRIDGE, interface=config.NIC_TYPE_VIRTIO,
             vnic_profile=config.MGMT_BRIDGE
         ):
-            raise NetworkException(
-                "Fail to update vNIC to RHEVM network on VM"
-            )
+            logger.error("Fail to update vNIC to RHEVM network on VM")
 
         logger.info("Remove network from setup")
         if not remove_net_from_setup(
             host=config.VDS_HOSTS[0], auto_nics=[0],
             network=[config.VLAN_NETWORKS[0]]
         ):
-            raise NetworkException("Cannot remove network from setup")
+            logger.error("Cannot remove network from setup")
 
 
 ##############################################################################
 
 
 @attr(tier=1)
-class TopologiesCase03(TestCase):
+class TestTopologiesCase03(TestCase):
     """
     Check connectivity to VM with BOND mode 2 network
     Check virtIO, e1000 and rtl8139 drivers
@@ -277,7 +267,7 @@ class TopologiesCase03(TestCase):
 
         logger.info("Update vNIC to BOND mode 2 network on VM")
         if not updateNic(
-            positive=True, vm=config.VM_NAME[0], nic="nic1",
+            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
             network=config.NETWORKS[0], vnic_profile=config.NETWORKS[0]
         ):
             raise NetworkException(
@@ -292,9 +282,8 @@ class TopologiesCase03(TestCase):
                 (config.VM_NAME[0], config.HOSTS[0])
             )
 
-    @istest
     @tcms(4139, 385847)
-    def bond_network_01_virtio(self):
+    def test_bond_network_01_virtio(self):
         """
         Check connectivity to BOND mode 2 network with virtIO driver
         """
@@ -302,9 +291,8 @@ class TopologiesCase03(TestCase):
             driver=config.NIC_TYPE_VIRTIO, mode=config.BOND_MODES[2]
         )
 
-    @istest
     @tcms(4139, 386261)
-    def bond_network_02_e1000(self):
+    def test_bond_network_02_e1000(self):
         """
         Check connectivity to BOND mode 2 network with e1000 driver
         """
@@ -315,9 +303,8 @@ class TopologiesCase03(TestCase):
             driver=config.NIC_TYPE_E1000, mode=config.BOND_MODES[2]
         )
 
-    @istest
     @tcms(4139, 386262)
-    def bond_network_03_rtl8139(self):
+    def test_bond_network_03_rtl8139(self):
         """
         Check connectivity to BOND mode 2 network with rtl8139 driver
         """
@@ -335,16 +322,16 @@ class TopologiesCase03(TestCase):
         """
         logger.info("Stop VM %s", config.VM_NAME[0])
         if not stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Fail to stop VM %s" % config.VM_NAME[0])
+            logger.error("Fail to stop VM %s", config.VM_NAME[0])
 
         logger.info("Update vNIC to RHEVM network on VM %s", config.VM_NAME[0])
         if not updateNic(
-            positive=True, vm=config.VM_NAME[0], nic="nic1",
-            network=config.MGMT_BRIDGE, interface="virtio",
+            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
+            network=config.MGMT_BRIDGE, interface=config.NIC_TYPE_VIRTIO,
             vnic_profile=config.MGMT_BRIDGE
         ):
-            raise NetworkException(
-                "Fail to update vNIC to RHEVM network on VM %s" %
+            logger.error(
+                "Fail to update vNIC to RHEVM network on VM %s",
                 config.VM_NAME[0]
             )
 
@@ -353,20 +340,20 @@ class TopologiesCase03(TestCase):
             host=config.VDS_HOSTS[0], auto_nics=[0],
             network=[config.NETWORKS[0]]
         ):
-            raise NetworkException(
-                "Cannot remove network %s from setup" % config.NETWORKS[0]
+            logger.error(
+                "Cannot remove network %s from setup", config.NETWORKS[0]
             )
 
 
 @attr(tier=1)
-class TopologiesCase04(TestCase):
+class TestTopologiesCase04(TestCase):
     """
     Check connectivity to VM with BOND mode 4 network
     Check virtIO, e1000 and rtl8139 drivers
     TODO: bond mode 4 requires switch side configuration disabling case until
      we have swith side support on all hosts including GE
     """
-    __test__ = False
+    __test__ = True
 
     @classmethod
     def setup_class(cls):
@@ -379,7 +366,7 @@ class TopologiesCase04(TestCase):
 
         logger.info("Update vNIC to BOND network on VM")
         if not updateNic(
-            positive=True, vm=config.VM_NAME[0], nic="nic1",
+            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
             network=config.NETWORKS[0], vnic_profile=config.NETWORKS[0]
         ):
             raise NetworkException(
@@ -390,9 +377,8 @@ class TopologiesCase04(TestCase):
         if not startVm(positive=True, vm=config.VM_NAME[0]):
             raise NetworkException("Fail to start VM %s" % config.VM_NAME[0])
 
-    @istest
     @tcms(4139, 385848)
-    def bond_network_01_virtio(self):
+    def test_bond_network_01_virtio(self):
         """
         Check connectivity to BOND mode 4 network with virtIO driver
         """
@@ -400,9 +386,8 @@ class TopologiesCase04(TestCase):
             driver=config.NIC_TYPE_VIRTIO, mode=config.BOND_MODES[4]
         )
 
-    @istest
     @tcms(4139, 386264)
-    def bond_network_02_e1000(self):
+    def test_bond_network_02_e1000(self):
         """
         Check connectivity to BOND mode 4 network with e1000 driver
         """
@@ -413,9 +398,8 @@ class TopologiesCase04(TestCase):
             driver=config.NIC_TYPE_E1000, mode=config.BOND_MODES[4]
         )
 
-    @istest
     @tcms(4139, 386265)
-    def bond_network_03_rtl8139(self):
+    def test_bond_network_03_rtl8139(self):
         """
         Check connectivity to BOND mode 4 network with rtl8139 driver
         """
@@ -433,28 +417,26 @@ class TopologiesCase04(TestCase):
         """
         logger.info("Stop VM %s", config.VM_NAME[0])
         if not stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Failed to stop VM %s" % config.VM_NAME[0])
+            logger.error("Failed to stop VM %s", config.VM_NAME[0])
 
         logger.info("Update vNIC to RHEVM network on VM")
         if not updateNic(
-            positive=True, vm=config.VM_NAME[0], nic="nic1",
-            network=config.MGMT_BRIDGE, interface="virtio",
+            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
+            network=config.MGMT_BRIDGE, interface=config.NIC_TYPE_VIRTIO,
             vnic_profile=config.MGMT_BRIDGE
         ):
-            raise NetworkException(
-                "Fail to update vNIC to RHEVM network on VM"
-            )
+            logger.error("Fail to update vNIC to RHEVM network on VM")
 
         logger.info("Remove network from setup")
         if not remove_net_from_setup(
             host=config.VDS_HOSTS[0], auto_nics=[0],
             network=[config.NETWORKS[0]]
         ):
-            raise NetworkException("Cannot remove network from setup")
+            logger.error("Cannot remove network from setup")
 
 
 @attr(tier=1)
-class TopologiesCase05(TestCase):
+class TestTopologiesCase05(TestCase):
     """
     Check connectivity to BOND mode 3 network
     This is non-VM network test, we check connectivity from host to
@@ -476,9 +458,8 @@ class TopologiesCase05(TestCase):
         if not create_and_attach_bond(config.BOND_MODES[3]):
             raise NetworkException("Cannot create and attach network")
 
-    @istest
     @tcms(4139, 385855)
-    def bond_non_vm_network(self):
+    def test_bond_non_vm_network(self):
         """
         Check connectivity to BOND mode 3 network
         """
@@ -494,11 +475,11 @@ class TopologiesCase05(TestCase):
             host=config.VDS_HOSTS[0], auto_nics=[0],
             network=[config.NETWORKS[0]]
         ):
-            raise NetworkException("Cannot remove network from setup")
+            logger.error("Cannot remove network from setup")
 
 
 @attr(tier=1)
-class TopologiesCase06(TestCase):
+class TestTopologiesCase06(TestCase):
     """
     Check connectivity to BOND mode 0 network
     This is non-VM network test, we check connectivity from host to
@@ -519,9 +500,8 @@ class TopologiesCase06(TestCase):
         if not create_and_attach_bond(config.BOND_MODES[0]):
             raise NetworkException("Cannot create and attach network")
 
-    @istest
     @tcms(4139, 385855)
-    def bond_non_vm_network(self):
+    def test_bond_non_vm_network(self):
         """
         Check connectivity to BOND mode 0 network
         """
@@ -537,11 +517,11 @@ class TopologiesCase06(TestCase):
             host=config.VDS_HOSTS[0], auto_nics=[0],
             network=[config.NETWORKS[0]]
         ):
-            raise NetworkException("Cannot remove network from setup")
+            logger.error("Cannot remove network from setup")
 
 
 @attr(tier=1)
-class TopologiesCase07(TestCase):
+class TestTopologiesCase07(TestCase):
     """
     Check connectivity to BOND mode 5 network
     This is non-VM network test, we check connectivity from host to
@@ -562,9 +542,8 @@ class TopologiesCase07(TestCase):
         if not create_and_attach_bond(config.BOND_MODES[5]):
             raise NetworkException("Cannot create and attach network")
 
-    @istest
     @tcms(4139, 385856)
-    def bond_non_vm_network(self):
+    def test_bond_non_vm_network(self):
         """
         Check connectivity to BOND mode 5 network
         """
@@ -580,11 +559,11 @@ class TopologiesCase07(TestCase):
             host=config.VDS_HOSTS[0], auto_nics=[0],
             network=[config.NETWORKS[0]]
         ):
-            raise NetworkException("Cannot remove network from setup")
+            logger.error("Cannot remove network from setup")
 
 
 @attr(tier=1)
-class TopologiesCase08(TestCase):
+class TestTopologiesCase08(TestCase):
     """
     Check connectivity to BOND mode 6 network
     This is non-VM network test, we check connectivity from host to
@@ -605,9 +584,8 @@ class TopologiesCase08(TestCase):
         if not create_and_attach_bond(config.BOND_MODES[6]):
             raise NetworkException("Cannot create and attach network")
 
-    @istest
     @tcms(4139, 385857)
-    def bond_non_vm_network(self):
+    def test_bond_non_vm_network(self):
         """
         Check connectivity to BOND mode 6 network
         """
@@ -623,4 +601,4 @@ class TopologiesCase08(TestCase):
             host=config.VDS_HOSTS[0], auto_nics=[0],
             network=[config.NETWORKS[0]]
         ):
-            raise NetworkException("Cannot remove network from setup")
+            logger.error("Cannot remove network from setup")

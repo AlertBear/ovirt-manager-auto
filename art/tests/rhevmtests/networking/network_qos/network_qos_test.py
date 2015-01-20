@@ -2,7 +2,6 @@
 
 import logging
 from rhevmtests.networking import config
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 
@@ -34,7 +33,7 @@ UPDATED_BW_PARAMS = (5, 5, 50)
 
 
 @attr(tier=1)
-class NetQOSCase01(TestCase):
+class TestNetQOSCase01(TestCase):
     """
     Add new network QOS
     """
@@ -60,9 +59,7 @@ class NetQOSCase01(TestCase):
                 outbound_average=BW_PARAMS[0], outbound_peak=BW_PARAMS[1],
                 outbound_burst=BW_PARAMS[2]
         ):
-            raise NetworkException(
-                "Couldn't create Network QOS under DC"
-            )
+            raise NetworkException("Couldn't create Network QOS under DC")
         logger.info(
             "Create VNIC profile with QoS and add it to the VNIC"
         )
@@ -98,19 +95,17 @@ class NetQOSCase01(TestCase):
         3) Remove Network QoS
         """
         logger.info(
-            "Remove VNIC from VM %s", config.VM_NAME[0]
+            "Remove VNIC %s from VM %s", config.NIC_NAME[1], config.VM_NAME[0]
         )
         if not updateNic(
-            True, config.VM_NAME[0], "nic2", plugged='false'
+            True, config.VM_NAME[0], config.NIC_NAME[1], plugged="false"
         ):
+            logger.error("Couldn't unplug NIC %s", config.NIC_NAME[1])
+
+        if not removeNic(True, config.VM_NAME[0], config.NIC_NAME[1]):
             logger.error(
-                "Couldn't unplug NIC"
-            )
-        if not removeNic(
-            True, config.VM_NAME[0], "nic2"
-        ):
-            logger.error(
-                "Couldn't remove VNIC from VM %s", config.VM_NAME[0]
+                "Couldn't remove VNIC %s from VM %s",
+                config.NIC_NAME[1], config.VM_NAME[0]
             )
 
         logger.info(
@@ -123,9 +118,7 @@ class NetQOSCase01(TestCase):
             logger.error(
                 "Couldn't remove VNIC profile %s", config.VNIC_PROFILE[0]
             )
-        if not delete_qos_from_datacenter(
-            config.DC_NAME[0], QOS_NAME[0]
-        ):
+        if not delete_qos_from_datacenter(config.DC_NAME[0], QOS_NAME[0]):
             logger.error(
                 "Couldn't delete the QoS %s from DC %s",
                 QOS_NAME[0], config.DC_NAME[0]
@@ -133,7 +126,7 @@ class NetQOSCase01(TestCase):
 
 
 @attr(tier=1)
-class NetQOSCase02(TestCase):
+class TestNetQOSCase02(TestCase):
     """
     Update Network QoS
     """
@@ -179,7 +172,6 @@ class NetQOSCase02(TestCase):
                 "Couldn't add VNIC with QoS to VM %s" % config.VM_NAME[1]
             )
 
-    @istest
     @tcms(10090, 293066)
     def test_update_network_qos(self):
         """
@@ -204,9 +196,7 @@ class NetQOSCase02(TestCase):
             outbound_peak=UPDATED_BW_PARAMS[1],
             outbound_burst=UPDATED_BW_PARAMS[2]
         ):
-            raise NetworkException(
-                "Couldn't update Network QOS under DC"
-            )
+            raise NetworkException("Couldn't update Network QOS under DC")
 
         inbound_dict = {"average": UPDATED_BW_PARAMS[0],
                         "peak": UPDATED_BW_PARAMS[1],
@@ -307,15 +297,10 @@ class NetQOSCase02(TestCase):
                 logger.error(
                     "Couldn't remove VNIC from VM %s", config.VM_NAME[i]
                 )
-        logger.info(
-            "Remove the QoS 'newQoS from DC"
-        )
-        if not delete_qos_from_datacenter(
-            config.DC_NAME[0], "newQoS"
-        ):
+        logger.info("Remove the QoS newQoS from DC")
+        if not delete_qos_from_datacenter(config.DC_NAME[0], "newQoS"):
             logger.error(
-                "Couldn't delete the QoS 'newQoS from DC %s",
-                config.DC_NAME[0]
+                "Couldn't delete the QoS 'newQoS from DC %s", config.DC_NAME[0]
             )
         logger.info(
             "Remove VNIC profile %s", config.VNIC_PROFILE[0]
@@ -330,7 +315,7 @@ class NetQOSCase02(TestCase):
 
 
 @attr(tier=1)
-class NetQOSCase03(TestCase):
+class TestNetQOSCase03(TestCase):
     """
     Remove Network QoS
     """
@@ -374,7 +359,6 @@ class NetQOSCase03(TestCase):
                 (QOS_NAME[0], config.VM_NAME[1])
             )
 
-    @istest
     @tcms(10090, 293068)
     def test_remove_network_qos(self):
         """
@@ -424,13 +408,15 @@ class NetQOSCase03(TestCase):
 
         logger.info("Unplug and plug NIC on %s", config.VM_NAME[0])
         if not updateNic(
-            True, config.VM_NAME[0], "nic2", plugged='false'
+            True, config.VM_NAME[0], config.NIC_NAME[1], plugged="false"
         ):
-            raise NetworkException("Couldn't unplug NIC")
+            raise NetworkException(
+                "Couldn't unplug NIC %s" % config.NIC_NAME[1]
+            )
         if not updateNic(
-            True, config.VM_NAME[0], "nic2", plugged='true'
+            True, config.VM_NAME[0], config.NIC_NAME[1], plugged="true"
         ):
-            raise NetworkException("Couldn't plug NIC")
+            raise NetworkException("Couldn't plug NIC %s" % config.NIC_NAME[1])
 
         logger.info(
             "Check that libvirt Network QoS values were updated to be "
@@ -466,16 +452,18 @@ class NetQOSCase03(TestCase):
         )
         for i in range(2):
             if not updateNic(
-                True, config.VM_NAME[i], "nic2", plugged='false'
+                True, config.VM_NAME[i], config.NIC_NAME[1], plugged="false"
             ):
                 logger.error(
-                    "Couldn't unplug NIC on VM %s", config.VM_NAME[i]
+                    "Couldn't unplug NIC %s on VM %s",
+                    config.NIC_NAME[1], config.VM_NAME[i]
                 )
             if not removeNic(
-                True, config.VM_NAME[i], "nic2"
+                True, config.VM_NAME[i], config.NIC_NAME[1]
             ):
                 logger.error(
-                    "Couldn't remove VNIC from VM %s", config.VM_NAME[i]
+                    "Couldn't remove VNIC %s from VM %s",
+                    config.NIC_NAME[1], config.VM_NAME[i]
                 )
 
         logger.info(
@@ -486,12 +474,12 @@ class NetQOSCase03(TestCase):
             network=config.MGMT_BRIDGE, data_center=config.DC_NAME[0]
         ):
             logger.error(
-                "Couldn't remove VNIC profile %s" % config.VNIC_PROFILE[0]
+                "Couldn't remove VNIC profile %s", config.VNIC_PROFILE[0]
             )
 
 
 @attr(tier=1)
-class NetQOSCase04(TestCase):
+class TestNetQOSCase04(TestCase):
     """
     Network QoSs, configured on several VNIC profiles
     """
@@ -575,7 +563,7 @@ class NetQOSCase04(TestCase):
 
         dict_compare = build_dict(
             inbound_dict=inbound_dict, outbound_dict=outbound_dict,
-            vm=config.VM_NAME[0], nic="nic3"
+            vm=config.VM_NAME[0], nic=config.NIC_NAME[2]
         )
 
         logger.info(
@@ -624,23 +612,19 @@ class NetQOSCase04(TestCase):
         3) Remove Network QoS
         """
         logger.info("Remove VNIC from VM %s", config.VM_NAME[0])
-        for nic in ("nic2", "nic3"):
+        for nic in (config.NIC_NAME[1], config.NIC_NAME[2]):
             if not updateNic(
-                True, config.VM_NAME[0], nic, plugged='false'
+                True, config.VM_NAME[0], nic, plugged="false"
             ):
                 logger.error(
-                    "Couldn't unplug NIC from %s", config.VM_NAME[0]
+                    "Couldn't unplug NIC %s from %s", nic, config.VM_NAME[0]
                 )
-            if not removeNic(
-                True, config.VM_NAME[0], nic
-            ):
+            if not removeNic(True, config.VM_NAME[0], nic):
                 logger.error(
-                    "Couldn't remove VNIC from VM %s", config.VM_NAME[0]
+                    "Couldn't remove NIC %s from VM %s", nic, config.VM_NAME[0]
                 )
 
-        logger.info(
-            "Remove VNIC profiles %s", config.VNIC_PROFILE[:2]
-        )
+        logger.info("Remove VNIC profiles %s", config.VNIC_PROFILE[:2])
         for vnic_profile in (config.VNIC_PROFILE[:2]):
             if not removeVnicProfile(
                 positive=True, vnic_profile_name=vnic_profile,
@@ -661,7 +645,7 @@ class NetQOSCase04(TestCase):
 
 
 @attr(tier=1)
-class NetQOSCase05(TestCase):
+class TestNetQOSCase05(TestCase):
     """
     Migrate VM with network QOS on its NIC
     """
@@ -708,7 +692,7 @@ class NetQOSCase05(TestCase):
 
         dict_compare = build_dict(
             inbound_dict=inbound_dict, outbound_dict=outbound_dict,
-            vm=config.VM_NAME[0], nic="nic2"
+            vm=config.VM_NAME[0], nic=config.NIC_NAME[1]
         )
 
         logger.info(
@@ -751,16 +735,18 @@ class NetQOSCase05(TestCase):
         """
         logger.info("Remove VNIC from VM %s", config.VM_NAME[0])
         if not updateNic(
-            True, config.VM_NAME[0], "nic2", plugged='false'
+            True, config.VM_NAME[0], config.NIC_NAME[1], plugged="false"
         ):
             logger.error(
-                "Couldn't unplug NIC from %s", config.VM_NAME[0]
+                "Couldn't unplug NIC %s from %s", config.NIC_NAME[1],
+                config.VM_NAME[0]
             )
         if not removeNic(
-            True, config.VM_NAME[0], "nic2"
+            True, config.VM_NAME[0], config.NIC_NAME[1]
         ):
             logger.error(
-                "Couldn't remove VNIC from VM %s", config.VM_NAME[0]
+                "Couldn't remove VNIC %s from VM %s", config.NIC_NAME[1],
+                config.VM_NAME[0]
             )
 
         logger.info(

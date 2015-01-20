@@ -5,12 +5,12 @@ multiple_queue_nics job
 import logging
 from art.rhevm_api.tests_lib.low_level.vms import stopVm
 from art.rhevm_api.utils.test_utils import set_engine_properties
-from rhevmtests.networking import config
+from rhevmtests.networking import config, network_cleanup
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.high_level.networks import prepareSetup
 
-logger = logging.getLogger("multiple_queue_nics_init")
+logger = logging.getLogger("Multiple_Queues_Nics_Init")
 
 # ################################################
 
@@ -29,6 +29,7 @@ def setup_package():
 
     if config.GOLDEN_ENV:
         logger.info("Running on GE. No need for further setup")
+        network_cleanup()
 
     else:
         if not prepareSetup(
@@ -55,8 +56,9 @@ def teardown_package():
     logger.info("Removing queues support from engine for 3.5 version")
     param = ["CustomDeviceProperties=''", "'--cver=3.5'"]
     if not set_engine_properties(engine_obj=config.ENGINE, param=param):
-        raise NetworkException("Failed to remove queues support via "
-                               "engine-config")
+        logger.error(
+            "Failed to remove queues support via engine-config"
+        )
     if config.GOLDEN_ENV:
         logger.info("Running on GE. No need for teardown")
 
@@ -65,4 +67,4 @@ def teardown_package():
             positive=True, datacenter=config.DC_NAME[0],
             vdc=config.VDC_HOST, vdc_password=config.VDC_ROOT_PASSWORD
         ):
-            raise NetworkException("Cannot remove setup")
+            logger.error("Cannot remove setup")

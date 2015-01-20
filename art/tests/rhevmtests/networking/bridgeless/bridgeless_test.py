@@ -5,7 +5,6 @@ Bridgeless (Non-VM) Network will be tested for untagged, tagged,
 bond scenarios.
 """
 
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 import logging
@@ -15,7 +14,7 @@ from art.rhevm_api.tests_lib.high_level.networks import(
     createAndAttachNetworkSN, remove_net_from_setup
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("Bridgeless_Networks_Cases")
 
 
 ########################################################################
@@ -26,14 +25,13 @@ logger = logging.getLogger(__name__)
 
 
 @attr(tier=1)
-class BridgelessCase1(TestCase):
+class TestBridgelessCase1(TestCase):
     """
     Create and attach Non-VM network
     """
     __test__ = True
 
-    @istest
-    def bridgeless_network(self):
+    def test_bridgeless_network(self):
         """
         Create and attach Non-VM network
         """
@@ -46,13 +44,16 @@ class BridgelessCase1(TestCase):
         }
 
         logger.info(
-            "Create and attach Non-VM network to DC/Cluster and Host"
+            "Create and attach Non-VM network %s to DC/Cluster and Host",
+            config.NETWORKS[0]
         )
         if not createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0],
         ):
-            raise NetworkException("Cannot create and attach network")
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.NETWORKS[0]
+            )
 
     @classmethod
     def teardown_class(cls):
@@ -64,18 +65,19 @@ class BridgelessCase1(TestCase):
                 host=config.VDS_HOSTS[0], data_center=config.DC_NAME[0],
                 auto_nics=[0], network=[config.NETWORKS[0]],
         ):
-            logger.error("Cannot remove network from setup")
+            logger.error(
+                "Cannot remove network %s from setup", config.NETWORKS[0]
+            )
 
 
 @attr(tier=1)
-class BridgelessCase2(TestCase):
+class TestBridgelessCase2(TestCase):
     """
     Create and attach Non-VM with VLAN network
     """
     __test__ = True
 
-    @istest
-    def vlan_bridgeless_network(self):
+    def test_vlan_bridgeless_network(self):
         """
         Create and attach Non-VM with VLAN network
         """
@@ -89,14 +91,17 @@ class BridgelessCase2(TestCase):
         }
 
         logger.info(
-            "Create and attach Non-VM VLAN network to DC/Cluster and Host"
+            "Create and attach Non-VM VLAN network %s to DC/Cluster and Host",
+            config.VLAN_NETWORKS[0]
         )
         if not createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict,
             auto_nics=[0, 1],
         ):
-            raise NetworkException("Cannot create and attach network")
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
+            )
 
     @classmethod
     def teardown_class(cls):
@@ -108,18 +113,19 @@ class BridgelessCase2(TestCase):
             host=config.VDS_HOSTS[0], data_center=config.DC_NAME[0],
             auto_nics=[0], network=[config.VLAN_NETWORKS[0]],
         ):
-            raise NetworkException("Cannot remove network from setup")
+            logger.error(
+                "Cannot remove network %s from setup", config.VLAN_NETWORKS[0]
+            )
 
 
 @attr(tier=1)
-class BridgelessCase3(TestCase):
+class TestBridgelessCase3(TestCase):
     """
     Create and attach Non-VM network with VLAN over BOND
     """
     __test__ = True
 
-    @istest
-    def bond_bridgeless_network(self):
+    def test_bond_bridgeless_network(self):
         """
         Create and attach Non-VM network with VLAN over BOND
         """
@@ -136,13 +142,17 @@ class BridgelessCase3(TestCase):
             },
         }
 
-        logger.info("Create and attach Non-VM network with VLAN "
-                    "over BOND to DC/Cluster and Host")
+        logger.info(
+            "Create and attach Non-VM network with VLAN %s over BOND to "
+            "DC/Cluster and Host", config.VLAN_NETWORKS[0]
+        )
         if not createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0],
         ):
-            raise NetworkException("Cannot create and attach network")
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
+            )
 
     @classmethod
     def teardown_class(cls):
@@ -154,18 +164,19 @@ class BridgelessCase3(TestCase):
             host=config.VDS_HOSTS[0], data_center=config.DC_NAME[0],
             auto_nics=[0], network=[config.VLAN_NETWORKS[0]]
         ):
-            raise NetworkException("Cannot remove network from setup")
+            logger.error(
+                "Cannot remove network %s from setup", config.VLAN_NETWORKS[0]
+            )
 
 
 @attr(tier=1)
-class BridgelessCase4(TestCase):
+class TestBridgelessCase4(TestCase):
     """
     Create and attach Non-VM network over BOND
     """
     __test__ = True
 
-    @istest
-    def bond_bridgeless_network(self):
+    def test_bond_bridgeless_network(self):
         """
         Create and attach bridgeless network over BOND
         """
@@ -179,13 +190,16 @@ class BridgelessCase4(TestCase):
         }
 
         logger.info(
-            "Create and attach Non-VM network over BOND to DC/Cluster and Host"
+            "Create and attach Non-VM network %s over BOND to DC/Cluster and "
+            "Host", config.NETWORKS[0]
         )
         if not createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0],
         ):
-            raise NetworkException("Cannot create and attach network")
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.NETWORKS[0]
+            )
 
     @classmethod
     def teardown_class(cls):
@@ -197,4 +211,6 @@ class BridgelessCase4(TestCase):
             host=config.VDS_HOSTS[0], data_center=config.DC_NAME[0],
             auto_nics=[0], network=[config.NETWORKS[0]],
         ):
-            raise NetworkException("Cannot remove network from setup")
+            logger.error(
+                "Cannot remove network %s from setup", config.NETWORKS[0]
+            )

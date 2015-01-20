@@ -10,7 +10,7 @@ from art.rhevm_api.tests_lib.low_level.vms import stopVm
 from art.test_handler.exceptions import NetworkException
 
 
-logger = logging.getLogger("Topologies_init")
+logger = logging.getLogger("Topologies_Init")
 
 #################################################
 
@@ -20,8 +20,8 @@ def setup_package():
     Prepare environment
     """
     if config.GOLDEN_ENV:
-        logger.info("Running on GE. Calling network_cleanup()")
         network_cleanup()
+        logger.info("Running on GE. No setup")
 
     else:
         logger.info("Creating data center, cluster, adding host and storage")
@@ -52,11 +52,10 @@ def teardown_package():
     Cleans the environment
     """
     if config.GOLDEN_ENV:
-        logger.info("Running on GE. Calling network_cleanup()")
-        network_cleanup()
+        logger.info("Running on GE. No teardown")
 
     else:
         if not cleanDataCenter(positive=True, datacenter=config.DC_NAME[0],
                                vdc=config.VDC_HOST,
                                vdc_password=config.VDC_ROOT_PASSWORD):
-            raise NetworkException("Cannot remove setup")
+            logger.error("Cannot remove setup")

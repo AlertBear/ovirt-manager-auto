@@ -3,9 +3,6 @@ multiple_queue_nics
 """
 
 import logging
-
-from nose.tools import istest
-
 from art.rhevm_api.tests_lib.high_level.vms import start_vm_on_specific_host
 from art.rhevm_api.tests_lib.low_level.hosts import(
     get_host_ip_from_engine, get_host_name_from_engine
@@ -29,14 +26,14 @@ from rhevmtests.networking.multiple_queue_nics.helper import(
 )
 
 
-logger = logging.getLogger("multiple_queue_nics_cases")
+logger = logging.getLogger("Multiple_Queues_Nics_Cases")
 HOST_NAME0 = None  # Fill in setup_module
 HOST_NAME1 = None  # Fill in setup_module
 
 
 def setup_module():
     """
-    Get host name from engine
+    Get host names from engine
     """
     global HOST_NAME0
     global HOST_NAME1
@@ -44,7 +41,7 @@ def setup_module():
     HOST_NAME1 = get_host_name_from_engine(config.VDS_HOSTS[1].ip)
 
 
-class MultipleQueueNicsTearDown(TestCase):
+class TestMultipleQueueNicsTearDown(TestCase):
     """
     Teardown class for MultipleQueueNics
     """
@@ -72,7 +69,7 @@ class MultipleQueueNicsTearDown(TestCase):
 
 
 @attr(tier=1)
-class MultipleQueueNics01(MultipleQueueNicsTearDown):
+class TestMultipleQueueNics01(TestMultipleQueueNicsTearDown):
     """
     Config queue on existing network
     """
@@ -100,9 +97,8 @@ class MultipleQueueNics01(MultipleQueueNicsTearDown):
         if not startVm(positive=True, vm=config.VM_NAME[0], wait_for_ip=True):
             raise NetworkException("Failed to start %s" % config.VM_NAME[0])
 
-    @istest
     @tcms(14895, 398707)
-    def multiple_queue_nics(self):
+    def test_multiple_queue_nics(self):
         """
         Check that queue exist in qemu process, vdsm.log and engine.log
         """
@@ -120,7 +116,7 @@ class MultipleQueueNics01(MultipleQueueNicsTearDown):
 
 
 @attr(tier=1)
-class MultipleQueueNics02(MultipleQueueNicsTearDown):
+class TestMultipleQueueNics02(TestMultipleQueueNicsTearDown):
     """
     1) Verify that number of queues is not updated on running VM
     2) Verify that number of queues is updated on new VM boot
@@ -160,9 +156,8 @@ class MultipleQueueNics02(MultipleQueueNicsTearDown):
                 "qemu did not return the expected number of queues"
             )
 
-    @istest
     @tcms(14895, 398856)
-    def multiple_queue_nics_update(self):
+    def test_multiple_queue_nics_update(self):
         """
         Make sure that number of queues does not change on running VM
         stop VM
@@ -216,7 +211,7 @@ class MultipleQueueNics02(MultipleQueueNicsTearDown):
 
 
 @attr(tier=1)
-class MultipleQueueNics03(MultipleQueueNicsTearDown):
+class TestMultipleQueueNics03(TestMultipleQueueNicsTearDown):
     """
     Check that queue survive VM hibernate
     """
@@ -255,9 +250,8 @@ class MultipleQueueNics03(MultipleQueueNicsTearDown):
                 "qemu did not return the expected number of queues"
             )
 
-    @istest
     @tcms(14895, 398859)
-    def multiple_queue_nics(self):
+    def test_multiple_queue_nics(self):
         """
         hibernate the VM and check the queue still configured on qemu
         """
@@ -283,7 +277,7 @@ class MultipleQueueNics03(MultipleQueueNicsTearDown):
 
 
 @attr(tier=1)
-class MultipleQueueNics04(MultipleQueueNicsTearDown):
+class TestMultipleQueueNics04(TestMultipleQueueNicsTearDown):
     """
     Check queue exists for VM from template
     """
@@ -364,9 +358,8 @@ class MultipleQueueNics04(MultipleQueueNicsTearDown):
                 "Failed to start %s", config.VM_FROM_TEMPLATE
             )
 
-    @istest
     @tcms(14895, 399253)
-    def multiple_queue_nics(self):
+    def test_multiple_queue_nics(self):
         """
         Check that queue exist on VM from template
         """
@@ -400,11 +393,11 @@ class MultipleQueueNics04(MultipleQueueNicsTearDown):
         if not removeTemplate(positive=True, template="queues_template"):
             logger.error("Failed to remove queues_template")
 
-        super(MultipleQueueNics04, cls).teardown_class()
+        super(TestMultipleQueueNics04, cls).teardown_class()
 
 
 @attr(tier=1)
-class MultipleQueueNics05(MultipleQueueNicsTearDown):
+class TestMultipleQueueNics05(TestMultipleQueueNicsTearDown):
     """
     Check that queues survive VM migration
     """
@@ -452,9 +445,8 @@ class MultipleQueueNics05(MultipleQueueNicsTearDown):
             raise NetworkException("Failed to migrate %s from %s to %s" %
                                    (config.VM_NAME[0], HOST_NAME0, HOST_NAME1))
 
-    @istest
     @tcms(14895, 398857)
-    def multiple_queue_nics(self):
+    def test_multiple_queue_nics(self):
         """
         Check number of queues after VM migration
         """

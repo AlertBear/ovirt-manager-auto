@@ -9,9 +9,9 @@ from art.rhevm_api.utils.test_utils import(
     set_engine_properties, get_engine_properties
 )
 from art.test_handler.exceptions import NetworkException
-from rhevmtests.networking import config
+from rhevmtests.networking import config, network_cleanup
 
-logger = logging.getLogger("BigRangeMacPool_init")
+logger = logging.getLogger("BigRangeMacPool_Init")
 
 ENGINE_DEFAULT_MAC_RANGE = []
 
@@ -22,6 +22,7 @@ def setup_package():
     """
     if config.GOLDEN_ENV:
         logger.info("Running on golden env")
+        network_cleanup()
         logger.info("Get engine default MAC pool range")
         engine_default_mac_range = get_engine_properties(
             config.ENGINE, [config.MAC_POOL_RANGE_CMD]
@@ -53,7 +54,7 @@ def teardown_package():
             [config.MAC_POOL_RANGE_CMD, ENGINE_DEFAULT_MAC_RANGE[0]]
         )
         if not set_engine_properties(config.ENGINE_HOST, [cmd]):
-            raise NetworkException(
+            logger.error(
                 "Failed to set MAC: %s", ENGINE_DEFAULT_MAC_RANGE[0]
             )
 
@@ -63,4 +64,4 @@ def teardown_package():
                 positive=True, datacenter=config.DC_NAME[0],
                 vdc=config.VDC_HOST, vdc_password=config.VDC_ROOT_PASSWORD
         ):
-            raise NetworkException("Cannot remove setup")
+            logger.error("Cannot remove setup")

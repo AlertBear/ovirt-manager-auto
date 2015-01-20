@@ -12,7 +12,7 @@ from art.test_handler.exceptions import NetworkException
 import libvirt
 from rhevmtests.networking import config
 
-logger = logging.getLogger("ArbitraryVlanDeviceName_helper")
+logger = logging.getLogger("ArbitraryVlanDeviceName_Helper")
 
 LIBVIRTD_CONF = "/etc/libvirt/libvirtd.conf"
 SASL_OFF = "none"

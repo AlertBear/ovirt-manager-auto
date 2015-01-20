@@ -6,15 +6,19 @@ Network Labels feature will be tested for untagged, tagged,
 bond scenarios and for VM and non-VM networks
 """
 from art.rhevm_api.tests_lib.high_level.hosts import deactivate_host_if_up
+from art.test_handler.plmanagement.plugins.bz_plugin import bz
 from art.unittest_lib import attr
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import TimeoutingSampler
-from art.rhevm_api.tests_lib.low_level.clusters import addCluster, \
-    removeCluster
-from art.rhevm_api.tests_lib.low_level.datacenters import addDataCenter, \
-    removeDataCenter
-from art.rhevm_api.tests_lib.low_level.hosts import sendSNRequest, activateHost, \
-    updateHost, deactivateHost, getHostNic
+from art.rhevm_api.tests_lib.low_level.clusters import(
+    addCluster, removeCluster
+)
+from art.rhevm_api.tests_lib.low_level.datacenters import(
+    addDataCenter, removeDataCenter
+)
+from art.rhevm_api.tests_lib.low_level.hosts import(
+    sendSNRequest, activateHost, updateHost, deactivateHost, getHostNic
+)
 from art.unittest_lib.network import vlan_int_name
 
 from rhevmtests.networking import config
@@ -24,13 +28,16 @@ from art.unittest_lib import NetworkTest as TestCase
 from art.test_handler.exceptions import NetworkException
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 
-from art.rhevm_api.tests_lib.high_level.networks import \
+from art.rhevm_api.tests_lib.high_level.networks import(
     createAndAttachNetworkSN, remove_net_from_setup
-from art.rhevm_api.tests_lib.low_level.networks import add_label,\
-    check_network_on_nic, remove_label, get_label_objects, getClusterNetwork, \
-    removeNetworkFromCluster, addNetworkToCluster, removeNetwork, findNetwork
+)
+from art.rhevm_api.tests_lib.low_level.networks import(
+    add_label, check_network_on_nic, remove_label, get_label_objects,
+    getClusterNetwork, removeNetworkFromCluster, addNetworkToCluster,
+    removeNetwork, findNetwork
+)
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("Network_Labels_Cases")
 
 HOST0_NICS = None  # filled in setup module
 HOST1_NICS = None  # filled in setup module
@@ -56,7 +63,7 @@ def setup_module():
     VLAN_BOND = vlan_int_name(config.BOND[0], config.VLAN_ID[0])
 
 
-class LabelTestCaseBase(TestCase):
+class TestLabelTestCaseBase(TestCase):
     """
     base class which provides  teardown class method for each test case
     """
@@ -67,19 +74,22 @@ class LabelTestCaseBase(TestCase):
         Remove networks from the setup.
         """
         logger.info("Starting teardown")
-        if not remove_label(host_nic_dict={config.HOSTS[0]: HOST0_NICS,
-                                           config.HOSTS[1]: HOST1_NICS}):
-            raise NetworkException("Couldn't remove labels from Hosts ")
+        if not remove_label(
+            host_nic_dict={config.HOSTS[0]: HOST0_NICS,
+                           config.HOSTS[1]: HOST1_NICS}
+        ):
+            logger.error("Couldn't remove labels from Hosts ")
 
-        if not remove_net_from_setup(host=config.VDS_HOSTS[:2], auto_nics=[0],
-                                     data_center=config.DC_NAME[0],
-                                     mgmt_network=config.MGMT_BRIDGE,
-                                     all_net=True):
-            raise NetworkException("Cannot remove network from setup")
+        if not remove_net_from_setup(
+            host=config.VDS_HOSTS[:2], auto_nics=[0],
+            data_center=config.DC_NAME[0], mgmt_network=config.MGMT_BRIDGE,
+            all_net=True
+        ):
+            logger.error("Cannot remove networks from setup")
 
 
 @attr(tier=1)
-class NetLabels01(LabelTestCaseBase):
+class NetLabels01(TestLabelTestCaseBase):
     """
     Check network label limitation:
 
@@ -158,7 +168,7 @@ class NetLabels01(LabelTestCaseBase):
 
 
 @attr(tier=1)
-class NetLabels02(LabelTestCaseBase):
+class NetLabels02(TestLabelTestCaseBase):
     """
     Check that the label cannot be attached to the Bond when it is used by
     another Host NIC
@@ -261,12 +271,12 @@ class NetLabels02(LabelTestCaseBase):
         """
         logger.info("Removing label from bond")
         if not remove_label(host_nic_dict={config.HOSTS[0]: [config.BOND[0]]}):
-            raise NetworkException("Couldn't remove labels from Bond ")
+            logger.error("Couldn't remove labels from Bond ")
         super(NetLabels02, cls).teardown_class()
 
 
 @attr(tier=1)
-class NetLabels03(LabelTestCaseBase):
+class NetLabels03(TestLabelTestCaseBase):
     """
     1) Put label on Host NIC of one Host
     2) Put label on bond of the second Host
@@ -350,12 +360,12 @@ class NetLabels03(LabelTestCaseBase):
         """
         logger.info("Removing label from bond")
         if not remove_label(host_nic_dict={config.HOSTS[1]: [config.BOND[0]]}):
-            raise NetworkException("Couldn't remove labels from Bond ")
+            logger.error("Couldn't remove labels from Bond ")
         super(NetLabels03, cls).teardown_class()
 
 
 @attr(tier=1)
-class NetLabels04(LabelTestCaseBase):
+class NetLabels04(TestLabelTestCaseBase):
     """
     1) Create bridgeless network on DC/Cluster
     2) Create VLAN network on DC/Cluster
@@ -459,12 +469,12 @@ class NetLabels04(LabelTestCaseBase):
         """
         logger.info("Removing label from bond")
         if not remove_label(host_nic_dict={config.HOSTS[1]: [config.BOND[0]]}):
-            raise NetworkException("Couldn't remove labels from Bond ")
+            logger.error("Couldn't remove labels from Bond ")
         super(NetLabels04, cls).teardown_class()
 
 
 @attr(tier=1)
-class NetLabels05(LabelTestCaseBase):
+class NetLabels05(TestLabelTestCaseBase):
     """
     Check that you can remove network from Host NIC on 2 Hosts by un-labeling
     that Network
@@ -542,7 +552,7 @@ class NetLabels05(LabelTestCaseBase):
 
 
 @attr(tier=1)
-class NetLabels06(LabelTestCaseBase):
+class NetLabels06(TestLabelTestCaseBase):
     """
     Check that you can break bond which has network attached to it by
     Un-Labeling
@@ -642,7 +652,7 @@ class NetLabels06(LabelTestCaseBase):
 
 
 @attr(tier=1)
-class NetLabels07(LabelTestCaseBase):
+class NetLabels07(TestLabelTestCaseBase):
     """
     1) Negative case: Try to remove labeled network NET1 from labeled
     interface on the first NIC by setupNetworks
@@ -762,7 +772,7 @@ class NetLabels07(LabelTestCaseBase):
 
 
 @attr(tier=1)
-class NetLabels08(LabelTestCaseBase):
+class NetLabels08(TestLabelTestCaseBase):
     """
     Check that the labeled network created in the DC level only will not be
     attached to the labeled Host NIC
@@ -818,7 +828,7 @@ class NetLabels08(LabelTestCaseBase):
 
 
 @attr(tier=1)
-class NetLabels09(LabelTestCaseBase):
+class NetLabels09(TestLabelTestCaseBase):
     """
     Create bond from labeled interfaces when those labels are attached to
     the VLAN networks appropriately
@@ -951,12 +961,12 @@ class NetLabels09(LabelTestCaseBase):
         """
         logger.info("Removing label from bond")
         if not remove_label(host_nic_dict={config.HOSTS[0]: [config.BOND[0]]}):
-            raise NetworkException("Couldn't remove labels from Bond ")
+            logger.error("Couldn't remove labels from Bond ")
         super(NetLabels09, cls).teardown_class()
 
 
 @attr(tier=1)
-class NetLabels10(LabelTestCaseBase):
+class NetLabels10(TestLabelTestCaseBase):
     """
     Create bond from labeled interfaces when those labels are attached to
     the VM non-VLAN  network and VLAN network appropriately and fail
@@ -1081,12 +1091,12 @@ class NetLabels10(LabelTestCaseBase):
         """
         logger.info("Removing label from bond")
         if not remove_label(host_nic_dict={config.HOSTS[0]: [config.BOND[0]]}):
-            raise NetworkException("Couldn't remove labels from Bond ")
+            logger.error("Couldn't remove labels from Bond ")
         super(NetLabels10, cls).teardown_class()
 
 
 @attr(tier=1)
-class NetLabels11(LabelTestCaseBase):
+class NetLabels11(TestLabelTestCaseBase):
     """
     Create bond from labeled interfaces when those labels are attached to
     the VM non-VLAN  network and non-VM network appropriately and fail
@@ -1209,12 +1219,12 @@ class NetLabels11(LabelTestCaseBase):
         """
         logger.info("Removing label from bond")
         if not remove_label(host_nic_dict={config.HOSTS[0]: [config.BOND[0]]}):
-            raise NetworkException("Couldn't remove labels from Bond ")
+            logger.error("Couldn't remove labels from Bond ")
         super(NetLabels11, cls).teardown_class()
 
 
 @attr(tier=1)
-class NetLabels12(LabelTestCaseBase):
+class NetLabels12(TestLabelTestCaseBase):
     """
     Create bond from labeled interfaces when those labels are attached to
     the non-VM and VLAN networks appropriately
@@ -1339,12 +1349,12 @@ class NetLabels12(LabelTestCaseBase):
         """
         logger.info("Removing label from bond")
         if not remove_label(host_nic_dict={config.HOSTS[0]: [config.BOND[0]]}):
-            raise NetworkException("Couldn't remove labels from Bond ")
+            logger.error("Couldn't remove labels from Bond ")
         super(NetLabels12, cls).teardown_class()
 
 
 @attr(tier=1)
-class NetLabels13(LabelTestCaseBase):
+class NetLabels13(TestLabelTestCaseBase):
     """
     1)Check that when a labeled network is detached from a cluster,
     the network will be removed from any labeled interface within that cluster.
@@ -1480,7 +1490,7 @@ class NetLabels13(LabelTestCaseBase):
 
 
 @attr(tier=1)
-class NetLabels14(LabelTestCaseBase):
+class NetLabels14(TestLabelTestCaseBase):
     """
     1)Check that after moving a Host with labeled interface from one DC to
     another, the network label feature is functioning as usual
@@ -1544,6 +1554,7 @@ class NetLabels14(LabelTestCaseBase):
             raise NetworkException("Couldn't add a DC and Cluster of %s "
                                    "version to the setup" % config.VERSION[0])
 
+    @bz({"1184454": {'engine': ['rest', 'sdk', 'java'], 'version': ['3.5']}})
     @tcms(12040, 332959)
     def test_move_host_supported_dc_cl(self):
         """
@@ -1608,6 +1619,7 @@ class NetLabels14(LabelTestCaseBase):
         logger.info("Activate Host")
         assert (activateHost(True, host=config.HOSTS[0]))
 
+    @bz({"1184454": {'engine': ['rest', 'sdk', 'java'], 'version': ['3.5']}})
     @tcms(12040, 337364)
     def test_move_host_unsupported_dc_cl(self):
         """
@@ -1647,14 +1659,14 @@ class NetLabels14(LabelTestCaseBase):
         for dc, cl in ((cls.dc_name2, cls.cl_name2),
                        (cls.uncomp_dc, cls.uncomp_cl)):
             if not removeDataCenter(positive=True, datacenter=dc):
-                logger.error("Failed to remove datacenter %s" % dc)
+                logger.error("Failed to remove datacenter %s", dc)
             if not removeCluster(positive=True, cluster=cl):
-                logger.error("Failed to remove cluster %s " % cl)
+                logger.error("Failed to remove cluster %s ", cl)
         super(NetLabels14, cls).teardown_class()
 
 
 @attr(tier=1)
-class NetLabels15(LabelTestCaseBase):
+class NetLabels15(TestLabelTestCaseBase):
     """
     Check that after moving a Host with labeled interface between all the
     Cluster versions for the 3.1 DC, the network label feature is functioning
@@ -1714,6 +1726,7 @@ class NetLabels15(LabelTestCaseBase):
                                        "%s" % (config.NETWORKS[index],
                                                cluster))
 
+    @bz({"1184454": {'engine': ['rest', 'sdk', 'java'], 'version': ['3.5']}})
     @tcms(12040, 332896)
     def test_move_host_supported_cl(self):
         """
@@ -1776,31 +1789,35 @@ class NetLabels15(LabelTestCaseBase):
         2) Remove DC in 3.1 with all its Clusters from the setup.
         3) Call super to remove all labels and networks from setup
         """
-        logger.info("Deactivate host, move it to the original Cluster %s and "
-                    "reactivate it", config.CLUSTER_NAME[0])
+        logger.info(
+            "Deactivate host, move it to the original Cluster %s and "
+            "reactivate it", config.CLUSTER_NAME[0]
+        )
         logger.info("Deactivate Host %s", config.HOSTS[0])
-        assert (deactivate_host_if_up(config.HOSTS[0]))
+        if not deactivate_host_if_up(config.HOSTS[0]):
+            logger.error("Couldn't deactivate Host %s", config.HOSTS[0])
 
         logger.info("Attach host to original DC/Cluster")
-        if not updateHost(True, host=config.HOSTS[0],
-                          cluster=config.CLUSTER_NAME[0]):
-            raise NetworkException("Cannot move host to original Cluster")
+        if not updateHost(
+            True, host=config.HOSTS[0], cluster=config.CLUSTER_NAME[0]
+        ):
+            logger.error("Cannot move host to original Cluster")
 
         logger.info("Activate Host")
-        assert (activateHost(True, host=config.HOSTS[0]))
+        if not activateHost(True, host=config.HOSTS[0]):
+            logger.error("Couldn't activate host %s", config.HOSTS[0])
 
-        logger.info("Removing the DC %s with all its Clusters",
-                    cls.dc_name2)
+        logger.info("Removing the DC %s with all its Clusters", cls.dc_name2)
         for cl in cls.comp_cl_name:
             if not removeCluster(positive=True, cluster=cl):
-                logger.error("Failed to remove cluster %s " % cl)
+                logger.error("Failed to remove cluster %s", cl)
         if not removeDataCenter(positive=True, datacenter=cls.dc_name2):
-            logger.error("Failed to remove datacenter %s" % cls.dc_name2)
+            logger.error("Failed to remove datacenter %s", cls.dc_name2)
         super(NetLabels15, cls).teardown_class()
 
 
 @attr(tier=1)
-class NetLabels16(LabelTestCaseBase):
+class NetLabels16(TestLabelTestCaseBase):
     """
     1) Check that moving a Host with Labeled VM network attached to it's NIC
     (with the same label) to another Cluster that has another non-VM network
@@ -1883,6 +1900,7 @@ class NetLabels16(LabelTestCaseBase):
                                    "Host NIC %s " %
                                    (config.NETWORKS[0], HOST0_NICS[1]))
 
+    @bz({"1184454": {'engine': ['rest', 'sdk', 'java'], 'version': ['3.5']}})
     @tcms(12040, 333115)
     def test_move_host_cluster_same_label(self):
         """
@@ -1942,16 +1960,16 @@ class NetLabels16(LabelTestCaseBase):
         """
         1) Remove newly created Cluster from the setup.
         """
-        logger.info("Removing newly created cluster %s from the setup",
-                    cls.cl_name2)
+        logger.info(
+            "Removing newly created cluster %s from the setup", cls.cl_name2
+        )
         if not removeCluster(positive=True, cluster=cls.cl_name2):
-            raise NetworkException("Failed to remove cluster %s " %
-                                   cls.cl_name2)
+            logger.error("Failed to remove cluster %s ", cls.cl_name2)
         super(NetLabels16, cls).teardown_class()
 
 
 @attr(tier=1)
-class NetLabels17(LabelTestCaseBase):
+class NetLabels17(TestLabelTestCaseBase):
     """
     Negative test cases:
     1) Check it is not possible to have 2 bridged networks on the same host
@@ -2046,7 +2064,7 @@ class NetLabels17(LabelTestCaseBase):
 
 
 @attr(tier=1)
-class NetLabels18(LabelTestCaseBase):
+class NetLabels18(TestLabelTestCaseBase):
     """
     1) Check that when adding a new labeled VM network to the system which
     has another VM network with the same label attached to the Host, will not
@@ -2167,7 +2185,7 @@ class NetLabels18(LabelTestCaseBase):
 
 
 @attr(tier=1)
-class NetLabels19(LabelTestCaseBase):
+class NetLabels19(TestLabelTestCaseBase):
     """
     Check that after moving a Host with labeled network red attached to the
     labeled interface (label=lb1) to another Cluster with network blue
@@ -2230,6 +2248,7 @@ class NetLabels19(LabelTestCaseBase):
                                    "%s " % (config.NETWORKS[0],
                                             HOST0_NICS[1]))
 
+    @bz({"1184454": {'engine': ['rest', 'sdk', 'java'], 'version': ['3.5']}})
     @tcms(12040, 332962)
     def test_move_host(self):
         """
@@ -2265,22 +2284,27 @@ class NetLabels19(LabelTestCaseBase):
         2) Remove label from Host NIC
         3) Remove additional Cluster from the setup
         """
-        logger.info("Deactivate host, move it to the original Cluster %s and "
-                    "reactivate it", config.CLUSTER_NAME[0])
+        logger.info(
+            "Deactivate host, move it to the original Cluster %s and "
+            "reactivate it", config.CLUSTER_NAME[0]
+        )
         logger.info("Deactivate Host %s", config.HOSTS[0])
-        assert (deactivateHost(True, host=config.HOSTS[0]))
+        if not deactivateHost(True, host=config.HOSTS[0]):
+            logger.error("Couldn't deactivate Host %s", config.HOSTS[0])
 
         logger.info("Attach Host to original DC/Cluster")
-        if not updateHost(True, host=config.HOSTS[0],
-                          cluster=config.CLUSTER_NAME[0]):
-            raise NetworkException("Cannot move host to original Cluster")
+        if not updateHost(
+            True, host=config.HOSTS[0], cluster=config.CLUSTER_NAME[0]
+        ):
+            logger.error("Cannot move host to original Cluster")
 
         logger.info("Activate Host")
-        assert (activateHost(True, host=config.HOSTS[0]))
+        if not activateHost(True, host=config.HOSTS[0]):
+            logger.error("Couldn't activate host %s", config.HOSTS[0])
 
         logger.info("Removing the Cluster %s from the setup", cls.cl_name2)
         if not removeCluster(positive=True, cluster=cls.cl_name2):
-            logger.error("Failed to remove cluster %s " % cls.cl_name2)
+            logger.error("Failed to remove cluster %s ", cls.cl_name2)
         super(NetLabels19, cls).teardown_class()
 
 

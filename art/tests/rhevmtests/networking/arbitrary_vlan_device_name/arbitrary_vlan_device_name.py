@@ -23,7 +23,7 @@ from art.unittest_lib import NetworkTest as TestCase
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from rhevmtests.networking import config
 
-logger = logging.getLogger("ArbitraryVlanDeviceName_cases")
+logger = logging.getLogger("ArbitraryVlanDeviceName_Cases")
 
 HOST_NAME = None  # Filled in setup_module
 
@@ -96,9 +96,12 @@ class TestArbitraryVlanDeviceName01(TestArbitraryVlanDeviceNameTearDown):
         """
         Remove the VLAN from the host
         """
-        remove_vlan_and_refresh_capabilities(
-            host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[0]
-        )
+        try:
+            remove_vlan_and_refresh_capabilities(
+                host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[0]
+            )
+        except NetworkException:
+            logger.error("Coudn't remove VLAN %s from host", VLAN_NAMES[0])
         super(TestArbitraryVlanDeviceName01, cls).teardown_class()
 
 
@@ -159,9 +162,12 @@ class TestArbitraryVlanDeviceName02(TestArbitraryVlanDeviceNameTearDown):
         """
         Remove the VLAN from the host
         """
-        remove_vlan_and_refresh_capabilities(
-            host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[0]
-        )
+        try:
+            remove_vlan_and_refresh_capabilities(
+                host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[0]
+            )
+        except NetworkException:
+            logger.error("Coudn't remove VLAN %s from host", VLAN_NAMES[0])
 
         logger.info("Cleaning host interfaces")
         if not createAndAttachNetworkSN(
@@ -227,9 +233,12 @@ class TestArbitraryVlanDeviceName03(TestArbitraryVlanDeviceNameTearDown):
         Remove the VLAN from the host
         """
         for i in range(3):
-            remove_vlan_and_refresh_capabilities(
-                host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[i]
-            )
+            try:
+                remove_vlan_and_refresh_capabilities(
+                    host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[i]
+                )
+            except NetworkException:
+                logger.error("Coudn't remove VLAN %s from host", VLAN_NAMES[i])
         super(TestArbitraryVlanDeviceName03, cls).teardown_class()
 
 
@@ -301,9 +310,12 @@ class TestArbitraryVlanDeviceName04(TestArbitraryVlanDeviceNameTearDown):
         Remove the VLAN from the host
         """
         for i in range(3):
-            remove_vlan_and_refresh_capabilities(
-                host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[i]
-            )
+            try:
+                remove_vlan_and_refresh_capabilities(
+                    host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[i]
+                )
+            except NetworkException:
+                logger.error("Coudn't remove VLAN %s from host", VLAN_NAMES[i])
 
         logger.info("Cleaning host interfaces")
         if not createAndAttachNetworkSN(
@@ -379,9 +391,12 @@ class TestArbitraryVlanDeviceName05(TestArbitraryVlanDeviceNameTearDown):
         """
         Remove the VLAN from the host
         """
-        remove_vlan_and_refresh_capabilities(
-            host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[0]
-        )
+        try:
+            remove_vlan_and_refresh_capabilities(
+                host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[0]
+            )
+        except NetworkException:
+            logger.error("Coudn't remove VLAN %s from host", VLAN_NAMES[0])
 
         logger.info("Removing all networks from %s", config.DC_NAME[0])
         if not remove_all_networks(
@@ -466,9 +481,12 @@ class TestArbitraryVlanDeviceName06(TestArbitraryVlanDeviceNameTearDown):
         """
         Remove the VLAN from the host
         """
-        remove_vlan_and_refresh_capabilities(
-            host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[0]
-        )
+        try:
+            remove_vlan_and_refresh_capabilities(
+                host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[0]
+            )
+        except NetworkException:
+            logger.error("Coudn't remove VLAN %s from host", VLAN_NAMES[0])
 
         logger.info("Removing all networks from %s", config.DC_NAME[0])
         if not remove_all_networks(

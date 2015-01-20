@@ -9,7 +9,7 @@ from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.apis_utils import TimeoutingSampler
 from rhevmtests.networking import config
 
-logger = logging.getLogger("int_fault_event_helper")
+logger = logging.getLogger("Int_Fault_Event_Helper")
 
 EVENT_API = get_api("event", "events")
 HOST_INTERFACE_STATE_UP = 609

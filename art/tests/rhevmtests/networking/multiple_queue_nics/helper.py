@@ -4,7 +4,7 @@ Helper for multiple_queues_nics
 import logging
 import re
 
-logger = logging.getLogger("multiple_queue_nics_helper")
+logger = logging.getLogger("Multiple_Queues_Nics_Helper")
 
 
 def check_queues_from_qemu(host_obj, num_queues):

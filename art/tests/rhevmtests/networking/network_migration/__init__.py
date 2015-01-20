@@ -21,11 +21,11 @@ def setup_package():
     Prepare environment
     """
     if config.GOLDEN_ENV:
+        network_cleanup()
         logger.info(
             "Running on golden env, starting VM %s on host %s",
             config.VM_NAME[0], config.HOSTS[0]
         )
-        network_cleanup()
 
         if not hl_vm.start_vm_on_specific_host(
                 vm=config.VM_NAME[0], host=config.HOSTS[0]
@@ -69,14 +69,14 @@ def teardown_package():
     logger.info("Enabling firewall on the Hosts")
     for host in config.VDS_HOSTS:
         if not host.service(config.FIREWALL_SRV).start():
-            raise NetworkException("Cannot start Firewall service")
+            logger.error("Cannot start Firewall service")
     if config.GOLDEN_ENV:
         logger.info(
             "Running on golden env, stopping VM %s", config.VM_NAME[0]
         )
         if not vms.stopVm(True, vm=config.VM_NAME[0]):
-            raise NetworkException(
-                "Failed to stop VM: %s" % config.VM_NAME[0]
+            logger.error(
+                "Failed to stop VM: %s", config.VM_NAME[0]
             )
         logger.info("Set non-Network hosts to the active state")
         set_host_status(activate=True)
@@ -85,4 +85,4 @@ def teardown_package():
             positive=True, datacenter=config.DC_NAME[0], vdc=config.VDC_HOST,
             vdc_password=config.VDC_ROOT_PASSWORD
         ):
-            raise NetworkException("Cannot remove setup")
+            logger.error("Cannot remove setup")

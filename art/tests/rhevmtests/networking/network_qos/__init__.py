@@ -4,7 +4,7 @@ Network QOS feature test
 
 import logging
 from art.rhevm_api.tests_lib.low_level.vms import addVm, startVm
-from rhevmtests.networking import config
+from rhevmtests.networking import config, network_cleanup
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.high_level.networks import prepareSetup
@@ -20,6 +20,7 @@ def setup_package():
     Prepare environment
     """
     if config.GOLDEN_ENV:
+        network_cleanup()
         logger.info(
             "Running on golden env, starting 1 VM %s on host %s",
             config.VM_NAME[0], config.HOSTS[0]
@@ -70,7 +71,7 @@ def teardown_package():
 
         if not vms.stopVms(vms=config.VM_NAME[0]):
             logger.error(
-                "Failed to stop VM: %s" % config.VM_NAME[0]
+                "Failed to stop VM: %s", config.VM_NAME[0]
             )
 
     else:

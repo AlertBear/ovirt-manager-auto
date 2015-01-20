@@ -23,13 +23,14 @@ def update_vnic_driver(driver):
     """
     logger.info("Unplug vNIC")
     if not updateNic(
-            positive=True, vm=config.VM_NAME[0], nic="nic1", plugged=False
+            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
+            plugged=False
     ):
         return False
 
     logger.info("Updating vNIC to %s driver", driver)
     if not updateNic(
-            positive=True, vm=config.VM_NAME[0], nic="nic1",
+            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
             interface=driver, plugged=True
     ):
         return False
@@ -71,15 +72,11 @@ def create_and_attach_bond(mode):
      bootproto,
      profile_required) = "vm", None, None, None, True
 
-    if mode in [i for i in config.BOND_MODES if str(i) in ('2', '4')]:
-        slaves = [4, 5]
-
-    else:
-        slaves = [2, 3]
+    slaves = [4, 5] if mode == 2 else [2, 3]
 
     # for modes bellow create bridgeless network with static IP
     if mode in [i for i in config.BOND_MODES if str(i) in (
-            '0', '3', '5', '6'
+            "0", "3", "5", "6"
     )]:
         usages = ""
         address = [config.ADDR_AND_MASK[0]]

@@ -4,10 +4,10 @@ Test Port mirroring.
 using 2 hosts and 5 VMs
 """
 
-from nose.tools import istest
 from art.rhevm_api.tests_lib.high_level.networks import checkICMPConnectivity
-from art.rhevm_api.tests_lib.low_level.hosts import waitForHostsStates, \
-    ifdownNic, ifupNic
+from art.rhevm_api.tests_lib.low_level.hosts import(
+    waitForHostsStates, ifdownNic, ifupNic
+)
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 import logging
@@ -21,7 +21,7 @@ from utils import (
 )
 from rhevmtests.networking import config
 
-logger = logging.getLogger("PortMirroring")
+logger = logging.getLogger("Port_Mirroring_Cases")
 
 MGMT_IPS = config.MGMT_IPS
 NET1_IPS = config.NET1_IPS
@@ -36,20 +36,16 @@ VM_NAME = config.VM_NAME
 
 
 @attr(tier=1)
-class PortMirroringCase01(TestCase):
+class TestPortMirroringCase01(TestCase):
     """
     Check that mirroring still works after migration
     """
     # BUG: https://bugzilla.redhat.com/show_bug.cgi?id=1159647
-    __test__ = False
+    # Testing if bug is not reproduced anymore
+    __test__ = True
 
-    @classmethod
-    def setup_class(cls):
-        pass
-
-    @istest
     @tcms(10475, 302095)
-    def a1_migrate_mirroring_vm(self):
+    def test_a1_migrate_mirroring_vm(self):
         """
         Check that mirroring still works after migrating listening VM to
         another host and back
@@ -79,9 +75,8 @@ class PortMirroringCase01(TestCase):
                 srcVM=MGMT_IPS[1], srcIP=NET1_IPS[1], dstIP=NET1_IPS[dstVM]
             )
 
-    @istest
     @tcms(10475, 302098)
-    def a2_migrate_all_vms(self):
+    def test_a2_migrate_all_vms(self):
         """
         Check that mirroring still works after migrating all VM's involved to
         anther host
@@ -127,20 +122,15 @@ class PortMirroringCase01(TestCase):
 
 
 @attr(tier=1)
-class PortMirroringCase02(TestCase):
+class TestPortMirroringCase02(TestCase):
     """
     Replace network on the mirrored VM to a non-mirrored network
     """
 
     __test__ = True
 
-    @classmethod
-    def setup_class(cls):
-        pass
-
-    @istest
     @tcms(10475, 302105)
-    def check_mirroring_after_replacing_network(self):
+    def test_check_mirroring_after_replacing_network(self):
         """
         Replace the network on a mirrored VM with a non-mirrored network and
         check that its traffic is not mirrored anymore.
@@ -178,42 +168,33 @@ class PortMirroringCase02(TestCase):
 ########################################################################
 
 @attr(tier=1)
-class PortMirroringCase03(TestCase):
+class TestPortMirroringCase03(TestCase):
     """
     Check mirroring when listening on multiple networks on the same machine
     """
     __test__ = True
 
-    @classmethod
-    def setup_class(cls):
-        pass
-
-    @istest
     @tcms(10475, 302101)
-    def check_pm_one_machine_multiple_networks(self):
+    def test_check_pm_one_machine_multiple_networks(self):
         """
-        Check that VM1 gets all traffic on both mgmt network and sw1
+        Check that VM1 gets all traffic on both MGMT network and sw1
         """
         send_and_capture_traffic(
             srcVM=MGMT_IPS[1], srcIP=NET1_IPS[1], dstIP=NET1_IPS[2]
         )
         send_and_capture_traffic(
             srcVM=MGMT_IPS[3], srcIP=MGMT_IPS[3], dstIP=MGMT_IPS[4],
-            nic='eth0'
+            nic=config.VM_NICS[0]
         )
-
-    @classmethod
-    def teardown_class(cls):
-        pass
 
 
 ########################################################################
 
 ########################################################################
 @attr(tier=1)
-class PortMirroringCase04(TestCase):
+class TestPortMirroringCase04(TestCase):
     """
-    Check mirroring when it's enabled on multiple machines.
+    Check port mirroring when it's enabled on multiple machines.
     """
     __test__ = True
 
@@ -226,15 +207,14 @@ class PortMirroringCase04(TestCase):
             config.VM_NAME[1], config.NIC_NAME[1], config.VLAN_NETWORKS[0]
         )
 
-    @istest
     @tcms(10475, 302100)
-    def a1_check_pm_two_machines_diff_networks(self):
+    def test_a1_check_pm_two_machines_diff_networks(self):
         """
         Check mirroring when it's enabled on different machines on different
         networks (VM1 is listening to mgmt network and VM2 is listening to sw1)
         """
         logger.info(
-            "Sending traffic between VM2 and VM3 on mgmt network to make sure "
+            "Sending traffic between VM2 and VM3 on MGMT network to make sure "
             "only VM1 gets this traffic."
         )
         send_and_capture_traffic(
@@ -261,12 +241,11 @@ class PortMirroringCase04(TestCase):
             nic='eth0', expectTraffic=False
         )
 
-    @istest
     @tcms(10475, 302093)
-    def a2_check_pn_two_machines_same_network(self):
+    def test_a2_check_pm_two_machines_same_network(self):
         """
-        Check mirroring when two machines are listening to the same network
-        (VM1 and VM2 listening on sw1).
+        Check port mirroring when two machines are listening to the same
+        network (VM1 and VM2 listening on sw1).
         """
         logger.info(
             "Sending traffic between VM3 and VM4 on sw1 to make sure both "
@@ -302,8 +281,8 @@ class PortMirroringCase04(TestCase):
                 True, config.VM_NAME[1], config.NIC_NAME[1]
         ):
             set_port_mirroring(
-                config.VM_NAME[1], config.NIC_NAME[1], config.VLAN_NETWORKS[
-                    0], disableMirroring=True
+                config.VM_NAME[1], config.NIC_NAME[1],
+                config.VLAN_NETWORKS[0], disableMirroring=True
             )
 
 
@@ -311,19 +290,14 @@ class PortMirroringCase04(TestCase):
 
 ########################################################################
 @attr(tier=1)
-class PortMirroringCase05(TestCase):
+class TestPortMirroringCase05(TestCase):
     """
     Restart VDSM on host while mirroring is on
     """
     __test__ = True
 
-    @classmethod
-    def setup_class(cls):
-        pass
-
-    @istest
     @tcms(10475, 302106)
-    def restart_vdsmd_on_host(self):
+    def test_restart_vdsmd_on_host(self):
         """
         Check that mirroring still occurs after restarting VDSM on the host
         """
@@ -349,25 +323,16 @@ class PortMirroringCase05(TestCase):
         if not waitForHostsStates(positive=True, names=config.HOSTS[0]):
             logger.error("%s status isn't UP", config.HOSTS[0])
 
-    @classmethod
-    def teardown_class(cls):
-        pass
-
 
 @attr(tier=1)
-class PortMirroringCase06(TestCase):
+class TestPortMirroringCase06(TestCase):
     """
     Check that mirroring still occurs after down/UP listening bridge on the
     host
     """
     __test__ = True
 
-    @classmethod
-    def setup_class(cls):
-        pass
-
-    @istest
-    def restart_networking_on_host(self):
+    def test_restart_networking_on_host(self):
         """
         Check that mirroring still occurs after down/UP listening bridge on the
         host
@@ -416,7 +381,3 @@ class PortMirroringCase06(TestCase):
             srcVM=MGMT_IPS[1], srcIP=NET1_IPS[1], dstIP=NET1_IPS[2],
             dupCheck=False
         )
-
-    @classmethod
-    def teardown_class(cls):
-        pass

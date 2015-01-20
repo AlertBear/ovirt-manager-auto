@@ -3,13 +3,13 @@ Display of NIC Slave/Bond fault on RHEV-M Event Log feature test
 """
 
 import logging
-from rhevmtests.networking import config
+from rhevmtests.networking import config, network_cleanup
 from art.rhevm_api.tests_lib.high_level.networks import (
     create_basic_setup, remove_basic_setup
 )
 from art.test_handler.exceptions import NetworkException
 
-logger = logging.getLogger("int_fault_event_init")
+logger = logging.getLogger("Int_Fault_Event_Init")
 
 
 def setup_package():
@@ -18,6 +18,7 @@ def setup_package():
     """
     if config.GOLDEN_ENV:
         logger.info("Running on golden env, no setup")
+        network_cleanup()
         return
 
     logger.info("Create setup with datacenter, cluster and host")
@@ -41,4 +42,4 @@ def teardown_package():
     if not remove_basic_setup(datacenter=config.DC_NAME[0],
                               cluster=config.CLUSTER_NAME[0],
                               hosts=config.HOSTS[0]):
-        raise NetworkException("Failed to remove setup")
+        logger.error("Failed to remove setup")

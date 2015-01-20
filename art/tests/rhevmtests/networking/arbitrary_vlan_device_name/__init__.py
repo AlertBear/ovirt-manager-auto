@@ -14,7 +14,7 @@ from rhevmtests.networking.arbitrary_vlan_device_name.helper import(
     set_libvirtd_sasl
 )
 
-logger = logging.getLogger("ArbitraryVlanDeviceName_init")
+logger = logging.getLogger("Arbitrary_VlanDeviceName_Init")
 
 
 def setup_package():
@@ -37,7 +37,9 @@ def setup_package():
 
     logger.info("Disabling sasl in libvirt")
     if not set_libvirtd_sasl(host_obj=config.VDS_HOSTS[0], sasl=False):
-        raise NetworkException("Failed to disable sasl on %s", config.HOSTS[0])
+        raise NetworkException(
+            "Failed to disable sasl on %s" % config.HOSTS[0]
+        )
 
 
 def teardown_package():
@@ -52,7 +54,7 @@ def teardown_package():
             datacenter=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             hosts=[config.HOSTS[0]]
         ):
-            raise NetworkException("Failed to remove setup")
+            logger.error("Failed to remove setup")
 
     logger.info("Enabling sasl in libvirt")
     if not set_libvirtd_sasl(host_obj=config.VDS_HOSTS[0]):

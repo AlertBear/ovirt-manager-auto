@@ -2,12 +2,9 @@
 
 import logging
 from rhevmtests.networking import config
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 
-
-from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.exceptions import(
     NetworkException, DataCenterException, VMException
 )
@@ -31,9 +28,7 @@ from art.rhevm_api.tests_lib.low_level.templates import(
     addTemplateNic, removeTemplateNic
 )
 
-HOST_API = get_api('host', 'hosts')
-VM_API = get_api('vm', 'vms')
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("VNIC_Profile_Cases")
 
 
 ########################################################################
@@ -43,7 +38,7 @@ logger = logging.getLogger(__name__)
 ########################################################################
 
 @attr(tier=1)
-class VNICProfileCase01(TestCase):
+class TestVNICProfileCase01(TestCase):
     """
     Verify that when creating the new DC  - the new VNIC profile
     is created with MGMT network name
@@ -62,9 +57,8 @@ class VNICProfileCase01(TestCase):
                              storage_type=config.STORAGE_TYPE):
             raise DataCenterException("Cannot create new DataCenter")
 
-    @istest
     @tcms(10053, 289787)
-    def check_mgmt_profile(self):
+    def test_check_mgmt_profile(self):
         """
         Check MGMT VNIC profile is created when creating the new DC
         """
@@ -79,11 +73,11 @@ class VNICProfileCase01(TestCase):
         """
         logger.info("Remove DC from setup")
         if not removeDataCenter(True, datacenter=cls.dc_name2):
-            raise DataCenterException("Cannot remove DC from setup")
+            logger.error("Cannot remove DC from setup")
 
 
 @attr(tier=1)
-class VNICProfileCase02(TestCase):
+class TestVNICProfileCase02(TestCase):
     """
     Verify uniqueness of VNIC profile
     """
@@ -102,9 +96,8 @@ class VNICProfileCase02(TestCase):
                                         network_dict=local_dict,):
             raise NetworkException("Cannot create and attach network")
 
-    @istest
     @tcms(10053, 293514)
-    def create_new_profiles(self):
+    def test_create_new_profiles(self):
         """
         Check you can create a profile for sw2 with the same name as sw1
         Check you can't create profile with the same name for the same network
@@ -129,11 +122,11 @@ class VNICProfileCase02(TestCase):
         for i in range(2):
             if not removeNetwork(positive=True, network=config.NETWORKS[i],
                                  data_center=config.DC_NAME[0]):
-                raise NetworkException("Couldn't remove network from DC")
+                logger.error("Couldn't remove network from DC")
 
 
 @attr(tier=1)
-class VNICProfileCase03(TestCase):
+class TestVNICProfileCase03(TestCase):
     """
     Verify that changing the VM network to non-VM makes all it''s VNIC
     profiles disappear
@@ -161,9 +154,8 @@ class VNICProfileCase03(TestCase):
                                network=config.NETWORKS[0])):
             raise NetworkException("Couldn't create second VNIC profile")
 
-    @istest
     @tcms(10053, 289764)
-    def update_to_non_vm(self):
+    def test_update_to_non_vm(self):
         """
         Update VM network to non-VM network
         Check that both VNIC profiles of the network were removed as a
@@ -187,11 +179,11 @@ class VNICProfileCase03(TestCase):
         logger.info("Remove network %s from DC", config.NETWORKS[0])
         if not removeNetwork(positive=True, network=config.NETWORKS[0],
                              data_center=config.DC_NAME[0]):
-            raise NetworkException("Couldn't remove networks from DC")
+            logger.error("Couldn't remove networks from DC")
 
 
 @attr(tier=1)
-class VNICProfileCase04(TestCase):
+class TestVNICProfileCase04(TestCase):
     """
     Verify that removing network from setup makes all it's all VNIC
     profiles disappear as well
@@ -219,9 +211,8 @@ class VNICProfileCase04(TestCase):
                                network=config.NETWORKS[0])):
             raise NetworkException("Couldn't create second VNIC profile")
 
-    @istest
     @tcms(10053, 289778)
-    def remove_network(self):
+    def test_remove_network(self):
         """
         Remove VM network
         Check that both VNIC profiles of the network were removed as a
@@ -244,13 +235,9 @@ class VNICProfileCase04(TestCase):
                 logger.error("VNIC profile %s exists after network removal",
                              config.NETWORKS[i])
 
-    @classmethod
-    def teardown_class(cls):
-        pass
-
 
 @attr(tier=1)
-class VNICProfileCase05(TestCase):
+class TestVNICProfileCase05(TestCase):
     """
     Verify that creating the non-VM network doesn't create default VNIC
     profile and doesn't allow you to create non-default VNIC profiles
@@ -271,9 +258,8 @@ class VNICProfileCase05(TestCase):
                                         network_dict=local_dict,):
             raise NetworkException("Cannot create and attach network")
 
-    @istest
     @tcms(10053, 293513)
-    def check_non_vm(self):
+    def test_check_non_vm(self):
         """
         Check no VNIC profile exists for non-VM network
         Check you can't create VNIC profile for non-VM network
@@ -298,11 +284,11 @@ class VNICProfileCase05(TestCase):
         logger.info("Remove network %s from DC", config.NETWORKS[0])
         if not removeNetwork(positive=True, network=config.NETWORKS[0],
                              data_center=config.DC_NAME[0]):
-            raise NetworkException("Couldn't remove network from DC")
+            logger.error("Couldn't remove network from DC")
 
 
 @attr(tier=1)
-class VNICProfileCase06(TestCase):
+class TestVNICProfileCase06(TestCase):
     """
     Check that default VNIC profile is created when a new network is added
     to setup . No VNIC profile is added when creating non-VM network and when
@@ -328,9 +314,8 @@ class VNICProfileCase06(TestCase):
                                         network_dict=local_dict,):
             raise NetworkException("Cannot create and attach network")
 
-    @istest
     @tcms(10053, 293519)
-    def check_profile(self):
+    def test_check_profile(self):
         """"
         1) Check that VNIC profile exists for VM network
         2) Check that VNIC profile doesn't exist for non-VM network'
@@ -362,12 +347,13 @@ class VNICProfileCase06(TestCase):
             logger.info("Remove network %s from DC", config.NETWORKS[i])
             if not removeNetwork(positive=True, network=config.NETWORKS[i],
                                  data_center=config.DC_NAME[0]):
-                raise NetworkException("Couldn't remove network %s from DC",
-                                       config.NETWORKS[i])
+                logger.error(
+                    "Couldn't remove network %s from DC", config.NETWORKS[i]
+                )
 
 
 @attr(tier=1)
-class VNICProfileCase07(TestCase):
+class TestVNICProfileCase07(TestCase):
     """
     Check that attach profile to VM when the network for that profile
     doesn't exist on host fails
@@ -390,9 +376,8 @@ class VNICProfileCase07(TestCase):
                                         network_dict=local_dict,):
             raise NetworkException("Cannot create and attach network")
 
-    @istest
     @tcms(10053, 321137)
-    def check_profile(self):
+    def test_check_profile(self):
         """"
         1) Check that VNIC profile exists for VM network
         2) Check that you can't add VNIC profile to VM if its network is
@@ -416,12 +401,13 @@ class VNICProfileCase07(TestCase):
         logger.info("Remove network %s from DC", config.NETWORKS[0])
         if not removeNetwork(positive=True, network=config.NETWORKS[0],
                              data_center=config.DC_NAME[0]):
-            raise NetworkException("Couldn't remove network %s from DC" %
-                                   config.NETWORKS[0])
+            logger.error(
+                "Couldn't remove network %s from DC", config.NETWORKS[0]
+            )
 
 
 @attr(tier=1)
-class VNICProfileCase08(TestCase):
+class TestVNICProfileCase08(TestCase):
     """
     Verify different scenarios of changing VNIC profiles on
     the unplugged VNIC of the running VM
@@ -475,9 +461,8 @@ class VNICProfileCase08(TestCase):
                       plugged='false'):
             raise VMException("Cannot add VNIC to VM")
 
-    @istest
     @tcms(10053, 300692)
-    def update_network_unplugged_nic(self):
+    def test_update_network_unplugged_nic(self):
         """
         1) Update VNIC profile on nic2 with profile from different network
         2) Update VNIC profile on nic2 with profile from the same network
@@ -521,12 +506,13 @@ class VNICProfileCase08(TestCase):
             if not remove_net_from_setup(host=config.VDS_HOSTS[0],
                                          auto_nics=[0],
                                          network=[config.NETWORKS[i]]):
-                raise NetworkException("Cannot remove network %s from setup"
-                                       % config.NETWORKS[i])
+                logger.error(
+                    "Cannot remove network %s from setup", config.NETWORKS[i]
+                )
 
 
 @attr(tier=1)
-class VNICProfileCase09(TestCase):
+class TestVNICProfileCase09(TestCase):
     """
     VNIC Profile on template
     """
@@ -545,9 +531,8 @@ class VNICProfileCase09(TestCase):
                                         network_dict=local_dict,):
             raise NetworkException("Cannot create and attach network")
 
-    @istest
     @tcms(10053, 289896)
-    def create_new_profiles_template(self):
+    def test_create_new_profiles_template(self):
         """
         1) Check that you can create non-empty VNIC profile on Template
         2) Check that you can create empty VNIC profile on Template
@@ -587,9 +572,8 @@ class VNICProfileCase09(TestCase):
                                  nic='nic3'):
             raise VMException("Couldn't get empty VNIC profile on VM ")
 
-    @istest
     @tcms(10053, 293518)
-    def remove_new_profiles_template(self):
+    def test_remove_new_profiles_template(self):
         """
         1) Remove VM created from the previous test
         2) Try to remove network when template is using it's VNIC profile.
@@ -631,11 +615,11 @@ class VNICProfileCase09(TestCase):
         logger.info("Remove network from setup")
         if not removeNetwork(positive=True, network=config.NETWORKS[0],
                              data_center=config.DC_NAME[0]):
-            raise NetworkException("Couldn't remove network from DC")
+            logger.error("Couldn't remove network from DC")
 
 
 @attr(tier=1)
-class VNICProfileCase10(TestCase):
+class TestVNICProfileCase10(TestCase):
     """
     Verify it's impossible to change VNIC profile without port mirroring to
     VNIC profile with port mirroring and vice versa on running VM
@@ -678,9 +662,8 @@ class VNICProfileCase10(TestCase):
                           network=config.NETWORKS[i]):
                 raise VMException("Cannot add VNIC to VM")
 
-    @istest
     @tcms(10053, 293517)
-    def update_vnic_profile(self):
+    def test_update_vnic_profile(self):
         """
         1) Try to update VNIC profile on nic2 to have port mirroring enabled
         2) Try to update VNIC profile on nic3 to have port mirroring disabled
@@ -706,20 +689,21 @@ class VNICProfileCase10(TestCase):
         for nic_name in ('nic2', 'nic3'):
             if not updateNic(True, config.VM_NAME[0], nic_name,
                              plugged='false'):
-                raise NetworkException("Couldn't unplug NICs")
+                logger.error("Couldn't unplug NICs")
             if not removeNic(True, config.VM_NAME[0], nic_name):
-                raise NetworkException("Cannot remove nic from setup")
+                logger.error("Cannot remove nic from setup")
         for i in range(2):
             logger.info("Remove network %s from setup", config.NETWORKS[i])
             if not remove_net_from_setup(host=config.VDS_HOSTS[0],
                                          auto_nics=[0],
                                          network=[config.NETWORKS[i]]):
-                raise NetworkException("Cannot remove network %s from setup"
-                                       % config.NETWORKS[i])
+                logger.error(
+                    "Cannot remove network %s from setup", config.NETWORKS[i]
+                )
 
 
 @attr(tier=1)
-class VNICProfileCase11(TestCase):
+class TestVNICProfileCase11(TestCase):
     """
     Verify different scenarios of changing VNIC profiles on
     plugged VNIC of the running VM
@@ -773,9 +757,8 @@ class VNICProfileCase11(TestCase):
                       plugged='true'):
             raise VMException("Cannot add VNIC to VM")
 
-    @istest
     @tcms(10053, 289729)
-    def update_network_plugged_nic(self):
+    def test_update_network_plugged_nic(self):
         """
         1) Update VNIC profile on nic2 with profile from different network
         2) Update VNIC profile on nic2 with profile from the same network
@@ -840,20 +823,21 @@ class VNICProfileCase11(TestCase):
         Remove VM networks from the setup
         """
         if not updateNic(True, config.VM_NAME[0], "nic2", plugged='false'):
-            raise NetworkException("Cannot unplug nic")
+            logger.error("Cannot unplug nic")
         if not removeNic(True, config.VM_NAME[0], "nic2"):
-            raise NetworkException("Cannot remove nic from setup")
+            logger.error("Cannot remove nic from setup")
         for i in range(2):
             logger.info("Remove network %s from setup", config.NETWORKS[i])
             if not remove_net_from_setup(host=config.VDS_HOSTS[0],
                                          auto_nics=[0],
                                          network=[config.NETWORKS[i]]):
-                raise NetworkException("Cannot remove network %s from setup"
-                                       % config.NETWORKS[i])
+                logger.error(
+                    "Cannot remove network %s from setup", config.NETWORKS[i]
+                )
 
 
 @attr(tier=1)
-class VNICProfileCase12(TestCase):
+class TestVNICProfileCase12(TestCase):
     """
     Verify uniqueness of VNIC profile
     """
@@ -872,9 +856,8 @@ class VNICProfileCase12(TestCase):
                                         network_dict=local_dict,):
             raise NetworkException("Cannot create and attach network")
 
-    @istest
     @tcms(10053, 293516)
-    def create_new_profiles(self):
+    def test_create_new_profiles(self):
         """
         Negative case: Try to update network for existing profile
         """
@@ -896,12 +879,13 @@ class VNICProfileCase12(TestCase):
         for i in range(2):
             if not removeNetwork(positive=True, network=config.NETWORKS[i],
                                  data_center=config.DC_NAME[0]):
-                raise NetworkException("Couldn't remove network %s from setup",
-                                       config.NETWORKS[i])
+                logger.error(
+                    "Couldn't remove network %s from setup", config.NETWORKS[i]
+                )
 
 
 @attr(tier=1)
-class VNICProfileCase13(TestCase):
+class TestVNICProfileCase13(TestCase):
     """
     Verify hotplug, link/unlink works on the running VM
     Try to remove VNIC profile when VM is using it (negative case)
@@ -924,9 +908,8 @@ class VNICProfileCase13(TestCase):
                                         auto_nics=[0]):
             raise NetworkException("Cannot create and attach networks")
 
-    @istest
     @tcms(10053, 289730)
-    def hotplug_link_unlink(self):
+    def test_hotplug_link_unlink(self):
         """
         1) Hotplug VNIC profile to the VM's nic2
         2) Unlink nic2
@@ -958,20 +941,21 @@ class VNICProfileCase13(TestCase):
         Remove VM networks from the setup
         """
         if not updateNic(True, config.VM_NAME[0], "nic2", plugged='false'):
-            raise NetworkException("Cannot unplug nic")
+            logger.error("Cannot unplug nic")
         if not removeNic(True, config.VM_NAME[0], "nic2"):
-            raise NetworkException("Cannot remove nic from setup")
+            logger.error("Cannot remove nic from setup")
 
         logger.info("Remove network %s from setup", config.NETWORKS[0])
         if not remove_net_from_setup(host=config.VDS_HOSTS[0],
                                      auto_nics=[0],
                                      network=[config.NETWORKS[0]]):
-            raise NetworkException("Cannot remove network %s from setup"
-                                   % config.NETWORKS[0])
+            logger.error(
+                "Cannot remove network %s from setup", config.NETWORKS[0]
+            )
 
 
 @attr(tier=1)
-class VNICProfileCase14(TestCase):
+class TestVNICProfileCase14(TestCase):
     """
     Try to remove VNIC profile when VM is using it (negative case)
     """
@@ -1000,9 +984,8 @@ class VNICProfileCase14(TestCase):
                       plugged='true'):
             raise VMException("Cannot add VNIC to VM")
 
-    @istest
     @tcms(10053, 289728)
-    def remove_used_profile(self):
+    def test_remove_used_profile(self):
         """
         Try to remove VNIC profile while VM is using it (negative case)
         """
@@ -1020,20 +1003,21 @@ class VNICProfileCase14(TestCase):
         Remove VM networks from the setup
         """
         if not updateNic(True, config.VM_NAME[0], "nic2", plugged='false'):
-            raise NetworkException("Cannot unplug nic")
+            logger.error("Cannot unplug nic")
         if not removeNic(True, config.VM_NAME[0], "nic2"):
-            raise NetworkException("Cannot remove nic from setup")
+            logger.error("Cannot remove nic from setup")
 
         logger.info("Remove network %s from setup", config.NETWORKS[0])
         if not remove_net_from_setup(host=config.VDS_HOSTS[0],
                                      auto_nics=[0],
                                      network=[config.NETWORKS[0]]):
-            raise NetworkException("Cannot remove network %s from setup"
-                                   % config.NETWORKS[0])
+            logger.error(
+                "Cannot remove network %s from setup", config.NETWORKS[0]
+            )
 
 
 @attr(tier=1)
-class VNICProfileCase15(TestCase):
+class TestVNICProfileCase15(TestCase):
     """
     Create new VNIC profile and make sure all its parameters exist in API
     """
@@ -1062,9 +1046,8 @@ class VNICProfileCase15(TestCase):
                                description="vnic_p_desc")):
             raise NetworkException("Couldn't create second VNIC profile")
 
-    @istest
     @tcms(10053, 289724)
-    def check_attr(self):
+    def test_check_attr(self):
         """
         Check VNIC profile created with parameters has these parameters
         """
@@ -1085,5 +1068,6 @@ class VNICProfileCase15(TestCase):
         if not remove_net_from_setup(host=config.VDS_HOSTS[0],
                                      auto_nics=[0],
                                      network=[config.NETWORKS[0]]):
-            raise NetworkException("Cannot remove network %s from setup"
-                                   % config.NETWORKS[0])
+            logger.error(
+                "Cannot remove network %s from setup", config.NETWORKS[0]
+            )

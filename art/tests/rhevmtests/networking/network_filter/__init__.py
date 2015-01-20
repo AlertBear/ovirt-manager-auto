@@ -3,14 +3,14 @@ NetworkFilter Test
 """
 
 import logging
-from rhevmtests.networking import config
+from rhevmtests.networking import config, network_cleanup
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.rhevm_api.tests_lib.high_level.networks import prepareSetup
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.high_level import vms as hl_vm
 
-logger = logging.getLogger("NetworkFilter")
+logger = logging.getLogger("Network_Filter_Init")
 
 #################################################
 
@@ -20,6 +20,7 @@ def setup_package():
     Prepare environment
     """
     if config.GOLDEN_ENV:
+        network_cleanup()
         logger.info(
             "Running on golden env, starting VM %s on host %s",
             config.VM_NAME[0], config.HOSTS[0]
@@ -66,8 +67,8 @@ def teardown_package():
             "Running on golden env, stopping VM %s", config.VM_NAME[0]
         )
         if not vms.stopVm(True, vm=config.VM_NAME[0]):
-            raise NetworkException(
-                "Failed to stop VM: %s" % config.VM_NAME[0]
+            logger.error(
+                "Failed to stop VM: %s", config.VM_NAME[0]
             )
 
     else:
@@ -75,4 +76,4 @@ def teardown_package():
                 positive=True, datacenter=config.DC_NAME[0],
                 vdc=config.VDC_HOST, vdc_password=config.VDC_ROOT_PASSWORD
         ):
-            raise NetworkException("Cannot remove setup")
+            logger.error("Cannot remove setup")

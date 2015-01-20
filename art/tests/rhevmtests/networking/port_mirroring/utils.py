@@ -7,16 +7,16 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     updateNic, migrateVm, getVmHost,
     waitForIP, stopVm)
 from art.rhevm_api.utils.test_utils import sendICMP, setPersistentNetwork
-from art.test_handler.exceptions import VMException, NetworkException
+from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.high_level import vms as hl_vm
 from rhevmtests.networking import config
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("Port_Mirroring_Helper")
 
 
 def send_and_capture_traffic(
-        srcVM, srcIP, dstIP, listenVM=config.VM_NAME[0], nic='eth1',
+        srcVM, srcIP, dstIP, listenVM=config.VM_NAME[0], nic="eth1",
         expectTraffic=True, dupCheck=True
 ):
     """
@@ -55,7 +55,7 @@ def send_and_capture_traffic(
                         user=config.VMS_LINUX_USER,
                         password=config.VMS_LINUX_PW,
                         nic=nic, src=srcIP, dst=dstIP, dupCheck=dupCheck,
-                        protocol='icmp', numPackets=3, ) as monitor:
+                        protocol="icmp", numPackets=3, ) as monitor:
             monitor.addTask(sendICMP, host=srcVM, user=config.VMS_LINUX_USER,
                             password=config.VMS_LINUX_PW, ip=dstIP)
     if not monitor.getResult():
@@ -73,24 +73,23 @@ def set_port_mirroring(vm, nic, network, disableMirroring=False):
     :param disableMirroring: boolean to indicate if we want to enable or
            disable port mirroring (leave False to enable)
     """
-    vnic_profile = network + ('' if disableMirroring else '_PM')
+    vnic_profile = network + ("" if disableMirroring else "_PM")
     port_mirror_text = "Disabling" if disableMirroring else "Enabling"
     logger_info = (
-        "{0} port mirroring on: VM: {1}, NIC: {2},  vNIC profile: {3}".format(
-            port_mirror_text, vm, nic, vnic_profile)
+        "%s port mirroring on: VM: %s, NIC: %s,  vNIC profile: %s",
+        port_mirror_text, vm, nic, vnic_profile
     )
     logger.info(logger_info)
     if not updateNic(True, vm, nic, plugged=False):
-        raise NetworkException("Failed to unplug %s on %s" % (nic, vm))
+        logger.error("Failed to unplug %s on %s", nic, vm)
 
     if not updateNic(
             True, vm, nic, network=network, vnic_profile=vnic_profile
     ):
-        raise VMException(
-            "Failed to update %s to %s profile." % (nic, vnic_profile))
+        logger.error("Failed to update %s to %s profile.", nic, vnic_profile)
 
     if not updateNic(True, vm, nic, plugged=True):
-        raise NetworkException("Failed to plug %s on %s" % (nic, vm))
+        logger.error("Failed to plug %s on %s", nic, vm)
 
 
 def return_vms_to_original_host():
@@ -98,9 +97,9 @@ def return_vms_to_original_host():
     Returns all the VMs to original host they were on
     """
     for vm in config.VM_NAME[:config.NUM_VMS]:
-        if getVmHost(vm)[1]['vmHoster'] == config.HOSTS[1]:
+        if getVmHost(vm)[1]["vmHoster"] == config.HOSTS[1]:
             if not migrateVm(True, vm, config.HOSTS[0]):
-                raise VMException('Failed to migrate vm %s' % vm)
+                logger.error("Failed to migrate vm %s", vm)
 
 
 def ge_seal_vm(vm):
@@ -116,9 +115,9 @@ def ge_seal_vm(vm):
     logger.info("Waiting for IP from %s", vm)
     rc, out = waitForIP(vm=vm, timeout=180, sleep=10)
     if not rc:
-        raise NetworkException('Failed to get VM IP on mgmt network')
+        raise NetworkException("Failed to get VM IP on mgmt network")
 
-    ip = out['ip']
+    ip = out["ip"]
     logger.info("Running setPersistentNetwork on %s", vm)
     if not setPersistentNetwork(ip, config.VMS_LINUX_PW):
         raise NetworkException("Failed to seal %s" % vm)

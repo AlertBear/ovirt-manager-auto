@@ -16,7 +16,7 @@ from rhevmtests.networking.big_ranges_mac_pool_manager import (
     ENGINE_DEFAULT_MAC_RANGE
 )
 
-logger = logging.getLogger("BigRangeMacPool_cases")
+logger = logging.getLogger("BigRangeMacPool_Cases")
 
 
 class TestBigRangeMacPoolTearDown(TestCase):
@@ -32,7 +32,7 @@ class TestBigRangeMacPoolTearDown(TestCase):
         set_range_cmd = "=".join(
             [config.MAC_POOL_RANGE_CMD, ENGINE_DEFAULT_MAC_RANGE[0]]
         )
-        logger.info("Set default MAC range: %s" % set_range_cmd)
+        logger.info("Set default MAC range: %s", set_range_cmd)
         if not set_engine_properties(config.ENGINE, [set_range_cmd]):
             logger.error(
                 "Failed to set default MAC range: %s", set_range_cmd

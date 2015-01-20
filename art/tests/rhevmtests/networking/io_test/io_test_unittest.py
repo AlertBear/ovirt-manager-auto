@@ -5,7 +5,6 @@ Testing Input/Output feature.
 Positive and negative cases for creating/editing networks
 with valid/invalid names, IPs, netmask, VLAN, usages.
 """
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 from art.test_handler.tools import tcms  # pylint: disable=E0611
@@ -17,15 +16,9 @@ from art.rhevm_api.tests_lib.low_level.networks import(
     addNetwork, addNetworkToCluster, updateNetwork, createNetworkInDataCenter
 )
 from art.test_handler.exceptions import NetworkException
-from art.rhevm_api.utils.test_utils import get_api
-from art.test_handler.settings import opts
 from rhevmtests.networking import config
 
-
-HOST_API = get_api('host', 'hosts')
-VM_API = get_api('vm', 'vms')
-ENUMS = opts['elements_conf']['RHEVM Enums']
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("IO_Test_Cases")
 
 ########################################################################
 
@@ -34,7 +27,7 @@ logger = logging.getLogger(__name__)
 ########################################################################
 
 
-class IOTestCaseBase(TestCase):
+class TestIOTestCaseBase(TestCase):
     """
     base class which provides  teardown class method for each test case
     """
@@ -50,20 +43,19 @@ class IOTestCaseBase(TestCase):
                 data_center=config.DC_NAME[0], all_net=True,
                 mgmt_network=config.MGMT_BRIDGE
         ):
-            raise NetworkException("Cannot remove network from setup")
+            logger.error("Cannot remove network from setup")
 
 
 @attr(tier=1)
-class Test01(IOTestCaseBase):
+class Test01(TestIOTestCaseBase):
     """
     Positive: Creating & adding networks with valid names to the cluster
     Negative: Trying to create networks with invalid names
     """
     __test__ = True
 
-    @istest
     @tcms(14499, 390936)
-    def check_network_names(self):
+    def test_check_network_names(self):
         """
         Positive: Should succeed creating networks with valid names
         Negative: Should fail to create networks with invalid names
@@ -127,7 +119,7 @@ class Test01(IOTestCaseBase):
 
 
 @attr(tier=1)
-class Test02(IOTestCaseBase):
+class Test02(TestIOTestCaseBase):
     """
     Negative: Trying to create networks with invalid IPs
     """
@@ -152,9 +144,8 @@ class Test02(IOTestCaseBase):
         ):
             raise NetworkException("Cannot create new Network")
 
-    @istest
     @tcms(14499, 390938)
-    def check_invalid_ips(self):
+    def test_check_invalid_ips(self):
         """
         Negative: Trying to create networks with invalid IPs
         (Creation should fail)
@@ -195,7 +186,7 @@ class Test02(IOTestCaseBase):
 
 
 @attr(tier=1)
-class Test03(IOTestCaseBase):
+class Test03(TestIOTestCaseBase):
     """
     Negative: Trying to create networks with invalid netmask
     """
@@ -220,9 +211,8 @@ class Test03(IOTestCaseBase):
         ):
             raise NetworkException("Cannot create new Network")
 
-    @istest
     @tcms(14499, 390940)
-    def check_invalid_netmask(self):
+    def test_check_invalid_netmask(self):
         """
         Negative: Trying to create networks with invalid netmask
         """
@@ -262,15 +252,14 @@ class Test03(IOTestCaseBase):
 
 
 @attr(tier=1)
-class Test04(IOTestCaseBase):
+class Test04(TestIOTestCaseBase):
     """
     Negative: Trying to create a network with netmask but without an ip address
     """
     __test__ = True
 
-    @istest
     @tcms(14499, 390942)
-    def check_netmask_without_ip(self):
+    def test_check_netmask_without_ip(self):
         """
         Negative: Trying to create a network with netmask but without an
         IP address
@@ -298,16 +287,15 @@ class Test04(IOTestCaseBase):
 
 
 @attr(tier=1)
-class Test05(IOTestCaseBase):
+class Test05(TestIOTestCaseBase):
     """
     Negative: Trying to create a network with static ip but without
     netmask
     """
     __test__ = True
 
-    @istest
     @tcms(14499, 393107)
-    def check_static_ip_without_netmask(self):
+    def test_check_static_ip_without_netmask(self):
         """
         Negative: Trying to create a network with static IP but without netmask
         """
@@ -335,16 +323,15 @@ class Test05(IOTestCaseBase):
 
 
 @attr(tier=1)
-class Test06(IOTestCaseBase):
+class Test06(TestIOTestCaseBase):
     """
     Positive: Creating networks with valid MTU and adding them to a cluster.
     Negative: Trying to create a network with invalid MTUs - should fail.
     """
     __test__ = True
 
-    @istest
     @tcms(14499, 390944)
-    def check_mtu(self):
+    def test_check_mtu(self):
         """
         Positive: Creating networks with valid MTUs and adding them to a
         cluster.
@@ -398,15 +385,14 @@ class Test06(IOTestCaseBase):
 
 
 @attr(tier=1)
-class Test07(IOTestCaseBase):
+class Test07(TestIOTestCaseBase):
     """
     Negative: Trying to create a network with invalid usages value
     """
     __test__ = True
 
-    @istest
     @tcms(14499, 390946)
-    def check_invalid_usages(self):
+    def test_check_invalid_usages(self):
         """
         Trying to create a network with invalid usages value
         """
@@ -424,16 +410,15 @@ class Test07(IOTestCaseBase):
 
 
 @attr(tier=1)
-class Test08(IOTestCaseBase):
+class Test08(TestIOTestCaseBase):
     """
     Positive: Creating networks with valid VLAN IDs & adding them to a cluster.
     Negative: Trying to create networks with invalid VLAN IDs.
     """
     __test__ = True
 
-    @istest
     @tcms(14499, 390948)
-    def check_vlan_ids(self):
+    def test_check_vlan_ids(self):
         """
         Positive: Creating networks with valid VLAN IDs & adding them to a
         cluster.
@@ -491,7 +476,7 @@ class Test08(IOTestCaseBase):
 
 
 @attr(tier=1)
-class Test09(IOTestCaseBase):
+class Test09(TestIOTestCaseBase):
     """
     Positive: Create network and edit its name to valid name
     Negative: Try to edit its name to invalid name
@@ -527,9 +512,8 @@ class Test09(IOTestCaseBase):
                 )
             )
 
-    @istest
     @tcms(14499, 390950)
-    def edit_network_name(self, initial_name=initial_name):
+    def test_edit_network_name(self, initial_name=initial_name):
         """
         Positive: Should succeed editing network to valid name
         Negative: Should fail to edit networks with invalid names
@@ -575,7 +559,7 @@ class Test09(IOTestCaseBase):
 
 
 @attr(tier=1)
-class Test10(IOTestCaseBase):
+class Test10(TestIOTestCaseBase):
     """
     Positive: change network VLAN tag to valid VLAN tag
     Negative: change network VLAN tag to invalid VLAN tag
@@ -612,9 +596,8 @@ class Test10(IOTestCaseBase):
                 )
             )
 
-    @istest
     @tcms(14499, 390952)
-    def edit_network_tag(self, default_name=default_name):
+    def test_edit_network_tag(self, default_name=default_name):
         """
         Positive: Should succeed editing network to valid VLAN tags
         Negative: Should fail to edit networks with invalid VLAN tags
@@ -662,7 +645,7 @@ class Test10(IOTestCaseBase):
 
 
 @attr(tier=1)
-class Test11(IOTestCaseBase):
+class Test11(TestIOTestCaseBase):
     """
     Positive: Change VM network to be non-VM network
     Positive: Change non-VM network to be VM network
@@ -700,9 +683,8 @@ class Test11(IOTestCaseBase):
                 )
             )
 
-    @istest
     @tcms(14499, 390954)
-    def edit_vm_network(self, default_name=default_name):
+    def test_edit_vm_network(self, default_name=default_name):
         """
         Positive: Should succeed changing VM network to non-VM network
         """

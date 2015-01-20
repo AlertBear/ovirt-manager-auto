@@ -4,7 +4,7 @@ Linking feature test
 
 import logging
 
-from rhevmtests.networking import config
+from rhevmtests.networking import config, network_cleanup
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level.vms import addVm
@@ -15,7 +15,7 @@ from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.high_level import vms as hl_vm
 
 
-logger = logging.getLogger("Linking")
+logger = logging.getLogger("Linking_Init")
 
 #################################################
 
@@ -24,27 +24,25 @@ def setup_package():
     """
     Prepare environment
     """
-    local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id':
-                                            config.VLAN_ID[0],
-                                            'nic': 1,
-                                            'required': 'false'},
-                  config.VLAN_NETWORKS[1]: {'vlan_id':
-                                            config.VLAN_ID[1],
-                                            'nic': 1,
-                                            'required': 'false'},
-                  config.VLAN_NETWORKS[2]: {'vlan_id':
-                                            config.VLAN_ID[2],
-                                            'nic': 1,
-                                            'required': 'false'},
-                  config.VLAN_NETWORKS[3]: {'vlan_id':
-                                            config.VLAN_ID[3],
-                                            'nic': 1,
-                                            'required': 'false'},
-                  config.VLAN_NETWORKS[4]: {'vlan_id':
-                                            config.VLAN_ID[4],
-                                            'nic': 1,
-                                            'required': 'false'}}
+    local_dict = {
+        config.VLAN_NETWORKS[0]: {
+            "vlan_id": config.VLAN_ID[0], "nic": 1, "required": "false"
+        },
+        config.VLAN_NETWORKS[1]: {
+            "vlan_id": config.VLAN_ID[1], "nic": 1, "required": "false"
+        },
+        config.VLAN_NETWORKS[2]: {
+            "vlan_id": config.VLAN_ID[2], "nic": 1, "required": "false"
+        },
+        config.VLAN_NETWORKS[3]: {
+            "vlan_id": config.VLAN_ID[3], "nic": 1, "required": "false"
+        },
+        config.VLAN_NETWORKS[4]: {
+            "vlan_id": config.VLAN_ID[4], "nic": 1, "required": "false"
+        }
+    }
     if config.GOLDEN_ENV:
+        network_cleanup()
         logger.info(
             "Running on golden env, setting up only networks and starting "
             " VM %s at host %s", config.VM_NAME[0], config.HOSTS[0]
@@ -62,22 +60,18 @@ def setup_package():
             raise NetworkException("VM %s did not come up" % config.VM_NAME[0])
 
     else:
-        if not prepareSetup(hosts=config.VDS_HOSTS[0],
-                            cpuName=config.CPU_NAME,
-                            username=config.HOSTS_USER,
-                            password=config.HOSTS_PW,
-                            datacenter=config.DC_NAME[0],
-                            storageDomainName=config.STORAGE_NAME[0],
-                            storage_type=config.STORAGE_TYPE,
-                            cluster=config.CLUSTER_NAME[0],
-                            lun_address=config.LUN_ADDRESS[0],
-                            lun_target=config.LUN_TARGET[0],
-                            luns=config.LUN[0], version=config.COMP_VERSION,
-                            vmName=config.VM_NAME[0],
-                            template_name=config.TEMPLATE_NAME[0],
-                            vm_password=config.VMS_LINUX_PW,
-                            mgmt_network=config.MGMT_BRIDGE,
-                            auto_nics=[0]):
+        if not prepareSetup(
+            hosts=config.VDS_HOSTS[0], cpuName=config.CPU_NAME,
+            username=config.HOSTS_USER, password=config.HOSTS_PW,
+            datacenter=config.DC_NAME[0],
+            storageDomainName=config.STORAGE_NAME[0],
+            storage_type=config.STORAGE_TYPE, cluster=config.CLUSTER_NAME[0],
+            lun_address=config.LUN_ADDRESS[0], lun_target=config.LUN_TARGET[0],
+            luns=config.LUN[0], version=config.COMP_VERSION,
+            vmName=config.VM_NAME[0], template_name=config.TEMPLATE_NAME[0],
+            vm_password=config.VMS_LINUX_PW, mgmt_network=config.MGMT_BRIDGE,
+            auto_nics=[0]
+        ):
             raise NetworkException("Cannot create setup")
 
         if not addVm(
@@ -105,8 +99,8 @@ def teardown_package():
             config.VM_NAME[0]
         )
         if not vms.stopVm(True, vm=config.VM_NAME[0]):
-            raise NetworkException(
-                "Failed to stop VM: %s" % config.VM_NAME[0]
+            logger.error(
+                "Failed to stop VM: %s", config.VM_NAME[0]
             )
 
         if not remove_net_from_setup(
@@ -114,8 +108,8 @@ def teardown_package():
                 data_center=config.DC_NAME[0], all_net=True,
                 mgmt_network=config.MGMT_BRIDGE
         ):
-            raise NetworkException(
-                "Failed to remove networks from DC %s" % config.DC_NAME[0]
+            logger.error(
+                "Failed to remove networks from DC %s", config.DC_NAME[0]
             )
 
     else:
@@ -123,4 +117,4 @@ def teardown_package():
                 positive=True, datacenter=config.DC_NAME[0],
                 vdc=config.VDC_HOST, vdc_password=config.VDC_ROOT_PASSWORD
         ):
-            raise NetworkException("Cannot remove setup")
+            logger.error("Cannot remove setup")
