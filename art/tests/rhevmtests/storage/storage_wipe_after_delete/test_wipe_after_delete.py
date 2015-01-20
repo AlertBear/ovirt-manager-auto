@@ -196,7 +196,7 @@ class CommonUsage(BaseTestCase):
             wait_for_jobs()
 
 
-@attr(tier=1)
+@attr(tier=0)
 class TestCase379365(CommonUsage):
     """
     Check wipe after delete functionality
@@ -231,7 +231,7 @@ class TestCase379365(CommonUsage):
                             wipe_after_delete=True)
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase379370(CommonUsage):
     """
     wipe after delete on hotplugged disks
@@ -266,7 +266,7 @@ class TestCase379370(CommonUsage):
                             wipe_after_delete=True)
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase379367(CommonUsage):
     """
     Checking functionality - checked box
@@ -291,7 +291,7 @@ class TestCase379367(CommonUsage):
         logger.info("Test finished")
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase384228(CommonUsage):
     """
     Wipe after delete with LSM
