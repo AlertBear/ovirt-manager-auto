@@ -328,8 +328,9 @@ class TestCase396322(BasicEnvironment):
                               vmName=VM1_NAME)
             assert verify_vm_disk_description(VM1_NAME, disk_alias,
                                               expected_disk_description)
-
-            target_sd = get_other_storage_domain(disk_alias, VM1_NAME)
+            # Find a storage domain of the same type to migrate the disk into
+            target_sd = get_other_storage_domain(disk_alias, VM1_NAME,
+                                                 self.storage)
             live_migrate_vm_disk(VM1_NAME, disk_alias, target_sd, wait=False)
             disk_description_expected_to_fail = \
                 "LSM_disk_description_will_not_work_at_all"
