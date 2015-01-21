@@ -332,7 +332,7 @@ class BasicResize(BaseTestCase):
                         "Failed to remove disks %s" % self.disk_name)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase336099(DisksPermutationEnvironment):
     """
     Resize virtual disk after snapshot creation
@@ -384,7 +384,7 @@ class TestCase336099(DisksPermutationEnvironment):
                                                % self.snap_description)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase336100(DisksPermutationEnvironment):
     """
     Commit snapshot after resizing the disk
