@@ -18,7 +18,7 @@ from art.rhevm_api.tests_lib.high_level.networks import(
 from art.rhevm_api.tests_lib.low_level.networks import updateClusterNetwork
 from art.rhevm_api.tests_lib.low_level.vms import addNic, removeNic, updateNic
 
-logger = logging.getLogger("Network_Migration_Test")
+logger = logging.getLogger("Network_Migration_Cases")
 
 NETMASK = "255.255.0.0"
 
@@ -193,17 +193,6 @@ class TestMigrationCase03(TestMigrationCaseBase):
         )
         dedicated_migration(vlan=config.VLAN_ID[0])
 
-    @tcms(8735, 256583)
-    def test_dedicated_tagged_migration_nic(self):
-        """
-        Check dedicated migration over tagged network by putting req net down
-        """
-        logger.info(
-            "Check that VLAN network migration over NIC is working as "
-            "expected by putting NIC with required network down"
-        )
-        migrate_unplug_required(vlan=config.VLAN_ID[0])
-
 
 @attr(tier=1)
 class TestMigrationCase04(TestMigrationCaseBase):
@@ -250,17 +239,6 @@ class TestMigrationCase04(TestMigrationCaseBase):
             "expected"
         )
         dedicated_migration()
-
-    @tcms(8735, 260554)
-    def test_nonvm_migration_nic(self):
-        """
-        Check dedicated migration over non-VM network by putting req net down
-        """
-        logger.info(
-            "Check that non-VM network migration over NIC is working "
-            "as expected by putting NIC with required network down"
-        )
-        migrate_unplug_required()
 
 
 @attr(tier=1)
@@ -465,17 +443,6 @@ class TestMigrationCase08(TestMigrationCaseBase):
         )
         dedicated_migration(bond=config.BOND[0])
 
-    @tcms(8735, 260604)
-    def test_dedicated_migration_bond_nic(self):
-        """
-        Check dedicated network migration over bond putting req net down
-        """
-        logger.info(
-            "Check that network migration over Bond is working as "
-            "expected by putting NIC with required network down"
-        )
-        migrate_unplug_required(bond=config.BOND[0], req_nic=1)
-
 
 @attr(tier=1)
 class TestMigrationCase09(TestMigrationCaseBase):
@@ -522,18 +489,6 @@ class TestMigrationCase09(TestMigrationCaseBase):
             "as expected "
         )
         dedicated_migration(bond=config.BOND[0])
-
-    @tcms(8735, 260603)
-    def test_dedicated_migration_nonvm_bond_nic(self):
-        """
-        Check migration over dedicated non-vm network over bond
-        Do it by turning down NIC with required network
-        """
-        logger.info(
-            "Check that non-VM network migration over Bond is working "
-            "as expected by putting NIC with required network down"
-        )
-        migrate_unplug_required(bond=config.BOND[0], req_nic=1)
 
 
 @attr(tier=1)
@@ -584,20 +539,6 @@ class TestMigrationCase10(TestMigrationCaseBase):
             "expected "
         )
         dedicated_migration(vlan=config.VLAN_ID[0], bond=config.BOND[0])
-
-    @tcms(8735, 260605)
-    def test_dedicated_migration_vlan_bond_nic(self):
-        """
-        Check migration over dedicated tagged network over bond
-        Disconnect the nic with required network to do it
-        """
-        logger.info(
-            "Check that VLAN network migration over Bond is working "
-            "as expected by putting NIC with required network down"
-        )
-        migrate_unplug_required(
-            bond=config.BOND[0], req_nic=1, vlan=config.VLAN_ID[0]
-        )
 
 
 @attr(tier=1)
