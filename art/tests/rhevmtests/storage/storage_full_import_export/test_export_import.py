@@ -173,7 +173,7 @@ class TestCase41256(BaseExportImportTestCase):
             True, self.vm_name, config.CLUSTER_NAME, self.export_domain)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase41242(BaseExportImportTestCase):
     """
     Test case 41242 - Export a VM sanity

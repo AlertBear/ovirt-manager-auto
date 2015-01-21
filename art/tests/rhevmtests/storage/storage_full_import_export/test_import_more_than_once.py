@@ -20,7 +20,7 @@ ENUMS = config.ENUMS
 STORAGE_DOMAIN_API = get_api('storage_domain', 'storagedomains')
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase174617(TestCase):
     """
     Test Case 174617 - Import more than once
