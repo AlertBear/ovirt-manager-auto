@@ -59,6 +59,8 @@ DATA_FILES = [
     'art/tests/rhevmtests/infra/*/*/*.py',
     'art/tests/rhevmtests/system/*.py',
     'art/tests/rhevmtests/system/*/*.py',
+    'art/tests/rhevmtests/system/generic_ldap/fixtures/*/*.properties',
+    'art/tests/rhevmtests/system/generic_ldap/fixtures/*/*.conf',
 ]
 
 DATA_FILES = common.expand_paths(TEST_DATA_PATH, *DATA_FILES)
@@ -85,7 +87,7 @@ CONFS = {
 
 MANIFEST = [
     'recursive-include art/rhevm_api *.xsd',
-    'recursive-include art/tests/rhevmtests *.conf *.xml *.py',
+    'recursive-include art/tests/rhevmtests *.conf *.xml *.py *.properties',
     'recursive-include art/unittest_lib *.py',
 ]
 
