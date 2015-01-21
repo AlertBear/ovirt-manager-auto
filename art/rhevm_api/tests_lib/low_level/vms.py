@@ -1344,16 +1344,17 @@ def _getVmSnapshots(vm, get_href=True):
 
 def _getVmSnapshot(vm, snap, all_content=False):
     if all_content:
-        backup_header = SNAPSHOT_API.api.headers['All-content']
+        backup_header = SNAPSHOT_API.api.headers.get('All-content', False)
         SNAPSHOT_API.api.headers['All-content'] = True
-    vm_obj = VM_API.find(vm)
-    returned_object = SNAPSHOT_API.getElemFromElemColl(vm_obj, snap,
-                                                       'snapshots',
-                                                       'snapshot',
-                                                       prop='description')
-
-    if all_content:
-        SNAPSHOT_API.api.headers['All-content'] = backup_header
+    try:
+        vm_obj = VM_API.find(vm)
+        returned_object = SNAPSHOT_API.getElemFromElemColl(vm_obj, snap,
+                                                           'snapshots',
+                                                           'snapshot',
+                                                           prop='description')
+    finally:
+        if all_content:
+            SNAPSHOT_API.api.headers['All-content'] = backup_header
     return returned_object
 
 
