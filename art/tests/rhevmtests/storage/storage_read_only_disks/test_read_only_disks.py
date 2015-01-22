@@ -302,7 +302,7 @@ class TestCase332473(TestCase):
                     self.disk_alias)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase332474(DefaultEnvironment):
     """
     Attach a RO shared disk to vm and try to write to the disk
@@ -443,7 +443,7 @@ class TestCase337630(DefaultEnvironment):
                                                % self.snapshot_description)
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase332475(TestCase):
     """
     Checks that changing disk's write policy from RW to RO will fails
