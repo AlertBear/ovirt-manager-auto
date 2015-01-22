@@ -1,6 +1,6 @@
 import config
 import logging
-from art.rhevm_api.tests_lib.low_level import vms
+from rhevmtests.storage.helpers import create_vm_or_clone
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ def create_vm(vm_name, disk_interface,
     from the configuration file)
     """
     logger.info("Creating VM %s at SD %s" % (vm_name, storage_domain))
-    return vms.createVm(
+    return create_vm_or_clone(
         True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
         nic=config.NIC_NAME[0], storageDomainName=storage_domain,
         size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,

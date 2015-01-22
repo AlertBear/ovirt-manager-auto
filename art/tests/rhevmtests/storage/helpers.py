@@ -12,7 +12,8 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import (
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
     get_vm_disk_logical_name, stop_vms_safely, get_vm_snapshots,
-    removeSnapshot, activateVmDisk, waitForIP,
+    removeSnapshot, activateVmDisk, waitForIP, cloneVmFromTemplate,
+    createVm, startVm,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.test_handler import exceptions
@@ -209,3 +210,61 @@ def get_vm_ip(vm_name):
     :rtype: str or EntityNotFound exception
     """
     return waitForIP(vm_name)[1]['ip']
+
+
+def create_vm_or_clone(positive, vmName, vmDescription,
+                       cluster, **kwargs):
+    """
+    Create a VM from scratch for non-GE environments, clones VM from
+    cluster's templates for GE environments
+
+    :param positive: Expected result
+    :type positive: bool
+    :param vmName: Name of the vm
+    :type vmName: str
+    :param vmDescription: Description of the vm
+    :type vmDescription: str
+    :param cluster: Name of the cluster
+    :type cluster: str
+    :return: True if successful in creating the vm, False otherwise
+    :rtype: bool
+    """
+    # This function mimics the parameters of createVm so all the
+    # instances of createVm can be quickly replaced
+    # TODO: add placement_host and HA parameters and modify the logic
+    #       after clone since multiple tests use those options
+
+    # Clone vm from template only allows virtio and virtio-scsi disk interfaces
+    diskInterface = kwargs.get('diskInterface', None)
+    if config.GOLDEN_ENV and (diskInterface != config.INTERFACE_IDE):
+        logger.info("Cloning vm")
+        template_name = None
+        for cl in config.CLUSTERS:
+            if cl['name'] == cluster:
+                # Get the name of the first template found under the cluster
+                # if there are multiple templates
+                template_name = cl['templates'][0]['template']['name']
+        if not template_name:
+            logger.error("Cannot find any templates to use under cluster %s",
+                         cluster)
+            return False
+
+        # Clone a vm from a template with the correct parameters
+        args_clone = {
+            'positive': True,
+            'name': vmName,
+            'template': template_name,
+            'cluster': cluster,
+            'clone': True,  # Always clone
+            # If sparse is not defined, use thin by default to speed up
+            # the test run
+            'vol_sparse': kwargs.get('volumeType', 'true'),
+            'vol_format': kwargs.get('volumeFormat', None),
+            'storagedomain': kwargs.get('storageDomainName', None),
+        }
+        assert cloneVmFromTemplate(**args_clone)
+        if kwargs.get('start', 'false').lower() == 'true':
+            return startVm(positive, vmName)
+        return True
+    else:
+        return createVm(positive, vmName, vmDescription, cluster, **kwargs)

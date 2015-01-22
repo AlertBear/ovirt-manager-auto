@@ -23,7 +23,7 @@ from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost, \
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainNamesForType)
 from art.rhevm_api.tests_lib.low_level.vms import updateVm, \
-    startVm, addSnapshot, is_snapshot_with_memory_state, createVm, \
+    startVm, addSnapshot, is_snapshot_with_memory_state, \
     stopVm, restoreSnapshot, undo_snapshot_preview, preview_snapshot, addVm, \
     removeVm, exportVm, importVm, removeVmFromExportDomain, \
     removeSnapshot, kill_process_by_pid_on_vm, shutdownVm, \
@@ -35,6 +35,7 @@ from art.rhevm_api.tests_lib.high_level.storagedomains import (
 
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
+from rhevmtests.storage.helpers import create_vm_or_clone
 
 logger = logging.getLogger(__name__)
 TCMS_TEST_PLAN = '10134'
@@ -71,7 +72,7 @@ def setup_module():
     def create_vm_and_snapshot(**vmArgs):
         vm_name = vmArgs['vmName']
         logger.info('Creating vm %s and installing OS on it', vm_name)
-        assert createVm(**vmArgs)
+        assert create_vm_or_clone(**vmArgs)
         logger.info('Creating base snapshot %s for vm %s',
                     config.BASE_SNAPSHOT, vm_name)
         assert addSnapshot(True, vm_name, config.BASE_SNAPSHOT)

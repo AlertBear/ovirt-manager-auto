@@ -20,7 +20,7 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import (
     cleanDataCenter, getStorageDomainNamesForType,
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
-    createVm, stop_vms_safely, waitForVMState, removeDisk, start_vms,
+    stop_vms_safely, waitForVMState, removeDisk, start_vms,
     getVmDisks, updateVmDisk, live_migrate_vm_disk, addDisk, removeVms,
 )
 from art.rhevm_api.utils.test_utils import get_api
@@ -28,6 +28,7 @@ from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import attr
 from rhevmtests.storage.storage_wipe_after_delete import config
+from rhevmtests.storage.helpers import create_vm_or_clone
 
 
 logger = logging.getLogger(__name__)
@@ -92,7 +93,7 @@ def setup_module():
 
             logger.info('Creating vm %s and installing OS on it', vm_name)
 
-            exs.append((vm_name, executor.submit(createVm, **args)))
+            exs.append((vm_name, executor.submit(create_vm_or_clone, **args)))
 
     for vm_name, ex in exs:
         if not ex.result():

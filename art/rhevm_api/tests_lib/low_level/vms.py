@@ -2286,8 +2286,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
         return True
     else:
         if (start.lower() == 'true'):
-            if not startVm(positive, vmName):
-                return False
+            return startVm(positive, vmName)
 
         return True
 

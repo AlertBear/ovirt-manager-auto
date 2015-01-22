@@ -9,6 +9,7 @@ from art.rhevm_api.tests_lib.low_level import vms as vms
 
 from art.rhevm_api.utils.test_utils import get_api
 from utilities.machine import Machine
+from rhevmtests.storage.helpers import create_vm_or_clone
 
 from art.test_handler.settings import opts
 import config
@@ -95,7 +96,7 @@ def prepare_vm(vm_name, create_snapshot=False, storage_domain=None):
     args = vm_args.copy()
     args['storageDomainName'] = storage_domain
     args['vmName'] = vm_name
-    assert vms.createVm(**args)
+    assert create_vm_or_clone(**args)
 
     vm_ip = vms.waitForIP(vm_name)[1]['ip']
     LOGGER.info("Storing ip address %s for vm %s", vm_ip, vm_name)

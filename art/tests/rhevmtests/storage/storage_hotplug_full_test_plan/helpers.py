@@ -13,6 +13,7 @@ from utilities import machine
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.low_level.hosts import getHostIP
+from rhevmtests.storage.helpers import create_vm_or_clone
 
 import config
 
@@ -83,7 +84,7 @@ def create_vm_with_disks(storage_domain, storage_type):
             name of the vm created
     """
     vm_name = config.VM_NAME % storage_type
-    vms.createVm(
+    create_vm_or_clone(
         True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
         nic=config.NIC_NAME[0], storageDomainName=storage_domain,
         size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,

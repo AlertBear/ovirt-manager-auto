@@ -42,7 +42,7 @@ def _prepare_data(sparse, vol_format, template_names, storage_type):
         config.TESTNAME, sparse, vol_format, storage_type)
     LOGGER.info("Creating vm %s %s %s..." % (sparse, vol_format, storage_type))
     if not create_vm(
-            vm_name, config.INTERFACE_IDE,
+            vm_name, config.INTERFACE_VIRTIO,
             sparse=sparse, volume_format=vol_format,
             storage_domain=storage_domain):
         raise exceptions.VMException("Creation of vm %s failed!" % vm_name)
@@ -198,7 +198,7 @@ class TestReadLock(TestCase):
         cls.template_name = "template_%s" % (cls.vm_name)
         storage_domain = storagedomains.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, cls.storage)[0]
-        if not create_vm(cls.vm_name, config.INTERFACE_IDE,
+        if not create_vm(cls.vm_name, config.INTERFACE_VIRTIO,
                          vm_type=cls.vm_type,
                          storage_domain=storage_domain):
             raise exceptions.VMException(

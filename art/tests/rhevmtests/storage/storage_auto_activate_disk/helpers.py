@@ -1,8 +1,14 @@
-from art.rhevm_api.tests_lib.low_level import vms
-import art.test_handler.exceptions as exceptions
-from art.rhevm_api.tests_lib.low_level import disks
+"""
+Collection of helper functions for auto activate disk tests
+"""
 import logging
 import config
+
+import art.test_handler.exceptions as exceptions
+
+from art.rhevm_api.tests_lib.low_level import disks, vms
+
+from rhevmtests.storage.helpers import create_vm_or_clone
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +38,7 @@ def create_and_start_vm(vm_name, storage_domain):
               'network': config.MGMT_BRIDGE
               }
 
-    if not vms.createVm(**vmArgs):
+    if not create_vm_or_clone(**vmArgs):
         raise exceptions.VMException('Unable to create vm %s for test'
                                      % vm_name)
 

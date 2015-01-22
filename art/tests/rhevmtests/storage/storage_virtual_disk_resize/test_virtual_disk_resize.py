@@ -25,12 +25,13 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import \
     getStorageDomainNamesForType, cleanDataCenter, getDomainAddress,\
     get_total_size
 from art.rhevm_api.tests_lib.low_level.vms import stop_vms_safely,\
-    waitForVMState, deactivateVmDisk, removeDisk, createVm, addSnapshot,\
+    waitForVMState, deactivateVmDisk, removeDisk, addSnapshot,\
     removeSnapshot, getVmDisks, preview_snapshot, \
     commit_snapshot, start_vms, undo_snapshot_preview, extend_vm_disk_size,\
     removeVm, waitForVmsStates, wait_for_vm_snapshots,\
     get_vms_disks_storage_domain_name, removeVms
 
+from rhevmtests.storage.helpers import create_vm_or_clone
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.rhevm_api.utils.storage_api import flushIptables
 
@@ -112,7 +113,7 @@ def setup_module():
 
             logger.info('Creating vm %s and installing OS on it', vm_name)
 
-            exs.append(executor.submit(createVm, **args))
+            exs.append(executor.submit(create_vm_or_clone, **args))
 
     [ex.result() for ex in exs]  # make sure all threads are finish
     logger.info('Shutting down vms %s', VMS_NAMES)
@@ -654,7 +655,7 @@ class TestCase287468(BasicResize):
         vmArgs['storageDomainName'] = self.storage_domain
 
         logger.info('Creating vm and installing OS on it')
-        if not createVm(**vmArgs):
+        if not create_vm_or_clone(**vmArgs):
             raise exceptions.VMException("Failed to create vm %s"
                                          % self.test_vm_name)
         assert waitForVMState(self.test_vm_name)
@@ -824,7 +825,7 @@ class TestCase287477(BasicResize):
             self.vm_name = "vm_%s_%s_%s" % (
                 self.tcms_test_case, self.storage, i)
             vmArgs['vmName'] = self.vm_name
-            if not createVm(**vmArgs):
+            if not create_vm_or_clone(**vmArgs):
                 raise exceptions.VMException('Unable to create vm %s for test'
                                              % self.vm_name)
             self.vm_names.append(self.vm_name)
@@ -874,7 +875,7 @@ class TestCase287478(BasicResize):
             vmArgs['storageDomainName'] = sd
             self.vm_name = self.vm_name % (self.tcms_test_case, i)
             vmArgs['vmName'] = self.vm_name
-            if not createVm(**vmArgs):
+            if not create_vm_or_clone(**vmArgs):
                 raise exceptions.VMException('Unable to create vm %s for test'
                                              % self.vm_name)
             self.vm_names.append(self.vm_name)

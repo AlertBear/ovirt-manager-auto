@@ -6,6 +6,8 @@ from art.rhevm_api.tests_lib.low_level import disks, templates, vms
 from art.rhevm_api.utils import test_utils as utils
 import art.test_handler.exceptions as exceptions
 from concurrent.futures import ThreadPoolExecutor
+from rhevmtests.storage.helpers import create_vm_or_clone
+
 import config
 import logging
 
@@ -73,22 +75,23 @@ def create_vm_and_template(cobbler_image, storage_domain, storage_type):
     template_name = config.TEMPLATE_NAME % storage_type
     logger.info("Creating VM %s and installing OS from image: %s" %
                 (vm_name, cobbler_image))
-    if not vms.createVm(config.positive,
-                        vmName=vm_name,
-                        vmDescription=vm_name,
-                        cluster=config.CLUSTER_NAME,
-                        nic=config.NIC_NAME[0],
-                        storageDomainName=storage_domain,
-                        size=10 * config.GB,
-                        diskInterface=config.ENUMS['interface_virtio'],
-                        memory=2 * config.GB,
-                        image=cobbler_image,
-                        installation=True,
-                        useAgent=True,
-                        os_type=config.ENUMS['rhel6'],
-                        user=config.VMS_LINUX_USER,
-                        password=config.VMS_LINUX_PW,
-                        network=config.MGMT_BRIDGE):
+    if not create_vm_or_clone(
+            config.positive,
+            vmName=vm_name,
+            vmDescription=vm_name,
+            cluster=config.CLUSTER_NAME,
+            nic=config.HOST_NICS[0],
+            storageDomainName=storage_domain,
+            size=10 * config.GB,
+            diskInterface=config.ENUMS['interface_virtio'],
+            memory=2 * config.GB,
+            image=cobbler_image,
+            installation=True,
+            useAgent=True,
+            os_type=config.ENUMS['rhel6'],
+            user=config.VMS_LINUX_USER,
+            password=config.VMS_LINUX_PW,
+            network=config.MGMT_BRIDGE):
         raise exceptions.VMException("Could not create vm %s" % vm_name)
     logger.info("VM %s created and started successfully" % vm_name)
 

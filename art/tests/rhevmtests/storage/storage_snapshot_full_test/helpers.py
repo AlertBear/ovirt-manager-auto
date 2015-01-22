@@ -6,6 +6,8 @@ from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
+
+from rhevmtests.storage.helpers import create_vm_or_clone
 import config
 import logging
 
@@ -74,7 +76,7 @@ def prepare_vm(**vm_args):
     Installs vm and creates base snapshot
     """
     vm_name = vm_args['vmName']
-    assert vms.createVm(**vm_args)
+    assert create_vm_or_clone(**vm_args)
     vm_ip = vms.waitForIP(vm_name)[1]['ip']
     VM_IP_ADDRESSES[vm_name] = vm_ip
     assert setPersistentNetwork(

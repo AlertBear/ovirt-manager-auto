@@ -17,6 +17,8 @@ import art.rhevm_api.utils.iptables as ip_action
 
 from art.rhevm_api.utils.test_utils import get_api, wait_for_tasks
 
+from rhevmtests.storage.helpers import create_vm_or_clone
+
 from art.test_handler import exceptions
 from sys import modules
 
@@ -200,7 +202,7 @@ def _create_vm(vm_name, vm_description, disk_interface,
     from the configuration file)
     """
     logger.info("Creating VM %s" % vm_name)
-    return vms.createVm(
+    return create_vm_or_clone(
         True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
         nic=config.NIC_NAME[0], storageDomainName=storageDomainName,
         size=config.DISK_SIZE,
