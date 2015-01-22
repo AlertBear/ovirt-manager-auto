@@ -124,7 +124,7 @@ def create_and_start_vm(vm_name, sd_name, installation=True):
               'storageDomainName': sd_name,
               'installation': installation,
               'size': config.DISK_SIZE,
-              'nic': config.HOST_NICS[0],
+              'nic': config.NIC_NAME[0],
               'image': config.COBBLER_PROFILE,
               'useAgent': True,
               'os_type': config.ENUMS['rhel6'],

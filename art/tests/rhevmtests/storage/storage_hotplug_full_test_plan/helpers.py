@@ -85,7 +85,7 @@ def create_vm_with_disks(storage_domain, storage_type):
     vm_name = config.VM_NAME % storage_type
     vms.createVm(
         True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
-        nic=config.HOST_NICS[0], storageDomainName=storage_domain,
+        nic=config.NIC_NAME[0], storageDomainName=storage_domain,
         size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
         volumeType=True, volumeFormat=config.DISK_FORMAT_COW,
         memory=config.GB, diskInterface=config.INTERFACE_VIRTIO,

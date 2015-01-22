@@ -18,7 +18,7 @@ def _create_vm(vm_name, disk_interface,
     logger.info("storage domain: %s" % storage_domain_name)
     return createVm(
         True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
-        nic=config.HOST_NICS[0], storageDomainName=storage_domain_name,
+        nic=config.NIC_NAME[0], storageDomainName=storage_domain_name,
         size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
         volumeType=sparse, volumeFormat=volume_format,
         diskInterface=disk_interface, memory=config.GB,

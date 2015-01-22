@@ -775,7 +775,7 @@ class TestCase289552(TestCase):
         assert vms.createVm(
             True, self.vm_name_1, self.vm_name_1, cluster=config.CLUSTER_NAME,
             storageDomainName=self.sd_name,
-            nic=config.HOST_NICS[0], size=config.DISK_SIZE,
+            nic=config.NIC_NAME[0], size=config.DISK_SIZE,
             diskType=config.DISK_TYPE_SYSTEM, volumeType=True,
             volumeFormat=config.ENUMS['format_cow'], memory=GB,
             diskInterface=config.INTERFACE_VIRTIO,
@@ -789,7 +789,7 @@ class TestCase289552(TestCase):
         assert vms.createVm(
             True, self.vm_name_2, self.vm_name_2, cluster=config.CLUSTER_NAME,
             storageDomainName=self.sd_name,
-            nic=config.HOST_NICS[0], size=config.DISK_SIZE,
+            nic=config.NIC_NAME[0], size=config.DISK_SIZE,
             diskType=config.DISK_TYPE_SYSTEM, volumeType=True,
             volumeFormat=config.ENUMS['format_cow'], memory=GB,
             diskInterface=config.INTERFACE_VIRTIO,

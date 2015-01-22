@@ -109,7 +109,7 @@ class TestCase355191(TestCase):
         logger.info("Creating VM %s at SD %s", vm_name, storage_domain)
         return ll_vms.createVm(
             True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
-            nic=config.HOST_NICS[0], storageDomainName=storage_domain,
+            nic=config.NIC_NAME[0], storageDomainName=storage_domain,
             size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
             volumeType=sparse, volumeFormat=volume_format,
             diskInterface=disk_interface, memory=GB,
@@ -283,7 +283,7 @@ class TestCase289683(TestCase):
             display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
             user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
             type=config.VM_TYPE_SERVER,
-            slim=True, nic=config.HOST_NICS[0], volumeType=True,
+            slim=True, nic=config.NIC_NAME[0], volumeType=True,
             volumeFormat=config.DISK_FORMAT_COW, useAgent=config.USE_AGENT,
             image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
             placement_host=host)
@@ -431,7 +431,7 @@ class TestCase320223(TestCase):
         logger.info("storage domain: %s" % storage_domain_name)
         return ll_vms.createVm(
             True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
-            nic=config.HOST_NICS[0], storageDomainName=storage_domain_name,
+            nic=config.NIC_NAME[0], storageDomainName=storage_domain_name,
             size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
             volumeType=sparse, volumeFormat=volume_format,
             diskInterface=disk_interface, memory=GB,
@@ -574,7 +574,7 @@ class TestCase315489(TestCase):
             display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
             user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
             type=config.VM_TYPE_SERVER,
-            slim=True, nic=config.HOST_NICS[0], volumeType=True,
+            slim=True, nic=config.NIC_NAME[0], volumeType=True,
             volumeFormat=config.DISK_FORMAT_COW, useAgent=config.USE_AGENT,
             image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
             placement_host=host)
@@ -682,7 +682,7 @@ class TestCase280628(TestCase):
         spm_host = hosts.getSPMHost(config.HOSTS)
         assert ll_vms.createVm(
             True, self.vm_name, self.vm_name, config.CLUSTER_NAME,
-            installation=True, nic=config.HOST_NICS[0],
+            installation=True, nic=config.NIC_NAME[0],
             storageDomainName=master_domain, size=config.DISK_SIZE,
             diskType=config.DISK_TYPE_SYSTEM, memory=GB,
             cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
@@ -727,7 +727,7 @@ def _create_vm(vm_name, vm_description, disk_interface,
     logger.info("storage domain: %s", storage_domain_name)
     return ll_vms.createVm(
         True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
-        nic=config.HOST_NICS[0], storageDomainName=storage_domain_name,
+        nic=config.NIC_NAME[0], storageDomainName=storage_domain_name,
         size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
         volumeType=sparse, volumeFormat=volume_format,
         diskInterface=disk_interface, memory=GB, cpu_socket=config.CPU_SOCKET,

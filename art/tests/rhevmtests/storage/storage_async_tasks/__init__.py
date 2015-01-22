@@ -34,7 +34,7 @@ def setup_module():
     LOGGER.info("Creating VM %s" % vm_name)
     assert vms.createVm(
         True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
-        nic=config.HOST_NICS[0], storageDomainName=storage_domain_name,
+        nic=config.NIC_NAME[0], storageDomainName=storage_domain_name,
         size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
         volumeType=True, volumeFormat=config.COW_DISK,
         diskInterface=config.INTERFACE_VIRTIO, memory=config.GB,

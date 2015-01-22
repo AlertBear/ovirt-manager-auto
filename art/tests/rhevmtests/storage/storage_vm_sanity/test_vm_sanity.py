@@ -59,7 +59,7 @@ def _create_vm(vm_name, vm_description, disk_interface,
         config.DATA_CENTER_NAME, storage_type)[0]
     return vms.createVm(
         True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
-        nic=config.HOST_NICS[0], storageDomainName=storage_domain,
+        nic=config.NIC_NAME[0], storageDomainName=storage_domain,
         size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
         volumeType=sparse, volumeFormat=volume_format,
         diskInterface=disk_interface, memory=GB,

@@ -106,7 +106,7 @@ def create_installing_vm(vm_name):
         'positive': True,
         'vmDescription': '',
         'cluster': config.CLUSTER_NAME,
-        'nic': config.HOST_NICS[0],
+        'nic': config.NIC_NAME[0],
         'nicType': config.ENUMS['nic_type_virtio'],
         'storageDomainName': MASTER_DOMAIN,
         'size': 5 * GB,

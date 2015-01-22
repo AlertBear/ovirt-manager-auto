@@ -42,7 +42,7 @@ vm_args = {
     'positive': True,
     'vmDescription': '',
     'cluster': config.CLUSTER_NAME,
-    'nic': config.HOST_NICS[0],
+    'nic': config.NIC_NAME[0],
     'nicType': ENUMS['nic_type_virtio'],
     'size': config.DISK_SIZE,
     'diskInterface': ENUMS['interface_virtio'],
