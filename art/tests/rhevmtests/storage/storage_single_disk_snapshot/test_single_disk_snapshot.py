@@ -253,7 +253,7 @@ class BasicEnvironment(BaseTestCase):
                                              self.snapshot_desc)
 
 
-@attr(tier=1)
+@attr(tier=0)
 class TestCase333023(BasicEnvironment):
     """
     Create snapshot of first disk out of 4 and verify that the
@@ -753,7 +753,7 @@ class TestCase342783(BasicEnvironment):
         super(TestCase342783, self).tearDown()
 
 
-@attr(tier=3)
+@attr(tier=1)
 class TestCase333055(BasicEnvironment):
     """
     Custom preview of vm configuration and 2 disks
@@ -825,7 +825,7 @@ class TestCase333055(BasicEnvironment):
         super(TestCase333055, self).tearDown()
 
 
-@attr(tier=3)
+@attr(tier=2)
 class TestCase343074(BasicEnvironment):
     """
     Restart vdsm during snapshot creation, check that snapshot creation
@@ -866,7 +866,7 @@ class TestCase343074(BasicEnvironment):
         super(TestCase343074, self).tearDown()
 
 
-@attr(tier=3)
+@attr(tier=2)
 class TestCase343077(BasicEnvironment):
     """
     Restart ovirt-engine service during snapshot creation, check that
@@ -977,7 +977,7 @@ class TestCase336096(BasicEnvironment):
         super(TestCase336096, self).tearDown()
 
 
-@attr(tier=3)
+@attr(tier=1)
 class TestCase336105(BasicEnvironment):
     """
     Create 3 snapshot and delete the second.
@@ -1043,7 +1043,7 @@ class TestCase336105(BasicEnvironment):
         self.check_file_existence_operation(True, 'snapshot')
 
 
-@attr(tier=3)
+@attr(tier=2)
 class TestCase343076(BasicEnvironment):
     """
     Block connectivity to storage server during snapshot creation, Check that
