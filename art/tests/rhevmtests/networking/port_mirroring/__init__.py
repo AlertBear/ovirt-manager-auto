@@ -222,11 +222,12 @@ def teardown_package():
                             "Failed to update %s in %s to profile "
                             "without port mirroring", config.NIC_NAME[0], vm
                         )
-                logger.info("Removing %s from %s", nic.name, vm)
-                if not removeNic(True, vm, nic.name):
-                    logger.error(
-                        "Failed to remove %s from %s", nic, vm
-                    )
+                else:
+                    logger.info("Removing %s from %s", nic.name, vm)
+                    if not removeNic(True, vm, nic.name):
+                        logger.error(
+                            "Failed to remove %s from %s", nic, vm
+                        )
 
         logger.info("Removing all networks from DC/Cluster and hosts")
         if not remove_net_from_setup(
