@@ -216,7 +216,7 @@ def _create_vm(vm_name, vm_description, disk_interface,
         useAgent=config.USE_AGENT)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase174610(BaseTestCase):
     """
     * Block connection from engine to host.
@@ -380,7 +380,7 @@ class TestCase174613(TestCase):
                     config.LIFECYCLE_DOMAIN_NAMES[index])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase147888(TestCase):
     """
     test check if bad and conflict parameters for creating storage
