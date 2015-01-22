@@ -220,7 +220,7 @@ class TestCase396321(BaseClassEditDescription):
         self.basic_positive_flow()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase396320(BasicEnvironment):
     """
     Hot plug disk from one running VM to another, ensuring that the
