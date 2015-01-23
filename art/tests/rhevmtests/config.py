@@ -235,6 +235,7 @@ VERSION = ["3.0", "3.1", "3.2", "3.3", "3.4", "3.5"]
 
 SAMPLER_TIMEOUT = 60
 CONNECT_TIMEOUT = 60
+ENGINE_RESTART_TIMEOUT = 120  # seconds
 
 MGMT_BRIDGE = PARAMETERS.get('mgmt_bridge')
 

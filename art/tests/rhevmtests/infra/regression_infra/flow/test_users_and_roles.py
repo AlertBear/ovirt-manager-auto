@@ -31,6 +31,24 @@ class TestCaseUserAndRoles(TestCase):
 
     __test__ = (config.STORAGE_TYPE == 'nfs')
 
+    @classmethod
+    def setup_class(cls):
+        status = users.addExternalUser(
+            positive=True,
+            user_name=config.USER_VDCADMIN,
+            principal=config.USER_VDCADMIN,
+            domain=config.USER_DOMAIN,
+        )
+        assert status, 'Create user %s' % config.USER_VDCADMIN
+
+    @classmethod
+    def teardown_class(cls):
+        status = users.removeUser(
+            positive=True,
+            user=config.USER_VDCADMIN_NAME,
+        )
+        assert status, 'Remove user %s' % config.USER_VDCADMIN_NAME
+
     @istest
     def t01_check_everyone_group_exists(self):
         """
@@ -58,8 +76,12 @@ class TestCaseUserAndRoles(TestCase):
         test creates a user with no roles
         """
         logger.info('Create user')
-        status = users.addUser(positive=True, user_name=config.USER_NO_ROLES,
-                               domain=config.USER_DOMAIN)
+        status = users.addExternalUser(
+            positive=True,
+            user_name=config.USER_NO_ROLES,
+            principal=config.USER_NO_ROLES,
+            domain=config.USER_DOMAIN,
+        )
         self.assertTrue(status, 'Create user')
 
     @istest
@@ -69,8 +91,12 @@ class TestCaseUserAndRoles(TestCase):
         test creates a user
         """
         logger.info('Create user')
-        status = users.addUser(positive=True, user_name=config.USERNAME,
-                               domain=config.USER_DOMAIN)
+        status = users.addExternalUser(
+            positive=True,
+            user_name=config.USERNAME,
+            principal=config.USERNAME,
+            domain=config.USER_DOMAIN,
+        )
         self.assertTrue(status, 'Create user')
 
     @istest
@@ -80,8 +106,12 @@ class TestCaseUserAndRoles(TestCase):
         test creates a user with no roles
         """
         logger.info('Create user - wrong domain')
-        status = users.addUser(positive=False, domain='bad_config',
-                               user_name=config.USERNAME)
+        status = users.addExternalUser(
+            positive=False,
+            domain='bad_config',
+            principal=config.USERNAME,
+            user_name=config.USERNAME,
+        )
         self.assertTrue(status, 'Create user - wrong domain')
 
     @istest
@@ -91,8 +121,12 @@ class TestCaseUserAndRoles(TestCase):
         test creates a user which does not exists in domain
         """
         logger.info('Create user which does not exists in domain')
-        status = users.addUser(positive=False, domain=config.USER_DOMAIN,
-                               user_name=config.USER_NON_EXISTING)
+        status = users.addExternalUser(
+            positive=False,
+            domain=config.USER_DOMAIN,
+            user_name=config.USER_NON_EXISTING,
+            principal=config.USER_NON_EXISTING,
+        )
         self.assertTrue(status, 'Create user which does not exists in domain')
 
     @istest
@@ -105,8 +139,11 @@ class TestCaseUserAndRoles(TestCase):
         status = tags.addTag(positive=True, name=config.TAG_1_NAME)
         self.assertTrue(status, 'Create tag')
         logger.info('Add tag to user')
-        status = users.addTagToUser(positive=True, user=config.USER_NO_ROLES,
-                                    tag=config.TAG_1_NAME)
+        status = users.addTagToUser(
+            positive=True,
+            user=config.USER_NO_ROLES_NAME,
+            tag=config.TAG_1_NAME
+        )
         self.assertTrue(status, 'Add tag to user')
 
     @istest
@@ -259,7 +296,7 @@ class TestCaseUserAndRoles(TestCase):
         """
         logger.info('Add vm permissions to user')
         status = mla.addVMPermissionsToUser(
-            positive=True, user=config.USERNAME, vm=config.VM_NAME)
+            positive=True, user=config.USERNAME_NAME, vm=config.VM_NAME)
         self.assertTrue(status, 'Add vm permissions to user')
 
     @istest
@@ -270,7 +307,7 @@ class TestCaseUserAndRoles(TestCase):
         """
         logger.info('Add host permissions to user')
         status = mla.addHostPermissionsToUser(
-            positive=True, user=config.USERNAME, host=config.HOST_NAME)
+            positive=True, user=config.USERNAME_NAME, host=config.HOST_NAME)
         self.assertTrue(status, 'Add host permissions to user')
 
     @istest
@@ -281,7 +318,7 @@ class TestCaseUserAndRoles(TestCase):
         """
         logger.info('Add storage permissions to user')
         status = mla.addStoragePermissionsToUser(
-            positive=True, user=config.USERNAME,
+            positive=True, user=config.USERNAME_NAME,
             storage=config.STORAGE_DOMAIN_NAME)
         self.assertTrue(status, 'Add storage permissions to user')
 
@@ -293,7 +330,7 @@ class TestCaseUserAndRoles(TestCase):
         """
         logger.info('Add cluster permissions to user')
         status = mla.addClusterPermissionsToUser(
-            positive=True, user=config.USERNAME,
+            positive=True, user=config.USERNAME_NAME,
             cluster=config.CLUSTER_1_NAME)
         self.assertTrue(status, 'Add cluster permissions to user')
 
@@ -317,7 +354,7 @@ class TestCaseUserAndRoles(TestCase):
         """
         logger.info('Add template permissions to user')
         status = mla.addPermissionsForTemplate(
-            positive=True, user=config.USERNAME,
+            positive=True, user=config.USERNAME_NAME,
             template=config.TEMPLATE_NAME)
         self.assertTrue(status, 'Add template permissions to user')
 
@@ -394,9 +431,9 @@ class TestCaseUserAndRoles(TestCase):
         test verifies users functionality
         the test removes users
         """
-        users_to_remove = [config.USER_NO_ROLES, config.USERNAME]
+        users_to_remove = [config.USER_NO_ROLES_NAME, config.USERNAME_NAME]
         for username in users_to_remove:
-            logger.info('Remove user ' + username)
+            logger.info('Remove user %s', username)
             status = users.removeUser(positive=True, user=username)
             self.assertTrue(status, 'Remove user ' + username)
 
@@ -408,10 +445,14 @@ class TestCaseUserAndRoles(TestCase):
         """
         logger.info('Check user properties in active directory')
         status = users.verifyADUserProperties(
-            positive=True, domain=config.USER_DOMAIN,
-            user=config.USER_VDCADMIN,
-            expected_username=config.USER_VDCADMIN + '@' + config.USER_DOMAIN,
-            expected_department='Quality Assurance')
+            positive=True,
+            domain=config.USER_DOMAIN,
+            user=config.USER_VDCADMIN_NAME,
+            expected_username='%s@%s' % (
+                config.USER_VDCADMIN_NAME, config.USER_DOMAIN
+            ),
+            expected_department='Quality Assurance'
+        )
         self.assertTrue(status, 'Check user properties in active directory')
 
     @istest
@@ -422,8 +463,12 @@ class TestCaseUserAndRoles(TestCase):
         """
         logger.info('Search user by name in active directory')
         status = users.searchForUserInAD(
-            positive=True, query_key='name', query_val=config.USER_VDCADMIN,
-            key_name='name', domain=config.USER_DOMAIN)
+            positive=True,
+            query_key='name',
+            query_val=config.USER_VDCADMIN_NAME,
+            key_name='name',
+            domain=config.USER_DOMAIN
+        )
         self.assertTrue(status, 'Search user by name in active directory')
 
     @istest
@@ -434,9 +479,12 @@ class TestCaseUserAndRoles(TestCase):
         """
         logger.info('Search user by username in active directory')
         status = users.searchForUserInAD(
-            positive=True, query_key='usrname',
-            query_val=config.USER_VDCADMIN + '@' + config.USER_DOMAIN,
-            key_name='user_name', domain=config.USER_DOMAIN)
+            positive=True,
+            query_key='usrname',
+            query_val=config.USER_VDCADMIN,
+            key_name='user_name',
+            domain=config.USER_DOMAIN
+        )
         self.assertTrue(status, 'Search user by username in active directory')
 
     @istest

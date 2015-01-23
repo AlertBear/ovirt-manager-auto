@@ -54,8 +54,12 @@ class TestCaseMixed(TestCase):
         the test adds a user
         """
         logger.info('Add user')
-        status = users.addUser(positive=True, user_name=config.USERNAME,
-                               domain=config.USER_DOMAIN)
+        status = users.addExternalUser(
+            positive=True,
+            user_name=config.USERNAME,
+            principal=config.USERNAME,
+            domain=config.USER_DOMAIN,
+        )
         self.assertTrue(status, 'Add user')
 
     @istest
@@ -66,7 +70,7 @@ class TestCaseMixed(TestCase):
         """
         logger.info('Add dc permissions to user')
         status = mla.addPermissionsForDataCenter(
-            positive=True, user=config.USERNAME,
+            positive=True, user=config.USERNAME_NAME,
             data_center=config.DATA_CENTER_1_NAME)
         self.assertTrue(status, 'Add dc permissions to user')
 
@@ -78,7 +82,7 @@ class TestCaseMixed(TestCase):
         """
         logger.info('Remove permissions for user')
         status = mla.removeAllPermissionsFromUser(
-            positive=True, user=config.USERNAME)
+            positive=True, user=config.USERNAME_NAME)
         self.assertTrue(status, 'Remove permissions for user')
 
     @istest
@@ -301,5 +305,5 @@ class TestCaseMixed(TestCase):
         the test removes a user
         """
         logger.info('Remove user')
-        status = users.removeUser(positive=True, user=config.USERNAME)
+        status = users.removeUser(positive=True, user=config.USERNAME_NAME)
         self.assertTrue(status, 'Remove user')

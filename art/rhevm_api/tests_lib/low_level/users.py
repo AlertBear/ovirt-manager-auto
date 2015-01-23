@@ -18,7 +18,7 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 import logging
 from art.core_api.apis_utils import getDS
-from art.rhevm_api.utils.test_utils import get_api, split
+from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.validator import compareElements, compareCollectionSize
 from art.core_api import is_action
 from art.test_handler.settings import opts
@@ -55,9 +55,13 @@ def addUser(positive, **kwargs):
        * principal - users principal
     Return: status (True if user was created properly, False otherwise)
     '''
-
-    user_name = kwargs.pop('user_name')
     domain = kwargs.pop('domain')
+    if domain != 'internal':
+        logger.warn(
+            "The function 'll.users.addUser' is deprecated for external "
+            "domain (%s) ! Please use addExternalUser instead.", domain,
+        )
+    user_name = kwargs.pop('user_name')
     userDomain = Domain(name=domain)
     userName = user_name + "@" + domain
     namespace = kwargs.pop('namespace', None)
@@ -67,6 +71,34 @@ def addUser(positive, **kwargs):
                 namespace=namespace, principal=principal)
     user, status = util.create(user, positive)
 
+    return status
+
+
+def addExternalUser(
+    positive, user_name, domain, namespace=None, principal=None
+):
+    '''
+    Create new user in external user database.
+
+    :param user_name: user account name
+    :type user_name: str
+    :param domain: user domain
+    :type domain: str
+    :param namespace: users namespace
+    :type namespace: str or None
+    :param principal: users principal
+    :type principal: str or None
+    :return: status
+    :rtype: bool
+    '''
+    user = User(
+        user_name=user_name,
+        domain=Domain(name=domain),
+        namespace=namespace,
+        principal=principal,
+    )
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1147900
+    _, status = util.create(user, positive, compare=False)
     return status
 
 
