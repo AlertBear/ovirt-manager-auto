@@ -39,7 +39,7 @@ def setup_module():
                     LOGGER.info('%s was created.' % KEYTAB)
             openldap.run_cmd(['rm', '-f', KEYTAB])
 
-    common.prepareExtensions(NAME, config.EXTENSIONS_DIRECTORY, EXTENSIONS,
+    common.prepareExtensions(NAME, config.ENGINE_EXTENSIONS_DIR, EXTENSIONS,
                              chown='ovirt', clean=False)
     users.addUser(True, user_name=config.SSO_USER,
                   domain=config.OPENLDAP_SSO['authz_name'])
@@ -63,7 +63,7 @@ def teardown_module():
     config.ENGINE_HOST.service(config.APACHE_SERVICE).restart()
     common.loginAsAdmin()
     users.removeUser(True, config.SSO_USER, config.OPENLDAP_SSO['authz_name'])
-    common.cleanExtDirectory(config.EXTENSIONS_DIRECTORY)
+    common.cleanExtDirectory(config.ENGINE_EXTENSIONS_DIR)
 
 
 @attr(tier=1)
@@ -89,7 +89,7 @@ class SSOLogin(TestCase):
     @common.check(EXTENSIONS)
     def sso_login(self):
         """  Test sso login to REST API """
-        krb_conf = os.path.join(config.EXTENSIONS_DIRECTORY, KRB5_CONF)
+        krb_conf = os.path.join(config.ENGINE_EXTENSIONS_DIR, KRB5_CONF)
         # Note that I can't separate this to more commands as it's forgotten
         login = ['export', 'KRB5_CONFIG=%s' % krb_conf, '&&',
                  'echo', config.SSO_PASSWORD, '|', 'kinit', self.USER, '&&',

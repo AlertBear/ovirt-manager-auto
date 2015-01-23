@@ -21,11 +21,11 @@ TRUSTSTORE_PASSWORD = '123456'
 def setup_module():
     common.createTrustore(config.ADW2K12_DOMAINS, TRUSTSTORE,
                           TRUSTSTORE_PASSWORD)
-    common.prepareExtensions(NAME, config.EXTENSIONS_DIRECTORY, EXTENSIONS)
+    common.prepareExtensions(NAME, config.ENGINE_EXTENSIONS_DIR, EXTENSIONS)
 
 
 def teardown_module():
-    common.cleanExtDirectory(config.EXTENSIONS_DIRECTORY)
+    common.cleanExtDirectory(config.ENGINE_EXTENSIONS_DIR)
     common.removeTruststore(TRUSTSTORE)
 
 

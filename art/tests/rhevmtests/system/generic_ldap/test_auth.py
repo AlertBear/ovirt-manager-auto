@@ -21,16 +21,16 @@ KRB_CONF = 'krb_ipa.conf'
 
 
 def setup_module():
-    krb_conf_path = os.path.join(config.EXTENSIONS_DIRECTORY, KRB_CONF)
+    krb_conf_path = os.path.join(config.ENGINE_EXTENSIONS_DIR, KRB_CONF)
     krbjava = '%s=%s' % (config.KRB_JAVA, krb_conf_path)
     common.changeEngineProperties(CONF_NAME, config.ENGINE_PROPERTIES, krbjava)
-    common.prepareExtensions(NAME, config.EXTENSIONS_DIRECTORY, EXTENSIONS)
+    common.prepareExtensions(NAME, config.ENGINE_EXTENSIONS_DIR, EXTENSIONS)
 
 
 def teardown_module():
     conf = os.path.join('%s/%s' % (config.PROPERTIES_DIRECTORY, CONF_NAME))
     common.removeFile(conf)
-    common.cleanExtDirectory(config.EXTENSIONS_DIRECTORY)
+    common.cleanExtDirectory(config.ENGINE_EXTENSIONS_DIR)
 
 
 @attr(tier=1)

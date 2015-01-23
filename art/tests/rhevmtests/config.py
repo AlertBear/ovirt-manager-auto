@@ -44,6 +44,7 @@ ENGINE_URL = '%s://%s:%s/%s' % (
     ENGINE_ENTRY_POINT
 )
 ENGINE_LOG = '/var/log/ovirt-engine/engine.log'
+ENGINE_EXTENSIONS_DIR = '/etc/ovirt-engine/extensions.d'
 
 # DATABASE SECTION - TODO: make it configurable
 DB_ENGINE_HOST = VDC_HOST

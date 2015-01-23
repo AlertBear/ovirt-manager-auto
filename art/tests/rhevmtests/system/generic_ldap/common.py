@@ -3,12 +3,13 @@ __test__ = False
 import os
 import logging
 
-from time import sleep
 from functools import wraps
 from art.test_handler.exceptions import SkipTest
 from art.core_api.apis_exceptions import APIException
 from rhevmtests.system.generic_ldap import config
 from art.rhevm_api.tests_lib.low_level import users, mla, general
+from art.rhevm_api.utils.aaa import copy_extension_file
+from art.rhevm_api.utils.test_utils import restart_engine
 from art.unittest_lib.common import is_bz_state
 
 
@@ -19,30 +20,20 @@ ATTEMPTS = 25
 BZ1147900_FIXED = is_bz_state('1147900')
 
 
-def _restartEngine():
-    config.ENGINE.restart()
-    for attempt in range(1, ATTEMPTS):
-        sleep(INTERVAL)
-        if config.ENGINE.health_page_status:
-            LOGGER.info('HealthPage is UP')
-            return
-    LOGGER.error('Engine was not successfully restarted.')
-
-
 # Extensions utils
 def enableExtensions(service, host):
     """ restart service """
     LOGGER.info('Restarting service %s.' % service)
     if service == config.OVIRT_SERVICE:
-        _restartEngine()
+        restart_engine(config.ENGINE, INTERVAL, INTERVAL * ATTEMPTS)
     else:
         host.service(service).restart()
 
 
 def cleanExtDirectory(ext_dir, files=['*']):
     """ remove files from extension directory """
+    ext_files = [os.path.join(ext_dir, f) for f in files]
     with config.ENGINE_HOST.executor().session() as ss:
-        ext_files = [os.path.join(ext_dir, f) for f in files]
         ss.run_cmd(['rm', '-f', ' '.join(ext_files)])
 
 
@@ -65,19 +56,18 @@ def prepareExtensions(module_name, ext_dir, extensions, clean=True,
 
     ext_path = os.path.dirname(os.path.abspath(__file__))
     LOGGER.info(module_name)
-    confs = os.listdir(os.path.join(ext_path, config.FIXTURES, module_name))
+    dir_from = os.path.join(
+        ext_path,
+        config.FIXTURES,
+        module_name,
+    )
+    confs = os.listdir(dir_from)
 
     for conf in confs:
-        ext_file = os.path.join(ext_path, config.FIXTURES, module_name, conf)
+        ext_file = os.path.join(dir_from, conf)
+        target_file = os.path.join(ext_dir, conf)
         try:
-            with host.executor().session() as ss:
-                assert not ss.run_cmd(['cp', ext_file, ext_dir])[0]
-                if chown:
-                    extension = os.path.join(ext_dir, conf)
-                    chown_cmd = ['chown', '%s:%s' % (chown, chown), extension]
-                    res = ss.run_cmd(chown_cmd)
-                    assert not res[0], res[1]
-            LOGGER.info('Configuration "%s" has been copied.', conf)
+            copy_extension_file(host, ext_file, target_file, chown)
             extensions[conf] = True
         except AssertionError as e:
             LOGGER.error('Configuration "%s" has NOT been copied. Tests with '

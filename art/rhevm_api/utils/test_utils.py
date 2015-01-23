@@ -1464,6 +1464,26 @@ def restartOvirtEngine(host_obj, interval, attempts, timeout,
     return False
 
 
+def restart_engine(engine, interval, timeout):
+    """
+    Function restart engine and waits for Health Status.
+
+    :param engine: engine object
+    :type engine: instance of resources.Engine
+    :param interval: sampling interval
+    :type interval: int
+    :param timeout: limit to wait
+    :type timeout: int
+    :raises: APITimeout in case timeout exceed
+    """
+    engine.restart()
+    for status in TimeoutingSampler(
+        timeout, interval, lambda: engine.health_page_status
+    ):
+        if status:
+            break
+
+
 @is_action()
 def configureTempStaticIp(host, user, password, ip, nic='eth1',
                           netmask='255.255.255.0'):

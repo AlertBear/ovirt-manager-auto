@@ -16,11 +16,11 @@ NAME = 'simple'
 
 
 def setup_module():
-    common.prepareExtensions(NAME, config.EXTENSIONS_DIRECTORY, EXTENSIONS)
+    common.prepareExtensions(NAME, config.ENGINE_EXTENSIONS_DIR, EXTENSIONS)
 
 
 def teardown_module():
-    common.cleanExtDirectory(config.EXTENSIONS_DIRECTORY)
+    common.cleanExtDirectory(config.ENGINE_EXTENSIONS_DIR)
 
 
 class IndirectMembership(TestCase):
