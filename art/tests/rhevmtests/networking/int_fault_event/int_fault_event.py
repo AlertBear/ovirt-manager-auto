@@ -31,6 +31,8 @@ class TestNicFaultTestCaseBase(TestCase):
     """
     base class which provides teardown class method for each test case
     """
+    apis = set(["rest"])
+
     @classmethod
     def teardown_class(cls):
         """

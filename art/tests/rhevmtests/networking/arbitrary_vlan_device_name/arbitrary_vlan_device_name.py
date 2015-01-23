@@ -42,6 +42,8 @@ class TestArbitraryVlanDeviceNameTearDown(TestCase):
     This job create networks on host and we need to make sure that we clean
     the host from all VLANs and bridges
     """
+    apis = set(["rest"])
+
     @classmethod
     def teardown_class(cls):
         job_tear_down()
