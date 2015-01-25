@@ -259,10 +259,12 @@ class BasicEnvironment(BaseTestCase):
                     self.sp_id, self.sd_ids[i], self.img_ids[i], volume_id)
             # Ensure that a status of True is returned for the prepareImage
             # execution
-            self.assertTrue(status, "Status returned for prepareImage "
-                                    "command was not True as expected")
+            logger.info("The returned status from running prepareImage is: "
+                        "'%s'", status)
             logger.info("The returned output from running prepareImage is: "
                         "'%s'", prepare_output)
+            self.assertTrue(status, "Status returned for prepareImage "
+                                    "command was not True as expected")
             self.assertTrue(self.host_machine.compare_lv_attributes(
                 self.sd_ids[i], self.vol_ids[i], "a-"),
                 "The disk was not found to be active after running "
@@ -478,6 +480,7 @@ class TestCase389851(BasicEnvironment):
     __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
     tcms_test_case = '389851'
     disk_count = 2
+    snapshot_success = False
 
     def setUp(self):
         super(TestCase389851, self).setUp()
@@ -606,6 +609,7 @@ class TestCase389921(BasicEnvironment):
     __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
     tcms_test_case = '389921'
     disk_count = 5
+    snapshot_success = False
 
     def tearDown(self):
         logger.info("Remove the snapshot created (if it succeeded), paving "

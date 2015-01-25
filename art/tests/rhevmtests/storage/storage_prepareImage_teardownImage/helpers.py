@@ -1,6 +1,7 @@
 """
 3.5 Feature: Helper module for prepareImage and teardownImage
 """
+from art.rhevm_api.tests_lib.low_level import hosts
 from utilities.machine import Machine
 from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost
 import config
@@ -17,6 +18,7 @@ def host_to_use():
     :rtype: Machine
     """
     host = getSPMHost(config.HOSTS)
+    host = hosts.getHostIP(host)
     return Machine(host=host, user=config.HOSTS_USER,
                    password=config.HOSTS_PW).util('linux')
 

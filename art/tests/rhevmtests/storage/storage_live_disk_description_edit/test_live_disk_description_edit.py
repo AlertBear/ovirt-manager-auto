@@ -117,7 +117,7 @@ class BasicEnvironment(BaseTestCase):
 
 class BaseClassEditDescription(BasicEnvironment):
     """
-    Base class to be used by test cases 396316O and 396321
+    Base class to be used by test cases 396316 and 396321
     """
     __test__ = False
 
