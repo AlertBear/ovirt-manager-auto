@@ -5,20 +5,19 @@ Sanity will test untagged, tagged, bond scenarios.
 It will cover scenarios for VM/non-VM networks.
 """
 
+import logging
+from art.unittest_lib import attr
+from art.unittest_lib import NetworkTest as TestCase
 from art.core_api.apis_exceptions import EntityNotFound
 
 from art.rhevm_api.tests_lib.low_level.datacenters import(
     add_qos_to_datacenter, delete_qos_from_datacenter, addDataCenter,
     removeDataCenter
 )
-from art.rhevm_api.tests_lib.low_level.events import get_max_event_id
-from art.unittest_lib import attr
-from art.unittest_lib import NetworkTest as TestCase
 from art.test_handler.tools import tcms  # pylint: disable=E0611
-import logging
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.utils.test_utils import(
-    set_engine_properties, get_engine_properties
+    set_engine_properties, get_engine_properties, get_api
 )
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level import vms
@@ -28,8 +27,8 @@ from art.rhevm_api.tests_lib.high_level.networks import(
     delete_dummy_interfaces, update_network_host, checkHostNicParameters
 )
 from art.rhevm_api.tests_lib.low_level.hosts import(
-    checkNetworkFilteringDumpxml, genSNNic, sendSNRequest, waitForHostsStates,
-    waitForSPM, refresh_host_capabilities, get_host_name_from_engine
+    checkNetworkFilteringDumpxml, genSNNic, sendSNRequest,
+    get_host_name_from_engine
 )
 from art.rhevm_api.tests_lib.low_level.vms import(
     addNic, removeNic, getVmNicLinked, getVmNicPlugged, updateNic,
@@ -50,8 +49,10 @@ from rhevmtests.networking.multiple_queue_nics.helper import(
 from rhevmtests.networking.network_qos.helper import(
     add_qos_profile_to_nic, build_dict, compare_qos
 )
+from rhevmtests.networking.sanity.helper import check_dummy_on_host_interfaces
 
 
+HOST_API = get_api("host", "hosts")
 HOST_NICS = None  # filled in setup module
 HOST_NAME0 = None  # Fill in setup_module
 DC_NAMES = [config.DC_NAME[0], config.EXTRA_DC]
@@ -61,7 +62,7 @@ logger = logging.getLogger("Sanity_Cases")
 
 def setup_module():
     """
-    obtain host IP
+    Obtain host IP and host nics
     """
     global HOST_NICS
     global HOST_NAME0
@@ -349,7 +350,7 @@ class TestSanityCase05(TestCase):
             positive=True, vnic_profile_name=cls.vnic_profile, network=cls.vlan
         ):
             logger.error(
-                "Failed to remove %s profile" % cls.vnic_profile
+                "Failed to remove %s profile", cls.vnic_profile
             )
 
         if not remove_net_from_setup(
@@ -635,7 +636,7 @@ class TestSanityCase08(TestCase):
             host=config.VDS_HOSTS[0], network=[cls.vlan_1, cls.vlan_2],
             mgmt_network=config.MGMT_BRIDGE, data_center=config.DC_NAME[0]
         ):
-            raise NetworkException("Cannot remove network from setup")
+            logger.error("Cannot remove network from setup")
 
         logger.info("Update MTU to default on Host NIC1")
         cmd = [
@@ -715,7 +716,7 @@ class TestSanityCase09(TestCase):
             host=config.VDS_HOSTS[0], network=[cls.vlan],
             mgmt_network=config.MGMT_BRIDGE, data_center=config.DC_NAME[0]
         ):
-            raise NetworkException("Cannot remove network from setup")
+            logger.error("Cannot remove network from setup")
 
 ########################################################################
 
@@ -1020,13 +1021,13 @@ class TestSanityCase12(TestCase):
             config.VM_NAME[0]
         )
         if not vms.stopVm(True, vm=config.VM_NAME[0]):
-            logger.error("Failed to stop VM: %s" % config.VM_NAME[0])
+            logger.error("Failed to stop VM: %s", config.VM_NAME[0])
 
         logger.info("Removing all the VNICs beside mgmt network")
         for nic in config.NIC_NAME[1:5]:
             if not removeNic(True, config.VM_NAME[0], nic):
                 logger.error(
-                    "Cannot remove vNIC from VM %s" % config.VM_NAME[0]
+                    "Cannot remove vNIC from VM %s", config.VM_NAME[0]
                 )
 
         logger.info("Remove networks %s from setup", config.VLAN_NETWORKS[:4])
@@ -1039,7 +1040,7 @@ class TestSanityCase12(TestCase):
 
         logger.info("Start VM %s", config.VM_NAME[0])
         if not startVm(positive=True, vm=config.VM_NAME[0], wait_for_ip=True):
-            logger.error("Failed to start %s" % config.VM_NAME[0])
+            logger.error("Failed to start %s", config.VM_NAME[0])
 
 ########################################################################
 
@@ -1148,7 +1149,7 @@ class TestSanityCase13(TestCase):
             host=config.VDS_HOSTS[0], network=[cls.vlan_1],
             mgmt_network=config.MGMT_BRIDGE, data_center=config.DC_NAME[0]
         ):
-            logger.error("Cannot create and attach network")
+            logger.error("Cannot remove network from setup")
 
 
 @attr(tier=0)
@@ -1307,8 +1308,7 @@ class TestSanityCase18(TestCase):
     @classmethod
     def setup_class(cls):
         """
-        Create logical VM network on DC/Cluster/Host with ethtool_opts
-        and bridge_opts having non-default values
+        Get default MAC range from engine
         """
         logger.info("Get engine default MAC pool range")
         cls.engine_default_mac_range.append(
@@ -1576,7 +1576,7 @@ class TestSanityCase20(TestCase):
             placement_host=HOST_NAME0
         ):
             logger.error(
-                "Failed to start %s on %s" % (config.VM_NAME[0], HOST_NAME0)
+                "Failed to start %s on %s", config.VM_NAME[0], HOST_NAME0
             )
 
 
@@ -1819,8 +1819,7 @@ class TestSanityCase23(TestCase):
             mgmt_network=config.MGMT_BRIDGE, data_center=config.DC_NAME[0]
         ):
             logger.error(
-                "Cannot remove network %s from setup" %
-                config.VLAN_NETWORKS[0]
+                "Cannot remove network %s from setup", config.VLAN_NETWORKS[0]
             )
 
 
@@ -1894,7 +1893,7 @@ class TestSanityCase24(TestCase):
         """
         logger.info("Removing label from %s", HOST_NICS[1])
         if not remove_label(host_nic_dict={HOST_NAME0: [HOST_NICS[1]]}):
-            logger.error("Couldn't remove labels from %s" % HOST_NICS[1])
+            logger.error("Couldn't remove labels from %s", HOST_NICS[1])
 
         if not remove_net_from_setup(
             host=config.VDS_HOSTS, data_center=config.DC_NAME[0],
@@ -1980,9 +1979,8 @@ class TestSanityCase25(TestCase):
             if not updateNic(
                 True, config.VM_NAME[0], config.NIC_NAME[1], plugged='false'
             ):
-                logger.error(
-                    "Couldn't unplug NIC"
-                )
+                logger.error("Couldn't unplug NIC %s", config.NIC_NAME[1])
+
             if not removeNic(
                 True, config.VM_NAME[0], config.NIC_NAME[1]
             ):
@@ -2035,26 +2033,18 @@ class TestSanityCase26(TestCase):
         ):
             raise NetworkException("Failed to create dummy interfaces")
 
-        logger.info("Restart vdsm and supervdsm services")
-        if not (
-                config.VDS_HOSTS[0].service("supervdsmd").stop() and
-                config.VDS_HOSTS[0].service("vdsmd").restart()
-        ):
-            raise NetworkException("Failed to restart vdsmd service")
+        logger.info("Refresh host capabilities")
+        host_obj = HOST_API.find(config.HOSTS[0])
+        refresh_href = "{0};force".format(host_obj.get_href())
+        HOST_API.get(href=refresh_href)
 
-        logger.info("Wait for %s to be UP", HOST_NAME0)
-        if not waitForHostsStates(True, HOST_NAME0, timeout=600):
-            raise NetworkException("%s is not in UP state" % HOST_NAME0)
-
-        logger.info("Refresh capabilities on host")
-        last_event = get_max_event_id(query="")
+        logger.info("Check if dummy0 exist on host via engine")
         sample = TimeoutingSampler(
             timeout=config.SAMPLER_TIMEOUT, sleep=1,
-            func=refresh_host_capabilities, host=HOST_NAME0,
-            start_event_id=last_event
+            func=check_dummy_on_host_interfaces, dummy_name="dummy0"
         )
         if not sample.waitForFuncStatus(result=True):
-            logger.error("Failed to refresh host capabilities")
+            raise NetworkException("Dummy interface not exists on engine")
 
     @tcms(16421, 448118)
     def test_dummy_bonds(self):
@@ -2066,18 +2056,15 @@ class TestSanityCase26(TestCase):
         idx = 0
         while idx < 20:
             rc, out = genSNNic(
-                nic="bond%s" % idx, slaves=["dummy%s" % idx,
-                                            "dummy%s" % (idx + 1)]
+                nic="bond%s" % idx, slaves=[
+                    "dummy%s" % idx, "dummy%s" % (idx + 1)
+                ]
             )
             if not rc:
                 raise NetworkException("Cannot generate NIC object")
 
             net_obj.append(out["host_nic"])
             idx += 2
-
-        logger.info("Wait for %s to be UP", HOST_NAME0)
-        if not waitForHostsStates(True, HOST_NAME0, timeout=600):
-            raise NetworkException("%s is not in UP state" % HOST_NAME0)
 
         logger.info("sending SNRequest: 10 bonds on dummy interfaces")
         if not sendSNRequest(
@@ -2086,7 +2073,7 @@ class TestSanityCase26(TestCase):
             check_connectivity="true", connectivity_timeout=config.TIMEOUT,
             force="false"
         ):
-            raise NetworkException("Failed to SNRequest: bond1")
+            raise NetworkException("Failed to SNRequest")
 
     @classmethod
     def teardown_class(cls):
@@ -2100,26 +2087,15 @@ class TestSanityCase26(TestCase):
         ):
             logger.error("Failed to delete dummy interfaces")
 
-        logger.info("Restart VDSM service")
-        if not (
-                config.VDS_HOSTS[0].service("supervdsmd").stop() and
-                config.VDS_HOSTS[0].service("vdsmd").restart()
-        ):
-            logger.error("Failed to restart vdsmd service")
+        logger.info("Refresh host capabilities")
+        host_obj = HOST_API.find(config.HOSTS[0])
+        refresh_href = "{0};force".format(host_obj.get_href())
+        HOST_API.get(href=refresh_href)
 
-        logger.info("Wait for %s to be UP", HOST_NAME0)
-        if not waitForHostsStates(True, HOST_NAME0, timeout=600):
-            raise NetworkException("%s is not in UP state" % HOST_NAME0)
-
-        if not waitForSPM(config.DC_NAME[0], 600, 30):
-            raise NetworkException("No SPM in %s" % config.DC_NAME[0])
-
-        logger.info("Refresh capabilities on host")
-        last_event = get_max_event_id(query="")
+        logger.info("CHeck if dummy0 not exist on host via engine")
         sample = TimeoutingSampler(
             timeout=config.SAMPLER_TIMEOUT, sleep=1,
-            func=refresh_host_capabilities, host=HOST_NAME0,
-            start_event_id=last_event
+            func=check_dummy_on_host_interfaces, dummy_name="dummy0"
         )
-        if not sample.waitForFuncStatus(result=True):
-            logger.error("Failed to refresh host capabilities")
+        if not sample.waitForFuncStatus(result=False):
+            logger.error("Dummy interface exists on engine")

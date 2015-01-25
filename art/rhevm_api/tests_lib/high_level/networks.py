@@ -546,40 +546,26 @@ def create_dummy_interfaces(host, username, password, num_dummy=1):
     """
     create (X) dummy network interfaces on host
     :param host: IP or FDQN of the host
-    :param username* - host username
-    :param password* - host password
-    :param num_dummy* - number of dummy interfaces to create
-    :return: True if creation of the dummy interface succeeded,
-    otherwise False
+    :type host: str
+    :param username: host username
+    :type username: str
+    :param password: host password
+    :type password: str
+    :param num_dummy: number of dummy interfaces to create
+    :type num_dummy: int
+    :return: True/False
+    :rtype: bool
     """
     host_obj = machine.Machine(host, username, password).util(machine.LINUX)
 
     dummy_list = [MODPROBE_CMD, 'dummy', 'numdummies=' + str(num_dummy)]
     rc, out = host_obj.runCmd(dummy_list)
 
-    append_dummy = ['/bin/sed', '-i', '/\\[vars\\]/a fake_nics=dummy*',
-                    VDSM_CONF_FILE]
-
     if not rc:
         logger.error("Create dummy interfaces failed. ERR: %s", out)
         return False
 
     logger.info(host_obj.runCmd([IP_CMD, "a", "l", "|", "grep", "dummy"])[1])
-
-    logger.info("Adding dummy support to %s", VDSM_CONF_FILE)
-    # detect RHEV-H
-    os_type = host_obj.getOsInfo().lower()
-    if HYPERVISOR in os_type:
-        logger.info("RHEV-H detected")
-        # unperist the file, change the file, persist the file
-        with host_obj.edit_files_on_rhevh(VDSM_CONF_FILE):
-            rc, out = host_obj.runCmd(append_dummy)
-    else:
-        rc, out = host_obj.runCmd(append_dummy)
-    if not rc:
-        logger.error("Add dummy support to VDSM conf file failed. ERR: %s",
-                     out)
-        return False
 
     for n in range(num_dummy):
         ifcfg_file_name = "dummy%s" % n
@@ -593,19 +579,19 @@ def delete_dummy_interfaces(host, username, password):
     """
     Delete dummy network interfaces on host
     :param host: IP or FDQN of the host
+    :type host: str
     :param username: host username
+    :type username: str
     :param password: host password
-    return: True if deletion of the dummy interface succeeded,
-    otherwise False
+    :type password: str
+    :return: True/False
+    :rtype: bool
     """
     host_obj = machine.Machine(host, username, password).util(machine.LINUX)
 
     logger.info("Unloading dummy module")
     unload_dummy = [MODPROBE_CMD, "-r", "dummy"]
-    host_obj.runCmd(unload_dummy)
 
-    logger.info("Removing dummy support")
-    dummy_remove = ["/bin/sed", "-i", "'/^fake_nics/d'", VDSM_CONF_FILE]
     # detect RHEV-H
     os_type = host_obj.getOsInfo().lower()
     if HYPERVISOR in os_type:
@@ -614,15 +600,11 @@ def delete_dummy_interfaces(host, username, password):
         # BZ1107969
         assert rhevh_remove_dummy(host, username, password)
 
-        # unpersist the file, change the file, persist the file
-        with host_obj.edit_files_on_rhevh(VDSM_CONF_FILE):
-            rc, out = host_obj.runCmd(dummy_remove)
     else:
-        rc, out = host_obj.runCmd(dummy_remove)
-    if not rc:
-        logger.error("Removing dummy support from %s failed ERR: %s",
-                     VDSM_CONF_FILE, out)
-        return False
+        rc, out = host_obj.runCmd(unload_dummy)
+        if not rc:
+            logger.error("Unload dummy modulefailed ERR: %s", out)
+            return False
     logger.info("Dummy support removed")
 
     logger.info("Removing ifcg-dummy* files")
@@ -1118,4 +1100,71 @@ def update_network_host(host, nic, auto_nics, save_config=True, **kwargs):
         if not commitNetConfig(True, host=host):
             logger.error("Couldn't save network configuration")
             return False
+    return True
+
+
+def add_dummy_vdsm_support(host, username, password):
+    """
+   Add support for dummy interface on VDSM
+   :param host: IP or FDQN of the host
+   :type host: str
+   :param username: host username
+   :type username: str
+   :param password: host password
+   :type password: str
+   :return: True/False
+   :rtype: bool
+   """
+    append_dummy = [
+        "/bin/sed", "-i", '-e', "/^fake_nics.*$/d", '-e',
+        "/\\[vars\\]/a fake_nics=dummy*", VDSM_CONF_FILE
+    ]
+    host_obj = machine.Machine(host, username, password).util(machine.LINUX)
+    logger.info("Adding dummy support to %s", VDSM_CONF_FILE)
+    # detect RHEV-H
+    os_type = host_obj.getOsInfo().lower()
+    if HYPERVISOR in os_type:
+        logger.info("RHEV-H detected: %s", os_type)
+        # unperist the file, change the file, persist the file
+        with host_obj.edit_files_on_rhevh(VDSM_CONF_FILE):
+            rc, out = host_obj.runCmd(append_dummy)
+    else:
+        rc, out = host_obj.runCmd(append_dummy)
+    if not rc:
+        logger.error(
+            "Add dummy support to VDSM conf file failed. ERR: %s", out
+        )
+        return False
+    return True
+
+
+def remove_dummy_vdsm_support(host, username, password):
+    """
+    Re3move support for dummy interface on VDSM
+   :param host: IP or FDQN of the host
+   :type host: str
+   :param username: host username
+   :type username: str
+   :param password: host password
+   :type password: str
+   :return: True/False
+   :rtype: bool
+    """
+    dummy_remove = ["/bin/sed", "-i", "'/^fake_nics/d'", VDSM_CONF_FILE]
+    host_obj = machine.Machine(host, username, password).util(machine.LINUX)
+    logger.info("Removing dummy support from %s", VDSM_CONF_FILE)
+    # detect RHEV-H
+    os_type = host_obj.getOsInfo().lower()
+    if HYPERVISOR in os_type:
+        logger.info("RHEV-H detected: %s", os_type)
+        # unperist the file, change the file, persist the file
+        with host_obj.edit_files_on_rhevh(VDSM_CONF_FILE):
+            rc, out = host_obj.runCmd(dummy_remove)
+    else:
+        rc, out = host_obj.runCmd(dummy_remove)
+    if not rc:
+        logger.error(
+            "Remove dummy support from VDSM conf file failed. ERR: %s", out
+        )
+        return False
     return True
