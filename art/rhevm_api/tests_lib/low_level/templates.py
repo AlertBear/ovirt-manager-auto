@@ -447,6 +447,30 @@ def removeTemplateFromExportDomain(positive, template, datacenter,
 
 
 @is_action()
+def export_domain_template_exist(template, export_domain):
+    """
+    Checks if a template exists in an export domain
+
+    :param template: Template name
+    :type template: str
+    :param export_domain: Export domain name
+    :type export_domain: str
+    :returns: True if template exists in export domain False otherwise
+    :rtype: bool
+    """
+    export_domain_object = SD_API.find(export_domain)
+    try:
+        TEMPLATE_API.getElemFromElemColl(export_domain_object, template)
+    except EntityNotFound:
+        TEMPLATE_API.logger.error(
+            "template %s cannot be found in export domain: %s",
+            template, export_domain
+        )
+        return False
+    return True
+
+
+@is_action()
 def validateTemplate(positive, template):
     '''
     Description: Validate template if exist
