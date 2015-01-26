@@ -18,9 +18,6 @@ ENGINE = ART_CONFIG['RUN']['engine'].lower()
 PARAMETERS = ART_CONFIG['PARAMETERS']
 
 STORAGE = copy.deepcopy(ART_CONFIG['PARAMETERS'])
-STORAGE['data_domain_path'] = PARAMETERS.as_list('data_domain_path')
-STORAGE['data_domain_address'] = PARAMETERS.as_list('data_domain_address')
-
 
 # DC info
 STORAGE_TYPE = PARAMETERS['storage_type']
@@ -79,3 +76,10 @@ OS_TYPE = test_utils.convertOsNameToOsTypeElement(
     True, PARAMETERS['vm_os'])[1]['osTypeElement']
 
 TEMPLATE_NAME = PARAMETERS.get('template_name', 'golden_env')
+
+STORAGE['lun'] = PARAMETERS.as_list('lun')
+STORAGE['lun_address'] = PARAMETERS.as_list('lun_address')
+STORAGE['lun_target'] = PARAMETERS.as_list('lun_target')
+
+STORAGE['data_domain_address'] = PARAMETERS.as_list('data_domain_address')
+STORAGE['data_domain_path'] = PARAMETERS.as_list('data_domain_path')
