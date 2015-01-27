@@ -443,7 +443,7 @@ class TestCase337630(DefaultEnvironment):
                                                % self.snapshot_description)
 
 
-@attr(tier=0)
+@attr(tier=2)
 class TestCase332475(TestCase):
     """
     Checks that changing disk's write policy from RW to RO will fails
@@ -953,7 +953,7 @@ class TestCase337931(DefaultSnapshotEnvironment):
                                                % self.snapshot_description)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase337930(DefaultSnapshotEnvironment):
     """
     Check that the RO disk is part of vm snapshot, and the disk
@@ -1022,7 +1022,7 @@ class TestCase337930(DefaultSnapshotEnvironment):
                                                % self.snapshot_description)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase337934(DefaultSnapshotEnvironment):
     """
     Checks that deleting a snapshot with RO disk shouldn't effect
