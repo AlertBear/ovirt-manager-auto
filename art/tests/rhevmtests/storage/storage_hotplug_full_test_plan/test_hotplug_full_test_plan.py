@@ -535,7 +535,7 @@ class TestCase134134(BasePlugDiskTest):
             self.assertTrue(status)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase134139(BasePlugDiskTest):
     """Unplug a disk and detach it. Tested as 2 independent functions"""
     __test__ = True
@@ -720,7 +720,7 @@ class TestCase139348(BasePlugDiskTest):
                 self.assertTrue(status)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase244310(BasePlugDiskTest):
     """
     Plug shared disks into 2 VMs simultaneously
@@ -883,7 +883,7 @@ class TestCase244314(TestCase):
             common.shutdown_and_remove_vms(vm_pair)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase174616(TestCase):
     """
     2 vms, 1 shareable disk attached to both of them.
