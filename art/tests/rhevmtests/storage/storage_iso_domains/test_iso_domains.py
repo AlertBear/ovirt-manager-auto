@@ -29,6 +29,8 @@ logger = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
 TCMS_TEST_PLAN = '6107'
+NEW_TCMS_TEST_PLAN = '6458'
+NEW_TCMS_CASE_ID = '50769'
 TCMS_CASE_ATTACH = '340691'
 TCMS_CASE_RUNONCE = '347379'
 
@@ -111,7 +113,7 @@ class BaseCaseIsoDomains(TestCase):
 
 
 @attr(tier=0)
-class TestCasesPlan6107(BaseCaseIsoDomains):
+class TestPlan6107(BaseCaseIsoDomains):
 
     mount_target = None
 
@@ -199,22 +201,22 @@ class TestCasesPlan6107(BaseCaseIsoDomains):
             status, "ISO domain %s wasn't deactivated after ejecting one of "
             "the isos from the vm %s" % (self.iso_domain_name, self.vm_name))
 
-    @tcms(TCMS_TEST_PLAN, TCMS_CASE_ATTACH)
+    @tcms(NEW_TCMS_TEST_PLAN, TCMS_CASE_ATTACH)
     def test_detaching_posixfs_iso_vm(self):
         """
         Try detaching a posixfs iso domain from vm while iso is attached
         """
         self.attach_iso_and_maintenance(iso_domain=config.ISO_POSIX_DOMAIN)
 
-    @tcms(TCMS_TEST_PLAN, TCMS_CASE_ATTACH)
+    @tcms(NEW_TCMS_TEST_PLAN, NEW_TCMS_CASE_ID)
     def test_detaching_nfs_iso_vm(self):
         """
         Try detaching a nfs iso domain from vm while iso is attached
         """
         self.attach_iso_and_maintenance(iso_domain=config.ISO_NFS_DOMAIN)
 
-    @bz("1065719")
-    @tcms(TCMS_TEST_PLAN, TCMS_CASE_RUNONCE)
+    @bz({"1065719": {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
+    @tcms(NEW_TCMS_TEST_PLAN, NEW_TCMS_CASE_ID)
     def test_detaching_posixfs_iso_vm_runonce(self):
         """
         Try detaching a posixfs iso domain from vm after attaching it with
@@ -223,8 +225,8 @@ class TestCasesPlan6107(BaseCaseIsoDomains):
         self.attach_iso_and_maintenance(
             run_once=True, iso_domain=config.ISO_POSIX_DOMAIN)
 
-    @bz("1065719")
-    @tcms(TCMS_TEST_PLAN, TCMS_CASE_RUNONCE)
+    @bz({"1065719": {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
+    @tcms(NEW_TCMS_TEST_PLAN, NEW_TCMS_CASE_ID)
     def test_detaching_nfs_iso_vm_runonce(self):
         """
         Try detaching a nfs iso domain from vm after attaching it with run once
@@ -233,7 +235,7 @@ class TestCasesPlan6107(BaseCaseIsoDomains):
             run_once=True, iso_domain=config.ISO_NFS_DOMAIN)
 
 
-class TestCasesPlan6107Shared(TestCasesPlan6107):
+class TestCase50769Shared(TestPlan6107):
     """
     Test detaching iso domains when an iso is inserted in a vm
     Shared DC
@@ -241,11 +243,10 @@ class TestCasesPlan6107Shared(TestCasesPlan6107):
     __test__ = True
     local = False
     vm_name = "TestCasesPlan6107Shared"
-
     storagedomains = [config.ISCSI_DOMAIN]
 
 
-class TestCasesPlan6107Local(TestCasesPlan6107):
+class TestCase50769Local(TestPlan6107):
     """
     Test detaching iso domains when an iso is inserted in a vm
     Local DC
@@ -256,7 +257,7 @@ class TestCasesPlan6107Local(TestCasesPlan6107):
     vm_name = "TestCasesPlan6107Local"
     storagedomains = [config.LOCAL_DOMAIN]
 
-    @bz("1097789")
+    @bz({"1097789": {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(TCMS_TEST_PLAN, TCMS_CASE_ATTACH)
     def test_detaching_local_iso_vm(self):
         """
@@ -264,7 +265,7 @@ class TestCasesPlan6107Local(TestCasesPlan6107):
         """
         self.attach_iso_and_maintenance(iso_domain=config.ISO_LOCAL_DOMAIN)
 
-    @bz("1097789")
+    @bz({"1097789": {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(TCMS_TEST_PLAN, TCMS_CASE_RUNONCE)
     def test_detaching_local_iso_vm_runonce(self):
         """
