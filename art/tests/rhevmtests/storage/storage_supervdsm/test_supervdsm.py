@@ -219,6 +219,7 @@ class TestCase289547(SuperVDSMTestBase):
         self.assertTrue(hosts.waitForHostsStates(
             True, config.FIRST_HOST, states='up', timeout=60),
             "Host never activated after vdsm restarted.")
+        time.sleep(SLEEP_SERVICE)
         success, output = self.machine.runCmd(HW_INFO_COMMAND)
         self.assertTrue(success, ERROR_HW_OUTPUT % output)
 
