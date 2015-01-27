@@ -523,8 +523,8 @@ class TestLinkedCase6(TestCase):
 
         for i in range(2):
             sample = TimeoutingSampler(
-                timeout=60, sleep=1, func=updateNic, positive=True,
-                vm=config.VM_NAME[0], nic="vnic%s" % (i + 2),
+                timeout=config.SAMPLER_TIMEOUT, sleep=1, func=updateNic,
+                positive=True, vm=config.VM_NAME[0], nic="vnic%s" % (i + 2),
                 network=config.VLAN_NETWORKS[0],
                 vnic_profile=config.VLAN_NETWORKS[0],
                 linked=link_param_list[i]

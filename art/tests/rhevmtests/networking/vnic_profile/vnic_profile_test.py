@@ -1007,12 +1007,12 @@ class TestVNICProfileCase11(TestCase):
         network but with port mirroring disabled (negative case)
         """
         logger.info("Changing VNIC to have VNIC profile from another network")
-        sample = TimeoutingSampler(
+        sample1 = TimeoutingSampler(
             timeout=config.SAMPLER_TIMEOUT, sleep=1, func=updateNic,
             positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[1],
             network=config.NETWORKS[1], vnic_profile=config.NETWORKS[1]
         )
-        if not sample.waitForFuncStatus(result=True):
+        if not sample1.waitForFuncStatus(result=True):
             raise NetworkException(
                 "Couldn't change VNIC profile to profile with different "
                 "network"
