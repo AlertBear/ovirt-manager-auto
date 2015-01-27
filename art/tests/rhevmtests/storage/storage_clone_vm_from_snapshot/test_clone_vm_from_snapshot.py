@@ -8,7 +8,7 @@ from art.test_handler.tools import tcms
 
 import config
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    getDCStorages, findMasterStorageDomain, findNonMasterStorageDomains,
+    getStorageDomainNamesForType,
 )
 
 from art.rhevm_api.tests_lib.low_level.disks import (
@@ -34,7 +34,7 @@ class BaseTestCase(TestCase):
     """
     Base Test Case for clone snapshot
     """
-    vm = config.VM_NAME[0]
+    vm = config.VM_NAME % TestCase.storage
     snapshot = "snapshot_%s"
     __test__ = False
 
@@ -42,23 +42,17 @@ class BaseTestCase(TestCase):
         """
         Get all the storage domains available.
         """
-        status, domains = findNonMasterStorageDomains(
-            True, config.DATA_CENTER_NAME)
-        self.slave_domain = domains['nonMasterDomains'][0]
-
-        status, domains = findMasterStorageDomain(
-            True, config.DATA_CENTER_NAME)
-        self.master_domain = domains['masterDomain']
-
-        self.storage_domains = getDCStorages(
-            config.DATA_CENTER_NAME, False)
+        self.storage_domains = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)
+        self.storage_domain_0 = self.storage_domains[0]
+        self.storage_domain_1 = self.storage_domains[1]
 
     def add_disk(self, disk_alias):
         """
         Add disk with alias 'disk_alias' to vm
         """
         assert addDisk(True, alias=disk_alias, size=config.GB,
-                       storagedomain=self.master_domain,
+                       storagedomain=self.storage_domain_0,
                        sparse=False, interface=config.VIRTIO_SCSI,
                        format=config.RAW_DISK)
 
@@ -96,8 +90,8 @@ class TestCase134130(BaseTestCase):
 
         assert cloneVmFromSnapshot(
             True, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
-            vm=config.VM_NAME[0], snapshot=config.SNAPSHOT_NAME,
-            storagedomain=self.slave_domain, compare=False)
+            vm=self.vm, snapshot=config.SNAPSHOT_NAME,
+            storagedomain=self.storage_domain_1, compare=False)
 
         assert waitForVMState(self.cloned_vm, state=config.VM_DOWN)
 
@@ -121,8 +115,8 @@ class TestCase134131(BaseTestCase):
         """
         assert cloneVmFromSnapshot(
             True, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
-            vm=config.VM_NAME[0], snapshot=config.SNAPSHOT_NAME,
-            storagedomain=self.slave_domain, sparse=False,
+            vm=self.vm, snapshot=config.SNAPSHOT_NAME,
+            storagedomain=self.storage_domain_1, sparse=False,
             vol_format=config.RAW_DISK, compare=False)
 
         assert waitForVMState(self.cloned_vm, state=config.VM_DOWN)
@@ -150,7 +144,7 @@ class TestCase134132(BaseTestCase):
         assert cloneVmFromSnapshot(
             True, name=self.cloned_vm_down, cluster=config.CLUSTER_NAME,
             vm=self.vm, snapshot=config.SNAPSHOT_NAME,
-            storagedomain=self.slave_domain, compare=False)
+            storagedomain=self.storage_domain_1, compare=False)
 
         assert waitForVMState(self.cloned_vm_down, state=config.VM_DOWN)
 
@@ -159,7 +153,7 @@ class TestCase134132(BaseTestCase):
         assert cloneVmFromSnapshot(
             True, name=self.cloned_vm_up, cluster=config.CLUSTER_NAME,
             vm=self.vm, snapshot=config.SNAPSHOT_NAME,
-            storagedomain=self.slave_domain, compare=False)
+            storagedomain=self.storage_domain_1, compare=False)
 
         assert waitForVMState(self.cloned_vm_up, state=config.VM_DOWN)
 
@@ -197,8 +191,8 @@ class TestCase137688(BaseTestCase):
 
         assert cloneVmFromSnapshot(
             True, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
-            vm=config.VM_NAME[0], snapshot=config.SNAPSHOT_NAME,
-            storagedomain=self.slave_domain, compare=False)
+            vm=self.vm, snapshot=config.SNAPSHOT_NAME,
+            storagedomain=self.storage_domain_1, compare=False)
 
         assert searchForVm(True, 'name', self.cloned_vm, 'name')
 
@@ -206,16 +200,16 @@ class TestCase137688(BaseTestCase):
 
         assert cloneVmFromSnapshot(
             False, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
-            vm=config.VM_NAME[0], snapshot=config.SNAPSHOT_NAME,
-            storagedomain=self.slave_domain, compare=False)
+            vm=self.vm, snapshot=config.SNAPSHOT_NAME,
+            storagedomain=self.storage_domain_1, compare=False)
 
         logger.info("Trying to clone a vm's snapshot with invalid characters")
         illegal_characters = "* are not allowed"
 
         assert cloneVmFromSnapshot(
             False, name=illegal_characters, cluster=config.CLUSTER_NAME,
-            vm=config.VM_NAME[0], snapshot=config.SNAPSHOT_NAME,
-            storagedomain=self.slave_domain, compare=False)
+            vm=self.vm, snapshot=config.SNAPSHOT_NAME,
+            storagedomain=self.storage_domain_1, compare=False)
 
 
 @attr(tier=1)
@@ -249,7 +243,7 @@ class TestCase166174(BaseTestCase):
         assert cloneVmFromSnapshot(
             True, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
             vm=self.vm, snapshot=self.snapshot_two_nics,
-            storagedomain=self.slave_domain, compare=False)
+            storagedomain=self.storage_domain_1, compare=False)
 
         self.assertEqual(len(get_vm_nics_obj(self.cloned_vm)), 2)
         wait_for_jobs()
@@ -295,7 +289,7 @@ class TestCase166175(BaseTestCase):
         assert cloneVmFromSnapshot(
             True, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
             vm=self.vm, snapshot=self.snapshot_two_disks,
-            storagedomain=self.slave_domain, compare=False)
+            storagedomain=self.storage_domain_1, compare=False)
         waitForVMState(self.cloned_vm)
 
         self.assertEqual(len(getVmDisks(self.cloned_vm)), 2)
@@ -350,7 +344,7 @@ class TestCase166179(BaseTestCase):
         assert cloneVmFromSnapshot(
             True, name=self.cloned_vm_desktop, cluster=config.CLUSTER_NAME,
             vm=self.vm, snapshot=config.SNAPSHOT_NAME,
-            storagedomain=self.slave_domain, compare=False)
+            storagedomain=self.storage_domain_1, compare=False)
 
         assert config.VM_TYPE_DESKTOP == \
             get_vm(self.cloned_vm_desktop).get_type()
@@ -361,7 +355,7 @@ class TestCase166179(BaseTestCase):
         assert cloneVmFromSnapshot(
             True, name=self.cloned_vm_server, cluster=config.CLUSTER_NAME,
             vm=self.vm_server, snapshot=self.snapshot_server,
-            storagedomain=self.slave_domain, compare=False)
+            storagedomain=self.storage_domain_1, compare=False)
 
         assert config.VM_TYPE_SERVER == \
             get_vm(self.cloned_vm_server).get_type()
@@ -408,7 +402,7 @@ class TestCase166182(BaseTestCase):
         assert cloneVmFromSnapshot(
             True, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
             vm=self.vm, snapshot=self.snapshot_multiple_disks,
-            storagedomain=self.slave_domain, compare=False)
+            storagedomain=self.storage_domain_1, compare=False)
         wait_for_jobs()
 
         cloned_disks = getVmDisks(self.cloned_vm)

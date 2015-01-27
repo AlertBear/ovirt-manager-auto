@@ -1,6 +1,6 @@
 import config
 import logging
-from art.rhevm_api.tests_lib.low_level.storagedomains import getDCStorages
+
 from art.rhevm_api.tests_lib.low_level.vms import createVm
 
 logger = logging.getLogger(__name__)
@@ -8,14 +8,11 @@ logger = logging.getLogger(__name__)
 
 def _create_vm(vm_name, disk_interface,
                sparse=True, volume_format=config.COW_DISK,
-               vm_type=config.VM_TYPE_DESKTOP, installation=True):
+               vm_type=config.VM_TYPE_DESKTOP, installation=True,
+               storage_domain_name=None):
     """ helper function for creating vm (passes common arguments, mostly taken
     from the configuration file)
     """
-    logger.info("Creating VM %s" % vm_name)
-    storage_domain_name = getDCStorages(
-        config.DATA_CENTER_NAME, False)[0].name
-    logger.info("storage domain: %s" % storage_domain_name)
     return createVm(
         True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
         nic=config.NIC_NAME[0], storageDomainName=storage_domain_name,
