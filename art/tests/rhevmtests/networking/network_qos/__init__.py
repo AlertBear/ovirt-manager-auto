@@ -3,12 +3,13 @@ Network QOS feature test
 """
 
 import logging
-from art.rhevm_api.tests_lib.low_level.vms import addVm, startVm
+from art.rhevm_api.tests_lib.low_level.vms import addVm
 from rhevmtests.networking import config, network_cleanup
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.high_level.networks import prepareSetup
 from art.rhevm_api.tests_lib.low_level import vms
+from art.rhevm_api.tests_lib.high_level import vms as hl_vm
 
 logger = logging.getLogger("Network_VNIC_QoS_Init")
 
@@ -25,13 +26,16 @@ def setup_package():
             "Running on golden env, starting 1 VM %s on host %s",
             config.VM_NAME[0], config.HOSTS[0]
         )
-        if not startVm(
-            positive=True, vm=config.VM_NAME[0], wait_for_ip=True,
-            placement_host=config.HOSTS[0]
+        if not hl_vm.start_vm_on_specific_host(
+            vm=config.VM_NAME[0], host=config.HOSTS[0]
         ):
             raise NetworkException(
                 "Cannot start VM %s on host %s" %
                 (config.VM_NAME[0], config.HOSTS[0])
+            )
+        if not vms.waitForVMState(vm=config.VM_NAME[0]):
+            raise NetworkException(
+                "VM %s did not come up" % config.VM_NAME[0]
             )
     else:
         if not prepareSetup(

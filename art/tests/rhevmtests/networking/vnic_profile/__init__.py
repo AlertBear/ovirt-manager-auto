@@ -26,10 +26,13 @@ def setup_package():
             config.VM_NAME[0], config.HOSTS[0]
         )
 
-        if not hl_vm.start_vm_on_specific_host(vm=config.VM_NAME[0],
-                                               host=config.HOSTS[0]):
-            raise NetworkException("Cannot start VM %s on host %s" %
-                                   (config.VM_NAME[0], config.HOSTS[0]))
+        if not hl_vm.start_vm_on_specific_host(
+            vm=config.VM_NAME[0], host=config.HOSTS[0]
+        ):
+            raise NetworkException(
+                "Cannot start VM %s on host %s" %
+                (config.VM_NAME[0], config.HOSTS[0])
+            )
         if not vms.waitForVMState(vm=config.VM_NAME[0]):
             raise NetworkException("VM %s did not come up" % config.VM_NAME[0])
     else:
