@@ -236,6 +236,14 @@ def create_vm_or_clone(positive, vmName, vmDescription,
 
     # Clone vm from template only allows virtio and virtio-scsi disk interfaces
     diskInterface = kwargs.get('diskInterface', None)
+    # start parameter could be bool or str in some calls
+    start = kwargs.get('start', False)
+    if (isinstance(start, str) and start.lower() == 'true' or
+            isinstance(start, bool) and start):
+        start = True
+    else:
+        start = False
+
     if config.GOLDEN_ENV and (diskInterface != config.INTERFACE_IDE):
         logger.info("Cloning vm")
         template_name = None
@@ -263,8 +271,9 @@ def create_vm_or_clone(positive, vmName, vmDescription,
             'storagedomain': kwargs.get('storageDomainName', None),
         }
         assert cloneVmFromTemplate(**args_clone)
-        if kwargs.get('start', 'false').lower() == 'true':
-            return startVm(positive, vmName)
+        # Bring the VM up, return true if the action succeeds
+        if kwargs.get('installation', False) or start:
+            return startVm(positive, vmName, wait_for_status=config.VM_UP)
         return True
     else:
         return createVm(positive, vmName, vmDescription, cluster, **kwargs)
