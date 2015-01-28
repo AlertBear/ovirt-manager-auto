@@ -196,41 +196,6 @@ class CommonUsage(BaseTestCase):
             wait_for_jobs()
 
 
-@attr(tier=0)
-class TestCase379365(CommonUsage):
-    """
-    Check wipe after delete functionality
-    https://tcms.engineering.redhat.com/case/379365/
-    """
-    __test__ = True
-    tcms_test_case = (
-        '379365' if CommonUsage.storage in config.BLOCK_TYPES else '384227'
-    )
-    disk_name = None
-
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
-    def test_live_edit_wipe_after_delete(self):
-        """
-        Actions:
-            - add vm + disk (do not check Wipe after Delete box)
-              and run it
-            - check the "Wipe after Delete box" and press Ok
-        Expected Results:
-            - no Errors should appear
-        """
-        addDisk(True, self.vm_name, config.DISK_SIZE,
-                storagedomain=self.storage_domain, sparse=True,
-                wipe_after_delete=False, interface=config.VIRTIO)
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
-
-        self.disk_name = [d.get_alias() for d in getVmDisks(self.vm_name) if
-                          not d.get_bootable()][0]
-
-        assert updateVmDisk(True, self.vm_name, self.disk_name,
-                            wipe_after_delete=True)
-
-
 @attr(tier=1)
 class TestCase379370(CommonUsage):
     """
@@ -266,7 +231,7 @@ class TestCase379370(CommonUsage):
                             wipe_after_delete=True)
 
 
-@attr(tier=1)
+@attr(tier=0)
 class TestCase379367(CommonUsage):
     """
     Checking functionality - checked box
