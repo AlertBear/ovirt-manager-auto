@@ -4,7 +4,6 @@ Virt - Migration test initialization
 
 import os
 import logging
-from concurrent.futures.thread import ThreadPoolExecutor
 
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
@@ -12,14 +11,28 @@ import art.rhevm_api.tests_lib.low_level.datacenters as dc_api
 import art.rhevm_api.tests_lib.low_level.clusters as cluster_api
 import art.rhevm_api.tests_lib.high_level.datacenters as high_dc_api
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
-from art.rhevm_api.utils.test_utils import raise_if_exception
 from rhevmtests.virt import config
 
 logger = logging.getLogger(__name__)
 
-#################################################
+# ################################################
 
 NUM_OF_VMS = 5
+
+
+def createVM(vm_name):
+    if not vm_api.createVm(positive=True, vmName=vm_name,
+                           vmDescription=config.VM_DESCRIPTION,
+                           cluster=config.CLUSTER_NAME[0],
+                           storageDomainName=config.STORAGE_NAME[0],
+                           size=config.DISK_SIZE,
+                           nic='nic1', network=config.MGMT_BRIDGE,
+                           installation=config.INSTALLATION,
+                           image=config.COBBLER_PROFILE,
+                           user=config.VMS_LINUX_USER,
+                           password=config.VMS_LINUX_PW,
+                           os_type='RHEL6x64', useAgent=True):
+        raise errors.VMException("Failed to create VM: " + vm_name)
 
 
 def setup_package():
@@ -68,24 +81,9 @@ def setup_package():
                         True, cluster_name, mem_ovrcmt_prc=0):
                     raise errors.VMException("Failed to update \
                         cluster %s to mem_ovrcmt_prc=0" % cluster_name)
-            results = list()
-            with ThreadPoolExecutor(
-                    max_workers=config.MAX_WORKERS) as executor:
-                logger.info('Create vms: %s', config.VM_NAMES[:5])
-                for vm_name in config.VM_NAMES[:5]:
-                    results.append(executor.submit(
-                        vm_api.createVm, positive=True, vmName=vm_name,
-                        vmDescription=config.VM_DESCRIPTION,
-                        cluster=config.CLUSTER_NAME[0],
-                        storageDomainName=config.STORAGE_NAME[0],
-                        size=config.DISK_SIZE,
-                        nic='nic1', network=config.MGMT_BRIDGE,
-                        installation=config.INSTALLATION,
-                        image=config.COBBLER_PROFILE,
-                        user=config.VMS_LINUX_USER,
-                        password=config.VMS_LINUX_PW,
-                        os_type='RHEL6x64', useAgent=True))
-            raise_if_exception(results)
+            logger.info('Create vms: %s', config.VM_NAMES[:5])
+            for vm_name in config.VM_NAMES[:5]:
+                createVM(vm_name)
             logger.info("Stop all vms")
             if not vm_api.stopVms(','.join(config.VM_NAMES[:5])):
                 raise errors.VMException("Failed to stop vms")
@@ -93,10 +91,10 @@ def setup_package():
             # Create the VMs from existing template, in the golden env.
             for vm_name in config.VM_NAMES[:5]:
                 if not vm_api.createVm(
-                    positive=True, vmName=vm_name,
-                    cluster=config.CLUSTER_NAME[0],
-                    vmDescription="mig_vm",
-                    template=config.TEMPLATE_NAME[0]
+                        positive=True, vmName=vm_name,
+                        cluster=config.CLUSTER_NAME[0],
+                        vmDescription="mig_vm",
+                        template=config.TEMPLATE_NAME[0]
                 ):
                     raise errors.VMException("Fail to add VM %s" % vm_name)
 

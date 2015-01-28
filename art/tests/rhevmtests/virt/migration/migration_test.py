@@ -1,12 +1,13 @@
 """
 Migration Test - Basic tests to check vm migration
 """
-from concurrent.futures import ThreadPoolExecutor
+
+import logging
+
+from nose.tools import istest
 
 from rhevmtests.virt import config
-import logging
 from art.unittest_lib import VirtTest as TestCase
-from nose.tools import istest
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
@@ -14,7 +15,7 @@ import art.rhevm_api.tests_lib.low_level.vms as vm_api
 import art.rhevm_api.tests_lib.high_level.vms as high_vm_api
 import art.rhevm_api.tests_lib.low_level.hosts as host_api
 import art.rhevm_api.tests_lib.high_level.hosts as high_host_api
-from art.rhevm_api.utils.test_utils import getStat, raise_if_exception
+from art.rhevm_api.utils.test_utils import getStat
 from art.unittest_lib import attr
 import art.rhevm_api.tests_lib.low_level.storagedomains as sd_api
 
@@ -129,11 +130,12 @@ class MigrationOverloadHost(TestCase):
         master_domain = (
             sd_api.get_master_storage_domain_name(config.DC_NAME[0])
         )
-        return vm_api.createVm(True, vm_name, config.VM_DESCRIPTION,
+        if not vm_api.createVm(True, vm_name, config.VM_DESCRIPTION,
                                cluster=config.CLUSTER_NAME[0], memory=memory,
                                storageDomainName=master_domain,
                                network=config.MGMT_BRIDGE,
-                               size=config.DISK_SIZE, nic='nic1')
+                               size=config.DISK_SIZE, nic='nic1'):
+            raise errors.VMException("Failed to create VM: " + vm_name)
 
     @classmethod
     def setup_class(cls):
@@ -141,7 +143,6 @@ class MigrationOverloadHost(TestCase):
         Create additional vms to overload host, start them
         and put one of the hosts to maintenance
         """
-        create_vms = list()
         total_mem = 0
         for host in config.HOSTS[0], config.HOSTS[1]:
             stats = getStat(host, 'host', 'hosts', 'memory.total')
@@ -152,11 +153,8 @@ class MigrationOverloadHost(TestCase):
         # It is rounded to MB, because this is how it is set in the database.
         vm_memory = ((total_mem/cls.number_of_vms)/config.MB)*config.MB
         logger.info("Create additional vms, with %s memory each", vm_memory)
-        with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-            for vm_name in config.VM_NAMES[5:]:
-                create_vms.append(executor.submit(cls._create_vm,
-                                                  vm_name, vm_memory))
-        raise_if_exception(create_vms)
+        for vm_name in config.VM_NAMES[5:]:
+            cls._create_vm(vm_name, vm_memory)
         for vm_name in config.VM_NAMES[5:]:
             if not vm_api.updateVm(True, vm_name, memory_guaranteed=vm_memory):
                 raise errors.VMException("Failed to update vm %s" % vm_name)
