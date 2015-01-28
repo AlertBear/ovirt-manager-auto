@@ -140,7 +140,8 @@ def create_disks_from_requested_permutations(domain_to_use,
         disk_description = disk_alias.replace("_alias", "_description")
         lst_aliases_and_descriptions.append({
             "alias": disk_alias,
-            "description": disk_description
+            "description": disk_description,
+            "description_orig": disk_description
         })
         assert addDisk(True, alias=disk_alias, description=disk_description,
                        size=size, interface=disk_permutation['interface'],
