@@ -59,7 +59,7 @@ class VmWithOs(TestCase):
                                          cls.vm_name)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase334691(VmWithOs):
     """
     Add disks while vm is running
