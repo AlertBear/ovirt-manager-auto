@@ -276,7 +276,7 @@ class CreateSnapshotWithMemoryState(DCWithStoragesActive):
         super(CreateSnapshotWithMemoryState, cls).teardown_class()
 
 
-@attr(tier=0)
+@attr(tier=2)
 class TestCase294432(CreateSnapshotWithMemoryState):
     """
     TCMS Test Case 294432 - Create Snapshot with Memory State on SPM
@@ -294,7 +294,7 @@ class TestCase294432(CreateSnapshotWithMemoryState):
         self.create_snapshot()
 
 
-@attr(tier=0)
+@attr(tier=2)
 class TestCase294434(CreateSnapshotWithMemoryState):
     """
     TCMS Test Case 294434 - Create Snapshot with Memory State on HSM
@@ -379,7 +379,7 @@ class TestCase294435(ReturnToSnapshot):
 @attr(tier=0)
 class TestCase294437(ReturnToSnapshot):
     """
-    TCMS Test Case 294437 - Commit to RAM Snapshot
+    TCMS Test Case 294437 - Restore RAM Snapshot
     """
     __test__ = True
     tcms_test_case = '294437'
