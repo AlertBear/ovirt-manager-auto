@@ -160,10 +160,10 @@ class TestCase272386(ClassWithOneVM):
         cls.vm_names = []
 
     @tcms(TCMS_PLAN_ID, tcms_case)
-    def test_start_vm_with_virtio_scsi_bootable_disk(self):
+    def test_start_vm_with_virtio_scsi_bootable_disk_and_remove_it(self):
         """
         Description: Create a vm with virtio-scsi disk as bootable device,
-        install OS on it and check that OS boots
+        install OS on it, check that OS boots and remove it
         """
 
         logger.info('Creating vm with virtio-scsi disk as bootable device')
@@ -171,8 +171,25 @@ class TestCase272386(ClassWithOneVM):
         _create_vm(self.vm_name, self.storage_domain, config.VIRTIO_SCSI, True)
         logger.info('vm with virtio-scsi boot disk created successfully')
 
+        vm_disks = [disk.get_id() for disk in getVmDisks(self.vm_name)]
+        disks_before_removal = getStorageDomainDisks(
+            self.storage_domain, False)
+        disks_before_removal = [disk.get_id() for disk in disks_before_removal]
+        logger.info('Removing vm %s', self.vm_name)
+        self.assertTrue(removeVm(True, self.vm_name), "Failed to remove vm "
+                                                      "%s" % self.vm_name)
+        self.vm_names.pop(0)
+        logger.info('Ensuring no disks remain')
+        disks_after_removal = getStorageDomainDisks(self.storage_domain, False)
+        disks_after_removal = [disk.get_id() for disk in disks_after_removal]
+        self.assertEqual(
+            disks_after_removal,
+            [disk for disk in disks_before_removal if disk not in vm_disks],
+            'found disks on storage domain: %s' % vm_disks
+        )
 
-@attr(tier=0)
+
+@attr(tier=1)
 class TestCase272383(ClassWithOneVM):
     """
     TCMS test case 272383 - Create template from vm with virtio-scsi disk
@@ -231,42 +248,7 @@ class TestCase272383(ClassWithOneVM):
         assert removeTemplate(True, config.TEMPLATE_NAME)
 
 
-@attr(tier=0)
-class TestCase272390(ClassWithOneVM):
-    """
-    TCMS case 272390 - Remove vm with virtio-scsi disk
-    Attempt to remove vm with virtio-scsi disk
-
-    https://tcms.engineering.redhat.com/case/272390/?from_plan=9456
-    """
-
-    __test__ = True
-    tcms_case = '272390'
-    installations = [False]
-
-    @tcms(TCMS_PLAN_ID, tcms_case)
-    def test_remove_vm_with_virtio_scsi_disk(self):
-        """
-        Description: Attempts to remove a vm with virtio-scsi disk
-        """
-        vm_disks = [disk.get_id() for disk in getVmDisks(self.vm_names[0])]
-        disks_before_removal = getStorageDomainDisks(
-            self.storage_domain, False)
-        disks_before_removal = [disk.get_id() for disk in disks_before_removal]
-        logger.info('Removing vm %s', self.vm_names[0])
-        self.assertTrue(removeVm(True, self.vm_names[0]))
-        self.vm_names.pop(0)
-        logger.info('Ensuring no disks remain')
-        disks_after_removal = getStorageDomainDisks(self.storage_domain, False)
-        disks_after_removal = [disk.get_id() for disk in disks_after_removal]
-        self.assertEqual(
-            disks_after_removal,
-            [disk for disk in disks_before_removal if disk not in vm_disks],
-            'found disks on storage domain: %s' % vm_disks
-        )
-
-
-@attr(tier=0)
+@attr(tier=1)
 class TestCase272388(ClassWithOneVM):
     """
     TCMS case 272388 - Migrate a vm with virtio-scsi disk
@@ -300,7 +282,7 @@ class TestCase272388(ClassWithOneVM):
                         'Error during migration of vm %s' % self.vm_names[0])
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase272914(ClassWithOneVM):
     """
     TCMS case 272914 - Clone VM from virtio scsi disk
@@ -344,7 +326,7 @@ class TestCase272914(ClassWithOneVM):
         self.assertTrue(startVm(True, self.cloned_vm_name, wait_for_ip=True))
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase293163(ClassWithOneVM):
     """
     TCMS case 293163 - VM with both virtio-scsi and virtio-blk disks
