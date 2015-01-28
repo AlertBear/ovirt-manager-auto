@@ -13,7 +13,8 @@ from art.rhevm_api.tests_lib.high_level.networks import(
     createAndAttachNetworkSN, remove_net_from_setup
 )
 from art.rhevm_api.tests_lib.low_level.networks import(
-    addNetwork, addNetworkToCluster, updateNetwork, createNetworkInDataCenter
+    addNetwork, addNetworkToCluster, updateNetwork,
+    create_network_in_datacenter
 )
 from art.test_handler.exceptions import NetworkException
 from rhevmtests.networking import config
@@ -500,7 +501,7 @@ class Test09(TestIOTestCaseBase):
             initial_name,
             config.DC_NAME[0],
         )
-        if not createNetworkInDataCenter(
+        if not create_network_in_datacenter(
             True,
             config.DC_NAME[0],
             **kwargs_dict
@@ -584,7 +585,7 @@ class Test10(TestIOTestCaseBase):
             config.DC_NAME[0],
         )
 
-        if not createNetworkInDataCenter(
+        if not create_network_in_datacenter(
             True,
             config.DC_NAME[0],
             **kwargs_dict
@@ -671,7 +672,7 @@ class Test11(TestIOTestCaseBase):
             config.DC_NAME[0],
         )
 
-        if not createNetworkInDataCenter(
+        if not create_network_in_datacenter(
             True,
             config.DC_NAME[0],
             **kwargs_dict

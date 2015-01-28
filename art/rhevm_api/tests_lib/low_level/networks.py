@@ -681,95 +681,101 @@ def findVnicProfile(vnic_profile_name):
     return False
 
 
-def getNetworksInDataCenter(datacenter):
+def get_networks_in_datacenter(datacenter):
     """
-    Description: Get all networks under datacenter.
-    **Author**: myakove
-    **Parameters**:
-        *  *datacenter* - datacenter name
-    **Return**: list of all networks
+    Get all networks under datacenter.
+    :param datacenter: datacenter name
+    :type datacenter: str
+    :return: list of all networks
+    :rtype: list
     """
-    DC = DC_API.find(datacenter)
-    return NET_API.getElemFromLink(DC, get_href=False)
+    dc = DC_API.find(datacenter)
+    return NET_API.getElemFromLink(dc, get_href=False)
 
 
-def getNetworkInDataCenter(network, datacenter):
+def get_network_in_datacenter(network, datacenter):
     """
-    Description: Find network under datacenter.
-    **Author**: myakove
-    **Parameters**:
-        *  *network* - Network name to find
-        *  *datacenter* - datacenter name
-    **Return**: net obj if network found, otherwise raise EntityNotFound.
+    Find network under datacenter.
+    :param network: Network name to find
+    :type network: str
+    :param datacenter: datacenter name
+    :type datacenter: str
+    :return: net obj if network found, otherwise None.
+    :rtype: object
     """
-    DC = DC_API.find(datacenter)
-    for net in NET_API.getElemFromLink(DC, get_href=False):
+    for net in get_networks_in_datacenter(datacenter=datacenter):
         if net.get_name() == network:
             return net
-    raise EntityNotFound('%s network does not exists in datacenter %s'
-                         % (network, datacenter))
+    return None
 
 
-def createNetworkInDataCenter(positive, datacenter, **kwargs):
+def create_network_in_datacenter(positive, datacenter, **kwargs):
     """
-    Description: add network to a datacenter
-    Author: myakove
-    Parameters:
-       *  *positive* - True if action should succeed, False otherwise
-       *  *datacenter* - data center name where a new network should be added
-       *  *name* - name of a new network
-       *  *description* - new network description (if relevant)
-       *  *stp* - support stp true/false (note: true/false as a strings)
-       *  *vlan_id* - network vlan id
-       *  *usages* - a string contain list of comma-separated usages
-                     'vm' or "" for Non-VM.
-       *  *mtu* - and integer to overrule mtu on the related host nic..
-       *  *profile_required* - flag to create or not VNIC profile for the
-                               network
-    Return: True if result of action == positive, False otherwise
+    add network to a datacenter
+    :param positive: True if action should succeed, False otherwise
+    :type positive: bool
+    :param datacenter: data center name where a new network should be added
+    :type datacenter: str
+    :param kwargs:
+        name: name of a new network
+        description: new network description (if relevant)
+        stp: support stp true/false (note: true/false as a strings)
+        vlan_id: network vlan id
+        usages: a string contain list of comma-separated usages 'vm' or ""
+                for Non-VM.
+        mtu: and integer to overrule mtu on the related host nic..
+        profile_required: flag to create or not VNIC profile for the network
+    :return: True if result of action == positive, False otherwise
+    :rtype: bool
     """
-    DC = DC_API.find(datacenter)
+    dc = DC_API.find(datacenter)
     net_obj = _prepareNetworkObject(**kwargs)
-    return NET_API.create(entity=net_obj, positive=positive,
-                          collection=NET_API.getElemFromLink
-                          (DC, get_href=True))[1]
+    return NET_API.create(
+        entity=net_obj, positive=positive, collection=NET_API.getElemFromLink
+        (dc, get_href=True)
+    )[1]
 
 
-def deleteNetworkInDataCenter(positive, network, datacenter):
+def delete_network_in_datacenter(positive, network, datacenter):
     """
-    Description: remove existing network from datacenter
-    Author: myakove
-    Parameters:
-       *  *positive* - True if action should succeed, False otherwise
-       *  *network* - name of a network that should be removed
-       *  *datacenter* - datacenter where the network should be deleted from
-    Return: True if result of action == positive, False otherwise
+    remove existing network from datacenter
+    :param positive: True if action should succeed, False otherwise
+    :type positive: bool
+    :param network: name of a network that should be removed
+    :type network: str
+    :param datacenter: datacenter where the network should be deleted from
+    :type datacenter: str
+    :return: True if result of action == positive, False otherwise
+    :rtype: bool
     """
-    net_to_remove = getNetworkInDataCenter(network=network,
-                                           datacenter=datacenter)
-    return NET_API.delete(net_to_remove, positive)
+    net_to_remove = get_network_in_datacenter(
+        network=network, datacenter=datacenter
+    )
+    if net_to_remove:
+        return NET_API.delete(net_to_remove, positive)
+    return False
 
 
-def updateNetworkInDataCenter(positive, network, datacenter, **kwargs):
+def update_network_in_datacenter(positive, network, datacenter, **kwargs):
     """
-    Description: update existing network in datacenter
-    Author: myakove
-    Parameters:
-       *  *positive* - True if action should succeed, False otherwise
-       *  *network* - name of a network that should be updated
-       *  *datacenter* -  datacenter name where the network should be updated
-       *  *description* - new network description (if relevant)
-       *  *stp* - new network support stp (if relevant). (true/false string)
-       *  *vlan_id* - new network vlan id (if relevant)
-       *  *usages* - a string contain list of comma-separated usages
-                     'vm' or "" for Non-VM.
-                    should contain all usages every update.
-                    a missing usage will be deleted!
-       *  *mtu* - and integer to overrule mtu on the related host nic..
-    Return: True if result of action == positive, False otherwise
+    update existing network in datacenter
+     :param positive: True if action should succeed, False otherwise
+     :param network: name of a network that should be updated
+     :param datacenter: datacenter name where the network should be updated
+     :param kwargs:
+        description: new network description (if relevant)
+        stp: new network support stp (if relevant). (true/false string)
+        vlan_id: new network vlan id (if relevant)
+        usages: a string contain list of comma-separated usages
+                'vm' or "" for Non-VM. should contain all usages every update.
+                a missing usage will be deleted!
+        mtu: and integer to overrule mtu on the related host nic..
+    :return: True if result of action == positive, False otherwise
+    :rtype: bool
     """
-    net = getNetworkInDataCenter(network=network,
-                                 datacenter=datacenter)
+    net = get_network_in_datacenter(
+        network=network, datacenter=datacenter
+    )
     net_update = _prepareNetworkObject(**kwargs)
     return NET_API.update(net, net_update, positive)
 
@@ -817,45 +823,45 @@ def checkVlanNet(host, user, password, interface, vlan):
     return vid == vlan
 
 
-def createNetworksInDataCenter(datacenter, num_of_net):
+def create_networks_in_datacenter(datacenter, num_of_net, prefix):
     """
-    Description: Create number of networks under datacenter.
-    Author: myakove
-    Parameters:
-       *  *datacenter* - datacenter name
-       *  *num_of_net* - number of networks to create
-    **Return**: List of networks if action succeeded,
-                otherwise raise NetworkException
+    Create number of networks under datacenter.
+    :param datacenter: datacenter name
+    :type datacenter: str
+    :param num_of_net: number of networks to create
+    :type num_of_net: int
+    :param prefix: Prefix for network name
+    :type prefix: str
+    :return: True/False
+    :rtype: bool
     """
-    nets = []
-    for net in range(num_of_net):
-        net_name = "_".join([NETWORK_NAME, str(net)])
-        if not createNetworkInDataCenter(positive=True,
-                                         datacenter=datacenter,
-                                         name=net_name):
-            raise NetworkException("Fail to create %s network on %s" %
-                                   (net_name, datacenter))
-        nets.append(net_name)
-    return nets
+    for num in range(num_of_net):
+        net_name = "_".join([prefix, str(num)])
+        if not create_network_in_datacenter(
+            positive=True, datacenter=datacenter, name=net_name
+        ):
+            return False
+    return True
 
 
-def deleteNetworksInDataCenter(datacenter, mgmt_net):
+def delete_networks_in_datacenter(datacenter, mgmt_net):
     """
-    Description: Delete all networks under datacenter except mgnt_net.
-    Author: myakove
-    Parameters:
-       *  *datacenter* - datacenter name
-    **Return**: True if action succeeded, otherwise False
+    Delete all networks under datacenter except mgmt_net.
+    :param datacenter: datacenter name
+    :type datacenter: str
+    :param mgmt_net: management network
+    :type mgmt_net: str
+    :return: True/False
+    :rtype: bool
     """
-    dc_networks = getNetworksInDataCenter(datacenter)
+    dc_networks = get_networks_in_datacenter(datacenter)
     for net in dc_networks:
         net_name = net.get_name()
         if net_name == mgmt_net:
             continue
-        if not deleteNetworkInDataCenter(positive=True,
-                                         network=net_name,
-                                         datacenter=datacenter):
-            logger.error("Cannot remove %s from %s", net_name, datacenter)
+        if not delete_network_in_datacenter(
+            positive=True, network=net_name, datacenter=datacenter
+        ):
             return False
     return True
 
@@ -1366,7 +1372,7 @@ def get_dc_network_by_cluster(cluster, network):
     cluster_net = getClusterNetwork(cluster, network)
     dc_id = cluster_obj.get_data_center().get_id()
     dc_name = DC_API.find(dc_id, attribute='id').get_name()
-    dc_net = getNetworkInDataCenter(network, dc_name)
+    dc_net = get_network_in_datacenter(network, dc_name)
     if dc_net.get_id() == cluster_net.get_id():
         return dc_net
     return False

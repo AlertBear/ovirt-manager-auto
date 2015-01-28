@@ -3,7 +3,7 @@ Sanity Test
 """
 
 import logging
-from art.rhevm_api.tests_lib.low_level.vms import startVm
+from art.rhevm_api.tests_lib.high_level import vms as hl_vm
 from art.rhevm_api.utils.test_utils import set_engine_properties
 from rhevmtests.networking import config, network_cleanup
 from art.rhevm_api.tests_lib.low_level import vms
@@ -53,13 +53,16 @@ def setup_package():
     else:
         network_cleanup()
         logger.info(
-            "Running on golden env, starting VM %s", config.VM_NAME[0]
+            "Running on golden env, starting VM %s on host %s",
+            config.VM_NAME[0], config.HOSTS[0]
         )
-        if not startVm(
-            positive=True, vm=config.VM_NAME[0], wait_for_ip=True,
-            placement_host=config.HOSTS[0]
+        if not hl_vm.start_vm_on_specific_host(
+            vm=config.VM_NAME[0], host=config.HOSTS[0]
         ):
-            raise NetworkException("Failed to start %s" % config.VM_NAME[0])
+            raise NetworkException(
+                "Cannot start VM %s on host %s" %
+                (config.VM_NAME[0], config.HOSTS[0])
+            )
 
     logger.info("Add dummy support in VDSM conf file")
     if not add_dummy_vdsm_support(

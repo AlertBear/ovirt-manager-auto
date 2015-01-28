@@ -24,7 +24,7 @@ from configobj import ConfigObj
 
 from utilities import machine
 from art.rhevm_api.tests_lib.low_level.networks import (
-    addNetwork, getClusterNetwork, getNetworksInDataCenter, removeNetwork,
+    addNetwork, getClusterNetwork, get_networks_in_datacenter, removeNetwork,
     addNetworkToCluster, NET_API, DC_API, updateNetwork, getClusterNetworks,
     MGMT_NETWORK,
 )
@@ -851,7 +851,7 @@ def remove_all_networks(datacenter=None, cluster=None,
         removal_area = "cluster " + cluster
 
     elif datacenter:
-        networks_list = getNetworksInDataCenter(datacenter)
+        networks_list = get_networks_in_datacenter(datacenter)
         removal_area = "datacenter " + datacenter
 
     else:

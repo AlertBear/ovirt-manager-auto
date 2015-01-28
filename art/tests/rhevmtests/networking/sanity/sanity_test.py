@@ -37,8 +37,8 @@ from art.rhevm_api.tests_lib.low_level.vms import(
 from art.rhevm_api.tests_lib.low_level.networks import(
     updateClusterNetwork, isVMNetwork, isNetworkRequired, updateNetwork,
     addVnicProfile, removeVnicProfile, removeNetwork, check_ethtool_opts,
-    check_bridge_opts, updateVnicProfile, createNetworksInDataCenter,
-    getNetworksInDataCenter, deleteNetworksInDataCenter, isVmHostNetwork,
+    check_bridge_opts, updateVnicProfile, create_networks_in_datacenter,
+    get_networks_in_datacenter, delete_networks_in_datacenter, isVmHostNetwork,
     checkIPRule, check_network_on_nic, add_label, remove_label
 )
 from art.rhevm_api.utils.test_utils import checkMTU
@@ -1586,8 +1586,6 @@ class TestSanityCase21(TestCase):
     List all networks under datacenter.
     """
     __test__ = True
-    net_list = None
-    net_list_extra = None
 
     @classmethod
     def setup_class(cls):
@@ -1601,44 +1599,35 @@ class TestSanityCase21(TestCase):
             raise NetworkException("Failed to add DC %s" % config.EXTRA_DC)
 
         logger.info("Create 10 networks under %s", DC_NAMES[0])
-        cls.net_list = []
-        cls.net_list_extra = []
-        nets = createNetworksInDataCenter(DC_NAMES[0], 10)
-        if not nets:
+        if not create_networks_in_datacenter(DC_NAMES[0], 10, "dc1_net"):
             raise NetworkException(
                 "Fail to create 10 network on %s" % DC_NAMES[0]
             )
-        cls.net_list.extend(nets)
-
         logger.info("Create 5 networks under %s", config.EXTRA_DC)
-        nets_extra = createNetworksInDataCenter(config.EXTRA_DC, 5)
-        if not nets_extra:
+        if not create_networks_in_datacenter(config.EXTRA_DC, 5, "dc2_net"):
             raise NetworkException(
                 "Fail to create 5 network on %s" % config.EXTRA_DC
             )
-        cls.net_list_extra.extend(nets_extra)
 
     @tcms(16421, 448122)
     def test_get_networks_list(self):
         """
         Get all networks under the datacenter.
         """
-        logger.info("Checking that all networks are exist in the datacenters")
-        for net in getNetworksInDataCenter(DC_NAMES[0]):
-            net_name = net.get_name()
-            if net_name == config.MGMT_BRIDGE:
-                continue
-            if net_name not in self.net_list:
+        logger.info("Checking that all networks exist in the datacenters")
+        dc1_net_list = ["_".join(["dc1_net", str(i)]) for i in xrange(10)]
+        engine_dc_net_list = get_networks_in_datacenter(DC_NAMES[0])
+        for net in dc1_net_list:
+            if net not in [i.name for i in engine_dc_net_list]:
                 raise NetworkException(
-                    "%s was expected to be in %s" % (net_name, DC_NAMES[0])
+                    "%s was expected to be in %s" % (net, DC_NAMES[0])
                 )
-        for net in getNetworksInDataCenter(config.EXTRA_DC):
-            net_name = net.get_name()
-            if net_name == config.MGMT_BRIDGE:
-                continue
-            if net_name not in self.net_list_extra:
+        dc2_net_list = ["_".join(["dc2_net", str(i)]) for i in xrange(5)]
+        engine_extra_dc_net_list = get_networks_in_datacenter(config.EXTRA_DC)
+        for net in dc2_net_list:
+            if net not in [i.name for i in engine_extra_dc_net_list]:
                 raise NetworkException(
-                    "%s was expected to be in %s" % (net_name, config.EXTRA_DC)
+                    "%s was expected to be in %s" % (net, config.EXTRA_DC)
                 )
 
     @classmethod
@@ -1651,7 +1640,7 @@ class TestSanityCase21(TestCase):
             logger.error("Cannot remove DC")
 
         logger.info("Remove all networks from %s", config.DC_NAME[0])
-        if not deleteNetworksInDataCenter(
+        if not delete_networks_in_datacenter(
             config.DC_NAME[0], config.MGMT_BRIDGE
         ):
             logger.error(
