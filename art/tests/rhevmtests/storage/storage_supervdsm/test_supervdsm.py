@@ -142,7 +142,7 @@ class TestCase289230(SuperVDSMTestBase):
             FILE_DOES_NOT_EXIST % VDSM_LOG)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase289539(SuperVDSMTestBase):
     """
     supervdsm test case, command options
@@ -189,7 +189,7 @@ class TestCase289539(SuperVDSMTestBase):
                             ERROR_EXEC_SERVICE_ACTION % (command, "supervdsm"))
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase289547(SuperVDSMTestBase):
     """
     supervdsm test case, communication between supervdsm and vdsm
