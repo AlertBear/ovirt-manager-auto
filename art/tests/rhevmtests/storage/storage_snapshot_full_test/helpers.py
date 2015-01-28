@@ -1,14 +1,13 @@
-__author__ = 'mbourvin'
-
+"""Helper functions for snapshot full plan"""
 from art.rhevm_api.utils.resource_utils import copyDataToVm, verifyDataOnVm
 from art.rhevm_api.utils.test_utils import removeDirOnHost
-from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 
 from rhevmtests.storage.helpers import create_vm_or_clone
 import config
+from rhevmtests.storage import helpers
 import logging
 
 logger = logging.getLogger(__name__)
@@ -99,7 +98,7 @@ def start_cat_process_on_vm(vm_name, src):
         * src - source for cat process to read from
     Returns: True if process starts succesfully and the process PID
     """
-    vm_ip = LookUpVMIpByName('', '').get_ip(vm_name)
+    vm_ip = helpers.get_vm_ip(vm_name)
     logger.info('Starting cat on vm %s from %s to /dev/null', vm_name, src)
     cmd = 'cat %s > /dev/null &' % src
     status, _ = runMachineCommand(True, ip=vm_ip, user=config.VM_USER,
@@ -148,7 +147,7 @@ def is_pid_running_on_vm(vm_name, pid, cmd):
                     pid, vm_name)
         return False
 
-    vm_ip = LookUpVMIpByName('', '').get_ip(vm_name)
+    vm_ip = helpers.get_vm_ip(vm_name)
     logger.info('Checking cmdline of process %s on vm %s', pid, vm_name)
     command = 'cat /proc/%s/cmdline' % pid
     rc, out = runMachineCommand(True, ip=vm_ip, user=config.VM_USER,

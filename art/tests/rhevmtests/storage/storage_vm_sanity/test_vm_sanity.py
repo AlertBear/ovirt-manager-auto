@@ -304,16 +304,16 @@ class TestCase248138(TestCase):
         vms.removeVm(True, vm=cls.vm_name, stopVM='true')
 
 
-@attr(tier=1)
+@attr(tier=0)
 class TestCase300867(TestCase):
     """
     storage vm sanity test, creates 2 snapshots and removes them.
     Check that actual disk size became the same it was
     before snapshots were made.
-    https://tcms.engineering.redhat.com/case/300867/?from_plan=1892
+    https://tcms.engineering.redhat.com/case/300867/?from_plan=6458
     """
     __test__ = True
-    tcms_plan_id = '1892'
+    tcms_plan_id = '6458'
     tcms_test_case = '300867'
     data_for_vm = []
     vms_ip_address = None
@@ -369,7 +369,7 @@ class TestCase300867(TestCase):
 
     @bz({"1185782": {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(tcms_plan_id, tcms_test_case)
-    def test_auto_shrink_qcow_volumes(self):
+    def test_delete_snapshot(self):
         """
         Create 2 snapshot, Deleting them and Check that actual disk
         size became the same it was before snapshots were made.
@@ -380,6 +380,10 @@ class TestCase300867(TestCase):
                     self.alias,
                     self.disk_size_before)
 
+        LOGGER.info("Make sure vm %s is up", self.vm_name)
+        if vms.get_vm_state(self.vm_name) == config.VM_DOWN:
+            vms.startVms([self.vm_name])
+            vms.waitForVMState(self.vm_name)
         self._make_snapshots()
 
         diskObj = disks.getVmDisk(self.vm_name, self.alias)
@@ -387,6 +391,7 @@ class TestCase300867(TestCase):
                     self.alias,
                     diskObj.get_actual_size())
 
+        vms.stop_vms_safely([self.vm_name])
         self._remove_snapshots()
 
         diskObj = disks.getVmDisk(self.vm_name, self.alias)

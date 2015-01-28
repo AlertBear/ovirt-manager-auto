@@ -2,28 +2,34 @@
 Storage live snapshot sanity tests - full test
 https://tcms.engineering.redhat.com/plan/5588/
 """
+from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
+from art.test_handler import exceptions
 import helpers
+import shlex
 import config
 import logging
+import os
+from rhevmtests.storage import helpers as storage_helpers
 
 from concurrent.futures import ThreadPoolExecutor
 
 from art.unittest_lib import StorageTest as TestCase, attr
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 
-from art.rhevm_api.tests_lib.high_level.vms import restore_snapshot, \
-    shutdown_vm_if_up
-from art.rhevm_api.tests_lib.high_level.hosts import switch_host_to_cluster
+from art.rhevm_api.tests_lib.high_level.vms import restore_snapshot
 
 from art.rhevm_api.tests_lib.low_level import hosts, templates, vms
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainNamesForType)
 
-from art.rhevm_api.utils.test_utils import get_api, prepareDataForVm, \
-    raise_if_exception, wait_for_tasks
+from art.rhevm_api.utils.test_utils import (
+    get_api, raise_if_exception, wait_for_tasks,
+)
+from rhevmtests.storage.helpers import remove_all_vm_test_snapshots
+from utilities.machine import Machine, LINUX
 
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
 VM_API = get_api('vm', 'vms')
 
@@ -33,34 +39,29 @@ SNAP_1 = 'spm_snapshot1'
 ACTIVE_SNAP = 'Active VM'
 VM_ON_SPM = 'vm_on_spm_%s'
 VM_ON_HSM = 'vm_on_hsm-%s'
+ACTIVE_VM = 'Active VM'
 
 SPM = None
 HSM = None
 
 
-vm_args = {
-    'positive': True,
-    'vmDescription': '',
-    'cluster': config.CLUSTER_NAME,
-    'nic': config.NIC_NAME[0],
-    'nicType': ENUMS['nic_type_virtio'],
-    'size': config.DISK_SIZE,
-    'diskInterface': ENUMS['interface_virtio'],
-    'volumeFormat': ENUMS['format_cow'],
-    'volumeType': True,  # This means sparse
-    'bootable': True,
-    'type': ENUMS['vm_type_desktop'],
-    'os_type': "rhel6x64",
-    'memory': config.GB,
-    'cpu_socket': 1,
-    'cpu_cores': 1,
-    'display_type': ENUMS['display_type_spice'],
-    'start': True,
-    'installation': True,
-    'image': config.COBBLER_PROFILE,
-    'network': config.MGMT_BRIDGE,
-    'useAgent': config.USE_AGENT,
-}
+vm_args = {'positive': True,
+           'vmName': '',
+           'vmDescription': '',
+           'diskInterface': config.VIRTIO,
+           'volumeFormat': config.COW_DISK,
+           'cluster': config.CLUSTER_NAME,
+           'storageDomainName': None,
+           'installation': True,
+           'size': config.DISK_SIZE,
+           'nic': config.NIC_NAME[0],
+           'image': config.COBBLER_PROFILE,
+           'useAgent': True,
+           'os_type': config.OS_TYPE,
+           'user': config.VM_USER,
+           'password': config.VM_PASSWORD,
+           'network': config.MGMT_BRIDGE
+           }
 
 VM_LIST = []
 
@@ -80,19 +81,14 @@ def setup_module():
             config.DATA_CENTER_NAME, storage_type)[0]
 
         args = vm_args.copy()
-        results = list()
-        with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-            # Create a vm on SPM
-            args['storageDomainName'] = storage_domain
-            for host, vm_name in [(SPM, VM_ON_SPM),
-                                  (HSM, VM_ON_HSM)]:
-                args['vmName'] = vm_name % storage_type
-                args['placement_host'] = host
-                results.append(executor.submit(helpers.prepare_vm, **args))
+        args['storageDomainName'] = storage_domain
+        for host, vm_name in [(SPM, VM_ON_SPM), (HSM, VM_ON_HSM)]:
+            args['vmName'] = vm_name % storage_type
+            args['vmDescription'] = vm_name % storage_type
+            args['placement_host'] = host
+            helpers.prepare_vm(**args)
 
-                VM_LIST.append(vm_name % storage_type)
-
-        raise_if_exception(results)
+            VM_LIST.append(args['vmName'])
 
 
 def teardown():
@@ -101,6 +97,86 @@ def teardown():
     """
     vms.stop_vms_safely(VM_LIST)
     vms.removeVms(True, VM_LIST)
+
+
+class BasicEnvironmentSetUp(TestCase):
+    """
+    This class implements setup, teardowns and common functions
+    """
+    __test__ = False
+    vm_on_hsm = VM_ON_HSM % TestCase.storage
+    vm_on_spm = VM_ON_SPM % TestCase.storage
+    tcms_plan_id = '5588'
+    vm_name = ''
+    file_name = 'test_file'
+    mount_path = '/root'
+    cmd_create = 'echo "test_txt" > test_file'
+    cm_del = 'rm -f test_file'
+
+    def setUp(self):
+        """
+        Prepare environment
+        """
+        self.disk_name = 'test_disk_%s' % self.tcms_test_case
+        self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
+        vms.start_vms([self.vm_name], 1, wait_for_ip=False)
+        if not vms.waitForVMState(self.vm_name):
+            raise exceptions.VMException(
+                "Timeout when waiting for vm %s and state up" % self.vm_name)
+        vm_ip = storage_helpers.get_vm_ip(self.vm_name)
+        self.vm = Machine(vm_ip, config.VM_USER,
+                          config.VM_PASSWORD).util(LINUX)
+        self.mounted_paths = []
+        self.boot_disk = vms.get_vm_bootable_disk(self.vm_name)
+        logger.info("The boot disk is: %s", self.boot_disk)
+
+    def tearDown(self):
+        remove_all_vm_test_snapshots(self.vm_name, self.snapshot_desc)
+        if not vms.start_vms([self.vm_name]):
+            raise exceptions.VMException(
+                "Failed to start vm %s" % self.vm_name)
+        if not vms.waitForVMState(self.vm_name):
+            raise exceptions.VMException(
+                "Timeout when waiting for vm %s to start" % self.vm_name)
+        if self.check_file_existence_operation(self.vm_name, True):
+            status, _ = self.vm.runCmd(shlex.split(self.cm_del))
+            if not status:
+                raise exceptions.DiskException(
+                    "File deletion from disk failed"
+                )
+
+    def _perform_snapshot_operation(
+            self, vm_name, disks=None, wait=True, live=False):
+        if not live:
+            if not vms.get_vm_state(vm_name) == config.VM_DOWN:
+                vms.shutdownVm(True, vm_name)
+                vms.waitForVMState(vm_name, config.VM_DOWN)
+        if disks:
+            is_disks = 'disks: %s' % disks
+        else:
+            is_disks = 'all disks'
+        logger.info("Adding new snapshot to vm %s with %s",
+                    self.vm_name, is_disks)
+        status = vms.addSnapshot(
+            True, vm_name, self.snapshot_desc, disks_lst=disks, wait=wait)
+        self.assertTrue(status, "Failed to create snapshot %s" %
+                                self.snapshot_desc)
+        if wait:
+            vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
+            wait_for_jobs()
+
+    def check_file_existence_operation(self, vm_name, should_exist=True):
+
+        vms.start_vms([vm_name], 1, wait_for_ip=False)
+        vms.waitForVMState(vm_name)
+        full_path = os.path.join(self.mount_path, self.file_name)
+        logger.info("Checking full path %s", full_path)
+        result = self.vm.isFileExists(full_path)
+        logger.info("File %s", 'exists' if result else 'does not exist')
+
+        if should_exist != result:
+            return False
+        return True
 
 
 class BaseTestCase(TestCase):
@@ -134,77 +210,98 @@ class BaseTestCase(TestCase):
 
 
 @attr(tier=0)
-class LiveSnapshot(BaseTestCase):
+class LiveSnapshot(BasicEnvironmentSetUp):
     """
+    Full flow Live snapshot - Test case 141612
     https://tcms.engineering.redhat.com/case/141612
 
     Create live snapshot
-    Add 3 files to the VM
-    Stop VM and restore snapshot
+    Add file to the VM
+    Stop VM
+    Preview and commit snapshot
 
     Expected Results:
     Snapshot should be successfully created
     Verify that a new data is written on new volumes
+    Verify that the file no longer exists both after preview and after commit
     """
     __test__ = True
     tcms_test_case = '141612'
 
-    def _test_on_host(self, vm_name):
+    def setUp(self):
+        self.previewed = False
+        self.vm_name = VM_ON_SPM % TestCase.storage
+        super(LiveSnapshot, self).setUp()
+
+    def _test_Live_snapshot(self, vm_name):
         """
         Tests live snapshot on given vm
         """
-        LOGGER.info("Creating live snapshot %s on vm %s", SNAP_1, vm_name)
-        self.assertTrue(
-            vms.addSnapshot(True, vm=vm_name, description=SNAP_1))
-        LOGGER.info("Preparing 3 files in /tmp")
-        succeeded, data_path = prepareDataForVm(
-            root_dir='/tmp', root_name_prefix='snap', dir_cnt=1, file_cnt=3)
-        assert succeeded
-        data_path = data_path['data_path']
-        LOGGER.info("Copying files from %s to vm %s", data_path, vm_name)
-        helpers.copy_data_to_vm(vm_name, data_path)
-        LOGGER.info("Verifying that vm %s has same files in %s", vm_name,
-                    data_path)
-        assert helpers.verify_data_on_vm(True, vm_name, data_path)
-        assert vms.stopVm(True, vm=vm_name)
-        LOGGER.info("Waiting until all snapshots are ok on vm %s", vm_name)
-        vms.wait_for_vm_snapshots(vm_name, states=['ok'])
-        LOGGER.info("Restoring snapshot %s on vm %s", SNAP_1, vm_name)
-        assert vms.restoreSnapshot(True, vm=vm_name, description=SNAP_1)
+        logger.info("Make sure vm %s is up", vm_name)
+        if vms.get_vm_state(vm_name) == config.VM_DOWN:
+            vms.startVms([vm_name])
+            vms.waitForVMState(vm_name)
+        logger.info("Creating snapshot")
+        self._perform_snapshot_operation(vm_name, live=True)
+        wait_for_jobs()
+
+        logger.info("writing file to disk")
+        cmd = self.cmd_create
+        status, _ = self.vm.runCmd(shlex.split(cmd))
+        assert status
+        if not self.check_file_existence_operation(vm_name, True):
+            raise exceptions.DiskException(
+                "Writing operation failed"
+            )
+
+        vms.shutdownVm(True, vm_name)
+        vms.waitForVMState(vm_name, state=config.VM_DOWN)
+
+        logger.info("Previewing snapshot %s on vm %s",
+                    self.snapshot_desc, vm_name)
+
+        self.previewed = vms.preview_snapshot(
+            True, vm=vm_name, description=self.snapshot_desc,
+            ensure_vm_down=True)
+        self.assertTrue(self.previewed,
+                        "Failed to preview snapshot %s" % self.snapshot_desc)
+
         assert vms.startVm(
-            True, vm=vm_name, wait_for_status=ENUMS['vm_state_up'])
+            True, vm=vm_name, wait_for_status=config.VM_UP)
         assert vms.waitForIP(vm=vm_name)
-        LOGGER.info("Checking that files in %s on vm %s no longer exist",
-                    data_path, vm_name)
-        assert helpers.verify_data_on_vm(False, vm_name, data_path)
+        logger.info("Checking that files no longer exist after preview")
+        if not self.check_file_existence_operation(vm_name, False):
+            raise exceptions.SnapshotException(
+                "Snapshot operation failed"
+            )
+
+        self.assertTrue(vms.commit_snapshot(
+            True, vm=vm_name, ensure_vm_down=True),
+            "Failed to commit snapshot %s" % self.snapshot_desc)
+        self.previewed = False
+        logger.info("Checking that files no longer exist after commit")
+        if not self.check_file_existence_operation(vm_name, False):
+            raise exceptions.SnapshotException(
+                "Snapshot operation failed"
+            )
 
     @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
-    def test_on_spm(self):
+    def test_live_snapshot(self):
         """
         Create a snapshot while VM is running on SPM host
         """
-        self._test_on_host(self.vm_on_spm)
+        self._test_Live_snapshot(self.vm_name)
 
-    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
-    def test_on_hsm(self):
-        """
-        Create a snapshot while VM is running on HSM host
-        """
-        self._test_on_host(self.vm_on_hsm)
-
-    def test_on_single_host(self):
-        """
-        Create a snapshot while VM is running on SPM host and there is one host
-        in the cluster
-        """
-        assert vms.stopVm(True, self.vm_on_hsm)
-        switch_host_to_cluster(HSM, 'Default')
-        self._test_on_host(self.vm_on_spm)
-        switch_host_to_cluster(HSM, config.CLUSTER_NAME)
+    def tearDown(self):
+        if self.previewed:
+            if not vms.undo_snapshot_preview(
+                    True, self.vm_name, ensure_vm_down=True):
+                raise exceptions.SnapshotException(
+                    "Failed to undo snapshot for vm %s" % self.vm_name)
 
 
-@attr(tier=0)
-class LiveSnapshotMultipleDisks(LiveSnapshot):
+@attr(tier=1)
+class LiveSnapshotMultipleDisks(BasicEnvironmentSetUp):
     """
     https://tcms.engineering.redhat.com/case/141646/
 
@@ -221,45 +318,78 @@ class LiveSnapshotMultipleDisks(LiveSnapshot):
     __test__ = True
     tcms_test_case = '141646'
 
-    @classmethod
-    def setup_class(cls):
+    def setUp(self):
+        self.previewed = False
+        self.vm_name = VM_ON_SPM % TestCase.storage
+        super(LiveSnapshotMultipleDisks, self).setUp()
+        self._prepare_disk()
+
+    def _test_Live_snapshot(self, vm_name):
         """
-        Adds IDE cow disks to vms
+        Tests live snapshot on given vm
         """
-        cls.vm_list = [cls.vm_on_spm, cls.vm_on_hsm]
-        storage_domain = getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, cls.storage)[0]
-        for vm_name in cls.vm_list:
-            assert vms.addDisk(
-                True, vm=vm_name, size=3 * config.GB, wait='True',
-                storagedomain=storage_domain, type=ENUMS['disk_type_data'],
-                interface=ENUMS['interface_ide'], format=ENUMS['format_cow'],
-                sparse='true')
-        super(LiveSnapshotMultipleDisks, cls).setup_class()
+        logger.info("Make sure vm %s is up", vm_name)
+        if vms.get_vm_state(vm_name) == config.VM_DOWN:
+            vms.startVms([vm_name])
+            vms.waitForVMState(vm_name)
+        logger.info("Creating snapshot")
+        self._perform_snapshot_operation(vm_name, live=True)
+        wait_for_jobs()
+
+        vm_devices = self.vm.get_storage_devices()
+        if not vm_devices:
+            raise exceptions.VMException("No devices found")
+        logger.info("Devices found: %s", vm_devices)
+        self.devices = [d for d in vm_devices if d != 'vda']
+        self.devices.sort()
+        for dev in self.devices:
+            logger.info("writing file to disk")
+            mount_path = self.mount_path % dev
+            cmd = self.cmd_create % mount_path
+            status, _ = self.vm.runCmd(shlex.split(cmd))
+
+            assert status
+        if not self.check_file_existence_operation(vm_name, True):
+            raise exceptions.DiskException(
+                "writing operation failed"
+            )
+
+        vms.stop_vms_safely([vm_name])
+
+        logger.info("Previewing snapshot %s on vm %s",
+                    self.snapshot_desc, vm_name)
+
+        self.previewed = vms.preview_snapshot(
+            True, vm=vm_name, description=self.snapshot_desc,
+            ensure_vm_down=True)
+        self.assertTrue(self.previewed,
+                        "Failed to preview snapshot %s" % self.snapshot_desc)
+
+        assert vms.startVm(
+            True, vm=vm_name, wait_for_status=config.VM_UP)
+        assert vms.waitForIP(vm=vm_name)
+
+        logger.info("Checking that files no longer exist after preview")
+        if not self.check_file_existence_operation(vm_name, False):
+            raise exceptions.SnapshotException(
+                "Snapshot operation failed"
+            )
+
+        self.assertTrue(vms.commit_snapshot(
+            True, vm=vm_name, ensure_vm_down=True),
+            "Failed to commit snapshot %s" % self.snapshot_desc)
+        logger.info("Checking that files no longer exist after commit")
+        if not self.check_file_existence_operation(vm_name, False):
+            raise exceptions.SnapshotException(
+                "Snapshot operation failed"
+            )
 
     @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
-    def test_on_spm(self):
+    def test_live_snapshot(self):
         """
         Create a snapshot while VM is running on SPM host
         """
-        self._test_on_host(self.vm_on_spm)
-
-    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
-    def test_on_hsm(self):
-        """
-        Create a snapshot while VM is running on HSM host
-        """
-        self._test_on_host(self.vm_on_hsm)
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Removes the disks created in setup_class
-        """
-        super(LiveSnapshotMultipleDisks, cls).teardown_class()
-        for vm_name in cls.vm_list:
-            disk_name = "%s_Disk2" % vm_name
-            assert vms.removeDisk(True, vm_name, disk_name)
+        self._test_Live_snapshot(self.vm_name)
 
 
 @attr(tier=2)
@@ -285,7 +415,7 @@ class SnapshotDescription(BaseTestCase):
             * length - how many 'a' chars should description contain
         """
         description = length * 'a'
-        LOGGER.info("Trying to create snapshot on vm %s with description "
+        logger.info("Trying to create snapshot on vm %s with description "
                     "containing %d 'a' letters", vm_name, length)
         self.assertTrue(
             vms.addSnapshot(positive, vm=vm_name, description=description))
@@ -303,81 +433,10 @@ class SnapshotDescription(BaseTestCase):
         """
         Try to create snapshots containing special characters
         """
-        LOGGER.info("Trying to create snapshot with description %s",
+        logger.info("Trying to create snapshot with description %s",
                     config.SPECIAL_CHAR_DESC)
         assert vms.addSnapshot(True, vm=self.vm_on_hsm,
                                description=config.SPECIAL_CHAR_DESC)
-
-
-@attr(tier=0)
-class PreviewSnapshot(BaseTestCase):
-    """
-    https://tcms.engineering.redhat.com/case/141644/
-
-    Create 3 files on a VM
-    Create live snapshot
-    Remove the 3 files
-    Stop VM
-    Preview the snapshot on the VM
-    Start the VM
-
-    Expected Results:
-
-    Verify that the snapshot being presented is the correct one (the files are
-    there)
-    """
-    __test__ = True
-    tcms_test_case = '141644'
-
-    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
-    def test_preview(self):
-        """
-        Checking that erased file is presented in preview mode of snapshot
-        """
-        LOGGER.info("Preparing 3 files in /tmp")
-        succeeded, data_path = prepareDataForVm(
-            root_dir='/tmp', root_name_prefix='snap', dir_cnt=1, file_cnt=3)
-        data_path = data_path['data_path']
-        assert succeeded
-        LOGGER.info("Copying files from %s to vm %s", data_path,
-                    self.vm_on_spm)
-        helpers.copy_data_to_vm(self.vm_on_spm, data_path)
-        LOGGER.info("Verifying that vm %s has same files in %s",
-                    self.vm_on_spm, data_path)
-        assert helpers.verify_data_on_vm(True, self.vm_on_spm, data_path)
-        LOGGER.info("Creating live snapshot %s on vm %s",
-                    SNAP_1, self.vm_on_spm)
-        self.assertTrue(
-            vms.addSnapshot(True, vm=self.vm_on_spm, description=SNAP_1))
-        vm_data_path = '/var%s' % data_path
-        LOGGER.info("Removing files in %s from vm %s",
-                    vm_data_path, self.vm_on_spm)
-        helpers.remove_dir_on_host(self.vm_on_spm, vm_data_path)
-        assert vms.stopVm(True, vm=self.vm_on_spm)
-        LOGGER.info("Waiting until all snapshots are ok on vm %s",
-                    self.vm_on_spm)
-        vms.wait_for_vm_snapshots(self.vm_on_spm, states=['ok'])
-        LOGGER.info("Previewing snapshot %s on vm %s", SNAP_1, self.vm_on_spm)
-        assert vms.preview_snapshot(
-            True, vm=self.vm_on_spm, description=SNAP_1)
-        assert vms.startVm(
-            True, vm=self.vm_on_spm, wait_for_status=ENUMS['vm_state_up'])
-        assert vms.waitForIP(vm=self.vm_on_spm)
-        LOGGER.info("Checking that files in %s on vm %s exist again",
-                    data_path, self.vm_on_spm)
-        self.assertTrue(
-            helpers.verify_data_on_vm(True, self.vm_on_spm, data_path))
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Undo preview of snapshot, then continue with teardown
-        """
-        LOGGER.info('shutting down vm')
-        shutdown_vm_if_up(cls.vm_on_spm)
-        LOGGER.info('Undo snapshot preview for snapshot %s', SNAP_1)
-        assert vms.undo_snapshot_preview(True, cls.vm_on_spm)
-        super(PreviewSnapshot, cls).teardown_class()
 
 
 @attr(tier=1)
@@ -405,7 +464,7 @@ class MultipleStorageDomainDisks(BaseTestCase):
         storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, cls.storage)[1]
         for _ in range(2):
-            LOGGER.info("Adding disk to vm %s", cls.vm_on_hsm)
+            logger.info("Adding disk to vm %s", cls.vm_on_hsm)
             assert vms.addDisk(
                 True, vm=cls.vm_on_hsm, size=3 * config.GB, wait='True',
                 storagedomain=storage_domain, type=ENUMS['disk_type_data'],
@@ -421,7 +480,7 @@ class MultipleStorageDomainDisks(BaseTestCase):
         super(MultipleStorageDomainDisks, cls).teardown_class()
         for disk_index in [2, 3]:
             disk_name = "%s_Disk%d" % (cls.vm_on_hsm, disk_index)
-            LOGGER.info("Removing disk %s of vm %s", disk_name, cls.vm_on_hsm)
+            logger.info("Removing disk %s of vm %s", disk_name, cls.vm_on_hsm)
             assert vms.removeDisk(True, cls.vm_on_hsm, disk_name)
 
     @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
@@ -467,7 +526,7 @@ class CreateSnapshotWhileMigration(BaseTestCase):
             vms.addSnapshot(False, vm=self.vm_on_hsm, description=SNAP_1))
 
 
-@attr(tier=0)
+@attr(tier=1)
 class SnapshotPresentation(BaseTestCase):
     """
     https://tcms.engineering.redhat.com/case/141614/
@@ -491,7 +550,7 @@ class SnapshotPresentation(BaseTestCase):
         """
         storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, cls.storage)[1]
-        LOGGER.info("Adding disk to vm %s", cls.vm_on_spm)
+        logger.info("Adding disk to vm %s", cls.vm_on_spm)
         assert vms.addDisk(
             True, vm=cls.vm_on_spm, size=3 * config.GB, wait='True',
             storagedomain=storage_domain, type=ENUMS['disk_type_data'],
@@ -506,7 +565,7 @@ class SnapshotPresentation(BaseTestCase):
         """
         super(SnapshotPresentation, cls).teardown_class()
         disk_name = "%s_Disk2" % cls.vm_on_spm
-        LOGGER.info("Removing disk %s of vm %s", disk_name, cls.vm_on_spm)
+        logger.info("Removing disk %s of vm %s", disk_name, cls.vm_on_spm)
         assert vms.removeDisk(True, cls.vm_on_spm, disk_name)
 
     @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
