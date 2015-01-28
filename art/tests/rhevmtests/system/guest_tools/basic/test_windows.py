@@ -1,31 +1,18 @@
 """
 Base class for all Windows basic sanity tests
 """
-import json
 import logging
-from nose.tools import istest
-from art.unittest_lib import attr
-from art.unittest_lib import CoreSystemTest as TestCase
-from unittest2 import skipIf
-import os
 
-import art.rhevm_api.utils.test_utils as utils
-from rhevmtests.system.guest_tools.basic import config
-import art.rhevm_api.tests_lib.low_level.vms as vms
-import art.rhevm_api.tests_lib.low_level.templates as template
+from art.rhevm_api.utils import test_utils as utils
+from art.rhevm_api.tests_lib.low_level import vms, templates
+from art.unittest_lib import attr, CoreSystemTest as TestCase
+from rhevmtests.system.guest_tools import config
+from nose.tools import istest
+from unittest2 import skipIf
+
 
 LOGGER = logging.getLogger(__name__)
-SKIP_INSTALL = False
-SKIP_UNINSTALL = False
-STAFCONVDIR = 'STAFCONVDIR'
-STAF_PATH = '/usr/local/staf/codepage'
-
-
-def setup_module():
-    """ setup variables """
-    global SKIP_INSTALL, SKIP_UNINSTALL
-    SKIP_INSTALL = bool(config.SKIP_INSTALL)
-    SKIP_UNINSTALL = bool(config.SKIP_UNINSTALL)
+SKIP_CASE = False
 
 
 class Windows(TestCase):
@@ -34,118 +21,273 @@ class Windows(TestCase):
     """
 
     __test__ = False
-    mac = None
-    ip = None
     machine = None
     vmName = None
-    template = None
     platf = None
-    toolsDict = None
-    templateNameStorage = None
 
     @classmethod
     def setup_class(cls):
-        "setup class"
-        LOGGER.info("Setting up class %s",
-                    cls.__name__)
-        template.importTemplate(
-            True, template=cls.templateNameStorage,
+        global SKIP_CASE
+        cls.platf = '64' if '64' in cls.vmName else ''
+        SKIP_CASE = '2008' in cls.vmName or '2012' in cls.vmName
+
+        templates.importTemplate(
+            True,
+            template=cls.vmName,
             export_storagedomain=config.EXPORT_STORAGE_DOMAIN,
             import_storagedomain=config.STORAGE_DOMAIN,
-            cluster=config.CLUSTER_NAME[0], name=cls.template)
-        vms.createVm(True, vmName=cls.vmName,
-                     vmDescription="VM for %s class" % cls.__name__,
-                     cluster=config.CLUSTER_NAME[0],
-                     template=cls.template, network=config.MGMT_BRIDGE)
+            cluster=config.CLUSTER_NAME[0],
+            name=cls.vmName,
+        )
+        vms.createVm(
+            True,
+            vmName=cls.vmName,
+            vmDescription="VM for %s class" % cls.__name__,
+            cluster=config.CLUSTER_NAME[0],
+            template=cls.vmName,
+            network=config.MGMT_BRIDGE,
+        )
         vms.runVmOnce(True, cls.vmName, cdrom_image=config.CD_WITH_TOOLS)
         vms.waitForVMState(vm=cls.vmName, state='up')
-        cls.mac = vms.getVmMacAddress(
+        mac = vms.getVmMacAddress(
             True, vm=cls.vmName,
-            nic='nic2')[1].get('macAddress', None)
-        LOGGER.info("Mac adress is %s", cls.mac)
-        cls.ip = utils.convertMacToIpAddress(
-            True, cls.mac, subnetClassB=config.SUBNET_CLASS)[1].get('ip', None)
-        os.environ[STAFCONVDIR] = STAF_PATH
+            nic='nic1'
+        )[1].get('macAddress', None)
+        LOGGER.info("Mac adress is %s", mac)
+
+        ip = utils.convertMacToIpAddress(
+            True, mac, subnetClassB=config.SUBNET_CLASS
+        )[1].get('ip', None)
         cls.machine = utils.createMachine(
             True,
             host=config.HOSTS[0],
-            ip=cls.ip,
+            ip=ip,
             os='windows',
             platf=cls.platf
         )
 
     @classmethod
     def teardown_class(cls):
-        "tear down class"
         vms.removeVm(True, vm=cls.vmName, stopVM='true')
 
     @istest
-    @skipIf(SKIP_INSTALL, "skiping installation")
-    def installationUsingAPT(self):
+    def a_installationUsingAPT(self):
         """
         This function test installation of GT using APT
         """
-        if not utils.isGtMachineReady(True, self.machine):
-            return False
-        if not utils.installAPT(
-                True, self.machine,
-                json.loads(self.toolsDict), timeout=1000):
-            LOGGER.error("Installation using APT failed")
-            return False
-        else:
-            if not utils.areToolsAreCorrectlyInstalled(True, self.machine):
-                LOGGER.error("Tools was not installed correctly")
-                return False
+        self.assertTrue(
+            utils.isGtMachineReady(True, self.machine),
+            'Windows machine is not ready, timeout expired.',
+        )
+        self.assertTrue(
+            utils.installAPT(
+                True,
+                self.machine,
+                {},
+                timeout=1000,
+            ),
+            'Installation using APT failed',
+        )
+        self.assertTrue(
+            utils.areToolsAreCorrectlyInstalled(True, self.machine),
+            'Tools was not installed correctly',
+        )
         LOGGER.info("Installation using APT was successful")
-        return True
+
+    def _checkProduct(self, product):
+        self.assertTrue(
+            self.machine.isProductInstalled(product),
+            '%s was not installed' % product
+        )
+        LOGGER.info('%s is installed', product)
 
     @istest
-    @skipIf(SKIP_UNINSTALL, "skiping uninstallation")
-    def unistallGuestTools(self):
+    def checkProductQemuAgent(self):
+        """ Check product qemu agent """
+        self._checkProduct('QEMU guest agent')
+
+    @istest
+    @skipIf(SKIP_CASE, 'Spice is not supported. Skipping.')
+    def checkProductSpice(self):
+        """ Check product spice """
+        self._checkProduct('RHEV-Spice%s' % self.platf)
+
+    @istest
+    def checkProductSpiceAgent(self):
+        """ Check product spice agent """
+        self._checkProduct('RHEV-Spice-Agent%s' % self.platf)
+
+    @istest
+    def checkProductSerial(self):
+        """ Check product serial """
+        self._checkProduct('RHEV-Serial%s' % self.platf)
+
+    @istest
+    def checkProductNetwork(self):
+        """ Check product network """
+        self._checkProduct('RHEV-Network%s' % self.platf)
+
+    @istest
+    def checkProductAgent(self):
+        """ Check product agent """
+        self._checkProduct('RHEV-Agent%s' % self.platf)
+
+    @istest
+    @skipIf(SKIP_CASE, 'USB is not supported. Skipping.')
+    def checkProductUSB(self):
+        """ Check product USB """
+        self._checkProduct('RHEV-USB')
+
+    @istest
+    @skipIf(SKIP_CASE, 'SSO is not supported. Skipping.')
+    def checkProductSSO(self):
+        """ Check product SSO """
+        self._checkProduct('RHEV-SSO%s' % self.platf)
+
+    @istest
+    def checkProductBlock(self):
+        """ Check product block """
+        self._checkProduct('RHEV-Block%s' % self.platf)
+
+    @istest
+    def checkProductBalloon(self):
+        """ Check product balloon """
+        self._checkProduct('RHEV-Balloon%s' % self.platf)
+
+    @istest
+    def checkProductSCSI(self):
+        """ Check product SCSI """
+        self._checkProduct('RHEV-SCSI%s' % self.platf)
+
+    def _checkService(self, service):
+        self.assertTrue(
+            self.machine.isServiceRunningAndEnabled(service),
+            '%s is not running/enabled' % service
+        )
+        LOGGER.info('Service %s is running/enabled', service)
+
+    @istest
+    def checkServiceQemuGA(self):
+        self._checkService('QEMU-GA')
+
+    # TODO add skip foro non win7 & win8
+    @istest
+    def checkServiceQemuGAVssProvider(self):
+        self._checkService('QEMU Guest Agent VSS Provider')
+
+    @istest
+    def checkServiceUSBRedirector(self):
+        self._checkService('spiceusbredirector')
+
+    @istest
+    def checkServiceAgent(self):
+        self._checkService('RHEV-Agent')
+
+    @istest
+    def checkServiceSpiceAgent(self):
+        self._checkService('vdservice')
+
+    @istest
+    def z_unistallGuestTools(self):
         """
         This tests uninstallation of GT
         """
-        if not utils.isGtMachineReady(True, self.machine):
-            return False
-        if not utils.removeTools(True, self.machine, timeout=1000):
-            LOGGER.error("Uninstallation failed")
-            return False
-        LOGGER.info("uninstallation was successful")
-        return True
+        self.assertTrue(
+            utils.isGtMachineReady(True, self.machine),
+            'Windows machine is not ready, timeout expired.',
+        )
+        if utils.removeTools(True, self.machine, timeout=1000):
+            LOGGER.info('GT was uninstalled')
+        else:
+            LOGGER.error('GT failed to uninstall')
 
 
 @attr(tier=1)
-class Windows7_64bit(Windows):
+class Windows7_64b(Windows):
     """
-    Setup for Windows 7 64 bit
+    Test that all product and services exist on windows machine after
+    GuestTools installation for windows 7 64bit.
     """
     __test__ = True
-    vmName = config.WIN7_VM_NAME
-    templateNameStorage = config.WIN7_TEMPLATE_NAME
-    template = config.WIN7_IMPORTED_TEMPLATE_NAME
-    platf = '64'
-    toolsDict = config.WIN7_TOOLS_DICT
+    vmName = config.WIN7_TEMPLATE_NAME
 
 
-class WindowsXP(Windows):
+@attr(tier=1)
+class Windows7_32b(Windows):
     """
-    Setup for Windows 7 XP
+    Test that all product and services exist on windows machine after
+    GuestTools installation for windows 7 32bit.
     """
     __test__ = False
-    templateNameStorage = config.WINXP_TEMPLATE_NAME
-    vmName = config.WINXP_VM_NAME
-    template = config.WINXP_IMPORTED_TEMPLATE_NAME
-    platf = '32'
-    toolsDict = config.WINXP_TOOLS_DICT
 
 
-class Windows7_32(Windows):
+@attr(tier=1)
+class Windows2008_32b(Windows):
     """
-    Setup for Windows 7 32 bit
+    Test that all product and services exist on windows machine after
+    GuestTools installation for windows 2008 32bit.
     """
     __test__ = False
-    templateNameStorage = config.WIN7_32_TEMPLATE_NAME
-    vmName = config.WIN7_32_VM_NAME
-    template = config.WIN7_32_IMPORTED_TEMPLATE_NAME
-    platf = '32'
-    toolsDict = config.WIN7_TOOLS_DICT
+
+
+@attr(tier=1)
+class Windows2008R2_32b(Windows):
+    """
+    Test that all product and services exist on windows machine after
+    GuestTools installation for windows 2008R2 32bit.
+    """
+    __test__ = False
+
+
+@attr(tier=1)
+class Windows2008_64b(Windows):
+    """
+    Test that all product and services exist on windows machine after
+    GuestTools installation for windows 2008 64bit.
+    """
+    __test__ = False
+
+
+@attr(tier=1)
+class Windows2008R2_64b(Windows):
+    """
+    Test that all product and services exist on windows machine after
+    GuestTools installation for windows 2008R2 64bit.
+    """
+    __test__ = False
+
+
+@attr(tier=1)
+class Windows2012_32b(Windows):
+    """
+    Test that all product and services exist on windows machine after
+    GuestTools installation for windows 2012 32bit.
+    """
+    __test__ = False
+
+
+@attr(tier=1)
+class Windows2012R2_32b(Windows):
+    """
+    Test that all product and services exist on windows machine after
+    GuestTools installation for windows 2012R2 32bit.
+    """
+    __test__ = False
+
+
+@attr(tier=1)
+class Windows2012_64b(Windows):
+    """
+    Test that all product and services exist on windows machine after
+    GuestTools installation for windows 2012 64bit.
+    """
+    __test__ = False
+
+
+@attr(tier=1)
+class Windows2012R2_64b(Windows):
+    """
+    Test that all product and services exist on windows machine after
+    GuestTools installation for windows 2012R2 64bit.
+    """
+    __test__ = False
