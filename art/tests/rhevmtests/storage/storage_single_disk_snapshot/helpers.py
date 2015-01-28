@@ -5,9 +5,7 @@
 import logging
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.vms import (
-    stop_vms_safely,
-    get_vm_snapshots,
-    removeSnapshot,
+    stop_vms_safely, get_vm_snapshots, removeSnapshot,
 )
 
 from rhevmtests.storage.helpers import *  # flake8: noqa
