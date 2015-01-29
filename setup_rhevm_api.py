@@ -19,6 +19,7 @@ DEPS = [
     'python-lxml',
     'python-pip',
     'python-repoze-lru >= 0.6',
+    'python-netaddr',
     'libvirt-python',
 ]
 
