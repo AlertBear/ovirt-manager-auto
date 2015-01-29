@@ -75,6 +75,7 @@ class RunOnGoldenEnvironment(Component):
         params['author_email'] = 'kjachim@redhat.com'
         params['description'] = 'Run tests on golden environment'
         params['long_description'] = cls.__doc__
+        params['requires'] = ['PyYAML']
         params['py_modules'] = [
             'art.test_handler.plmanagement.plugins.golden_env_plugin']
 
