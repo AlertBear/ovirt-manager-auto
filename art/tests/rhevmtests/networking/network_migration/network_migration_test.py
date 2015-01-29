@@ -1,4 +1,6 @@
 #! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Testing network migration feature.
 1 DC, 1 Cluster, 2 Hosts and 1 VM will be created for testing.
@@ -17,6 +19,7 @@ from art.rhevm_api.tests_lib.high_level.networks import(
 )
 from art.rhevm_api.tests_lib.low_level.networks import updateClusterNetwork
 from art.rhevm_api.tests_lib.low_level.vms import addNic, removeNic, updateNic
+from rhevmtests.networking.helper import create_random_ips
 
 logger = logging.getLogger("Network_Migration_Cases")
 
@@ -33,7 +36,6 @@ class TestMigrationCaseBase(TestCase):
     """
     base class which provides  teardown class method for each test case
     """
-
     @classmethod
     def teardown_class(cls):
         """
@@ -60,11 +62,11 @@ class TestMigrationCase01(TestMigrationCaseBase):
         Create logical vm network on DC/Cluster/Hosts
         Configure it as migration network
         """
-        source_ip, dest_ip = config.NET1_IPS[0], config.NET1_IPS[1]
+        ips = create_random_ips()
         local_dict = {
             config.NETWORKS[0]: {
                 "nic": 1, "required": "true", "cluster_usages": "migration",
-                "bootproto": "static", "address": [source_ip, dest_ip],
+                "bootproto": "static", "address": [ips[0], ips[1]],
                 "netmask": [NETMASK, NETMASK]
             },
             config.NETWORKS[1]: {
@@ -118,7 +120,7 @@ class TestMigrationCase02(TestMigrationCaseBase):
         """
         Create logical vm network on DC/Cluster/Hosts
         """
-        source_ip, dest_ip = config.NET1_IPS[0], config.NET1_IPS[1]
+        ips = create_random_ips()
         logger.info(
             "Create non-migration network %s on DC/Cluster/Hosts",
             config.NETWORKS[0]
@@ -126,7 +128,7 @@ class TestMigrationCase02(TestMigrationCaseBase):
         local_dict = {
             config.NETWORKS[0]: {
                 "nic": 1, "required": "true", "bootproto": "static",
-                "address": [source_ip, dest_ip], "netmask": [NETMASK, NETMASK]
+                "address": [ips[0], ips[1]], "netmask": [NETMASK, NETMASK]
             }
         }
 
@@ -163,12 +165,12 @@ class TestMigrationCase03(TestMigrationCaseBase):
             "Create logical tagged vm network %s on DC/Cluster/Hosts",
             config.VLAN_NETWORKS[0]
         )
-        source_ip, dest_ip = config.NET1_IPS[0], config.NET1_IPS[1]
+        ips = create_random_ips()
         local_dict = {
             config.VLAN_NETWORKS[0]: {
                 "vlan_id": config.VLAN_ID[0], "nic": 1, "required": "true",
                 "cluster_usages": "migration", "bootproto": "static",
-                "address": [source_ip, dest_ip], "netmask": [NETMASK, NETMASK]
+                "address": [ips[0], ips[1]], "netmask": [NETMASK, NETMASK]
             },
             config.VLAN_NETWORKS[1]: {
                 "vlan_id": config.VLAN_ID[1], "nic": 2, "required": "true"
@@ -210,12 +212,12 @@ class TestMigrationCase04(TestMigrationCaseBase):
             "Create logical non-vm network %s on DC/Cluster/Hosts",
             config.NETWORKS[0]
         )
-        source_ip, dest_ip = config.NET1_IPS[0], config.NET1_IPS[1]
+        ips = create_random_ips()
         local_dict = {
             config.NETWORKS[0]: {
                 "nic": 1, "required": "true", "usages": "",
                 "cluster_usages": "migration", "bootproto": "static",
-                "address": [source_ip, dest_ip], "netmask": [NETMASK, NETMASK]
+                "address": [ips[0], ips[1]], "netmask": [NETMASK, NETMASK]
             },
             config.NETWORKS[1]: {
                 "nic": 2, "required": "true"
@@ -258,12 +260,12 @@ class TestMigrationCase05(TestMigrationCaseBase):
             "Create migration and display vm network %s on "
             "DC/Cluster/Hosts", config.NETWORKS[0]
         )
-        source_ip, dest_ip = config.NET1_IPS[0], config.NET1_IPS[1]
+        ips = create_random_ips()
         local_dict = {
             config.NETWORKS[0]: {
                 "nic": 1, "required": "true",
                 "cluster_usages": "migration,display", "bootproto": "static",
-                "address": [source_ip, dest_ip], "netmask": [NETMASK, NETMASK]
+                "address": [ips[0], ips[1]], "netmask": [NETMASK, NETMASK]
             },
             config.NETWORKS[1]: {
                 "nic": 2, "required": "true"
@@ -302,11 +304,11 @@ class TestMigrationCase06(TestMigrationCaseBase):
         Create logical vm network on DC/Cluster/Hosts
         Configure it as migration and configure it on the VM
         """
-        source_ip, dest_ip = config.NET1_IPS[0], config.NET1_IPS[1]
+        ips = create_random_ips()
         local_dict = {
             config.NETWORKS[0]: {
                 "nic": 1, "required": "true", "cluster_usages": "migration",
-                "bootproto": "static", "address": [source_ip, dest_ip],
+                "bootproto": "static", "address": [ips[0], ips[1]],
                 "netmask": [NETMASK, NETMASK]
             },
             config.NETWORKS[1]: {
@@ -350,9 +352,11 @@ class TestMigrationCase06(TestMigrationCaseBase):
         logger.info("Remove VNIC from VM %s", config.VM_NAME[0])
         if not updateNic(True, config.VM_NAME[0], "nic2", plugged="false"):
                 logger.error("Couldn't update nic to be unplugged")
+
         logger.info("Removing the nic2 from the VM %s", config.VM_NAME[0])
         if not removeNic(True, config.VM_NAME[0], "nic2"):
             logger.error("Cannot remove nic from setup")
+
         logger.info("Remove networks from setup")
         super(TestMigrationCase06, cls).teardown_class()
 
@@ -416,12 +420,12 @@ class TestMigrationCase08(TestMigrationCaseBase):
             "Configure migration network %s on the DC/Cluster/Hosts over Bond",
             config.NETWORKS[0]
         )
-        source_ip, dest_ip = config.NET1_IPS[0], config.NET1_IPS[1]
+        ips = create_random_ips()
         local_dict = {
             config.NETWORKS[0]: {
                 "nic": config.BOND[0], "slaves": [2, 3], "required": "true",
                 "cluster_usages": "migration", "bootproto": "static",
-                "address": [source_ip, dest_ip], "netmask": [NETMASK, NETMASK]
+                "address": [ips[0], ips[1]], "netmask": [NETMASK, NETMASK]
             },
             config.NETWORKS[1]: {
                 "nic": 1, "required": "true"
@@ -461,12 +465,12 @@ class TestMigrationCase09(TestMigrationCaseBase):
             "Configure non-VM migration network %s on the DC/Cluster/Hosts "
             "over bond", config.NETWORKS[0]
         )
-        source_ip, dest_ip = config.NET1_IPS[0], config.NET1_IPS[1]
+        ips = create_random_ips()
         local_dict = {
             config.NETWORKS[0]: {
                 "nic": config.BOND[0], "slaves": [2, 3], "required": "true",
                 "usages": "", "cluster_usages": "migration",
-                "bootproto": "static", "address": [source_ip, dest_ip],
+                "bootproto": "static", "address": [ips[0], ips[1]],
                 "netmask": [NETMASK, NETMASK]
             },
             config.NETWORKS[1]: {
@@ -508,7 +512,7 @@ class TestMigrationCase10(TestMigrationCaseBase):
             "Configure tagged migration network %s on the DC/Cluster/Host "
             "over Bond", config.NETWORKS[0]
         )
-        source_ip, dest_ip = config.NET1_IPS[0], config.NET1_IPS[1]
+        ips = create_random_ips()
         local_dict = {
             None: {
                 "nic": config.BOND[0], "mode": 1, "slaves": [2, 3]
@@ -516,7 +520,7 @@ class TestMigrationCase10(TestMigrationCaseBase):
             config.VLAN_NETWORKS[0]: {
                 "nic": config.BOND[0], "vlan_id": config.VLAN_ID[0],
                 "required": "true", "cluster_usages": "migration",
-                "bootproto": "static", "address": [source_ip, dest_ip],
+                "bootproto": "static", "address": [ips[0], ips[1]],
                 "netmask": [NETMASK, NETMASK]
             },
             config.NETWORKS[1]: {
@@ -558,11 +562,11 @@ class TestMigrationCase11(TestMigrationCaseBase):
             "Configure migration network %s on the DC/Cluster/Host",
             config.NETWORKS[0]
         )
-        source_ip, dest_ip = config.NET1_IPS[0], config.NET1_IPS[1]
+        ips = create_random_ips()
         local_dict = {
             config.NETWORKS[0]: {
                 "nic": 1, "required": "true", "cluster_usages": "migration",
-                "bootproto": "static", "address": [source_ip, dest_ip],
+                "bootproto": "static", "address": [ips[0], ips[1]],
                 "netmask": [NETMASK, NETMASK]
             },
             config.NETWORKS[1]: {"nic": 2, "required": "true"}
@@ -611,11 +615,11 @@ class TestMigrationCase12(TestMigrationCaseBase):
             "Create migration network %s and put it only on Host1",
             config.NETWORKS[0]
         )
-        source_ip = config.NET1_IPS[0]
+        ips = create_random_ips(num_of_ips=1)
         local_dict = {
             config.NETWORKS[0]: {
                 "nic": 1, "required": "true", "cluster_usages": "migration",
-                "bootproto": "static", "address": [source_ip],
+                "bootproto": "static", "address": [ips[0]],
                 "netmask": [NETMASK]
             }
         }
