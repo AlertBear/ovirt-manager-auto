@@ -112,19 +112,23 @@ class BaseCaseIsoDomains(TestCase):
                 vdc_password=config.VDC_PASSWORD)
 
 
-@attr(tier=0)
 class TestPlan6107(BaseCaseIsoDomains):
 
     mount_target = None
 
     def tearDown(self):
+        self.clean_environment()
+
+    def clean_environment(self):
         """
         Make sure vm is stopped and doesn't have an iso attached
         Clean the iso domains
         """
-        assert ll_vms.eject_cdrom_vm(self.vm_name)
-        if ll_vms.checkVmState(False, self.vm_name, config.VM_DOWN):
-            assert ll_vms.shutdownVm(True, self.vm_name)
+        wait_for_jobs()
+        ll_vms.start_vms([self.vm_name], wait_for_status=config.VM_UP)
+        if not ll_vms.eject_cdrom_vm(self.vm_name):
+            logger.error("Failed to eject cdrom from vm %s", self.vm_name)
+        ll_vms.stop_vms_safely([self.vm_name])
 
         if self.iso_domain_name:
             logger.info("Removing iso domain %s", self.iso_domain_name)
@@ -202,39 +206,33 @@ class TestPlan6107(BaseCaseIsoDomains):
             "the isos from the vm %s" % (self.iso_domain_name, self.vm_name))
 
     @tcms(NEW_TCMS_TEST_PLAN, TCMS_CASE_ATTACH)
-    def test_detaching_posixfs_iso_vm(self):
+    def test_detaching_iso_vm_and_vm_runonce(self):
         """
-        Try detaching a posixfs iso domain from vm while iso is attached
+        Try detaching a posixfs/nfs iso domain from vm while iso is attached
         """
+        logger.info("Testing detaching posixfs iso domain while iso image is "
+                    "attached to vm")
         self.attach_iso_and_maintenance(iso_domain=config.ISO_POSIX_DOMAIN)
+        self.clean_environment()
 
-    @tcms(NEW_TCMS_TEST_PLAN, NEW_TCMS_CASE_ID)
-    def test_detaching_nfs_iso_vm(self):
-        """
-        Try detaching a nfs iso domain from vm while iso is attached
-        """
+        logger.info("Testing detaching nfs iso domain while iso image is "
+                    "attached to vm")
         self.attach_iso_and_maintenance(iso_domain=config.ISO_NFS_DOMAIN)
+        self.clean_environment()
 
-    @bz({"1065719": {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
-    @tcms(NEW_TCMS_TEST_PLAN, NEW_TCMS_CASE_ID)
-    def test_detaching_posixfs_iso_vm_runonce(self):
-        """
-        Try detaching a posixfs iso domain from vm after attaching it with
-        run once
-        """
+        logger.info("Testing detaching posixfs iso domain while iso image is "
+                    "attached to vm and run it once")
         self.attach_iso_and_maintenance(
             run_once=True, iso_domain=config.ISO_POSIX_DOMAIN)
+        self.clean_environment()
 
-    @bz({"1065719": {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
-    @tcms(NEW_TCMS_TEST_PLAN, NEW_TCMS_CASE_ID)
-    def test_detaching_nfs_iso_vm_runonce(self):
-        """
-        Try detaching a nfs iso domain from vm after attaching it with run once
-        """
+        logger.info("Testing detaching nfs iso domain while iso image is "
+                    "attached to vm and run it once")
         self.attach_iso_and_maintenance(
             run_once=True, iso_domain=config.ISO_NFS_DOMAIN)
 
 
+@attr(tier=0)
 class TestCase50769Shared(TestPlan6107):
     """
     Test detaching iso domains when an iso is inserted in a vm
@@ -246,6 +244,7 @@ class TestCase50769Shared(TestPlan6107):
     storagedomains = [config.ISCSI_DOMAIN]
 
 
+@attr(tier=1)
 class TestCase50769Local(TestPlan6107):
     """
     Test detaching iso domains when an iso is inserted in a vm
