@@ -57,7 +57,7 @@ DATA_FILES = [
     'art/tests/rhevmtests/infra/*.py',
     'art/tests/rhevmtests/infra/*/*.py',
     'art/tests/rhevmtests/infra/*/*/*.py',
-    'art/tests/rhevmtests/infra/regression_mixed/fixtures/*.properties',
+    'art/tests/rhevmtests/infra/regression_infra/fixtures/*.properties',
     'art/tests/rhevmtests/system/*.py',
     'art/tests/rhevmtests/system/*/*.py',
     'art/tests/rhevmtests/system/generic_ldap/fixtures/*/*.properties',
