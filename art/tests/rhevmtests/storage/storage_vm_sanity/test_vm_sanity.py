@@ -137,7 +137,7 @@ def _prepare_data(sparse, vol_format, template_names, storage_type):
     template_names[(sparse, vol_format)] = template_name
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase248138(TestCase):
     """
     storage vm sanity test, creates and removes snapshots
@@ -484,25 +484,6 @@ class TestReadLock(TestCase):
         if not templates.removeTemplate(True, cls.template_name):
             raise exceptions.TemplateException("Failed removing template %s"
                                                % cls.template_name)
-
-
-@attr(tier=0)
-class TestCase320224(TestReadLock):
-    """
-    TCMS Test Case 320224 - Run on desktop
-    """
-    __test__ = True
-    tcms_test_case = '320224'
-    vm_type = config.VM_TYPE_DESKTOP
-
-    @tcms(TestReadLock.tcms_plan_id, tcms_test_case)
-    def test_create_vms(self):
-        """
-        Start creating a VM from template (desktop)
-        Wait until template is locked
-        Start creating another VM from the same template
-        """
-        self.create_two_vms_simultaneously()
 
 
 @attr(tier=0)
