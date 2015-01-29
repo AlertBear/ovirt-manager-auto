@@ -6,6 +6,7 @@ import shlex
 from utilities.machine import Machine
 from art.rhevm_api.tests_lib.low_level.disks import (
     waitForDisksState, attachDisk, addDisk, get_all_disk_permutation,
+    updateDisk
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainObj,
@@ -13,7 +14,7 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import (
 from art.rhevm_api.tests_lib.low_level.vms import (
     get_vm_disk_logical_name, stop_vms_safely, get_vm_snapshots,
     removeSnapshot, activateVmDisk, waitForIP, cloneVmFromTemplate,
-    createVm, startVm,
+    createVm, startVm, getVmDisks,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.test_handler import exceptions
@@ -271,6 +272,12 @@ def create_vm_or_clone(positive, vmName, vmDescription,
             'storagedomain': kwargs.get('storageDomainName', None),
         }
         assert cloneVmFromTemplate(**args_clone)
+        # Because alias is not a unique property and a lot of test use it
+        # as identifier, rename the vm's disk alias to be safe
+        disks_obj = getVmDisks(vmName)
+        for i in range(len(disks_obj)):
+            updateDisk(True, vmName=vmName, id=disks_obj[i].get_id(),
+                       alias=vmName + "_Disk_" + str(i))
         # Bring the VM up, return true if the action succeeds
         if kwargs.get('installation', False) or start:
             return startVm(positive, vmName, wait_for_status=config.VM_UP)

@@ -87,7 +87,7 @@ def getObjDisks(name, get_href=True, is_template=False):
     return DISKS_API.getElemFromLink(obj, get_href=get_href)
 
 
-def getVmDisk(vmName, alias):
+def getVmDisk(vmName, alias=None, disk_id=None):
     """
     Description: Returns disk from VM's collection
     Parameters:
@@ -96,8 +96,17 @@ def getVmDisk(vmName, alias):
     Author: jlibosva
     Return: Disk from VM's collection
     """
+    value = None
     vmObj = VM_API.find(vmName)
-    return DISKS_API.getElemFromElemColl(vmObj, alias)
+    if alias:
+        prop = "name"
+        value = alias
+    elif disk_id:
+        prop = "id"
+        value = disk_id
+    else:
+        raise EntityNotFound("No disk identifier was used")
+    return DISKS_API.getElemFromElemColl(vmObj, value, prop=prop)
 
 
 def getTemplateDisk(template_name, alias):
@@ -269,9 +278,10 @@ def updateDisk(positive, **kwargs):
     """
     Description: Update already existing disk
     Parameters:
-        * alias - name of current disk
+        * vmName - mandatory, will find the disk from the VM name
+        * alias - name of current disk or new alias if id is provided
+        * id - id of the current disk
         * description - description for the current disk
-        * name - new name of the disk
         * provisioned_size - size of the disk
         * interface - IDE or virtio
         * format - raw or cow
@@ -289,17 +299,20 @@ def updateDisk(positive, **kwargs):
         * storage_connection - in case of direct LUN - existing storage
                                connection to use instead of creating a new one
         * active - True or False whether disk should be automatically activated
-        * vmName - optional, will find the disk from the VM name
-                   provided instead from the disks collection
         You cannot set both storage_connection and lun_* in one call!
     Author: jlibosva
     Return: Status of the operation's result dependent on positive value
     """
     vm_name = kwargs.pop('vmName', None)
-    if vm_name:
-        disk_object = getVmDisk(vmName=vm_name, alias=kwargs.pop('alias'))
-    else:
-        disk_object = DISKS_API.find(kwargs.pop('alias'))
+    if not vm_name:
+        raise TypeError("Parameter vmName is needed to update the disk")
+    disk_id = kwargs.pop('id', None)
+    alias = kwargs.get('alias', None)
+    if disk_id:
+        disk_object = getVmDisk(vmName=vm_name, disk_id=disk_id)
+    elif alias:
+        disk_object = getVmDisk(vmName=vm_name, alias=alias)
+
     new_disk_object = _prepareDiskObject(**kwargs)
     new_disk_object, status = DISKS_API.update(disk_object, new_disk_object,
                                                positive)
