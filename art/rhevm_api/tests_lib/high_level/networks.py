@@ -254,6 +254,8 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
 
     for host in host_list:
         host_name = get_host_name_from_engine(host.ip)
+        if not host_name:
+            host_name = get_host_name_from_engine(host.fqdn)
 
         logger.info("Found host name: %s", host_name)
 
@@ -342,6 +344,8 @@ def remove_net_from_setup(host, auto_nics=[0], network=[], data_center=None,
     """
     hosts_obj = [host] if not isinstance(host, list) else host
     hosts_list = [get_host_name_from_engine(h.ip) for h in hosts_obj]
+    if not hosts_list[0]:
+        hosts_list = [get_host_name_from_engine(h.fqdn) for h in hosts_obj]
 
     if all_net:
         if not remove_all_networks(
