@@ -8,7 +8,7 @@ import logging
 from nose.tools import istest
 from art.unittest_lib import attr
 from art.unittest_lib import VirtTest as TestCase
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms   # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vms
@@ -206,7 +206,6 @@ class CreateVmWithCdromPayload(PayloadViaCreate):
     payload_content = PAYLOADS_CONTENT[0]
     payload_type = PAYLOADS_TYPE[0]
 
-    @bz({'1158010': {'engine': None, 'version': None}})
     @tcms(TCMS_PLAN_ID, '222049')
     @istest
     def check_existence_of_payload(self):
@@ -215,7 +214,6 @@ class CreateVmWithCdromPayload(PayloadViaCreate):
         """
         self.assertTrue(self._check_existence_of_payload(PAYLOADS_DEVICES[0]))
 
-    @bz({'1158010': {'engine': None, 'version': None}})
     @tcms(TCMS_PLAN_ID, '304572')
     @istest
     def check_object_existence(self):
