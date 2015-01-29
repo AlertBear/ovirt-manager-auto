@@ -7,6 +7,7 @@ from art.rhevm_api.tests_lib.low_level.hosts import (
 )
 from art.core_api.apis_exceptions import EntityNotFound
 from art.unittest_lib.common import StorageTest as TestCase
+from art.unittest_lib import attr
 from utilities.machine import Machine, LINUX
 
 import config
@@ -133,45 +134,7 @@ class DirectLunAttachTestCase(TestCase):
         self.detach_and_delete_disk_from_vm(self.disk_alias)
 
 
-class TestCase138744(DirectLunAttachTestCase):
-    """
-    Verify that a lun can be created
-    """
-    tcms_test_case = "138744"
-
-    def test_add_lun(self):
-        """
-        create direct lun disk
-        """
-        logger.info("Adding new disk (direct lun) %s", self.disk_alias)
-        assert addDisk(True, **self.lun_kwargs)
-        wait_for_jobs()
-
-    def tearDown(self):
-        logger.info("Deleting disk %s", self.disk_alias)
-        assert deleteDisk(True, self.disk_alias)
-        wait_for_jobs()
-
-
-class TestCase138745(DirectLunAttachTestCase):
-    """
-    Attach a lun when vm is down.
-    """
-    tcms_test_case = "138745"
-
-    def setUp(self):
-        super(TestCase138745, self).setUp()
-        stop_vms_safely([self.vm_name], config.VM_DOWN)
-        waitForVMState(self.vm_name, config.VM_DOWN)
-
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
-    def test_attach_lun_vm_down(self):
-        """
-        Attach the lun
-        """
-        self.attach_disk_to_vm()
-
-
+@attr(tier=1)
 class TestCase138746(DirectLunAttachTestCase):
     """
     Attach a lun when vm is running
@@ -193,21 +156,7 @@ class TestCase138746(DirectLunAttachTestCase):
         self.attach_disk_to_vm()
 
 
-class TestCase138749(DirectLunAttachTestCase):
-    """
-    Attach the lun to the vm and run it.
-    """
-    tcms_test_case = "138749"
-
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
-    def test_attach_vm_and_run(self):
-        """
-        Attach the lun to the vm and run it.
-        """
-        self.attach_disk_to_vm()
-        assert startVm(True, self.vm_name, config.VM_UP)
-
-
+@attr(tier=1)
 class TestCase231815(DirectLunAttachTestCase):
     """
     Suspend vm with direct lun attached
@@ -233,6 +182,7 @@ class TestCase231815(DirectLunAttachTestCase):
         super(TestCase231815, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase138755(DirectLunAttachTestCase):
     """
     Add more then one direct lun to the same vm
@@ -274,6 +224,7 @@ class TestCase138755(DirectLunAttachTestCase):
         self.detach_and_delete_disk_from_vm(self.disk_to_add)
 
 
+@attr(tier=1)
 class TestCase138756(DirectLunAttachTestCase):
     """
     Attach lun vm, create a template and verify the direct lun will not be
@@ -306,6 +257,7 @@ class TestCase138756(DirectLunAttachTestCase):
         super(TestCase138756, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase138757(DirectLunAttachTestCase):
     """
     attach lun to vm, run vm as stateless and create snapshot.
@@ -337,6 +289,7 @@ class TestCase138757(DirectLunAttachTestCase):
         super(TestCase138757, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase138758(DirectLunAttachTestCase):
     """
     Attach lun to vm and verify the direct lun will not be
@@ -376,6 +329,7 @@ class TestCase138758(DirectLunAttachTestCase):
         super(TestCase138758, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase138760(DirectLunAttachTestCase):
     """
     HA vm with direct lun
@@ -408,6 +362,7 @@ class TestCase138760(DirectLunAttachTestCase):
         super(TestCase138760, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase138761(DirectLunAttachTestCase):
     """
     migrate a non-migrate vm with direct lun
@@ -437,6 +392,7 @@ class TestCase138761(DirectLunAttachTestCase):
         super(TestCase138761, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase138763(DirectLunAttachTestCase):
     """
     direct lun and disk interface
@@ -470,6 +426,7 @@ class TestCase138763(DirectLunAttachTestCase):
         wait_for_jobs()
 
 
+@attr(tier=1)
 class TestCase138764(DirectLunAttachTestCase):
     """
     direct lun as bootable disk
@@ -496,6 +453,7 @@ class TestCase138764(DirectLunAttachTestCase):
         wait_for_jobs()
 
 
+@attr(tier=1)
 class TestCase138765(DirectLunAttachTestCase):
     """
     shared disk from direct lun
@@ -522,6 +480,7 @@ class TestCase138765(DirectLunAttachTestCase):
         wait_for_jobs()
 
 
+@attr(tier=1)
 class TestCase138766(DirectLunAttachTestCase):
     """
     move vm with direct lun
@@ -556,60 +515,10 @@ class TestCase138766(DirectLunAttachTestCase):
         super(TestCase138766, self).tearDown()
 
 
-class TestCase138768(DirectLunAttachTestCase):
-    """
-    detach a direct lun
-    """
-    tcms_test_case = "138768"
-    detached = False
-
-    def detach_disk_from_vm(self, vm_name, disk_alias):
-        logger.info("Detaching direct lun %s", disk_alias)
-        deactivateVmDisk(True, vm_name, diskAlias=disk_alias)
-        self.detached = detachDisk(True, disk_alias, vm_name)
-        assert self.detached
-        wait_for_jobs()
-
-    # TODO
-    #  Not working!
-    # @tcms(TCMS_PLAN_ID, tcms_test_case)
-    # def test_live_detach_direct_lun(self):
-    #     """
-    #     Live detach direct lun from vm
-    #     """
-    #     self.attach_disk_to_vm()
-    #
-    #     startVm(True, self.vm_name)
-    #     waitForVMState(self.vm_name)
-    #     self.detach_disk_from_vm(self.vm_name, self.disk_alias)
-
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
-    def test_cold_detach_direct_lun(self):
-        """
-        Detach direct lun from vm
-        """
-        self.attach_disk_to_vm()
-
-        stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
-
-        self.detach_disk_from_vm(self.vm_name, self.disk_alias)
-
-    def tearDown(self):
-        if self.detached:
-            assert deleteDisk(True, self.disk_alias)
-
-        else:
-            detachDisk(True, self.disk_alias, self.vm_name)
-            waitForDisksState(self.disk_alias)
-            assert deleteDisk(True, self.disk_alias)
-
-        wait_for_jobs()
-
-
+@attr(tier=0)
 class TestCase138769(DirectLunAttachTestCase):
     """
-    remove direct lun
+    Full flow direct lun
     """
     tcms_test_case = "138769"
 
@@ -619,7 +528,9 @@ class TestCase138769(DirectLunAttachTestCase):
         * Create direct lun and attach it to vm.
         * Detach it and remove it
         """
+        stop_vms_safely([self.vm_name])
         self.attach_disk_to_vm()
+        # TODO: Verify write operation to direct lun
 
         logger.info("Detaching direct lun %s", self.disk_alias)
         assert detachDisk(True, self.disk_alias, self.vm_name)
@@ -632,6 +543,7 @@ class TestCase138769(DirectLunAttachTestCase):
         pass
 
 
+@attr(tier=1)
 class TestCase138770(DirectLunAttachTestCase):
     """
     remove a vm with a direct lun
@@ -663,6 +575,7 @@ class TestCase138770(DirectLunAttachTestCase):
             super(TestCase138770, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase138773(DirectLunAttachTestCase):
     """
     Direct lun - wipe after delete
