@@ -39,3 +39,6 @@ VM_FOR_TEMPLATE = 'vm_for_template'
 CONFIG_ELEMENTS = 'elements_conf'
 CONFIG_SECTION = 'RHEVM Utilities'
 VARS = opts[CONFIG_ELEMENTS][CONFIG_SECTION]
+
+LOGDIR = 'logdir'
+OUTPUT_DIR = opts.get(LOGDIR, None)

@@ -33,21 +33,39 @@ def teardown_module():
     base.teardown_module()
 
 
-@attr(tier=0)
-class LogCollectorSingleDC(base.RHEVMUtilsTestCase):
-    """ Tests with single DC and single cluster setup """
+class LogCollectorTestCaseBase(base.RHEVMUtilsTestCase):
+    """
+    rhevm-log-collector testcase
+    """
 
     __test__ = True
     utility = NAME
     utility_class = LogCollectorUtility
     _multiprocess_can_split_ = True
 
+    def setUp(self):
+        if not unittest_conf.GOLDEN_ENV:
+            super(LogCollectorTestCaseBase, self).setUp()
+        self.kwargs = {}
+        if unittest_conf.OUTPUT_DIR:
+            self.kwargs = {'output': unittest_conf.OUTPUT_DIR}
+            LOGGER.info("Output directory specified: %s.",
+                        unittest_conf.OUTPUT_DIR)
+        self.host = unittest_conf.HOSTS[0]
+        self.vm_name = unittest_conf.VM_NAME[0]
+        self.cluster = unittest_conf.CLUSTER_NAME[0]
+
+
+@attr(tier=0)
+class LogCollectorSingleDC(LogCollectorTestCaseBase):
+    """ Tests with single DC and single cluster setup """
+
     @tcms(LOG_COLLECTOR_TEST_PLAN, 275493)
     def test_log_collector_list(self):
         """ log_collector list"""
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,
                                            unittest_conf.VDC_PASSWORD)
-        self.ut(action='list')
+        self.ut(action='list', kwargs=self.kwargs)
         self.ut.autoTest()
 
     @tcms(LOG_COLLECTOR_TEST_PLAN, 95162)
@@ -55,7 +73,7 @@ class LogCollectorSingleDC(base.RHEVMUtilsTestCase):
         """ log_collector collect"""
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,
                                            unittest_conf.VDC_PASSWORD)
-        self.ut(action='collect')
+        self.ut(action='collect', kwargs=self.kwargs)
         self.ut.autoTest()
 
     @tcms(LOG_COLLECTOR_TEST_PLAN, 337745)
@@ -64,13 +82,15 @@ class LogCollectorSingleDC(base.RHEVMUtilsTestCase):
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,
                                            unittest_conf.VDC_PASSWORD)
 
-        self.ut(action='collect')
+        self.ut(action='collect', kwargs=self.kwargs)
         normalLines = len(self.ut.out.split('\n'))
-        args = {'quiet': None}
-        self.ut(action='collect', kwargs=args)
+        kwargs = {'quiet': None}
+        kwargs.update(self.kwargs)
+        self.ut(action='collect', kwargs=kwargs)
         quietLines = len(self.ut.out.split('\n'))
-        args = {'verbose': None}
-        self.ut(action='collect', kwargs=args)
+        kwargs = {'verbose': None}
+        kwargs.update(self.kwargs)
+        self.ut(action='collect', kwargs=kwargs)
         verboseLines = len(self.ut.out.split('\n'))
 
         assert verboseLines > normalLines > quietLines
@@ -78,19 +98,19 @@ class LogCollectorSingleDC(base.RHEVMUtilsTestCase):
     @tcms(LOG_COLLECTOR_TEST_PLAN, 95174)
     def test_log_collector_version(self):
         """log_collector --version"""
-        args = {'version': None}
-        self.ut(kwargs=args)
+        kwargs = {'version': None}
+        self.ut(kwargs=kwargs)
         reportedVersion = self.ut.out.rstrip().split('-', 1)[1]
 
-        cmd = ['rpm', '-qa', '*log-collector*']
+        cmd = ['rpm', '-qa', '\*log-collector\*']
         self.ut.execute(None, cmd)
         assert reportedVersion in self.ut.out
 
     @tcms(LOG_COLLECTOR_TEST_PLAN, 95172)
     def test_log_collector_help(self):
         """log_collector --help"""
-        args = {'help': None}
-        self.ut(kwargs=args)
+        kwargs = {'help': None}
+        self.ut(kwargs=kwargs)
         self.ut.autoTest()
 
     @tcms(LOG_COLLECTOR_TEST_PLAN, 95168)
@@ -98,8 +118,9 @@ class LogCollectorSingleDC(base.RHEVMUtilsTestCase):
         """collect data skipping postregs"""
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,
                                            unittest_conf.VDC_PASSWORD)
-        args = {'no-postgresql': None}
-        self.ut(action='collect', kwargs=args)
+        kwargs = {'no-postgresql': None}
+        kwargs.update(self.kwargs)
+        self.ut(action='collect', kwargs=kwargs)
         self.ut.autoTest()
 
     @tcms(LOG_COLLECTOR_TEST_PLAN, 337746)
@@ -107,8 +128,9 @@ class LogCollectorSingleDC(base.RHEVMUtilsTestCase):
         """skip host data"""
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,
                                            unittest_conf.VDC_PASSWORD)
-        args = {'no-hypervisors': None}
-        self.ut(action='collect', kwargs=args)
+        kwargs = {'no-hypervisors': None}
+        kwargs.update(self.kwargs)
+        self.ut(action='collect', kwargs=kwargs)
         self.ut.autoTest()
 
     @tcms(LOG_COLLECTOR_TEST_PLAN, 95169)
@@ -118,20 +140,15 @@ class LogCollectorSingleDC(base.RHEVMUtilsTestCase):
                                            unittest_conf.VDC_PASSWORD)
 
         hosts = llhosts.get_host_list()
-        args = {'hosts': hosts[0].address}
-
-        self.ut(action='collect', kwargs=args)
+        kwargs = {'hosts': hosts[0].address}
+        kwargs.update(self.kwargs)
+        self.ut(action='collect', kwargs=kwargs)
         self.ut.autoTest()
 
 
 @attr(tier=1)
-class LogCollectorMoreDCs(base.RHEVMUtilsTestCase):
+class LogCollectorMoreDCs(LogCollectorTestCaseBase):
     """ Tests with additional DC and cluster """
-
-    __test__ = True
-    utility = NAME
-    utility_class = LogCollectorUtility
-    _multiprocess_can_split_ = True
 
     def setUp(self):
         super(LogCollectorMoreDCs, self).setUp()
@@ -160,8 +177,9 @@ class LogCollectorMoreDCs(base.RHEVMUtilsTestCase):
         """collect logs from specific cluster"""
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,
                                            unittest_conf.VDC_PASSWORD)
-        args = {'cluster': unittest_conf.NEW_CLUSTER_NAME}
-        self.ut(action='collect', kwargs=args)
+        kwargs = {'cluster': unittest_conf.NEW_CLUSTER_NAME}
+        kwargs.update(self.kwargs)
+        self.ut(action='collect', kwargs=kwargs)
         self.ut.autoTest()
         assert 'No hypervisors were selected' in self.ut.out
 
@@ -170,8 +188,9 @@ class LogCollectorMoreDCs(base.RHEVMUtilsTestCase):
         """collect logs from single data center"""
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,
                                            unittest_conf.VDC_PASSWORD)
-        args = {'data-center': unittest_conf.NEW_DC_NAME}
-        self.ut(action='collect', kwargs=args)
+        kwargs = {'data-center': unittest_conf.NEW_DC_NAME}
+        kwargs.update(self.kwargs)
+        self.ut(action='collect', kwargs=kwargs)
         self.ut.autoTest()
         assert 'No hypervisors were selected' in self.ut.out
 
@@ -180,32 +199,28 @@ class LogCollectorMoreDCs(base.RHEVMUtilsTestCase):
         """ log_collector list empty data center"""
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,
                                            unittest_conf.VDC_PASSWORD)
-        args = {'data-center': unittest_conf.NEW_DC_NAME}
-        self.ut(action='list', kwargs=args)
+        kwargs = {'data-center': unittest_conf.NEW_DC_NAME}
+        kwargs.update(self.kwargs)
+        self.ut(action='list', kwargs=kwargs)
         assert 'No hypervisors were found' in self.ut.out
 
 
 @attr(tier=1)
-class LogCollectorRegressionBz1058894(base.RHEVMUtilsTestCase):
+class LogCollectorRegressionBz1058894(LogCollectorTestCaseBase):
     """ Regression tests for the log-collector """
 
     __test__ = unittest_conf.STORAGE_TYPE == 'iscsi'
-    utility = NAME
-    utility_class = LogCollectorUtility
 
     def setUp(self):
         if unittest_conf.GOLDEN_ENV:
             return
         super(LogCollectorRegressionBz1058894, self).setUp()
-        self.host = unittest_conf.HOSTS[0]
-        cluster = 'cluster_' + unittest_conf.BASENAME
-        self.vm_name = unittest_conf.VM_NAME[0]
 
         storagedomains = llstoragedomains.get_storagedomain_names()
         assert storagedomains
         assert llvms.createVm(
             True, self.vm_name, 'description does not matter',
-            cluster=cluster, size=DISK_SIZE, nic='nic0',
+            cluster=self.cluster, size=DISK_SIZE, nic='nic0',
             storageDomainName=storagedomains[0])
         assert llvms.startVm(True, self.vm_name)
 
@@ -223,5 +238,5 @@ class LogCollectorRegressionBz1058894(base.RHEVMUtilsTestCase):
         """ collect from host running a VM on iSCSI storage"""
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,
                                            unittest_conf.VDC_PASSWORD)
-        self.ut(action='collect')
+        self.ut(action='collect', kwargs=self.kwargs)
         self.ut.autoTest()
