@@ -63,9 +63,7 @@ def setup_package():
             address=config.EXPORT_STORAGE_ADDRESS,
             path=config.EXPORT_STORAGE_PATH
         ):
-            raise NetworkException(
-                "Cannot create Export Storage Domain "
-            )
+            raise NetworkException("Cannot create Export Storage Domain ")
     else:
         logger.info("Cleaning the GE setup")
         network_cleanup()
@@ -86,20 +84,16 @@ def setup_package():
             installation=True, network=config.MGMT_BRIDGE,
             useAgent=True, diskType=config.DISK_TYPE_SYSTEM
         ):
-            logger.error("Cannot create VM %s", config.IE_VM)
+            raise NetworkException("Cannot create VM %s" % config.IE_VM)
 
         logger.info("Creating new Template %s", config.IE_TEMPLATE)
         ip_addr = waitForIP(config.IE_VM)[1]["ip"]
         if not setPersistentNetwork(
             host=ip_addr, password=config.VMS_LINUX_PW
         ):
-            raise NetworkException(
-                "Set persistent network failed"
-            )
+            raise NetworkException("Set persistent network failed")
         if not stopVm(True, vm=config.IE_VM):
-            raise NetworkException(
-                "Cannot stop vm %s" % config.IE_VM
-            )
+            raise NetworkException("Cannot stop vm %s" % config.IE_VM)
         if not createTemplate(
             True, vm=config.IE_VM, cluster=config.CLUSTER_NAME[0],
             name=config.IE_TEMPLATE
@@ -116,14 +110,15 @@ def setup_package():
             "Cannot attach Export Storage Domain to %s" % config.DC_NAME[0]
         )
 
-    local_dict = {config.NETWORKS[0]: {"nic": 1,
-                                       "required": "false"},
-                  config.NETWORKS[1]: {"mtu": config.MTU[0],
-                                       "nic": 2,
-                                       "required": "false"},
-                  config.NETWORKS[2]: {"vlan_id": config.VLAN_ID[0],
-                                       "nic": 3,
-                                       "required": "false"}}
+    local_dict = {
+        config.NETWORKS[0]: {"nic": 1, "required": "false"},
+        config.NETWORKS[1]: {
+            "mtu": config.MTU[0], "nic": 2, "required": "false"
+        },
+        config.NETWORKS[2]: {
+            "vlan_id": config.VLAN_ID[0], "nic": 3, "required": "false"
+        }
+    }
 
     logger.info("Attaching bridged, MTU and VLAN networks to host")
     if not createAndAttachNetworkSN(
@@ -135,7 +130,7 @@ def setup_package():
         )
 
     logger.info("Adding 4 NICs to new VM and Template ")
-    net_list = ["sw1", "sw2", "sw3", None]
+    net_list = config.NETWORKS[:3] + [None]
     for index, net in enumerate(net_list):
         if not addNic(
                 True, config.IE_VM, name=config.NIC_NAME[index + 1],
@@ -241,7 +236,7 @@ def teardown_package():
             )
 
         logger.info(
-            "Remove all networks besides mgmt from DC/Cluster and Host")
+            "Remove all networks besides MGMT from DC/Cluster and Host")
         if not remove_net_from_setup(
                 host=config.VDS_HOSTS[0], auto_nics=[0], all_net=True,
                 mgmt_network=config.MGMT_BRIDGE,

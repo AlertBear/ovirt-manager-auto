@@ -75,13 +75,13 @@ class TestIECase01(TestCase):
         logger.info(
             "Check VM NICs VNIC profiles for VM imported from same DC version"
         )
-        for (nic, vnic) in ((config.NIC_NAME[0], config.MGMT_BRIDGE),
-                            (config.NIC_NAME[1], config.NETWORKS[0]),
-                            (config.NIC_NAME[2], config.NETWORKS[1]),
-                            (config.NIC_NAME[3], config.NETWORKS[2])):
-            if not check_vnic_on_vm_nic(
-                    vm=config.IE_VM, nic=nic, vnic=vnic
-            ):
+        for (nic, vnic) in (
+            (config.NIC_NAME[0], config.MGMT_BRIDGE),
+            (config.NIC_NAME[1], config.NETWORKS[0]),
+            (config.NIC_NAME[2], config.NETWORKS[1]),
+            (config.NIC_NAME[3], config.NETWORKS[2])
+        ):
+            if not check_vnic_on_vm_nic(vm=config.IE_VM, nic=nic, vnic=vnic):
                 raise NetworkException(
                     "No correct VNIC profile %s on VNIC %s for VM" % (
                         vnic, nic)
@@ -95,12 +95,15 @@ class TestIECase01(TestCase):
         logger.info(
             "Check VM NICs VNIC profiles for VM imported more than once"
         )
-        for (nic, vnic) in ((config.NIC_NAME[0], config.MGMT_BRIDGE),
-                            (config.NIC_NAME[1], config.NETWORKS[0]),
-                            (config.NIC_NAME[2], config.NETWORKS[1]),
-                            (config.NIC_NAME[3], config.NETWORKS[2])):
+        for (nic, vnic) in (
+            (config.NIC_NAME[0], config.MGMT_BRIDGE),
+            (config.NIC_NAME[1], config.NETWORKS[0]),
+            (config.NIC_NAME[2], config.NETWORKS[1]),
+            (config.NIC_NAME[3], config.NETWORKS[2])
+        ):
             if not check_vnic_on_vm_nic(
-                    vm=config.IMP_MORE_THAN_ONCE_VM, nic=nic, vnic=vnic):
+                    vm=config.IMP_MORE_THAN_ONCE_VM, nic=nic, vnic=vnic
+            ):
                 raise NetworkException(
                     "No correct VNIC profile %s on VNIC %s for VM" % (
                         vnic, nic)
@@ -163,10 +166,12 @@ class TestIECase02(TestCase):
             "Check that NICs VNIC profiles for Template imported more than "
             "once are kept"
         )
-        for (nic, vnic) in ((config.NIC_NAME[0], config.MGMT_BRIDGE),
-                            (config.NIC_NAME[1], config.NETWORKS[0]),
-                            (config.NIC_NAME[2], config.NETWORKS[1]),
-                            (config.NIC_NAME[3], config.NETWORKS[2])):
+        for (nic, vnic) in (
+            (config.NIC_NAME[0], config.MGMT_BRIDGE),
+            (config.NIC_NAME[1], config.NETWORKS[0]),
+            (config.NIC_NAME[2], config.NETWORKS[1]),
+            (config.NIC_NAME[3], config.NETWORKS[2])
+        ):
             if not check_vnic_on_template_nic(
                     template=config.IE_TEMPLATE, nic=nic, vnic=vnic
             ):
@@ -178,17 +183,19 @@ class TestIECase02(TestCase):
     @tcms(6915, 194554)
     def test_02_import_more_than_once(self):
         """
-        Check that Template imported more than once keeps all it's VNIC
+        Check that Template imported more than once keeps all its VNIC
         profiles
         """
         logger.info(
             "Check that NICs VNIC profiles for Template imported more than "
             "once are kept"
         )
-        for (nic, vnic) in ((config.NIC_NAME[0], config.MGMT_BRIDGE),
-                            (config.NIC_NAME[1], config.NETWORKS[0]),
-                            (config.NIC_NAME[2], config.NETWORKS[1]),
-                            (config.NIC_NAME[3], config.NETWORKS[2])):
+        for (nic, vnic) in (
+            (config.NIC_NAME[0], config.MGMT_BRIDGE),
+            (config.NIC_NAME[1], config.NETWORKS[0]),
+            (config.NIC_NAME[2], config.NETWORKS[1]),
+            (config.NIC_NAME[3], config.NETWORKS[2])
+        ):
             if not check_vnic_on_template_nic(
                     template=config.IMP_MORE_THAN_ONCE_TEMP,
                     nic=nic, vnic=vnic
@@ -205,10 +212,9 @@ class TestIECase02(TestCase):
         """
         logger.info("Removing imported templates")
         for template in (
-                config.IMP_MORE_THAN_ONCE_TEMP, config.IE_TEMPLATE):
-            if not removeTemplate(
-                    positive=True, template=template
-            ):
+                config.IMP_MORE_THAN_ONCE_TEMP, config.IE_TEMPLATE
+        ):
+            if not removeTemplate(positive=True, template=template):
                 logger.error("Couldn't remove imported Template %s", template)
 
 
@@ -247,7 +253,7 @@ class TestIECase03(TestCase):
                 network=config.NETWORKS[:2], data_center=config.DC_NAME[0]
         ):
             raise NetworkException(
-                "Cannot remove network sw1 and sw2 from setup"
+                "Cannot remove networks %s from setup" % config.NETWORKS[:2]
             )
 
         logger.info("Remove sw3 from the host")
@@ -256,7 +262,8 @@ class TestIECase03(TestCase):
                 auto_nics=[config.VDS_HOSTS[0].nics[0]]
         ):
             raise NetworkException(
-                "Failed to remove sw3 from %s" % config.HOSTS[1]
+                "Failed to remove %s from %s" %
+                (config.NETWORKS[2], config.HOSTS[1])
             )
 
         logger.info(
@@ -299,13 +306,13 @@ class TestIECase03(TestCase):
             "Check VM NICs VNIC profiles when one of them is missing in the "
             "target DC exist on the setup"
         )
-        for (nic, vnic) in ((config.NIC_NAME[0], config.MGMT_BRIDGE),
-                            (config.NIC_NAME[1], None),
-                            (config.NIC_NAME[2], None),
-                            (config.NIC_NAME[3], config.NETWORKS[2])):
-            if not check_vnic_on_vm_nic(
-                    vm=config.IE_VM, nic=nic, vnic=vnic
-            ):
+        for (nic, vnic) in (
+            (config.NIC_NAME[0], config.MGMT_BRIDGE),
+            (config.NIC_NAME[1], None),
+            (config.NIC_NAME[2], None),
+            (config.NIC_NAME[3], config.NETWORKS[2])
+        ):
+            if not check_vnic_on_vm_nic(vm=config.IE_VM, nic=nic, vnic=vnic):
                 raise NetworkException(
                     "No correct VNIC profile %s on VNIC %s for VM" % (
                         vnic, nic)
@@ -319,10 +326,12 @@ class TestIECase03(TestCase):
         completed
         """
         logger.info("Check VM NICs VNIC profiles for Template")
-        for (nic, vnic) in ((config.NIC_NAME[0], config.MGMT_BRIDGE),
-                            (config.NIC_NAME[1], None),
-                            (config.NIC_NAME[2], None),
-                            (config.NIC_NAME[3], config.NETWORKS[2])):
+        for (nic, vnic) in (
+            (config.NIC_NAME[0], config.MGMT_BRIDGE),
+            (config.NIC_NAME[1], None),
+            (config.NIC_NAME[2], None),
+            (config.NIC_NAME[3], config.NETWORKS[2])
+        ):
             if not check_vnic_on_template_nic(
                 template=config.IE_TEMPLATE, nic=nic, vnic=vnic
             ):
@@ -360,11 +369,9 @@ class TestIECase03(TestCase):
             "Start imported VM when all the networks of VM reside on one of "
             "the hosts in the setup"
         )
-        if not startVm(
-                positive=True, vm=config.IE_VM, wait_for_ip=True
-        ):
+        if not startVm(positive=True, vm=config.IE_VM, wait_for_ip=True):
             raise NetworkException(
-                "Couldn't start VM %s , when should" % config.IE_VM
+                "Couldn't start VM %s, when should" % config.IE_VM
             )
 
     @tcms(6915, 378809)
@@ -423,33 +430,29 @@ class TestIECase03(TestCase):
         that Template
         3) Put the networks sw1, sw2 and sw3 back to the DC/Cluster/Host
         """
-        dc_dict1 = {config.NETWORKS[0]: {"nic": 1,
-                                         "required": "false"},
-                    config.NETWORKS[1]: {"mtu": config.MTU[0],
-                                         "nic": 2,
-                                         "required": "false"}}
-        local_dict1 = {config.NETWORKS[0]: {"nic": 1,
-                                            "required": "false"},
-                       config.NETWORKS[1]: {"mtu": config.MTU[0],
-                                            "nic": 2,
-                                            "required": "false"},
-                       config.NETWORKS[2]: {"vlan_id": config.VLAN_ID[0],
-                                            "nic": 3,
-                                            "required": "false"}}
+        dc_dict1 = {
+            config.NETWORKS[0]: {"nic": 1, "required": "false"},
+            config.NETWORKS[1]: {
+                "mtu": config.MTU[0], "nic": 2, "required": "false"
+            }
+        }
+        local_dict1 = {
+            config.NETWORKS[0]: {"nic": 1, "required": "false"},
+            config.NETWORKS[1]: {
+                "mtu": config.MTU[0], "nic": 2, "required": "false"
+            },
+            config.NETWORKS[2]: {
+                "vlan_id": config.VLAN_ID[0], "nic": 3, "required": "false"
+            }
+        }
 
         logger.info("Remove VMs from setup")
         for vm in (config.IE_VM, "IE_VM_2"):
-            if not removeVm(
-                    positive=True, vm=vm, stopVM="true"
-            ):
-                logger.error(
-                    "Couldn't remove imported VM %s", vm
-                )
+            if not removeVm(positive=True, vm=vm, stopVM="true"):
+                logger.error("Couldn't remove imported VM %s", vm)
 
         logger.info("Remove imported Template from setup")
-        if not removeTemplate(
-                positive=True, template=config.IE_TEMPLATE
-        ):
+        if not removeTemplate(positive=True, template=config.IE_TEMPLATE):
             logger.error(
                 "Couldn't remove imported Template %s", config.IE_TEMPLATE
             )
