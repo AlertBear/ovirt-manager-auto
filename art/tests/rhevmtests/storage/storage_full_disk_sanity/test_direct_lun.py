@@ -12,8 +12,7 @@ from utilities.machine import Machine, LINUX
 
 import config
 from art.rhevm_api.tests_lib.low_level.disks import (
-    addDisk, attachDisk, detachDisk, deleteDisk,
-    waitForDisksState, get_other_storage_domain,
+    addDisk, attachDisk, detachDisk, deleteDisk, get_other_storage_domain,
 )
 
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
@@ -28,7 +27,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, waitForVMState, getVmDisks, startVm, suspendVm,
     runVmOnce, addSnapshot, updateVm, removeSnapshot,
     get_snapshot_disks, migrateVm, moveVm, removeVm,
-    getVmHost, deactivateVmDisk, get_vms_disks_storage_domain_name,
+    getVmHost, get_vms_disks_storage_domain_name,
 )
 
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
