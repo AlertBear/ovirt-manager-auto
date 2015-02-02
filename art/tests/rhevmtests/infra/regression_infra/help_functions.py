@@ -22,6 +22,7 @@ from art.test_handler.exceptions import (DataCenterException,
                                          VMException,
                                          TemplateException)
 from art.core_api.apis_exceptions import EntityNotFound
+from art.rhevm_api.utils.test_utils import wait_for_tasks
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
@@ -145,6 +146,12 @@ class utils(object):
 
     @staticmethod
     def deactivate_sd():
+        logger.info('Wait for tasks to finish ...')
+        wait_for_tasks(
+            config.VDC_HOST,
+            config.VDC_ROOT_PASSWORD,
+            config.DATA_CENTER_1_NAME,
+        )
         logger.info('Deactivate storage domain')
         status = storagedomains.deactivateStorageDomain(
             positive=True, datacenter=config.DATA_CENTER_1_NAME,
