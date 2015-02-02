@@ -1,7 +1,7 @@
 import config
 import logging
 
-from art.rhevm_api.tests_lib.low_level.vms import createVm
+from rhevmtests.storage.helpers import create_vm_or_clone
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ def _create_vm(vm_name, disk_interface,
     """ helper function for creating vm (passes common arguments, mostly taken
     from the configuration file)
     """
-    return createVm(
+    return create_vm_or_clone(
         True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
         nic=config.NIC_NAME[0], storageDomainName=storage_domain_name,
         size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,

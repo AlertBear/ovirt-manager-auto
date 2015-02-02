@@ -270,6 +270,7 @@ def create_vm_or_clone(positive, vmName, vmDescription,
             'vol_sparse': kwargs.get('volumeType', 'true'),
             'vol_format': kwargs.get('volumeFormat', None),
             'storagedomain': kwargs.get('storageDomainName', None),
+            'vm_description': vmDescription,
         }
         assert cloneVmFromTemplate(**args_clone)
         # Because alias is not a unique property and a lot of test use it

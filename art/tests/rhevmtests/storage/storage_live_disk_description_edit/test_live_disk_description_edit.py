@@ -16,7 +16,7 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import (
 from art.unittest_lib import StorageTest as BaseTestCase
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level.vms import (
-    stop_vms_safely, createVm, waitForVMState, startVm, removeVm,
+    stop_vms_safely, waitForVMState, startVm, removeVm,
     remove_all_vm_lsm_snapshots, live_migrate_vm_disk,
 )
 
@@ -24,7 +24,9 @@ from art.unittest_lib import attr
 
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler import exceptions
-from rhevmtests.storage.helpers import create_disks_from_requested_permutations
+from rhevmtests.storage.helpers import (
+    create_disks_from_requested_permutations, create_vm_or_clone,
+)
 
 from rhevmtests.storage.storage_live_disk_description_edit import config
 
@@ -68,7 +70,7 @@ def setup_module():
                                 config.STORAGE_TYPE, config.TESTNAME)
 
     logger.info('Creating a VM')
-    if not createVm(**vm_main_arguments):
+    if not create_vm_or_clone(**vm_main_arguments):
         raise exceptions.VMException('Unable to create vm %s for test'
                                      % VM1_NAME)
 
@@ -234,7 +236,7 @@ class TestCase396320(BasicEnvironment):
         vm_arguments['vmDescription'] = VM2_NAME + "_description"
 
         logger.info('Creating 2nd VM needed for the test')
-        if not createVm(**vm_arguments):
+        if not create_vm_or_clone(**vm_arguments):
             raise exceptions.VMException('Unable to create vm %s for test'
                                          % VM2_NAME)
         addDisk(True, alias=VM2_DISK1_ALIAS,

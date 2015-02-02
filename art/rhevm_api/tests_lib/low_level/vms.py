@@ -1950,7 +1950,8 @@ def remove_cdrom_vm(positive, vm_name):
 
 def _createVmForClone(
         name, template=None, cluster=None, clone=None, vol_sparse=None,
-        vol_format=None, storagedomain=None, snapshot=None, vm_name=None):
+        vol_format=None, storagedomain=None, snapshot=None, vm_name=None,
+        vm_description=None):
     """
     Description: helper function - creates VM objects for VM_API.create call
                  when VM is created from template, sets all required attributes
@@ -1970,6 +1971,7 @@ def _createVmForClone(
     # TBD: Probaly better split this since the disk parameter is not that
     # similar for template and snapshots
     vm = data_st.VM(name=name)
+    vm.set_description(vm_description)
     if template:
         templObj = TEMPLATE_API.find(template)
         vm.set_template(templObj)
@@ -2026,7 +2028,7 @@ def _createVmForClone(
 def cloneVmFromTemplate(positive, name, template, cluster,
                         timeout=VM_IMAGE_OPT_TIMEOUT, clone=True,
                         vol_sparse=None, vol_format=None, wait=True,
-                        storagedomain=None):
+                        storagedomain=None, vm_description=None):
     '''
     Description: clone vm from a pre-defined template
     Author: edolinin
@@ -2043,9 +2045,11 @@ def cloneVmFromTemplate(positive, name, template, cluster,
     clone = str(clone).lower()
     # don't even try to use deepcopy, it will fail
     expectedVm = _createVmForClone(name, template, cluster, clone, vol_sparse,
-                                   vol_format, storagedomain)
+                                   vol_format, storagedomain,
+                                   vm_description=vm_description)
     newVm = _createVmForClone(name, template, cluster, clone, vol_sparse,
-                              vol_format, storagedomain)
+                              vol_format, storagedomain,
+                              vm_description=vm_description)
 
     if clone == 'true':
         expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))

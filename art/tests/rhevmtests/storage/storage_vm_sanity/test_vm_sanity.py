@@ -110,7 +110,7 @@ def _prepare_data(sparse, vol_format, template_names, storage_type):
         config.VM_BASE_NAME, storage_type)
     LOGGER.info("Creating vm %s %s ..." % (sparse, vol_format))
     if not _create_vm(
-            vm_name, vm_description, config.INTERFACE_IDE,
+            vm_name, vm_description, config.INTERFACE_VIRTIO,
             sparse=sparse, volume_format=vol_format,
             storage_type=storage_type):
         raise exceptions.VMException("Creation of vm %s failed!" % vm_name)
@@ -154,7 +154,7 @@ class TestCase248138(TestCase):
         cls.vm_name = '%s_%s_snap' % (config.VM_BASE_NAME, cls.storage)
         vm_description = '%s_%s_snap' % (
             config.VM_BASE_NAME, cls.storage)
-        if not _create_vm(cls.vm_name, vm_description, config.INTERFACE_IDE,
+        if not _create_vm(cls.vm_name, vm_description, config.INTERFACE_VIRTIO,
                           storage_type=cls.storage):
             raise exceptions.VMException(
                 "Creation of VM %s failed!" % cls.vm_name)
@@ -324,7 +324,7 @@ class TestCase300867(TestCase):
         vm_description = '%s_%s_snap' % (
             config.VM_BASE_NAME, cls.storage)
         # create vm with thin provision disk
-        if not _create_vm(cls.vm_name, vm_description,  config.INTERFACE_IDE,
+        if not _create_vm(cls.vm_name, vm_description, config.INTERFACE_VIRTIO,
                           sparse=True, volume_format=ENUMS['format_cow'],
                           storage_type=cls.storage):
             raise exceptions.VMException(
@@ -418,7 +418,7 @@ class TestReadLock(TestCase):
     def setup_class(cls):
         cls.vm_name = '%s_%s' % (config.VM_BASE_NAME, cls.vm_type)
         cls.template_name = "template_%s" % (cls.vm_name)
-        if not _create_vm(cls.vm_name, cls.vm_name, config.INTERFACE_IDE,
+        if not _create_vm(cls.vm_name, cls.vm_name, config.INTERFACE_VIRTIO,
                           vm_type=cls.vm_type, storage_type=cls.storage):
             raise exceptions.VMException(
                 "Creation of VM %s failed!" % cls.vm_name)
