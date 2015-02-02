@@ -22,6 +22,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.core_api.apis_exceptions import EngineTypeError
+from art.test_handler.tools import bz  # pylint: disable=E0611
 
 from rhevmtests.infra.regression_infra import config
 
@@ -48,6 +49,7 @@ class TestCaseMixed(TestCase):
         self.assertTrue(status, 'Check product name')
 
     @istest
+    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
     def t02_create_user(self):
         """
         test verifies user functionality
@@ -63,6 +65,7 @@ class TestCaseMixed(TestCase):
         self.assertTrue(status, 'Add user')
 
     @istest
+    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
     def t03_add_data_center_permissions_to_user(self):
         """
         test verifies permissions functionality
@@ -75,6 +78,7 @@ class TestCaseMixed(TestCase):
         self.assertTrue(status, 'Add dc permissions to user')
 
     @istest
+    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
     def t04_remove_all_permissions_for_user(self):
         """
         test verifies permissions functionality
@@ -299,6 +303,7 @@ class TestCaseMixed(TestCase):
             self.assertTrue(status, 'Remove tag ' + curr_tag)
 
     @istest
+    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
     def t23_remove_user(self):
         """
         test verifies user functionality
