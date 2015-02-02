@@ -192,7 +192,7 @@ class MigrationOverloadHost(TestCase):
             raise errors.HostException("Failed to activate host")
 
 
-@attr(tier=0)
+@attr(tier=1)
 class HostToMaintenanceMigration(TestCase):
     """
     Check if all vms migrated when host move to maintenance

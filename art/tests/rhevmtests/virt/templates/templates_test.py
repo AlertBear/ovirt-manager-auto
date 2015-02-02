@@ -51,7 +51,7 @@ BASIC_PARAMETERS = {'name': TEMPLATE_VM, 'cluster': config.CLUSTER_NAME[0]}
 ########################################################################
 
 
-@attr(tier=0)
+@attr(tier=1)
 class BaseTemplateClass(TestCase):
     """
     Base class that create vm and template from it
@@ -714,6 +714,7 @@ class VMDeleteProtection(BaseTemplateVMClass):
 ########################################################################
 
 
+@attr(tier=0)
 class VMBoot(BaseTemplateVMClass):
     """
     Boot order inheritance
@@ -920,6 +921,7 @@ class NegativeTemplateCases(BaseTemplateClass):
 ########################################################################
 
 
+@attr(tier=0)
 class BasicTemplate(BaseTemplateClass):
     """
     Create, update, search, remove template and
@@ -933,6 +935,7 @@ class BasicTemplate(BaseTemplateClass):
     update_template = 'upgrade_template'
     group = 'Everyone'
 
+    @attr(tier=1)
     @istest
     def specify_template_storage_domain(self):
         """
@@ -983,11 +986,12 @@ class BasicTemplate(BaseTemplateClass):
             logger.info("Remove template %s", cls.storage_template)
             if not templates.removeTemplate(True, cls.storage_template):
                 raise errors.TemplateException("Failed to remove template")
-        logger.info("Update template %s name to %s", cls.update_template,
-                    cls.template_name)
-        if not templates.updateTemplate(True, cls.update_template,
-                                        name=cls.template_name):
-            raise errors.TemplateException("Template update failed")
+        if templates.check_template_existence(cls.update_template):
+            logger.info("Update template %s name to %s", cls.update_template,
+                        cls.template_name)
+            if not templates.updateTemplate(True, cls.update_template,
+                                            name=cls.template_name):
+                raise errors.TemplateException("Template update failed")
         super(BasicTemplate, cls).teardown_class()
 
 ########################################################################
