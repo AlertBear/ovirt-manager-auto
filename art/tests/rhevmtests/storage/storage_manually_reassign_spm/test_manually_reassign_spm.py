@@ -141,7 +141,7 @@ class DCUp(TestCase):
 @attr(tier=0)
 class TestCase288461(DCUp):
     """
-    TCMS Test Case 288461 - Manually Resign SPM
+    TCMS Test Case 288461 - Manually Re-assign SPM
     """
 
     __test__ = True
@@ -149,7 +149,7 @@ class TestCase288461(DCUp):
 
     @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
-    def test_resign_spm(self):
+    def test_reassign_spm(self):
         """
         Assign hsm host to be spm while another host is spm of DC
         """
