@@ -351,23 +351,24 @@ class TestCase396322(BasicEnvironment):
                               vmName=VM1_NAME)
             assert verify_vm_disk_description(VM1_NAME, disk_dict[ALIAS],
                                               disk_dict[DESCRIPTION])
-            logger.info('Wait until all jobs have completed and the disk is '
-                        'no longer locked, this will be the case once Live '
-                        'storage migration has completed')
+
+    def tearDown(self):
+        """
+        Ensure that the snapshot created is removed and all disks are detached
+        """
+        # Power off VM, remove snapshot created during Live storage
+        # migration and then delete each disk
+        logger.info(
+            'Wait until all jobs have completed and the disk is no longer '
+            'locked, this will be the case once Live storage migration has '
+            'completed'
+        )
 
         wait_for_jobs()
         for disk_dict in self.disk_aliases_and_descriptions:
             waitForDisksState(disk_dict[ALIAS], timeout=900, sleep=5)
 
-        # Power off VM, remove snapshot created during Live storage
-        # migration and then detach disk so the next disk permutation
-        # can start execution
         stop_vms_safely([VM1_NAME])
         waitForVMState(VM1_NAME, config.VM_DOWN)
         remove_all_vm_lsm_snapshots(VM1_NAME)
-        for disk_dict in self.disk_aliases_and_descriptions:
-            disk_dict[DESCRIPTION] = disk_dict[DESCRIPTION_ORIG]
-            assert updateDisk(True, alias=disk_dict[ALIAS],
-                              description=disk_dict[DESCRIPTION],
-                              vmName=VM1_NAME)
-            detachDisk(True, disk_dict[ALIAS], VM1_NAME)
+        super(TestCase396322, self).tearDown()
