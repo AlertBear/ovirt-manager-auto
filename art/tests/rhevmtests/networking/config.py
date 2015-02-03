@@ -73,8 +73,10 @@ EXPORT_TYPE = ENUMS['storage_dom_type_export']
 # EXPORT_STORAGE_NAME, EXPORT_STORAGE_ADDRESS, EXPORT_STORAGE_PATH
 
 # Topologies parameters
-ADDR_AND_MASK = ["172.16.200.100", "255.255.255.0"]
-DST_HOST_IP = "172.16.200.2"
+# Due to the switch configuration with specific IP
+# https://engineering.redhat.com/rt/Ticket/Display.html?id=336074
+ADDR_AND_MASK = ["10.35.147.50", "255.255.255.240"]
+DST_HOST_IP = "10.35.147.62"
 
 # Port mirroring parameters
 PM_VNIC_PROFILE = ['%s_PM' % net for net in [MGMT_BRIDGE] + VLAN_NETWORKS]

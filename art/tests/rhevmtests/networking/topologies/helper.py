@@ -1,3 +1,6 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Helper for topologies job
 """
@@ -13,13 +16,16 @@ from rhevmtests.networking import config
 
 logger = logging.getLogger("topologies_helper")
 
+TIMEOUT = 300
+
 
 def update_vnic_driver(driver):
     """
-    Description: Update vNIC driver for VM
-    author: myakove
-    Parameters:
-        *  *driver* - driver to update the vNIC (virtio, e1000, rtl8139)
+    Update vNIC driver for VM
+    :param driver: driver to update the vNIC (virtio, e1000, rtl8139)
+    :type driver: str
+    :return: True in case of success/False otherwise
+    :rtype: bool
     """
     logger.info("Unplug vNIC")
     if not updateNic(
@@ -28,7 +34,7 @@ def update_vnic_driver(driver):
     ):
         return False
 
-    logger.info("Updating vNIC to %s driver", driver)
+    logger.info("Updating vNIC to %s driver and plug it", driver)
     if not updateNic(
             positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
             interface=driver, plugged=True
@@ -37,17 +43,21 @@ def update_vnic_driver(driver):
     return True
 
 
-def check_connectivity(vlan=False, vm=True):
+def check_connectivity(vlan=False, vm=True, flags=list()):
     """
-    Description: Check connectivity for VM and non-VM networks
-    Parameters:
-        *  *vlan* - ping from host if True else ping from engine
-        *  *vm* - Check connectivity to VM network if True, False for non-VM
-
+    Check connectivity for VM and non-VM networks
+    :param vlan: ping from host if True else ping from engine
+    :type vlan: bool
+    :param vm: Check connectivity to VM network if True, False for non-VM
+    :type vm: bool
+    :param flags: extra flags for ping command (for example -I eth1)
+    :type flags: list
+    :return: True in case of success/False otherwise
+    :rtype: bool
     """
     vm_ip = None
     if vm:
-        ip = waitForIP(vm=config.VM_NAME[0], timeout=300)
+        ip = waitForIP(vm=config.VM_NAME[0], timeout=TIMEOUT)
         if not ip[0]:
             return False
         vm_ip = ip[1]["ip"]
@@ -57,42 +67,35 @@ def check_connectivity(vlan=False, vm=True):
 
     dst_ip = vm_ip if vm_ip is not None else config.DST_HOST_IP
 
-    return check_icmp(host_obj=host, dst_ip=dst_ip)
+    return check_icmp(host_obj=host, dst_ip=dst_ip, flags=flags)
 
 
 def create_and_attach_bond(mode):
     """
-    Description: Create and attach BOND.
-    Parameters:
-        *  *mode* - BOND mode.
+    Create and attach BOND.
+    :param mode: Bond mode
+    :type mode: str
+    :return: True in case of success/False otherwise
+    :rtype: bool
     """
-    (usages,
-     address,
-     netmask,
-     bootproto,
-     profile_required) = "vm", None, None, None, True
+    (usages, address, netmask, bootproto) = "vm", None, None, None
 
     slaves = [4, 5] if mode == 2 else [2, 3]
 
-    # for modes bellow create bridgeless network with static IP
-    if mode in [i for i in config.BOND_MODES if str(i) in (
-            "0", "3", "5", "6"
-    )]:
+    # for modes bellow create non-VM network with static IP
+    if mode in ["0", "3", "5", "6"]:
         usages = ""
         address = [config.ADDR_AND_MASK[0]]
         netmask = [config.ADDR_AND_MASK[1]]
         bootproto = "static"
-        profile_required = False
 
-    local_dict = {config.NETWORKS[0]: {"nic": config.BOND[int(mode)],
-                                       "mode": mode,
-                                       "slaves": slaves,
-                                       "usages": usages,
-                                       "address": address,
-                                       "netmask": netmask,
-                                       "bootproto": bootproto,
-                                       "required": False,
-                                       "profile_required": profile_required}}
+    local_dict = {
+        config.NETWORKS[0]: {
+            "nic": config.BOND[int(mode)], "mode": mode, "slaves": slaves,
+            "usages": usages, "address": address, "netmask": netmask,
+            "bootproto": bootproto, "required": False
+        }
+    }
 
     if not createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
@@ -113,13 +116,20 @@ def check_connectivity_log(
         driver=None, mode=None, info=False, error=False, vlan=False
 ):
     """
-    Description: Generate string for info/errors.
-    Parameters:
-        *  *mode* - BOND mode.
-        *  *driver* - driver of the interface
-        *  *info* - Info string if True
-        *  *error* - raise string if True
-        *  *vlan* - vlan network in string if True
+    Generate string for info/errors.
+    :param driver: driver of the interface
+    :type driver: str
+    :param mode: Bond mode
+    :type mode: int
+    :param info: info string is True
+    :type info: bool
+    :param error: error string is True
+    :type error: bool
+    :param vlan: vlan network in string is True
+    :type vlan: bool
+    :return: output message
+    :rtype: str
+
     """
     output = "info or error not sent, nothing to do"
     interface = "BOND mode %s" % mode if mode else ""
@@ -140,21 +150,29 @@ def check_connectivity_log(
     return output
 
 
-def check_vm_connect_and_log(driver=None, mode=None, vlan=False, vm=True):
+def check_vm_connect_and_log(
+    driver=None, mode=None, vlan=False, vm=True, flags=list()
+):
     """
-    Description: Check VM connectivity with logger info and raise error if
-    fail
-    Parameters:
-        *  *mode* - BOND mode.
-        *  *driver* - driver of the interface
-        *  *vlan* - ping from host if True else ping from engine
-        *  *vm* - Check connectivity to VM network if True, False for non-VM
+    Check VM connectivity with logger info and raise error if fails
+    :param driver: driver of the interface
+    :type driver: str
+    :param mode: Bond mode
+    :type mode: int
+    :param vlan: ping from host if True else ping from engine
+    :type vlan: bool
+    :param vm: Check connectivity to VM network if True, False for non-VM
+    :type vm: bool
+    :param flags: extra flags for ping command (for example -I eth1)
+    :type flags: list
+    :return: True or raise exception
+    :rtype: bool
     """
     logger.info(check_connectivity_log(
         mode=mode, driver=driver, info=True, vlan=vlan)
     )
 
-    if not check_connectivity(vlan=vlan, vm=vm):
+    if not check_connectivity(vlan=vlan, vm=vm, flags=flags):
         raise NetworkException(check_connectivity_log(
             mode=mode, driver=driver, error=True, vlan=vlan)
         )

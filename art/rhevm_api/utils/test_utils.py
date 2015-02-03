@@ -1972,7 +1972,7 @@ def get_engine_properties(engine_obj, param):
     return value.strip(), version.strip()
 
 
-def check_icmp(host_obj, dst_ip, attempts=60):
+def check_icmp(host_obj, dst_ip, attempts=60, flags=None):
     """
     Check ICMP connectivity from host to destination IP
     :param host_obj: resource.VDS host object
@@ -1981,13 +1981,18 @@ def check_icmp(host_obj, dst_ip, attempts=60):
     :type dst_ip: str
     :param attempts: Number of attempts for ICMP
     :type attempts: int
+    :param flags: extra flags for ping command (for example -I eth1)
+    :type flags: list or None
     :return: True/False
     :rtype: bool
     """
     host_exec = host_obj.executor()
+    if not isinstance(flags, list):
+        flags = []
+    flags.extend(["-c", "1"])
+    cmd = ["ping"] + [dst_ip] + flags
     while attempts:
-        rc, out, err = host_exec.run_cmd(
-            ["ping", dst_ip, "-c", "1"])
+        rc, out, err = host_exec.run_cmd(cmd)
         if rc:
             attempts -= 1
         else:

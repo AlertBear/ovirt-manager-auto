@@ -1,3 +1,6 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Testing Topologies feature.
 1 DC, 1 Cluster, 1 Hosts and 1 VM will be created for testing.
@@ -41,18 +44,21 @@ class TestTopologiesCase01(TestCase):
         """
         Create and attach VLAN network to host and VM
         """
-        logger.info("Create and attach VLAN network %s",
-                    config.VLAN_NETWORKS[0])
-        local_dict = {config.VLAN_NETWORKS[0]: {"vlan_id": config.VLAN_ID[0],
-                                                "nic": 1,
-                                                "required": False}}
+        logger.info(
+            "Create and attach VLAN network %s", config.VLAN_NETWORKS[0]
+        )
+        local_dict = {
+            config.VLAN_NETWORKS[0]: {
+                "vlan_id": config.VLAN_ID[0], "nic": 1, "required": False
+            }
+        }
 
         if not createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0, 1]
         ):
             raise NetworkException(
-                "Cannot create and attach network %s", config.VLAN_NETWORKS[0]
+                "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
             )
 
         logger.info("Update vNIC to VLAN network on VM %s", config.VM_NAME[0])
@@ -262,7 +268,7 @@ class TestTopologiesCase03(TestCase):
         Create and attach BOND mode 2 network to host and VM
         """
         logger.info("Create and attach BOND mode 2 network")
-        if not create_and_attach_bond(2):
+        if not create_and_attach_bond(config.BOND_MODES[2]):
             raise NetworkException("Cannot create and attach network")
 
         logger.info("Update vNIC to BOND mode 2 network on VM")
@@ -361,7 +367,7 @@ class TestTopologiesCase04(TestCase):
         Create and attach BOND mode 4 network to host and VM
         """
         logger.info("Create and attach BOND mode 4 network")
-        if not create_and_attach_bond(4):
+        if not create_and_attach_bond(config.BOND_MODES[4]):
             raise NetworkException("Cannot create and attach network")
 
         logger.info("Update vNIC to BOND network on VM")
@@ -439,10 +445,8 @@ class TestTopologiesCase04(TestCase):
 class TestTopologiesCase05(TestCase):
     """
     Check connectivity to BOND mode 3 network
-    This is non-VM network test, we check connectivity from host to
-    red-vds1.qa.lab.tlv.redhat.com IP 172.16.200.2.
-    If this case fail check that red-vds1.qa.lab.tlv.redhat.com is up and eth1
-    configured with IP 172.16.200.2
+    This is non-VM network test, we check connectivity from host to the IP:
+    10.35.147.62 configured on switch
     !!! NOTE: bond mode 3 is officially not supported with VM networks!!!
     """
     __test__ = True
@@ -463,7 +467,9 @@ class TestTopologiesCase05(TestCase):
         """
         Check connectivity to BOND mode 3 network
         """
-        check_vm_connect_and_log(mode=config.BOND_MODES[3], vm=False)
+        check_vm_connect_and_log(
+            mode=config.BOND_MODES[3], vm=False, flags=["-r"]
+        )
 
     @classmethod
     def teardown_class(cls):
@@ -482,10 +488,8 @@ class TestTopologiesCase05(TestCase):
 class TestTopologiesCase06(TestCase):
     """
     Check connectivity to BOND mode 0 network
-    This is non-VM network test, we check connectivity from host to
-    red-vds1.qa.lab.tlv.redhat.com IP 172.16.200.2.
-    If this case fail check that red-vds1.qa.lab.tlv.redhat.com is up and eth1
-    configured with IP 172.16.200.2
+    This is non-VM network test, we check connectivity from host to to the IP:
+    10.35.147.62 configured on switch
     """
     __test__ = True
 
@@ -505,7 +509,9 @@ class TestTopologiesCase06(TestCase):
         """
         Check connectivity to BOND mode 0 network
         """
-        check_vm_connect_and_log(mode=config.BOND_MODES[0], vm=False)
+        check_vm_connect_and_log(
+            mode=config.BOND_MODES[0], vm=False, flags=["-r"]
+        )
 
     @classmethod
     def teardown_class(cls):
@@ -524,10 +530,8 @@ class TestTopologiesCase06(TestCase):
 class TestTopologiesCase07(TestCase):
     """
     Check connectivity to BOND mode 5 network
-    This is non-VM network test, we check connectivity from host to
-    red-vds1.qa.lab.tlv.redhat.com IP 172.16.200.2.
-    If this case fail check that red-vds1.qa.lab.tlv.redhat.com is up and eth1
-    configured with IP 172.16.200.2
+    This is non-VM network test, we check connectivity from host to to the IP:
+    10.35.147.62 configured on switch
     """
     __test__ = True
 
@@ -547,7 +551,9 @@ class TestTopologiesCase07(TestCase):
         """
         Check connectivity to BOND mode 5 network
         """
-        check_vm_connect_and_log(mode=config.BOND_MODES[5], vm=False)
+        check_vm_connect_and_log(
+            mode=config.BOND_MODES[5], vm=False, flags=["-r"]
+        )
 
     @classmethod
     def teardown_class(cls):
@@ -566,10 +572,8 @@ class TestTopologiesCase07(TestCase):
 class TestTopologiesCase08(TestCase):
     """
     Check connectivity to BOND mode 6 network
-    This is non-VM network test, we check connectivity from host to
-    red-vds1.qa.lab.tlv.redhat.com IP 172.16.200.2.
-    If this case fail check that red-vds1.qa.lab.tlv.redhat.com is up and eth1
-    configured with IP 172.16.200.2
+    This is non-VM network test, we check connectivity from host to to the IP:
+    10.35.147.62 configured on switch
     """
     __test__ = True
 
@@ -589,7 +593,9 @@ class TestTopologiesCase08(TestCase):
         """
         Check connectivity to BOND mode 6 network
         """
-        check_vm_connect_and_log(mode=config.BOND_MODES[6], vm=False)
+        check_vm_connect_and_log(
+            mode=config.BOND_MODES[6], vm=False, flags=["-r"]
+        )
 
     @classmethod
     def teardown_class(cls):
