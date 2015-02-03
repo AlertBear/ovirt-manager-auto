@@ -53,4 +53,4 @@ def teardown_module():
             True, config.DATA_CENTER_NAME, vdc=config.VDC,
             vdc_password=config.VDC_PASSWORD)
     else:
-        safely_remove_vms([VM_NAMES])
+        safely_remove_vms(VM_NAMES)
