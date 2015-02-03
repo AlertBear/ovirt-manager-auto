@@ -80,7 +80,7 @@ def create_vm_and_template(cobbler_image, storage_domain, storage_type):
             vmName=vm_name,
             vmDescription=vm_name,
             cluster=config.CLUSTER_NAME,
-            nic=config.HOST_NICS[0],
+            nic=config.NIC_NAME[0],
             storageDomainName=storage_domain,
             size=10 * config.GB,
             diskInterface=config.ENUMS['interface_virtio'],
