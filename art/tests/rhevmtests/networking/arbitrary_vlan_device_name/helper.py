@@ -3,14 +3,16 @@ Helper for arbitrary_vlan_device_name job
 """
 import logging
 import os
+import libvirt
+
 from random import randint
+from rhevmtests.networking import config
+from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level.events import get_max_event_id
 from art.rhevm_api.tests_lib.low_level.hosts import(
     getHostNicsList, refresh_host_capabilities, get_host_name_from_engine,
 )
-from art.test_handler.exceptions import NetworkException
-import libvirt
-from rhevmtests.networking import config
+
 
 logger = logging.getLogger("ArbitraryVlanDeviceName_Helper")
 
@@ -42,7 +44,7 @@ def job_tear_down():
         logger.info("Delete BRIDGE: %s on %s", y, host_name)
         try:
             config.VDS_HOSTS[0].network.delete_bridge(bridge=y)
-        except Exception:
+        except NetworkException:
             logger.error(
                 "Failed to delete BRIDGE: %s on %s", y, host_name
             )
@@ -103,7 +105,7 @@ def virsh_add_bridge(host_obj, bridge):
     """
     Add bridge to virsh via xml file
     :param host_obj: resources.VDS object
-    :type host_obj: str
+    :type host_obj: object
     :param bridge: Bridge name
     :type bridge: str
     :return: True/False
@@ -140,7 +142,7 @@ def virsh_delete_bridge(host_obj, bridge):
     """
     Delete bridge to virsh via xml file
     :param host_obj: resources.VDS object
-    :type host_obj: str
+    :type host_obj: object
     :param bridge: Bridge name
     :type bridge: str
     :return: True/False
@@ -178,28 +180,59 @@ def set_libvirtd_sasl(host_obj, sasl=True):
     sed_arg = "'s/{0}/{1}/g'".format(
         sasl_on if not sasl else sasl_off, sasl_off if not sasl else sasl_on
     )
-    cmd = ["sed", "-i", sed_arg, LIBVIRTD_CONF]
+
+    # following sed procedure is needed by RHEV-H and its read only file system
+    # TODO: add persist after config.VDS_HOST.os is available see
+    # https://projects.engineering.redhat.com/browse/RHEVM-2049
+    sed_cmd = [
+        "sed", sed_arg, LIBVIRTD_CONF
+    ]
     host_exec = host_obj.executor()
     logger_str = "Enable" if sasl else "Disable"
-    logger.info("%s sasl in %s", logger_str, LIBVIRTD_CONF)
-    rc, out, err = host_exec.run_cmd(cmd)
+    logger.info(
+        "%s sasl in %s", logger_str, LIBVIRTD_CONF
+    )
+    rc, sed_out, err = host_exec.run_cmd(sed_cmd)
+    if rc:
+        logger.error(
+            "Failed to run sed %s %s err: %s. out: %s",
+            sed_arg, LIBVIRTD_CONF, logger_str, err, sed_out
+        )
+        return False
+    cat_cmd = [
+        "echo", "%s" % sed_out, ">", LIBVIRTD_CONF
+    ]
+    rc, cat_out, err = host_exec.run_cmd(cat_cmd)
+
     if rc:
         logger.error(
             "Failed to %s sasl in libvirt. err: %s. out: %s", logger_str,
-            err, out
+            err, cat_out
         )
         return False
 
-    logger.info("Stop %s service", LIBVIRTD_SERVICE)
-    if not host_obj.service(LIBVIRTD_SERVICE).stop():
-        logger.error("Failed to restart %s service", LIBVIRTD_SERVICE)
+    logger.info(
+        "Stop %s service", LIBVIRTD_SERVICE
+    )
+    if not host_obj.service(
+            LIBVIRTD_SERVICE).stop(
+
+    ):
+        logger.error(
+            "Failed to restart %s service", LIBVIRTD_SERVICE
+        )
         return False
 
-    logger.info("Restarting %s server", VDSMD_SERVICE)
-    if not host_obj.service(VDSMD_SERVICE).restart():
-        logger.error("Failed to restart %s service", VDSMD_SERVICE)
+    logger.info(
+        "Restarting %s server", VDSMD_SERVICE
+    )
+    if not host_obj.service(
+            VDSMD_SERVICE).restart(
+    ):
+        logger.error(
+            "Failed to restart %s service", VDSMD_SERVICE
+        )
         return False
-
     return True
 
 
