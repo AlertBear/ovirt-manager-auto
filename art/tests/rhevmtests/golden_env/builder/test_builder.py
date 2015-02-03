@@ -141,11 +141,18 @@ class CreateDC(TestCase):
             if storage_type == ENUMS['storage_type_nfs']:
                 address, path = storage_conf.get_unused_nfs_share()
                 assert storagedomains.addNFSDomain(
-                    host, sd_name, datacenter_name, address, path)
+                    host, sd_name, datacenter_name, address, path, format=True)
             elif storage_type == ENUMS['storage_type_iscsi']:
                 lun, address, target = storage_conf.get_unused_iscsi_share()
                 assert storagedomains.addISCSIDataDomain(
-                    host, sd_name, datacenter_name, lun, address, target)
+                    host,
+                    sd_name,
+                    datacenter_name,
+                    lun,
+                    address,
+                    target,
+                    override_luns=True
+                )
             elif storage_type == ENUMS['storage_type_gluster']:
                 address, path, vfs = storage_conf.get_unused_gluster_share()
                 assert storagedomains.addGlusterDomain(

@@ -57,7 +57,8 @@ def _ISCSIdiscoverAndLogin(host, lun_address, lun_target):
 
 @is_action()
 def addISCSIDataDomain(host, storage, data_center, lun, lun_address,
-                       lun_target, lun_port=3260, storage_format=None):
+                       lun_target, lun_port=3260, storage_format=None,
+                       override_luns=None):
     '''
     positive flow for adding ISCSI Storage including all the necessary steps
     Author: atal
@@ -70,6 +71,7 @@ def addISCSIDataDomain(host, storage, data_center, lun, lun_address,
         * lun_target - name of lun target in iscsi server
         * lun_port - lun port
         * storage_format - storage format version (v1/v2/v3)
+        * override_luns - when True it will format/wipe out the block device
     return True if succeeded, False otherwise
     '''
 
@@ -80,7 +82,7 @@ def addISCSIDataDomain(host, storage, data_center, lun, lun_address,
             True, host=host, name=storage, type=ENUMS['storage_dom_type_data'],
             storage_type=ENUMS['storage_type_iscsi'], lun=lun,
             lun_address=lun_address, lun_target=lun_target, lun_port=lun_port,
-            storage_format=storage_format):
+            storage_format=storage_format, override_luns=override_luns):
         logger.error('Failed to add (%s, %s, %s) to %s' % (
             lun_address, lun_target, lun, host))
         return False
@@ -168,7 +170,8 @@ def addGlusterDomain(host, name, data_center, address, path, vfs_type,
 
 @is_action()
 def addNFSDomain(host, storage, data_center, address, path,
-                 sd_type=ENUMS['storage_dom_type_data'], storage_format=None):
+                 sd_type=ENUMS['storage_dom_type_data'], storage_format=None,
+                 format=None):
     '''
     positive flow for adding NFS Storage including all the necessary steps
     Author: atal
@@ -180,12 +183,13 @@ def addNFSDomain(host, storage, data_center, address, path,
         * path - path for nfs mount
         * sd_type - type of storage domain: data, iso or export
         * storage_format - storage format version (v1/v2/v3)
+        * format - when True it will remove the previous data
     return True if succeeded, False otherwise
     '''
     if not storagedomains.addStorageDomain(
             True, host=host, name=storage, type=sd_type,
             storage_type=ENUMS['storage_type_nfs'], address=address, path=path,
-            storage_format=storage_format):
+            storage_format=storage_format, format=format):
         logger.error('Failed to add %s:%s to %s' % (address, path, host))
         return False
 

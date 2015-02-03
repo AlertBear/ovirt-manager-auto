@@ -124,6 +124,7 @@ def _prepareStorageDomainObject(positive, **kwargs):
         sd.set_storage(Storage(
             type_=storage_type, path=kwargs.pop('path', None)))
     elif storage_type == ENUMS['storage_type_nfs']:
+        sd.set_format(kwargs.pop('format', None))
         sd.set_storage(
             Storage(
                 type_=storage_type, path=kwargs.pop('path', None),
@@ -131,7 +132,9 @@ def _prepareStorageDomainObject(positive, **kwargs):
                 nfs_version=kwargs.pop('nfs_version', None),
                 nfs_retrans=kwargs.pop('nfs_retrans', None),
                 nfs_timeo=kwargs.pop('nfs_timeo', None),
-                mount_options=kwargs.pop('mount_options', None)))
+                mount_options=kwargs.pop('mount_options', None),
+            )
+        )
     elif storage_type == ENUMS['storage_type_iscsi']:
         lun = kwargs.pop('lun', None)
         lun_address = getIpAddressByHostName(kwargs.pop('lun_address', None))
@@ -140,7 +143,12 @@ def _prepareStorageDomainObject(positive, **kwargs):
         logical_unit = LogicalUnit(
             id=lun, address=lun_address, target=lun_target, port=lun_port)
         sd.set_storage(
-            Storage(type_=storage_type, logical_unit=[logical_unit]))
+            Storage(
+                type_=storage_type,
+                logical_unit=[logical_unit],
+                override_luns=kwargs.pop('override_luns', None)
+            )
+        )
     elif storage_type == ENUMS['storage_type_fcp']:
         logical_unit = LogicalUnit(id=kwargs.pop('lun', None))
         sd.set_storage(Storage(logical_unit=logical_unit))
