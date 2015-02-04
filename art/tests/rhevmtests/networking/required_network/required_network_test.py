@@ -1,19 +1,22 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Testing RequiredNetwork network feature.
 1 DC, 1 Cluster, 1 Hosts will be created for testing.
 """
 import logging
-from art.rhevm_api.tests_lib.high_level.hosts import activate_host_if_not_up
 from rhevmtests.networking import config
 from art.unittest_lib import NetworkTest as TestCase, attr
+from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.exceptions import NetworkException
+from art.rhevm_api.tests_lib.high_level.hosts import activate_host_if_not_up
 from art.rhevm_api.tests_lib.high_level.networks import (
     createAndAttachNetworkSN, validateNetwork, remove_all_networks
 )
 from art.rhevm_api.tests_lib.low_level.hosts import (
     ifdownNic, waitForHostsStates, ifupNic, check_host_nic_status
 )
-from art.test_handler.tools import tcms  # pylint: disable=E0611
-from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level.networks import (
     isNetworkRequired, updateClusterNetwork
 )
@@ -30,7 +33,7 @@ HOST_NICS = None  # filled in setup module
 
 def setup_module():
     """
-    obtain host IP
+    obtain host NICs
     """
     global HOST_NICS
     HOST_NICS = config.VDS_HOSTS[0].nics
@@ -77,13 +80,6 @@ class TestRequiredNetwork01(TearDownRequiredNetwork):
     """
     __test__ = True
 
-    @classmethod
-    def setup_class(cls):
-        """
-        No need to run setup class
-        """
-        logger.info("No need to run setup class")
-
     @tcms(5868, 166462)
     def test_mgmt(self):
         """
@@ -109,13 +105,6 @@ class TestRequiredNetwork01(TearDownRequiredNetwork):
                 "%s is set to non required" % config.MGMT_BRIDGE
             )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        No need to run teardown
-        """
-        logger.info("No need to run teardown")
-
 ##############################################################################
 
 
@@ -134,8 +123,10 @@ class TestRequiredNetwork02(TearDownRequiredNetwork):
         """
         Create sw1 network as non-required and attach it to the host.
         """
-        local_dict = {config.NETWORKS[0]: {
-            "nic": 1, "required": "false"}
+        local_dict = {
+            config.NETWORKS[0]: {
+                "nic": 1, "required": "false"
+            }
         }
         logger.info(
             "Attach %s to DC/Cluster/Host(%s)", config.NETWORKS[0],
@@ -146,7 +137,9 @@ class TestRequiredNetwork02(TearDownRequiredNetwork):
                 host=config.VDS_HOSTS[0], network_dict=local_dict,
                 auto_nics=[0]
         ):
-            raise NetworkException("Cannot create and attach networks")
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.NETWORKS[0]
+            )
 
     @tcms(5868, 167539)
     def test_1operational_network(self):
@@ -213,16 +206,16 @@ class TestRequiredNetwork03(TearDownRequiredNetwork):
                 host=config.VDS_HOSTS[0], network_dict=local_dict,
                 auto_nics=[0]
         ):
-            raise NetworkException("Cannot create and attach networks")
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.NETWORKS[0]
+            )
 
         logger.info("Turn %s down", HOST_NICS[1])
         if not ifdownNic(
                 host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
                 nic=HOST_NICS[1]
         ):
-            raise NetworkException(
-                "Failed to turn down %s" % HOST_NICS[1]
-            )
+            raise NetworkException("Failed to turn down %s" % HOST_NICS[1])
 
     @tcms(5868, 165851)
     def test_operational(self):
@@ -276,8 +269,8 @@ class TestRequiredNetwork04(TearDownRequiredNetwork):
                 auto_nics=[0]
         ):
             raise NetworkException(
-                "Cannot create and attach %s over %s" % (
-                    config.VLAN_NETWORKS[0], config.BOND[0])
+                "Cannot create and attach %s over %s" %
+                (config.VLAN_NETWORKS[0], config.BOND[0])
             )
 
     @tcms(5868, 166460)
@@ -285,14 +278,12 @@ class TestRequiredNetwork04(TearDownRequiredNetwork):
         """
         Check that host in operational after turn down eth2
         """
-        logger.info("Turn %s", HOST_NICS[2])
+        logger.info("Turn down %s", HOST_NICS[2])
         if not ifdownNic(
                 host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
                 nic=HOST_NICS[2]
         ):
-            raise NetworkException(
-                "Failed to turn down %s" % HOST_NICS[2]
-            )
+            raise NetworkException("Failed to turn down %s" % HOST_NICS[2])
 
         logger.info("Check that %s is up", config.HOSTS[0])
         if not waitForHostsStates(
@@ -309,9 +300,7 @@ class TestRequiredNetwork04(TearDownRequiredNetwork):
                 host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
                 nic=HOST_NICS[3]
         ):
-            raise NetworkException(
-                "Failed to turn down %s" % HOST_NICS[3]
-            )
+            raise NetworkException("Failed to turn down %s" % HOST_NICS[3])
 
         logger.info("Check that %s is non-operational", config.HOSTS[0])
         if not waitForHostsStates(
@@ -341,8 +330,10 @@ class TestRequiredNetwork05(TearDownRequiredNetwork):
         """
         Create sw162 network as required and attach it to the host.
         """
-        local_dict = {config.VLAN_NETWORKS[0]: {
-            "vlan_id": config.VLAN_ID[0], "nic": 1, "required": "true"}
+        local_dict = {
+            config.VLAN_NETWORKS[0]: {
+                "vlan_id": config.VLAN_ID[0], "nic": 1, "required": "true"
+            }
         }
         logger.info(
             "Attach %s network to DC/Cluster/Host(%s)",
@@ -353,7 +344,9 @@ class TestRequiredNetwork05(TearDownRequiredNetwork):
                 host=config.VDS_HOSTS[0], network_dict=local_dict,
                 auto_nics=[0, 1]
         ):
-            raise NetworkException("Cannot create and attach networks")
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
+            )
 
     @tcms(5868, 166460)
     def test_nonoperational(self):
@@ -396,8 +389,10 @@ class TestRequiredNetwork06(TearDownRequiredNetwork):
         """
         Create sw1 network as non-required and attach it to the host.
         """
-        local_dict = {config.NETWORKS[0]: {
-            "nic": 1, "usages": "", "required": "true"}
+        local_dict = {
+            config.NETWORKS[0]: {
+                "nic": 1, "usages": "", "required": "true"
+            }
         }
         logger.info(
             "Attach %s network to DC/Cluster/Host(%s)", config.NETWORKS[0],

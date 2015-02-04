@@ -1,13 +1,16 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 RequiredNetwork Test
 """
 
 import logging
 from rhevmtests.networking import config, network_cleanup
+from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.high_level.networks import (
     create_basic_setup, remove_basic_setup
 )
-from art.test_handler.exceptions import NetworkException
 from rhevmtests.networking.required_network.helper import(
     deactivate_hosts, activate_hosts
 )
