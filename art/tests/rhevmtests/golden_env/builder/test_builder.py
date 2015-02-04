@@ -74,23 +74,23 @@ class StorageConfiguration(object):
                 'tests_iso_domain_address')
             self.shared_iso_path = configuration.get('tests_iso_domain_path')
 
-        self.unused_nfs_shares = zip(self.nfs_addresses, self.nfs_paths)
-        self.unused_iscsi_shares = zip(
+        self.nfs_shares = zip(self.nfs_addresses, self.nfs_paths)
+        self.iscsi_shares = zip(
             self.iscsi_luns, self.iscsi_lun_addresses, self.iscsi_lun_targets)
         self.unused_gluster_shares = zip(
             self.gluster_addresses, self.gluster_paths, self.gluster_vfs_types)
         self.unused_local_paths = list(self.local_paths)
-        self.unused_export_shares = zip(
+        self.export_shares = zip(
             self.export_addresses, self.export_paths)
 
     def get_shared_iso(self):
         return self.shared_iso_address, self.shared_iso_path
 
-    def get_unused_nfs_share(self):
-        return self.unused_nfs_shares.pop(0)
+    def get_nfs_share(self):
+        return self.nfs_shares.pop(0)
 
-    def get_unused_iscsi_share(self):
-        return self.unused_iscsi_shares.pop(0)
+    def get_iscsi_share(self):
+        return self.iscsi_shares.pop(0)
 
     def get_unused_gluster_share(self):
         return self.unused_gluster_shares.pop(0)
@@ -98,8 +98,8 @@ class StorageConfiguration(object):
     def get_unused_local_share(self):
         return self.unused_local_paths.pop(0)
 
-    def get_unused_export_share(self):
-        return self.unused_export_shares.pop(0)
+    def get_export_share(self):
+        return self.export_shares.pop(0)
 
 
 class CreateDC(TestCase):
@@ -139,11 +139,11 @@ class CreateDC(TestCase):
             sd_name = sd['storage_domain']['name']
             storage_type = sd['storage_domain']['storage_type']
             if storage_type == ENUMS['storage_type_nfs']:
-                address, path = storage_conf.get_unused_nfs_share()
+                address, path = storage_conf.get_nfs_share()
                 assert storagedomains.addNFSDomain(
                     host, sd_name, datacenter_name, address, path, format=True)
             elif storage_type == ENUMS['storage_type_iscsi']:
-                lun, address, target = storage_conf.get_unused_iscsi_share()
+                lun, address, target = storage_conf.get_iscsi_share()
                 assert storagedomains.addISCSIDataDomain(
                     host,
                     sd_name,
@@ -345,7 +345,7 @@ class CreateDC(TestCase):
     def add_export_domain(self, export_domain, storage_conf, host):
         if export_domain['name']:
             name = export_domain['name']
-            address, path = storage_conf.get_unused_export_share()
+            address, path = storage_conf.get_export_share()
             assert ll_sd.addStorageDomain(
                 True, name=name, type=ENUMS['storage_dom_type_export'],
                 storage_type=ENUMS['storage_type_nfs'],

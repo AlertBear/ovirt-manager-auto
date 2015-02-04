@@ -153,14 +153,27 @@ if 'prepared_env' in ART_CONFIG:
     CPU_CORES = int(VMS[0]['cpu_cores'])
     CPU_SOCKET = int(VMS[0]['cpu_socket'])
 
-    UNUSED_DATA_DOMAIN_ADDRESSES = PARAMETERS.as_list('data_domain_address')
-    UNUSED_DATA_DOMAIN_PATHS = PARAMETERS.as_list('data_domain_path')
+    DATA_DOMAIN_ADDRESSES = PARAMETERS.as_list('data_domain_address')
+    DATA_DOMAIN_PATHS = PARAMETERS.as_list('data_domain_path')
+    logger.info("nfs storage for building GE: %s %s",
+                DATA_DOMAIN_ADDRESSES, DATA_DOMAIN_PATHS)
+
+    LUNS = PARAMETERS.as_list('lun')
+    LUN_ADDRESSES = PARAMETERS.as_list('lun_address')
+    LUN_TARGETS = PARAMETERS.as_list('lun_target')
+    logger.info("iscsi luns for building GE: %s %s %s", LUNS,
+                LUN_ADDRESSES, LUN_TARGETS)
+
+    UNUSED_DATA_DOMAIN_ADDRESSES = PARAMETERS.as_list(
+        'extra_data_domain_address'
+    )
+    UNUSED_DATA_DOMAIN_PATHS = PARAMETERS.as_list('extra_data_domain_path')
     logger.info("Free nfs shares: %s %s",
                 UNUSED_DATA_DOMAIN_ADDRESSES, UNUSED_DATA_DOMAIN_PATHS)
 
-    UNUSED_LUNS = PARAMETERS.as_list('lun')
-    UNUSED_LUN_ADDRESSES = PARAMETERS.as_list('lun_address')
-    UNUSED_LUN_TARGETS = PARAMETERS.as_list('lun_target')
+    UNUSED_LUNS = PARAMETERS.as_list('extra_lun')
+    UNUSED_LUN_ADDRESSES = PARAMETERS.as_list('extra_lun_address')
+    UNUSED_LUN_TARGETS = PARAMETERS.as_list('extra_lun_target')
     logger.info("Free iscsi shares: %s %s %s", UNUSED_LUNS,
                 UNUSED_LUN_ADDRESSES, UNUSED_LUN_TARGETS)
 else:
