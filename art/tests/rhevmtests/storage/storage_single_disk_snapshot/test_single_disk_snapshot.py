@@ -268,7 +268,9 @@ class TestCase333023(BasicEnvironment):
     snapshot was created successfully
     https://tcms.engineering.redhat.com/case/333023/?from_plan=12057
     """
-    __test__ = True
+    # TODO: Change implementation of get_amount_of_volumes() to work with
+    # non block devices
+    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
     tcms_test_case = '333023'
 
     def setUp(self):
@@ -993,7 +995,9 @@ class TestCase336105(BasicEnvironment):
     Create 3 snapshot and delete the second.
     https://tcms.engineering.redhat.com/case/336105/?from_plan=12057
     """
-    __test__ = True
+    # TODO: Change implementation of get_amount_of_volumes() to work with
+    # non block devices
+    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
     tcms_test_case = '336105'
     snap_1 = 'snapshot_1'
     snap_2 = 'snapshot_2'
