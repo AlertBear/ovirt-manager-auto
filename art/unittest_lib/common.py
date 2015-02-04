@@ -57,6 +57,7 @@ class NetworkTest(BaseTestCase):
     """
     Basic class for network tests
     """
+    apis = set(["rest", "java", "sdk"])
     __test__ = False
 
 
