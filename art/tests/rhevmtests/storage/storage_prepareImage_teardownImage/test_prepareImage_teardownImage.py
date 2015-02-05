@@ -425,7 +425,7 @@ class TestCase388747(BasicEnvironment):
                         "Failed to start VM '%s'" % VM1_NAME)
 
 
-@attr(tier=0)
+@attr(tier=2)
 class TestCase388748(BasicEnvironment):
     """
     Prepare image with no parameters
@@ -471,7 +471,7 @@ class TestCase388748(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=0)
+@attr(tier=2)
 class TestCase389851(BasicEnvironment):
     """
     Prepare image with optional flag unset
