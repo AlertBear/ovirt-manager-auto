@@ -16,12 +16,13 @@ Configuration Options:
     | **enabled**   to enable the plugin (true/false)
 """
 
-from art.test_handler.plmanagement import Component, implements, get_logger,\
-     PluginError
-from art.test_handler.plmanagement.interfaces.application import\
-     IConfigurable, IApplicationListener
-from art.test_handler.plmanagement.interfaces.config_validator import\
-              IConfigValidation
+from art.test_handler.plmanagement import Component, implements, get_logger
+from art.test_handler.plmanagement.interfaces.application import (
+    IConfigurable, IApplicationListener
+)
+from art.test_handler.plmanagement.interfaces.config_validator import (
+    IConfigValidation,
+)
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 
 
@@ -31,6 +32,7 @@ logger = get_logger('puppet')
 
 
 ENABLED = 'enabled'
+REASON = 'reason'
 PUPPET_SEC = 'PUPPET'
 VDC_PARAMS = 'REST_CONNECTION'
 PARAMETERS = 'PARAMETERS'
@@ -48,21 +50,28 @@ class PuppetPlugin(Component):
     Plugin disables puppet daemon on VDC and VDSs machines before test is
     executed. And also enables puppet daemon when test is done.
     """
-    implements(IConfigurable, IApplicationListener, IConfigValidation, \
-            IPackaging)
+    implements(
+        IConfigurable,
+        IApplicationListener,
+        IConfigValidation,
+        IPackaging,
+    )
 
     name = "Puppet"
-    priority = -2000 # to ensure it runs first
+    priority = -2000  # to ensure it runs first
 
     def __init__(self):
         super(PuppetPlugin, self).__init__()
         self.machines = []
+        self.reason = None
 
     @classmethod
     def add_options(cls, parser):
         group = parser.add_argument_group(cls.name, description=cls.__doc__)
-        group.add_argument('--with-puppet', action='store_true', \
-                dest='puppet_enabled', help="enable plugin")
+        group.add_argument(
+            '--with-puppet', action='store_true', dest='puppet_enabled',
+            help="enable plugin",
+        )
 
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
@@ -76,8 +85,10 @@ class PuppetPlugin(Component):
 
         self.machines = [Machine(vdc, user, vdc_passwd).util(LINUX)]
 
-        for name, passwd in  zip(vds, vds_passwd):
+        for name, passwd in zip(vds, vds_passwd):
             self.machines.append(Machine(name, user, passwd).util(LINUX))
+
+        self.reason = conf[PUPPET_SEC][REASON]
 
     @classmethod
     def is_enabled(cls, params, conf):
@@ -93,7 +104,7 @@ class PuppetPlugin(Component):
         self.__exec_toogle_puppet(OPT_ENABLE)
 
     def __exec_toogle_puppet(self, opt):
-        toogle_cmd = [PUPPET_DAEMON, 'agent', opt, '--detailed-exitcodes']
+        toogle_cmd = [PUPPET_DAEMON, 'agent', '--detailed-exitcodes', opt]
         test_cmd = [PUPPET_DAEMON, 'agent', '--test', '--detailed-exitcodes']
         error_log_msg = "%s: failed execute %s with %s err: %s; out: %s"
 
@@ -103,9 +114,12 @@ class PuppetPlugin(Component):
         elif opt == OPT_DISABLE:
             cmds = (test_cmd, toogle_cmd)
             action_msg = 'disabled'
+            if self.reason:
+                toogle_cmd.append(self.reason)
         else:
-            assert False, "opt argument must be %s or %s, but got %s" % \
-                    (OPT_ENABLE, OPT_DISABLE, opt)
+            assert False, "opt argument must be %s or %s, but got %s" % (
+                OPT_ENABLE, OPT_DISABLE, opt,
+            )
 
         for m in self.machines:
             fail = False
@@ -128,12 +142,13 @@ class PuppetPlugin(Component):
         params['author_email'] = 'lbednar@redhat.com'
         params['description'] = 'Puppet plugin for ART'
         params['long_description'] = cls.__doc__
-        params['py_modules'] = ['art.test_handler.plmanagement.plugins.puppet_plugin']
+        params['py_modules'] = [
+            'art.test_handler.plmanagement.plugins.puppet_plugin'
+        ]
 
     def config_spec(self, spec, val_funcs):
-        section_spec = spec.get(PUPPET_SEC, {})
+        section_spec = spec.setdefault(PUPPET_SEC, {})
         section_spec[ENABLED] = "boolean(default=False)"
-        spec[PUPPET_SEC] = section_spec
-        parms_spec = spec.get(PARAMETERS, {})
+        section_spec[REASON] = "string(default=None)"
+        parms_spec = spec.setdefault(PARAMETERS, {})
         parms_spec[VDC_PASSWD] = "string(default=None)"
-        spec[PARAMETERS] = parms_spec
