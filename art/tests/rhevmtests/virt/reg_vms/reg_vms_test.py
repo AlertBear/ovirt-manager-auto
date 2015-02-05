@@ -477,7 +477,7 @@ class UpdateVm(BaseVm):
         self.assertTrue(vm_api.updateVm(True, self.vm_name,
                                         description="TEST"))
 
-    @bz({'1158458': {'engine': None, 'version': None}})
+    @bz({'1158458': {'engine': ['java', 'sdk', 'cli'], 'version': None}})
     @istest
     def update_vm_cluster(self):
         """
@@ -490,9 +490,12 @@ class UpdateVm(BaseVm):
                                         placement_affinity=affinity))
         cluster = config.CLUSTER_NAME[1]
         self.assertTrue(vm_api.updateVm(True, self.vm_name,
-                                        cluster=cluster))
+                                        cluster=cluster,
+                                        cpu_profile=None))
         self.assertTrue(vm_api.updateVm(True, self.vm_name,
-                                        cluster=config.CLUSTER_NAME[0]))
+                                        cluster=config.CLUSTER_NAME[0],
+                                        cpu_profile=None))
+        logger.info("Update cluster to: %s", cluster)
 
     @istest
     def update_vm_memory(self):
