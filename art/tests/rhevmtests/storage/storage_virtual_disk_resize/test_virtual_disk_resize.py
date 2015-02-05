@@ -14,23 +14,27 @@ from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest as BaseTestCase
 
 from art.rhevm_api.tests_lib.high_level import datacenters
-from art.rhevm_api.tests_lib.high_level.disks import \
-    create_all_legal_disk_permutations
+from art.rhevm_api.tests_lib.high_level.disks import (
+    create_all_legal_disk_permutations,
+)
 from art.rhevm_api.tests_lib.low_level.datacenters import get_data_center
-from art.rhevm_api.tests_lib.low_level.disks import waitForDisksState,\
-    getStorageDomainDisks, addDisk, attachDisk
+from art.rhevm_api.tests_lib.low_level.disks import (
+    waitForDisksState, getStorageDomainDisks, addDisk, attachDisk,
+)
 from art.rhevm_api.tests_lib.low_level.hosts import (
-    waitForHostsStates, getHostIP, getSPMHost)
-from art.rhevm_api.tests_lib.low_level.storagedomains import \
-    getStorageDomainNamesForType, cleanDataCenter, getDomainAddress,\
-    get_total_size
-from art.rhevm_api.tests_lib.low_level.vms import stop_vms_safely,\
-    waitForVMState, deactivateVmDisk, removeDisk, addSnapshot,\
-    removeSnapshot, getVmDisks, preview_snapshot, \
-    commit_snapshot, start_vms, undo_snapshot_preview, extend_vm_disk_size,\
-    removeVm, waitForVmsStates, wait_for_vm_snapshots,\
-    get_vms_disks_storage_domain_name, removeVms
-
+    waitForHostsStates, getHostIP, getSPMHost,
+)
+from art.rhevm_api.tests_lib.low_level.storagedomains import (
+    getStorageDomainNamesForType, cleanDataCenter, getDomainAddress,
+    get_total_size,
+)
+from art.rhevm_api.tests_lib.low_level.vms import (
+    stop_vms_safely, waitForVMState, deactivateVmDisk, removeDisk, addSnapshot,
+    removeSnapshot, getVmDisks, preview_snapshot,
+    commit_snapshot, start_vms, undo_snapshot_preview, extend_vm_disk_size,
+    removeVm, waitForVmsStates, wait_for_vm_snapshots,
+    get_vms_disks_storage_domain_name, removeVms, createVm,
+)
 from rhevmtests.storage.helpers import create_vm_or_clone
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.rhevm_api.utils.storage_api import flushIptables
@@ -70,7 +74,7 @@ disk_args = {
 
 
 vmArgs = {'positive': True,
-          'vmDescription': config.VM_NAME[0],
+          'vmDescription': config.VM_NAME,
           'diskInterface': config.VIRTIO,
           'volumeFormat': config.COW_DISK,
           'cluster': config.CLUSTER_NAME,
@@ -81,8 +85,8 @@ vmArgs = {'positive': True,
           'image': config.COBBLER_PROFILE,
           'useAgent': True,
           'os_type': config.OS_TYPE,
-          'user': config.VM_USER,
-          'password': config.VM_PASSWORD,
+          'user': config.VMS_LINUX_USER,
+          'password': config.VMS_LINUX_PW,
           'network': config.MGMT_BRIDGE
           }
 VMS_NAMES = []
@@ -105,7 +109,7 @@ def setup_module():
             storage_domain = getStorageDomainNamesForType(
                 config.DATA_CENTER_NAME, storage_type)[0]
 
-            vm_name = "%s_%s" % (config.VM_NAME[0], storage_type)
+            vm_name = "%s_%s" % (config.VM_NAME, storage_type)
             VMS_NAMES.append(vm_name)
             args = vmArgs.copy()
             args['storageDomainName'] = storage_domain
@@ -113,7 +117,10 @@ def setup_module():
 
             logger.info('Creating vm %s and installing OS on it', vm_name)
 
-            exs.append(executor.submit(create_vm_or_clone, **args))
+            # TODO: TestCase297017 will fail if the vm is created with
+            #       create_vm_or_clone, (which clones a VM from a template),
+            #       investigate and fix the failure
+            exs.append(executor.submit(createVm, **args))
 
     [ex.result() for ex in exs]  # make sure all threads are finish
     logger.info('Shutting down vms %s', VMS_NAMES)
@@ -127,7 +134,7 @@ def teardown_module():
     logger.info('Cleaning datacenter')
     if not config.GOLDEN_ENV:
         cleanDataCenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
-                        vdc_password=config.VDC_PASSWORD)
+                        vdc_password=config.VDC_ROOT_PASSWORD)
 
     else:
         stop_vms_safely(VMS_NAMES)
@@ -141,7 +148,7 @@ class DisksPermutationEnvironment(BaseTestCase):
     __test__ = False
     shared = False
     new_size = (config.DISK_SIZE + config.GB)
-    vm = "%s_%s" % (config.VM_NAME[0], BaseTestCase.storage)
+    vm = "%s_%s" % (config.VM_NAME, BaseTestCase.storage)
 
     @classmethod
     def setup_class(cls):
@@ -191,7 +198,7 @@ class BasicResize(BaseTestCase):
     A class with common setup and teardown methods
     """
     __test__ = False
-    vm = "%s_%s" % (config.VM_NAME[0], BaseTestCase.storage)
+    vm = "%s_%s" % (config.VM_NAME, BaseTestCase.storage)
     new_size = (config.DISK_SIZE + config.GB)
     host_ip = None
     disk_name = ''
@@ -243,8 +250,8 @@ class BasicResize(BaseTestCase):
                     (not disk_obj.get_bootable())][0]
         datacenter_obj = get_data_center(config.DATA_CENTER_NAME)
 
-        logger.info("Checking volum size in host %s with ip %s",
-                    self.host, self.host_ip)
+        logger.info("Checking volume size in host %s with ip %s for disk %s",
+                    self.host, self.host_ip, disk_obj.get_alias())
         lv_size = helpers.get_volume_size(self.host_ip,
                                           config.HOSTS_USER,
                                           config.HOSTS_PW,
@@ -454,7 +461,7 @@ class TestCase287466(BasicResize):
     Virtual disk resize - preallocated  block disk
     https://tcms.engineering.redhat.com/case/287466/?from_plan=9949
     """
-    __test__ = config.STORAGE_TYPE in config.BLOCK_TYPES
+    __test__ = BasicResize.storage in config.BLOCK_TYPES
     tcms_test_case = '287466'
 
     def setUp(self):
@@ -484,7 +491,7 @@ class TestCase297017(BasicResize):
     Virtual disk resize - Thin block disk
     https://tcms.engineering.redhat.com/case/297017/?from_plan=9949
     """
-    __test__ = config.STORAGE_TYPE in config.BLOCK_TYPES
+    __test__ = BasicResize.storage in config.BLOCK_TYPES
     tcms_test_case = '297017'
 
     def setUp(self):
@@ -514,7 +521,7 @@ class TestCase287467(BasicResize):
     Virtual disk resize - preallocated file disk
     https://tcms.engineering.redhat.com/case/287467/?from_plan=9949
     """
-    __test__ = config.STORAGE_TYPE not in config.BLOCK_TYPES
+    __test__ = BasicResize.storage not in config.BLOCK_TYPES
     tcms_test_case = '287467'
 
     def setUp(self):
@@ -544,7 +551,7 @@ class TestCase297018(BasicResize):
     Virtual disk resize - Thin file disk
     https://tcms.engineering.redhat.com/case/297018/?from_plan=9949
     """
-    __test__ = config.STORAGE_TYPE not in config.BLOCK_TYPES
+    __test__ = BasicResize.storage not in config.BLOCK_TYPES
     tcms_test_case = '297018'
 
     def setUp(self):
@@ -574,7 +581,7 @@ class TestCase297090(BasicResize):
     block connectivity from host to storage domain - preallocated disk
     https://tcms.engineering.redhat.com/case/297090/?from_plan=9949
     """
-    __test__ = config.STORAGE_TYPE in config.BLOCK_TYPES
+    __test__ = BasicResize.storage in config.BLOCK_TYPES
     tcms_test_case = '297090'
 
     def setUp(self):
@@ -605,7 +612,7 @@ class TestCase297089(BasicResize):
     block connectivity from host to storage domain - sparse disk
     https://tcms.engineering.redhat.com/case/297089/?from_plan=9949
     """
-    __test__ = config.STORAGE_TYPE in config.BLOCK_TYPES
+    __test__ = BasicResize.storage in config.BLOCK_TYPES
     tcms_test_case = '297089'
 
     def setUp(self):
@@ -700,7 +707,7 @@ class TestCase287469(BasicResize):
     Extend disk to more than available capacity
     https://tcms.engineering.redhat.com/case/287469/?from_plan=9949
     """
-    __test__ = config.STORAGE_TYPE in config.BLOCK_TYPES
+    __test__ = BasicResize.storage in config.BLOCK_TYPES
     tcms_test_case = '287469'
 
     def setUp(self):
@@ -804,7 +811,7 @@ class TestCase287477(BasicResize):
     Increase and decrease multiple disks
     https://tcms.engineering.redhat.com/case/287477/?from_plan=9949
     """
-    __test__ = config.STORAGE_TYPE in config.BLOCK_TYPES
+    __test__ = BasicResize.storage in config.BLOCK_TYPES
     tcms_test_case = '287477'
     vm_name = "vm_%s_%s"
     vm_count = 3
@@ -853,7 +860,7 @@ class TestCase287478(BasicResize):
     https://tcms.engineering.redhat.com/case/287478/?from_plan=9949
     Currently __test__ = False - disk shrink doesn't support
     """
-    __test__ = config.STORAGE_TYPE in config.BLOCK_TYPES
+    __test__ = BasicResize.storage in config.BLOCK_TYPES
     tcms_test_case = '287478'
     vm_name = "vm_%s_%s"
     vm_count = 2

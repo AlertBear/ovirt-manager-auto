@@ -69,8 +69,8 @@ def get_vm_storage_devices(vm_name):
     start_vms([vm_name], max_workers=1, wait_for_ip=False)
     assert waitForVMState(vm_name)
     vm_ip = get_vm_ip(vm_name)
-    vm_machine = Machine(host=vm_ip, user=config.VM_USER,
-                         password=config.VM_PASSWORD).util('linux')
+    vm_machine = Machine(host=vm_ip, user=config.VMS_LINUX_USER,
+                         password=config.VMS_LINUX_PW).util('linux')
     output = vm_machine.get_boot_storage_device()
     boot_disk = 'vda' if 'vd' in output else 'sda'
 
@@ -92,8 +92,8 @@ def verify_write_operation_to_disk(vm_name, disk_number=0):
     Return: ecode and output, or raise EntityNotFound if error occurs
     """
     vm_ip = get_vm_ip(vm_name)
-    vm_machine = Machine(host=vm_ip, user=config.VM_USER,
-                         password=config.VM_PASSWORD).util('linux')
+    vm_machine = Machine(host=vm_ip, user=config.VMS_LINUX_USER,
+                         password=config.VMS_LINUX_PW).util('linux')
     vm_devices, boot_disk = get_vm_storage_devices(vm_name)
 
     command = DD_COMMAND % (boot_disk, vm_devices[disk_number])
@@ -147,8 +147,8 @@ def get_vm_device_size(vm_name, device_name):
     except CanNotFindIP:
         raise exceptions.VMException("No IP found for vm %s: ", vm_name)
 
-    vm_machine = Machine(host=vm_ip, user=config.VM_USER,
-                         password=config.VM_PASSWORD).util('linux')
+    vm_machine = Machine(host=vm_ip, user=config.VMS_LINUX_USER,
+                         password=config.VMS_LINUX_PW).util('linux')
 
     device_size = vm_machine.get_storage_device_size(device_name)
     logger.info("Device %s size: %s GB", device_name, device_size)
