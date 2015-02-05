@@ -72,8 +72,10 @@ class BaseVm(TestCase):
         Remove all vms from cluster
         """
         logger.info("Remove all vms")
-        if not vm_api.remove_all_vms_from_cluster(config.CLUSTER_NAME[0],
-                                                  config.VM_NAME):
+        # TODO:After correlation-Id ticket close,will set use_threads to True
+        if not vm_api.remove_all_vms_from_cluster(
+                config.CLUSTER_NAME[0], use_threads=False
+        ):
             raise errors.VMException("Failed to remove all vms")
 
 
