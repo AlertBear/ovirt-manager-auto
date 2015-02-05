@@ -12,6 +12,8 @@ from art.rhevm_api.tests_lib.low_level.disks import getStorageDomainDisks,\
     deleteDisk
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.storagedomains import getDCStorages
+from art.rhevm_api.utils.cpumodel import CpuModelDenominator, CpuModelError
+from art.rhevm_api.resources import Host  # This import is not good here
 import art.test_handler.exceptions as errors
 from art.test_handler.settings import opts
 
@@ -57,6 +59,22 @@ def build_setup(config, storage, storage_type, basename="testname",
 
     hosts.add_hosts(config.as_list('vds'), config.as_list('vds_password'),
                     cluster_name)
+
+    # Align cluster cpu compatibility to fit all hosts
+    hosts_obj = [Host.get(h) for h in config.as_list('vds')]
+    cpu_den = CpuModelDenominator()
+    try:
+        cpu_info = cpu_den.get_common_cpu_model(
+            hosts_obj, version=config['compatibility_version'],
+        )
+    except CpuModelError as ex:
+        LOGGER.error("Can not determine the best cpu_model: %s", ex)
+    else:
+        LOGGER.info("Cpu info %s for cluster: %s", cpu_info, cluster_name)
+        if not clusters.updateCluster(True, cluster_name, cpu=cpu_info['cpu']):
+            LOGGER.error(
+                "Can not update cluster cpu_model to: %s", cpu_info['cpu'],
+            )
 
     return storagedomains.create_storages(
         storage, storage_type, config.as_list('vds')[0], datacenter_name)
