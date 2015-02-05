@@ -8,7 +8,6 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import \
     findMasterStorageDomain, findNonMasterStorageDomains, cleanDataCenter, \
     getDomainAddress, deactivateStorageDomain, activateStorageDomain
 import config
-from nose.tools import istest
 from art.rhevm_api.tests_lib.low_level.hosts import select_host_as_spm, \
     getSPMHost, checkSPMPriority, deactivateHosts, setSPMPriority, \
     waitForSPM, checkHostSpmStatus, activateHosts, isHostUp
@@ -45,7 +44,6 @@ class DCUp(TestCase):
     Base class that ensures DC, all domains and hosts are up, spm is elected
     and spm priorities are set to default for all hosts
     """
-
     __test__ = False
 
     spm_priorities = []
@@ -143,11 +141,9 @@ class TestCase288461(DCUp):
     """
     TCMS Test Case 288461 - Manually Re-assign SPM
     """
-
     __test__ = True
     tcms_test_case = '288461'
 
-    @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     def test_reassign_spm(self):
         """
@@ -163,7 +159,6 @@ class SelectNewSPMDuringSPMElection(DCUp):
     Class that Begins spm selection, then selects a second host as spm during
     the original spm selection expecting the second action to succeed
     """
-
     __test__ = False
     first_spm = None
     second_spm = None
@@ -200,7 +195,6 @@ class TestCase288463(SelectNewSPMDuringSPMElection):
     __test__ = False
     tcms_test_case = '288463'
 
-    @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     def test_select_new_host_as_spm(self):
         """
@@ -224,7 +218,6 @@ class TestCase293727(SelectNewSPMDuringSPMElection):
     __test__ = False
     tcms_test_case = '293727'
 
-    @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     def test_select_new_host_as_spm(self):
         """
@@ -241,7 +234,6 @@ class ReassignSPMWithStorageBlocked(DCUp):
     Block connection between specified hosts and specified domain and try to
     reassign spm
     """
-
     __test__ = False
     domain_blocked = []
     domain_to_block = None
@@ -300,7 +292,6 @@ class TestCase289887(ReassignSPMWithStorageBlocked):
     __test__ = True
     tcms_test_case = '289887'
 
-    @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     def test_set_spm_with_blocked_nonmaster_domain(self):
         """
@@ -320,7 +311,6 @@ class TestCase289888(ReassignSPMWithStorageBlocked):
     __test__ = True
     tcms_test_case = '289888'
 
-    @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     @bz('999493')
     def test_set_spm_with_blocked_nonmaster_domain(self):
@@ -339,7 +329,6 @@ class TestCase289890(DCUp):
     """
     TCMS Test Case 289890 - Reassign spm during storage domain deactivation
     """
-
     __test__ = True
     tcms_test_case = '289890'
 
@@ -353,7 +342,6 @@ class TestCase289890(DCUp):
         assert deactivateStorageDomain(True, config.DATA_CENTER_NAME,
                                        cls.nonmaster_domain)
 
-    @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     def test_reassign_spm_during_deactivate_domain(self):
         """

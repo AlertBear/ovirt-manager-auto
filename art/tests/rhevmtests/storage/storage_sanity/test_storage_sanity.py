@@ -3,13 +3,14 @@ from art.rhevm_api.tests_lib.high_level.storagedomains import (
     addISCSIDataDomain,
 )
 from art.rhevm_api.tests_lib.low_level.hosts import (
-    getSPMHost, waitForSPM,
+    getSPMHost, waitForSPM, select_host_as_spm,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     get_total_size, removeStorageDomains, wait_for_change_total_size,
 )
 from art.rhevm_api.utils.test_utils import wait_for_tasks
+from art.test_handler import exceptions
 from art.unittest_lib import StorageTest as TestCase, attr
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.high_level import storagedomains
@@ -223,3 +224,58 @@ class TestCase94954(TestCase):
             ll_st_domains.activateStorageDomain(
                 True, config.DATA_CENTER_NAME, old_master_domain_name),
             "Cannot activate old master domain")
+
+
+@attr(tier=0)
+class TestCase288461(TestCase):
+    """
+    TCMS Test Case 288461 - Manually Re-assign SPM
+    """
+    __test__ = True
+    tcms_test_plan = '9953'
+    tcms_test_case = '288461'
+    original_spm_host = None
+
+    def setUp(self):
+        logger.info("Waiting for SPM host to be elected on current Data "
+                    "center")
+        if not waitForSPM(config.DATA_CENTER_NAME, SPM_TIMEOUT, SPM_SLEEP):
+            raise exceptions.HostException("SPM is not set on the current "
+                                           "Data center")
+
+        logger.info("Getting current SPM host and HSM hosts")
+        self.original_spm_host = getSPMHost(config.HOSTS)
+        self.hsm_hosts = [host for host in config.HOSTS if host !=
+                          self.original_spm_host]
+        if not self.original_spm_host:
+            raise exceptions.HostException("Current SPM host could not be "
+                                           "retrieved")
+        if not self.hsm_hosts:
+            raise exceptions.HostException("Did not find any HSM hosts")
+        logger.info("Found SPM host: '%s', HSM hosts: '%s",
+                    self.original_spm_host, self.hsm_hosts)
+
+    def tearDown(self):
+        if self.original_spm_host:
+            logger.info("Waiting for SPM host to be elected")
+            if not waitForSPM(config.DATA_CENTER_NAME, SPM_TIMEOUT, SPM_SLEEP):
+                raise exceptions.HostException("SPM is not set on the current "
+                                               "Data center")
+            logger.info("Setting the original SPM host '%s' back as SPM",
+                        self.original_spm_host)
+            if not select_host_as_spm(True, self.original_spm_host,
+                                      config.DATA_CENTER_NAME):
+                raise exceptions.HostException("Did not successfully revert "
+                                               "the SPM to host '%s'" %
+                                               self.original_spm_host)
+
+    @tcms(tcms_test_plan, tcms_test_case)
+    def test_reassign_spm(self):
+        """
+        Assign first HSM host to be the SPM
+        """
+        self.new_spm_host = self.hsm_hosts[0]
+        logger.info("Selecting HSM host '%s' as SPM", self.new_spm_host)
+        self.assertTrue(select_host_as_spm(True, self.new_spm_host,
+                                           config.DATA_CENTER_NAME),
+                        "Unable to set host '%s' as SPM" % self.new_spm_host)
