@@ -1,18 +1,19 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Helper functions for network QoS job
 """
 
 import logging
-from art.rhevm_api.tests_lib.low_level.networks import(
-    update_qos_on_vnic_profile, addVnicProfile
-)
-from art.rhevm_api.tests_lib.low_level.vms import getVmMacAddress, addNic
-
-logger = logging.getLogger("Network_VNIC_QoS_Helper")
-
 from art.test_handler.exceptions import NetworkException
 from rhevmtests.networking import config
 import xml.etree.ElementTree
+from art.rhevm_api.tests_lib.low_level.vms import getVmMacAddress, addNic
+from art.rhevm_api.tests_lib.low_level.networks import(
+    update_qos_on_vnic_profile, addVnicProfile
+)
+logger = logging.getLogger("Network_VNIC_QoS_Helper")
 
 M_K_CONVERTER = 1024
 BITS_BYTES = 8
@@ -141,7 +142,7 @@ def build_dict(inbound_dict, outbound_dict, vm, nic):
     rc, mac_dict = getVmMacAddress(True, vm=vm, nic=nic)
     if not rc:
         raise NetworkException("Failed to get MAC address")
-    mac = mac_dict['macAddress']
+    mac = mac_dict["macAddress"]
     return {mac: qos_obj}
 
 
@@ -155,12 +156,12 @@ def get_libvirt_bw(interface):
     """
     try:
         virsh_qos_in_dict = interface.find(
-            'bandwidth').find('inbound').attrib
+            "bandwidth").find("inbound").attrib
     except AttributeError:
         virsh_qos_in_dict = {}
     try:
         virsh_qos_out_dict = interface.find(
-            'bandwidth').find('outbound').attrib
+            "bandwidth").find("outbound").attrib
     except AttributeError:
         virsh_qos_out_dict = {}
     return virsh_qos_in_dict, virsh_qos_out_dict
@@ -179,7 +180,7 @@ def compare_qos(host_obj, vm_name, **kwargs):
     :rtype: bool
     """
     xml_out = get_vm_xml(host_obj, vm_name)
-    interface_list = xml_out.find('devices').findall('interface')
+    interface_list = xml_out.find("devices").findall("interface")
     for interface in interface_list:
         interface_mac = interface.find("mac").get("address")
         if interface_mac in kwargs:
@@ -194,7 +195,7 @@ def compare_qos(host_obj, vm_name, **kwargs):
 
 def add_qos_profile_to_nic(
     qos_name="QoSProfile1", vnic_profile_name=config.VNIC_PROFILE[0],
-    nic='nic2', update_libvirt=True
+    nic=config.NIC_NAME[1], update_libvirt=True
 ):
     """
     Creates VNIC profile for mgmt network

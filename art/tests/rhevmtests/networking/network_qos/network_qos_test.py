@@ -1,5 +1,11 @@
 #! /usr/bin/python
+# -*- coding: utf-8 -*-
 
+"""
+Testing network VM QoS feature.
+1 DC, 1 Cluster, 2 Hosts and 1 VM will be created for testing.
+Create, update, remove and migration tests will be done for Network QoS feature
+"""
 import logging
 from rhevmtests.networking import config
 from art.unittest_lib import attr
@@ -9,12 +15,12 @@ from art.test_handler.exceptions import NetworkException
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level.datacenters import(
     add_qos_to_datacenter, update_qos_in_datacenter,
-    delete_qos_from_datacenter)
-
+    delete_qos_from_datacenter
+)
 from art.rhevm_api.tests_lib.low_level.networks import removeVnicProfile
 from art.rhevm_api.tests_lib.low_level.vms import(
-    addNic, updateNic, removeNic, stopVm, migrateVm, restartVm, startVm)
-
+    addNic, updateNic, removeNic, stopVm, migrateVm, restartVm, startVm
+)
 from rhevmtests.networking.network_qos.helper import(
     compare_qos, build_dict, add_qos_profile_to_nic
 )
@@ -64,14 +70,18 @@ class TestNetQOSCase01(TestCase):
             "Create VNIC profile with QoS and add it to the VNIC"
         )
         add_qos_profile_to_nic()
-        inbound_dict = {"average": BW_PARAMS[0], "peak": BW_PARAMS[1],
-                        "burst": BW_PARAMS[2]}
-        outbound_dict = {"average": BW_PARAMS[0], "peak": BW_PARAMS[1],
-                         "burst": BW_PARAMS[2]}
+        inbound_dict = {
+            "average": BW_PARAMS[0], "peak": BW_PARAMS[1],
+            "burst": BW_PARAMS[2]
+        }
+        outbound_dict = {
+            "average": BW_PARAMS[0], "peak": BW_PARAMS[1],
+            "burst": BW_PARAMS[2]
+        }
 
         dict_compare = build_dict(
             inbound_dict=inbound_dict, outbound_dict=outbound_dict,
-            vm=config.VM_NAME[0], nic="nic2"
+            vm=config.VM_NAME[0], nic=config.NIC_NAME[1]
         )
 
         logger.info(
@@ -165,8 +175,8 @@ class TestNetQOSCase02(TestCase):
             config.VNIC_PROFILE[0], QOS_NAME[0], config.VM_NAME[1]
         )
         if not addNic(
-            True, config.VM_NAME[1], name="nic2", network=config.MGMT_BRIDGE,
-            vnic_profile=config.VNIC_PROFILE[0]
+            True, config.VM_NAME[1], name=config.NIC_NAME[1],
+            network=config.MGMT_BRIDGE, vnic_profile=config.VNIC_PROFILE[0]
         ):
             raise NetworkException(
                 "Couldn't add VNIC with QoS to VM %s" % config.VM_NAME[1]
@@ -198,15 +208,17 @@ class TestNetQOSCase02(TestCase):
         ):
             raise NetworkException("Couldn't update Network QOS under DC")
 
-        inbound_dict = {"average": UPDATED_BW_PARAMS[0],
-                        "peak": UPDATED_BW_PARAMS[1],
-                        "burst": UPDATED_BW_PARAMS[2]}
-        outbound_dict = {"average": UPDATED_BW_PARAMS[0],
-                         "peak": UPDATED_BW_PARAMS[1],
-                         "burst": UPDATED_BW_PARAMS[2]}
+        inbound_dict = {
+            "average": UPDATED_BW_PARAMS[0], "peak": UPDATED_BW_PARAMS[1],
+            "burst": UPDATED_BW_PARAMS[2]
+        }
+        outbound_dict = {
+            "average": UPDATED_BW_PARAMS[0], "peak": UPDATED_BW_PARAMS[1],
+            "burst": UPDATED_BW_PARAMS[2]
+        }
         dict_compare = build_dict(
             inbound_dict=inbound_dict, outbound_dict=outbound_dict,
-            vm=config.VM_NAME[0], nic="nic2"
+            vm=config.VM_NAME[0], nic=config.NIC_NAME[1]
         )
 
         logger.info(
@@ -234,19 +246,19 @@ class TestNetQOSCase02(TestCase):
             )
 
         logger.info(
-            "Unplug and plug nic2 on %s", config.VM_NAME[0]
+            "Unplug and plug %s on %s", config.NIC_NAME[1], config.VM_NAME[0]
         )
         if not updateNic(
-            True, config.VM_NAME[0], "nic2", plugged="false"
+            True, config.VM_NAME[0], config.NIC_NAME[1], plugged="false"
         ):
             logger.error(
-                "Couldn't unplug nic2"
+                "Couldn't unplug %s", config.NIC_NAME[1]
             )
         if not updateNic(
-            True, config.VM_NAME[0], "nic2", plugged="true"
+            True, config.VM_NAME[0], config.NIC_NAME[1], plugged="true"
         ):
             logger.error(
-                "Couldn't plug nic2"
+                "Couldn't plug %s", config.NIC_NAME[1]
             )
 
         logger.info(
@@ -286,13 +298,13 @@ class TestNetQOSCase02(TestCase):
         )
         for i in range(2):
             if not updateNic(
-                True, config.VM_NAME[i], "nic2", plugged='false'
+                True, config.VM_NAME[i], config.NIC_NAME[1], plugged="false"
             ):
                 logger.error(
                     "Couldn't unplug NIC on %s", config.VM_NAME[i]
                 )
             if not removeNic(
-                True, config.VM_NAME[i], "nic2"
+                True, config.VM_NAME[i], config.NIC_NAME[1]
             ):
                 logger.error(
                     "Couldn't remove VNIC from VM %s", config.VM_NAME[i]
@@ -300,7 +312,7 @@ class TestNetQOSCase02(TestCase):
         logger.info("Remove the QoS newQoS from DC")
         if not delete_qos_from_datacenter(config.DC_NAME[0], "newQoS"):
             logger.error(
-                "Couldn't delete the QoS 'newQoS from DC %s", config.DC_NAME[0]
+                "Couldn't delete the QoS newQoS from DC %s", config.DC_NAME[0]
             )
         logger.info(
             "Remove VNIC profile %s", config.VNIC_PROFILE[0]
@@ -351,8 +363,8 @@ class TestNetQOSCase03(TestCase):
             config.VNIC_PROFILE[0], QOS_NAME[0], config.VM_NAME[1]
         )
         if not addNic(
-            True, config.VM_NAME[1], name="nic2", network=config.MGMT_BRIDGE,
-            vnic_profile=config.VNIC_PROFILE[0]
+            True, config.VM_NAME[1], name=config.NIC_NAME[1],
+            network=config.MGMT_BRIDGE, vnic_profile=config.VNIC_PROFILE[0]
         ):
             raise NetworkException(
                 "Couldn't add VNIC with QoS %s to VM %s" %
@@ -380,7 +392,7 @@ class TestNetQOSCase03(TestCase):
 
         dict_compare = build_dict(
             inbound_dict={}, outbound_dict={},
-            vm=config.VM_NAME[0], nic="nic2"
+            vm=config.VM_NAME[0], nic=config.NIC_NAME[1]
         )
 
         logger.info(
@@ -439,17 +451,13 @@ class TestNetQOSCase03(TestCase):
        2) Remove VNIC from VMs.
        3) Remove VNIC profile
        """
-        logger.info(
-            "Stop VM %s", config.VM_NAME[1]
-        )
+        logger.info("Stop VM %s", config.VM_NAME[1])
         if not stopVm(True, vm=config.VM_NAME[1]):
             logger.error(
                 "Couldn't stop VM %s", config.VM_NAME[1]
             )
 
-        logger.info(
-            "Remove VNIC from VMs %s", config.VM_NAME[:2]
-        )
+        logger.info("Remove VNIC from VMs %s", config.VM_NAME[:2])
         for i in range(2):
             if not updateNic(
                 True, config.VM_NAME[i], config.NIC_NAME[1], plugged="false"
@@ -524,7 +532,7 @@ class TestNetQOSCase04(TestCase):
         )
         add_qos_profile_to_nic(
             qos_name=QOS_NAME[1], vnic_profile_name=config.VNIC_PROFILE[1],
-            nic='nic3', update_libvirt=False
+            nic=config.NIC_NAME[2], update_libvirt=False
         )
 
     def test_several_network_qos(self):
@@ -537,14 +545,18 @@ class TestNetQOSCase04(TestCase):
         4) Check that provided bw values are the same as the values
         configured on libvirt for QoSProfile2 and QoSProfile1
         """
-        inbound_dict = {"average": BW_PARAMS[0], "peak": BW_PARAMS[1],
-                        "burst": BW_PARAMS[2]}
-        outbound_dict = {"average": BW_PARAMS[0], "peak": BW_PARAMS[1],
-                         "burst": BW_PARAMS[2]}
+        inbound_dict = {
+            "average": BW_PARAMS[0], "peak": BW_PARAMS[1],
+            "burst": BW_PARAMS[2]
+        }
+        outbound_dict = {
+            "average": BW_PARAMS[0], "peak": BW_PARAMS[1],
+            "burst": BW_PARAMS[2]
+        }
 
         dict_compare = build_dict(
             inbound_dict=inbound_dict, outbound_dict=outbound_dict,
-            vm=config.VM_NAME[0], nic="nic2"
+            vm=config.VM_NAME[0], nic=config.NIC_NAME[1]
         )
 
         logger.info(
@@ -581,9 +593,7 @@ class TestNetQOSCase04(TestCase):
                 "found on libvirt" % (inbound_dict, outbound_dict)
             )
 
-        logger.info(
-            "Restart VM %s", config.VM_NAME[0]
-        )
+        logger.info("Restart VM %s", config.VM_NAME[0])
         if not restartVm(
             vm=config.VM_NAME[0], placement_host=config.HOSTS[0]
         ):
@@ -672,8 +682,8 @@ class TestNetQOSCase05(TestCase):
                 "Couldn't create Network QOS %s under DC" % QOS_NAME[0]
             )
         logger.info(
-            "Create VNIC profile %s with QoS %s and add it to the nic2",
-            config.VNIC_PROFILE[0], QOS_NAME[0]
+            "Create VNIC profile %s with QoS %s and add it to the %s",
+            config.VNIC_PROFILE[0], QOS_NAME[0], config.NIC_NAME[1]
         )
         add_qos_profile_to_nic()
 
@@ -685,10 +695,14 @@ class TestNetQOSCase05(TestCase):
         3) Check that provided bw values are the same as the values
         configured on libvirt after migration
         """
-        inbound_dict = {"average": BW_PARAMS[0], "peak": BW_PARAMS[1],
-                        "burst": BW_PARAMS[2]}
-        outbound_dict = {"average": BW_PARAMS[0], "peak": BW_PARAMS[1],
-                         "burst": BW_PARAMS[2]}
+        inbound_dict = {
+            "average": BW_PARAMS[0], "peak": BW_PARAMS[1],
+            "burst": BW_PARAMS[2]
+        }
+        outbound_dict = {
+            "average": BW_PARAMS[0], "peak": BW_PARAMS[1],
+            "burst": BW_PARAMS[2]
+        }
 
         dict_compare = build_dict(
             inbound_dict=inbound_dict, outbound_dict=outbound_dict,
