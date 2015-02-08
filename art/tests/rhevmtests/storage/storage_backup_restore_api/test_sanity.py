@@ -5,6 +5,7 @@ https://tcms.engineering.redhat.com/plan/10435
 
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.unittest_lib import StorageTest as TestCase
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import storagedomains
@@ -13,7 +14,7 @@ from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.low_level import templates, hosts
 from art.rhevm_api.tests_lib.low_level.datacenters import get_data_center
 from art.unittest_lib import attr
-from rhevmtests.storage.helpers import get_vm_ip
+from rhevmtests.storage.helpers import get_vm_ip, remove_all_vm_test_snapshots
 
 import art.rhevm_api.utils.storage_api as st_api
 
@@ -128,9 +129,8 @@ class CreateTemplateFromVM(BaseTestCase):
     """
     __test__ = False
     template_name = "%s-template"
-    create_template = None
 
-    def create_template(self):
+    def _create_template(self):
         """
         Create a template of a backup VM after attaching snapshot disk of
         source VM to backup VM
@@ -386,7 +386,7 @@ class TestCase304156(BaseTestCase):
                     helpers.TRANSIENT_DIR_PATH)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase304159(BaseTestCase):
     """
     Create source VM snapshot, attach snapshot to backup VM
@@ -432,13 +432,8 @@ class TestCase304161(TestCase):
     - Preview snapshot, commit it
     - Delete snapshot
     https://tcms.engineering.redhat.com/case/304161/?from_plan=10435
-
-    This case is currently __test__ = False because snapshot operation are
-    currently
-    missing from REST API:
-    https://bugzilla.redhat.com/show_bug.cgi?id=867339
     """
-    __test__ = False
+    __test__ = True
     tcms_test_case = '304161'
     snapshot_name_format = "%s-%s"
 
@@ -480,7 +475,8 @@ class TestCase304161(TestCase):
 
         logger.info("Undoing Previewed snapshot %s", self.first_snapshot)
         self.assertTrue(vms.undo_snapshot_preview(
-            True, self.vm_names[0], self.first_snapshot),
+            True, self.vm_names[0], self.first_snapshot
+        ),
             "Failed to undo previewed snapshot %s" % self.first_snapshot)
 
         logger.info("Previewing snapshot %s", self.first_snapshot)
@@ -489,14 +485,16 @@ class TestCase304161(TestCase):
                         "Failed to preview snapshot %s" % self.first_snapshot)
 
         logger.info("Committing Previewed snapshot %s", self.first_snapshot)
-        self.assertFalse(vms.commit_snapshot(
-            True, self.vm_names[0], self.first_snapshot),
-            "Failed to commit previewed snapshot %s" % self.first_snapshot)
+        self.assertTrue(vms.commit_snapshot(
+            False, self.vm_names[0], self.first_snapshot
+        ),
+            "Succeeded to commit previewed snapshot %s" % self.first_snapshot)
 
-        logger.info("Deleting snapshot %s", self.first_snapshot)
-        self.assertFalse(vms.removeSnapshot(
-            True, self.vm_names[0], self.first_snapshot),
-            "Failed to delete snapshot %s" % self.first_snapshot)
+        logger.info("Undoing Previewed snapshot %s", self.first_snapshot)
+        self.assertTrue(vms.undo_snapshot_preview(
+            True, self.vm_names[0], self.first_snapshot
+        ),
+            "Failed to undo previewed snapshot %s" % self.first_snapshot)
 
     def tearDown(self):
         """
@@ -505,14 +503,23 @@ class TestCase304161(TestCase):
         logger.info('Detaching backup disk')
         disks_objs = vms.get_snapshot_disks(
             self.vm_names[0],
-            helpers.SNAPSHOT_TEMPLATE_DESC % self.vm_names[0])
+            helpers.SNAPSHOT_TEMPLATE_DESC % self.vm_names[0]
+        )
 
         if not disks.detachDisk(True, disks_objs[0].get_alias(),
                                 self.vm_names[1]):
             raise exceptions.DiskException("Failed to remove disk %s"
                                            % disks_objs[0].get_alias())
+        logger.info("Deleting snapshot %s", self.first_snapshot)
+        remove_all_vm_test_snapshots(
+            self.vm_names[0], self.first_snapshot
+        )
+        logger.info("Snapshot %s deleted successfully", self.first_snapshot)
 
-        vms.start_vms(self.vm_names[1], 1, wait_for_ip=False)
+        vms.start_vms(
+            [self.vm_names[0]], 1, wait_for_status=config.VM_UP,
+            wait_for_ip=False
+        )
 
 
 @attr(tier=1)
@@ -534,7 +541,7 @@ class TestCase304166(CreateTemplateFromVM):
         Create a template of a backup VM after attaching snapshot disk of
         source VM to backup VM
         """
-        self.create_template()
+        self._create_template()
 
 
 @attr(tier=1)
@@ -556,7 +563,7 @@ class TestCase304167(CreateTemplateFromVM):
         Create a template of source VM after attaching snapshot disk of
         source VM to backup VM
         """
-        self.create_template()
+        self._create_template()
 
 
 @attr(tier=2)
@@ -838,16 +845,20 @@ class TestCase322485(TestCase):
         self.vm_names = VM_NAMES[TestCase.storage]
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
-    def test_hotplug_more_than_1_disk(self):
+    def test_attach_multiple_disks(self):
         """
          Create a snapshot to source VM and
          try to attach all source VM's snapshot disks to backup VM
         """
         storage_domain = vms.get_vms_disks_storage_domain_name(
             self.vm_names[0])
-        vms.addDisk(True, self.vm_names[0], 6 * config.GB, True,
-                    storage_domain,
-                    interface=config.DISK_INTERFACE_VIRTIO)
+        if not vms.addDisk(
+                True, self.vm_names[0], 6 * config.GB, True, storage_domain,
+                interface=config.DISK_INTERFACE_VIRTIO
+        ):
+            raise exceptions.DiskException(
+                "Failed to add disk to vm %s" % self.vm_names[0]
+            )
         vms.addSnapshot(
             True, vm=self.vm_names[0],
             description=self.snapshot_template_name % self.vm_names[0])
@@ -976,7 +987,7 @@ class TestCase322487(BaseTestCase):
                                  "to backup vm")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase322886(TestCase):
     """
     During a vm disk live migration,
@@ -1017,3 +1028,5 @@ class TestCase322886(TestCase):
 
         self.assertFalse(status, "Succeeded to attach backup snapshot disk "
                                  "to backup vm")
+        logger.info("Waiting for all jobs to finish")
+        wait_for_jobs()
