@@ -1,26 +1,26 @@
 #! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Test Port mirroring.
 using 2 hosts and 5 VMs
 """
-
-from art.rhevm_api.tests_lib.high_level.networks import checkICMPConnectivity
-from art.rhevm_api.tests_lib.low_level.hosts import(
-    waitForHostsStates, ifdownNic, ifupNic
-)
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 import logging
 from art.test_handler.exceptions import NetworkException
 from art.test_handler.tools import tcms  # pylint: disable=E0611
+from rhevmtests.networking import config
+from art.rhevm_api.tests_lib.high_level.networks import checkICMPConnectivity
 from art.rhevm_api.tests_lib.low_level.vms import (
     migrateVm, getVmNicPortMirroring,
 )
-from utils import (
+from helper import (
     send_and_capture_traffic, set_port_mirroring, return_vms_to_original_host
 )
-from rhevmtests.networking import config
-
+from art.rhevm_api.tests_lib.low_level.hosts import (
+    waitForHostsStates, ifdownNic, ifupNic
+)
 logger = logging.getLogger("Port_Mirroring_Cases")
 
 MGMT_IPS = config.MGMT_IPS
@@ -40,8 +40,6 @@ class TestPortMirroringCase01(TestCase):
     """
     Check that mirroring still works after migration
     """
-    # BUG: https://bugzilla.redhat.com/show_bug.cgi?id=1159647
-    # Testing if bug is not reproduced anymore
     __test__ = True
 
     @tcms(10475, 302095)
@@ -59,16 +57,12 @@ class TestPortMirroringCase01(TestCase):
             "Migrating %s to %s and back to %s", VM_NAME[0], config.HOSTS[1],
             config.HOSTS[0]
         )
-        if not migrateVm(True, VM_NAME[0], config.HOSTS[1]):
-            raise NetworkException(
-                "Failed to migrate %s to %s" %
-                (config.VM_NAME[0], config.HOSTS[1])
-            )
-        if not migrateVm(True, VM_NAME[0], config.HOSTS[0]):
-            raise NetworkException(
-                "Failed to migrate %s back to %s" %
-                (config.VM_NAME[0], config.HOSTS[0])
-            )
+        for host in (config.HOSTS[1], config.HOSTS[0]):
+            if not migrateVm(True, VM_NAME[0], host):
+                raise NetworkException(
+                    "Failed to migrate %s to %s" %
+                    (config.VM_NAME[0], host)
+                )
 
         for dstVM in (2, 3):
             send_and_capture_traffic(
@@ -78,8 +72,8 @@ class TestPortMirroringCase01(TestCase):
     @tcms(10475, 302098)
     def test_a2_migrate_all_vms(self):
         """
-        Check that mirroring still works after migrating all VM's involved to
-        anther host
+        Check that mirroring still works after migrating all VMs involved to
+        another host
         """
         for dstVM in (2, 3):
             send_and_capture_traffic(
@@ -87,8 +81,8 @@ class TestPortMirroringCase01(TestCase):
             )
 
         logger.info(
-            "Migrating all VMs to %s and check if PM still works "
-            "afterward", config.HOSTS[1]
+            "Migrating all VMs to %s and check if PM still works ",
+            config.HOSTS[1]
         )
 
         for vmName in VM_NAME[:4]:
@@ -219,7 +213,7 @@ class TestPortMirroringCase04(TestCase):
         )
         send_and_capture_traffic(
             srcVM=MGMT_IPS[1], srcIP=MGMT_IPS[1], dstIP=MGMT_IPS[2],
-            nic='eth0'
+            nic=config.VM_NICS[0]
         )
 
         send_and_capture_traffic(
@@ -238,7 +232,7 @@ class TestPortMirroringCase04(TestCase):
 
         send_and_capture_traffic(
             srcVM=MGMT_IPS[0], srcIP=NET1_IPS[0], dstIP=NET1_IPS[3],
-            nic='eth0', expectTraffic=False
+            nic=config.VM_NICS[0], expectTraffic=False
         )
 
     @tcms(10475, 302093)
@@ -321,7 +315,7 @@ class TestPortMirroringCase05(TestCase):
 
         logger.info("Check that %s is UP", config.HOSTS[0])
         if not waitForHostsStates(positive=True, names=config.HOSTS[0]):
-            logger.error("%s status isn't UP", config.HOSTS[0])
+            raise NetworkException("%s status isn't UP" % config.HOSTS[0])
 
 
 @attr(tier=1)
@@ -351,8 +345,8 @@ class TestPortMirroringCase06(TestCase):
                 nic=config.VLAN_NETWORKS[0]
         ):
             raise NetworkException(
-                "Failed to set down %s on %s" % (
-                    config.VLAN_NETWORKS[0], config.HOSTS[0])
+                "Failed to set down %s on %s" %
+                (config.VLAN_NETWORKS[0], config.HOSTS[0])
             )
 
         if not ifupNic(
@@ -360,8 +354,8 @@ class TestPortMirroringCase06(TestCase):
                 nic=config.VLAN_NETWORKS[0]
         ):
             raise NetworkException(
-                "Failed to set down %s on %s" % (
-                    config.VLAN_NETWORKS[0], config.HOSTS[0])
+                "Failed to set down %s on %s" %
+                (config.VLAN_NETWORKS[0], config.HOSTS[0])
             )
 
         logger.info(

@@ -1,38 +1,48 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Utilities used by port_mirroring_test
 """
-
+import logging
 from art.rhevm_api.tests_lib.high_level.networks import TrafficMonitor
-from art.rhevm_api.tests_lib.low_level.vms import (
-    updateNic, migrateVm, getVmHost,
-    waitForIP, stopVm)
 from art.rhevm_api.utils.test_utils import sendICMP, setPersistentNetwork
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.high_level import vms as hl_vm
 from rhevmtests.networking import config
-import logging
-
+from art.rhevm_api.tests_lib.low_level.vms import (
+    updateNic, migrateVm, getVmHost, waitForIP, stopVm
+)
 logger = logging.getLogger("Port_Mirroring_Helper")
 
 
 def send_and_capture_traffic(
-        srcVM, srcIP, dstIP, listenVM=config.VM_NAME[0], nic="eth1",
+        srcVM, srcIP, dstIP, listenVM=config.VM_NAME[0], nic=config.VM_NICS[1],
         expectTraffic=True, dupCheck=True
 ):
     """
     A function that sends ICMP traffic from 'srcIP' to 'dstIP' while capturing
     traffic on 'listeningVM' to check if mirroring is happening.
     :param srcVM: mgmt network IP of the VM to send ping from
+    :type srcVM: str
     :param srcIP: IP to send ping form
+    :type srcIP: str
     :param dstIP: IP to send ping to
+    :type dstIP: str
     :param listenVM: name of the VM that will listen to the traffic
+    :type listenVM: str
     :param nic: NIC to listen to traffic on
+    :type nic: str
     :param expectTraffic: boolean to indicate if we expect to see the ping
            traffic on the listening machine or not.
+    :type expectTraffic: bool
+    :param dupCheck: Check if packets are duplicated
+    :type dupCheck: bool
     :return: If expectTraffic is True: True if the ping traffic was sent and
                 captured on the listening machine, False otherwise.
                 If expectTraffic is False: True if the ping traffic wasn't
                 captured, False otherwise.
+    :rtype: bool or Exception
     """
     logger_info = (
         "Send and capture traffic from {0} to {1}. Listen VM is {2}. "
@@ -68,10 +78,14 @@ def set_port_mirroring(vm, nic, network, disableMirroring=False):
     to avoid unplugging NIC's and changing their order in the machine (eth1,
     eth2, etc)
     :param vm: name of the VM
+    :type vm: str
     :param nic: nic to enable/disable port mirroring on
+    :type nic: str
     :param network: the name of the network the nic is connected to
+    :type network: str
     :param disableMirroring: boolean to indicate if we want to enable or
            disable port mirroring (leave False to enable)
+    :type disableMirroring: bool
     """
     vnic_profile = network + ("" if disableMirroring else "_PM")
     port_mirror_text = "Disabling" if disableMirroring else "Enabling"
@@ -106,6 +120,7 @@ def ge_seal_vm(vm):
     """
     Start VM, seal the VM and restart the VM
     :param vm: VM IP
+    :type vm: str
     :return: None
     """
     logger.info("Sealing VM: %s", vm)

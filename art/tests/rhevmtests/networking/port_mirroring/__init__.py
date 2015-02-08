@@ -1,3 +1,6 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Port Mirroring test
 """
@@ -6,6 +9,9 @@ import logging
 from utilities import machine
 from rhevmtests.networking import config, network_cleanup
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
+from art.rhevm_api.tests_lib.low_level.networks import addVnicProfile
+from art.test_handler.exceptions import NetworkException
+from art.rhevm_api.tests_lib.low_level.vms import addNic
 from art.rhevm_api.tests_lib.low_level.vms import (
     createVm, waitForIP, updateNic, stopVms, removeNic, get_vm_nics_obj,
     waitForVMState,
@@ -13,10 +19,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
 from art.rhevm_api.tests_lib.high_level.networks import (
     prepareSetup, createAndAttachNetworkSN, remove_net_from_setup
 )
-from art.rhevm_api.tests_lib.low_level.networks import addVnicProfile
-from art.test_handler.exceptions import NetworkException
-from art.rhevm_api.tests_lib.low_level.vms import addNic
-from rhevmtests.networking.port_mirroring.utils import(
+from rhevmtests.networking.port_mirroring.helper import(
     ge_seal_vm, set_port_mirroring
 )
 
@@ -28,7 +31,7 @@ def setup_package():
     Prepare environment
     """
     if config.GOLDEN_ENV:
-        logger.info("Running on GE. No setup")
+        logger.info("Running on GE")
         network_cleanup()
 
     if not config.GOLDEN_ENV:
@@ -55,8 +58,8 @@ def setup_package():
         )
         for vmName in config.VM_NAME[1:config.NUM_VMS]:
             if not createVm(
-                True, vmName=vmName, vmDescription='linux vm',
-                cluster=config.CLUSTER_NAME[0], start='True',
+                True, vmName=vmName, vmDescription="linux vm",
+                cluster=config.CLUSTER_NAME[0], start="True",
                 template=config.TEMPLATE_NAME[0],
                 placement_host=config.HOSTS[0],
                 network=config.MGMT_BRIDGE
@@ -66,7 +69,7 @@ def setup_package():
                 )
 
             if not waitForVMState(vm=vmName):
-                raise NetworkException("VM is not UP")
+                raise NetworkException("VM %s is not UP" % vmName)
 
     logger.info(
         "Create %s, %s on %s/%s and attach them to %s",
@@ -74,13 +77,17 @@ def setup_package():
             [config.BOND[0], config.VLAN_NETWORKS[1]]),
         config.DC_NAME[0], config.CLUSTER_NAME[0], config.HOSTS[:2]
     )
-    network_params = {None: {
-        "nic": config.BOND[0], "mode": 1, "slaves": [2, 3]
-    }, config.VLAN_NETWORKS[0]: {
-        "vlan_id": config.VLAN_ID[0], "nic": 1, "required": "false"
-    }, config.VLAN_NETWORKS[1]: {
-        "vlan_id": config.VLAN_ID[1], "nic": config.BOND[0],
-        "required": "false"}
+    network_params = {
+        None: {
+            "nic": config.BOND[0], "mode": 1, "slaves": [2, 3]
+        },
+        config.VLAN_NETWORKS[0]: {
+            "vlan_id": config.VLAN_ID[0], "nic": 1, "required": "false"
+        },
+        config.VLAN_NETWORKS[1]: {
+            "vlan_id": config.VLAN_ID[1], "nic": config.BOND[0],
+            "required": "false"
+        }
     }
 
     if not createAndAttachNetworkSN(
@@ -137,22 +144,23 @@ def setup_package():
 
     logger.info("Configure IPs for each VM")
     for i, vm in enumerate(config.VM_NAME[:config.NUM_VMS]):
-        logger.info("Getting mgmt network IP for %s.", vm)
+        logger.info("Getting MGMT network IP for %s.", vm)
         rc, out = waitForIP(vm=vm, timeout=180, sleep=10)
 
         if not rc:
-            raise NetworkException("Failed to get VM IP on mgmt network")
+            raise NetworkException("Failed to get VM IP on MGMT network")
 
-        local_mgmt_ip = out['ip']
+        local_mgmt_ip = out["ip"]
         logger.info(
-            "Update the list of mgmt network IPs with %s from %s",
+            "Update the list of MGMT network IPs with %s from %s",
             local_mgmt_ip, vm
         )
         config.MGMT_IPS.append(local_mgmt_ip)
 
         vm_obj = machine.Machine(
             local_mgmt_ip, config.VMS_LINUX_USER,
-            config.VMS_LINUX_PW).util(machine.LINUX)
+            config.VMS_LINUX_PW
+        ).util(machine.LINUX)
 
         logger.info("Configure IPs on %s for nic1 and nic2", vm)
         for nicIndex, ip in enumerate(
