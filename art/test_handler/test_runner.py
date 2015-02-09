@@ -150,6 +150,7 @@ class _TestElm(_DictLikeObject):
         self.start_time = None
         self.end_time = None
         self.parent = None
+        self.attrs = {}
 
     def incr_exc(self):
         if self.exc is None:
@@ -188,6 +189,10 @@ class TestGroup(_TestElm):
         self.skipped = TSInt()
         self.error = TSInt()
         self.exc = None
+        self.skip = False
+
+    def set_skip(self, skip):
+        self.skip = skip
 
     def __iter__(self):
         raise NotImplementedError()
@@ -349,6 +354,7 @@ class TestRunner(object):
         except SkipTest as s:
             test_group.status = test_group.TEST_STATUS_SKIPPED
             logger.info("Skipped: %s, the reason: %s", test_group.test_name, s)
+            test_group.set_skip(True)
             for test_elm in test_group:
                 self._run_test_elm(test_elm, skip=True)
                 self._report_test_case_status(test_elm, test_group)

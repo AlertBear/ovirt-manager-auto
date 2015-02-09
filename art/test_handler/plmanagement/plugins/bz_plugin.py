@@ -74,6 +74,9 @@ from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import (
     IConfigValidation
 )
+from art.test_handler.plmanagement.interfaces.tests_listener import (
+    ITestGroupHandler,
+)
 from art.test_handler.settings import initPlmanager, opts
 from art.test_handler import find_config_file
 
@@ -123,7 +126,6 @@ RHEVM_PRODUCT = 'Red Hat Enterprise Virtualization Manager'
 OVIRT_PRODUCT = 'oVirt'
 
 BZ_ID = 'bz'
-BZ_DICT = 'bz_dict'
 
 URL_RE = re.compile("^(https?://[^/]+)")
 
@@ -236,10 +238,13 @@ class Bugzilla(Component):
     """
     Plugin provides access to bugzilla site.
     """
-    implements(IConfigurable,
-               IApplicationListener,
-               IConfigValidation,
-               IPackaging)
+    implements(
+        IConfigurable,
+        IApplicationListener,
+        IConfigValidation,
+        ITestGroupHandler,
+        IPackaging,
+    )
 
     name = "Bugzilla"
     enabled = True
@@ -459,6 +464,21 @@ class Bugzilla(Component):
                 logger.warn(msg, bug.id, self.product, product)
                 return False
         return True
+
+    def pre_test_group(self, g):
+        bug_dict = g.attrs.get(BZ_ID)
+        if not bug_dict or not isinstance(bug_dict, dict):
+            return
+        for bz_id, options in bug_dict.iteritems():
+            engine = options.get('engine')
+            version = options.get('version')
+            self.should_be_skipped(bz_id, engine, version)
+
+    def post_test_group(self, g):
+        pass
+
+    def test_group_skipped(self, g):
+        pass
 
     @classmethod
     def is_enabled(cls, params, conf):

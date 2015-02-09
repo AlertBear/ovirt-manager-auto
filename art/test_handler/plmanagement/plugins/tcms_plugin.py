@@ -177,14 +177,14 @@ class TCMS(Component):
         setattr(tools, TCMS_DEC, tcms_decorator)
 
     def pre_test_group(self, group):
-        tcms_plan = getattr(group, TCMS_PLAN_ID, None)
+        tcms_plan = group.attrs.get(TCMS_PLAN_ID)
         if tcms_plan:
             logger.debug("Adding TCMS plan to list: %s", tcms_plan)
             self.tcms_plans.append(tcms_plan)
 
     def post_test_group(self, group):
         self.post_test_case(group)
-        tcms_plan = getattr(group, TCMS_PLAN_ID, None)
+        tcms_plan = group.attrs.get(TCMS_PLAN_ID)
         logger.debug("Current TCMS plan: %s, all: %s",
                      tcms_plan, self.tcms_plans)
         if tcms_plan and tcms_plan == self.tcms_plans[-1]:
@@ -197,18 +197,18 @@ class TCMS(Component):
         pass
 
     def _get_engine_name(self, test):
-        engine = getattr(test, 'api', None)
+        engine = test.attrs.get('api')
         if not engine:
             engine = settings.opts['engine']
         return engine
 
     def post_test_case(self, test):
-        tcms_data = getattr(test, TCMS_TEST_CASE, None)
+        tcms_data = test.attrs.get(TCMS_TEST_CASE)
         if not tcms_data:
             return
 
         tcms_cases = str(tcms_data).split(',')
-        plan = getattr(test, TCMS_PLAN_ID, None)
+        plan = test.attrs.get(TCMS_PLAN_ID)
         if not plan and self.tcms_plans:
             plan = self.tcms_plans[-1]
 
@@ -262,7 +262,7 @@ class TCMS(Component):
         if test.status == test.TEST_STATUS_SKIPPED:
             status = test.TEST_STATUS_FAILED
             if self.report_bz:
-                bz = getattr(test, 'bz', None)
+                bz = test.attrs.get('bz')
 
         info_lines = []
         for info_line in self.info_lines:

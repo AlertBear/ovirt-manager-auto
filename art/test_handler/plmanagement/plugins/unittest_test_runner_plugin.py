@@ -104,10 +104,6 @@ DEFAULT_NOSE_CUSTOM_PATHS = [
                     '..', 'nose_customization')),
     '/opt/art/nose_customization']
 
-BZ_ID = 'bz'  # TODO: should be removed
-TCMS_PLAN_ID = 'tcms_plan_id'  # TODO: should be removed
-TCMS_TEST_CASE = 'tcms_test_case'  # TODO: should be removed
-CLI_VALIDATION = 'cli_validation'  # TODO: should be removed
 NOSE_CUSTOMIZATION_PATHS = 'nose_custom_paths'
 NOSE_CONFIG_PATH = 'nose_config'
 NOSE_API_SELECTOR = 'nose_apiselector'
@@ -184,11 +180,8 @@ class UTestCase(TestCase):
         self.mod_name, self.test_action = t.address()[1:]
         self.t = t
         self.f = getattr(t.test, t.test._testMethodName)
+        self.attrs.update(self.f.__dict__)  # inherit attributes
         self.test_name = self.test_action
-        self.bz = getattr(self.f, BZ_ID, None)
-        self.tcms_plan_id = getattr(self.f, TCMS_PLAN_ID, None)
-        self.tcms_test_case = getattr(self.f, TCMS_TEST_CASE, None)
-        self.cli_validation = getattr(self.f, CLI_VALIDATION, None)
         setattr(self.t.test, 'vital4group', False)
         self.serial = iterNumber()
         try:
@@ -197,7 +190,6 @@ class UTestCase(TestCase):
             logger.error("Test case %s has missing documentation string!",
                          self.test_name)
         self.skip = skip
-        # TODO: set another atts
 
     def __call__(self):
         if not self.skip:
@@ -251,14 +243,18 @@ class UTestGroup(TestGroup):
     def __init__(self, c, skip=False):
         super(UTestGroup, self).__init__()
         self.context = c
-        self.tcms_plan_id = getattr(c.context, TCMS_PLAN_ID, None)
+        self.attrs.update(c.context.__dict__)  # inherit attributes
         self.test_name = self.context.context.__name__
         try:
             self.description = self.context.context.__doc__.strip()
         except AttributeError:
             logger.error("Test class %s has missing documentation string!",
                          self.test_name)
-        self.skip = skip
+        self.skip_subs = False
+        self.set_skip(skip)
+
+    def set_skip(self, skip):
+        super(UTestGroup, self).set_skip(skip)
         self.skip_subs = skip
 
     def __iter__(self):
@@ -312,7 +308,7 @@ class UTestSuite(TestSuite):
     def __init__(self, context):
         super(UTestSuite, self).__init__()
         self.context = context
-        self.tcms_plan_id = getattr(context.context, TCMS_PLAN_ID, None)
+        self.attrs.update(context.context.__dict__)
         self.test_name = self.context.context.__name__
         self.skip_subs = False
 

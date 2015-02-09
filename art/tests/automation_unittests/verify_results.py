@@ -17,11 +17,12 @@ class VerifyUnittestResults(TestCase):
 
     __test__ = False
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(cls):
         """
         Initialize test summary parameters to verify results
         """
-        sum_plugin = self.get_summary_plugin()
+        sum_plugin = cls.get_summary_plugin()
         logger.info('Init test result summary parameters')
         sum_plugin.passed = sum_plugin.failed = 0
         sum_plugin.skipped = sum_plugin.error = 0
@@ -37,7 +38,8 @@ class VerifyUnittestResults(TestCase):
                           (sum_plugin.passed, sum_plugin.failed,
                            sum_plugin.skipped, sum_plugin.error))
 
-    def get_summary_plugin(self):
+    @classmethod
+    def get_summary_plugin(cls):
         plmanager = initPlmanager()
         return [pl for pl in plmanager.application_liteners
                 if pl.name == "Results Summary"][0]
