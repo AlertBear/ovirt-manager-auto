@@ -1,13 +1,15 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
 
 """
 Network labels feature test
 """
 import logging
 from rhevmtests.networking import config, network_cleanup
+from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.high_level.networks import(
     create_basic_setup, remove_basic_setup
 )
-from art.test_handler.exceptions import NetworkException
 
 logger = logging.getLogger("Network_Labels_Init")
 

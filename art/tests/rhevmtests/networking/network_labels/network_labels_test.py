@@ -1,3 +1,5 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
 
 """
 Testing Network labels feature.
@@ -6,7 +8,6 @@ Network Labels feature will be tested for untagged, tagged,
 bond scenarios and for VM and non-VM networks
 """
 from art.rhevm_api.tests_lib.high_level.hosts import deactivate_host_if_up
-from art.test_handler.plmanagement.plugins.bz_plugin import bz
 from art.unittest_lib import attr
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import TimeoutingSampler
@@ -26,7 +27,7 @@ import logging
 
 from art.unittest_lib import NetworkTest as TestCase
 from art.test_handler.exceptions import NetworkException
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 
 from art.rhevm_api.tests_lib.high_level.networks import(
     createAndAttachNetworkSN, remove_net_from_setup
