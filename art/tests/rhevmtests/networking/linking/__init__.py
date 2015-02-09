@@ -1,3 +1,6 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Linking feature test
 """
@@ -8,12 +11,11 @@ from rhevmtests.networking import config, network_cleanup
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level.vms import addVm
+from art.rhevm_api.tests_lib.low_level import vms
+from art.rhevm_api.tests_lib.high_level import vms as hl_vm
 from art.rhevm_api.tests_lib.high_level.networks import(
     createAndAttachNetworkSN, prepareSetup, remove_net_from_setup
 )
-from art.rhevm_api.tests_lib.low_level import vms
-from art.rhevm_api.tests_lib.high_level import vms as hl_vm
-
 
 logger = logging.getLogger("Linking_Init")
 
@@ -52,9 +54,8 @@ def setup_package():
                 vm=config.VM_NAME[0], host=config.HOSTS[0]
         ):
             raise NetworkException(
-                "Cannot start VM %s at host %s" % (
-                    config.VM_NAME[0], config.HOSTS[0]
-                )
+                "Cannot start VM %s at host %s" %
+                (config.VM_NAME[0], config.HOSTS[0])
             )
         if not vms.waitForVMState(vm=config.VM_NAME[0]):
             raise NetworkException("VM %s did not come up" % config.VM_NAME[0])
@@ -79,14 +80,16 @@ def setup_package():
                 template=config.TEMPLATE_NAME[0],
                 display_type=config.DISPLAY_TYPE
         ):
-            raise NetworkException("Cannot create VM from template")
+            raise NetworkException(
+                "Cannot create VM %s from template" % config.VM_NAME[1]
+            )
 
     if not createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict,
             auto_nics=[0, 1]
     ):
-        raise NetworkException("Cannot create and attach network")
+        raise NetworkException("Cannot create and attach networks")
 
 
 def teardown_package():
@@ -108,9 +111,7 @@ def teardown_package():
                 data_center=config.DC_NAME[0], all_net=True,
                 mgmt_network=config.MGMT_BRIDGE
         ):
-            logger.error(
-                "Failed to remove networks from DC %s", config.DC_NAME[0]
-            )
+            logger.error("Failed to remove networks from setup")
 
     else:
         if not cleanDataCenter(
