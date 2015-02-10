@@ -10,14 +10,12 @@ from rhevmtests.system.generic_ldap import config
 from art.rhevm_api.tests_lib.low_level import users, mla, general
 from art.rhevm_api.utils.aaa import copy_extension_file
 from art.rhevm_api.utils.test_utils import restart_engine
-from art.unittest_lib.common import is_bz_state
 
 
 LOGGER = logging.getLogger(__name__)
 SKIP_MESSAGE = 'Configuration was not setup for this test. Skipping.'
 INTERVAL = 5
 ATTEMPTS = 25
-BZ1147900_FIXED = is_bz_state('1147900')
 
 
 # Extensions utils
@@ -39,7 +37,7 @@ def cleanExtDirectory(ext_dir, files=['*']):
 
 def prepareExtensions(module_name, ext_dir, extensions, clean=True,
                       service=config.OVIRT_SERVICE, host=config.ENGINE_HOST,
-                      chown=None):
+                      chown=None, enable=True):
     '''
     prepare all extension for module_name
     Parameters:
@@ -74,7 +72,8 @@ def prepareExtensions(module_name, ext_dir, extensions, clean=True,
                          'this configuration will be skipped. %s', conf, e)
             extensions[conf] = False
 
-    enableExtensions(service, host)
+    if enable:
+        enableExtensions(service, host)
 
 
 # Check if extension was correctly copied, and could be tested.
@@ -107,14 +106,17 @@ def assignUserPermissionsOnCluster(user_name, provider, principal=None,
 
     return True if operation succeed False otherwise
     '''
-    if (create_user and not users.addUser(True, user_name=user_name,
-                                          domain=provider,
-                                          principal=principal)):
-        if BZ1147900_FIXED:
-            return False
+    if create_user:
+        assert users.addExternalUser(
+            True,
+            user_name=user_name,
+            domain=provider,
+            principal=principal
+        ), "Can't add user '%s' from provider '%s'" % (user_name, provider)
 
-    return mla.addClusterPermissionsToUser(True, user_name, cluster,
-                                           role, provider)
+    return mla.addClusterPermissionsToUser(
+        True, user_name, cluster, role, provider
+    )
 
 
 def connectionTest():
@@ -128,8 +130,12 @@ def connectionTest():
 
 
 def loginAsAdmin():
-    users.loginAsUser(config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
-                      config.VDC_PASSWORD, False)
+    users.loginAsUser(
+        config.VDC_ADMIN_USER,
+        config.VDC_ADMIN_DOMAIN,
+        config.VDC_PASSWORD,
+        False
+    )
 
 
 # -- Truststore utils --
@@ -153,7 +159,7 @@ def generateCertificate(session, ssl_host, crt_dir, port='636'):
     return rc, crt_file
 
 
-def importCertificateToTruststore(session, filename, truststore, password):
+def importCertificateToTrustStore(session, filename, truststore, password):
     '''
     Import certificate into truststore.
     Parameters:
@@ -167,7 +173,7 @@ def importCertificateToTruststore(session, filename, truststore, password):
     return session.run_cmd(cmd)
 
 
-def listTruststore(session, truststore, password):
+def listTrustStore(session, truststore, password):
     '''
     Return list of certificates in truststore. For debug purposes.
     Parameters:
@@ -181,7 +187,7 @@ def listTruststore(session, truststore, password):
     return out
 
 
-def createTrustore(hosts, truststore, password, temp_dir='/tmp'):
+def createTrustStore(hosts, truststore, password, temp_dir='/tmp'):
     '''
     Parameters:
      * hosts - list of host:port strings where certs should be obtained
@@ -197,13 +203,13 @@ def createTrustore(hosts, truststore, password, temp_dir='/tmp'):
                 LOGGER.error('Cert for %s was not obtained.', ssl_host)
                 continue
 
-            importCertificateToTruststore(ss, crt_file, truststore, password)
+            importCertificateToTrustStore(ss, crt_file, truststore, password)
 
         LOGGER.info('Truststore content is:\n%s',
-                    listTruststore(ss, truststore, password))
+                    listTrustStore(ss, truststore, password))
 
 
-def removeTruststore(truststore):
+def removeTrustStore(truststore):
     '''
     Parameters:
      * truststore - full path of truststore

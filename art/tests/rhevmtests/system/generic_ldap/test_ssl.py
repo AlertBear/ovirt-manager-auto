@@ -10,23 +10,8 @@ from art.rhevm_api.tests_lib.low_level import users
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 from nose.tools import istest
 
+
 LOGGER = logging.getLogger(__name__)
-EXTENSIONS = {}
-NAME = __name__
-NAME = NAME[NAME.rfind('.') + 1:]
-TRUSTSTORE = '/tmp/adw2k12r2.ts'
-TRUSTSTORE_PASSWORD = '123456'
-
-
-def setup_module():
-    common.createTrustore(config.ADW2K12_DOMAINS, TRUSTSTORE,
-                          TRUSTSTORE_PASSWORD)
-    common.prepareExtensions(NAME, config.ENGINE_EXTENSIONS_DIR, EXTENSIONS)
-
-
-def teardown_module():
-    common.cleanExtDirectory(config.ENGINE_EXTENSIONS_DIR)
-    common.removeTruststore(TRUSTSTORE)
 
 
 @attr(tier=1)
@@ -53,7 +38,7 @@ class ADTLS(TestCase):
             assert users.removeUser(True, principal, cls.conf['authz_name'])
 
     @istest
-    @common.check(EXTENSIONS)
+    @common.check(config.EXTENSIONS)
     def adtls(self):
         """ active directory start tsl """
         for domain in config.ADW2K12_DOMAINS:

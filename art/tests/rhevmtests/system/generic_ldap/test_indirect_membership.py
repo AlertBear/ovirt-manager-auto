@@ -10,17 +10,8 @@ from art.rhevm_api.tests_lib.low_level import users, mla
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 from nose.tools import istest
 
+
 LOGGER = logging.getLogger(__name__)
-EXTENSIONS = {}
-NAME = 'simple'
-
-
-def setup_module():
-    common.prepareExtensions(NAME, config.ENGINE_EXTENSIONS_DIR, EXTENSIONS)
-
-
-def teardown_module():
-    common.cleanExtDirectory(config.ENGINE_EXTENSIONS_DIR)
 
 
 class IndirectMembership(TestCase):
@@ -68,7 +59,7 @@ class IndirectMembershipRecursive(IndirectMembership):
     NAMESPACE = config.AD_GROUP32_NS
 
     @istest
-    @common.check(EXTENSIONS)
+    @common.check(config.EXTENSIONS)
     def ad_indirect_group_membership(self):
         """ test AD indirect group membership """
         self.indirect_group_membership()
@@ -86,7 +77,7 @@ class IndirectMembershipNonRecursive(IndirectMembership):
     PASSWORD = config.IPA_PASSWORD
 
     @istest
-    @common.check(EXTENSIONS)
+    @common.check(config.EXTENSIONS)
     def ipa_indirect_group_membership(self):
         """ test IPA indirect group membership """
         self.indirect_group_membership()
