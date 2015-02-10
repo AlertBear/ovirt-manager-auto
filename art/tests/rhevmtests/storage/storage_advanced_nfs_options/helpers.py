@@ -18,7 +18,6 @@ from utilities import sshConnection
 
 from art.rhevm_api.tests_lib.high_level import datacenters as hl_dc
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_st
-from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
 from art.rhevm_api.tests_lib.low_level import clusters as ll_cl
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
@@ -26,17 +25,16 @@ from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.tests_lib.low_level import templates as ll_templ
 from art.rhevm_api.tests_lib.low_level import disks as ll_disks
 from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
+from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 
 import config
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
 VDSM_CONFIG_FILE = '/etc/vdsm/vdsm.conf'
 STORAGE_DOMAIN_API = test_utils.get_api('storage_domain', 'storagedomains')
-NFS = ENUMS['storage_type_nfs']
 VERSION_30 = '3.0'
 VERSION_31 = '3.1'
-INTERFACE_VIRTIO = ENUMS['interface_virtio']
 DEFAULT_NFS_RETRANS = 6
 DEFAULT_NFS_TIMEOUT = 600
 DEFAULT_DC_TIMEOUT = 1500
@@ -75,8 +73,9 @@ def verify_nfs_options(
 
 
 def _run_ssh_command(host, password, cmd, exc):
+    host_ip = ll_hosts.getHostIP(host)
     ssh_session = sshConnection.SSHSession(
-        hostname=host, username='root', password=password)
+        hostname=host_ip, username='root', password=password)
     rc, out, err = ssh_session.runCmd(cmd)
     if rc:
         raise exceptions.HostException("%s %s" % (exc, err))
@@ -109,7 +108,7 @@ def _write_vdsm_config(host, password, text):
 
 def _create_config_copy(host, password, copy_file):
     cmd = 'cp %s %s' % (VDSM_CONFIG_FILE, copy_file)
-    LOGGER.info("cmd: %s" % cmd)
+    logger.info("cmd: %s", cmd)
     exc = 'Cannot create a copy of vdsm.conf on %s:' % host
     _run_ssh_command(host, password, cmd, exc)
 
@@ -138,7 +137,7 @@ def change_vdsm_config(host, password, params):
     new_config = str_buffer.getvalue()
     str_buffer.close()
 
-    LOGGER.info("New vdsm config: %s" % new_config)
+    logger.info("New vdsm config: %s", new_config)
 
     copy_file = 'vdsm_conf_copy_%s.conf' % time.strftime('%y_%m_%d_%H_%M')
     _create_config_copy(host, password, copy_file)
@@ -210,29 +209,33 @@ class TestCaseNFSOptions(TestCase):
     host = None
     password = None
     cl_name = None
+    host_for_dc = None
+
+    @classmethod
+    def setup_class(cls):
+        cls.sds_for_cleanup = []
+        cls.host = ll_hosts.getSPMHost(config.HOSTS)
+        cls.host_ip = ll_hosts.getHostIP(cls.host)
+        cls.password = config.HOSTS_PW
 
     @classmethod
     def teardown_class(cls):
         """
-        Removes storage domain created in the test. If a test creates anything
-        besides storage domains, it should be cleared by the test itself.
+        Remove the storage domains created during the test
         """
-        LOGGER.info("Cleanup - removing non-master storage domains")
-        datacenter = config.DATA_CENTER_NAME
-        storage_domains = STORAGE_DOMAIN_API.get(absLink=False)
-        LOGGER.info("All storage domains: %s" %
-                    ",".join([x.name for x in storage_domains]))
-        # Filtering out image storage domains
-        non_master_sds = filter(
-            lambda w: not w.get_master() and
-            w.get_storage().get_type() not in config.STORAGE_TYPE_PROVIDERS,
-            storage_domains,
-        )
-
-        for storage_domain in non_master_sds:
-            LOGGER.info("Removing storage domain %s" % storage_domain.name)
-            hl_st.remove_storage_domain(
-                storage_domain.name, datacenter, config.HOSTS[0], True)
+        logger.info("Cleanup - removing storage domains")
+        for storage_domain in cls.sds_for_cleanup:
+            logger.info("Removing storage domain %s", storage_domain)
+            if ll_st.checkIfStorageDomainExist(True, storage_domain):
+                try:
+                    hl_st.remove_storage_domain(
+                        storage_domain, config.DATA_CENTER_NAME,
+                        cls.host, True
+                    )
+                except exceptions.StorageDomainException:
+                    logger.error("Unable to remove storage domain %s",
+                                 storage_domain)
+            # TODO: mount and remove all the content just in case
 
     def create_nfs_domain_and_verify_options(self, domain_list, host=None,
                                              password=None, datacenter=None):
@@ -254,7 +257,9 @@ class TestCaseNFSOptions(TestCase):
         **Returns**: nothing, fails the test in case of any error
         """
         if host is None:
-            host = config.HOSTS[0]
+            host = self.host
+
+        host_ip = ll_hosts.getHostIP(host)
 
         if password is None:
             password = config.HOSTS_PW
@@ -263,19 +268,19 @@ class TestCaseNFSOptions(TestCase):
             datacenter = config.DATA_CENTER_NAME
 
         for domain in domain_list:
-            LOGGER.info("Creating nfs domain %s" % domain.name)
+            logger.info("Creating nfs domain %s", domain.name)
             hl_st.create_nfs_domain_with_options(
                 domain.name, domain.sd_type, host, domain.address,
                 domain.path, retrans=domain.retrans_to_set,
                 version=domain.vers_to_set, timeo=domain.timeout_to_set,
                 datacenter=datacenter)
 
-        LOGGER.info("Getting info about mounted resources")
-        mounted_resources = ll_st.get_mounted_nfs_resources(host, password)
+        logger.info("Getting info about mounted resources")
+        mounted_resources = ll_st.get_mounted_nfs_resources(host_ip, password)
 
-        LOGGER.info("verifying nfs options")
+        logger.info("verifying nfs options")
         for domain in domain_list:
-            nfs_timeo, nfs_retrans, nfs_vers = mounted_resources[
+            nfs_timeo, nfs_retrans, nfs_vers, nfs_sync = mounted_resources[
                 (domain.address, domain.path)]
             result = verify_nfs_options(
                 domain.expected_timeout, domain.expected_retrans,
@@ -289,22 +294,29 @@ class TestCaseNFSOptions(TestCase):
         according to self params.
         Uses self.dc_name, self.cl_name, self.host, self.password
         """
-        LOGGER.info("Creating %s datacenter" % version)
+        logger.info("Creating %s datacenter", version)
         if not ll_dc.addDataCenter(
-                True, name=self.dc_name, storage_type=NFS, version=version):
+                True, name=self.dc_name, storage_type=config.STORAGE_TYPE_NFS,
+                version=version
+        ):
             self.fail("Adding %s datacenter failed" % self.dc_name)
-        LOGGER.info("Datacenter %s was created successfully" % self.dc_name)
+        logger.info("Datacenter %s was created successfully", self.dc_name)
 
-        LOGGER.info("Adding cluster to 3.0 datacenter")
+        logger.info("Adding cluster to 3.0 datacenter")
         if not ll_cl.addCluster(
                 True, name=self.cl_name, version=version, cpu=config.CPU_NAME,
                 data_center=self.dc_name):
             self.fail("Adding cluster to datacenter %s failed" % self.dc_name)
-        LOGGER.info("Cluster was created successfully")
+        logger.info("Cluster was created successfully")
 
-        LOGGER.info("Adding host to dc %s" % self.dc_name)
-        hl_hosts.add_hosts([self.host], [self.password], self.cl_name)
-        LOGGER.info("Datacenter %s prepared successfully" % version)
+        logger.info("Adding host to dc %s", self.dc_name)
+        self.assertTrue(ll_hosts.addHost(
+            True, name=self.host_for_dc, root_password=self.password,
+            cluster=self.cl_name, reboot=True,
+            ), "Unable to add host %s to cluster %s" % (
+            self.host_for_dc, self.host_for_dc)
+        )
+        logger.info("Datacenter %s prepared successfully", version)
 
 
 def clean_dc(dc_name, host, cl_name, sd_name=None):
@@ -312,19 +324,19 @@ def clean_dc(dc_name, host, cl_name, sd_name=None):
     removes also given storage domain
     """
     if ll_st.getDCStorages(dc_name, False):  # the easy part
-        LOGGER.info("Tear down - removing data center")
+        logger.info("Tear down - removing data center")
         hl_dc.clean_datacenter(True, dc_name)
     else:
         if sd_name is not None:
-            LOGGER.info("Tear down - removing storage domain")
+            logger.info("Tear down - removing storage domain")
             ll_st.removeStorageDomain(True, sd_name, host, 'true')
-        LOGGER.info("Tear down - removing data center")
+        logger.info("Tear down - removing data center")
         ll_dc.removeDataCenter(True, dc_name)
-        LOGGER.info("Tear down - deactivating host")
+        logger.info("Tear down - deactivating host")
         ll_hosts.deactivateHost(True, host)
-        LOGGER.info("Tear down - removing host")
+        logger.info("Tear down - removing host")
         ll_hosts.removeHost(True, host)
-        LOGGER.info("Tear down - removing cluster")
+        logger.info("Tear down - removing cluster")
         ll_cl.removeCluster(True, cl_name)
 
 
@@ -339,8 +351,21 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
     disk_2 = None
     vm_1 = None
     vm_2 = None
-    host_2 = None
     template = None
+    host_for_dc = None
+    master_domain = None
+
+    @classmethod
+    def setup_class(cls):
+        """Getting the master domain"""
+        logger.info("Getting master storage domain")
+        found, master_domain = ll_st.findMasterStorageDomain(
+            True, config.DATA_CENTER_NAME,
+        )
+        if not found:
+            cls.fail("Master storage domain not found")
+        cls.master_domain = master_domain['masterDomain']
+        super(TestCaseStandardOperations, cls).setup_class()
 
     def setUp(self):
         """ Prepares environment - creates storage domains with different
@@ -353,20 +378,22 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
         datacenter = config.DATA_CENTER_NAME
 
         hl_st.create_nfs_domain_with_options(
-            self.sd_1, sd_type, self.host, config.NFS_ADDRESS[0],
-            config.NFS_PATH[0], 'v3', 7, 700, datacenter)
+            self.sd_1, sd_type, self.host, config.NFS_ADDRESSES[0],
+            config.NFS_PATHS[0], version='v3', retrans=7, timeo=700,
+            datacenter=datacenter)
         self.assertTrue(
             ll_st.activateStorageDomain(True, datacenter, self.sd_1))
 
         hl_st.create_nfs_domain_with_options(
-            self.sd_2, sd_type, self.host, config.NFS_ADDRESS[1],
-            config.NFS_PATH[1], 'v3', 8, 800, datacenter)
+            self.sd_2, sd_type, self.host, config.NFS_ADDRESSES[1],
+            config.NFS_PATHS[1], version='v3', retrans=8, timeo=800,
+            datacenter=datacenter)
         self.assertTrue(
             ll_st.activateStorageDomain(True, datacenter, self.sd_2))
 
         hl_st.create_nfs_domain_with_options(
             self.sd_exp, ENUMS['storage_dom_type_export'], self.host,
-            config.NFS_ADDRESS[2], config.NFS_PATH[2],
+            config.NFS_ADDRESSES[2], config.NFS_PATHS[2],
             datacenter=datacenter)
         self.assertTrue(
             ll_st.activateStorageDomain(True, datacenter, self.sd_exp))
@@ -374,12 +401,12 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
         self.assertTrue(ll_disks.addDisk(
             True, alias=self.disk_1, size=config.DISK_SIZE,
             storagedomain=self.sd_1, format=ENUMS['format_raw'],
-            interface=INTERFACE_VIRTIO, bootable=True))
+            interface=config.INTERFACE_VIRTIO, bootable=True))
 
         self.assertTrue(ll_disks.addDisk(
             True, alias=self.disk_2, size=config.DISK_SIZE,
             storagedomain=self.sd_1, format=ENUMS['format_raw'],
-            interface=INTERFACE_VIRTIO, bootable=True))
+            interface=config.INTERFACE_VIRTIO, bootable=True))
 
         self.assertTrue(ll_vms.addVm(
             True, name=self.vm_1, storagedomain=self.sd_1,
@@ -395,13 +422,16 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
         self.assertTrue(ll_disks.attachDisk(True, self.disk_1, self.vm_1))
         self.assertTrue(ll_disks.attachDisk(True, self.disk_2, self.vm_2))
 
-        if config.HOST_FOR_30_DC == self.host_2:  # if we don't have more...
-            hl_hosts.add_hosts(
-                [self.host_2], [config.HOSTS_PW], config.CLUSTER_NAME)
-
         self.assertTrue(ll_templ.createTemplate(
             True, vm=self.vm_1, name=self.template,
             cluster=config.CLUSTER_NAME))
+
+        self.assertTrue(ll_hosts.addHost(
+            True, name=self.host_for_dc, root_password=self.password,
+            cluster=config.CLUSTER_NAME, reboot=True,
+            ), "Unable to add host %s to cluster %s" % (
+            self.host_for_dc, config.CLUSTER_NAME)
+        )
 
     def perform_standard_operations(self, vm, vm_with_disk, disk, another_std,
                                     template, export_std, datacenter):
@@ -427,60 +457,61 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
 
         **Returns**: nothing, fails the test in case of any error
         """
-        LOGGER.info("Moving disk %s to %s" % (disk, another_std))
+        self.master_domain = None
+        logger.info("Moving disk %s to %s", disk, another_std)
         ll_vms.move_vm_disk(vm_with_disk, disk, another_std)
 
-        LOGGER.info("Moving vm %s to sd %s" % (vm, another_std))
+        logger.info("Moving vm %s to sd %s", vm, another_std)
         if not ll_vms.moveVm(True, vm, another_std):
             self.fail(
-                "Cannot move vm %s to storage domain %s" % (vm, another_std))
+                "Cannot move vm %s to storage domain %s", vm, another_std)
 
-        LOGGER.info("Migrating vm %s" % vm)
-        LOGGER.info("Starting vm %s" % vm)
+        logger.info("Migrating vm %s", vm)
+        logger.info("Starting vm %s", vm)
         ll_vms.startVm(True, vm)
         status, host_with_vm = ll_vms.getVmHost(vm)
         host_with_vm = host_with_vm['vmHoster']
-        LOGGER.info("Current host: %s" % host_with_vm)
+        logger.info("Current host: %s", host_with_vm)
         if not status:
             self.fail("Cannot get host with vm")
-        for host in config.HOSTS:
-            if host != host_with_vm:
-                if not ll_vms.migrateVm(True, vm, host):
-                    self.fail("Cannot migrate vm %s to %s" % (vm, host))
-                break
-        LOGGER.info("Exporting template")
+
+        hosts = config.HOSTS + [self.host_for_dc]
+        host_2 = filter(lambda w: w != host_with_vm, hosts)[0]
+        if not ll_vms.migrateVm(True, vm, host_2):
+            self.fail("Cannot migrate vm %s to %s" % (vm, host_2))
+        logger.info("Exporting template")
         if not ll_templ.exportTemplate(True, template, export_std, wait=True):
             self.fail(
                 "Exporting template %s on %s failed" % (template, export_std))
 
-        LOGGER.info("Changing SPM host")
-        old_spm_host = ll_hosts.getSPMHost(config.HOSTS)
-        LOGGER.info("Waiting for tasks before deactivating the host")
-        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                                  datacenter)
+        logger.info("Changing SPM host")
+        old_spm_host = ll_hosts.getSPMHost(hosts)
+        wait_for_jobs()
         if not ll_hosts.deactivateHost(True, old_spm_host):
-            LOGGER.info("Cannot deactivate host %s" % old_spm_host)
+            logger.error("Cannot deactivate host %s", old_spm_host)
+            self.fail("Cannot deactivate host %s" % old_spm_host)
         ll_hosts.waitForSPM(config.DATA_CENTER_NAME, 600, 30)
-        new_spm_host = ll_hosts.getSPMHost(config.HOSTS)
-        LOGGER.info("New SPM host: %s" % new_spm_host)
+        new_spm_host = ll_hosts.getSPMHost(hosts)
+        logger.info("New SPM host: %s", new_spm_host)
 
-        LOGGER.info("Getting master storage domain")
-        found, master_std = ll_st.findMasterStorageDomain(
+        logger.info("Getting master storage domain")
+        found, master_domain = ll_st.findMasterStorageDomain(
             True, config.DATA_CENTER_NAME)
         if not found:
             self.fail("Master storage domain not found")
-        master_std = master_std['masterDomain']
-        LOGGER.info("Waiting for tasks before deactivating the host")
-        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                                  datacenter)
-        LOGGER.info("Deactivating master storage domain %s" % master_std)
-        if not ll_st.deactivateStorageDomain(True, datacenter, master_std):
+        self.master_domain = master_domain['masterDomain']
+        logger.info(
+            "Deactivating master storage domain %s", self.master_domain,
+        )
+        if not ll_st.deactivateStorageDomain(
+            True, datacenter, self.master_domain
+        ):
             self.fail("Cannot deactivate master storage domain")
         found, new_master = ll_st.findMasterStorageDomain(
             True, config.DATA_CENTER_NAME)
         if not found:
             self.fail("New master not found!")
-        LOGGER.info("New master: %s" % new_master['masterDomain'])
+        logger.info("New master: %s", new_master['masterDomain'])
 
     @classmethod
     def teardown_class(cls):
@@ -488,9 +519,13 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
         Don't add asserts, in case of errors in the test some of the commands
         may fail and it is OK.
         """
-        ll_vms.stopVm(True, cls.vm_1)
-        ll_vms.waitForVMState(cls.vm_1, 'down')
-        ll_hosts.activateHost(True, config.HOSTS[0])
+        wait_for_jobs()
+        try:
+            ll_vms.stop_vms_safely([cls.vm_1])
+        except apis_exceptions.EntityNotFound:
+            pass
+        if not ll_hosts.isHostUp(True, cls.host):
+            ll_hosts.activateHost(True, cls.host)
         try:
             ll_templ.removeTemplate(True, cls.template)
         except apis_exceptions.EntityNotFound:
@@ -504,22 +539,26 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
         except apis_exceptions.EntityNotFound:
             pass
         ll_vms.waitForVmsGone(True, ",".join([cls.vm_1, cls.vm_2]))
-        ll_st.activateStorageDomain(True, config.DATA_CENTER_NAME, 'nfs_0')
-        ll_st.waitForStorageDomainStatus(
-            True, config.DATA_CENTER_NAME, 'nfs_0', 'active',
-            timeOut=DEFAULT_DC_TIMEOUT)
-        ll_st.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
-        ll_st.deactivateStorageDomain(True, config.DATA_CENTER_NAME, cls.sd_1)
-        ll_st.findMasterStorageDomain(True, config.DATA_CENTER_NAME)
-        ll_st.deactivateStorageDomain(True, config.DATA_CENTER_NAME, cls.sd_2)
-        ll_st.findMasterStorageDomain(True, config.DATA_CENTER_NAME)
-        ll_st.deactivateStorageDomain(
-            True, config.DATA_CENTER_NAME, cls.sd_exp)
-        ll_st.findMasterStorageDomain(True, config.DATA_CENTER_NAME)
-        if config.HOST_FOR_30_DC == cls.host_2:  # if we had to use this one...
-            ll_hosts.deactivateHost(True, cls.host_2)
-            ll_hosts.removeHost(True, cls.host_2)
-            # just in case - wait for new SPM host
+
+        if cls.master_domain:
+            ll_st.activateStorageDomain(
+                True, config.DATA_CENTER_NAME, cls.master_domain,
+            )
+            ll_st.waitForStorageDomainStatus(
+                True, config.DATA_CENTER_NAME, cls.master_domain,
+                config.SD_ACTIVE, timeOut=DEFAULT_DC_TIMEOUT)
+
+        wait_for_jobs()
+        cls.sds_for_cleanup = [cls.sd_1, cls.sd_2, cls.sd_exp]
+        for sd_remove in cls.sds_for_cleanup:
+            ll_st.deactivateStorageDomain(
+                True, config.DATA_CENTER_NAME, sd_remove)
+        try:
+            logger.info("Removing host %s", cls.host_for_dc)
+            if ll_hosts.getHostState(cls.host_for_dc) == config.HOST_UP:
+                ll_hosts.deactivateHost(True, cls.host_for_dc)
             ll_hosts.waitForSPM(config.DATA_CENTER_NAME, 600, 30)
+            ll_hosts.removeHost(True, cls.host_for_dc)
+        except apis_exceptions.EntityNotFound:
+            pass
         super(TestCaseStandardOperations, cls).teardown_class()

@@ -1,12 +1,13 @@
 import config
 import helpers
 import logging
+
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_st
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 ENUMS = helpers.ENUMS
 
 
@@ -19,19 +20,17 @@ class TestCase232975(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = True
+    __test__ = helpers.TestCaseNFSOptions.storage == config.STORAGE_TYPE_NFS
     tcms_plan_id = '5849'
     tcms_test_case = '232975'
     export_domain = 'test_%s_export' % tcms_test_case
     iso_domain = 'test_%s_iso' % tcms_test_case
-    host = config.HOSTS[0]
-    password = config.HOSTS_PW
     datacenter = config.DATA_CENTER_NAME
     nfs_version = 'v3'
     nfs_timeout = 60
     nfs_retrans = 1
-    export_address = config.NFS_ADDRESS[0]
-    export_path = config.NFS_PATH[0]
+    export_address = config.NFS_ADDRESSES[0]
+    export_path = config.NFS_PATHS[0]
 
     def setUp(self):
         """ Creates storage domains which will be later imported
@@ -48,6 +47,7 @@ class TestCase232975(helpers.TestCaseNFSOptions):
         hl_st.remove_storage_domain(
             self.export_domain, self.datacenter, self.host, False, config.VDC,
             config.VDC_PASSWORD)
+        self.sds_for_cleanup.append(self.export_domain)
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_import_existing_export_domain(self):
@@ -55,54 +55,20 @@ class TestCase232975(helpers.TestCaseNFSOptions):
         """
         sd_type = ENUMS['storage_dom_type_export']
         ll_st.importStorageDomain(
-            True, sd_type, helpers.NFS, self.export_address, self.export_path,
-            self.host, self.nfs_version, self.nfs_retrans, self.nfs_timeout)
+            True, sd_type, config.STORAGE_TYPE_NFS, self.export_address,
+            self.export_path, self.host, self.nfs_version, self.nfs_retrans,
+            self.nfs_timeout)
         result = ll_st.get_options_of_resource(
-            self.host, self.password, self.export_address, self.export_path)
+            self.host_ip, self.password, self.export_address, self.export_path)
         if result is None:
             self.fail("Resource %s:%s is not mounted on %s!" % (
                 self.export_address, self.export_path, self.host))
-        timeo, retrans, nfsvers = result
+        timeo, retrans, nfsvers, sync = result
         result = helpers.verify_nfs_options(
             self.nfs_timeout, self.nfs_retrans, self.nfs_version,
             timeo, retrans, nfsvers)
         if result is not None:
             self.fail("NFS option %s not as expected %s, real %s" % result)
-
-
-@attr(tier=1)
-class TestCase148669(helpers.TestCaseNFSOptions):
-    """
-    The most basic test case - creates a data storage domain with specified
-    advanced NFS options and checks if they were actually used. Check is done
-    with calling mount on host on which NFS resource is mounted.
-
-    https://tcms.engineering.redhat.com/case/148669/?from_plan=5849
-
-    **Author**: Katarzyna Jachim
-    """
-    __test__ = True
-    tcms_plan_id = '5849'
-    tcms_test_case = '148669'
-    nfs_retrans = 7
-    nfs_timeout = 710
-    nfs_version = 'v3'
-
-    @tcms(tcms_plan_id, tcms_test_case)
-    def test_create_nfs_storage_with_options(self):
-        """ Creates storage domain with advanced NFS options and checks that
-        they were really used.
-        """
-        storage = helpers.NFSStorage(
-            name='test_148669',
-            address=config.NFS_ADDRESS[0], path=config.NFS_PATH[0],
-            timeout_to_set=self.nfs_timeout,
-            retrans_to_set=self.nfs_retrans,
-            vers_to_set=self.nfs_version,
-            expected_timeout=self.nfs_timeout,
-            expected_retrans=self.nfs_retrans,
-            expected_vers=self.nfs_version)
-        self.create_nfs_domain_and_verify_options([storage])
 
 
 @attr(tier=1)
@@ -114,12 +80,11 @@ class TestCase148670(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = True
+    __test__ = helpers.TestCaseNFSOptions.storage == config.STORAGE_TYPE_NFS
     tcms_plan_id = '5849'
     tcms_test_case = '148670'
-    nfs_address = config.NFS_ADDRESS[0]
-    nfs_path = config.NFS_PATH[0]
-    host = config.HOSTS[0]
+    nfs_address = config.NFS_ADDRESSES[0]
+    nfs_path = config.NFS_PATHS[0]
 
     def setUp(self):
         self.name = None
@@ -133,7 +98,7 @@ class TestCase148670(helpers.TestCaseNFSOptions):
         nfs_retrans = 65536 * 2 + 5
         nfs_timeout = 730
         nfs_version = 'v3'
-        LOGGER.info("Creating nfs domain %s" % self.name)
+        logger.info("Creating nfs domain %s" % self.name)
         hl_st.create_nfs_domain_with_options(
             self.name, ENUMS['storage_dom_type_data'], self.host,
             self.nfs_address, self.nfs_path, retrans=nfs_retrans,
@@ -148,7 +113,7 @@ class TestCase148670(helpers.TestCaseNFSOptions):
         nfs_retrans = 7
         nfs_timeout = 65536 * 2 + 5
         nfs_version = 'v3'
-        LOGGER.info("Creating nfs domain %s" % self.name)
+        logger.info("Creating nfs domain %s" % self.name)
         hl_st.create_nfs_domain_with_options(
             self.name, ENUMS['storage_dom_type_data'], self.host,
             self.nfs_address, self.nfs_path, retrans=nfs_retrans,
@@ -163,7 +128,7 @@ class TestCase148670(helpers.TestCaseNFSOptions):
         nfs_retrans = 7
         nfs_timeout = 1000
         nfs_version = 'v7'
-        LOGGER.info("Creating nfs domain %s" % self.name)
+        logger.info("Creating nfs domain %s" % self.name)
         hl_st.create_nfs_domain_with_options(
             self.name, ENUMS['storage_dom_type_data'], self.host,
             self.nfs_address, self.nfs_path, retrans=nfs_retrans,
@@ -188,7 +153,7 @@ class TestCase148641(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = True
+    __test__ = helpers.TestCaseNFSOptions.storage == config.STORAGE_TYPE_NFS
     tcms_plan_id = '5849'
     tcms_test_case = '148641'
 
@@ -198,14 +163,16 @@ class TestCase148641(helpers.TestCaseNFSOptions):
         correct.
         """
         version = 'v3'  # TODO: fix it! it should depend on the host os version
-        name = 'test_%s' % self.tcms_test_case
+        self.name = 'test_%s' % self.tcms_test_case
         storage = helpers.NFSStorage(
-            name=name, address=config.NFS_ADDRESS[0], path=config.NFS_PATH[0],
-            timeout_to_set=None, retrans_to_set=None, vers_to_set=None,
+            name=self.name, address=config.NFS_ADDRESSES[0],
+            path=config.NFS_PATHS[0], timeout_to_set=None,
+            retrans_to_set=None, vers_to_set=None,
             expected_timeout=helpers.DEFAULT_NFS_TIMEOUT,
             expected_retrans=helpers.DEFAULT_NFS_RETRANS,
             expected_vers=version)
         self.create_nfs_domain_and_verify_options([storage])
+        self.sds_for_cleanup.append(self.name)
 
 
 @attr(tier=1)
@@ -218,7 +185,7 @@ class TestCase153290(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = True
+    __test__ = helpers.TestCaseNFSOptions.storage == config.STORAGE_TYPE_NFS
     tcms_plan_id = '5849'
     tcms_test_case = '153290'
     nfs_retrans = 7
@@ -229,14 +196,15 @@ class TestCase153290(helpers.TestCaseNFSOptions):
         """ Creates NFS storage domain of specified type. Suffix - suffix of
         domain name.
         """
-        name = 'test_%s_%s' % (self.tcms_test_case, suffix)
+        self.name = 'test_%s_%s' % (self.tcms_test_case, suffix)
         storage = helpers.NFSStorage(
-            name=name, sd_type=sd_type, address=config.NFS_ADDRESS[idx],
-            path=config.NFS_PATH[idx], timeout_to_set=self.nfs_timeout,
+            name=self.name, sd_type=sd_type, address=config.NFS_ADDRESSES[idx],
+            path=config.NFS_PATHS[idx], timeout_to_set=self.nfs_timeout,
             retrans_to_set=self.nfs_retrans, vers_to_set=self.nfs_version,
             expected_timeout=self.nfs_timeout,
             expected_retrans=self.nfs_retrans, expected_vers=self.nfs_version)
         self.create_nfs_domain_and_verify_options([storage])
+        self.sds_for_cleanup.append(self.name)
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_create_change_nfs_options_export(self):
@@ -253,7 +221,7 @@ class TestCase153290(helpers.TestCaseNFSOptions):
         self._create_and_check(ENUMS['storage_dom_type_iso'], 'iso', 1)
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase153368(helpers.TestCaseNFSOptions):
     """
     Creates multiple storage domains with different custom advanced NFS options
@@ -263,7 +231,7 @@ class TestCase153368(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = True
+    __test__ = helpers.TestCaseNFSOptions.storage == config.STORAGE_TYPE_NFS
     tcms_plan_id = '5849'
     tcms_test_case = '153368'
 
@@ -273,9 +241,9 @@ class TestCase153368(helpers.TestCaseNFSOptions):
         creates multiple storage domains with different advanced NFS options
         and checks they are correct
         """
-        name = 'test_%s_' % self.tcms_test_case
+        self.name_prefix = 'test_%s_' % self.tcms_test_case
         nfs_resources = []
-        for i in range(len(config.NFS_ADDRESS)):
+        for i in range(len(config.NFS_ADDRESSES)):
             if i:
                 timeout, retrans = 100 * i + 650, 6 + i
                 exp_timeout, exp_retrans = 100 * i + 650, 6 + i
@@ -283,8 +251,11 @@ class TestCase153368(helpers.TestCaseNFSOptions):
                 timeout, retrans = None, None
                 exp_timeout = helpers.DEFAULT_NFS_TIMEOUT
                 exp_retrans = helpers.DEFAULT_NFS_RETRANS
-            kwargs = {"name": name + str(i), "address": config.NFS_ADDRESS[i],
-                      "path": config.NFS_PATH[i], "timeout_to_set": timeout,
+            name = self.name_prefix + str(i)
+            self.sds_for_cleanup.append(name)
+            kwargs = {"name": name,
+                      "address": config.NFS_ADDRESSES[i],
+                      "path": config.NFS_PATHS[i], "timeout_to_set": timeout,
                       "retrans_to_set": retrans, "vers_to_set": 'v3',
                       "expected_timeout": exp_timeout,
                       "expected_retrans": exp_retrans, "expected_vers": 'v3'}
@@ -308,7 +279,7 @@ class TestCase166534(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = True
+    __test__ = helpers.TestCaseNFSOptions.storage == config.STORAGE_TYPE_NFS
     tcms_plan_id = '5849'
     tcms_test_case = '166534'
     nfs_retrans = 7
@@ -321,44 +292,44 @@ class TestCase166534(helpers.TestCaseNFSOptions):
         advanced NFS options by default use default NFS options, not the ones
         defined when creating the storage domain.
         """
-        name = 'test_%s_create' % self.tcms_test_case
-        host = config.HOSTS[0]
-        password = config.HOSTS_PW
-        address = config.NFS_ADDRESS[0]
-        path = config.NFS_PATH[0]
+        self.name = 'test_%s_create' % self.tcms_test_case
+        address = config.NFS_ADDRESSES[0]
+        path = config.NFS_PATHS[0]
         datacenter = config.DATA_CENTER_NAME
         sd_type = ENUMS['storage_dom_type_export']
 
         storage = helpers.NFSStorage(
-            name=name, address=address, path=path,
+            name=self.name, address=address, path=path,
             timeout_to_set=self.nfs_timeout, retrans_to_set=self.nfs_retrans,
             vers_to_set=self.nfs_version, expected_timeout=self.nfs_timeout,
             expected_retrans=self.nfs_retrans, expected_vers=self.nfs_version,
             sd_type=ENUMS['storage_dom_type_export'])
         self.create_nfs_domain_and_verify_options([storage])
+        self.sds_for_cleanup.append(self.name)
 
         hl_st.remove_storage_domain(
-            name, datacenter, host, False, config.VDC, config.VDC_PASSWORD)
+            self.name, datacenter, self.host, False, config.VDC,
+            config.VDC_PASSWORD)
 
-        LOGGER.info("Importing storage domain")
+        logger.info("Importing storage domain")
         ll_st.importStorageDomain(
-            True, sd_type, helpers.NFS, address, path, host)
-        LOGGER.info("Attaching storage domain")
-        ll_st.attachStorageDomain(True, datacenter, name)
+            True, sd_type, config.STORAGE_TYPE_NFS, address, path, self.host)
+        logger.info("Attaching storage domain")
+        ll_st.attachStorageDomain(True, datacenter, self.name)
 
-        LOGGER.info("Getting mount options")
+        logger.info("Getting mount options")
         options = ll_st.get_options_of_resource(
-            host, password, address, path)
+            self.host_ip, self.password, address, path)
         if options is None:
             self.fail("Storage domain is not mounted!")
-        (timeo, retrans, vers) = options
-        LOGGER.info("Verifying mount options")
+        (timeo, retrans, vers, sync) = options
+        logger.info("Verifying mount options")
         result = helpers.verify_nfs_options(
             helpers.DEFAULT_NFS_TIMEOUT, helpers.DEFAULT_NFS_RETRANS, 'v3',
             timeo, retrans, vers)
         if result is not None:
             self.fail("Wrong NFS option %s, expected: %s, real: %s" % result)
-        LOGGER.info("Test passed")
+        logger.info("Test passed")
 
 
 @attr(tier=1)
@@ -372,7 +343,7 @@ class TestCase166616(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = True
+    __test__ = helpers.TestCaseNFSOptions.storage == config.STORAGE_TYPE_NFS
     tcms_plan_id = '5849'
     tcms_test_case = '166616'
     nfs_retrans = 7
@@ -388,44 +359,47 @@ class TestCase166616(helpers.TestCaseNFSOptions):
         * destroys it
         * creates once again with default advanced options
         """
-        address = config.NFS_ADDRESS[0]
-        path = config.NFS_PATH[0]
+        address = config.NFS_ADDRESSES[0]
+        path = config.NFS_PATHS[0]
         datacenter = config.DATA_CENTER_NAME
-        host = config.HOSTS[0]
-        name = 'test_%s_custom' % self.tcms_test_case
+        self.name = 'test_%s_custom' % self.tcms_test_case
+        self.sds_for_cleanup.append(self.name)
 
-        LOGGER.info("Creating first time with custom options")
+        logger.info("Creating first time with custom options")
         storage = helpers.NFSStorage(
-            name=name, address=address, path=path,
+            name=self.name, address=address, path=path,
             timeout_to_set=self.nfs_timeout, retrans_to_set=self.nfs_retrans,
             vers_to_set=self.nfs_version, expected_timeout=self.nfs_timeout,
             expected_retrans=self.nfs_retrans, expected_vers=self.nfs_version,
             sd_type=ENUMS['storage_dom_type_export'])
         self.create_nfs_domain_and_verify_options([storage])
 
-        LOGGER.info("Removing created storage domain")
+        logger.info("Removing created storage domain")
         hl_st.remove_storage_domain(
-            name, datacenter, host, False, config.VDC, config.VDC_PASSWORD)
+            self.name, datacenter, self.host, False, config.VDC,
+            config.VDC_PASSWORD)
 
-        LOGGER.info("Creating second time with custom options")
+        logger.info("Creating second time with custom options")
         storage = helpers.NFSStorage(
-            name=name, address=address, path=path,
+            name=self.name, address=address, path=path,
             timeout_to_set=self.nfs_timeout, retrans_to_set=self.nfs_retrans,
             vers_to_set=self.nfs_version, expected_timeout=self.nfs_timeout,
             expected_retrans=self.nfs_retrans, expected_vers=self.nfs_version,
             sd_type=ENUMS['storage_dom_type_export'])
         self.create_nfs_domain_and_verify_options([storage])
 
-        LOGGER.info("Destroying storage domain")
+        logger.info("Destroying storage domain")
         hl_st.remove_storage_domain(
-            name, datacenter, host, True, config.VDC, config.VDC_PASSWORD)
+            self.name, datacenter, self.host, True, config.VDC,
+            config.VDC_PASSWORD)
 
-        LOGGER.info("Creating third time with default options")
-        name = 'test_%s_default' % self.tcms_test_case
+        logger.info("Creating third time with default options")
+        self.name = 'test_%s_default' % self.tcms_test_case
         storage = helpers.NFSStorage(
-            name=name, address=address, path=path, timeout_to_set=None,
+            name=self.name, address=address, path=path, timeout_to_set=None,
             retrans_to_set=None, vers_to_set=None,
             expected_timeout=helpers.DEFAULT_NFS_TIMEOUT,
             expected_retrans=helpers.DEFAULT_NFS_RETRANS, expected_vers='v3',
             sd_type=ENUMS['storage_dom_type_export'])
+        self.sds_for_cleanup.append(self.name)
         self.create_nfs_domain_and_verify_options([storage])

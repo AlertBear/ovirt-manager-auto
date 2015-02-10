@@ -1525,7 +1525,7 @@ def get_options_of_resource(host, password, address, path):
         * *address*: address of the NFS server
         * *path*: path to the NFS resource on the NFS server
 
-    **Returns**:  tuple (timeo, retrans, nfsvers)
+    **Returns**:  tuple (timeo, retrans, nfsvers, sync)
                   or None if there is no such nfs mount
     """
     nfs_mounts = get_mounted_nfs_resources(host, password)
@@ -1543,7 +1543,7 @@ def get_mounted_nfs_resources(host, password):
         * *host*: host on which 'mount' should be called
         * *password*: root password on this host
 
-    **Returns**: dict: (address, path) ->  (timeo, retrans, nfsvers)
+    **Returns**: dict: (address, path) ->  (timeo, retrans, nfsvers, sync)
     """
     ssh_session = sshConnection.SSHSession(
         hostname=host, username='root', password=password)
