@@ -14,7 +14,7 @@ from art.rhevm_api.tests_lib.low_level import hosts, clusters, storagedomains
 logger = logging.getLogger(__name__)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase99062(TestCase):
     """
     storage sanity test, clean up the environment
