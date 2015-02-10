@@ -6,15 +6,29 @@ TESTNAME = PARAMETERS.get('basename', 'StorageIsoDomains')
 
 REST_PASS = REST_CONNECTION['password']
 
-ADDRESS = PARAMETERS.as_list('data_domain_address')
-PATH = PARAMETERS.as_list('data_domain_path')
-LUNS = PARAMETERS.as_list('lun')
-LUN_ADDRESS = PARAMETERS.as_list('lun_address')
-LUN_TARGET = PARAMETERS.as_list('lun_target')
+if GOLDEN_ENV:
+    ADDRESS = UNUSED_DATA_DOMAIN_ADDRESSES[:]
+    PATH = UNUSED_DATA_DOMAIN_PATHS[:]
+    LUNS = UNUSED_LUNS[:]
+    LUN_ADDRESS = UNUSED_LUN_ADDRESSES[:]
+    LUN_TARGET = UNUSED_LUN_TARGETS[:]
+
+    # TODO: Give proper values if GE is able to run on Local in the future
+    LOCAL_DOMAIN = [None, None]
+else:
+    ADDRESS = PARAMETERS.as_list('data_domain_address')
+    PATH = PARAMETERS.as_list('data_domain_path')
+    LUNS = PARAMETERS.as_list('lun')
+    LUN_ADDRESS = PARAMETERS.as_list('lun_address')
+    LUN_TARGET = PARAMETERS.as_list('lun_target')
+
+    LOCAL_DOMAIN = PARAMETERS.as_list('local_domain_path')
+
+
 LUN_PORT = 3260
 
 ISO_NFS_DOMAIN = {
-    "name": "nfsIsoDomain",
+    'name': 'nfsIsoDomain',
     'type': ENUMS['storage_dom_type_iso'],
     'storage_type': STORAGE_TYPE_NFS,
     'address': ADDRESS[0],
@@ -22,7 +36,7 @@ ISO_NFS_DOMAIN = {
 }
 
 ISO_POSIX_DOMAIN = {
-    "name": "posixIsoDomain",
+    'name': 'posixIsoDomain',
     'type': ENUMS['storage_dom_type_iso'],
     'address': ADDRESS[0],
     'path': PATH[0],
@@ -32,24 +46,21 @@ ISO_POSIX_DOMAIN = {
 }
 
 ISO_LOCAL_DOMAIN = {
-    "name": "localIsoDomain",
+    'name': 'localIsoDomain',
     'type': ENUMS['storage_dom_type_iso'],
     'storage_type': STORAGE_TYPE_LOCAL,
+    'path': LOCAL_DOMAIN[1],
 }
 
 LOCAL_DOMAIN = {
-    'name': "localStorageDomain",
+    'name': 'localStorageDomain',
     'type': TYPE_DATA,
     'storage_type': STORAGE_TYPE_LOCAL,
+    'path': LOCAL_DOMAIN[0],
 }
 
-# TODO: enable when local domains variables are set for golden environment
-if not GOLDEN_ENV:
-    LOCAL_DOMAIN['path'] = PARAMETERS.as_list("local_domain_path")[0]
-    ISO_LOCAL_DOMAIN['path'] = PARAMETERS.as_list("local_domain_path")[1]
-
 ISCSI_DOMAIN = {
-    'name': "iscsiDomain",
+    'name': 'iscsiDomain',
     'type': TYPE_DATA,
     'storage_type': STORAGE_TYPE_ISCSI,
     'lun': LUNS[0],
