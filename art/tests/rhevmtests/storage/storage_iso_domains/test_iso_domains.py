@@ -70,6 +70,7 @@ class BaseCaseIsoDomains(TestCase):
     local = None
     machine = None
     vm_name = None
+    mount_target = None
     storagedomains = []
 
     @classmethod
@@ -111,11 +112,6 @@ class BaseCaseIsoDomains(TestCase):
                 True, cls.data_center_name, vdc=config.VDC,
                 vdc_password=config.VDC_PASSWORD)
 
-
-class TestPlan6107(BaseCaseIsoDomains):
-
-    mount_target = None
-
     def tearDown(self):
         self.clean_environment()
 
@@ -149,11 +145,12 @@ class TestPlan6107(BaseCaseIsoDomains):
         logger.info("Adding iso domain %s", iso_domain['name'])
         self.iso_domain_name = None
         assert helpers.add_storage_domain(
-            self.data_center_name, self.spm_host, **iso_domain)
+            self.data_center_name, self.spm_host, **iso_domain
+        )
         self.iso_domain_name = iso_domain['name']
 
         # Mount the nfs partition with all the isos
-        logger.info("Mouting nfs partition %s:%s to upload isos to the "
+        logger.info("Mounting nfs partition %s:%s to upload isos to the "
                     "domain", config.iso_address, config.iso_path)
         with self.machine.mount(
             "%s:%s" % (config.iso_address, config.iso_path),
@@ -187,25 +184,41 @@ class TestPlan6107(BaseCaseIsoDomains):
 
         if run_once:
             assert ll_vms.runVmOnce(
-                True, self.vm_name, cdrom_image=config.ISO_IMAGE)
+                True, self.vm_name, cdrom_image=config.ISO_IMAGE
+            )
         else:
             assert ll_vms.attach_cdrom_vm(True, self.vm_name, config.ISO_IMAGE)
             assert ll_vms.startVm(True, self.vm_name)
 
         status = ll_sd.deactivateStorageDomain(
-            False, self.data_center_name, self.iso_domain_name)
+            False, self.data_center_name, self.iso_domain_name
+        )
         self.assertTrue(
             status, "ISO domain %s was deactivated while one of the isos "
-            "is attached to vm %s" % (iso_domain['name'], self.vm_name))
+            "is attached to vm %s" % (iso_domain['name'], self.vm_name)
+        )
 
         assert ll_vms.eject_cdrom_vm(self.vm_name)
         status = ll_sd.deactivateStorageDomain(
             True, self.data_center_name, self.iso_domain_name)
         self.assertTrue(
             status, "ISO domain %s wasn't deactivated after ejecting one of "
-            "the isos from the vm %s" % (self.iso_domain_name, self.vm_name))
+            "the isos from the vm %s" % (self.iso_domain_name, self.vm_name)
+        )
 
-    @tcms(NEW_TCMS_TEST_PLAN, TCMS_CASE_ATTACH)
+
+@attr(tier=0)
+class TestCase50769Shared(BaseCaseIsoDomains):
+    """
+    Test detaching iso domains when an iso is inserted in a vm
+    under a shared DC
+    """
+    __test__ = True
+    local = False
+    vm_name = "TestCasesPlan6458Shared"
+    storagedomains = [config.ISCSI_DOMAIN]
+
+    @tcms(NEW_TCMS_TEST_PLAN, NEW_TCMS_CASE_ID)
     def test_detaching_iso_vm_and_vm_runonce(self):
         """
         Try detaching a posixfs/nfs iso domain from vm while iso is attached
@@ -232,23 +245,11 @@ class TestPlan6107(BaseCaseIsoDomains):
             run_once=True, iso_domain=config.ISO_NFS_DOMAIN)
 
 
-@attr(tier=0)
-class TestCase50769Shared(TestPlan6107):
+@attr(tier=2)
+class Plan6107Local(BaseCaseIsoDomains):
     """
     Test detaching iso domains when an iso is inserted in a vm
-    Shared DC
-    """
-    __test__ = True
-    local = False
-    vm_name = "TestCasesPlan6107Shared"
-    storagedomains = [config.ISCSI_DOMAIN]
-
-
-@attr(tier=1)
-class TestCase50769Local(TestPlan6107):
-    """
-    Test detaching iso domains when an iso is inserted in a vm
-    Local DC
+    under a local DC
     """
     # Local data center tests are not supported by the golden environment
     __test__ = not config.GOLDEN_ENV
