@@ -1,3 +1,6 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Testing Display of NIC Slave/Bond fault on RHEV-M Event Log
 1 DC, 1 Cluster, 1 Host will be created for testing.
@@ -115,7 +118,9 @@ class TestNicFault02(TestNicFaultTestCaseBase):
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
         ):
-            raise NetworkException("Cannot create and attach networks")
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.NETWORKS[0]
+            )
 
     @tcms(13885, 366410)
     def test_required_nic_fault(self):
@@ -140,7 +145,7 @@ class TestNicFault02(TestNicFaultTestCaseBase):
 @attr(tier=1)
 class TestNicFault03(TestNicFaultTestCaseBase):
     """
-    No setup needed
+    Check empty NIC failure
     """
     __test__ = True
 
@@ -170,8 +175,10 @@ class TestNicFault04(TestNicFaultTestCaseBase):
         """
         Attach label to BOND
         """
-        local_dict1 = {None: {
-            "nic": config.BOND[0], "slaves": [2, 3], "required": "false"}
+        local_dict1 = {
+            None: {
+                "nic": config.BOND[0], "slaves": [2, 3], "required": "false"
+            }
         }
 
         logger.info("Create Bond %s", config.BOND[0])
@@ -221,14 +228,20 @@ class TestNicFault05(TestNicFaultTestCaseBase):
         Attach required network to BOND
         """
         logger.info("Create and attach network over BOND")
-        local_dict = {config.NETWORKS[0]: {"nic": config.BOND[0],
-                                           "slaves": [2, 3]}}
+        local_dict = {
+            config.NETWORKS[0]: {
+                "nic": config.BOND[0], "slaves": [2, 3]
+            }
+        }
 
         if not createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
         ):
-            raise NetworkException("Cannot create and attach network")
+            raise NetworkException(
+                "Cannot create and attach network %s to bond %s" %
+                (config.NETWORKS[0], config.BOND[0])
+            )
 
     @tcms(13885, 366415)
     def test_required_bond_fault(self):
@@ -269,9 +282,11 @@ class TestNicFault06(TestNicFaultTestCaseBase):
         Create BOND without network attached to it.
         """
         logger.info("Create BOND")
-        local_dict1 = {None: {
-            "nic": config.BOND[0], "slaves": [2, 3]
-        }}
+        local_dict1 = {
+            None: {
+                "nic": config.BOND[0], "slaves": [2, 3]
+            }
+        }
         if not createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict1, auto_nics=[0]
@@ -300,16 +315,20 @@ class TestNicFault07(TestNicFaultTestCaseBase):
         """
         Attach non-required network to host NIC
         """
-        local_dict = {config.NETWORKS[0]: {
-            "nic": 1, "required": "false"
-        }}
+        local_dict = {
+            config.NETWORKS[0]: {
+                "nic": 1, "required": "false"
+            }
+        }
 
         logger.info("Attach %s network to DC/Cluster/Host", config.NETWORKS[0])
         if not createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
         ):
-            raise NetworkException("Cannot create and attach networks")
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.NETWORKS[0]
+            )
 
     @tcms(13885, 366418)
     def test_non_required_nic_fault(self):
@@ -338,15 +357,19 @@ class TestNicFault08(TestNicFaultTestCaseBase):
         Attach non-required network to BOND
         """
         logger.info("Create and attach network over BOND")
-        local_dict = {config.NETWORKS[0]: {
-            "nic": config.BOND[0], "slaves": [2, 3], "required": "false"
-        }}
+        local_dict = {
+            config.NETWORKS[0]: {
+                "nic": config.BOND[0], "slaves": [2, 3], "required": "false"
+            }
+        }
 
         if not createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
         ):
-            raise NetworkException("Cannot create and attach network")
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.NETWORKS[0]
+            )
 
     @tcms(13885, 366419)
     def test_non_required_bond_fault(self):
@@ -370,16 +393,20 @@ class TestNicFault09(TestNicFaultTestCaseBase):
         """
         Attach non-vm network to host NIC
         """
-        local_dict = {config.NETWORKS[0]: {
-            "nic": 1, "required": "false", "usages": ""
-        }}
+        local_dict = {
+            config.NETWORKS[0]: {
+                "nic": 1, "required": "false", "usages": ""
+            }
+        }
 
         logger.info("Attach %s network to DC/Cluster/Host", config.NETWORKS[0])
         if not createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
         ):
-            raise NetworkException("Cannot create and attach networks")
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.NETWORKS[0]
+            )
 
     @tcms(13885, 366420)
     def test_non_required_nic_fault(self):
@@ -408,16 +435,20 @@ class TestNicFault10(TestNicFaultTestCaseBase):
         Attach non-vm network to BOND
         """
         logger.info("Create and attach network over BOND")
-        local_dict = {config.NETWORKS[0]: {
-            "nic": config.BOND[0], "slaves": [2, 3], "required": "false",
-            "usages": ""
-        }}
+        local_dict = {
+            config.NETWORKS[0]: {
+                "nic": config.BOND[0], "slaves": [2, 3], "required": "false",
+                "usages": ""
+            }
+        }
 
         if not createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
         ):
-            raise NetworkException("Cannot create and attach network")
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.NETWORKS[0]
+            )
 
     @tcms(13885, 366421)
     def test_non_required_bond_fault(self):

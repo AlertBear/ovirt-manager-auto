@@ -1,3 +1,6 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Functions for nic_slave_bond_fault_event_log job
 """
@@ -85,7 +88,7 @@ def if_up_nic(nic, wait=True):
     :type nic: str
     :param wait: Wait to NIC status
     :type wait: bool
-    :return: True if NIC is down otherwise False
+    :return: True if NIC is up otherwise False
     :rtype: bool
     """
     logger.info("Sleeping for 15 seconds")
