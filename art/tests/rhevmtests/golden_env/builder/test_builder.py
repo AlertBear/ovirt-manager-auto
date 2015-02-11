@@ -4,7 +4,7 @@ import os
 
 from art.unittest_lib import BaseTestCase as TestCase
 
-from art.rhevm_api.utils import test_utils
+from art.rhevm_api.utils import test_utils, cpumodel
 
 from art.rhevm_api.tests_lib.low_level import datacenters
 from art.rhevm_api.tests_lib.low_level import hosts
@@ -15,6 +15,8 @@ from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 
 from art.rhevm_api.tests_lib.high_level import storagedomains
+
+from art.rhevm_api.resources import VDS
 
 import art.test_handler.exceptions as errors
 
@@ -122,8 +124,10 @@ class CreateDC(TestCase):
         if not hosts_def:
             LOGGER.info("No hosts in cluster")
             return
+        vds_objs = list()
         for host_def in hosts_def:
             host_ip, host_pwd = host_conf.get_unused_host()
+            vds_objs.append(VDS(host_ip, host_pwd))
             if not hosts.addHost(
                     True, host_def['host']['name'], address=host_ip,
                     root_password=host_pwd, wait=False, cluster=cluster_name):
@@ -133,6 +137,26 @@ class CreateDC(TestCase):
                 True,
                 ",".join([x['host']['name'] for x in hosts_def])):
             raise errors.HostException("Hosts are not up")
+
+        # Set the best cpu_model for hosts
+        cpu_den = cpumodel.CpuModelDenominator()
+        try:
+            cpu_info = cpu_den.get_common_cpu_model(
+                vds_objs,
+                version=comp_version,
+            )
+        except cpumodel.CpuModelError as ex:
+            LOGGER.error("Can not determine the best cpu_model: %s", ex)
+        else:
+            LOGGER.info("Cpu info %s for cluster: %s", cpu_info, cluster_name)
+            if not clusters.updateCluster(
+                True,
+                cluster_name,
+                cpu=cpu_info['cpu']
+            ):
+                LOGGER.error(
+                    "Can not update cluster cpu_model to: %s", cpu_info['cpu'],
+                )
 
     def add_sds(self, storages, host, datacenter_name, storage_conf):
         for sd in storages:
