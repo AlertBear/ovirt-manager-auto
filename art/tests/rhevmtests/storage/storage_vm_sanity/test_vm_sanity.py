@@ -4,7 +4,6 @@ TCMS plan: https://tcms.engineering.redhat.com/plan/8676
 """
 
 import logging
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.unittest_lib import StorageTest as TestCase
 
@@ -71,33 +70,6 @@ def _create_vm(vm_name, vm_description, disk_interface,
         type=vm_type, installation=True, slim=True,
         image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
         useAgent=config.USE_AGENT)
-
-
-@attr(tier=1)
-class TestCase248112(TestCase):
-    """
-    storage vm sanity test, creates and removes vm with a cow disk
-    https://tcms.engineering.redhat.com/case/248112/?from_plan=8676
-    """
-    __test__ = True
-    tcms_plan_id = '8676'
-    tcms_test_case = '248112'
-
-    @istest
-    @tcms(tcms_plan_id, tcms_test_case)
-    def create_and_remove_vm_test(self):
-        """ creates and removes vm
-        """
-        vm_name = '%s_%s_virtio' % (
-            config.VM_BASE_NAME, self.storage)
-        self.assertTrue(
-            _create_vm(vm_name, vm_name, config.INTERFACE_VIRTIO,
-                       storage_type=self.storage),
-            "VM %s creation failed!" % vm_name)
-        LOGGER.info("Removing created VM")
-        self.assertTrue(
-            vms.removeVm(True, vm=vm_name, stopVM='true'),
-            "Removal of vm %s failed!" % vm_name)
 
 
 def _prepare_data(sparse, vol_format, template_names, storage_type):
@@ -246,9 +218,8 @@ class TestCase248138(TestCase):
         LOGGER.info("Verifying data on VM %s" % self.vm_name)
         self._verify_data_on_vm(expected_data)
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
-    def delete_snapshots_test(self):
+    def test_delete_snapshots_advanced(self):
         """ Deleting snapshots
         """
         self._prepare_data()
@@ -410,15 +381,16 @@ class TestCase300867(TestCase):
         vms.removeVm(True, vm=cls.vm_name, stopVM='true')
 
 
-class TestReadLock(TestCase):
+@attr(tier=0)
+class TestCase320225(TestCase):
     """
     Create a template from a VM, then start to create 2 VMs from
     this template at once.
     """
-    __test__ = False
+    __test__ = True
     tcms_plan_id = '8040'
-    tcms_test_case = None
-    vm_type = None
+    tcms_test_case = '320225'
+    vm_type = config.VM_TYPE_SERVER
     vm_name = None
     template_name = None
     vm_name_1 = '%s_1' % config.VM_BASE_NAME
@@ -429,7 +401,7 @@ class TestReadLock(TestCase):
     def setup_class(cls):
         cls.vm_name = '%s_%s' % (config.VM_BASE_NAME, cls.vm_type)
         cls.template_name = "template_%s" % cls.vm_name
-        if not _create_vm(cls.vm_name, cls.vm_name, config.INTERFACE_IDE,
+        if not _create_vm(cls.vm_name, cls.vm_name, config.VIRTIO_SCSI,
                           vm_type=cls.vm_type, storage_type=cls.storage):
             raise exceptions.VMException(
                 "Creation of VM %s failed!" % cls.vm_name)
@@ -442,23 +414,26 @@ class TestReadLock(TestCase):
             raise exceptions.VMException("Can't shut down vm %s" %
                                          cls.vm_name)
         vms.waitForVMState(cls.vm_name, state=config.VM_DOWN)
-        LOGGER.info("Creating template %s from VM %s" % (cls.template_name,
-                                                         cls.vm_name))
-        template_args = {
-            "vm": cls.vm_name,
-            "name": cls.template_name,
-            "cluster": config.CLUSTER_NAME
-        }
-        if not templates.createTemplate(True, **template_args):
-            raise exceptions.TemplateException("Failed creating template %s" %
-                                               cls.template_name)
 
-    def create_two_vms_simultaneously(self):
+    @tcms(tcms_plan_id, tcms_test_case)
+    def test_create_vm_from_template_basic_flow(self):
         """
-        Start creating a VM from template
+        Create template from vm
+        Start creating a VM from this template
         Wait until template is locked
         Start creating another VM from the same template
         """
+        template_args = {
+            "vm": self.vm_name,
+            "name": self.template_name,
+            "cluster": config.CLUSTER_NAME
+        }
+        LOGGER.info("Creating template %s from VM %s" % (self.template_name,
+                                                         self.vm_name))
+
+        if not templates.createTemplate(True, **template_args):
+            raise exceptions.TemplateException(
+                "Failed creating template %s" % self.template_name)
         LOGGER.info("Creating first vm %s from template %s" %
                     (self.vm_name_1, self.template_name))
         assert vms.createVm(True, self.vm_name_1, self.vm_name_1,
@@ -496,22 +471,3 @@ class TestReadLock(TestCase):
         if not templates.removeTemplate(True, cls.template_name):
             raise exceptions.TemplateException("Failed removing template %s"
                                                % cls.template_name)
-
-
-@attr(tier=0)
-class TestCase320225(TestReadLock):
-    """
-    TCMS Test Case 320225 - Run on server
-    """
-    __test__ = True
-    tcms_test_case = '320225'
-    vm_type = config.VM_TYPE_SERVER
-
-    @tcms(TestReadLock.tcms_plan_id, tcms_test_case)
-    def test_create_vms(self):
-        """
-        Start creating a VM from template (server)
-        Wait until template is locked
-        Start creating another VM from the same template
-        """
-        self.create_two_vms_simultaneously()
