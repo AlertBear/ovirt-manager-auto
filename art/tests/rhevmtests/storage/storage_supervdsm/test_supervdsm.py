@@ -189,7 +189,7 @@ class TestCase289539(SuperVDSMTestBase):
                             ERROR_EXEC_SERVICE_ACTION % (command, "supervdsm"))
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase289547(SuperVDSMTestBase):
     """
     supervdsm test case, communication between supervdsm and vdsm
