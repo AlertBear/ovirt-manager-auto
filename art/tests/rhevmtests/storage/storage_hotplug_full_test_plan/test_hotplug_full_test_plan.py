@@ -349,7 +349,7 @@ class TestCase287481(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase286369(helpers.HotplugHookTest):
     """
     Check that non-executable hooks will not be called
@@ -507,22 +507,23 @@ class BasePlugDiskTest(TestCase):
                      cls.disks))
 
 
-@attr(tier=1)
+@attr(tier=0)
 class TestCase231521(BasePlugDiskTest):
     """Activate/Deactivate an already attached disk
-    on a running VM with support OS"""
+    on a running VM with supported OS"""
 
     __test__ = True
 
     tcms_plan_id = '5291'
     tcms_test_case = '231521'
+    interfaces = [config.VIRTIO, config.VIRTIO_SCSI]
 
     @classmethod
     def setup_class(cls):
         """Create a VM with 2 disks extra disks - 1 active and 1 inactive"""
         super(TestCase231521, cls).setup_class()
         vms.stop_vms_safely(cls.vm_names)
-        for vm_name in cls.vm_names:
+        for vm_name, interface in zip(cls.vm_names, cls.interfaces):
             # add disk and deactivate it
             LOGGER.info("Adding 2 disks to VM %s" % vm_name)
             disk_args = {
@@ -532,7 +533,7 @@ class TestCase231521(BasePlugDiskTest):
                 'wipe_after_delete': cls.storage in config.BLOCK_TYPES,
                 'storagedomain': cls.storage_domain,
                 'bootable': False,
-                'interface': ENUMS['interface_virtio'],
+                'interface': interface,
                 'vm': vm_name,
             }
 
@@ -551,7 +552,7 @@ class TestCase231521(BasePlugDiskTest):
                 raise exceptions.VMException("Unable to start VM %s" % vm_name)
 
     @tcms(tcms_plan_id, tcms_test_case)
-    def test_activate_disk(self):
+    def test_activate_deactivate_disk(self):
         """Activate an already attached disk on a running VM"""
         for vm in self.vm_names:
             inactive_disks = [disk for disk in vms.getVmDisks(vm)
@@ -565,10 +566,6 @@ class TestCase231521(BasePlugDiskTest):
             LOGGER.info("Finished activating disk %s" % disk_name)
             self.assertTrue(status)
 
-    @tcms(tcms_plan_id, tcms_test_case)
-    def test_deactivate_disk(self):
-        """Deactivate an already attached disk on a running VM"""
-        for vm in self.vm_names:
             active_disks = [disk for disk in vms.getVmDisks(vm)
                             if not disk.get_bootable() and
                             disk.get_active()]
@@ -613,173 +610,10 @@ class TestCase139348(BasePlugDiskTest):
 
 
 @attr(tier=1)
-class TestCase244310(BasePlugDiskTest):
-    """
-    Plug shared disks into 2 VMs simultaneously
-    """
-
-    __test__ = True
-    tcms_plan_id = '5291'
-    tcms_test_case = '244310'
-
-    @classmethod
-    def setup_class(cls):
-        """
-        create 2 vms for each template and start them
-        """
-        super(TestCase244310, cls).setup_class()
-        vms.stop_vms_safely(cls.vm_names)
-        cls.vm_pairs = []
-
-        def create_two_vms(vm_name):
-            new_name = vm_name + "1"
-            LOGGER.info("renaming vm %s to %s" % (vm_name, new_name))
-            if not vms.updateVm(positive, vm=vm_name, name=new_name):
-                raise exceptions.VMException("Unable to rename vm %s to %s" %
-                                             (vm_name, new_name))
-            vm_name = common.create_vm_from_template(
-                cls.template_name, cls.__name__, cls.storage_domain,
-                cls.storage)
-            vm_pair = (vm_name, new_name)
-            for vm in vm_pair:
-                LOGGER.info("Starting vm %s" % vm)
-                if not vms.startVm(positive, vm, wait_for_ip=True):
-                    raise exceptions.VMException("Unable to start VM %s" % vm)
-                LOGGER.info("VM %s started successfully" % vm)
-            cls.vm_pairs.append(vm_pair)
-
-        results = []
-        with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-            for vm_name in cls.vm_names:
-                results.append(executor.submit(create_two_vms,
-                                               vm_name))
-        utils.raise_if_exception(results)
-
-    @tcms(tcms_plan_id, tcms_test_case)
-    def test_plug_shared_disk_to_2_vms_same(self):
-        """
-        plug same disk into 2 vms simultaneously
-        """
-        for first_vm, second_vm in self.vm_pairs:
-            LOGGER.info("VMs are: %s, %s" % (first_vm, second_vm))
-            disk_name = config.DISK_NAME_FORMAT % (
-                ENUMS['interface_virtio'],
-                'shareable',
-                self.storage,
-            )
-            LOGGER.info(
-                "Plugging disk %s into vm %s (first vm)",
-                disk_name,
-                first_vm
-            )
-            first_plug_status = disks.attachDisk(positive,
-                                                 alias=disk_name,
-                                                 vmName=first_vm)
-            LOGGER.info(
-                "Plugging disk %s into vm %s (second vm)",
-                disk_name,
-                second_vm
-            )
-            second_plug_status = disks.attachDisk(positive,
-                                                  alias=disk_name,
-                                                  vmName=second_vm)
-            self.assertTrue(first_plug_status and second_plug_status)
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        remove and delete vms
-        """
-        for vm_pair in cls.vm_pairs:
-            common.shutdown_and_remove_vms(vm_pair)
-
-
-@attr(tier=1)
-class TestCase244314(TestCase):
-    """
-    Unplug and detach shared disk from one of the vms
-    """
-
-    __test__ = True
-    tcms_plan_id = '5291'
-    tcms_test_case = '244314'
-    template_name = config.TEMPLATE_NAME % TestCase.storage
-
-    @classmethod
-    def setup_class(cls):
-        """
-        create vm pair for each template, plug disk into vms and start them
-        """
-        cls.vm_pairs = []
-        cls.storage_domain = getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, cls.storage)[0]
-
-        disk_name = config.DISK_NAME_FORMAT % (
-            ENUMS['interface_virtio'],
-            'shareable',
-            cls.storage,
-        )
-        vm_name = common.create_vm_from_template(
-            cls.template_name, cls.__name__, cls.storage_domain, cls.storage)
-        new_name = vm_name + "1"
-        LOGGER.info("renaming vm %s to %s", vm_name, new_name)
-        if not vms.updateVm(positive, vm=vm_name, name=new_name):
-            raise exceptions.VMException("Unable to rename vm %s to %s" %
-                                         (vm_name, new_name))
-        vm_name = common.create_vm_from_template(
-            cls.template_name, cls.__name__, cls.storage_domain, cls.storage)
-        vm_pair = (vm_name, new_name)
-
-        for vm in vm_pair:
-            LOGGER.info("Plugging and activating disk %s to vm %s" %
-                        (disk_name, vm))
-            if not disks.attachDisk(positive, alias=disk_name, vmName=vm):
-                raise exceptions.DiskException("Unable to plug %s to vm %s"
-                                               % (disk_name, vm))
-            LOGGER.info("Disk %s plugged to vm %s" % (disk_name, vm))
-            LOGGER.info("Starting vm %s" % vm)
-            if not vms.startVm(positive, vm, wait_for_ip=True):
-                raise exceptions.VMException("Unable to start VM %s" % vm)
-            LOGGER.info("VM %s started successfully" % vm)
-            cls.vm_pairs.append(vm_pair)
-
-    @tcms(tcms_plan_id, tcms_test_case)
-    def test_unplug_shared_disk(self):
-        """
-        Unplug shared disk from a single VM while it is still plugged to
-        another vm
-        """
-        first_vm = self.vm_pairs[0][0]
-        disk_name = config.DISK_NAME_FORMAT % (
-            ENUMS['interface_virtio'],
-            'shareable',
-            self.storage,
-        )
-        LOGGER.info(
-            "Unplugging disk %s from vm %s",
-            disk_name,
-            first_vm
-        )
-        unplug_status = vms.deactivateVmDisk(positive,
-                                             diskAlias=disk_name,
-                                             vm=first_vm)
-        LOGGER.info("Disk %s unplugged from vm %s", disk_name, first_vm)
-        self.assertTrue(unplug_status)
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Shutdown and remove vms created in test
-        """
-        for vm_pair in cls.vm_pairs:
-            common.shutdown_and_remove_vms(vm_pair)
-
-
-@attr(tier=0)
 class TestCase174616(TestCase):
     """
     2 vms, 1 shareable disk attached to both of them.
-    test check if hotplug works fine
+    test ensure hotplug works fine
     """
     __test__ = True
 
