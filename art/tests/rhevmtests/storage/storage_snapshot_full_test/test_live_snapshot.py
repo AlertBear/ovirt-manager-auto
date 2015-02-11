@@ -392,7 +392,7 @@ class LiveSnapshotMultipleDisks(BasicEnvironmentSetUp):
         self._test_Live_snapshot(self.vm_name)
 
 
-@attr(tier=2)
+@attr(tier=1)
 class SnapshotDescription(BaseTestCase):
     """
     https://tcms.engineering.redhat.com/case/141636

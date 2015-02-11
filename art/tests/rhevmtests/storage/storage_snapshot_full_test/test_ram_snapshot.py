@@ -8,30 +8,33 @@ from helpers import is_pid_running_on_vm, start_cat_process_on_vm
 
 from concurrent.futures import ThreadPoolExecutor
 
-from nose.tools import istest
-
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
 
 from art.test_handler import exceptions as errors
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 
-from art.rhevm_api.tests_lib.low_level.datacenters import \
-    waitForDataCenterState
-from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost, \
-    getAnyNonSPMHost
+from art.rhevm_api.tests_lib.low_level.datacenters import (
+    waitForDataCenterState,
+)
+from art.rhevm_api.tests_lib.low_level.hosts import (
+    getSPMHost, getAnyNonSPMHost,
+)
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    getStorageDomainNamesForType)
-from art.rhevm_api.tests_lib.low_level.vms import updateVm, \
-    startVm, addSnapshot, is_snapshot_with_memory_state, \
-    stopVm, restoreSnapshot, undo_snapshot_preview, preview_snapshot, addVm, \
-    removeVm, exportVm, importVm, removeVmFromExportDomain, \
-    removeSnapshot, kill_process_by_pid_on_vm, shutdownVm, \
-    wait_for_vm_snapshots, removeVms, stop_vms_safely
+    getStorageDomainNamesForType,
+)
+from art.rhevm_api.tests_lib.low_level.vms import (
+    updateVm, startVm, addSnapshot, is_snapshot_with_memory_state,
+    stopVm, restoreSnapshot, undo_snapshot_preview, preview_snapshot, addVm,
+    removeVm, exportVm, importVm, removeVmFromExportDomain,
+    removeSnapshot, kill_process_by_pid_on_vm, shutdownVm,
+    wait_for_vm_snapshots, removeVms, stop_vms_safely,
+)
 
 from art.rhevm_api.tests_lib.high_level.vms import shutdown_vm_if_up
 from art.rhevm_api.tests_lib.high_level.storagedomains import (
-    attach_and_activate_domain, detach_and_deactivate_domain)
+    attach_and_activate_domain, detach_and_deactivate_domain,
+)
 
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
@@ -276,7 +279,7 @@ class CreateSnapshotWithMemoryState(DCWithStoragesActive):
         super(CreateSnapshotWithMemoryState, cls).teardown_class()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase294432(CreateSnapshotWithMemoryState):
     """
     TCMS Test Case 294432 - Create Snapshot with Memory State on SPM
@@ -285,7 +288,6 @@ class TestCase294432(CreateSnapshotWithMemoryState):
     run_test_on_spm = True
     tcms_test_case = '294432'
 
-    @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     def test_create_snapshot_spm(self):
         """
@@ -294,7 +296,7 @@ class TestCase294432(CreateSnapshotWithMemoryState):
         self.create_snapshot()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase294434(CreateSnapshotWithMemoryState):
     """
     TCMS Test Case 294434 - Create Snapshot with Memory State on HSM
@@ -303,7 +305,6 @@ class TestCase294434(CreateSnapshotWithMemoryState):
     run_test_on_spm = False
     tcms_test_case = '294434'
 
-    @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     def test_create_snapshot_hsm(self):
         """
@@ -356,7 +357,6 @@ class TestCase294435(ReturnToSnapshot):
     tcms_test_case = '294435'
     test_action = staticmethod(preview_snapshot)
 
-    @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     def test_preview_snapshot(self):
         """
@@ -385,7 +385,6 @@ class TestCase294437(ReturnToSnapshot):
     tcms_test_case = '294437'
     test_action = staticmethod(restoreSnapshot)
 
-    @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     def test_restore_snasphot(self):
         """
@@ -422,7 +421,6 @@ class TestCase294439(VMWithMemoryStateSnapshot):
         assert startVm(True, cls.vm, wait_for_ip=True,
                        wait_for_status=config.VM_UP)
 
-    @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     @bz('1018554')
     def test_vm_with_multiple_ram_snapshots(self):
@@ -521,7 +519,7 @@ class TestCase294439(VMWithMemoryStateSnapshot):
 @attr(tier=1)
 class TestCase294617(VMWithMemoryStateSnapshot):
     """
-    TCMS test case 294617 - Create vm from memory snapshot
+    TCMS test case 294617 - Create vm from snapshot with memory
     """
 
     __test__ = True
@@ -530,7 +528,6 @@ class TestCase294617(VMWithMemoryStateSnapshot):
     cloned_vm_name = '%s_%s_cloned' % (
                      VM_PREFIX, VMWithMemoryStateSnapshot.storage)
 
-    @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     def test_create_vm_from_memory_state_snapshot(self):
         """
@@ -570,43 +567,6 @@ class TestCase294617(VMWithMemoryStateSnapshot):
 
 
 @attr(tier=1)
-class TestCase294623(VMWithMemoryStateSnapshot):
-    """
-    TCMS test case 294623 - Export a vm with memory snapshot
-    """
-
-    __test__ = True
-    tcms_test_case = '294623'
-
-    @istest
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
-    def test_export_vm_with_memory_state_snapshot(self):
-        """
-        Export vm with memory state snapshot and check if export vm has
-        snapshot and the snapshot contains memory state
-        """
-        logger.info('Exporting vm %s to export domain %s', self.vm,
-                    config.EXPORT_DOMAIN)
-        self.assertTrue(exportVm(True, self.vm, config.EXPORT_DOMAIN),
-                        'Unable to export vm %s to export domain %s'
-                        % (self.vm, config.EXPORT_DOMAIN))
-
-        # TODO: check that vm was exported with snapshots - currently not
-        # possible - RFE?
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove vm from export domain
-        """
-        logger.info('Removing vm %s from export domain %s', cls.vm,
-                    config.EXPORT_DOMAIN)
-        removeVmFromExportDomain(True, cls.vm, config.DATA_CENTER_NAME,
-                                 config.EXPORT_DOMAIN)
-        super(TestCase294623, cls).teardown_class()
-
-
-@attr(tier=1)
 class TestCase294624(VMWithMemoryStateSnapshot):
     """
     TCMS test case 294624 - Import a vm with memory snapshot
@@ -618,32 +578,26 @@ class TestCase294624(VMWithMemoryStateSnapshot):
     original_vm = '%s_%s_original' % (
                   VM_PREFIX, VMWithMemoryStateSnapshot.storage)
 
-    @classmethod
-    def setup_class(cls):
-        """
-        Export the vm
-        """
-        super(TestCase294624, cls).setup_class()
-
-        logger.info('Exporting vm %s to domain %s', cls.vm,
-                    config.EXPORT_DOMAIN)
-        if not exportVm(True, cls.vm, config.EXPORT_DOMAIN):
-            raise errors.VMException('Unable to export vm %s to domain %s' %
-                                     (cls.vm, config.EXPORT_DOMAIN))
-        logger.info('Removing original vm to allow import vm without collapse '
-                    'snapshots', )
-        if not removeVm(True, cls.vm):
-            raise errors.VMException('Unable to remove vm %s', cls.vm)
-
-    @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     def test_import_vm_with_memory_state_snapshot(self):
         """
         Import a vm that has memory state snapshot and ensure it resumes memory
         state from that snapshot successfully
         """
-        logger.info('Importing vm %s from export domain %s', self.vm,
-                    config.EXPORT_DOMAIN)
+        logger.info('Exporting vm %s to domain %s',
+                    self.vm, config.EXPORT_DOMAIN)
+        if not exportVm(True, self.vm, config.EXPORT_DOMAIN):
+            raise errors.VMException('Unable to export vm %s to domain %s' %
+                                     (self.vm, config.EXPORT_DOMAIN))
+        logger.info('Removing original vm to allow import vm without collapse '
+                    'snapshots')
+        if not removeVm(True, self.vm):
+            raise errors.VMException('Unable to remove vm %s', self.vm)
+
+        logger.info(
+            'Importing vm %s from export domain %s',
+            self.vm, config.EXPORT_DOMAIN
+        )
         self.assertTrue(importVm(True, self.vm, config.EXPORT_DOMAIN,
                                  self.storage_domain, config.CLUSTER_NAME),
                         'Unable to import vm %s from export domain %s' %
@@ -693,7 +647,6 @@ class TestCase294631(VMWithMemoryStateSnapshot):
     __test__ = True
     tcms_test_case = '294631'
 
-    @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     def test_remove_memory_state_snapshot(self):
         """
@@ -716,7 +669,7 @@ class TestCase294631(VMWithMemoryStateSnapshot):
                                               self.cmdlines[0]))
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase305433(VMWithMemoryStateSnapshot):
     """
     TCMS test case 305433 - Stateless vm with memory snapshot
@@ -725,7 +678,6 @@ class TestCase305433(VMWithMemoryStateSnapshot):
     __test__ = True
     tcms_test_case = '305433'
 
-    @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     @bz('1004184')
     def test_stateless_vm_with_memory_snapshot(self):
