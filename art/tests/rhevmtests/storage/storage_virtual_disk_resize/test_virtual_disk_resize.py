@@ -575,7 +575,7 @@ class TestCase297018(BasicResize):
         self.perform_basic_action()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase297090(BasicResize):
     """
     block connectivity from host to storage domain - preallocated disk
@@ -606,7 +606,7 @@ class TestCase297090(BasicResize):
         self.block_connection_case()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase297089(BasicResize):
     """
     block connectivity from host to storage domain - sparse disk
@@ -701,7 +701,7 @@ class TestCase287468(BasicResize):
         assert removeVm(True, self.test_vm_name, stopVM='true', wait=True)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase287469(BasicResize):
     """
     Extend disk to more than available capacity
@@ -740,7 +740,7 @@ class TestCase287469(BasicResize):
         super(TestCase287469, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase297085(BasicResize):
     """
     Stop libvirt service during disk extension
