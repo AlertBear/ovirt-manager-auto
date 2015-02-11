@@ -7,7 +7,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 
 from art.unittest_lib import StorageTest as TestCase, attr
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import storagedomains, vms, templates
 
 from common import _create_vm
@@ -55,7 +55,7 @@ class BaseExportImportTestCase(TestCase):
         assert vms.removeVm(True, self.vm_name)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase42054(BaseExportImportTestCase):
     """
     Test Force Override option
@@ -128,7 +128,7 @@ class TestCase42054(BaseExportImportTestCase):
         super(TestCase42054, self).tearDown()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase41256(BaseExportImportTestCase):
     """
     Test Case 41256 -  Collapse Snapshots
@@ -173,12 +173,10 @@ class TestCase41256(BaseExportImportTestCase):
             True, self.vm_name, config.CLUSTER_NAME, self.export_domain)
 
 
-@attr(tier=1)
+@attr(tier=0)
 class TestCase41242(BaseExportImportTestCase):
     """
     Test case 41242 - Export a VM sanity
-    Bugzilla 882632 - Fails to export a VM cloned from a template to a
-                      storage domain without the original template
     Test import from Blank and from template
     """
     __test__ = True
@@ -203,7 +201,6 @@ class TestCase41242(BaseExportImportTestCase):
 
         assert templates.removeTemplate(True, self.template_name)
 
-    @bz('882632')
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_export_vm(self):
         """

@@ -24,7 +24,6 @@ STORAGE_DOMAIN_API = get_api('storage_domain', 'storagedomains')
 class TestCase174617(TestCase):
     """
     Test Case 174617 - Import more than once
-    Bugzilla 853045 - 500 when exporting/import template/vm
 
     * Import the same VM twice
     * Import the same template twice
