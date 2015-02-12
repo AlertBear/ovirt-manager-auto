@@ -264,6 +264,9 @@ class UTestGroup(TestGroup):
             logger.info('Group description: %s', self.description)
             try:
                 if not self.skip:
+                    self.context.config.plugins.startContext(
+                        self.context.context
+                    )
                     self.context.setUp()
             except Exception as ex:
                 logger.error("TEST GROUP setUp ERROR: %s: %s", ex,
@@ -293,6 +296,9 @@ class UTestGroup(TestGroup):
                     logger.info("TEST GROUP tearDown: %s", self.test_name)
                     self.context.was_setup = True
                     self.context.tearDown()
+                    self.context.config.plugins.stopContext(
+                        self.context.context
+                    )
             except Exception as e:
                 self.incr_exc()
                 self.status = self.TEST_STATUS_FAILED
@@ -319,6 +325,7 @@ class UTestSuite(TestSuite):
             logger.info(TEST_CASES_SEPARATOR)
             logger.info("TEST SUITE setUp: %s", self.test_name)
             try:
+                self.context.config.plugins.startContext(self.context.context)
                 self.context.setUp()
             except Exception as ex:
                 logger.error("TEST SUITE setUp ERROR: %s: %s", ex,
@@ -348,6 +355,7 @@ class UTestSuite(TestSuite):
             try:
                 self.context.was_setup = True
                 self.context.tearDown()
+                self.context.config.plugins.stopContext(self.context.context)
             except Exception:
                 self.incr_exc()
                 self.status = self.TEST_STATUS_FAILED

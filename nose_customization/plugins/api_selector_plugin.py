@@ -55,12 +55,16 @@ class APISelectorPlugin(NosePlugin):
         api = getattr(test, 'api', None)
         if not api:
             return
-        opts['engine'] = api
-        art_log.info("The API backend switched to %s", api)
+        if opts['engine'] != api:
+            opts['engine'] = api
+            art_log.info("The API backend switched to %s", api)
 
-    def startTest(self, test):
+    def startContext(self, test):
         self._set_api(test)
 
-    def stopTest(self, test):
-        opts['engine'] = self.original_engine
-        art_log.info("The API backend switched to %s", self.original_engine)
+    def stopContext(self, test):
+        if opts['engine'] != self.original_engine:
+            opts['engine'] = self.original_engine
+            art_log.info(
+                "The API backend switched to %s", self.original_engine,
+            )
