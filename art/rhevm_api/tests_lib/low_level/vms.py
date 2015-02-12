@@ -1642,7 +1642,7 @@ def shutdownVm(positive, vm, async='true'):
 
 @is_action()
 def migrateVm(positive, vm, host=None, wait=True, force=False):
-    '''
+    """
     Migrate the VM.
 
     If the host was specified, after the migrate action was performed,
@@ -1653,57 +1653,64 @@ def migrateVm(positive, vm, host=None, wait=True, force=False):
     method is checking whether the VM is UP and whether the VM runs
     on host different to the source host.
 
-    Author: edolinin, jhenner
-    Parameters:
-       * vm - name of vm
-       * host - Name of the destionation host to migrate VM on, or
-                None for RHEVM destination host autoselection.
-       * wait - When True wait until end of action,
-                     False return without waiting.
-    Return: True if vm was migrated and test is positive,
-            False otherwise.
-    '''
-    vmObj = VM_API.find(vm)
-    if not vmObj.get_host():
-        logger.error("VM has no attribute 'host': %s" % dir(vmObj))
+    :param positive: Expected result
+    :type positive: bool
+    :param vm: name of vm
+    :type vm: str
+    :param host: Name of the destination host to migrate VM on, or
+                 None for RHEVM destination host autodetect.
+    :type host: str
+    :param wait: When True wait until end of action, False return without
+                 waiting.
+    :type wait: bool
+    :param force: <Don't know what is force. please comment>
+    :type force: bool
+    :return: True if vm was migrated and test is positive, False otherwise.
+    :rtype: bool
+    """
+    vm_obj = VM_API.find(vm)
+    if not vm_obj.get_host():
+        logger.error("VM has no attribute 'host': %s", dir(vm_obj))
         return False
-    actionParams = {}
+    action_params = {}
 
-    # If the host is not specified, we should let RHEVM to autoselect host.
+    # If the host is not specified, we should let RHEVM to autodetect the host.
     if host:
-        destHostObj = HOST_API.find(host)
-        actionParams['host'] = data_st.Host(id=destHostObj.id)
+        dest_host_obj = HOST_API.find(host)
+        action_params["host"] = data_st.Host(id=dest_host_obj.id)
 
     if force:
-        actionParams['force'] = True
+        action_params["force"] = True
 
-    if not VM_API.syncAction(vmObj, "migrate", positive, **actionParams):
+    if not VM_API.syncAction(vm_obj, "migrate", positive, **action_params):
         return False
 
     # Check the VM only if we do the positive test. We know the action status
     # failed so with fingers crossed we can assume that VM didn't migrate.
     if not wait or not positive:
-        logger.warning('Not going to wait till VM migration completes. \
-        wait=%s, positive=%s' % (str(wait), positive))
+        logger.warning(
+            "Not going to wait till VM migration completes. wait=%s, "
+            "positive=%s" % (str(wait), positive)
+        )
         return True
 
     # Barak: change status to up from powering up, since all migrations ends in
     # up, but diskless VM skips the powering_up phase
-    if not VM_API.waitForElemStatus(vmObj, 'up', 300):
+    if not VM_API.waitForElemStatus(vm_obj, "up", 300):
         return False
 
     # Check whether we tried to migrate vm to different cluster
     # in this case we return False, since this action shouldn't be allowed.
-    logger.info('Getting the VM host after VM migrated.')
-    realDestHostId = VM_API.find(vm).host.id
-    realDestHostObj = HOST_API.find(realDestHostId, 'id')
-    if vmObj.cluster.id != realDestHostObj.cluster.id:
-        logger.error('VM migrated to a different cluster')
+    logger.info("Getting the %s host after VM migrated.", vm)
+    real_dest_host_id = VM_API.find(vm).host.id
+    real_dest_host_obj = HOST_API.find(real_dest_host_id, "id")
+    if vm_obj.cluster.id != real_dest_host_obj.cluster.id:
+        logger.error("%s migrated to a different cluster", vm)
         return False
 
-    # Validating that the vm did migrate to a diffrent host
-    if vmObj.host.id == realDestHostId:
-        logger.error('VM stayed on the same host')
+    # Validating that the vm did migrate to a different host
+    if vm_obj.host.id == real_dest_host_id:
+        logger.error("%s stayed on the same host", vm)
         return False
 
     return True
@@ -3076,16 +3083,21 @@ def wait_for_vm_states(vm_name, states=[ENUMS['vm_state_up']],
             break
 
 
-def start_vms(vm_list, max_workers=2,
-              wait_for_status=ENUMS['vm_state_powering_up'],
-              wait_for_ip=True):
+def start_vms(
+    vm_list, max_workers=2, wait_for_status=ENUMS['vm_state_powering_up'],
+    wait_for_ip=True
+):
     """
     Starts all vms in vm_list. Throws an exception if it fails
 
     :param vm_list: list of vm names
+    :type vm_list: list
     :param max_workers: In how many threads should vms start
+    :type max_workers: int
     :param wait_for_status: from ENUMS, to which state we wait for
+    :type wait_for_status: str
     :param wait_for_ip: Boolean, wait to get an ip from the vm
+    :type wait_for_ip: bool
     :raises: VMException
     """
     results = list()
@@ -3094,14 +3106,17 @@ def start_vms(vm_list, max_workers=2,
             vm_obj = VM_API.find(machine)
             if vm_obj.get_status().get_state() == ENUMS['vm_state_down']:
                 logger.info("Starting vm %s", machine)
-                results.append(executor.submit(startVm, True,
-                                               machine, wait_for_status,
-                                               wait_for_ip,
-                                               ))
+                results.append(
+                    executor.submit(
+                        startVm, True, machine, wait_for_status, wait_for_ip
+                    )
+                )
     for machine, res in zip(vm_list, results):
         if res.exception():
-            logger.error("Got exception while starting vm %s: %s", machine,
-                         res.exception())
+            logger.error(
+                "Got exception while starting vm %s: %s",
+                machine, res.exception()
+            )
             raise res.exception()
         if not res.result():
             raise exceptions.VMException("Cannot start vm %s" % machine)
@@ -4347,3 +4362,36 @@ def get_vm_disk_logical_name(vm_name, disk_alias):
     """
     disk_object = getVmDisk(vm_name, disk_alias)
     return disk_object.get_logical_name()
+
+
+def run_vms_once(vms, max_workers=None, **kwargs):
+    """
+    Starts all vms in vm_list. Throws an exception if it fails
+
+    :param vms: list of vm names
+    :type vms: list
+    :param max_workers: In how many threads should vms start
+    :type max_workers: int
+    :param kwargs: kwargs for runVmOnce function
+    :type kwargs: dict
+    :raises: VMException
+    """
+    results = list()
+    max_workers = len(vms) if not max_workers else max_workers
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for machine in vms:
+            vm_obj = VM_API.find(machine)
+            if vm_obj.get_status().get_state() == ENUMS['vm_state_down']:
+                logger.info("Starting vm %s", machine)
+                results.append(
+                    executor.submit(runVmOnce, True, machine, **kwargs)
+                )
+    for machine, res in zip(vms, results):
+        if res.exception():
+            logger.error(
+                "Got exception while starting vm %s: %s",
+                machine, res.exception()
+            )
+            raise res.exception()
+        if not res.result():
+            raise exceptions.VMException("Cannot start vm %s" % machine)
