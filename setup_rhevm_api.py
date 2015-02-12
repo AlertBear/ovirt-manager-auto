@@ -45,6 +45,7 @@ PACKAGE_DATA = {
 
 DATA_FILES = [
     'art/rhevm_api/data_struct/api.xsd',
+    'art/tests/ldap/*/*.properties',
     'art/tests/rhevmtests/*.py',
     'art/tests/rhevmtests/storage/*.py',
     'art/tests/rhevmtests/storage/storage_*/*.py',
