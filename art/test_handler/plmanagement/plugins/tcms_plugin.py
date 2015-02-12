@@ -190,14 +190,14 @@ class TCMS(Component):
         if tcms_plan and tcms_plan == self.tcms_plans[-1]:
             self.tcms_plans.pop()
 
-    def pre_test_case(self, g):
+    def pre_test_case(self, t):
         pass
 
     def test_group_skipped(self, g):
         pass
 
     def _get_engine_name(self, test):
-        engine = test.attrs.get('api')
+        engine = getattr(test, 'api', None)
         if not engine:
             engine = settings.opts['engine']
         return engine
@@ -209,11 +209,12 @@ class TCMS(Component):
 
         tcms_cases = str(tcms_data).split(',')
         plan = test.attrs.get(TCMS_PLAN_ID)
-        if not plan and self.tcms_plans:
-            plan = self.tcms_plans[-1]
-
-        assert plan, "Missing tcms_plan for test_case %s" % tcms_cases
-        # NOTE: it shouldn't happen
+        if not plan:
+            if self.tcms_plans:
+                plan = self.tcms_plans[-1]
+            else:
+                # This can happen when CASE_ID is defined in parent class
+                return
 
         plans = self.results.setdefault(self._get_engine_name(test), {})
         res = plans.setdefault(plan, {})
