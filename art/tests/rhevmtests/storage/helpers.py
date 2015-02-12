@@ -3,7 +3,7 @@ Storage helper functions
 """
 import logging
 import shlex
-from utilities.machine import Machine
+from utilities.machine import Machine, LINUX
 from art.rhevm_api.tests_lib.low_level.disks import (
     waitForDisksState, attachDisk, addDisk, get_all_disk_permutation,
     updateDisk
@@ -26,6 +26,7 @@ DISK_TIMEOUT = 250
 SNAPSHOT_TIMEOUT = 15 * 60
 DD_TIMEOUT = 30
 DD_COMMAND = 'dd if=/dev/urandom of=%s'
+ERROR_MSG = "Error: Boot device is protected"
 
 disk_args = {
     # Fixed arguments
@@ -176,8 +177,9 @@ def perform_dd_to_disk(vm_name, disk_alias, protect_boot_device=True):
     :rtype: int, str
     """
     vm_ip = get_vm_ip(vm_name)
-    vm_machine = Machine(host=vm_ip, user=config.VM_USER,
-                         password=config.VM_PASSWORD).util('linux')
+    vm_machine = Machine(
+        host=vm_ip, user=config.VM_USER, password=config.VM_PASSWORD
+    ).util(LINUX)
     output = vm_machine.get_boot_storage_device()
     boot_disk = 'vda' if 'vd' in output else 'sda'
 
@@ -189,8 +191,8 @@ def perform_dd_to_disk(vm_name, disk_alias, protect_boot_device=True):
             logger.warn("perform_dd_to_disk function aborted since the "
                         "requested disk alias translates into the boot "
                         "device, this would overwrite the OS")
-            # TODO: Need to return an error code here
-            return
+
+            return False, ERROR_MSG
 
     command = DD_COMMAND % disk_logical_volume_name
     logger.info("Performing command '%s'", command)

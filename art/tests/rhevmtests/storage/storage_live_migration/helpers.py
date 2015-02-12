@@ -3,19 +3,13 @@ Live Storage Migration test helpers functions
 """
 
 import logging
-from utilities.machine import Machine
-from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.tests_lib.low_level.disks import (
     waitForDisksState, addDisk, get_all_disk_permutation, attachDisk,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-from art.rhevm_api.tests_lib.low_level.vms import (
-    activateVmDisk, waitForVMState, start_vms,
-)
-from rhevmtests.storage.helpers import get_vm_ip
+from art.rhevm_api.tests_lib.low_level.vms import activateVmDisk
 
 from art.test_handler import exceptions
-import shlex
 
 import config
 
@@ -136,31 +130,3 @@ def add_new_disk_for_test(vm_name, alias, provisioned_size=(1 * config.GB),
             waitForDisksState(disk_params['alias'])
             if attach:
                 prepare_disks_for_vm(vm_name, [disk_params['alias']])
-
-
-def verify_write_operation_to_disk(vm_name, disk_number=0, ensure_vm_on=False):
-    """
-    Function that perform dd command to disk
-    Parameters:
-        * vm_name - name of vm which write operation should occur on
-        * disk_number - disk number from devices list
-    Return: ecode and output, or raise EntityNotFound if error occurs
-    """
-    if ensure_vm_on:
-        start_vms([vm_name], 1, wait_for_ip=False)
-        waitForVMState(vm_name)
-    vm_ip = get_vm_ip(vm_name)
-    vm_machine = Machine(host=vm_ip, user=config.VM_USER,
-                         password=config.VM_PASSWORD).util('linux')
-    vm_devices = vm_machine.get_storage_devices(filter=FILTER)
-    output = vm_machine.get_boot_storage_device()
-    boot_disk = 'vda' if 'vd' in output else 'sda'
-    if not vm_devices:
-        raise EntityNotFound("Error occurred retrieving vm devices")
-
-    vm_devices = [device for device in vm_devices if device != boot_disk]
-    command = DD_COMMAND % (boot_disk, vm_devices[disk_number])
-    logger.info("Verifying write operation to disk %s",
-                vm_devices[disk_number])
-    ecode, out = vm_machine.runCmd(shlex.split(command), timeout=DD_TIMEOUT)
-    return ecode, out

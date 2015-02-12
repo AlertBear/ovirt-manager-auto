@@ -35,7 +35,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     removeVm, waitForVmsStates, wait_for_vm_snapshots,
     get_vms_disks_storage_domain_name, removeVms, createVm,
 )
-from rhevmtests.storage.helpers import create_vm_or_clone
+import rhevmtests.storage.helpers as storage_helpers
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.rhevm_api.utils.storage_api import flushIptables
 
@@ -243,7 +243,7 @@ class BasicResize(BaseTestCase):
         assert waitForDisksState(self.disk_name, timeout=TASK_TIMEOUT)
 
         logger.info("dd to disk %s", self.disk_name)
-        helpers.verify_write_operation_to_disk(self.vm)
+        storage_helpers.perform_dd_to_disk(self.vm, self.disk_name)
 
         disks_objs = getVmDisks(self.vm)
         disk_obj = [disk_obj for disk_obj in disks_objs if
@@ -662,7 +662,7 @@ class TestCase287468(BasicResize):
         vmArgs['storageDomainName'] = self.storage_domain
 
         logger.info('Creating vm and installing OS on it')
-        if not create_vm_or_clone(**vmArgs):
+        if not storage_helpers.create_vm_or_clone(**vmArgs):
             raise exceptions.VMException("Failed to create vm %s"
                                          % self.test_vm_name)
         assert waitForVMState(self.test_vm_name)
@@ -789,7 +789,7 @@ class TestCase297085(BasicResize):
         self.assertTrue(rc, "Failed to start libvirt: %s" % output)
         assert waitForDisksState(self.disk_name, timeout=TASK_TIMEOUT)
         logger.info("dd to disk %s", self.disk_name)
-        helpers.verify_write_operation_to_disk(self.vm)
+        storage_helpers.perform_dd_to_disk(self.vm, self.disk_name)
         logger.info("Getting volume size")
 
         disks_objs = getVmDisks(self.vm)
@@ -832,7 +832,7 @@ class TestCase287477(BasicResize):
             self.vm_name = "vm_%s_%s_%s" % (
                 self.tcms_test_case, self.storage, i)
             vmArgs['vmName'] = self.vm_name
-            if not create_vm_or_clone(**vmArgs):
+            if not storage_helpers.create_vm_or_clone(**vmArgs):
                 raise exceptions.VMException('Unable to create vm %s for test'
                                              % self.vm_name)
             self.vm_names.append(self.vm_name)
@@ -882,7 +882,7 @@ class TestCase287478(BasicResize):
             vmArgs['storageDomainName'] = sd
             self.vm_name = self.vm_name % (self.tcms_test_case, i)
             vmArgs['vmName'] = self.vm_name
-            if not create_vm_or_clone(**vmArgs):
+            if not storage_helpers.create_vm_or_clone(**vmArgs):
                 raise exceptions.VMException('Unable to create vm %s for test'
                                              % self.vm_name)
             self.vm_names.append(self.vm_name)

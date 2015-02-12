@@ -12,22 +12,14 @@ from art.rhevm_api.tests_lib.low_level.vms import (
 
 from art.rhevm_api.tests_lib.low_level import disks
 from art.test_handler import exceptions
-import shlex
-from art.test_handler.exceptions import CanNotFindIP
 from rhevmtests.storage.helpers import get_vm_ip
 
 import config
 
 logger = logging.getLogger(__name__)
 
-ENUMS = config.ENUMS
-
-DISKS_NAMES = list()
 DISK_TIMEOUT = 250
 FILTER = '[sv]d'
-DD_COMMAND = 'dd if=/dev/%s of=/dev/%s bs=1M oflag=direct'
-
-DD_TIMEOUT = 1500
 
 
 def prepare_disks_for_vm(vm_name, disks_to_prepare):
@@ -83,26 +75,6 @@ def get_vm_storage_devices(vm_name):
     return vm_devices, boot_disk
 
 
-def verify_write_operation_to_disk(vm_name, disk_number=0):
-    """
-    Function that perform dd command to disk
-    Parameters:
-        * vm_name - name of vm which write operation should occur on
-        * disk_number - disk number from devices list
-    Return: ecode and output, or raise EntityNotFound if error occurs
-    """
-    vm_ip = get_vm_ip(vm_name)
-    vm_machine = Machine(host=vm_ip, user=config.VMS_LINUX_USER,
-                         password=config.VMS_LINUX_PW).util('linux')
-    vm_devices, boot_disk = get_vm_storage_devices(vm_name)
-
-    command = DD_COMMAND % (boot_disk, vm_devices[disk_number])
-
-    ecode, out = vm_machine.runCmd(shlex.split(command), timeout=DD_TIMEOUT)
-
-    return ecode, out
-
-
 def get_volume_size(hostname, user, password, disk_object, dc_obj):
     """
     Get volume size in GB
@@ -144,7 +116,7 @@ def get_vm_device_size(vm_name, device_name):
     """
     try:
         vm_ip = get_vm_ip(vm_name)
-    except CanNotFindIP:
+    except exceptions.CanNotFindIP:
         raise exceptions.VMException("No IP found for vm %s: ", vm_name)
 
     vm_machine = Machine(host=vm_ip, user=config.VMS_LINUX_USER,

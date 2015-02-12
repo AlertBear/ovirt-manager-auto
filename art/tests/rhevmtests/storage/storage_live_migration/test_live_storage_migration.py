@@ -40,7 +40,7 @@ from art.rhevm_api.utils.log_listener import watch_logs
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
-from rhevmtests.storage.helpers import get_vm_ip
+import rhevmtests.storage.helpers as storage_helpers
 from rhevmtests.storage.storage_live_migration import helpers
 from art.unittest_lib.common import StorageTest as BaseTestCase
 
@@ -346,7 +346,7 @@ class TestCase166090(BaseTestCase):
         """
         start_vms([self.base_vm], 1, wait_for_ip=False)
         waitForVMState(self.base_vm)
-        ip_addr = get_vm_ip(self.base_vm)
+        ip_addr = storage_helpers.get_vm_ip(self.base_vm)
         setPersistentNetwork(ip_addr, config.VM_PASSWORD)
         stop_vms_safely([self.base_vm])
 
@@ -1288,14 +1288,19 @@ class TestCase281156(AllPermutationsDisks):
             - we should succeed to delete the snapshot
             - we should succeed to run the vm
         """
-        for index, disk in enumerate(helpers.DISKS_NAMES):
+        for disk in helpers.DISKS_NAMES:
             target_sd = get_other_storage_domain(disk, config.VM_NAME)
             start_vms([config.VM_NAME], 1, wait_for_ip=False)
             waitForVMState(config.VM_NAME)
             live_migrate_vm_disk(config.VM_NAME, disk, target_sd, wait=False)
 
-            helpers.verify_write_operation_to_disk(config.VM_NAME, index,
-                                                   ensure_vm_on=True)
+            status, _ = storage_helpers.perform_dd_to_disk(
+                config.VM_NAME, disk
+            )
+            if not status:
+                raise exceptions.DiskException(
+                    "Failed to perform dd operation on disk %s" % disk
+                )
 
             wait_for_jobs()
             stop_vms_safely([config.VM_NAME])
@@ -2069,13 +2074,18 @@ class TestCase281162(AllPermutationsDisks):
         """
         start_vms([config.VM_NAME], 1, wait_for_ip=False)
         waitForVMState(config.VM_NAME)
-        for index, disk in zip(range(len(helpers.DISKS_NAMES)),
-                               helpers.DISKS_NAMES):
+        for disk in helpers.DISKS_NAMES:
             target_sd = get_other_storage_domain(disk, config.VM_NAME)
             live_migrate_vm_disk(config.VM_NAME, disk, target_sd, wait=False)
 
             logger.info("Writing to disk")
-            helpers.verify_write_operation_to_disk(config.VM_NAME, index)
+            status, _ = storage_helpers.perform_dd_to_disk(
+                config.VM_NAME, disk
+            )
+            if not status:
+                raise exceptions.DiskException(
+                    "Failed to perform dd operation on disk %s" % disk
+                )
 
             wait_for_jobs()
             stop_vms_safely([config.VM_NAME])

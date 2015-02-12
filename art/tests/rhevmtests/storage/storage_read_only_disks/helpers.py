@@ -3,21 +3,17 @@ Read Only Disk test helpers functions
 """
 
 import logging
-from utilities.machine import Machine
-from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.tests_lib.low_level.disks import (
     waitForDisksState, addDisk, get_all_disk_permutation, attachDisk,
     check_disk_visibility, checkDiskExists, deleteDisk,
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import addStorageDomain
 from art.rhevm_api.tests_lib.low_level.vms import (
-    activateVmDisk, getVmDisks, waitForVMState, start_vms,
+    activateVmDisk, getVmDisks,
 )
 from art.test_handler import exceptions
+from rhevmtests.storage import helpers
 
-from rhevmtests.storage.helpers import get_vm_ip
-
-import shlex
 import config
 
 logger = logging.getLogger(__name__)
@@ -100,35 +96,6 @@ def start_creating_disks_for_test(sd_name, storage_type, shared=False):
                      permutation=permutation, shared=shared)
 
 
-def verify_write_operation_to_disk(vm_name, disk_number):
-    """
-    Function that perform dd command to disk
-    Parameters:
-        * vm_name - name of vm which write operation should occur on
-        * disk_number - disk number from devices list
-    Return: ecode and output, or raise EntityNotFound if error occurs
-    """
-    start_vms([vm_name], max_workers=1, wait_for_ip=False)
-    waitForVMState(vm_name)
-    vm_ip = get_vm_ip(vm_name)
-    vm_machine = Machine(host=vm_ip, user=config.VM_USER,
-                         password=config.VM_PASSWORD).util('linux')
-    output = vm_machine.get_boot_storage_device()
-    boot_disk = 'vda' if 'vd' in output else 'sda'
-
-    vm_devices = vm_machine.get_storage_devices(filter=FILTER)
-    if not vm_devices:
-        raise EntityNotFound("Error occurred retrieving vm devices")
-
-    vm_devices = [device for device in vm_devices if device != boot_disk]
-
-    command = DD_COMMAND % (boot_disk, vm_devices[disk_number])
-
-    ecode, out = vm_machine.runCmd(shlex.split(command), timeout=DD_TIMEOUT)
-
-    return ecode, out
-
-
 def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
     """
     Attach disks to vm
@@ -176,7 +143,7 @@ def write_on_vms_ro_disks(vm_name, storage_type, imported_vm=False):
         logger.info("Disks: %s", DISKS_NAMES[storage_type])
     logger.info("VM %s disks %s", vm_name, vm_disks)
 
-    for index, disk in enumerate(DISKS_NAMES[storage_type]):
+    for disk in DISKS_NAMES[storage_type]:
         logger.info("Checking if disk %s visible to %s", disk, vm_name)
         is_visible = check_disk_visibility(disk, vm_disks)
 
@@ -184,10 +151,9 @@ def write_on_vms_ro_disks(vm_name, storage_type, imported_vm=False):
             raise exceptions.DiskException("Disk %s is not visible to vm %s",
                                            disk, vm_name)
         logger.info("disk %s is visible to %s" % (disk, vm_name))
-        state, out = verify_write_operation_to_disk(
-            vm_name, disk_number=index)
         logger.info("Trying to write to read only disk...")
-        status = (not state) and (READ_ONLY in out or NOT_PERMITTED in out)
+        status, out = helpers.perform_dd_to_disk(config.VM_NAME, disk)
+        status = (not status) and (READ_ONLY in out or NOT_PERMITTED in out)
         if not status:
             raise exceptions.DiskException("Write operation to RO disk "
                                            "succeeded")
