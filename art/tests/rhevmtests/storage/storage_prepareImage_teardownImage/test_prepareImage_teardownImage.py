@@ -471,7 +471,7 @@ class TestCase388748(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase389851(BasicEnvironment):
     """
     Prepare image with optional flag unset
@@ -517,7 +517,7 @@ class TestCase389851(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase389852(BasicEnvironment):
     """
     Prepare image with 1 erroneous flag value
@@ -644,7 +644,7 @@ class TestCase389921(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase389922(BasicEnvironment):
     """
     Prepare image on VM with disks from different Storage Domains
@@ -705,7 +705,7 @@ class TestCase389922(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase389923(BasicEnvironment):
     """
     Prepare image for Disks on a VM created from template
@@ -854,7 +854,7 @@ class TestCase389924(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase389927(BasicEnvironment):
     """
     Prepare image followed by Tear Down, then run Prepare image once more
@@ -986,7 +986,7 @@ class TestCase389939(BasicEnvironment):
         self.basic_positive_flow_only_teardown_image_no_volume_id()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase389940(BasicEnvironment):
     """
     Tear down image with 1 erroneous flag value
