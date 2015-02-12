@@ -22,7 +22,7 @@ class TestCase99062(TestCase):
 
     This test case expects one host
     """
-    __test__ = True
+    __test__ = not config.GOLDEN_ENV
     tcms_plan_id = '6458'
     tcms_test_case = '99062'
     host = config.HOSTS[0]

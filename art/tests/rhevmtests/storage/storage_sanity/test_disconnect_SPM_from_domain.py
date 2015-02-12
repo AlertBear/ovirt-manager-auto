@@ -1,7 +1,6 @@
 import logging
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
-from nose.tools import istest
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
 from art.rhevm_api.tests_lib.low_level.hosts import waitForSPM
@@ -34,7 +33,7 @@ def teardown_module():
         vdc_password=config.VDC_PASSWORD)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase68536(TestCase):
     """
     storage sanity test, disconnect SPM from storage
@@ -62,10 +61,9 @@ class TestCase68536(TestCase):
         cls.master_domain_ip = cls.master_domain_ip['address']
         logger.info("Master domain ip found : %s", cls.master_domain_ip)
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
     @bz('1017207')
-    def disconnect_SPM_from_storage_test(self):
+    def test_disconnect_SPM_from_storage(self):
         """ test checks if disconnecting SPM from storage domain
             works properly
         """
