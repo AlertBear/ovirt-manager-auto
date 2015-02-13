@@ -217,7 +217,9 @@ def create_vm_or_clone(positive, vmName, vmDescription,
                        cluster, **kwargs):
     """
     Create a VM from scratch for non-GE environments, clones VM from
-    cluster's templates for GE environments
+    cluster's templates for GE environments. This function greatly improves
+    runtime on GE environments by re-using existing templates instead of
+    creating VMs from scratch
 
     :param positive: Expected result
     :type positive: bool
@@ -230,23 +232,23 @@ def create_vm_or_clone(positive, vmName, vmDescription,
     :return: True if successful in creating the vm, False otherwise
     :rtype: bool
     """
-    # This function mimics the parameters of createVm so all the
-    # instances of createVm can be quickly replaced
-    # TODO: add placement_host and HA parameters and modify the logic
-    #       after clone since multiple tests use those options
-
-    # Clone vm from template only allows virtio and virtio-scsi disk interfaces
-    diskInterface = kwargs.get('diskInterface', None)
-    # start parameter could be bool or str in some calls
+    diskInterface = kwargs.get('diskInterface')
     start = kwargs.get('start', False)
+    installation = kwargs.get('installation', False)
+    # start parameter could be bool or str in some calls
     if (isinstance(start, str) and start.lower() == 'true' or
             isinstance(start, bool) and start):
         start = True
     else:
         start = False
 
-    if config.GOLDEN_ENV and (diskInterface != config.INTERFACE_IDE):
-        logger.info("Cloning vm")
+    # If the vm doesn't need installation don't waste time cloning the vm
+    # Clone vm from template only allows virtio and virtio-scsi disk
+    # interfaces, in case of IDE create a vm instead of cloning
+    if (config.GOLDEN_ENV and
+            diskInterface != config.INTERFACE_IDE and installation):
+        logger.info("Cloning vm %s", vmName)
+        template_name = 'template_2'
         template_name = None
         for cl in config.CLUSTERS:
             if cl['name'] == cluster:
@@ -262,16 +264,22 @@ def create_vm_or_clone(positive, vmName, vmDescription,
         args_clone = {
             'positive': True,
             'name': vmName,
-            'template': template_name,
             'cluster': cluster,
+            'template': template_name,
             'clone': True,  # Always clone
             # If sparse is not defined, use thin by default to speed up
             # the test run
             'vol_sparse': kwargs.get('volumeType', 'true'),
-            'vol_format': kwargs.get('volumeFormat', None),
-            'storagedomain': kwargs.get('storageDomainName', None),
-            'vm_description': vmDescription,
+            'vol_format': kwargs.get('volumeFormat'),
+            'storagedomain': kwargs.get('storageDomainName'),
+            'virtio_scsi': diskInterface == config.INTERFACE_VIRTIO_SCSI,
         }
+        update_keys = [
+            'vmDescription', 'type', 'placement_host', 'placement_affinity',
+            'highly_available',
+        ]
+        update_args = dict((key, kwargs.get(key)) for key in update_keys)
+        args_clone.update(update_args)
         assert cloneVmFromTemplate(**args_clone)
         # Because alias is not a unique property and a lot of test use it
         # as identifier, rename the vm's disk alias to be safe
@@ -280,7 +288,7 @@ def create_vm_or_clone(positive, vmName, vmDescription,
             updateDisk(True, vmName=vmName, id=disks_obj[i].get_id(),
                        alias=vmName + "_Disk_" + str(i))
         # Bring the VM up, return true if the action succeeds
-        if kwargs.get('installation', False) or start:
+        if start:
             return startVm(positive, vmName, wait_for_status=config.VM_UP)
         return True
     else:

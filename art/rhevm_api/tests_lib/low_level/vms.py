@@ -327,6 +327,11 @@ def _prepareVmObject(**kwargs):
     cpu_profile_id = kwargs.pop('cpu_profile', None)
     if cpu_profile_id:
         vm.set_cpu_profile(data_st.CpuProfile(id=cpu_profile_id))
+
+    # virtio_scsi
+    virtio_scsi = kwargs.pop('virtio_scsi', None)
+    if virtio_scsi is not None:
+        vm.set_virtio_scsi(data_st.VirtIO_SCSI(enabled=virtio_scsi))
     return vm
 
 
@@ -1959,7 +1964,7 @@ def remove_cdrom_vm(positive, vm_name):
 def _createVmForClone(
         name, template=None, cluster=None, clone=None, vol_sparse=None,
         vol_format=None, storagedomain=None, snapshot=None, vm_name=None,
-        vm_description=None):
+        **kwargs):
     """
     Description: helper function - creates VM objects for VM_API.create call
                  when VM is created from template, sets all required attributes
@@ -1976,10 +1981,10 @@ def _createVmForClone(
        * vm_name - name of the snapshot's vm
     Returns: VM object
     """
-    # TBD: Probaly better split this since the disk parameter is not that
+    # TODO: Probaly better split this since the disk parameter is not that
     # similar for template and snapshots
-    vm = data_st.VM(name=name)
-    vm.set_description(vm_description)
+    # Create the vm object
+    vm = _prepareVmObject(name=name, cluster=cluster, **kwargs)
     if template:
         templObj = TEMPLATE_API.find(template)
         vm.set_template(templObj)
@@ -1995,8 +2000,6 @@ def _createVmForClone(
         raise ValueError("Either template or snapshot and vm parameters "
                          "must be set")
 
-    clusterObj = CLUSTER_API.find(cluster)
-    vm.set_cluster(clusterObj)
     diskArray = data_st.Disks()
     diskArray.set_clone(clone.lower())
 
@@ -2029,6 +2032,7 @@ def _createVmForClone(
         disk.storage_domains = storage_domains
         diskArray.add_disk(disk)
     vm.set_disks(diskArray)
+
     return vm
 
 
@@ -2036,7 +2040,7 @@ def _createVmForClone(
 def cloneVmFromTemplate(positive, name, template, cluster,
                         timeout=VM_IMAGE_OPT_TIMEOUT, clone=True,
                         vol_sparse=None, vol_format=None, wait=True,
-                        storagedomain=None, vm_description=None):
+                        storagedomain=None, **kwargs):
     '''
     Description: clone vm from a pre-defined template
     Author: edolinin
@@ -2054,10 +2058,10 @@ def cloneVmFromTemplate(positive, name, template, cluster,
     # don't even try to use deepcopy, it will fail
     expectedVm = _createVmForClone(name, template, cluster, clone, vol_sparse,
                                    vol_format, storagedomain,
-                                   vm_description=vm_description)
+                                   **kwargs)
     newVm = _createVmForClone(name, template, cluster, clone, vol_sparse,
                               vol_format, storagedomain,
-                              vm_description=vm_description)
+                              **kwargs)
 
     if clone == 'true':
         expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
@@ -2071,7 +2075,8 @@ def cloneVmFromTemplate(positive, name, template, cluster,
 def cloneVmFromSnapshot(positive, name, cluster, vm, snapshot,
                         storagedomain=None, wait=True, sparse=True,
                         vol_format=ENUMS['format_cow'],
-                        timeout=VM_IMAGE_OPT_TIMEOUT, compare=True):
+                        timeout=VM_IMAGE_OPT_TIMEOUT, compare=True,
+                        **kwargs):
     '''
     Description: clone vm from a snapshot
     Author: cmestreg
@@ -2089,11 +2094,11 @@ def cloneVmFromSnapshot(positive, name, cluster, vm, snapshot,
     expectedVm = _createVmForClone(
         name, cluster=cluster, clone="true", vol_sparse=sparse,
         vol_format=vol_format, storagedomain=storagedomain, snapshot=snapshot,
-        vm_name=vm)
+        vm_name=vm, **kwargs)
     newVm = _createVmForClone(
         name, cluster=cluster, clone="true", vol_sparse=sparse,
         vol_format=vol_format, storagedomain=storagedomain, snapshot=snapshot,
-        vm_name=vm)
+        vm_name=vm, **kwargs)
 
     expectedVm.set_snapshots(None)
     expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
