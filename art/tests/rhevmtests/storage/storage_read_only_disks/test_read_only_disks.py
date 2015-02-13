@@ -159,6 +159,10 @@ class BaseTestCase(TestCase):
     __test__ = False
     vm_name = config.VM_NAME % TestCase.storage
 
+    def setUp(self):
+        """Initialize DISKS_NAMES variable"""
+        helpers.DISKS_NAMES[self.storage] = list()
+
     def prepare_disks_for_vm(self, read_only, vm_name=None):
         """Attach read only disks to the vm"""
         vm_name = self.vm_name if not vm_name else vm_name
@@ -285,7 +289,6 @@ class TestCase332473(BaseTestCase):
     """
     __test__ = BaseTestCase.storage in config.BLOCK_TYPES
     tcms_test_case = '332473'
-    disk_alias = ''
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_attach_RO_direct_LUN_disk(self):
@@ -296,7 +299,7 @@ class TestCase332473(BaseTestCase):
         - Check that disk is visible to the VM
         - Verify that it's impossible to write to the disk:
         """
-        for interface in [config.VIRTIO, config.VIRTIO_SCSI]:
+        for i, interface in enumerate([config.VIRTIO, config.VIRTIO_SCSI]):
             direct_lun_args = {
                 'wipe_after_delete': config.BLOCK_FS,
                 'bootable': False,
@@ -305,9 +308,9 @@ class TestCase332473(BaseTestCase):
                 'format': config.FORMAT_COW,
                 'interface': interface,
                 'alias': "direct_lun_disk_%s" % interface,
-                'lun_address': config.DIRECT_LUN_ADDRESS,
-                'lun_target': config.DIRECT_LUN_TARGET,
-                'lun_id': config.DIRECT_LUN,
+                'lun_address': config.DIRECT_LUN_ADDRESSES[i],
+                'lun_target': config.DIRECT_LUN_TARGETS[i],
+                'lun_id': config.DIRECT_LUNS[i],
                 "type_": self.storage}
 
             self.disk_alias = direct_lun_args['alias']
@@ -330,12 +333,15 @@ class TestCase332473(BaseTestCase):
 
     def tearDown(self):
         stop_vms_safely([self.vm_name])
-        status = removeDisk(True, self.vm_name, self.disk_alias)
-        self.assertTrue(status, "Failed to remove disk %s"
-                                % self.disk_alias)
+        disks_aliases = [disk.get_alias() for disk in getVmDisks(self.vm_name)]
+        for disk_alias in helpers.DISKS_NAMES[self.storage]:
+            if disk_alias in disks_aliases:
+                remove_func = lambda w: removeDisk(True, self.vm_name, w)
+            else:
+                remove_func = lambda w: deleteDisk(True, w)
 
-        logger.info("Disk %s removed successfully",
-                    self.disk_alias)
+            if not remove_func(disk_alias):
+                logger.info("Failed to remove disk %s", self.disk_alias)
 
 
 @attr(tier=1)

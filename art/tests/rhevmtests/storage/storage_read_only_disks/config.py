@@ -31,10 +31,10 @@ FORMAT_RAW = DISK_FORMAT_RAW
 
 if STORAGE_TYPE == STORAGE_TYPE_ISCSI:
     if GOLDEN_ENV:
-        DIRECT_LUN = UNUSED_LUNS[1]
-        DIRECT_LUN_ADDRESS = UNUSED_LUN_ADDRESSES[1]
-        DIRECT_LUN_TARGET = UNUSED_LUN_TARGETS[1]
+        DIRECT_LUNS = UNUSED_LUNS
+        DIRECT_LUN_ADDRESSES = UNUSED_LUN_ADDRESSES
+        DIRECT_LUN_TARGETS = UNUSED_LUN_TARGETS
     else:
-        DIRECT_LUN = PARAMETERS.get('direct_lun')
-        DIRECT_LUN_ADDRESS = PARAMETERS.get('direct_lun_address')
-        DIRECT_LUN_TARGET = PARAMETERS.get('direct_lun_target')
+        DIRECT_LUNS = PARAMETERS.as_list('direct_lun')
+        DIRECT_LUN_ADDRESSES = PARAMETERS.as_list('direct_lun_address')
+        DIRECT_LUN_TARGETS = PARAMETERS.as_list('direct_lun_target')
