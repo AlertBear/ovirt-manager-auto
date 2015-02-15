@@ -425,7 +425,7 @@ class TestCase388747(BasicEnvironment):
                         "Failed to start VM '%s'" % VM1_NAME)
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase388748(BasicEnvironment):
     """
     Prepare image with no parameters
@@ -517,7 +517,7 @@ class TestCase389851(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase389852(BasicEnvironment):
     """
     Prepare image with 1 erroneous flag value
@@ -562,7 +562,7 @@ class TestCase389852(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase389853(BasicEnvironment):
     """
     Prepare image with several erroneous parameters
@@ -762,7 +762,7 @@ class TestCase389923(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase389924(BasicEnvironment):
     """
     Prepare image with 1 disk missing/corrupted from VM
@@ -854,7 +854,7 @@ class TestCase389924(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase389927(BasicEnvironment):
     """
     Prepare image followed by Tear Down, then run Prepare image once more
@@ -916,7 +916,7 @@ class TestCase389931(BasicEnvironment):
         self.basic_positive_flow_teardown_first(5)
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase389935(BasicEnvironment):
     """
     Tear down image with a powered off VM
@@ -986,7 +986,7 @@ class TestCase389939(BasicEnvironment):
         self.basic_positive_flow_only_teardown_image_no_volume_id()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase389940(BasicEnvironment):
     """
     Tear down image with 1 erroneous flag value
@@ -1030,7 +1030,7 @@ class TestCase389940(BasicEnvironment):
                                    CMD_ERROR_INCORRECT_NUM_PARAMS_PART_3])
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase389943(BasicEnvironment):
     """
     Tear down image with several erroneous parameters
