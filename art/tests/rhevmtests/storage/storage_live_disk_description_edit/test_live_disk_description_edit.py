@@ -301,7 +301,7 @@ class TestCase396320(BasicEnvironment):
             detachDisk(True, disk_dict[ALIAS], VM2_NAME)
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase396322(BasicEnvironment):
     """
     Attempt to edit a disk's description on a running VM while running a
