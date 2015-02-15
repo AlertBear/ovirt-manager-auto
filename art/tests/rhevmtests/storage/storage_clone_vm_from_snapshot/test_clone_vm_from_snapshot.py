@@ -169,7 +169,7 @@ class TestCase134132(BaseTestCase):
         wait_for_jobs()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase137688(BaseTestCase):
     """
     Clone vm from snapshot:
