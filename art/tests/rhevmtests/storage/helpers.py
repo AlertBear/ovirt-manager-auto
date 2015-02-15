@@ -3,10 +3,11 @@ Storage helper functions
 """
 import logging
 import shlex
+from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost, getHostIP
 from utilities.machine import Machine, LINUX
 from art.rhevm_api.tests_lib.low_level.disks import (
     waitForDisksState, attachDisk, addDisk, get_all_disk_permutation,
-    updateDisk
+    updateDisk,
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainObj,
@@ -294,3 +295,18 @@ def create_vm_or_clone(positive, vmName, vmDescription,
         return True
     else:
         return createVm(positive, vmName, vmDescription, cluster, **kwargs)
+
+
+def host_to_use():
+    """
+    Extract the SPM host information.  This is then used to execute commands
+    directly on the host
+
+    __author__ = "glazarov"
+    :returns: Machine object on which commands can be executed
+    :rtype: Machine
+    """
+    host = getSPMHost(config.HOSTS)
+    host = getHostIP(host)
+    return Machine(host=host, user=config.HOSTS_USER,
+                   password=config.HOSTS_PW).util(LINUX)

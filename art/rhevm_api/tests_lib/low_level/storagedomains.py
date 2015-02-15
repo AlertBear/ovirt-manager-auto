@@ -226,21 +226,33 @@ def updateStorageDomain(positive, storagedomain, **kwargs):
 
 @is_action()
 def extendStorageDomain(positive, storagedomain, **kwargs):
-    '''
-    Description: extend existing iscsi/fcp storage domain
-    Author: edolinin
-    Parameters:
-       * storagedomain - storage domain name
-       * storage_type - storage type (ENUMS['storage_type_iscsi'],
-        ENUMS['storage_type_fcp'])
-       * lun - lun id
-       * host - storage domain host
-       * lun_address - iscsi lun address
-       * lun_target - iscsi lun target name
-       * lun_port - iscsi lun port
-    Return: status (True if storage domain was extended properly,
-                    False otherwise)
-    '''
+    """
+    Extend an existing iSCSI or FCP storage domain
+
+    __author__ = "edolinin, glazarov"
+    :param positive: True when extend storage is expected to pass,
+    False otherwise
+    :type positive: bool
+    :param storage_domain: The storage domain which is to be extended
+    :type storage_domain: str
+    :param storage_type: The storage type to be used (iSCSI or FCP)
+    :type storage_type: str
+    :param host: The host to be used with which to extend the storage domain
+    :type host: str
+    :param lun: The LUN to be used when extending storage domain
+    :type lun: str
+    :param lun_address: The iSCSI server address which contain the LUN
+    :type lun_address: str
+    :param lun_target: The iSCSI target (name of the LUN in iSCSI server)
+    :type lun_target: str
+    :param lun_port: The iSCSI server port
+    :type lun_port: int
+    :param override_luns: True if the block device should be formatted
+    (when not empty), False if block device should be used as is
+    :type override_luns: bool
+    :returns: True on success, False otherwise
+    :rtype: bool
+    """
     storDomObj = util.find(storagedomain)
 
     storDomNew = _prepareStorageDomainObject(positive, **kwargs)

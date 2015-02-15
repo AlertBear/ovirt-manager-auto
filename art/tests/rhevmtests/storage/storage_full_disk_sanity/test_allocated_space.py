@@ -1,6 +1,8 @@
 """
 Test Allocation/Total size properties
 """
+import config
+import logging
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.high_level.storagedomains import (
@@ -10,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level.datacenters import (
     waitForDataCenterState,
 )
 from art.rhevm_api.tests_lib.low_level.disks import (
-    addDisk, deleteDisk,  waitForDisksState, move_disk, get_disk_obj,
+    addDisk, deleteDisk, waitForDisksState, move_disk, get_disk_obj,
 )
 from art.rhevm_api.tests_lib.low_level.hosts import (
     waitForHostsStates, waitForSPM, getSPMHost, getHostIP,
@@ -24,9 +26,9 @@ from art.rhevm_api.tests_lib.low_level.templates import (
 )
 from art.rhevm_api.tests_lib.low_level.vms import createVm, removeVm
 from art.rhevm_api.utils.test_utils import restartVdsmd
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
-import config
-import logging
+from art.test_handler.tools import tcms  # pylint: disable=E0611
+from rhevmtests.storage.helpers import host_to_use
+from art.test_handler import exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,10 @@ VM_DISK_SIZE = 2 * config.GB
 
 THIN_PROVISION = 'thin_provision'
 PREALLOCATED = 'preallocated'
+MIN_UNUSED_LUNS = 1
+# The delta between the expected storage domain size and the actual size (
+# given that engine returns the SD total size in GB as an integer)
+SD_SIZE_DELTA = 1 * config.GB + 10 * config.MB
 
 
 class BaseCase(TestCase):
@@ -148,9 +154,20 @@ class BaseCase(TestCase):
                                 self.expected_allocated_size[domain]))
             total_size = get_total_size(domain)
             logger.info('total size for domain %s is %s', domain, total_size)
-            self.assertEqual(total_size, self.expected_total_size[domain],
-                             'Total size is: %s, expected is %s'
-                             % (total_size, self.expected_total_size[domain]))
+
+            size_difference = abs(
+                total_size - self.expected_total_size[domain]
+            )
+            logger.info("The difference in SD size between the expected and "
+                        "actual is: '%s'", str(size_difference))
+            # A SD size delta is necessary for a comparison between the actual
+            # and expected sizes, since the API returns the SD size in GB as
+            # an integer
+            self.assertTrue(
+                size_difference <= SD_SIZE_DELTA,
+                "Total size is: %s, expected is '%s'" % (
+                    str(total_size), str(self.expected_total_size[domain]))
+            )
 
 
 # TBD: Remove this when is implemented in the main story, storage sanity
@@ -160,7 +177,6 @@ class TestCase286305(BaseCase):
     """
     TCMS Test Case 286305 - Create new disk and check storage details
     """
-
     __test__ = True
     tcms_test_case = '286305'
 
@@ -194,7 +210,6 @@ class TestCase286768(BaseCase):
     TCMS Test Case 286768 - Delete disk and check storage details
     https://tcms.engineering.redhat.com/case/286768/
     """
-
     __test__ = True
     tcms_test_case = '286768'
 
@@ -232,7 +247,6 @@ class TestCase286772(BaseCase):
     TCMS Test Case 286772 - Move disks and check storage details of both
     domains
     """
-
     # TODO: Move floating disk through REST not working development -
     # enable test once this feature works
     __test__ = False
@@ -293,6 +307,7 @@ class TestCase286775(BaseCase):
     apis = BaseCase.apis - set(['sdk'])
     tcms_test_case = '286775'
     new_sd_name = "storage_domain_%s" % tcms_test_case
+    bz = {'1186410': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
     @classmethod
     def setup_class(cls):
@@ -301,12 +316,34 @@ class TestCase286775(BaseCase):
         environment is not changed in case is run in a common environment,
         such as in the case of the golden environment or in a tiered approach
         """
+        if not (len(config.UNUSED_LUNS) >= MIN_UNUSED_LUNS):
+            raise exceptions.StorageDomainException(
+                "A minimum of 1 free LUN is needed in order to create a new "
+                "Storage domain"
+            )
         cls.spm_host = getSPMHost(config.HOSTS)
-        assert addISCSIDataDomain(
-            config.HOSTS[0], cls.new_sd_name, config.DATA_CENTER_NAME,
+        cls.host_machine = host_to_use()
+        lun_size_orig, lun_free_space_orig = \
+            cls.host_machine.get_lun_storage_info(config.EXTEND_LUN[0])
+        logger.info("LUN size to be used in SD creation is '%s' and its free "
+                    "space is '%s'", str(lun_size_orig),
+                    str(lun_free_space_orig))
+        if not addISCSIDataDomain(
+            cls.spm_host, cls.new_sd_name, config.DATA_CENTER_NAME,
             config.EXTEND_LUN[0], config.EXTEND_LUN_ADDRESS[0],
-            config.EXTEND_LUN_TARGET[0],
-        )
+            config.EXTEND_LUN_TARGET[0], override_luns=True
+        ):
+            raise exceptions.StorageDomainException(
+                "Adding iSCSI storage domain has failed"
+            )
+        lun_size_sd, lun_free_space_sd = cls.host_machine.get_lun_storage_info(
+            config.EXTEND_LUN[0])
+        logger.info("LUN size after SD creation is '%s' and its free space is "
+                    "'%s'", str(lun_size_sd), str(lun_free_space_sd))
+        # When creating or extending a storage domain, each LUN loses about
+        # 380 MB of its physical usable space.  In addition, when first
+        # creating a storage domain, 4 GB of free space is taken out for
+        # metadata, headers and other internal usage
         super(TestCase286775, cls).setup_class()
 
     @classmethod
@@ -317,27 +354,46 @@ class TestCase286775(BaseCase):
 
     def perform_action(self):
         """
-        Extend first domain
+        Extend added domain
         """
-        logger.info('Extending first domain %s', self.new_sd_name)
-        extend_luns = config.EXTEND_LUNS.pop()
-        extend_storage_domain(self.new_sd_name,
-                              config.STORAGE_TYPE,
-                              config.HOSTS[0],
-                              **extend_luns)
-        self.expected_total_size[self.new_sd_name] += \
-            config.EXTEND_SIZE * config.GB
+        self.assertTrue(len(config.EXTEND_LUNS) >= MIN_UNUSED_LUNS,
+                        "There are less than %s unused Extend LUNs, aborting "
+                        "test" % MIN_UNUSED_LUNS)
+        current_sd_size = get_total_size(self.new_sd_name)
+        logger.info("The current SD size is: '%s'", current_sd_size)
+
+        extend_lun = config.EXTEND_LUNS.pop()
+        lun_size_unused, lun_free_space_unused = \
+            self.host_machine.get_lun_storage_info(extend_lun["lun_list"][0])
+        logger.info("LUN size is '%s' and its free space is '%s'",
+                    str(lun_size_unused), str(lun_free_space_unused))
+
+        logger.info("Extending domain '%s'", self.new_sd_name)
+        extend_storage_domain(self.new_sd_name, config.STORAGE_TYPE_ISCSI,
+                              self.spm_host, **extend_lun)
 
         # Waits until total size changes (extend is done)
-        # wait_for_tasks doesn't work (value is not updated properly)
+        # wait_for_tasks doesn't work (value is not updated correctly)
         wait_for_change_total_size(
             self.new_sd_name, self.current_total_size[self.new_sd_name])
+
+        extended_sd_size = get_total_size(self.new_sd_name)
+        logger.info("The updated SD size after the extend has completed is: "
+                    "'%s'", extended_sd_size)
+
+        lun_size_sd, lun_free_space_sd = \
+            self.host_machine.get_lun_storage_info(extend_lun["lun_list"][0])
+        logger.info("LUN size is '%s' and its free space is '%s'",
+                    str(lun_size_sd), str(lun_free_space_sd))
+
+        self.expected_total_size[self.new_sd_name] += lun_size_sd
+        logger.info("The new expected domain size with the Raw LUN size is "
+                    "'%s'", str(self.expected_total_size[self.new_sd_name]))
 
         # Assert size hasn't changed during the extend
         self.assertEqual(self.current_used_size[self.new_sd_name],
                          get_used_size(self.new_sd_name))
 
-    @bz({'1159637': {'engine': None, 'version': ['3.5']}})
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_extend_domain_and_check_details(self):
         """
@@ -352,7 +408,6 @@ class TestCase321336(BaseCase):
     TCMS Test Case 321336 - Create template and check storage details
     https://tcms.engineering.redhat.com/case/321336
     """
-
     __test__ = True
     tcms_test_case = '321336'
     vms = (THIN_PROVISION, PREALLOCATED)
@@ -410,7 +465,13 @@ class TestCase321336(BaseCase):
             }
             self.assertTrue(createTemplate(**template_args),
                             "Unable to create template %s" % template_name)
-            self.expected_allocated_size[self.domains[0]] += VM_DISK_SIZE
+
+            # Thin provisioned templates only take up 1GB per disk, just as
+            # with snapshots
+            if vm_name == THIN_PROVISION:
+                self.expected_allocated_size[self.domains[0]] += 1 * config.GB
+            else:
+                self.expected_allocated_size[self.domains[0]] += VM_DISK_SIZE
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_create_templates(self):
@@ -426,11 +487,9 @@ class TestCase286779(BaseCase):
     TCMS Test Case 286779 - Check  storage domain details after rollback
     https://tcms.engineering.redhat.com/case/286779
     """
-
     # TODO: Move floating disk through REST not working development -
     # enable test once this feature works
     __test__ = False
-
     tcms_test_case = '286779'
 
     def perform_action(self):
@@ -489,7 +548,6 @@ class TestCaseUsedSpace(BaseCase):
     __test__ = False
     apis = BaseCase.apis - set(['sdk'])
 
-    @bz({'1159637': {'engine': None, 'version': ['3.5']}})
     def test_used_space(self):
         """
         Test extending an iscsi domain doesn't remove used space

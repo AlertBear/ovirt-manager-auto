@@ -97,20 +97,30 @@ def addISCSIDataDomain(host, storage, data_center, lun, lun_address,
 @is_action()
 def extendISCSIDomain(
         storage_domain, host, extend_lun, extend_lun_address,
-        extend_lun_target, extend_lun_port=3260):
+        extend_lun_target, extend_lun_port=3260, override_luns=None):
     """
-    Description:
-        Extends iscsi storage domain with given lun,
-        performs all needed operation (discover & login)
-    Author: kjachim
-    Parameters:
-        * host - host on which storage domain is created
-        * storage_domain - storage domain to extend
-        * extend_lun - lun which we want to extend storage domain with
-        * extend_lun_address - iscsi server address
-        * extend_lun_target - iscsi target (name of lun on iscsi address)
-        * extend_lun_port - (optional) iscsi server port (default 3260)
-    returns True in case of success, False otherwise
+    Extends iSCSI storage domain using the requested LUN parameters
+
+    __author__ = "kjachim, glazarov"
+    :param storage_domain: The storage domain which is to be extended
+    :type storage_domain: str
+    :param host: The host to be used with which to extend the storage domain
+    :type host: str
+    :param extend_lun: The LUN to be used when extending storage domain
+    :type extend_lun: str
+    :param extend_lun_address: The iSCSI server address which contains the LUN
+    :type extend_lun_address: str
+    :param extend_lun_target: The iSCSI target (name of the LUN in iSCSI
+    server)
+    :type extend_lun_target: str
+    :param extend_lun_port: The iSCSI server port (default is 3260)
+    :type extend_lun_port: int
+    :param override_luns: True if the block device should be formatted
+    (when not empty), False if block device should be used as is
+    :type override_luns: bool
+    :returns: True when storage domain is successfully extended,
+    False otherwise
+    :rtype: bool
     """
     if not _ISCSIdiscoverAndLogin(host, extend_lun_address, extend_lun_target):
         return False
@@ -118,7 +128,8 @@ def extendISCSIDomain(
     return storagedomains.extendStorageDomain(
         True, storagedomain=storage_domain, host=host, lun=extend_lun,
         lun_address=extend_lun_address, lun_target=extend_lun_target,
-        lun_port=extend_lun_port, storage_type=ENUMS['storage_type_iscsi'])
+        lun_port=extend_lun_port, storage_type=ENUMS['storage_type_iscsi'],
+        override_luns=override_luns)
 
 
 @is_action()
@@ -309,21 +320,35 @@ def extend_storage_domain(storage_domain, type_, host, **kwargs):
 
 def __extend_iscsi_domain(storage_domain, host, **kwargs):
     """
-    Description: Extends iscsi domain with luns defined with extend_lun* params
-    Parameters:
-        * storage_domain - storage domain to extend
-        * host - host on which storage domain is created
-        * lun_targets - list of lun targets
-        * lun_addresses - list of lun addresses
-        * lun_list - list of lun ids
+    Extends iSCSI storage domain using the requested LUN parameters
+
+    __author__ = "glazarov"
+    :param storage_domain: The storage domain which is to be extended
+    :type storage_domain: str
+    :param host: The host to be used with which to extend the storage domain
+    :type host: str
+    :param lun_list: The LUNs to be used when extending storage domain
+    :type lun_list: list of str
+
+    :param lun_addresses: The iSCSI server addresses which contain the LUNs
+    :type lun_addresses: list of str
+    :param lun_targets: The iSCSI targets (names of the LUN in iSCSI server)
+    :type lun_targets: list of str
+    :param override_luns: True if the block device should be formatted
+    (when not empty), False if block device should be used as is
+    :type override_luns: bool
+    :returns: Null on success, raises StorageDomainException on failure
+    :rtype: null
     """
     lun_targets_list = kwargs.pop('lun_targets')
     lun_addresses_list = kwargs.pop('lun_addresses')
     lun_list = kwargs.pop('lun_list')
+    override_luns = kwargs.pop('override_luns', None)
     for (lun, lun_address, lun_target) in zip(
             lun_list, lun_addresses_list, lun_targets_list):
         if not extendISCSIDomain(
-                storage_domain, host, lun, lun_address, lun_target):
+                storage_domain, host, lun, lun_address, lun_target,
+                override_luns=override_luns):
             raise errors.StorageDomainException(
                 "extendISCSIDomain(%s, %s, %s, %s, %s) failed." % (
                     storage_domain, host, lun, lun_address, lun_target))

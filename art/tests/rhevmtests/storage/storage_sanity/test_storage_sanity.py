@@ -57,6 +57,7 @@ class TestCase94947(TestCase):
     """
     __test__ = TestCase.storage in config.BLOCK_TYPES
     tcms_test_case = '94947'
+    bz = {'1186410': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
     def setUp(self):
         """
@@ -74,7 +75,7 @@ class TestCase94947(TestCase):
             self.spm_host, self.sd_name,
             config.DATA_CENTER_NAME, config.UNUSED_LUNS["lun_list"][0],
             config.UNUSED_LUNS["lun_addresses"][0],
-            config.UNUSED_LUNS["lun_targets"][0]
+            config.UNUSED_LUNS["lun_targets"][0], override_luns=True
         )
         self.assertTrue(status_attach_and_activate,
                         "The domain was not added and activated "
@@ -102,7 +103,8 @@ class TestCase94947(TestCase):
         extend_lun = {
             "lun_list": [config.UNUSED_LUNS["lun_list"][1]],
             "lun_addresses": [config.UNUSED_LUNS["lun_addresses"][1]],
-            "lun_targets": [config.UNUSED_LUNS["lun_targets"][1]]
+            "lun_targets": [config.UNUSED_LUNS["lun_targets"][1]],
+            "override_luns": True
         }
         logger.info("Extending storage domain %s", self.sd_name)
         storagedomains.extend_storage_domain(self.sd_name, config.STORAGE_TYPE,

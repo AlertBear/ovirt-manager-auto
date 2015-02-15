@@ -10,7 +10,7 @@ from art.rhevm_api.tests_lib.low_level.templates import (
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 import config
 from helpers import (
-    host_to_use, get_spuuid, get_sduuid, get_imguuid, get_voluuid,
+    get_spuuid, get_sduuid, get_imguuid, get_voluuid,
 )
 import logging
 from art.rhevm_api.tests_lib.low_level.disks import (
@@ -28,7 +28,9 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     removeVms,
 )
 from art.unittest_lib import attr
-from rhevmtests.storage.helpers import perform_dd_to_disk, create_vm_or_clone
+from rhevmtests.storage.helpers import (
+    create_vm_or_clone, perform_dd_to_disk, host_to_use,
+)
 
 logger = logging.getLogger(__name__)
 

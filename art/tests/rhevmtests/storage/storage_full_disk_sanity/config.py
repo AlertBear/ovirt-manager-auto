@@ -4,7 +4,7 @@ Config module for storage vm sanity
 
 __test__ = False
 
-from rhevmtests.storage.config import * # flake8: noqa
+from rhevmtests.storage.config import *  # flake8: noqa
 
 # Name of the test
 TESTNAME = "full_disk_tests"
@@ -34,7 +34,7 @@ else:
         EXTEND_LUN_ADDRESS = UNUSED_LUN_ADDRESSES
         EXTEND_LUN_TARGET = UNUSED_LUN_TARGETS
         EXTEND_LUN = UNUSED_LUNS
-        EXTEND_LUNS = [] # used in test_allocated_space
+        EXTEND_LUNS = []  # used in test_allocated_space
         EXTEND_SIZE = 0
 
 if EXTEND_LUN:
@@ -48,4 +48,5 @@ if EXTEND_LUN:
             "lun_targets": [target],
             "lun_addresses": [address],
             "lun_list": [lun],
+            "override_luns": True,
         })
