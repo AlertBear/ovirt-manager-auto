@@ -4,24 +4,16 @@ https://tcms.engineering.redhat.com/plan/12049
 """
 import logging
 
-from art.rhevm_api.tests_lib.low_level.datacenters import (
-    addDataCenter, removeDataCenter,
-)
 from art.rhevm_api.tests_lib.low_level.hosts import (
-    updateHost, deactivateHost, activateHost, kill_qemu_process, getHostIP,
-    getVmHost,
-)
-from art.rhevm_api.tests_lib.low_level.clusters import (
-    addCluster, removeCluster,
+    kill_qemu_process, getHostIP, getVmHost,
 )
 from art.rhevm_api.tests_lib.low_level.disks import (
     updateDisk, getVmDisk, waitForDisksState, addDisk, attachDisk,
     checkDiskExists, deleteDisk,
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    cleanDataCenter, getDomainAddress, attachStorageDomain,
-    deactivateStorageDomain, findExportStorageDomains,
-    getStorageDomainNamesForType, removeStorageDomain,
+    cleanDataCenter, getDomainAddress, findExportStorageDomains,
+    getStorageDomainNamesForType,
 )
 from art.rhevm_api.tests_lib.low_level.templates import (
     removeTemplate, createTemplate, waitForTemplatesStates,
@@ -33,7 +25,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     migrateVm, suspendVm, startVm, exportVm, importVm, get_snapshot_disks,
     cloneVmFromSnapshot, removeVm, cloneVmFromTemplate, stop_vms_safely,
     removeVms, move_vm_disk, waitForVmsStates, preview_snapshot,
-    undo_snapshot_preview, commit_snapshot, addVm,
+    undo_snapshot_preview, commit_snapshot,
     removeVmFromExportDomain, does_vm_exist, DiskNotFound,
     get_vms_disks_storage_domain_name, waitForDisksStat,
     safely_remove_vms, get_vm_bootable_disk,
@@ -44,7 +36,7 @@ from art.rhevm_api.tests_lib.high_level.storagedomains import (
     attach_and_activate_domain, detach_and_deactivate_domain,
 )
 
-from art.rhevm_api.utils.test_utils import setPersistentNetwork, wait_for_tasks
+from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
@@ -545,7 +537,7 @@ class TestCase337936(BaseTestCase):
         """
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase332489(DefaultEnvironment):
     """
     Block connectivity from vdsm to the storage domain
@@ -738,76 +730,6 @@ class TestCase332476(DefaultEnvironment):
 
 
 @attr(tier=1)
-class TestCase332480(DefaultEnvironment):
-    """
-    Export and import a vm with RO disk attached to it
-    https://tcms.engineering.redhat.com/case/332480/?from_plan=12049
-    """
-    __test__ = True
-    tcms_test_case = '332480'
-    imported_vm = 'imported_vm'
-    export_domain = ''
-
-    @bz({'1169100': {'enine': ['rest', 'sdk'], 'version': ["3.5"]}})
-    @tcms(TEST_PLAN_ID, tcms_test_case)
-    def test_export_and_import_vm_with_RO_disk(self):
-        """
-        - VM with OS
-        - Attaching RO disks to the VM (all possible permutation)
-        - Export the VM to an export domain
-        - Import the same VM
-        - Check that disk is visible to the VM
-        - Verify that it's impossible to write to the disk
-        """
-        self.vm_exported, self.vm_imported = False, False
-        self.prepare_disks_for_vm(read_only=True)
-
-        self.export_domain = findExportStorageDomains(
-            config.DATA_CENTER_NAME)[0]
-
-        logger.info("Exporting vm %s", self.vm_name)
-        start_vms([self.vm_name], max_workers=1, wait_for_ip=True)
-        waitForVMState(self.vm_name)
-        vm_ip = get_vm_ip(self.vm_name)
-        setPersistentNetwork(vm_ip, config.VM_PASSWORD)
-        stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
-        self.vm_exported = exportVm(True, self.vm_name, self.export_domain,
-                                    timeout=TASK_TIMEOUT)
-        self.assertTrue(self.vm_exported,
-                        "Couldn't export vm %s" % self.vm_name)
-        logger.info("Importing vm %s as %s", self.vm_name,
-                    self.imported_vm)
-        self.vm_imported = importVm(
-            True, vm=self.vm_name,
-            export_storagedomain=self.export_domain,
-            import_storagedomain=self.storage_domains[0],
-            cluster=config.CLUSTER_NAME, name=self.imported_vm,
-            timeout=TASK_TIMEOUT)
-
-        self.assertTrue(self.vm_imported,
-                        "Couldn't import vm %s" % self.vm_name)
-
-        start_vms([self.imported_vm], 1, wait_for_ip=False)
-        waitForVMState(self.imported_vm)
-        helpers.write_on_vms_ro_disks(
-            self.imported_vm, self.storage, imported_vm=True)
-
-    def tearDown(self):
-        if self.vm_imported:
-            stop_vms_safely([self.imported_vm])
-            waitForVMState(self.imported_vm, config.VM_DOWN)
-            if not removeVm(True, self.imported_vm, wait=True):
-                logger.error("Failed to remove vm %s", self.imported_vm)
-        if self.vm_exported and not removeVmFromExportDomain(
-                True, vm=self.vm_name, datacenter=config.DATA_CENTER_NAME,
-                export_storagedomain=self.export_domain):
-            logger.error("Failed to remove vm %s from export domain %s",
-                         self.imported_vm, self.export_domain)
-        super(TestCase332480, self).tearDown()
-
-
-@attr(tier=2)
 class TestCase334878(DefaultEnvironment):
     """
     Import more than once VM with RO disk, and verify that it's impossible
@@ -820,7 +742,6 @@ class TestCase334878(DefaultEnvironment):
     imported_vm_2 = 'imported_vm_2'
     export_domain = ''
 
-    @bz({'1169100': {'enine': ['rest', 'sdk'], 'version': ["3.5"]}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_import_more_than_once_VM_with_RO_disk(self):
         """
@@ -1188,7 +1109,6 @@ class TestCase337935(DefaultEnvironment):
     cloned_vm_name = 'cloned_vm'
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
-    @bz({'1072471': {'enine': ['rest', 'sdk'], 'version': ["3.5"]}})
     def test_clone_vm_from_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -1383,8 +1303,8 @@ class TestCase334877(DefaultEnvironment):
             state, out = helpers.verify_write_operation_to_disk(
                 self.vm_name, disk_number=index)
             logger.info("Trying to write to read only disk %s...", disk)
-            status = (not state) and ((READ_ONLY in out)) or (NOT_PERMITTED
-                                                              in out)
+            status = (not state) and (READ_ONLY in out) or (NOT_PERMITTED
+                                                            in out)
             self.assertTrue(status, "Write operation to RO disk succeeded")
             logger.info("Failed to write to read only disk")
 
@@ -1410,12 +1330,8 @@ class TestCase332477(DefaultEnvironment):
     """
     Checks that Live Storage Migration of RO disk should be possible
     https://tcms.engineering.redhat.com/case/332477/?from_plan=12049
-
-    Currently __test__ = False due to bug 1091956 that corrupt the
-    image volumes:
-    https://bugzilla.redhat.com/show_bug.cgi?id=1091956
     """
-    __test__ = False
+    __test__ = True
     tcms_test_case = '332477'
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
@@ -1482,12 +1398,8 @@ class TestCase334876(DefaultEnvironment):
     Checks that Live Storage Migration of RW disk should be possible, even
     when a RO disk is attached to vm
     https://tcms.engineering.redhat.com/case/334876/?from_plan=12049
-
-    Currently __test__ = False due to bug 1091956 that corrupt the
-    image volumes:
-    https://bugzilla.redhat.com/show_bug.cgi?id=1091956
     """
-    __test__ = False
+    __test__ = True
     tcms_test_case = '334876'
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
@@ -1515,109 +1427,7 @@ class TestCase334876(DefaultEnvironment):
                      self.storage_domains[1])
 
 
-@attr(tier=1)
-class TestCase334923(BaseTestCase):
-    """
-    Check that RO disk is available for lower versions than 3.4
-    https://tcms.engineering.redhat.com/case/334923/?from_plan=12049
-    """
-    __test__ = True
-    tcms_test_case = '334923'
-    cluster_name = 'test_cluster_334923'
-    datacenter_name = 'low_dc_334923'
-    version = '3.3'
-    test_vm_name = 'test_vm_334923'
-    sd_name = 'sd_334923'
-    disk_name = 'disk_334923'
-
-    def setUp(self):
-        if not addDataCenter(True, name=self.datacenter_name,
-                             local=False, version=self.version):
-            raise exceptions.DataCenterException("addDataCenter %s with "
-                                                 "storage type %s and "
-                                                 "version %s failed."
-                                                 % (self.datacenter_name,
-                                                    TestCase.storage,
-                                                    self.version))
-        logger.info("Datacenter %s was created successfully",
-                    self.datacenter_name)
-
-        if not addCluster(True, name=self.cluster_name, cpu=config.CPU_NAME,
-                          data_center=self.datacenter_name,
-                          version=self.version):
-            raise exceptions.ClusterException("addCluster %s with cpu_"
-                                              "type %s and version %s to "
-                                              "datacenter %s failed"
-                                              % (self.cluster_name,
-                                                 config.CPU_NAME,
-                                                 self.version,
-                                                 self.datacenter_name))
-        logger.info("Cluster %s was created successfully", self.cluster_name)
-
-        wait_for_jobs()
-        deactivateHost(True, config.HOSTS[0])
-        updateHost(True, config.HOSTS[0], cluster=self.cluster_name)
-        activateHost(True, config.HOSTS[0])
-
-        helpers.create_third_sd(self.sd_name, config.HOSTS[0], self.storage)
-
-        attachStorageDomain(True, self.datacenter_name, self.sd_name)
-        disk_args = {
-            'provisioned_size': config.DISK_SIZE,
-            'wipe_after_delete': self.storage in config.BLOCK_TYPES,
-            'storagedomain': self.sd_name,
-            'bootable': False,
-            'shareable': False,
-            'active': True,
-            'size': config.DISK_SIZE,
-            'format': config.FORMAT_COW,
-            'interface': config.VIRTIO,
-            'sparse': True,
-            'alias': self.disk_name}
-        assert addDisk(True, **disk_args)
-
-    @tcms(TEST_PLAN_ID, tcms_test_case)
-    def test_RO_disk_available_compatibility_version(self):
-        """
-        - Create a VM
-        - Add a disk to the VM
-        """
-        logger.info('Creating vm')
-        if not addVm(True, wait=True, name=self.test_vm_name,
-                     cluster=self.cluster_name):
-            raise exceptions.VMException("Failed to create vm %s"
-                                         % self.test_vm_name)
-        stop_vms_safely([self.test_vm_name])
-        waitForVMState(self.test_vm_name, config.VM_DOWN)
-        logger.info("Attaching a RO in %s cluster", self.version)
-        helpers.prepare_disks_for_vm(
-            self.test_vm_name, [self.disk_name], read_only=True)
-
-    def tearDown(self):
-        safely_remove_vms([self.test_vm_name])
-        wait_for_tasks(config.VDC, config.VDC_PASSWORD, self.datacenter_name)
-        logger.info("Restoring environment")
-
-        if not deactivateStorageDomain(True, self.datacenter_name,
-                                       self.sd_name):
-            logger.error("Error trying to deactivate storage domain %s",
-                         self.sd_name)
-        if not removeDataCenter(True, self.datacenter_name):
-            logger.error("Error trying to remove datacenter %s",
-                         self.datacenter_name)
-        if not removeStorageDomain(True, self.sd_name, config.HOSTS[0],
-                                   format='true'):
-            logger.error("Error trying to remove storage domain %s",
-                         self.sd_name)
-        if not deactivateHost(True, config.HOSTS[0]):
-            logger.error("Error trying to deactivate host %s",
-                         config.HOSTS[0])
-        assert updateHost(True, config.HOSTS[0], cluster=config.CLUSTER_NAME)
-        assert activateHost(True, config.HOSTS[0])
-        assert removeCluster(True, cluster=self.cluster_name)
-
-
-@attr(tier=2)
+@attr(tier=3)
 class TestCase334921(DefaultEnvironment):
     """
     Check that the VM sees its second disk as RO, after killing qemu process
@@ -1658,7 +1468,7 @@ class TestCase334921(DefaultEnvironment):
             logger.info("Failed to write to read only disk")
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase332485(BaseTestCase):
     """
     Restart vdsm during RO disk activation
@@ -1682,7 +1492,7 @@ class TestCase332485(BaseTestCase):
         """
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase332486(BaseTestCase):
     """
     Restart ovirt-engine during RO disk activation
@@ -1706,7 +1516,7 @@ class TestCase332486(BaseTestCase):
         """
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase332488(BaseTestCase):
     """
     Restart libvirt during RO disk activation
