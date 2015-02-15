@@ -138,6 +138,9 @@ class TestCase94950(TestCase):
             "Detached active domain...")
 
         logger.info("Deactivating non-master domains")
+        wait_for_tasks(
+            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+        )
         self.assertTrue(
             ll_st_domains.execOnNonMasterDomains(
                 True, config.DATA_CENTER_NAME, 'deactivate', 'all'),
@@ -150,6 +153,9 @@ class TestCase94950(TestCase):
             "Activating non-master domains failed")
 
         logger.info("Deactivating non-master domains")
+        wait_for_tasks(
+            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+        )
         self.assertTrue(
             ll_st_domains.execOnNonMasterDomains(
                 True, config.DATA_CENTER_NAME, 'deactivate', 'all'),
@@ -207,7 +213,8 @@ class TestCase94954(TestCase):
 
         logger.info("Deactivating master domain")
         wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
+            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+        )
         self.assertTrue(
             ll_st_domains.deactivateStorageDomain(
                 True, config.DATA_CENTER_NAME, old_master_domain_name),
