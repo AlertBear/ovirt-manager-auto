@@ -420,7 +420,7 @@ class TestCase321336(BaseCase):
         self.run_scenario()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase286779(BaseCase):
     """
     TCMS Test Case 286779 - Check  storage domain details after rollback

@@ -2,9 +2,7 @@
 Test Direct Lun Sanity - TCMS plan 5426
 """
 import logging
-from art.rhevm_api.tests_lib.low_level.hosts import (
-    getHostIP, get_cluster_hosts,
-)
+from art.rhevm_api.tests_lib.low_level.hosts import getHostIP
 from art.core_api.apis_exceptions import EntityNotFound
 from art.unittest_lib.common import StorageTest as TestCase
 from art.unittest_lib import attr
@@ -26,8 +24,8 @@ from art.rhevm_api.tests_lib.low_level.templates import (
 from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, waitForVMState, getVmDisks, startVm, suspendVm,
     runVmOnce, addSnapshot, updateVm, removeSnapshot,
-    get_snapshot_disks, migrateVm, moveVm, removeVm,
-    getVmHost, get_vms_disks_storage_domain_name,
+    get_snapshot_disks, moveVm, removeVm, getVmHost,
+    get_vms_disks_storage_domain_name,
 )
 
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
@@ -328,7 +326,7 @@ class TestCase138758(DirectLunAttachTestCase):
         super(TestCase138758, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=3)
 class TestCase138760(DirectLunAttachTestCase):
     """
     HA vm with direct lun
@@ -362,36 +360,6 @@ class TestCase138760(DirectLunAttachTestCase):
 
 
 @attr(tier=1)
-class TestCase138761(DirectLunAttachTestCase):
-    """
-    migrate a non-migrate vm with direct lun
-
-    Bug: https://bugzilla.redhat.com/show_bug.cgi?id=1144810
-    """
-    __test__ = False
-    tcms_test_case = "138761"
-
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
-    def test_migrate_vm_direct_lun(self):
-        """
-        Select a specific host for vm, with direct lun, and try to migrate it
-        """
-        self.attach_disk_to_vm()
-        host = get_cluster_hosts(config.CLUSTER_NAME)
-        assert updateVm(True, self.vm_name, placement_host=host)
-        startVm(True, self.vm_name)
-
-        assert migrateVm(False, self.vm_name)
-        wait_for_jobs()
-
-        assert waitForVMState(self.vm_name)
-
-    def tearDown(self):
-        assert updateVm(True, self.vm_name, placement_host=None)
-        super(TestCase138761, self).tearDown()
-
-
-@attr(tier=1)
 class TestCase138763(DirectLunAttachTestCase):
     """
     direct lun and disk interface
@@ -415,6 +383,16 @@ class TestCase138763(DirectLunAttachTestCase):
         Create direct lun - interface virtio
         """
         self.lun_kwargs['interface'] = config.INTERFACE_VIRTIO
+
+        assert addDisk(True, **self.lun_kwargs)
+        wait_for_jobs()
+
+    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    def test_direct_lun_interface_virtio_scsi(self):
+        """
+        Create direct lun - interface virtio-scsi
+        """
+        self.lun_kwargs['interface'] = config.INTERFACE_VIRTIO_SCSI
 
         assert addDisk(True, **self.lun_kwargs)
         wait_for_jobs()
