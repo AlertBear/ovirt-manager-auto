@@ -40,7 +40,7 @@ from art.unittest_lib import attr
 
 from utilities.machine import Machine, LINUX
 
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.test_handler import exceptions
 
 from rhevmtests.storage.storage_single_disk_snapshot import config
@@ -353,16 +353,14 @@ class TestCase333028(BasicEnvironment):
         super(TestCase333028, self).tearDown()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase289572(BasicEnvironment):
     """
     Create a snapshot to the VM while it's suspended and pick only one disk
     and configuration file
     https://tcms.engineering.redhat.com/case/289572/?from_plan=12057
-
-    __test__ = False -> https://bugzilla.redhat.com/show_bug.cgi?id=1120232
     """
-    __test__ = False
+    __test__ = True
     tcms_test_case = '289572'
 
     def setUp(self):
@@ -371,6 +369,7 @@ class TestCase289572(BasicEnvironment):
         super(TestCase289572, self).setUp()
         assert self._prepare_fs_on_devs()
 
+    @bz({"1120232": {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_suspended_vm(self):
         """
@@ -441,7 +440,7 @@ class TestCase289572(BasicEnvironment):
         super(TestCase289572, self).tearDown()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase333031(BasicEnvironment):
     """
     Preview snapshot of 2 disks out of 4 and verify that the
@@ -519,7 +518,7 @@ class TestCase333031(BasicEnvironment):
         super(TestCase333031, self).tearDown()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase333049(BasicEnvironment):
     """
     Create snapshot of all vm's disks, preview it and undo the snapshot.
@@ -585,7 +584,7 @@ class TestCase333049(BasicEnvironment):
         super(TestCase333049, self).tearDown()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase333050(BasicEnvironment):
     """
     Create snapshot of first disk out of 4, preview it and undo the snapshot.
@@ -655,65 +654,7 @@ class TestCase333050(BasicEnvironment):
         super(TestCase333050, self).tearDown()
 
 
-@attr(tier=2)
-class TestCase333058(BasicEnvironment):
-    """
-    Custom preview of vm configuration and all disks
-    https://tcms.engineering.redhat.com/case/333058/?from_plan=12057
-    """
-    __test__ = True
-    tcms_test_case = '333058'
-    commit = False
-
-    def setUp(self):
-        self.disk_count = 2
-        self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
-        super(TestCase333058, self).setUp()
-        assert self._prepare_fs_on_devs()
-
-    @tcms(TEST_PLAN_ID, tcms_test_case)
-    def test_custom_preview_with_configuration_and_all_disks(self):
-        """
-        - Create a VM with 2 disks (with file system on both)
-        - Create files on both disks
-        - Create snapshot to all VM's disks and conf.
-        - Delete the files created as part of step 2
-        - Preview snapshot of all VM's disks and conf.
-        - Commit snapshot
-        """
-        self._perform_snapshot_operation()
-        wait_for_jobs()
-
-        self.delete_operation()
-
-        logger.info("Previewing the snapshot %s", self.snapshot_desc)
-        assert preview_snapshot(True, self.vm_name, self.snapshot_desc,
-                                ensure_vm_down=True)
-        wait_for_jobs()
-
-        self.check_file_existence_operation(True, 'snapshot')
-
-        logger.info("Committing the snapshot %s", self.snapshot_desc)
-        assert commit_snapshot(True, self.vm_name, ensure_vm_down=True)
-
-        self.commit = True
-
-        wait_for_jobs()
-
-        self.check_file_existence_operation(True, 'commit')
-
-    def tearDown(self):
-        for path in self.mounted_paths:
-            self.vm.runCmd(shlex.split(self.umount_cmd % path))
-
-        if not self.commit:
-            assert undo_snapshot_preview(True, self.vm_name,
-                                         ensure_vm_down=True)
-
-        super(TestCase333058, self).tearDown()
-
-
-@attr(tier=2)
+@attr(tier=1)
 class TestCase342783(BasicEnvironment):
     """
     Check that the new cloned VM was created only with 1 disk and the
@@ -835,7 +776,7 @@ class TestCase333055(BasicEnvironment):
         super(TestCase333055, self).tearDown()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase343074(BasicEnvironment):
     """
     Restart vdsm during snapshot creation, check that snapshot creation
@@ -878,7 +819,7 @@ class TestCase343074(BasicEnvironment):
         super(TestCase343074, self).tearDown()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase343077(BasicEnvironment):
     """
     Restart ovirt-engine service during snapshot creation, check that
@@ -927,7 +868,7 @@ class TestCase343077(BasicEnvironment):
         super(TestCase343077, self).tearDown()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase336096(BasicEnvironment):
     """
     Create snapshot only from VM configuration.
@@ -1057,7 +998,7 @@ class TestCase336105(BasicEnvironment):
         self.check_file_existence_operation(True, 'snapshot')
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase343076(BasicEnvironment):
     """
     Block connectivity to storage server during snapshot creation, Check that
