@@ -3710,16 +3710,12 @@ def get_vm_boot_sequence(vm_name):
     return [boot.get_dev() for boot in boots]
 
 
-def remove_all_vms_from_cluster(cluster_name, skip=None, use_threads=True):
+def remove_all_vms_from_cluster(cluster_name, skip=None):
     """
     Stop if need and remove all exists vms from specific cluster
 
     :param cluster_name: cluster name
-    :type  cluster_name: str
     :param skip: list of names of vms which should be left
-    :type skip: list
-    :param use_threads: using threads to remove VMs, by default True.
-    :type use_threads: bool
     :return: True, if all vms removed from cluster, False otherwise
     :rtype: bool
     """
@@ -3734,15 +3730,8 @@ def remove_all_vms_from_cluster(cluster_name, skip=None, use_threads=True):
             if vm_obj.get_name() not in skip:
                 vms_in_cluster.append(vm_obj.get_name())
     stop_vms_safely(vms_in_cluster)
-    if use_threads:
-        logger.info("Removing VMs using threads")
-        if not removeVms(True, vms_in_cluster):
-            return False
-    else:
-        logger.info("Removing VMs without threads")
-        for vm_name in vms_in_cluster:
-            if not removeVm(True, vm_name, force=True, stopVM=False):
-                return False
+    if not removeVms(True, vms_in_cluster):
+        return False
     return True
 
 
