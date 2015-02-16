@@ -35,7 +35,7 @@ class SetupTestCase(base.RHEVMUtilsTestCase):
     def create_answer_file(self):
         ans = os.path.join('/tmp', 'answer_file')
         params = self.ut.setup.getInstallParams(
-            '__default__', unittest_conf.config['CLEANUP_ANSWERS'])
+            '__default__', unittest_conf.config['ANSWERS'])
         self.ut.setup.fillAnswerFile(ans, **params)
         logger.info("%s: install setup with %s", host, pformat(params))
 
