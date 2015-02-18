@@ -174,7 +174,7 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
         LOGGER.info("Upper tear down")
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase285357(TestCaseBlockedConnection):
     __test__ = (TestCaseBlockedConnection.storage == 'nfs')
     tcms_test_case = '285357'
@@ -188,7 +188,7 @@ class TestCase285357(TestCaseBlockedConnection):
         self.run_flow()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase285370(TestNoSpaceLeftOnDevice):
     __test__ = (TestNoSpaceLeftOnDevice.storage == 'nfs')
     tcms_test_case = '285370'
@@ -203,7 +203,7 @@ class TestCase285370(TestNoSpaceLeftOnDevice):
         self.run_flow()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase285371(TestCaseBlockedConnection):
     __test__ = (TestCaseBlockedConnection.storage == 'iscsi')
     tcms_test_case = '285371'
@@ -242,7 +242,7 @@ class TestCase285372(TestNoSpaceLeftOnDevice):
         self.run_flow()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase285375(TestCaseBlockedConnection):
     __test__ = (TestCaseBlockedConnection.storage == 'fcp')
     tcms_test_case = '285375'
