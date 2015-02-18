@@ -245,10 +245,7 @@ def create_vm_or_clone(positive, vmName, vmDescription,
         start = False
 
     # If the vm doesn't need installation don't waste time cloning the vm
-    # Clone vm from template only allows virtio and virtio-scsi disk
-    # interfaces, in case of IDE create a vm instead of cloning
-    if (config.GOLDEN_ENV and
-            diskInterface != config.INTERFACE_IDE and installation):
+    if config.GOLDEN_ENV and installation:
         logger.info("Cloning vm %s", vmName)
         template_name = 'template_2'
         template_name = None
@@ -274,7 +271,6 @@ def create_vm_or_clone(positive, vmName, vmDescription,
             'vol_sparse': kwargs.get('volumeType', 'true'),
             'vol_format': kwargs.get('volumeFormat'),
             'storagedomain': kwargs.get('storageDomainName'),
-            'virtio_scsi': diskInterface == config.INTERFACE_VIRTIO_SCSI,
         }
         update_keys = [
             'vmDescription', 'type', 'placement_host', 'placement_affinity',
@@ -285,10 +281,13 @@ def create_vm_or_clone(positive, vmName, vmDescription,
         assert cloneVmFromTemplate(**args_clone)
         # Because alias is not a unique property and a lot of test use it
         # as identifier, rename the vm's disk alias to be safe
+        # Since cloning doesn't allow to specify disk interface, change it
         disks_obj = getVmDisks(vmName)
         for i in range(len(disks_obj)):
-            updateDisk(True, vmName=vmName, id=disks_obj[i].get_id(),
-                       alias=vmName + "_Disk_" + str(i))
+            updateDisk(
+                True, vmName=vmName, id=disks_obj[i].get_id(),
+                alias="{0}_Disk_{1}".format(vmName, i),
+                interface=diskInterface)
         # Bring the VM up, return true if the action succeeds
         if start:
             return startVm(positive, vmName, wait_for_status=config.VM_UP)
