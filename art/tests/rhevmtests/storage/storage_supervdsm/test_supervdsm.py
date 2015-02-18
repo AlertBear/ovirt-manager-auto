@@ -189,7 +189,7 @@ class TestCase289539(SuperVDSMTestBase):
                             ERROR_EXEC_SERVICE_ACTION % (command, "supervdsm"))
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase289547(SuperVDSMTestBase):
     """
     supervdsm test case, communication between supervdsm and vdsm
@@ -243,7 +243,7 @@ class TestCase289547(SuperVDSMTestBase):
         self.assertTrue(success, ERROR_HW_OUTPUT % output)
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase289565(SuperVDSMTestBase):
     """
     supervdsm test case, supervdsm stress test
@@ -276,7 +276,7 @@ class TestCase289565(SuperVDSMTestBase):
         )
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase293152(SuperVDSMTestBase):
     """
     deleting supervdsm log and changing log file permissions
