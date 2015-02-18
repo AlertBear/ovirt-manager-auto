@@ -194,7 +194,7 @@ class DCUp(AllHostsUp):
                                    POLLING_INTERVAL)
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TwoHostsAndOneWithHigherPriority(AllHostsUp):
     """
     Setup with 3 hosts -
@@ -282,7 +282,7 @@ class SeveralHosts(DCUp):
         self._get_new_spm(config.TEST_HOSTS[1], config.TEST_HOSTS[2])
 
 
-@attr(tier=2)
+@attr(tier=1)
 class PriorityOutOfRange(SPMPriorityMinusOne):
     """
     Change the SPM priority value in the DataBase (negative test)
@@ -397,7 +397,7 @@ class RandomSelection(DCUp):
             self._select_new_spm()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class RestartVdsm(DCUp):
     """
     Restart/Stop VDSM
@@ -423,7 +423,7 @@ class RestartVdsm(DCUp):
         self._check_host_for_spm(config.TEST_HOSTS[0])
 
 
-@attr(tier=2)
+@attr(tier=1)
 class SingleHost(AllHostsUp):
     """
     Host that has priority -1 is not chosen, even if it is the only host
@@ -508,7 +508,7 @@ class SPMPriorityOneHostMinusOne(DCUp):
                 % current_spm)
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TwoHost(AllHostsUp):
     """
     Host with higher priority is always chosen, after swiping priorities
@@ -613,7 +613,7 @@ class SingleHostChangePriority(DCUp):
         ll_hosts.checkSPMPriority(True,  config.TEST_HOSTS[0], '10')
 
 
-@attr(tier=2)
+@attr(tier=1)
 class SingleHostChangePriorityIllegal(DCUp):
     """
     Make sure that spm priority changes correctly or doesn't change at all
