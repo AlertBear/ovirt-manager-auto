@@ -33,7 +33,7 @@ def teardown_module():
         vdc_password=config.VDC_PASSWORD)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase68536(TestCase):
     """
     storage sanity test, disconnect SPM from storage
