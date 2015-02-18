@@ -152,7 +152,7 @@ def write_on_vms_ro_disks(vm_name, storage_type, imported_vm=False):
                                            disk, vm_name)
         logger.info("disk %s is visible to %s" % (disk, vm_name))
         logger.info("Trying to write to read only disk...")
-        status, out = helpers.perform_dd_to_disk(config.VM_NAME, disk)
+        status, out = helpers.perform_dd_to_disk(vm_name, disk)
         status = (not status) and (READ_ONLY in out or NOT_PERMITTED in out)
         if not status:
             raise exceptions.DiskException("Write operation to RO disk "
