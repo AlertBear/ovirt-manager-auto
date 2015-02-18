@@ -2,7 +2,7 @@
     rhevm cleanup module
 """
 
-from rhevmtests.system.rhevm_utils import base
+from rhevmtests.system.rhevm_utils.base import RHEVMUtilsTestCase
 from utilities.rhevm_tools.cleanup import CleanUpUtility
 import os
 import logging
@@ -19,13 +19,12 @@ host = unittest_conf.VDC_HOST
 _multiprocess_can_split_ = True
 
 
-@attr(tier=0)
-class CleanUpTestCase(base.RHEVMUtilsTestCase):
+class CleanUpTestCaseBase(RHEVMUtilsTestCase):
     """
         rhevm cleanup test cases
     """
 
-    __test__ = not unittest_conf.GOLDEN_ENV
+    __test__ = False
     utility = NAME
     utility_class = CleanUpUtility
     _multiprocess_can_split_ = True
@@ -36,6 +35,12 @@ class CleanUpTestCase(base.RHEVMUtilsTestCase):
             '__default__', unittest_conf.config['CLEANUP_ANSWERS'])
         self.ut.setup.fillAnswerFile(ans, **params)
         logger.info("%s: clean engine with %s", host, params)
+
+
+@attr(tier=0, extra_reqs={'utility': NAME})
+class CleanUpTestCase(CleanUpTestCaseBase):
+
+    __test__ = True
 
     @tcms(TCMS_PLAN, 296506)
     def test_clean_up(self):
@@ -51,3 +56,11 @@ class CleanUpTestCase(base.RHEVMUtilsTestCase):
         self.ut(config_append=self.c['cleanup_answer_file'],
                 generate_answer=self.c['new_cleanup_ans_file'])
         self.ut.testGenerateAnswerFile()
+
+    @tcms(TCMS_PLAN, 296462)
+    def test_generating_log(self):
+        """ generating_log """
+        self.create_answer_file()
+        self.ut(config_append=self.c['cleanup_answer_file'],
+                log=self.c['cleanup_log_file'])
+        self.ut.testGenerateLogFile()

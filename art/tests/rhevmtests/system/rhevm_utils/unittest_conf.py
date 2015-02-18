@@ -180,7 +180,8 @@ SETUP = {
 CLEANUP = {
     'vm_name': '%(def_vm_name)s',
     'cleanup_answer_file': '/tmp/cleanup_answer_file',
-    'new_cleanup_ans_file': '/tmp/new_cleanup_ans_file'
+    'new_cleanup_ans_file': '/tmp/new_cleanup_ans_file',
+    'cleanup_log_file': '/tmp/cleanup_log_file.log',
 }
 
 CONFIG = {
