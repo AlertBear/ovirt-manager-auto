@@ -27,7 +27,7 @@ TIMEOUT = 300
 OPERATION_FINISHED = False
 
 
-@attr(tier=2)
+@attr(tier=3)
 class RestartOvirt(TestCase):
     __test__ = False
     ovirt_host = Machine(

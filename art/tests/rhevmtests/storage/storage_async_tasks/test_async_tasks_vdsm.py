@@ -31,7 +31,7 @@ TIMEOUT = 300
 DATA_CENTER_INIT_TIMEOUT = 1200
 
 
-@attr(tier=2)
+@attr(tier=3)
 class RestartVDSM(TestCase):
     __test__ = False
 
