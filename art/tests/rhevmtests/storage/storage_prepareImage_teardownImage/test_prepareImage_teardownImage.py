@@ -882,7 +882,7 @@ class TestCase389927(BasicEnvironment):
         self.basic_positive_flow_prepare_image_only()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase389931(BasicEnvironment):
     """
     Prepare image followed by Tear down
