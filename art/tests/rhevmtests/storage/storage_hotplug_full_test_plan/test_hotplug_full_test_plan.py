@@ -205,7 +205,7 @@ class TestCase286368(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase286226(helpers.HotplugHookTest):
     """
     Check after_disk_hotplug for plugging 10 disks concurrently
@@ -232,7 +232,7 @@ class TestCase286226(helpers.HotplugHookTest):
         self.assertEqual(len(result), len(DISKS_TO_PLUG), result)
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase287480(helpers.HotplugHookTest):
     """
     Check after_disk_hotunplug for unplugging 10 disks concurrently
@@ -259,7 +259,7 @@ class TestCase287480(helpers.HotplugHookTest):
         self.assertEqual(len(result), len(DISKS_TO_PLUG), result)
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase287249(helpers.HotplugHookTest):
     """
     Check if before_disk_hotplug is called when attaching & activating
@@ -300,7 +300,7 @@ class TestCase287249(helpers.HotplugHookTest):
             disks.detachDisk(True, self.use_disks[0], self.vm_name)
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase287481(helpers.HotplugHookTest):
     """
     Check that activation will succeed and the hook will fail if
@@ -349,7 +349,7 @@ class TestCase287481(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase286369(helpers.HotplugHookTest):
     """
     Check that non-executable hooks will not be called
@@ -383,7 +383,7 @@ class TestCase286369(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase286243(helpers.HotplugHookTest):
     """
     Multiple hooks for one action, checks that all will be called
@@ -420,7 +420,7 @@ class TestCase286243(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase286861(helpers.HotplugHookTest):
     """
     Restart vdsm during before_disk_hotplug, action should fail
