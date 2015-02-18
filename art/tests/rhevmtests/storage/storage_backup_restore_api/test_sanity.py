@@ -200,7 +200,7 @@ class TestCase303842(BaseTestCase):
         self.assertTrue(is_disk_attached, "Backup disk is not attached")
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase303854(BaseTestCase):
     """
     Restart vdsm / engine while snapshot disk attached to backup vm
@@ -386,7 +386,7 @@ class TestCase304156(BaseTestCase):
                     helpers.TRANSIENT_DIR_PATH)
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase304159(BaseTestCase):
     """
     Create source VM snapshot, attach snapshot to backup VM
@@ -566,7 +566,7 @@ class TestCase304167(CreateTemplateFromVM):
         self._create_template()
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase304168(TestCase):
     """
     Block connection from host to storage domain 2 that contains
@@ -899,7 +899,7 @@ class TestCase322485(TestCase):
                 logger.info("Disk %s - removed", disk.get_alias())
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase322486(TestCase):
     """
     During a vm disk migration, try to attach the snapshot disk to backup vm
@@ -953,7 +953,7 @@ class TestCase322486(TestCase):
         disks.waitForDisksState(vm_disks[0].get_alias())
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase322487(BaseTestCase):
     """
     Attach snapshot disk to backup vm more than once
@@ -987,7 +987,7 @@ class TestCase322487(BaseTestCase):
                                  "to backup vm")
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase322886(TestCase):
     """
     During a vm disk live migration,
