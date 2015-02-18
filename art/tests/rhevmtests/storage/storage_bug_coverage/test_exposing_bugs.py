@@ -84,7 +84,7 @@ def teardown_module():
                                    vdc_password=config.VDC_PASSWORD)
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase355191(TestCase):
     """
     Test case 355191 - Test that exposes BZ1066834
@@ -180,7 +180,7 @@ from a vm with non-ascii character in its name is working
 """
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase305452(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=1002249
@@ -403,7 +403,7 @@ Test image lock free after engine restart
 """
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase320223(TestCase):
     """
     bug coverage test, restart engine during template creation
@@ -652,7 +652,7 @@ TCMS plan: https://tcms.engineering.redhat.com/plan/9583
 """
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase280628(TestCase):
     """ Test exposing https://bugzilla.redhat.com/show_bug.cgi?id=962549
 
@@ -741,7 +741,7 @@ def _create_vm(vm_name, vm_description, disk_interface,
         network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT)
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase398664(TestCase):
     """
     Test exposing https://bugzilla.redhat.com/show_bug.cgi?id=1119664
