@@ -25,7 +25,7 @@ ENUMS = config.ENUMS
 STORAGE_DOMAIN_API = test_utils.get_api('storage_domain', 'storagedomains')
 
 
-@attr(tier=2)
+@attr(tier=3)
 class TestCase281163(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=890922
