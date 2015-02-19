@@ -14,7 +14,7 @@ from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.low_level import templates, hosts
 from art.rhevm_api.tests_lib.low_level.datacenters import get_data_center
 from art.unittest_lib import attr
-from rhevmtests.storage.helpers import get_vm_ip, remove_all_vm_test_snapshots
+from rhevmtests.storage.helpers import get_vm_ip
 
 import art.rhevm_api.utils.storage_api as st_api
 
@@ -510,12 +510,6 @@ class TestCase304161(TestCase):
                                 self.vm_names[1]):
             raise exceptions.DiskException("Failed to remove disk %s"
                                            % disks_objs[0].get_alias())
-        logger.info("Deleting snapshot %s", self.first_snapshot)
-        remove_all_vm_test_snapshots(
-            self.vm_names[0], self.first_snapshot
-        )
-        logger.info("Snapshot %s deleted successfully", self.first_snapshot)
-
         vms.start_vms(
             [self.vm_names[0]], 1, wait_for_status=config.VM_UP,
             wait_for_ip=False
