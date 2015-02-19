@@ -122,7 +122,7 @@ class TestCase289230(SuperVDSMTestBase):
     @tcms(tcms_plan_id, tcms_test_case)
     def supervdsm_sanity(self):
         """
-        Test basic funtionality is running after host is installed
+        Test basic functionality is running after host is installed
         """
         logger.info("Make sure services are running after host is added "
                     "to rhevm in the setup Class")
@@ -142,7 +142,7 @@ class TestCase289230(SuperVDSMTestBase):
             FILE_DOES_NOT_EXIST % VDSM_LOG)
 
 
-@attr(tier=1)
+@attr(tier=3)
 class TestCase289539(SuperVDSMTestBase):
     """
     supervdsm test case, command options
@@ -243,7 +243,7 @@ class TestCase289547(SuperVDSMTestBase):
         self.assertTrue(success, ERROR_HW_OUTPUT % output)
 
 
-@attr(tier=1)
+@attr(tier=3)
 class TestCase289565(SuperVDSMTestBase):
     """
     supervdsm test case, supervdsm stress test
