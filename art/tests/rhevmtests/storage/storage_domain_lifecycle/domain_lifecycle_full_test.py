@@ -186,6 +186,7 @@ def _create_sds(storage_type, host):
             sd_args['lun_address'] = config.LIFECYCLE_LUN_ADDRESS[index]
             sd_args['lun_target'] = config.LIFECYCLE_LUN_TARGET[index]
             sd_args['lun_port'] = config.LUN_PORT
+            sd_args['override_luns'] = True
 
         logger.info('Creating storage domain with parameters: %s', sd_args)
         status = ll_st_domains.addStorageDomain(True, **sd_args) and status
