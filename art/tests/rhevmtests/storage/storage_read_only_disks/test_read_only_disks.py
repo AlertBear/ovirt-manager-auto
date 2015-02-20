@@ -213,7 +213,7 @@ class DefaultEnvironment(BaseTestCase):
         assert waitForDisksState(helpers.DISKS_NAMES[self.storage],
                                  timeout=TASK_TIMEOUT)
         stop_vms_safely([self.vm_name])
-        waitForVMState(vm=self.vm_name, state=config.VM_DOWN)
+        assert waitForVMState(vm=self.vm_name, state=config.VM_DOWN)
 
     def tearDown(self):
         """
@@ -253,7 +253,7 @@ class DefaultSnapshotEnvironment(DefaultEnvironment):
         self.prepare_disks_for_vm(read_only=True)
 
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
 
         logger.info("Adding new snapshot %s", self.snapshot_description)
         assert addSnapshot(
@@ -287,7 +287,7 @@ class TestCase332472(DefaultEnvironment):
         """
         self.prepare_disks_for_vm(read_only=True)
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
 
         helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
@@ -301,6 +301,7 @@ class TestCase332473(BaseTestCase):
     __test__ = BaseTestCase.storage in config.BLOCK_TYPES
     tcms_test_case = '332473'
 
+    @bz({'1194695': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_attach_RO_direct_LUN_disk(self):
         """
@@ -311,36 +312,35 @@ class TestCase332473(BaseTestCase):
         - Verify that it's impossible to write to the disk:
         """
         for i, interface in enumerate([config.VIRTIO, config.VIRTIO_SCSI]):
+            disk_alias = "direct_lun_disk_%s" % interface
             direct_lun_args = {
-                'wipe_after_delete': config.BLOCK_FS,
+                'wipe_after_delete': True,
                 'bootable': False,
                 'shareable': False,
                 'active': True,
                 'format': config.FORMAT_COW,
                 'interface': interface,
-                'alias': "direct_lun_disk_%s" % interface,
+                'alias': disk_alias,
                 'lun_address': config.DIRECT_LUN_ADDRESSES[i],
                 'lun_target': config.DIRECT_LUN_TARGETS[i],
                 'lun_id': config.DIRECT_LUNS[i],
                 "type_": self.storage}
 
-            self.disk_alias = direct_lun_args['alias']
-
-            logger.info("Creating disk %s", self.disk_alias)
+            logger.info("Creating disk %s", disk_alias)
             assert addDisk(True, **direct_lun_args)
-            helpers.DISKS_NAMES[self.storage].append(self.disk_alias)
+            helpers.DISKS_NAMES[self.storage].append(disk_alias)
 
             logger.info("Attaching disk %s as RO disk to vm %s",
-                        self.disk_alias, self.vm_name)
+                        disk_alias, self.vm_name)
             status = attachDisk(
-                True, self.disk_alias, self.vm_name, active=True,
+                True, disk_alias, self.vm_name, active=True,
                 read_only=True
             )
 
             self.assertTrue(status, "Failed to attach direct lun as read only")
 
-            start_vms([self.vm_name], 1, wait_for_ip=False)
-            waitForVMState(self.vm_name)
+            start_vms([self.vm_name], 1, wait_for_ip=True)
+            assert waitForVMState(self.vm_name)
 
             helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
@@ -373,7 +373,7 @@ class TestCase332474(DefaultEnvironment):
 
         self.prepare_disks_for_vm(read_only=False)
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
 
         self.test_vm_name = 'test_%s' % self.tcms_test_case
         vmArgs['vmName'] = self.test_vm_name
@@ -395,6 +395,7 @@ class TestCase332474(DefaultEnvironment):
         - On VM2, Verify that it's impossible to write to the RO disk
         """
         self.prepare_disks_for_vm(read_only=True, vm_name=self.test_vm_name)
+
         for disk in helpers.DISKS_NAMES[self.storage]:
             state, out = storage_helpers.perform_dd_to_disk(
                 self.test_vm_name, disk
@@ -427,7 +428,7 @@ class TestCase337630(DefaultEnvironment):
 
         self.prepare_disks_for_vm(read_only=False)
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
 
         self.test_vm_name = 'test_%s' % self.tcms_test_case
         vmArgs['vmName'] = self.test_vm_name
@@ -437,7 +438,7 @@ class TestCase337630(DefaultEnvironment):
         if not storage_helpers.create_vm_or_clone(**vmArgs):
             raise exceptions.VMException("Failed to create vm %s"
                                          % self.test_vm_name)
-        waitForVMState(self.test_vm_name)
+        assert waitForVMState(self.test_vm_name)
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_RO_persistent_after_snapshot_creation_to_a_shared_disk(self):
@@ -529,7 +530,7 @@ class TestCase332475(BaseTestCase):
         helpers.start_creating_disks_for_test(self.storage_domains[0],
                                               self.storage)
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
         self.prepare_disks_for_vm(read_only=False)
 
         vm_disks = getVmDisks(self.vm_name)
@@ -594,7 +595,7 @@ class TestCase332489(DefaultEnvironment):
         """
         self.prepare_disks_for_vm(read_only=True)
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
 
         for disk in helpers.DISKS_NAMES[self.storage]:
             state, out = storage_helpers.perform_dd_to_disk(
@@ -627,7 +628,7 @@ class TestCase332489(DefaultEnvironment):
         if status:
             self.blocked = True
 
-        waitForVMState(self.vm_name, state=config.VM_PAUSED)
+        assert waitForVMState(self.vm_name, state=config.VM_PAUSED)
 
         logger.info("Unblocking connection from vdsm to storage domain")
         status = unblockOutgoingConnection(
@@ -638,7 +639,7 @@ class TestCase332489(DefaultEnvironment):
             self.blocked = False
 
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
         for disk in helpers.DISKS_NAMES[self.storage]:
             state, out = storage_helpers.perform_dd_to_disk(
                 self.vm_name, disk
@@ -697,7 +698,7 @@ class TestCase332484(DefaultEnvironment):
         self.prepare_disks_for_vm(read_only=True)
 
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
 
         vm_disks = filter(not_bootable, getVmDisks(self.vm_name))
 
@@ -755,7 +756,7 @@ class TestCase332476(DefaultEnvironment):
         - Verify that it's impossible to write to the disk
         """
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
 
         self.prepare_disks_for_vm(read_only=True)
 
@@ -763,7 +764,7 @@ class TestCase332476(DefaultEnvironment):
         suspendVm(True, self.vm_name)
         logger.info("Re activating vm %s", self.vm_name)
         startVm(True, self.vm_name)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
 
         helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
@@ -800,11 +801,11 @@ class TestCase334878(DefaultEnvironment):
 
         logger.info("Exporting vm %s", self.vm_name)
         start_vms([self.vm_name], max_workers=1, wait_for_ip=True)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
         vm_ip = storage_helpers.get_vm_ip(self.vm_name)
         setPersistentNetwork(vm_ip, config.VM_PASSWORD)
         stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
+        assert waitForVMState(self.vm_name, config.VM_DOWN)
 
         self.vm_exported = exportVm(True, self.vm_name, self.export_domain)
         self.assertTrue(
@@ -818,7 +819,7 @@ class TestCase334878(DefaultEnvironment):
             config.CLUSTER_NAME, name=self.imported_vm_1
         )
         start_vms([self.imported_vm_1], max_workers=1, wait_for_ip=False)
-        waitForVMState(self.imported_vm_1)
+        assert waitForVMState(self.imported_vm_1)
 
         logger.info(
             "Importing vm %s as %s", self.vm_name, self.imported_vm_2
@@ -828,7 +829,7 @@ class TestCase334878(DefaultEnvironment):
             config.CLUSTER_NAME, name=self.imported_vm_2
         )
         start_vms([self.imported_vm_2], max_workers=1, wait_for_ip=False)
-        waitForVMState(self.imported_vm_2)
+        assert waitForVMState(self.imported_vm_2)
 
         helpers.write_on_vms_ro_disks(
             self.imported_vm_1, self.storage, imported_vm=True
@@ -895,7 +896,7 @@ class TestCase332483(DefaultSnapshotEnvironment):
                 % ro_disk.get_alias()
             )
         stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
+        assert waitForVMState(self.vm_name, config.VM_DOWN)
         logger.info("Previewing snapshot %s", self.snapshot_description)
         self.create_snapshot = preview_snapshot(True, self.vm_name,
                                                 self.snapshot_description)
@@ -903,7 +904,7 @@ class TestCase332483(DefaultSnapshotEnvironment):
         assert self.create_snapshot
         wait_for_jobs()
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
 
         helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
@@ -972,7 +973,7 @@ class TestCase337931(DefaultSnapshotEnvironment):
                 % ro_disk.get_alias()
             )
         stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
+        assert waitForVMState(self.vm_name, config.VM_DOWN)
         logger.info("Previewing snapshot %s", self.snapshot_description)
         status = preview_snapshot(
             True, self.vm_name, self.snapshot_description
@@ -983,13 +984,13 @@ class TestCase337931(DefaultSnapshotEnvironment):
 
         status = undo_snapshot_preview(True, self.vm_name)
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
         assert status
 
         self.create_snapshot = not status
 
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
 
         helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
@@ -1054,7 +1055,7 @@ class TestCase337930(DefaultSnapshotEnvironment):
                 % ro_disk.get_alias()
             )
         stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
+        assert waitForVMState(self.vm_name, config.VM_DOWN)
         logger.info("Previewing snapshot %s", self.snapshot_description)
         status = preview_snapshot(
             True, self.vm_name, self.snapshot_description
@@ -1064,12 +1065,12 @@ class TestCase337930(DefaultSnapshotEnvironment):
 
         status = commit_snapshot(True, self.vm_name)
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
         assert status
         self.create_snapshot = not status
 
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
 
         helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
@@ -1140,7 +1141,7 @@ class TestCase337934(DefaultSnapshotEnvironment):
                 % ro_disk.get_alias()
             )
         stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
+        assert waitForVMState(self.vm_name, config.VM_DOWN)
         logger.info(
             "Removing snapshot %s", self.snapshot_description
         )
@@ -1156,7 +1157,7 @@ class TestCase337934(DefaultSnapshotEnvironment):
         )
 
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
 
         helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
@@ -1202,7 +1203,7 @@ class TestCase337935(DefaultEnvironment):
         self.prepare_disks_for_vm(read_only=True)
 
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
         vm_ip = storage_helpers.get_vm_ip(self.vm_name)
 
         ro_vm_disks = filter(not_bootable, getVmDisks(self.vm_name))
@@ -1448,7 +1449,7 @@ class TestCase332477(DefaultEnvironment):
         logger.info("VM disks: %s", [d.get_alias() for d in ro_vm_disks])
 
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
 
         for index, disk in enumerate(ro_vm_disks):
             move_vm_disk(
@@ -1525,7 +1526,7 @@ class TestCase334876(DefaultEnvironment):
         logger.info("VM disks: %s", [d.get_alias() for d in ro_vm_disks])
 
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
 
         move_vm_disk(self.vm_name, bootable, self.storage_domains[1])
 
@@ -1558,7 +1559,7 @@ class TestCase334921(DefaultEnvironment):
         self.assertTrue(status, "Failed to kill qemu process")
         logger.info("qemu process killed")
         start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert waitForVMState(self.vm_name)
         ro_vm_disks = getVmDisks(self.vm_name)
         ro_vm_disks = [d for d in ro_vm_disks if (not d.get_bootable())]
         logger.info("VM disks: %s", [d.get_alias() for d in ro_vm_disks])
