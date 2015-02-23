@@ -857,7 +857,8 @@ def changeVMStatus(positive, vm, action, expectedStatus, async='true'):
     Parameters:
        * positive - indicates positive/negative test's flow
        * vm - name of vm
-       * action - action that should be run on vm (start/stop/suspend/shutdown)
+       * action - action that should be run on vm -
+       (start/stop/suspend/shutdown/detach)
        * expectedStatus - status of vm in case the action succeeded
        * async - don't wait for VM status if 'true' ('false' by default)
     Return: status (True if vm status is changed properly, False otherwise)
@@ -1671,7 +1672,7 @@ def validateSnapshot(positive, vm, snapshot):
 
 
 def wait_for_snapshot_gone(
-        positive, snapshot, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT
+    positive, snapshot, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT
 ):
     """
     Wait for snapshot to disappear from the setup. This function will block
@@ -1695,8 +1696,8 @@ def wait_for_snapshot_gone(
 
 @is_action()
 def removeSnapshot(
-        positive, vm, description, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT,
-        wait=True
+    positive, vm, description, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT,
+    wait=True
 ):
     """
     Remove vm snapshot
@@ -2233,9 +2234,10 @@ def remove_cdrom_vm(positive, vm_name):
 
 
 def _createVmForClone(
-        name, template=None, cluster=None, clone=None, vol_sparse=None,
-        vol_format=None, storagedomain=None, snapshot=None, vm_name=None,
-        **kwargs):
+    name, template=None, cluster=None, clone=None, vol_sparse=None,
+    vol_format=None, storagedomain=None, snapshot=None, vm_name=None,
+    **kwargs
+):
     """
     Description: helper function - creates VM objects for VM_API.create call
                  when VM is created from template, sets all required attributes
@@ -2427,24 +2429,24 @@ def checkVmStatistics(positive, vm):
 
 @is_action()
 def createVm(
-        positive, vmName, vmDescription, cluster='Default', nic=None,
-        nicType=None, mac_address=None, storageDomainName=None, size=None,
-        diskType=ENUMS['disk_type_data'], volumeType='true',
-        volumeFormat=ENUMS['format_cow'], diskActive=True,
-        diskInterface=ENUMS['interface_virtio'], bootable='true',
-        wipe_after_delete='false', start='false', template='Blank',
-        templateUuid=None, type=None, os_type=None, memory=None,
-        cpu_socket=None, cpu_cores=None, cpu_mode=None, display_type=None,
-        installation=False, slim=False, user=None, password=None,
-        attempt=60, interval=60, cobblerAddress=None, cobblerUser=None,
-        cobblerPasswd=None, image=None, async=False, hostname=None,
-        network=None, vnic_profile=None, useAgent=False,
-        placement_affinity=None, placement_host=None, vcpu_pinning=None,
-        highly_available=None, availablity_priority=None, vm_quota=None,
-        disk_quota=None, plugged='true', linked='true', protected=None,
-        copy_permissions=False, custom_properties=None,
-        watchdog_model=None, watchdog_action=None, cpu_profile_id=None,
-        numa_mode=None, balloon=None,
+    positive, vmName, vmDescription, cluster='Default', nic=None,
+    nicType=None, mac_address=None, storageDomainName=None, size=None,
+    diskType=ENUMS['disk_type_data'], volumeType='true',
+    volumeFormat=ENUMS['format_cow'], diskActive=True,
+    diskInterface=ENUMS['interface_virtio'], bootable='true',
+    wipe_after_delete='false', start='false', template='Blank',
+    templateUuid=None, type=None, os_type=None, memory=None,
+    cpu_socket=None, cpu_cores=None, cpu_mode=None, display_type=None,
+    installation=False, slim=False, user=None, password=None,
+    attempt=60, interval=60, cobblerAddress=None, cobblerUser=None,
+    cobblerPasswd=None, image=None, async=False, hostname=None,
+    network=None, vnic_profile=None, useAgent=False,
+    placement_affinity=None, placement_host=None, vcpu_pinning=None,
+    highly_available=None, availablity_priority=None, vm_quota=None,
+    disk_quota=None, plugged='true', linked='true', protected=None,
+    copy_permissions=False, custom_properties=None,
+    watchdog_model=None, watchdog_action=None, cpu_profile_id=None,
+    numa_mode=None, balloon=None,
 ):
     """
     Create new vm with nic, disk and OS
@@ -2567,7 +2569,7 @@ def createVm(
             mac_address=mac_address, network=network, vnic_profile=profile,
             plugged=plugged, linked=linked
         ):
-                return False
+            return False
 
     if template == "Blank" and storageDomainName and templateUuid is None:
         if not addDisk(
@@ -2890,7 +2892,7 @@ def waitForVmDiskStatus(vm, active, diskAlias=None, diskId=None,
         return False
 
     getFunc, diskDesc = (_getVmDiskById, diskId) if diskId is not None else \
-                        (_getVmFirstDiskByName, diskAlias)
+        (_getVmFirstDiskByName, diskAlias)
 
     disk = getFunc(vm, diskDesc)
     cur_state = disk.get_active()
@@ -3378,7 +3380,7 @@ def move_vm_disk(vm_name, disk_name, target_sd, wait=True,
     sd = STORAGE_DOMAIN_API.find(target_sd)
     disk = getVmDisk(vm_name, disk_name)
     if not DISKS_API.syncAction(
-            disk, 'move', storage_domain=sd, positive=True
+        disk, 'move', storage_domain=sd, positive=True
     ):
         raise exceptions.DiskException(
             "Failed to move disk %s of vm %s to storage domain %s" %
@@ -3447,8 +3449,8 @@ def start_vms(
 
 @is_action('waitForVmSnapshots')
 def wait_for_vm_snapshots(
-        vm_name, states, snapshots_description=None, timeout=SNAPSHOT_TIMEOUT,
-        sleep=SNAPSHOT_SAMPLING_PERIOD
+    vm_name, states, snapshots_description=None, timeout=SNAPSHOT_TIMEOUT,
+    sleep=SNAPSHOT_SAMPLING_PERIOD
 ):
     """
     Description: Wait until snapshots_description are in the given status,
@@ -3497,8 +3499,8 @@ def wait_for_vm_snapshots(
     )
 
     for sample in TimeoutingSampler(
-            timeout, sleep, _get_unsatisfying_snapshots, states,
-            snapshots_description
+        timeout, sleep, _get_unsatisfying_snapshots, states,
+        snapshots_description
     ):
         if not sample:
             return
@@ -3563,7 +3565,7 @@ def collect_vm_logs(vm_name, root_passwd='qum5net'):
 
 
 def restore_snapshot(
-        positive, vm, description, ensure_vm_down=False, restore_memory=False
+    positive, vm, description, ensure_vm_down=False, restore_memory=False
 ):
     """
     Restore VM state to a particular snapshot
@@ -3835,82 +3837,82 @@ def wait_for_vm_migrate(vm, host, **kwargs):
 
 
 def check_vm_migration(vm, host, time_to_wait):
-        """
-        Check if vm migrated on given host in defined time
-        **Author**: alukiano
+    """
+    Check if vm migrated on given host in defined time
+    **Author**: alukiano
 
-        **Parameters**:
-            * *vm* - vm for migration name
-            * *host* - destination host name
-            * *time_to_wait - migration waiting time
-        **Returns**: True, migration_duration if event passed,
-         otherwise False, migration_duration
-        """
-        start_time = time.time()
-        logger.info("Wait until vm %s will migrate on host %s", vm, host)
-        result = wait_for_vm_migrate(vm, host, timeout=time_to_wait)
-        migration_duration = time.time() - start_time
-        if not result:
-            logger.error("Process of migration failed")
-            return False, None
-        logger.info("Process of migration takes %f seconds",
-                    migration_duration)
-        return True, migration_duration
+    **Parameters**:
+        * *vm* - vm for migration name
+        * *host* - destination host name
+        * *time_to_wait - migration waiting time
+    **Returns**: True, migration_duration if event passed,
+     otherwise False, migration_duration
+    """
+    start_time = time.time()
+    logger.info("Wait until vm %s will migrate on host %s", vm, host)
+    result = wait_for_vm_migrate(vm, host, timeout=time_to_wait)
+    migration_duration = time.time() - start_time
+    if not result:
+        logger.error("Process of migration failed")
+        return False, None
+    logger.info("Process of migration takes %f seconds",
+                migration_duration)
+    return True, migration_duration
 
 
 def no_vm_migration(vm, host, time_to_wait):
-        """
-        Check that no migration happened
-        **Author**: alukiano
+    """
+    Check that no migration happened
+    **Author**: alukiano
 
-        **Parameters**:
-            * *vm* - vm for migration name
-            * *host* - source host name
-            * *time_to_wait - migration waiting time
-        **Returns**: True, host if no migration occurred,
-         otherwise False, host
-        """
-        logger.info("Wait %f seconds", time_to_wait)
-        time.sleep(time_to_wait)
-        logger.info("Check if vm %s still on old host %s", vm, host)
-        result, vm_host = getVmHost(vm)
-        if not result:
-            logger.error("Failed to get vm %s host", vm)
-            return False
-        if vm_host.get("vmHoster") != host:
-            logger.error("Vm %s migrated on host %s",
-                         vm, vm_host.get("vmHoster"))
-            return False
-        logger.info("After %s seconds, vm %s still on old host %s",
-                    time_to_wait, vm, host)
-        return True
+    **Parameters**:
+        * *vm* - vm for migration name
+        * *host* - source host name
+        * *time_to_wait - migration waiting time
+    **Returns**: True, host if no migration occurred,
+     otherwise False, host
+    """
+    logger.info("Wait %f seconds", time_to_wait)
+    time.sleep(time_to_wait)
+    logger.info("Check if vm %s still on old host %s", vm, host)
+    result, vm_host = getVmHost(vm)
+    if not result:
+        logger.error("Failed to get vm %s host", vm)
+        return False
+    if vm_host.get("vmHoster") != host:
+        logger.error("Vm %s migrated on host %s",
+                     vm, vm_host.get("vmHoster"))
+        return False
+    logger.info("After %s seconds, vm %s still on old host %s",
+                time_to_wait, vm, host)
+    return True
 
 
 def maintenance_vm_migration(vm, src_host, dst_host):
-        """
-        Put source host to maintenance, and check if host migrated to
-        destination host
-        **Author**: alukiano
+    """
+    Put source host to maintenance, and check if host migrated to
+    destination host
+    **Author**: alukiano
 
-        **Parameters**:
-            * *vm* - vm for migration name
-            * *src_host* - source host name
-            * *dst_host - destination host
-        **Returns**: True if vm migrated on destination host,
-         otherwise False
-        """
-        import hosts
-        logger.info("Put host %s to maintenance mode", src_host)
-        if not hosts.deactivateHost(True, src_host):
-            logger.error("Deactivation of host %s failed", src_host)
-            return False
-        logger.info("Check to which host vm %s was migrated", vm)
-        result, vm_host = getVmHost(vm)
-        if vm_host.get("vmHoster") != dst_host:
-            logger.error("Vm %s migrated on host %s and not on host %s",
-                         vm, vm_host.get("vmHoster"), dst_host)
-            return False
-        return True
+    **Parameters**:
+        * *vm* - vm for migration name
+        * *src_host* - source host name
+        * *dst_host - destination host
+    **Returns**: True if vm migrated on destination host,
+     otherwise False
+    """
+    import hosts
+    logger.info("Put host %s to maintenance mode", src_host)
+    if not hosts.deactivateHost(True, src_host):
+        logger.error("Deactivation of host %s failed", src_host)
+        return False
+    logger.info("Check to which host vm %s was migrated", vm)
+    result, vm_host = getVmHost(vm)
+    if vm_host.get("vmHoster") != dst_host:
+        logger.error("Vm %s migrated on host %s and not on host %s",
+                     vm, vm_host.get("vmHoster"), dst_host)
+        return False
+    return True
 
 
 def get_snapshot_disks(vm, snapshot):
@@ -4774,7 +4776,7 @@ def get_vm_disk_logical_name(
 
     logger.debug("Waiting for logical volume name for disk %s", disk_alias)
     for logical_name in TimeoutingSampler(
-            timeout, interval, get_logical_name, vm_name, disk_alias,
+        timeout, interval, get_logical_name, vm_name, disk_alias,
     ):
         if logical_name:
             if parse_logical_name:

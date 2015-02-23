@@ -1534,14 +1534,7 @@ class VmPool(BaseVmWithDiskTemplate):
             )
         )
         logger.info("Search for vm pool %s", self.new_vm_pool)
-        self.assertTrue(
-            vm_pool_api.searchForVmPool(
-                True,
-                query_key='description',
-                query_val='Pool*',
-                key_name='description'
-            )
-        )
+        self.assertTrue(vm_pool_api.does_vm_pool_exist(self.new_vm_pool))
         logger.info("Detach all vms from vm pool %s", self.new_vm_pool)
         vm_pool_api.detachVms(True, self.new_vm_pool)
         logger.info("Remove vm pool %s", self.new_vm_pool)

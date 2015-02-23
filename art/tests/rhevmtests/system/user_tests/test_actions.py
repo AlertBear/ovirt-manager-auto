@@ -117,10 +117,9 @@ def teardown_module():
         config.RUNNING_VM,
         stopVM='true'
     )
-    vmpools.removeWholeVmPool(
+    vmpools.removeVmPool(
         True,
-        vmpool=config.CREATE_POOL,
-        size=1
+        vmpool=config.CREATE_POOL
     )
     disks.deleteDisk(
         True,
@@ -134,10 +133,9 @@ def teardown_module():
         True,
         config.DELETE_VM
     )
-    vmpools.removeWholeVmPool(
+    vmpools.removeVmPool(
         True,
         vmpool=config.DELETE_POOL,
-        size=1
     )
     templates.removeTemplate(
         True,
@@ -208,7 +206,7 @@ def user_case(login_as=None, cleanup_func=None, **kwargs_glob):
                     self.cleanup_functions.append({
                         'func': cleanup_func,
                         'params': kwargs_glob,
-                    })
+                        })
         return wrapper
     return decorator
 
@@ -299,33 +297,33 @@ class CaseRoleActions(TestCase):
                 config.USER_SYSTEM: {
                     mla.addPermissionsForDataCenter: [
                         config.DELETE_DC,
-                    ],
-                },
+                        ],
+                    },
                 config.USER_DC: {
                     mla.addVMPermissionsToUser: [
                         config.CREATE_VM,
-                    ],
+                        ],
                     mla.addVmPoolPermissionToUser: [
                         config.CREATE_POOL, config.DELETE_POOL,
-                    ],
+                        ],
                     mla.addPermissionsForTemplate: [
                         config.DELETE_TEMPLATE,
-                    ],
+                        ],
                     mla.addClusterPermissionsToUser: [
                         config.DELETE_CLUSTER,
-                    ],
-                },
+                        ],
+                    },
                 config.USER_CLUSTER: {
                     mla.addVMPermissionsToUser: [
                         config.RUNNING_VM, config.DELETE_VM, config.CREATE_VM,
-                    ],
-                },
+                        ],
+                    },
                 config.USER_STORAGE: {
                     mla.addPermissionsForDisk: [
                         config.DELETE_DISK,
-                    ],
-                },
-            }
+                        ],
+                    },
+                }
             for user, func_obj_maps, in user_object_perm_map.iteritems():
                 for func, obj_names in func_obj_maps.iteritems():
                     for obj_name in obj_names:
@@ -434,10 +432,9 @@ class CaseRoleActions(TestCase):
     @istest
     @user_case(
         login_as=config.USER_DC,
-        cleanup_func=vmpools.removeWholeVmPool,
+        cleanup_func=vmpools.removeVmPool,
         positive=True,
         vmpool=config.USER_DC,
-        size=1
     )
     def create_vm_pool(self):
         """ create_vm_pool """
@@ -507,18 +504,21 @@ class CaseRoleActions(TestCase):
         """ manipulate_roles """
         error_stack = []
         if not mla.addRole(
-                self.positive,
-                name=config.CREATE_ROLE,
-                permits=config.PERMIT_LOGIN):
+            self.positive,
+            name=config.CREATE_ROLE,
+            permits=config.PERMIT_LOGIN
+        ):
             error_stack.append('Action add role failed.')
         if not mla.updateRole(
-                self.positive,
-                config.UPDATE_ROLE,
-                description=config.CREATE_ROLE):
+            self.positive,
+            config.UPDATE_ROLE,
+            description=config.CREATE_ROLE
+        ):
             error_stack.append('Action update role failed.')
         if not mla.removeRole(
-                self.positive,
-                config.UPDATE_ROLE):
+            self.positive,
+            config.UPDATE_ROLE
+        ):
             error_stack.append('Action remove role failed.')
 
         if len(error_stack) > 0:
@@ -535,9 +535,10 @@ class CaseRoleActions(TestCase):
         """ manipulate_users """
         error_stack = []
         if not users.addUser(
-                self.positive,
-                user_name=config.CREATE_USER,
-                domain=config.USER_DOMAIN):
+            self.positive,
+            user_name=config.CREATE_USER,
+            domain=config.USER_DOMAIN
+        ):
             error_stack.append('Action add user failed.')
         try:
             assert users.removeUser(
@@ -595,22 +596,25 @@ class CaseRoleActions(TestCase):
         """ configure_template_network """
         error_stack = []
         if not templates.addTemplateNic(
-                self.positive,
-                config.CREATE_TEMPLATE,
-                name=config.CREATE_TEMPLATE_NIC2,
-                network=config.MGMT_BRIDGE,
-                interface='virtio'):
+            self.positive,
+            config.CREATE_TEMPLATE,
+            name=config.CREATE_TEMPLATE_NIC2,
+            network=config.MGMT_BRIDGE,
+            interface='virtio'
+        ):
             error_stack.append('Action add template nic failed.')
         if not templates.updateTemplateNic(
-                self.positive,
-                config.CREATE_TEMPLATE,
-                config.CREATE_TEMPLATE_NIC1,
-                interface='e1000'):
+            self.positive,
+            config.CREATE_TEMPLATE,
+            config.CREATE_TEMPLATE_NIC1,
+            interface='e1000'
+        ):
             error_stack.append('Action update template nic failed.')
         if not templates.removeTemplateNic(
-                self.positive,
-                config.CREATE_TEMPLATE,
-                config.CREATE_TEMPLATE_NIC1):
+            self.positive,
+            config.CREATE_TEMPLATE,
+            config.CREATE_TEMPLATE_NIC1
+        ):
             error_stack.append('Action remove template nic failed.')
 
         if len(error_stack) > 0:
@@ -911,17 +915,8 @@ class CaseRoleActions(TestCase):
     def delete_vm_pool(self):
         """ delete_vm_pool """
         self.assertTrue(
-            vmpools.removeWholeVmPool(
-                self.positive,
+            vmpools.removeVmPool(
+                positive=self.positive,
                 vmpool=config.DELETE_POOL,
-                size=1,
-                remove_vms=False
             )
         )
-        if self.positive:
-            login_as_admin()
-            vmpools.removePooledVms(
-                True,
-                name=config.DELETE_POOL,
-                vm_total=1
-            )
