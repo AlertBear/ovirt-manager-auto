@@ -23,10 +23,11 @@ VALUE_COLUMN = 'option_value'
 __THIS_MODULE = modules[__name__]
 
 directoryServices = {
-    'IPA': 'FREE_IPA',
-    'LDAP': 'OPEN_LDAP',
-    'RHDS': 'RED_HAT_DIRECTORY_SERVER',
-    'AD': 'ACTIVE_DIRECTORY'
+    'IPA': 'MANAGE_DOMAINS_FREE_IPA',
+    'LDAP': 'MANAGE_DOMAINS_OPEN_LDAP',
+    'RHDS': 'MANAGE_DOMAINS_RED_HAT_DIRECTORY_SERVER',
+    'ADW2K8R2': 'MANAGE_DOMAINS_ADW2K8R2',
+    'ADW2K12R2': 'MANAGE_DOMAINS_ADW2K12R2',
 }
 
 
@@ -39,6 +40,7 @@ def _run_ssh_command(host, password, cmd):
     return out
 
 
+@attr(tier=2, extra_reqs={'utility': NAME})
 class ManageDomainsTestCaseBase(RHEVMUtilsTestCase):
     """
     rhevm-manage-domains testcase
@@ -51,8 +53,7 @@ class ManageDomainsTestCaseBase(RHEVMUtilsTestCase):
     directoryService = None
 
     def setUp(self):
-        if not unittest_conf.GOLDEN_ENV:
-            super(ManageDomainsTestCaseBase, self).setUp()
+        super(ManageDomainsTestCaseBase, self).setUp()
         self.domainName = config[self.directoryService].get('name', None)
         self.domainUser = config[self.directoryService].get('user', None)
         self.password = config[self.directoryService].get('password', None)
@@ -76,11 +77,9 @@ class ManageDomainsTestCaseBase(RHEVMUtilsTestCase):
     def tearDown(self):
         cmd = ['rm', '-f', self.password, self.passwordFile]
         _run_ssh_command(self.host, self.sshPassword, cmd)
-        if not unittest_conf.GOLDEN_ENV:
-            super(ManageDomainsTestCaseBase, self).tearDown()
+        super(ManageDomainsTestCaseBase, self).tearDown()
 
 
-@attr(tier=2)
 class ManageDomainsTestCaseAdd(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/175847/?from_plan=4580
@@ -138,7 +137,6 @@ class ManageDomainsTestCaseAdd(ManageDomainsTestCaseBase):
         # from a pipe
 
 
-@attr(tier=2)
 class ManageDomainsTestCaseEdit(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/175882/?from_plan=4580
@@ -185,7 +183,6 @@ class ManageDomainsTestCaseEdit(ManageDomainsTestCaseBase):
         self.ut.autoTest(rc=22)
 
 
-@attr(tier=2)
 class ManageDomainsTestCaseList(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/107969/?from_plan=4580
@@ -209,7 +206,6 @@ class ManageDomainsTestCaseList(ManageDomainsTestCaseBase):
         self.ut.autoTest()
 
 
-@attr(tier=2)
 class ManageDomainsTestCaseValidate(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/334273/?from_plan=4580
@@ -237,7 +233,6 @@ class ManageDomainsTestCaseValidate(ManageDomainsTestCaseBase):
         self.ut.autoTest()
 
 
-@attr(tier=2)
 class ManageDomainsTestCaseDelete(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/108231/?from_plan=4580
@@ -257,13 +252,11 @@ class ManageDomainsTestCaseDelete(ManageDomainsTestCaseBase):
         self.ut.autoTest()
 
 
-@attr(tier=2)
 class ManageDomainsTestCaseHelp(RHEVMUtilsTestCase):
     """
     https://tcms.engineering.redhat.com/case/107969/?from_plan=4580
     """
 
-    __test__ = not unittest_conf.GOLDEN_ENV
     utility = NAME
     utility_class = ManageDomainsUtility
     _multiprocess_can_split_ = True
@@ -280,7 +273,6 @@ class ManageDomainsTestCaseHelp(RHEVMUtilsTestCase):
         self.ut.autoTest()
 
 
-@attr(tier=2)
 class ManageDomainsTimeSkew(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/110044/?from_plan=4580
@@ -314,13 +306,11 @@ class ManageDomainsTimeSkew(ManageDomainsTestCaseBase):
         self.assertRaises(errors.MissingDmainError, self.ut.autoTest, rc=8)
 
 
-@attr(tier=2)
 class ManageDomainsUnpriviledgedUser(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/127947/?from_plan=4580
     """
 
-    __test__ = not unittest_conf.GOLDEN_ENV
     # doesn't matter what's here, but it has to be anything in order to not to
     # get key error in SetUp
     directoryService = directoryServices.values()[0]
@@ -339,7 +329,6 @@ class ManageDomainsUnpriviledgedUser(ManageDomainsTestCaseBase):
         assert 'Exception' not in out
 
 
-@attr(tier=2)
 class ManageDomainsUppercaseLowercase(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/107971/?from_plan=4580
@@ -374,13 +363,11 @@ class ManageDomainsUppercaseLowercase(ManageDomainsTestCaseBase):
         self.ut.autoTest()
 
 
-@attr(tier=2)
 class ManageDomainsMultipleProviders(RHEVMUtilsTestCase):
     """
     https://tcms.engineering.redhat.com/case/109297/?from_plan=4580
     """
 
-    __test__ = not unittest_conf.GOLDEN_ENV
     utility = NAME
     utility_class = ManageDomainsUtility
 
@@ -432,7 +419,6 @@ class ManageDomainsMultipleProviders(RHEVMUtilsTestCase):
             self.ut.autoTest()
 
 
-@attr(tier=2)
 class ManageDomainsTestCaseNegativeScenarios(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/107972/?from_plan=4580
@@ -461,10 +447,8 @@ class ManageDomainsTestCaseNegativeScenarios(ManageDomainsTestCaseBase):
         assert 'Invalid provider, valid providers are' in self.ut.out
 
 
-@attr(tier=2)
 class ManageDomainsBug1037894(ManageDomainsTestCaseBase):
-    __test__ = not unittest_conf.GOLDEN_ENV
-    directoryService = 'ACTIVE_DIRECTORY_TLV'
+    directoryService = 'MANAGE_DOMAINS_ACTIVE_DIRECTORY_TLV'
 
     def setUp(self):
         super(ManageDomainsBug1037894, self).setUp()
@@ -506,12 +490,12 @@ tests = {
     'Negative': ManageDomainsTestCaseNegativeScenarios,
 }
 
-# generate test classes dynamically
+# generates test classes dynamically
 for action, parent in tests.iteritems():
     for service, confSection in directoryServices.iteritems():
         name = 'ManageDomainsTestCase%s%s' % (action, service)
         attributes = {
-            '__test__': not unittest_conf.GOLDEN_ENV,
+            '__test__': True,
             'directoryService': confSection
         }
         newClass = type(name, (parent,), attributes)

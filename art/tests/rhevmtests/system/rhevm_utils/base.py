@@ -35,6 +35,10 @@ def setup_module():
     """
     Build datacenter
     """
+    if unittest_conf.GOLDEN_ENV:
+        logger.info("Golden environment - skipping setup_module")
+        return
+
     params = unittest_conf.ART_CONFIG['PARAMETERS']
     build_setup(config=params, storage=params,
                 storage_type=params.get('data_center_type'),
@@ -45,6 +49,10 @@ def teardown_module():
     """
     Clean datacenter
     """
+    if unittest_conf.GOLDEN_ENV:
+        logger.info("Golden environment - skipping teardown_module")
+        return
+
     params = unittest_conf.ART_CONFIG['PARAMETERS']
     dc_name = params.get('dc_name', 'datacenter_%s' % params.get('basename'))
     cleanDataCenter(True, dc_name, vdc=params.get('host'),
