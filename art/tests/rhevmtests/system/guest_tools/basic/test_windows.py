@@ -15,6 +15,7 @@ LOGGER = logging.getLogger(__name__)
 SKIP_CASE = False
 
 
+@attr(tier=1, extra_reqs={'pywinrm': True})
 class Windows(TestCase):
     """
     Base class for all Windows basic sanity tests
@@ -202,8 +203,7 @@ class Windows(TestCase):
             LOGGER.error('GT failed to uninstall')
 
 
-@attr(tier=1)
-class Windows7_64b(Windows):
+class Windows7_64bit(Windows):
     """
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 7 64bit.

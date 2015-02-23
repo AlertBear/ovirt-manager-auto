@@ -13,9 +13,13 @@ VM_API = get_api('vm', 'vms')
 
 
 def setup_package():
-    datacenters.build_setup(
-        config.PARAMETERS, config.PARAMETERS,
-        config.STORAGE_TYPE, config.TEST_NAME)
+    if not config.GOLDEN_ENV:
+        datacenters.build_setup(
+            config.PARAMETERS,
+            config.PARAMETERS,
+            config.STORAGE_TYPE,
+            config.TEST_NAME,
+        )
     storagedomains.importStorageDomain(
         True, type='export',
         storage_type='nfs',
@@ -25,7 +29,6 @@ def setup_package():
         clean_export_domain_metadata=True)
     h_sd.attach_and_activate_domain(config.DC_NAME[0],
                                     config.EXPORT_STORAGE_DOMAIN)
-    # Prepare templates/vms
     for os, template in config.TEMPLATES.iteritems():
         vm_name = 'vm_%s' % template['name']
         assert templates.importTemplate(
@@ -57,6 +60,14 @@ def teardown_package():
         vms.removeVm(True, vm='vm_%s' % template['name'], stopVM='true')
         templates.removeTemplate(True, template['name'])
 
-    h_sd.remove_storage_domain(config.EXPORT_STORAGE_DOMAIN,
-                               config.DC_NAME[0], config.HOSTS[0])
-    storagedomains.cleanDataCenter(True, config.DC_NAME[0])
+    h_sd.detach_and_deactivate_domain(
+        config.DC_NAME[0],
+        config.EXPORT_STORAGE_DOMAIN,
+    )
+    h_sd.remove_storage_domain(
+        config.EXPORT_STORAGE_DOMAIN,
+        config.DC_NAME[0], config.HOSTS[0],
+    )
+
+    if not config.GOLDEN_ENV:
+        storagedomains.cleanDataCenter(True, config.DC_NAME[0])
