@@ -3,6 +3,7 @@ Storage helper functions
 """
 import logging
 import shlex
+import time
 from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost, getHostIP
 from utilities.machine import Machine, LINUX
 from art.rhevm_api.tests_lib.low_level.disks import (
@@ -25,9 +26,12 @@ logger = logging.getLogger(__name__)
 
 DISK_TIMEOUT = 250
 SNAPSHOT_TIMEOUT = 15 * 60
-DD_TIMEOUT = 30
-DD_COMMAND = 'dd if=/dev/urandom of=%s'
+DD_TIMEOUT = 60 * 6
+DD_COMMAND = 'dd bs=1M count=%d if=%s of=%s'
+DEFAULT_DD_SIZE = 20 * config.MB
 ERROR_MSG = "Error: Boot device is protected"
+GUEST_AGENT_TIMEOUT = 60 * 6
+GUEST_AGENT_SLEEP = 5
 
 disk_args = {
     # Fixed arguments
@@ -156,7 +160,9 @@ def create_disks_from_requested_permutations(domain_to_use,
     return lst_aliases_and_descriptions
 
 
-def perform_dd_to_disk(vm_name, disk_alias, protect_boot_device=True):
+def perform_dd_to_disk(
+    vm_name, disk_alias, protect_boot_device=True, size=DEFAULT_DD_SIZE,
+):
     """
     Function that performs dd command from urandom to the requested disk (by
     alias)
@@ -174,8 +180,10 @@ def perform_dd_to_disk(vm_name, disk_alias, protect_boot_device=True):
     writing to this device ignored, False if boot device should be
     overwritten (use with caution!)
     : type protect_boot_device: bool
+    :param size: number of bytes to dd (Default size 20MB)
+    :type size: int
     :returns: ecode and output
-    :rtype: int, str
+    :rtype: tuple
     """
     vm_ip = get_vm_ip(vm_name)
     vm_machine = Machine(
@@ -184,7 +192,25 @@ def perform_dd_to_disk(vm_name, disk_alias, protect_boot_device=True):
     output = vm_machine.get_boot_storage_device()
     boot_disk = 'vda' if 'vd' in output else 'sda'
 
-    disk_logical_volume_name = get_vm_disk_logical_name(vm_name, disk_alias)
+    # TODO: Disk's logical name cannot be available until FullListVdsCommand
+    # is executed, find a way to force the execution and remove this logic
+    disk_logical_volume_name = None
+    start_t = time.time()
+    while time.time() - start_t < GUEST_AGENT_TIMEOUT:
+        disk_logical_volume_name = get_vm_disk_logical_name(
+            vm_name, disk_alias
+        )
+        if disk_logical_volume_name:
+            break
+        time.sleep(GUEST_AGENT_SLEEP)
+
+    if not disk_logical_volume_name:
+        # This function is used to test whether logical volume was found,
+        # raises an exception if it wasn't found
+        raise exceptions.DiskException(
+            "Failed to get %s disk logical name" % disk_alias
+        )
+
     logger.info("The logical volume name for the requested disk is: '%s'",
                 disk_logical_volume_name)
     if protect_boot_device:
@@ -195,11 +221,13 @@ def perform_dd_to_disk(vm_name, disk_alias, protect_boot_device=True):
 
             return False, ERROR_MSG
 
-    command = DD_COMMAND % disk_logical_volume_name
+    command = DD_COMMAND % (
+        size/config.MB, "/dev/{0}".format(boot_disk), disk_logical_volume_name
+    )
     logger.info("Performing command '%s'", command)
 
     ecode, out = vm_machine.runCmd(shlex.split(command), timeout=DD_TIMEOUT)
-
+    logger.info("Output for dd: %s", out)
     return ecode, out
 
 
@@ -236,15 +264,7 @@ def create_vm_or_clone(positive, vmName, vmDescription,
     :rtype: bool
     """
     diskInterface = kwargs.get('diskInterface')
-    start = kwargs.get('start', False)
     installation = kwargs.get('installation', False)
-    # start parameter could be bool or str in some calls
-    if (isinstance(start, str) and start.lower() == 'true' or
-            isinstance(start, bool) and start):
-        start = True
-    else:
-        start = False
-
     # If the vm doesn't need installation don't waste time cloning the vm
     if config.GOLDEN_ENV and installation:
         logger.info("Cloning vm %s", vmName)
@@ -289,10 +309,8 @@ def create_vm_or_clone(positive, vmName, vmDescription,
                 True, vmName=vmName, id=disks_obj[i].get_id(),
                 alias="{0}_Disk_{1}".format(vmName, i),
                 interface=diskInterface)
-        # Bring the VM up, return true if the action succeeds
-        if start:
-            return startVm(positive, vmName, wait_for_status=config.VM_UP)
-        return True
+        # createVm always leaves the vm up when installation is True
+        return startVm(positive, vmName, wait_for_status=config.VM_UP)
     else:
         return createVm(positive, vmName, vmDescription, cluster, **kwargs)
 

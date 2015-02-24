@@ -33,7 +33,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     removeSnapshot, getVmDisks, preview_snapshot,
     commit_snapshot, start_vms, undo_snapshot_preview, extend_vm_disk_size,
     removeVm, waitForVmsStates, wait_for_vm_snapshots,
-    get_vms_disks_storage_domain_name, removeVms, createVm,
+    get_vms_disks_storage_domain_name, removeVms,
 )
 import rhevmtests.storage.helpers as storage_helpers
 from art.rhevm_api.utils.log_listener import watch_logs
@@ -80,7 +80,7 @@ vmArgs = {'positive': True,
           'cluster': config.CLUSTER_NAME,
           'storageDomainName': None,
           'installation': True,
-          'size': config.DISK_SIZE,
+          'size': config.VM_DISK_SIZE,
           'nic': config.NIC_NAME[0],
           'image': config.COBBLER_PROFILE,
           'useAgent': True,
@@ -120,7 +120,9 @@ def setup_module():
             # TODO: TestCase297017 will fail if the vm is created with
             #       create_vm_or_clone, (which clones a VM from a template),
             #       investigate and fix the failure
-            exs.append(executor.submit(createVm, **args))
+            exs.append(
+                executor.submit(storage_helpers.create_vm_or_clone, **args)
+            )
 
     [ex.result() for ex in exs]  # make sure all threads are finish
     logger.info('Shutting down vms %s', VMS_NAMES)
@@ -242,8 +244,12 @@ class BasicResize(BaseTestCase):
                                 % (self.disk_name, self.new_size))
         assert waitForDisksState(self.disk_name, timeout=TASK_TIMEOUT)
 
+        # TODO: Check the capacity value in getVolumeInfo
         logger.info("dd to disk %s", self.disk_name)
-        storage_helpers.perform_dd_to_disk(self.vm, self.disk_name)
+        ecode, output = storage_helpers.perform_dd_to_disk(
+            self.vm, self.disk_name, size=self.new_size - 500 * config.MB,
+        )
+        self.assertTrue(ecode, "dd command failed")
 
         disks_objs = getVmDisks(self.vm)
         disk_obj = [disk_obj for disk_obj in disks_objs if
@@ -402,6 +408,7 @@ class TestCase336100(DisksPermutationEnvironment):
     tcms_test_case = '336100'
     snap_description = 'snap_%s' % tcms_test_case
     is_preview = False
+    new_size = config.VM_DISK_SIZE + config.GB
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     @bz({'1178499': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
@@ -504,6 +511,7 @@ class TestCase297017(BasicResize):
         self.disk_args['format'] = config.COW_DISK
         super(TestCase297017, self).setUp()
 
+    @bz({'1195768': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_thin_block_resize(self):
         """
@@ -816,7 +824,7 @@ class TestCase287477(BasicResize):
     vm_name = "vm_%s_%s"
     vm_count = 3
 
-    new_size = (config.DISK_SIZE + config.GB)
+    new_size = (config.VM_DISK_SIZE + config.GB)
 
     def setUp(self):
         """
@@ -864,7 +872,7 @@ class TestCase287478(BasicResize):
     tcms_test_case = '287478'
     vm_name = "vm_%s_%s"
     vm_count = 2
-    new_size = (config.DISK_SIZE + config.GB)
+    new_size = (config.VM_DISK_SIZE + config.GB)
 
     def setUp(self):
         """
