@@ -16,7 +16,7 @@ from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import mla, users, general
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils import test_utils
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from test_base import connectionTest
 from utilities.machine import LINUX, Machine
 from art.core_api.apis_utils import TimeoutingSampler
@@ -62,11 +62,15 @@ class ActiveDirectory(TestCase):
 
     @classmethod
     def setup_class(cls):
-        for user in [config.TEST_USER(cls.domain), config.AD2_USER,
-                     config.EXPIRED_PSW_NAME(cls.domain),
-                     config.DISABLED_ACC(cls.domain),
-                     config.EXPIRED_ACC_NAME(cls.domain),
-                     config.NORMAL_USER(cls.domain)]:
+        for user in [
+            config.AD2_USER,
+            config.TEST_USER(cls.domain),
+            config.EXPIRED_PSW_NAME(cls.domain),
+            config.DISABLED_ACC(cls.domain),
+            config.EXPIRED_ACC_NAME(cls.domain),
+            config.NORMAL_USER(cls.domain),
+            config.TEST_USER_DIFFERENT_AD(cls.domain)[0],
+        ]:
             addUserWithClusterPermissions(user)
         assert users.addGroup(True, config.GROUP(cls.domain))
         assert mla.addClusterPermissionsToGroup(
@@ -77,12 +81,15 @@ class ActiveDirectory(TestCase):
     def teardown_class(cls):
         users.loginAsUser(config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
                           config.USER_PASSWORD, False)
-        for username in [config.TEST_USER(cls.domain), config.AD2_USER,
-                         config.EXPIRED_PSW_NAME(cls.domain),
-                         config.DISABLED_ACC(cls.domain),
-                         config.EXPIRED_ACC_NAME(cls.domain),
-                         config.NORMAL_USER(cls.domain),
-                         config.USER_FROM_GROUP(cls.domain)]:
+        for username in [
+            config.TEST_USER(cls.domain),
+            config.EXPIRED_PSW_NAME(cls.domain),
+            config.DISABLED_ACC(cls.domain),
+            config.EXPIRED_ACC_NAME(cls.domain),
+            config.NORMAL_USER(cls.domain),
+            config.USER_FROM_GROUP(cls.domain),
+            config.TEST_USER_DIFFERENT_AD(cls.domain)[0],
+        ]:
             user, domain = username.split('@')
             assert users.removeUser(True, user, domain)
         assert users.deleteGroup(True, config.GROUP(cls.domain))
@@ -131,7 +138,6 @@ class ActiveDirectory(TestCase):
 
     @istest
     @tcms(config.AD_TCMS_PLAN_ID, 91742)
-    @bz(1125161)
     def fetchingGroupsWithUser(self):
         """ Fetching user groups when logging with UPN """
         user_name = config.USER_FROM_GROUP(self.domain)
@@ -188,8 +194,9 @@ class ActiveDirectory(TestCase):
         """ Multiple domains: Two ADs, using FQDN names """
         self._loginAsUser(config.TEST_USER(self.domain))
         self.assertTrue(connectionTest())
-        users.loginAsUser(config.AD2_USER_NAME, config.AD2_DOMAIN,
-                          config.USER_PASSWORD, True)
+        user_name, password = config.TEST_USER_DIFFERENT_AD(self.domain)
+        name, domain = user_name.split('@')
+        users.loginAsUser(name, domain, password, True)
         self.assertTrue(connectionTest())
         LOGGER.info("User with same name from different domains can login.")
 
@@ -198,7 +205,7 @@ class ActiveDirectory(TestCase):
 class AD(ActiveDirectory):
     """ AD 2003 """
     __test__ = True
-    domain = config.AD1_DOMAIN
+    domain = config.AD2_DOMAIN
     PASSWORD = config.USER_PASSWORD
 
 
@@ -213,6 +220,6 @@ class AD_W2K12_R2(ActiveDirectory):
 @attr(tier=1)
 class AD_W2K8_R2(ActiveDirectory):
     """ AD 2008 """
-    __test__ = False
+    __test__ = True
     domain = config.W2K8R2_DOMAIN
     PASSWORD = config.W2K8R2_PASSWORD

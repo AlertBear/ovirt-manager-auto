@@ -17,7 +17,6 @@ def getUserWithDomain(user_name, user_domain):
 USER_PASSWORD = '123456'
 
 # TLV domain
-AD1_DOMAIN = ACTIVE_DIRECTORY.get('ad1_domain', None)
 AD2_DOMAIN = ACTIVE_DIRECTORY.get('ad2_domain', None)
 AD2_USER = ACTIVE_DIRECTORY.get('ad2_user', None)
 AD2_USER_NAME = ACTIVE_DIRECTORY.get('ad2_user_name', None)
@@ -72,7 +71,7 @@ W2K12R2_PASSWORD = str(ACTIVE_DIRECTORY.get('w2k12rw_password', 'Heslo123'))
 # Common
 DOMAINS = { RHDS_DOMAIN: [RHDS, 'rhds'],
             IPA_DOMAIN: [IPA ,'ipa'],
-            AD1_DOMAIN:  [ACTIVE_DIRECTORY, 'ad1'],
+            AD2_DOMAIN:  [ACTIVE_DIRECTORY, 'ad2'],
             W2K8R2_DOMAIN:  [ACTIVE_DIRECTORY, 'w2k8r2'],
             W2K12R2_DOMAIN: [ACTIVE_DIRECTORY, 'w2k12r2'] }
 
@@ -118,6 +117,27 @@ def NORMAL_USER(domain):
 
 def TEST_USER(domain):
     return getParamFromDomain('user', domain)
+
+
+def TEST_USER_DIFFERENT_AD(domain):
+    domains = {
+        AD2_DOMAIN: {
+            'domain': W2K12R2_DOMAIN,
+            'password': W2K12R2_PASSWORD
+        },
+        W2K12R2_DOMAIN: {
+            'domain': W2K8R2_DOMAIN,
+            'password': W2K8R2_PASSWORD,
+        },
+        W2K8R2_DOMAIN: {
+            'domain': AD2_DOMAIN,
+            'password': USER_PASSWORD,
+        },
+    }
+    return getParamFromDomain(
+        'user', domains[domain]['domain']
+    ), domains[domain]['password']
+
 
 MAIN_CLUSTER_NAME = 'Default'
 AD_TCMS_PLAN_ID = 2112
