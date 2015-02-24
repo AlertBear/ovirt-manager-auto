@@ -1943,7 +1943,7 @@ def setHostToNonOperational(orig_host, host_password, nic):
         return False
 
     return waitForHostsStates(True, names=orig_host, states='non_operational',
-                              timeout=TIMEOUT)
+                              timeout=TIMEOUT * 2)
 
 
 def start_vdsm(host, password, datacenter):

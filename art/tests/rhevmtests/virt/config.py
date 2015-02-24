@@ -31,8 +31,11 @@ export_storage = PARAMETERS.get('export_storage', EXPORT_STORAGE_NAME)
 ADDITIONAL_DC_NAME = 'virt_additional_dc'
 ADDITIONAL_CL_NAME = 'virt_additional_cl'
 # Vm names
-VM_NAME_BASIC = 'virt-vm'
-VM_NAMES = ['%s-%d' % (VM_NAME_BASIC, i) for i in range(15)]
+VM_NAME_BASIC = 'golden_env_mixed_virtio'
 VM_DESCRIPTION = PARAMETERS.get('vm_description', '%s_test' % TEST_NAME)
 
 USERNAME = VDC_ADMIN_USER
+
+MIGRATION_TEMPLATE_NAME = "vm_migration_template"
+MIGRATION_BASE_VM = "base_vm_migration_test"
+RHEL_IMAGE = "rhel6.5-agent3.5"

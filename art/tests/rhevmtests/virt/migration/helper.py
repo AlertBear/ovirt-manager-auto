@@ -6,18 +6,21 @@ Helper functions for network migration job
 """
 
 import logging
+
 from utilities.jobs import Job, JobsSet
 from rhevmtests.networking import config
+from rhevmtests.virt import config as config_virt
 from art.rhevm_api.utils import log_listener
-from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.unittest_lib.network import find_ip, get_host
-from art.rhevm_api.tests_lib.high_level.vms import (
-    migrate_vms, migrate_by_nic_down, migrate_by_maintenance
-)
-from art.rhevm_api.tests_lib.high_level.networks import (
-    checkICMPConnectivity
-)
+import art.rhevm_api.tests_lib.high_level.datacenters as hl_data_center
+import art.rhevm_api.tests_lib.low_level.clusters as ll_cluster
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.test_handler.exceptions as exceptions
+import art.rhevm_api.tests_lib.low_level.templates as ll_template
+
 
 logger = logging.getLogger("Virt_Network_Migration_Helper")
 VDSM_LOG = "/var/log/vdsm/vdsm.log"
@@ -93,7 +96,7 @@ def migrate_unplug_required(vms, nic_index=1, vlan=None, bond=None, req_nic=2):
         dst_host_obj=dst_host_obj, dst_host=dst_host, dst_ip=dst,
         req_nic=req_nic
     ):
-        raise NetworkException(
+        raise exceptions.NetworkException(
             "Couldn't migrate %s over %s by putting %s to maintenance" %
             (vms, orig_host_obj.nics[nic_index], orig_host)
         )
@@ -130,7 +133,7 @@ def dedicated_migration(
         nic_index=nic_index, vlan=vlan, bond=bond
     )
 
-    if not checkICMPConnectivity(
+    if not hl_networks.checkICMPConnectivity(
         host=orig_host_obj.ip, user=config.HOSTS_USER,
         password=config.HOSTS_PW, ip=dst
     ):
@@ -141,7 +144,7 @@ def dedicated_migration(
         dst_host_obj=dst_host_obj, dst_host=dst_host, dst_ip=dst,
         maintenance=maintenance
     ):
-        raise NetworkException(
+        raise exceptions.NetworkException(
             "Couldn't migrate %s over %s " %
             (vms, orig_host_obj.nics[nic_index])
         )
@@ -160,10 +163,11 @@ def set_host_status(activate=False):
     logger.info("Putting hosts besides first two to %s", host_state)
     host_list = hosts.HOST_API.get(absLink=False)
     for host in host_list:
-        if (hosts.getHostCluster(host.name) == config.CLUSTER_NAME[0] and
-                host.name not in config.HOSTS[:2]):
+        host_cluster = hosts.getHostCluster(host.name)
+        if (host_cluster == config.CLUSTER_NAME[0] and
+           host.name not in config.HOSTS[:2]):
             if not call_func(True, host.name):
-                raise NetworkException(
+                raise exceptions.NetworkException(
                     "Couldn't put %s into %s" % (host.name, host_state)
                 )
 
@@ -217,15 +221,15 @@ def search_log(
     }
 
     if req_nic:
-        func = migrate_by_nic_down
+        func = hl_vms.migrate_by_nic_down
         check_vm_migration_kwargs["nic"] = req_nic
         check_vm_migration_kwargs["password"] = config.HOSTS_PW
 
     elif maintenance:
-        func = migrate_by_maintenance
+        func = hl_vms.migrate_by_maintenance
 
     else:
-        func = migrate_vms
+        func = hl_vms.migrate_vms
         check_vm_migration_kwargs["dst_host"] = dst_host
 
     job1 = Job(log_listener.watch_logs, (), watch_logs_kwargs)
@@ -249,8 +253,120 @@ def get_orig_and_dest_hosts(vms):
     orig_hosts = [get_origin_host(vm) for vm in vms]
     logger.info("Checking if all VMs are on the same host")
     if not all([i[1] == orig_hosts[0][1] for i in orig_hosts]):
-        raise NetworkException("Not all VMs are on the same host")
+        raise exceptions.NetworkException("Not all VMs are on the same host")
 
     orig_host_obj, orig_host = get_origin_host(vms[0])
     dst_host_obj, dst_host = get_dst_host(orig_host_obj, orig_host)
     return orig_host_obj, orig_host, dst_host_obj, dst_host
+
+
+def create_template():
+    """
+    create template
+    :return: True: if template created else return false
+    :rtype: bool
+    """
+    logger.info("Create VM for Template ")
+    if not ll_vms.createVm(
+        positive=True,
+        vmName=config_virt.MIGRATION_BASE_VM,
+        vmDescription=config_virt.VM_DESCRIPTION,
+        cluster=config_virt.CLUSTER_NAME[0],
+        storageDomainName=config_virt.STORAGE_NAME[0],
+        size=config_virt.DISK_SIZE,
+        nic=config.NIC_NAME[0],
+        network=config_virt.MGMT_BRIDGE,
+        user=config_virt.VMS_LINUX_USER,
+        password=config_virt.VMS_LINUX_PW,
+    ):
+        logger.error(
+            exceptions.VMException(
+                "Failed to create VM %s" %
+                config_virt.MIGRATION_BASE_VM
+            )
+        )
+        return False
+    logger.info("Create template")
+    if not hl_vms.prepare_vm_for_rhel_template(
+        config_virt.MIGRATION_BASE_VM,
+        config_virt.VMS_LINUX_PW,
+        config_virt.RHEL_IMAGE
+    ):
+        logger.error(exceptions.VMException("Failed to seal VM for template"))
+        return False
+    if not ll_template.createTemplate(
+        True,
+        vm=config_virt.MIGRATION_BASE_VM,
+        cluster=config_virt.CLUSTER_NAME[0],
+        name=config_virt.MIGRATION_TEMPLATE_NAME
+    ):
+        logger.error(exceptions.TemplateException("Failed to create Template"))
+        return False
+    logger.info("VM template is ready")
+    return True
+
+
+def add_setup_components():
+    """
+    Add to setup: New Data Center, Clusters , Hosts
+    :return: True: if setup created else returns false
+    :rtype: bool
+    """
+    logger.info("Create new setup...")
+    if not hl_data_center.build_setup(
+        config_virt.PARAMETERS,
+        config_virt.PARAMETERS,
+        config_virt.STORAGE_TYPE,
+        config_virt.TEST_NAME
+    ):
+        logger.error("Setup environment failed")
+        return False
+    logger.info(
+        "Add one more cluster %s to data center %s",
+        config_virt.CLUSTER_NAME[1],
+        config_virt.DC_NAME[0]
+    )
+    if not ll_cluster.addCluster(
+        True,
+        name=config_virt.CLUSTER_NAME[1],
+        version=config_virt.COMP_VERSION,
+        data_center=config_virt.DC_NAME[0],
+        cpu=config_virt.CPU_NAME
+    ):
+        logger.error(
+            "Cluster %s creation failed ",
+            config_virt.CLUSTER_NAME[1]
+        )
+        return False
+    return True
+
+
+def prepare_environment():
+    """
+    Prepare environment
+     1. Create DC, Cluster, hosts
+     2. Create template
+     3. Create VMs from template
+    :return: True if setup is ready else return False
+    :rtype: bool
+    """
+    logger.info("Prepare environment")
+    if not add_setup_components():
+        raise exceptions.TestException("Failed create setup")
+    if not create_template():
+        logger.error("Failed to create Template")
+        return False
+    logger.info(
+        'Create vms: %s %s',
+        config.VM_NAME[:5],
+        " from template"
+    )
+    for vm_name in config.VM_NAME[:5]:
+        if not ll_vms.cloneVmFromTemplate(
+            True, name=vm_name,
+            template=config_virt.MIGRATION_TEMPLATE_NAME,
+            cluster=config.CLUSTER_NAME[0]
+        ):
+            logger.error("Failed to clone VM")
+            return False
+    return True

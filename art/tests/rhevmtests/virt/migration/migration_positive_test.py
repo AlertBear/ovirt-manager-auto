@@ -8,6 +8,7 @@ Network migration will be tested for untagged, tagged, bond scenarios.
 It will cover scenarios for VM/non-VM networks
 """
 import logging
+
 from rhevmtests.networking import config
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import vms
@@ -26,6 +27,7 @@ from rhevmtests.virt.migration.helper import (
 from art.rhevm_api.tests_lib.high_level.networks import (
     createAndAttachNetworkSN, remove_net_from_setup
 )
+
 
 logger = logging.getLogger("Virt_Network_Migration_Cases")
 
@@ -56,7 +58,7 @@ class TestMigrationCaseBase(TestCase):
             logger.error("Cannot remove networks from setup")
 
 
-@attr(tier=1)
+@attr(tier=0)
 class TestMigrationCase01(TestMigrationCaseBase):
     """
     Verify dedicated regular network migration, migration 5 VMs
@@ -103,30 +105,35 @@ class TestMigrationCase01(TestMigrationCaseBase):
     @tcms(8735, 256582)
     def test_a1_dedicated_migration(self):
         """
-        Check dedicated network migration
+        Check dedicated network migration for 5 VMs
         """
         logger.info(
-            "Check that network migration over NIC is working as expected"
+            "Check that network migration for 5 VMs"
+            "over NIC is working as expected"
         )
         dedicated_migration(vms=config.VM_NAME[:5])
 
     @tcms(8735, 250476)
     def test_a2_dedicated_migration_nic(self):
         """
-        Check dedicated network migration by putting req net down
+        Check dedicated network migration for 5 VMs
+        by putting req net down
         """
         logger.info(
-            "Check that network migration over NIC is working as "
-            "expected by putting NIC with required network down"
+            "Check that network migration for 5 VMs"
+            "over NIC is working as expected by "
+            "putting NIC with required network down"
         )
         migrate_unplug_required(vms=config.VM_NAME[:5])
 
     def test_a3_dedicated_migration_maintenance(self):
         """
-        Check dedicated network migration by putting host into maintenance
+        Check dedicated network migration for 5 VMs
+        by putting host into maintenance
         """
         logger.info(
-            "Check that network migration over NIC is working as "
+            "Check that network migration for 5 VMs "
+            "over NIC is working as "
             "expected by putting the host into maintenance"
         )
         dedicated_migration(vms=config.VM_NAME[:5], maintenance=True)

@@ -11,6 +11,7 @@ from art.rhevm_api.utils.test_utils import get_api, setPersistentNetwork
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
+from art.rhevm_api.utils.test_utils import getStat
 
 LOGGER = logging.getLogger(__name__)
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -424,4 +425,173 @@ def migrate_vms(
         vm_user=vm_user, vm_password=vm_password, dst_host=dst_host
     ):
         return False
+    return True
+
+
+def get_vms_os_type(test_vms):
+    """
+     get vms list and returns the os type of the vms as list
+     if VM has no os the value return for this VM will be "Other"
+     in case of exception return empty None
+    :param test_vms: list of vms
+    :type  test_vms: list
+    :return: list of os type per vm
+    :rtype: list
+    """
+    try:
+        LOGGER.info("Get VMs os type")
+        vms_obj = [vms.get_vm(vm) for vm in test_vms]
+        return [vm.get_os().get_type().lower() for vm in vms_obj]
+    except Exception, e:
+        LOGGER.error("Failed to get os type for vms: %s" % test_vms)
+        LOGGER.error("Failed to get os type, reason: %s" % e)
+        return None
+
+
+def update_os_type(os_type, test_vms):
+    """
+    update os type for vms in list
+    :param os_type: desire os type
+    :type os_type: str
+    :param test_vms: list of vms
+    :type test_vms: list
+    :return: True if os type set in vms
+    :rtype bool
+    """
+    LOGGER.info(
+        "Set VMs %s os type to %s",
+        test_vms,
+        os_type
+    )
+    for vm in test_vms:
+        LOGGER.info(
+            "update vm %s to os type: %s",
+            vm,
+            os_type
+        )
+        if not vms.updateVm(
+            True,
+            vm=vm,
+            os_type=os_type
+        ):
+            LOGGER.error(
+                "Failed to update os type to vm %s",
+                vm
+            )
+            return False
+    return True
+
+
+def get_vm_memory(vm):
+    """
+     return vm memory it will use as
+     default memory to restore vm memory
+    :param vm: vm name
+    :type vm: str
+    :return: vm memory
+    :rtype: str
+    """
+    LOGGER.info("store vm %s memory", vm)
+    vm_obj = vms.get_vm(vm)
+    LOGGER.info("vm memory: %s", vm_obj.get_memory())
+    return vm_obj.get_memory()
+
+
+def set_vms_with_host_memory_by_percentage(
+    test_hosts,
+    test_vms,
+    percentage=10
+):
+    """
+    update vms in list memory with of hosts memory by percentage.
+    :param test_hosts: host list
+    :type test_hosts: list
+    :param test_vms: vm list
+    :type test_vms: list
+    :param percentage: percentage of the host memory
+    :type percentage: int
+    :return: True/False if vms memory updated , index of host with max memory
+    :rtype: tuple {bool,int}
+    """
+    LOGGER.info(
+        'update vms %s memory with %s percent of host memory'
+        'for hosts: %s.' %
+        (
+            test_vms,
+            str(percentage),
+            test_hosts
+        )
+    )
+    hosts_memory = [
+        getStat(host, 'host', 'hosts', 'memory.total')
+        for host in test_hosts
+    ]
+    host_index_max_mem = hosts_memory.index(max(hosts_memory))
+    LOGGER.info(
+        "The host with the maximum memory: %s",
+        test_hosts[host_index_max_mem]
+    )
+    LOGGER.info(
+        "update vms: %s  memory to host memory",
+        test_vms
+    )
+    for vm in test_vms:
+        for host_memory in hosts_memory:
+            new_memory = (
+                long(long(host_memory.get('memory.total'))
+                     * (float(percentage) / float(100)))
+            )
+            LOGGER.info("normalization memory to MB: %s", str(new_memory))
+            new_memory = (long(new_memory / MB)) * MB
+            LOGGER.info(
+                "update vm: %s memory to %s",
+                vm,
+                str(new_memory)
+            )
+            if not vms.updateVm(
+                True,
+                vm=vm,
+                memory=new_memory,
+                memory_guaranteed=new_memory
+            ):
+                LOGGER.error(
+                    "Failed to update memory to vm %s",
+                    vm
+                )
+                return False, -1
+    return True, host_index_max_mem
+
+
+def update_vms_memory(test_vms, memory):
+    """
+     update memory for vms in list
+    :param test_vms:list of vms
+    :type test_vms: list
+    :param memory: memory to update
+    :type memory: str
+    :return: True if memory updated
+    :rtype: bool
+    """
+    LOGGER.info(
+        "update memory %s for vms %s",
+        memory,
+        test_vms
+    )
+    for vm in test_vms:
+        LOGGER.info(
+            "update vm: %s memory to %s",
+            vm,
+            memory
+        )
+        if not vms.updateVm(
+            True,
+            vm=vm,
+            memory=memory,
+            memory_guaranteed=memory
+        ):
+            LOGGER.error(
+                "Failed to update memory to vm %s",
+                vm
+            )
+            return False
     return True
