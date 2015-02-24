@@ -81,6 +81,7 @@ RUN_SECTION = 'RUN'
 LB_ENABLED = 'devices_load_balancing'
 STORAGE_POOL = 'storage_pool'
 CONF_PATH_ENV = 'STORAGE_CONF_FILE'
+STORAGE_ROLE = 'storage_role'
 
 
 class AutoDevices(Component):
@@ -113,12 +114,6 @@ class AutoDevices(Component):
         logger.info("Preparing storages.")
         from art.test_handler.plmanagement.plugins import storage
         self.su = storage.StorageUtils(self.conf, os.getenv(CONF_PATH_ENV))
-        load_balancing = self.conf[STR_SECTION][LB_ENABLED]
-        if load_balancing == 'capacity' or load_balancing == 'random':
-            spool = self.conf[STR_SECTION].as_list(STORAGE_POOL)
-            spool = None if 'None' in spool else spool
-            self.su.load_balancing = load_balancing
-            self.su.serverPool = spool
         try:
             self.su.storageSetup()
         except Exception as ex:
@@ -168,7 +163,8 @@ class AutoDevices(Component):
     def config_spec(self, spec, val_funcs):
         section_spec = spec.get(STR_SECTION, {})
         section_spec[STORAGE_POOL] = "force_list(default=None)"
-        #TODO: remove false, it remained for backward compatibility
+        section_spec[STORAGE_ROLE] = "string(default='')"
+        # TODO: remove false, it remained for backward compatibility
         section_spec[LB_ENABLED] = \
             "option('capacity', 'random', 'no', 'false', default=random)"
         spec[STR_SECTION] = section_spec

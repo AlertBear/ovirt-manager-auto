@@ -54,6 +54,8 @@ SAN_STORAGE_TYPES = ['iscsi', 'fcp']
 ISO_EXPORT_TYPE = 'iso_export_domain_nas'
 LOAD_BALANCING_CAPACITY = 'capacity'
 LOAD_BALANCING_RANDOM = 'random'
+STORAGE_ROLE = 'storage_role'
+LOAD_BALANCING = 'devices_load_balancing'
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +104,7 @@ def getStorageServers(storageType='none'):
                     if stype not in self.storageServers:
                         servers = getStorageServer(stype, self.load_balancing,
                                                    self.storageConfigFile,
-                                                   self.serverPool)
+                                                   self.storage_pool)
                         smng = createStorageManager(servers, stype,
                                                     self.storageConfigFile)
                         self.storageServers[stype] = smng
@@ -245,7 +247,7 @@ def getStorageServer(type_, load_balancing, conf=None, servers=None):
             monitor = snmp.SNMPMonitor(type_, conf, servers=servers)
             return monitor.getServersByDiskSpaceToCpuRatio()
         elif load_balancing == LOAD_BALANCING_RANDOM:
-            return smngr.getRandomServers(type_, conf, servers)
+            return smngr.get_random_servers(type_, conf, servers)
         else:
             raise GetServerForDynamicStorageAllocationException(
                 "Unsupported load-balancing type: %s" % load_balancing)
@@ -274,6 +276,9 @@ class StorageUtils:
         self.storageConf = config['STORAGE']
         self.logger = logging.getLogger('storage')
         self.host_group = self.storageConf.get('host_group')
+        # the storage roles is a dictionary which easily resolve params
+        # related to each storage_role
+        self.storage_roles = {}
         self.storage_type = str(getFromMainConfSection(config, 'storage_type',
                                                        asList=False))
         # alligning with gluster name in rhevm
@@ -283,8 +288,10 @@ class StorageUtils:
         if 'posixfs_' in self.storage_type:
             self.storage_type, self.real_storage_type = \
                 self.storage_type.split('_')
-        self.load_balancing = False
-        self.serverPool = None
+        load_balancing = self.storageConf.get(LOAD_BALANCING, False)
+        self.load_balancing = (False if load_balancing in ('no', 'false')
+                               else load_balancing)
+        self.storage_pool = self.storageConf.get('storage_pool', None)
         self.storageConfigFile = storageConfig
         self.storages = {'gluster': {},
                          'nfs':     {},
@@ -332,6 +339,23 @@ class StorageUtils:
             self.host_group = createHostGroupName(getFromMainConfSection(
                 config, 'host', mainSection='REST_CONNECTION', asList=False))
 
+    def update_storage_roles(self, section):
+        '''
+        Update storage_roles dictionary with storage_role details
+        from conf file if the storage_role exist in this section
+        __author__ = 'khakimi'
+        :param section: from self.config STORAGE section or subsection of it.
+        :type section: dict
+        '''
+        storage_role = section.get(STORAGE_ROLE, None)
+        if storage_role:
+            config_default = self.config['DEFAULT']
+            storage_api_conf = config_default.get('STORAGE_API_CONF', None)
+            server_dict = smngr.get_server_dict_by_role(
+                storage_api_conf, self.storage_pool, storage_role)
+            if server_dict:
+                self.storage_roles.update(server_dict)
+
     def getDeviceTargetPath(self, targetPath, type_):
         '''
         Description: decide the path in conf file where to put the device,
@@ -363,20 +387,31 @@ class StorageUtils:
         Return: None
         '''
 
+        self.update_storage_roles(confStorageSection)
+        storage_role = confStorageSection.get(STORAGE_ROLE, None)
         for dev_type in DEV_TYPES:
-            storageServer = \
-                confStorageSection.get('{0}_server'.format(dev_type), None)
+            storageServer = confStorageSection.get(
+                '{0}_server'.format(dev_type), None)
+            if storageServer is None and storage_role:
+                storage_type = confStorageSection.get('storage_type', None)
+                if storage_type == dev_type:
+                    storageServer = self.storage_roles[storage_role]['ip']
             targetDevPath = self.getDeviceTargetPath(targetPath, dev_type)
-            self.storages[dev_type][targetDevPath] = \
-                {'ip': getIpAddressByHostName(storageServer) if storageServer
-                 else None,
-                 'total': int(confStorageSection.
-                              get('{0}_devices'.format(dev_type), '0')),
-                 }
-            if dev_type in SAN_STORAGE_TYPES:
-                self.storages[dev_type][targetDevPath]['capacity'] = \
-                    confStorageSection.get('devices_capacity', '0')
-                self.storages[dev_type][targetDevPath]['is_specific'] = False
+            storage_ip = getIpAddressByHostName(storageServer) if \
+                storageServer else None
+            total_devices = int(confStorageSection.get(
+                '{0}_devices'.format(dev_type), '0'))
+            if ((storage_ip or self.load_balancing in ('capacity', 'random'))
+                    and total_devices > 0):
+                self.storages[dev_type][targetDevPath] = {
+                    'ip': storage_ip,
+                    'total': total_devices
+                }
+                if dev_type in SAN_STORAGE_TYPES:
+                    self.storages[dev_type][targetDevPath]['capacity'] = \
+                        confStorageSection.get('devices_capacity', '0')
+                    self.storages[dev_type][targetDevPath]['is_specific'] = \
+                        False
 
         localDevices = confStorageSection.get('local_devices', None)
         if localDevices:
@@ -388,6 +423,10 @@ class StorageUtils:
                 'paths': confStorageSection.as_list('local_devices'),
             }
 
+    def log_storage_server(self, server_name, storageSection, storage_type):
+        logger.info("Server: {0} Type: {1} from section :{2}".format(
+            server_name, storage_type, storageSection))
+
     @getStorageServers()
     def _storageSetupNAS(self, storage_type):
         """
@@ -398,19 +437,18 @@ class StorageUtils:
                              is exactly storage type from conf file
         Return: None
         """
-        if storage_type == 'gluster':
-            for storageSection, sectionParams in\
-                    self.storages[storage_type].items():
+        for storageSection, sectionParams in\
+                self.storages[storage_type].items():
+            self.log_storage_server(sectionParams['ip'], storageSection,
+                                    storage_type)
+            if storage_type == 'gluster':
                 self.gluster_devices[storageSection] = \
                     [self.__create_nas_device(sectionParams['ip'],
                                               self.host_group,
                                               storage_type)
                      for i in range(0, sectionParams['total'])
                      ]
-
-        elif storage_type == 'nfs':
-            for storageSection, sectionParams in\
-                    self.storages[storage_type].items():
+            elif storage_type == 'nfs':
                 self.nfs_devices[storageSection] = \
                     [self.__create_nas_device(sectionParams['ip'],
                                               self.host_group,
@@ -418,9 +456,7 @@ class StorageUtils:
                      for i in range(0, sectionParams['total'])
                      ]
 
-        elif storage_type == 'pnfs':
-            for storageSection, sectionParams in\
-                    self.storages[storage_type].iteritems():
+            elif storage_type == 'pnfs':
                 self.pnfs_devices[storageSection] = [
                     self.__create_nas_device(sectionParams['ip'],
                                              self.host_group,
@@ -441,6 +477,8 @@ class StorageUtils:
             else self.fcp_devices
         for storageSection, sectionParams in \
                 self.storages[storage_type].items():
+            self.log_storage_server(sectionParams['ip'], storageSection,
+                                    storage_type)
             block_devices[storageSection] = [
                 self.__create_block_device(
                     storage_type, sectionParams, self.host_group,
@@ -456,11 +494,13 @@ class StorageUtils:
         Return: None
         """
         for storageSection, sectionParams in self.storages['local'].items():
-                self.local_devices[storageSection] = [
-                    self.__create_local_device(sectionParams['ip'],
-                                               sectionParams['password'], path)
-                    for path in sectionParams['paths']
-                ]
+            self.log_storage_server(sectionParams['ip'], storageSection,
+                                    'local')
+            self.local_devices[storageSection] = [
+                self.__create_local_device(sectionParams['ip'],
+                                           sectionParams['password'], path)
+                for path in sectionParams['paths']
+            ]
 
     @getStorageServers(ISO_EXPORT_TYPE)
     def _storageSetupISOandExportDomains(self):
@@ -473,6 +513,8 @@ class StorageUtils:
         fsType = self.config[MAIN_SECTION][ISO_EXPORT_TYPE]
 
         for storageSection, sectionParams in self.storages['iso'].items():
+            self.log_storage_server(sectionParams['ip'], storageSection,
+                                    'iso')
             self.iso_devices[storageSection] = [
                 self.__create_nas_device(sectionParams['ip'], self.host_group,
                                          fsType)
@@ -480,6 +522,8 @@ class StorageUtils:
             ]
 
         for storageSection, sectionParams in self.storages['export'].items():
+            self.log_storage_server(sectionParams['ip'], storageSection,
+                                    'export')
             self.export_devices[storageSection] = [
                 self.__create_nas_device(sectionParams['ip'], self.host_group,
                                          fsType)
@@ -636,7 +680,7 @@ class StorageUtils:
                     lunId = 'serial' if self.storages[stype][
                         storageSection]['is_specific'] else 'uuid'
                     block_devices = self.iscsi_devices if \
-                        self.storage_type == 'iscsi' else self.fcp_devices
+                        stype == 'iscsi' else self.fcp_devices
                     if storageSection in block_devices.keys():
                         for device in block_devices[storageSection]:
                             self.__remove_block_device(
