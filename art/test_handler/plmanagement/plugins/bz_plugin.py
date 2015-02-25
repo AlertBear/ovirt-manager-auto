@@ -399,13 +399,13 @@ class Bugzilla(Component):
                     self.__check_version(bz)):
                 logger.info("skipping due to in_state=%s, engine_in=%s",
                             self.is_state_by_bug(bz), engine_in)
-                raise BugzillaSkipTest(bz, self.url)
+                raise BugzillaSkipTest(bz_id, self.url)
 
             # if the bug is closed on current release resolution, but was fixed
             # in later version
             if bz.bug_status == 'CLOSED':
                 if self.__check_fixed_at(bz) and engine_in:
-                    raise BugzillaSkipTest(bz, self.url)
+                    raise BugzillaSkipTest(bz_id, self.url)
 
         for version in versions:
             self.version = Version(version)
@@ -415,7 +415,7 @@ class Bugzilla(Component):
                     bz.resolution in SKIP_FOR_RESOLUTION):
                 logger.info("skipping due to in_state=%s, resolution=%s",
                             self.is_state(bz_id), bz.resolution)
-                raise BugzillaSkipTest(bz, self.url)
+                raise BugzillaSkipTest(bz_id, self.url)
 
     def __check_version(self, bug):
         """
