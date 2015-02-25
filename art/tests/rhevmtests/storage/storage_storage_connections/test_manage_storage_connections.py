@@ -1,10 +1,10 @@
-from art.unittest_lib import StorageTest as TestCase
+import config
+import helpers
 import logging
+from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
 from utilities.machine import Machine
-
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
-
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import storageconnections
@@ -12,9 +12,6 @@ from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import clusters
 from art.rhevm_api.tests_lib.low_level import datacenters
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
-
-import config
-import helpers
 
 LOGGER = logging.getLogger(__name__)
 
@@ -127,13 +124,6 @@ class TestCasePosix(TestCase):
 
         sd = sd_api.find(self.sd_name)
 
-        # just in case - restart vdsm (bug 950055)
-        LOGGER.info("Restarting VDSM")
-        test_utils.restartVdsmd(self.host, self.password)
-        LOGGER.info("Waiting for datacenter up")
-        assert datacenters.waitForDataCenterState(config.DATA_CENTER_NAME)
-        assert hosts.waitForHostsStates(True, self.host)
-
         LOGGER.info("Changing connection")
         result = self.default_update()
         LOGGER.info("result: %s" % result)
@@ -145,12 +135,6 @@ class TestCasePosix(TestCase):
             True, config.DATA_CENTER_NAME, self.sd_name)
 
     def change_connection_in_active_sd(self):
-        # just in case - restart vdsm (bug 950055)
-        LOGGER.info("Restarting VDSM")
-        test_utils.restartVdsmd(self.host, self.password)
-        LOGGER.info("Waiting for datacenter up")
-        assert hosts.waitForHostsStates(True, self.host)
-        assert datacenters.waitForDataCenterState(config.DATA_CENTER_NAME)
         LOGGER.info("DC is up")
 
         result = self.default_update()
@@ -286,7 +270,6 @@ class TestCase288710(TestCaseNFS):
     tcms_test_case = '288710'
     sd_name = "sd_%s" % tcms_test_case
 
-    @bz(950055)
     @tcms(tcms_plan_id, tcms_test_case)
     def test_change_conn_more_than_once(self):
         """ Tries to change the same connection twice.
@@ -301,13 +284,6 @@ class TestCase288710(TestCaseNFS):
         helpers.copy_nfs_sd(
             self.address, self.path, new_address, new_path,
             config.HOST_FOR_MNT, 'root', config.PASSWD_FOR_MNT)
-
-        # just in case - restart vdsm (bug 950055)
-        LOGGER.info("Restarting VDSM")
-        test_utils.restartVdsmd(self.host, self.password)
-        LOGGER.info("Waiting for datacenter up")
-        assert datacenters.waitForDataCenterState(config.DATA_CENTER_NAME)
-        assert hosts.waitForHostsStates(True, self.host)
 
         result = storageconnections.update_connection(
             self.conn, address=new_address, path=new_path, type='nfs',
@@ -427,13 +403,6 @@ class TestCase288708(TestCaseLocalFS):
         helpers.copy_local_sd(self.old_path, self.path, self.machine)
 
         assert datacenters.waitForDataCenterState(config.DATA_CENTER_NAME)
-
-        # just in case - restart vdsm (bug 950055)
-        LOGGER.info("Restarting VDSM")
-        test_utils.restartVdsmd(self.host, self.password)
-        LOGGER.info("Waiting for datacenter up")
-        assert datacenters.waitForDataCenterState(config.DATA_CENTER_NAME)
-        assert hosts.waitForHostsStates(True, self.host)
 
         LOGGER.info("Updating connection")
 

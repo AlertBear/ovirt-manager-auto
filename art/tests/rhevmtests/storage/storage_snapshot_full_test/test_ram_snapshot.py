@@ -1,19 +1,14 @@
 """
 Storage full snapshot test - ram snapshot
 """
-
-import logging
 import config
+import logging
 from helpers import is_pid_running_on_vm, start_cat_process_on_vm
-
 from concurrent.futures import ThreadPoolExecutor
-
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
-
 from art.test_handler import exceptions as errors
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
-
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level.datacenters import (
     waitForDataCenterState,
 )
@@ -30,12 +25,10 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     removeSnapshot, kill_process_by_pid_on_vm, shutdownVm,
     wait_for_vm_snapshots, removeVms, stop_vms_safely,
 )
-
 from art.rhevm_api.tests_lib.high_level.vms import shutdown_vm_if_up
 from art.rhevm_api.tests_lib.high_level.storagedomains import (
     attach_and_activate_domain, detach_and_deactivate_domain,
 )
-
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from rhevmtests.storage.helpers import create_vm_or_clone
@@ -422,7 +415,6 @@ class TestCase294439(VMWithMemoryStateSnapshot):
                        wait_for_status=config.VM_UP)
 
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
-    @bz('1018554')
     def test_vm_with_multiple_ram_snapshots(self):
         """
         * Start another process on the vm and create a new memory snapshot.
@@ -674,12 +666,10 @@ class TestCase305433(VMWithMemoryStateSnapshot):
     """
     TCMS test case 305433 - Stateless vm with memory snapshot
     """
-
     __test__ = True
     tcms_test_case = '305433'
 
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
-    @bz('1004184')
     def test_stateless_vm_with_memory_snapshot(self):
         """
         * Restore memory snapshot

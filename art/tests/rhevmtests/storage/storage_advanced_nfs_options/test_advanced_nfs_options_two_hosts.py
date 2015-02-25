@@ -1,17 +1,14 @@
-from nose.tools import istest
+import config
+import helpers
 import logging
-
 from art.test_handler import exceptions
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
 from art.rhevm_api.tests_lib.low_level import clusters as ll_cl
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_st
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import attr
-
-import helpers
-import config
 
 LOGGER = logging.getLogger(__name__)
 ENUMS = helpers.ENUMS
@@ -50,7 +47,6 @@ class TestCase166613(helpers.TestCaseStandardOperations):
         self.vdsm_copy_file = None
         super(TestCase166613, self).setUp()
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
     def test_change_vdsm_conf_and_perform_standard_operations(self):
         """ Changes vdsm.conf and checks that datacenter works correctly
@@ -105,9 +101,7 @@ class TestCase148672(helpers.TestCaseStandardOperations):
     host_2 = config.HOSTS[1]
     template = 'templ_%s' % tcms_test_case
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
-    @bz(996146)
     def test_functionality_with_custom_nfs_options(self):
         """ Tests basic data center functionality with storage domain with
         custom NFS options
@@ -159,7 +153,6 @@ class TestCase166615(helpers.TestCaseNFSOptions):
         LOGGER.info("Adding host to 3.0 dc")
         hl_hosts.add_hosts([cls.host], [cls.password], cls.cl_name)
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
     def test_upgrade_datacenter(self):
         """ Creates NFS storage domain in 3.0 data center. Upgrades data center

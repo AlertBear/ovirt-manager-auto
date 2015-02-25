@@ -3,6 +3,8 @@ Storage backup restore API - 10435
 https://tcms.engineering.redhat.com/plan/10435
 """
 
+import config
+import helpers
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
@@ -15,18 +17,11 @@ from art.rhevm_api.tests_lib.low_level import templates, hosts
 from art.rhevm_api.tests_lib.low_level.datacenters import get_data_center
 from art.unittest_lib import attr
 from rhevmtests.storage.helpers import get_vm_ip
-
 import art.rhevm_api.utils.storage_api as st_api
-
 from art.rhevm_api.utils import test_utils as utils
-
 from utilities.machine import Machine
-
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler import exceptions
-
-import helpers
-import config
 
 logger = logging.getLogger(__name__)
 
@@ -209,7 +204,6 @@ class TestCase303854(BaseTestCase):
     __test__ = True
     tcms_test_case = '303854'
 
-    @bz({'1158016': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_restart_VDSM_and_engine_while_disk_attached_to_backup_vm(self):
         """

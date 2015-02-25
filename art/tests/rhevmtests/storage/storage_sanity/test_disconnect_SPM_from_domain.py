@@ -1,13 +1,13 @@
+import config
 import logging
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
 from art.rhevm_api.tests_lib.low_level.hosts import waitForSPM
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import hosts
 import art.rhevm_api.utils.storage_api as st_api
-import config
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,7 @@ class TestCase68536(TestCase):
     tcms_test_case = '68536'
     master_domain_ip = None
     spm = None
+    bz = {'1017207': {'engine': None, 'version': None}}
 
     @classmethod
     def setup_class(cls):
@@ -62,7 +63,6 @@ class TestCase68536(TestCase):
         logger.info("Master domain ip found : %s", cls.master_domain_ip)
 
     @tcms(tcms_plan_id, tcms_test_case)
-    @bz('1017207')
     def test_disconnect_SPM_from_storage(self):
         """ test checks if disconnecting SPM from storage domain
             works properly

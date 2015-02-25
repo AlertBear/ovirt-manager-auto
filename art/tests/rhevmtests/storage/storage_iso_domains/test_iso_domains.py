@@ -9,22 +9,17 @@ Check with NFS, POSIXFS and local ISO domains
 import logging
 import helpers
 import config
-
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
-
 import art.rhevm_api.tests_lib.high_level.storagedomains as hl_sd
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-from art.rhevm_api.tests_lib.low_level.hosts import (
-    getSPMHost,
-)
-
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
-
+from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from utilities import machine
 from utilities.rhevm_tools.base import Utility, Setup
+
 logger = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
@@ -256,8 +251,8 @@ class Plan6107Local(BaseCaseIsoDomains):
     local = True
     vm_name = "TestCasesPlan6107Local"
     storagedomains = [config.LOCAL_DOMAIN]
+    bz = {'1188326': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
-    @bz({"1097789": {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(TCMS_TEST_PLAN, TCMS_CASE_ATTACH)
     def test_detaching_local_iso_vm(self):
         """
@@ -265,7 +260,6 @@ class Plan6107Local(BaseCaseIsoDomains):
         """
         self.attach_iso_and_maintenance(iso_domain=config.ISO_LOCAL_DOMAIN)
 
-    @bz({"1097789": {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(TCMS_TEST_PLAN, TCMS_CASE_RUNONCE)
     def test_detaching_local_iso_vm_runonce(self):
         """

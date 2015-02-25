@@ -2,8 +2,9 @@
 3.4 Feature: Read only (RO) disk - 12049
 https://tcms.engineering.redhat.com/plan/12049
 """
+import config
+import helpers
 import logging
-
 from art.rhevm_api.tests_lib.low_level.hosts import (
     kill_qemu_process, getHostIP, getVmHost,
 )
@@ -20,37 +21,28 @@ from art.rhevm_api.tests_lib.low_level.templates import (
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.vms import (
-    addSnapshot, getVmDisks, removeDisk, start_vms,
-    deactivateVmDisk, waitForVMState, removeSnapshot,
-    migrateVm, suspendVm, startVm, exportVm, importVm, get_snapshot_disks,
-    cloneVmFromSnapshot, removeVm, cloneVmFromTemplate, stop_vms_safely,
-    removeVms, move_vm_disk, waitForVmsStates, preview_snapshot,
-    undo_snapshot_preview, commit_snapshot,
+    addSnapshot, getVmDisks, removeDisk, start_vms, deactivateVmDisk,
+    waitForVMState, removeSnapshot, migrateVm, suspendVm, startVm, exportVm,
+    importVm, get_snapshot_disks, cloneVmFromSnapshot, removeVm,
+    cloneVmFromTemplate, stop_vms_safely, removeVms, move_vm_disk,
+    waitForVmsStates, preview_snapshot, undo_snapshot_preview, commit_snapshot,
     removeVmFromExportDomain, does_vm_exist, DiskNotFound,
     get_vms_disks_storage_domain_name, waitForDisksStat,
     safely_remove_vms, get_vm_bootable_disk,
 )
-
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
 from art.rhevm_api.tests_lib.high_level.storagedomains import (
     attach_and_activate_domain, detach_and_deactivate_domain,
 )
-
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
-
 import rhevmtests.storage.helpers as storage_helpers
-
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler import exceptions
-
 from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest as TestCase
-
-import helpers
-import config
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +53,6 @@ TEST_PLAN_ID = '12049'
 ENUMS = config.ENUMS
 READ_ONLY = 'Read-only'
 NOT_PERMITTED = 'Operation not permitted'
-
 
 vmArgs = {'positive': True,
           'vmDescription': config.TEST_NAME,
@@ -300,8 +291,8 @@ class TestCase332473(BaseTestCase):
     """
     __test__ = BaseTestCase.storage in config.BLOCK_TYPES
     tcms_test_case = '332473'
+    bz = {'1194695': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
-    @bz({'1194695': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_attach_RO_direct_LUN_disk(self):
         """
@@ -577,8 +568,8 @@ class TestCase332489(DefaultEnvironment):
     tcms_test_case = '332489'
     blocked = False
     storage_domain_ip = ''
+    bz = {'1138144': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
-    @bz({'1138144': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_RO_persistent_after_block_connectivity_to_storage(self):
         """

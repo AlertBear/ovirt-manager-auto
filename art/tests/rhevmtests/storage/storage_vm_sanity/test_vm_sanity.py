@@ -16,7 +16,7 @@ from art.rhevm_api.tests_lib.low_level import vms, disks
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.utils import log_listener
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 
 import config
 from rhevmtests.storage.helpers import get_vm_ip, create_vm_or_clone
@@ -293,6 +293,7 @@ class TestCase300867(TestCase):
     snapshots = [snapShot1_name, snapShot2_name]
     disk_size_before = 0
     disk_size_after = 0
+    bz = {'1185782': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
     @classmethod
     def setup_class(cls):
@@ -338,7 +339,6 @@ class TestCase300867(TestCase):
                     timeout=2100),
                 "Removing snapshot %s failed!" % snapshot)
 
-    @bz({"1185782": {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(tcms_plan_id, tcms_test_case)
     def test_delete_snapshot(self):
         """

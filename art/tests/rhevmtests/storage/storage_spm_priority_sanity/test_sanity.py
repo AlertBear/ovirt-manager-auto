@@ -2,26 +2,23 @@
 Storage SPM priority sanity test - 5299
 https://tcms.engineering.redhat.com/plan/5299/
 """
-
+import config
 import logging
 import time
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
-
 from art.rhevm_api.tests_lib.high_level import hosts as hosts
 from art.rhevm_api.tests_lib.low_level import datacenters, storagedomains
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-from art.rhevm_api.utils.test_utils import get_api, toggleServiceOnHost,\
-    raise_if_false
-
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.rhevm_api.utils.test_utils import (
+    get_api, toggleServiceOnHost, raise_if_false,
+)
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler import exceptions
 from art.test_handler.handler_lib.utils import no_datatype_validation
-from art.rhevm_api.utils.storage_api import blockOutgoingConnection, \
-    unblockOutgoingConnection
-
-import config
-
+from art.rhevm_api.utils.storage_api import (
+    blockOutgoingConnection, unblockOutgoingConnection,
+)
 
 LOGGER = logging.getLogger(__name__)
 ENUMS = config.ENUMS
@@ -736,6 +733,7 @@ class StorageDisconnect(DCUp):
     """
     __test__ = True
     tcms_test_case = '136447'
+    bz = {'1017207': {'engine': None, 'version': None}}
 
     def tearDown(self):
         """
@@ -746,7 +744,6 @@ class StorageDisconnect(DCUp):
                 self.storage_domain_ip['address']):
             logging.debug("Failed to unblock outgoing connection")
 
-    @bz('1017207')
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_disconnect_storage(self):
         """

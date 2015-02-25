@@ -1,14 +1,12 @@
-from utilities.machine import Machine, LINUX
-from art.unittest_lib import StorageTest as TestCase
-import logging
-import time
-
-from concurrent.futures import ThreadPoolExecutor
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
-from nose.plugins.attrib import attr
-
 import config
 import common
+import logging
+import time
+from utilities.machine import Machine, LINUX
+from art.unittest_lib import StorageTest as TestCase
+from concurrent.futures import ThreadPoolExecutor
+from art.test_handler.tools import tcms  # pylint: disable=E0611
+from nose.plugins.attrib import attr
 from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, waitForVMState, addSnapshot, removeSnapshot,
     validateSnapshot, startVm, suspendVm, wait_for_vm_states, get_vm_state,
@@ -153,7 +151,6 @@ class TestCase288728(RestartOvirt):
 
         self.restart_before_tasks_start()
 
-    @bz({'1158016': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(tcms_plan_id, tcms_test_case)
     def test_restart_during_tasks(self):
         """
@@ -272,7 +269,6 @@ class TestCase288972(RestartOvirt):
         """
         self.restart_before_tasks_start()
 
-    @bz({'1158016': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(tcms_plan_id, tcms_test_case)
     def test_restart_during_tasks(self):
         """

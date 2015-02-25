@@ -2,17 +2,15 @@
 3.3 Feature: Storage Virtual disk resize - 9949
 https://tcms.engineering.redhat.com/plan/9949
 """
-
+import config
+import helpers
 import logging
 import time
-
 from threading import Thread
 from concurrent.futures import ThreadPoolExecutor
-
 from utilities.machine import Machine
 from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest as BaseTestCase
-
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.high_level.disks import (
     create_all_legal_disk_permutations,
@@ -38,13 +36,8 @@ from art.rhevm_api.tests_lib.low_level.vms import (
 import rhevmtests.storage.helpers as storage_helpers
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.rhevm_api.utils.storage_api import flushIptables
-
 from art.test_handler import exceptions
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
-
-import helpers
-import config
-
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +48,6 @@ FILE_TO_WATCH = "/var/log/vdsm/vdsm.log"
 REGEX = "lvextend"
 
 TEST_PLAN_ID = '9949'
-
 
 disk_args = {
     # Fixed arguments
@@ -357,7 +349,6 @@ class TestCase336099(DisksPermutationEnvironment):
     snap_description = 'snap_%s' % tcms_test_case
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
-    @bz({'1178499': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     def test_virtual_disk_resize_after_snapshot_creation(self):
         """
         - VM with 6G disk and OS
@@ -411,7 +402,6 @@ class TestCase336100(DisksPermutationEnvironment):
     new_size = config.VM_DISK_SIZE + config.GB
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
-    @bz({'1178499': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     def test_Commit_snapshot_after_disk_resize(self):
         """
         - VM with 6G disk and OS

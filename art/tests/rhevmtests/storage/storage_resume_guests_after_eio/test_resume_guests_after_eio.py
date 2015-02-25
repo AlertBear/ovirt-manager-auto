@@ -2,7 +2,7 @@ from art.unittest_lib import StorageTest as TestCase
 import logging
 import time
 from art.unittest_lib import attr
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import vms, storagedomains, disks, hosts
 from art.rhevm_api.tests_lib.low_level.vms import (
     addDisk, get_vms_disks_storage_domain_name,
@@ -178,9 +178,9 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
 class TestCase285357(TestCaseBlockedConnection):
     __test__ = (TestCaseBlockedConnection.storage == 'nfs')
     tcms_test_case = '285357'
+    bz = {'1138144': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
-    @bz({'1138144': {'enine': ['rest', 'sdk'], 'version': ["3.5"]}})
     def test_nfs_blocked_connection(self):
         """ checks if VM is paused after connection to sd is lost,
             checks if VM is unpaused after connection is restored
@@ -193,9 +193,9 @@ class TestCase285370(TestNoSpaceLeftOnDevice):
     __test__ = (TestNoSpaceLeftOnDevice.storage == 'nfs')
     tcms_test_case = '285370'
     left_space = 10 * GB
+    bz = {'1024353': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
-    @bz({'1024353': {'enine': ['rest', 'sdk'], 'version': ["3.5"]}})
     def test_nfs_no_space_left_on_device(self):
         """ checks if VM is paused after no-space-left error on sd,
             checks if VM is unpaused after there is again free space on sd
@@ -207,9 +207,9 @@ class TestCase285370(TestNoSpaceLeftOnDevice):
 class TestCase285371(TestCaseBlockedConnection):
     __test__ = (TestCaseBlockedConnection.storage == 'iscsi')
     tcms_test_case = '285371'
+    bz = {'1138144': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
-    @bz({'1138144': {'enine': ['rest', 'sdk'], 'version': ["3.5"]}})
     def test_iscsi_blocked_connection(self):
         """ checks if VM is paused after connection to sd is lost,
             checks if VM is unpaused after connection is restored
@@ -246,9 +246,9 @@ class TestCase285372(TestNoSpaceLeftOnDevice):
 class TestCase285375(TestCaseBlockedConnection):
     __test__ = (TestCaseBlockedConnection.storage == 'fcp')
     tcms_test_case = '285375'
+    bz = {'1138144': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
-    @bz({'1138144': {'enine': ['rest', 'sdk'], 'version': ["3.5"]}})
     def test_fc_blocked_connection(self):
         """ checks if VM is paused after connection to sd is lost,
             checks if VM is unpaused after connection is restored

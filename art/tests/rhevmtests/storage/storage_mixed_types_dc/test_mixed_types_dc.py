@@ -6,12 +6,9 @@ import time
 import logging
 import helpers
 import config
-
 from utilities.machine import Machine
-
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
-
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.clusters as ll_cl
 import art.rhevm_api.tests_lib.low_level.disks as ll_disks
@@ -19,14 +16,12 @@ import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
 from rhevmtests.storage.helpers import get_vm_ip
-
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
@@ -377,7 +372,6 @@ class TestCase336529(IscsiNfsSD):
         disk_name = "%s_Disk2" % cls.vm_name
         helpers.add_disk_to_sd(disk_name, cls.iscsi, attach_to_vm=cls.vm_name)
 
-    @bz("867339")
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     def test_snapshot_operations(self):
         """
@@ -584,7 +578,6 @@ class TestCase343101(BaseCaseDCMixed):
     nfs = config.NFS_DOMAIN['name']
 
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
-    @bz(1091956)
     def test_move_nfs_to_nfs(self):
         """
         Move disks from one nfs storage to another
@@ -608,12 +601,10 @@ class TestCase343383(IscsiNfsSD):
     After reconstruct is finished, perform operations in the storage
     pool like disk creation, removal and move
     """
-
     tcms_test_case = '343383'
-    __test__ = False  # Broken - cannot recover from BZs, so better disable it
+    __test__ = False  # TODO: Cannot recover from BZs, disabling case
+    bz = {'1078907': {'engine': None, 'version': None}}
 
-    @bz("1078907")
-    @bz("1072900")
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     def test_reconstruct_master(self):
         """
@@ -948,7 +939,6 @@ class TestCase336876(IscsiNfsSD):
         assert ll_templates.createTemplate(
             True, vm=cls.vm_name, name=cls.template_name)
 
-    @bz("1084789")
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     def test_thin_provision_on_block(self):
         """

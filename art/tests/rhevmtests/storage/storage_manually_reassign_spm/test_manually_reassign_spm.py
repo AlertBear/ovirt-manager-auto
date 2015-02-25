@@ -1,19 +1,23 @@
+import config
 import logging
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
-from art.rhevm_api.tests_lib.low_level.datacenters import \
-    waitForDataCenterState
-from art.rhevm_api.tests_lib.low_level.storagedomains import \
-    findMasterStorageDomain, findNonMasterStorageDomains, cleanDataCenter, \
-    getDomainAddress, deactivateStorageDomain, activateStorageDomain
-import config
-from art.rhevm_api.tests_lib.low_level.hosts import select_host_as_spm, \
-    getSPMHost, checkSPMPriority, deactivateHosts, setSPMPriority, \
-    waitForSPM, checkHostSpmStatus, activateHosts, isHostUp
-from art.rhevm_api.utils.storage_api import blockOutgoingConnection, \
-    unblockOutgoingConnection
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.rhevm_api.tests_lib.low_level.datacenters import (
+    waitForDataCenterState,
+)
+from art.rhevm_api.tests_lib.low_level.storagedomains import (
+    findMasterStorageDomain, findNonMasterStorageDomains, cleanDataCenter,
+    getDomainAddress, deactivateStorageDomain, activateStorageDomain,
+)
+from art.rhevm_api.tests_lib.low_level.hosts import (
+    select_host_as_spm, getSPMHost, checkSPMPriority, deactivateHosts,
+    setSPMPriority, waitForSPM, checkHostSpmStatus, activateHosts, isHostUp,
+)
+from art.rhevm_api.utils.storage_api import (
+    blockOutgoingConnection, unblockOutgoingConnection,
+)
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 
 logger = logging.getLogger(__name__)
 
@@ -310,9 +314,9 @@ class TestCase289888(ReassignSPMWithStorageBlocked):
     """
     __test__ = True
     tcms_test_case = '289888'
+    bz = {'999493': {'engine': None, 'version': None}}
 
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
-    @bz('999493')
     def test_set_spm_with_blocked_nonmaster_domain(self):
         """
         * Block connection between spm and non-master domain

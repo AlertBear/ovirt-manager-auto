@@ -1,16 +1,10 @@
-from art.unittest_lib import attr
-from nose.tools import istest
+import config
+import helpers
 import logging
-
+from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_st
-from art.test_handler.exceptions import SkipTest
-from art.test_handler.handler_lib.utils import no_datatype_validation
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
-from art.test_handler.settings import opts
-
-import helpers
-import config
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 
 LOGGER = logging.getLogger(__name__)
 ENUMS = helpers.ENUMS
@@ -55,7 +49,6 @@ class TestCase232975(helpers.TestCaseNFSOptions):
             self.export_domain, self.datacenter, self.host, False, config.VDC,
             config.VDC_PASSWORD)
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
     def test_import_existing_export_domain(self):
         """ Imports existing export storage domain with custom NFS options
@@ -95,7 +88,6 @@ class TestCase148669(helpers.TestCaseNFSOptions):
     nfs_timeout = 710
     nfs_version = 'v3'
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
     def test_create_nfs_storage_with_options(self):
         """ Creates storage domain with advanced NFS options and checks that
@@ -132,55 +124,7 @@ class TestCase148670(helpers.TestCaseNFSOptions):
     def setUp(self):
         self.name = None
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
-    @bz(983885)
-    @no_datatype_validation
-    def test_create_nfs_storage_with_string_retrans(self):
-        """ Tries to create an NFS storage domain with a string passed as
-        the number of retransmissions
-        """
-        # check backend we are running on at runtime and not from config.py
-        # due to backends switching on the fly several times, while config.py
-        # is only executed once
-        if opts['engine'] == 'cli':
-            raise SkipTest("CLI backend is not supported")
-        self.name = 'test_%s_str_retrans' % self.tcms_test_case
-        nfs_retrans = 'a'
-        nfs_timeout = 720
-        nfs_version = 'v3'
-        LOGGER.info("Creating nfs domain %s" % self.name)
-        hl_st.create_nfs_domain_with_options(
-            self.name, ENUMS['storage_dom_type_data'], self.host,
-            self.nfs_address, self.nfs_path, retrans=nfs_retrans,
-            version=nfs_version, timeo=nfs_timeout, positive=False)
-
-    @istest
-    @tcms(tcms_plan_id, tcms_test_case)
-    @bz(983885)
-    @no_datatype_validation
-    def test_create_nfs_storage_with_string_timeout(self):
-        """ Tries to create an NFS storage domain with a string passed as
-        the NFS timeout
-        """
-        # check backend we are running on at runtime and not from config.py
-        # due to backends switching on the fly several times, while config.py
-        # is only executed once
-        if opts['engine'] == 'cli':
-            raise SkipTest("CLI backend is not supported")
-        self.name = 'test_%s_str_timeout' % self.tcms_test_case
-        nfs_retrans = 7
-        nfs_timeout = 'aaa'
-        nfs_version = 'v3'
-        LOGGER.info("Creating nfs domain %s" % self.name)
-        hl_st.create_nfs_domain_with_options(
-            self.name, ENUMS['storage_dom_type_data'], self.host,
-            self.nfs_address, self.nfs_path, retrans=nfs_retrans,
-            version=nfs_version, timeo=nfs_timeout, positive=False)
-
-    @istest
-    @tcms(tcms_plan_id, tcms_test_case)
-    @bz(962442)
     def test_create_nfs_storage_with_out_of_range_retransmissions(self):
         """ Tries to create an NFS storage domain with an out of range
         retransmission number
@@ -195,9 +139,7 @@ class TestCase148670(helpers.TestCaseNFSOptions):
             self.nfs_address, self.nfs_path, retrans=nfs_retrans,
             version=nfs_version, timeo=nfs_timeout, positive=False)
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
-    @bz(962442)
     def test_create_nfs_storage_with_out_of_range_timeout(self):
         """ Tries to create an NFS storage domain with an out of range
         NFS timeout
@@ -212,7 +154,6 @@ class TestCase148670(helpers.TestCaseNFSOptions):
             self.nfs_address, self.nfs_path, retrans=nfs_retrans,
             version=nfs_version, timeo=nfs_timeout, positive=False)
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
     def test_create_nfs_storage_with_incorrect_nfs_version(self):
         """ Tries to create an NFS storage domain with a random string
@@ -251,7 +192,6 @@ class TestCase148641(helpers.TestCaseNFSOptions):
     tcms_plan_id = '5849'
     tcms_test_case = '148641'
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
     def test_create_nfs_storage_with_default_options(self):
         """ Creates storage domains with default options and checks if they are
@@ -298,7 +238,6 @@ class TestCase153290(helpers.TestCaseNFSOptions):
             expected_retrans=self.nfs_retrans, expected_vers=self.nfs_version)
         self.create_nfs_domain_and_verify_options([storage])
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
     def test_create_change_nfs_options_export(self):
         """ Creates export storage domain with advanced NFS options and checks
@@ -306,7 +245,6 @@ class TestCase153290(helpers.TestCaseNFSOptions):
         """
         self._create_and_check(ENUMS['storage_dom_type_export'], 'export', 0)
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
     def test_create_change_nfs_options_iso(self):
         """ Creates ISO storage domain with advanced NFS options and checks
@@ -329,7 +267,6 @@ class TestCase153368(helpers.TestCaseNFSOptions):
     tcms_plan_id = '5849'
     tcms_test_case = '153368'
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
     def test_multiple_storage_domains(self):
         """
@@ -378,7 +315,6 @@ class TestCase166534(helpers.TestCaseNFSOptions):
     nfs_timeout = 760
     nfs_version = 'v3'
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
     def test_import_storage_domain_created_with_nfs_options(self):
         """ Checks that importing storage domain which was created with custom
@@ -443,7 +379,6 @@ class TestCase166616(helpers.TestCaseNFSOptions):
     nfs_timeout = 770
     nfs_version = 'v3'
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
     def test_remove_and_add_again_storage_domain_with_nfs_options(self):
         """ Test steps:

@@ -2,24 +2,21 @@
 Test exposing BZ 1000789, checks that creating a vm
 from a template with no disks is working
 """
+import config
 import logging
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
 from art.rhevm_api.utils import test_utils
-
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import disks
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
-
-import config
 
 LOGGER = logging.getLogger(__name__)
 
-ENUMS = config.ENUMS
 STORAGE_DOMAIN_API = test_utils.get_api('storage_domain', 'storagedomains')
 
 VM_NO_DISKS = 'no_disk_vm'
@@ -158,7 +155,6 @@ class TestCase231819(TestCase):
     tcms_plan_id = '2339'
     tcms_test_case = '231819'
 
-    @bz(1000789)
     @tcms(tcms_plan_id, tcms_test_case)
     def test_create_vm_from_template(self):
         """ creates vms from templates

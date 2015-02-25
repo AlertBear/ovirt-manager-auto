@@ -6,7 +6,6 @@ https://tcms.engineering.redhat.com/plan/12057
 import logging
 import shlex
 import os
-
 from art.rhevm_api.tests_lib.low_level.disks import deleteDisk
 from art.rhevm_api.tests_lib.low_level.hosts import (
     waitForHostsStates, getSPMHost, getHostIP,
@@ -18,13 +17,11 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import (
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
-
 from art.rhevm_api.utils.test_utils import restartVdsmd, restartOvirtEngine
 from rhevmtests.storage.helpers import (
     get_vm_ip, create_vm_or_clone,
 )
 from rhevmtests.storage.storage_single_disk_snapshot import helpers
-
 from art.unittest_lib import StorageTest as BaseTestCase
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level.vms import (
@@ -35,14 +32,10 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     wait_for_vm_snapshots, get_vm_state, safely_remove_vms,
     get_vms_disks_storage_domain_name,
 )
-
 from art.unittest_lib import attr
-
 from utilities.machine import Machine, LINUX
-
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler import exceptions
-
 from rhevmtests.storage.storage_single_disk_snapshot import config
 
 logger = logging.getLogger(__name__)
@@ -362,6 +355,7 @@ class TestCase289572(BasicEnvironment):
     """
     __test__ = True
     tcms_test_case = '289572'
+    bz = {'1120232': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
     def setUp(self):
         self.disk_count = 2
@@ -369,7 +363,6 @@ class TestCase289572(BasicEnvironment):
         super(TestCase289572, self).setUp()
         assert self._prepare_fs_on_devs()
 
-    @bz({"1120232": {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_suspended_vm(self):
         """

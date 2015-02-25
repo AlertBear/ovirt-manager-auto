@@ -1,24 +1,20 @@
-from art.unittest_lib import StorageTest as TestCase
+import config
+import common
 import logging
+from art.unittest_lib import StorageTest as TestCase
 import time
 from threading import Thread
 from art.rhevm_api.utils import log_listener
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from nose.plugins.attrib import attr
-
-import config
-import common
-
 from art.rhevm_api.tests_lib.low_level.vms import (
     validateSnapshot, removeSnapshot,
     addSnapshot, startVm, stop_vms_safely, waitForVMState, waitForVmsGone,
     cloneVmFromTemplate, removeVm, VM_API,
 )
-
 from art.rhevm_api.tests_lib.low_level.vms import (
     suspendVm, wait_for_vm_states, get_vm_state,
 )
-
 from art.rhevm_api.utils.test_utils import wait_for_tasks, restartVdsmd
 from art.rhevm_api.tests_lib.low_level.datacenters import (
     wait_for_datacenter_state_api,
@@ -99,6 +95,7 @@ class TestCase287892(RestartVDSM):
     tcms_plan_id = '10029'
     tcms_test_case = '287892'
     snapshot_name = 'snapshot_%s' % tcms_test_case
+    bz = {'1069610': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
     def tearDown(self):
         super(TestCase287892, self).tearDown()
@@ -129,7 +126,6 @@ class TestCase287892(RestartVDSM):
             "Snapshot %s doesn't exists!" % self.snapshot_name)
 
     @tcms(tcms_plan_id, tcms_test_case)
-    @bz({'1069610': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     def test_restart_before_tasks_start(self):
         """
         Restart VDSM before tasks were sent to it - snapshot creation

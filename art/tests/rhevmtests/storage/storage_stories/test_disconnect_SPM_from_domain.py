@@ -3,11 +3,10 @@ from art.unittest_lib import StorageTest as TestCase, attr
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
 from art.rhevm_api.tests_lib.high_level import datacenters
 from utilities.utils import getIpAddressByHostName
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.utils.test_utils import get_api
 import art.rhevm_api.utils.iptables as ip_action
-
 from art.test_handler import exceptions
 from sys import modules
 
@@ -115,7 +114,6 @@ class TestCase174611(BaseTestCase):
     tcms_test_case = '174611'
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
-    @bz('842257')
     def test_disconnect_host_from_storage(self):
         """
         Block connection from one host to storage server.

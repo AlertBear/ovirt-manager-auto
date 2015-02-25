@@ -3,6 +3,7 @@
 """
 All test-exposing bugs
 """
+import config
 import logging
 import os
 from art.rhevm_api.utils.log_listener import watch_logs
@@ -21,11 +22,8 @@ from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import disks as ll_disks
 from art.rhevm_api.tests_lib.low_level import hosts
-
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
-
-import config
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +130,6 @@ class TestCase355191(TestCase):
         self.storage_domain = storagedomains.getDCStorages(
             config.DATA_CENTER_NAME, False)[0].get_name()
 
-    @bz(BZID)
     @tcms(tcms_plan_id, tcms_test_case)
     def test_add_multiple_bootable_disks(self):
         """
@@ -217,7 +214,6 @@ class TestCase305452(TestCase):
             raise errors.VMException("Cannot delete vm %s" %
                                      config.VM_BASE_NAME)
 
-    @bz(1002249)
     @tcms(tcms_plan_id, tcms_test_case)
     def test_create_template_from_vm(self):
         """ creates template from vm

@@ -7,7 +7,7 @@ from art.rhevm_api.tests_lib.low_level.datacenters import get_data_center
 from art.rhevm_api.tests_lib.low_level.templates import (
     createTemplate, removeTemplate,
 )
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 import config
 from helpers import (
     get_spuuid, get_sduuid, get_imguuid, get_voluuid,
@@ -483,6 +483,7 @@ class TestCase389851(BasicEnvironment):
     tcms_test_case = '389851'
     disk_count = 2
     snapshot_success = False
+    bz = {'1115556': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
     def setUp(self):
         super(TestCase389851, self).setUp()
@@ -502,7 +503,6 @@ class TestCase389851(BasicEnvironment):
             removeSnapshot(True, VM1_NAME, VM1_SNAPSHOT1_DESCRIPTION)
         super(TestCase389851, self).tearDown()
 
-    @bz({'1115556': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_prepare_image_without_volume_id(self):
         """
@@ -528,9 +528,9 @@ class TestCase389852(BasicEnvironment):
     __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
     tcms_test_case = '389852'
     disk_count = 1
+    bz = ({'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']},
+           '1184718': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
 
-    @bz({'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']},
-         '1184718': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_prepare_image_with_1_invalid_parameter(self):
         """
@@ -573,8 +573,8 @@ class TestCase389853(BasicEnvironment):
     __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
     tcms_test_case = '389853'
     disk_count = 2
+    bz = {'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
-    @bz({'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_prepare_image_with_several_invalid_parameters(self):
         """
@@ -774,6 +774,7 @@ class TestCase389924(BasicEnvironment):
     tcms_test_case = '389924'
     disk_count = 4
     vm_name = VM2_NAME
+    bz = {'1184718': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
     def setUp(self):
         logger.info('Powering off VM %s', self.vm_name)
@@ -798,7 +799,6 @@ class TestCase389924(BasicEnvironment):
             detachDisk(True, disk_alias, self.vm_name)
             deleteDisk(True, disk_alias)
 
-    @bz({'1184718': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_prepare_image_with_large_disk_marked_for_wipe_after_delete(self):
         """
@@ -997,9 +997,9 @@ class TestCase389940(BasicEnvironment):
     __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
     tcms_test_case = '389940'
     disk_count = 1
+    bz = ({'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']},
+           '1184718': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
 
-    @bz({'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']},
-         '1184718': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_teardown_image_with_1_invalid_parameter(self):
         """
@@ -1041,8 +1041,8 @@ class TestCase389943(BasicEnvironment):
     __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
     tcms_test_case = '389943'
     disk_count = 2
+    bz = {'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
-    @bz({'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_prepare_image_with_several_invalid_parameters(self):
         """

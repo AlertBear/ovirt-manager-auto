@@ -1,10 +1,9 @@
+import config
+import logging
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
-import logging
 from concurrent.futures import ThreadPoolExecutor
-
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
-
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import storageconnections
@@ -16,8 +15,6 @@ from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.high_level import datastructures
-
-import config
 
 LOGGER = logging.getLogger(__name__)
 
@@ -161,7 +158,6 @@ class TestCase288985(TestCase):
         self.add_connection_with_empty_sth('lun_address')
 
     @tcms(tcms_plan_id, tcms_test_case)
-    @bz(1006449)
     def test_adding_storage_connection_without_port(self):
         """ try to add an iscsi storage connection without LUN port
         """
@@ -252,7 +248,6 @@ class TestCase288986(TestCase):
         self.change_connection_without_sth(self.conn_1, 'lun_address')
 
     @tcms(tcms_plan_id, tcms_test_case)
-    @bz(1006449)
     def test_changing_storage_connection_without_port(self):
         """ try to change an iscsi connection and set LUN port to nothing
         """
@@ -264,7 +259,6 @@ class TestCase288986(TestCase):
             storageconnections.StorageConnection = old_conn
 
     @tcms(tcms_plan_id, tcms_test_case)
-    @bz(1005284)
     def test_changing_storage_connection_without_target(self):
         """ try to change an iscsi connection and set LUN target to nothing
         """
@@ -552,7 +546,6 @@ class TestCase288963(TestCase):
         self.disks.remove(alias)
 
     @tcms(tcms_plan_id, tcms_test_case)
-    @bz(1012944)
     def test_get_storage_connections(self):
         """ Verify that GET call works for various connection/storage domains
         combinations
