@@ -44,8 +44,7 @@ class LogCollectorTestCaseBase(base.RHEVMUtilsTestCase):
     _multiprocess_can_split_ = True
 
     def setUp(self):
-        if not unittest_conf.GOLDEN_ENV:
-            super(LogCollectorTestCaseBase, self).setUp()
+        super(LogCollectorTestCaseBase, self).setUp()
         self.kwargs = {}
         if unittest_conf.OUTPUT_DIR:
             self.kwargs = {'output': unittest_conf.OUTPUT_DIR}
