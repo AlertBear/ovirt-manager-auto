@@ -31,10 +31,10 @@ def setup_package():
                                     config.EXPORT_STORAGE_DOMAIN)
     for os, template in config.TEMPLATES.iteritems():
         vm_name = 'vm_%s' % template['name']
-        assert templates.importTemplate(
+        assert templates.import_template(
             True, template=template['name'],
-            export_storagedomain=config.EXPORT_STORAGE_DOMAIN,
-            import_storagedomain=config.STORAGE_DOMAIN,
+            source_storage_domain=config.EXPORT_STORAGE_DOMAIN,
+            destination_storage_domain=config.STORAGE_DOMAIN,
             cluster=config.CLUSTER_NAME[0], name=template['name'])
         assert vms.createVm(True, vm_name, vm_name,
                             cluster=config.CLUSTER_NAME[0],

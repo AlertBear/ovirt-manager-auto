@@ -15,7 +15,7 @@ from art.rhevm_api.tests_lib.high_level.networks import(
     remove_net_from_setup, createAndAttachNetworkSN
 )
 from art.rhevm_api.tests_lib.low_level.templates import(
-    importTemplate, removeTemplate, check_vnic_on_template_nic
+    import_template, removeTemplate, check_vnic_on_template_nic
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import(
     getStorageDomainNamesForType
@@ -145,10 +145,10 @@ class TestIECase02(TestCase):
         )[0]
         for name in (None, config.IMP_MORE_THAN_ONCE_TEMP):
             log_temp = name if name is not None else config.IE_TEMPLATE
-            if not importTemplate(
+            if not import_template(
                     positive=True, template=config.IE_TEMPLATE,
-                    export_storagedomain=config.EXPORT_STORAGE_NAME,
-                    import_storagedomain=sd_name,
+                    source_storage_domain=config.EXPORT_STORAGE_NAME,
+                    destination_storage_domain=sd_name,
                     cluster=config.CLUSTER_NAME[0],
                     name=name
             ):
@@ -275,10 +275,10 @@ class TestIECase03(TestCase):
             datacenter_name=config.DC_NAME[0],
             storage_type=config.STORAGE_TYPE
         )[0]
-        if not importTemplate(
+        if not import_template(
                 positive=True, template=config.IE_TEMPLATE,
-                export_storagedomain=config.EXPORT_STORAGE_NAME,
-                import_storagedomain=sd_name,
+                source_storage_domain=config.EXPORT_STORAGE_NAME,
+                destination_storage_domain=sd_name,
                 cluster=config.CLUSTER_NAME[0]
         ):
             raise NetworkException("Cannot import Template to the setup ")

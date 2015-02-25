@@ -100,7 +100,7 @@ class TestCase281164(TestCase):
         host_ip = hosts.getHostIP(host)
 
         LOGGER.info("Start importing template")
-        assert templates.importTemplate(
+        assert templates.import_template(
             True, self.templ_name, self.export_domain, self.storage_domain,
             config.CLUSTER_NAME, async=True)
 
@@ -124,7 +124,7 @@ class TestCase281164(TestCase):
                                               timeout=1200)
 
         LOGGER.info("Importing second time")
-        assert templates.importTemplate(
+        assert templates.import_template(
             True, self.templ_name, self.export_domain, self.storage_domain,
             config.CLUSTER_NAME)
 

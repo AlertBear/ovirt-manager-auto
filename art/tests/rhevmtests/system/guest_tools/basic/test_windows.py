@@ -32,11 +32,11 @@ class Windows(TestCase):
         cls.platf = '64' if '64' in cls.vmName else ''
         SKIP_CASE = '2008' in cls.vmName or '2012' in cls.vmName
 
-        templates.importTemplate(
+        templates.import_template(
             True,
             template=cls.vmName,
-            export_storagedomain=config.EXPORT_STORAGE_DOMAIN,
-            import_storagedomain=config.STORAGE_DOMAIN,
+            source_storage_domain=config.EXPORT_STORAGE_DOMAIN,
+            destination_storage_domain=config.STORAGE_DOMAIN,
             cluster=config.CLUSTER_NAME[0],
             name=cls.vmName,
         )

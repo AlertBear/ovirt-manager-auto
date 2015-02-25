@@ -1025,10 +1025,12 @@ class ImportExportTemplate(BaseTemplateClass):
             raise errors.TemplateException("Cannot remove template %s" %
                                            self.template_name)
         logger.info("Import template %s from export domain")
-        self.assertTrue(templates.importTemplate(True, self.template_name,
-                                                 export_domain,
-                                                 self.master_domain,
-                                                 config.CLUSTER_NAME[0]))
+        self.assertTrue(
+            templates.import_template(
+                True, self.template_name, export_domain,
+                self.master_domain, config.CLUSTER_NAME[0]
+            )
+        )
 
 ########################################################################
 

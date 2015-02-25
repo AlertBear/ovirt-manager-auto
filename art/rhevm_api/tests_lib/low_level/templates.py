@@ -491,40 +491,61 @@ def exportTemplate(positive, template, storagedomain, exclusive='false',
 
 
 @is_action()
-def importTemplate(positive, template, export_storagedomain,
-                   import_storagedomain, cluster, name=None,
-                   async=False):
-    '''
-    Description: import template
-    Author: edolinin
-    Parameters:
-       * template - name of template that should be imported
-       * cluster - cluster to use
-       * export_storagedomain - storage domain from where export the template
-       * import_storagedomain - storage domain to where import the template
-       * name - new name of template
-    Return: status (True if template was imported properly, False otherwise)
-    '''
+def import_template(positive, template, source_storage_domain,
+                    destination_storage_domain, cluster, name=None,
+                    async=False):
+    """
+    Description: import template from export_domain
+    _author_: edolinin
+    :param positive: True if success, False otherwise
+    :type positive: bool
+    :param template: name of template to be imported
+    :type template: str
+    :param source_storage_domain: from which to export the template
+    :type source_storage_domain: str
+    :param destination_storage_domain: which to import the template
+    :type destination_storage_domain: str
+    :param cluster: cluster into which template will be imported
+    :type cluster: str
+    :param name: new name for the imported template
+    :type name: str
+    :param async: True wait for response, False otherwise
+    :type async: bool
+    :returns: True if function should wait for response, False otherwise
+    :rtype: bool
+    """
 
-    expStorDomObj = SD_API.find(export_storagedomain)
-    templObj = TEMPLATE_API.getElemFromElemColl(expStorDomObj, template)
+    export_storage_domain_obj = SD_API.find(source_storage_domain)
+    template_obj = TEMPLATE_API.getElemFromElemColl(
+        export_storage_domain_obj,
+        template
+    )
 
-    sd = StorageDomain(name=import_storagedomain)
+    sd = StorageDomain(name=destination_storage_domain)
     cl = Cluster(name=cluster)
 
-    actionParams = dict(storage_domain=sd, cluster=cl, async=async)
+    action_params = dict(
+        storage_domain=sd,
+        cluster=cl,
+        async=async
+    )
 
-    actionName = 'import'
+    action_name = 'import'
     if opts['engine'] in ('cli', 'sdk'):
-        actionName = 'import_template'
+        action_name = 'import_template'
 
     if name is not None:
-        actionParams['clone'] = True
-        newTemplate = Template(name=name)
-        actionParams['template'] = newTemplate
+        action_params['clone'] = True
+        new_template = Template(name=name)
+        action_params['template'] = new_template
 
-    status = TEMPLATE_API.syncAction(templObj, actionName, positive,
-                                     **actionParams)
+    status = TEMPLATE_API.syncAction(
+        template_obj,
+        action_name,
+        positive,
+        **action_params
+    )
+
     if not async:
         time.sleep(30)
 

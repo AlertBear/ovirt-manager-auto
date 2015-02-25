@@ -106,9 +106,9 @@ class TestCase174617(TestCase):
                 logger.info("Importing template %s from %s to %s",
                             self.template_name, self.export_domain, new_name)
                 execution.append([
-                    new_name, templates.importTemplate,
+                    new_name, templates.import_template,
                     executor.submit(
-                        templates.importTemplate, True, self.template_name,
+                        templates.import_template, True, self.template_name,
                         self.export_domain, self.storage_domain,
                         config.CLUSTER_NAME, new_name)])
 
