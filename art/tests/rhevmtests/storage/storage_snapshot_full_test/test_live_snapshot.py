@@ -85,7 +85,6 @@ def setup_module():
         for host, vm_name in [(SPM, VM_ON_SPM), (HSM, VM_ON_HSM)]:
             args['vmName'] = vm_name % storage_type
             args['vmDescription'] = vm_name % storage_type
-            args['placement_host'] = host
             helpers.prepare_vm(**args)
 
             VM_LIST.append(args['vmName'])
