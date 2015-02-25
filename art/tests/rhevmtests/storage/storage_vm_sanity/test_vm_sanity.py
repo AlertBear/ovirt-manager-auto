@@ -19,7 +19,7 @@ from art.rhevm_api.utils import log_listener
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 
 import config
-from rhevmtests.storage.helpers import get_vm_ip
+from rhevmtests.storage.helpers import get_vm_ip, create_vm_or_clone
 
 LOGGER = logging.getLogger(__name__)
 GB = 1024 * 1024 * 1024
@@ -57,7 +57,7 @@ def _create_vm(vm_name, vm_description, disk_interface,
     LOGGER.info("Creating VM %s" % vm_name)
     storage_domain = storagedomains.getStorageDomainNamesForType(
         config.DATA_CENTER_NAME, storage_type)[0]
-    return vms.createVm(
+    return create_vm_or_clone(
         True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
         nic=config.NIC_NAME[0], storageDomainName=storage_domain,
         size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,

@@ -23,12 +23,12 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import (
 from art.unittest_lib import StorageTest as BaseTestCase
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level.vms import (
-    stop_vms_safely, createVm, waitForVMState, startVm, removeVm,
+    stop_vms_safely, waitForVMState, startVm, removeVm,
     waitForVmDiskStatus, addSnapshot, removeSnapshot, cloneVmFromTemplate,
     removeVms,
 )
 from art.unittest_lib import attr
-from rhevmtests.storage.helpers import perform_dd_to_disk
+from rhevmtests.storage.helpers import perform_dd_to_disk, create_vm_or_clone
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +104,7 @@ def setup_module():
     executions = []
     with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
         for args in [vm1_args, vm2_args]:
-            executions.append(executor.submit(createVm, **args))
+            executions.append(executor.submit(create_vm_or_clone, **args))
 
     # Ensure that all threads have completed execution
     [execution.result() for execution in executions]
