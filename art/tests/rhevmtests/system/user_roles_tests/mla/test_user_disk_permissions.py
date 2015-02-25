@@ -147,6 +147,9 @@ class DPCase147122(TestCase):
     """
     __test__ = True
 
+    # RHEVM-1461
+    apis = set(['rest'])
+
     @classmethod
     def setup_class(cls):
         mla.addStoragePermissionsToUser(True, config.USER_NAME,
@@ -310,6 +313,9 @@ class DPCase147125(TestCase):
     To activate/deactivate user must have an manipulate permissions on VM.
     """
     __test__ = True
+
+    # FIXME: https://projects.engineering.redhat.com/browse/RHEVM-1727
+    apis = TestCase.apis - set(['cli'])
 
     def setUp(self):
         self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
@@ -556,6 +562,9 @@ class DPCase147130(TestCase):
     disks and on the vm.
     """
     __test__ = True
+
+    # FIXME: https://projects.engineering.redhat.com/browse/RHEVM-1727
+    apis = DPCase147125.apis - set(['cli'])
 
     def setUp(self):
         vms.createVm(

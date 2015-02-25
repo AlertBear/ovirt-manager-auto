@@ -84,6 +84,9 @@ class RoleCase54413(TestCase):
     """
     __test__ = True
 
+    # https://projects.engineering.redhat.com/browse/RHEVM-1754
+    apis = TestCase.apis - set(['java', 'sdk'])
+
     @tcms(TCMS_PLAN_ID, 54413)
     @istest
     def createRolePerms(self):
@@ -159,6 +162,9 @@ class RoleCase54401(TestCase):
     """
     __test__ = True
 
+    # FIXME: RHEVM-1758
+    apis = TestCase.apis - set(['cli'])
+
     @tcms(TCMS_PLAN_ID, 54401)
     @istest
     def editRole(self):
@@ -224,6 +230,9 @@ class RoleCase54401(TestCase):
 class RoleCase54415(TestCase):
     """ Try to get list of roles as user and non-admin user """
     __test__ = True
+
+    # https://projects.engineering.redhat.com/browse/RHEVM-1754
+    apis = TestCase.apis - set(['java', 'sdk'])
 
     @tcms(TCMS_PLAN_ID, 54415)
     @istest
