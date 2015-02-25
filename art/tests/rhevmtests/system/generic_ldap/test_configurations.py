@@ -5,66 +5,57 @@ __test__ = True
 
 import logging
 
-from rhevmtests.system.generic_ldap import config, common
+from rhevmtests.system.generic_ldap import common, config
 from art.rhevm_api.tests_lib.low_level import mla
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 from nose.tools import istest
 
+
 LOGGER = logging.getLogger(__name__)
-EXTENSIONS = {}
-NAME = __name__
-NAME = NAME[NAME.rfind('.') + 1:]
+DOMAIN_NAMES = []
 
 
 def setup_module():
-    common.prepareExtensions(NAME, config.ENGINE_EXTENSIONS_DIR, EXTENSIONS)
+    global DOMAIN_NAMES
+    DOMAIN_NAMES = [
+        domain.get_name() for domain in mla.domUtil.get(absLink=False)
+    ]
+    LOGGER.info('Enabled domains are:\n%s', '\n'.join(DOMAIN_NAMES))
 
 
-def teardown_module():
-    common.cleanExtDirectory(config.ENGINE_EXTENSIONS_DIR)
+class Configuration(TestCase):
+    __test__ = False
+
+    def _isExtensionAvailable(self, extName):
+        LOGGER.info('Checking for existence of %s.', extName)
+        return extName in DOMAIN_NAMES
 
 
 @attr(tier=1)
-class WrongConfiguration(TestCase):
+class WrongConfiguration(Configuration):
     '''
     Test if wrong configuration is ignored.
     '''
     __test__ = True
     conf = config.WRONG_EXTENSION
 
-    def setUp(self):
-        self.domains = mla.domUtil.get(absLink=False)
-
     @istest
-    @common.check(EXTENSIONS)
+    @common.check(config.EXTENSIONS)
     def wrongConfiguration(self):
         ''' wrong configuration '''
-        LOGGER.info('Checking for existence of %s.', self.conf['authz_name'])
-        res = filter(lambda d: d.get_name() == self.conf['authz_name'],
-                     self.domains)
-        self.assertEqual(len(res), 0, 'Configuration %s was added' % self.conf)
-        LOGGER.info('Enabled domains are: %s',
-                    [d.get_name() for d in self.domains])
+        self.assertFalse(self._isExtensionAvailable(self.conf['authz_name']))
 
 
 @attr(tier=1)
-class DisabledConfiguration(TestCase):
+class DisabledConfiguration(Configuration):
     '''
-    Test if disabled configuration is skipped.
+    Test if disabled configuration is ignored.
     '''
     __test__ = True
     conf = config.DISABLED_EXTENSION
 
-    def setUp(self):
-        self.domains = mla.domUtil.get(absLink=False)
-
     @istest
-    @common.check(EXTENSIONS)
+    @common.check(config.EXTENSIONS)
     def disabledConfiguration(self):
         ''' disabled configuration '''
-        LOGGER.info('Checking for existence of %s.', self.conf['authz_name'])
-        res = filter(lambda d: d.get_name() == self.conf['authz_name'],
-                     self.domains)
-        self.assertEqual(len(res), 0, 'Configuration %s was added' % self.conf)
-        LOGGER.info('Enabled domains are: %s',
-                    [d.get_name() for d in self.domains])
+        self.assertFalse(self._isExtensionAvailable(self.conf['authz_name']))

@@ -12,10 +12,13 @@ ENGINE_PROPERTIES = 'ENGINE_PROPERTIES'
 KRB_JAVA = 'java.security.krb5.conf'
 PROPERTIES_DIRECTORY = '/etc/ovirt-engine/engine.conf.d'
 APACHE_EXTENSIONS = '/etc/httpd/conf.d'
-EXTENSIONS_PKG = 'ovirt-engine-extension-aaa-*'
+MISC_PKG = 'ovirt-engine-extension-aaa-misc'
 KRB_MODULE = 'mod_auth_kerb'
 DEFAULT_CLUSTER_NAME = 'Default'
 USERROLE = ENUMS['role_name_user_role']
+EXTENSIONS = {}
+TRUSTSTORE = '/tmp/adw2k12r2.ts'
+TRUSTSTORE_PASSWORD = '123456'
 
 # Extensions properties
 WRONG_EXTENSION = {

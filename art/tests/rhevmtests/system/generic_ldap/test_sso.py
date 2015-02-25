@@ -13,10 +13,7 @@ from nose.tools import istest
 
 
 LOGGER = logging.getLogger(__name__)
-EXTENSIONS = {}
 APACHE_EXTENSIONS = {}
-NAME = __name__
-NAME = NAME[NAME.rfind('.') + 1:]
 KRB5_CONF = 'krb5.conf'
 KEYTAB = '/etc/http.keytab'
 APACHE_FIXTURES = 'apache'
@@ -29,7 +26,9 @@ def setup_module():
     add_keytab = 'ktadd -keytab %s HTTP/%s' % (KEYTAB, fqdn)
 
     with config.ENGINE_HOST.executor().session() as engine:
-        engine.run_cmd(['yum', 'install', '-y', config.KRB_MODULE])
+        engine.run_cmd([
+            'yum', 'install', '-y', config.KRB_MODULE, config.MISC_PKG
+        ])
         with config.OPENLDAP_HOST.executor().session() as openldap:
             openldap.run_cmd(['kadmin.local', '-q', add_principal])
             openldap.run_cmd(['kadmin.local', '-q', add_keytab])
@@ -39,8 +38,6 @@ def setup_module():
                     LOGGER.info('%s was created.' % KEYTAB)
             openldap.run_cmd(['rm', '-f', KEYTAB])
 
-    common.prepareExtensions(NAME, config.ENGINE_EXTENSIONS_DIR, EXTENSIONS,
-                             chown='ovirt', clean=False)
     users.addUser(True, user_name=config.SSO_USER,
                   domain=config.OPENLDAP_SSO['authz_name'])
     mla.addClusterPermissionsToUser(True, config.SSO_USER,
@@ -57,13 +54,14 @@ def teardown_module():
     config.OPENLDAP_HOST.executor().run_cmd(
         ['kadmin.local', '-q', delete_principal])
     with config.ENGINE_HOST.executor().session() as ss:
-        ss.run_cmd(['yum', 'remove', '-y', config.KRB_MODULE])
+        ss.run_cmd([
+            'yum', 'remove', '-y', config.KRB_MODULE, config.MISC_PKG
+        ])
         ss.run_cmd(['rm', '-f', KEYTAB])
     common.cleanExtDirectory(config.APACHE_EXTENSIONS, [APACHE_CONF])
     config.ENGINE_HOST.service(config.APACHE_SERVICE).restart()
     common.loginAsAdmin()
     users.removeUser(True, config.SSO_USER, config.OPENLDAP_SSO['authz_name'])
-    common.cleanExtDirectory(config.ENGINE_EXTENSIONS_DIR)
 
 
 @attr(tier=1)
@@ -86,7 +84,7 @@ class SSOLogin(TestCase):
             ss.run_cmd(['rm', '-f', cls.cookie_file])
 
     @istest
-    @common.check(EXTENSIONS)
+    @common.check(config.EXTENSIONS)
     def sso_login(self):
         """  Test sso login to REST API """
         krb_conf = os.path.join(config.ENGINE_EXTENSIONS_DIR, KRB5_CONF)

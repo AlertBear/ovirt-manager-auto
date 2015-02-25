@@ -7,15 +7,11 @@ import os
 import logging
 
 from rhevmtests.system.generic_ldap import config, common
-from art.test_handler.tools import bz
 from art.rhevm_api.tests_lib.low_level import users, mla
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 from nose.tools import istest
 
 LOGGER = logging.getLogger(__name__)
-EXTENSIONS = {}
-NAME = __name__
-NAME = NAME[NAME.rfind('.') + 1:]
 CONF_NAME = '99-krb_ipa.conf'
 KRB_CONF = 'krb_ipa.conf'
 
@@ -24,13 +20,12 @@ def setup_module():
     krb_conf_path = os.path.join(config.ENGINE_EXTENSIONS_DIR, KRB_CONF)
     krbjava = '%s=%s' % (config.KRB_JAVA, krb_conf_path)
     common.changeEngineProperties(CONF_NAME, config.ENGINE_PROPERTIES, krbjava)
-    common.prepareExtensions(NAME, config.ENGINE_EXTENSIONS_DIR, EXTENSIONS)
+    common.enableExtensions(config.OVIRT_SERVICE, config.ENGINE_HOST)
 
 
 def teardown_module():
     conf = os.path.join('%s/%s' % (config.PROPERTIES_DIRECTORY, CONF_NAME))
     common.removeFile(conf)
-    common.cleanExtDirectory(config.ENGINE_EXTENSIONS_DIR)
 
 
 @attr(tier=1)
@@ -83,8 +78,7 @@ class ADDigestMD5(DirectLogin):
     DOMAIN = config.ADDIGEST_USER_DOMAIN
 
     @istest
-    @common.check(EXTENSIONS)
-    @bz(1151127)
+    @common.check(config.EXTENSIONS)
     def ad_digest_md5(self):
         """ active directory digest md5 authentication """
         self.login()
@@ -100,7 +94,7 @@ class IPAGSSAPI(DirectLogin):
     PASSWORD = config.IPAGSSAPI_PASSWORD
 
     @istest
-    @common.check(EXTENSIONS)
+    @common.check(config.EXTENSIONS)
     def ipa_gssapi(self):
         """ IPA gssapi authentication """
         self.login()
