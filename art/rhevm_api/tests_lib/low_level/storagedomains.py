@@ -25,7 +25,10 @@ from art.core_api.validator import compareCollectionSize
 from art.rhevm_api.tests_lib.low_level.clusters import removeCluster
 from art.rhevm_api.tests_lib.low_level.datacenters import removeDataCenter
 from art.rhevm_api.tests_lib.low_level.disks import (
-    getStorageDomainDisks, deleteDisk, waitForDisksGone,
+    getStorageDomainDisks,
+    deleteDisk,
+    waitForDisksGone,
+    wait_for_disks_status,
 )
 from art.rhevm_api.tests_lib.low_level.hosts import (
     deactivateHost, removeHost, getHostCompatibilityVersion,
@@ -57,6 +60,7 @@ Host = getDS('Host')
 Storage = getDS('Storage')
 LogicalUnit = getDS('LogicalUnit')
 DataCenter = getDS('DataCenter')
+Cluster = getDS('Cluster')
 
 ELEMENT = 'storage_domain'
 COLLECTION = 'storagedomains'
@@ -72,6 +76,9 @@ connUtil = get_api('storage_connection', 'storageconnections')
 
 xpathMatch = is_action(
     'xpathStoragedomains', id_name='xpathMatch')(XPathMatch(util))
+
+ONE_ONLY = 1
+TIMEOUT = 600
 
 
 def _prepareStorageDomainObject(positive, **kwargs):
@@ -1791,3 +1798,199 @@ def getStorageDomainNamesForType(datacenter_name, storage_type):
             and sdObj.get_storage().get_type() == storage_type
             and sdObj.get_status().get_state() ==
             ENUMS['storage_domain_state_active']]
+
+
+class GlanceImage(object):
+    """Represents an image resides in glance like storage domain.
+
+     Args:
+      image_name (str): image name as it appears in glance
+      glance_repository_name: glance attached to your engine
+    """
+
+    def __init__(self, image_name, glance_repository_name):
+        self._image_name = image_name
+        self._glance_repository_name = glance_repository_name
+        self._disk_name = None
+        self._disk_id = None
+        self._imported_disk_name = None
+        self._imported_template_name = None
+        self._disk_status = None
+        self._destination_storage_domain = None
+        self._is_imported_as_template = None
+
+    @property
+    def image_name(self):
+        return self._image_name
+
+    @property
+    def glance_repository_name(self):
+        return self._glance_repository_name
+
+    @property
+    def disk_id(self):
+        return self._disk_id
+
+    @property
+    def disk_name(self):
+        return self._disk_name
+
+    @property
+    def imported_disk_name(self):
+        return self._imported_disk_name
+
+    @property
+    def imported_template_name(self):
+        return self._imported_template_name
+
+    @property
+    def disk_status(self):
+        return self._disk_status
+
+    @property
+    def destination_storage_domain(self):
+        return self._destination_storage_domain
+
+    @property
+    def is_imported_as_template(self):
+        return self._is_imported_as_template
+
+    def _is_glance_disk_added(self, disks_list_before_addition):
+
+        self._imported_disk_name, self._disk_id = (
+            self._get_new_disk_name_and_id(
+                disks_list_before_addition
+            )
+        )
+
+        if self.imported_disk_name is None:
+            return False
+
+        return True
+
+    def _get_disk_name_by_id(self, storage_domain_name):
+        disks_list = getStorageDomainDisks(
+            storage_domain_name, False
+        )
+        for disk in disks_list:
+            if disk.get_id() == self.disk_id:
+                return disk.get_name()
+
+        return None
+
+    def _get_new_disk_name_and_id(self, disks_list_before_addition):
+
+        get_disks_ids = lambda d: [x.get_id() for x in d]
+        disk_ids_before = get_disks_ids(disks_list_before_addition)
+
+        storage_domain_obj = StorageDomain(
+            name=self.destination_storage_domain
+        )
+        disks_list = getStorageDomainDisks(
+            storage_domain_obj.get_name(), False
+        )
+        disk_ids_now = get_disks_ids(disks_list)
+
+        new_disk_id = list(set(disk_ids_now) - set(disk_ids_before))
+
+        if len(new_disk_id) != ONE_ONLY:
+            util.logger.error(
+                "Something went wrong, can't know what is the new disk ID"
+            )
+            return None, None
+
+        self._disk_id = ''.join(new_disk_id)
+
+        return (
+            self._get_disk_name_by_id(storage_domain_obj.get_name()),
+            self.disk_id,
+        )
+
+    def _is_import_success(self, disks_list_before_addition):
+
+        if self._is_glance_disk_added(disks_list_before_addition):
+            self._disk_name, self._disk_id = self._get_new_disk_name_and_id(
+                disks_list_before_addition
+            )
+
+            if self.disk_name is not None:
+                if not wait_for_disks_status(
+                        self.disk_id, key='id',
+                        timeout=TIMEOUT):
+                    return False
+
+                self._disk_status = ENUMS['disk_state_ok']
+                util.logger.info(
+                    "Disk {0} ID {1} have been imported successfully".format(
+                        self.disk_name, self.disk_id
+                    )
+                )
+                return True
+
+        return False
+
+    def import_image(
+            self, destination_storage_domain, cluster_name,
+            import_as_template=False, async=False):
+        """
+        Description: Import images from glance type storage domain
+        :param destination_storage_domain: Name of storage domain to import to
+        :type destination_storage_domain: str
+        :param cluster_name: Name of cluster to import to.
+        :type cluster_name: str
+        :param import_as_template: True for template, False otherwise
+        :type import_as_template: bool.
+        :param async: False don't wait for response, wait otherwise
+        :type async: bool
+        :returns: status of creation of disk/template
+        :rtype: bool
+        """
+        self._destination_storage_domain = destination_storage_domain
+        self._is_imported_as_template = import_as_template
+
+        source_sd_obj = util.find(self._glance_repository_name)
+        destination_sd_obj = StorageDomain(name=destination_storage_domain)
+
+        all_images = util.getElemFromLink(
+            source_sd_obj,
+            link_name='images',
+            attr='image',
+            get_href=False
+        )
+
+        source_image_obj = filter(
+            lambda x: x.get_name() == self.image_name, all_images
+        )[0]
+
+        cluster_obj = Cluster(name=cluster_name)
+
+        action_params = dict(
+            storage_domain=destination_sd_obj,
+            cluster=cluster_obj, async=async,
+            import_as_template=import_as_template,
+            )
+
+        disks_list_before_addition = getStorageDomainDisks(
+            destination_storage_domain, False
+        )
+
+        status = util.syncAction(
+            source_image_obj,
+            'import',
+            True,
+            **action_params
+        )
+
+        if not async:
+            return self._is_import_success(disks_list_before_addition)
+
+        self._disk_name, self._disk_id = self._get_new_disk_name_and_id(
+            disks_list_before_addition
+        )
+
+        util.logger.warn(
+            "Note that async is %s, you are responsible "
+            "to check if the disk is added", async
+        )
+
+        return status
