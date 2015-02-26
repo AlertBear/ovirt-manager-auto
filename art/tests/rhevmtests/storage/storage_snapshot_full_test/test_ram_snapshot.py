@@ -20,18 +20,19 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import (
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
     updateVm, startVm, addSnapshot, is_snapshot_with_memory_state,
-    stopVm, restoreSnapshot, undo_snapshot_preview, preview_snapshot, addVm,
+    stopVm, restoreSnapshot, undo_snapshot_preview, preview_snapshot,
     removeVm, exportVm, importVm, removeVmFromExportDomain,
     removeSnapshot, kill_process_by_pid_on_vm, shutdownVm,
-    wait_for_vm_snapshots, removeVms, stop_vms_safely,
+    wait_for_vm_snapshots, removeVms, stop_vms_safely,  startVms,
+    cloneVmFromSnapshot, waitForIP, getVmHost,
 )
+
 from art.rhevm_api.tests_lib.high_level.vms import shutdown_vm_if_up
 from art.rhevm_api.tests_lib.high_level.storagedomains import (
     attach_and_activate_domain, detach_and_deactivate_domain,
 )
-from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
-from rhevmtests.storage.helpers import create_vm_or_clone
+from rhevmtests.storage.helpers import create_vm_or_clone, get_vm_ip
 
 logger = logging.getLogger(__name__)
 TCMS_TEST_PLAN = '10134'
@@ -184,8 +185,8 @@ class VMWithMemoryStateSnapshot(DCWithStoragesActive):
         assert status
 
         if cls.persist_network:
-            vm_ip = LookUpVMIpByName('', '').get_ip(cls.vm)
-            logger.info('Setting persistant network on vm %s', cls.vm)
+            vm_ip = get_vm_ip(cls.vm)
+            logger.info('Setting persistent network on vm %s', cls.vm)
             assert setPersistentNetwork(vm_ip, config.VM_PASSWORD)
 
         logger.info('Creating snapshot %s with RAM state', cls.memory_snapshot)
@@ -219,22 +220,11 @@ class CreateSnapshotWithMemoryState(DCWithStoragesActive):
         Set vm to run on specified host the start vm
         """
         super(CreateSnapshotWithMemoryState, cls).setup_class()
-
-        logger.info('Shutting down vm %s', cls.vm)
-        shutdown_vm_if_up(cls.vm)
-
-        cls.host_for_test = cls.spm if cls.run_test_on_spm else cls.hsm
+        logger.info('VM %s', cls.vm)
+        cls.host_for_test = getVmHost(cls.vm)[1]['vmHoster']
         logger.info('Setting vm %s to run on host: %s', cls.vm,
                     cls.host_for_test)
-        kwargs = {'placement_affinity': config.VM_PINNED,
-                  'placement_host': cls.host_for_test}
-        if not updateVm(True, cls.vm, **kwargs):
-            raise errors.VMException('Could not pin vm %s to host %s'
-                                     % (cls.vm, cls.host_for_test))
-
-        logger.info('Starting VM %s', cls.vm)
-        if not startVm(True, cls.vm, wait_for_ip=True):
-            raise errors.VMException('Error when booting vm %s', cls.vm)
+        startVms([cls.vm], wait_for_status=config.VM_UP)
 
     def create_snapshot(self):
         """
@@ -519,6 +509,7 @@ class TestCase294617(VMWithMemoryStateSnapshot):
     tcms_test_case = '294617'
     cloned_vm_name = '%s_%s_cloned' % (
                      VM_PREFIX, VMWithMemoryStateSnapshot.storage)
+    bz = {'1178508': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     def test_create_vm_from_memory_state_snapshot(self):
@@ -530,17 +521,25 @@ class TestCase294617(VMWithMemoryStateSnapshot):
         logger.info('Creating new vm %s from snapshot %s of vm %s',
                     self.cloned_vm_name, self.memory_snapshot, self.vm)
 
-        self.assertTrue(addVm(True,
-                              name=self.cloned_vm_name,
-                              description=self.cloned_vm_name,
-                              snapshot=self.memory_snapshot,
-                              cluster=config.CLUSTER_NAME),
-                        'Could not create vm %s from snapshot %s'
-                        % (self.cloned_vm_name, self.memory_snapshot))
+        self.assertTrue(
+            cloneVmFromSnapshot(
+                True, name=self.cloned_vm_name, cluster=config.CLUSTER_NAME,
+                vm=self.vm, snapshot=self.memory_snapshot,
+                ),
+            'Could not create vm %s from snapshot %s'
+            % (self.cloned_vm_name, self.memory_snapshot)
+        )
 
         logger.info('Starting VM %s', self.cloned_vm_name)
-        self.assertTrue(startVm(True, self.cloned_vm_name, wait_for_ip=True),
-                        'Unable to start VM %s' % self.cloned_vm_name)
+        self.assertTrue(
+            startVms([self.cloned_vm_name], config.VM_UP),
+            'Unable to start VM %s' % self.cloned_vm_name
+        )
+        status, ip = waitForIP(self.cloned_vm_name)
+        if not status:
+            raise errors.CanNotFindIP(
+                "Failed to get IP for vm %s" % self.cloned_vm_name
+            )
 
         self.assertFalse(is_pid_running_on_vm(self.cloned_vm_name,
                                               self.pids[0], self.cmdlines[0]))
@@ -661,7 +660,7 @@ class TestCase294631(VMWithMemoryStateSnapshot):
                                               self.cmdlines[0]))
 
 
-@attr(tier=1)
+@attr(tier=3)
 class TestCase305433(VMWithMemoryStateSnapshot):
     """
     TCMS test case 305433 - Stateless vm with memory snapshot

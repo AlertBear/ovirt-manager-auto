@@ -2662,7 +2662,7 @@ def getVmHost(vm):
     '''
     try:
         vm_obj = VM_API.find(vm)
-        host_obj = HOST_API.find(vm_obj.host.id, 'id')
+        host_obj = HOST_API.find(vm_obj.get_host(), 'id')
     except EntityNotFound:
         return False, {'vmHoster': None}
     return True, {'vmHoster': host_obj.get_name()}
@@ -3391,7 +3391,9 @@ def is_pid_running_on_vm(vm_name, pid, user, password):
         * user - username used to login to vm
         * password - password for the user
     """
-    vm_ip = LookUpVMIpByName('', '').get_ip(vm_name)
+    status, vm_ip = waitForIP(vm_name)
+    if not status:
+        raise exceptions.CanNotFindIP("Failed to get IP for vm %s" % vm_name)
     logger.debug('Got ip %s for vm %s', vm_ip, vm_name)
     vm_machine_object = Machine(vm_ip, user, password).util(LINUX)
     return vm_machine_object.isProcessExists(pid)

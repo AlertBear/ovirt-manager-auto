@@ -44,24 +44,22 @@ ACTIVE_VM = 'Active VM'
 SPM = None
 HSM = None
 
-
-vm_args = {'positive': True,
-           'vmName': '',
-           'vmDescription': '',
-           'diskInterface': config.VIRTIO,
-           'volumeFormat': config.COW_DISK,
-           'cluster': config.CLUSTER_NAME,
-           'storageDomainName': None,
-           'installation': True,
-           'size': config.DISK_SIZE,
-           'nic': config.NIC_NAME[0],
-           'image': config.COBBLER_PROFILE,
-           'useAgent': True,
-           'os_type': config.OS_TYPE,
-           'user': config.VM_USER,
-           'password': config.VM_PASSWORD,
-           'network': config.MGMT_BRIDGE
-           }
+vm_args = {
+    'positive': True,
+    'vmName': "",
+    'vmDescription': "",
+    'diskInterface': config.VIRTIO,
+    'volumeFormat': config.COW_DISK,
+    'cluster': config.CLUSTER_NAME,
+    'installation': True,
+    'size': config.DISK_SIZE,
+    'nic': config.NIC_NAME[0],
+    'image': config.COBBLER_PROFILE,
+    'useAgent': True,
+    'os_type': config.ENUMS['rhel6'],
+    'user': config.VM_USER,
+    'password': config.VM_PASSWORD
+}
 
 VM_LIST = []
 
@@ -118,6 +116,9 @@ class BasicEnvironmentSetUp(TestCase):
         """
         self.disk_name = 'test_disk_%s' % self.tcms_test_case
         self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
+        self.storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )[0]
         vms.start_vms([self.vm_name], 1, wait_for_ip=False)
         if not vms.waitForVMState(self.vm_name):
             raise exceptions.VMException(
@@ -209,7 +210,7 @@ class BaseTestCase(TestCase):
 
 
 @attr(tier=0)
-class LiveSnapshot(BasicEnvironmentSetUp):
+class TestCase141612(BasicEnvironmentSetUp):
     """
     Full flow Live snapshot - Test case 141612
     https://tcms.engineering.redhat.com/case/141612
@@ -230,7 +231,7 @@ class LiveSnapshot(BasicEnvironmentSetUp):
     def setUp(self):
         self.previewed = False
         self.vm_name = VM_ON_SPM % TestCase.storage
-        super(LiveSnapshot, self).setUp()
+        super(TestCase141612, self).setUp()
 
     def _test_Live_snapshot(self, vm_name):
         """
@@ -300,7 +301,7 @@ class LiveSnapshot(BasicEnvironmentSetUp):
 
 
 @attr(tier=1)
-class LiveSnapshotMultipleDisks(BasicEnvironmentSetUp):
+class TestCase141646(BasicEnvironmentSetUp):
     """
     https://tcms.engineering.redhat.com/case/141646/
 
@@ -316,12 +317,63 @@ class LiveSnapshotMultipleDisks(BasicEnvironmentSetUp):
     """
     __test__ = True
     tcms_test_case = '141646'
+    mount_path = '/new_fs_%s'
+    cmd_create = 'echo "test_txt" > %s/test_file'
 
     def setUp(self):
         self.previewed = False
         self.vm_name = VM_ON_SPM % TestCase.storage
-        super(LiveSnapshotMultipleDisks, self).setUp()
-        self._prepare_disk()
+        super(TestCase141646, self).setUp()
+        logger.info("Adding disk to vm %s", self.vm_name)
+        assert vms.addDisk(
+            True, vm=self.vm_name, size=3 * config.GB, wait='True',
+            storagedomain=self.storage_domain,
+            type=ENUMS['disk_type_data'], interface=config.INTERFACE_VIRTIO,
+            format=config.DISK_FORMAT_COW, sparse='true'
+        )
+        self._prepare_fs_on_devs()
+
+    def _prepare_fs_on_devs(self):
+        vm_devices = self.vm.get_storage_devices()
+        if not vm_devices:
+            logger.error("No devices found in vm %s", self.vm_name)
+            return False
+        logger.info("Devices found: %s", vm_devices)
+        devices = [d for d in vm_devices if d != 'vda']
+        devices.sort()
+        for dev in devices:
+            dev_size = self.vm.get_storage_device_size(dev)
+            dev_path = os.path.join('/dev', dev)
+            logger.info("Creating partition for dev: %s", dev_path)
+            dev_number = self.vm.createPartition(
+                dev_path, ((dev_size / 2) * config.GB)
+            )
+            logger.info("Creating file system for dev: %s", dev + dev_number)
+            self.vm.createFileSystem(
+                dev_path, dev_number, 'ext4', (self.mount_path % dev)
+            )
+
+            self.mounted_paths.append(self.mount_path % dev)
+
+    def check_file_existence_operation(
+            self, should_exist=True, operation='snapshot'
+    ):
+
+        vms.start_vms([self.vm_name], 1, wait_for_ip=False)
+        vms.waitForVMState(self.vm_name)
+        lst = []
+        state = not should_exist
+        for dev in self.devices:
+            full_path = os.path.join((self.mount_path % dev), self.file_name)
+            logger.info("Checking full path %s", full_path)
+            result = self.vm.isFileExists(full_path)
+            logger.info("File %s", 'exist' if result else 'not exist')
+            lst.append(result)
+
+        if state in lst:
+            raise exceptions.SnapshotException(
+                "%s operation failed" % operation
+            )
 
     def _test_Live_snapshot(self, vm_name):
         """
@@ -348,10 +400,7 @@ class LiveSnapshotMultipleDisks(BasicEnvironmentSetUp):
             status, _ = self.vm.runCmd(shlex.split(cmd))
 
             assert status
-        if not self.check_file_existence_operation(vm_name, True):
-            raise exceptions.DiskException(
-                "writing operation failed"
-            )
+            self.check_file_existence_operation(True, 'writing')
 
         vms.stop_vms_safely([vm_name])
 
@@ -363,25 +412,24 @@ class LiveSnapshotMultipleDisks(BasicEnvironmentSetUp):
             ensure_vm_down=True)
         self.assertTrue(self.previewed,
                         "Failed to preview snapshot %s" % self.snapshot_desc)
+        logger.info("Wait for all jobs to complete")
+        wait_for_jobs()
 
         assert vms.startVm(
             True, vm=vm_name, wait_for_status=config.VM_UP)
         assert vms.waitForIP(vm=vm_name)
 
         logger.info("Checking that files no longer exist after preview")
-        if not self.check_file_existence_operation(vm_name, False):
-            raise exceptions.SnapshotException(
-                "Snapshot operation failed"
-            )
+        self.check_file_existence_operation(False)
 
         self.assertTrue(vms.commit_snapshot(
             True, vm=vm_name, ensure_vm_down=True),
             "Failed to commit snapshot %s" % self.snapshot_desc)
+        logger.info("Wait for all jobs to complete")
+        wait_for_jobs()
+        self.previewed = False
         logger.info("Checking that files no longer exist after commit")
-        if not self.check_file_existence_operation(vm_name, False):
-            raise exceptions.SnapshotException(
-                "Snapshot operation failed"
-            )
+        self.check_file_existence_operation(False)
 
     @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
     def test_live_snapshot(self):
@@ -390,9 +438,18 @@ class LiveSnapshotMultipleDisks(BasicEnvironmentSetUp):
         """
         self._test_Live_snapshot(self.vm_name)
 
+    def tearDown(self):
+        if self.previewed:
+            if not vms.undo_snapshot_preview(
+                    True, self.vm_name, ensure_vm_down=True
+            ):
+                raise exceptions.SnapshotException(
+                    "Failed to undo snapshot for vm %s" % self.vm_name
+                )
+
 
 @attr(tier=1)
-class SnapshotDescription(BaseTestCase):
+class TestCase141636(BaseTestCase):
     """
     https://tcms.engineering.redhat.com/case/141636
 
@@ -439,7 +496,7 @@ class SnapshotDescription(BaseTestCase):
 
 
 @attr(tier=1)
-class MultipleStorageDomainDisks(BaseTestCase):
+class TestCase147751(BaseTestCase):
     """
     https://tcms.engineering.redhat.com/case/147751
 
@@ -469,14 +526,14 @@ class MultipleStorageDomainDisks(BaseTestCase):
                 storagedomain=storage_domain, type=ENUMS['disk_type_data'],
                 interface=ENUMS['interface_ide'], format=ENUMS['format_cow'],
                 sparse='true')
-        super(MultipleStorageDomainDisks, cls).setup_class()
+        super(TestCase147751, cls).setup_class()
 
     @classmethod
     def teardown_class(cls):
         """
         Removes the second disk of vm vm_on_spm
         """
-        super(MultipleStorageDomainDisks, cls).teardown_class()
+        super(TestCase147751, cls).teardown_class()
         for disk_index in [2, 3]:
             disk_name = "%s_Disk%d" % (cls.vm_on_hsm, disk_index)
             logger.info("Removing disk %s of vm %s", disk_name, cls.vm_on_hsm)
@@ -493,7 +550,7 @@ class MultipleStorageDomainDisks(BaseTestCase):
 
 
 @attr(tier=1)
-class CreateSnapshotWhileMigration(BaseTestCase):
+class TestCase141738(BaseTestCase):
     """
     https://tcms.engineering.redhat.com/case/141738
 
@@ -513,7 +570,7 @@ class CreateSnapshotWhileMigration(BaseTestCase):
         Waits until migration finishes
         """
         vms.waitForVMState(cls.vm_on_hsm)
-        super(CreateSnapshotWhileMigration, cls).teardown_class()
+        super(TestCase141738, cls).teardown_class()
 
     @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
     def test_migration(self):
@@ -526,7 +583,7 @@ class CreateSnapshotWhileMigration(BaseTestCase):
 
 
 @attr(tier=1)
-class SnapshotPresentation(BaseTestCase):
+class TestCase141614(BaseTestCase):
     """
     https://tcms.engineering.redhat.com/case/141614/
 
@@ -555,14 +612,14 @@ class SnapshotPresentation(BaseTestCase):
             storagedomain=storage_domain, type=ENUMS['disk_type_data'],
             interface=ENUMS['interface_ide'], format=ENUMS['format_cow'],
             sparse='true')
-        super(SnapshotPresentation, cls).setup_class()
+        super(TestCase141614, cls).setup_class()
 
     @classmethod
     def teardown_class(cls):
         """
         Removes the second disk of vm vm_on_spm
         """
-        super(SnapshotPresentation, cls).teardown_class()
+        super(TestCase141614, cls).teardown_class()
         disk_name = "%s_Disk2" % cls.vm_on_spm
         logger.info("Removing disk %s of vm %s", disk_name, cls.vm_on_spm)
         assert vms.removeDisk(True, cls.vm_on_spm, disk_name)
@@ -582,7 +639,7 @@ class SnapshotPresentation(BaseTestCase):
 
 
 @attr(tier=1)
-class LiveSnapshotOnVMCreatedFromTemplate(BaseTestCase):
+class TestCase286330(BaseTestCase):
     """
     https://tcms.engineering.redhat.com/case/286330
 
@@ -608,7 +665,7 @@ class LiveSnapshotOnVMCreatedFromTemplate(BaseTestCase):
         storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, cls.storage)[0]
         assert templates.createTemplate(
-            True, vm='vm_on_spm', name='template_test',
+            True, vm=cls.vm_on_spm, name='template_test',
             cluster=config.CLUSTER_NAME)
         assert vms.addVm(
             True, name='vm_thin', description='', cluster=config.CLUSTER_NAME,
