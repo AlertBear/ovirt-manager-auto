@@ -38,6 +38,7 @@ DS_CLASS_MAPPER = {
     'datacenternetworkvnicprofile': 'VnicProfile',
     'jobstep': 'Step',
     'hostniclabels': 'Labels',
+    'datacenternetwork': 'Network',
 }
 
 primitive = (int, bool, float, long, basestring)
