@@ -136,9 +136,37 @@ def remove_power_management(host, pm_type):
 def activate_host_if_not_up(host):
     """
     Activate the host if the host is not up
+
     :param host: IP/FQDN of the host
     :return: True if host was activated properly False otherwise
     """
     if not hosts.getHostState(host) == ENUMS["host_state_up"]:
         return hosts.activateHost(True, host)
     return True
+
+
+def restart_vdsm_under_maintenance_state(host_name, host_resource):
+    """
+    Put host to maintenance, restart vdsm service and activate host
+
+    :param host_name: host name
+    :type host_name: str
+    :param host_resource: host resource
+    :type host_resource: instance of VDS
+    :raises: HostException
+    """
+    logging.info("Put host %s to maintenance", host_name)
+    if not hosts.deactivateHost(True, host_name):
+        raise errors.HostException(
+            "Failed to put host %s to maintenance" % host_name
+        )
+    logging.info("Restart host %s vdsmd service", host_name)
+    if not host_resource.service("vdsmd").restart():
+        logging.error(
+            "Failed to restart vdsmd service on host %s", host_name
+        )
+    logging.info("Activate host %s", host_name)
+    if not hosts.activateHost(True, host_name):
+        raise errors.HostException(
+            "Failed to activate host %s" % host_name
+        )

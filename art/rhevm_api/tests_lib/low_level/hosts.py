@@ -2040,7 +2040,7 @@ def change_mom_rpc_port(host_resource, port=MOM_DEFAULT_PORT):
             host_resource.ip, err
         )
         return False
-    return host_resource.service("vdsmd").restart()
+    return True
 
 
 def set_mom_script(

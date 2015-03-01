@@ -9,13 +9,15 @@ import art.test_handler.exceptions as errors
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import templates
+import art.rhevm_api.tests_lib.low_level.vmpools as pools
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import storagedomains
-import art.rhevm_api.tests_lib.low_level.vmpools as pools
+import art.rhevm_api.tests_lib.high_level.hosts as h_hosts
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 
 logger = logging.getLogger("MOM")
 RHEL_TEMPLATE = "rhel_template"
+NUM_OF_HOSTS = 2
 
 #################################################
 
@@ -89,26 +91,32 @@ def setup_package():
             raise errors.VMException("Failed to remove vms from pool")
 
         # disable swapping on hosts for faster tests
-        for host_resource in config.VDS_HOSTS[:2]:
-            logger.info("Turning off swapping on host %s", host_resource.ip)
+        for host_id in range(NUM_OF_HOSTS):
+            host_resource = config.VDS_HOSTS[host_id]
+            logger.info(
+                "Turning off swapping on host %s", config.HOSTS[host_id]
+            )
             rc, out, err = host_resource.executor().run_cmd(["swapoff", "-a"])
             if rc:
                 raise errors.HostException(
                     "Failed to turn off swap, output: %s" % err
                 )
-            logger.info("Copy mom script to host %s", host_resource)
+            logger.info("Copy mom script to host %s", config.HOSTS[host_id])
             hosts.set_mom_script(config.ENGINE_HOST, host_resource)
             logger.info(
                 "Changing rpc port for mom to %s on host %s",
-                hosts.MOM_DEFAULT_PORT, host_resource.ip
+                hosts.MOM_DEFAULT_PORT, config.HOSTS[host_id]
             )
             if not hosts.change_mom_rpc_port(
                     host_resource, port=hosts.MOM_DEFAULT_PORT
             ):
                 raise errors.HostException(
                     "Failed to change RPC port for mom on host %s" %
-                    host_resource.ip
+                    config.HOSTS[host_id]
                 )
+            h_hosts.restart_vdsm_under_maintenance_state(
+                config.HOSTS[host_id], host_resource
+            )
 
         if not storagedomains.waitForStorageDomainStatus(
             True, config.DC_NAME[0], config.STORAGE_NAME[0],
@@ -141,19 +149,23 @@ def teardown_package():
                 "Failed to turn on swap on host %s" % " ".join(fail_hosts)
             )
 
-        for host_resource in config.VDS_HOSTS[:2]:
-            if not hosts.change_mom_rpc_port(host_resource, -1):
+        for host_id in range(NUM_OF_HOSTS):
+            if not hosts.change_mom_rpc_port(config.VDS_HOSTS[host_id], -1):
                 raise errors.HostException(
-                    "Failed to set mom port for rpc to default"
+                    "Failed to set mom port for rpc to default on host %s" %
+                    config.HOSTS[host_id]
                 )
+            h_hosts.restart_vdsm_under_maintenance_state(
+                config.HOSTS[host_id], config.VDS_HOSTS[host_id]
+            )
             logger.info(
                 "MOM port for rpc changed to default on host %s",
-                host_resource.ip
+                config.HOSTS[host_id]
             )
-            if not hosts.remove_mom_script(host_resource):
+            if not hosts.remove_mom_script(config.VDS_HOSTS[host_id]):
                 raise errors.HostException(
-                    "Failed to remove script for mom on host %s, output: %s" %
-                    host_resource.ip
+                    "Failed to remove mom script from host %s" %
+                    config.HOSTS[host_id]
                 )
 
         if not storagedomains.waitForStorageDomainStatus(
@@ -172,5 +184,5 @@ def teardown_package():
         if not config.GOLDEN_ENV:
             storagedomains.cleanDataCenter(
                 True, config.DC_NAME[0], vdc=config.VDC_HOST,
-                vdc_password=config.VDC_PASSWORD
+                vdc_password=config.VDC_ROOT_PASSWORD
             )

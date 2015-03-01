@@ -19,31 +19,30 @@ import logging
 import config
 
 from time import sleep
-from concurrent.futures import ThreadPoolExecutor
 
-from art.rhevm_api.tests_lib.low_level import clusters
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import hosts
+from art.rhevm_api.tests_lib.low_level import clusters
 from art.rhevm_api.tests_lib.low_level import storagedomains
+import art.rhevm_api.tests_lib.high_level.hosts as h_hosts
 
 import art.test_handler.exceptions as errors
 
 from art.test_handler import find_test_file
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.rhevm_api.utils.test_utils import getStat
-from art.core_api.apis_utils import TimeoutingSampler
-from art.core_api.apis_exceptions import APITimeout
 
 from nose.plugins.attrib import attr
 
 logger = logging.getLogger(__name__)
+find_test_file.__test__ = False
 
 SLEEP_TIME = 20
 WAIT_FOR_IP_TIMEOUT = 300
 BALLOON_ITERATIONS = 25  # number of iterations for testing test ballooning
-MULTI_VMS_ITERATIONS = 100  # number of iterations VMs with different memory
+MULTI_VMS_ITERATIONS = 25  # number of iterations VMs with different memory
 NEGATIVE_ITERATIONS = 10  # number of iterations for negative test cases
-RESTART_VDSM_INDEX = 10  # index of restarting VDSM
+RESTART_VDSM_INDEX = 12  # index of restarting VDSM
 MEMORY_OVERCOMMITMENT = 200
 HOST_ALLOC_PATH = "/tmp/hostAlloc.py"
 ALLOC_SCRIPT_LOCAL = "tests/rhevmtests/sla/mom/hostAlloc.py"
@@ -63,79 +62,6 @@ class MOM(TestCase):
     """
     __test__ = False
     pid_list = []
-
-    @classmethod
-    def _start_vms_and_check_status(cls, vm_list):
-        """
-        Start vms and check vms status
-
-        :param vm_list: list of vms
-        :type vm_list: list
-        :returns: True, if all vms in state powering up or up, otherwise False
-        :rtype: bool
-        """
-        vms.start_vms(vm_list, wait_for_status=None, wait_for_ip=False)
-        logger.info(
-            "Check that all vms %s have statuses %s or %s",
-            vm_list, config.VM_POWERING_UP, config.VM_UP
-        )
-        for vm in vm_list:
-            if vms.get_vm_state(vm) not in (
-                    config.VM_POWERING_UP, config.VM_UP
-            ):
-                return False
-        return True
-
-    @classmethod
-    def _wait_until_vms_start(cls, vm_list):
-        """
-        Wait until all vms up or powering up
-
-        :param vm_list: list of vms
-        :type vm_list: list
-        :raises: VMException
-        """
-        sampler = TimeoutingSampler(
-            config.SAMPLER_TIMEOUT, config.SAMPLER_SLEEP,
-            cls._start_vms_and_check_status, vm_list
-        )
-        try:
-            for sample in sampler:
-                if sample:
-                    logger.info("All vms %s run", vm_list)
-                    break
-        except APITimeout:
-            raise errors.VMException(
-                "Timeout when waiting for all vms to up"
-            )
-
-    @classmethod
-    def _wait_for_ip_multi_thread(cls, vm_list):
-        """
-        Wait for vms ip via ThreadPoolExecutor
-
-        :param vm_list: vm list
-        :type vm_list: list
-        :raises: VMException
-        """
-        results = list()
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            for vm in vm_list:
-                logger.info("Wait for ip for vm %s", vm)
-                results.append(
-                    executor.submit(
-                        vms.waitForIP, vm, timeout=WAIT_FOR_IP_TIMEOUT
-                    )
-                )
-        for vm, res in zip(vm_list, results):
-            if res.exception():
-                logger.error(
-                    "Got exception while waiting of ip of vm %s: %s",
-                    vm, res.exception()
-                )
-                raise res.exception()
-            if not res.result():
-                raise errors.VMException("Vm %s still not have ip" % vm)
 
     @classmethod
     def ksm_running(cls, host_resource):
@@ -277,9 +203,7 @@ class MOM(TestCase):
         :type multi_os: bool
         """
         logger.info("Start vms: %s", vm_list)
-        self._wait_until_vms_start(vm_list)
-        logger.info("Wait until all vms %s will have ips", vm_list)
-        self._wait_for_ip_multi_thread(vm_list)
+        vms.start_vms(vm_list)
 
         pid = self.prepare_balloon(len(vm_list))
         deflated = self.wait_for_balloon_change(True, True, vm_list, multi_os)
@@ -428,12 +352,14 @@ class MOM(TestCase):
                 continue
 
             if failed_attempts >= 10:
-                config.VDS_HOSTS[0].service("vdsmd").restart()
+                config.VDS_HOSTS[host_id].service("vdsmd").restart()
                 failed_attempts = 0
 
             for vm in vm_list:
-                logger.info("VM stats: max - %d, current - %d",
-                            mem_dict[vm][MAX], mem_dict[vm][CURRENT])
+                logger.info(
+                    "VM stats: max - %d, current - %d",
+                    mem_dict[vm][MAX], mem_dict[vm][CURRENT]
+                )
 
             if not positive:
                 vm = vm_list[0]
@@ -475,6 +401,7 @@ class KSM(MOM):
     """
 
     __test__ = True
+    host_id = 0
 
     @classmethod
     def setup_class(cls):
@@ -515,10 +442,9 @@ class KSM(MOM):
         ):
             raise errors.VMException("Failed to update cluster")
 
-        if not config.VDS_HOSTS[0].service("vdsmd").restart():
-            raise errors.VMException("Failed to restart vdsm")
-        if not hosts.waitForHostsStates(True, config.HOSTS[0]):
-            raise errors.VMException("Failed to reactivate host")
+        h_hosts.restart_vdsm_under_maintenance_state(
+            config.HOSTS[cls.host_id], config.VDS_HOSTS[cls.host_id]
+        )
         if not storagedomains.waitForStorageDomainStatus(
                 True, config.DC_NAME[0], config.STORAGE_NAME[0],
                 config.ENUMS["storage_domain_state_active"]
@@ -651,10 +577,9 @@ class KSM(MOM):
         ):
             raise errors.VMException("Failed to update cluster")
 
-        if not config.VDS_HOSTS[0].service("vdsmd").restart():
-            raise errors.VMException("Failed to restart vdsm")
-        if not hosts.waitForHostsStates(True, config.HOSTS[0]):
-            raise errors.VMException("Failed to reactivate host")
+        h_hosts.restart_vdsm_under_maintenance_state(
+            config.HOSTS[cls.host_id], config.VDS_HOSTS[cls.host_id]
+        )
         if not storagedomains.waitForStorageDomainStatus(
                 True, config.DC_NAME[0], config.STORAGE_NAME[0],
                 config.ENUMS["storage_domain_state_active"]
