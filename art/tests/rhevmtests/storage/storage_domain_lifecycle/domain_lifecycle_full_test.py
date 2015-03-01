@@ -1,28 +1,22 @@
+import config
 import logging
 from art.rhevm_api.tests_lib.low_level.clusters import addCluster
 from art.unittest_lib import StorageTest as TestCase
-from nose.tools import istest
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_datacenters
 from art.rhevm_api.tests_lib.low_level import clusters as ll_clusters
 from art.rhevm_api.tests_lib.low_level import vms, hosts
 from art.unittest_lib import attr
-
 from art.rhevm_api.tests_lib.high_level import hosts as hi_hosts
 from art.rhevm_api.tests_lib.high_level import datacenters, storagedomains
 from utilities.utils import getIpAddressByHostName
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 import art.rhevm_api.utils.storage_api as st_api
 import art.rhevm_api.utils.iptables as ip_action
-
 from art.rhevm_api.utils.test_utils import get_api, wait_for_tasks
-
 from rhevmtests.storage.helpers import create_vm_or_clone
-
 from art.test_handler import exceptions
 from sys import modules
-
-import config
 
 TCMS_PLAN_ID = '6458'
 logger = logging.getLogger(__name__)
@@ -289,7 +283,6 @@ class TestCase174613(TestCase):
     mount_options = 'sync'
     sd_names = config.LIFECYCLE_DOMAIN_NAMES[1:]
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
     def test_create_sd_with_defined_values(self):
         """
@@ -789,7 +782,9 @@ class TestUpgradeISCSI(TestUpgrade):
                 cls.sd_luns)):
             assert storagedomains.addISCSIDataDomain(
                 cls.host, cls.sd_name_pattern % index, cls.dc_name, lun,
-                lun_address, lun_target, storage_format=cls.storage_format)
+                lun_address, lun_target, storage_format=cls.storage_format,
+                override_luns=True
+            )
             LOGGER.info("iSCSI storage domains %s were created successfully",
                         cls.sd_name_pattern % index)
 

@@ -2,25 +2,27 @@
 Reconstruct master test - 2461
 https://tcms.engineering.redhat.com/plan/2461
 """
+import config
 import logging
-from nose.tools import istest
 from art.unittest_lib import StorageTest as TestCase
-
 from art.rhevm_api.tests_lib.low_level import clusters
 from art.rhevm_api.tests_lib.low_level import datacenters
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import vms
-from art.rhevm_api.tests_lib.high_level.storagedomains\
-    import addISCSIDataDomain, addNFSDomain
-from art.rhevm_api.utils.test_utils import get_api, restartVdsmd, \
-    validateElementStatus, stopVdsmd, startVdsmd, wait_for_tasks
-from art.rhevm_api.utils.storage_api import generateSDMetadataCorruption, \
-    restoreSDOriginalMetadata, blockOutgoingConnection, \
-    unblockOutgoingConnection
+from art.rhevm_api.tests_lib.high_level.storagedomains import (
+    addISCSIDataDomain, addNFSDomain,
+)
+from art.rhevm_api.utils.test_utils import (
+    get_api, restartVdsmd, validateElementStatus, stopVdsmd, startVdsmd,
+    wait_for_tasks,
+)
+from art.rhevm_api.utils.storage_api import (
+    generateSDMetadataCorruption, restoreSDOriginalMetadata,
+    blockOutgoingConnection, unblockOutgoingConnection,
+)
 from art.test_handler.settings import plmanager
 from art.test_handler.tools import tcms  # pylint: disable=E0611
-import config
 
 # Automatic setup and teardown on failure
 automatic_rebuild = True
@@ -143,7 +145,8 @@ def setup_iscsi():
         config.DATA_CENTER_NAME,
         config.PARAMETERS['master_lun'],
         config.PARAMETERS['master_lun_address'],
-        config.PARAMETERS['master_lun_target']
+        config.PARAMETERS['master_lun_target'],
+        override_luns=True
     )
     addresses_list = config.PARAMETERS.as_list('lun_address')
     targets_list = config.PARAMETERS.as_list('lun_target')
@@ -300,7 +303,6 @@ class CorruptMetadata(DataCenterWithSD):
     tcms_test_case = '87133'
     vm_name = None
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
     def test_metadata_corruption(self):
         """
