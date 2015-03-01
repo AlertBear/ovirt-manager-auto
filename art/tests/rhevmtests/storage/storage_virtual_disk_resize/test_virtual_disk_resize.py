@@ -511,7 +511,6 @@ class TestCase297017(BasicResize):
         self.disk_args['format'] = config.COW_DISK
         super(TestCase297017, self).setUp()
 
-    @bz({'1195768': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_thin_block_resize(self):
         """
