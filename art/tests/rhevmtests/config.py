@@ -300,7 +300,9 @@ DATA_CENTER_PROBLEMATIC = ENUMS['data_center_state_problematic']
 
 # VM states
 VM_PINNED = ENUMS['vm_affinity_pinned']
-VM_ANY_HOST = ENUMS['vm_affinity_migratable']
+VM_ANY_HOST = ENUMS['placement_host_any_host_in_cluster']
+VM_MIGRATABLE = ENUMS['vm_affinity_migratable']
+VM_USER_MIGRATABLE = ENUMS['vm_affinity_user_migratable']
 VM_UP = ENUMS['vm_state_up']
 VM_DOWN = ENUMS['vm_state_down']
 VM_POWER_UP = ENUMS['vm_state_powering_up']

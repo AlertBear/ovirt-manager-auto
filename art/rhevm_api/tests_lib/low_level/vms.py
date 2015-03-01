@@ -3772,6 +3772,7 @@ def remove_all_vms_from_cluster(cluster_name, skip=None, wait=False):
             logger.info("send delete command to vm: %s", vm)
             removeVm(True, vm, wait=wait)
         return waitForVmsGone(True, vms_in_cluster)
+    return True
 
 
 def get_vm_display_port(vm_name):

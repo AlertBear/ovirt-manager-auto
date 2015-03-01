@@ -22,8 +22,10 @@ def setup_package():
     """
     if os.environ.get("JENKINS_URL") and not config.GOLDEN_ENV:
         logger.info("Building setup...")
-        datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
-                                config.STORAGE_TYPE, config.TEST_NAME)
+        datacenters.build_setup(
+            config.PARAMETERS, config.PARAMETERS,
+            config.STORAGE_TYPE, config.TEST_NAME
+        )
 
 
 def teardown_package():
@@ -38,5 +40,7 @@ def teardown_package():
         ):
             raise errors.VMException("Failed to remove vms")
         if not config.GOLDEN_ENV:
-            cleanDataCenter(True, config.DC_NAME[0], vdc=config.VDC_HOST,
-                            vdc_password=config.VDC_ROOT_PASSWORD)
+            cleanDataCenter(
+                True, config.DC_NAME[0], vdc=config.VDC_HOST,
+                vdc_password=config.VDC_ROOT_PASSWORD
+            )
