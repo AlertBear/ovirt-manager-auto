@@ -14,6 +14,11 @@ if not GOLDEN_ENV:
         EXTEND_LUN_ADDRESS = PARAMETERS.as_list("extend_lun_address")
         EXTEND_LUN_TARGET = PARAMETERS.as_list("extend_lun_target")
         EXTEND_LUN = PARAMETERS.as_list("extend_lun")
+    else:
+        UNUSED_DATA_DOMAIN_ADDRESSES = PARAMETERS.as_list(
+            'extra_data_domain_address'
+        )
+        UNUSED_DATA_DOMAIN_PATHS = PARAMETERS.as_list('extra_data_domain_path')
 else:
     if STORAGE_TYPE_ISCSI in STORAGE_SELECTOR:
         EXTEND_LUN_ADDRESS = UNUSED_LUN_ADDRESSES

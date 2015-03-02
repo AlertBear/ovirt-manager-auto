@@ -307,7 +307,6 @@ class TestCase286775(BaseCase):
     apis = BaseCase.apis - set(['sdk'])
     tcms_test_case = '286775'
     new_sd_name = "storage_domain_%s" % tcms_test_case
-    bz = {'1186410': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
     @classmethod
     def setup_class(cls):
