@@ -292,6 +292,7 @@ def create_vm_or_clone(positive, vmName, vmDescription,
             'vol_sparse': kwargs.get('volumeType', 'true'),
             'vol_format': kwargs.get('volumeFormat'),
             'storagedomain': kwargs.get('storageDomainName'),
+            'virtio_scsi': True,
         }
         update_keys = [
             'vmDescription', 'type', 'placement_host', 'placement_affinity',
