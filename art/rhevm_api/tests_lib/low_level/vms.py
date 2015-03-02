@@ -2317,17 +2317,20 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
 
 
 @is_action()
-def waitForIP(vm, timeout=1800, sleep=DEF_SLEEP):
-    '''
+def waitForIP(vm, timeout=600, sleep=DEF_SLEEP):
+    """
     Description: Waits until agent starts reporting IP address
-    Author: jlibosva
-    Parameters:
-       * vm - name of the virtual machine
-       * timeout - how long to wait
-       * sleep - polling interval
-    Return: Tupple ( True/False whether it obtained the IP,
-                     IP if fetched or None)
-    '''
+
+    __author__ = "jlibsova"
+    :param vm: name of the virtual machine
+    :type vm: str
+    :param timeout: how long to wait
+    :type timeout: int
+    :param sleep: polling interval
+    :type sleep: int
+    :return: True/False whether it obtained the IP, IP if fetched or None
+    :rtype: tuple
+    """
     guest_info = None
     start_time = time.time()
     while time.time() - start_time < timeout:
