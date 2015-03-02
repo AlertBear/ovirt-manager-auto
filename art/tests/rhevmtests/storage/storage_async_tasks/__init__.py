@@ -56,7 +56,7 @@ def setup_module():
             interface=config.INTERFACE_VIRTIO)
         disk_names.append(disk_name)
 
-    disks.waitForDisksState(",".join(disk_names))
+    disks.wait_for_disks_status(",".join(disk_names))
     for disk_name in disk_names:
         assert disks.attachDisk(True, disk_name, vm_name)
 

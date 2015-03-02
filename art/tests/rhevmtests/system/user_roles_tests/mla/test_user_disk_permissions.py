@@ -65,7 +65,7 @@ class DPCase147121(TestCase):
         disks.addDisk(True, alias=config.DISK_NAME, interface='virtio',
                       format='cow', provisioned_size=config.GB,
                       storagedomain=config.MAIN_STORAGE_NAME)
-        disks.waitForDisksState(config.DISK_NAME)
+        disks.wait_for_disks_status(config.DISK_NAME)
         mla.addStoragePermissionsToUser(True, config.USER_NAME,
                                         config.MAIN_STORAGE_NAME,
                                         role=role.DiskOperator)
@@ -193,7 +193,7 @@ class DPCase147123(TestCase):
         disks.addDisk(True, alias=config.DISK_NAME, interface='virtio',
                       format='cow', provisioned_size=config.GB,
                       storagedomain=config.MAIN_STORAGE_NAME)
-        disks.waitForDisksState(config.DISK_NAME)
+        disks.wait_for_disks_status(config.DISK_NAME)
         mla.addStoragePermissionsToUser(True, config.USER_NAME,
                                         config.MAIN_STORAGE_NAME,
                                         role=self.disk_role)
@@ -356,7 +356,7 @@ class DPCase147126(TestCase):
         disks.addDisk(True, alias=config.DISK_NAME, interface='virtio',
                       format='cow', provisioned_size=config.GB,
                       storagedomain=config.MAIN_STORAGE_NAME)
-        disks.waitForDisksState(config.DISK_NAME)
+        disks.wait_for_disks_status(config.DISK_NAME)
         mla.addStoragePermissionsToUser(True, config.USER_NAME,
                                         config.MAIN_STORAGE_NAME,
                                         role=role.UserRole)
@@ -476,7 +476,7 @@ class DPCase147128(TestCase):
         vms.move_vm_disk(config.VM_NAME, self.disk_name,
                          config.ALT1_STORAGE_NAME)
         time.sleep(5)
-        disks.waitForDisksState(self.disk_name)
+        disks.wait_for_disks_status(self.disk_name)
         test_utils.wait_for_tasks(config.VDC_HOST, config.VDC_ROOT_PASSWORD,
                                   config.MAIN_DC_NAME)
         LOGGER.info("User with perms on target sd and disk can move disk.")
@@ -616,7 +616,7 @@ class DPCase147137(TestCase):
                       format='raw', provisioned_size=config.GB,
                       storagedomain=config.MAIN_STORAGE_NAME,
                       shareable=True)
-        disks.waitForDisksState(config.DISK_NAME)
+        disks.wait_for_disks_status(config.DISK_NAME)
         mla.addStoragePermissionsToUser(True, config.USER_NAME,
                                         config.MAIN_STORAGE_NAME,
                                         role=role.DiskOperator)

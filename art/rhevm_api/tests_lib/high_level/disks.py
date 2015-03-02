@@ -27,8 +27,11 @@ def delete_disks(disks_names, timeout=DEFAULT_TIMEOUT, sleep=SLEEP_TIME):
     if not disks_names:
         return False
     logger.info("Wait until disks state is OK")
-    if not disks.waitForDisksState(disks_names, timeout=timeout,
-                                   sleep=sleep):
+    if not disks.wait_for_disks_status(
+            disks_names,
+            timeout=timeout,
+            sleep=sleep
+    ):
         return False
     for disk in disks_names:
         logger.info("Delete disk %s", disk)

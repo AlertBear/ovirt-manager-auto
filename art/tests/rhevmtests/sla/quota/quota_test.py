@@ -469,7 +469,7 @@ class QuotaTestObjectWithoutQuota(TestCase):
                              interface=DISK_INTERFACE,
                              format=DISK_FORMAT,
                              storagedomain=config.STORAGE_NAME[0])
-        assert disks.waitForDisksState(DISK_NAME)
+        assert disks.wait_for_disks_status(DISK_NAME)
 
         db.set_dc_quota_mode(config.DC_NAME[0], cls.mode)
 

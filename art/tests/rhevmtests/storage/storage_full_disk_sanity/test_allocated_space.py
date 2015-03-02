@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level.datacenters import (
     waitForDataCenterState,
 )
 from art.rhevm_api.tests_lib.low_level.disks import (
-    addDisk, deleteDisk, waitForDisksState, move_disk, get_disk_obj,
+    addDisk, deleteDisk, wait_for_disks_status, move_disk, get_disk_obj,
 )
 from art.rhevm_api.tests_lib.low_level.hosts import (
     waitForHostsStates, waitForSPM, getSPMHost, getHostIP,
@@ -90,7 +90,7 @@ class BaseCase(TestCase):
                         self.expected_allocated_size)
             self.disk_names.append(disk_name)
         logger.info('Waiting for disks to be OK')
-        self.assertTrue(waitForDisksState(self.disk_names))
+        self.assertTrue(wait_for_disks_status(self.disk_names))
 
     @classmethod
     def setup_class(cls):
@@ -499,10 +499,13 @@ class TestCase286779(BaseCase):
         logger.info('Starting to move disk %s', self.disk_name)
         self.assertTrue(move_disk(self.disk_name, self.domains[0],
                                   self.domains[1], wait=False))
-        self.assertTrue(waitForDisksState([self.disk_name],
-                                          status=config.DISK_LOCKED),
-                        'Disk %s never moved to locked status'
-                        % self.disk_name)
+        self.assertTrue(
+            wait_for_disks_status(
+                [self.disk_name],
+                status=config.DISK_LOCKED
+            ),
+            'Disk {0} never moved to locked status'.format(self.disk_name)
+        )
 
         self.spm = getSPMHost(config.HOSTS)
         self.spm_ip = getHostIP(self.spm)
@@ -517,7 +520,7 @@ class TestCase286779(BaseCase):
 
         logger.info('Waiting for disk %s to be OK after rollback',
                     self.disk_name)
-        self.assertTrue(waitForDisksState([self.disk_name]))
+        self.assertTrue(wait_for_disks_status([self.disk_name]))
 
     def setUp(self):
         """

@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import (
 )
 
 from art.rhevm_api.tests_lib.low_level.disks import (
-    addDisk, waitForDisksState, attachDisk,
+    addDisk, wait_for_disks_status, attachDisk,
 )
 
 from art.rhevm_api.tests_lib.low_level.vms import (
@@ -56,9 +56,9 @@ class BaseTestCase(TestCase):
                        sparse=False, interface=config.VIRTIO_SCSI,
                        format=config.RAW_DISK)
 
-        assert waitForDisksState(disksNames=[disk_alias])
+        assert wait_for_disks_status(disksNames=[disk_alias])
         assert attachDisk(True, disk_alias, self.vm)
-        assert waitForDisksState(disksNames=[disk_alias])
+        assert wait_for_disks_status(disksNames=[disk_alias])
         assert waitForVmDiskStatus(
             self.vm, True, diskAlias=disk_alias, sleep=1)
 

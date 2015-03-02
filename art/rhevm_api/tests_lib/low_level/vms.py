@@ -33,7 +33,7 @@ from art.core_api.apis_utils import data_st, TimeoutingSampler, getDS
 from art.rhevm_api.tests_lib.high_level.disks import delete_disks
 from art.rhevm_api.tests_lib.low_level.disks import (
     _prepareDiskObject, getVmDisk, getObjDisks, get_other_storage_domain,
-    waitForDisksState, get_disk_storage_domain_name,
+    wait_for_disks_status, get_disk_storage_domain_name,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.networks import (
@@ -4023,7 +4023,7 @@ def live_migrate_vm_disk(vm_name, disk_name, target_sd,
         for sample in sampler:
             if sample:
                 break
-        waitForDisksState([disk_name], timeout=timeout)
+        wait_for_disks_status([disk_name], timeout=timeout)
         wait_for_jobs()
 
 

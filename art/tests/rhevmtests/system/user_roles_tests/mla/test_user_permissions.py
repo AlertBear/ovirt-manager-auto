@@ -59,7 +59,7 @@ def setUpModule():
     disks.addDisk(
         True, alias=config.DISK_NAME, interface='virtio', format='cow',
         provisioned_size=config.GB, storagedomain=config.MAIN_STORAGE_NAME)
-    disks.waitForDisksState(config.DISK_NAME)
+    disks.wait_for_disks_status(config.DISK_NAME)
     h_sd.addNFSDomain(
         config.MAIN_HOST_NAME, config.ALT2_STORAGE_NAME,
         config.MAIN_DC_NAME, config.ALT2_STORAGE_ADDRESS,
@@ -418,7 +418,7 @@ class PermissionsCase54420(TestCase):
                               interface='virtio', format='cow',
                               provisioned_size=config.GB,
                               storagedomain=config.MAIN_STORAGE_NAME)
-                disks.waitForDisksState(config.DISK_NAME1)
+                disks.wait_for_disks_status(config.DISK_NAME1)
                 b = b or checkIfObjectHasRole(
                     disks.DISKS_API.find(config.DISK_NAME1),
                     DISK_PREDEFINED, role_obj.administrative)
@@ -526,7 +526,7 @@ class PermissionsCase111082(TestCase):
         disks.addDisk(
             True, alias=config.DISK_NAME1, interface='virtio', format='cow',
             provisioned_size=config.GB, storagedomain=config.ALT2_STORAGE_NAME)
-        disks.waitForDisksState(config.DISK_NAME1)
+        disks.wait_for_disks_status(config.DISK_NAME1)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME1)
         mla.addPermissionsForTemplate(
             True, config.USER_NAME, config.TEMPLATE_NAME2, role.TemplateOwner)

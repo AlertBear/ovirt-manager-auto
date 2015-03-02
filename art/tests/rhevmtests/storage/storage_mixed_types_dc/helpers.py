@@ -90,7 +90,7 @@ def add_disk_to_sd(disk_name, storagedomain, attach_to_vm=None):
     if not ll_disks.addDisk(True, **disk_args):
         raise exceptions.DiskException('Unable to create disk %s' %
                                        disk_args['alias'])
-    assert ll_disks.waitForDisksState([disk_name])
+    assert ll_disks.wait_for_disks_status([disk_name])
 
     start = False
     if attach_to_vm:

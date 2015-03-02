@@ -50,7 +50,7 @@ def setUpModule():
     disks.addDisk(
         True, alias=config.DISK_NAME, interface='virtio', format='cow',
         provisioned_size=config.GB, storagedomain=config.MAIN_STORAGE_NAME)
-    disks.waitForDisksState(config.DISK_NAME)
+    disks.wait_for_disks_status(config.DISK_NAME)
 
 
 def tearDownModule():

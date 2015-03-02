@@ -9,7 +9,7 @@ from art.rhevm_api.tests_lib.low_level.hosts import (
     kill_qemu_process, getHostIP, getVmHost,
 )
 from art.rhevm_api.tests_lib.low_level.disks import (
-    updateDisk, getVmDisk, waitForDisksState, addDisk, attachDisk,
+    updateDisk, getVmDisk, wait_for_disks_status, addDisk, attachDisk,
     checkDiskExists, deleteDisk,
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
@@ -201,8 +201,10 @@ class DefaultEnvironment(BaseTestCase):
         helpers.start_creating_disks_for_test(
             self.storage_domains[0], self.storage, shared=self.shared
         )
-        assert waitForDisksState(helpers.DISKS_NAMES[self.storage],
-                                 timeout=TASK_TIMEOUT)
+        assert wait_for_disks_status(
+            helpers.DISKS_NAMES[self.storage],
+            timeout=TASK_TIMEOUT
+        )
         stop_vms_safely([self.vm_name])
         assert waitForVMState(vm=self.vm_name, state=config.VM_DOWN)
 
@@ -1401,7 +1403,7 @@ class TestCase334877(DefaultEnvironment):
             move_vm_disk(
                 self.vm_name, disk.get_alias(), self.storage_domains[1]
             )
-            waitForDisksState(disk.get_alias())
+            wait_for_disks_status(disk.get_alias())
             logger.info("disk %s moved", disk.get_alias())
             vm_disk = getVmDisk(self.vm_name, disk.get_alias())
             is_disk_ro = vm_disk.get_read_only()

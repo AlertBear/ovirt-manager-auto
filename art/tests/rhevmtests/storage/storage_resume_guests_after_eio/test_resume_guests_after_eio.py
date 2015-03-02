@@ -151,7 +151,7 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
             storagedomain=self.sd, format=config.ENUMS['format_raw'],
             interface=config.INTERFACE_VIRTIO, sparse=False)
 
-        disks.waitForDisksState(self.big_disk_name, timeout=3600)
+        disks.wait_for_disks_status(self.big_disk_name, timeout=3600)
 
         LOGGER.info("Big disk created")
 

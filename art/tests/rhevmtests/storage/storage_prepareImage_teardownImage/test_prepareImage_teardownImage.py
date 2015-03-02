@@ -14,7 +14,7 @@ from helpers import (
 )
 import logging
 from art.rhevm_api.tests_lib.low_level.disks import (
-    addDisk, attachDisk, waitForDisksState, get_disk_obj, detachDisk,
+    addDisk, attachDisk, wait_for_disks_status, get_disk_obj, detachDisk,
     deleteDisk, move_disk,
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
@@ -231,7 +231,7 @@ class BasicEnvironment(BaseTestCase):
                                     wipe_after_delete=wipe_after_delete,
                                     bootable=False),
                             "Failed to Add Disk %s" % self.disk_alias)
-            waitForDisksState(self.disk_alias)
+            wait_for_disks_status(self.disk_alias)
             self.assertTrue(attachDisk(True, self.disk_alias, self.vm_name),
                             "Failed to attach disk '%s' to VM '%s'" % (
                                 self.disk_alias, self.vm_name))

@@ -4,7 +4,7 @@ Live Storage Migration test helpers functions
 
 import logging
 from art.rhevm_api.tests_lib.low_level.disks import (
-    waitForDisksState, addDisk, get_all_disk_permutation, attachDisk,
+    wait_for_disks_status, addDisk, get_all_disk_permutation, attachDisk,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.vms import activateVmDisk
@@ -86,7 +86,7 @@ def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
     """
     is_ro = 'Read Only' if read_only else 'Read Write'
     for disk in disks_to_prepare:
-        waitForDisksState(disk, timeout=DISK_TIMEOUT)
+        wait_for_disks_status(disk, timeout=DISK_TIMEOUT)
         logger.info("Attaching disk %s as %s disk to vm %s",
                     disk, is_ro, vm_name)
         status = attachDisk(True, disk, vm_name, active=False,
@@ -127,6 +127,6 @@ def add_new_disk_for_test(vm_name, alias, provisioned_size=(1 * config.GB),
                 raise exceptions.DiskException(
                     "Can't create disk with params: %s" % disk_params)
             logger.info("Waiting for disk %s to be ok", disk_params['alias'])
-            waitForDisksState(disk_params['alias'])
+            wait_for_disks_status(disk_params['alias'])
             if attach:
                 prepare_disks_for_vm(vm_name, [disk_params['alias']])

@@ -17,7 +17,7 @@ from art.rhevm_api.tests_lib.high_level.disks import (
 )
 from art.rhevm_api.tests_lib.low_level.datacenters import get_data_center
 from art.rhevm_api.tests_lib.low_level.disks import (
-    waitForDisksState, getStorageDomainDisks, addDisk, attachDisk,
+    wait_for_disks_status, getStorageDomainDisks, addDisk, attachDisk,
 )
 from art.rhevm_api.tests_lib.low_level.hosts import (
     waitForHostsStates, getHostIP, getSPMHost,
@@ -157,7 +157,7 @@ class DisksPermutationEnvironment(BaseTestCase):
         helpers.DISKS_NAMES = create_all_legal_disk_permutations(
             self.storage_domain, shared=self.shared,
             block=block, size=config.DISK_SIZE)
-        assert waitForDisksState(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
+        assert wait_for_disks_status(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
         stop_vms_safely([self.vm])
         waitForVMState(vm=self.vm, state=config.VM_DOWN)
         helpers.prepare_disks_for_vm(self.vm, helpers.DISKS_NAMES)
@@ -216,11 +216,11 @@ class BasicResize(BaseTestCase):
 
         self.assertTrue(addDisk(True, **args), "Failed to add disk %s"
                                                % self.disk_args['alias'])
-        assert waitForDisksState(self.disk_name)
+        assert wait_for_disks_status(self.disk_name)
         stop_vms_safely([self.vm])
         waitForVMState(vm=self.vm, state=ENUMS['vm_state_down'])
         attachDisk(True, self.disk_args['alias'], self.vm)
-        assert waitForDisksState(self.disk_name)
+        assert wait_for_disks_status(self.disk_name)
         start_vms([self.vm], 1, wait_for_ip=False)
         waitForVMState(vm=self.vm)
 
@@ -234,7 +234,7 @@ class BasicResize(BaseTestCase):
                                      provisioned_size=self.new_size)
         self.assertTrue(status, "Failed to resize disk %s to size %s"
                                 % (self.disk_name, self.new_size))
-        assert waitForDisksState(self.disk_name, timeout=TASK_TIMEOUT)
+        assert wait_for_disks_status(self.disk_name, timeout=TASK_TIMEOUT)
 
         # TODO: Check the capacity value in getVolumeInfo
         logger.info("dd to disk %s", self.disk_name)
@@ -292,7 +292,7 @@ class BasicResize(BaseTestCase):
 
         logger.info("Unblocking the connection")
         flushIptables(self.host_ip, config.HOSTS_USER, config.HOSTS_PW)
-        assert waitForDisksState(self.disk_name, timeout=TASK_TIMEOUT)
+        assert wait_for_disks_status(self.disk_name, timeout=TASK_TIMEOUT)
         waitForHostsStates(True, self.host)
 
         disks_objs = getVmDisks(self.vm)
@@ -325,7 +325,7 @@ class BasicResize(BaseTestCase):
             assert status
         for vm in vm_names:
             disk_name = getVmDisks(vm)[0].get_alias()
-            assert waitForDisksState(disk_name)
+            assert wait_for_disks_status(disk_name)
 
     def tearDown(self):
         """
@@ -370,7 +370,7 @@ class TestCase336099(DisksPermutationEnvironment):
 
             self.assertTrue(status, "Failed to resize disk %s to size %s"
                                     % (disk, self.new_size))
-        assert waitForDisksState(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
+        assert wait_for_disks_status(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
 
         devices, boot_device = helpers.get_vm_storage_devices(
             self.vm)
@@ -423,7 +423,7 @@ class TestCase336100(DisksPermutationEnvironment):
                                          provisioned_size=self.new_size)
             self.assertTrue(status, "Failed to resize disk %s to size %s"
                                     % (disk, self.new_size))
-        assert waitForDisksState(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
+        assert wait_for_disks_status(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
 
         status = preview_snapshot(True, self.vm, self.snap_description)
         self.is_preview = status
@@ -666,7 +666,7 @@ class TestCase287468(BasicResize):
         assert attachDisk(True, self.disk_args['alias'], self.test_vm_name)
         start_vms([self.test_vm_name], max_workers=1, wait_for_ip=False)
         assert waitForVMState(self.test_vm_name)
-        assert waitForDisksState(self.disk_name)
+        assert wait_for_disks_status(self.disk_name)
         stop_vms_safely([self.vm, self.test_vm_name])
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
@@ -733,7 +733,7 @@ class TestCase287469(BasicResize):
                                 % (self.disk_name, self.new_size))
 
     def tearDown(self):
-        assert waitForDisksState(self.disk_name)
+        assert wait_for_disks_status(self.disk_name)
         super(TestCase287469, self).tearDown()
 
 
@@ -784,7 +784,7 @@ class TestCase297085(BasicResize):
                                password=config.HOSTS_PW).util('linux')
         rc, output = host_machine.runCmd(self.start_libvirt.split())
         self.assertTrue(rc, "Failed to start libvirt: %s" % output)
-        assert waitForDisksState(self.disk_name, timeout=TASK_TIMEOUT)
+        assert wait_for_disks_status(self.disk_name, timeout=TASK_TIMEOUT)
         logger.info("dd to disk %s", self.disk_name)
         storage_helpers.perform_dd_to_disk(self.vm, self.disk_name)
         logger.info("Getting volume size")

@@ -381,39 +381,67 @@ def detachDisk(positive, alias, vmName, detach=True):
 
 
 @is_action()
-def waitForDisksState(disksNames, status=ENUMS['disk_state_ok'],
-                      timeout=DEFAULT_DISK_TIMEOUT, sleep=DEFAULT_SLEEP):
+def wait_for_disks_status(disks, key='name', status=ENUMS['disk_state_ok'],
+                          timeout=DEFAULT_DISK_TIMEOUT, sleep=DEFAULT_SLEEP):
+    """ Description: Waits until all disks reached the requested status
+    :param disks: list of disk names/ids to poll on their status
+    :type disks: list
+    :param key: key to look for disks by, it can be name or id
+    :type key: str
+    :param status: state of disks disk_state_{ok, locked, illegal, invalid}
+    :type status: str
+    :param timeout: Maximum time to poll for disks to reach the requested state
+    :type timeout: int
+    :param sleep: polling interval
+    :type sleep: int
+    :return: True if disks reach the requested status, False otherwise
+    :rtype: bool
     """
-    Description: Waits till all disks are in the given state
-    Parameters:
-        * disksNames - string containing disks' names separated by comma
-        * status - desired state
-        * timeout - timeout how long should we wait
-        * sleep - polling interval
-    Author: jlibosva
-    Return: True if state was reached on all disks, False otherwise
-    """
-    if isinstance(disksNames, basestring):
-        disks = split(disksNames)
+    if isinstance(disks, basestring):
+        disks_list = disks.split()
     else:
-        disks = disksNames[:]
+        disks_list = disks[:]
 
-    [DISKS_API.find(disk) for disk in disks]
+    [DISKS_API.find(disk, attribute=key) for disk in disks_list]
 
     sampler = TimeoutingSampler(timeout, sleep, DISKS_API.get, absLink=False)
 
+    is_incorrect_state = lambda d, s: (d.get_status().get_state() != s)
     try:
         for sample in sampler:
-            disks_in_wrong_state = [
-                x for x in sample if (x.get_name() in disks and
-                                      (x.get_status().get_state() != status))]
-            if not disks_in_wrong_state:
+            disks_in_wrong_status = []
+            for x in sample:
+                if key == 'name':
+                    disk_to_poll = x.get_name()
+                elif key == 'id':
+                    disk_to_poll = x.get_id()
+                else:
+                    logger.error("Can't poll with key: {0}".format(key))
+                    break
+
+                if disk_to_poll not in disks_list:
+                    continue
+
+                logger.info(
+                    "polling on disk: {0} for state: {1}".format(
+                        disk_to_poll, status
+                    )
+                )
+                if is_incorrect_state(x, status):
+                    disks_in_wrong_status.append(x)
+
+            if not disks_in_wrong_status:
                 return True
+
     except APITimeout:
         logger.error(
-            "Timeout when waiting for all the disks %s in %s state" % (
-                disks, status))
+            "Timeout when waiting for all the disks {0} in {1} state".format(
+                disks, status
+            )
+        )
         return False
+
+    return False
 
 
 @is_action()

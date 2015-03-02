@@ -5,7 +5,7 @@
 import logging
 from utilities.machine import Machine
 from art.core_api.apis_exceptions import EntityNotFound
-from art.rhevm_api.tests_lib.low_level.disks import waitForDisksState
+from art.rhevm_api.tests_lib.low_level.disks import wait_for_disks_status
 from art.rhevm_api.tests_lib.low_level.vms import (
     activateVmDisk, waitForVMState, start_vms,
 )
@@ -33,7 +33,7 @@ def prepare_disks_for_vm(vm_name, disks_to_prepare):
     Raise DiskException if operation fails
     """
     for disk in disks_to_prepare:
-        assert waitForDisksState(disk, timeout=DISK_TIMEOUT)
+        assert wait_for_disks_status(disk, timeout=DISK_TIMEOUT)
         logger.info("Attaching disk %s to vm %s",
                     disk, vm_name)
         status = disks.attachDisk(True, disk, vm_name, active=False)

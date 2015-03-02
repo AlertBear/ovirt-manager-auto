@@ -103,7 +103,7 @@ def create_vm_with_disks(storage_domain, storage_type):
             storagedomain=storage_domain,
             format=config.DISK_FORMAT_COW, interface=config.INTERFACE_VIRTIO)
 
-    disks.waitForDisksState(",".join(DISKS_TO_PLUG + [UNATTACHED_DISK]))
+    disks.wait_for_disks_status(",".join(DISKS_TO_PLUG + [UNATTACHED_DISK]))
     for disk_name in DISKS_TO_PLUG:
         disks.attachDisk(True, disk_name, vm_name, False)
     return vm_name

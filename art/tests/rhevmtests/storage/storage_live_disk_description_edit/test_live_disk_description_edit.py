@@ -5,7 +5,7 @@ https://tcms.engineering.redhat.com/plan/14844
 
 import logging
 from art.rhevm_api.tests_lib.low_level.disks import (
-    deleteDisk, updateDisk, addDisk, attachDisk, waitForDisksState,
+    deleteDisk, updateDisk, addDisk, attachDisk, wait_for_disks_status,
     detachDisk, get_other_storage_domain,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
@@ -244,7 +244,7 @@ class TestCase396320(BasicEnvironment):
                 size=config.DISK_SIZE, interface=config.INTERFACE_VIRTIO,
                 sparse=True, format=config.DISK_FORMAT_COW,
                 storagedomain=self.storage_domain, bootable=False)
-        waitForDisksState(VM2_DISK1_ALIAS)
+        wait_for_disks_status(VM2_DISK1_ALIAS)
         attachDisk(True, VM2_DISK1_ALIAS, VM2_NAME)
 
     def tearDown(self):
@@ -342,8 +342,10 @@ class TestCase396322(BasicEnvironment):
             "LSM_disk_description_will_not_work_at_all"
         logger.info('Waiting until disk is locked, expected to be the'
                     'case when the Snapshot operation commences')
-        assert waitForDisksState(disk_dict[ALIAS],
-                                 status=config.DISK_LOCKED)
+        assert wait_for_disks_status(
+            disk_dict[ALIAS],
+            status=config.DISK_LOCKED
+        )
 
         for disk_dict in self.disk_aliases_and_descriptions:
             assert updateDisk(False, alias=disk_dict[ALIAS],
@@ -366,7 +368,7 @@ class TestCase396322(BasicEnvironment):
 
         wait_for_jobs()
         for disk_dict in self.disk_aliases_and_descriptions:
-            waitForDisksState(disk_dict[ALIAS], timeout=900, sleep=5)
+            wait_for_disks_status(disk_dict[ALIAS], timeout=900, sleep=5)
 
         stop_vms_safely([VM1_NAME])
         waitForVMState(VM1_NAME, config.VM_DOWN)

@@ -69,7 +69,7 @@ class TestCase281164(TestCase):
             size=disk_size, storagedomain=self.storage_domain, sparse=False,
             format=config.RAW_DISK, interface=config.INTERFACE_IDE)
 
-        assert disks.waitForDisksState(disk_name)
+        assert disks.wait_for_disks_status(disk_name)
 
         assert disks.attachDisk(True, disk_name, self.vm_name)
 

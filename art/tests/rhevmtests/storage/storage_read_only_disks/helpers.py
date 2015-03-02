@@ -4,7 +4,7 @@ Read Only Disk test helpers functions
 
 import logging
 from art.rhevm_api.tests_lib.low_level.disks import (
-    waitForDisksState, addDisk, get_all_disk_permutation, attachDisk,
+    wait_for_disks_status, addDisk, get_all_disk_permutation, attachDisk,
     check_disk_visibility, checkDiskExists, deleteDisk,
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import addStorageDomain
@@ -107,7 +107,7 @@ def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
     """
     is_ro = 'Read Only' if read_only else 'Read Write'
     for disk in disks_to_prepare:
-        waitForDisksState(disk, timeout=DISK_TIMEOUT)
+        wait_for_disks_status(disk, timeout=DISK_TIMEOUT)
         logger.info("Attaching disk %s as %s disk to vm %s",
                     disk, is_ro, vm_name)
         status = attachDisk(True, disk, vm_name, active=False,

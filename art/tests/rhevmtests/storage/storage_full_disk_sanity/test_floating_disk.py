@@ -43,10 +43,18 @@ class TestCase174614(TestCase):
                 size=config.GB, interface=config.VIRTIO_SCSI,
                 format=ENUMS['format_cow'], storagedomain=self.storage_domain))
 
-        self.assertTrue(disks.waitForDisksState(disksNames=[self.disk_name]))
+        self.assertTrue(
+            disks.wait_for_disks_status(
+                disksNames=[self.disk_name]
+            )
+        )
         logger.info("Attaching disk to vm %s" % self.vm_1)
         self.assertTrue(disks.attachDisk(True, self.disk_name, self.vm_1))
-        self.assertTrue(disks.waitForDisksState(disksNames=[self.disk_name]))
+        self.assertTrue(
+            disks.wait_for_disks_status(
+                disksNames=[self.disk_name]
+            )
+        )
         self.assertTrue(vms.startVm(True, self.vm_1))
         # TBD Extra validation How tests disk is working
         self.assertTrue(vms.stopVm(True, self.vm_1))
@@ -56,7 +64,11 @@ class TestCase174614(TestCase):
 
         logger.info("Attaching disk to vm %s" % self.vm_2)
         self.assertTrue(disks.attachDisk(True, self.disk_name, self.vm_2))
-        self.assertTrue(disks.waitForDisksState(disksNames=[self.disk_name]))
+        self.assertTrue(
+            disks.wait_for_disks_status(
+                disksNames=[self.disk_name]
+            )
+        )
         self.assertTrue(vms.startVm(True, self.vm_2))
         # TBD Extra validation How tests disk is working
 

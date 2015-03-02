@@ -9,7 +9,7 @@ from utilities.machine import Machine
 from utilities.utils import getIpAddressByHostName
 
 from art.rhevm_api.tests_lib.low_level.disks import (
-    waitForDisksState, get_other_storage_domain, attachDisk,
+    wait_for_disks_status, get_other_storage_domain, attachDisk,
     deleteDisk, getVmDisk, get_disk_storage_domain_name,
     getObjDisks, detachDisk, addDisk,
 )
@@ -191,7 +191,7 @@ class AllPermutationsDisks(BaseTestCase):
         Creating all possible combinations of disks for test
         """
         helpers.start_creating_disks_for_test(shared=self.shared)
-        assert waitForDisksState(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
+        assert wait_for_disks_status(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
         stop_vms_safely([self.vm])
         waitForVMState(vm=self.vm, state=ENUMS['vm_state_down'])
         helpers.prepare_disks_for_vm(config.VM_NAME, helpers.DISKS_NAMES)
@@ -1016,7 +1016,7 @@ class TestCase174424(CommonUsage):
                         "Can't create disk with params: %s" % disk_params)
                 logger.info("Waiting for disk %s to be ok",
                             disk_params['alias'])
-                waitForDisksState(disk_params['alias'])
+                wait_for_disks_status(disk_params['alias'])
                 self.disks_names.append(disk_params['alias'])
                 assert attachDisk(True, disk_params['alias'], vm_name)
 
@@ -1111,7 +1111,7 @@ class TestCase232947(AllPermutationsDisks):
         watch_logs(FILE_TO_WATCH, regex, '', MIGRATION_TIMEOUT,
                    self.host_ip, config.HOSTS_USER, config.HOSTS_PW)
         assert stopVm(True, config.VM_NAME)
-        waitForDisksState(disk_name, timeout=LIVE_MIGRATION_TIMEOUT)
+        wait_for_disks_status(disk_name, timeout=LIVE_MIGRATION_TIMEOUT)
         wait_for_jobs()
         start_vms([config.VM_NAME], 1, wait_for_ip=False)
         waitForVMState(config.VM_NAME)
@@ -1403,7 +1403,7 @@ class TestCase281206(BaseTestCase):
         status = deactivateVmDisk(False, config.VM_NAME, self.disk_name)
         self.assertTrue(status, "Succeeded to deactivate vm disk %s during "
                                 "live storage migration" % self.disk_name)
-        waitForDisksState(self.disk_name)
+        wait_for_disks_status(self.disk_name)
         wait_for_jobs()
 
     def tearDown(self):
@@ -1521,7 +1521,7 @@ class TestCase373597(SimpleCase):
         self.sd_args['lun_target'] = config.LUN_TARGET[-2]
 
         extendStorageDomain(True, target_sd, **self.sd_args)
-        waitForDisksState(disk_name)
+        wait_for_disks_status(disk_name)
         wait_for_jobs()
 
 
@@ -1644,7 +1644,7 @@ class TestCase174418(SimpleCase):
         live_migrate_vm(config.VM_NAME, wait=False)
         logger.info("Rebooting host (SPM) %s", spm_host)
         assert rebootHost(True, spm_host, config.HOSTS_USER, config.HOSTS_PW)
-        waitForDisksState(vm_disk, timeout=DISK_TIMEOUT)
+        wait_for_disks_status(vm_disk, timeout=DISK_TIMEOUT)
 
         status = verify_vm_disk_moved(config.VM_NAME, vm_disk, source_sd)
         self.assertFalse(status, "Succeeded to live migrate vm disk %s"
@@ -1670,7 +1670,7 @@ class TestCase174418(SimpleCase):
         logger.info("Rebooting host (SPM) %s", spm_host)
         assert rebootHost(True, hsm_host, config.HOSTS_USER, config.HOSTS_PW)
 
-        waitForDisksState(vm_disk, timeout=DISK_TIMEOUT)
+        wait_for_disks_status(vm_disk, timeout=DISK_TIMEOUT)
 
         status = verify_vm_disk_moved(config.VM_NAME, vm_disk, source_sd)
         self.assertFalse(status, "Succeeded to live migrate vm disk %s"
@@ -1702,7 +1702,7 @@ class TestCase174419(BaseTestCase):
         live_migrate_vm(config.VM_NAME, wait=False)
         logger.info("Rebooting host %s", host)
         assert rebootHost(True, host, config.HOSTS_USER, config.HOSTS_PW)
-        waitForDisksState(vm_disk, timeout=DISK_TIMEOUT)
+        wait_for_disks_status(vm_disk, timeout=DISK_TIMEOUT)
 
         status = verify_vm_disk_moved(config.VM_NAME, vm_disk, source_sd)
         self.assertFalse(status, "Succeeded to live migrate vm disk %s"
@@ -1768,7 +1768,7 @@ class TestCase174420(BaseTestCase):
         logger.info("Killing vms %s pid", config.VM_NAME)
         self._kill_vm_pid()
 
-        waitForDisksState(vm_disk, timeout=DISK_TIMEOUT)
+        wait_for_disks_status(vm_disk, timeout=DISK_TIMEOUT)
 
         status = verify_vm_disk_moved(config.VM_NAME, vm_disk, source_sd)
         self.assertFalse(status, "Succeeded to live migrate vm disk %s"
@@ -1845,7 +1845,7 @@ class TestCase174421(BaseTestCase):
                          "Succeeded to live migrate vm disk %s" % vm_disk)
 
     def tearDown(self):
-        waitForDisksState(self.disk_name)
+        wait_for_disks_status(self.disk_name)
         assert deleteDisk(True, self.disk_name)
         remove_all_vm_lsm_snapshots(config.VM_NAME)
 
@@ -1888,7 +1888,7 @@ class TestCase174426(CommonUsage):
                         "Can't create disk with params: %s" % disk_params)
                 logger.info("Waiting for disk %s to be ok",
                             disk_params['alias'])
-                waitForDisksState(disk_params['alias'])
+                wait_for_disks_status(disk_params['alias'])
                 self.disks_names.append(disk_params['alias'])
                 assert attachDisk(True, disk_params['alias'], vm_name,
                                   active=disk_params['active'])

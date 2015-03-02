@@ -47,17 +47,29 @@ class TestCase174621(TestCase):
                 format=ENUMS['format_raw'], storagedomain=self.storage_domain,
                 shareable=True, sparse=False))
 
-        self.assertTrue(disks.waitForDisksState(disksNames=[self.disk_name]))
+        self.assertTrue(
+            disks.wait_for_disks_status(
+                disksNames=[self.disk_name]
+            )
+        )
         logger.info("Attaching disk to vm %s" % self.vm_1)
         self.assertTrue(disks.attachDisk(True, self.disk_name, self.vm_1))
-        self.assertTrue(disks.waitForDisksState(disksNames=[self.disk_name]))
+        self.assertTrue(
+            disks.wait_for_disks_status(
+                disksNames=[self.disk_name]
+            )
+        )
         self.assertTrue(vms.waitForVmDiskStatus(self.vm_1, True,
                         diskAlias=self.disk_name, timeout=2, sleep=1))
         # TBD Extra validation ?
 
         logger.info("Attaching disk to vm %s" % self.vm_2)
         self.assertTrue(disks.attachDisk(True, self.disk_name, self.vm_2))
-        self.assertTrue(disks.waitForDisksState(disksNames=[self.disk_name]))
+        self.assertTrue(
+            disks.wait_for_disks_status(
+                disksNames=[self.disk_name]
+            )
+        )
         self.assertTrue(vms.waitForVmDiskStatus(self.vm_1, True,
                         diskAlias=self.disk_name, timeout=2, sleep=1))
         self.assertTrue(vms.waitForVmDiskStatus(self.vm_2, True,
@@ -113,7 +125,7 @@ class TestCase275816(TestCase):
             size=self.disk_size, storagedomain=storage_domain,
             format=ENUMS['format_raw'], interface=config.VIRTIO_SCSI,
             sparse=False)
-        assert disks.waitForDisksState(self.disk_name)
+        assert disks.wait_for_disks_status(self.disk_name)
         logger.info("Disk created")
 
         for vm in self.vm_names:

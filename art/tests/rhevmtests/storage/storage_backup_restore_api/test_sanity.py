@@ -918,8 +918,10 @@ class TestCase322486(TestCase):
         vms.move_vm_disk(self.vm_names[0], self.vm_disks[0].get_alias(),
                          self.destination_sd, wait=False)
 
-        disks.waitForDisksState(self.vm_disks[0].get_alias(),
-                                config.ENUMS['disk_state_locked'])
+        disks.wait_for_disks_status(
+            self.vm_disks[0].get_alias(),
+            config.ENUMS['disk_state_locked']
+        )
 
         status = vms.attach_backup_disk_to_vm(
             self.vm_names[0], self.vm_names[1],
@@ -935,10 +937,10 @@ class TestCase322486(TestCase):
         vm_disks = vms.getVmDisks(self.vm_names[0])
         logger.info("Moving disk %s to SD %s", vm_disks[0].get_alias(),
                     self.original_sd)
-        disks.waitForDisksState(vm_disks[0].get_alias())
+        disks.wait_for_disks_status(vm_disks[0].get_alias())
         vms.move_vm_disk(self.vm_names[0], vm_disks[0].get_alias(),
                          self.original_sd, wait=True)
-        disks.waitForDisksState(vm_disks[0].get_alias())
+        disks.wait_for_disks_status(vm_disks[0].get_alias())
 
 
 @attr(tier=1)

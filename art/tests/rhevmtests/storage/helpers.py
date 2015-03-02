@@ -7,7 +7,7 @@ import time
 from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost, getHostIP
 from utilities.machine import Machine, LINUX
 from art.rhevm_api.tests_lib.low_level.disks import (
-    waitForDisksState, attachDisk, addDisk, get_all_disk_permutation,
+    wait_for_disks_status, attachDisk, addDisk, get_all_disk_permutation,
     updateDisk,
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
@@ -64,7 +64,7 @@ def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
         disk_args['alias'] = disk
         disk_args['description'] = '%s_description' % disk
         assert addDisk(positive=True, **disk_args)
-        waitForDisksState(disk, timeout=DISK_TIMEOUT)
+        wait_for_disks_status(disk, timeout=DISK_TIMEOUT)
         logger.info("Attaching disk %s as %s disk to vm %s",
                     disk, is_ro, vm_name)
         status = attachDisk(True, disk, vm_name, active=False,
@@ -156,7 +156,7 @@ def create_disks_from_requested_permutations(domain_to_use,
                        sparse=disk_permutation['sparse'],
                        format=disk_permutation['format'],
                        storagedomain=domain_to_use, bootable=False)
-        assert waitForDisksState(disk_alias)
+        assert wait_for_disks_status(disk_alias)
     return lst_aliases_and_descriptions
 
 
