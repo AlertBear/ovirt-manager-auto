@@ -34,7 +34,7 @@ SPECIFIC_VMS_PARAMS = {
     },
     HA_RESERVATION_VM: {
         'highly_available': True,
-        'placement_host': HOSTS[1],
+        'placement_host': HOSTS[1] if len(HOSTS) >= 2 else None,
         'placement_affinity': ENUMS['vm_affinity_migratable']
     }
 }

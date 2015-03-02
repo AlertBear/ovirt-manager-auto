@@ -35,12 +35,7 @@ LOW_UTILIZATION = 20
 DURATION = 1
 CLUSTER_POLICY_NONE = 'none'
 CLUSTER_POLICY_PS = config.ENUMS['scheduling_policy_power_saving']
-# Mapping between hosts and vms for run once
-HOST_VM_MAP = {
-    config.VM_NAME[0]: config.HOSTS[0],
-    config.VM_NAME[1]: config.HOSTS[1],
-    config.VM_NAME[2]: config.HOSTS[2]
-}
+
 
 ########################################################################
 #                             Test Cases                               #
@@ -63,10 +58,12 @@ class PowerSavingWithPM(TestCase):
         Start vms, update cluster policy to Power_Saving
         with default parameters and load host CPU
         """
+        if not config.HOST_VM_MAP:
+            raise errors.SkipTest("Number of hosts not enough to run test")
         logger.info("Start vms")
         for vm in cls.vms_to_start:
-            logger.info("Run vm %s on host %s", vm, HOST_VM_MAP[vm])
-            if not vm_api.runVmOnce(True, vm, host=HOST_VM_MAP[vm]):
+            logger.info("Run vm %s on host %s", vm, config.HOST_VM_MAP[vm])
+            if not vm_api.runVmOnce(True, vm, host=config.HOST_VM_MAP[vm]):
                 raise errors.VMException("Failed to run vm")
         if cls.hosts_to_load:
             logger.info("Load host %s cpu to %d percent",
@@ -184,8 +181,8 @@ class SPMHostNotKilledByPolicy(PowerSavingWithPM):
     """
     __test__ = True
     vms_to_start = config.VM_NAME[1:3]
-    hosts_to_load = [config.HOSTS[1]]
-    host_down = config.HOSTS[2]
+    hosts_to_load = [config.HOSTS_WITH_DUMMY[1]]
+    host_down = config.HOSTS_WITH_DUMMY[2]
 
     @tcms('12295', '336561')
     @istest
@@ -207,8 +204,8 @@ class HostWithoutCPULoadingShutdownByPolicy(PowerSavingWithPM):
     """
     __test__ = True
     vms_to_start = config.VM_NAME[1:3]
-    hosts_to_load = [config.HOSTS[1]]
-    host_down = config.HOSTS[2]
+    hosts_to_load = [config.HOSTS_WITH_DUMMY[1]]
+    host_down = config.HOSTS_WITH_DUMMY[2]
 
     @tcms('12295', '336562')
     @istest
@@ -232,7 +229,7 @@ class HostStartedByPowerManagement(PowerSavingWithPM):
     """
     __test__ = True
     vms_to_start = config.VM_NAME[:2]
-    hosts_to_load = [config.HOSTS[1]]
+    hosts_to_load = [config.HOSTS_WITH_DUMMY[1]]
 
     @tcms('12295', '336569')
     @istest
@@ -259,7 +256,7 @@ class CheckPolicyControlOfPowerManagementFlag(PowerSavingWithPM):
     """
     __test__ = True
     vms_to_start = [config.VM_NAME[0]]
-    host_down = config.HOSTS[2]
+    host_down = config.HOSTS_WITH_DUMMY[2]
 
     @classmethod
     def setup_class(cls):
@@ -313,7 +310,7 @@ class StartHostWhenNoReservedHostLeft(PowerSavingWithPM):
         host_status = host_api.getHostState(config.HOSTS[1]) == config.HOST_UP
         host_up = config.HOSTS[1] if host_status else config.HOSTS[2]
         additional_vm = None
-        for vm, host in HOST_VM_MAP.iteritems():
+        for vm, host in config.HOST_VM_MAP.iteritems():
             if host == host_up:
                 logger.info("Run vm %s on host %s", vm, host)
                 if not vm_api.runVmOnce(True, vm, host=host):
@@ -410,7 +407,7 @@ class HostStoppedByUser(PowerSavingWithPM):
     """
     __test__ = True
     vms_to_start = [config.VM_NAME[0]]
-    host_down = config.HOSTS[1]
+    host_down = config.HOSTS_WITH_DUMMY[1]
 
     @classmethod
     def setup_class(cls):

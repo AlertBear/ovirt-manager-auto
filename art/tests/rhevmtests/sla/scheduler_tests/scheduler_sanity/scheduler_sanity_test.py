@@ -499,7 +499,10 @@ class TestNetworkFilter(UpdateVms):
     }
     vms_new_parameters = {
         config.VM_NAME[1]: {
-            'placement_host': config.HOSTS[1], 'placement_affinity': PINNED
+            'placement_host': config.HOSTS[1] if len(
+                config.HOSTS
+            ) >= 2 else None,
+            'placement_affinity': PINNED
         }
     }
     network_name = 'network_filter'

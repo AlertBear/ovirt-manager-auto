@@ -199,8 +199,13 @@ class MigrateVm(Affinity):
         """
         Start vms, and create new affinity group
         """
-        host_vm_dict = {config.VM_NAME[0]: config.HOSTS[0],
-                        config.VM_NAME[1]: config.HOSTS[1]}
+        if len(config.HOSTS) >= 2:
+            host_vm_dict = {
+                config.VM_NAME[0]: config.HOSTS[0],
+                config.VM_NAME[1]: config.HOSTS[1]
+            }
+        else:
+            raise errors.SkipTest("Not enough hosts to run this test")
         logger.info("Start vms on different hosts")
         for vm, host in host_vm_dict.iteritems():
             if not vm_api.runVmOnce(True, vm, host=host):

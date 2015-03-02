@@ -36,9 +36,6 @@ HIGH_UTILIZATION = random.randint(70, 90)
 LOW_UTILIZATION = random.randint(10, 30)
 CLUSTER_POLICIES = [config.ENUMS['scheduling_policy_evenly_distributed'],
                     config.ENUMS['scheduling_policy_power_saving'], 'none']
-START_VMS = {config.VM_NAME[0]: config.HOSTS[0],
-             config.VM_NAME[1]: config.HOSTS[1],
-             config.VM_NAME[2]: config.HOSTS[2]}
 
 
 @attr(tier=1)
@@ -50,8 +47,10 @@ class RhevmClusterPolicies(TestCase):
         """
         Start vm on specific host for future migration
         """
+        if not config.HOST_VM_MAP:
+            raise errors.SkipTest("Number of hosts not enough to run test")
         logger.info("Starting all vms")
-        for vm, host in START_VMS.iteritems():
+        for vm, host in config.HOST_VM_MAP.iteritems():
             logger.info("Run vm %s on host %s", vm, host)
             if not vm_api.runVmOnce(True, vm, host=host):
                 raise errors.VMException("Failed to run vm")

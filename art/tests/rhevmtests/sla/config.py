@@ -76,3 +76,13 @@ NUM_OF_DEVICES = int(STORAGE_CONF.get("%s_devices" % STORAGE_TYPE_NFS, 0))
 STORAGE_NAME = [
     "_".join([STORAGE_TYPE_NFS, str(i)]) for i in xrange(NUM_OF_DEVICES)
 ]
+
+HOST_VM_MAP = {
+    VM_NAME[0]: HOSTS[0],
+    VM_NAME[1]: HOSTS[1],
+    VM_NAME[2]: HOSTS[2]
+} if len(HOSTS) >= 3 else None
+
+HOSTS_WITH_DUMMY = list(HOSTS)
+while len(HOSTS_WITH_DUMMY) < 3:
+    HOSTS_WITH_DUMMY.append(None)
