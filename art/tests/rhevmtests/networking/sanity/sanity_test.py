@@ -2005,6 +2005,7 @@ class TestSanityCase26(TestCase):
     """
     Negative: Create more than 5 BONDS using dummy interfaces
     """
+    apis = set(["rest"])
     vlan_1 = config.VLAN_NETWORKS[0]
     vlan_id_1 = config.VLAN_ID[0]
 
