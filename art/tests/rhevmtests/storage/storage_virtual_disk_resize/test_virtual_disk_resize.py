@@ -399,7 +399,7 @@ class TestCase336100(DisksPermutationEnvironment):
     tcms_test_case = '336100'
     snap_description = 'snap_%s' % tcms_test_case
     is_preview = False
-    new_size = config.VM_DISK_SIZE + config.GB
+    new_size = config.DISK_SIZE + config.GB
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_Commit_snapshot_after_disk_resize(self):
