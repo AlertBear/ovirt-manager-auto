@@ -329,7 +329,7 @@ class TestCase304134(BaseTestCase):
         logger.info("%s contain backup volume", helpers.TRANSIENT_DIR_PATH)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase304156(BaseTestCase):
     """
     Attach snapshot disk of source VM to running backup VM
