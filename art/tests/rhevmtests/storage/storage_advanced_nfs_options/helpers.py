@@ -387,7 +387,8 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
             cluster=config.CLUSTER_NAME))
 
         self.assertTrue(ll_disks.wait_for_disks_status(
-            ",".join([self.disk_1, self.disk_2]), timeout=600))
+            [self.disk_1, self.disk_2], timeout=600)
+        )
 
         self.assertTrue(ll_disks.attachDisk(True, self.disk_1, self.vm_1))
         self.assertTrue(ll_disks.attachDisk(True, self.disk_2, self.vm_2))

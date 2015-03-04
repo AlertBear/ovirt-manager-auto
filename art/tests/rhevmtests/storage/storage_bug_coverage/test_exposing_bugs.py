@@ -167,7 +167,7 @@ class TestCase355191(TestCase):
         # If it fails, the disk are still being added, wait for them
         disks_aliases = [disk.get_alias() for disk in ll_vms.getVmDisks(
             config.VM_NAME[0])]
-        ll_disks.wait_for_disks_status(disksNames=disks_aliases)
+        ll_disks.wait_for_disks_status(disks=disks_aliases)
         assert ll_vms.removeVm(True, config.VM_NAME[0])
 
 

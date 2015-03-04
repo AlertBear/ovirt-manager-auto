@@ -919,8 +919,8 @@ class TestCase322486(TestCase):
                          self.destination_sd, wait=False)
 
         disks.wait_for_disks_status(
-            self.vm_disks[0].get_alias(),
-            config.ENUMS['disk_state_locked']
+            disks=self.vm_disks[0].get_alias(),
+            status=config.ENUMS['disk_state_locked']
         )
 
         status = vms.attach_backup_disk_to_vm(

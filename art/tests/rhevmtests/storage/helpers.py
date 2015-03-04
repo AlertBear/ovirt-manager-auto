@@ -64,7 +64,7 @@ def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
         disk_args['alias'] = disk
         disk_args['description'] = '%s_description' % disk
         assert addDisk(positive=True, **disk_args)
-        wait_for_disks_status(disk, timeout=DISK_TIMEOUT)
+        wait_for_disks_status([disk], timeout=DISK_TIMEOUT)
         logger.info("Attaching disk %s as %s disk to vm %s",
                     disk, is_ro, vm_name)
         status = attachDisk(True, disk, vm_name, active=False,
@@ -156,7 +156,7 @@ def create_disks_from_requested_permutations(domain_to_use,
                        sparse=disk_permutation['sparse'],
                        format=disk_permutation['format'],
                        storagedomain=domain_to_use, bootable=False)
-        assert wait_for_disks_status(disk_alias)
+        assert wait_for_disks_status([disk_alias])
     return lst_aliases_and_descriptions
 
 

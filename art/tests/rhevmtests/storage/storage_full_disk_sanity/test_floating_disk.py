@@ -45,14 +45,14 @@ class TestCase174614(TestCase):
 
         self.assertTrue(
             disks.wait_for_disks_status(
-                disksNames=[self.disk_name]
+                disks=[self.disk_name]
             )
         )
         logger.info("Attaching disk to vm %s" % self.vm_1)
         self.assertTrue(disks.attachDisk(True, self.disk_name, self.vm_1))
         self.assertTrue(
             disks.wait_for_disks_status(
-                disksNames=[self.disk_name]
+                disks=[self.disk_name]
             )
         )
         self.assertTrue(vms.startVm(True, self.vm_1))
@@ -66,7 +66,7 @@ class TestCase174614(TestCase):
         self.assertTrue(disks.attachDisk(True, self.disk_name, self.vm_2))
         self.assertTrue(
             disks.wait_for_disks_status(
-                disksNames=[self.disk_name]
+                disks=[self.disk_name]
             )
         )
         self.assertTrue(vms.startVm(True, self.vm_2))
