@@ -2653,19 +2653,20 @@ def checkVMConnectivity(
 
 @is_action()
 def getVmHost(vm):
-    '''
-    Explore which host is running the VM
-    Author: atal
-    parameter:
-        * vm - vm name
-    return - tuple (True, hostname in dict or False, None)
-    '''
+    """
+    Get host name for given running VM
+
+    :param vm: vm name
+    :type vm: str
+    :return:tuple (True, hostname in dict or False, None)
+    :rtype: tuple
+    """
     try:
         vm_obj = VM_API.find(vm)
-        host_obj = HOST_API.find(vm_obj.get_host(), 'id')
+        host_obj = HOST_API.find(vm_obj.get_host().id, "id")
     except EntityNotFound:
-        return False, {'vmHoster': None}
-    return True, {'vmHoster': host_obj.get_name()}
+        return False, {"vmHoster": None}
+    return True, {"vmHoster": host_obj.get_name()}
 
 
 @is_action()
