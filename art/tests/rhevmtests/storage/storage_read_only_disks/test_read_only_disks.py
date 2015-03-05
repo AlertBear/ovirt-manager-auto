@@ -214,7 +214,7 @@ class DefaultEnvironment(BaseTestCase):
         )
         assert wait_for_disks_status(
             helpers.DISKS_NAMES[self.storage],
-            timeout=TASK_TIMEOUT
+            timeout=DISK_TIMEOUT,
         )
         stop_vms_safely([self.vm_name])
         assert waitForVMState(vm=self.vm_name, state=config.VM_DOWN)

@@ -23,7 +23,7 @@ from art.core_api.apis_exceptions import EntityNotFound, APITimeout
 from art.core_api.apis_utils import data_st, TimeoutingSampler
 from art.rhevm_api.data_struct.data_structures import Fault
 from art.rhevm_api.tests_lib.low_level.datacenters import get_sd_datacenter
-from art.rhevm_api.utils.test_utils import get_api, split, waitUntilGone
+from art.rhevm_api.utils.test_utils import get_api, waitUntilGone
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.core_api import is_action
 from art.test_handler.settings import opts
