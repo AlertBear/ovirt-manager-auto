@@ -1,6 +1,7 @@
 """
 Storage full snapshot test - ram snapshot
 """
+from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 import config
 import logging
 from helpers import is_pid_running_on_vm, start_cat_process_on_vm
@@ -317,6 +318,8 @@ class ReturnToSnapshot(VMWithMemoryStateSnapshot):
                                          restore_memory=True),
                         'Could not restore RAM snapshot %s on vm %s' %
                         (self.memory_snapshot, self.vm))
+        logger.info("Wait for running jobs")
+        wait_for_jobs()
 
         logger.info('Starting vm %s')
         self.assertTrue(startVm(True, vm=self.vm, wait_for_ip=True,
