@@ -3387,19 +3387,24 @@ def is_snapshot_with_memory_state(vm_name, snapshot):
 
 def is_pid_running_on_vm(vm_name, pid, user, password):
     """
-    Description: Checks if a process with given pid is running on the vm
-    Author: gickowic
-    Parameters:
-        * vm_name - name of the vm
-        * pid - pid of the process to search for
-        * user - username used to login to vm
-        * password - password for the user
+    Checks if a process with given pid is running on the vm
+
+    :param vm_name: name of the vm
+    :type vm_name: str
+    :param pid: pid of the process to search for
+    :type pid: str
+    :param user: username used to login to vm
+    :type user: str
+    :param password: password for the user
+    :type password: str
+    :return: True if pid exists, False otherwise
+    :rtype: bool
     """
     status, vm_ip = waitForIP(vm_name)
     if not status:
         raise exceptions.CanNotFindIP("Failed to get IP for vm %s" % vm_name)
-    logger.debug('Got ip %s for vm %s', vm_ip, vm_name)
-    vm_machine_object = Machine(vm_ip, user, password).util(LINUX)
+    logger.debug('Got ip %s for vm %s', vm_ip['ip'], vm_name)
+    vm_machine_object = Machine(vm_ip['ip'], user, password).util(LINUX)
     return vm_machine_object.isProcessExists(pid)
 
 
