@@ -4,12 +4,14 @@ TCMS plan: https://tcms.engineering.redhat.com/plan/8676
 """
 
 import logging
+import time
 from art.unittest_lib import attr
 from art.unittest_lib import StorageTest as TestCase
 
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.utils import resource_utils
 from art.test_handler import exceptions
+from threading import Thread
 
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import vms, disks
@@ -23,6 +25,8 @@ from rhevmtests.storage.helpers import get_vm_ip, create_vm_or_clone
 
 LOGGER = logging.getLogger(__name__)
 GB = 1024 * 1024 * 1024
+FILE_TO_WATCH = '/var/log/ovirt-engine/engine.log'
+REGEX = 'createVolume'
 
 ENUMS = config.ENUMS
 STORAGE_DOMAIN_API = test_utils.get_api('storage_domain', 'storagedomains')
@@ -434,19 +438,24 @@ class TestCase320225(TestCase):
         if not templates.createTemplate(True, **template_args):
             raise exceptions.TemplateException(
                 "Failed creating template %s" % self.template_name)
+
+        t = Thread(target=log_listener.watch_logs, args=(
+            FILE_TO_WATCH, REGEX, '', 60,
+            config.VDC, config.HOSTS_USER, config.VDC_ROOT_PASSWORD))
+        LOGGER.info("Waiting for createVolume command in engine.log")
+        t.start()
+
+        time.sleep(5)
+
         LOGGER.info("Creating first vm %s from template %s" %
                     (self.vm_name_1, self.template_name))
         assert vms.createVm(True, self.vm_name_1, self.vm_name_1,
                             template=self.template_name,
                             cluster=config.CLUSTER_NAME)
-        LOGGER.info("Waiting for createVolume command in engine.log")
-        log_listener.watch_logs('/var/log/ovirt-engine/engine.log',
-                                'createVolume',
-                                '',
-                                time_out=60,
-                                ip_for_files=config.VDC,
-                                username='root',
-                                password=config.VDC_ROOT_PASSWORD)
+
+        t.join()
+        time.sleep(5)
+
         LOGGER.info("Starting to create vm %s from template %s" %
                     (self.vm_name_2, self.template_name))
         assert vms.createVm(True, self.vm_name_2, self.vm_name_2,
