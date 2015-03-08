@@ -265,6 +265,7 @@ class TestCase141612(BasicEnvironmentSetUp):
             ensure_vm_down=True)
         self.assertTrue(self.previewed,
                         "Failed to preview snapshot %s" % self.snapshot_desc)
+        wait_for_jobs()
 
         assert vms.startVm(
             True, vm=vm_name, wait_for_status=config.VM_UP)
