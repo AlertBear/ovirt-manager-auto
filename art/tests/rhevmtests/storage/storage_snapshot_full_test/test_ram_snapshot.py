@@ -221,11 +221,13 @@ class CreateSnapshotWithMemoryState(DCWithStoragesActive):
         Set vm to run on specified host the start vm
         """
         super(CreateSnapshotWithMemoryState, cls).setup_class()
+        startVms([cls.vm], wait_for_status=config.VM_UP)
+        logger.info("Wait for running jobs to complete")
+        wait_for_jobs()
         logger.info('VM %s', cls.vm)
         cls.host_for_test = getVmHost(cls.vm)[1]['vmHoster']
         logger.info('Setting vm %s to run on host: %s', cls.vm,
                     cls.host_for_test)
-        startVms([cls.vm], wait_for_status=config.VM_UP)
 
     def create_snapshot(self):
         """
