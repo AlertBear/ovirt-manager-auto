@@ -28,7 +28,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     waitForVmsStates, preview_snapshot, undo_snapshot_preview, commit_snapshot,
     removeVmFromExportDomain, does_vm_exist, DiskNotFound,
     get_vms_disks_storage_domain_name, waitForDisksStat,
-    safely_remove_vms, get_vm_bootable_disk,
+    safely_remove_vms, get_vm_bootable_disk, remove_all_vm_lsm_snapshots,
 )
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
 from art.rhevm_api.tests_lib.high_level.storagedomains import (
@@ -912,6 +912,7 @@ class TestCase332483(DefaultSnapshotEnvironment):
         stop_vms_safely([self.vm_name])
         waitForVMState(self.vm_name, config.VM_DOWN)
         if self.create_snapshot:
+            logger.info("Undoing snapshot %s", self.snapshot_description)
             if not undo_snapshot_preview(True, self.vm_name):
                 logger.error("Error undoing snapshot snapshot preview for %s",
                              self.vm_name)
@@ -982,6 +983,7 @@ class TestCase337931(DefaultSnapshotEnvironment):
 
         assert status
 
+        logger.info("Undoing snapshot %s", self.snapshot_description)
         status = undo_snapshot_preview(True, self.vm_name)
         start_vms([self.vm_name], 1, wait_for_ip=False)
         assert waitForVMState(self.vm_name)
@@ -998,6 +1000,7 @@ class TestCase337931(DefaultSnapshotEnvironment):
         stop_vms_safely([self.vm_name])
         waitForVMState(self.vm_name, config.VM_DOWN)
         if self.create_snapshot:
+            logger.info("Undoing snapshot %s", self.snapshot_description)
             if not undo_snapshot_preview(True, self.vm_name):
                 logger.error("Error previewing snapshot for %s", self.vm_name)
 
@@ -1063,6 +1066,7 @@ class TestCase337930(DefaultSnapshotEnvironment):
         self.create_snapshot = True
         assert status
 
+        logger.info("Committing snapshot %s", self.snapshot_description)
         status = commit_snapshot(True, self.vm_name)
         start_vms([self.vm_name], 1, wait_for_ip=False)
         assert waitForVMState(self.vm_name)
@@ -1079,6 +1083,7 @@ class TestCase337930(DefaultSnapshotEnvironment):
         stop_vms_safely([self.vm_name])
         waitForVMState(self.vm_name, config.VM_DOWN)
         if self.create_snapshot:
+            logger.info("Undoing snapshot %s", self.snapshot_description)
             if not undo_snapshot_preview(True, self.vm_name):
                 logger.error("Error previewing snapshot for %s", self.vm_name)
                 # Something went wrong removing the snapshot, remove and
@@ -1479,6 +1484,10 @@ class TestCase332477(DefaultEnvironment):
                 "Disk %s is read only after move to different storage domain"
                 % vm_disk.get_alias()
             )
+
+    def tearDown(self):
+        super(TestCase332477, self).tearDown()
+        remove_all_vm_lsm_snapshots(self.vm_name)
 
 
 @attr(tier=1)
