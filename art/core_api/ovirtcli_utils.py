@@ -940,22 +940,29 @@ class CliUtil(RestUtil):
 
     def create(self, entity, positive, expectedEntity=None, incrementBy=1,
                async=False, collection=None, compare=True):
-        '''
+        """
         Description: creates a new element
         Author: edolinin
-        Parameters:
-           * entity - entity for post body
-           * positive - if positive or negative verification should be done
-           * expectedEntity - if there are some expected entity different
+        :param entity: entity for post bod
+        :type entity: str
+        :param positive: if positive or negative verification should be done
+        :type positive: bool
+        :param expectedEntity: if there are some expected entity different
                               from sent
-           * incrementBy - increment by number of elements
-           * async -sync or async request
-           * collection - collection to use for add command
-           * compare - True by default and run compareElements,
+        :type expectedEntity: str
+        :param incrementBy: increment by number of elements
+        :type incrementBy: int
+        :param async: sync or async request
+        :type async: bool
+        :param collection: collection to use for add command
+        :type collection: collection
+        :param compare: True by default and run compareElements,
                        otherwise compareElements doesn't run
-        Return: POST response (None on parse error.),
+        :type compare: bool
+        :return: POST response (None on parse error.),
                 status (True if POST test succeeded, False otherwise.)
-        '''
+        :rtype: tuple string, bool
+        """
         out = ''
         addEntity = validator.cliEntety(entity, self.element_name)
         createCmd = "add {0} {1}".format(self.cli_element_name, addEntity)
@@ -1044,6 +1051,14 @@ class CliUtil(RestUtil):
                     return response, False
 
                 self.logger.info("New entity was added successfully")
+            # We will get to this else in case we have a negative test which
+            # did not get an exception - the negative flow was successful in
+            # creating the requested object even though it shouldn't have
+            else:
+                self.logger.info(
+                    "New entity was added successfully, not as expected"
+                )
+                return response, False
         return response, True
 
     def update(self, origEntity, newEntity, positive,
