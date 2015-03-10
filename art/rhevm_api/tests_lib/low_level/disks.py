@@ -402,6 +402,7 @@ def wait_for_disks_status(disks, key='name', status=ENUMS['disk_state_ok'],
     else:
         disks_list = disks[:]
 
+    logger.info("Waiting for status %s on disks %s", status, disks_list)
     [DISKS_API.find(disk, attribute=key) for disk in disks_list]
 
     sampler = TimeoutingSampler(timeout, sleep, DISKS_API.get, absLink=False)
@@ -422,7 +423,7 @@ def wait_for_disks_status(disks, key='name', status=ENUMS['disk_state_ok'],
                 if disk_to_poll not in disks_list:
                     continue
 
-                logger.info(
+                logger.debug(
                     "polling on disk: {0} for state: {1}".format(
                         disk_to_poll, status
                     )

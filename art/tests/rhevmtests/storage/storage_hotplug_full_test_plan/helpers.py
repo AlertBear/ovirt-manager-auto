@@ -29,6 +29,7 @@ HOOKJPEG = tempfile.mkstemp(suffix=".jpeg")[1]
 DISKS_TO_PLUG = ["disk_to_plug_%s" % x for x in range(10)]
 UNATTACHED_DISK = "unattached_disk"
 TEXT = 'Hello World!'
+DISKS_WAIT_TIMEOUT = 300
 
 
 MAIN_HOOK_DIR = "/usr/libexec/vdsm/hooks/"
@@ -103,7 +104,9 @@ def create_vm_with_disks(storage_domain, storage_type):
             storagedomain=storage_domain,
             format=config.DISK_FORMAT_COW, interface=config.INTERFACE_VIRTIO)
 
-    disks.wait_for_disks_status(DISKS_TO_PLUG + [UNATTACHED_DISK])
+    disks.wait_for_disks_status(
+        DISKS_TO_PLUG + [UNATTACHED_DISK], timeout=DISKS_WAIT_TIMEOUT,
+    )
     for disk_name in DISKS_TO_PLUG:
         disks.attachDisk(True, disk_name, vm_name, False)
     return vm_name
