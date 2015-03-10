@@ -39,9 +39,9 @@ def _restore_empty_dc():
             for sd in non_master_sds:
                 hl_sd.detach_and_deactivate_domain(config.DATA_CENTER_NAME, sd)
         master_sd = master_sd['masterDomain']
-        test_utils.wait_for_tasks(
-            vdc=config.VDC, vdc_password=config.VDC_PASSWORD,
-            datacenter=config.DATA_CENTER_NAME)
+        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  config.DATA_CENTER_NAME)
         assert storagedomains.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, master_sd)
         dcObj = dc_api.find(config.DATA_CENTER_NAME)
@@ -335,12 +335,18 @@ class TestCase288983(TestCase):
         conn_id = conns[0].id
         host = config.HOSTS[0]
         assert not storageconnections.remove_storage_connection(conn_id, host)
+        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  config.DATA_CENTER_NAME)
         assert storagedomains.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name_1)
         assert not storageconnections.remove_storage_connection(conn_id, host)
         assert storagedomains.detachConnectionFromStorageDomain(
             self.sd_name_1, conn_id)
         assert not storageconnections.remove_storage_connection(conn_id, host)
+        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  config.DATA_CENTER_NAME)
         assert storagedomains.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name_2)
         assert not storageconnections.remove_storage_connection(conn_id, host)
@@ -646,9 +652,15 @@ class TestCase288975(TestCase):
         """
         conn = storagedomains.getConnectionsForStorageDomain(self.sd_name_1)[0]
         self._try_to_change_connection(conn.id, False)
+        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  config.DATA_CENTER_NAME)
         assert storagedomains.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name_2)
         self._try_to_change_connection(conn.id, False)
+        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  config.DATA_CENTER_NAME)
         assert storagedomains.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name_1)
         self._try_to_change_connection(conn.id, True)
@@ -713,6 +725,9 @@ class TestCase288968(TestCase):
         """
         assert not storagedomains.addConnectionToStorageDomain(
             self.sd_name_1, self.conn.id)
+        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  config.DATA_CENTER_NAME)
         assert storagedomains.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name_1)
         assert storagedomains.addConnectionToStorageDomain(
@@ -720,6 +735,9 @@ class TestCase288968(TestCase):
         assert storagedomains.activateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name_1)
 
+        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  config.DATA_CENTER_NAME)
         assert storagedomains.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name_2)
         assert storagedomains.addConnectionToStorageDomain(

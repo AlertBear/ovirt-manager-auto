@@ -4,7 +4,6 @@ import logging
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
 from utilities.machine import Machine
-from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import storageconnections
@@ -12,6 +11,7 @@ from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import clusters
 from art.rhevm_api.tests_lib.low_level import datacenters
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 
 LOGGER = logging.getLogger(__name__)
 
@@ -112,6 +112,9 @@ class TestCasePosix(TestCase):
         pass
 
     def positive_flow(self, vfs_type):
+        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  config.DATA_CENTER_NAME)
         assert storagedomains.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name)
 
@@ -274,6 +277,9 @@ class TestCase288710(TestCaseNFS):
     def test_change_conn_more_than_once(self):
         """ Tries to change the same connection twice.
         """
+        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  config.DATA_CENTER_NAME)
         assert storagedomains.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name)
 
@@ -297,6 +303,9 @@ class TestCase288710(TestCaseNFS):
         assert storagedomains.activateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name)
 
+        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  config.DATA_CENTER_NAME)
         assert storagedomains.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name)
 
@@ -348,6 +357,9 @@ class TestCase293074(TestCaseNFS):
         """ Tries to edit storage connection when there is no host in DC,
             action should fail.
         """
+        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  config.DATA_CENTER_NAME)
         assert storagedomains.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name)
 
@@ -395,6 +407,9 @@ class TestCase288708(TestCaseLocalFS):
     def test_change_local_connection(self):
         """ Tries to change a local connection
         """
+        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  config.DATA_CENTER_NAME)
         LOGGER.info("Deactivating storage domain")
         assert storagedomains.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name)
@@ -416,8 +431,10 @@ class TestCase288708(TestCaseLocalFS):
         LOGGER.info("Test finished successfully")
 
     def tearDown(self):
-        # don't assert, it may be still active
-        LOGGER.info("Tear down")
+        LOGGER.info("Class tearDown")
+        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  config.DATA_CENTER_NAME)
         storagedomains.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name)
 

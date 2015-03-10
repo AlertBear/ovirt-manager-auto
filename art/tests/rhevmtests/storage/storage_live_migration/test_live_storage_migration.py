@@ -2,12 +2,11 @@
 Storage live migration sanity test - 6128
 https://tcms.engineering.redhat.com/plan/6128/
 """
-
+import config
 import logging
 from time import sleep
 from utilities.machine import Machine
 from utilities.utils import getIpAddressByHostName
-
 from art.rhevm_api.tests_lib.low_level.disks import (
     wait_for_disks_status, get_other_storage_domain, attachDisk,
     deleteDisk, getVmDisk, get_disk_storage_domain_name,
@@ -43,13 +42,11 @@ from art.rhevm_api.utils.storage_api import (
 import rhevmtests.storage.helpers as storage_helpers
 from rhevmtests.storage.storage_live_migration import helpers
 from art.unittest_lib.common import StorageTest as BaseTestCase
-
 from art.rhevm_api.utils.test_utils import (
-    get_api, setPersistentNetwork, restartVdsmd,
+    get_api, setPersistentNetwork, restartVdsmd, wait_for_tasks,
 )
 from art.test_handler import exceptions
 from art.test_handler.tools import tcms  # pylint: disable=E0611
-import config
 
 logger = logging.getLogger(__name__)
 
@@ -948,6 +945,9 @@ class TestCase168839(BaseTestCase):
         self.target_sd = get_other_storage_domain(self.vm_disk.get_alias(),
                                                   config.VM_NAME)
 
+        logger.info("Waiting for tasks before deactivating the storage domain")
+        wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                       config.DATA_CENTER_NAME)
         deactivateStorageDomain(True, config.DATA_CENTER_NAME, self.target_sd)
         assert waitForStorageDomainStatus(
             True, config.DATA_CENTER_NAME, self.target_sd,
@@ -1900,6 +1900,9 @@ class TestCase174426(CommonUsage):
         self.disks_names = []
         stop_vms_safely([config.VM_NAME])
         self._prepare_disks_for_vm(config.VM_NAME)
+        logger.info("Waiting for tasks before deactivating the storage domain")
+        wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                       config.DATA_CENTER_NAME)
         assert deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, SD_NAME_2)
 

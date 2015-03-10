@@ -82,6 +82,10 @@ class TestCase94947(TestCase):
         """
         Removes storage domain created with setUp
         """
+        logger.info("Waiting for tasks before deactivating/removing the "
+                    "storage domain")
+        wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                       config.DATA_CENTER_NAME)
         logger.info("Removing Storage domain '%s'", self.sd_name)
         self.assertTrue(ll_st_domains.removeStorageDomains(True, self.sd_name,
                                                            self.spm_host),

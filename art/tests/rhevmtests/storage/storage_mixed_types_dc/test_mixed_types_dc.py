@@ -422,6 +422,9 @@ class TestCase336530(IscsiNfsSD):
         """
         Perform basic disk sanity after reconstruct
         """
+        logger.info("Waiting for tasks before deactivating the storage domain")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  config.DATA_CENTER_NAME)
         logger.info("Maintenance master domain %s", self.master_domain)
         assert ll_sd.deactivateStorageDomain(True, config.DATA_CENTER_NAME,
                                              self.master_domain)
@@ -509,7 +512,10 @@ class TestCase336594(BaseCaseDCMixed):
         """
         Reinitialize from unattached storage domain
         """
-        logger.info("Maintenance ISCSI domain")
+        logger.info("Waiting for tasks before deactivating the storage domain")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  config.DATA_CENTER_NAME)
+        logger.info("Deactivate iSCSI domain")
         ll_sd.deactivateStorageDomain(True, config.DATA_CENTER_NAME,
                                       self.iscsi)
 
@@ -799,14 +805,21 @@ class TestCase336601(BaseCaseDCMixed):
         assert helpers.add_storage_domain(
             config.DATA_CENTER_NAME, **config.ISCSI_DOMAIN2)
 
-        logger.info("Removing storage doamins")
+        logger.info("Waiting for tasks before deactivating/removing the "
+                    "storage domain")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  config.DATA_CENTER_NAME)
+        logger.info("Removing storage domain")
         assert ll_sd.removeStorageDomains(
             True, [self.iscsi2], config.HOST)
 
-        logger.info("Make sure to remove Data Center")
+        logger.info("Waiting for tasks before deactivating the storage domain")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  config.DATA_CENTER_NAME)
         assert ll_sd.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.iscsi)
 
+        logger.info("Make sure to remove Data Center")
         assert ll_sd.removeDataCenter(True, config.DATA_CENTER_NAME)
         assert ll_dc.addDataCenter(
             True, name=config.DATA_CENTER_NAME, local=False,

@@ -351,10 +351,10 @@ class TestCase174613(TestCase):
         if not vms.safely_remove_vms([config.LIFECYCLE_VM]):
             logger.info("Failed to remove vm %s", config.LIFECYCLE_VM)
 
-        logger.info('Waiting for all vms to be removed')
+        logger.info("Waiting for tasks before deactivating/removing the "
+                    "storage domain")
         wait_for_tasks(config.VDC, config.VDC_PASSWORD,
                        config.DATA_CENTER_NAME)
-
         logger.info('Removing storage domains')
         assert ll_st_domains.removeStorageDomains(
             True, cls.sd_names, config.FIRST_HOST)
@@ -478,8 +478,12 @@ class TestCase147888(TestCase):
     @classmethod
     def teardown_class(cls):
         """
-        Removes SD's
+        Removes Storage domains
         """
+        logger.info("Waiting for tasks before deactivating/removing the "
+                    "storage domain")
+        wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                       config.DATA_CENTER_NAME)
         logger.info('Removing storage domains')
         assert ll_st_domains.removeStorageDomains(
             True, cls.sd_names, config.FIRST_HOST)
@@ -566,6 +570,8 @@ class TestCase174631(TestCase):
             raise exceptions.VMException(
                 "Failed to remove vm %s" % config.LIFECYCLE_VM)
 
+        logger.info("Waiting for tasks before deactivating/removing the "
+                    "storage domain")
         wait_for_tasks(config.VDC, config.VDC_PASSWORD,
                        config.DATA_CENTER_NAME)
 
@@ -611,6 +617,10 @@ class TestCase284310(TestCase):
         """
         Removes SD
         """
+        logger.info("Waiting for tasks before deactivating/removing the "
+                    "storage domain")
+        wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                       config.DATA_CENTER_NAME)
         logger.info('Removing storage domains')
         assert ll_st_domains.removeStorageDomains(
             True, cls.sd_names, config.FIRST_HOST)
@@ -671,6 +681,8 @@ class TestUpgrade(TestCase):
         LOGGER.info("Remove vm %s", cls.vm_name)
         vms.safely_remove_vms([cls.vm_name])
 
+        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        wait_for_tasks(config.VDC, config.VDC_PASSWORD, cls.dc_name)
         LOGGER.info('Deactivating non master storage domains')
         assert ll_st_domains.execOnNonMasterDomains(
             True, cls.dc_name, 'deactivate', 'all')
@@ -682,7 +694,8 @@ class TestUpgrade(TestCase):
             True, cls.dc_name)
         LOGGER.info('Deactivating master storage domains %s',
                     master_name['masterDomain'])
-
+        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        wait_for_tasks(config.VDC, config.VDC_PASSWORD, cls.dc_name)
         assert ll_st_domains.deactivateStorageDomain(
             True, cls.dc_name, master_name['masterDomain'])
 

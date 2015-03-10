@@ -1,15 +1,14 @@
-import logging
 import config
-
+import logging
 from art.core_api.apis_exceptions import EntityNotFound
-from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
-
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_datacenters
 from art.rhevm_api.tests_lib.low_level import hosts, clusters, storagedomains
+from art.rhevm_api.utils.test_utils import wait_for_tasks
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +81,10 @@ class TestCase99062(TestCase):
                 format = 'true'
             else:
                 format = 'false'
+            logger.info("Waiting for tasks before deactivating the "
+                        "non-master storage domain")
+            wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                           config.DATA_CENTER_NAME)
             assert storagedomains.deactivateStorageDomain(
                 True, config.DATA_CENTER_NAME, sd)
             assert storagedomains.detachStorageDomain(
@@ -89,6 +92,10 @@ class TestCase99062(TestCase):
             assert storagedomains.removeStorageDomain(
                 True, sd, self.host, format=format)
 
+        logger.info("Waiting for tasks before deactivating the master storage "
+                    "domain")
+        wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                       config.DATA_CENTER_NAME)
         assert storagedomains.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.master_domain)
 

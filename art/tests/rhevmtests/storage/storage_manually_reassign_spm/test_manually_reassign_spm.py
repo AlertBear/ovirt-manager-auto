@@ -17,6 +17,7 @@ from art.rhevm_api.tests_lib.low_level.hosts import (
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
+from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 
 logger = logging.getLogger(__name__)
@@ -342,6 +343,9 @@ class TestCase289890(DCUp):
         deactivate non master domain
         """
         super(TestCase289890, cls).setup_class()
+        logger.info("Waiting for tasks before deactivating the storage domain")
+        wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                       config.DATA_CENTER_NAME)
         logger.info('deactivating non-master domain %s', cls.nonmaster_domain)
         assert deactivateStorageDomain(True, config.DATA_CENTER_NAME,
                                        cls.nonmaster_domain)
@@ -351,8 +355,10 @@ class TestCase289890(DCUp):
         """
         Deactivate domain and select new spm during deactivate process
         """
+        logger.info("Waiting for tasks before deactivating the storage domain")
+        wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                       config.DATA_CENTER_NAME)
         logger.info('Deactivating storage domain %s', self.master_domain)
-
         self.assertTrue(deactivateStorageDomain(True,
                                                 config.DATA_CENTER_NAME,
                                                 self.master_domain))

@@ -16,6 +16,7 @@ import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost
+from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from utilities import machine
 from utilities.rhevm_tools.base import Utility, Setup
@@ -185,6 +186,8 @@ class BaseCaseIsoDomains(TestCase):
             assert ll_vms.attach_cdrom_vm(True, self.vm_name, config.ISO_IMAGE)
             assert ll_vms.startVm(True, self.vm_name)
 
+        logger.info("Waiting for tasks before deactivating the storage domain")
+        wait_for_tasks(config.VDC, config.VDC_PASSWORD, self.data_center_name)
         status = ll_sd.deactivateStorageDomain(
             False, self.data_center_name, self.iso_domain_name
         )
@@ -194,6 +197,8 @@ class BaseCaseIsoDomains(TestCase):
         )
 
         assert ll_vms.eject_cdrom_vm(self.vm_name)
+        logger.info("Waiting for tasks before deactivating the storage domain")
+        wait_for_tasks(config.VDC, config.VDC_PASSWORD, self.data_center_name)
         status = ll_sd.deactivateStorageDomain(
             True, self.data_center_name, self.iso_domain_name)
         self.assertTrue(

@@ -215,17 +215,19 @@ def setup_module():
 
 def teardown_module():
     """
-    Removes storage domains from data-center to unassigned and removes
-    data-center
+    Removes storage domains from data center to unassigned and removes
+    data center
     """
+    LOGGER.info("Waiting for tasks before deactivating the master storage "
+                "domain")
     wait_for_tasks(config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
-    LOGGER.info("Putting datacenter to maintenance")
+    LOGGER.info("De-activating master storage domain")
     assert storagedomains.deactivateStorageDomain(
         True,
         config.DATA_CENTER_NAME,
         MASTER_DOMAIN
     )
-    LOGGER.info("Removing datacenter")
+    LOGGER.info("Removing Data Center")
     assert datacenters.removeDataCenter(True, config.DATA_CENTER_NAME)
 
 
@@ -275,6 +277,10 @@ class DataCenterWithSD(TestCase):
                                                  cls.non_master)
         if non_master.status.state == \
                 config.ENUMS['storage_domain_state_active']:
+            LOGGER.info("Waiting for tasks before deactivating the non-master "
+                        "storage domain")
+            wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                           config.DATA_CENTER_NAME)
             LOGGER.info("Deactivating storage domain %s", non_master.name)
             assert storagedomains.deactivateStorageDomain(
                 True,
@@ -556,6 +562,10 @@ class ReconstructWith2UnreachableDomainsAnd1ReachableDomain(DataCenterWithSD):
             datacenter=config.DATA_CENTER_NAME,
             storagedomain=cls.non_master2
         )
+        LOGGER.info("Waiting for tasks before deactivating the master storage "
+                    "domain")
+        wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                       config.DATA_CENTER_NAME)
         LOGGER.info("Deactivating master domain %s in order to have master "
                     "domain on domain that is on same server as other one",
                     cls.master_domain)
