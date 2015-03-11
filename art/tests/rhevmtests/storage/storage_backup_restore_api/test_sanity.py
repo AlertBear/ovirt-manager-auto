@@ -895,6 +895,10 @@ class TestCase322486(TestCase):
     """
     __test__ = True
     tcms_test_case = '322486'
+    bz = {
+        '1196049': {'engine': None, 'version': ['3.5.1']},
+        '1176673': {'engine': None, 'version': ['3.6']},
+    } if TestCase.storage == config.STORAGE_TYPE_ISCSI else None
 
     def setUp(self):
         self.vm_names = VM_NAMES[TestCase.storage]
@@ -986,6 +990,10 @@ class TestCase322886(TestCase):
     """
     __test__ = True
     tcms_test_case = '322886'
+    bz = {
+        '1196049': {'engine': None, 'version': ['3.5.1']},
+        '1176673': {'engine': None, 'version': ['3.6']},
+    } if TestCase.storage == config.STORAGE_TYPE_ISCSI else None
 
     def setUp(self):
         self.vm_names = VM_NAMES[TestCase.storage]

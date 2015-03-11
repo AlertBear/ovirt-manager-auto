@@ -1387,6 +1387,10 @@ class TestCase334877(DefaultEnvironment):
     """
     __test__ = True
     tcms_test_case = '334877'
+    bz = {
+        '1196049': {'engine': None, 'version': ['3.5.1']},
+        '1176673': {'engine': None, 'version': ['3.6']},
+    } if TestCase.storage == config.STORAGE_TYPE_ISCSI else None
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_moving_RO_disk(self):
@@ -1449,6 +1453,10 @@ class TestCase332477(DefaultEnvironment):
     """
     __test__ = True
     tcms_test_case = '332477'
+    bz = {
+        '1196049': {'engine': None, 'version': ['3.5.1']},
+        '1176673': {'engine': None, 'version': ['3.6']},
+    } if TestCase.storage == config.STORAGE_TYPE_ISCSI else None
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_live_migrate_RO_disk(self):
@@ -1526,6 +1534,10 @@ class TestCase334876(DefaultEnvironment):
     """
     __test__ = True
     tcms_test_case = '334876'
+    bz = {
+        '1196049': {'engine': None, 'version': ['3.5.1']},
+        '1176673': {'engine': None, 'version': ['3.6']},
+    } if TestCase.storage == config.STORAGE_TYPE_ISCSI else None
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_live_migrate_RW_disk(self):
