@@ -7,7 +7,6 @@ import logging
 import helpers
 
 from art.rhevm_api.utils import test_utils
-from art.rhevm_api.tests_lib.high_level import vms as hi_vms
 
 from art.rhevm_api.tests_lib.low_level import vms, disks
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
@@ -179,7 +178,7 @@ class TestCase334692(VmWithAnotherDiskWhileStatus):
         """
         Remove the disks from the VM
         """
-        hi_vms.shutdown_vm_if_up(self.vm_name)
+        vms.stop_vms_safely([self.vm_name])
         disk_names = []
         for permutation in DISK_PERMUTATIONS:
             disk_name = "%s_%s_%s_%s_disk" % (self.vm_name,
