@@ -3740,12 +3740,17 @@ def get_vm_boot_sequence(vm_name):
     return [boot.get_dev() for boot in boots]
 
 
-def remove_all_vms_from_cluster(cluster_name, skip=None):
+def remove_all_vms_from_cluster(cluster_name, skip=None, wait=False):
     """
     Stop if need and remove all exists vms from specific cluster
 
     :param cluster_name: cluster name
+    :type cluster_name: str
     :param skip: list of names of vms which should be left
+    :type skip: list
+    :param wait : If wait is False the remove will be asynchrony
+                  else we will wait for each remove VM to finish
+    :type wait: bool
     :return: True, if all vms removed from cluster, False otherwise
     :rtype: bool
     """
@@ -3761,9 +3766,12 @@ def remove_all_vms_from_cluster(cluster_name, skip=None):
                 vms_in_cluster.append(vm_obj.get_name())
     if vms_in_cluster:
         stop_vms_safely(vms_in_cluster)
-        if not removeVms(True, vms_in_cluster):
-            return False
-    return True
+        log = "" if wait else "asynchrony"
+        logger.info("Remove VMs %s", log)
+        for vm in vms_in_cluster:
+            logger.info("send delete command to vm: %s", vm)
+            removeVm(True, vm, wait=wait)
+        return waitForVmsGone(True, vms_in_cluster)
 
 
 def get_vm_display_port(vm_name):

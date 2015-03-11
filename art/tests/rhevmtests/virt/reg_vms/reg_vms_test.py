@@ -72,8 +72,10 @@ class BaseVm(TestCase):
         Remove all vms from cluster
         """
         logger.info("Remove all vms")
-        if not vm_api.remove_all_vms_from_cluster(config.CLUSTER_NAME[0],
-                                                  config.VM_NAME):
+        if not vm_api.remove_all_vms_from_cluster(
+                config.CLUSTER_NAME[0],
+                config.VM_NAME
+        ):
             raise errors.VMException("Failed to remove all vms")
 
 
@@ -150,8 +152,10 @@ class AddVm(TestCase):
         Remove all created vms
         """
         logger.info("Remove all vms")
-        if not vm_api.remove_all_vms_from_cluster(config.CLUSTER_NAME[0],
-                                                  config.VM_NAME):
+        if not vm_api.remove_all_vms_from_cluster(
+                config.CLUSTER_NAME[0],
+                config.VM_NAME
+        ):
             raise errors.VMException("Failed to remove all vms")
 
     @istest
@@ -638,8 +642,10 @@ class DifferentVmTestCases(TestCase):
         """
         Remove all created vms
         """
-        if not vm_api.remove_all_vms_from_cluster(config.CLUSTER_NAME[0],
-                                                  config.VM_NAME):
+        if not vm_api.remove_all_vms_from_cluster(
+                config.CLUSTER_NAME[0],
+                config.VM_NAME,
+        ):
             raise errors.VMException("Failed to remove all vms")
 
     @attr(tier=1)
