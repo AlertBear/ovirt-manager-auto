@@ -89,6 +89,7 @@ def tearDownModule():
     )
 
 
+@attr(tier=0)
 class PermissionsCase54408(TestCase):
     """ objects and user permissions """
     __test__ = True
@@ -122,6 +123,7 @@ class PermissionsCase54408(TestCase):
             LOGGER.info(msg % obj.get_name())
 
 
+@attr(tier=0)
 class PermissionsCase54409(TestCase):
     """" permissions inheritence """
     __test__ = True
@@ -175,6 +177,7 @@ class PermissionsCase54409(TestCase):
 # Check that in the object Permissions sub tab you will see all permissions
 # that were associated with the selected object in the main grid or one of
 # its ancestors.
+@attr(tier=0)
 class PermissionsCase5441054414(TestCase):
     """" permissions subtab """
     __test__ = True
@@ -212,6 +215,7 @@ class PermissionsCase5441054414(TestCase):
 # system object.
 # Try to remove last super-admin user with permission on system object.
 # Try to remoce super-admin + system permission from the user.
+@attr(tier=1)
 class PermissionsCase5441854419(TestCase):
     """ last permission on object and test removal of SuperUser """
     __test__ = True
@@ -242,6 +246,7 @@ class PermissionsCase5441854419(TestCase):
 # you don't have "Super-Admin" permission on the "System" object". - FAILED
 # When you're user/super user ,try to delegate permission to another
 # user/super user. - SUCCESS
+@attr(tier=1)
 class PermissionsCase54425(TestCase):
     """ test delegate perms """
     __test__ = True
@@ -349,6 +354,7 @@ class PermissionsCase54425(TestCase):
 
 
 # Check if user is under some Group if it has permissions of its group
+@attr(tier=1)
 class PermissionsCase54446(TestCase):
     """ Check if user is under some Group if has permissions of its group """
     __test__ = True
@@ -393,6 +399,7 @@ class PermissionsCase54446(TestCase):
 # Creating object from user API and admin API should be different:
 # for example admin API - createVm - should not delegate perms on VM
 # user API - createVm - should add perms UserVmManager on VM
+@attr(tier=1)
 class PermissionsCase54420(TestCase):
     """ Object creating from User and Admin portal """
     __test__ = True
@@ -483,6 +490,7 @@ class PermissionsCase54420(TestCase):
 # login as user from group, remove the user
 # Check that group still exist in the Configure-->System.
 # Check that group's permissions still exist
+@attr(tier=1)
 class PermissionsCase108233(TestCase):
     """ Removing user that part of the group. """
     __test__ = True
@@ -519,6 +527,7 @@ class PermissionsCase108233(TestCase):
 # Create new desktop pool
 # Check that permission was inherited from data-center
 # Ensure that user can take a machine from created pool
+@attr(tier=1)
 class PermissionsCase109086(TestCase):
     """ Permission inheritance for desktop pool """
     __test__ = True

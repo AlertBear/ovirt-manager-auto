@@ -10,7 +10,7 @@ from rhevmtests.system.user_roles_tests import config
 from rhevmtests.system.user_roles_tests.roles import role as role_e
 from nose.tools import istest
 from art.core_api.apis_exceptions import EntityNotFound
-from art.unittest_lib import CoreSystemTest as TestCase
+from art.unittest_lib import attr, CoreSystemTest as TestCase
 
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import (
@@ -89,6 +89,7 @@ def _get_role_permits(curr_role):
     )
 
 
+@attr(tier=1)
 class RoleCase54413(TestCase):
     """
     Check that only users which are permitted to create role, can create role.
@@ -182,6 +183,7 @@ class RoleCase54413(TestCase):
         )
 
 
+@attr(tier=1)
 class RoleCase54401(TestCase):
     """
     Assign new role to users, check that role behave correctly after update.
@@ -274,6 +276,7 @@ class RoleCase54401(TestCase):
         mla.removeRole(True, config.USER_ROLE)
 
 
+@attr(tier=1)
 class RoleCase54415(TestCase):
     """ Try to get list of roles as user and non-admin user """
     __test__ = True
@@ -331,6 +334,7 @@ class RoleCase54415(TestCase):
             self.assertTrue(users.removeUser(True, config.USER_NAME))
 
 
+@attr(tier=1)
 class RoleCase54402(TestCase):
     """
     Try to remove role which is assigned to user and that is not assigned
@@ -384,6 +388,7 @@ class RoleCase54402(TestCase):
         )
 
 
+@attr(tier=1)
 class RoleCase54366(TestCase):
     """ Try to create role with illegal characters. """
     __test__ = True
@@ -397,6 +402,7 @@ class RoleCase54366(TestCase):
             LOGGER.info("Role with char '%s' can't be created.", char)
 
 
+@attr(tier=1)
 class RoleCase54540(TestCase):
     """ Try to remove predefined roles """
     __test__ = True
@@ -413,6 +419,7 @@ class RoleCase54540(TestCase):
             )
 
 
+@attr(tier=1)
 class RoleCase54411(TestCase):
     """
     Check there are some predefined roles. Names could change in future, so
@@ -429,6 +436,7 @@ class RoleCase54411(TestCase):
         LOGGER.info("There are still same predefined roles.")
 
 
+@attr(tier=1)
 class RoleCase54403(TestCase):
     """
     There is no support to copy role in REST.
@@ -450,6 +458,7 @@ class RoleCase54403(TestCase):
         self.assertTrue(mla.removeRole(True, config.USER_ROLE))
 
 
+@attr(tier=1)
 class RolesCase54412(TestCase):
     """
     Assigning a Role to a object, means that the role apply to all the

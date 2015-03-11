@@ -11,6 +11,7 @@ import logging
 from rhevmtests.system.user_roles_tests import config
 from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
+from art.unittest_lib import attr
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.core_api.apis_exceptions import EntityNotFound
 from test_network_permissions_negative import (
@@ -48,6 +49,7 @@ def tearDownModule():
         assert users.removeUser(True, user)
 
 
+@attr(tier=1)
 class NetworkingPossitive(NetworkingNegative):
     __test__ = False
 

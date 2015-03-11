@@ -8,7 +8,7 @@ copied, when copy_permissions flag is/isn't provided.
 __test__ = True
 
 import logging
-from art.unittest_lib import CoreSystemTest as TestCase
+from art.unittest_lib import attr, CoreSystemTest as TestCase
 from nose.tools import istest
 from rhevmtests.system.user_roles_tests import config
 from rhevmtests.system.user_roles_tests.roles import role
@@ -158,6 +158,7 @@ def checkForTemplatePermissions(exists):
     _compare(exists, config.USER_NAME2, template_perms, USER2_TEMPLATE_ROLES)
 
 
+@attr(tier=1)
 class CopyPermissions299326(TestCase):
     """ Check if permissions are copied to vm when enabled """
     __test__ = True
@@ -185,6 +186,7 @@ class CopyPermissions299326(TestCase):
         vms.removeVm(True, config.VM_NAME1)
 
 
+@attr(tier=1)
 class CopyPermissions299330(TestCase):
     """ Check if permissions are copied to vm when disabled """
     __test__ = True
@@ -208,6 +210,7 @@ class CopyPermissions299330(TestCase):
         vms.removeVm(True, config.VM_NAME1)
 
 
+@attr(tier=1)
 class CopyPermissions299328(TestCase):
     """ Check if permissions are copied to template when enabled """
     __test__ = True
@@ -230,6 +233,7 @@ class CopyPermissions299328(TestCase):
         templates.removeTemplate(True, config.TEMPLATE_NAME2)
 
 
+@attr(tier=1)
 class CopyPermissions299331(TestCase):
     """ Check if permissions are not copied to template when disabled """
     __test__ = True
