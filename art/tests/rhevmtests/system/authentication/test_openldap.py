@@ -40,7 +40,7 @@ def loginAsAdmin():
                       config.USER_PASSWORD, False)
 
 
-@attr(tier=1)
+@attr(tier=0)
 class LDAPCase289010(TestCase):
     """
     Login as normal user and user from group.
@@ -81,7 +81,7 @@ class LDAPCase289010(TestCase):
         users.deleteGroup(positive=True, group_name=config.LDAP_GROUP)
 
 
-@attr(tier=1)
+@attr(tier=0)
 class LDAPCase289066(TestCase):
     """
     Login as user with disabled account.
@@ -110,7 +110,7 @@ class LDAPCase289066(TestCase):
                          domain=config.LDAP_DOMAIN)
 
 
-@attr(tier=1)
+@attr(tier=0)
 class LDAPCase289068(TestCase):
     """ Test if user with expired password can't login """
     __test__ = True

@@ -36,14 +36,27 @@ ENGINE = 'engine'
 RHEVM = 'rhevm'
 
 
+def teardown_module():
+    config.ENGINE_HOST.executor().run_cmd([SET_AUTH % (ENGINE, AUTH)])
+    config.ENGINE.restart()
+    for status in TimeoutingSampler(
+        timeout=70,
+        sleep=5,
+        func=lambda: config.ENGINE.health_page_status,
+    ):
+        if status:
+            break
+
+
 def addUserWithClusterPermissions(user_name):
     name, domain = user_name.split('@')
     assert users.addUser(True, user_name=name, domain=domain)
-    assert mla.addClusterPermissionsToUser(True, name,
-                                           config.MAIN_CLUSTER_NAME,
-                                           role=USERVMMANAGER, domain=domain)
+    assert mla.addClusterPermissionsToUser(
+        True, name, config.MAIN_CLUSTER_NAME, role=USERVMMANAGER, domain=domain
+    )
 
 
+@attr(tier=1)
 class ActiveDirectory(TestCase):
     __test__ = False
 
@@ -94,26 +107,13 @@ class ActiveDirectory(TestCase):
             assert users.removeUser(True, user, domain)
         assert users.deleteGroup(True, config.GROUP(cls.domain))
 
-        config.ENGINE_HOST.executor().run_cmd([
-            '%s-config' % cls.product,
-            '-s',
-            'SASL_QOP=auth'
-        ])
-        config.ENGINE.restart()
-        for status in TimeoutingSampler(
-            timeout=70,
-            sleep=5,
-            func=lambda: config.ENGINE.health_page_status,
-        ):
-            if status:
-                break
-
     def setUp(self):
         users.loginAsUser(config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
                           config.USER_PASSWORD, False)
 
     @istest
     @tcms(config.AD_TCMS_PLAN_ID, 47586)
+    @attr(tier=0)
     def disabledAccount(self):
         """ Disabled account """
         self._loginAsUser(config.DISABLED_ACC(self.domain))
@@ -122,6 +122,7 @@ class ActiveDirectory(TestCase):
 
     @istest
     @tcms(config.AD_TCMS_PLAN_ID, 47587)
+    @attr(tier=0)
     def expiredPassword(self):
         """ Expired password """
         self._loginAsUser(config.EXPIRED_PSW_NAME(self.domain))
@@ -130,6 +131,7 @@ class ActiveDirectory(TestCase):
 
     @istest
     @tcms(config.AD_TCMS_PLAN_ID, 47585)
+    @attr(tier=0)
     def expiredUser(self):
         """ Expired user """
         self._loginAsUser(config.EXPIRED_ACC_NAME(self.domain))
@@ -138,6 +140,7 @@ class ActiveDirectory(TestCase):
 
     @istest
     @tcms(config.AD_TCMS_PLAN_ID, 91742)
+    @attr(tier=0)
     def fetchingGroupsWithUser(self):
         """ Fetching user groups when logging with UPN """
         user_name = config.USER_FROM_GROUP(self.domain)
@@ -201,7 +204,6 @@ class ActiveDirectory(TestCase):
         LOGGER.info("User with same name from different domains can login.")
 
 
-@attr(tier=1)
 class AD(ActiveDirectory):
     """ AD 2003 """
     __test__ = True
@@ -209,7 +211,6 @@ class AD(ActiveDirectory):
     PASSWORD = config.USER_PASSWORD
 
 
-@attr(tier=1)
 class AD_W2K12_R2(ActiveDirectory):
     """ AD 2012 """
     __test__ = True
@@ -217,7 +218,6 @@ class AD_W2K12_R2(ActiveDirectory):
     PASSWORD = config.W2K12R2_PASSWORD
 
 
-@attr(tier=1)
 class AD_W2K8_R2(ActiveDirectory):
     """ AD 2008 """
     __test__ = True

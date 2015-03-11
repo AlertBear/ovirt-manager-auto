@@ -4,7 +4,7 @@ __test__ = False
 
 from rhevmtests.system.authentication import config
 import logging
-from art.unittest_lib import CoreSystemTest as TestCase
+from art.unittest_lib import attr, CoreSystemTest as TestCase
 from nose.tools import istest
 from art.rhevm_api.tests_lib.low_level import mla, users, general
 from art.core_api.apis_exceptions import APIException
@@ -38,6 +38,7 @@ def addUser(user_name, domain):
     users.addUser(True, user_name=user_name, domain=domain)
 
 
+@attr(tier=0)
 class BaseNormalUserAndGroupUser(TestCase):
     """ Login as normal user and user from group. """
     __test__ = False
@@ -78,6 +79,7 @@ class BaseNormalUserAndGroupUser(TestCase):
         users.deleteGroup(positive=True, group_name=config.GROUP(self.domain))
 
 
+@attr(tier=0)
 class BaseExpiredAccount(TestCase):
     """ Login as user with expired account """
     __test__ = False
@@ -105,6 +107,7 @@ class BaseExpiredAccount(TestCase):
                          domain=self.domain)
 
 
+@attr(tier=0)
 class BaseExpiredPassword(TestCase):
     """ Login as user with expired password """
     __test__ = False
@@ -132,6 +135,7 @@ class BaseExpiredPassword(TestCase):
                          domain=self.domain)
 
 
+@attr(tier=1)
 class BaseGroupsPersistency(TestCase):
     """ Persistency of group rights """
     __test__ = False
@@ -163,6 +167,7 @@ class BaseGroupsPersistency(TestCase):
         users.deleteGroup(True, group_name=config.GROUP(self.domain))
 
 
+@attr(tier=1)
 class BaseUserWithManyGroups(TestCase):
     """ Login as user with many groups """
     __test__ = False
@@ -187,6 +192,7 @@ class BaseUserWithManyGroups(TestCase):
                          user=config.WITH_MANY_GROUPS_NAME(self.domain))
 
 
+@attr(tier=1)
 class BaseSearchForUsersAndGroups(TestCase):
     """ Search within domain for users and groups """
     __test__ = False

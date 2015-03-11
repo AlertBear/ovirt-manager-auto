@@ -47,7 +47,7 @@ def loginAsAdmin():
                       config.USER_PASSWORD, False)
 
 
-@attr(tier=1)
+@attr(tier=0)
 class IPACase93880(TestCase):
     """
     Login as:
@@ -90,7 +90,7 @@ class IPACase93880(TestCase):
                          domain=config.IPA_DOMAIN)
 
 
-@attr(tier=1)
+@attr(tier=0)
 class IPACase93879(TestCase):
     """
     Login as:
@@ -127,9 +127,13 @@ class IPACase93879(TestCase):
 
     def tearDown(self):
         loginAsAdmin()
-        users.removeUser(positive=True, user=config.IPA_REGULAR_NAME,
-                         domain=config.IPA_DOMAIN)
         users.deleteGroup(positive=True, group_name=config.IPA_GROUP)
+        users.removeUser(
+            True, user=config.IPA_REGULAR_NAME, domain=config.IPA_DOMAIN
+        )
+        users.removeUser(
+            True, user=config.IPA_WITH_GROUP_NAME, domain=config.IPA_DOMAIN
+        )
 
 
 @attr(tier=1)
