@@ -14,7 +14,7 @@ from nose.tools import istest
 LOGGER = logging.getLogger(__name__)
 
 
-@attr(tier=1)
+@attr(tier=0)
 class ADTLS(TestCase):
     """
     Test if start tls connection to AD succeed.
