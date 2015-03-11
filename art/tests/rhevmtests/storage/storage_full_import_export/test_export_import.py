@@ -3,13 +3,11 @@ Export/import test cases
 """
 import config
 import logging
-
 from concurrent.futures import ThreadPoolExecutor
-
 from art.unittest_lib import StorageTest as TestCase, attr
+from art.test_handler import exceptions
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import storagedomains, vms, templates
-
 from common import _create_vm
 
 logger = logging.getLogger(__name__)
@@ -21,7 +19,7 @@ MAX_WORKERS = config.MAX_WORKERS
 # Remove this part when is integrated in stories
 # http://rhevm-qe-storage.pad.engineering.redhat.com/11
 # class TestCase41240(TestCase):
-#     """ Attacht export domain, verify it works
+#     """ Attach export domain, and verify that it works
 
 
 class BaseExportImportTestCase(TestCase):
@@ -44,15 +42,22 @@ class BaseExportImportTestCase(TestCase):
             config.DATA_CENTER_NAME, self.storage)[0]
 
         logger.info("Creating vm %s with type %s", self.vm_name, self.vm_type)
-        assert _create_vm(self.vm_name, vm_type=self.vm_type,
-                          storage_domain=self.storage_domain)
-        assert vms.shutdownVm(True, self.vm_name, 'false')
+        if not _create_vm(self.vm_name, vm_type=self.vm_type,
+                          storage_domain=self.storage_domain):
+            raise exceptions.VMException('Unable to create vm %s for test' %
+                                         self.vm_name)
+        vms.stop_vms_safely([self.vm_name])
+        if not vms.waitForVMState(self.vm_name, config.VM_DOWN):
+            raise exceptions.VMException('Unable to stop vm %s for test' %
+                                         self.vm_name)
 
     def tearDown(self):
         """
         * Removes vm
         """
-        assert vms.removeVm(True, self.vm_name)
+        if not vms.safely_remove_vms([self.vm_name]):
+            raise exceptions.VMException('Unable to remove vm %s for test' %
+                                         self.vm_name)
 
 
 @attr(tier=1)
