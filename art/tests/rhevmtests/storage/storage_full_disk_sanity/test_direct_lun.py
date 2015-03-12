@@ -25,7 +25,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, waitForVMState, getVmDisks, startVm, suspendVm,
     runVmOnce, addSnapshot, updateVm, removeSnapshot,
     get_snapshot_disks, moveVm, removeVm, getVmHost,
-    get_vms_disks_storage_domain_name,
+    get_vms_disks_storage_domain_name, wait_for_vm_snapshots,
 )
 
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
@@ -276,8 +276,14 @@ class TestCase138757(DirectLunAttachTestCase):
 
     def tearDown(self):
         stop_vms_safely([self.vm_name])
-        assert waitForVMState(self.vm_name, config.VM_DOWN)
+        if not waitForVMState(self.vm_name, config.VM_DOWN):
+            raise exceptions.VMException(
+                "Failed to stop vm %s" % self.vm_name
+            )
 
+        # after stopping vm that runs in stateless mode a temporary snapshot
+        # is deleted and the ACTIVE_VM volume is locked for few seconds
+        wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
         if not self.snap_added:
             logger.info("Removing snapshot %s", self.snap_desc)
             assert removeSnapshot(True, self.vm_name, self.snap_desc)
