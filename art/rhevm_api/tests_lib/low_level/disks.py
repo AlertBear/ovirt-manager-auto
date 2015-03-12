@@ -632,38 +632,64 @@ def check_disk_visibility(disk, disks_list):
 
 
 @is_action('getImproperStorageDomain')
-def get_other_storage_domain(disk_name, vm_name=None, storage_type=None):
+def get_other_storage_domain(
+    disk_name, vm_name=None, storage_type=None, force_type=True
+):
     """
-    Description: Chooses random storage domain from the set of storage domains,
-    that disk is not placed on.
-    Author: ratamir, cmestreg
-    Parameters:
-    * disk_name - name of the disk
-    * vm_name - name of vm (None by default), that contains disk disk_name.
-                None if the disk is floating disk (will be searched in disks
-                collection)
-    * storage_type - if provided, only return the storage domain of the
-                     specified type
-    Return: Name of storage domain that doesn't contain disk_name
-    """
-    logger.info("Get disk %s improper storage domain", disk_name)
+    Choose a random, active data storage domain from the available list of
+    storage domains (ignoring the storage domain on which the disk is found)
 
-    disk_sd_name = get_disk_storage_domain_name(disk_name, vm_name=vm_name)
-    dc = get_sd_datacenter(disk_sd_name)
+    __author__ = "ratamir"
+    :param disk_name: name of the disk
+    :type disk_name: str
+    :param vm_name: In case of a non-floating disk, name of vm that contains
+                    the disk
+    :type vm_name: str
+    :param storage_type: if provided, only return the storage domain of the
+                         specified type
+    :type storage_type: str
+    :param force_type: return only the storage domain of the same device type
+                       (file or block)
+    :type force_type: bool
+    :returns: name of a storage domain that doesn't contain the disk or empty
+    string
+    :rtype: str
+    """
+    logger.info(
+        "Find the storage domain that the disk %s is found on", disk_name,
+    )
+    if not vm_name:
+        disk = DISKS_API.find(disk_name)
+    else:
+        disk = getVmDisk(vm_name, disk_name)
+    disk_sd_id = disk.get_storage_domains().get_storage_domain()[0].get_id()
+    disk_sd = STORAGE_DOMAIN_API.find(disk_sd_id, 'id')
+
+    block_type = disk_sd.get_storage().get_type() in BLOCK_DEVICES
+    dc = get_sd_datacenter(disk_sd.get_name())
     sd_list = []
 
     for sd in STORAGE_DOMAIN_API.getElemFromLink(dc, get_href=False):
-        if sd.get_name() != disk_sd_name and (
+        if sd.get_id() != disk_sd_id and (
                 sd.get_status().get_state() ==
-                ENUMS['storage_domain_state_active']):
-            if storage_type and storage_type != sd.get_storage().get_type():
+                ENUMS['storage_domain_state_active']) and (
+                sd.get_type() == ENUMS['storage_dom_type_data']
+        ):
+            sd_type = sd.get_storage().get_type()
+            if storage_type and storage_type != sd_type:
+                continue
+            if force_type and (block_type != (sd_type in BLOCK_DEVICES)):
                 continue
             sd_list.append(sd.get_name())
 
-    improper_sd = random.choice(sd_list)
-    logger.info("Disk %s improper storage domain is: %s", disk_name,
-                improper_sd)
-    return improper_sd
+    if sd_list:
+        random_sd = random.choice(sd_list)
+        logger.info(
+            "Disk %s improper storage domain is: %s", disk_name, random_sd,
+        )
+        return random_sd
+    else:
+        return ""
 
 
 def get_disk_storage_domain_name(disk_name, vm_name=None, template_name=None):
