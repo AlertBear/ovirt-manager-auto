@@ -317,7 +317,8 @@ class TestCaseUserAndRoles(TestCase):
         self.assertTrue(status, 'Add host permissions to user')
 
     @istest
-    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
+    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}},
+        {'1193848': {'engine': ['sdk'], 'version': ['3.5']}})
     def t22_add_storage_permissions_to_user(self):
         """
         test verifies roles functionality

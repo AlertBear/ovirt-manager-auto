@@ -7,8 +7,8 @@ test_storage_domain
 """
 
 import logging
-
 from nose.tools import istest
+from art.test_handler.tools import bz  # pylint: disable=E0611
 from art.unittest_lib import attr
 
 from art.unittest_lib import BaseTestCase as TestCase
@@ -66,6 +66,7 @@ class TestCaseStorageDomain(TestCase):
         self.assertTrue(status, 'Add storage domain')
 
     @istest
+    @bz({'1193848': {'engine': ['sdk'], 'version': ['3.5']}})
     def t02_create_storage_domain(self):
         """
         test verifies storage domain functionality
@@ -81,6 +82,7 @@ class TestCaseStorageDomain(TestCase):
         self.assertTrue(status, 'Create storage domain')
 
     @istest
+    @bz({'1193848': {'engine': ['sdk'], 'version': ['3.5']}})
     def t03_attach_nfs_storage_domain_to_data_center(self):
         """
         test verifies storage domain functionality
@@ -93,6 +95,7 @@ class TestCaseStorageDomain(TestCase):
         self.assertTrue(status, 'Attach storage domain')
 
     @istest
+    @bz({'1193848': {'engine': ['sdk'], 'version': ['3.5']}})
     def t04_update_storage_domain(self):
         """
         test verifies storage domain functionality
@@ -107,6 +110,7 @@ class TestCaseStorageDomain(TestCase):
         self.__class__.sd_name = new_name
 
     @istest
+    @bz({'1193848': {'engine': ['sdk'], 'version': ['3.5']}})
     def t05_deactivate_storage_domain(self):
         """
         test verifies storage domain functionality
@@ -119,6 +123,7 @@ class TestCaseStorageDomain(TestCase):
         self.assertTrue(status, 'Deactivate storage domain')
 
     @istest
+    @bz({'1193848': {'engine': ['sdk'], 'version': ['3.5']}})
     def t06_remove_storage_domain(self):
         """
         test verifies storage domain functionality

@@ -6,6 +6,7 @@ Then new VM from this template is checked, if it matches the template type.
 """
 
 from nose.tools import istest
+from art.test_handler.tools import bz  # pylint: disable=E0611
 from art.unittest_lib import VirtTest as TestCase
 import logging
 
@@ -870,6 +871,7 @@ class NegativeTemplateCases(BaseTemplateClass):
                                                   name=self.template_name))
 
     @istest
+    @bz({'1193848': {'engine': ['sdk'], 'version': ['3.5']}})
     def create_template_with_wrong_cluster(self):
         """
         Create new template with wrong cluster
@@ -885,6 +887,7 @@ class NegativeTemplateCases(BaseTemplateClass):
                                                   cluster=cluster))
 
     @istest
+    @bz({'1193848': {'engine': ['sdk'], 'version': ['3.5']}})
     def update_template_name_to_already_exist(self):
         """
         Update template name to template name that already exist
