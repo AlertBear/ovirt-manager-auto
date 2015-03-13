@@ -238,8 +238,17 @@ class BasicResize(BaseTestCase):
 
         # TODO: Check the capacity value in getVolumeInfo
         logger.info("dd to disk %s", self.disk_name)
+        if self.storage in config.BLOCK_TYPES:
+            # For block devices, the disk size (lv) will increase by chunks of
+            # 1 GB after a certain treshold is surpassed. Copy less than the
+            # supposed extended size so the lv will not grow bigger than the
+            # extended size.
+            dd_size = self.new_size - 600 * config.MB
+        else:
+            # For file devices the true size will be the same as the dd size.
+            dd_size = self.new_size
         ecode, output = storage_helpers.perform_dd_to_disk(
-            self.vm, self.disk_name, size=self.new_size - 500 * config.MB,
+            self.vm, self.disk_name, size=dd_size,
         )
         self.assertTrue(ecode, "dd command failed")
 
