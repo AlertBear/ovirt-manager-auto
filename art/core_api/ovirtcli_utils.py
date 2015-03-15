@@ -1019,12 +1019,8 @@ class CliUtil(RestUtil):
             self.logger.error("%s", e)
             return response, False
         except CLICommandFailure as e:
-            self.printErrorMsg(
-                ApiOperation.create,
-                e.status,
-                e.reason,
-                e.detail
-            )
+            self.print_error_msg(ApiOperation.create, e.status, e.reason,
+                                 e.detail, positive=positive)
             if positive:
                 return response, False
         else:
@@ -1133,7 +1129,8 @@ class CliUtil(RestUtil):
             self.logger.error("%s", e)
             return response, False
         except CLICommandFailure as e:
-            self.printErrorMsg(ApiOperation.update, status=e.status)
+            self.print_error_msg(ApiOperation.update, status=e.status,
+                                 positive=positive)
             if positive or not validator.compareResponseCode(
                     e.status, expected_neg_status, self.logger):
                 return None, False
@@ -1227,8 +1224,8 @@ class CliUtil(RestUtil):
             self.logger.error("%s", e)
             return False
         except CLICommandFailure as e:
-            self.printErrorMsg(ApiOperation.delete,
-                               e.status, e.reason, e.detail)
+            self.print_error_msg(ApiOperation.delete, e.status, e.reason,
+                                 e.detail, positive=positive)
             if positive:
                 return False
 
@@ -1460,12 +1457,8 @@ class CliUtil(RestUtil):
             self.logger.error("%s", e)
             return False
         except CLICommandFailure as e:
-            self.printErrorMsg(
-                ApiOperation.syncAction,
-                e.status,
-                e.reason,
-                e.detail
-            )
+            self.print_error_msg(ApiOperation.syncAction, e.status,
+                                 e.reason, e.detail, positive=positive)
             if positive:
                 return False
             else:

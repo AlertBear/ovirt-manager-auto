@@ -996,7 +996,7 @@ element:%(elm)s " % {'col': self.collection_name,
                 return python_response, False
 
         except java_sdk.JavaError as e:
-            self.parse_java_error(e, ApiOperation.create)
+            self.parse_java_error(e, ApiOperation.create, positive)
             if positive:
                 return None, False
 
@@ -1092,7 +1092,7 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                 return None, False
 
         except java_sdk.JavaError as e:
-            e = self.parse_java_error(e, ApiOperation.update)
+            e = self.parse_java_error(e, ApiOperation.update, positive)
             if positive or not validator.compareResponseCode(
                     e.status, expected_neg_status, self.logger):
                 return None, False
@@ -1141,7 +1141,7 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                     java_entity.delete()
 
         except java_sdk.JavaError as e:
-            self.parse_java_error(e, ApiOperation.delete)
+            self.parse_java_error(e, ApiOperation.delete, positive)
             if positive:
                 return False
             return True
@@ -1335,7 +1335,7 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                     java_action_entity,
                     str(self.getCorrelationId(ApiOperation.syncAction)))
         except java_sdk.JavaError as e:
-            self.parse_java_error(e, ApiOperation.syncAction)
+            self.parse_java_error(e, ApiOperation.syncAction, positive)
             if positive:
                 return False
             return True
@@ -1419,7 +1419,7 @@ currently status is '%s' ", status, element_status)
                           self.element_name, element_status)
         return False
 
-    def parse_java_error(self, java_error, op_code):
+    def parse_java_error(self, java_error, op_code, positive=True):
         """
         Description: function that converts java error to object that has
                      code, reason, detail, java_traceback fields
@@ -1449,8 +1449,9 @@ currently status is '%s' ", status, element_status)
             # getting traceback
             java_traceback = '\n\t'.join([trace.toString() for trace
                                           in java_error.args[0].stackTrace])
-            super(JavaSdkUtil, self).printErrorMsg(op_code, status, reason,
-                                                   detail, java_traceback)
+            super(JavaSdkUtil, self).print_error_msg(op_code, status, reason,
+                                                     detail, java_traceback,
+                                                     positive=positive)
         except Exception as e:
             self.logger.error('Caught Exception %s', e)
             self.logger.error('Possible internal error: %s', str(java_error))

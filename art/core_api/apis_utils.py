@@ -242,25 +242,36 @@ class APIUtil(object):
             self.logger.error(TIMEOUT_MSG_TMPL)
             return False
 
-    def printErrorMsg(self, operation, status=None, reason=None, detail=None,
-                      trace=None):
-        '''
+    def print_error_msg(self, operation, status=None, reason=None,
+                        detail=None, trace=None, positive=True):
+        """
         Description: print detailed error message.
-        Author: khakimi
-        Parameters:
-            * operation - the operation which failed (create/update...)
-            * status - status code (400...)
-            * reason - error reason (Bad Request...)
-            * detail - error details
-            * trace - stack trace
-        '''
-        error_msg = ['Failed to {0} element:\n'.format(operation)]
+        :param operation: the operation which failed (create/update...)
+        :type operation: str
+        :param status: status code (400...)
+        :type status: str
+        :param reason: error reason (Bad Request...)
+        :type reason: str
+        :param detail: error details
+        :type detail: str
+        :param trace: stack trace
+        :type trace: str
+        :param positive: True if it is Not as expected otherwise False
+        :type positive: bool
+        """
+        error_msg = []
+        positive_msg = '{0} as expected:\n'.format(' NOT' if positive else '')
+        error_msg.append('Failed to {0} element'.format(operation))
+        error_msg.append(positive_msg)
         error_msg.append('\tStatus: {0}\n'.format(status) if status else '')
         error_msg.append('\tReason: {0}\n'.format(reason) if reason else '')
         error_msg.append('\tDetail: {0}\n'.format(detail) if detail else '')
         error_msg.append('\tTrace: {0}\n'.format(trace) if trace else '')
 
-        logger.error(''.join(error_msg))
+        if positive:
+            logger.error(''.join(error_msg))
+        else:
+            logger.warn(''.join(error_msg))
 
 
 class TimeoutingSampler(_TimeoutingSampler):

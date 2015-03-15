@@ -183,8 +183,8 @@ class SdkUtil(APIUtil):
                 return response, False
 
         except RequestError as e:
-            self.printErrorMsg(ApiOperation.create,
-                               e.status, e.reason, e.detail)
+            self.print_error_msg(ApiOperation.create, e.status, e.reason,
+                                 e.detail, positive=positive)
             if positive:
                 return None, False
 
@@ -293,8 +293,8 @@ class SdkUtil(APIUtil):
                 response = origEntity.update(**matrix_params)
             self.logger.info(self.element_name + " was updated")
         except RequestError as e:
-            self.printErrorMsg(ApiOperation.update,
-                               e.status, e.reason, e.detail)
+            self.print_error_msg(ApiOperation.update, e.status, e.reason,
+                                 e.detail, positive=positive)
             if positive or not validator.compareResponseCode(
                     e.status, expected_neg_status, self.logger):
                 return None, False
@@ -329,8 +329,8 @@ class SdkUtil(APIUtil):
                 with measure_time('DELETE'):
                     entity.delete(correlation_id=correlation_id)
         except RequestError as e:
-            self.printErrorMsg(ApiOperation.delete,
-                               e.status, e.reason, e.detail)
+            self.print_error_msg(ApiOperation.delete, e.status, e.reason,
+                                 e.detail, positive=positive)
             if positive:
                 return False
 
@@ -443,8 +443,8 @@ class SdkUtil(APIUtil):
                 act = getattr(entity, action)(act,
                                               correlation_id=correlation_id)
         except RequestError as e:
-            self.printErrorMsg(ApiOperation.syncAction,
-                               e.status, e.reason, e.detail)
+            self.print_error_msg(ApiOperation.syncAction, e.status, e.reason,
+                                 e.detail, positive=positive)
             if positive:
                 return False
             else:

@@ -248,8 +248,8 @@ class RestUtil(APIUtil):
         if ret[RespKey.status] not in expected_pos_status:
             reason = ret[RespKey.reason] if(RespKey.reason in
                                             ret.keys()) else None
-            self.printErrorMsg(operation, ret[RespKey.status], reason,
-                               self.parseDetail(ret))
+            self.print_error_msg(operation, ret[RespKey.status], reason,
+                                 self.parseDetail(ret), positive=positive)
         expected_statuses = (
             expected_pos_status if positive else expected_neg_status)
 
