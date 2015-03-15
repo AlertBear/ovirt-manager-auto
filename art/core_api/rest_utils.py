@@ -63,8 +63,8 @@ class RestUtil(APIUtil):
         Parameters:
         Returns:
         """
-        if self._restInit and not self.standalone:
-            self.api = self._restInit
+        if RestUtil._restInit and not self.standalone:
+            self.api = RestUtil._restInit
         else:
             self.api = http.HTTPProxy(self.opts)
             if self.opts['persistent_auth']:
@@ -77,9 +77,15 @@ class RestUtil(APIUtil):
                     self.api.connect()
                 except APIException as e:
                     raise APILoginError(e)
-                self.__class__._restInit = self.api
 
-        self.links = self.api.HEAD_for_links()
+        try:
+            self.links = self.api.HEAD_for_links()
+        except APIException:
+            raise APIException(
+                "Failed to Build links matrix from HEAD request")
+        else:
+            if RestUtil._restInit is None:
+                RestUtil._restInit = self.api
 
         # load xsd schema file
         if self.xsd is None:
@@ -96,7 +102,7 @@ class RestUtil(APIUtil):
         Parameters:
         Returns: True if logout succeeded or False otherwise
         """
-        cls._restInit = None
+        RestUtil._restInit = None
 
     @contextmanager
     def correlationIdContext(self, api_operation):
