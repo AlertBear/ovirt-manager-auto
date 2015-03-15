@@ -17,7 +17,6 @@ from art.rhevm_api.utils.test_utils import wait_for_tasks, restartOvirtEngine
 from art.rhevm_api.tests_lib.low_level.hosts import waitForHostsStates
 
 LOGGER = logging.getLogger(__name__)
-ENGINE_LOG = '/var/log/ovirt-engine/engine.log'
 VDSM_LOG = '/var/log/vdsm/vdsm.log'
 ALL_TASKS_FINISHED = 'Number of running tasks: 0'
 TIMEOUT = 300
@@ -52,7 +51,7 @@ class RestartOvirt(TestCase):
         regex = "Adding task .*Parent Command %s.*" % action_name
         cmd = ':'
         watch_logs(
-            ENGINE_LOG, regex, cmd, ip_for_files=config.VDC,
+            config.ENGINE_LOG, regex, cmd, ip_for_files=config.VDC,
             username=config.VDC_ROOT_USER, password=config.VDC_PASSWORD)
         OPERATION_FINISHED = True
         restartOvirtEngine(self.ovirt_host, 10, 30, 75)

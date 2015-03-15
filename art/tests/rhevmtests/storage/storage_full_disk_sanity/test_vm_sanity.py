@@ -239,7 +239,7 @@ class TestReadLock(TestCase):
                             template=self.template_name,
                             cluster=config.CLUSTER_NAME)
         LOGGER.info("Waiting for createVolume command in engine.log")
-        log_listener.watch_logs('/var/log/ovirt-engine/engine.log',
+        log_listener.watch_logs(config.ENGINE_LOG,
                                 'createVolume',
                                 '',
                                 time_out=60,

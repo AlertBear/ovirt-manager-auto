@@ -21,7 +21,6 @@ from art.rhevm_api.tests_lib.low_level.datacenters import (
 )
 
 LOGGER = logging.getLogger(__name__)
-ENGINE_LOG = '/var/log/ovirt-engine/engine.log'
 SPM_TIMEOUT = 1200
 TIMEOUT = 300
 DATA_CENTER_INIT_TIMEOUT = 1200
@@ -59,7 +58,7 @@ class RestartVDSM(TestCase):
         cmd = 'service vdsmd restart'
 
         t = Thread(target=log_listener.watch_logs, args=(
-            ENGINE_LOG, regex, cmd, TIMEOUT, config.VDC,
+            config.ENGINE_LOG, regex, cmd, TIMEOUT, config.VDC,
             config.VDC_ROOT_USER, config.VDC_PASSWORD,
             config.HOSTS[0], config.HOSTS_USER, config.HOSTS_PW)
         )

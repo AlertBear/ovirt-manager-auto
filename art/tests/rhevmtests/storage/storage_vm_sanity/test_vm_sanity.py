@@ -25,7 +25,6 @@ from rhevmtests.storage.helpers import get_vm_ip, create_vm_or_clone
 
 LOGGER = logging.getLogger(__name__)
 GB = 1024 * 1024 * 1024
-FILE_TO_WATCH = '/var/log/ovirt-engine/engine.log'
 REGEX = 'createVolume'
 
 ENUMS = config.ENUMS
@@ -440,7 +439,7 @@ class TestCase320225(TestCase):
                 "Failed creating template %s" % self.template_name)
 
         t = Thread(target=log_listener.watch_logs, args=(
-            FILE_TO_WATCH, REGEX, '', 60,
+            config.ENGINE_LOG, REGEX, '', 60,
             config.VDC, config.HOSTS_USER, config.VDC_ROOT_PASSWORD))
         LOGGER.info("Waiting for createVolume command in engine.log")
         t.start()
