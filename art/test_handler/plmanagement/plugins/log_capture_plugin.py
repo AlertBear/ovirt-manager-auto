@@ -28,13 +28,16 @@ import logging
 
 from art.test_handler.plmanagement import Component, implements, ThreadScope
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
-from art.test_handler.plmanagement.interfaces.tests_listener import \
-    ITestCaseHandler
+from art.test_handler.plmanagement.interfaces.tests_listener import (
+    ITestCaseHandler,
+)
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
-from art.test_handler.plmanagement.interfaces.report_formatter import \
-    IResultExtension
-from art.test_handler.plmanagement.interfaces.config_validator import\
-    IConfigValidation
+from art.test_handler.plmanagement.interfaces.report_formatter import (
+    IResultExtension,
+)
+from art.test_handler.plmanagement.interfaces.config_validator import (
+    IConfigValidation,
+)
 
 
 LOGS = 'LOG_CAPTURE'
@@ -84,8 +87,13 @@ class LogCapture(Component):
     """
     Plugin captures logs and assigns them to related to test_case
     """
-    implements(IConfigurable, ITestCaseHandler, IPackaging, IResultExtension, \
-                                                            IConfigValidation)
+    implements(
+        IConfigurable,
+        ITestCaseHandler,
+        IPackaging,
+        IResultExtension,
+        IConfigValidation,
+    )
     name = "Log Capture"
 
     def __init__(self):
@@ -95,8 +103,12 @@ class LogCapture(Component):
     @classmethod
     def add_options(cls, parser):
         group = parser.add_argument_group(cls.name, description=cls.__doc__)
-        group.add_argument('--log-capture', action='store_true', \
-                dest='log_capture', help="enable plugin")
+        group.add_argument(
+            '--log-capture',
+            action='store_true',
+            dest='log_capture',
+            help="enable plugin",
+        )
 
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
@@ -146,14 +158,16 @@ class LogCapture(Component):
         params['author'] = 'Lukas Bednar'
         params['author_email'] = 'lbednar@redhat.com'
         params['description'] = 'Log capturing for ART'
-        params['long_description'] = 'Log capturing plugin for ART. '\
+        params['long_description'] = (
+            'Log capturing plugin for ART. '
             'It collects logs related to running test_case.'
-        params['py_modules'] = \
-            ['art.test_handler.plmanagement.plugins.log_capture_plugin']
+        )
+        params['py_modules'] = [
+            'art.test_handler.plmanagement.plugins.log_capture_plugin',
+        ]
 
     def config_spec(self, spec, val_funcs):
-        section_spec = spec.get(LOGS, {})
+        section_spec = spec.setdefault(LOGS, {})
         section_spec[ENABLED] = 'boolean(default=%s)' % DEFAULT_STATE
         section_spec[record_name] = 'string(default=%s)' % ATTR_NAME
         section_spec[logging_level] = 'string(default=%s)' % DEFAULT_LEVEL
-        spec[LOGS] = section_spec

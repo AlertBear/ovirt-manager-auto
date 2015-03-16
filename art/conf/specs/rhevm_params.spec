@@ -49,9 +49,5 @@ useAgent = string(default='True')
 vm_os = string(default='Red Hat Enterprise Linux 6.x x64')
 display_type = option('spice', 'vnc', 'rdesktop', default='spice')
 
-[MATRIX_TEST_RUNNER]
-test_modules = force_list(default=list('art.rhevm_api',))
-auto_discovery = boolean(default=True)
-
 [STORAGE]
 storage_pool=force_list(default=list())

@@ -229,11 +229,6 @@ according to your application definitions)::
     [PARAMETERS]
     version = 3.0
 
-    [MATRIX_TEST_RUNNER]
-    test_modules = my_app.tests
-    auto_discovery = true
-    discover_action = true
-
 Run
 ---
 
@@ -357,20 +352,6 @@ Example for the secured http connection::
     entry_point = api
     user_domain = qa.lab.redhat.com
 
-[MATRIX_TEST_RUNNER] section
-------------------------------
-This section defines test runner parameters:
-
--   **test_modules** - list of python modules where your tests functions are located
-
--   **auto_discovery** - if to discover tests actions automatically (according to is_action() decorator)
-    or not, default is False
-
--   **discover_action** - if to discover actions or to use cached data (conf/actions.conf). It's required
-    to enable this option for the first discovery at least. After it's executed all the actions are located
-    at conf/actions.conf file where they can be loaded from later on (recommended for better performance).
-    Default value is False.
-
 
 [PARAMETERS] section
 --------------------
@@ -435,7 +416,7 @@ Example of definition of spec file in plugin::
                 (RHEVM_PRODUCT, OVIRT_PRODUCT, RHEVM_PRODUCT)
         spec[PLUGIN_SECTION] = section_spec
 
-.. note:
+.. note::
 
     Defining Configspec files allows you to significantly reduce the size of configuration files and simplifies the creation of new ones.
 
