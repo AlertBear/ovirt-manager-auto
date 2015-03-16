@@ -20,6 +20,7 @@ from art.rhevm_api.tests_lib.low_level.hosts import (
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     get_allocated_size, get_total_size, wait_for_change_total_size,
     get_used_size, getStorageDomainNamesForType,
+    wait_for_storage_domain_available_size,
 )
 from art.rhevm_api.tests_lib.low_level.templates import (
     createTemplate, removeTemplate,
@@ -335,6 +336,9 @@ class TestCase286775(BaseCase):
             raise exceptions.StorageDomainException(
                 "Adding iSCSI storage domain has failed"
             )
+        assert wait_for_storage_domain_available_size(
+            config.DATA_CENTER_NAME, cls.new_sd_name,
+        )
         lun_size_sd, lun_free_space_sd = cls.host_machine.get_lun_storage_info(
             config.EXTEND_LUN[0])
         logger.info("LUN size after SD creation is '%s' and its free space is "

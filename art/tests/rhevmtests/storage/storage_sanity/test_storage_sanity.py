@@ -79,6 +79,9 @@ class TestCase94947(TestCase):
                         "The domain was not added and activated "
                         "successfully")
         wait_for_jobs()
+        assert ll_st_domains.wait_for_storage_domain_available_size(
+            config.DATA_CENTER_NAME, self.sd_name,
+        )
         self.domain_size = ll_st_domains.get_total_size(self.sd_name)
         logger.info("Total size for domain '%s' is '%s'", self.sd_name,
                     self.domain_size)

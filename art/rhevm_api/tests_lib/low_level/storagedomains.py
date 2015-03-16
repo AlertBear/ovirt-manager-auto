@@ -328,6 +328,39 @@ def detachStorageDomain(positive, datacenter, storagedomain):
     return util.delete(storDomObj, positive)
 
 
+def wait_for_storage_domain_available_size(
+    datacenter, storagedomain, timeout=60, interval=5
+):
+    """
+    Waits until the storage domain's "available size" is set.
+    These properties are not available inmediately adding the storage domain,
+    and in some cases is needed for the tests.
+
+    __author__ = "cmestreg"
+    :param datacenter: Name of the data center
+    :type datacenter: str
+    :param storagedomain: Name of the storage domain
+    :type storagedomain: str
+    :param timeout: Maximum number of seconds to wait before timing out
+    :type timeout: int
+    :param interval: Number of seconds between polling
+    :type interval: int
+    :returns: True in case the available size is present, False otherwise
+    :rtype: bool
+    """
+    def _get_size():
+        if getDCStorage(datacenter, storagedomain).get_available():
+            return True
+        util.logger.warning('Available size still is still not set')
+        return False
+
+    util.logger.warning('Waiting for storage domain return available size')
+    for size in TimeoutingSampler(timeout, interval, _get_size):
+        if size:
+            return True
+    return False
+
+
 @is_action()
 def activateStorageDomain(positive, datacenter, storagedomain, wait=True):
     '''
@@ -355,8 +388,7 @@ def activateStorageDomain(positive, datacenter, storagedomain, wait=True):
     if status and positive and wait:
         return waitForStorageDomainStatus(
             True, datacenter, storagedomain,
-            ENUMS['storage_domain_state_active'],
-            180,
+            ENUMS['storage_domain_state_active'], 180,
         )
     return status
 
