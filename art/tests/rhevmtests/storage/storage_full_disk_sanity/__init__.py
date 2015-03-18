@@ -63,8 +63,10 @@ def teardown_module():
     vm_names = filter(vms.does_vm_exist, VM_NAMES + external)
     vms.stop_vms_safely(vm_names)
     vms.removeVms(True, vm_names)
-    assert detach_and_deactivate_domain(
-        config.DATA_CENTER_NAME, config.EXPORT_STORAGE_NAME)
+
+    if config.GOLDEN_ENV:
+        assert detach_and_deactivate_domain(
+            config.DATA_CENTER_NAME, config.EXPORT_STORAGE_NAME)
 
     if not config.GOLDEN_ENV:
         logger.info("Tear down - cleanDataCenter")
