@@ -1,5 +1,6 @@
 import config
 import logging
+from art.core_api import apis_exceptions
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler import exceptions
@@ -55,7 +56,9 @@ class TestCase94947(TestCase):
         """
         Creates a storage domain
         """
-        waitForSPM(config.DATA_CENTER_NAME, SPM_TIMEOUT, SPM_SLEEP)
+        if not waitForSPM(config.DATA_CENTER_NAME, SPM_TIMEOUT, SPM_SLEEP):
+            raise exceptions.HostException("SPM is not set on the current "
+                                           "Data center")
         self.spm_host = getSPMHost(config.HOSTS)
 
         self.assertTrue(len(config.UNUSED_LUNS) >= MIN_UNUSED_LUNS,
@@ -129,7 +132,9 @@ class TestCase94950(TestCase):
         """
         Creates a storage domain
         """
-        waitForSPM(config.DATA_CENTER_NAME, SPM_TIMEOUT, SPM_SLEEP)
+        if not waitForSPM(config.DATA_CENTER_NAME, SPM_TIMEOUT, SPM_SLEEP):
+            raise exceptions.HostException("SPM is not set on the current "
+                                           "Data center")
         self.spm_host = getSPMHost(config.HOSTS)
 
         if self.storage in config.BLOCK_TYPES:
@@ -176,18 +181,22 @@ class TestCase94950(TestCase):
         """
         Removes storage domain created with setUp
         """
-        logger.info("Waiting for tasks before deactivating/removing the "
-                    "storage domain")
-        wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                       config.DATA_CENTER_NAME)
-        logger.info("Removing Storage domain '%s'", self.sd_name)
-        status = ll_st_domains.removeStorageDomains(True, self.sd_name,
-                                                    self.spm_host)
-        if not status:
-            raise exceptions.StorageDomainException(
-                "Failed to remove domain '%s'" % self.sd_name
-            )
-        wait_for_jobs()
+        if self.sd_name is not None:
+            logger.info("Waiting for tasks before deactivating/removing the "
+                        "storage domain")
+            wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                           config.DATA_CENTER_NAME)
+            logger.info("Removing Storage domain '%s'", self.sd_name)
+            try:
+                status = ll_st_domains.removeStorageDomains(True, self.sd_name,
+                                                            self.spm_host)
+                if not status:
+                    raise exceptions.StorageDomainException(
+                        "Failed to remove domain '%s'" % self.sd_name
+                    )
+            except apis_exceptions.EntityNotFound:
+                logger.info("Storage domain '%s' wasn't added successfully, "
+                            "nothing to remove", self.sd_name)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_change_domain_status_test(self):

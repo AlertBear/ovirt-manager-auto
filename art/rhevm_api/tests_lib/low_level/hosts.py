@@ -1472,7 +1472,7 @@ def getHost(positive, dataCenter='Default', spm=True, hostName=None):
         elementStatus, hosts = searchElement(positive, ELEMENT, COLLECTION,
                                              'cluster', cluster.name)
         if not elementStatus:
-            return False, {'hostName': None}
+            continue
         for host in hosts:
             spmStatus = checkHostSpmStatus(positive, host.name)
             if spm and spmStatus:
