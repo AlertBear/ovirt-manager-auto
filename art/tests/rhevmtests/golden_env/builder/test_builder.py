@@ -27,6 +27,7 @@ ENUMS = config.ENUMS
 GB = 1024 * 1024 * 1024
 HOME = os.environ.get('HOME', '.')
 INVENTORY_FILE = 'golden_env_hosts.txt'
+GLANCE = 'OpenStackImageProvider'
 
 
 class HostConfiguration(object):
@@ -129,13 +130,13 @@ class CreateDC(TestCase):
             host_ip, host_pwd = host_conf.get_unused_host()
             vds_objs.append(VDS(host_ip, host_pwd))
             if not hosts.addHost(
-                    True, host_def['host']['name'], address=host_ip,
+                    True, host_def['name'], address=host_ip,
                     root_password=host_pwd, wait=False, cluster=cluster_name):
                 raise errors.HostException("Cannot add host")
 
         if not hosts.waitForHostsStates(
                 True,
-                ",".join([x['host']['name'] for x in hosts_def])):
+                ",".join([x['name'] for x in hosts_def])):
             raise errors.HostException("Hosts are not up")
 
         # Set the best cpu_model for hosts
@@ -160,8 +161,8 @@ class CreateDC(TestCase):
 
     def add_sds(self, storages, host, datacenter_name, storage_conf):
         for sd in storages:
-            sd_name = sd['storage_domain']['name']
-            storage_type = sd['storage_domain']['storage_type']
+            sd_name = sd['name']
+            storage_type = sd['storage_type']
             if storage_type == ENUMS['storage_type_nfs']:
                 address, path = storage_conf.get_nfs_share()
                 assert storagedomains.addNFSDomain(
@@ -233,6 +234,89 @@ class CreateDC(TestCase):
         self._create_vm(vm, dc_name, cl_name)
         self._seal_vm(vm['name'], vm['password'])
 
+    def _is_vms_state_down(self, cloned_vms):
+        for cloned_vm in cloned_vms:
+            LOGGER.info("Waiting until %s state is down...", cloned_vm)
+            assert vms.waitForVMState(
+                cloned_vm,
+                state=ENUMS['vm_state_down']
+            )
+
+    def _clone_vm(self, vm_description, cloned_vms, cl_name):
+        if 'number_of_vms' in vm_description:
+            number_of_vms = vm_description['number_of_vms']
+        else:
+            number_of_vms = 1
+
+        suffix_num = 0
+        vm_prefix = vm_description['name']
+        vm_description['name'] += repr(suffix_num)
+
+        while suffix_num < number_of_vms:
+            LOGGER.info(
+                "Creating VM: %s from Template: %s",
+                vm_description['name'],
+                vm_description['clone_from']
+            )
+            vms.cloneVmFromTemplate(
+                True,
+                vm_description['name'],
+                vm_description['clone_from'],
+                cl_name,
+                wait=False
+            )
+            cloned_vms.append(vm_description['name'])
+            suffix_num += 1
+            vm_description['name'] = vm_prefix
+            vm_description['name'] += repr(suffix_num)
+
+    def _add_multiple_vms_from_template(
+            self, vm_description, cloned_vms, dc_name, cl_name
+    ):
+        LOGGER.info(
+            "Creating a template and clone %s vms out of it",
+            vm_description['number_of_vms']
+        )
+        prefix_vm_name = vm_description['name']
+        suffix_num = 0
+        vm_description['name'] += repr(suffix_num)
+        suffix_num += 1
+        self._create_and_seal_vm(
+            vm_description,
+            dc_name,
+            cl_name
+        )
+        tmp_template = "tmp_template"
+        template_creation_status = templates.createTemplate(
+            True,
+            vm=vm_description['name'],
+            name=tmp_template, cluster=cl_name
+        )
+        assert template_creation_status
+
+        while suffix_num < vm_description['number_of_vms']:
+            vm_description['name'] = prefix_vm_name
+            vm_description['name'] += repr(suffix_num)
+            suffix_num += 1
+            LOGGER.info(
+                "Cloning vm %s from template %s",
+                vm_description['name'], tmp_template
+            )
+
+            vms.cloneVmFromTemplate(
+                True,
+                vm_description['name'], tmp_template,
+                cl_name,
+                vol_sparse=vm_description['disk_sparse'],
+                vol_format=vm_description['disk_format'],
+                wait=False)
+
+            cloned_vms.append(vm_description['name'])
+
+        self._is_vms_state_down(cloned_vms)
+
+        assert templates.removeTemplate(True, tmp_template)
+
     def add_vms(self, vms_def, dc_name, cl_name):
         """ add description
         """
@@ -241,63 +325,26 @@ class CreateDC(TestCase):
 
         for vm_description in vms_def:
             LOGGER.info(vm_description)
-            prefix_vm_name = vm_description['vm']['name']
-            if 'number_of_vms' in vm_description['vm']:
-                LOGGER.info(
-                    "Creating a template and clone %s vms out of it",
-                    vm_description['vm']['number_of_vms']
-                )
-                suffix_num = 0
-                vm_description['vm']['name'] += repr(suffix_num)
-                suffix_num += 1
-                self._create_and_seal_vm(
-                    vm_description['vm'],
+            cloned_vms = []
+
+            if 'clone_from' in vm_description:
+                self._clone_vm(vm_description, cloned_vms, cl_name)
+            elif 'number_of_vms' in vm_description:
+                self._add_multiple_vms_from_template(
+                    vm_description,
+                    cloned_vms,
                     dc_name,
                     cl_name
                 )
-                tmp_template = "tmp_template"
-                template_creation_status = templates.createTemplate(
-                    True,
-                    vm=vm_description['vm']['name'],
-                    name=tmp_template, cluster=cl_name
-                )
-                assert template_creation_status
-
-                cloned_vms = []
-                while suffix_num < vm_description['vm']['number_of_vms']:
-                    vm_description['vm']['name'] = prefix_vm_name
-                    vm_description['vm']['name'] += repr(suffix_num)
-                    suffix_num += 1
-                    LOGGER.info(
-                        "Cloning vm %s from template %s",
-                        vm_description['vm']['name'], tmp_template
-                    )
-
-                    vms.cloneVmFromTemplate(
-                        True,
-                        vm_description['vm']['name'], tmp_template,
-                        cl_name,
-                        vol_sparse=vm_description['vm']['disk_sparse'],
-                        vol_format=vm_description['vm']['disk_format'],
-                        wait=False)
-
-                    cloned_vms.append(vm_description['vm']['name'])
-
-                for cloned_vm in cloned_vms:
-                    LOGGER.info("Waiting until %s state is down...", cloned_vm)
-                    assert vms.waitForVMState(
-                        cloned_vm,
-                        state=ENUMS['vm_state_down']
-                    )
-
-                assert templates.removeTemplate(True, tmp_template)
             else:
                 LOGGER.info("Creating a new vm")
                 self._create_and_seal_vm(
-                    vm_description['vm'],
+                    vm_description,
                     dc_name,
                     cl_name
                 )
+            if cloned_vms:
+                self._is_vms_state_down(cloned_vms)
 
     def copy_template_disks(self, template, all_sds):
         template_disks = [
@@ -310,16 +357,41 @@ class CreateDC(TestCase):
                 for disk in template_disks:
                     templates.copyTemplateDisk(template, disk, sd)
 
-    def add_templates(self, templ_def, cluster, datacenter):
-        sds = ll_sd.getDCStorages(datacenter, False)
+    def _get_data_storage_domains(self, data_center):
+        sds = ll_sd.getDCStorages(data_center, False)
         data_type = ENUMS['storage_dom_type_data']
         data_sds = [x.get_name() for x in sds if x.get_type() == data_type]
+
+        return data_sds
+
+    def add_templates(self, templ_def, cluster, datacenter):
+
+        data_sds = self._get_data_storage_domains(datacenter)
+
         for template in templ_def:
-            template_name = template['template']['name']
+            template_name = template['name']
             assert templates.createTemplate(
-                True, vm=template['template']['base_vm'], name=template_name,
-                cluster=cluster)
+                True, vm=template['base_vm'],
+                name=template_name,
+                cluster=cluster
+            )
+
             self.copy_template_disks(template_name, data_sds)
+
+    def add_glance_templates(self, glance_templates, data_center, cluster):
+        for glance_template in glance_templates:
+            glance, image = glance_template['source'].split(':')
+            gi = ll_sd.GlanceImage(image, glance)
+
+            data_sds = self._get_data_storage_domains(data_center)
+            assert gi.import_image(
+                destination_storage_domain=data_sds[0],
+                cluster_name=cluster,
+                new_disk_alias=glance_template['name'],
+                new_template_name=glance_template['name'],
+                import_as_template=True,
+                async=False
+            )
 
     def build_dc(self, dc_def, host_conf, storage_conf):
         datacenter_name = dc_def['name']
@@ -334,14 +406,14 @@ class CreateDC(TestCase):
         clusters = dc_def['clusters']
         for cluster in clusters:
             self.build_cluster(
-                cluster['cluster'], datacenter_name, comp_version, host_conf)
-            LOGGER.info("Cluster %s added", cluster['cluster']['name'])
+                cluster, datacenter_name, comp_version, host_conf)
+            LOGGER.info("Cluster %s added", cluster['name'])
         LOGGER.info("Added all clusters")
 
-        if clusters[0]['cluster']['hosts']:
+        if clusters[0]['hosts']:
             LOGGER.info("Adding storage domains")
             storages = dc_def['storage_domains']
-            host = clusters[0]['cluster']['hosts'][0]['host']['name']
+            host = clusters[0]['hosts'][0]['name']
             if storages is not None:
                 self.add_sds(storages, host, datacenter_name, storage_conf)
             else:
@@ -350,19 +422,27 @@ class CreateDC(TestCase):
             LOGGER.info("No hosts, so no adding storages")
 
         for cluster in clusters:
-            cl_def = cluster['cluster']
-            vms_def = cl_def['vms']
+            if cluster['external_templates']:
+                LOGGER.info("Adding templates")
+                self.add_glance_templates(
+                    cluster['external_templates'],
+                    datacenter_name,
+                    cluster['name']
+                )
+            else:
+                LOGGER.info("No glance templates to add")
+            vms_def = cluster['vms']
             if vms_def:
                 LOGGER.info("Adding vms")
                 self.add_vms(
-                    vms_def, datacenter_name, cl_def['name'])
+                    vms_def, datacenter_name, cluster['name'])
             else:
                 LOGGER.info("No vms to add")
 
-            templ_def = cl_def['templates']
+            templ_def = cluster['templates']
             if templ_def:
                 LOGGER.info("Adding templates")
-                self.add_templates(templ_def, cl_def['name'], datacenter_name)
+                self.add_templates(templ_def, cluster['name'], datacenter_name)
             else:
                 LOGGER.info("No templates to add")
 
@@ -387,25 +467,49 @@ class CreateDC(TestCase):
             True, ENUMS['storage_dom_type_iso'], ENUMS['storage_type_nfs'],
             address[0], path[0], host)
 
+    def connect_glance(self, external_provider_def):
+        # TODO
+        LOGGER.info(
+            "Connecting %s to environment", external_provider_def['name']
+        )
+        LOGGER.info(
+            "%s %s %s %s %s %s %s",
+            external_provider_def['type'],
+            external_provider_def['name'],
+            external_provider_def['url'],
+            external_provider_def['username'],
+            external_provider_def['password'],
+            external_provider_def['tenant'],
+            external_provider_def['authentication_url']
+        )
+
+    def _add_external_providers(self, external_providers):
+        for external_provider in external_providers:
+            if external_provider['type'] == GLANCE:
+                self.connect_glance(external_provider)
+
     def test_build_env(self):
         GOLDEN_ENV = config.ART_CONFIG['prepared_env']
-        dcs = GOLDEN_ENV[0]['dcs']
+
+        if GOLDEN_ENV['external_providers']:
+            self._add_external_providers(GOLDEN_ENV['external_providers'])
+
+        dcs = GOLDEN_ENV['dcs']
         storage_conf = StorageConfiguration(config.STORAGE)
         host_conf = HostConfiguration(config.HOSTS, config.PASSWORDS)
         for dc in dcs:
-            self.build_dc(dc['dc'], host_conf, storage_conf)
+            self.build_dc(dc, host_conf, storage_conf)
 
-        export_domains = GOLDEN_ENV[1]['export_domains']
+        export_domains = GOLDEN_ENV['export_domains']
         host = ''
         if export_domains is None:
             LOGGER.info("No export_domains to add!")
         else:
             host = (hosts.get_host_list()[0]).get_name()
             for export_domain in export_domains:
-                self.add_export_domain(
-                    export_domain['export_domain'], storage_conf, host)
+                self.add_export_domain(export_domain, storage_conf, host)
 
-        iso_domains = GOLDEN_ENV[2]['iso_domains']
+        iso_domains = GOLDEN_ENV['iso_domains']
         if not host or iso_domains is None:
             LOGGER.info(
                 "There are no hosts or no iso domain described in yaml,"
