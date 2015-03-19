@@ -11,7 +11,6 @@ from art.test_handler.settings import initPlmanager, opts
 from art.test_handler.exceptions import VitalTestFailed, \
     Vital4GroupTestFailed, SkipTest, formatExcInfo
 from utilities.jobs import JobsSet, Job
-from utilities.timeout import TimeoutExpiredError
 # TODO: consider to use
 # http://docs.python.org/dev/library/concurrent.futures.html instead
 
@@ -348,9 +347,6 @@ class TestRunner(object):
             else:
                 assert False, ('number of workers must be positive not %s' %
                                test_group.workers)
-        except TimeoutExpiredError as e:
-            test_group.status = test_group.TEST_STATUS_ERROR
-            logger.error("Failed: %s, the reason: %s", test_group.test_name, e)
         except SkipTest as s:
             test_group.status = test_group.TEST_STATUS_SKIPPED
             logger.info("Skipped: %s, the reason: %s", test_group.test_name, s)
