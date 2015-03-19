@@ -35,6 +35,6 @@ if STORAGE_TYPE == STORAGE_TYPE_ISCSI:
         DIRECT_LUN_ADDRESSES = UNUSED_LUN_ADDRESSES
         DIRECT_LUN_TARGETS = UNUSED_LUN_TARGETS
     else:
-        DIRECT_LUNS = PARAMETERS.as_list('direct_lun')
-        DIRECT_LUN_ADDRESSES = PARAMETERS.as_list('direct_lun_address')
-        DIRECT_LUN_TARGETS = PARAMETERS.as_list('direct_lun_target')
+        DIRECT_LUNS = PARAMETERS.as_list("extend_lun")
+        DIRECT_LUN_ADDRESSES = PARAMETERS.as_list("extend_lun_address")
+        DIRECT_LUN_TARGETS = PARAMETERS.as_list("extend_lun_target")

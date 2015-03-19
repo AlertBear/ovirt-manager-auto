@@ -1194,7 +1194,6 @@ class TestCase337935(DefaultEnvironment):
     snapshot_description = 'test_snap'
     cloned = False
     cloned_vm_name = 'cloned_vm'
-    bz = {'1178508': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_clone_vm_from_snapshot_with_RO_disk(self):
