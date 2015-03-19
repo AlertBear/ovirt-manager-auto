@@ -17,6 +17,7 @@ if GOLDEN_ENV:
 # Global parameters
 HOSTS_IP = [host.ip for host in VDS_HOSTS]
 EXTRA_DC = ["_".join(["EXTRA_DC", str(i)]) for i in range(6)]
+EXTRA_CL = ["".join(["NET_Cluster", str(i)]) for i in range(5)]
 MTU = [9000, 5000, 2000, 1500]
 NETMASK = '255.255.255.0'
 VNIC_PROFILE = PARAMETERS.as_list('vnic_profile')
