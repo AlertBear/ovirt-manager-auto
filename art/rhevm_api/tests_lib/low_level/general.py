@@ -323,3 +323,17 @@ def prepare_ds_object(object_name, **kwargs):
                 "%s object has no attribute: %s" % (object_name, key)
             )
     return ds_object
+
+
+def get_object_name_by_id(object_api, object_id):
+    """
+    Get object name by object object_id
+
+    :param object_api: Object API (CLUSTER_API for example)
+    :type object_api: class
+    :param object_id: Object ID
+    :type id: str
+    :return: Object name
+    :rtype: str
+    """
+    return object_api.find(object_id, "id").get_name()
