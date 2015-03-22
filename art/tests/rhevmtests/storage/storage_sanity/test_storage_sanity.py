@@ -349,6 +349,9 @@ class TestCase288461(TestCase):
                                                "Data center")
             logger.info("Setting the original SPM host '%s' back as SPM",
                         self.original_spm_host)
+            wait_for_tasks(
+                config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            )
             if not select_host_as_spm(True, self.original_spm_host,
                                       config.DATA_CENTER_NAME):
                 raise exceptions.HostException("Did not successfully revert "
@@ -362,6 +365,9 @@ class TestCase288461(TestCase):
         """
         self.new_spm_host = self.hsm_hosts[0]
         logger.info("Selecting HSM host '%s' as SPM", self.new_spm_host)
+        wait_for_tasks(
+            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+        )
         self.assertTrue(select_host_as_spm(True, self.new_spm_host,
                                            config.DATA_CENTER_NAME),
                         "Unable to set host '%s' as SPM" % self.new_spm_host)
