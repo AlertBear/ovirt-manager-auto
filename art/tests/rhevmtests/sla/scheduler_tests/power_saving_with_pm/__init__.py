@@ -25,8 +25,8 @@ def setup_package():
         if not config.GOLDEN_ENV:
             logger.info("Building setup...")
             if not dc_api.build_setup(
-                    config.PARAMETERS, config.PARAMETERS,
-                    config.STORAGE_TYPE, config.TEST_NAME
+                config.PARAMETERS, config.PARAMETERS,
+                config.STORAGE_TYPE, config.TEST_NAME
             ):
                 raise errors.DataCenterException("Setup environment failed")
             logger.info("Create three new vms")
@@ -40,8 +40,9 @@ def setup_package():
                     raise errors.VMException("Cannot create %s" % vm)
         logger.info("Select host %s as SPM", config.HOSTS[0])
         if not host_api.checkHostSpmStatus(True, config.HOSTS[0]):
-            if not host_api.select_host_as_spm(True, config.HOSTS[0],
-                                               config.DC_NAME[0]):
+            if not host_api.select_host_as_spm(
+                True, config.HOSTS[0], config.DC_NAME[0]
+            ):
                 raise errors.DataCenterException(
                     "Selecting host as SPM failed"
                 )
@@ -80,7 +81,7 @@ def teardown_package():
                 raise errors.HostException("Can not update host %s" % host)
         if not config.GOLDEN_ENV:
             if not cleanDataCenter(
-                    True, config.DC_NAME[0], vdc=config.VDC_HOST,
-                    vdc_password=config.VDC_ROOT_PASSWORD
+                True, config.DC_NAME[0], vdc=config.VDC_HOST,
+                vdc_password=config.VDC_ROOT_PASSWORD
             ):
                 raise errors.DataCenterException("Clean up environment failed")

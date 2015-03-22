@@ -23,8 +23,10 @@ def setup_package():
     """
     if os.environ.get("JENKINS_URL") and not config.GOLDEN_ENV:
         logger.info("Building setup...")
-        if not dc_api.build_setup(config.PARAMETERS, config.PARAMETERS,
-                                  config.STORAGE_TYPE, config.TEST_NAME):
+        if not dc_api.build_setup(
+            config.PARAMETERS, config.PARAMETERS,
+            config.STORAGE_TYPE, config.TEST_NAME
+        ):
             raise errors.DataCenterException("Setup environment failed")
         logger.info("Create five new vms")
         for vm in config.VM_NAME:
@@ -37,10 +39,12 @@ def setup_package():
                 raise errors.VMException("Cannot create %s" % vm)
     logger.info("Select host %s as SPM", config.HOSTS[0])
     if not host_api.checkHostSpmStatus(True, config.HOSTS[0]):
-        if not host_api.select_host_as_spm(True, config.HOSTS[0],
-                                           config.DC_NAME[0]):
-            raise errors.DataCenterException("Selecting host as "
-                                             "SPM failed")
+        if not host_api.select_host_as_spm(
+            True, config.HOSTS[0], config.DC_NAME[0]
+        ):
+            raise errors.DataCenterException(
+                "Selecting host as SPM failed"
+            )
 
 
 def teardown_package():
@@ -48,11 +52,15 @@ def teardown_package():
     Cleans the environment
     """
     logger.info("Remove all vms from cluster %s", config.CLUSTER_NAME[0])
-    if not vm_api.remove_all_vms_from_cluster(config.CLUSTER_NAME[0],
-                                              skip=config.VM_NAME):
+    if not vm_api.remove_all_vms_from_cluster(
+        config.CLUSTER_NAME[0],
+        skip=config.VM_NAME
+    ):
         raise errors.VMException("Failed to remove vms")
     if os.environ.get("JENKINS_URL") and not config.GOLDEN_ENV:
-        if not cleanDataCenter(True, config.DC_NAME[0],
-                               vdc=config.VDC_HOST,
-                               vdc_password=config.VDC_PASSWORD):
+        if not cleanDataCenter(
+            True, config.DC_NAME[0],
+            vdc=config.VDC_HOST,
+            vdc_password=config.VDC_ROOT_PASSWORD
+        ):
             raise errors.DataCenterException("Clean up environment failed")

@@ -24,8 +24,8 @@ def setup_package():
     if os.environ.get("JENKINS_URL") and not config.GOLDEN_ENV:
         logger.info("Building setup...")
         if not dc_api.build_setup(
-                config.PARAMETERS, config.PARAMETERS,
-                config.STORAGE_TYPE, config.TEST_NAME
+            config.PARAMETERS, config.PARAMETERS,
+            config.STORAGE_TYPE, config.TEST_NAME
         ):
             raise errors.DataCenterException("Setup environment failed")
         logger.info("Create three new vms")
@@ -40,7 +40,7 @@ def setup_package():
     logger.info("Select host %s as SPM", config.HOSTS[0])
     if not host_api.checkHostSpmStatus(True, config.HOSTS[0]):
         if not host_api.select_host_as_spm(
-                True, config.HOSTS[0], config.DC_NAME[0]
+            True, config.HOSTS[0], config.DC_NAME[0]
         ):
             raise errors.DataCenterException(
                 "Selecting host %s as SPM failed" % config.HOSTS[0]
@@ -61,12 +61,12 @@ def teardown_package():
             raise errors.HostException("Failed to activate host")
         logger.info("Remove all vms from cluster %s", config.CLUSTER_NAME[0])
         if not vm_api.remove_all_vms_from_cluster(
-                config.CLUSTER_NAME[0], skip=config.VM_NAME
+            config.CLUSTER_NAME[0], skip=config.VM_NAME
         ):
             raise errors.VMException("Failed to remove vms")
     if os.environ.get("JENKINS_URL") and not config.GOLDEN_ENV:
         if not cleanDataCenter(
-                True, config.DC_NAME[0], vdc=config.VDC_HOST,
-                vdc_password=config.VDC_PASSWORD
+            True, config.DC_NAME[0], vdc=config.VDC_HOST,
+            vdc_password=config.VDC_ROOT_PASSWORD
         ):
             raise errors.DataCenterException("Clean up environment failed")

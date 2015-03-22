@@ -26,20 +26,22 @@ def setup_package():
         params = dict(config.GENERAL_VM_PARAMS)
         if not config.GOLDEN_ENV:
             logger.info("Building setup...")
-            datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
-                                    config.STORAGE_TYPE, config.TEST_NAME)
+            datacenters.build_setup(
+                config.PARAMETERS, config.PARAMETERS,
+                config.STORAGE_TYPE, config.TEST_NAME
+            )
             vms_to_create = [config.VM_NAME[0], config.WATCHDOG_VM]
             params.update(config.INSTALL_VM_PARAMS)
         else:
             params['template'] = config.TEMPLATE_NAME[0]
             vms_to_create = [config.WATCHDOG_VM]
         for vm in vms_to_create:
-                if not vms.createVm(
-                    positive=True, vmName=vm,
-                    vmDescription="Watchdog VM",
-                    **params
-                ):
-                    raise errors.VMException("Cannot add VM %s" % vm)
+            if not vms.createVm(
+                positive=True, vmName=vm,
+                vmDescription="Watchdog VM",
+                **params
+            ):
+                raise errors.VMException("Cannot add VM %s" % vm)
         vms.stop_vms_safely(vms_to_create)
 
 
@@ -55,5 +57,7 @@ def teardown_package():
         ):
             raise errors.VMException("Failed to remove vms")
         if not config.GOLDEN_ENV:
-            cleanDataCenter(True, config.DC_NAME[0], vdc=config.VDC_HOST,
-                            vdc_password=config.VDC_ROOT_PASSWORD)
+            cleanDataCenter(
+                True, config.DC_NAME[0], vdc=config.VDC_HOST,
+                vdc_password=config.VDC_ROOT_PASSWORD
+            )
