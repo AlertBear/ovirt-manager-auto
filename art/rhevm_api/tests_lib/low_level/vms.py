@@ -71,6 +71,8 @@ VM_INSTALL_TIMEOUT = 1800
 CLONE_FROM_SNAPSHOT = 1500
 VM_SAMPLING_PERIOD = 3
 
+GUEST_AGENT_TIMEOUT = 60 * 6
+
 SNAPSHOT_SAMPLING_PERIOD = 5
 SNAPSHOT_APPEAR_TIMEOUT = 120
 FILTER_DEVICE = '[sv]d'
@@ -4366,7 +4368,10 @@ def safely_remove_vms(vms):
     return True
 
 
-def get_vm_disk_logical_name(vm_name, disk_alias):
+def get_vm_disk_logical_name(
+    vm_name, disk_alias, wait=True, timeout=GUEST_AGENT_TIMEOUT,
+    interval=DEF_SLEEP,
+):
     """
     Retrieves the logical name of a disk that is attached to a VM
     **** Important note: Guest Agent must be installed in the OS for this
@@ -4378,11 +4383,30 @@ def get_vm_disk_logical_name(vm_name, disk_alias):
     :param disk_alias: The alias of the disk for which the logical volume
     name should be retrieved
     :type disk_alias: str
-    :returns: Disk logical name
+    :param wait: If the function should wait until the value is set by the
+    guest agent
+    :type wait: bool
+    :param timeout: how long to wait in seconds
+    :type timeout: int
+    :param internal: internal time in seconds
+    :type internal: int
+    :returns: Disk logical name, None in case is not set
     :rtype: str
     """
-    disk_object = getVmDisk(vm_name, disk_alias)
-    return disk_object.get_logical_name()
+    def get_logical_name(vm_name, disk_alias):
+        return getVmDisk(vm_name, disk_alias).get_logical_name()
+
+    if not wait:
+        return get_logical_name(vm_name, disk_alias)
+
+    logger.debug("Waiting for logical volume name for disk %s", disk_alias)
+    for logical_name in TimeoutingSampler(
+            timeout, interval, get_logical_name, vm_name, disk_alias,
+    ):
+        if logical_name:
+            return logical_name
+
+    return None
 
 
 def run_vms_once(vms, max_workers=None, **kwargs):

@@ -3,7 +3,6 @@ Storage helper functions
 """
 import logging
 import shlex
-import time
 from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost, getHostIP
 from utilities.machine import Machine, LINUX
 from art.rhevm_api.tests_lib.low_level.disks import (
@@ -32,8 +31,6 @@ DD_TIMEOUT = 60 * 6
 DD_COMMAND = 'dd bs=1M count=%d if=%s of=%s'
 DEFAULT_DD_SIZE = 20 * config.MB
 ERROR_MSG = "Error: Boot device is protected"
-GUEST_AGENT_TIMEOUT = 60 * 6
-GUEST_AGENT_SLEEP = 5
 
 disk_args = {
     # Fixed arguments
@@ -194,18 +191,7 @@ def perform_dd_to_disk(
     output = vm_machine.get_boot_storage_device()
     boot_disk = 'vda' if 'vd' in output else 'sda'
 
-    # TODO: Disk's logical name cannot be available until FullListVdsCommand
-    # is executed, find a way to force the execution and remove this logic
-    disk_logical_volume_name = None
-    start_t = time.time()
-    while time.time() - start_t < GUEST_AGENT_TIMEOUT:
-        disk_logical_volume_name = get_vm_disk_logical_name(
-            vm_name, disk_alias
-        )
-        if disk_logical_volume_name:
-            break
-        time.sleep(GUEST_AGENT_SLEEP)
-
+    disk_logical_volume_name = get_vm_disk_logical_name(vm_name, disk_alias)
     if not disk_logical_volume_name:
         # This function is used to test whether logical volume was found,
         # raises an exception if it wasn't found

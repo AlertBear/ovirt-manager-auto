@@ -1,13 +1,15 @@
 from art.unittest_lib import StorageTest as TestCase
 import logging
 import time
+from multiprocessing import Process
 from art.unittest_lib import attr
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import vms, storagedomains, disks, hosts
 from art.rhevm_api.tests_lib.low_level.vms import (
-    addDisk, get_vms_disks_storage_domain_name,
+    addDisk, get_vms_disks_storage_domain_name, get_vm_disk_logical_name,
 )
 from art.rhevm_api.utils import storage_api
+from rhevmtests.storage.helpers import perform_dd_to_disk
 
 import config
 
@@ -32,7 +34,8 @@ def _wait_for_vm_booted(
 
 class TestResumeGuests(TestCase):
     __test__ = False
-    vm = "%s_%s" % (config.VM_NAME[0], TestCase.storage)
+    vm = "%s_%s" % (config.VM_NAME, TestCase.storage)
+    remove_file = False
 
     def setUp(self):
         """ just start writing
@@ -41,6 +44,7 @@ class TestResumeGuests(TestCase):
         LOGGER.info("Starting writing process")
         assert vms.run_cmd_on_vm(
             self.vm, cmd, VM_USER, VM_PASSWORD)[0]
+        self.remove_file = True
         # give it time to really start writing
         time.sleep(10)
 
@@ -52,14 +56,14 @@ class TestResumeGuests(TestCase):
         assert vms.stopVm(True, self.vm)
 
         LOGGER.info("Starting the VM")
-        assert vms.startVm(
-            True, self.vm, config.ENUMS['vm_state_up'], True, 3600)
+        assert vms.startVm(True, self.vm, config.VM_UP, True)
 
-        cmd = "rm -f %s" % FILE_TO_WRITE
-        LOGGER.info("Removing file %s we were writing to" % FILE_TO_WRITE)
-        # big timeout as rm may take a lot of time in case of big files
-        assert vms.run_cmd_on_vm(
-            self.vm, cmd, VM_USER, VM_PASSWORD, 3600)[0]
+        if self.remove_file:
+            cmd = "rm -f %s" % FILE_TO_WRITE
+            LOGGER.info("Removing file %s we were writing to" % FILE_TO_WRITE)
+            # big timeout as rm may take a lot of time in case of big files
+            assert vms.run_cmd_on_vm(
+                self.vm, cmd, VM_USER, VM_PASSWORD, 3600)[0]
 
     def break_storage(self):
         pass
@@ -164,7 +168,6 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
     def tearDown(self):
         """ additional step in tearDown - remove big disk
         """
-        super(TestNoSpaceLeftOnDevice, self).tearDown()
         LOGGER.info("Tear down - removing disk if needed")
         disk_names = [
             x.alias for x in disks.getStorageDomainDisks(self.sd, False)]
@@ -172,6 +175,7 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
         if self.big_disk_name in disk_names:
             disks.deleteDisk(True, self.big_disk_name)
         LOGGER.info("Upper tear down")
+        super(TestNoSpaceLeftOnDevice, self).tearDown()
 
 
 @attr(tier=3)
@@ -224,15 +228,29 @@ class TestCase285372(TestNoSpaceLeftOnDevice):
 
     def setUp(self):
         storage = get_vms_disks_storage_domain_name(self.vm)
-        addDisk(True, self.vm, config.DISK_SIZE, storagedomain=storage,
-                interface=config.VIRTIO)
+        self.disk_alias = "second_disk_%s" % self.tcms_test_case
+        LOGGER.info("Adding disk %s to vm %s", self.disk_alias, self.vm)
+        if not addDisk(
+            True, self.vm, config.DISK_SIZE, storagedomain=storage,
+            interface=config.VIRTIO, alias=self.disk_alias,
+        ):
+            LOGGER.error("Error adding disk %s", self.disk_alias)
+        disks.wait_for_disks_status(self.disk_alias)
 
-        cmd = "dd of=/dev/vda if=/dev/urandom &"
-        LOGGER.info("Starting writing process")
-        assert vms.run_cmd_on_vm(
-            self.vm, cmd, VM_USER, VM_PASSWORD)[0]
-        # give it time to really start writing
-        time.sleep(10)
+        LOGGER.info(
+            "Waiting for %s logical name to be available", self.disk_alias,
+        )
+        if not get_vm_disk_logical_name(self.vm, self.disk_alias):
+            LOGGER.error("Couldn't get %s logical name", self.disk_alias)
+
+        self.process = Process(
+            target=perform_dd_to_disk,
+            args=(self.vm, self.disk_alias, True, config.DISK_SIZE,),
+        )
+        self.process.start()
+        # Wait for the operation to start
+        # TODO: change the sleep to check the operation started
+        time.sleep(5)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_iscsi_no_space_left_on_device(self):
@@ -240,6 +258,20 @@ class TestCase285372(TestNoSpaceLeftOnDevice):
             checks if VM is unpaused after there is again free space on sd
         """
         self.run_flow()
+
+    def tearDown(self):
+        """Remove vm's disk"""
+        self.process.terminate()
+        if not vms.deactivateVmDisk(True, self.vm, self.disk_alias):
+            LOGGER.error(
+                "Error deactivating disk %s from vm %s", self.disk_alias,
+                self.vm,
+            )
+        if not vms.removeDisk(True, self.vm, self.disk_alias):
+            LOGGER.error(
+                "Error removing disk %s from vm %s", self.disk_alias, self.vm,
+            )
+        super(TestCase285372, self).tearDown()
 
 
 @attr(tier=3)
