@@ -8,7 +8,7 @@ import logging
 from rhevmtests.sla import config
 
 from art.unittest_lib import attr
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import SlaTest as TestCase
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
@@ -54,7 +54,7 @@ class BaseSchedulingClass(TestCase):
                 unit_name, unit_type, cls.policy_name
             )
             if not sch_api.add_scheduling_policy_unit(
-                    cls.policy_name, unit_name, unit_type
+                cls.policy_name, unit_name, unit_type
             ):
                 raise errors.SchedulerException("Failed to add unit to policy")
 
@@ -65,7 +65,7 @@ class BaseSchedulingClass(TestCase):
         """
         logger.info("Create new scheduler policy %s.", cls.policy_name)
         if not sch_api.add_new_scheduling_policy(
-                name=cls.policy_name, properties=cls.policy_properties
+            name=cls.policy_name, properties=cls.policy_properties
         ):
             raise errors.SchedulerException(
                 "Failed to add new scheduler policy."
@@ -93,12 +93,12 @@ class TestCRUD(TestCase):
     __test__ = True
     policy_name = 'crud_policy'
     new_policy_name = 'new_crud_policy'
-
-    @bz(
-        {
-            '1189095': {'engine': ['cli', 'sdk', 'java'], 'version': ['3.5']},
+    bz = {
+        '1189095': {
+            'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
         }
-    )
+    }
+
     @tcms(TCMS_PLAN_ID, '287142')
     def test_crud_check(self):
         """
@@ -143,7 +143,7 @@ class AttachPolicyToCluster(BaseSchedulingClass):
             config.CLUSTER_NAME[0], cls.policy_name
         )
         if not updateCluster(
-                True, config.CLUSTER_NAME[0], scheduling_policy=cls.policy_name
+            True, config.CLUSTER_NAME[0], scheduling_policy=cls.policy_name
         ):
             raise errors.ClusterException("Failed to update cluster.")
 
@@ -153,7 +153,7 @@ class AttachPolicyToCluster(BaseSchedulingClass):
         Update cluster scheduler policy to None.
         """
         if not updateCluster(
-                True, config.CLUSTER_NAME[0], scheduling_policy='none'
+            True, config.CLUSTER_NAME[0], scheduling_policy='none'
         ):
             raise errors.ClusterException("Failed to update cluster.")
         super(AttachPolicyToCluster, cls).teardown_class()
@@ -203,12 +203,12 @@ class TestDeletePolicyInUse(AttachPolicyToCluster):
     """
     __test__ = True
     policy_name = 'delete_policy_in_use'
-
-    @bz(
-        {
-            '1189095': {'engine': ['cli', 'sdk', 'java'], 'version': ['3.5']}
+    bz = {
+        '1189095': {
+            'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
         }
-    )
+    }
+
     @tcms(TCMS_PLAN_ID, '287260')
     def test_delete_policy(self):
         """
@@ -222,6 +222,12 @@ class TestRemoveBuildInPolicy(TestCase):
     """
     Negative: remove build-in scheduler policy.
     """
+    __test__ = True
+    bz = {
+        '1189095': {
+            'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
+        }
+    }
 
     @tcms(TCMS_PLAN_ID, '287261')
     def test_delete_policy(self):
@@ -246,6 +252,11 @@ class TestPinToHostFilter(UpdateVms):
     }
     old_parameters = {
         'placement_host': ANY_HOST, 'placement_affinity': MIGRATABLE
+    }
+    bz = {
+        '1189095': {
+            'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
+        }
     }
 
     @tcms(TCMS_PLAN_ID, '287262')
@@ -277,7 +288,7 @@ class TestNegativePinToHostFilter(UpdateVms):
     Negative: Check PinToHost filter,
     deactivate host where vm pinned and start vm
     """
-    __test__ = False
+    __test__ = True
     policy_name = 'negative_check_pin_to_host'
     policy_units = {config.ENUMS['filter_pin_to_host']: FILTER_TYPE}
     vms_new_parameters = {
@@ -287,6 +298,11 @@ class TestNegativePinToHostFilter(UpdateVms):
     }
     old_parameters = {
         'placement_host': ANY_HOST, 'placement_affinity': MIGRATABLE
+    }
+    bz = {
+        '1189095': {
+            'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
+        }
     }
 
     @classmethod
@@ -315,11 +331,10 @@ class TestNegativePinToHostFilter(UpdateVms):
         """
         Activate host.
         """
-
         logger.info("Activate host %s.", config.HOSTS[0])
         if not host_api.activateHost(True, config.HOSTS[0]):
             raise errors.HostException("Failed to activate host.")
-        super(TestNegativePinToHostFilter, cls).setup_class()
+        super(TestNegativePinToHostFilter, cls).teardown_class()
 
 
 class TestMemoryFilter(UpdateVms):
@@ -334,6 +349,12 @@ class TestMemoryFilter(UpdateVms):
     old_parameters = {
         'memory': config.GB, 'memory_guaranteed': config.GB, 'os_type': 'other'
     }
+    bz = {
+        '1189095': {
+            'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
+        },
+        '1142081': {'engine': None, 'version': ['3.5', '3.5.1']}
+    }
 
     @classmethod
     def setup_class(cls):
@@ -345,7 +366,7 @@ class TestMemoryFilter(UpdateVms):
             config.CLUSTER_NAME[0]
         )
         if not cluster_api.updateCluster(
-                True, config.CLUSTER_NAME[0], mem_ovrcmt_prc=0
+            True, config.CLUSTER_NAME[0], mem_ovrcmt_prc=0
         ):
             raise errors.ClusterException("Failed to update cluster")
         host_list = config.HOSTS[:2]
@@ -360,7 +381,6 @@ class TestMemoryFilter(UpdateVms):
         logger.info("Start vms %s", config.VM_NAME[:2])
         vm_api.start_vms(config.VM_NAME[:2], max_workers=2, wait_for_ip=False)
 
-    @bz({'1142081': {'engine': None, 'version': ['3.5']}})
     @tcms(TCMS_PLAN_ID, '287263')
     def test_check_filter(self):
         """
@@ -396,6 +416,11 @@ class TestCpuFilter(UpdateVms):
     vms_new_parameters = {}
     old_parameters = {
         'cpu_socket': 1, 'cpu_cores': 1, 'placement_host': ANY_HOST
+    }
+    bz = {
+        '1189095': {
+            'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
+        }
     }
 
     @classmethod
@@ -455,6 +480,11 @@ class TestNegativeCpuFilter(UpdateVms):
         'cpu_socket': 1, 'cpu_cores': 1,
         'placement_host': ANY_HOST, 'placement_affinity': MIGRATABLE
     }
+    bz = {
+        '1189095': {
+            'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
+        }
+    }
 
     @classmethod
     def setup_class(cls):
@@ -489,6 +519,7 @@ class TestNetworkFilter(UpdateVms):
     check that filter prevent to start vm on host without specific network.
     """
     __test__ = True
+    apis = set(['rest', 'java', 'sdk'])
     policy_name = 'network_filter'
     policy_units = {
         config.ENUMS['filter_network']: FILTER_TYPE,
@@ -506,6 +537,11 @@ class TestNetworkFilter(UpdateVms):
         }
     }
     network_name = 'network_filter'
+    bz = {
+        '1189095': {
+            'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
+        }
+    }
 
     @classmethod
     def setup_class(cls):
@@ -525,9 +561,11 @@ class TestNetworkFilter(UpdateVms):
         ):
             raise errors.NetworkException("Failed to add new network")
         for vm in config.VM_NAME[:2]:
-            logger.info("Update vm %s to use network %s", vm, cls.network_name)
+            logger.info(
+                "Update vm %s to use network %s", vm, cls.network_name
+            )
             if not vm_api.updateNic(
-                    True, vm, config.NIC_NAME[0], network=cls.network_name
+                True, vm, config.NIC_NAME[0], network=cls.network_name
             ):
                 raise errors.VMException("Failed to update vm nic")
 
@@ -541,7 +579,8 @@ class TestNetworkFilter(UpdateVms):
             vm_api.startVm(True, config.VM_NAME[0]), "Vm failed to run"
         )
         logger.info(
-            "Check if vm %s run on host %s", config.VM_NAME[0], config.HOSTS[0]
+            "Check if vm %s run on host %s",
+            config.VM_NAME[0], config.HOSTS[0]
         )
         self.assertEqual(
             vm_api.get_vm_host(config.VM_NAME[0]), config.HOSTS[0],
@@ -571,15 +610,18 @@ class TestNetworkFilter(UpdateVms):
                 "Update vm %s to use network %s", vm, config.MGMT_BRIDGE
             )
             if not vm_api.updateNic(
-                    True, vm, config.NIC_NAME[0], network=config.MGMT_BRIDGE
+                True, vm, config.NIC_NAME[0],
+                network=config.MGMT_BRIDGE
             ):
                 raise errors.VMException("Failed to update vm nic")
         logger.info(
             "Remove and detach network %s", cls.network_name
         )
         if not high_network_api.remove_net_from_setup(
-                [config.VDS_HOSTS[0]], network=[cls.network_name],
-                data_center=config.DC_NAME[0]
+            [config.VDS_HOSTS[0]], network=[cls.network_name],
+            data_center=config.DC_NAME[0]
         ):
-            raise errors.HostException("Failed to remove and detach network")
+            raise errors.HostException(
+                "Failed to remove and detach network"
+            )
         super(TestNetworkFilter, cls).teardown_class()
