@@ -29,6 +29,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     removeVmFromExportDomain, does_vm_exist, DiskNotFound,
     get_vms_disks_storage_domain_name, waitForDisksStat,
     safely_remove_vms, get_vm_bootable_disk, remove_all_vm_lsm_snapshots,
+    wait_for_vm_snapshots,
 )
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
 from art.rhevm_api.tests_lib.high_level.storagedomains import (
@@ -1065,6 +1066,9 @@ class TestCase337930(DefaultSnapshotEnvironment):
         )
         self.create_snapshot = True
         assert status
+        wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_OK, config.SNAPSHOT_IN_PREVIEW],
+        )
 
         logger.info("Committing snapshot %s", self.snapshot_description)
         status = commit_snapshot(True, self.vm_name)
@@ -1088,7 +1092,7 @@ class TestCase337930(DefaultSnapshotEnvironment):
                 logger.error("Error previewing snapshot for %s", self.vm_name)
                 # Something went wrong removing the snapshot, remove and
                 # create the vm again
-                removeVm(self.vm_name)
+                removeVm(True, self.vm_name)
                 self.ensure_vm_exists()
                 remove_snapshot = False
 

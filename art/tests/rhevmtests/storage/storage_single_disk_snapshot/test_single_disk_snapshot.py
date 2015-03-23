@@ -905,9 +905,11 @@ class TestCase336096(BasicEnvironment):
         assert preview_snapshot(True, self.vm_name, self.snapshot_desc,
                                 ensure_vm_down=True,
                                 disks_lst=disks_to_preview)
+        wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_OK, config.SNAPSHOT_IN_PREVIEW],
+        )
 
         assert commit_snapshot(True, self.vm_name)
-        wait_for_jobs()
         self.commit = True
 
         assert removeNic(True, self.vm_name, self.nic)

@@ -326,6 +326,7 @@ HOST_NONRESPONSIVE = ENUMS["host_state_non_responsive"]
 
 # Snapshot states
 SNAPSHOT_OK = ENUMS['snapshot_state_ok']
+SNAPSHOT_IN_PREVIEW = ENUMS['snapshot_state_in_preview']
 
 # Import/Export parameters
 IMP_MORE_THAN_ONCE_VM = "MoreThanOnceVM"
