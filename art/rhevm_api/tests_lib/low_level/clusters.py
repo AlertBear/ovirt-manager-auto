@@ -23,12 +23,14 @@ from threading import Thread
 
 from art.core_api import is_action
 from art.core_api.apis_utils import getDS
+from art.rhevm_api.tests_lib.low_level.networks import NET_API
 import art.test_handler.exceptions as exceptions
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.rhevm_api.tests_lib.low_level.general import prepare_ds_object
-from art.rhevm_api.tests_lib.low_level.hosts import activateHost, \
-    deactivateHost, updateHost
+from art.rhevm_api.tests_lib.low_level.hosts import(
+    activateHost, deactivateHost, updateHost
+)
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.rhevm_api.utils.test_utils import searchForObj
 
@@ -149,6 +151,10 @@ def _prepareClusterObject(**kwargs):
 
     if 'ha_reservation' in kwargs:
         cl.set_ha_reservation(kwargs.pop('ha_reservation'))
+
+    if 'management_network' in kwargs:
+        net_obj = NET_API.find(kwargs.get('management_network'))
+        cl.set_management_network(net_obj)
 
     return cl
 
@@ -818,3 +824,20 @@ def get_cpu_profile_id_by_name(cluster_name, cpu_profile_name):
     """
     cpu_profile_obj = get_cpu_profile_obj(cluster_name, cpu_profile_name).id
     return cpu_profile_obj.id if cpu_profile_obj else None
+
+
+def get_cluster_management_network(cluster_name):
+    """
+    Get MGMT network object for Cluster
+    :param cluster_name: Name of the Cluster
+    :type cluster_name: str
+    :return: network MGMT
+    :rtype: object
+    """
+    try:
+        cl_obj = CLUSTER_API.query(
+            "name=%s" % cluster_name, all_content=True
+        )[0]
+    except IndexError:
+        return None
+    return cl_obj.get_management_network()

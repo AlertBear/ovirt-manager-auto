@@ -1447,3 +1447,42 @@ def get_vnic_profile_objects():
     :rtype: list
     """
     return VNIC_PROFILE_API.get(absLink=False)
+
+
+def get_management_network(cluster_name):
+    """
+    Find MGMT network besides all networks of specific Cluster
+
+    :param cluster_name: Name of the Cluster
+    :type cluster_name: str
+    :return: network MGMT
+    :rtype: object
+    """
+    try:
+        net_obj = [
+            i for i in getClusterNetworks(cluster_name, href=False)
+            if "management" in i.get_usages().get_usage()
+        ][0]
+    except IndexError:
+        return None
+
+    return net_obj
+
+
+def check_network_usage(cluster_name, network, *attrs):
+    """
+    Check Usages attrs exist for specific network
+    :param cluster_name: Name of the Cluster
+    :type cluster_name: str
+    :param network: Name of the Network
+    :type network: str
+    :param attrs: list of attributes (display, migration, management)
+    :type attrs: list
+    :return: True/False
+    :rtype: bool
+    """
+    net_obj = getClusterNetwork(cluster_name, network)
+    for attr in attrs:
+        if attr not in net_obj.get_usages().get_usage():
+            return False
+    return True

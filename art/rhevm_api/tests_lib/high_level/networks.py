@@ -26,7 +26,7 @@ from utilities import machine
 from art.rhevm_api.tests_lib.low_level.networks import (
     addNetwork, getClusterNetwork, get_networks_in_datacenter, removeNetwork,
     addNetworkToCluster, NET_API, DC_API, updateNetwork, getClusterNetworks,
-    MGMT_NETWORK,
+    MGMT_NETWORK, get_management_network
 )
 from art.rhevm_api.tests_lib.low_level.hosts import (
     sendSNRequest, commitNetConfig, genSNNic, getHostNic, removeHost,
@@ -34,7 +34,8 @@ from art.rhevm_api.tests_lib.low_level.hosts import (
 from art.rhevm_api.tests_lib.low_level.templates import createTemplate
 from art.rhevm_api.tests_lib.low_level.vms import (
     getVmMacAddress, startVm, stopVm, createVm, waitForVmsStates,
-    waitForIP)
+    waitForIP
+)
 from art.rhevm_api.utils.test_utils import (
     convertMacToIpAddress, setPersistentNetwork, sendICMP,
 )
@@ -46,6 +47,7 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import (
 )
 from art.rhevm_api.tests_lib.low_level.clusters import (
     addCluster, removeCluster, updateCluster,
+    get_cluster_management_network
 )
 from art.rhevm_api.tests_lib.high_level.storagedomains import (
     create_storages,
@@ -1172,3 +1174,24 @@ def remove_dummy_vdsm_support(host, username, password):
         )
         return False
     return True
+
+
+def is_management_network(cluster_name, network):
+    """
+    Check if network is MGMT network
+
+    :param cluster_name: Name of the Cluster
+    :type cluster_name: str
+    :param network: network to check
+    :type: str
+    :return: network MGMT
+    :rtype: object
+    """
+    mgmt_net_obj = get_management_network(cluster_name)
+    cl_mgmt_net_obj = get_cluster_management_network(cluster_name)
+    if (
+            mgmt_net_obj.get_name() == network and
+            mgmt_net_obj.get_id() == cl_mgmt_net_obj.get_id()
+    ):
+        return True
+    return False
