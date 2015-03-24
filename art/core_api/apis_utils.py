@@ -18,11 +18,11 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import sys
-import time
 import abc
 import logging
 from collections import namedtuple
 from utilities.utils import generateShortGuid
+from utilities.timeout import TimeoutingSampler as _TimeoutingSampler
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 import art.test_handler.settings as settings
 
@@ -263,83 +263,8 @@ class APIUtil(object):
         logger.error(''.join(error_msg))
 
 
-class TimeoutingSampler(object):
-    '''
-    Samples the function output.
+class TimeoutingSampler(_TimeoutingSampler):
 
-    This is a generator object that at first yields the output of function
-    `func`. After the yield, it either raises instance of `timeout_exc_cls` or
-    sleeps `sleep` seconds.
-
-    Yielding the output allows you to handle every value as you wish.
-
-    Feel free to set the instance variables.
-
-    Author: jhenner
-    '''
-
-    def __init__(self, timeout, sleep, func, *func_args, **func_kwargs):
-        '''
-        See the doc for TimeoutingSampler.
-        '''
-
-        self.timeout = timeout
-        ''' Timeout in seconds. '''
-        self.sleep = sleep
-        ''' Sleep interval seconds. '''
-
-        self.func = func
-        ''' A function to sample. '''
-        self.func_args = func_args
-        ''' Args for func. '''
-        self.func_kwargs = func_kwargs
-        ''' Kwargs for func. '''
-
-        self.start_time = None
-        ''' Time of starting the sampling. '''
-        self.last_sample_time = None
-        ''' Time of last sample. '''
-
+    def __init__(self, *args, **kwargs):
+        super(TimeoutingSampler, self).__init__(*args, **kwargs)
         self.timeout_exc_cls = APITimeout
-        ''' Class of exception to be raised.  '''
-        self.timeout_exc_args = ()
-        ''' An args for __init__ of the timeout exception. '''
-        self.timeout_exc_kwargs = {}
-        ''' A kwargs for __init__ of the timeout exception. '''
-
-    def __iter__(self):
-        if self.start_time is None:
-            self.start_time = time.time()
-        while True:
-            self.last_sample_time = time.time()
-            yield self.func(*self.func_args, **self.func_kwargs)
-            if self.timeout < (time.time() - self.start_time):
-                raise self.timeout_exc_cls(*self.timeout_exc_args,
-                                           **self.timeout_exc_kwargs)
-            time.sleep(self.sleep)
-
-    def waitForFuncStatus(self, result):
-        '''
-    Description: Get function and run it for given time until success or
-                 timeout. (using __iter__ function)
-    **Author**: myakove
-    **Parameters**:
-        * *result* - Expected result from func (True or False), for
-                     positive/negative tests
-    Example (calling updateNic function)::
-    sample = TimeoutingSampler(timeout=60, sleep=1,
-                               func=updateNic, positive=True,
-                               vm=config.VM_NAME[0], nic=nic_name,
-                               plugged='true')
-            if not sample.waitForFuncStatus(result=True):
-                raise NetworkException("Couldn't update NIC to be plugged")
-        '''
-
-        try:
-            for res in self:
-                if result == res:
-                    return True
-        except APITimeout:
-            logger.error("(%s) return incorrect status after timeout"
-                         % self.func.__name__)
-            return False
