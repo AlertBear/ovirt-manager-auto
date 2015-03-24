@@ -418,6 +418,16 @@ class CreateDC(TestCase):
                 self.add_sds(storages, host, datacenter_name, storage_conf)
             else:
                 LOGGER.info("No storage_domains on yaml description file")
+
+            export_domains = dc_def['export_domains']
+            if export_domains is None:
+                LOGGER.info("No export_domains to add")
+            else:
+                for export_domain in export_domains:
+                    self.add_export_domain(
+                        export_domain, storage_conf, datacenter_name, host
+                    )
+
         else:
             LOGGER.info("No hosts, so no adding storages")
 
@@ -446,7 +456,7 @@ class CreateDC(TestCase):
             else:
                 LOGGER.info("No templates to add")
 
-    def add_export_domain(self, export_domain, storage_conf, host):
+    def add_export_domain(self, export_domain, storage_conf, dc, host):
         if export_domain['name']:
             name = export_domain['name']
             address, path = storage_conf.get_export_share()
@@ -456,6 +466,12 @@ class CreateDC(TestCase):
                 path=path,
                 address=address,
                 host=host
+            )
+            assert ll_sd.attachStorageDomain(
+                True, datacenter=dc, storagedomain=name
+            )
+            assert ll_sd.activateStorageDomain(
+                True, datacenter=dc, storagedomain=name
             )
         else:
             LOGGER.info("Please provide name to your export domain")
@@ -500,23 +516,14 @@ class CreateDC(TestCase):
         for dc in dcs:
             self.build_dc(dc, host_conf, storage_conf)
 
-        export_domains = GOLDEN_ENV['export_domains']
-        host = ''
-        if export_domains is None:
-            LOGGER.info("No export_domains to add!")
-        else:
-            host = (hosts.get_host_list()[0]).get_name()
-            for export_domain in export_domains:
-                self.add_export_domain(export_domain, storage_conf, host)
-
         iso_domains = GOLDEN_ENV['iso_domains']
+        host = (hosts.get_host_list()[0]).get_name()
         if not host or iso_domains is None:
             LOGGER.info(
                 "There are no hosts or no iso domain described in yaml,"
                 "can't add shared_iso_domain!"
             )
         else:
-            host = (hosts.get_host_list()[0]).get_name()
             self.import_shared_iso_domain(storage_conf, host)
 
         GoldenEnvironmentInventory.write_host_list_to_file()
