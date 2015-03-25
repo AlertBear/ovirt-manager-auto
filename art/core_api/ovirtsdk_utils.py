@@ -284,7 +284,7 @@ class SdkUtil(APIUtil):
         for attr in newEntity.__dict__.keys():
             try:
                 attrVal = newEntity.__dict__[attr]
-                if attrVal:
+                if attrVal is not None:
                     self.__set_property(origEntity, attr, attrVal)
             except AttributeError:
                 self.logger.warn("Attribute doesn't exist %s", attr)
