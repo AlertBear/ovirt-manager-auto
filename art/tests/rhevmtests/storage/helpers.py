@@ -20,6 +20,8 @@ from art.rhevm_api.tests_lib.low_level.vms import (
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.test_handler import exceptions
+
+from rhevmtests.helpers import get_golden_template_name
 from rhevmtests.storage import config
 
 logger = logging.getLogger(__name__)
@@ -268,13 +270,7 @@ def create_vm_or_clone(positive, vmName, vmDescription,
     # If the vm doesn't need installation don't waste time cloning the vm
     if config.GOLDEN_ENV and installation:
         logger.info("Cloning vm %s", vmName)
-        template_name = 'template_2'
-        template_name = None
-        for cl in config.CLUSTERS:
-            if cl['name'] == cluster:
-                # Get the name of the first template found under the cluster
-                # if there are multiple templates
-                template_name = cl['templates'][0]['template']['name']
+        template_name = get_golden_template_name(cluster)
         if not template_name:
             logger.error("Cannot find any templates to use under cluster %s",
                          cluster)
