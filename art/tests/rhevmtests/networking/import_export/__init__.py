@@ -7,10 +7,7 @@ import logging
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from rhevmtests.networking import config, network_cleanup
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    cleanDataCenter, addStorageDomain, attachStorageDomain,
-    getStorageDomainNamesForType)
-from art.rhevm_api.tests_lib.high_level.storagedomains import(
-    detach_and_deactivate_domain
+    cleanDataCenter, addStorageDomain, getStorageDomainNamesForType
 )
 from art.rhevm_api.tests_lib.high_level.networks import(
     prepareSetup, createAndAttachNetworkSN, remove_net_from_setup
@@ -18,10 +15,12 @@ from art.rhevm_api.tests_lib.high_level.networks import(
 from art.rhevm_api.tests_lib.low_level.templates import(
     exportTemplate, removeTemplate,
     addTemplateNic, removeTemplateFromExportDomain,
-    createTemplate)
+    createTemplate
+)
 from art.rhevm_api.tests_lib.low_level.vms import(
     stopVm, addNic, exportVm, removeVm,
-    removeVmFromExportDomain, waitForIP, createVm)
+    removeVmFromExportDomain, waitForIP, createVm
+)
 from art.test_handler.exceptions import NetworkException
 
 logger = logging.getLogger("Import_Export_Init")
@@ -101,14 +100,6 @@ def setup_package():
             raise NetworkException(
                 "Cannot create template %s" % config.IE_TEMPLATE
             )
-
-    if not attachStorageDomain(
-        True, datacenter=config.DC_NAME[0],
-        storagedomain=config.EXPORT_STORAGE_NAME
-    ):
-        raise NetworkException(
-            "Cannot attach Export Storage Domain to %s" % config.DC_NAME[0]
-        )
 
     local_dict = {
         config.NETWORKS[0]: {"nic": 1, "required": "false"},
@@ -224,15 +215,6 @@ def teardown_package():
             logger.error(
                 "Couldn't remove template %s form Export Domain",
                 config.IE_TEMPLATE
-            )
-
-        logger.info("Detach and deactivate Export Storage Domain")
-        if not detach_and_deactivate_domain(
-                datacenter=config.DC_NAME[0],
-                domain=config.EXPORT_STORAGE_NAME
-        ):
-            logger.error(
-                "Cannot detach and deactivate Export Storage"
             )
 
         logger.info(
