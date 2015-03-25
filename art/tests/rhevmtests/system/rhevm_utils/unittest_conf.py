@@ -20,7 +20,7 @@ NEW_DC_NAME = params.get('new_datacenter_name', 'golden_setup_new_dc')
 # image/iso uploader is using default names for iso/export domain, which are
 # specified in high_level.storagedomains.create_storages
 if GOLDEN_ENV:
-    ISO_DOMAIN_NAME = iso_sds[0]['iso_domain']['name']
+    ISO_DOMAIN_NAME = iso_sds[0]['name']
     STORAGE_TYPE = STORAGE_TYPE_NFS
 else:
     ISO_DOMAIN_NAME = 'iso_domain'
