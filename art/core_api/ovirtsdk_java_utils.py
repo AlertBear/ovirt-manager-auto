@@ -51,20 +51,20 @@ DEF_SLEEP = 10
 STYLE_EXCEPTIONS_JAVA_COLLECTIONS = {'vms': 'vMs', 'vmpools': 'vmPools'}
 JAVA_IGNORE_LIST = ['getClass', 'getLinks']
 PYTHON_IGNORE_LIST = ['get_link']
-STYLE_EXCEPTIONS_PYTHON_JAVA_METHODS = \
-    {'get_valueOf_': 'isValue',
-     'get_power_management': 'getPowerManagers',
-     'get_host_nic': 'getSlaves',
-     'get_property': 'getProperties',
-     'get_model': 'getWatchdogModels',
-     'get_action': 'getWatchdogActions'
-     }
-ACTION_EXCEPTIONS_PYTHON_JAVA_METHODS = \
-    {'VM': {'export': 'exportVm'},
-     'Template': {'export': 'exportTemplate'},
-     'StorageDomainVM': {'import': 'importVm'},
-     'StorageDomainTemplate': {'import': 'importTemplate'}
-     }
+STYLE_EXCEPTIONS_PYTHON_JAVA_METHODS = {
+    'get_valueOf_': 'isValue',
+    'get_power_management': 'getPowerManagers',
+    'get_host_nic': 'getSlaves',
+    'get_property': 'getProperties',
+    'get_model': 'getWatchdogModels',
+    'get_action': 'getWatchdogActions'
+}
+ACTION_EXCEPTIONS_PYTHON_JAVA_METHODS = {
+    'VM': {'export': 'exportVm'},
+    'Template': {'export': 'exportTemplate'},
+    'StorageDomainVM': {'import': 'importVm'},
+    'StorageDomainTemplate': {'import': 'importTemplate'}
+}
 
 
 def jvm_thread_care(func):
@@ -286,8 +286,9 @@ def translator_to_java(python_object, java_object):
           data from python object
     """
     # getting getters and setters
-    python_getters, _, java_getters, java_setters = \
-        get_getters_and_setters(python_object, java_object)
+    python_getters, _, java_getters, java_setters = get_getters_and_setters(
+        python_object, java_object
+    )
 
     # creating lowercase to java methods mapping of java_setters
     java_setters = dict([(setter.lower(), setter) for setter in java_setters])
@@ -311,53 +312,70 @@ def translator_to_java(python_object, java_object):
         # finding needed java getter and setter
         # sometimes there are mismatches and typos in api.xsd so in one place
         # name is correct and it is not correct in another
-        if getter in STYLE_EXCEPTIONS_PYTHON_JAVA_METHODS and \
-                hasattr(java_object,
-                        STYLE_EXCEPTIONS_PYTHON_JAVA_METHODS[getter]):
+        if getter in STYLE_EXCEPTIONS_PYTHON_JAVA_METHODS and hasattr(
+            java_object, STYLE_EXCEPTIONS_PYTHON_JAVA_METHODS[getter]
+        ):
             java_getter = STYLE_EXCEPTIONS_PYTHON_JAVA_METHODS[getter]
         else:
             lower_case_getter = getter.lower().replace('_', '')
-            potential_lower_case_getter_names = [lower_case_getter,
-                                                 "%ss" % lower_case_getter]
+            potential_lower_case_getter_names = [
+                lower_case_getter,
+                "%ss" % lower_case_getter,
+                lower_case_getter.replace('get', 'is', 1)
+            ]
 
             for getter_name in potential_lower_case_getter_names:
                 if getter_name in java_getters:
                     java_getter = java_getters[getter_name]
                     break
                 else:
-                    logger.debug("translator to java from python: %s:"
-                                 "'%s' of '%s' doesn't exists in: %s"
-                                 " trying another getter", java_object,
-                                 getter_name, get_object_name(java_object),
-                                 java_getters)
+                    logger.debug(
+                        "translator to java from python: %s:'%s' of '%s'"
+                        " doesn't exists in: %s trying another getter",
+                        java_object, getter_name, get_object_name(java_object),
+                        java_getters
+                    )
             else:
-                logger.debug("translator to java from python: %s: "
-                             " No java getter found for '%s' of '%s'",
-                             java_object, getter, python_object)
+                logger.debug(
+                    "translator to java from python: %s: "
+                    "No java getter found for '%s' of '%s'",
+                    java_object, getter, python_object
+                )
                 continue
-
-        java_setter = java_setters.get('set%s' % java_getter[3:].lower(), None)
+        for prefix in ('is', 'get'):
+            if java_getter.lower().startswith(prefix):
+                setter_name = java_getter.lower().replace(prefix, 'set', 1)
+                java_setter = java_setters.get(setter_name, None)
+                if java_setter:
+                    break
+                logger.debug(
+                    "translator to java from python: %s: '%s' of"
+                    " '%s' doesn't exists in:\n%s",
+                    java_object, setter_name,
+                    get_object_name(java_object), java_setters
+                )
 
         if java_setter is None:
-            logger.debug("translator to java from python: %s: "
-                         "'set%s' of '%s' doesn't exists in:\n%s", java_object,
-                         java_getter[3:], get_object_name(java_object),
-                         java_setters)
             continue
 
-        logger.debug("translator to java from python: %s:"
-                     "Found Java getter %s that matches Python getter %s",
-                     java_object, java_getter, getter)
-        logger.debug("translator to java from python: %s:"
-                     "Found expected Java setter %s", java_object, java_setter)
+        logger.debug(
+            "translator to java from python: %s: "
+            "Found Java getter %s that matches Python getter %s",
+            java_object, java_getter, getter
+        )
+        logger.debug(
+            "translator to java from python: %s:Found expected Java setter %s",
+            java_object, java_setter
+        )
 
         # checking data
         # this way i'm finding relevant objects also when
         # list of objects is passed
         if 'brokers' in str(data):
-            logger.warning("broker case - shouldn't get there,"
-                           "if we are here it means python SDK is"
-                           " used in parallel")
+            logger.warning(
+                "broker case - shouldn't get there,"
+                "if we are here it means python SDK is used in parallel"
+            )
         elif 'object' in str(data):
             # in this case no recursion needed, just pass internal
             # java_object to Java SDK object
@@ -383,9 +401,9 @@ def translator_to_java(python_object, java_object):
                             real_object_name = \
                                 get_java_object_name_by_getter_name(getter)
                             # creating empty object
-                            java_entity = \
-                                getattr(org.ovirt.engine.sdk.entities,
-                                        real_object_name)()
+                            java_entity = getattr(
+                                org.ovirt.engine.sdk.entities, real_object_name
+                            )()
                             # filling it with data from python
                             translator_to_java(entity, java_entity)
                             # adding it to container
@@ -411,8 +429,9 @@ def translator_to_java(python_object, java_object):
                 container = []
                 for python_entity in data:
                     # creating empty object
-                    java_entity = getattr(org.ovirt.engine.sdk.entities,
-                                          real_object_name)()
+                    java_entity = getattr(
+                        org.ovirt.engine.sdk.entities, real_object_name
+                    )()
                     # filling it with data from python
                     translator_to_java(python_entity, java_entity)
                     # adding it to container
@@ -426,23 +445,24 @@ def translator_to_java(python_object, java_object):
                     getattr(java_object, java_setter)(container)
             else:
                 # creating empty object
-                java_entity = getattr(org.ovirt.engine.sdk.entities,
-                                      real_object_name)()
+                java_entity = getattr(
+                    org.ovirt.engine.sdk.entities, real_object_name
+                )()
                 # adding it
                 getattr(java_object, java_setter)(java_entity)
 
                 # getting back for casting check
-                java_object_to_fill = getattr(java_object,
-                                              java_getter)()
+                java_object_to_fill = getattr(java_object, java_getter)()
 
                 # checking if casting OK (Permits issue)
                 if 'Object' in str(type(java_object_to_fill)):
-                    java_object_to_fill = \
-                        getattr(org.ovirt.engine.sdk.entities,
-                                real_object_name).cast_(java_object_to_fill)
+                    java_object_to_fill = getattr(
+                        org.ovirt.engine.sdk.entities, real_object_name
+                    ).cast_(java_object_to_fill)
 
-                translator_to_java(getattr(python_object, getter)(),
-                                   java_object_to_fill)
+                translator_to_java(
+                    getattr(python_object, getter)(), java_object_to_fill
+                )
         # primitives and lists of primitives cases
         else:
             if isinstance(data, list):
@@ -450,18 +470,19 @@ def translator_to_java(python_object, java_object):
                 # TODO: to add long and more complex datatypes support if
                 # needed
                 for item in data:
-                    logger.debug('translator to java from python: %s: '
-                                 'list case, Setting %s().add(%s)',
-                                 java_object, getattr(java_object,
-                                                      java_getter),
-                                 item)
+                    logger.debug(
+                        'translator to java from python: %s: list case,'
+                        ' Setting %s().add(%s)',
+                        java_object, getattr(java_object, java_getter), item
+                    )
                     getattr(java_object, java_getter)().add(item)
             else:
                 java_datatype = java_setters_datatypes_dict[java_setter]
                 java_data = python_primitives_converter(java_datatype, data)
-                logger.debug('translator to java from python: %s: Setting'
-                             ' %s with %s', java_object,
-                             getattr(java_object, java_setter), java_data)
+                logger.debug(
+                    'translator to java from python: %s: Setting %s with %s',
+                    java_object, getattr(java_object, java_setter), java_data
+                )
                 getattr(java_object, java_setter)(java_data)
 
 
