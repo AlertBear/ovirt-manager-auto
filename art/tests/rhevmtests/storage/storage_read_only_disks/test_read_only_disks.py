@@ -32,9 +32,6 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     wait_for_vm_snapshots,
 )
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
-from art.rhevm_api.tests_lib.high_level.storagedomains import (
-    attach_and_activate_domain, detach_and_deactivate_domain,
-)
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
@@ -106,10 +103,6 @@ def setup_module():
             config.PARAMETERS['data_domain_path'] = domain_path
         else:
             config.PARAMETERS['lun'] = luns
-    else:
-        assert attach_and_activate_domain(
-            config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME
-        )
 
     for storage_type in config.STORAGE_SELECTOR:
         storage_domain = getStorageDomainNamesForType(
@@ -139,9 +132,6 @@ def teardown_module():
             vm_name = config.VM_NAME % storage_type
             stop_vms_safely([vm_name])
             removeVm(True, vm_name)
-        assert detach_and_deactivate_domain(
-            config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME
-        )
     else:
         logger.info('Cleaning datacenter')
         cleanDataCenter(

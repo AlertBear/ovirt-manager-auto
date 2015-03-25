@@ -5,9 +5,6 @@ This creates builds the environment in the systems plus 2 VMs for disks tests
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from art.rhevm_api.tests_lib.high_level import datacenters
-from art.rhevm_api.tests_lib.high_level.storagedomains import (
-    attach_and_activate_domain, detach_and_deactivate_domain,
-)
 from art.rhevm_api.tests_lib.low_level import storagedomains, vms
 
 from rhevmtests.storage.storage_full_disk_sanity import config
@@ -29,9 +26,6 @@ def setup_module():
         datacenters.build_setup(
             config=config.PARAMETERS, storage=config.PARAMETERS,
             storage_type=config.STORAGE_TYPE)
-    else:
-        assert attach_and_activate_domain(
-            config.DATA_CENTER_NAME, config.EXPORT_STORAGE_NAME)
 
     executions = []
     with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
@@ -63,10 +57,6 @@ def teardown_module():
     vm_names = filter(vms.does_vm_exist, VM_NAMES + external)
     vms.stop_vms_safely(vm_names)
     vms.removeVms(True, vm_names)
-
-    if config.GOLDEN_ENV:
-        assert detach_and_deactivate_domain(
-            config.DATA_CENTER_NAME, config.EXPORT_STORAGE_NAME)
 
     if not config.GOLDEN_ENV:
         logger.info("Tear down - cleanDataCenter")

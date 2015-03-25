@@ -29,9 +29,6 @@ from art.rhevm_api.tests_lib.low_level.vms import (
 )
 
 from art.rhevm_api.tests_lib.high_level.vms import shutdown_vm_if_up
-from art.rhevm_api.tests_lib.high_level.storagedomains import (
-    attach_and_activate_domain, detach_and_deactivate_domain,
-)
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from rhevmtests.storage.helpers import create_vm_or_clone, get_vm_ip
 
@@ -63,9 +60,6 @@ def setup_module():
     """
     Create vm and install OS on it, with snapshot after OS installation
     """
-    if config.GOLDEN_ENV:
-        assert attach_and_activate_domain(
-            config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME)
 
     def create_vm_and_snapshot(**vmArgs):
         vm_name = vmArgs['vmName']
@@ -101,9 +95,6 @@ def teardown_module():
     """
     stop_vms_safely(VMS_NAMES)
     removeVms(True, VMS_NAMES)
-    if config.GOLDEN_ENV:
-        detach_and_deactivate_domain(
-            config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME)
 
 
 class DCWithStoragesActive(TestCase):
