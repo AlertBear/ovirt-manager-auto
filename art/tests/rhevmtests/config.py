@@ -92,14 +92,16 @@ STORAGE_NAME = ["_".join([STORAGE_TYPE.lower(), str(i)])
 if 'prepared_env' in ART_CONFIG:
     GOLDEN_ENV = ART_CONFIG['prepared_env']
 
-    dcs = GOLDEN_ENV[0]['dcs']
+    dcs = GOLDEN_ENV['dcs']
+    DC = None
+
     for dc in dcs:
-        if int(dc['dc']['local']) == LOCAL:
-            DC = dc['dc']
+        if int(dc['local']) == LOCAL:
+            DC = dc
     DC_NAME = [DC['name']]
     COMP_VERSION = DC['compatibility_version']
 
-    CLUSTERS = [x['cluster'] for x in DC['clusters']]
+    CLUSTERS = DC['clusters']
     CLUSTER_NAME = [x['name'] for x in CLUSTERS]
     CPU_NAME = CLUSTERS[0]['cpu_name']
 
@@ -110,7 +112,7 @@ if 'prepared_env' in ART_CONFIG:
     for cluster in CLUSTERS:
         for host in cluster['hosts']:
             host_obj = hosts.HostObject(
-                host['host']['name'], host['host']['passwd'])
+                host['name'], host['passwd'])
             HOST_OBJS.append(host_obj)
             HOSTS.append(host_obj.name)
             HOSTS_PW = host_obj.password
@@ -120,17 +122,17 @@ if 'prepared_env' in ART_CONFIG:
     VMS = []
     for cluster in CLUSTERS:
         for vm in cluster['vms']:
-            if 'number_of_vms' in vm['vm']:
-                num_of_vms = repr(vm['vm']['number_of_vms'])
+            if 'number_of_vms' in vm:
+                num_of_vms = repr(vm['number_of_vms'])
                 suffix_n = 0
-                vm_name = vm['vm']['name']
+                vm_name = vm['name']
                 while suffix_n < int(num_of_vms):
                     another_vm = copy.deepcopy(vm)
-                    another_vm['vm']['name'] = vm_name + str(suffix_n)
+                    another_vm['name'] = vm_name + str(suffix_n)
                     suffix_n += 1
-                    VMS.append(another_vm['vm'])
+                    VMS.append(another_vm)
             else:
-                VMS.append(vm['vm'])
+                VMS.append(vm)
 
     VM_NAME = [x['name'] for x in VMS]
     VMS_LINUX_USER = VMS[0]['user']
@@ -139,14 +141,14 @@ if 'prepared_env' in ART_CONFIG:
     TEMPLATES = []
     for cluster in CLUSTERS:
         for templ in cluster['templates']:
-            TEMPLATES.append(templ['template'])
+            TEMPLATES.append(templ)
     TEMPLATE_NAME = [x['name'] for x in TEMPLATES]
 
-    export_sds = GOLDEN_ENV[1]['export_domains']
-    EXPORT_STORAGE_NAME = export_sds[0]['export_domain']['name']
+    export_sds = DC['export_domains']
+    EXPORT_STORAGE_NAME = export_sds[0]['name']
 
-    iso_sds = GOLDEN_ENV[2]['iso_domains']
-    ISO_DOMAIN_NAME = iso_sds[0]['iso_domain']['name']
+    iso_sds = GOLDEN_ENV['iso_domains']
+    ISO_DOMAIN_NAME = iso_sds[0]['name']
     ISO_DOMAIN_ADDRESS = PARAMETERS.as_list("tests_iso_domain_address")[0]
     ISO_DOMAIN_PATH = PARAMETERS.as_list("tests_iso_domain_path")[0]
 
