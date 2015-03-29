@@ -12,6 +12,8 @@ from art.rhevm_api.tests_lib.high_level.networks import(
     prepareSetup, add_dummy_vdsm_support, remove_dummy_vdsm_support
 )
 from art.test_handler.exceptions import NetworkException
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+from art.core_api.apis_utils import TimeoutingSampler
 
 logger = logging.getLogger("Sanity_Init")
 
@@ -77,6 +79,16 @@ def setup_package():
             config.VDS_HOSTS[0].service("vdsmd").restart()
     ):
         raise NetworkException("Failed to restart vdsmd service")
+
+    logger.info("Put the Host in up state if it's not up")
+    sample = TimeoutingSampler(
+        timeout=config.SAMPLER_TIMEOUT, sleep=1,
+        func=hl_hosts.activate_host_if_not_up, host=config.HOSTS[0]
+    )
+    if not sample.waitForFuncStatus(result=True):
+        raise NetworkException(
+            "Failed to activate host: %s" % config.HOSTS[0]
+        )
 
 
 def teardown_package():

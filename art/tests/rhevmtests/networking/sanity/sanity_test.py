@@ -6,7 +6,6 @@ It will cover scenarios for VM/non-VM networks.
 """
 
 import logging
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 from art.core_api.apis_exceptions import EntityNotFound
@@ -110,11 +109,6 @@ class TestSanityCase02(TestCase):
         """
         Create vlan sw162 with static ip (1.1.1.1) on first non-mgmt interface
         """
-        logger.info("Put the Host in up state if it's not up")
-        if not hl_hosts.activate_host_if_not_up(host=config.HOSTS[0]):
-            raise NetworkException(
-                "Failed to activate host: %s" % config.VDS_HOSTS[0]
-            )
 
         logger.info("Create network and attach it to the host")
         local_dict = {
