@@ -180,6 +180,7 @@ class TestCase396316(BaseClassEditDescription):
     """
     __test__ = BaseClassEditDescription.storage in config.BLOCK_TYPES
     tcms_test_case = '396316'
+    bz = {'1206911': {'engine': ['java'], 'version': ['3.5']}}
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_edit_description_on_block_or_file_domain(self):
@@ -203,6 +204,7 @@ class TestCase396321(BaseClassEditDescription):
     """
     __test__ = BaseClassEditDescription.storage not in config.BLOCK_TYPES
     tcms_test_case = '396321'
+    bz = {'1206911': {'engine': ['java'], 'version': ['3.5']}}
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_edit_description_on_block_or_file_domain(self):
