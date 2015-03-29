@@ -201,6 +201,9 @@ class CreateVmWithCdromPayload(PayloadViaCreate):
     also check if payload object exist under vm
     """
     __test__ = True
+
+    bz = {'1198677': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}}
+
     vm_name = 'CreateVmWithCdromPayload'
     payload_filename = PAYLOADS_FILENAME[0]
     payload_content = PAYLOADS_CONTENT[0]
@@ -228,6 +231,9 @@ class UpdateVmWithCdromPayloadAndCheckPayloadObject(PayloadViaUpdate):
     Create new vm with cdrom payload via update and check if payload exist
     """
     __test__ = True
+
+    bz = {'1198677': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}}
+
     vm_name = 'UpdateVmWithCdromPayload'
     payload_filename = PAYLOADS_FILENAME[0]
     payload_content = PAYLOADS_CONTENT[1]
@@ -249,6 +255,9 @@ class CdromPayloadComplexContent(PayloadViaUpdate):
     and check if payload exist
     """
     __test__ = True
+
+    bz = {'1198677': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}}
+
     vm_name = 'CdromPayloadComplexContent'
     payload_filename = PAYLOADS_FILENAME[0]
     payload_content = PAYLOADS_CONTENT[4]
@@ -268,6 +277,9 @@ class CreateVmWithFloppyPayload(PayloadViaCreate):
     Create new vm with floppy payload via create and check if payload exist
     """
     __test__ = True
+
+    bz = {'1198677': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}}
+
     vm_name = 'CreateVmWithFloppyPayload'
     payload_filename = PAYLOADS_FILENAME[1]
     payload_content = PAYLOADS_CONTENT[2]
@@ -287,6 +299,9 @@ class UpdateVmWithFloppyPayload(PayloadViaUpdate):
     Create new vm with floppy payload via update and check if payload exist
     """
     __test__ = True
+
+    bz = {'1198677': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}}
+
     vm_name = 'UpdateVmWithFloppyPayload'
     payload_filename = PAYLOADS_FILENAME[1]
     payload_content = PAYLOADS_CONTENT[3]
