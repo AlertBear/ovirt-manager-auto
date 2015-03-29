@@ -460,12 +460,13 @@ class CreateDC(TestCase):
         if export_domain['name']:
             name = export_domain['name']
             address, path = storage_conf.get_export_share()
-            assert ll_sd.addStorageDomain(
-                True, name=name, type=ENUMS['storage_dom_type_export'],
+            assert ll_sd.importStorageDomain(
+                True,
+                type=ENUMS['storage_dom_type_export'],
                 storage_type=ENUMS['storage_type_nfs'],
-                path=path,
                 address=address,
-                host=host
+                host=host,
+                path=path
             )
             assert ll_sd.attachStorageDomain(
                 True, datacenter=dc, storagedomain=name
