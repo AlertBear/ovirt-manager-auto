@@ -1,3 +1,6 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Test ArbitraryVlanDeviceName
 Supporting vlan devices with names not in standard "dev.VLANID"
@@ -6,18 +9,11 @@ This job required password less ssh between the machine that run the job
 and the host
 """
 
+import helper
 import logging
-from art.rhevm_api.tests_lib.high_level.networks import(
-    createAndAttachNetworkSN, remove_all_networks
-)
-from art.rhevm_api.tests_lib.low_level.hosts import get_host_name_from_engine
-from helper import(
-    check_if_nic_in_hostnics, add_bridge_on_host_and_virsh,
-    delete_bridge_on_host_and_virsh, add_vlan_and_refresh_capabilities,
-    check_if_nic_in_vdscaps, remove_vlan_and_refresh_capabilities,
-    job_tear_down, VLAN_NAMES, BRIDGE_NAMES, VLAN_IDS
-)
-from art.test_handler.exceptions import NetworkException
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.test_handler.exceptions as exceptions
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 from art.test_handler.tools import tcms  # pylint: disable=E0611
@@ -33,7 +29,7 @@ def setup_module():
     setup_module
     """
     global HOST_NAME
-    HOST_NAME = get_host_name_from_engine(config.VDS_HOSTS[0].ip)
+    HOST_NAME = ll_hosts.get_host_name_from_engine(config.VDS_HOSTS[0].ip)
 
 
 class TestArbitraryVlanDeviceNameTearDown(TestCase):
@@ -46,7 +42,7 @@ class TestArbitraryVlanDeviceNameTearDown(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        job_tear_down()
+        helper.job_tear_down()
 
 
 @attr(tier=1)
@@ -65,9 +61,13 @@ class TestArbitraryVlanDeviceName01(TestArbitraryVlanDeviceNameTearDown):
         """
         Create VLAN entity with name on the host
         """
-        add_vlan_and_refresh_capabilities(
-            host_obj=config.VDS_HOSTS[0], nic=1, vlan_id=VLAN_IDS[0],
-            vlan_name=VLAN_NAMES[0]
+        helper.add_vlans_to_host(
+            host_obj=config.VDS_HOSTS[0], nic=1, vlan_id=[helper.VLAN_IDS[0]],
+            vlan_name=[helper.VLAN_NAMES[0]]
+        )
+        helper.add_bridge_on_host_and_virsh(
+            host_obj=config.VDS_HOSTS[0], bridge=[helper.BRIDGE_NAMES[0]],
+            network=[helper.VLAN_NAMES[0]]
         )
 
     @tcms(13961, 372421)
@@ -78,31 +78,12 @@ class TestArbitraryVlanDeviceName01(TestArbitraryVlanDeviceNameTearDown):
         Add the bridge with VLAN to virsh
         Check that the bridge is in getVdsCaps
         """
-        check_if_nic_in_hostnics(nic=VLAN_NAMES[0], host=HOST_NAME)
-
-        add_bridge_on_host_and_virsh(
-            host_obj=config.VDS_HOSTS[0], bridge=BRIDGE_NAMES[0],
-            network=VLAN_NAMES[0]
+        helper.check_if_nic_in_host_nics(
+            nic=helper.VLAN_NAMES[0], host=HOST_NAME
         )
-        check_if_nic_in_vdscaps(
-            host_obj=config.VDS_HOSTS[0], nic=BRIDGE_NAMES[0]
+        helper.check_if_nic_in_vdscaps(
+            host_obj=config.VDS_HOSTS[0], nic=helper.BRIDGE_NAMES[0]
         )
-        delete_bridge_on_host_and_virsh(
-            host_obj=config.VDS_HOSTS[0], bridge=BRIDGE_NAMES[0]
-        )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove the VLAN from the host
-        """
-        try:
-            remove_vlan_and_refresh_capabilities(
-                host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[0]
-            )
-        except NetworkException:
-            logger.error("Coudn't remove VLAN %s from host", VLAN_NAMES[0])
-        super(TestArbitraryVlanDeviceName01, cls).teardown_class()
 
 
 @attr(tier=1)
@@ -124,16 +105,21 @@ class TestArbitraryVlanDeviceName02(TestArbitraryVlanDeviceNameTearDown):
         Create VLAN entity with name on the host
         """
         local_dict = {None: {"nic": config.BOND[0], "slaves": [2, 3]}}
-        if not createAndAttachNetworkSN(
+        if not hl_networks.createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict,
             auto_nics=[0],
         ):
-            raise NetworkException("Cannot create and attach network")
-
-        add_vlan_and_refresh_capabilities(
+            raise exceptions.NetworkException(
+                "Cannot create and attach network"
+            )
+        helper.add_vlans_to_host(
             host_obj=config.VDS_HOSTS[0], nic=config.BOND[0],
-            vlan_id=VLAN_IDS[0], vlan_name=VLAN_NAMES[0]
+            vlan_id=[helper.VLAN_IDS[0]], vlan_name=[helper.VLAN_NAMES[0]]
+        )
+        helper.add_bridge_on_host_and_virsh(
+            host_obj=config.VDS_HOSTS[0], bridge=[helper.BRIDGE_NAMES[0]],
+            network=[helper.VLAN_NAMES[0]]
         )
 
     @tcms(13961, 372422)
@@ -144,37 +130,12 @@ class TestArbitraryVlanDeviceName02(TestArbitraryVlanDeviceNameTearDown):
         Add the bridge with VLAN to virsh
         Check that the bridge is in getVdsCaps
         """
-        check_if_nic_in_hostnics(nic=VLAN_NAMES[0], host=HOST_NAME)
-
-        add_bridge_on_host_and_virsh(
-            host_obj=config.VDS_HOSTS[0], bridge=BRIDGE_NAMES[0],
-            network=VLAN_NAMES[0]
+        helper.check_if_nic_in_host_nics(
+            nic=helper.VLAN_NAMES[0], host=HOST_NAME
         )
-        check_if_nic_in_vdscaps(
-            host_obj=config.VDS_HOSTS[0], nic=BRIDGE_NAMES[0]
+        helper.check_if_nic_in_vdscaps(
+            host_obj=config.VDS_HOSTS[0], nic=helper.BRIDGE_NAMES[0]
         )
-        delete_bridge_on_host_and_virsh(
-            host_obj=config.VDS_HOSTS[0], bridge=BRIDGE_NAMES[0]
-        )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove the VLAN from the host
-        """
-        try:
-            remove_vlan_and_refresh_capabilities(
-                host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[0]
-            )
-        except NetworkException:
-            logger.error("Coudn't remove VLAN %s from host", VLAN_NAMES[0])
-
-        logger.info("Cleaning host interfaces")
-        if not createAndAttachNetworkSN(
-            host=config.VDS_HOSTS[0], network_dict={}, auto_nics=[0]
-        ):
-            logger.error("Clean host interfaces failed")
-        super(TestArbitraryVlanDeviceName02, cls).teardown_class()
 
 
 @attr(tier=1)
@@ -193,11 +154,15 @@ class TestArbitraryVlanDeviceName03(TestArbitraryVlanDeviceNameTearDown):
         """
         Create VLAN entity with name on the host
         """
-        for i in range(3):
-            add_vlan_and_refresh_capabilities(
-                host_obj=config.VDS_HOSTS[0], nic=1, vlan_id=VLAN_IDS[i],
-                vlan_name=VLAN_NAMES[i]
-            )
+        helper.add_vlans_to_host(
+            host_obj=config.VDS_HOSTS[0], nic=1,
+            vlan_id=helper.VLAN_IDS,
+            vlan_name=helper.VLAN_NAMES
+        )
+        helper.add_bridge_on_host_and_virsh(
+            host_obj=config.VDS_HOSTS[0], bridge=helper.BRIDGE_NAMES,
+            network=helper.VLAN_NAMES
+        )
 
     @tcms(13961, 372423)
     def test_multiple_vlans_on_nic(self):
@@ -209,37 +174,12 @@ class TestArbitraryVlanDeviceName03(TestArbitraryVlanDeviceNameTearDown):
         Check that the bridges is in getVdsCaps
         """
         for i in range(3):
-            check_if_nic_in_hostnics(nic=VLAN_NAMES[i], host=HOST_NAME)
-
-        for i in range(3):
-            add_bridge_on_host_and_virsh(
-                host_obj=config.VDS_HOSTS[0], bridge=BRIDGE_NAMES[i],
-                network=VLAN_NAMES[i]
+            helper.check_if_nic_in_host_nics(
+                nic=helper.VLAN_NAMES[i], host=HOST_NAME
             )
-
-        for i in range(3):
-            check_if_nic_in_vdscaps(
-                host_obj=config.VDS_HOSTS[0], nic=BRIDGE_NAMES[i]
+            helper.check_if_nic_in_vdscaps(
+                host_obj=config.VDS_HOSTS[0], nic=helper.BRIDGE_NAMES[i]
             )
-
-        for i in range(3):
-            delete_bridge_on_host_and_virsh(
-                host_obj=config.VDS_HOSTS[0], bridge=BRIDGE_NAMES[i]
-            )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove the VLAN from the host
-        """
-        for i in range(3):
-            try:
-                remove_vlan_and_refresh_capabilities(
-                    host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[i]
-                )
-            except NetworkException:
-                logger.error("Coudn't remove VLAN %s from host", VLAN_NAMES[i])
-        super(TestArbitraryVlanDeviceName03, cls).teardown_class()
 
 
 @attr(tier=1)
@@ -264,17 +204,22 @@ class TestArbitraryVlanDeviceName04(TestArbitraryVlanDeviceNameTearDown):
         local_dict = {None: {
             "nic": config.BOND[0], "mode": 1, "slaves": [2, 3]}
         }
-        if not createAndAttachNetworkSN(
+        if not hl_networks.createAndAttachNetworkSN(
             host=config.VDS_HOSTS[0], network_dict=local_dict,
             auto_nics=[0],
         ):
-            raise NetworkException("Cannot create and attach network")
-
-        for i in range(3):
-            add_vlan_and_refresh_capabilities(
-                host_obj=config.VDS_HOSTS[0], nic=config.BOND[0],
-                vlan_id=VLAN_IDS[i], vlan_name=VLAN_NAMES[i]
+            raise exceptions.NetworkException(
+                "Cannot create and attach network"
             )
+        helper.add_vlans_to_host(
+            host_obj=config.VDS_HOSTS[0], nic=1,
+            vlan_id=helper.VLAN_IDS,
+            vlan_name=helper.VLAN_NAMES
+        )
+        helper.add_bridge_on_host_and_virsh(
+            host_obj=config.VDS_HOSTS[0], bridge=helper.BRIDGE_NAMES,
+            network=helper.VLAN_NAMES
+        )
 
     @tcms(13961, 372424)
     def test_multiple_vlans_on_bond(self):
@@ -286,43 +231,12 @@ class TestArbitraryVlanDeviceName04(TestArbitraryVlanDeviceNameTearDown):
         Check that the bridges is in getVdsCaps
         """
         for i in range(3):
-            check_if_nic_in_hostnics(nic=VLAN_NAMES[i], host=HOST_NAME)
-
-        for i in range(3):
-            add_bridge_on_host_and_virsh(
-                host_obj=config.VDS_HOSTS[0], bridge=BRIDGE_NAMES[i],
-                network=VLAN_NAMES[i]
+            helper.check_if_nic_in_host_nics(
+                nic=helper.VLAN_NAMES[i], host=HOST_NAME
             )
-
-        for i in range(3):
-            check_if_nic_in_vdscaps(
-                host_obj=config.VDS_HOSTS[0], nic=BRIDGE_NAMES[i]
+            helper.check_if_nic_in_vdscaps(
+                host_obj=config.VDS_HOSTS[0], nic=helper.BRIDGE_NAMES[i]
             )
-
-        for i in range(3):
-            delete_bridge_on_host_and_virsh(
-                host_obj=config.VDS_HOSTS[0], bridge=BRIDGE_NAMES[i]
-            )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove the VLAN from the host
-        """
-        for i in range(3):
-            try:
-                remove_vlan_and_refresh_capabilities(
-                    host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[i]
-                )
-            except NetworkException:
-                logger.error("Coudn't remove VLAN %s from host", VLAN_NAMES[i])
-
-        logger.info("Cleaning host interfaces")
-        if not createAndAttachNetworkSN(
-            host=config.VDS_HOSTS[0], network_dict={}, auto_nics=[0]
-        ):
-            logger.error("Clean host interfaces failed")
-        super(TestArbitraryVlanDeviceName04, cls).teardown_class()
 
 
 @attr(tier=1)
@@ -353,16 +267,21 @@ class TestArbitraryVlanDeviceName05(TestArbitraryVlanDeviceNameTearDown):
                 "required": "false",
             },
         }
-        if not createAndAttachNetworkSN(
+        if not hl_networks.createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict,
             auto_nics=[0, 1],
         ):
-            raise NetworkException("Cannot create and attach network")
-
-        add_vlan_and_refresh_capabilities(
-            host_obj=config.VDS_HOSTS[0], nic=1, vlan_id=VLAN_IDS[0],
-            vlan_name=VLAN_NAMES[0]
+            raise exceptions.NetworkException(
+                "Cannot create and attach network"
+            )
+        helper.add_vlans_to_host(
+            host_obj=config.VDS_HOSTS[0], nic=1, vlan_id=[helper.VLAN_IDS[0]],
+            vlan_name=[helper.VLAN_NAMES[0]]
+        )
+        helper.add_bridge_on_host_and_virsh(
+            host_obj=config.VDS_HOSTS[0], bridge=[helper.BRIDGE_NAMES[0]],
+            network=[helper.VLAN_NAMES[0]]
         )
 
     @tcms(13961, 373616)
@@ -373,17 +292,11 @@ class TestArbitraryVlanDeviceName05(TestArbitraryVlanDeviceNameTearDown):
         Add the bridge with VLAN to virsh
         Check that the bridge is in getVdsCaps
         """
-        check_if_nic_in_hostnics(nic=VLAN_NAMES[0], host=HOST_NAME)
-
-        add_bridge_on_host_and_virsh(
-            host_obj=config.VDS_HOSTS[0], bridge=BRIDGE_NAMES[0],
-            network=VLAN_NAMES[0]
+        helper.check_if_nic_in_host_nics(
+            nic=helper.VLAN_NAMES[0], host=HOST_NAME
         )
-        check_if_nic_in_vdscaps(
-            host_obj=config.VDS_HOSTS[0], nic=BRIDGE_NAMES[0]
-        )
-        delete_bridge_on_host_and_virsh(
-            host_obj=config.VDS_HOSTS[0], bridge=BRIDGE_NAMES[0]
+        helper.check_if_nic_in_vdscaps(
+            host_obj=config.VDS_HOSTS[0], nic=helper.BRIDGE_NAMES[0]
         )
 
     @classmethod
@@ -391,26 +304,13 @@ class TestArbitraryVlanDeviceName05(TestArbitraryVlanDeviceNameTearDown):
         """
         Remove the VLAN from the host
         """
-        try:
-            remove_vlan_and_refresh_capabilities(
-                host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[0]
-            )
-        except NetworkException:
-            logger.error("Coudn't remove VLAN %s from host", VLAN_NAMES[0])
-
         logger.info("Removing all networks from %s", config.DC_NAME[0])
-        if not remove_all_networks(
+        if not hl_networks.remove_all_networks(
             datacenter=config.DC_NAME[0], mgmt_network=config.MGMT_BRIDGE,
             cluster=config.CLUSTER_NAME[0]
         ):
             logger.error(
                 "Failed to remove all networks from %s", config.DC_NAME[0])
-
-        logger.info("Cleaning host interfaces")
-        if not createAndAttachNetworkSN(
-            host=config.VDS_HOSTS[0], network_dict={}, auto_nics=[0]
-        ):
-            logger.error("Clean host interfaces failed")
         super(TestArbitraryVlanDeviceName05, cls).teardown_class()
 
 
@@ -443,16 +343,21 @@ class TestArbitraryVlanDeviceName06(TestArbitraryVlanDeviceNameTearDown):
                 "usages": ""
             },
         }
-        if not createAndAttachNetworkSN(
+        if not hl_networks.createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict,
             auto_nics=[0, 1],
         ):
-            raise NetworkException("Cannot create and attach network")
-
-        add_vlan_and_refresh_capabilities(
-            host_obj=config.VDS_HOSTS[0], nic=1, vlan_id=VLAN_IDS[0],
-            vlan_name=VLAN_NAMES[0]
+            raise exceptions.NetworkException(
+                "Cannot create and attach network"
+            )
+        helper.add_vlans_to_host(
+            host_obj=config.VDS_HOSTS[0], nic=1, vlan_id=[helper.VLAN_IDS[0]],
+            vlan_name=[helper.VLAN_NAMES[0]]
+        )
+        helper.add_bridge_on_host_and_virsh(
+            host_obj=config.VDS_HOSTS[0], bridge=[helper.BRIDGE_NAMES[0]],
+            network=[helper.VLAN_NAMES[0]]
         )
 
     @tcms(13961, 373616)
@@ -463,17 +368,11 @@ class TestArbitraryVlanDeviceName06(TestArbitraryVlanDeviceNameTearDown):
         Add the bridge with VLAN to virsh
         Check that the bridge is in getVdsCaps
         """
-        check_if_nic_in_hostnics(nic=VLAN_NAMES[0], host=HOST_NAME)
-
-        add_bridge_on_host_and_virsh(
-            host_obj=config.VDS_HOSTS[0], bridge=BRIDGE_NAMES[0],
-            network=VLAN_NAMES[0]
+        helper.check_if_nic_in_host_nics(
+            nic=helper.VLAN_NAMES[0], host=HOST_NAME
         )
-        check_if_nic_in_vdscaps(
-            host_obj=config.VDS_HOSTS[0], nic=BRIDGE_NAMES[0]
-        )
-        delete_bridge_on_host_and_virsh(
-            host_obj=config.VDS_HOSTS[0], bridge=BRIDGE_NAMES[0]
+        helper.check_if_nic_in_vdscaps(
+            host_obj=config.VDS_HOSTS[0], nic=helper.BRIDGE_NAMES[0]
         )
 
     @classmethod
@@ -481,24 +380,11 @@ class TestArbitraryVlanDeviceName06(TestArbitraryVlanDeviceNameTearDown):
         """
         Remove the VLAN from the host
         """
-        try:
-            remove_vlan_and_refresh_capabilities(
-                host_obj=config.VDS_HOSTS[0], vlan_name=VLAN_NAMES[0]
-            )
-        except NetworkException:
-            logger.error("Coudn't remove VLAN %s from host", VLAN_NAMES[0])
-
         logger.info("Removing all networks from %s", config.DC_NAME[0])
-        if not remove_all_networks(
+        if not hl_networks.remove_all_networks(
             datacenter=config.DC_NAME[0], mgmt_network=config.MGMT_BRIDGE,
             cluster=config.CLUSTER_NAME[0]
         ):
             logger.error(
                 "Failed to remove all networks from %s", config.DC_NAME[0])
-
-        logger.info("Cleaning host interfaces")
-        if not createAndAttachNetworkSN(
-            host=config.VDS_HOSTS[0], network_dict={}, auto_nics=[0]
-        ):
-            logger.error("Clean host interfaces failed")
         super(TestArbitraryVlanDeviceName06, cls).teardown_class()

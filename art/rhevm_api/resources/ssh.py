@@ -1,9 +1,15 @@
+import os
 import socket
 import paramiko
 import contextlib
 import subprocess
-
 from art.rhevm_api.resources.resource import Resource
+
+SSH_DIR_PATH = "~/.ssh"
+AUTHORIZED_KEYS = os.path.join(SSH_DIR_PATH, "authorized_keys")
+KNOWN_HOSTS = os.path.join(SSH_DIR_PATH, "known_hosts")
+ID_RSA_PUB = os.path.join(SSH_DIR_PATH, "id_rsa.pub")
+ID_RSA_PRV = os.path.join(SSH_DIR_PATH, "id_rsa")
 
 
 class RemoteExecutor(Resource):

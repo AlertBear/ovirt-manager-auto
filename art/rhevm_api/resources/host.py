@@ -2,10 +2,10 @@ import socket
 import netaddr
 from art.rhevm_api.resources.common import fqdn2ip
 from art.rhevm_api.resources.resource import Resource
-from art.rhevm_api.resources.ssh import RemoteExecutor
 from art.rhevm_api.resources.service import Systemd, SysVinit, InitCtl
 from art.rhevm_api.resources.network import Network
 from art.rhevm_api.resources.filesystem import FileSystem
+from art.rhevm_api.resources import ssh
 
 
 class Host(Resource):
@@ -39,10 +39,10 @@ class Host(Resource):
 
     def __init__(self, ip, service_provider=None):
         """
-        :param ip: IP adress of machine or resolvable fqdn
+        :param ip: IP address of machine or resolvable FQDN
         :type ip: string
         :param service_provider: system service handler
-        :type service_provider: class wich implemets SystemService interface
+        :type service_provider: class which implement SystemService interface
         """
         super(Host, self).__init__()
         if not netaddr.valid_ipv4(ip):
@@ -59,7 +59,7 @@ class Host(Resource):
     def get(cls, ip):
         """
         Get host from inventory
-        :param ip: IP adress of machine or resolvable fqdn
+        :param ip: IP address of machine or resolvable FQDN
         :type ip: str
         :return: host
         :rtype: Host
@@ -100,7 +100,7 @@ class Host(Resource):
     def executor(self, user=None):
         if user is None:
             user = self.root_user
-        return RemoteExecutor(user, self.ip)
+        return ssh.RemoteExecutor(user, self.ip)
 
     def copy_to(self, resource, src, dst):
         """
@@ -167,6 +167,60 @@ class Host(Resource):
             self._service_provider = service.__class__
             return service
 
+    def get_ssh_public_key(self):
+        """
+        Get SSH public key
+
+        :return: SSH public key
+        :rtype: str
+        """
+        host_exec = self.executor()
+        if not self.fs.exists(ssh.ID_RSA_PUB):
+            # Generating SSH key if not exist
+            cmd = [
+                "ssh-keygen", "-q", "-t", "rsa", "-N", '', "-f", ssh.ID_RSA_PRV
+            ]
+            rc = host_exec.run_cmd(cmd)[0]
+            if rc:
+                return ""
+
+        cmd = ["cat", ssh.ID_RSA_PUB]
+        return host_exec.run_cmd(cmd)[1]
+
+    def remove_remote_host_ssh_key(self, remote_host):
+        """
+        Remove remote host keys (ip, fqdn) from KNOWN_HOSTS file
+
+        :param remote_host: Remote host resource object
+        :type remote_host: Host
+        :return: True/False
+        :rtype: bool
+        """
+        local_host_exec = self.executor()
+        ssh_keygen = ["ssh-keygen", "-R"]
+        if self.fs.exists(ssh.KNOWN_HOSTS):
+            # Remove old keys from local host if any
+            for i in [remote_host.ip, remote_host.fqdn]:
+                rc = local_host_exec.run_cmd(ssh_keygen + [i])[0]
+                if rc:
+                    return False
+        return True
+
+    def remove_remote_key_from_authorized_keys(self):
+        """
+        Remove remote ssh key from AUTHORIZED_KEYS file
+
+        :return: True/False
+        :rtype: bool
+        """
+        local_host_exec = self.executor()
+        local_fqdn = self.fqdn
+        cmd = ["sed", "-i", "/%s/d" % local_fqdn, ssh.AUTHORIZED_KEYS]
+        rc = local_host_exec.run_cmd(cmd)[0]
+        if rc:
+            return False
+        return True
+
     def get_network(self):
         return Network(self)
 
@@ -177,3 +231,7 @@ class Host(Resource):
     @property
     def fs(self):
         return FileSystem(self)
+
+    @property
+    def ssh_public_key(self):
+        return self.get_ssh_public_key()

@@ -1,18 +1,17 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
-Helper for arbitrary_vlan_device_name job
+Helper for ArbitraryVlanDeviceName job
 """
 import logging
-import os
 import libvirt
-
 from random import randint
 from rhevmtests.networking import config
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level.events import get_max_event_id
-from art.rhevm_api.tests_lib.low_level.hosts import(
-    getHostNicsList, refresh_host_capabilities, get_host_name_from_engine,
-)
-
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 logger = logging.getLogger("ArbitraryVlanDeviceName_Helper")
 
@@ -24,38 +23,47 @@ VDSMD_SERVICE = "vdsmd"
 VLAN_NAMES = ["vlan10", "vlan20", "vlan30"]
 VLAN_IDS = ["10", "20", "30"]
 BRIDGE_NAMES = ["br_vlan10", "br_vlan20", "br_vlan30"]
-SSH_DIR_PATH = "~/.ssh"
-AUTHORIZED_KEYS = os.path.join(SSH_DIR_PATH, "authorized_keys")
-KNOWN_HOSTS = os.path.join(SSH_DIR_PATH, "known_hosts")
 
 
 def job_tear_down():
     """
     tear_down for ArbitraryVlanDeviceName job
     """
-    host_name = get_host_name_from_engine(config.VDS_HOSTS[0].ip)
-    for x, y in zip(VLAN_NAMES, BRIDGE_NAMES):
-        logger.info("Delete VLAN: %s on %s", x, host_name)
-        host_delete_vlan(host_obj=config.VDS_HOSTS[0], vlan_name=x)
+    host_obj = config.VDS_HOSTS[0]
+    host_name = ll_hosts.get_host_name_from_engine(host_obj.ip)
+    vlans_to_remove = [
+        v for v in VLAN_NAMES if is_interface_on_host(
+            host_obj=host_obj, interface=v
+        )
+    ]
+    remove_vlan_and_refresh_capabilities(
+        host_obj=host_obj, vlan_name=vlans_to_remove
+    )
+    virsh_delete_bridges(host_obj=host_obj, bridges=BRIDGE_NAMES)
 
-        logger.info("Delete virsh BRIDGE: %s on %s", y, host_name)
-        virsh_delete_bridge(host_obj=config.VDS_HOSTS[0], bridge=y)
+    for bridge in BRIDGE_NAMES:
+        logger.info("Checking if %s exists on %s", bridge, host_name)
+        if host_obj.network.get_bridge(bridge):
+            logger.info("Delete BRIDGE: %s on %s", bridge, host_name)
+            try:
+                host_obj.network.delete_bridge(bridge=bridge)
+            except Exception:
+                logger.error(
+                    "Failed to delete BRIDGE: %s on %s", bridge, host_name
+                )
 
-        logger.info("Delete BRIDGE: %s on %s", y, host_name)
-        try:
-            config.VDS_HOSTS[0].network.delete_bridge(bridge=y)
-        except NetworkException:
-            logger.error(
-                "Failed to delete BRIDGE: %s on %s", y, host_name
-            )
-            return False
+    logger.info("Cleaning host interfaces")
+    if not hl_networks.createAndAttachNetworkSN(
+        host=host_obj, network_dict={}, auto_nics=[0]
+    ):
+        logger.error("Clean host interfaces failed")
 
 
 def host_add_vlan(host_obj, vlan_id, vlan_name, nic):
     """
     Create VLAN interface on hosts
     :param host_obj: resources.VDS object
-    :type host_obj: object
+    :type host_obj: VDS
     :param vlan_id: VLAN ID
     :type vlan_id: str
     :param nic: Interface index (from host_obj.nics) or str (for bond nic)
@@ -84,7 +92,7 @@ def host_delete_vlan(host_obj, vlan_name):
     """
     Delete VLAN from host
     :param host_obj: resources.VDS object
-    :type host_obj: object
+    :type host_obj: VDS
     :param vlan_name: VLAN name
     :type vlan_name: str
     :return: True/False
@@ -105,7 +113,7 @@ def virsh_add_bridge(host_obj, bridge):
     """
     Add bridge to virsh via xml file
     :param host_obj: resources.VDS object
-    :type host_obj: object
+    :type host_obj: VDS
     :param bridge: Bridge name
     :type bridge: str
     :return: True/False
@@ -129,39 +137,27 @@ def virsh_add_bridge(host_obj, bridge):
         logger.error("Failed to add network to libvirt from XML. ERR: %s", e)
         return False
 
-    if vdsm_bridge_name not in [
-        i.name() for i in libvirt_conn.listAllNetworks(0)
-    ]:
+    if not get_bridge_from_virsh(host_obj, bridge):
         logger.error("%s not found among libvirt networks", vdsm_bridge_name)
         return False
 
     return True
 
 
-def virsh_delete_bridge(host_obj, bridge):
+def virsh_delete_bridges(host_obj, bridges):
     """
     Delete bridge to virsh via xml file
     :param host_obj: resources.VDS object
-    :type host_obj: object
-    :param bridge: Bridge name
-    :type bridge: str
-    :return: True/False
-    :rtype: bool
+    :type host_obj: VDS
+    :param bridges: Bridge name
+    :type bridges: list
     """
-    host_ip = host_obj.ip
-    vdsm_bridge_name = "vdsm-{0}".format(bridge)
-    libvirt_conn = get_libvirt_connection(host_ip)
-    try:
-        all_networks = libvirt_conn.listAllNetworks(0)
-        for net in all_networks:
-            if vdsm_bridge_name == net.name():
-                net.destroy()
-                return True
-    except libvirt.libvirtError as e:
-        logger.error("Failed to delete bridge from virsh. ERR: %s", e)
-
-    logger.error("%s not found among libvirt networks", vdsm_bridge_name)
-    return False
+    bridges = filter(
+        None, [get_bridge_from_virsh(host_obj, b) for b in bridges]
+    )
+    for br in bridges:
+        logger.info("Deleting %s from virsh", br.name())
+        br.destroy()
 
 
 def set_libvirtd_sasl(host_obj, sasl=True):
@@ -169,7 +165,7 @@ def set_libvirtd_sasl(host_obj, sasl=True):
     Set auth_unix_rw="none" in libvirtd.conf to enable passwordless
     connection to libvirt command line (virsh)
     :param host_obj: resources.VDS object
-    :type host_obj: object
+    :type host_obj: VDS
     :param sasl: True to enable sasl, False to disable
     :type sasl: bool
     :return: True/False
@@ -184,14 +180,10 @@ def set_libvirtd_sasl(host_obj, sasl=True):
     # following sed procedure is needed by RHEV-H and its read only file system
     # TODO: add persist after config.VDS_HOST.os is available see
     # https://projects.engineering.redhat.com/browse/RHEVM-2049
-    sed_cmd = [
-        "sed", sed_arg, LIBVIRTD_CONF
-    ]
+    sed_cmd = ["sed", sed_arg, LIBVIRTD_CONF]
     host_exec = host_obj.executor()
     logger_str = "Enable" if sasl else "Disable"
-    logger.info(
-        "%s sasl in %s", logger_str, LIBVIRTD_CONF
-    )
+    logger.info("%s sasl in %s", logger_str, LIBVIRTD_CONF)
     rc, sed_out, err = host_exec.run_cmd(sed_cmd)
     if rc:
         logger.error(
@@ -199,39 +191,24 @@ def set_libvirtd_sasl(host_obj, sasl=True):
             sed_arg, LIBVIRTD_CONF, logger_str, err, sed_out
         )
         return False
-    cat_cmd = [
-        "echo", "%s" % sed_out, ">", LIBVIRTD_CONF
-    ]
-    rc, cat_out, err = host_exec.run_cmd(cat_cmd)
 
+    cat_cmd = ["echo", "%s" % sed_out, ">", LIBVIRTD_CONF]
+    rc, cat_out, err = host_exec.run_cmd(cat_cmd)
     if rc:
         logger.error(
-            "Failed to %s sasl in libvirt. err: %s. out: %s", logger_str,
-            err, cat_out
+            "Failed to %s sasl in libvirt. err: %s. out: %s",
+            logger_str, err, cat_out
         )
         return False
 
-    logger.info(
-        "Stop %s service", LIBVIRTD_SERVICE
-    )
-    if not host_obj.service(
-            LIBVIRTD_SERVICE).stop(
-
-    ):
-        logger.error(
-            "Failed to restart %s service", LIBVIRTD_SERVICE
-        )
+    logger.info("Stop %s service", LIBVIRTD_SERVICE)
+    if not host_obj.service(LIBVIRTD_SERVICE).stop():
+        logger.error("Failed to restart %s service", LIBVIRTD_SERVICE)
         return False
 
-    logger.info(
-        "Restarting %s server", VDSMD_SERVICE
-    )
-    if not host_obj.service(
-            VDSMD_SERVICE).restart(
-    ):
-        logger.error(
-            "Failed to restart %s service", VDSMD_SERVICE
-        )
+    logger.info("Restarting %s service", VDSMD_SERVICE)
+    if not host_obj.service(VDSMD_SERVICE).restart():
+        logger.error("Failed to restart %s service", VDSMD_SERVICE)
         return False
     return True
 
@@ -252,7 +229,7 @@ def detach_nic_from_bridge(host_obj, bridge, nic):
     """
     Detach NIC from bridge
     :param host_obj: resources.VDS object
-    :type host_obj: object
+    :type host_obj: VDS
     :param bridge: Bridge name
     :type bridge: str
     :param nic: NIC name
@@ -272,7 +249,7 @@ def detach_nic_from_bridge(host_obj, bridge, nic):
     return True
 
 
-def check_if_nic_in_hostnics(nic, host):
+def check_if_nic_in_host_nics(nic, host):
     """
     Check if NIC is among the host NICs collection
     :param nic: NIC name
@@ -282,7 +259,7 @@ def check_if_nic_in_hostnics(nic, host):
     :return: raise NetworkException on error
     """
     logger.info("Check that %s exists on %s via engine", nic, host)
-    host_nics = getHostNicsList(host=host)
+    host_nics = ll_hosts.getHostNicsList(host=host)
     if nic not in [i.name for i in host_nics]:
         raise NetworkException("%s not found in %s nics" % (nic, host))
 
@@ -291,21 +268,22 @@ def add_bridge_on_host_and_virsh(host_obj, bridge, network):
     """
     Create bridge on host and create the bridge on virsh as well
     :param host_obj: resources.VDS object
-    :type host_obj: object
+    :type host_obj: VDS
     :param bridge: Bridge name
-    :type bridge: str
+    :type bridge: list
     :param network: Network name
-    :type network: str
+    :type network: list
     :return: raise NetworkException on error
     """
-    host_name = get_host_name_from_engine(host_obj.ip)
-    logger.info("Attaching %s to %s on %s", network, bridge, host_name)
-    if not host_obj.network.add_bridge(bridge=bridge, network=network):
-        raise NetworkException("Failed to add %s with %s" % (bridge, network))
+    host_name = ll_hosts.get_host_name_from_engine(host_obj.ip)
+    for br, net in zip(bridge, network):
+        logger.info("Attaching %s to %s on %s", net, br, host_name)
+        if not host_obj.network.add_bridge(bridge=br, network=net):
+            raise NetworkException("Failed to add %s with %s" % (br, net))
 
-    logger.info("Adding %s to %s via virsh", bridge, host_name)
-    if not virsh_add_bridge(host_obj=host_obj, bridge=bridge):
-        raise NetworkException("Failed to add %s to virsh" % bridge)
+        logger.info("Adding %s to %s via virsh", br, host_name)
+        if not virsh_add_bridge(host_obj=host_obj, bridge=br):
+            raise NetworkException("Failed to add %s to virsh" % br)
 
     refresh_capabilities(host=host_name)
 
@@ -314,17 +292,14 @@ def delete_bridge_on_host_and_virsh(host_obj, bridge):
     """
     Delete bridge on host and delete the bridge on virsh as well
     :param host_obj: resources.VDS object
-    :type host_obj: object
+    :type host_obj: VDS
     :param bridge: Bridge name
     :type bridge: str
     :return: raise NetworkException on error
     """
-    host_name = get_host_name_from_engine(host_obj.ip)
+    host_name = ll_hosts.get_host_name_from_engine(host_obj.ip)
     logger.info("Delete %s on %s", bridge, host_name)
-    if not virsh_delete_bridge(host_obj=host_obj, bridge=bridge):
-        raise NetworkException(
-            "Failed to delete %s on %s" % (bridge, host_name)
-        )
+    virsh_delete_bridges(host_obj=host_obj, bridges=[bridge])
     logger.info("Delete %s on %s", bridge, host_name)
     if not host_obj.network.delete_bridge(bridge=bridge):
         raise NetworkException(
@@ -332,74 +307,81 @@ def delete_bridge_on_host_and_virsh(host_obj, bridge):
         )
 
 
-def add_vlan_and_refresh_capabilities(host_obj, vlan_id, vlan_name, nic):
+def add_vlans_to_host(host_obj, vlan_id, vlan_name, nic):
     """
-    Add VLAN to host and refresh host capabilities
+    Add VLAN to host
     :param host_obj: resources.VDS object
-    :type host_obj: object
+    :type host_obj: VDS
     :param nic: Interface index (from host_obj.nics) or str (for bond nic)
     :type nic: int or str
     :param vlan_id: VLAN id
-    :type vlan_id: str
+    :type vlan_id: list
     :param vlan_name: VLAN name
-    :type vlan_name: str
+    :type vlan_name: list
     :return: raise NetworkException on error
     """
-    host_name = get_host_name_from_engine(host_obj.ip)
+    host_name = ll_hosts.get_host_name_from_engine(host_obj.ip)
     logger.info(
         "Adding VLAN ID: %s. Name: %s. to %s", vlan_id, vlan_name, host_name
     )
-    if not host_add_vlan(
-        host_obj=host_obj, vlan_id=vlan_id, nic=nic, vlan_name=vlan_name
-    ):
-        raise NetworkException(
-            "Failed to create %s on %s" % (vlan_name, host_name)
-        )
-
-    refresh_capabilities(host=host_name)
+    for vid, vname in zip(vlan_id, vlan_name):
+        if not host_add_vlan(
+            host_obj=host_obj, vlan_id=vid, nic=nic, vlan_name=vname
+        ):
+            raise NetworkException(
+                "Failed to create %s on %s" % (vlan_name, host_name)
+            )
 
 
 def remove_vlan_and_refresh_capabilities(host_obj, vlan_name):
     """
     Add vlan to host and refresh host capabilities
     :param host_obj: resources.VDS object
-    :type host_obj: object
+    :type host_obj: VDS
     :param vlan_name: VLAN name
-    :type vlan_name: str
-    :return: raise NetworkException on error
+    :type vlan_name: list
+    :return: True/False
+    :rtype: bool
     """
-    host_name = get_host_name_from_engine(host_obj.ip)
-    logger.info("Removing %s from %s", vlan_name, host_name)
-    if not host_delete_vlan(host_obj=host_obj, vlan_name=vlan_name):
-        raise NetworkException(
-            "Failed to remove %s from %s" % (vlan_name, host_name)
-        )
-
-    refresh_capabilities(host=host_name)
+    host_name = ll_hosts.get_host_name_from_engine(host_obj.ip)
+    for vlan in vlan_name:
+        logger.info("Removing %s from %s", vlan, host_name)
+        if not host_delete_vlan(host_obj=host_obj, vlan_name=vlan):
+            return False
+    if not refresh_capabilities(host=host_name):
+        return False
+    return True
 
 
 def refresh_capabilities(host):
     """
     Refresh host capabilities
-    :param host: Host name (engine name)
+    :param host: Host name (from engine)
     :type host: str
-    :return: raise NetworkException on error
+    :return: True/False
+    :rtype: bool
     """
+    logger.info("Getting MAX event ID")
     last_event = get_max_event_id(query="")
     logger.info("Refresh capabilities for %s", host)
-    if not refresh_host_capabilities(host=host, start_event_id=last_event):
+    if not ll_hosts.refresh_host_capabilities(
+        host=host, start_event_id=last_event
+    ):
         logger.error("Failed to refresh capabilities for: %s" % host)
+        return False
+    return True
 
 
 def check_if_nic_in_vdscaps(host_obj, nic):
     """
     Check if NIC in vdsClient getVdsCaps
     :param host_obj: resources.VDS object
-    :type host_obj: object
+    :type host_obj: VDS
     :param nic: NIC name
     :type nic: str
     :return: raise NetworkException on error
     """
+    logger.info("Check if %s in vdsCaps", nic)
     host_exec = host_obj.executor()
     cmd = [
         "vdsClient", "-s", "0", "getVdsCaps", "|", "grep", nic, "|", "wc",
@@ -410,3 +392,43 @@ def check_if_nic_in_vdscaps(host_obj, nic):
         raise NetworkException(
             "%s not found in getVdsCaps. err: %s" % (nic, err)
         )
+
+
+def is_interface_on_host(host_obj, interface):
+    """
+    Check if interface exists on host
+    :param host_obj: resources.VDS object
+    :type host_obj: VDS
+    :param interface: Interface name
+    :type interface: str
+    :return: True/False
+    :rtype: bool
+    """
+    host_exec = host_obj.executor()
+    cmd = ["ip", "a", "s", interface]
+    rc, out, err = host_exec.run_cmd(cmd)
+    if rc:
+        return False
+    return True
+
+
+def get_bridge_from_virsh(host_obj, bridge):
+    """
+    Check if bridge exist in virsh
+
+    :param host_obj: resources.VDS object
+    :type host_obj: VDS
+    :param bridge: Bridge name
+    :type bridge: str
+    :return: Network if found else None
+    :rtype: object
+    """
+    host_ip = host_obj.ip
+    vdsm_bridge_name = "vdsm-{0}".format(bridge)
+    libvirt_connection = get_libvirt_connection(host_ip)
+    all_bridges = libvirt_connection.listAllNetworks(0)
+    try:
+        return [i for i in all_bridges if vdsm_bridge_name == i.name()][0]
+    except IndexError:
+        logger.error("%s not found in virsh", bridge)
+        return None
