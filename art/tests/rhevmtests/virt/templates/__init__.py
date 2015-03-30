@@ -21,9 +21,6 @@ def setup_package():
     """
     if config.GOLDEN_ENV:
         logger.info("Running on golden env")
-        for sd_name in [config.EXPORT_STORAGE_NAME]:
-            assert storagedomains.attachStorageDomain(
-                True, config.DC_NAME[0], sd_name)
         return
     if os.environ.get("JENKINS_URL"):
         logger.info("Building setup...")
@@ -36,12 +33,7 @@ def teardown_package():
     Cleans the environment
     """
     if config.GOLDEN_ENV:
-        logger.info("Running on golden env, detaching storage domain")
-        for sd_name in [config.EXPORT_STORAGE_NAME]:
-            assert storagedomains.deactivateStorageDomain(
-                True, config.DC_NAME[0], sd_name)
-            assert storagedomains.detachStorageDomain(
-                True, config.DC_NAME[0], sd_name)
+        logger.info("Running on golden env")
         return
     if os.environ.get("JENKINS_URL"):
         logger.info("Teardown...")
