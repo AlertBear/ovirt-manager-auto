@@ -3,9 +3,12 @@ Base for setup the environment
 This creates builds the environment in the systems plus VM for disks tests
 """
 import logging
-from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
+from art.rhevm_api.tests_lib.high_level.datacenters import (
+    build_setup,
+    clean_datacenter,
+)
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    cleanDataCenter, getStorageDomainNamesForType,
+    getStorageDomainNamesForType,
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
     addSnapshot, stopVm, safely_remove_vms,
@@ -49,8 +52,9 @@ def teardown_module():
     """
     if not config.GOLDEN_ENV:
         logger.info("Tearing down - cleanDataCenter")
-        cleanDataCenter(
+        clean_datacenter(
             True, config.DATA_CENTER_NAME, vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD)
+            vdc_password=config.VDC_PASSWORD
+        )
     else:
         safely_remove_vms(VM_NAMES)

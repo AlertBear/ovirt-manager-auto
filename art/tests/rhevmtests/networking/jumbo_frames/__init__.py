@@ -7,7 +7,7 @@ Jumbo Frames init
 
 import logging
 from rhevmtests.networking import config, network_cleanup
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_storagedomains
+from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
@@ -144,7 +144,7 @@ def teardown_package():
         ):
             logger.error("Cannot remove networks from setup")
     else:
-        if not ll_storagedomains.cleanDataCenter(
+        if not clean_datacenter(
             positive=True, datacenter=config.DC_NAME[0], vdc=config.VDC_HOST,
             vdc_password=config.VDC_ROOT_PASSWORD
         ):

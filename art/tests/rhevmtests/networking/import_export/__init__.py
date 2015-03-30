@@ -6,8 +6,10 @@ Import Export Test
 import logging
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from rhevmtests.networking import config, network_cleanup
+from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    cleanDataCenter, addStorageDomain, getStorageDomainNamesForType
+    addStorageDomain,
+    getStorageDomainNamesForType
 )
 from art.rhevm_api.tests_lib.high_level.networks import(
     prepareSetup, createAndAttachNetworkSN, remove_net_from_setup
@@ -185,7 +187,7 @@ def teardown_package():
     logger.info("Starting teardown process")
     if not config.GOLDEN_ENV:
         logger.info("Removing setup: %s", config.DC_NAME[0])
-        if not cleanDataCenter(
+        if not clean_datacenter(
                 positive=True, datacenter=config.DC_NAME[0],
                 vdc=config.VDC_HOST,
                 vdc_password=config.VDC_ROOT_PASSWORD

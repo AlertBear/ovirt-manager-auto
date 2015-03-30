@@ -1,6 +1,7 @@
 """
 DataCenter Networks feature test
 """
+from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 from rhevmtests.system.power_management import config
 
 from art.test_handler.exceptions import DataCenterException, HostException,\
@@ -10,8 +11,6 @@ import logging
 from art.rhevm_api.tests_lib.low_level.clusters import addCluster
 from art.rhevm_api.tests_lib.low_level.hosts import addHost
 from art.rhevm_api.tests_lib.high_level import storagedomains
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_storagedomains
-
 
 ########################################################
 
@@ -56,7 +55,7 @@ def teardown_package():
     """
     Cleans environment
     """
-    if not ll_storagedomains.cleanDataCenter(
+    if not clean_datacenter(
             True, config.DC_NAME[0],
             vdc=config.VDC_HOST,
             vdc_password=config.VDC_ROOT_PASSWORD):

@@ -60,6 +60,7 @@ def teardown_module():
 
     if not config.GOLDEN_ENV:
         logger.info("Tear down - cleanDataCenter")
-        storagedomains.cleanDataCenter(
+        datacenters.clean_datacenter(
             True, config.DATA_CENTER_NAME, vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD)
+            vdc_password=config.VDC_PASSWORD
+        )

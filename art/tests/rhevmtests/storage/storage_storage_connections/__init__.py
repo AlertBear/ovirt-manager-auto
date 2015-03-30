@@ -48,7 +48,7 @@ def setup_module():
 def teardown_module():
     """ removes created datacenter, storages etc.
     """
-    if not storagedomains.cleanDataCenter(True, config.DATA_CENTER_NAME):
+    if not datacenters.clean_datacenter(True, config.DATA_CENTER_NAME):
         LOGGER.info("Tear down - removing data center")
         ll_dc.removeDataCenter(True, config.DATA_CENTER_NAME)
         for host in config.HOSTS:

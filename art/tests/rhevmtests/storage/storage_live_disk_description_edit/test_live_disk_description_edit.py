@@ -10,7 +10,7 @@ from art.rhevm_api.tests_lib.low_level.disks import (
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    cleanDataCenter, getStorageDomainNamesForType,
+    getStorageDomainNamesForType,
 )
 from art.unittest_lib import attr
 from art.unittest_lib import StorageTest as BaseTestCase
@@ -84,8 +84,12 @@ def teardown_module():
 
     if not config.GOLDEN_ENV:
         logger.info('Cleaning Data Center')
-        cleanDataCenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
-                        vdc_password=config.VDC_PASSWORD)
+        datacenters.clean_datacenter(
+            True,
+            config.DATA_CENTER_NAME,
+            vdc=config.VDC,
+            vdc_password=config.VDC_PASSWORD
+        )
 
 
 class BasicEnvironment(BaseTestCase):

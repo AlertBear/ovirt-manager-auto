@@ -6,8 +6,8 @@ VNIC profile feature test
 """
 
 import logging
+from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 from rhevmtests.networking import config, network_cleanup
-from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.high_level.networks import prepareSetup
@@ -63,7 +63,7 @@ def teardown_package():
         if not vms.stopVm(True, vm=config.VM_NAME[0]):
             logger.error("Failed to stop VM: %s", config.VM_NAME[0])
     else:
-        if not cleanDataCenter(
+        if not clean_datacenter(
             positive=True, datacenter=config.DC_NAME[0], vdc=config.VDC_HOST,
             vdc_password=config.VDC_ROOT_PASSWORD
         ):

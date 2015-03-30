@@ -8,6 +8,7 @@ import io
 import time
 import tempfile
 import os
+
 from art.unittest_lib import StorageTest as TestCase
 
 from art.rhevm_api.utils import test_utils
@@ -15,11 +16,12 @@ from art.core_api import apis_exceptions
 from art.test_handler import exceptions
 from utilities import sshConnection
 
-from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
+from art.rhevm_api.tests_lib.high_level import datacenters as hl_dc
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_st
+from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
 from art.rhevm_api.tests_lib.low_level import clusters as ll_cl
-from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
+from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.tests_lib.low_level import templates as ll_templ
 from art.rhevm_api.tests_lib.low_level import disks as ll_disks
@@ -311,7 +313,7 @@ def clean_dc(dc_name, host, cl_name, sd_name=None):
     """
     if ll_st.getDCStorages(dc_name, False):  # the easy part
         LOGGER.info("Tear down - removing data center")
-        ll_st.cleanDataCenter(True, dc_name)
+        hl_dc.clean_datacenter(True, dc_name)
     else:
         if sd_name is not None:
             LOGGER.info("Tear down - removing storage domain")

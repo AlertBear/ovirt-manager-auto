@@ -56,6 +56,8 @@ def setup_module():
 def teardown_module():
     assert templates.removeTemplate(True, config.TEMPLATE_NAME)
     if not config.GOLDEN_ENV:
-        storagedomains.cleanDataCenter(True, config.DC_NAME[0],
-                                       vdc=config.VDC_HOST,
-                                       vdc_password=config.VDC_ROOT_PASSWORD)
+        datacenters.clean_datacenter(
+            True, config.DC_NAME[0],
+            vdc=config.VDC_HOST,
+            vdc_password=config.VDC_ROOT_PASSWORD
+        )

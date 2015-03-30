@@ -28,9 +28,10 @@ def setup_module():
 def teardown_module():
     """ removes created datacenter, storages etc.
     """
-    ll_st_domains.cleanDataCenter(
+    datacenters.clean_datacenter(
         True, config.DATA_CENTER_NAME, vdc=config.VDC,
-        vdc_password=config.VDC_PASSWORD)
+        vdc_password=config.VDC_PASSWORD
+    )
 
 
 @attr(tier=3)

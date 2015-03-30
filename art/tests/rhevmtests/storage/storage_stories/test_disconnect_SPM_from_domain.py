@@ -68,9 +68,11 @@ def teardown_module():
     """
     Removes created datacenter, storages etc.
     """
-    ll_st_domains.cleanDataCenter(
-        True, config.DATA_CENTER_NAME, vdc=config.VDC,
-        vdc_password=config.VDC_PASSWORD)
+    datacenters.clean_datacenter(
+        True, config.DATA_CENTER_NAME,
+        vdc=config.VDC,
+        vdc_password=config.VDC_PASSWORD
+    )
 
 
 class BaseTestCase(TestCase):

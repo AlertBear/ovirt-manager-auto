@@ -28,7 +28,6 @@ from rhevmtests.sla import config
 import art.test_handler.exceptions as errors
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import vms
-from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 
 LOGGER = logging.getLogger(__name__)
 
@@ -63,7 +62,9 @@ def teardown_package():
         ):
             raise errors.VMException("Failed to remove vms")
         if not config.GOLDEN_ENV:
-            cleanDataCenter(
-                True, config.DC_NAME[0], vdc=config.VDC_HOST,
-                vdc_password=config.VDC_ROOT_PASSWORD
+            datacenters.clean_datacenter(
+                True, config.DC_NAME[0],
+                vdc=config.VDC_HOST,
+                vdc_password=config.VDC_PASSWORD
+
             )

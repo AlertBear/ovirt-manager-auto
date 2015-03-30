@@ -70,4 +70,4 @@ def teardown_package():
     )
 
     if not config.GOLDEN_ENV:
-        storagedomains.cleanDataCenter(True, config.DC_NAME[0])
+        datacenters.clean_datacenter(True, config.DC_NAME[0])

@@ -13,7 +13,7 @@ from art.rhevm_api.tests_lib.low_level.disks import (
     checkDiskExists, deleteDisk,
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    cleanDataCenter, getDomainAddress, findExportStorageDomains,
+    getDomainAddress, findExportStorageDomains,
     getStorageDomainNamesForType,
 )
 from art.rhevm_api.tests_lib.low_level.templates import (
@@ -31,7 +31,10 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     safely_remove_vms, get_vm_bootable_disk, remove_all_vm_lsm_snapshots,
     wait_for_vm_snapshots,
 )
-from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
+from art.rhevm_api.tests_lib.high_level.datacenters import (
+    build_setup,
+    clean_datacenter,
+)
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
@@ -134,7 +137,7 @@ def teardown_module():
             removeVm(True, vm_name)
     else:
         logger.info('Cleaning datacenter')
-        cleanDataCenter(
+        clean_datacenter(
             True, config.DATA_CENTER_NAME, vdc=config.VDC,
             vdc_password=config.VDC_PASSWORD
         )

@@ -1,7 +1,7 @@
-from art.rhevm_api.tests_lib.low_level.datacenters import \
-    waitForDataCenterState
+from art.rhevm_api.tests_lib.low_level.datacenters import (
+    waitForDataCenterState,
+)
 from art.rhevm_api.tests_lib.low_level.hosts import updateHost
-from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.high_level.datacenters as datacenters
 import logging
@@ -37,7 +37,9 @@ def teardown_package():
     logger.info("Wait until datacenter up")
     if not waitForDataCenterState(config.DC_NAME[0]):
         raise errors.DataCenterException("Datacenter down")
-    if not cleanDataCenter(positive=True, datacenter=config.DC_NAME[0],
-                           vdc=config.VDC_HOST,
-                           vdc_password=config.VDC_ROOT_PASSWORD):
+    if not datacenters.clean_datacenter(
+            positive=True, datacenter=config.DC_NAME[0],
+            vdc=config.VDC_HOST,
+            vdc_password=config.VDC_ROOT_PASSWORD
+    ):
         raise errors.DataCenterException("Cannot remove setup")

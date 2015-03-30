@@ -49,9 +49,10 @@ def teardown_package():
     Cleans the environment
     """
     if not config.GOLDEN_ENV:
-        assert storagedomains.cleanDataCenter(
+        assert datacenters.clean_datacenter(
             True, config.DATA_CENTER_NAME, vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD)
+            vdc_password=config.VDC_PASSWORD
+        )
     else:
         for storage_type in config.STORAGE_SELECTOR:
             vm_name = "%s_%s" % (config.VM_NAME, storage_type)

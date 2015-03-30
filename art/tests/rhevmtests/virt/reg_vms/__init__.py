@@ -8,7 +8,6 @@ import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.datacenters as dc_api
 import art.rhevm_api.tests_lib.low_level.clusters as cluster_api
 import art.rhevm_api.tests_lib.high_level.datacenters as high_dc_api
-from art.rhevm_api.tests_lib.low_level import storagedomains
 from rhevmtests.virt import config
 
 logger = logging.getLogger(__name__)
@@ -75,7 +74,9 @@ def teardown_package():
         if not cluster_api.removeCluster(True,
                                          config.CLUSTER_NAME[1]):
             raise errors.ClusterException("Failed to remove cluster")
-        if not storagedomains.cleanDataCenter(
-                True, config.DC_NAME[0], vdc=config.VDC_HOST,
-                vdc_password=config.VDC_ROOT_PASSWORD):
+        if not high_dc_api.clean_datacenter(
+                True, config.DC_NAME[0],
+                vdc=config.VDC_HOST,
+                vdc_password=config.VDC_ROOT_PASSWORD
+        ):
             raise errors.DataCenterException("Clean up environment failed")

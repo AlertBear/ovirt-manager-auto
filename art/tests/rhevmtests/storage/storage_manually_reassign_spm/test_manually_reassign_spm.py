@@ -2,13 +2,19 @@ import config
 import logging
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
-from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
+from art.rhevm_api.tests_lib.high_level.datacenters import (
+    build_setup,
+    clean_datacenter,
+)
 from art.rhevm_api.tests_lib.low_level.datacenters import (
     waitForDataCenterState,
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    findMasterStorageDomain, findNonMasterStorageDomains, cleanDataCenter,
-    getDomainAddress, deactivateStorageDomain, activateStorageDomain,
+    findMasterStorageDomain,
+    findNonMasterStorageDomains,
+    getDomainAddress,
+    deactivateStorageDomain,
+    activateStorageDomain,
 )
 from art.rhevm_api.tests_lib.low_level.hosts import (
     select_host_as_spm, getSPMHost, checkSPMPriority, deactivateHosts,
@@ -40,8 +46,10 @@ def teardown_module():
     Clean datacenter
     """
     assert activateHosts(True, config.HOSTS)
-    cleanDataCenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
-                    vdc_password=config.VDC_PASSWORD)
+    clean_datacenter(
+        True, config.DATA_CENTER_NAME, vdc=config.VDC,
+        vdc_password=config.VDC_PASSWORD
+    )
 
 
 class DCUp(TestCase):

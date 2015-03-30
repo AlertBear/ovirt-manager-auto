@@ -515,8 +515,10 @@ def removeHost(positive, host, deactivate=False):
 
     hostObj = HOST_API.find(host)
     if deactivate:
-        if not deactivateHost(positive=positive, host=host):
-            return False
+        if not isHostInMaintenance(positive, host):
+            if not deactivateHost(positive=positive, host=host):
+                return False
+
     return HOST_API.delete(hostObj, positive)
 
 

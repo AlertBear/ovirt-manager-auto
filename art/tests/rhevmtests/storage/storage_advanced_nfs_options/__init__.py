@@ -6,7 +6,6 @@ Test suite for checking if setting advanced NFS options
 
 Test suite is valid only for RHEV-M 3.1+
 """
-
 from art.test_handler import exceptions
 from art.rhevm_api.tests_lib.high_level import datacenters as hl_dc
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
@@ -37,4 +36,4 @@ def setup_module():
 def teardown_module():
     """ removes created datacenter, storages etc.
     """
-    ll_st.cleanDataCenter(True, config.DATA_CENTER_NAME)
+    hl_dc.clean_datacenter(True, config.DATA_CENTER_NAME)

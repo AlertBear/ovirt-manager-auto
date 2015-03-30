@@ -12,7 +12,6 @@ Purpose of this doc string is also description of test suite.
 
 # Import module from rhevm_api
 import art.rhevm_api.tests_lib.high_level.datacenters as datacenters
-from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 
 
 def setup_package():
@@ -27,4 +26,4 @@ def setup_package():
 def teardown_package():
     import config
     # Here put your tear-down action for whole bunch of tests
-    cleanDataCenter(True, config.DATA_CENTER_NAME)
+    datacenters.clean_datacenter(True, config.DATA_CENTER_NAME)

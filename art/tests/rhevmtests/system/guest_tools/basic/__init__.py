@@ -1,6 +1,5 @@
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import storagedomains
-from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from rhevmtests.system.guest_tools import config
 
 
@@ -56,4 +55,4 @@ def teardown_package():
         True, storagedomain=config.ISO_STORAGE_DOMAIN,
         host=config.HOSTS[0], format='False')
     if not config.GOLDEN_ENV:
-        cleanDataCenter(True, config.DC_NAME[0])
+        datacenters.clean_datacenter(True, config.DC_NAME[0])

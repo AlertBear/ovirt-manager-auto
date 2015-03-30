@@ -10,7 +10,6 @@ import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
 import art.rhevm_api.tests_lib.low_level.hosts as host_api
 import art.rhevm_api.tests_lib.high_level.datacenters as dc_api
-from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 
 logger = logging.getLogger(__name__)
 
@@ -80,8 +79,8 @@ def teardown_package():
             if not host_api.updateHost(True, host, pm=False):
                 raise errors.HostException("Can not update host %s" % host)
         if not config.GOLDEN_ENV:
-            if not cleanDataCenter(
-                True, config.DC_NAME[0], vdc=config.VDC_HOST,
-                vdc_password=config.VDC_ROOT_PASSWORD
+            if not dc_api.clean_datacenter(
+                    True, config.DC_NAME[0], vdc=config.VDC_HOST,
+                    vdc_password=config.VDC_ROOT_PASSWORD
             ):
                 raise errors.DataCenterException("Clean up environment failed")

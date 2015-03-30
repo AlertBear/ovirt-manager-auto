@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from art.rhevm_api.tests_lib.high_level import storagedomains as h_sd
+from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 from rhevmtests.system.user_roles_tests import config
 from art.rhevm_api.tests_lib.low_level import (
     storagedomains, clusters, datacenters, hosts
@@ -52,4 +53,4 @@ def setup_package():
 def teardown_package():
     """ Clean environment """
     if not config.GOLDEN_ENV:
-        storagedomains.cleanDataCenter(True, config.MAIN_DC_NAME)
+        clean_datacenter(True, config.MAIN_DC_NAME)

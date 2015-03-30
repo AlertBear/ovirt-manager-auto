@@ -7,8 +7,8 @@ Port Mirroring test
 
 import logging
 from utilities import machine
+from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 from rhevmtests.networking import config, network_cleanup
-from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.rhevm_api.tests_lib.low_level.networks import addVnicProfile
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level.vms import addNic
@@ -247,7 +247,7 @@ def teardown_package():
 
     else:
         logger.info("Clean the environment")
-        if not cleanDataCenter(
+        if not clean_datacenter(
             positive=True, datacenter=config.DC_NAME[0], vdc=config.VDC_HOST,
             vdc_password=config.VDC_ROOT_PASSWORD
         ):

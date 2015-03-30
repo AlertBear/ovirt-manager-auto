@@ -9,8 +9,11 @@ Check with NFS, POSIXFS and local ISO domains
 import logging
 import helpers
 import config
+
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
+
+from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 import art.rhevm_api.tests_lib.high_level.storagedomains as hl_sd
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
@@ -104,7 +107,7 @@ class BaseCaseIsoDomains(TestCase):
             ll_vms.stop_vms_safely([cls.vm_name])
             assert ll_vms.removeVm(True, cls.vm_name)
         else:
-            ll_sd.cleanDataCenter(
+            clean_datacenter(
                 True, cls.data_center_name, vdc=config.VDC,
                 vdc_password=config.VDC_PASSWORD)
 

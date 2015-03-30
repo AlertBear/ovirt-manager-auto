@@ -8,6 +8,7 @@ Virt - Migration test initialization
 import os
 import logging
 
+from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 from rhevmtests.networking import network_cleanup
 from rhevmtests.networking import config as netconf
 import art.test_handler.exceptions as errors
@@ -16,7 +17,6 @@ from art.test_handler.exceptions import (
 )
 from rhevmtests.virt.migration.helper import set_host_status
 import art.rhevm_api.tests_lib.low_level.clusters as cluster_api
-from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from rhevmtests.virt import config
 from rhevmtests.virt.migration import helper
 from art.rhevm_api.tests_lib.low_level import vms
@@ -159,10 +159,8 @@ def teardown_package():
                 logging.info("Remove all elements in data center: dataCenter,"
                              "storage domains, hosts & cluster."
                              "in data center %s ", config.DC_NAME[0])
-                if not cleanDataCenter(
-                    True,
-                    config.DC_NAME[0],
-                    vdc=config.VDC_HOST,
+                if not clean_datacenter(
+                    True, config.DC_NAME[0], vdc=config.VDC_HOST,
                     vdc_password=config.VDC_ROOT_PASSWORD
                 ):
                     logger.error("Clean up environment failed")

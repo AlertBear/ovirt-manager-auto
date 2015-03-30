@@ -38,9 +38,11 @@ def teardown_module():
     Removes created datacenter, storage domains etc.
     """
     if not config.GOLDEN_ENV:
-        ll_st_domains.cleanDataCenter(True, config.DATA_CENTER_NAME,
-                                      vdc=config.VDC,
-                                      vdc_password=config.VDC_PASSWORD)
+        datacenters.clean_datacenter(
+            True, config.DATA_CENTER_NAME,
+            vdc=config.VDC,
+            vdc_password=config.VDC_PASSWORD
+        )
 
 
 @attr(tier=0)

@@ -23,7 +23,7 @@ from art.rhevm_api.tests_lib.low_level.hosts import (
     waitForHostsStates, getHostIP, getSPMHost,
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    getStorageDomainNamesForType, cleanDataCenter, getDomainAddress,
+    getStorageDomainNamesForType, getDomainAddress,
     get_total_size,
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
@@ -127,8 +127,10 @@ def teardown_module():
     """
     logger.info('Cleaning datacenter')
     if not config.GOLDEN_ENV:
-        cleanDataCenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
-                        vdc_password=config.VDC_ROOT_PASSWORD)
+        datacenters.clean_datacenter(
+            True, config.DATA_CENTER_NAME,
+            vdc=config.VDC, vdc_password=config.VDC_ROOT_PASSWORD
+        )
 
     else:
         stop_vms_safely(VMS_NAMES)

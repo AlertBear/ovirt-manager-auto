@@ -12,8 +12,6 @@ from art.unittest_lib import attr
 
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import hosts
-from art.rhevm_api.tests_lib.low_level import storagedomains as \
-    ll_storagedomains
 
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 
@@ -83,9 +81,10 @@ def teardown_module():
     """ removes created datacenter, storages etc.
     """
     if not config.GOLDEN_ENV:
-        ll_storagedomains.cleanDataCenter(
+        datacenters.clean_datacenter(
             True, config.DATA_CENTER_NAME, vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD)
+            vdc_password=config.VDC_PASSWORD
+        )
 
 
 class SuperVDSMTestBase(TestCase):

@@ -7,8 +7,10 @@ __test__ = False
 
 import logging
 from art.unittest_lib import CoreSystemTest as TestCase
-from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
-from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
+from art.rhevm_api.tests_lib.high_level.datacenters import (
+    build_setup,
+    clean_datacenter,
+)
 import art.rhevm_api.tests_lib.low_level.vms as llvms
 from art.rhevm_api.utils.test_utils import get_api
 VM_API = get_api('vm', 'vms')
@@ -55,8 +57,8 @@ def teardown_module():
 
     params = unittest_conf.ART_CONFIG['PARAMETERS']
     dc_name = params.get('dc_name', 'datacenter_%s' % params.get('basename'))
-    cleanDataCenter(True, dc_name, vdc=params.get('host'),
-                    vdc_password=params.get('vdc_password'))
+    clean_datacenter(True, dc_name, vdc=params.get('host'),
+                     vdc_password=params.get('vdc_password'))
 
 _multiprocess_can_split_ = True
 

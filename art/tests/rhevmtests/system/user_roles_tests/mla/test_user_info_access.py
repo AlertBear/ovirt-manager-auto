@@ -17,6 +17,8 @@ from art.rhevm_api.tests_lib.low_level import (
     users, vms, templates, mla, clusters, datacenters, hosts,
     storagedomains, networks, events
 )
+from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
+
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as h_storagedomains
 )
@@ -70,7 +72,7 @@ def tearDownModule():
 
     if not config.GOLDEN_ENV:
         clusters.removeCluster(True, config.CLUSTER_NAME[1])
-        storagedomains.cleanDataCenter(True, config.DC_NAME_B)
+        clean_datacenter(True, config.DC_NAME_B)
 
 
 def loginAsUser(**kwargs):

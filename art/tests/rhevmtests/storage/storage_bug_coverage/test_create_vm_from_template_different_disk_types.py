@@ -10,7 +10,6 @@ from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.tests_lib.low_level import templates
-from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import disks
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
@@ -137,9 +136,12 @@ def setup_module():
 def teardown_module():
     """ removes created datacenter, storages etc.
     """
-    storagedomains.cleanDataCenter(True, config.DATA_CENTER_NAME,
-                                   vdc=config.VDC,
-                                   vdc_password=config.VDC_PASSWORD)
+    datacenters.clean_datacenter(
+        True,
+        config.DATA_CENTER_NAME,
+        vdc=config.VDC,
+        vdc_password=config.VDC_PASSWORD
+    )
 
 
 @attr(tier=1)

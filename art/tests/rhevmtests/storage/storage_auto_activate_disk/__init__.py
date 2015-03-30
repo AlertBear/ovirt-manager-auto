@@ -4,7 +4,6 @@ Storage Auto Activate Tests
 
 import logging
 import art.rhevm_api.tests_lib.high_level.datacenters as datacenters
-from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from rhevmtests.storage.storage_auto_activate_disk import config
 
 logger = logging.getLogger(__name__)
@@ -28,5 +27,7 @@ def teardown_package():
     """
     logger.info("teardown")
     if not config.GOLDEN_ENV:
-        cleanDataCenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
-                        vdc_password=config.VDC_PASSWORD)
+        datacenters.clean_datacenter(
+            True, config.DATA_CENTER_NAME, vdc=config.VDC,
+            vdc_password=config.VDC_PASSWORD
+        )

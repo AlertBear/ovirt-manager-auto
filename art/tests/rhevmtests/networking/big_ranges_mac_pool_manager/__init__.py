@@ -4,7 +4,7 @@ Allow big ranges in MacPoolManager
 
 import logging
 from art.rhevm_api.tests_lib.high_level.networks import prepareSetup
-from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
+from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 from art.rhevm_api.utils.test_utils import(
     set_engine_properties, get_engine_properties
 )
@@ -60,7 +60,7 @@ def teardown_package():
 
     else:
         logger.info("Removing setup")
-        if not cleanDataCenter(
+        if not clean_datacenter(
                 positive=True, datacenter=config.DC_NAME[0],
                 vdc=config.VDC_HOST, vdc_password=config.VDC_ROOT_PASSWORD
         ):

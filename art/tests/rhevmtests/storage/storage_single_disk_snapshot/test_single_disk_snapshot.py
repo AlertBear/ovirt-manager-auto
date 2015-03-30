@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level.hosts import (
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    cleanDataCenter, getStorageDomainNamesForType, getDomainAddress,
+    getStorageDomainNamesForType, getDomainAddress,
 )
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
@@ -95,8 +95,10 @@ def teardown_module():
         safely_remove_vms(VM_NAMES)
     else:
         logger.info('Cleaning datacenter')
-        cleanDataCenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
-                        vdc_password=config.VDC_PASSWORD)
+        datacenters.clean_datacenter(
+            True, config.DATA_CENTER_NAME, vdc=config.VDC,
+            vdc_password=config.VDC_PASSWORD
+        )
 
 
 class BasicEnvironment(BaseTestCase):

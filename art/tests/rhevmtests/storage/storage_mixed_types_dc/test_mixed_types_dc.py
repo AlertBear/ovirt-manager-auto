@@ -9,6 +9,8 @@ import config
 from utilities.machine import Machine
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
+
+from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.clusters as ll_cl
 import art.rhevm_api.tests_lib.low_level.disks as ll_disks
@@ -78,7 +80,7 @@ class BaseCaseDCMixed(TestCase):
         test_utils.wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
 
-        ll_sd.cleanDataCenter(
+        clean_datacenter(
             True, config.DATA_CENTER_NAME, vdc=config.VDC,
             vdc_password=config.VDC_PASSWORD,
             formatExpStorage='true')
@@ -869,14 +871,14 @@ class TestCase336617(TestCase):
                 assert ll_sd.removeStorageDomain(
                     True, config.GLUSTER_DOMAIN['name'], config.HOST)
 
-            ll_sd.cleanDataCenter(
+            clean_datacenter(
                 True, config.DATA_CENTER_NAME, vdc=config.VDC,
                 vdc_password=config.VDC_PASSWORD)
 
     @classmethod
     def teardown_class(cls):
         """Clean in case the Glusterfs fails"""
-        ll_sd.cleanDataCenter(
+        clean_datacenter(
             True, config.DATA_CENTER_NAME, vdc=config.VDC,
             vdc_password=config.VDC_PASSWORD)
 

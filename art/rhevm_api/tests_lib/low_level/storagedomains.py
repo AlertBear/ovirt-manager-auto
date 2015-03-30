@@ -22,8 +22,6 @@ import re
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS, TimeoutingSampler
 from art.core_api.validator import compareCollectionSize
-from art.rhevm_api.tests_lib.low_level.clusters import removeCluster
-from art.rhevm_api.tests_lib.low_level.datacenters import removeDataCenter
 from art.rhevm_api.tests_lib.low_level.disks import (
     getStorageDomainDisks,
     deleteDisk,
@@ -31,18 +29,13 @@ from art.rhevm_api.tests_lib.low_level.disks import (
     wait_for_disks_status,
 )
 from art.rhevm_api.tests_lib.low_level.hosts import (
-    deactivateHost, removeHost, getHostCompatibilityVersion,
-)
-from art.rhevm_api.tests_lib.low_level.hosts import getHost
-from art.rhevm_api.tests_lib.low_level.vms import removeVms, stopVms
-from art.rhevm_api.tests_lib.low_level.templates import removeTemplates
+    getHostCompatibilityVersion)
 from art.rhevm_api.utils.storage_api import (
     getVmsInfo, getImagesList, getVolumeInfo, getVolumesList,
 )
 from art.rhevm_api.utils.test_utils import (
     validateElementStatus, get_api, searchForObj, getImageAndVolumeID,
-    getAllImages, wait_for_tasks,
-)
+    getAllImages)
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from utilities.utils import getIpAddressByHostName
 from art.core_api import is_action
@@ -646,234 +639,111 @@ def isStorageDomainMaster(positive, dataCenterName, storageDomainName):
         return not isMaster
 
 
-@is_action()
-def cleanDataCenter(
-        positive, datacenter, db_name=RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
-        db_user=RHEVM_UTILS_ENUMS['RHEVM_DB_USER'], formatIsoStorage='false',
-        formatExpStorage='false', vdc=None, vdc_password=None):
-    '''
-    Description: Remove all elements in data center: dataCenter,
-                 storage domains, hosts & cluster.
-    Author: istein
-    Parameters:
-       * datacenter - data center name
-       * db_name - name of the rhevm database
-       * db_user - name of the rhevm database user
-       * formatIsoStorage - Determine if ISO storage domain will be formatted
-         or not (true/false).
-    '''
+def remove_floating_disks(storage_domain):
+    """
+    Description: remove floating disks from storage domain
+    :param storage_domain object
+    :type storage_domain: object
+    """
 
-    status = True
-    vmList = []
-    nonDownVmList = []
-    templList = []
-    sd_attached = False
-    floating_disks = []
+    util.logger.info(
+        'Remove floating disks in storage domain %s',
+        storage_domain.get_name()
+    )
+    floating_disks = getStorageDomainDisks(
+        storage_domain.get_name(),
+        False
+    )
+    floating_disks = filter(
+        lambda w: w.get_name() != ENUMS['ovf_disk_alias'],
+        floating_disks
+    )
 
-    spmExist, spmHostName = getHost(positive, datacenter, True)
-
-    if not spmExist:
-        util.logger.error("No SPM host found in data center %s, storage "
-                          "domains can't be removed, exit cleanDataCenter",
-                          datacenter)
-        return False
-    spmHostName = spmHostName['hostName']
-
-    spmHostObject = hostUtil.find(spmHostName)
-    clId = spmHostObject.get_cluster().get_id()
-    cluster_name = spmHostObject.get_cluster().get_name()
-
-    util.logger.info('Remove VMs, if any, connected to cluster')
-    vmObjList = vmUtil.get(absLink=False)
-    vmsConnectedToCluster = filter(
-        lambda vmObj: vmObj.get_cluster().get_id() == clId, vmObjList)
-    if vmsConnectedToCluster:
-        # Build vmList
-        [vmList.append(vmObj.get_name()) for vmObj in vmsConnectedToCluster]
-        # Build non down vm List to be stopped
-        nonDownVms = filter(
-            lambda vmObj: vmObj.status.state.lower() != ENUMS['vm_state_down'],
-            vmsConnectedToCluster)
-        if nonDownVms:
-            [nonDownVmList.append(vmObj.get_name()) for vmObj in nonDownVms]
-            util.logger.info('Shutting down vms that are still up: %s',
-                             ','.join(nonDownVmList))
-            if not stopVms(','.join(nonDownVmList)):
+    if floating_disks:
+        floating_disks_list = [disk.get_alias() for disk in floating_disks]
+        for disk in floating_disks_list:
+            util.logger.info('Removing floating disk %s', disk)
+            if not deleteDisk(True, alias=disk, async=False):
                 return False
-        if not removeVms(positive, ','.join(vmList)):
-            return False
-    else:
-        util.logger.info('No vms found in cluster %s', cluster_name)
-
-    if vdc is not None and vdc_password is not None:
-        util.logger.info('Waiting for vms to be removed')
-        wait_for_tasks(vdc=vdc, vdc_password=vdc_password,
-                       datacenter=datacenter, db_name=db_name, db_user=db_user)
-
-    util.logger.info('Remove Templates, if any, connected to cluster')
-    templObjList = templUtil.get(absLink=False)
-    templConnectedToCluster = filter(
-        lambda templObj: templObj.get_cluster().get_id() == clId, templObjList)
-    if templConnectedToCluster:
-        [templList.append(templObj.name) for templObj in
-         templConnectedToCluster]
-        util.logger.info('Removing templates: %s', ','.join(templList))
-        rmTemplStatus = removeTemplates(positive, ','.join(templList))
-        if not rmTemplStatus:
-            return False
-        util.logger.info('All templates in cluster %s removed succesfully',
-                         cluster_name)
-    else:
-        util.logger.info('No templates found in cluster %s', cluster_name)
-
-    if vdc is not None and vdc_password is not None:
-        util.logger.info('Waiting for templates to be removed')
-        wait_for_tasks(vdc=vdc, vdc_password=vdc_password,
-                       datacenter=datacenter, db_name=db_name, db_user=db_user)
-
-    sdObjList = getDCStorages(datacenter, False)
-
-    # remove any floating disks left after cleaning vms
-    for storage_domain in sdObjList:
-        util.logger.info('Find any floating disks in storage domain %s',
-                         storage_domain.get_name())
-        floating_disks = getStorageDomainDisks(storage_domain.get_name(),
-                                               False)
-        floating_disks = filter(
-            lambda w: w.get_name() != ENUMS['ovf_disk_alias'], floating_disks
+        util.logger.info('Ensuring all disks are removed')
+        if not waitForDisksGone(
+                True,
+                ','.join(floating_disks_list),
+                sleep=10
+        ):
+                return False
+        util.logger.info(
+            'All floating disks: %s removed successfully',
+            floating_disks_list
         )
-        if floating_disks:
-            floating_disks_list = [disk.get_alias() for disk in floating_disks]
-            for disk in floating_disks_list:
-                util.logger.info('Removing floating disk %s', disk)
-                if not deleteDisk(True, alias=disk, async=False):
-                    return False
-            util.logger.info('Ensuring all disks are removed')
-            if not waitForDisksGone(True, ','.join(floating_disks_list),
-                                    sleep=10):
-                    return False
-            util.logger.info('All floating disks removed succesfully')
-            util.logger.info('%s', floating_disks_list)
-        else:
-            util.logger.info('No floating disks found in storage domain %s',
-                             storage_domain.get_name())
 
-    if vdc is not None and vdc_password is not None:
-        util.logger.info('Waiting for disks to be removed')
-        wait_for_tasks(vdc=vdc, vdc_password=vdc_password,
-                       datacenter=datacenter, db_name=db_name, db_user=db_user)
 
-    util.logger.info("Find all non master storage domains")
+def deactivate_master_storage_domain(positive, datacenter):
+    """
+    Description: deactivate storage domain in a datacenter
+    :param datacenter name
+    :type datacenter : str
+    :returns status True when successful
+    :rtype: bool
+    """
 
-    nonMasterSdObjects = filter(lambda sdObj: not sdObj.get_master(),
-                                sdObjList)
+    status, master = findMasterStorageDomain(positive, datacenter)
+    master_storage_domain = master['masterDomain']
 
-    util.logger.info("Find Master Domain")
-    st, masterDomain = findMasterStorageDomain(positive, datacenter)
-    masterSd = masterDomain['masterDomain']
-
-    util.logger.info("Deactivate & detach non master storage domains")
-    if nonMasterSdObjects:
-        for sd in nonMasterSdObjects:
-            if validateElementStatus(positive, 'storagedomain',
-                                     'storagedomains', sd.get_name(), 'active',
-                                     datacenter):
-                deactivateStatus = deactivateStorageDomain(positive,
-                                                           datacenter,
-                                                           sd.get_name())
-                if not deactivateStatus:
-                    util.logger.error("Deactivate storage domain %s Failed",
-                                      sd.get_name())
-                    status = False
-            detachStatus = detachStorageDomain(positive, datacenter,
-                                               sd.get_name())
-            if not detachStatus:
-                util.logger.error("Detach storage domain %s Failed",
-                                  sd.get_name())
-                status = False
-    else:
-        util.logger.info("No non master storage domains found")
-
-    util.logger.info("Deactivate master storage domain")
-    if masterSd:
-        if validateElementStatus(positive, 'storagedomain', 'storagedomains',
-                                 masterSd, 'active', datacenter):
-            if vdc and vdc_password:
-                util.logger.info('Waiting for pending tasks...')
-                wait_for_tasks(vdc=vdc, vdc_password=vdc_password,
-                               datacenter=datacenter, db_name=db_name,
-                               db_user=db_user)
-            deactivateStatus = deactivateStorageDomain(positive, datacenter,
-                                                       masterSd)
-            if not deactivateStatus:
-                util.logger.error("Deactivate master storage domain %s Failed",
-                                  masterSd)
+    if master_storage_domain:
+        if validateElementStatus(
+                positive, 'storagedomain', 'storagedomains',
+                master_storage_domain, 'active', datacenter
+        ):
+            if not deactivateStorageDomain(
+                positive, datacenter, master_storage_domain
+            ):
+                util.logger.error(
+                    "Deactivate master storage domain %s Failed",
+                    master_storage_domain
+                )
                 status = False
     else:
         util.logger.info("Error in master storage domain search")
 
-    util.logger.info("Remove data center")
-    if not removeDataCenter(positive, datacenter):
-        util.logger.error("Remove data center %s failed", datacenter)
-        status = False
+    return status
 
-    util.logger.info("Remove storage domains")
-    for sd in sdObjList:
-        # If storage domain do not exist skip to the next one.
+
+def remove_storage_domains(
+        sds, host, format_export='false', format_iso='false'):
+    """
+    Description: remove given list of storage domains with host to remove with
+    :param sds storage domain object list to be removed
+    :type sds: list
+    :param host name
+    :type host: str
+    :param format_export True to format domains when removing
+    :type format_export: bool
+    :param format_iso True to format domains when removing
+    :type format_iso: bool
+
+    """
+    for sd in sds:
         try:
             util.find(sd.get_name())
         except EntityNotFound:
             continue
-        sd_attached = False
-        # If storage domain is still attached to a dataCenter skip to next one
-        for dc in dcUtil.get(absLink=False):
-            sdObjList = util.getElemFromLink(dc, get_href=False) or []
-            for storageDomain in sdObjList:
-                if storageDomain == sd.get_name():
-                    sd_attached = True
+        format_storage = True
+        if sd.get_type() == ENUMS['storage_dom_type_iso']:
+            format_storage = format_iso
+        if sd.get_type() == ENUMS['storage_dom_type_export']:
+            format_storage = format_export
 
-        if not sd_attached:
-            # Set formatStorage to 'true' for data storage domains
-            formatStorage = 'true'
-            if sd.get_type() == ENUMS['storage_dom_type_iso']:
-                formatStorage = formatIsoStorage
-            elif sd.get_type() == ENUMS['storage_dom_type_export']:
-                formatStorage = formatExpStorage
-            removeStatus = removeStorageDomain(positive, sd.get_name(),
-                                               spmHostName, formatStorage)
-            if not removeStatus:
-                util.logger.error("Remove storage domain %s Failed",
-                                  sd.get_name())
-                status = False
+        if not removeStorageDomain(
+                True,
+                sd.get_name(),
+                host,
+                str(format_storage)
+        ):
+            util.logger.error("Failed to remove %s", sd.get_name())
+            return False
 
-    util.logger.info("Deactivate all non maintenance hosts, connected to SPM "
-                     "host's cluster")
-    hostObjList = hostUtil.get(absLink=False)
-    hostsConnectedToCluster = filter(lambda hostObj:
-                                     hostObj.get_cluster().get_id() == clId,
-                                     hostObjList)
-    if hostsConnectedToCluster:
-        nonMaintHosts = [
-            host_obj for host_obj in hostsConnectedToCluster
-            if host_obj.status.state != ENUMS['host_state_maintenance']]
-        if nonMaintHosts:
-            for hostObj in nonMaintHosts:
-                if not deactivateHost(positive, hostObj.get_name()):
-                    util.logger.error("Deactivate Host %s Failed",
-                                      hostObj.get_name())
-                    status = False
-        for hostObj in hostsConnectedToCluster:
-            if not removeHost(positive, hostObj.name):
-                util.logger.error("Remove Host %s Failed", hostObj.get_name())
-                return False
-
-    util.logger.info("Remove cluster")
-    clObj = clUtil.find(clId, 'id')
-    cluster = clObj.get_name()
-    if not removeCluster(positive, cluster):
-        util.logger.error("Remove cluster %s Failed", cluster)
-        status = False
-    return status
+    return True
 
 
 @is_action()

@@ -4,18 +4,26 @@ High-level functions above data-center
 
 import logging
 
+from art.core_api import is_action
+
 import art.rhevm_api.tests_lib.low_level.clusters as clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as datacenters
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.hosts as hosts
 import art.rhevm_api.tests_lib.high_level.storagedomains as storagedomains
-from art.rhevm_api.tests_lib.low_level.disks import getStorageDomainDisks,\
-    deleteDisk
+import art.rhevm_api.tests_lib.high_level.clusters as hl_clusters
+from art.rhevm_api.tests_lib.low_level.disks import (
+    getStorageDomainDisks,
+    deleteDisk,
+)
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-from art.rhevm_api.tests_lib.low_level.storagedomains import getDCStorages
+import art.rhevm_api.tests_lib.low_level.storagedomains as ll_storagedomains
 from art.rhevm_api.utils.cpumodel import CpuModelDenominator, CpuModelError
 from art.rhevm_api.resources import Host  # This import is not good here
 import art.test_handler.exceptions as errors
 from art.test_handler.settings import opts
+from art.rhevm_api.utils.test_utils import wait_for_tasks
+
 
 LOGGER = logging.getLogger(__name__)
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -89,7 +97,7 @@ def clean_all_disks_from_dc(datacenter, exception_list=None):
     * datacenter - data center name
     * exception_list - List of disks names that should remain in the setup
     """
-    sdObjList = getDCStorages(datacenter, False)
+    sdObjList = ll_storagedomains.getDCStorages(datacenter, False)
 
     for storage_domain in sdObjList:
         LOGGER.info('Find any floating disks in storage domain %s',
@@ -110,3 +118,166 @@ def clean_all_disks_from_dc(datacenter, exception_list=None):
         else:
             LOGGER.info('No floating disks found in storage domain %s',
                         storage_domain.get_name())
+
+
+def get_spm_host(positive, datacenter):
+    """
+    Description: get spm host name
+    :param datacenter name
+    :type datacenter: str
+    :returns name of spm host
+    :rtype: str
+    """
+
+    is_spm_exists, spm_host = ll_hosts.getHost(positive, datacenter, True)
+
+    if not is_spm_exists:
+        LOGGER.error("No SPM found in data center %s, storage", datacenter)
+        return None
+
+    return ll_hosts.HOST_API.find(spm_host['hostName'])
+
+
+def get_clusters_connected_to_datacenter(dc_id):
+    """
+    Description: get list of clusters connected to datacenter
+    :param dc_id datacenter id
+    :type dc_id: str
+    :returns list of clusters names
+    :rtype: list
+    """
+
+    all_clusters = clusters.util.get(absLink=False)
+    clusters_connected_to_dc = [
+        cluster for cluster in all_clusters
+        if cluster.get_data_center() is not None
+    ]
+    return filter(
+        lambda x: x.get_data_center().get_id() == dc_id,
+        clusters_connected_to_dc
+    )
+
+
+@is_action
+def clean_datacenter(
+        positive, datacenter,
+        db_name=ll_storagedomains.RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
+        db_user=ll_storagedomains.RHEVM_UTILS_ENUMS['RHEVM_DB_USER'],
+        formatIsoStorage='false',
+        formatExpStorage='false',
+        vdc=None,
+        vdc_password=None):
+    """
+    Description: Remove data center: all clusters. vms, templates floating
+                 disks, storage domains and hosts
+    :param datacenter name
+    :type datacenter: str
+    :param db_name: engine database name
+    :type db_name: str
+    :param db_user: name of engine db user
+    :type db_user: str
+    :param formatIsoStorage - when removing should we format it
+    :type formatIsoStorage: bool
+    :param formatExpStorage - when removing should we format it
+    :type formatExpStorage: bool
+    :param vdc engine machine ip
+    :type vdc; str
+    :param vdc_password
+    :type vdc_password: str
+    """
+    status = True
+    dc_obj = datacenters.util.find(datacenter)
+
+    spm_host_obj = get_spm_host(positive, datacenter)
+    hosts_to_remove = []
+
+    if not spm_host_obj:
+        return False
+
+    clusters_to_remove = get_clusters_connected_to_datacenter(dc_obj.get_id())
+
+    for cluster_obj in clusters_to_remove:
+        hl_clusters.remove_vms_and_templates_from_cluster(
+            cluster_obj.get_name()
+        )
+        hosts_to_remove += (
+            hl_clusters.get_hosts_connected_to_cluster(cluster_obj.get_id())
+        )
+
+    sds = ll_storagedomains.getDCStorages(datacenter, False)
+
+    for sd in sds:
+        LOGGER.info(
+            "Remove floating disks from storage domain: %s",
+            sd.get_name()
+        )
+        ll_storagedomains.remove_floating_disks(sd)
+
+    if vdc and vdc_password:
+        wait_for_tasks(
+            vdc=vdc,
+            vdc_password=vdc_password,
+            datacenter=dc_obj.get_name(),
+            db_name=db_name,
+            db_user=db_user
+        )
+
+    LOGGER.info("Deactivate and detach non master storage domains")
+    for sd in sds:
+        if not sd.get_master():
+            LOGGER.info("Detach and deactivate %s", sd.get_name())
+            storagedomains.detach_and_deactivate_domain(
+                dc_obj.get_name(), sd.get_name()
+            )
+
+    if vdc and vdc_password:
+        wait_for_tasks(
+            vdc=vdc,
+            vdc_password=vdc_password,
+            datacenter=dc_obj.get_name(),
+            db_name=db_name,
+            db_user=db_user
+        )
+
+    LOGGER.info("Deactivate master storage domain")
+    status = ll_storagedomains.deactivate_master_storage_domain(
+        positive, datacenter
+    )
+
+    if vdc and vdc_password:
+        wait_for_tasks(
+            vdc=vdc,
+            vdc_password=vdc_password,
+            datacenter=dc_obj.get_name(),
+            db_name=db_name,
+            db_user=db_user
+        )
+
+    LOGGER.info("Remove data center")
+    if not datacenters.removeDataCenter(positive, datacenter):
+        LOGGER.error("Remove data center %s failed", datacenter)
+        status = False
+
+    LOGGER.info("Remove storage domains")
+    status = ll_storagedomains.remove_storage_domains(
+        sds, spm_host_obj.get_name(),
+        formatExpStorage,
+        formatIsoStorage
+    )
+
+    LOGGER.info("Remove hosts")
+    for host in hosts_to_remove:
+        LOGGER.info("Put %s to maintenance & remove it", host.get_name())
+        if not ll_hosts.removeHost(True, host.get_name(), deactivate=True):
+            LOGGER.error("Failed to remove %s", host.get_name())
+
+    LOGGER.info("Remove cluster")
+    for cluster_obj in clusters_to_remove:
+        if not clusters.removeCluster(positive, cluster_obj.get_name()):
+            LOGGER.error(
+                "Remove cluster %s Failed",
+                cluster_obj.get_name()
+            )
+            status = False
+
+    return status

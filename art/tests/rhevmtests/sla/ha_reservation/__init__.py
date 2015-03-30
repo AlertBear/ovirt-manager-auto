@@ -7,8 +7,10 @@ import logging
 import art.test_handler.exceptions as errors
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import clusters
-from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
-from art.rhevm_api.tests_lib.low_level import storagedomains
+from art.rhevm_api.tests_lib.high_level.datacenters import (
+    build_setup,
+    clean_datacenter,
+)
 from art.rhevm_api.tests_lib.low_level import vms
 
 from rhevmtests.sla.ha_reservation import config
@@ -83,7 +85,7 @@ def teardown_package():
         ):
             raise errors.ClusterException("Failed to update cluster")
         if not config.GOLDEN_ENV:
-            storagedomains.cleanDataCenter(
+            clean_datacenter(
                 True, config.DC_NAME, vdc=config.VDC_HOST,
                 vdc_password=config.VDC_ROOT_PASSWORD
             )

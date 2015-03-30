@@ -106,9 +106,10 @@ def teardown_module():
     ll_clusters.removeCluster(True, config.TMP_CLUSTER_NAME)
 
     if not config.GOLDEN_ENV:
-        ll_st_domains.cleanDataCenter(
+        datacenters.clean_datacenter(
             True, config.DATA_CENTER_NAME, vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD)
+            vdc_password=config.VDC_PASSWORD
+        )
 
 
 def put_host_to_cluster(host, cluster):

@@ -45,9 +45,10 @@ def teardown_module():
     """ removes created datacenter, storages etc.
     """
     if not config.GOLDEN_ENV:
-        storagedomains.cleanDataCenter(
+        datacenters.clean_datacenter(
             True, config.DATA_CENTER_NAME, vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD)
+            vdc_password=config.VDC_PASSWORD
+        )
 
 
 def _create_vm(vm_name, vm_description, disk_interface,

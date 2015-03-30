@@ -4,7 +4,7 @@ Sanity testing of upgrade.
 
 import logging
 
-from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
+from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 from art.rhevm_api.tests_lib.low_level.vms import removeVm, checkVMConnectivity
 from art.test_handler.exceptions import VMException
 from art.unittest_lib import CoreSystemTest as TestCase
@@ -22,8 +22,10 @@ def teardown_module():
     """
     Clean datacenter
     """
-    cleanDataCenter(True, config.DC_NAME, vdc=config.VDC,
-                    vdc_password=config.VDC_PASSWORD)
+    clean_datacenter(
+        True, config.DC_NAME, vdc=config.VDC,
+        vdc_password=config.VDC_PASSWORD
+    )
     LOGGER.debug("tearDownClass: cleaned the DC")
 
 

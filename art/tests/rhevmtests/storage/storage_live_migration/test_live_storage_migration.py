@@ -13,7 +13,7 @@ from art.rhevm_api.tests_lib.low_level.disks import (
     getObjDisks, detachDisk, addDisk,
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    get_master_storage_domain_name, cleanDataCenter, deactivateStorageDomain,
+    get_master_storage_domain_name, deactivateStorageDomain,
     waitForStorageDomainStatus, activateStorageDomain, extendStorageDomain,
     getDomainAddress, get_free_space,
 )
@@ -34,7 +34,7 @@ from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.high_level.datacenters import (
     build_setup, clean_all_disks_from_dc,
-)
+    clean_datacenter)
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
@@ -138,8 +138,10 @@ def teardown_module():
     Clean datacenter
     """
     logger.info('Cleaning datacenter')
-    cleanDataCenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
-                    vdc_password=config.VDC_PASSWORD)
+    clean_datacenter(
+        True, config.DATA_CENTER_NAME, vdc=config.VDC,
+        vdc_password=config.VDC_PASSWORD
+    )
 
 
 class SimpleCase(BaseTestCase):

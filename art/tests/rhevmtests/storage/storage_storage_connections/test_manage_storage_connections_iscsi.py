@@ -887,9 +887,10 @@ class TestCase289552(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        storagedomains.cleanDataCenter(
+        datacenters.clean_datacenter(
             True, config.DATA_CENTER_NAME, vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD)
+            vdc_password=config.VDC_PASSWORD
+        )
         storageconnections.remove_all_storage_connections()
         datacenters.build_setup(
             config.PARAMETERS, config.PARAMETERS, config.STORAGE_TYPE,

@@ -2,7 +2,7 @@
 Storage spm priority sanity package
 """
 from art.rhevm_api.tests_lib.high_level import datacenters
-from art.rhevm_api.tests_lib.low_level import storagedomains, hosts
+from art.rhevm_api.tests_lib.low_level import hosts
 from rhevmtests.storage.storage_spm_priority_sanity import config
 
 import logging
@@ -50,4 +50,4 @@ def teardown_package():
             hosts.activateHost(True, host)
 
     if not config.GOLDEN_ENV:
-        assert storagedomains.cleanDataCenter(True, config.DATA_CENTER_NAME)
+        assert datacenters.clean_datacenter(True, config.DATA_CENTER_NAME)

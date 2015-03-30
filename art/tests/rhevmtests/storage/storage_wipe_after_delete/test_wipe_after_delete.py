@@ -13,11 +13,14 @@ from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost, getHostIP
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.unittest_lib.common import StorageTest as BaseTestCase
-from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
+from art.rhevm_api.tests_lib.high_level.datacenters import (
+    build_setup,
+    clean_datacenter,
+)
 
 from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    cleanDataCenter, getStorageDomainNamesForType,
+    getStorageDomainNamesForType,
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, waitForVMState, removeDisk, start_vms,
@@ -109,8 +112,8 @@ def teardown_module():
     """
     if not config.GOLDEN_ENV:
         logger.info('Cleaning datacenter')
-        cleanDataCenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
-                        vdc_password=config.VDC_PASSWORD)
+        clean_datacenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
+                         vdc_password=config.VDC_PASSWORD)
 
     else:
         stop_vms_safely(VMS_NAMES)

@@ -43,7 +43,7 @@ from art.rhevm_api.utils.cpumodel import (
     CpuModelDenominator, CpuModelError,
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    waitForStorageDomainStatus, cleanDataCenter,
+    waitForStorageDomainStatus,
 )
 from art.rhevm_api.tests_lib.low_level.clusters import (
     addCluster, removeCluster, updateCluster,
@@ -55,6 +55,7 @@ from art.rhevm_api.tests_lib.high_level.storagedomains import (
 from art.rhevm_api.tests_lib.high_level.hosts import (
     add_hosts,
 )
+from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 from art.rhevm_api.tests_lib.low_level.datacenters import (
     waitForDataCenterState, addDataCenter, removeDataCenter,
 )
@@ -913,7 +914,7 @@ def networkTeardown(datacenter, storagedomain, hosts=list(), auto_nics=list(),
         return False
 
     logger.info("Running clean Datacenter")
-    if not cleanDataCenter(positive=True, datacenter=datacenter):
+    if not clean_datacenter(positive=True, datacenter=datacenter,):
         raise DataCenterException("Cannot remove setup")
 
     return True

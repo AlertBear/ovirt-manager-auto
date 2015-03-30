@@ -15,7 +15,7 @@ from art.rhevm_api.utils.test_utils import wait_for_tasks
 
 import art.rhevm_api.tests_lib.high_level.datacenters as datacenters
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    cleanDataCenter, getStorageDomainNamesForType,
+    getStorageDomainNamesForType,
 )
 
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
@@ -120,9 +120,10 @@ def teardown_module():
         templates.removeTemplate(True, template)
 
     if not config.GOLDEN_ENV:
-        cleanDataCenter(
+        datacenters.clean_datacenter(
             True, config.DATA_CENTER_NAME, vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD)
+            vdc_password=config.VDC_PASSWORD
+        )
 
 
 @attr(tier=0)
