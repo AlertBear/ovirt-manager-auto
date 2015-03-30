@@ -2,7 +2,6 @@
 Storage backup restore API - 10435
 https://tcms.engineering.redhat.com/plan/10435
 """
-
 import config
 import helpers
 import logging
@@ -699,9 +698,9 @@ class TestCase304197(TestCase):
     """
     __test__ = True
     bz = {'1211670': {'engine': ['cli'], 'version': ['3.5']}}
-    # The ticket for sdk support:
+    # TODO: Ticket is open for Python SDK and Java SDK support:
     # https://projects.engineering.redhat.com/browse/RHEVM-1901
-    apis = TestCase.apis - set(['sdk'])
+    apis = TestCase.apis - set(['java', 'sdk'])
     tcms_test_case = '304197'
 
     def setUp(self):

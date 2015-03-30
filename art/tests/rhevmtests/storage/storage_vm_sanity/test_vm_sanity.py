@@ -400,24 +400,24 @@ class TestCase320225(TestCase):
     vm_name_1 = '%s_1' % config.VM_BASE_NAME
     vm_name_2 = '%s_2' % config.VM_BASE_NAME
     SLEEP_AMOUNT = 5
+    bz = {'1207246': {'engine': ['java'], 'version': ['3.5']}}
 
-    @classmethod
-    def setup_class(cls):
-        cls.vm_name = '%s_%s' % (config.VM_BASE_NAME, cls.vm_type)
-        cls.template_name = "template_%s" % cls.vm_name
-        if not _create_vm(cls.vm_name, cls.vm_name, config.VIRTIO_SCSI,
-                          vm_type=cls.vm_type, storage_type=cls.storage):
+    def setUp(self):
+        self.vm_name = '%s_%s' % (config.VM_BASE_NAME, self.vm_type)
+        self.template_name = "template_%s" % self.vm_name
+        if not _create_vm(self.vm_name, self.vm_name, config.VIRTIO_SCSI,
+                          vm_type=self.vm_type, storage_type=self.storage):
             raise exceptions.VMException(
-                "Creation of VM %s failed!" % cls.vm_name)
-        LOGGER.info("Waiting for vm %s state 'up'" % cls.vm_name)
-        if not vms.waitForVMState(cls.vm_name):
+                "Creation of VM %s failed!" % self.vm_name)
+        LOGGER.info("Waiting for vm %s state 'up'" % self.vm_name)
+        if not vms.waitForVMState(self.vm_name):
             raise exceptions.VMException(
-                "Waiting for VM %s status 'up' failed" % cls.vm_name)
-        LOGGER.info("Shutting down %s" % cls.vm_name)
-        if not vms.shutdownVm(True, cls.vm_name, async='false'):
+                "Waiting for VM %s status 'up' failed" % self.vm_name)
+        LOGGER.info("Shutting down %s" % self.vm_name)
+        if not vms.shutdownVm(True, self.vm_name, async='false'):
             raise exceptions.VMException("Can't shut down vm %s" %
-                                         cls.vm_name)
-        vms.waitForVMState(cls.vm_name, state=config.VM_DOWN)
+                                         self.vm_name)
+        vms.waitForVMState(self.vm_name, state=config.VM_DOWN)
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_create_vm_from_template_basic_flow(self):
@@ -467,16 +467,15 @@ class TestCase320225(TestCase):
         assert vms.startVm(True, self.vm_name_2,
                            wait_for_status=ENUMS['vm_state_up'])
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         vms_list = filter(vms.does_vm_exist,
-                          [cls.vm_name, cls.vm_name_1, cls.vm_name_2])
+                          [self.vm_name, self.vm_name_1, self.vm_name_2])
         LOGGER.info("Removing VMs %s" % vms_list)
         vms.stop_vms_safely(vms_list)
         for vm in vms_list:
             if not vms.removeVm(True, vm):
                 LOGGER.error("Failed removing vm %s", vm)
         LOGGER.info("Removing template")
-        if not templates.removeTemplate(True, cls.template_name):
+        if not templates.removeTemplate(True, self.template_name):
             raise exceptions.TemplateException("Failed removing template %s"
-                                               % cls.template_name)
+                                               % self.template_name)
