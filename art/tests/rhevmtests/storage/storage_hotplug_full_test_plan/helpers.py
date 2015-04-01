@@ -6,7 +6,7 @@ import logging
 import os
 from art.unittest_lib import StorageTest as TestCase
 import tempfile
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from art.rhevm_api.utils import test_utils
 
 from utilities import machine
@@ -267,17 +267,18 @@ class HotplugHookTest(TestCase):
         """ perform defined action (plug/unplug disk) on given disks and checks
             it succeeded
         """
-        results = []
         with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-            for disk_name in self.use_disks:
-                LOGGER.info("Calling %s on %s" % (self.action[0].__name__,
-                                                  disk_name))
-                results.append(executor.submit(
-                    self.action[0], True, self.vm_name, disk_name))
-        for result in results:
+            future_to_results = dict(
+                (executor.submit(
+                    self.action[0], True, self.vm_name, disk_name,
+                ), disk_name) for disk_name in self.use_disks
+            )
+        for future in as_completed(future_to_results):
+            disk_name = future_to_results[future]
             self.assertTrue(
-                result.result(),
-                "Something went wrong: %s" % [i.result() for i in results])
+                future.result(), "Failed to perform action %s on %s" % (
+                    self.action[0].__name__, disk_name),
+            )
 
     def perform_action_and_verify_hook_called(self):
         """ calls defined action (activate/deactivate disk) and checks if hooks
