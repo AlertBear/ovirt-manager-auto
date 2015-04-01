@@ -55,7 +55,9 @@ STYLE_EXCEPTIONS_PYTHON_JAVA_METHODS = \
     {'get_valueOf_': 'isValue',
      'get_power_management': 'getPowerManagers',
      'get_host_nic': 'getSlaves',
-     'get_property': 'getProperties'
+     'get_property': 'getProperties',
+     'get_model': 'getWatchdogModels',
+     'get_action': 'getWatchdogActions'
      }
 ACTION_EXCEPTIONS_PYTHON_JAVA_METHODS = \
     {'VM': {'export': 'exportVm'},
