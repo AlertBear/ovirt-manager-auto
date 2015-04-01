@@ -101,13 +101,6 @@ class HostObject(object):
         self.nics = nics
         if self.ip is None:
             self.ip = getHostIP(self.name)
-        self.up_nics = []
-        if self.nics is None:
-            all_nics = getHostNicsList(self.name)
-            self.nics = sorted([x.get_name() for x in all_nics])
-            self.up_nics = [
-                x.get_name() for x in all_nics
-                if x.get_status().get_state() == 'up']
 
 
 def get_host_list():
