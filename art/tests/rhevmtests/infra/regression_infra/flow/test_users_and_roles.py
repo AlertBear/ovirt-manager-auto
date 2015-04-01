@@ -71,7 +71,6 @@ class TestCaseUserAndRoles(TestCase):
         self.assertTrue(status, "Delete 'Everyone' group failed as expected")
 
     @istest
-    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
     def t03_create_user_with_no_role(self):
         """
         test verifies users functionality
@@ -87,7 +86,6 @@ class TestCaseUserAndRoles(TestCase):
         self.assertTrue(status, 'Create user')
 
     @istest
-    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
     def t04_create_user(self):
         """
         test verifies users functionality
@@ -133,7 +131,6 @@ class TestCaseUserAndRoles(TestCase):
         self.assertTrue(status, 'Create user which does not exists in domain')
 
     @istest
-    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
     def t07_add_tag_to_user(self):
         """
         test verifies users functionality
@@ -293,7 +290,6 @@ class TestCaseUserAndRoles(TestCase):
         self.assertTrue(status, 'Remove permissions from system role')
 
     @istest
-    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
     def t20_add_vm_permissions_to_user(self):
         """
         test verifies roles functionality
@@ -305,7 +301,6 @@ class TestCaseUserAndRoles(TestCase):
         self.assertTrue(status, 'Add vm permissions to user')
 
     @istest
-    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
     def t21_add_host_permissions_to_user(self):
         """
         test verifies roles functionality
@@ -317,8 +312,7 @@ class TestCaseUserAndRoles(TestCase):
         self.assertTrue(status, 'Add host permissions to user')
 
     @istest
-    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']},
-         '1193848': {'engine': ['sdk'], 'version': ['3.5']}})
+    @bz({'1193848': {'engine': ['sdk'], 'version': ['3.5']}})
     def t22_add_storage_permissions_to_user(self):
         """
         test verifies roles functionality
@@ -331,7 +325,6 @@ class TestCaseUserAndRoles(TestCase):
         self.assertTrue(status, 'Add storage permissions to user')
 
     @istest
-    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
     def t23_add_cluster_permissions_to_user(self):
         """
         test verifies roles functionality
@@ -356,7 +349,6 @@ class TestCaseUserAndRoles(TestCase):
         self.assertTrue(status, 'Add cluster permissions to group')
 
     @istest
-    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
     def t25_add_template_permissions_to_user(self):
         """
         test verifies roles functionality
@@ -426,7 +418,6 @@ class TestCaseUserAndRoles(TestCase):
             logger.info('xPath is only supported for rest')
 
     @istest
-    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
     def t30_remove_tag(self):
         """
         test verifies tags functionality
@@ -437,7 +428,6 @@ class TestCaseUserAndRoles(TestCase):
         self.assertTrue(status, 'Remove tag')
 
     @istest
-    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
     def t31_remove_users(self):
         """
         test verifies users functionality
