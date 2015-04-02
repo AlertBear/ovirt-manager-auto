@@ -48,7 +48,6 @@ import parser as pyparser
 import argparse
 from functools import wraps
 
-from art.test_handler.settings import opts
 from art.test_handler.plmanagement import Component, implements, get_logger
 from art.test_handler.plmanagement.interfaces.application import (
     ITestParser,
@@ -66,6 +65,7 @@ from art.test_handler.test_runner import TestCase, TestSuite, TestGroup,\
     TestResult, TEST_CASES_SEPARATOR
 from art.test_handler.exceptions import SkipTest
 from art.test_handler import find_test_file, locate_file
+from art.test_handler.settings import opts
 import art
 
 logger = get_logger("unittest_loader")
@@ -465,6 +465,7 @@ class UnittestLoader(Component):
         # it should be somewhere else.
         self.conf = conf
         self.conf[CONFIG_PARAMS].merge(self.conf[REST_CONNECTION])
+        self.system_engine = self.conf[RUN_SEC]['system_engine']
 
         TestResult.ATTRIBUTES['module_name'] = ('mod_name', None, None)
         TestResult.ATTRIBUTES['test_action'] = ('test_action', None, None)
@@ -572,7 +573,12 @@ class UnittestLoader(Component):
         pass
 
     def pre_test_group(self, test_group):
-        pass
+        api = test_group.attrs.get('api', None)
+        if not isinstance(api, basestring):
+            return
+        if opts['engine'] != api:
+            opts['engine'] = api
+            logger.info("The API backend switched to %s", api)
 
     def post_test_group(self, test_group):
         """
@@ -594,6 +600,11 @@ class UnittestLoader(Component):
                 del parent.factory.was_torndown[parent.context]
                 del parent.factory.was_setup[parent.context]
                 parent.setupContext(parent.context)
+        if opts['engine'] != self.system_engine:
+            opts['engine'] = self.system_engine
+            logger.info(
+                "The API backend switched to %s", self.system_engine,
+            )
 
     def test_group_skipped(self, test_group):
         pass

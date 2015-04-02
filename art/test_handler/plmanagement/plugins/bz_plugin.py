@@ -75,7 +75,7 @@ from art.test_handler.plmanagement.interfaces.config_validator import (
     IConfigValidation
 )
 from art.test_handler.plmanagement.interfaces.tests_listener import (
-    ITestGroupHandler,
+    ITestSkipper,
 )
 from art.test_handler.plmanagement.interfaces.report_formatter import (
     IResultExtension,
@@ -246,8 +246,8 @@ class Bugzilla(Component):
         IConfigurable,
         IApplicationListener,
         IConfigValidation,
-        ITestGroupHandler,
         IResultExtension,
+        ITestSkipper,
         IPackaging,
     )
 
@@ -485,7 +485,7 @@ class Bugzilla(Component):
                 return False
         return True
 
-    def pre_test_group(self, g):
+    def should_be_test_group_skipped(self, g):
         bug_dict = g.attrs.get(BZ_ID)
         if not bug_dict or not isinstance(bug_dict, dict):
             return
@@ -494,10 +494,7 @@ class Bugzilla(Component):
             version = options.get('version')
             self.should_be_skipped(bz_id, engine, version)
 
-    def post_test_group(self, g):
-        pass
-
-    def test_group_skipped(self, g):
+    def should_be_test_case_skipped(self, t):
         pass
 
     @classmethod
