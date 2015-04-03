@@ -128,10 +128,14 @@ class CreateDC(TestCase):
         vds_objs = list()
         for host_def in hosts_def:
             host_ip, host_pwd = host_conf.get_unused_host()
-            vds_objs.append(VDS(host_ip, host_pwd))
+            vds_obj = VDS(host_ip, host_pwd)
+            vds_fqdn = vds_obj.fqdn
+            vds_objs.append(vds_obj)
             if not hosts.addHost(
                     True, host_def['name'], address=host_ip,
-                    root_password=host_pwd, wait=False, cluster=cluster_name):
+                    root_password=host_pwd, wait=False, cluster=cluster_name,
+                    **{"comment": vds_fqdn}
+                    ):
                 raise errors.HostException("Cannot add host")
 
         if not hosts.waitForHostsStates(
