@@ -467,17 +467,26 @@ class TestCase304161(TestCase):
         self.assertTrue(vms.preview_snapshot(True, self.vm_names[0],
                                              self.first_snapshot),
                         "Failed to preview snapshot %s" % self.first_snapshot)
+        vms.wait_for_vm_snapshots(
+            self.vm_names[0], config.SNAPSHOT_IN_PREVIEW,  self.first_snapshot
+        )
 
         logger.info("Undoing Previewed snapshot %s", self.first_snapshot)
         self.assertTrue(vms.undo_snapshot_preview(
             True, self.vm_names[0], self.first_snapshot
         ),
             "Failed to undo previewed snapshot %s" % self.first_snapshot)
+        vms.wait_for_vm_snapshots(
+            self.vm_names[0], config.SNAPSHOT_OK,  self.first_snapshot
+        )
 
         logger.info("Previewing snapshot %s", self.first_snapshot)
         self.assertTrue(vms.preview_snapshot(True, self.vm_names[0],
                                              self.first_snapshot),
                         "Failed to preview snapshot %s" % self.first_snapshot)
+        vms.wait_for_vm_snapshots(
+            self.vm_names[0], config.SNAPSHOT_IN_PREVIEW,  self.first_snapshot
+        )
 
         logger.info("Committing Previewed snapshot %s", self.first_snapshot)
         self.assertTrue(vms.commit_snapshot(

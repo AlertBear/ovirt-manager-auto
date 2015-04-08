@@ -3129,28 +3129,58 @@ def start_vms(
 
 
 @is_action('waitForVmSnapshots')
-def wait_for_vm_snapshots(vm_name, states,
-                          timeout=SNAPSHOT_TIMEOUT, sleep=DEF_SLEEP):
+def wait_for_vm_snapshots(
+        vm_name, states, snapshots_description=None, timeout=SNAPSHOT_TIMEOUT,
+        sleep=SNAPSHOT_SAMPLING_PERIOD
+):
     """
-    Description: Waits until all vm's snapshots are in one of given states
+    Description: Wait until snapshots_description are in the given status,
+    in case snapshot_descriptions is not provided wait for all the vm's
+    snapshots
     Parameters:
-        * vm_name - name of the vm
-        * states - list of desired snapshots' state
-        * timeout - maximum amount of time this operation can take
-        * sleep - polling period
+        :param vm_name: name of the vm
+        :type vm_name: str
+        :param states: list of desired snapshots' state
+        :type states: list
+        :param snapshots_description: snapshot names in case of specific
+        snapshot/s
+        :type snapshots_description: str or list
+        :param timeout: maximum amount of time this operation can take
+        :type timeout: int
+        :param sleep: polling period
+        :type sleep: int
     """
-    def _get_unsatisfying_snapshots(vm_name, states):
+    def _get_unsatisfying_snapshots(statuses, description):
         """
-        Returns all snapshots that are not in any of state from states
+        Returns True if there are still snapshot not in desired state,
+        False otherwise
         """
         snapshots = _getVmSnapshots(vm_name, False)
-        return [snapshot for snapshot in snapshots
-                if snapshot.snapshot_status not in states]
-    logger.info("Waiting untill all snapshots of %s vm are in one of following"
-                "states: %s", vm_name, states)
-    for not_wanted_snaps in TimeoutingSampler(
-            timeout, sleep, _get_unsatisfying_snapshots, vm_name, states):
-        if not not_wanted_snaps:
+        if description is not None:
+            if isinstance(description, basestring):
+                description = description.split()
+            snapshots = [
+                snapshot for snapshot in snapshots
+                if snapshot.get_description() in description
+            ]
+        return bool(
+            [
+                snap for snap in snapshots if snap.get_snapshot_status() not
+                in statuses
+            ]
+        )
+
+    snapshots = snapshots_description if snapshots_description else 'all'
+    logger.info(
+        "Waiting until snapshots %s of %s vm are in one of following "
+        "states: %s", snapshots, vm_name, states
+    )
+
+    for sample in TimeoutingSampler(
+            timeout, sleep, _get_unsatisfying_snapshots, states,
+            snapshots_description
+    ):
+        if not sample:
             return
 
 
