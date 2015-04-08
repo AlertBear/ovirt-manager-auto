@@ -48,11 +48,15 @@ import parser as pyparser
 import argparse
 from functools import wraps
 
+from art.test_handler.settings import opts
 from art.test_handler.plmanagement import Component, implements, get_logger
-from art.test_handler.plmanagement.interfaces.application import ITestParser,\
-    IConfigurable
-from art.test_handler.plmanagement.interfaces.report_formatter \
-    import IResultExtension
+from art.test_handler.plmanagement.interfaces.application import (
+    ITestParser,
+    IConfigurable,
+)
+from art.test_handler.plmanagement.interfaces.report_formatter import (
+    IResultExtension,
+)
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.tests_listener import \
     ITestGroupHandler
@@ -559,6 +563,7 @@ class UnittestLoader(Component):
         else:
             st_msg = logger.error
         st_msg(tc.format_attr('status'))
+        res['engine-api'] = tc.attrs.get('api', opts['engine'])
 
     def pre_group_result_reported(self, res, tg):
         pass
