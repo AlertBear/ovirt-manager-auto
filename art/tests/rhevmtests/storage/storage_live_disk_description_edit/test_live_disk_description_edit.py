@@ -148,7 +148,7 @@ class BaseClassEditDescription(BasicEnvironment):
             assert verify_vm_disk_description(VM1_NAME, disk_dict[ALIAS],
                                               disk_dict[DESCRIPTION])
         logger.info("Starting VM")
-        startVm(True, VM1_NAME, config.VM_UP)
+        assert startVm(True, VM1_NAME, config.VM_UP)
         for disk_dict in self.disk_aliases_and_descriptions:
             assert verify_vm_disk_description(VM1_NAME, disk_dict[ALIAS],
                                               disk_dict[DESCRIPTION])
@@ -275,8 +275,8 @@ class TestCase396320(BasicEnvironment):
                               description=disk_dict[DESCRIPTION],
                               vmName=VM1_NAME)
 
-        startVm(True, VM1_NAME, config.VM_UP)
-        startVm(True, VM2_NAME, config.VM_UP)
+        assert startVm(True, VM1_NAME, config.VM_UP)
+        assert startVm(True, VM2_NAME, config.VM_UP)
         for disk_dict in self.disk_aliases_and_descriptions:
             assert verify_vm_disk_description(VM1_NAME, disk_dict[ALIAS],
                                               disk_dict[DESCRIPTION])
@@ -327,7 +327,7 @@ class TestCase396322(BasicEnvironment):
         """
         for disk_dict in self.disk_aliases_and_descriptions:
             attachDisk(True, disk_dict[ALIAS], VM1_NAME)
-        startVm(True, VM1_NAME, config.VM_UP)
+        assert startVm(True, VM1_NAME, config.VM_UP)
 
         for disk_dict in self.disk_aliases_and_descriptions:
             disk_dict[DESCRIPTION] = VM_POWERED_ON_DESCRIPTION

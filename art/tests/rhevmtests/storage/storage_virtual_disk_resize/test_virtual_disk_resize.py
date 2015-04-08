@@ -471,6 +471,7 @@ class TestCase287466(BasicResize):
     """
     __test__ = BasicResize.storage in config.BLOCK_TYPES
     tcms_test_case = '287466'
+    bz = {'1206911': {'engine': ['java'], 'version': ['3.5']}}
 
     def setUp(self):
         """
@@ -501,6 +502,7 @@ class TestCase297017(BasicResize):
     """
     __test__ = BasicResize.storage in config.BLOCK_TYPES
     tcms_test_case = '297017'
+    bz = {'1206911': {'engine': ['java'], 'version': ['3.5']}}
 
     def setUp(self):
         """
@@ -531,6 +533,7 @@ class TestCase287467(BasicResize):
     """
     __test__ = BasicResize.storage not in config.BLOCK_TYPES
     tcms_test_case = '287467'
+    bz = {'1206911': {'engine': ['java'], 'version': ['3.5']}}
 
     def setUp(self):
         """
@@ -561,6 +564,7 @@ class TestCase297018(BasicResize):
     """
     __test__ = BasicResize.storage not in config.BLOCK_TYPES
     tcms_test_case = '297018'
+    bz = {'1206911': {'engine': ['java'], 'version': ['3.5']}}
 
     def setUp(self):
         """
