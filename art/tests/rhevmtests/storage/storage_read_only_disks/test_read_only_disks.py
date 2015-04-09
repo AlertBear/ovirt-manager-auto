@@ -896,13 +896,18 @@ class TestCase332483(DefaultSnapshotEnvironment):
                                                 self.snapshot_description)
 
         assert self.create_snapshot
-        wait_for_jobs()
+        wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_IN_PREVIEW],
+            [self.snapshot_description],
+        )
         start_vms([self.vm_name], 1, wait_for_ip=False)
         assert waitForVMState(self.vm_name)
 
         helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
     def tearDown(self):
+        # Wait in case the snapshot fails and there are jobs running
+        wait_for_jobs()
         stop_vms_safely([self.vm_name])
         waitForVMState(self.vm_name, config.VM_DOWN)
         if self.create_snapshot:
@@ -976,7 +981,10 @@ class TestCase337931(DefaultSnapshotEnvironment):
         self.create_snapshot = status
 
         assert status
-
+        wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_IN_PREVIEW],
+            [self.snapshot_description],
+        )
         logger.info("Undoing snapshot %s", self.snapshot_description)
         status = undo_snapshot_preview(True, self.vm_name)
         start_vms([self.vm_name], 1, wait_for_ip=False)
@@ -1060,7 +1068,8 @@ class TestCase337930(DefaultSnapshotEnvironment):
         self.create_snapshot = True
         assert status
         wait_for_vm_snapshots(
-            self.vm_name, [config.SNAPSHOT_OK, config.SNAPSHOT_IN_PREVIEW],
+            self.vm_name, [config.SNAPSHOT_IN_PREVIEW],
+            [self.snapshot_description],
         )
 
         logger.info("Committing snapshot %s", self.snapshot_description)
@@ -1216,6 +1225,9 @@ class TestCase337935(DefaultEnvironment):
         logger.info("Adding new snapshot %s", self.snapshot_description)
         assert addSnapshot(
             True, self.vm_name, self.snapshot_description
+        )
+        wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_OK], [self.snapshot_description],
         )
 
         snap_disks = get_snapshot_disks(self.vm_name,

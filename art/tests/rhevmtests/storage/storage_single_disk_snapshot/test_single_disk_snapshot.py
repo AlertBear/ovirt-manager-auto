@@ -188,8 +188,9 @@ class BasicEnvironment(BaseTestCase):
         self.assertTrue(status, "Failed to create snapshot %s" %
                                 self.snapshot_desc)
         if wait:
-            wait_for_vm_snapshots(self.vm_name, ENUMS['snapshot_state_ok'])
-            wait_for_jobs()
+            wait_for_vm_snapshots(
+                self.vm_name, [config.SNAPSHOT_OK], [self.snapshot_desc],
+            )
 
     def _prepare_fs_on_devs(self):
         start_vms([self.vm_name], 1, wait_for_ip=False)
@@ -313,9 +314,9 @@ class TestCase333028(BasicEnvironment):
         - Preview the snapshot of the first disk.
         """
         self._perform_snapshot_operation()
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
-        self.vm.runCmd(shlex.split(self.cm_del))
+        start_vms([self.vm_name], 1, wait_for_ip=True)
+        status, output = self.vm.runCmd(shlex.split(self.cm_del))
+        self.assertTrue(status, "Files were not deleted {0}".format(output))
 
         disks_to_preview = [(self.boot_disk, self.snapshot_desc),
                             (self.disks_names[0], ACTIVE_VM),
@@ -331,19 +332,24 @@ class TestCase333028(BasicEnvironment):
                                           disks_lst=disks_to_preview)
 
         assert self.previewed
+        wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_IN_PREVIEW], [self.snapshot_desc],
+        )
+        start_vms([self.vm_name], 1, wait_for_ip=True)
 
-        wait_for_jobs()
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
-
+        logger.info("Check that the file exist after previewing the snapshot")
         assert self.vm.isFileExists(self.file_name)
 
     def tearDown(self):
+        wait_for_jobs()
         stop_vms_safely([self.vm_name])
         waitForVMState(self.vm_name, config.VM_DOWN)
         if self.previewed:
             assert undo_snapshot_preview(True, self.vm_name)
-
+            wait_for_vm_snapshots(
+                self.vm_name, [config.SNAPSHOT_OK],
+                [self.snapshot_desc],
+            )
         wait_for_jobs()
         super(TestCase333028, self).tearDown()
 
@@ -465,9 +471,7 @@ class TestCase333031(BasicEnvironment):
         logger.info("Snapshot with disks: %s", disks_for_snap)
         self._perform_snapshot_operation(
             disks=disks_for_snap)
-        wait_for_jobs()
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        start_vms([self.vm_name], 1, wait_for_ip=True)
 
         self.delete_operation()
 
@@ -479,17 +483,16 @@ class TestCase333031(BasicEnvironment):
 
         logger.info("Previewing the snapshot %s", self.snapshot_desc)
         self.previewed = preview_snapshot(True, self.vm_name,
-                                          ACTIVE_VM,
+                                          self.snapshot_desc,
                                           ensure_vm_down=True,
                                           disks_lst=disks_to_preview)
 
         assert self.previewed
+        wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_IN_PREVIEW], [self.snapshot_desc],
+        )
 
-        wait_for_jobs()
-
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
-
+        assert startVm(True, self.vm_name, wait_for_ip=True)
         lst = []
         for dev in self.devices:
             full_path = os.path.join((self.mount_path % dev), self.file_name)
@@ -553,7 +556,10 @@ class TestCase333049(BasicEnvironment):
                                           ensure_vm_down=True)
         assert self.previewed
 
-        wait_for_jobs()
+        wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_IN_PREVIEW],
+            [self.snapshot_desc],
+        )
 
         self.check_file_existence_operation(True, 'snapshot')
 
@@ -562,8 +568,10 @@ class TestCase333049(BasicEnvironment):
             assert undo_snapshot_preview(True, self.vm_name,
                                          ensure_vm_down=True)
             self.previewed = False
-
-        wait_for_jobs()
+            wait_for_vm_snapshots(
+                self.vm_name, [config.SNAPSHOT_OK],
+                [self.snapshot_desc],
+            )
 
         self.check_file_existence_operation(False, 'undo')
 
@@ -573,6 +581,10 @@ class TestCase333049(BasicEnvironment):
             assert undo_snapshot_preview(True, self.vm_name,
                                          ensure_vm_down=True)
 
+            wait_for_vm_snapshots(
+                self.vm_name, [config.SNAPSHOT_OK],
+                [self.snapshot_desc],
+            )
         for path in self.mounted_paths:
             self.vm.runCmd(shlex.split(self.umount_cmd % path))
 
@@ -632,8 +644,11 @@ class TestCase333050(BasicEnvironment):
                                           ensure_vm_down=True,
                                           disks_lst=disks_to_preview)
         assert self.previewed
+        wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_IN_PREVIEW],
+            [self.snapshot_desc],
+        )
 
-        wait_for_jobs()
         start_vms([self.vm_name], 1, wait_for_ip=False)
         waitForVMState(self.vm_name)
 

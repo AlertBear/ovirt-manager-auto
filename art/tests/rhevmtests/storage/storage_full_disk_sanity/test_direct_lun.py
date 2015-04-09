@@ -283,7 +283,9 @@ class TestCase138757(DirectLunAttachTestCase):
 
         # after stopping vm that runs in stateless mode a temporary snapshot
         # is deleted and the ACTIVE_VM volume is locked for few seconds
-        wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
+        wait_for_vm_snapshots(
+            self.vm_name, config.SNAPSHOT_OK, [self.snap_desc],
+        )
         if not self.snap_added:
             logger.info("Removing snapshot %s", self.snap_desc)
             assert removeSnapshot(True, self.vm_name, self.snap_desc)
@@ -313,7 +315,9 @@ class TestCase138758(DirectLunAttachTestCase):
         logger.info("Create new snapshot %s", self.snap_desc)
         self.snap_added = addSnapshot(True, self.vm_name, self.snap_desc)
         assert self.snap_added
-        wait_for_jobs()
+        wait_for_vm_snapshots(
+            self.vm_name, config.SNAPSHOT_OK, [self.snap_desc],
+        )
 
         snap_disks = get_snapshot_disks(self.vm_name, self.snap_desc)
 
