@@ -19,12 +19,13 @@ host = unittest_conf.VDC_HOST
 _multiprocess_can_split_ = True
 
 
+@attr(extra_reqs={'utility': NAME})
 class CleanUpTestCaseBase(RHEVMUtilsTestCase):
     """
         rhevm cleanup test cases
     """
 
-    __test__ = False
+    __test__ = True
     utility = NAME
     utility_class = CleanUpUtility
     _multiprocess_can_split_ = True

@@ -21,12 +21,12 @@ _multiprocess_can_split_ = True
 host = unittest_conf.VDC_HOST
 
 
-@attr(tier=0)
+@attr(extra_reqs={'utility': NAME})
 class SetupTestCase(base.RHEVMUtilsTestCase):
     """
         rhevm setup test cases
     """
-    __test__ = not unittest_conf.GOLDEN_ENV
+    __test__ = True
     utility = NAME
     utility_class = SetupUtility
     clear_snap = 'clear_machine'
