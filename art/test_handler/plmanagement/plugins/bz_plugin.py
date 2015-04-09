@@ -77,6 +77,9 @@ from art.test_handler.plmanagement.interfaces.config_validator import (
 from art.test_handler.plmanagement.interfaces.tests_listener import (
     ITestGroupHandler,
 )
+from art.test_handler.plmanagement.interfaces.report_formatter import (
+    IResultExtension,
+)
 from art.test_handler.settings import initPlmanager, opts
 from art.test_handler import find_config_file
 
@@ -174,6 +177,7 @@ def bz(bug_dict):
                 return func(*args, **kwargs)
             except IndexError:
                 logger.warning("Failed to get Bugzilla plugin")
+        setattr(func, BZ_ID, bug_dict)
         return skip_if_bz
     return real_bz
 
@@ -243,6 +247,7 @@ class Bugzilla(Component):
         IApplicationListener,
         IConfigValidation,
         ITestGroupHandler,
+        IResultExtension,
         IPackaging,
     )
 
@@ -355,6 +360,21 @@ class Bugzilla(Component):
 
     def on_plugins_loaded(self):
         pass
+
+    def pre_suite_result_reported(self, res, ts):
+        pass
+
+    def pre_group_result_reported(self, res, tg):
+        self.__udpate_result(res, tg)
+
+    def pre_test_result_reported(self, res, tc):
+        self.__udpate_result(res, tc)
+
+    def __udpate_result(self, res, element):
+        bug_dict = element.attrs.get(BZ_ID)
+        if not bug_dict or not isinstance(bug_dict, dict):
+            return
+        res['bugzilla'] = ",".join(bug_dict.iterkeys())
 
     def should_be_skipped(self, bz_id, engines=None, versions=None):
         """
