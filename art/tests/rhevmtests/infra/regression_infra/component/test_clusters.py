@@ -7,6 +7,7 @@ Created on June 3, 2014
 import logging
 
 from nose.tools import istest
+from art.test_handler.tools import bz  # pylint: disable=E0611
 from art.unittest_lib import attr
 
 from art.unittest_lib import BaseTestCase as TestCase
@@ -56,15 +57,18 @@ class TestCaseCluster(TestCase):
         Remove cluster if it still exists
         """
         logger.info('Remove clusters in case not removed in the tests')
-        clusters_to_remove = [config.CLUSTER_1_NAME, config.CLUSTER_2_NAME,
+        clusters_to_remove = [cls.cluster_name, config.CLUSTER_2_NAME,
                               config.CLUSTER_3_NAME, config.CLUSTER_4_NAME]
-        try:
-            for claster_name in clusters_to_remove:
+
+        for claster_name in clusters_to_remove:
+            try:
                 clusters.removeCluster(positive=False, cluster=claster_name)
-        except EntityNotFound:
-            logger.info('Failed to remove cluster - this is expected if: '
-                        '1. remove clusters test passed successfully '
-                        '2. add cluster tests failed')
+            except EntityNotFound:
+                logger.info(
+                    'Failed to remove cluster %s - this is expected if: '
+                    '1. remove clusters test passed successfully '
+                    '2. add cluster tests failed', claster_name
+                )
 
     @istest
     def t01_add_cluster(self):
@@ -123,6 +127,7 @@ class TestCaseCluster(TestCase):
         self.assertTrue(status, 'Add cluster - specific memory overcommit')
 
     @istest
+    @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
     def t05_add_cluster_wrong_scheduling_policy(self):
         """
         test verifies add cluster functionality
@@ -138,6 +143,7 @@ class TestCaseCluster(TestCase):
         self.assertTrue(status, 'Add cluster - wrong scheduling policy')
 
     @istest
+    @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
     def t06_add_cluster_scheduling_policy_power_saving(self):
         """
         test verifies add cluster functionality
@@ -153,6 +159,7 @@ class TestCaseCluster(TestCase):
         self.assertTrue(status, 'Add cluster - scheduling policy power_saving')
 
     @istest
+    @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
     def t07_add_cluster_scheduling_policy_evenly_distributed(self):
         """
         test verifies add cluster functionality
@@ -181,6 +188,7 @@ class TestCaseCluster(TestCase):
         self.assertTrue(status, 'Check cluster - memory over-commit')
 
     @istest
+    @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
     def t09_check_cluster_scheduling_policy_power_saving(self):
         """
         test verifies check cluster parameters functionality
@@ -195,6 +203,7 @@ class TestCaseCluster(TestCase):
                         'power_saving')
 
     @istest
+    @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
     def t10_check_cluster_scheduling_policy_evenly_distributed(self):
         """
         test verifies check cluster parameters functionality
@@ -338,6 +347,7 @@ class TestCaseCluster(TestCase):
         self.assertTrue(status, 'Check cluster - memory overcommit')
 
     @istest
+    @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
     def t20_update_cluster_high_treshold_out_of_range(self):
         """
         test verifies update cluster functionality
@@ -357,6 +367,7 @@ class TestCaseCluster(TestCase):
         self.assertTrue(status, 'Check cluster - threshold')
 
     @istest
+    @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
     def t21_update_cluster_low_treshold_out_of_range(self):
         """
         test verifies update cluster functionality
@@ -376,6 +387,7 @@ class TestCaseCluster(TestCase):
         self.assertTrue(status, 'Check cluster - threshold')
 
     @istest
+    @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
     def t22_update_cluster_thersholds_power_saving(self):
         """
         test verifies update cluster functionality
@@ -398,6 +410,7 @@ class TestCaseCluster(TestCase):
         self.assertTrue(status, 'Check cluster - power_saving thresholds')
 
     @istest
+    @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
     def t23_update_cluster_thershold_evenly_ditributed(self):
         """
         test verifies update cluster functionality
@@ -420,6 +433,7 @@ class TestCaseCluster(TestCase):
         self.assertTrue(status, 'Check cluster - evenly_distributed threshold')
 
     @istest
+    @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
     def t24_update_cluster_scheduling_policy(self):
         """
         test verifies update cluster functionality
@@ -441,6 +455,7 @@ class TestCaseCluster(TestCase):
         self.assertTrue(status, 'Check cluster - scheduling policy')
 
     @istest
+    @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
     def t25_update_cluster_bad_treshold_range(self):
         """
         test verifies update cluster functionality
@@ -480,6 +495,7 @@ class TestCaseCluster(TestCase):
             logger.info('xPath is only supported for rest')
 
     @istest
+    @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
     def t27_remove_clusters(self):
         """
         test verifies remove cluster functionality
