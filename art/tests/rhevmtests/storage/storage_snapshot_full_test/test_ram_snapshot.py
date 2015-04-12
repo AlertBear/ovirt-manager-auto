@@ -1,7 +1,6 @@
 """
 Storage full snapshot test - ram snapshot
 """
-from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 import config
 import logging
 from helpers import is_pid_running_on_vm, start_cat_process_on_vm
@@ -16,6 +15,7 @@ from art.rhevm_api.tests_lib.low_level.datacenters import (
 from art.rhevm_api.tests_lib.low_level.hosts import (
     getSPMHost, getAnyNonSPMHost,
 )
+from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainNamesForType,
 )
@@ -27,7 +27,6 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     wait_for_vm_snapshots, removeVms, stop_vms_safely,  startVms,
     cloneVmFromSnapshot, waitForIP, getVmHost,
 )
-
 from art.rhevm_api.tests_lib.high_level.vms import shutdown_vm_if_up
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from rhevmtests.storage.helpers import create_vm_or_clone, get_vm_ip

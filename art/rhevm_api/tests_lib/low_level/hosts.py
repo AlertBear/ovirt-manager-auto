@@ -1169,7 +1169,9 @@ def returnSPMHost(hosts):
     for host in hosts:
         # TODO: remove check against string and leave as boolean when ticket
         # https://engineering.redhat.com/trac/automation/ticket/2142 is solved
-        if host.get_storage_manager().get_valueOf_() == 'true':
+        host_value = host.get_storage_manager().get_valueOf_()
+        if (isinstance(host_value, str) and host_value == 'true') or (
+           isinstance(host_value, bool) and host_value):
             return True, {'spmHost': host.get_name()}
     return False, {'spmHost': None}
 
@@ -1205,7 +1207,10 @@ def getAnyNonSPMHost(hosts, expected_states=None, cluster_name=None):
         if cluster_name and cluster_name != CL_API.find(
                 host.get_cluster().get_id(),  attribute='id').get_name():
             continue
-        if host.get_storage_manager().get_valueOf_() == 'false':
+
+        host_value = host.get_storage_manager().get_valueOf_()
+        if (isinstance(host_value, str) and host_value == 'false') or (
+           isinstance(host_value, bool) and not host_value):
             return True, {'hsmHost': host.get_name()}
     return False, {'hsmHost': None}
 
