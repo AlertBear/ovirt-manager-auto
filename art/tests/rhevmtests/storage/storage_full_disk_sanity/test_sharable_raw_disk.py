@@ -1,17 +1,15 @@
 """
 Storage VM Floating Disk
 """
-import logging
-from art.unittest_lib import StorageTest as TestCase, attr
-from art.rhevm_api.tests_lib.low_level import disks, storagedomains
-from art.test_handler.tools import tcms  # pylint: disable=E0611
 import config
+import logging
+from art.rhevm_api.tests_lib.low_level import disks, storagedomains, vms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.unittest_lib import StorageTest as TestCase, attr
 
 ENUMS = config.ENUMS
 
 logger = logging.getLogger(__name__)
-
-from art.rhevm_api.tests_lib.low_level import vms
 
 
 @attr(tier=0)
@@ -45,36 +43,31 @@ class TestCase174621(TestCase):
                 True, alias=self.disk_name, provisioned_size=config.GB,
                 size=config.GB, interface=config.VIRTIO_SCSI,
                 format=ENUMS['format_raw'], storagedomain=self.storage_domain,
-                shareable=True, sparse=False))
-
-        self.assertTrue(
-            disks.wait_for_disks_status(
-                disks=[self.disk_name]
-            )
+                shareable=True, sparse=False)
         )
+
+        self.assertTrue(disks.wait_for_disks_status(disks=[self.disk_name]))
         logger.info("Attaching disk to vm %s" % self.vm_1)
         self.assertTrue(disks.attachDisk(True, self.disk_name, self.vm_1))
+        self.assertTrue(disks.wait_for_disks_status(disks=[self.disk_name]))
         self.assertTrue(
-            disks.wait_for_disks_status(
-                disks=[self.disk_name]
-            )
+            vms.waitForVmDiskStatus(self.vm_1, True, diskAlias=self.disk_name,
+                                    sleep=1)
         )
-        self.assertTrue(vms.waitForVmDiskStatus(self.vm_1, True,
-                        diskAlias=self.disk_name, timeout=2, sleep=1))
-        # TBD Extra validation ?
+        # TODO: TBD Extra validation ?
 
         logger.info("Attaching disk to vm %s" % self.vm_2)
         self.assertTrue(disks.attachDisk(True, self.disk_name, self.vm_2))
+        self.assertTrue(disks.wait_for_disks_status(disks=[self.disk_name]))
         self.assertTrue(
-            disks.wait_for_disks_status(
-                disks=[self.disk_name]
-            )
+            vms.waitForVmDiskStatus(self.vm_1, True, diskAlias=self.disk_name,
+                                    sleep=1)
         )
-        self.assertTrue(vms.waitForVmDiskStatus(self.vm_1, True,
-                        diskAlias=self.disk_name, timeout=2, sleep=1))
-        self.assertTrue(vms.waitForVmDiskStatus(self.vm_2, True,
-                        diskAlias=self.disk_name, timeout=2, sleep=1))
-        # TBD Extra validation ?
+        self.assertTrue(
+            vms.waitForVmDiskStatus(self.vm_2, True, diskAlias=self.disk_name,
+                                    sleep=1)
+        )
+        # TODO: TBD Extra validation ?
 
     def tearDown(self):
         """
