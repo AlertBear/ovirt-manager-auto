@@ -12,24 +12,19 @@ from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     cleanDataCenter, getStorageDomainNamesForType,
 )
-
+from art.unittest_lib import attr
 from art.unittest_lib import StorageTest as BaseTestCase
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, waitForVMState, startVm, removeVm,
     remove_all_vm_lsm_snapshots, live_migrate_vm_disk,
 )
-
-from art.unittest_lib import attr
-
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler import exceptions
 from rhevmtests.storage.helpers import (
     create_disks_from_requested_permutations, create_vm_or_clone,
 )
-
 from rhevmtests.storage.storage_live_disk_description_edit import config
-
 from rhevmtests.storage.storage_live_disk_description_edit.helpers import (
     verify_vm_disk_description,
 )
@@ -180,7 +175,8 @@ class TestCase396316(BaseClassEditDescription):
     """
     __test__ = BaseClassEditDescription.storage in config.BLOCK_TYPES
     tcms_test_case = '396316'
-    bz = {'1206911': {'engine': ['java'], 'version': ['3.5']}}
+    bz = ({'1206911': {'engine': ['java'], 'version': ['3.5']},
+           '1211314': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_edit_description_on_block_or_file_domain(self):
@@ -204,7 +200,8 @@ class TestCase396321(BaseClassEditDescription):
     """
     __test__ = BaseClassEditDescription.storage not in config.BLOCK_TYPES
     tcms_test_case = '396321'
-    bz = {'1206911': {'engine': ['java'], 'version': ['3.5']}}
+    bz = ({'1206911': {'engine': ['java'], 'version': ['3.5']},
+           '1211314': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_edit_description_on_block_or_file_domain(self):
