@@ -385,9 +385,8 @@ class HostStoppedUnexpectedly(PowerSavingWithPM):
             raise errors.HostException(
                 "Host %s not in non-responsive state" % config.HOSTS[1])
         logger.info("Wait until another host up")
-        result = self._check_hosts_num_with_status(2, config.HOST_UP)
         self.assertTrue(
-            self._check_host_status(config.HOSTS[2], config.HOST_UP) and result
+            self._check_hosts_num_with_status(2, config.HOST_UP)
         )
 
     @classmethod
