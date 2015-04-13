@@ -18,13 +18,14 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import logging
-from art.rhevm_api.tests_lib.high_level.networks import getIpOnHostNic
-from art.rhevm_api.tests_lib.low_level.hosts import get_host_name_from_engine
-from art.rhevm_api.tests_lib.low_level.vms import getVmHost
-from art.test_handler.exceptions import NetworkException
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.test_handler.exceptions as exceptions
 
 logger = logging.getLogger(__name__)
 DEFAULT_HOST_NICS_NUM = 4
+NUM_OF_NETWORKS = 5
 DEFAULT_MTU = "1500"
 
 
@@ -54,7 +55,7 @@ def find_ip(vm, host_list, nic_index, vlan=None, bond=None):
     src_host, dst_host, dst_name_engine = None, None, None
     orig_host = get_host(vm)
     for host in host_list:
-        host_name_engine = get_host_name_from_engine(host.ip)
+        host_name_engine = ll_hosts.get_host_name_from_engine(host.ip)
         if host_name_engine == orig_host:
             src_host = host
         else:
@@ -73,8 +74,8 @@ def find_ip(vm, host_list, nic_index, vlan=None, bond=None):
         src_int = src_host.nics[nic_index]
         dst_int = dst_host.nics[nic_index]
     return (
-        getIpOnHostNic(orig_host, src_int),
-        getIpOnHostNic(dst_name_engine, dst_int)
+        hl_networks.getIpOnHostNic(orig_host, src_int),
+        hl_networks.getIpOnHostNic(dst_name_engine, dst_int)
     )
 
 
@@ -85,9 +86,9 @@ def get_host(vm):
             *  *vm* - VM name
         Return: Host that VM is running on
     """
-    rc, out = getVmHost(vm)
+    rc, out = ll_vms.getVmHost(vm)
     if not rc:
-        raise NetworkException("Cannot get host that VM resides on")
+        raise exceptions.NetworkException("Cannot get host that VM resides on")
     return out['vmHoster']
 
 
@@ -100,3 +101,38 @@ def vlan_int_name(interface, vlan):
             Return: interface.vlan name format
         """
     return ".".join([interface, vlan])
+
+
+def generate_networks_names(cases, num_of_networks=NUM_OF_NETWORKS):
+    """
+    Generate networks names per case
+    :param cases: Number of cases
+    :type cases: int
+    :param num_of_networks: Number of networks for each case
+    :type num_of_networks: int
+    :return: {case_num:[net_name, ...]}
+    :rtype: dict
+    """
+    cases = [(i + 1) for i in range(cases)]
+    return dict(
+        [(c, [
+            "case%s_net%d" % (c, (i + 1)) for i in range(num_of_networks)
+        ]) for c in cases]
+    )
+
+
+def check_dummy_on_host_interfaces(host_name, dummy_name):
+    """
+    Check if dummy interface is on host via engine
+    :param host_name: Host name
+    :type host_name: str
+    :param dummy_name: Dummy name
+    :type dummy_name: str
+    :return: True/False
+    :rtype: bool
+    """
+    host_nics = ll_hosts.getHostNicsList(host_name)
+    for nic in host_nics:
+        if dummy_name == nic.name:
+            return True
+    return False
