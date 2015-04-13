@@ -16,7 +16,7 @@ else:
     HOSTS_IP = [host.ip for host in VDS_HOSTS]
 
 # Global parameters
-EXTRA_DC = "NET_DC_2"
+EXTRA_DC = ["_".join(["EXTRA_DC", str(i)]) for i in range(6)]
 MTU = [9000, 5000, 2000, 1500]
 NETMASK = '255.255.255.0'
 VNIC_PROFILE = PARAMETERS.as_list('vnic_profile')
@@ -106,3 +106,14 @@ VM_FROM_TEMPLATE = "vm_from_queues_template"
 # Big MAC pool range
 BMPR_VM_NAME = "BigRangeMacPool_VM1"
 MAC_POOL_RANGE_CMD = "MacPoolRanges"
+
+# MAC pool range per DC
+MAC_POOL_NAME = ["_".join(["MAC_POOL", str(i)]) for i in range(6)]
+MAC_POOL_RANGE_LIST = [
+    ("00:00:00:10:10:10", "00:00:00:10:10:11"),
+    ("00:00:00:20:10:10", "00:00:00:20:10:12"),
+    ("00:00:00:30:10:10", "00:00:00:30:10:12")
+]
+DEFAULT_MAC_POOL = "Default"
+MAC_POOL_CL = "MAC_POOL_CL"
+MP_VM_NAMES = ["_".join(["MAC_POOL_VM", str(i)]) for i in range(6)]
