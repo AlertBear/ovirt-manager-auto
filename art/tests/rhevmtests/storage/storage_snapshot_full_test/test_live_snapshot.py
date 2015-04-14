@@ -227,6 +227,7 @@ class TestCase141612(BasicEnvironmentSetUp):
     """
     __test__ = True
     tcms_test_case = '141612'
+    bz = {'1211588': {'engine': ['cli'], 'version': ['3.5', '3.6']}}
 
     def setUp(self):
         self.previewed = False
