@@ -698,6 +698,7 @@ class TestCase304197(TestCase):
     https://tcms.engineering.redhat.com/case/304197/?from_plan=10435
     """
     __test__ = True
+    bz = {'1211670': {'engine': ['cli'], 'version': ['3.5']}}
     # The ticket for sdk support:
     # https://projects.engineering.redhat.com/browse/RHEVM-1901
     apis = TestCase.apis - set(['sdk'])
