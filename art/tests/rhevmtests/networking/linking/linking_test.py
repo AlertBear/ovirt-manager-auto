@@ -9,6 +9,7 @@ It will cover scenarios for different states of VNIC on stopped/running VM.
 """
 
 import logging
+from art.rhevm_api.tests_lib.high_level.vms import start_vm_on_specific_host
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 from rhevmtests.networking import config
@@ -21,8 +22,7 @@ from art.rhevm_api.tests_lib.low_level.networks import(
 )
 from art.rhevm_api.tests_lib.low_level.vms import(
     addNic, getVmNicLinked, getVmNicPlugged, removeNic,
-    updateNic, getVmNicNetwork, startVm, waitForVmsStates, stopVm,
-    waitForVMState
+    updateNic, getVmNicNetwork, startVm, stopVm, waitForVMState
 )
 
 logger = logging.getLogger("Linking_Cases")
@@ -757,16 +757,13 @@ class TestLinkedCase7(TestCase):
                 "NIC2 is linked, but shouldn't be"
             )
 
-        if not startVm(True, vm=config.VM_NAME[1]):
-            raise NetworkException("Can't start VM")
-
-        if not waitForVmsStates(
-                True, names=config.VM_NAME[1], timeout=120, states="up"
+        if not start_vm_on_specific_host(
+            vm=config.VM_NAME[1], host=config.HOSTS[0], wait_for_ip=True
         ):
             raise NetworkException(
-                "VM status is not up in the predefined timeout"
+                "Cannot start VM %s at host %s" %
+                (config.VM_NAME[1], config.HOSTS[0])
             )
-
         logger.info("Changing linked and plugged to True ")
         logger.info("Changing network and turning on port mirroring")
         if not updateNic(
