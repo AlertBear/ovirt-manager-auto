@@ -597,7 +597,7 @@ class TemplateCreatorInfoTests(TestCase):
 # Create some templates in Datacenter2.
 # - Check /api/templates
 # Should see all templates in Datacenter1, but none in Datacenter2.
-@attr(tier=1)
+@attr(tier=1, extra_reqs={'datacenters_count': 2})
 class TemplateCreatorAndDCAdminInfoTest(TestCase):
     __test__ = True
 
