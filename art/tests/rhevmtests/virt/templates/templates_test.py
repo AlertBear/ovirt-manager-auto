@@ -967,10 +967,14 @@ class BasicTemplate(BaseTemplateClass):
         """
         Search for template
         """
-        self.assertTrue(templates.searchForTemplate(True,
-                                                    query_key='name',
-                                                    query_val='template',
-                                                    key_name='name'))
+        self.assertTrue(
+            templates.searchForTemplate(
+                True,
+                expected_count=1,
+                query_key='name',
+                query_val='template',
+                key_name='name')
+        )
 
     @istest
     def add_template_permissions_to_group(self):
