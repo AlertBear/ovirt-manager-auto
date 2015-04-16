@@ -15,7 +15,7 @@ LOGGER = logging.getLogger(__name__)
 SKIP_CASE = False
 
 
-@attr(tier=1, extra_reqs={'pywinrm': True})
+@attr(tier=1)
 class Windows(TestCase):
     """
     Base class for all Windows basic sanity tests
@@ -70,6 +70,7 @@ class Windows(TestCase):
     @classmethod
     def teardown_class(cls):
         vms.removeVm(True, vm=cls.vmName, stopVM='true')
+        templates.removeTemplate(True, cls.vmName)
 
     @istest
     def a_installationUsingAPT(self):
