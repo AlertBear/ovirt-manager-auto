@@ -1,7 +1,7 @@
 import ast
 import logging
 from rhevmtests.system.guest_tools.linux_guest_agent import config
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import attr, CoreSystemTest as TestCase
 from art.test_handler.settings import opts
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.utils.resource_utils import runMachineCommand
@@ -62,6 +62,7 @@ class MyLinuxMachine(machine.LinuxMachine):
         )
 
 
+@attr(tier=1)
 class BasePostInstall(TestCase):
     """ rhevm-guest-agent post-install """
 
@@ -80,6 +81,7 @@ class BasePostInstall(TestCase):
         self.assertTrue(self.machine.runCmd(cmd_passwd)[0])
 
 
+@attr(tier=1)
 class BaseUninstallGA(TestCase):
     """ rhevm-guest-agent uninstall """
     package_manager = 'yum'
@@ -100,6 +102,7 @@ class BaseUninstallGA(TestCase):
                                            'install', self.package))
 
 
+@attr(tier=1)
 class BaseServiceTest(TestCase):
     """ rhevm-guest-agent service test """
     os = None
@@ -119,6 +122,7 @@ class BaseServiceTest(TestCase):
         self.assertTrue(machine.isServiceRunning(config.AGENT_SERVICE_NAME))
 
 
+@attr(tier=1)
 class BaseAgentDataUpdate(TestCase):
     """ rhevm-guest-agent agent function agent data update """
 
@@ -135,6 +139,7 @@ class BaseAgentDataUpdate(TestCase):
         pass
 
 
+@attr(tier=1)
 class BaseFunctionContinuity(TestCase):
     """ rhevm-guest-agent agent function continuity """
     os = None
@@ -165,6 +170,7 @@ class BaseFunctionContinuity(TestCase):
         start_vdsm(vm_name)
 
 
+@attr(tier=1)
 class BaseAgentData(TestCase):
     """ rhevm-guest-agent agent data """
     success_msg = "%s of guest agent was successfull on %s"
@@ -269,6 +275,7 @@ class BaseAgentData(TestCase):
         self._check_guestIP()
 
 
+@attr(tier=1)
 class BaseInstallGA(TestCase):
     """ rhevm-guest-agent install """
     __test__ = False
