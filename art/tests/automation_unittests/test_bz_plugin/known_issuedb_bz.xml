@@ -1,0 +1,14 @@
+<issues>
+    <issue ids="1">
+         <case_name>^.*t01.*$</case_name>
+    </issue>
+    <issue ids="2">
+         <case_name>^.*t02.*$</case_name>
+    </issue>
+    <issue ids="7">
+         <case_name>^.*t03.*$</case_name>
+    </issue>
+    <issue ids="7">
+         <case_name>^.*t04.*$</case_name>
+    </issue>
+</issues>

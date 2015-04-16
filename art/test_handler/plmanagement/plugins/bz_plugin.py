@@ -76,6 +76,7 @@ from art.test_handler.plmanagement.interfaces.config_validator import (
 )
 from art.test_handler.plmanagement.interfaces.tests_listener import (
     ITestSkipper,
+    ITestCaseHandler,
 )
 from art.test_handler.plmanagement.interfaces.report_formatter import (
     IResultExtension,
@@ -248,6 +249,7 @@ class Bugzilla(Component):
         IConfigValidation,
         IResultExtension,
         ITestSkipper,
+        ITestCaseHandler,
         IPackaging,
     )
 
@@ -495,6 +497,18 @@ class Bugzilla(Component):
             self.should_be_skipped(bz_id, engine, version)
 
     def should_be_test_case_skipped(self, t):
+        pass
+
+    def pre_test_case(self, t):
+        if self.issuedb:
+            bz_ids = self.issuedb.lookup(t.test_name, self.config_name)
+            for bz_id in bz_ids:
+                self.should_be_skipped(bz_id)
+
+    def post_test_case(self, t):
+        pass
+
+    def test_case_skipped(self, t):
         pass
 
     @classmethod
