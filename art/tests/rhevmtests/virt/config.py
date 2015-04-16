@@ -15,16 +15,15 @@ SHARED_ISO_DOMAIN_ADDRESS = ISO_DOMAIN_ADDRESS
 SHARED_ISO_DOMAIN_PATH = ISO_DOMAIN_PATH
 SHARED_ISO_DOMAIN_NAME = ISO_DOMAIN_NAME
 # Run once parameters
-CDROM_IMAGE_1 = 'en_windows_7_enterprise_x64_dvd_x15-70749.iso'
+CDROM_IMAGE_1 = 'en_windows_7_enterprise_x86_dvd_x15-70745.iso'
 CDROM_IMAGE_2 = 'en_windows_7_enterprise_x64.iso'
-FLOPPY_IMAGE = PARAMETERS.get('floppy_image')
+FLOPPY_IMAGE = 'win2k3.vfd'
 
 # Storage names
 storage_name = PARAMETERS.get('storage_name', '%s_%d' % (STORAGE_TYPE, 0))
 nfs_storage_0 = PARAMETERS.get('storage_name_0', '%s_0' % STORAGE_TYPE)
 nfs_storage_1 = PARAMETERS.get('storage_name_1', '%s_1' % STORAGE_TYPE)
 export_storage = PARAMETERS.get('export_storage', EXPORT_STORAGE_NAME)
-
 # #################################################
 # Following paramaters are virt specific paramaters
 # #################################################
