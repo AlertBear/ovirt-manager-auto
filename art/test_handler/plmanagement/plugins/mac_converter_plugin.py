@@ -98,13 +98,15 @@ class TCPDumpParser(object):
     P_MAC = 'Client-Ethernet-Address (?P<mac>([0-9a-f]+[-:]){5}[0-9a-f]+)'
     P_MSG = 'DHCP-Message Option [0-9]+, length [0-9]+: (?P<msg>[a-z]+)'
 
-    EXPECT = {S_UNKNOWN: (P_REPLY,),
-              S_REPLY: (P_YOUR_IP,),
-              S_CL_IP: (P_SERVER_IP,),
-              S_SER_IP: (P_GW_IP, P_MAC),
-              S_GW_IP: (P_MAC,),
-              S_MAC_ADDR: (P_MSG,),
-              }
+    EXPECT = {
+        S_UNKNOWN: (P_REPLY,),
+        S_REPLY: (P_YOUR_IP,),
+        S_CL_IP: (P_SERVER_IP,),
+        S_SER_IP: (P_GW_IP, P_MAC),
+        S_GW_IP: (P_MAC,),
+        S_MAC_ADDR: (P_MSG,),
+        S_MSG: (P_MSG,),
+    }
 
     def __init__(self, cache, debug=False):
         super(TCPDumpParser, self).__init__()
@@ -251,6 +253,8 @@ class SSHProducer(Producer):
                 self.collecting()
             except Exception as ex:
                 # closed by remote host, it could be caused by reboot of host
+                logger.warn("Collecting failed: %s", ex)
+                logger.debug("Exception", exc_info=True)
                 m = Machine(self.hostname, 'root', self.password).util(LINUX)
                 m.isAlive(self.timeout, 1)
 
