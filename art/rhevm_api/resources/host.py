@@ -174,18 +174,17 @@ class Host(Resource):
         :return: SSH public key
         :rtype: str
         """
-        host_exec = self.executor()
         if not self.fs.exists(ssh.ID_RSA_PUB):
             # Generating SSH key if not exist
             cmd = [
                 "ssh-keygen", "-q", "-t", "rsa", "-N", '', "-f", ssh.ID_RSA_PRV
             ]
-            rc = host_exec.run_cmd(cmd)[0]
+            rc = self.executor().run_cmd(cmd)[0]
             if rc:
                 return ""
 
         cmd = ["cat", ssh.ID_RSA_PUB]
-        return host_exec.run_cmd(cmd)[1]
+        return self.executor().run_cmd(cmd)[1]
 
     def remove_remote_host_ssh_key(self, remote_host):
         """
@@ -196,12 +195,11 @@ class Host(Resource):
         :return: True/False
         :rtype: bool
         """
-        local_host_exec = self.executor()
         ssh_keygen = ["ssh-keygen", "-R"]
         if self.fs.exists(ssh.KNOWN_HOSTS):
             # Remove old keys from local host if any
             for i in [remote_host.ip, remote_host.fqdn]:
-                rc = local_host_exec.run_cmd(ssh_keygen + [i])[0]
+                rc = self.executor().run_cmd(ssh_keygen + [i])[0]
                 if rc:
                     return False
         return True
@@ -213,13 +211,31 @@ class Host(Resource):
         :return: True/False
         :rtype: bool
         """
-        local_host_exec = self.executor()
         local_fqdn = self.fqdn
         cmd = ["sed", "-i", "/%s/d" % local_fqdn, ssh.AUTHORIZED_KEYS]
-        rc = local_host_exec.run_cmd(cmd)[0]
+        rc = self.executor().run_cmd(cmd)[0]
         if rc:
             return False
         return True
+
+    def get_os_info(self):
+        """
+        Get OS info (Distro, version and code name)
+
+        :return: Results {dist: , ver: , name:}
+        :rtype: dict
+        """
+        values = ["dist", "ver", "name"]
+        cmd = [
+            "python", "-c",
+            "import platform;print ','.join(platform.linux_distribution())"
+            ]
+        rc, out, _ = self.executor().run_cmd(cmd)
+        if rc:
+            return dict([(x, None) for x in values])
+        return dict([
+            (x, y) for x, y in zip(values, [i.strip() for i in out.split(",")])
+        ])
 
     def get_network(self):
         return Network(self)
@@ -235,3 +251,7 @@ class Host(Resource):
     @property
     def ssh_public_key(self):
         return self.get_ssh_public_key()
+
+    @property
+    def os_info(self):
+        return self.get_os_info()
