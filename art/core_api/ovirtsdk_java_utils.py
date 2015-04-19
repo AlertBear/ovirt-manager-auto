@@ -799,8 +799,8 @@ class JavaSdkUtil(APIUtil):
                         self.opts['port'], request_timeout,
                         self.opts['session_timeout'],
                         self.opts['persistent_auth'],
-                        self.opts['ssl_key_file'],
-                        self.opts['ssl_cert_file'], self.opts['filter'],
+                        self.opts['ssl_key_store_file'],
+                        self.opts['password'], self.opts['filter'],
                         self.opts['debug'])
             except java_sdk.JavaError as e:
                 raise APILoginError(e)

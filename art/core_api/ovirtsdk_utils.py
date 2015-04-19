@@ -36,6 +36,16 @@ PROPERTIES_MAP = {
 }
 
 
+def print_connection_method(kwargs):
+    '''
+    print the connection method
+    :param kwargs: all method arguments
+    :type kwargs: dict
+    '''
+    conn_cmd = ["{0}={1}, ".format(k, v) for k, v in kwargs.iteritems()]
+    logger.info("Connect: sdkApi.API({0})".format("".join(conn_cmd)))
+
+
 class SdkUtil(APIUtil):
     '''
     Implements SDK APIs methods
@@ -56,25 +66,28 @@ class SdkUtil(APIUtil):
         if not self._sdkInit:
             user_with_domain = '{0}@{1}'.format(self.opts['user'],
                                                 self.opts['user_domain'])
+            kwargs = dict()
+            kwargs.update(
+                url=self.opts['uri'],
+                username=user_with_domain,
+                password=self.opts['password'],
+                persistent_auth=self.opts['persistent_auth'],
+                session_timeout=self.opts['session_timeout'],
+                renew_session=True,
+                filter=self.opts['filter'],
+            )
+            if self.opts['secure']:
+                kwargs.update(
+                    key_file=self.opts['ssl_key_file'],
+                    cert_file=self.opts['ssl_cert_file'],
+                    ca_file=self.opts['ssl_ca_file'],
+                    )
+            else:
+                kwargs.update(insecure=True)
+
+            print_connection_method(kwargs)
             try:
-                if not self.opts['secure']:
-                    self.api = \
-                        sdkApi.API(
-                            self.opts['uri'], user_with_domain,
-                            self.opts['password'], insecure=True,
-                            persistent_auth=self.opts['persistent_auth'],
-                            session_timeout=self.opts['session_timeout'],
-                            renew_session=True, filter=self.opts['filter'])
-                else:
-                    self.api = \
-                        sdkApi.API(
-                            self.opts['uri'], user_with_domain,
-                            self.opts['password'], self.opts['ssl_key_file'],
-                            self.opts['ssl_cert_file'],
-                            self.opts['ssl_ca_file'],
-                            persistent_auth=self.opts['persistent_auth'],
-                            session_timeout=self.opts['session_timeout'],
-                            renew_session=True, filter=self.opts['filter'])
+                self.api = sdkApi.API(**kwargs)
             except (RequestError, DisconnectedError) as e:
                 raise APILoginError(e)
 

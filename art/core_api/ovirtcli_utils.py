@@ -481,7 +481,7 @@ class RhevmCli(CliConnection):
             cliConnect.append(str(additionalArgs[key]))
 
         self._connectionCommand = ' '.join(cliConnect)
-        self.logger.debug('Connect: %s' % self._connectionCommand)
+        self.logger.info('Connect: %s' % self._connectionCommand)
 
     def outputValidator(self, output):
         """
