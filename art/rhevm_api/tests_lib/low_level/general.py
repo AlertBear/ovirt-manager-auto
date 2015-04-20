@@ -185,14 +185,25 @@ def checkSummary(positive, domain):
     if not validator.compareCollectionSize(hosts, sumHostsAct, util.logger):
         status = False
 
-    users = userUtil.query(constraint='Active=True')
-    util.logger.info('Comparing active users number')
-    sumUsersActive = getAll.get_summary().get_users().active
-    if not validator.compareCollectionSize(
-            users, sumUsersActive, util.logger):
+    users = userUtil.get(absLink=False)
+    sumUsersTotal = getAll.get_summary().get_users().total
+    util.logger.info('Comparing total users number')
+    if not len(users) <= sumUsersTotal:
+        util.logger.error(
+            "Collection size is wrong, "
+            "actual should be smaller or equal to expected. "
+            "expected is: %(exp)s, actual is: %(act)s",
+            {'exp': sumUsersTotal, 'act': len(users)}
+        )
         status = False
+    else:
+        util.logger.debug(
+            "Collection size is correct: %(exp)s is bigger then %(act)s since "
+            "the number of returned users is limited for performance reasons",
+            {'exp': sumUsersTotal, 'act': len(users)}
+        )
 
-    util.logger.info('Comparing total storages number')
+    util.logger.info('Comparing total storage number')
     sumSDTotal = getAll.get_summary().get_storage_domains().total
     storageDomains = sdUtil.get(absLink=False)
     if not validator.compareCollectionSize(

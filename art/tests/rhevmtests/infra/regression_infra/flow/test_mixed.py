@@ -21,7 +21,7 @@ from art.rhevm_api.tests_lib.low_level import (
     tags
 )
 from art.rhevm_api.utils.xpath_utils import XPathMatch
-from art.core_api.apis_exceptions import EngineTypeError
+from art.core_api.apis_exceptions import EntityNotFound, EngineTypeError
 from art.test_handler.tools import bz  # pylint: disable=E0611
 
 from rhevmtests.infra.regression_infra import config
@@ -39,6 +39,38 @@ class TestCaseMixed(TestCase):
     __test__ = (config.STORAGE_TYPE == 'nfs')
     tag_name = config.TAG_1_NAME
 
+    @classmethod
+    def teardown_class(cls):
+        """
+        Clear the environment
+        Remove users and tags if still exists
+        """
+        logger.info('Remove user in case not removed in the test')
+        try:
+            users.removeUser(positive=False, user=config.USERNAME_NAME)
+        except EntityNotFound:
+                logger.info(
+                    'Failed to remove user %s - this is expected if: '
+                    '1. remove user test passed successfully '
+                    '2. add user test failed', config.USERNAME_NAME
+                )
+
+        logger.info('Remove tags in case not removed in the tests')
+        tags_to_remove = [
+            cls.tag_name, config.TAG_2_NAME,
+            config.TAG_3_NAME, config.TAG_4_NAME, config.TAG_5_NAME,
+            config.TAG_SUB_NAME
+        ]
+        for tag_name in tags_to_remove:
+            try:
+                tags.removeTag(positive=False, tag=tag_name)
+            except EntityNotFound:
+                logger.info(
+                    'Failed to remove tag %s - this is expected if: '
+                    '1. remove tags test passed successfully '
+                    '2. add tag tests failed', tag_name
+                )
+
     @istest
     def t01_check_product_name(self):
         """
@@ -49,7 +81,8 @@ class TestCaseMixed(TestCase):
         self.assertTrue(status, 'Check product name')
 
     @istest
-    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
+    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']},
+         '1213393': {'engine': ['cli'], 'version': ['3.6']}})
     def t02_create_user(self):
         """
         test verifies user functionality
@@ -65,7 +98,8 @@ class TestCaseMixed(TestCase):
         self.assertTrue(status, 'Add user')
 
     @istest
-    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
+    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']},
+         '1213393': {'engine': ['cli'], 'version': ['3.6']}})
     def t03_add_data_center_permissions_to_user(self):
         """
         test verifies permissions functionality
@@ -78,7 +112,8 @@ class TestCaseMixed(TestCase):
         self.assertTrue(status, 'Add dc permissions to user')
 
     @istest
-    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
+    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']},
+         '1213393': {'engine': ['cli'], 'version': ['3.6']}})
     def t04_remove_all_permissions_for_user(self):
         """
         test verifies permissions functionality
@@ -303,7 +338,8 @@ class TestCaseMixed(TestCase):
             self.assertTrue(status, 'Remove tag ' + curr_tag)
 
     @istest
-    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
+    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']},
+         '1213393': {'engine': ['cli'], 'version': ['3.6']}})
     def t23_remove_user(self):
         """
         test verifies user functionality

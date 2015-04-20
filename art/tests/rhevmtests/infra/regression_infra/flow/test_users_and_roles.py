@@ -15,7 +15,7 @@ from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.low_level import users, tags, general, mla
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.core_api.apis_exceptions import EngineTypeError
-from art.test_handler.tools import bz  # pylint: disable=E0611
+from art.test_handler.tools import bz as bzd  # pylint: disable=E0611
 
 from .. import config
 
@@ -31,6 +31,8 @@ class TestCaseUserAndRoles(TestCase):
     """
 
     __test__ = (config.STORAGE_TYPE == 'nfs')
+
+    bz = {'1213393': {'engine': ['cli'], 'version': ['3.6']}}
 
     @classmethod
     def setup_class(cls):
@@ -312,7 +314,7 @@ class TestCaseUserAndRoles(TestCase):
         self.assertTrue(status, 'Add host permissions to user')
 
     @istest
-    @bz({'1193848': {'engine': ['sdk'], 'version': ['3.5']}})
+    @bzd({'1193848': {'engine': ['sdk'], 'version': ['3.5']}})
     def t22_add_storage_permissions_to_user(self):
         """
         test verifies roles functionality
@@ -489,6 +491,7 @@ class TestCaseUserAndRoles(TestCase):
         )
         self.assertTrue(status, 'Search user by username in active directory')
 
+    @bzd({'1211050': {'engine': None, 'version': ['3.6']}})
     @istest
     def t35_check_xsd_schema_validations(self):
         """
