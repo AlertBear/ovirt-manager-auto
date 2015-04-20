@@ -90,7 +90,7 @@ def teardown_package():
         return
     logger.info("Teardown...")
     if not dc_api.clean_datacenter(
-            True, config.dc_name, vdc=config.VDC_HOST,
+            True, config.DC_NAME[0], vdc=config.VDC_HOST,
             vdc_password=config.VDC_ROOT_PASSWORD
     ):
         raise errors.DataCenterException("Clean up environment failed")
