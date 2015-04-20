@@ -74,6 +74,7 @@ CMD_ERROR_INCORRECT_NUM_PARAMS_PART_2 = \
 CMD_ERROR_INCORRECT_NUM_PARAMS_PART_3 = \
     "Prepare an image, making the needed volumes available."
 
+CMD_OK = "OK"
 CMD_INCORRECT_PARAMETER = "incorrect"
 CMD_ERROR_INVALID_SP_UUID = "Storage pool does not exist: ('incorrect',)"
 CMD_ERROR_INVALID_SD_UUID = "Storage domain does not exist: ('incorrect',)"
@@ -531,8 +532,7 @@ class TestCase389852(BasicEnvironment):
     __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
     tcms_test_case = '389852'
     disk_count = 1
-    bz = ({'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']},
-           '1184718': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
+    bz = {'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_prepare_image_with_1_invalid_parameter(self):
@@ -777,7 +777,6 @@ class TestCase389924(BasicEnvironment):
     tcms_test_case = '389924'
     disk_count = 4
     vm_name = VM2_NAME
-    bz = {'1184718': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
     def setUp(self):
         logger.info('Powering off VM %s', self.vm_name)
@@ -845,8 +844,8 @@ class TestCase389924(BasicEnvironment):
                 self.img_ids[-1], self.vol_ids[-1])
         logger.info("The returned output from running teardownImage on the "
                     "disk being deleted was '%s'", teardown_output)
-        self.assertTrue(CMD_ERROR_VOLUME_DOES_NOT_EXIST in teardown_output,
-                        "Did not observe the expected error, '%s', as "
+        self.assertTrue(CMD_OK in teardown_output,
+                        "Did not observe the expected message, '%s', as "
                         "part of the output '%s'" %
                         (CMD_ERROR_VOLUME_DOES_NOT_EXIST, teardown_output))
 
@@ -1000,8 +999,7 @@ class TestCase389940(BasicEnvironment):
     __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
     tcms_test_case = '389940'
     disk_count = 1
-    bz = ({'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']},
-           '1184718': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
+    bz = {'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_teardown_image_with_1_invalid_parameter(self):
