@@ -53,6 +53,8 @@ def restart_vdsm(host_index):
         action='restart')
 
 
+# TODO: This seems to be GE ready, check why it was not running
+@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
 class BaseTestCase(TestCase):
     """
     This class implements setup and teardowns of common things

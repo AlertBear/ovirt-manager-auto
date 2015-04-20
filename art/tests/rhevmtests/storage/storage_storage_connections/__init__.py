@@ -25,6 +25,8 @@ def setup_module():
     """ creates datacenter, adds hosts, clusters, storages according to
         the config file
     """
+    if config.GOLDEN_ENV:
+        return
     datacenters.build_setup(
         config.PARAMETERS, config.PARAMETERS, config.STORAGE_TYPE,
         basename=config.TESTNAME,
@@ -48,6 +50,8 @@ def setup_module():
 def teardown_module():
     """ removes created datacenter, storages etc.
     """
+    if config.GOLDEN_ENV:
+        return
     if not datacenters.clean_datacenter(True, config.DATA_CENTER_NAME):
         LOGGER.info("Tear down - removing data center")
         ll_dc.removeDataCenter(True, config.DATA_CENTER_NAME)

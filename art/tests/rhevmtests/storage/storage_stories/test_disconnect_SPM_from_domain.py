@@ -43,6 +43,8 @@ def setup_module():
     and overridden with only one lun/path to sent as parameter to build_setup.
     after the build_setup finish, we return to the original lists
     """
+    if config.GOLDEN_ENV:
+        return
     if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
         domain_path = config.PATH
         config.PARAMETERS['data_domain_path'] = [domain_path[0]]
@@ -68,6 +70,8 @@ def teardown_module():
     """
     Removes created datacenter, storages etc.
     """
+    if config.GOLDEN_ENV:
+        return
     datacenters.clean_datacenter(
         True, config.DATA_CENTER_NAME,
         vdc=config.VDC,
@@ -75,6 +79,7 @@ def teardown_module():
     )
 
 
+@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
 class BaseTestCase(TestCase):
     """
     This class implements setup and teardowns of common things

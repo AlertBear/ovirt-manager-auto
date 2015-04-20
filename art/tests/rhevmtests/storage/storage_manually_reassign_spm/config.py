@@ -15,16 +15,20 @@ LOW_SPM_PRIORITY = '1'
 
 # ISCSI
 # TODO: how to handle this?
-if STORAGE_TYPE == ENUMS['storage_type_iscsi']:
-    PARAMETERS['lun'] = [PARAMETERS['lun'], PARAMETERS['another_lun']]
-    PARAMETERS['lun_address'] = [PARAMETERS['lun_address'],
-                                 PARAMETERS['another_lun_address']]
-    PARAMETERS['lun_target'] = [PARAMETERS['lun_target'],
-                                PARAMETERS['another_lun_target']]
-# NFS
-elif STORAGE_TYPE == ENUMS['storage_type_nfs']:
-    PARAMETERS['data_domain_path'] = [PARAMETERS['data_domain_path'],
-                                      PARAMETERS['another_data_domain_path']]
-    PARAMETERS['data_domain_address'] = [PARAMETERS['data_domain_address'],
-                                         PARAMETERS[
-                                             'another_data_domain_address']]
+if not GOLDEN_ENV:
+    if STORAGE_TYPE == ENUMS['storage_type_iscsi']:
+        PARAMETERS['lun'] = [PARAMETERS['lun'], PARAMETERS['another_lun']]
+        PARAMETERS['lun_address'] = [PARAMETERS['lun_address'],
+                                     PARAMETERS['another_lun_address']]
+        PARAMETERS['lun_target'] = [PARAMETERS['lun_target'],
+                                    PARAMETERS['another_lun_target']]
+    # NFS
+    elif STORAGE_TYPE == ENUMS['storage_type_nfs']:
+        PARAMETERS['data_domain_path'] = [
+            PARAMETERS['data_domain_path'],
+            PARAMETERS['another_data_domain_path'],
+        ]
+        PARAMETERS['data_domain_address'] = [
+            PARAMETERS['data_domain_address'],
+            PARAMETERS['another_data_domain_address'],
+        ]

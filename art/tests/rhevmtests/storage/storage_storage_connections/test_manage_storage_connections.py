@@ -24,6 +24,7 @@ host_api = test_utils.get_api('host', 'hosts')
 GB = 1024 ** 3
 
 
+@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
 class TestCaseLocalFS(TestCase):
     __test__ = False
     sd_name = None
@@ -64,6 +65,7 @@ class TestCaseLocalFS(TestCase):
             self.machine.removeFile(self.path)
 
 
+@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
 class TestCasePosix(TestCase):
     __test__ = False
     conn = None

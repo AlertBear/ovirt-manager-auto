@@ -38,6 +38,8 @@ def setup_package():
     """
     Prepares host in a cluster and creates all storage domain given by config.
     """
+    if config.GOLDEN_ENV:
+        return
     assert _check_test_requirements(config)
     luns = config.PARAMETERS.as_list('lun')
     domain_address = config.PARAMETERS.as_list('data_domain_address')
@@ -57,6 +59,8 @@ def teardown_package():
     """
     Removes unattached storage domains, host and cluster
     """
+    if config.GOLDEN_ENV:
+        return
     storage_domains = SD_API.get(absLink=False)
     host = config.PARAMETERS.as_list('vds')[0]
     unattached = [sd for sd in storage_domains

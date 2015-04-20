@@ -30,6 +30,9 @@ TCMS_PLAIN_ID = "5290"
 logger = logging.getLogger(__name__)
 
 
+# TODO: enable tests after https://bugzilla.redhat.com/show_bug.cgi?id=1201268
+# is fixed
+@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
 class BaseTestCase(TestCase):
     """
     Base Test Case for clone snapshot
@@ -79,7 +82,6 @@ class TestCase134130(BaseTestCase):
     __test__ = True
     tcms_case_id = "134130"
     cloned_vm = "vm_%s" % tcms_case_id
-    bz = {'1201268': {'engine': None, 'version': ['3.5.1']}}
 
     @tcms(TCMS_PLAIN_ID, tcms_case_id)
     def test_clone_vm_from_snapshot(self):
@@ -108,7 +110,6 @@ class TestCase134131(BaseTestCase):
     __test__ = True
     tcms_case_id = "134131"
     cloned_vm = "vm_%s" % tcms_case_id
-    bz = {'1201268': {'engine': None, 'version': ['3.5.1']}}
 
     @tcms(TCMS_PLAIN_ID, tcms_case_id)
     def test_clone_vm_from_snapshot_select_storage(self):
@@ -134,7 +135,6 @@ class TestCase134132(BaseTestCase):
     cloned_vm_up = "vm_up_%s" % tcms_case_id
     cloned_vm_down = "vm_down_%s" % tcms_case_id
     temp_name = 'test_template'
-    bz = {'1201268': {'engine': None, 'version': ['3.5.1']}}
     __test__ = True
 
     def test_clone_vm_from_snapshot_vm_status(self):
@@ -182,7 +182,6 @@ class TestCase137688(BaseTestCase):
     __test__ = True
     tcms_case_id = "137688"
     cloned_vm = "vm_%s" % tcms_case_id
-    bz = {'1201268': {'engine': None, 'version': ['3.5.1']}}
 
     def test_clone_vm_name_validation(self):
         """
@@ -226,7 +225,6 @@ class TestCase166174(BaseTestCase):
     tcms_case_id = "166174"
     cloned_vm = "vm_%s" % tcms_case_id
     snapshot_two_nics = "snapshot with two nics"
-    bz = {'1201268': {'engine': None, 'version': ['3.5.1']}}
 
     def test_clone_vm_multiple_nics(self):
         """
@@ -276,7 +274,6 @@ class TestCase166175(BaseTestCase):
     cloned_vm = "cloned_vm_%s" % tcms_case_id
     snapshot_two_disks = "snapshot with two disks"
     disk_alias = "second_disk_%s" % tcms_case_id
-    bz = {'1201268': {'engine': None, 'version': ['3.5.1']}}
 
     def test_clone_vm_multiple_disks(self):
         """
@@ -326,7 +323,6 @@ class TestCase166179(BaseTestCase):
     vm_server = "vm_server_%s" % tcms_case_id
     snapshot_server = "snapshot_server_%s" % tcms_case_id
     cloned_vm_server = "cloned_server_%s" % tcms_case_id
-    bz = {'1201268': {'engine': None, 'version': ['3.5.1']}}
 
     def setUp(self):
         """
@@ -388,7 +384,6 @@ class TestCase166182(BaseTestCase):
     disk_alias = "second_disk_%s" % tcms_case_id
     disk_alias2 = "third_disk_%s" % tcms_case_id
     snapshot_multiple_disks = "snapshot multiple disks %s" % tcms_case_id
-    bz = {'1201268': {'engine': None, 'version': ['3.5.1']}}
 
     def test_clone_vm_after_deleting_disk(self):
         """

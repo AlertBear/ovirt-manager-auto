@@ -7,8 +7,12 @@ from rhevmtests.storage.config import * # flake8: noqa
 
 TESTNAME = "%sTestStorage" % STORAGE_TYPE
 
-DC_VERSIONS = PARAMETERS.as_list('dc_versions')
-DC_TYPE = PARAMETERS['data_center_type']
+if not GOLDEN_ENV:
+    DC_VERSIONS = PARAMETERS.as_list('dc_versions')
+    DC_TYPE = PARAMETERS['data_center_type']
+else:
+    DC_VERSIONS = []
+    DC_TYPE = []
 
 # TODO: remove
 VDC_PASSWORD = VDC_ROOT_PASSWORD

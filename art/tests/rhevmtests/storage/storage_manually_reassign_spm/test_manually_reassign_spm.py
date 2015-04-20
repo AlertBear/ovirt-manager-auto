@@ -35,6 +35,8 @@ def setup_module():
     """
     Build datacenter
     """
+    if config.GOLDEN_ENV:
+        return
     build_setup(config=config.PARAMETERS, storage=config.PARAMETERS,
                 storage_type=config.STORAGE_TYPE, basename=config.TESTNAME)
 
@@ -45,6 +47,8 @@ def teardown_module():
     """
     Clean datacenter
     """
+    if config.GOLDEN_ENV:
+        return
     assert activateHosts(True, config.HOSTS)
     clean_datacenter(
         True, config.DATA_CENTER_NAME, vdc=config.VDC,
@@ -52,6 +56,7 @@ def teardown_module():
     )
 
 
+@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
 class DCUp(TestCase):
     """
     Base class that ensures DC, all domains and hosts are up, spm is elected

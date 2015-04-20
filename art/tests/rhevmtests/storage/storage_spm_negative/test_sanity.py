@@ -4,7 +4,7 @@ https://tcms.engineering.redhat.com/plan/2461
 """
 import config
 import logging
-from art.unittest_lib import StorageTest as TestCase
+from art.unittest_lib import attr, StorageTest as TestCase
 from art.rhevm_api.tests_lib.low_level import clusters
 from art.rhevm_api.tests_lib.low_level import datacenters
 from art.rhevm_api.tests_lib.low_level import hosts
@@ -231,6 +231,7 @@ def teardown_module():
     assert datacenters.removeDataCenter(True, config.DATA_CENTER_NAME)
 
 
+@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
 class DataCenterWithSD(TestCase):
     """
     Datacenter with storage domains

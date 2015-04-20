@@ -1,7 +1,6 @@
 import config
 import logging
-from art.unittest_lib import StorageTest as TestCase
-from art.unittest_lib import attr
+from art.unittest_lib import StorageTest, attr
 from concurrent.futures import ThreadPoolExecutor
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.utils import test_utils
@@ -67,6 +66,11 @@ def _restore_empty_dc():
             assert storagedomains.removeStorageDomain(
                 True, sd.name, config.HOSTS[0])
     assert storageconnections.remove_all_storage_connections()
+
+
+@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
+class TestCase(StorageTest):
+    pass
 
 
 @attr(tier=0)

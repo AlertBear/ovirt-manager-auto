@@ -23,6 +23,8 @@ def setup_module():
     Creates datacenter, adds hosts, clusters, storages according to
     the config file
     """
+    if config.GOLDEN_ENV:
+        return
     assert datacenters.build_setup(
         config.PARAMETERS, config.PARAMETERS, config.STORAGE_TYPE,
         basename=config.TESTNAME)
@@ -71,6 +73,8 @@ def teardown_module():
     """
     Removes created datacenter, storages etc.
     """
+    if config.GOLDEN_ENV:
+        return
     datacenters.clean_datacenter(
         True,
         config.DATA_CENTER_NAME,

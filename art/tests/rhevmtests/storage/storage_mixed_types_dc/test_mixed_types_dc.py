@@ -37,6 +37,7 @@ TIMEOUT_DATA_CENTER_RECONSTRUCT = 600
 SDK_ENGINE = 'sdk'
 
 
+@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
 class BaseCaseDCMixed(TestCase):
     """
     Base Case for building an environment with specific storage domains and
