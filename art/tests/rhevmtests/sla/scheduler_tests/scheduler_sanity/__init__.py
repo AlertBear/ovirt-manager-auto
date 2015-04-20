@@ -66,6 +66,6 @@ def teardown_package():
     if os.environ.get("JENKINS_URL") and not config.GOLDEN_ENV:
         if not dc_api.clean_datacenter(
                 True, config.DC_NAME[0], vdc=config.VDC_HOST,
-                vdc_password=config.VDC_PASSWORD
+                vdc_password=config.VDC_ROOT_PASSWORD
         ):
             raise errors.DataCenterException("Clean up environment failed")
