@@ -58,7 +58,6 @@ DEPS = [
     'python-dateutil',
     'art-utilities = %s' % VERSION,
     'python-configobj >= 4.7.2',
-    'python-jinja2,',  # FIXME: remove with rhevmscale module
     'pexpect',  # required by cli engine
 ]
 if sys.version_info[0] == 2 and sys.version_info[1] < 7:
