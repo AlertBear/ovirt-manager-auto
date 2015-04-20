@@ -802,3 +802,33 @@ def get_template_nics_objects(template):
     template_obj = TEMPLATE_API.find(template)
     return TEMPLATE_API.getElemFromLink(
         template_obj, link_name="nics", attr="nic")
+
+
+def wait_for_export_domain_template_state(
+        export_domain, template, state=ENUMS['disk_state_ok'],
+        timeout=CREATE_TEMPLATE_TIMEOUT
+):
+    """
+    Wait for status of the specified template under the specified export_domain
+    :param export_domain: Export domain name
+    :type export_domain: str
+    :param template: Template name
+    :type template: str
+    :param state: Expected state of the template
+    :type state: str
+    :param timeout: Time to wait for the expected status
+    :type timeout: int
+    :return: True if template's state is as expected in the timeout frame.
+     False otherwise
+    """
+    export_domain_object = SD_API.find(export_domain)
+    template_object = TEMPLATE_API.getElemFromElemColl(
+        export_domain_object, template
+    )
+    if not TEMPLATE_API.waitForElemStatus(template_object, state, timeout):
+        TEMPLATE_API.logger.error(
+            "Template: %s from export domain: %s failed to enter state: %s",
+            template, export_domain, state
+        )
+        return False
+    return True
