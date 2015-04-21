@@ -144,6 +144,9 @@ if 'prepared_env' in ART_CONFIG:
             TEMPLATES.append(templ)
     TEMPLATE_NAME = [x['name'] for x in TEMPLATES]
 
+    storage_domains = DC['storage_domains']
+    STORAGE_NAME = [x['name'] for x in storage_domains]
+
     export_sds = DC['export_domains']
     EXPORT_STORAGE_NAME = export_sds[0]['name']
 
