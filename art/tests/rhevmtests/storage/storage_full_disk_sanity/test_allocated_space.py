@@ -465,16 +465,28 @@ class TestCase321336(BaseCase):
                 'positive': True,
                 'name': template_name,
                 'vm': vm_name,
+                'storagedomains': self.domains[0]
             }
             self.assertTrue(createTemplate(**template_args),
                             "Unable to create template %s" % template_name)
 
-            # Thin provisioned templates only take up 1GB per disk, just as
-            # with snapshots
-            if vm_name == THIN_PROVISION:
-                self.expected_allocated_size[self.domains[0]] += 1 * config.GB
-            else:
-                self.expected_allocated_size[self.domains[0]] += VM_DISK_SIZE
+            # For block devices, the allocated size is increased to the real
+            # size in ranges of 1 GB with a minimum of 1 GB for thin
+            # provisioned type. For preallocated type, the allocated size is
+            # the whole preallocated size of the disk
+            # For file devices, the allocated size for both disk types is
+            # the same as the real size of the disk. In this case the template
+            # is created from an empty vm so there's no increase in the
+            # allocated size
+            if self.storage in config.BLOCK_TYPES:
+                if vm_name == THIN_PROVISION:
+                    # Thin provisioned templates only take up 1GB per disk,
+                    # just as with snapshots
+                    self.expected_allocated_size[self.domains[0]] += \
+                        1 * config.GB
+                else:
+                    self.expected_allocated_size[self.domains[0]] += \
+                        VM_DISK_SIZE
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_create_templates(self):
