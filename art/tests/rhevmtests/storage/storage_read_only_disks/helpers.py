@@ -1,8 +1,9 @@
 """
 Read Only Disk test helpers functions
 """
-
+import config
 import logging
+from art.test_handler import exceptions
 from art.rhevm_api.tests_lib.low_level.disks import (
     wait_for_disks_status, addDisk, get_all_disk_permutation, attachDisk,
     check_disk_visibility, checkDiskExists, deleteDisk,
@@ -11,10 +12,7 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import addStorageDomain
 from art.rhevm_api.tests_lib.low_level.vms import (
     activateVmDisk, getVmDisks,
 )
-from art.test_handler import exceptions
 from rhevmtests.storage import helpers
-
-import config
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +20,13 @@ ENUMS = config.ENUMS
 
 DISKS_NAMES = dict()  # dictionary with storage type as key
 DISK_TIMEOUT = 250
-
 DD_TIMEOUT = 1500
 DD_COMMAND = 'dd if=/dev/%s of=/dev/%s bs=1M oflag=direct'
 FILTER = '[sv]d'
 READ_ONLY = 'Read-only'
 NOT_PERMITTED = 'Operation not permitted'
+
+not_bootable = lambda disk: not disk.get_bootable() and disk.get_active()
 
 
 def add_new_disk(sd_name, storage_type, permutation, shared=False,
@@ -135,22 +134,28 @@ def write_on_vms_ro_disks(vm_name, storage_type, imported_vm=False):
         * storage_type - storage domain type
         * imported_vm - True if the vm is imported
     """
-    vm_disks = getVmDisks(vm_name)
+    vm_disks = filter(not_bootable, getVmDisks(vm_name))
     if imported_vm:
         global DISKS_NAMES
-        DISKS_NAMES[storage_type] = [disk.get_alias() for disk in vm_disks if
-                                     not disk.get_bootable()]
+        DISKS_NAMES[storage_type] = [disk.get_alias() for disk in vm_disks]
         logger.info("Disks: %s", DISKS_NAMES[storage_type])
     logger.info("VM %s disks %s", vm_name, vm_disks)
 
-    for disk in DISKS_NAMES[storage_type]:
+    for disk, is_ro_vm_disk in zip(DISKS_NAMES[storage_type], vm_disks):
         logger.info("Checking if disk %s visible to %s", disk, vm_name)
         is_visible = check_disk_visibility(disk, vm_disks)
-
         if not is_visible:
-            raise exceptions.DiskException("Disk %s is not visible to vm %s",
-                                           disk, vm_name)
+            raise exceptions.DiskException(
+                "Disk '%s' is not visible to vm '%s'", disk, vm_name
+            )
         logger.info("disk %s is visible to %s" % (disk, vm_name))
+
+        logger.info("Checking if disk '%s' is readonly", disk)
+        if not is_ro_vm_disk.get_read_only():
+            raise exceptions.DiskException(
+                "Disk '%s' is not read only, aborting test", disk
+            )
+
         logger.info("Trying to write to read only disk...")
         status, out = helpers.perform_dd_to_disk(vm_name, disk)
         status = (not status) and (READ_ONLY in out or NOT_PERMITTED in out)
