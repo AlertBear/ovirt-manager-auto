@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Copyright (C) 2013 Red Hat, Inc.
 #
@@ -29,28 +30,22 @@ NUM_OF_NETWORKS = 5
 DEFAULT_MTU = "1500"
 
 
-def skipBOND(case_list, host_nics):
-    """
-    Description: Check if host can run BOND test (host have 4 interfaces)
-    if not skip the test (only for unittest)
-    **Author**: myakove
-    **Parameters**:
-       * *case_list* - list of class names from unittest test.
-       * *host_nics* - List of interfaces on the host (use config.HOST_NICS)
-    """
-    if len(host_nics) < DEFAULT_HOST_NICS_NUM:
-        for case in case_list:
-            case.__test__ = False
-            logger.info("%s is skipped, host cannot run BOND test case" % case)
-
-
 def find_ip(vm, host_list, nic_index, vlan=None, bond=None):
     """
     Find source and destination IP for hosts
+
     :param vm:  VM name
-    :param host_list:  List off the hosts (resource.VDS objects)
+    :type vm: str
+    :param host_list:  List of the hosts (resource.VDS objects)
+    :type host_list: list
     :param nic_index:  Nic to get IP on the hosts
+    :type nic_index: int
+    :param vlan: VLAN name
+    :type vlan: str
+    :param bond: BOND name
+    :type bond: str
     :return: Source and destination IPs
+    :rtype: tuple
     """
     src_host, dst_host, dst_name_engine = None, None, None
     orig_host = get_host(vm)
@@ -81,10 +76,12 @@ def find_ip(vm, host_list, nic_index, vlan=None, bond=None):
 
 def get_host(vm):
     """
-    Description: Find the host that the VM is running on
-        **Parameters**:
-            *  *vm* - VM name
-        Return: Host that VM is running on
+    Find the host that the VM is running on
+
+    :param vm: VM name
+    :type vm: str
+    :return: Host that VM is running on
+    :rtype: str
     """
     rc, out = ll_vms.getVmHost(vm)
     if not rc:
@@ -94,18 +91,22 @@ def get_host(vm):
 
 def vlan_int_name(interface, vlan):
     """
-        Description: Build the name for tagged interface or bond
-            **Parameters**:
-                *  *interface* - interface name
-                *  *vlan* - vlan id
-            Return: interface.vlan name format
-        """
+    Build the name for tagged interface or bond
+
+    :param interface: interface name
+    :type interface: str
+    :param vlan: vlan id
+    :type vlan: str
+    :return: interface.vlan name format
+    :rtype: str
+    """
     return ".".join([interface, vlan])
 
 
 def generate_networks_names(cases, num_of_networks=NUM_OF_NETWORKS):
     """
     Generate networks names per case
+
     :param cases: Number of cases
     :type cases: int
     :param num_of_networks: Number of networks for each case
@@ -124,11 +125,12 @@ def generate_networks_names(cases, num_of_networks=NUM_OF_NETWORKS):
 def check_dummy_on_host_interfaces(host_name, dummy_name):
     """
     Check if dummy interface is on host via engine
+
     :param host_name: Host name
     :type host_name: str
     :param dummy_name: Dummy name
     :type dummy_name: str
-    :return: True/False
+    :return: True if dummy interface is on host False otherwise
     :rtype: bool
     """
     host_nics = ll_hosts.getHostNicsList(host_name)
