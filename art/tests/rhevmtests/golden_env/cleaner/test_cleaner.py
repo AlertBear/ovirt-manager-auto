@@ -1,6 +1,6 @@
 import logging
 
-from art.unittest_lib import BaseTestCase, attr
+from art.unittest_lib import BaseTestCase
 
 import art.rhevm_api.tests_lib.high_level.datacenters as hl_dc
 
@@ -10,7 +10,6 @@ from rhevmtests.golden_env import config
 LOGGER = logging.getLogger(__name__)
 
 
-@attr(team='automationInfra')
 class CleanGoldenEnv(BaseTestCase):
     __test__ = True
 
