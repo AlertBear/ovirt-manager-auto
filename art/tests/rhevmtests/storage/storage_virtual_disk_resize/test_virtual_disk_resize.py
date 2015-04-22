@@ -426,7 +426,7 @@ class TestCase336100(DisksPermutationEnvironment):
         logger.info("Creating Snapshot")
         self.assertTrue(addSnapshot(True, self.vm, self.snap_description),
                         "Failed to add snapshot %s" % self.snap_description)
-        wait_for_vm_snapshots(self.vm, ENUMS['snapshot_state_ok'])
+        wait_for_vm_snapshots(self.vm, config.SNAPSHOT_OK)
 
         for disk in helpers.DISKS_NAMES:
             status = extend_vm_disk_size(True, self.vm,
@@ -439,12 +439,15 @@ class TestCase336100(DisksPermutationEnvironment):
         status = preview_snapshot(True, self.vm, self.snap_description)
         self.is_preview = status
         assert status
+        wait_for_vm_snapshots(
+            self.vm, [config.SNAPSHOT_IN_PREVIEW], [self.snap_description],
+        )
 
         status = commit_snapshot(True, self.vm)
-        start_vms([self.vm], 1, wait_for_ip=False)
-        waitForVMState(self.vm)
         assert status
         self.is_preview = not status
+        start_vms([self.vm], 1, wait_for_ip=False)
+        waitForVMState(self.vm)
         vm_disks = getVmDisks(self.vm)
         disks_sizes = [disk.get_size() for disk in vm_disks if
                        (not disk.get_bootable())]
@@ -454,7 +457,7 @@ class TestCase336100(DisksPermutationEnvironment):
     def tearDown(self):
         if self.is_preview:
             undo_snapshot_preview(True, self.vm)
-            wait_for_vm_snapshots(self.vm, ENUMS['snapshot_state_ok'])
+            wait_for_vm_snapshots(self.vm, config.SNAPSHOT_OK)
 
         super(TestCase336100, self).tearDown()
 
