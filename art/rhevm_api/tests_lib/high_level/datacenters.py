@@ -158,7 +158,7 @@ def get_clusters_connected_to_datacenter(dc_id):
     )
 
 
-@is_action
+@is_action()
 def clean_datacenter(
         positive, datacenter,
         db_name=ll_storagedomains.RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
