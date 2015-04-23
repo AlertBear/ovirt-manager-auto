@@ -284,14 +284,3 @@ def loginAsUser(user, domain, password, filter):
     opts['user_domain'] = domain
     opts['password'] = password
     logger.info(msg, user, domain, filter)
-
-
-def fetchUserGroups(positive, user_name):
-    '''
-    Description: Fetch groups of user
-    Parameters:
-       * user_name - name of the user
-    Return: list of Group objects
-    '''
-    userObj = util.query('{0}={1}'.format('usrname', user_name))[0]
-    return userObj.get_groups().group

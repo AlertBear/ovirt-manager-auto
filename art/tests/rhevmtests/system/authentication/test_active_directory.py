@@ -143,13 +143,12 @@ class ActiveDirectory(TestCase):
     @istest
     @tcms(config.AD_TCMS_PLAN_ID, 91742)
     @attr(tier=0)
-    def fetchingGroupsWithUser(self):
-        """ Fetching user groups when logging with UPN """
+    def userFromGroup(self):
+        """ Test if user from group can login """
         user_name = config.USER_FROM_GROUP(self.domain)
         self._loginAsUser(user_name, filter=False)
-        groups = users.fetchUserGroups(True, user_name=user_name)
-        LOGGER.info("User's groups: %s", [g.get_name() for g in groups])
-        assert len(groups)
+        self.assertTrue(connectionTest())
+        LOGGER.info("User from group can login")
 
     def _checkEnc(self, auth, result):
         user, domain = config.NORMAL_USER(self.domain).split('@')
