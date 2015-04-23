@@ -236,9 +236,12 @@ class RoleCase54401(TestCase):
         )
 
         loginAsAdmin()
-        self.assertTrue(mla.addRolePermissions(
-            True, config.USER_ROLE, permit='vm_basic_operations')
-        )
+        for perm in ['run_vm', 'stop_vm']:
+            self.assertTrue(
+                mla.addRolePermissions(
+                    True, config.USER_ROLE, permit=perm
+                )
+            )
 
         # 5.Check that after editing(changing) a role effect will be immediate.
         # User should operate vm now

@@ -625,7 +625,7 @@ class PositiveNetworkPermissions236408(NetworkingPossitive):
 
     @istest
     @tcms(TCMS_PLAN_ID_POS, 236408)
-    @bz(1153043)
+    @bz({'1209505': {'engine': None, 'version': ['3.6']}})
     def addVNICToTemplate(self):
         """ Add a VNIC to template """
         loginAsUser(config.USER_NAME)
@@ -800,6 +800,7 @@ class PositiveNetworkPermissions317269(NetworkingPossitive):
 class PositiveNetworkPermissions317133(NetworkingPossitive):
     __test__ = True
     dc_name = 'rand_dc_name'
+    bz = {'1214805': {'engine': None, 'version': ['3.6']}}
 
     def setUp(self):
         users.addRoleToUser(True, config.USER_NAME, role.DataCenterAdmin)
@@ -814,7 +815,6 @@ class PositiveNetworkPermissions317133(NetworkingPossitive):
         datacenters.removeDataCenter(True, self.dc_name)
 
     @istest
-    @bz(1014985)
     @tcms(TCMS_PLAN_ID_POS, 317133)
     def automaticCreationToUser(self):
         """ Check that networkadmin permissions are added automatically  """

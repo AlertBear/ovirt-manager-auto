@@ -526,6 +526,7 @@ class DPCase147128(TestCase):
 
     @tcms(TCMS_PLAN_ID, 147128)
     @istest
+    @bz({'1209505': {'engine': None, 'version': ['3.6']}})
     def moveDisk(self):
         """ Move disk with and without having permissions on sds """
         # Move disk without permissions
@@ -615,7 +616,7 @@ class DPCase147129(TestCase):
 
     @tcms(TCMS_PLAN_ID, 147129)
     @istest
-    @bz(1153043)
+    @bz({'1209505': {'engine': None, 'version': ['3.6']}})
     def addDiskToVm(self):
         """ add disk to vm with and without permissions """
         users.loginAsUser(

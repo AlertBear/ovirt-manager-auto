@@ -239,7 +239,7 @@ class VmUserInfoTests2(TestCase):
         LOGGER.info("User can't see object where he has permissions.")
 
         assert len(dcs) == 1, msgVisible % ('datacenters', dcs)
-        assert len(cls) == 2, msgVisible % ('clusters', cls)
+        assert len(cls) == 1, msgVisible % ('clusters', cls)
 
     @istest
     @tcms(TCMS_PLAN_ID, 171076)

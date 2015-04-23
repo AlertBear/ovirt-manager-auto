@@ -4,7 +4,7 @@ __test__ = False
 from rhevmtests.system.config import *  # flake8:  noqa
 
 # Networks
-NETWORK_NAME = 'rhevm'
+NETWORK_NAME = MGMT_BRIDGE
 NETWORK_NAME1 = 'rhevm1'
 NETWORK_NAME2 = 'rhevm2'
 NETWORK_NAME3 = 'rhevm3'
