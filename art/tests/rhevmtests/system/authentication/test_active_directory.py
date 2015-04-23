@@ -37,7 +37,9 @@ RHEVM = 'rhevm'
 
 
 def teardown_module():
-    config.ENGINE_HOST.executor().run_cmd([SET_AUTH % (ENGINE, AUTH)])
+    config.ENGINE_HOST.executor().run_cmd(
+        ['engine-config', '-s', 'SASL_QOP=auth']
+    )
     config.ENGINE.restart()
     for status in TimeoutingSampler(
         timeout=70,
