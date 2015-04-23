@@ -748,9 +748,10 @@ def get_template_from_cluster(cluster):
     """
     logging.info("Getting all templates in cluster %s", cluster)
     cluster_id = CLUSTER_API.find(cluster).get_id()
-    all_templates = TEMPLATE_API.get(absLink=False)
-    templates_in_cluster = [x.get_name() for x in all_templates if
-                            x.get_cluster().get_id() == cluster_id]
+    templates = TEMPLATE_API.get(absLink=False)
+    templates_in_cluster = [
+        t.name for t in templates if t.cluster and t.cluster.id == cluster_id
+    ]
     logging.info("Templates in cluster: %s", templates_in_cluster)
     return templates_in_cluster
 
