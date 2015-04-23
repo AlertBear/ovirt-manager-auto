@@ -23,36 +23,36 @@ def setup_package():
         storagedomains.activateStorageDomain(
             True, config.DC_NAME[0], config.EXPORT_STORAGE_DOMAIN
         )
-    storagedomains.importStorageDomain(
-        True,
-        type='iso',
-        storage_type='nfs',
-        address=config.ISO_DOMAIN_ADDRESS,
-        host=config.HOSTS[0],
-        path=config.ISO_DOMAIN_PATH
-    )
+        storagedomains.importStorageDomain(
+            True,
+            type='iso',
+            storage_type='nfs',
+            address=config.ISO_DOMAIN_ADDRESS,
+            host=config.HOSTS[0],
+            path=config.ISO_DOMAIN_PATH
+        )
     storagedomains.attachStorageDomain(
-        True, config.DC_NAME[0], config.ISO_STORAGE_DOMAIN
+        True, config.DC_NAME[0], config.ISO_DOMAIN_NAME
     )
     storagedomains.activateStorageDomain(
-        True, config.DC_NAME[0], config.ISO_STORAGE_DOMAIN
+        True, config.DC_NAME[0], config.ISO_DOMAIN_NAME
     )
 
 
 def teardown_package():
     storagedomains.deactivateStorageDomain(
         True, datacenter=config.DC_NAME[0],
-        storagedomain=config.ISO_STORAGE_DOMAIN
+        storagedomain=config.ISO_DOMAIN_NAME
     )
     storagedomains.detachStorageDomain(
         True, datacenter=config.DC_NAME[0],
-        storagedomain=config.ISO_STORAGE_DOMAIN
-    )
-    storagedomains.removeStorageDomain(
-        True, storagedomain=config.ISO_STORAGE_DOMAIN,
-        host=config.HOSTS[0], format='False'
+        storagedomain=config.ISO_DOMAIN_NAME
     )
     if not config.GOLDEN_ENV:
+        storagedomains.removeStorageDomain(
+            True, storagedomain=config.ISO_DOMAIN_NAME,
+            host=config.HOSTS[0], format='False'
+        )
         storagedomains.deactivateStorageDomain(
             True, datacenter=config.DC_NAME[0],
             storagedomain=config.EXPORT_STORAGE_DOMAIN
