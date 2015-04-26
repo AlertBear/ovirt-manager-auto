@@ -213,9 +213,13 @@ class BaseCaseIsoDomains(TestCase):
 @attr(tier=0)
 class TestCase50769Shared(BaseCaseIsoDomains):
     """
-    Test detaching iso domains when an iso is inserted in a vm
-    under a shared DC
+    Test detaching iso domains when an iso image is inserted in a vm under a
+    shared DC
     """
+    # Please note that the following bug may cause this case to fail
+    # intermittently: https://bugzilla.redhat.com/show_bug.cgi?id=1215402
+    # The Posix ISO domain fails to Detach and can only be removed by using
+    # the Destroy option (which the code doesn't do)
     __test__ = True
     local = False
     vm_name = "TestCasesPlan6458Shared"
@@ -251,8 +255,8 @@ class TestCase50769Shared(BaseCaseIsoDomains):
 @attr(tier=1)
 class Plan6107Local(BaseCaseIsoDomains):
     """
-    Test detaching iso domains when an iso is inserted in a vm
-    under a local DC
+    Test detaching iso domains when an iso image is inserted in a vm under a
+    local DC
     """
     # Local data center tests are not supported by the golden environment
     __test__ = not config.GOLDEN_ENV
