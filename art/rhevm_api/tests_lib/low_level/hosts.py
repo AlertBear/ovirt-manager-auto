@@ -2395,3 +2395,20 @@ def get_host_free_memory(host_name):
     """
     stats = getStat(host_name, ELEMENT, COLLECTION, ["memory.free"])
     return stats["memory.free"]
+
+
+def get_host_nic_statistics(host, nic):
+    """
+    Get HOST NIC statistics collection
+
+    :param host: Host name
+    :type host: str
+    :param nic: NIC name
+    :type nic: str
+    :return: VM NIC statistics list
+    :rtype: list
+    """
+    host_nic = getHostNic(host, nic)
+    return HOST_NICS_API.getElemFromLink(
+        host_nic, link_name="statistics", attr="statistic"
+    )

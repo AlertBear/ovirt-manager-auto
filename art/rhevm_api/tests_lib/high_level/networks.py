@@ -30,11 +30,12 @@ from art.rhevm_api.tests_lib.low_level.networks import (
 )
 from art.rhevm_api.tests_lib.low_level.hosts import (
     sendSNRequest, commitNetConfig, genSNNic, getHostNic, removeHost,
-    get_host_name_from_engine)
+    get_host_name_from_engine, get_host_nic_statistics
+)
 from art.rhevm_api.tests_lib.low_level.templates import createTemplate
 from art.rhevm_api.tests_lib.low_level.vms import (
     getVmMacAddress, startVm, stopVm, createVm, waitForVmsStates,
-    waitForIP
+    waitForIP, get_vm_nic_statistics
 )
 from art.rhevm_api.utils.test_utils import (
     convertMacToIpAddress, setPersistentNetwork, sendICMP,
@@ -1196,3 +1197,38 @@ def is_management_network(cluster_name, network):
     ):
         return True
     return False
+
+
+def get_nic_statistics(nic, host=None, vm=None, keys=None):
+    """
+    Get Host NIC/VM NIC statistics value for given keys.
+    Available keys are:
+        data.current.rx
+        data.current.tx
+        errors.total.rx
+        errors.total.tx
+        data.total.rx
+        data.total.tx
+
+    :param nic: NIC name
+    :type nic: str
+    :param host: Host name
+    :type host: str
+    :param vm: VM name
+    :type vm: str
+    :param keys: Keys to get keys for
+    :type keys: list
+    :return: Dict with keys values
+    :rtype: dict
+    """
+    res = dict()
+    stats = get_host_nic_statistics(
+        host, nic
+    ) if host else get_vm_nic_statistics(
+        vm, nic
+    )
+    for stat in stats:
+        stat_name = stat.get_name()
+        if stat_name in keys:
+            res[stat_name] = stat.get_values().get_value()[0].get_datum()
+    return res

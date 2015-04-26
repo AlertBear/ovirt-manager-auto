@@ -4561,3 +4561,20 @@ def get_vm_nic_mac_address(vm, nic='nic1'):
         VM_API.logger.error("Vm %s doesn't have nic '%s'", vm, nic)
         return ""
     return str(nicObj.mac.address)
+
+
+def get_vm_nic_statistics(vm, nic):
+    """
+    Get VM NIC statistics collection
+
+    :param vm: VM name
+    :type vm: str
+    :param nic: NIC name
+    :type nic: str
+    :return: VM NIC statistics list
+    :rtype: list
+    """
+    vm_nic = getVmNic(vm, nic)
+    return NIC_API.getElemFromLink(
+        vm_nic, link_name="statistics", attr="statistic"
+    )
