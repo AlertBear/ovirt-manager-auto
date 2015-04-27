@@ -334,6 +334,7 @@ class TestCase294435(ReturnToSnapshot):
     __test__ = True
     tcms_test_case = '294435'
     test_action = staticmethod(preview_snapshot)
+    bz = {'1211588': {'engine': ['cli'], 'version': ['3.5', '3.6']}}
 
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     def test_preview_snapshot(self):
