@@ -167,12 +167,18 @@ if 'prepared_env' in ART_CONFIG:
     ISO_DOMAIN_ADDRESS = PARAMETERS.as_list("tests_iso_domain_address")[0]
     ISO_DOMAIN_PATH = PARAMETERS.as_list("tests_iso_domain_path")[0]
 
-    EXTERNAL_PROVIDERS = [x['name'] for x in GOLDEN_ENV['external_providers']]
-    logger.info(
-        "external providers in golden environment: %s", EXTERNAL_PROVIDERS
-    )
     CPU_CORES = 1
     CPU_SOCKET = 1
+
+    # External Provider types
+    GLANCE = 'OpenStackImageProvider'
+
+    external_providers = GOLDEN_ENV['external_providers']
+    EXTERNAL_PROVIDERS = {}
+    for provider in external_providers:
+        EXTERNAL_PROVIDERS[provider['type']] = provider['name']
+
+    GOLDEN_GLANCE_IMAGE = 'golden_env_mixed_virtio_0_Disk1'
 
     DATA_DOMAIN_ADDRESSES = PARAMETERS.as_list('data_domain_address')
     DATA_DOMAIN_PATHS = PARAMETERS.as_list('data_domain_path')
