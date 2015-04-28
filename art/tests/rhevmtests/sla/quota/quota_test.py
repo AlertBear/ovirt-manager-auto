@@ -359,16 +359,18 @@ class QuotaTestMode(TestCase):
         """
         db.update_quota(QUOTA_NAME, grace_vds_group_percentage=20)
         with ui_setup(quota_ui):
-            quota_ui.edit_quota(config.DC_NAME[0], QUOTA_NAME,
-                                mem_limit=0, vcpu_limit=0, storage_limit=20)
+            quota_ui.edit_quota(
+                config.DC_NAME[0], QUOTA_NAME,
+                mem_limit=0, vcpu_limit=0, storage_limit=20
+            )
         q_id = db.get_quota_id_by_name(QUOTA_NAME)
-        self.assertTrue(disks.addDisk(True, alias=DISK_NAME,
-                                      provisioned_size=10*GB,
-                                      interface=DISK_INTERFACE,
-                                      format=DISK_FORMAT,
-                                      storagedomain=config.STORAGE_NAME[0],
-                                      quota=q_id))
-        self.assertTrue(delete_disks([DISK_NAME]))
+        self.assertTrue(
+            disks.addDisk(
+                True, alias=DISK_NAME, provisioned_size=10*GB,
+                interface=DISK_INTERFACE, format=DISK_FORMAT,
+                storagedomain=config.STORAGE_NAME[0], quota=q_id
+            )
+        )
 
     @istest
     @tcms('9428', '268996')
@@ -376,14 +378,14 @@ class QuotaTestMode(TestCase):
         """ Quota storage limit in grace """
         max_id = events.get_max_event_id(None)
         q_id = db.get_quota_id_by_name(QUOTA_NAME)
-        self.assertTrue(disks.addDisk(True, alias=DISK_NAME,
-                                      provisioned_size=14*GB,
-                                      interface=DISK_INTERFACE,
-                                      format=DISK_FORMAT,
-                                      storagedomain=config.STORAGE_NAME[0],
-                                      quota=q_id))
+        self.assertTrue(
+            disks.addDisk(
+                True, alias=DISK_NAME, provisioned_size=14*GB,
+                interface=DISK_INTERFACE, format=DISK_FORMAT,
+                storagedomain=config.STORAGE_NAME[0], quota=q_id
+            )
+        )
         self.assertTrue(self._check_quota_message(max_id, GRACE_MODE))
-        self.assertTrue(delete_disks([DISK_NAME]))
 
     @istest
     @tcms('9428', '268997')
@@ -391,18 +393,19 @@ class QuotaTestMode(TestCase):
         """ Quota storage limit over grace """
         max_id = events.get_max_event_id(None)
         q_id = db.get_quota_id_by_name(QUOTA_NAME)
-        self.assertTrue(disks.addDisk(self.positive, alias=DISK_NAME,
-                        provisioned_size=15*GB,
-                        interface=DISK_INTERFACE,
-                        format=DISK_FORMAT,
-                        storagedomain=config.STORAGE_NAME[0],
-                        quota=q_id))
+        self.assertTrue(
+            disks.addDisk(
+                self.positive, alias=DISK_NAME, provisioned_size=15*GB,
+                interface=DISK_INTERFACE, format=DISK_FORMAT,
+                storagedomain=config.STORAGE_NAME[0], quota=q_id
+            )
+        )
         self.assertTrue(self._check_quota_message(max_id, EXCEED_MODE))
-        if self.positive:
-            self.assertTrue(delete_disks([DISK_NAME]))
         with ui_setup(quota_ui):
-            quota_ui.edit_quota(config.DC_NAME[0], QUOTA_NAME,
-                                mem_limit=0, vcpu_limit=0, storage_limit=0)
+            quota_ui.edit_quota(
+                config.DC_NAME[0], QUOTA_NAME,
+                mem_limit=0, vcpu_limit=0, storage_limit=0
+            )
 
     @istest
     @tcms('9428', '268998')
@@ -411,6 +414,14 @@ class QuotaTestMode(TestCase):
         with ui_setup(quota_ui):
             self.assertRaises(GeneralException, quota_ui.remove_quota,
                               config.DC_NAME[0], QUOTA_NAME)
+
+    def tearDown(self):
+        """
+        If quota disk exist remove it
+        """
+        if disks.checkDiskExists(True, DISK_NAME):
+            if not delete_disks([DISK_NAME]):
+                logging.error("Failed to remove disk %s", DISK_NAME)
 
 
 class QuotaTestEnforced(QuotaTestMode):

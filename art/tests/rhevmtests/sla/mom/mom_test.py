@@ -422,9 +422,9 @@ class KSM(MOM):
         for vm_index in range(int(config.VM_NUM)):
             vm = "%s-%s" % (config.POOL_NAME, str(vm_index + 1))
             cls.vm_list.append(vm)
-            vm_mem = round(
-                host_mem * 2 / config.VM_NUM / config.GB
-            ) * config.GB
+            vm_mem = int(
+                round(host_mem * 2 / config.VM_NUM / config.GB) * config.GB
+            )
             user_migratable = config.ENUMS["vm_affinity_user_migratable"]
             if not vms.updateVm(
                     True, vm, placement_host=config.HOSTS[0],

@@ -16,21 +16,21 @@ DISK_SIZE = 6 * GB
 def delete_disks(disks_names, timeout=DEFAULT_TIMEOUT, sleep=SLEEP_TIME):
     """
     Wait until disks states is OK, delete disks and wait until all disks gone
-    **Author**: alukiano
 
-    **Parameters**:
-        * *disks_names* - list of disks names(["name1", "name2" ...])
-        * *timeout* - how long it should wait(by default 180 seconds)
-        * *sleep* - how often it should poll the state(by default 10 seconds)
-    **Returns**: True, if method was succeeded, else False
+    :param disks_names: list of disk names
+    :type disks_names: list
+    :param timeout: how long it should wait(by default 180 seconds)
+    :type timeout: int
+    :param sleep: how often it should poll the state(by default 10 seconds)
+    :type sleep: int
+    :returns : True, if method was succeeded, else False
+    :rtype: bool
     """
     if not disks_names:
         return False
     logger.info("Wait until disks state is OK")
     if not disks.wait_for_disks_status(
-            disks_names,
-            timeout=timeout,
-            sleep=sleep
+            disks_names, timeout=timeout, sleep=sleep
     ):
         return False
     for disk in disks_names:
