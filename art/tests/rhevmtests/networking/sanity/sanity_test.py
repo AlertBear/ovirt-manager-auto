@@ -16,9 +16,7 @@ from art.rhevm_api.tests_lib.low_level.datacenters import(
 )
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.core_api.apis_utils import TimeoutingSampler
-from art.rhevm_api.utils.test_utils import(
-    set_engine_properties, get_engine_properties, get_api
-)
+from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level import vms
 from rhevmtests.networking import config
@@ -1301,79 +1299,6 @@ class TestSanityCase17(TestCase):
 @attr(tier=0)
 class TestSanityCase18(TestCase):
     """
-    Invalid vs valid mac address ranges
-    """
-    __test__ = True
-    engine_default_mac_range = []
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Get default MAC range from engine
-        """
-        logger.info("Get engine default MAC pool range")
-        cls.engine_default_mac_range.append(
-            get_engine_properties(config.ENGINE, [
-                config.MAC_POOL_RANGE_CMD
-            ]
-            )[0])
-
-    @tcms(16421, 448119)
-    def test_big_range_mac_pool(self):
-
-        """
-        set valid and invalid MAC pool ranges
-        """
-
-        macs_list_not_valid = ["FF:00:00:00:00:00-FF:00:00:00:00:01"]
-        macs_list_valid = [
-            "00:00:00:00:00:00-00:00:00:00:00:01,"
-            "00:00:00:00:00:00-00:00:00:00:00:01",
-            "00:00:00:00:00:00-00:00:00:10:00:00,"
-            "00:00:00:02:00:00-00:03:00:00:00:00",
-            "00:00:00:00:00:00-00:00:00:10:00:00,"
-            "00:00:00:02:00:00-00:03:00:00:00:0a",
-            "00:00:00:00:00:00-00:00:00:10:00:00,"
-            "00:00:00:02:00:00-00:03:00:00:00:0A",
-            "FF:00:00:00:00:00-FF:00:00:00:00:01,"
-            "F0:00:00:00:00:00-F0:00:00:00:00:01",
-            "FF:00:00:00:00:00-FF:00:00:00:00:01,"
-            "00:00:00:00:00:00-00:00:00:00:00:01"
-        ]
-
-        logger.info("Check valid MAC range")
-        for mac in macs_list_valid:
-            logger.info("Setting valid MAC range: %s", mac)
-            cmd = "=".join([config.MAC_POOL_RANGE_CMD, mac])
-            if not set_engine_properties(config.ENGINE, [cmd], restart=False):
-                raise NetworkException("Failed to set MAC range: %s" % mac)
-        logger.info("Check invalid MAC range")
-        for mac in macs_list_not_valid:
-            logger.info("Setting invalid MAC range: %s", mac)
-            cmd = "=".join([config.MAC_POOL_RANGE_CMD, mac])
-            if set_engine_properties(config.ENGINE, [cmd], restart=False):
-                raise NetworkException(
-                    "Succeeded to set MAC range: %s. but shouldn't" % mac
-                )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Set default MAC range and MAC count and Remove the VM
-        """
-        logger.info("Setting engine MacPoolRange to default")
-        cmd = "=".join(
-            [config.MAC_POOL_RANGE_CMD, cls.engine_default_mac_range[0]]
-        )
-        if not set_engine_properties(config.ENGINE, [cmd], restart=False):
-            logger.error(
-                "Failed to set MAC: %s", cls.engine_default_mac_range[0]
-            )
-
-
-@attr(tier=0)
-class TestSanityCase19(TestCase):
-    """
     Configure ethtool and bridge opts with non-default value
     Verify ethtool and bridge_opts were updated with non-default values
     Update ethtool_and bridge opts with default value
@@ -1501,7 +1426,7 @@ class TestSanityCase19(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase20(TestCase):
+class TestSanityCase19(TestCase):
     """
     Configure queue for existing network
     """
@@ -1582,7 +1507,7 @@ class TestSanityCase20(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase21(TestCase):
+class TestSanityCase20(TestCase):
     """
     List all networks under datacenter.
     """
@@ -1650,7 +1575,7 @@ class TestSanityCase21(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase22(TestCase):
+class TestSanityCase21(TestCase):
     """
     Update VM network to be non-VM network
     Update non-VM network to be VM network
@@ -1758,7 +1683,7 @@ class TestSanityCase22(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase23(TestCase):
+class TestSanityCase22(TestCase):
     """
     Verify you can configure additional VLAN network with static IP and gateway
     """
@@ -1814,7 +1739,7 @@ class TestSanityCase23(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase24(TestCase):
+class TestSanityCase23(TestCase):
     """
     1) Put label on Host NIC of one Host
     2) Check network is attached to Host
@@ -1893,7 +1818,7 @@ class TestSanityCase24(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase25(TestCase):
+class TestSanityCase24(TestCase):
     """
     Add new network QOS
     """
@@ -2002,7 +1927,7 @@ class TestSanityCase25(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase26(TestCase):
+class TestSanityCase25(TestCase):
     """
     Negative: Create more than 5 BONDS using dummy interfaces
     """
