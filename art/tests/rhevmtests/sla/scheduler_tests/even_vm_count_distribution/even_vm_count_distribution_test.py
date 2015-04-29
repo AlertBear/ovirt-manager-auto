@@ -10,7 +10,7 @@ import logging
 from rhevmtests.sla import config
 from nose.tools import istest
 from art.unittest_lib import attr
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 from art.unittest_lib import SlaTest as TestCase
@@ -142,6 +142,11 @@ class BalancingWithDefaultParameters(TwoHostsTests):
     default parameters
     """
     __test__ = True
+    bz = {
+        '1189095': {
+            'engine': ['cli', 'java'], 'version': ['3.5', '3.5.1']
+        }
+    }
 
     @classmethod
     def setup_class(cls):
@@ -168,6 +173,11 @@ class NoHostForMigration(TwoHostsTests):
     that no migration appear under vm_evenly_distributed cluster policy
     """
     __test__ = True
+    bz = {
+        '1189095': {
+            'engine': ['cli', 'java'], 'version': ['3.5', '3.5.1']
+        }
+    }
 
     @classmethod
     def setup_class(cls):
@@ -196,6 +206,11 @@ class StartVmUnderClusterPolicy(TwoHostsTests):
     when on host_1(SPM) and host_2 equal number of vms
     """
     __test__ = True
+    bz = {
+        '1189095': {
+            'engine': ['cli', 'java'], 'version': ['3.5', '3.5.1']
+        }
+    }
 
     @classmethod
     def setup_class(cls):
@@ -227,6 +242,11 @@ class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
     after killing host_2 vms from host_2 must start on host_1
     """
     __test__ = True
+    bz = {
+        '1189095': {
+            'engine': ['cli', 'java'], 'version': ['3.5', '3.5.1']
+        }
+    }
 
     @classmethod
     def setup_class(cls):
@@ -262,7 +282,6 @@ class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
         super(HaVmStartOnHostAboveMaxLevel, cls).setup_class()
 
     @tcms('12212', '338999')
-    @bz({'1175824': {'engine': None, 'version': ['3.5']}})
     @istest
     def check_migration(self):
         """
@@ -312,6 +331,11 @@ class PutHostToMaintenance(EvenVmCountDistribution):
     maintenance, as result all vms from host_2 must migrate on host_3
     """
     __test__ = True
+    bz = {
+        '1189095': {
+            'engine': ['cli', 'java'], 'version': ['3.5', '3.5.1']
+        }
+    }
 
     @classmethod
     def setup_class(cls):
@@ -329,20 +353,15 @@ class PutHostToMaintenance(EvenVmCountDistribution):
         """
         logger.info("Deactivate host %s", config.HOSTS[1])
         if not host_api.deactivateHost(True, config.HOSTS[1]):
-            raise errors.HostException("Deactivate host %s failed"
-                                       % config.HOSTS[1])
+            raise errors.HostException(
+                "Deactivate host %s failed" % config.HOSTS[1]
+            )
         self._check_migration(config.HOSTS[2], NUM_OF_VMS_ON_HOST)
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Activate host_2 and deactivate host_3
-        """
         logger.info("Activate host %s", config.HOSTS[1])
         if not host_api.activateHost(True, config.HOSTS[1]):
-            raise errors.HostException("Activation of host %s failed",
-                                       config.HOSTS[1])
-        super(PutHostToMaintenance, cls).teardown_class()
+            raise errors.HostException(
+                "Activation of host %s failed", config.HOSTS[1]
+            )
 
 
 class MigrateVmUnderPolicy(EvenVmCountDistribution):
@@ -353,6 +372,11 @@ class MigrateVmUnderPolicy(EvenVmCountDistribution):
     must migrate vm on host_3
     """
     __test__ = True
+    bz = {
+        '1189095': {
+            'engine': ['cli', 'java'], 'version': ['3.5', '3.5.1']
+        }
+    }
 
     @classmethod
     def setup_class(cls):
