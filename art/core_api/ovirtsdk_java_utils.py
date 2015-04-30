@@ -264,7 +264,10 @@ def get_java_object_name_by_getter_name(python_getter):
     suggested_name = ''.join(python_getter.split('get_')[1:])
     # looking for it
     try:
-        return get_object_name_from_ds(suggested_name)
+        ds_name = get_object_name_from_ds(suggested_name)
+        # The XJC compiler used to generate Java code eliminates underscores
+        # from class names, so we need to eliminate them here as well
+        return ds_name.replace('_', '')
     except Exception:
         err_msg = "Entity '%s' is missing in \
 org.ovirt.engine.sdk.entities %s" % (suggested_name,
