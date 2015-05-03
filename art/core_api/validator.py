@@ -293,7 +293,10 @@ def compareElements(expElm, actElm, logger, root, equal=True,
     * java_sdk_mode - run with java sdk backend
     Returns: True is elements are equal, False otherwise
     '''
-    ignore_list = ['status', 'role', 'active', 'total', 'required', 'permit']
+    ignore_list = [
+        'status', 'role', 'active', 'total', 'required', 'permit',
+        'root_password'
+    ]
     ignore_list.extend(ATTR_IGNORE_LIST)
 
     if not actElm:

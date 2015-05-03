@@ -320,7 +320,7 @@ def _prepareVmObject(**kwargs):
     # initialization
     initialization = kwargs.pop('initialization', None)
     if initialization:
-        vm.set_initialization(initialization=initialization)
+        vm.set_initialization(initialization)
 
     # timezone
     vm.timezone = kwargs.pop('timezone', None)
@@ -406,6 +406,8 @@ def addVm(positive, wait=True, **kwargs):
        * timeout - waiting timeout
        * protected - true if VM is delete protected
        * cpu_profile_id - id of cpu profile
+       * initialization - should be created as an Initialization object with
+         relevant parameters (sysprep, ovf, username, root_password etc).
     Return: status (True if vm was added properly, False otherwise)
     '''
     kwargs.update(add=True)
