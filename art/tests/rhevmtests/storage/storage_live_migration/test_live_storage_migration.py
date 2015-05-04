@@ -578,7 +578,8 @@ class TestCase166166(BaseTestCase):
     live migration with shared disk
     https://tcms.engineering.redhat.com/case/166166
     """
-    __test__ = True
+    # Gluster doesn't support shareable disks
+    __test__ = BaseTestCase.storage != config.STORAGE_TYPE_GLUSTER
     tcms_test_case = '166166'
     test_vm_name = 'test_vm_%s' % tcms_test_case
     permutation = {}

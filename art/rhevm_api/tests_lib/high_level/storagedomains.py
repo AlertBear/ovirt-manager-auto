@@ -552,6 +552,10 @@ class PosixFSStorageAdder(StorageAdder):
 class GlusterStorageAdder(PosixFSStorageAdder):
     def add_storage(self, i):
         name = 'gluster_%s' % i
+        self.domain_addresses = self.storage.as_list(
+            "gluster_data_domain_address"
+        )
+        self.domain_paths = self.storage.as_list("gluster_data_domain_path")
         self._add_storage(addGlusterDomain, self.host, name, self.datacenter,
                           self.domain_addresses[i], self.domain_paths[i],
                           self.vfs_type, ENUMS['storage_dom_type_data'])

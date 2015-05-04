@@ -162,8 +162,7 @@ class TestCase94950(TestCase):
                 raise exceptions.StorageDomainException(
                     "Creating iSCSI domain '%s' failed" % self.sd_name
                 )
-            wait_for_jobs()
-        else:
+        elif self.storage in config.STORAGE_TYPE_NFS:
             self.sd_name = "{0}_{1}".format(self.tcms_test_case,
                                             "NFS_Domain")
             self.nfs_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[0]
@@ -180,7 +179,25 @@ class TestCase94950(TestCase):
                 raise exceptions.StorageDomainException(
                     "Creating NFS domain '%s' failed" % self.sd_name
                 )
-            wait_for_jobs()
+        elif self.storage in config.STORAGE_TYPE_GLUSTER:
+            self.sd_name = "{0}_{1}".format(self.tcms_test_case,
+                                            "Gluster_Domain")
+            self.gluster_address = \
+                config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0]
+            self.gluster_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0]
+            status = storagedomains.addGlusterDomain(
+                host=self.spm_host,
+                name=self.sd_name,
+                data_center=config.DATA_CENTER_NAME,
+                address=self.gluster_address,
+                path=self.gluster_path,
+                vfs_type=config.ENUMS['vfs_type_glusterfs']
+            )
+            if not status:
+                raise exceptions.StorageDomainException(
+                    "Creating Gluster domain '%s' failed" % self.sd_name
+                )
+        wait_for_jobs()
 
     def tearDown(self):
         """

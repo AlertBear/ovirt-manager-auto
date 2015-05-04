@@ -18,7 +18,8 @@ class TestCase174621(TestCase):
     Test sharing disk
     Expected system: 2 vms with state down
     """
-    __test__ = True
+    # Gluster doesn't support shareable disks
+    __test__ = TestCase.storage != config.STORAGE_TYPE_GLUSTER
 
     tcms_plan_id = '6458'
     tcms_test_case = '174621'
@@ -89,7 +90,8 @@ class TestCase275816(TestCase):
 
     https://tcms.engineering.redhat.com/case/275816/?from_plan=9583
     """
-    __test__ = True
+    # Gluster doesn't support shareable disks
+    __test__ = TestCase.storage != config.STORAGE_TYPE_GLUSTER
 
     tcms_plan_id = '9583'
     tcms_test_case = '275816'

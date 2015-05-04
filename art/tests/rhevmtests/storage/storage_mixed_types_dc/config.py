@@ -1,4 +1,4 @@
-from rhevmtests.storage.config import * # flake8: noqa
+from rhevmtests.storage.config import *  # flake8: noqa
 
 __test__ = False
 
@@ -13,11 +13,6 @@ HOST = HOSTS[0]
 HOST_ADMIN = HOSTS_USER
 HOST_PASSWORD = HOSTS_PW
 
-# TODO: remove
-FC_SD_TYPE = STORAGE_TYPE_FCP
-ISCSI_SD_TYPE = STORAGE_TYPE_ISCSI
-NFS_SD_TYPE = STORAGE_TYPE_NFS
-
 FC_SD_NAME_1 = "fc_sd"
 ISCSI_SD_NAME_1 = "iscsi_sd"
 ISCSI_SD_NAME_2 = "iscsi_sd2"
@@ -28,7 +23,7 @@ NFS_DOMAIN = {
     'name': NFS_SD_NAME_1,
     'type': ENUMS['storage_dom_type_data'],
     'address': ADDRESS[0],
-    'storage_type': NFS_SD_TYPE,
+    'storage_type': STORAGE_TYPE_NFS,
     'path': PATH[0],
 }
 
@@ -63,9 +58,9 @@ ISCSI_DOMAIN2 = {
 GLUSTER_DOMAIN = {
     'name': GLUSTER_SD_NAME_1,
     'type': ENUMS['storage_dom_type_data'],
-    'storage_type': ENUMS['storage_type_gluster'],
-    'address': ADDRESS[1],
-    'path': PATH[1],
+    'storage_type': STORAGE_TYPE_GLUSTER,
+    'address': GLUSTER_ADDRESS[1],
+    'path': GLUSTER_PATH[1],
     'vfs_type': ENUMS['vfs_type_glusterfs'],
 }
 

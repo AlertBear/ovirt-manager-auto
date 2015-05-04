@@ -1,31 +1,25 @@
 """
 Hotplug full test plan
 """
-
+import config
+import helpers
+import common
 import logging
 from concurrent.futures import ThreadPoolExecutor
 import time
-
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import attr
-
+from art.unittest_lib import StorageTest as TestCase
 from art.rhevm_api.utils import test_utils as utils
 import art.test_handler.exceptions as exceptions
 from art.rhevm_api.utils.test_utils import wait_for_tasks
-
 import art.rhevm_api.tests_lib.high_level.datacenters as datacenters
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainNamesForType,
 )
-
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
 from art.rhevm_api.tests_lib.low_level import vms, disks, templates, hosts
 from art.rhevm_api.tests_lib.high_level.disks import delete_disks
-
-import config
-import helpers
-import common
-from art.unittest_lib import StorageTest as TestCase
 
 LOGGER = logging.getLogger(__name__)
 ENUMS = config.ENUMS
@@ -512,7 +506,6 @@ class BasePlugDiskTest(TestCase):
 class TestCase231521(BasePlugDiskTest):
     """Activate/Deactivate an already attached disk
     on a running VM with supported OS"""
-
     __test__ = True
 
     tcms_plan_id = '5291'
@@ -582,8 +575,8 @@ class TestCase231521(BasePlugDiskTest):
 @attr(tier=1)
 class TestCase139348(BasePlugDiskTest):
     """Hotplug floating disk (shareable and non-shareable)"""
-
-    __test__ = True
+    # Gluster doesn't support shareable disks
+    __test__ = TestCase.storage != config.STORAGE_TYPE_GLUSTER
     tcms_plan_id = '5291'
     tcms_test_case = '139348'
 
@@ -616,7 +609,8 @@ class TestCase174616(TestCase):
     2 vms, 1 shareable disk attached to both of them.
     test ensure hotplug works fine
     """
-    __test__ = True
+    # Gluster doesn't support shareable disks
+    __test__ = TestCase.storage != config.STORAGE_TYPE_GLUSTER
 
     tcms_plan_id = '6458'
     tcms_test_case = '174616'
@@ -697,7 +691,6 @@ class TestCase174616(TestCase):
             and then Activate them
         """
         for vm in self.vm_names:
-
             self.assertTrue(vms.startVm(True, vm),
                             "Unable to start vms")
 

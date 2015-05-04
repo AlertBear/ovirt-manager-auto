@@ -6,13 +6,11 @@ Check with shared and local DCs
 Check with RHEL and windows OSs
 Check with NFS, POSIXFS and local ISO domains
 """
+import config
 import logging
 import helpers
-import config
-
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
-
 from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 import art.rhevm_api.tests_lib.high_level.storagedomains as hl_sd
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
@@ -220,7 +218,8 @@ class TestCase50769Shared(BaseCaseIsoDomains):
     # intermittently: https://bugzilla.redhat.com/show_bug.cgi?id=1215402
     # The Posix ISO domain fails to Detach and can only be removed by using
     # the Destroy option (which the code doesn't do)
-    __test__ = True
+    # Gluster doesn't support being used as an ISO domain
+    __test__ = TestCase.storage != config.STORAGE_TYPE_GLUSTER
     local = False
     vm_name = "TestCasesPlan6458Shared"
     storagedomains = [config.ISCSI_DOMAIN]

@@ -98,6 +98,7 @@ def prepare_vm(vm_name, create_snapshot=False, storage_domain=None):
     assert vms.createVm(**args)
 
     vm_ip = vms.waitForIP(vm_name)[1]['ip']
+    assert vm_ip is not None
     LOGGER.info("Storing ip address %s for vm %s", vm_ip, vm_name)
 
     VM_IP_ADDRESSES[vm_name] = vm_ip

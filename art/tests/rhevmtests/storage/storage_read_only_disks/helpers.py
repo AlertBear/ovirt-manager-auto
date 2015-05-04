@@ -151,23 +151,29 @@ def create_third_sd(sd_name, host_name, storage_type):
 
     sd_args['name'] = sd_name
     if config.GOLDEN_ENV:
-        if storage_type == config.STORAGE_TYPE_NFS:
-            sd_args['address'] = config.UNUSED_DATA_DOMAIN_ADDRESSES[0]
-            sd_args['path'] = config.UNUSED_DATA_DOMAIN_PATHS[0]
-        elif storage_type == config.STORAGE_TYPE_ISCSI:
+        if storage_type == config.STORAGE_TYPE_ISCSI:
             sd_args['lun'] = config.UNUSED_LUNS[0]
             sd_args['lun_address'] = config.UNUSED_LUN_ADDRESSES[0]
             sd_args['lun_target'] = config.UNUSED_LUN_TARGETS[0]
             sd_args['lun_port'] = config.LUN_PORT
+        elif storage_type == config.STORAGE_TYPE_NFS:
+            sd_args['address'] = config.UNUSED_DATA_DOMAIN_ADDRESSES[0]
+            sd_args['path'] = config.UNUSED_DATA_DOMAIN_PATHS[0]
+        elif storage_type == config.STORAGE_TYPE_GLUSTER:
+            sd_args['address'] = config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0]
+            sd_args['path'] = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0]
     else:
-        if storage_type == config.STORAGE_TYPE_NFS:
-            sd_args['address'] = config.ADDRESS[2]
-            sd_args['path'] = config.PATH[2]
-        elif storage_type == config.STORAGE_TYPE_ISCSI:
+        if storage_type == config.STORAGE_TYPE_ISCSI:
             sd_args['lun'] = config.LUNS[2]
             sd_args['lun_address'] = config.LUN_ADDRESS[2]
             sd_args['lun_target'] = config.LUN_TARGET[2]
             sd_args['lun_port'] = config.LUN_PORT
+        elif storage_type == config.STORAGE_TYPE_NFS:
+            sd_args['address'] = config.ADDRESS[2]
+            sd_args['path'] = config.PATH[2]
+        elif storage_type == config.STORAGE_TYPE_GLUSTER:
+            sd_args['address'] = config.GLUSTER_ADDRESS[2]
+            sd_args['path'] = config.GLUSTER_PATH[2]
 
     logger.info('Creating storage domain with parameters: %s', sd_args)
     status = addStorageDomain(True, **sd_args)

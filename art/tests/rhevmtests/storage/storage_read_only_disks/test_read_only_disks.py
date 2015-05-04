@@ -78,14 +78,14 @@ not_bootable = lambda d: (not d.get_bootable()) and (d.get_active())
 
 def setup_module():
     """
-    Create datacenter with 2 host, 2 storage domains and 1 export domain
-    Create vm and install OS on it
+    Create a data center with 2 hosts, 2 storage domains and 1 export domain.
+    Create a vm and install an OS on it
 
-    for this TCMS plan we need 3 SD but only two of them should be created on
+    For this TCMS plan we need 3 SD, but only two of them should be created on
     setup. the other SD will be created manually in the test case 334923.
-    so to accomplish this behaviour, the luns and paths lists are saved
-    and overridden with only two lun/path to sent as parameter to build_setup.
-    after the build_setup finish, we return to the original lists
+    To accomplish this, the lists containing luns and paths are saved and
+    overridden with only two lun/path to sent as parameter to build_setup.
+    After the build_setup finishes, we return to the original lists
     """
     if not config.GOLDEN_ENV:
         logger.info("Preparing datacenter %s with hosts %s",
@@ -94,6 +94,9 @@ def setup_module():
         if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
             domain_path = config.PATH
             config.PARAMETERS['data_domain_path'] = domain_path[0:2]
+        elif config.STORAGE_TYPE == config.STORAGE_TYPE_GLUSTER:
+            domain_path = config.GLUSTER_PATH
+            config.PARAMETERS['gluster_data_domain_path'] = domain_path[0:2]
         else:
             luns = config.LUNS
             config.PARAMETERS['lun'] = luns[0:2]
@@ -104,6 +107,8 @@ def setup_module():
 
         if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
             config.PARAMETERS['data_domain_path'] = domain_path
+        elif config.STORAGE_TYPE == config.STORAGE_TYPE_GLUSTER:
+            config.PARAMETERS['gluster_data_domain_path'] = domain_path
         else:
             config.PARAMETERS['lun'] = luns
 
@@ -177,7 +182,6 @@ class DefaultEnvironment(BaseTestCase):
     """
     A class with common setup and teardown methods
     """
-
     spm = None
     shared = False
 
@@ -361,7 +365,8 @@ class TestCase332474(DefaultEnvironment):
     Attach a RO shared disk to vm and try to write to the disk
     https://tcms.engineering.redhat.com/case/332474/?from_plan=12049
     """
-    __test__ = True
+    # Gluster doesn't support shareable disks
+    __test__ = TestCase.storage != config.STORAGE_TYPE_GLUSTER
     tcms_test_case = '332474'
     test_vm_name = ''
 
@@ -415,7 +420,8 @@ class TestCase337630(DefaultEnvironment):
     shared disk
     https://tcms.engineering.redhat.com/case/337630/?from_plan=12049
     """
-    __test__ = True
+    # Gluster doesn't support shareable disks
+    __test__ = TestCase.storage != config.STORAGE_TYPE_GLUSTER
     tcms_test_case = '337630'
     snapshot_description = 'test_snap'
     test_vm_name = ''

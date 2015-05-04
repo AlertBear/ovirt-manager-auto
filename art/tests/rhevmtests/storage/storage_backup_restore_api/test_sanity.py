@@ -706,8 +706,9 @@ class TestCase304197(TestCase):
     def setUp(self):
         self.vm_names = VM_NAMES[TestCase.storage]
         vms.start_vms(self.vm_names, 2, wait_for_ip=False)
-        vms.waitForVmsStates(True, self.vm_names)
+        assert vms.waitForVmsStates(True, self.vm_names)
         self.vm_machine_ip = get_vm_ip(self.vm_names[1])
+        assert self.vm_machine_ip is not None
         self.storage_domains = storagedomains.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)
 

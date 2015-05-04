@@ -46,6 +46,9 @@ def start_creating_disks_for_test(storage_domain, wipe_after_delete, sd_type):
     with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
         for disk_interface in config.DISK_INTERFACES:
             for shareable in (True, False):
+                # Gluster doesn't support shareable disks
+                if shareable and sd_type == config.STORAGE_TYPE_GLUSTER:
+                    continue
                 disk_args['alias'] = config.DISK_NAME_FORMAT % (
                     disk_interface,
                     'shareable' if shareable else 'non-shareable',

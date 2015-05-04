@@ -53,6 +53,9 @@ def setup_module():
         if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
             domain_path = config.PATH
             config.PARAMETERS['data_domain_path'] = [domain_path[0]]
+        elif config.STORAGE_TYPE == config.STORAGE_TYPE_GLUSTER:
+            domain_path = config.GLUSTER_PATH
+            config.PARAMETERS['gluster_data_domain_path'] = [domain_path[0]]
         else:
             luns = config.LUNS
             config.PARAMETERS['lun'] = [luns[0]]
@@ -66,6 +69,8 @@ def setup_module():
 
         if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
             config.PARAMETERS['data_domain_path'] = domain_path
+        elif config.STORAGE_TYPE == config.STORAGE_TYPE_GLUSTER:
+            config.PARAMETERS['gluster_data_domain_path'] = domain_path
         else:
             config.PARAMETERS['lun'] = luns
 
@@ -80,9 +85,16 @@ def setup_module():
             config.LIFECYCLE_LUN_ADDRESS = config.LUN_ADDRESS
             config.LIFECYCLE_LUN_TARGET = config.LUN_TARGET
             config.PARAMETERS['lun'] = luns
+        elif config.STORAGE_TYPE == config.STORAGE_TYPE_GLUSTER:
+            config.LIFECYCLE_ADDRESS = config.GLUSTER_ADDRESS
+            config.LIFECYCLE_PATH = config.GLUSTER_PATH
+            config.PARAMETERS['gluster_data_domain_path'] = domain_path
     else:
         config.LIFECYCLE_ADDRESS = config.UNUSED_DATA_DOMAIN_ADDRESSES
         config.LIFECYCLE_PATH = config.UNUSED_DATA_DOMAIN_PATHS
+        config.LIFECYCLE_GLUSTER_ADDRESS = \
+            config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES
+        config.LIFECYCLE_GLUSTER_PATH = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS
         config.LIFECYCLE_LUNS = config.UNUSED_LUNS
         config.LIFECYCLE_LUN_ADDRESS = config.UNUSED_LUN_ADDRESSES
         config.LIFECYCLE_LUN_TARGET = config.UNUSED_LUN_TARGETS
@@ -173,15 +185,18 @@ def _create_sds(storage_type, host):
 
     for index in range(1, config.EXTRA_SD_INDEX):
         sd_args['name'] = config.LIFECYCLE_DOMAIN_NAMES[index]
-        if storage_type == config.STORAGE_TYPE_NFS:
-            sd_args['address'] = config.LIFECYCLE_ADDRESS[index]
-            sd_args['path'] = config.LIFECYCLE_PATH[index]
-        elif storage_type == config.STORAGE_TYPE_ISCSI:
+        if storage_type == config.STORAGE_TYPE_ISCSI:
             sd_args['lun'] = config.LIFECYCLE_LUNS[index]
             sd_args['lun_address'] = config.LIFECYCLE_LUN_ADDRESS[index]
             sd_args['lun_target'] = config.LIFECYCLE_LUN_TARGET[index]
             sd_args['lun_port'] = config.LUN_PORT
             sd_args['override_luns'] = True
+        elif storage_type == config.STORAGE_TYPE_NFS:
+            sd_args['address'] = config.LIFECYCLE_ADDRESS[index]
+            sd_args['path'] = config.LIFECYCLE_PATH[index]
+        elif storage_type == config.STORAGE_TYPE_GLUSTER:
+            sd_args['address'] = config.GLUSTER_LIFECYCLE_ADDRESS[index]
+            sd_args['path'] = config.GLUSTER_LIFECYCLE_PATH[index]
 
         logger.info('Creating storage domain with parameters: %s', sd_args)
         status = ll_st_domains.addStorageDomain(True, **sd_args) and status
@@ -651,12 +666,14 @@ class TestUpgrade(TestCase):
     @classmethod
     def setup_class(cls):
         """
-        Prepares data-center without storages
+        Prepares Data center without storage
         """
         if cls.storage == config.STORAGE_TYPE_NFS:
             cls.sd_paths = config.LIFECYCLE_PATH[1:]
             cls.sd_address = config.LIFECYCLE_ADDRESS[1:]
-
+        elif cls.storage == config.STORAGE_TYPE_GLUSTER:
+            cls.sd_paths = config.GLUSTER_LIFECYCLE_PATH[1:]
+            cls.sd_address = config.GLUSTER_LIFECYCLE_ADDRESS[1:]
         else:
             cls.sd_luns = config.LIFECYCLE_LUNS[1:]
             cls.sd_luns_address = config.LIFECYCLE_LUN_ADDRESS[1:]
@@ -841,6 +858,25 @@ class TestUpgradePosix(TestUpgrade):
         # super(TestUpgradePosix, cls).teardown_class()
 
 
+class TestUpgradeGluster(TestUpgrade):
+    """
+    Building glusterfs data center
+    """
+    storage_type = config.ENUMS['storage_type_gluster']
+
+    @classmethod
+    def setup_class(cls):
+        logger.warning("Gluster test hasn't been implemented yet")
+        # uncomment it when you implement posix tests
+        # super(TestUpgradePosix, cls).setup_class()
+
+    @classmethod
+    def teardown_class(cls):
+        logger.warning("Gluster test hasn't been implemented yet")
+        # uncomment it when you implement posix tests
+        # super(TestUpgradePosix, cls).teardown_class()
+
+
 class TestUpgradeFCP(TestUpgrade):
     """
     Building FCP data center
@@ -867,6 +903,7 @@ TYPE_TO_CLASS = {
     config.ENUMS['storage_type_local']: TestUpgradeLocal,
     config.ENUMS['storage_type_fcp']: TestUpgradeFCP,
     config.ENUMS['storage_type_posixfs']: TestUpgradePosix,
+    config.ENUMS['storage_type_gluster']: TestUpgradeGluster,
 }
 
 storage_v3_format = config.ENUMS['storage_format_version_v3']
@@ -877,10 +914,13 @@ for storage_type in config.STORAGE_SELECTOR:
             if dc_version == dc_upgrade_version:
                 continue
             dc_upgrade_version_name = dc_upgrade_version.replace('.', '')
-            if storage_type == config.ENUMS['storage_type_nfs']:
-                storage_format = config.ENUMS['storage_format_version_v1']
-            elif storage_type == config.ENUMS['storage_type_iscsi']:
+            if storage_type == config.ENUMS['storage_type_iscsi']:
                 storage_format = config.ENUMS['storage_format_version_v2']
+            elif storage_type == config.ENUMS['storage_type_nfs']:
+                storage_format = config.ENUMS['storage_format_version_v1']
+            elif storage_type == config.ENUMS['storage_type_gluster']:
+                storage_format = config.ENUMS['storage_format_version_v1']
+
             name_pattern = (storage_type, dc_version_name,
                             dc_upgrade_version_name)
             class_name = "TestUpgrade%s%s%s" % name_pattern

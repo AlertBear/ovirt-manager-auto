@@ -163,6 +163,13 @@ if 'prepared_env' in ART_CONFIG:
     logger.info("nfs storage for building GE: %s %s",
                 DATA_DOMAIN_ADDRESSES, DATA_DOMAIN_PATHS)
 
+    GLUSTER_DATA_DOMAIN_ADDRESSES = PARAMETERS.as_list(
+        'gluster_data_domain_address'
+    )
+    GLUSTER_DATA_DOMAIN_PATHS = PARAMETERS.as_list('gluster_data_domain_path')
+    logger.info("Gluster storage for building GE: %s %s",
+                GLUSTER_DATA_DOMAIN_ADDRESSES, GLUSTER_DATA_DOMAIN_PATHS)
+
     LUNS = PARAMETERS.as_list('lun')
     LUN_ADDRESSES = PARAMETERS.as_list('lun_address')
     LUN_TARGETS = PARAMETERS.as_list('lun_target')
@@ -175,6 +182,16 @@ if 'prepared_env' in ART_CONFIG:
     UNUSED_DATA_DOMAIN_PATHS = PARAMETERS.as_list('extra_data_domain_path')
     logger.info("Free nfs shares: %s %s",
                 UNUSED_DATA_DOMAIN_ADDRESSES, UNUSED_DATA_DOMAIN_PATHS)
+
+    UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES = PARAMETERS.as_list(
+        'gluster_extra_data_domain_address'
+    )
+    UNUSED_GLUSTER_DATA_DOMAIN_PATHS = PARAMETERS.as_list(
+        'gluster_extra_data_domain_path'
+    )
+    logger.info("Free Gluster shares: %s %s",
+                UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES,
+                UNUSED_GLUSTER_DATA_DOMAIN_PATHS)
 
     UNUSED_LUNS = PARAMETERS.as_list('extra_lun')
     UNUSED_LUN_ADDRESSES = PARAMETERS.as_list('extra_lun_address')
@@ -233,6 +250,10 @@ else:
         LUN = LUNS
         LUN_ADDRESS = PARAMETERS.as_list('lun_address')
         LUN_TARGET = PARAMETERS.as_list('lun_target')
+    elif STORAGE_TYPE == STORAGE_TYPE_GLUSTER:
+        GLUSTER_ADDRESS = PARAMETERS.as_list('gluster_data_domain_address')
+        GLUSTER_PATH = PARAMETERS.as_list('gluster_data_domain_path')
+        VFS_TYPE = ENUMS['vfs_type_glusterfs']
     elif STORAGE_TYPE == ENUMS['storage_type_posixfs']:
         VFS_TYPE = (PARAMETERS['storage_type']).split("_")[1]
         if VFS_TYPE == "pnfs":

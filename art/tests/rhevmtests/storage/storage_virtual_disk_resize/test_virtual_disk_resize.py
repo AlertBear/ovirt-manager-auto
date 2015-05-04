@@ -654,7 +654,7 @@ class TestCase287468(BasicResize):
     Resize shared disk
     https://tcms.engineering.redhat.com/case/287468/?from_plan=9949
     """
-    __test__ = True
+    __test__ = BasicResize.storage != config.STORAGE_TYPE_GLUSTER
     tcms_test_case = '287468'
     test_vm_name = "vm_%s" % tcms_test_case
 

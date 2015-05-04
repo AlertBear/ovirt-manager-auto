@@ -24,7 +24,6 @@ else:
 
     LOCAL_DOMAIN = PARAMETERS.as_list('local_domain_path')
 
-
 LUN_PORT = 3260
 
 ISO_NFS_DOMAIN = {

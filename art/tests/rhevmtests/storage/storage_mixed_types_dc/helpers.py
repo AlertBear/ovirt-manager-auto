@@ -19,7 +19,7 @@ def add_storage_domain(datacenter_name, **domain):
     """
     Add and attach an storege domain to datacenter_name
     """
-    if domain['storage_type'] == config.ISCSI_SD_TYPE:
+    if domain['storage_type'] == config.STORAGE_TYPE_ISCSI:
         if not hl_sd._ISCSIdiscoverAndLogin(config.HOST,
                                             domain['lun_address'],
                                             domain['lun_target']):

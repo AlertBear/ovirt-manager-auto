@@ -82,7 +82,6 @@ def attach_new_disk(vm_name, should_be_active=True, **permutation):
     return False
 
 
-# Remove when patchset 11542 will be merged - disks.get_all_disk_permutation()
 def get_all_disk_permutation(block=True, shared=False):
     permutations = []
     for disk_format in [config.DISK_FORMAT_COW, config.DISK_FORMAT_RAW]:
