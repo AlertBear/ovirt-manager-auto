@@ -4480,3 +4480,22 @@ def run_vms_once(vms, max_workers=None, **kwargs):
             raise res.exception()
         if not res.result():
             raise exceptions.VMException("Cannot start vm %s" % machine)
+
+
+def get_vm_nic_mac_address(vm, nic='nic1'):
+    """
+    Get MAC address on specific NIC of given VM
+
+    :param vm: VM to find NIC MAC on
+    :type vm: str
+    :param nic: NIC of the VM to find MAC on
+    :type nic: str
+    :return: MAC address on specific NIC of the VM
+    :rtype: str
+    """
+    try:
+        nicObj = getVmNic(vm, nic)
+    except EntityNotFound:
+        VM_API.logger.error("Vm %s doesn't have nic '%s'", vm, nic)
+        return ""
+    return str(nicObj.mac.address)

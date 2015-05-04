@@ -73,15 +73,21 @@ def addDataCenter(positive, **kwargs):
 
 @is_action()
 def updateDataCenter(positive, datacenter, **kwargs):
-    '''
-     Description: Update existed data center
-     Parameters:
-        * datacenter - name of a data center that should updated
-        * name - new name of a data center (if relevant)
-        * description - new data center description (if relevant)
-        * storage_type - new data center storage type (if relevant)
-     Return: status (True if data center was updated properly, False otherwise)
-     '''
+    """
+    Update Data Center parameters
+
+    :param positive: Expected result
+    :type positive: bool
+    :param datacenter: DataCenter name
+    :type datacenter: str
+    :param kwargs:
+            name: new DC name
+            description: new DC description
+            storage_type: new storage type
+            version: new DC version
+            mac_pool: new MAC pool for the DC
+    :return: True if update succeeded, False otherwise
+    """
 
     dc = util.find(datacenter)
     dcUpd = DataCenter()
@@ -99,6 +105,9 @@ def updateDataCenter(positive, datacenter, **kwargs):
         majorV, minorV = kwargs.pop('version').split(".")
         dcVersion = Version(major=majorV, minor=minorV)
         dcUpd.set_version(dcVersion)
+
+    if "mac_pool" in kwargs:
+        dcUpd.set_mac_pool(kwargs.pop("mac_pool"))
 
     dcUpd, status = util.update(dc, dcUpd, positive)
 
