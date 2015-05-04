@@ -115,8 +115,6 @@ def teardown_package():
         logger.error("Failed to remove dummy support to VDSM conf file")
 
     logger.info("Restart vdsm and supervdsm services")
-    if not (
-            config.VDS_HOSTS[0].service("supervdsmd").stop() and
-            config.VDS_HOSTS[0].service("vdsmd").restart()
-    ):
-        logger.error("Failed to restart vdsmd service")
+    hl_hosts.restart_vdsm_under_maintenance_state(
+        config.HOSTS[0], config.VDS_HOSTS[0]
+    )
