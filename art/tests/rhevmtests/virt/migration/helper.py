@@ -6,7 +6,6 @@ Helper functions for network migration job
 """
 
 import logging
-
 from utilities.jobs import Job, JobsSet
 from rhevmtests.networking import config
 from rhevmtests.virt import config as config_virt
@@ -20,11 +19,24 @@ import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as exceptions
 import art.rhevm_api.tests_lib.low_level.templates as ll_template
-
+import art.test_handler as test_handler
+import art.rhevm_api.resources as resources
+import art.core_api.apis_utils as utils
+import art.rhevm_api.resources.user as users
+import rhevmtests.helpers as helpers
 
 logger = logging.getLogger("Virt_Network_Migration_Helper")
 VDSM_LOG = "/var/log/vdsm/vdsm.log"
 LOG_MSG = ":starting migration to qemu\+tls://%s/system with miguri tcp://%s"
+service_status = "id"
+LOAD_MEMORY_FILE = "tests/rhevmtests/virt/migration/memoryLoad.py"
+DESTINATION_PATH = "/tmp/memoryLoad.py"
+DELAY_FOR_SCRIPT = 70
+MEMORY_USAGE = 70
+run_script_command = 'python /tmp/memoryLoad.py -s %s &> /tmp/OUT1 & echo $!'
+
+
+test_handler.find_test_file.__test__ = False
 
 
 def get_origin_host(vm):
@@ -164,8 +176,10 @@ def set_host_status(activate=False):
     host_list = hosts.HOST_API.get(absLink=False)
     for host in host_list:
         host_cluster = hosts.getHostCluster(host.name)
-        if (host_cluster == config.CLUSTER_NAME[0] and
-           host.name not in config.HOSTS[:2]):
+        if (
+            host_cluster == config.CLUSTER_NAME[0] and
+            host.name not in config.HOSTS[:2]
+        ):
             if not call_func(True, host.name):
                 raise exceptions.NetworkException(
                     "Couldn't put %s into %s" % (host.name, host_state)
@@ -370,3 +384,159 @@ def prepare_environment():
             logger.error("Failed to clone VM")
             return False
     return True
+
+
+def copy_file_to_vm(
+    vm_ip,
+    source_file_path,
+    destination_path
+):
+    """
+    Copy file to VM using Machine.
+
+    :param vm_ip: VM ip
+    :type vm_ip: str
+    :param source_file_path: File location at ART
+    :type source_file_path: str
+    :param destination_path: destination path on VM
+    :type destination_path: str
+    :return: Returns False if action of copy to VM, otherwise True
+    :rtype: bool
+    """
+    logger.info(
+        "Copy file %s to vm-%s:%s",
+        source_file_path,
+        vm_ip,
+        destination_path
+    )
+    try:
+        host = resources.Host(vm_ip)
+        host.users.append(users.RootUser(config.VMS_LINUX_PW))
+        host.copy_to(
+            config.ENGINE_HOST,
+            test_handler.find_test_file(source_file_path),
+            destination_path
+        )
+    except Exception, e:
+        logger.error("Failed to copy file to vm:%s", vm_ip)
+        logger.error(e.message)
+        return False
+    return True
+
+
+def load_vm_memory(vm_name, memory_size):
+    """
+     1. Copy load memory python script to VM
+     2. Run it, wait for 60 sec to memory be capture by script.
+
+    :param vm_name: vm that run the script
+    :type vm_name: str
+    :param memory_size:  memory size for script
+    :type memory_size: str
+    """
+    command = run_script_command % memory_size
+    logger.info(
+        "Run load on VM memory, till usage is:%s percent, script command: %s ",
+        MEMORY_USAGE,
+        command
+    )
+    vm_ip = ll_vms.waitForIP(vm_name)[1]['ip']
+    if not vm_ip:
+        raise exceptions.VMException('Failed to get IP for VM %s' % vm_name)
+    logger.info(
+        'Copy script %s to VM: %s',
+        LOAD_MEMORY_FILE,
+        vm_name
+    )
+    if not copy_file_to_vm(vm_ip, LOAD_MEMORY_FILE, DESTINATION_PATH):
+        raise exceptions.VMException(
+            'Failed to copy script to VM:%s' %
+            vm_name
+        )
+    logger.info('Running script')
+    run_command(vm_ip, command)
+    logger.info('Wait till memory is catch by script')
+    return monitor_vm_load_status(vm_ip, MEMORY_USAGE)
+
+
+def run_command(vm_ip, cmd):
+    """
+    running command using resource HOST, if command failed
+    it returns 0 (False) . Command is string send to run as list
+    usage: 1. To run load memory script in BG - No output
+           2. To run free - output memory usage
+
+    :param vm_ip: VM IP
+    :type: vm_ip: str
+    :param cmd: Command to run
+    :type cmd: str
+    :return: If command success returns command out
+    else returns 0 (False)
+    :rtype: int
+    """
+    cmd_array = cmd.split()
+
+    vm_exec = helpers.get_host_executor_with_root_user(
+        vm_ip, config.VMS_LINUX_PW
+    )
+    rc, out, error = vm_exec.run_cmd(cmd_array)
+    if rc:
+        logger.error(
+            "Failed to run command on VM:%s ,error:%s ,output:%s",
+            vm_ip,
+            error,
+            out
+        )
+        return 0
+    logger.info("output: %s", out)
+    return int(out)
+
+
+def check_vm_memory_load(vm_ip, memory_usage):
+    """
+     checks VM memory status using free command
+     compare with expected memory.
+
+    :param vm_ip: vm ip to monitor
+    :type: vm_name: str
+    :param memory_usage: memory usage in percents
+    :type: memory_usage:int
+    :return: True if VM load is as expected else False
+    :rtype: bool
+    """
+    total_mem_cmd = "free | grep Mem | awk '{ print $2 }'"
+    use_mem_cmd = "free | grep Mem | awk '{ print $3 }'"
+    total = run_command(vm_ip, total_mem_cmd)
+    use = run_command(vm_ip, use_mem_cmd)
+    if total and use:
+        current_usage = int((use/float(total))*100)
+        logger.info("current usage is: %d", current_usage)
+        if int(current_usage) >= memory_usage:
+            return True
+        else:
+            return False
+    else:
+        return False
+
+
+def monitor_vm_load_status(vm_ip, memory_usage):
+    """
+     uses timer to monitor VM load status
+     calls check_vm_memory_load method in 5 sec
+     intervals, time out after 70 sec.
+
+    :param vm_ip: vm IP to monitor
+    :type: vm_ip: str
+    :param memory_usage: memory usage in percents
+    :type: memory_usage: int
+    :return: True if VM load is as expected else False
+    :rtype: bool
+    """
+    sample = utils.TimeoutingSampler(
+        timeout=DELAY_FOR_SCRIPT,
+        sleep=5,
+        func=check_vm_memory_load,
+        vm_ip=vm_ip,
+        memory_usage=memory_usage
+    )
+    return sample.waitForFuncStatus(result=True)

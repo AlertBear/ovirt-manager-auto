@@ -1,8 +1,10 @@
 """
 Rhevmtests helper functions
 """
+import art.rhevm_api.resources
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 from art.rhevm_api.resources import ssh
+import art.rhevm_api.resources.user as users
 from rhevmtests.storage import config
 
 
@@ -61,3 +63,19 @@ def set_passwordless_ssh(src_host, dst_host):
         if rc1 or rc2:
             return False
     return True
+
+
+def get_host_executor_with_root_user(ip, root_password):
+    """
+    Return remote executor with user root on give ip
+
+    :param ip: host ip
+    :type: ip: str
+    :param root_password: root password
+    :type: root_password: str
+    :return: RemoteExecutor with root user
+    :rtype: RemoteExecutor
+    """
+    host = art.rhevm_api.resources.Host(ip)
+    host.users.append(users.RootUser(root_password))
+    return host.executor()

@@ -17,9 +17,9 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 from art.unittest_lib import attr
-from art.rhevm_api.tests_lib.high_level.hosts import (
-    switch_host_to_cluster
-)
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import rhevmtests.virt.migration.helper as helper
+from art.rhevm_api.tests_lib.low_level import storagedomains
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ class TestMigrateNoAvailableHostOnCluster(TestCase):
         """
         Change second host cluster(to cluster [1])
         """
-        switch_host_to_cluster(
+        hl_hosts.switch_host_to_cluster(
             config.HOSTS[1],
             config.CLUSTER_NAME[1]
         )
@@ -48,7 +48,7 @@ class TestMigrateNoAvailableHostOnCluster(TestCase):
         """
         Back host cluster to init(cluster [0])
         """
-        switch_host_to_cluster(
+        hl_hosts.switch_host_to_cluster(
             config.HOSTS[1],
             config.CLUSTER_NAME[0]
         )
@@ -79,7 +79,7 @@ class TestMigrateVmOnOtherDataCenter(TestCase):
         """
         Change second host cluster (to ADDITIONAL CL)
         """
-        switch_host_to_cluster(
+        hl_hosts.switch_host_to_cluster(
             config.HOSTS[1],
             config.ADDITIONAL_CL_NAME
         )
@@ -89,7 +89,7 @@ class TestMigrateVmOnOtherDataCenter(TestCase):
         """
         Back host cluster to init (cluster [0])
         """
-        switch_host_to_cluster(
+        hl_hosts.switch_host_to_cluster(
             config.HOSTS[1],
             config.CLUSTER_NAME[0]
         )
@@ -274,4 +274,220 @@ class TestMigrationOverloadHost(TestCase):
                 True,
                 self.test_vms),
             "not all VMs are up"
+        )
+
+
+@attr(tier=1)
+class TestVMMigrateOptionsCase1(TestCase):
+    """
+    Negative case: VM Migration options case 1
+    Create new VM with migration options disable (pin to host)
+    """
+    __test__ = True
+
+    affinity = config.VM_PINNED
+    vm_name = 'DoNotAllowMigration'
+    storage_domain = storagedomains.getStorageDomainNamesForType(
+        config.DC_NAME[0], config.STORAGE_TYPE_NFS
+    )[0]
+
+    @classmethod
+    def setup_class(cls):
+        logger.info(
+            'Create VM %s with option "Do not allow migration"',
+            cls.vm_name
+        )
+        if not ll_vms.createVm(
+            True,
+            vmName=cls.vm_name,
+            vmDescription='VM_pin_to_host',
+            cluster=config.CLUSTER_NAME[0],
+            placement_affinity=cls.affinity,
+            nic=config.NIC_NAME[0],
+            storageDomainName=cls.storage_domain,
+            size=config.DISK_SIZE
+        ):
+            raise errors.VMException(
+                "Failed to add vm %s " %
+                cls.vm_name
+            )
+        if not ll_vms.startVm(True, cls.vm_name):
+            raise errors.VMException(
+                'Failed to start vm %s' %
+                cls.vm_name
+            )
+
+    @classmethod
+    def teardown_class(cls):
+        try:
+            logger.info('Stop vm: %s', cls.vm_name)
+            if not ll_vms.stopVm(True, cls.vm_name):
+                logger.error(
+                    "Failed to stop vm %s",
+                    cls.vm_name
+                )
+            logger.info('Remove vm')
+            if not ll_vms.removeVm(True, cls.vm_name):
+                logger.error(
+                    'Failed to remove test vm %s' %
+                    cls.vm_name
+                )
+        except Exception, e:
+            logger.error(
+                'TestVMMigrateOptionsCase2 teardown failed'
+            )
+            logger.error(e)
+
+    @tcms(TCMS_PLAN_ID, '447719')
+    def test_migration_new_vm(self):
+        """
+         Negative test:
+         Migration new VM with option 'Do not allow migration'
+        """
+        self.assertFalse(
+            ll_vms.migrateVm(
+                True,
+                self.vm_name,
+                host=config.HOSTS[1]),
+            'Migration succeed although vm set to "Do not allow migration"'
+        )
+
+
+@attr(tier=1)
+class TestVMMigrateOptionsCase2(TestCase):
+    """
+     Negative cases: VM Migration options cases
+     Update exist VM with migration options to disable
+     migration (pin to host)
+    """
+    __test__ = True
+    affinity_pinned_to_host = config.VM_PINNED
+    affinity_migratable = config.VM_MIGRATABLE
+
+    @classmethod
+    def setup_class(cls):
+        logger.info(
+            'update vm %s with affinity: pin to host',
+            config.VM_NAME[1]
+        )
+        if not ll_vms.updateVm(
+            True,
+            config.VM_NAME[1],
+            placement_affinity=cls.affinity_pinned_to_host
+        ):
+            raise errors.VMException(
+                "Failed to update vm %s" %
+                config.VM_NAME[1]
+            )
+        logger.info(
+            'Start VM %s',
+            config.VM_NAME[1]
+        )
+        if not ll_vms.startVm(True, config.VM_NAME[1]):
+            raise errors.VMException('Failed to start vm')
+
+    @classmethod
+    def teardown_class(cls):
+        try:
+            if not ll_vms.stopVm(
+                True,
+                config.VM_NAME[1]
+            ):
+                logger.error(
+                    'Failed to stop vm %s' %
+                    config.VM_NAME[1]
+                )
+            logger.info(
+                'update vm %s back to: migratable ',
+                config.VM_NAME[1]
+            )
+            if not ll_vms.updateVm(
+                True,
+                config.VM_NAME[1],
+                placement_affinity=cls.affinity_migratable
+            ):
+                logger.error(
+                    'Failed to update vm %s' %
+                    config.VM_NAME[1]
+                )
+        except Exception, e:
+            logger.error(
+                'TestVMMigrateOptionsCase2 teardown failed'
+            )
+            logger.error(e)
+
+    @tcms(TCMS_PLAN_ID, '447720')
+    def test_update_vm(self):
+        """
+        Negative test:
+        Migration updated VM with option 'Do not allow migration'
+        """
+        self.assertFalse(
+            ll_vms.migrateVm(
+                True,
+                config.VM_NAME[1],
+                host=config.HOSTS[1]),
+            'Migration succeed although vm set to "Do not allow migration"'
+        )
+
+
+@attr(tier=1)
+class TestMigrateVMWithLoadOnMemory(TestCase):
+    """
+    Negative test:
+    Migrate VM With load on VM memory to fail migration.
+    The load memory script is copy to VM, and run on it.
+    """
+    __test__ = True
+
+    @classmethod
+    def setUp(cls):
+        logger.info('Start vm %s', config.VM_NAME[1])
+        if not ll_vms.startVm(
+            True,
+            config.VM_NAME[1],
+            wait_for_ip=True
+        ):
+            raise errors.VMException(
+                'Failed to start vm %s',
+                config.VM_NAME[1]
+            )
+
+    @classmethod
+    def tearDown(cls):
+        try:
+            logger.info('Stop vm: %s', config.VM_NAME[1])
+            if not ll_vms.stopVm(
+                True,
+                config.VM_NAME[1]
+            ):
+                logger.error(
+                    'Failed to stop vm %s'
+                    % config.VM_NAME[1]
+                )
+        except Exception, e:
+            logger.error(
+                'TestMigrateVMWithLoadOnMemory teardown failed'
+            )
+            logger.error(e)
+
+    @tcms(TCMS_PLAN_ID, '447817')
+    def test_check_migration_with_load_on_memory(self):
+        """
+         Negative test: Migrate VM with load on memory
+        """
+        if not helper.load_vm_memory(
+            config.VM_NAME[1],
+            memory_size='0.5'
+        ):
+            raise VMException("Failed to load VM memory")
+        logger.info(
+            "Start migration for VM: %s , migration should failed",
+            config.VM_NAME[1]
+        )
+        self.assertFalse(
+            ll_vms.migrateVm(
+                True,
+                config.VM_NAME[1]),
+            'Migration pass although vm memory is loaded.'
         )
