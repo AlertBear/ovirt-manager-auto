@@ -489,7 +489,8 @@ class TestRemoveVmFromAffinityGroupOnClusterChange(Affinity):
     additional_cluster_name = 'test_cluster'
     bz = {
         '1206130': {'engine': ['sdk'], 'version': ['3.5', '3.5.1']},
-        '1206875': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}
+        '1206875': {'engine': ['cli'], 'version': ['3.5', '3.5.1']},
+        '1218528': {'engine': ['java'], 'version': ['3.5', '3.5.1']},
     }
 
     @classmethod
@@ -508,12 +509,22 @@ class TestRemoveVmFromAffinityGroupOnClusterChange(Affinity):
             version=comp_version
         ):
             raise errors.ClusterException("Failed to create new cluster")
+        cpu_profile_obj = cluster_api.get_cpu_profile_obj(
+            cls.additional_cluster_name, cls.additional_cluster_name
+        )
+        if not cpu_profile_obj:
+            raise errors.ClusterException(
+                "Failed to get cpu profile object %s from cluster %s" %
+                (cls.additional_cluster_name, cls.additional_cluster_name)
+            )
         logger.info(
             "Update vm %s cluster to %s",
             config.VM_NAME[0], cls.additional_cluster_name
         )
         if not vm_api.updateVm(
-            True, config.VM_NAME[0], cluster=cls.additional_cluster_name
+            True, config.VM_NAME[0],
+            cluster=cls.additional_cluster_name,
+            cpu_profile_id=cpu_profile_obj.get_id()
         ):
             raise errors.VMException("Failed update vm cluster")
 
