@@ -86,3 +86,17 @@ HOST_VM_MAP = {
 HOSTS_WITH_DUMMY = list(HOSTS)
 while len(HOSTS_WITH_DUMMY) < 3:
     HOSTS_WITH_DUMMY.append(None)
+
+DEFAULT_VM_PARAMETERS = {
+    'memory': GB,
+    'memory_guaranteed': GB,
+    'cpu_socket': 1,
+    'cpu_cores': 1,
+    'os_type': ENUMS['rhel6x64'],
+    'type': VM_TYPE_DESKTOP,
+    'placement_affinity': VM_MIGRATABLE,
+    'placement_host': VM_ANY_HOST,
+    'cluster': CLUSTER_NAME[0],
+    'watchdog_model': '',
+    'highly_available': False
+}
