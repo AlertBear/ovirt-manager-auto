@@ -5,7 +5,7 @@ import art.rhevm_api.tests_lib.low_level.storagedomains as llstoragedomains
 import art.rhevm_api.tests_lib.low_level.vms as llvms
 
 from art.test_handler.exceptions import VMException
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.unittest_lib import attr
 import unittest_conf
 from utilities.rhevm_tools.log_collector import LogCollectorUtility
@@ -67,6 +67,7 @@ class LogCollectorSingleDC(LogCollectorTestCaseBase):
         self.ut(action='list', kwargs=self.kwargs)
         self.ut.autoTest()
 
+    @bz({'1218526': {}})
     @tcms(LOG_COLLECTOR_TEST_PLAN, 95162)
     def test_log_collector_collect(self):
         """ log_collector collect"""
@@ -99,7 +100,7 @@ class LogCollectorSingleDC(LogCollectorTestCaseBase):
         """log_collector --version"""
         kwargs = {'version': None}
         self.ut(kwargs=kwargs)
-        reportedVersion = self.ut.out.rstrip().split('-', 1)[1]
+        reportedVersion = self.ut.out.rstrip().split('-', 1)[1].split('_')[0]
 
         cmd = ['rpm', '-qa', '\*log-collector\*']
         self.ut.execute(None, cmd)
@@ -112,6 +113,7 @@ class LogCollectorSingleDC(LogCollectorTestCaseBase):
         self.ut(kwargs=kwargs)
         self.ut.autoTest()
 
+    @bz({'1218526': {}})
     @tcms(LOG_COLLECTOR_TEST_PLAN, 95168)
     def test_log_collector_collect_no_postgres(self):
         """collect data skipping postregs"""
@@ -122,6 +124,7 @@ class LogCollectorSingleDC(LogCollectorTestCaseBase):
         self.ut(action='collect', kwargs=kwargs)
         self.ut.autoTest()
 
+    @bz({'1218526': {}})
     @tcms(LOG_COLLECTOR_TEST_PLAN, 337746)
     def test_log_collector_collect_no_hypervisors(self):
         """skip host data"""
@@ -132,6 +135,7 @@ class LogCollectorSingleDC(LogCollectorTestCaseBase):
         self.ut(action='collect', kwargs=kwargs)
         self.ut.autoTest()
 
+    @bz({'1218526': {}})
     @tcms(LOG_COLLECTOR_TEST_PLAN, 95169)
     def test_log_collector_collect_single_host(self):
         """collect logs from a specified host"""
@@ -171,6 +175,7 @@ class LogCollectorMoreDCs(LogCollectorTestCaseBase):
             True, unittest_conf.NEW_DC_NAME)
         super(LogCollectorMoreDCs, self).tearDown()
 
+    @bz({'1218526': {}})
     @tcms(LOG_COLLECTOR_TEST_PLAN, 95167)
     def test_log_collector_empty_cluster(self):
         """collect logs from specific cluster"""
@@ -182,6 +187,7 @@ class LogCollectorMoreDCs(LogCollectorTestCaseBase):
         self.ut.autoTest()
         assert 'No hypervisors were selected' in self.ut.out
 
+    @bz({'1218526': {}})
     @tcms(LOG_COLLECTOR_TEST_PLAN, 95166)
     def test_log_collector_collect_empty_DC(self):
         """collect logs from single data center"""
