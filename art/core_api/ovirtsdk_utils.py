@@ -410,21 +410,37 @@ class SdkUtil(APIUtil):
         '''
         return getattr(self.api, collection_name)
 
-    def getElemFromLink(self, elm, link_name=None, attr=None, get_href=False):
-        '''
-        Description: get element's collection from specified link
-        Parameters:
-           * elm - element object
-           * link_name - link name
-           * attr - unused param. used only in restapi
-        Return: element obj or None if not found
-        '''
+    def getElemFromLink(
+            self, elm, link_name=None, attr=None, get_href=False,
+            all_content=False
+    ):
+        """
+        Get collection (link_name or self.collection_name) of objects
+        from requested element (elm)
+
+        :param elm: Object from which the collection will be retrieved
+        :type elm: object
+        :param link_name: collection to be retrieved from the elm object
+        :type link_name: str
+        :param attr: Parameter is only used by rest api
+        :type attr: Not in use
+        :param get_href:  If True, get the api URL of the object
+        :type get_href: bool
+        :param all_content: If True, retrieved object should be with all
+        content
+        :type all_content: bool
+        :return: Collection object or None if not found
+        :rtype: object or None
+        """
         if not link_name:
             link_name = self.collection_name
 
         if get_href:
+            # equivalent to elm.link_name
             return getattr(elm, link_name)
         else:
+            if all_content:
+                return getattr(elm, link_name).list(all_content=all_content)
             return getattr(elm, link_name).list()
 
     def syncAction(self, entity, action, positive, async=False, **params):

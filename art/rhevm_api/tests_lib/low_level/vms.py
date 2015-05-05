@@ -1348,25 +1348,47 @@ def remove_locked_vm(vm_name, vdc, vdc_pass,
     return removeVm("true", vm_obj.get_name())
 
 
-def _getVmSnapshots(vm, get_href=True):
+def _getVmSnapshots(vm, get_href=True, all_content=False):
+    """
+    Get the requested vm's snapshot collection
+
+    :param vm: vm name
+    :type vm: str
+    :param get_href: If True, get vm's snapshots' href
+    :type get_href: bool
+    :param all_content: If True, snapshots will return with all content
+    :type all_content: bool
+    :return: vm's snapshot collection
+    :rtype: list
+    """
     vmObj = VM_API.find(vm)
-    return SNAPSHOT_API.getElemFromLink(vmObj, get_href=get_href)
+    return SNAPSHOT_API.getElemFromLink(
+        vmObj, get_href=get_href, all_content=all_content)
 
 
 def _getVmSnapshot(vm, snap, all_content=False):
-    if all_content:
-        backup_header = SNAPSHOT_API.api.headers.get('All-content', False)
-        SNAPSHOT_API.api.headers['All-content'] = True
-    try:
-        vm_obj = VM_API.find(vm)
-        returned_object = SNAPSHOT_API.getElemFromElemColl(vm_obj, snap,
-                                                           'snapshots',
-                                                           'snapshot',
-                                                           prop='description')
-    finally:
-        if all_content:
-            SNAPSHOT_API.api.headers['All-content'] = backup_header
-    return returned_object
+    """
+    Get a specific vm snapshot
+
+    :param vm: vm name
+    :type vm: str
+    :param snap: Snapshot description
+    :type snap: str
+    :param all_content: If True, snapshots will return with all content
+    :type all_content: bool
+    :return: vm snapshot
+    :rtype: Snapshot object
+    """
+    snapshot_objects = _getVmSnapshots(vm, False, all_content=all_content)
+    logger.info(
+        "Snapshots found: %s", [
+            snapshot.get_description() for snapshot in snapshot_objects
+        ]
+    )
+    for snapshot in snapshot_objects:
+        if snapshot.get_description() == snap:
+            return snapshot
+    return None
 
 
 @is_action()

@@ -615,16 +615,27 @@ class RestUtil(APIUtil):
         self.validateResponseViaXSD(actionHref, ret)
         return validator.compareActionLink(entity.actions, action, self.logger)
 
-    def getElemFromLink(self, elm, link_name=None, attr=None, get_href=False):
-        '''
-        Description: get element's collection from specified link
-        Parameters:
-           * elm - element object
-           * link_name - link name
-           * attr - attribute to get (usually name of desired element)
-           * get_href - if to return href link or no
-        Return: element obj or None if not found
-        '''
+    def getElemFromLink(self, elm, link_name=None, attr=None, get_href=False,
+                        all_content=False):
+        """
+        Get collection or specific object if attr is passed (link_name or
+        self.collection_name) of objects
+        from requested element (elm)
+
+        :param elm: Object from which the collection will be retrieved
+        :type elm: object
+        :param link_name: collection to be retrieved from the elm object
+        :type link_name: str
+        :param attr: attribute to get (usually name of desired collection)
+        :type attr: str
+        :param get_href: If True, get the api URL of the object
+        :type get_href: bool
+        :param all_content: If True, retrieved object should be with all
+        content
+        :type all_content: bool
+        :return: Collection object or None if not found
+        :rtype: object or None
+        """
         if not link_name:
             link_name = self.collection_name
 
@@ -633,24 +644,33 @@ class RestUtil(APIUtil):
 
         no_results = None if get_href else []
 
-        for link in elm.get_link():
-            if link.get_rel() == link_name:
-                if get_href:
-                    return link.get_href()
+        if all_content:
+            self.api.headers['All-content'] = all_content
 
-                linkCont = self.get(link.get_href())
-                if not linkCont:
-                    return no_results
+        try:
+            for link in elm.get_link():
+                if link.get_rel() == link_name:
+                    if get_href:
+                        return link.get_href()
 
-                if isinstance(linkCont, list):
-                    return linkCont
-                elif isinstance(linkCont, data_st.Fault):
-                    raise EntityNotFound("Obtained Fault object for %s "
-                                        "element and link_name %s link with"
-                                        " response: %s" % (elm, link_name,
-                                        linkCont.get_detail()))
-                else:
-                    return getattr(linkCont, 'get_' + attr)()
+                    link_content = self.get(link.get_href())
+                    if not link_content:
+                        return no_results
+
+                    if isinstance(link_content, list):
+                        return link_content
+                    elif isinstance(link_content, data_st.Fault):
+                        raise EntityNotFound(
+                            "Obtained Fault object for %s element and "
+                            "link_name %s link with response: %s"
+                            % (elm, link_name, link_content.get_detail())
+                        )
+                    else:
+                        return getattr(link_content, 'get_' + attr)()
+        finally:
+            # Sets up the default 'all_content' header
+            if all_content:
+                self.api.headers.pop('All-content')
         return no_results
 
     def waitForElemStatus(self, restElement, status, timeout=DEF_TIMEOUT,

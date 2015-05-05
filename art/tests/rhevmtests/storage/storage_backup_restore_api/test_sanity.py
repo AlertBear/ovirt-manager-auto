@@ -690,9 +690,9 @@ class TestCase304197(TestCase):
     """
     __test__ = True
     bz = {'1211670': {'engine': ['cli'], 'version': ['3.5']}}
-    # TODO: Ticket is open for Python SDK and Java SDK support:
+    # TODO: Ticket is open for CLI and Java support:
     # https://projects.engineering.redhat.com/browse/RHEVM-1901
-    apis = TestCase.apis - set(['java', 'sdk'])
+    apis = TestCase.apis - set(['java', 'cli'])
     tcms_test_case = '304197'
 
     def setUp(self):
@@ -732,6 +732,7 @@ class TestCase304197(TestCase):
         status = ovf is None
         self.assertFalse(status, "OVF object wasn't found")
 
+        logger.info("Adding backup disk to vm %s", self.vm_names[1])
         self.assertTrue(vms.addDisk(
             True, self.vm_names[1], BACKUP_DISK_SIZE, True,
             self.storage_domains[0], interface=config.DISK_INTERFACE_VIRTIO),
