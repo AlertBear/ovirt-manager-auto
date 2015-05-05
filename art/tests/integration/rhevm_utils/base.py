@@ -16,7 +16,7 @@ from art.rhevm_api.utils.test_utils import get_api
 VM_API = get_api('vm', 'vms')
 
 
-from rhevmtests.system.rhevm_utils import unittest_conf
+from integration.rhevm_utils import unittest_conf
 config = unittest_conf.config
 
 from utilities.rhevm_tools.base import Setup

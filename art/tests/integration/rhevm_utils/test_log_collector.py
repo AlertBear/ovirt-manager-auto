@@ -11,7 +11,7 @@ import unittest_conf
 from utilities.rhevm_tools.log_collector import LogCollectorUtility
 import logging
 
-from rhevmtests.system.rhevm_utils import base
+from integration.rhevm_utils import base
 
 LOG_COLLECTOR_TEST_PLAN = 3748
 NAME = 'log_collector'

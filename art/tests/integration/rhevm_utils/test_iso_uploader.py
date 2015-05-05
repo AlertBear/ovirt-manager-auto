@@ -1,6 +1,6 @@
 import sys
 
-from rhevmtests.system.rhevm_utils import base
+from integration.rhevm_utils import base
 import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import attr

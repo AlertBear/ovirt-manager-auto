@@ -5,7 +5,7 @@ import os
 import logging
 from pprint import pformat
 
-from rhevmtests.system.rhevm_utils import base
+from integration.rhevm_utils import base
 from utilities.rhevm_tools.setup import SetupUtility
 import unittest_conf
 
