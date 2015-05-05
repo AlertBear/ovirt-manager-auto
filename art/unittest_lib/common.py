@@ -59,6 +59,7 @@ class NetworkTest(BaseTestCase):
     """
     apis = set(["rest", "java", "sdk"])
     __test__ = False
+    test_failed = False
 
 
 @attr(team="virt")
