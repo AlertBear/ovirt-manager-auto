@@ -1,3 +1,4 @@
+import re
 from art.core_api import is_action
 from art.core_api.apis_utils import data_st, TimeoutingSampler
 from art.rhevm_api.utils.test_utils import get_api
@@ -46,29 +47,55 @@ def check_recent_job(positive, description, last_jobs_num=None,
 
 
 @is_action()
-def get_active_jobs():
+def get_active_jobs(job_descriptions=None):
+    """
+    Check if all/requested jobs have been completed
+
+    __author__ = 'ratamir'
+    :param job_descriptions: job descriptions that needs to be sampled
+    :type job_descriptions: list
+    :return: list of job objects
+    :rtype: list
+    """
     jobs = JOBS_API.get(absLink=False)
 
-    jobs = filter(lambda j: (j.get_status().get_state() ==
-                             ENUMS['job_started']), jobs)
+    jobs = filter(
+        lambda job: (
+            job.get_status().get_state() == ENUMS['job_started']
+        ), jobs
+    )
 
-    LOGGER.info("Active jobs: %s", [j.get_description() for j in jobs])
+    if job_descriptions:
+        relevant_jobs = []
+        for job_description in job_descriptions:
+            for job in jobs:
+                if re.match(job_description, job.get_description()):
+                    relevant_jobs.append(job)
+                    break
+        jobs = relevant_jobs
 
+    LOGGER.info("Active jobs: %s", [job.get_description() for job in jobs])
     return jobs
 
 
 @is_action("waitForJobs")
-def wait_for_jobs(timeout=JOB_TIMEOUT, sleep=TASK_POLL):
+def wait_for_jobs(job_descriptions=None, timeout=JOB_TIMEOUT, sleep=TASK_POLL):
     """
-    Description: Waits until all tasks in data-center are finished
-    Author: ratamir
-    Parameters:
-        * timeout - max seconds to wait
-        * sleep - polling interval
+    Waits until all/requested jobs in data-center have completed
+
+    __author__ = 'ratamir'
+    :param job_descriptions: job descriptions that needs to be sampled
+    :type job_descriptions: list
+    :param timeout: max seconds to wait
+    :type timeout: int
+    :param sleep: polling interval
+    :type sleep: int
+    :raise: TimeoutExpiredError
     """
-    LOGGER.info("Waiting for jobs")
+    LOGGER.info("Waiting for jobs %s", job_descriptions)
     sampler = TimeoutingSampler(
-        timeout, sleep, get_active_jobs)
+        timeout, sleep, get_active_jobs, job_descriptions
+    )
     for jobs in sampler:
         if not jobs:
             LOGGER.info("All jobs are gone")
