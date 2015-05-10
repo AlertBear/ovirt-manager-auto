@@ -188,7 +188,6 @@ class TestCase41242(BaseExportImportTestCase):
     tcms_test_case = '41242'
     vm_from_template = "vm_from_template_%s" % tcms_test_case
     prefix = "imported"
-    bz = {'1207246': {'engine': ['java'], 'version': ['3.5']}}
 
     def setUp(self):
         """

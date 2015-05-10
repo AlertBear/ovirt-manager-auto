@@ -2,7 +2,6 @@
 3.5 Live Disk Description Edit
 https://tcms.engineering.redhat.com/plan/14844
 """
-
 import logging
 from art.rhevm_api.tests_lib.low_level.disks import (
     deleteDisk, updateDisk, addDisk, attachDisk, wait_for_disks_status,
@@ -179,8 +178,7 @@ class TestCase396316(BaseClassEditDescription):
     """
     __test__ = BaseClassEditDescription.storage in config.BLOCK_TYPES
     tcms_test_case = '396316'
-    bz = ({'1206911': {'engine': ['java'], 'version': ['3.5']},
-           '1211314': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
+    bz = {'1211314': {'engine': ['cli'], 'version': ['3.5', '3.6']}}
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_edit_description_on_block_or_file_domain(self):
@@ -204,8 +202,7 @@ class TestCase396321(BaseClassEditDescription):
     """
     __test__ = BaseClassEditDescription.storage not in config.BLOCK_TYPES
     tcms_test_case = '396321'
-    bz = ({'1206911': {'engine': ['java'], 'version': ['3.5']},
-           '1211314': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
+    bz = {'1211314': {'engine': ['cli'], 'version': ['3.5', '3.6']}}
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_edit_description_on_block_or_file_domain(self):

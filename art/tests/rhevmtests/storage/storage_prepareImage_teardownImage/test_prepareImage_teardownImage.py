@@ -410,7 +410,6 @@ class TestCase388747(BasicEnvironment):
     __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
     tcms_test_case = '388747'
     disk_count = 2
-    bz = {'1206911': {'engine': ['java'], 'version': ['3.5']}}
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_prepare_image_with_all_parameters(self):

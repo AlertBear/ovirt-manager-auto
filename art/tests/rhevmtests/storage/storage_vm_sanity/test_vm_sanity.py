@@ -2,25 +2,21 @@
 Storage VM sanity
 TCMS plan: https://tcms.engineering.redhat.com/plan/8676
 """
-
+import config
 import logging
 import time
 from art.unittest_lib import attr
 from art.unittest_lib import StorageTest as TestCase
-
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.utils import resource_utils
 from art.test_handler import exceptions
 from threading import Thread
-
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import vms, disks
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.utils import log_listener
 from art.test_handler.tools import tcms  # pylint: disable=E0611
-
-import config
 from rhevmtests.storage.helpers import get_vm_ip, create_vm_or_clone
 
 LOGGER = logging.getLogger(__name__)
@@ -297,7 +293,7 @@ class TestCase300867(TestCase):
     snapshots = [snapShot1_name, snapShot2_name]
     disk_size_before = 0
     disk_size_after = 0
-    bz = {'1185782': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
+    bz = {'1185782': {'engine': None, 'version': ['3.5']}}
 
     @classmethod
     def setup_class(cls):
@@ -400,7 +396,6 @@ class TestCase320225(TestCase):
     vm_name_1 = '%s_1' % config.VM_BASE_NAME
     vm_name_2 = '%s_2' % config.VM_BASE_NAME
     SLEEP_AMOUNT = 5
-    bz = {'1207246': {'engine': ['java'], 'version': ['3.5']}}
 
     def setUp(self):
         self.vm_name = '%s_%s' % (config.VM_BASE_NAME, self.vm_type)
