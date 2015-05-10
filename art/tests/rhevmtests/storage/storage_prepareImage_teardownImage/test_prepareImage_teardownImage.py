@@ -2,17 +2,9 @@
 3.5 prepareImage and teardownImage
 https://tcms.engineering.redhat.com/plan/14466
 """
-from concurrent.futures.thread import ThreadPoolExecutor
-from art.rhevm_api.tests_lib.low_level.datacenters import get_data_center
-from art.rhevm_api.tests_lib.low_level.templates import (
-    createTemplate, removeTemplate,
-)
-from art.test_handler.tools import tcms  # pylint: disable=E0611
 import config
-from helpers import (
-    get_spuuid, get_sduuid, get_imguuid, get_voluuid,
-)
 import logging
+from art.rhevm_api.tests_lib.low_level.datacenters import get_data_center
 from art.rhevm_api.tests_lib.low_level.disks import (
     addDisk, attachDisk, wait_for_disks_status, get_disk_obj, detachDisk,
     deleteDisk, move_disk,
@@ -20,14 +12,24 @@ from art.rhevm_api.tests_lib.low_level.disks import (
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainNamesForType,
 )
-from art.unittest_lib import StorageTest as BaseTestCase
-from art.rhevm_api.tests_lib.high_level import datacenters
+from art.rhevm_api.tests_lib.low_level.templates import (
+    createTemplate, removeTemplate,
+)
 from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, waitForVMState, startVm, removeVm,
     waitForVmDiskStatus, addSnapshot, removeSnapshot, cloneVmFromTemplate,
     removeVms,
 )
+from art.rhevm_api.tests_lib.high_level import datacenters
+from art.test_handler import exceptions
+from art.test_handler.tools import tcms  # pylint: disable=E0611
+from helpers import (
+    get_spuuid, get_sduuid, get_imguuid, get_voluuid,
+)
+
+from art.unittest_lib import StorageTest as BaseTestCase
 from art.unittest_lib import attr
+
 from rhevmtests.storage.helpers import (
     create_vm_or_clone, perform_dd_to_disk, host_to_use,
 )
@@ -104,13 +106,10 @@ def setup_module():
 
     logger.info('Creating VM to be used for all tests except for case 389924')
     logger.info('Creating VM to be used only for case 389924')
-    executions = []
-    with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-        for args in [vm1_args, vm2_args]:
-            executions.append(executor.submit(create_vm_or_clone, **args))
-
-    # Ensure that all threads have completed execution
-    [execution.result() for execution in executions]
+    for args in [vm1_args, vm2_args]:
+        if not create_vm_or_clone(**args):
+            raise exceptions.VMException("Unable to create or clone VM '%s'"
+                                         % args['vmName'])
 
 
 def teardown_module():
