@@ -1,31 +1,32 @@
-import art.test_handler.exceptions as exceptions
+import config
+import logging
 
+import art.test_handler.exceptions as exceptions
 import art.rhevm_api.tests_lib.low_level.disks as ll_disks
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-
 import art.rhevm_api.tests_lib.high_level.hosts as hosts
 import art.rhevm_api.tests_lib.high_level.storagedomains as hl_sd
-import art.test_handler.exceptions as errors
-import logging
-import config
+
+from rhevmtests.storage.helpers import create_vm_or_clone
 
 logger = logging.getLogger(__name__)
 
 
-def add_storage_domain(datacenter_name, **domain):
+def add_storage_domain(datacenter_name, host, **domain):
     """
     Add and attach an storege domain to datacenter_name
     """
     if domain['storage_type'] == config.STORAGE_TYPE_ISCSI:
-        if not hl_sd._ISCSIdiscoverAndLogin(config.HOST,
+        if not hl_sd._ISCSIdiscoverAndLogin(host,
                                             domain['lun_address'],
                                             domain['lun_target']):
             return False
+        domain['override_luns'] = True
 
-    if not ll_sd.addStorageDomain(True, host=config.HOST, **domain):
+    if not ll_sd.addStorageDomain(True, host=host, **domain):
         return False
 
     status = ll_sd.attachStorageDomain(
@@ -35,19 +36,21 @@ def add_storage_domain(datacenter_name, **domain):
         True, datacenter_name, domain['name'])
 
 
-def build_environment(compatibility_version, storage_domains):
+def build_environment(
+    compatibility_version, storage_domains,
+    datacenter_name=config.DATA_CENTER_NAME, cluster_name=config.CLUSTER_NAME,
+    hosts_for_cluster=None,
+):
     """
     Build an environment
         * compatibility version: str with version
         * domains: list of dictionary with the storage domains parameters
     """
-    datacenter_name = config.DATA_CENTER_NAME
-    cluster_name = config.CLUSTER_NAME
 
     if not ll_dc.addDataCenter(True, name=datacenter_name,
                                local=False,
                                version=compatibility_version):
-        raise errors.DataCenterException(
+        raise exceptions.DataCenterException(
             "addDataCenter %s with version %s failed." %
             (datacenter_name, compatibility_version))
 
@@ -55,17 +58,20 @@ def build_environment(compatibility_version, storage_domains):
                                   cpu=config.PARAMETERS['cpu_name'],
                                   data_center=datacenter_name,
                                   version=compatibility_version):
-        raise errors.ClusterException(
+        raise exceptions.ClusterException(
             "addCluster %s with version %s to datacenter %s failed" %
             (cluster_name, compatibility_version, datacenter_name))
 
     hosts.add_hosts(
-        config.PARAMETERS.as_list('vds'),
+        hosts_for_cluster,
         config.PARAMETERS.as_list('vds_password'),
-        cluster_name)
+        cluster_name,
+    )
 
     for domain in storage_domains:
-        assert add_storage_domain(datacenter_name, **domain)
+        assert add_storage_domain(
+            datacenter_name, hosts_for_cluster[0], **domain
+        )
 
 
 def add_disk_to_sd(disk_name, storagedomain, attach_to_vm=None):
@@ -134,6 +140,6 @@ def create_and_start_vm(vm_name, sd_name, installation=True):
               'volumeType': False,  # pre-allocated
               }
 
-    if not ll_vms.createVm(**vmArgs):
+    if not create_vm_or_clone(**vmArgs):
         raise exceptions.VMException('Unable to create vm %s for test'
                                      % vm_name)

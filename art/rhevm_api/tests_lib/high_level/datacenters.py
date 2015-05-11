@@ -191,9 +191,6 @@ def clean_datacenter(
     spm_host_obj = get_spm_host(positive, datacenter)
     hosts_to_remove = []
 
-    if not spm_host_obj:
-        return False
-
     clusters_to_remove = get_clusters_connected_to_datacenter(dc_obj.get_id())
 
     for cluster_obj in clusters_to_remove:
@@ -206,64 +203,66 @@ def clean_datacenter(
 
     sds = ll_storagedomains.getDCStorages(datacenter, False)
 
-    for sd in sds:
-        LOGGER.info(
-            "Remove floating disks from storage domain: %s",
-            sd.get_name()
-        )
-        ll_storagedomains.remove_floating_disks(sd)
+    if sds:
+        for sd in sds:
+            LOGGER.info(
+                "Remove floating disks from storage domain: %s",
+                sd.get_name()
+            )
+            ll_storagedomains.remove_floating_disks(sd)
 
-    if vdc and vdc_password:
-        wait_for_tasks(
-            vdc=vdc,
-            vdc_password=vdc_password,
-            datacenter=dc_obj.get_name(),
-            db_name=db_name,
-            db_user=db_user
-        )
-
-    LOGGER.info("Deactivate and detach non master storage domains")
-    for sd in sds:
-        if not sd.get_master():
-            LOGGER.info("Detach and deactivate %s", sd.get_name())
-            storagedomains.detach_and_deactivate_domain(
-                dc_obj.get_name(), sd.get_name()
+        if vdc and vdc_password:
+            wait_for_tasks(
+                vdc=vdc,
+                vdc_password=vdc_password,
+                datacenter=dc_obj.get_name(),
+                db_name=db_name,
+                db_user=db_user
             )
 
-    if vdc and vdc_password:
-        wait_for_tasks(
-            vdc=vdc,
-            vdc_password=vdc_password,
-            datacenter=dc_obj.get_name(),
-            db_name=db_name,
-            db_user=db_user
+        LOGGER.info("Deactivate and detach non-master storage domains")
+        for sd in sds:
+            if not sd.get_master():
+                LOGGER.info("Detach and deactivate %s", sd.get_name())
+                storagedomains.detach_and_deactivate_domain(
+                    dc_obj.get_name(), sd.get_name()
+                )
+
+        if vdc and vdc_password:
+            wait_for_tasks(
+                vdc=vdc,
+                vdc_password=vdc_password,
+                datacenter=dc_obj.get_name(),
+                db_name=db_name,
+                db_user=db_user
+            )
+
+        LOGGER.info("Deactivate master storage domain")
+        status = ll_storagedomains.deactivate_master_storage_domain(
+            positive, datacenter
         )
 
-    LOGGER.info("Deactivate master storage domain")
-    status = ll_storagedomains.deactivate_master_storage_domain(
-        positive, datacenter
-    )
-
-    if vdc and vdc_password:
-        wait_for_tasks(
-            vdc=vdc,
-            vdc_password=vdc_password,
-            datacenter=dc_obj.get_name(),
-            db_name=db_name,
-            db_user=db_user
-        )
+        if vdc and vdc_password:
+            wait_for_tasks(
+                vdc=vdc,
+                vdc_password=vdc_password,
+                datacenter=dc_obj.get_name(),
+                db_name=db_name,
+                db_user=db_user
+            )
 
     LOGGER.info("Remove data center")
     if not datacenters.removeDataCenter(positive, datacenter):
         LOGGER.error("Remove data center %s failed", datacenter)
         status = False
 
-    LOGGER.info("Remove storage domains")
-    status = ll_storagedomains.remove_storage_domains(
-        sds, spm_host_obj.get_name(),
-        formatExpStorage,
-        formatIsoStorage
-    )
+    if sds and spm_host_obj:
+        LOGGER.info("Remove storage domains")
+        status = ll_storagedomains.remove_storage_domains(
+            sds, spm_host_obj.get_name(),
+            formatExpStorage,
+            formatIsoStorage
+        )
 
     LOGGER.info("Remove hosts")
     for host in hosts_to_remove:
