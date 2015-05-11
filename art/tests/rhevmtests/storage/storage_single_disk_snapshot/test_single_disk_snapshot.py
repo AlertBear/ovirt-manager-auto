@@ -6,7 +6,9 @@ https://tcms.engineering.redhat.com/plan/12057
 import logging
 import shlex
 import os
-from art.rhevm_api.tests_lib.low_level.disks import deleteDisk
+from art.rhevm_api.tests_lib.low_level.disks import (
+    deleteDisk, addDisk, wait_for_disks_status,
+)
 from art.rhevm_api.tests_lib.low_level.hosts import (
     waitForHostsStates, getSPMHost, getHostIP,
 )
@@ -19,7 +21,7 @@ from art.rhevm_api.utils.storage_api import (
 )
 from art.rhevm_api.utils.test_utils import restartVdsmd, restartOvirtEngine
 from rhevmtests.storage.helpers import (
-    get_vm_ip, create_vm_or_clone,
+    get_vm_ip, create_vm_or_clone, prepare_disks_for_vm,
 )
 from rhevmtests.storage.storage_single_disk_snapshot import helpers
 from art.unittest_lib import StorageTest as BaseTestCase
@@ -120,6 +122,8 @@ class BasicEnvironment(BaseTestCase):
         """
         Creating disks for case
         """
+        self.storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)[0]
         start_vms([self.vm_name], 1, wait_for_ip=False)
         waitForVMState(self.vm_name)
         vm_ip = get_vm_ip(self.vm_name)
@@ -133,9 +137,17 @@ class BasicEnvironment(BaseTestCase):
 
         self.disks_names = ['disk_%s_%s' % (d, self.tcms_test_case) for d in
                             range(self.disk_count)]
-        self.boot_disk = get_vm_bootable_disk(self.vm_name)
         logger.info("DISKS: %s", self.disks_names)
-        helpers.prepare_disks_for_vm(self.vm_name, self.disks_names)
+        for disk_name in self.disks_names:
+            addDisk(
+                True, alias=disk_name, size=config.GB,
+                storagedomain=self.storage_domain, format=config.COW_DISK,
+                interface=config.INTERFACE_VIRTIO, sparse=True,
+            )
+            wait_for_disks_status([disk_name])
+
+        prepare_disks_for_vm(self.vm_name, self.disks_names)
+        self.boot_disk = get_vm_bootable_disk(self.vm_name)
         wait_for_jobs()
         stop_vms_safely([self.vm_name])
         waitForVMState(self.vm_name, config.VM_DOWN)

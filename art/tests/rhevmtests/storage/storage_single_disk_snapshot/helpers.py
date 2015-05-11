@@ -8,19 +8,8 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, get_vm_snapshots, removeSnapshot,
 )
 
-from rhevmtests.storage.helpers import *  # flake8: noqa
-from rhevmtests.storage.storage_single_disk_snapshot import config
-
 logger = logging.getLogger(__name__)
 
-ENUMS = config.ENUMS
-
-DISK_NAME_FORMAT = '%s_%s_%s_disk'
-DISKS_NAMES = list()
-
-DD_COMMAND = 'dd if=/dev/%s of=/dev/%s bs=1M oflag=direct'
-
-DD_TIMEOUT = 1500
 SNAPSHOT_TIMEOUT = 15 * 60
 
 
