@@ -64,3 +64,26 @@ class VDS(Host):
     @cache.lrucache(name='cpu_model')
     def get_cpu_model(self):
         raise NotImplementedError()
+
+    def vds_client(self, cmd, args=None):
+        """
+        Run given commend on host with vdsClient
+        :param cmd: command to execute
+        :type: cmd: str
+        :param args: command parameters optional
+        :type: list
+        :return: rc, command output
+        :rtype: tuple
+        """
+        vds_command = ['vdsClient', '-s', '0', cmd]
+        if args:
+            vds_command.extend(args)
+        rc, out, err = self.executor().run_cmd(vds_command)
+        if rc:
+            self.logger.error(
+                "Failed to run command '%s'; out: %s; err: %s",
+                " ".join(cmd),
+                out,
+                err
+            )
+        return rc, out
