@@ -5,7 +5,6 @@ https://tcms.engineering.redhat.com/plan/10435
 import config
 import helpers
 import logging
-from concurrent.futures import ThreadPoolExecutor
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.unittest_lib import StorageTest as TestCase
 from art.rhevm_api.tests_lib.high_level import datacenters
@@ -39,28 +38,19 @@ def setup_module():
         datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
                                 config.STORAGE_TYPE, config.TESTNAME)
 
-    exs = []
-    with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-        for storage_type in config.STORAGE_SELECTOR:
-            storage_domain = storagedomains.getStorageDomainNamesForType(
-                config.DATA_CENTER_NAME, storage_type)[0]
-            VM_NAMES[storage_type] = []
-            for idx in range(config.VM_COUNT):
-                vm_name = "backup_api_vm_%d_%s" % (idx, storage_type)
-                VM_NAMES[storage_type].append(vm_name)
-
-                logger.info("Creating vm %s on storage domain %s",
-                            vm_name, storage_domain)
-                exs.append((
-                    vm_name,
-                    executor.submit(
-                        helpers.prepare_vm, vm_name,
-                        helpers.SHOULD_CREATE_SNAPSHOT[idx], storage_domain,
-                    )
-                ))
-
-    # helpers.prepare_vm will raise a exception in case anything goes wrong
-    [ex[1].exception() for ex in exs]
+    for storage_type in config.STORAGE_SELECTOR:
+        storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, storage_type)[0]
+        VM_NAMES[storage_type] = []
+        for idx in range(config.VM_COUNT):
+            vm_name = "backup_api_vm_%d_%s" % (idx, storage_type)
+            logger.info(
+                "Creating vm %s on storage domain %s", vm_name, storage_domain
+            )
+            helpers.prepare_vm(
+                vm_name, helpers.SHOULD_CREATE_SNAPSHOT[idx], storage_domain
+            )
+            VM_NAMES[storage_type].append(vm_name)
 
 
 def teardown_module():
