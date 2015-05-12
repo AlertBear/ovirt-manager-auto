@@ -25,6 +25,7 @@ def setup_module():
         config.ADW2K12_DOMAINS, config.TRUSTSTORE, config.TRUSTSTORE_PASSWORD
     )
     common.enableExtensions(config.OVIRT_SERVICE, config.ENGINE_HOST)
+    common.loginAsAdmin()
 
 
 def teardown_module():

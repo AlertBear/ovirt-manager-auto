@@ -130,12 +130,7 @@ def connectionTest():
 
 
 def loginAsAdmin():
-    users.loginAsUser(
-        config.VDC_ADMIN_USER,
-        config.VDC_ADMIN_DOMAIN,
-        config.VDC_PASSWORD,
-        False
-    )
+    users.loginAsUser('admin', 'internal', '123456', False)
 
 
 # -- Truststore utils --
