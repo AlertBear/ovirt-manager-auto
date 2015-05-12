@@ -18,7 +18,7 @@ def setup_module():
         config.DC_NAME[0], False)[0].get_name()
     assert vms.createVm(
         True, config.HOOKS_VM_NAME, '', cluster=config.CLUSTER_NAME[0],
-        nic=config.HOST_NICS[0], storageDomainName=storage_domain,
+        nic='nic1', storageDomainName=storage_domain,
         size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
         diskInterface=config.DISK_INTERFACE, memory=config.GB,
         cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
