@@ -156,3 +156,10 @@ class QueryNotFoundException(RHEVMEntityException):
     Exception for query not found (get_obj_by_query)
     """
     pass
+
+
+class TearDownException(RHEVMEntityException):
+    """
+    Exception for failed teardown
+    """
+    pass

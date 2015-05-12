@@ -1,4 +1,5 @@
 import logging
+from art.test_handler.exceptions import TearDownException
 from art.test_handler.settings import plmanager, opts, ART_CONFIG
 from unittest import TestCase
 from nose.plugins.attrib import attr
@@ -39,6 +40,11 @@ class BaseTestCase(TestCase):
     """
     __test__ = False
     apis = set(opts['engines'])
+    test_failed = False
+
+    def teardown_exception(self):
+        if self.test_failed:
+            raise TearDownException("TearDown failed with errors")
 
 
 @attr(team="storage")
@@ -58,8 +64,6 @@ class NetworkTest(BaseTestCase):
     Basic class for network tests
     """
     apis = set(["rest", "java", "sdk"])
-    __test__ = False
-    test_failed = False
 
 
 @attr(team="virt")
