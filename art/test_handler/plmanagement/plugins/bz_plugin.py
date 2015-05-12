@@ -423,9 +423,9 @@ class Bugzilla(Component):
                             self.is_state_by_bug(bz), engine_in)
                 raise BugzillaSkipTest(bz_id, self.url)
 
-            # if the bug is closed on current release resolution, but was fixed
-            # in later version
-            if bz.bug_status == 'CLOSED':
+            # if the bug is closed or verified on current release resolution,
+            # but was fixed in later version
+            if bz.bug_status in ('CLOSED', 'VERIFIED'):
                 if self.__check_fixed_at(bz) and engine_in:
                     raise BugzillaSkipTest(bz_id, self.url)
 
