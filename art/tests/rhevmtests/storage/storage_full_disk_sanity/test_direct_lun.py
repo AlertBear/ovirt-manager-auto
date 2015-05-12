@@ -81,7 +81,6 @@ class DirectLunAttachTestCase(TestCase):
             self.vm_name)
         self.lun_kwargs = BASE_KWARGS.copy()
         self.lun_kwargs["alias"] = self.disk_alias
-        self.lun_kwargs["storagedomain"] = self.vm_storage_domain
 
         stop_vms_safely([self.vm_name])
         waitForVMState(self.vm_name, config.VM_DOWN)
