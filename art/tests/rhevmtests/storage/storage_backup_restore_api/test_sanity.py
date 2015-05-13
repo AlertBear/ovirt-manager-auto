@@ -24,6 +24,7 @@ from art.test_handler import exceptions
 logger = logging.getLogger(__name__)
 
 TASK_TIMEOUT = 1500
+BACKUP_DISK_SIZE = 10 * config.GB
 
 TEST_PLAN_ID = '10435'
 
@@ -731,7 +732,7 @@ class TestCase304197(TestCase):
         self.assertFalse(status, "OVF object wasn't found")
 
         self.assertTrue(vms.addDisk(
-            True, self.vm_names[1], 6 * config.GB, True,
+            True, self.vm_names[1], BACKUP_DISK_SIZE, True,
             self.storage_domains[0], interface=config.DISK_INTERFACE_VIRTIO),
             "Failed to add backup disk to backup vm %s" % self.vm_names[1])
 
