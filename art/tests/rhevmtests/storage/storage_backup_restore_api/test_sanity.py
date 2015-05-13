@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 TASK_TIMEOUT = 1500
 BACKUP_DISK_SIZE = 10 * config.GB
+MOVING_DISK_TIMEOUT = 600
 
 TEST_PLAN_ID = '10435'
 
@@ -897,10 +898,6 @@ class TestCase322486(TestCase):
     """
     __test__ = True
     tcms_test_case = '322486'
-    bz = {
-        '1196049': {'engine': None, 'version': ['3.5.1']},
-        '1176673': {'engine': None, 'version': ['3.6']},
-    } if TestCase.storage == config.STORAGE_TYPE_ISCSI else None
 
     def setUp(self):
         self.vm_names = VM_NAMES[TestCase.storage]
@@ -941,12 +938,15 @@ class TestCase322486(TestCase):
         Restoring environment
         """
         vm_disks = vms.getVmDisks(self.vm_names[0])
+        # Waiting for the disk's move operation from the test to finish
+        disks.wait_for_disks_status(vm_disks[0].get_alias(),
+                                    timeout=MOVING_DISK_TIMEOUT)
         logger.info("Moving disk %s to SD %s", vm_disks[0].get_alias(),
                     self.original_sd)
-        disks.wait_for_disks_status(vm_disks[0].get_alias())
         vms.move_vm_disk(self.vm_names[0], vm_disks[0].get_alias(),
                          self.original_sd, wait=True)
-        disks.wait_for_disks_status(vm_disks[0].get_alias())
+        disks.wait_for_disks_status(vm_disks[0].get_alias(),
+                                    timeout=MOVING_DISK_TIMEOUT)
 
 
 @attr(tier=1)
