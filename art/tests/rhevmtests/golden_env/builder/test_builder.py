@@ -53,10 +53,12 @@ class StorageConfiguration(object):
         else:
             self.iscsi_luns, self.iscsi_lun_addresses = [], []
             self.iscsi_lun_targets = []
-        if 'gluster_domain_address' in configuration:
+        if 'gluster_data_domain_address' in configuration:
             self.gluster_addresses = configuration.as_list(
-                'gluster_domain_address')
-            self.gluster_paths = configuration.as_list('gluster_domain_path')
+                'gluster_data_domain_address')
+            self.gluster_paths = configuration.as_list(
+                'gluster_data_domain_path'
+            )
             self.gluster_vfs_types = (
                 [configuration['vfs_type']] * len(self.gluster_paths))
         else:
@@ -80,7 +82,7 @@ class StorageConfiguration(object):
         self.nfs_shares = zip(self.nfs_addresses, self.nfs_paths)
         self.iscsi_shares = zip(
             self.iscsi_luns, self.iscsi_lun_addresses, self.iscsi_lun_targets)
-        self.unused_gluster_shares = zip(
+        self.gluster_shares = zip(
             self.gluster_addresses, self.gluster_paths, self.gluster_vfs_types)
         self.unused_local_paths = list(self.local_paths)
         self.export_shares = zip(
@@ -95,8 +97,8 @@ class StorageConfiguration(object):
     def get_iscsi_share(self):
         return self.iscsi_shares.pop(0)
 
-    def get_unused_gluster_share(self):
-        return self.unused_gluster_shares.pop(0)
+    def get_gluster_share(self):
+        return self.gluster_shares.pop(0)
 
     def get_unused_local_share(self):
         return self.unused_local_paths.pop(0)
@@ -183,7 +185,7 @@ class CreateDC(TestCase):
                     override_luns=True
                 )
             elif storage_type == ENUMS['storage_type_gluster']:
-                address, path, vfs = storage_conf.get_unused_gluster_share()
+                address, path, vfs = storage_conf.get_gluster_share()
                 assert storagedomains.addGlusterDomain(
                     host, sd_name, datacenter_name, address, path,
                     vfs_type=vfs)
