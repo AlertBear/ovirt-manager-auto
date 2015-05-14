@@ -2,7 +2,7 @@
 # Check test_rhds.py how to use it.
 __test__ = False
 
-from rhevmtests.system.authentication import config
+from authentication import config
 import logging
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 from nose.tools import istest

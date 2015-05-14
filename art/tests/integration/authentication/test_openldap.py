@@ -7,7 +7,7 @@ User with many groups and if updating of user is propagated.
 
 __test__ = True
 
-from rhevmtests.system.authentication import config
+from authentication import config
 import logging
 
 from art.unittest_lib import CoreSystemTest as TestCase

@@ -2,9 +2,11 @@
 
 __test__ = False
 
-from rhevmtests.system.config import *  # flake8: noqa
+from art.rhevm_api import resources
+from art.test_handler.settings import ART_CONFIG
 
-
+REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
+PARAMETERS = ART_CONFIG['PARAMETERS']
 IPA = ART_CONFIG['IPA']
 ACTIVE_DIRECTORY = ART_CONFIG['ACTIVE_DIRECTORY']
 RHDS = ART_CONFIG['RHDS']
@@ -69,15 +71,20 @@ W2K12R2_DOMAIN = str(ACTIVE_DIRECTORY.get('w2k12rw_domain', None))
 W2K12R2_PASSWORD = str(ACTIVE_DIRECTORY.get('w2k12rw_password', 'Heslo123'))
 
 # Common
-DOMAINS = { RHDS_DOMAIN: [RHDS, 'rhds'],
-            IPA_DOMAIN: [IPA ,'ipa'],
-            AD2_DOMAIN:  [ACTIVE_DIRECTORY, 'ad2'],
-            W2K8R2_DOMAIN:  [ACTIVE_DIRECTORY, 'w2k8r2'],
-            W2K12R2_DOMAIN: [ACTIVE_DIRECTORY, 'w2k12r2'] }
+DOMAINS = {
+    RHDS_DOMAIN: [RHDS, 'rhds'],
+    IPA_DOMAIN: [IPA, 'ipa'],
+    AD2_DOMAIN: [ACTIVE_DIRECTORY, 'ad2'],
+    W2K8R2_DOMAIN: [ACTIVE_DIRECTORY, 'w2k8r2'],
+    W2K12R2_DOMAIN: [ACTIVE_DIRECTORY, 'w2k12r2'],
+}
+
 
 def getParamFromDomain(param, domain_name):
     try:
-        return DOMAINS[domain_name][0].get('%s_%s' % (DOMAINS[domain_name][1], param))
+        return DOMAINS[domain_name][0].get(
+            '%s_%s' % (DOMAINS[domain_name][1], param)
+        )
     except KeyError:
         raise KeyError("%s domain is not configured, please configure it"
                        % domain_name)
@@ -144,3 +151,35 @@ AD_TCMS_PLAN_ID = 2112
 IPA_TCMS_PLAN_ID = 3999
 RHDS_TCMS_PLAN_ID = 5859
 LDAP_TCMS_PLAN_ID = 9906
+
+VDC_ADMIN_USER = 'admin'
+VDC_ADMIN_DOMAIN = 'internal'
+
+VDC_HOST = REST_CONNECTION['host']
+VDC_ROOT_PASSWORD = PARAMETERS.get('vdc_root_password')
+VDC_ROOT_USER = "root"
+HOSTS_USER = 'root'
+VDC_PASSWORD = REST_CONNECTION['password']
+VDC_PORT = REST_CONNECTION['port']
+ENGINE_ENTRY_POINT = REST_CONNECTION['entry_point']
+ENGINE_URL = '%s://%s:%s/%s' % (
+    REST_CONNECTION.get('scheme'),
+    VDC_HOST,
+    VDC_PORT,
+    ENGINE_ENTRY_POINT
+)
+ENGINE_HOST = resources.Host(VDC_HOST)
+ENGINE_HOST.users.append(
+    resources.RootUser(VDC_ROOT_PASSWORD)
+)
+ENGINE = resources.Engine(
+    ENGINE_HOST,
+    resources.ADUser(
+        VDC_ADMIN_USER,
+        VDC_PASSWORD,
+        resources.Domain(VDC_ADMIN_DOMAIN),
+    ),
+    schema=REST_CONNECTION.get('schema'),
+    port=VDC_PORT,
+    entry_point=ENGINE_ENTRY_POINT,
+)

@@ -9,36 +9,29 @@ __test__ = True
 
 import time
 import logging
-from rhevmtests.system.authentication import config
+from authentication import config
 from art.unittest_lib import CoreSystemTest as TestCase
 from nose.tools import istest
 from art.unittest_lib import attr
-from art.rhevm_api.tests_lib.low_level import mla, users, general
+from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand
-from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from test_base import connectionTest
-from utilities.machine import LINUX, Machine
 from art.core_api.apis_utils import TimeoutingSampler
 
 LOGGER = logging.getLogger(__name__)
-OUT = '> /dev/null 2>&1 &'
 MB = 1024 * 1024
 AUTH = 'auth'
 AUTH_CONF = 'auth-conf'
-SET_AUTH = """%s-config -s SASL_QOP=%s"""
+OUT = '> /dev/null 2>&1 &'
 TCP_DUMP = 'nohup tcpdump -l -s 65535 -A -vv port 389 -w /tmp/tmp.cap %s' % OUT
 CHECK_DUMP = 'tcpdump -A -r /tmp/tmp.cap 2>/dev/null | grep %s'
 CLEAN = 'rm -f /tmp/tmp.cap && kill -9 `pgrep tcpdump`'
-USERVMMANAGER = 'UserVmManager'
-OVIRT = 'ovirt'
-ENGINE = 'engine'
-RHEVM = 'rhevm'
 
 
-def teardown_module():
+def set_sasl_qop(level):
     config.ENGINE_HOST.executor().run_cmd(
-        ['engine-config', '-s', 'SASL_QOP=auth']
+        ['engine-config', '-s', 'SASL_QOP=%s' % level]
     )
     config.ENGINE.restart()
     for status in TimeoutingSampler(
@@ -50,11 +43,16 @@ def teardown_module():
             break
 
 
+def teardown_module():
+    set_sasl_qop(AUTH)
+
+
 def addUserWithClusterPermissions(user_name):
     name, domain = user_name.split('@')
     assert users.addUser(True, user_name=name, domain=domain)
     assert mla.addClusterPermissionsToUser(
-        True, name, config.MAIN_CLUSTER_NAME, role=USERVMMANAGER, domain=domain
+        True, name, config.MAIN_CLUSTER_NAME,
+        role='UserVmManager', domain=domain
     )
 
 
@@ -64,12 +62,6 @@ class ActiveDirectory(TestCase):
 
     PASSWORD = None
     domain = None
-    product = ENGINE
-
-    def __init__(self, *args, **kwargs):
-        super(ActiveDirectory, self).__init__(*args, **kwargs)
-        if OVIRT not in general.getProductName()[1]['product_name'].lower():
-            self.product = ENGINE
 
     def _loginAsUser(self, user_name, filter=True):
         name, domain = user_name.split('@')
@@ -153,14 +145,8 @@ class ActiveDirectory(TestCase):
     def _checkEnc(self, auth, result):
         user, domain = config.NORMAL_USER(self.domain).split('@')
 
-        self.assertTrue(
-            runMachineCommand(True, ip=config.VDC_HOST, cmd=auth,
-                              user=config.HOSTS_USER,
-                              password=config.VDC_PASSWORD)[0],
-            "Run cmd %s failed." % auth)
-        machine = Machine(config.VDC_HOST, config.HOSTS_USER,
-                          config.VDC_PASSWORD).util(LINUX)
-        test_utils.restartOvirtEngine(machine, 5, 25, 70)
+        set_sasl_qop(auth)
+
         self.assertTrue(
             runMachineCommand(True, ip=config.VDC_HOST,
                               cmd=TCP_DUMP,
@@ -183,14 +169,14 @@ class ActiveDirectory(TestCase):
                               user=config.HOSTS_USER,
                               password=config.VDC_PASSWORD)[0],
             "Run cmd %s failed." % CLEAN)
-        LOGGER.info("Authorization passed.")
+        LOGGER.info("Authentication passed.")
 
     @istest
     @tcms(config.AD_TCMS_PLAN_ID, 91745)
     def ldapEncryption(self):
         """ LDAP encryption """
-        self._checkEnc(SET_AUTH % (self.product, AUTH), True)
-        self._checkEnc(SET_AUTH % (self.product, AUTH_CONF), False)
+        self._checkEnc(AUTH, True)
+        self._checkEnc(AUTH_CONF, False)
 
     @istest
     @tcms(config.AD_TCMS_PLAN_ID, 41716)
