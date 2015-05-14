@@ -218,9 +218,12 @@ class BasicEnvironment(BaseTestCase):
         for dev in self.devices:
             dev_size = self.vm.get_storage_device_size(dev)
             dev_path = os.path.join('/dev', dev)
-            logger.info("Creating partition for dev: %s", dev_path)
-            dev_number = self.vm.createPartition(dev_path,
-                                                 ((dev_size / 2) * config.GB))
+            partition_size = int((dev_size/2.) * config.GB)
+            logger.info(
+                "Creating partition of size %s for dev: %s", partition_size,
+                dev_path,
+            )
+            dev_number = self.vm.createPartition(dev_path, partition_size)
             logger.info("Creating file system for dev: %s", dev + dev_number)
             self.vm.createFileSystem(dev_path, dev_number, 'ext4',
                                      (self.mount_path % dev))
