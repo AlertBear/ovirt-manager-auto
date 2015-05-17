@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 DISK_TIMEOUT = 250
 REMOVE_SNAPSHOT_TIMEOUT = 25 * 60
 DD_TIMEOUT = 60 * 6
+DISK_SIZE = 3 * config.GB
 DD_EXEC = '/bin/dd'
 DD_COMMAND = '{0} bs=1M count=%d if=%s of=%s'.format(DD_EXEC)
 DEFAULT_DD_SIZE = 20 * config.MB
@@ -618,3 +619,85 @@ def execute_lsblk_cmd(vm_name):
     # The values are retrieved as one long string
     output_values = out.values()[0]
     return shlex.split(output_values)
+
+
+def add_new_disk(
+        sd_name, permutation, sd_type, shared=False, disk_size=DISK_SIZE
+):
+    """
+    Add a new disk
+
+    :param sd_name: storage domain where a new disk will be added
+    :type sd_name: str
+    :param permutation:
+            * alias - alias of the disk
+            * interface - VIRTIO, VIRTIO_SCSI or IDE
+            * sparse - True if thin, False if preallocated
+            * format - disk format 'cow' or 'raw'
+    :type permutation: dict
+    :param sd_type: type of the storage domain (nfs, iscsi, gluster)
+    :type sd_type: str
+    :param shared: True if the disk should be shared
+    :type shared: bool
+    :param disk_size: disk size (default is 3GB)
+    :type disk_size: int
+    :returns: disk's alias
+    :rtype: str
+    """
+    if 'alias' in permutation:
+        alias = permutation['alias']
+    else:
+        alias = "%s_%s_%s_%s_disk" % (
+            permutation['interface'], permutation['format'],
+            permutation['sparse'], sd_type
+        )
+
+    disk_args = {
+        # Fixed arguments
+        'provisioned_size': disk_size,
+        'wipe_after_delete': sd_type in config.BLOCK_TYPES,
+        'storagedomain': sd_name,
+        'bootable': False,
+        'shareable': shared,
+        'active': True,
+        'size': disk_size,
+        # Custom arguments - change for each disk
+        'format': permutation['format'],
+        'interface': permutation['interface'],
+        'sparse': permutation['sparse'],
+        'alias': alias,
+    }
+    logger.info("Adding new disk: %s", alias)
+
+    assert addDisk(True, **disk_args)
+    return alias
+
+
+def start_creating_disks_for_test(
+        shared=False, sd_name=None, sd_type=None, disk_size=DISK_SIZE):
+    """
+    Begins asynchronous creation of disks from all permutations of disk
+    interfaces, formats and allocation policies
+
+    :param shared: Specifies whether the disks should be shared
+    :type shared: bool
+    :param sd_name: name of the storage domain where the disks will be created
+    :type sd_name: str
+    :param sd_type: storage type of the domain where the disks will be created
+    :type sd_type: str
+    :param disk_size: Disk size to be used with the disk creation
+    :type disk_size: int
+    :returns: list of disk names
+    :rtype: list
+    """
+    disk_names = []
+    logger.info("Creating all disks required for test")
+    disk_permutations = get_all_disk_permutation(
+        block=sd_type in config.BLOCK_TYPES, shared=shared)
+    for permutation in disk_permutations:
+        alias = add_new_disk(
+            sd_name=sd_name, permutation=permutation, shared=shared,
+            sd_type=sd_type, disk_size=disk_size
+        )
+        disk_names.append(alias)
+    return disk_names

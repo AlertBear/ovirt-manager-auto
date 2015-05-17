@@ -64,7 +64,8 @@ ID_ATTR = 'id'
 DEF_SLEEP = 10
 VM_SNAPSHOT_ACTION = 600
 VM_ACTION_TIMEOUT = 600
-VM_REMOVE_SNAPSHOT_TIMEOUT = 1200
+# Live merge requires a long timeout for snapshot removal
+VM_REMOVE_SNAPSHOT_TIMEOUT = 2400
 VM_DISK_CLONE_TIMEOUT = 720
 VM_IMAGE_OPT_TIMEOUT = 900
 VM_INSTALL_TIMEOUT = 1800
@@ -1637,7 +1638,7 @@ def addSnapshot(positive, vm, description, wait=True, persist_memory=None,
                                            compare=wait)
 
     if wait:
-        wait_for_jobs(job_descriptions=[ENUMS['job_create_snapshot']])
+        wait_for_jobs([ENUMS['job_create_snapshot']])
 
     try:
         snapshot = _getVmSnapshot(vm, description)
@@ -1672,15 +1673,15 @@ def validateSnapshot(positive, vm, snapshot):
 
 
 def wait_for_snapshot_gone(
-    positive, snapshot, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT
+        vm_name, snapshot, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT
 ):
     """
     Wait for snapshot to disappear from the setup. This function will block
     up to `timeout` seconds, sampling the snapshots list until the specified
     snapshot is gone
 
-    :param positive: Determines whether the case is positive or negative
-    :type positive: bool
+    :param vm_name: Name of the vm that the snapshot created on
+    :type vm_name: str
     :param snapshot: Snapshot description
     :type snapshot: str
     :param timeout: How long should wait until the snapshot is removed
@@ -1689,9 +1690,12 @@ def wait_for_snapshot_gone(
     False otherwise
     :rtype: bool
     """
-    return waitUntilGone(
-        positive, snapshot, VM_API, timeout, SNAPSHOT_SAMPLING_PERIOD
-    )
+    for sample in TimeoutingSampler(
+            timeout, SNAPSHOT_SAMPLING_PERIOD, get_vm_snapshots, vm_name
+    ):
+        if snapshot not in [snap.get_description() for snap in sample]:
+            return True
+    return False
 
 
 @is_action()
@@ -1726,12 +1730,7 @@ def removeSnapshot(
         return False
 
     if wait:
-        status = wait_for_snapshot_gone(positive, description, timeout)
-        # Make sure remove volumes async tasks are not running in background
-        try:
-            wait_for_jobs([ENUMS['job_remove_snapshot']])
-        except APITimeout:
-            return False
+        status = wait_for_snapshot_gone(vm, description, timeout)
         return status
     return True
 
