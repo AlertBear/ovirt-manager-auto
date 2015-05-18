@@ -42,8 +42,9 @@ class BaseTestCase(TestCase):
     apis = set(opts['engines'])
     test_failed = False
 
-    def teardown_exception(self):
-        if self.test_failed:
+    @classmethod
+    def teardown_exception(cls):
+        if cls.test_failed:
             raise TearDownException("TearDown failed with errors")
 
 
