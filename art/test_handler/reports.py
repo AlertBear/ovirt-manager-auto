@@ -18,89 +18,16 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-import logging
-from art.test_handler.settings import opts
 from lxml.etree import Element, ElementTree, PI
 from lxml.builder import E
 import threading
 import os
-from sys import stderr
 from lockfile import FileLock
 from abc import ABCMeta, abstractmethod
 import datetime
 from dateutil import tz
-from time import strftime
-
-
-COLORS = {
-    'ERROR': 31,
-    'WARNING': 33,
-    'INFO': 32,
-    'DEBUG': 34,
-}
-
-
-FMT = '%(asctime)s - %(threadName)s - %(name)s - ' \
-      '$COL_LVL%(levelname)s$COL_RST - %(message)s'
 
 JUNIT_NOFRAMES_STYLESHEET = "junit-noframes.xsl"
-
-
-def colorize_fmt(fmt, colours):
-    for placeholder, colour in colours.iteritems():
-        fmt = fmt.replace(placeholder, colour)
-    return fmt
-
-
-class ColoredFormatter(logging.Formatter):
-    '''
-    Colorizes the logging records by their level and content.
-    '''
-    def __init__(self, msg, use_color=True):
-        logging.Formatter.__init__(self, msg)
-        self.useColor = use_color
-        self.colors = {'$COL_LVL': '', '$COL_RST': ''}
-
-    def format(self, record):
-        if self.useColor:
-            self.colors['$COL_LVL'] = '\033[%d;1m' \
-                    % COLORS.get(record.levelname, 35)
-            self.colors['$COL_RST'] = '\033[0m'
-        else:
-            self.colors['$COL_LVL'] = '\033[%dm' \
-                    % COLORS.get(record.levelname, 35)
-            self.colors['$COL_RST'] = '\033[0m'
-
-        self._fmt = colorize_fmt(FMT, self.colors)
-        return logging.Formatter.format(self, record)
-
-
-def initializeLogger():
-    '''
-    Initialize logger so that it spits output to file and stderr. Colorize only
-    the messages going to tty through stderr to not cause mess in the files.
-    Author: jhenner
-    '''
-
-    logLevel = logging.INFO
-
-    # Prepare empty colours for the colour placeholders for messages going to
-    # file.
-    bw_colours = {'$COL_LVL': '', '$COL_RST': ''}
-    bw_fmt = colorize_fmt(FMT, bw_colours)
-
-    if not opts['log']:
-        timestamp = strftime('%Y%m%d_%H%M%S')
-        opts['log'] = "%s/%sTests.log" % (opts['logdir'], timestamp)
-
-    logging.basicConfig(level=logLevel, filemode='w', format=bw_fmt,
-                        filename=opts['log'])
-
-    # Prepare handler and formatter for stderr outputs.
-    sh = logging.StreamHandler()
-    sh.setLevel(logging.INFO)
-    sh.setFormatter(ColoredFormatter(FMT, stderr.isatty()))
-    logging.getLogger().addHandler(sh)
 
 
 def create_results_dir_path(path):

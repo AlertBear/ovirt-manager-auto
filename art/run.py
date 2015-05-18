@@ -1,25 +1,31 @@
 #!/usr/bin/python
 
 import logging
+import os
 from sys import argv, exit, stderr
+from time import strftime
 import traceback
 from socket import error as SocketError
 
 from art.core_api.apis_exceptions import APICommandError, APIException
 from art.test_handler.test_runner import TestRunner
-from art.test_handler.settings import populateOptsFromArgv, CmdLineError, \
-        initPlmanager, opts, readTestRunOpts
+from art.test_handler.settings import (
+    populateOptsFromArgv, CmdLineError, initPlmanager, opts, readTestRunOpts
+)
 from art.test_handler.plmanagement import PluginError
-from art.test_handler.reports import initializeLogger
+from utilities.logger_utils import initialize_logger
 from art.test_handler.settings import ReturnCode as RC
 from art.test_handler.handler_lib.configs import ValidationError
+from art.test_handler import find_config_file
+
+LOGGER_ART_CONF = 'conf/logger_art.conf'
 
 logger = logging.getLogger(__name__)
 
 
 def _main(plmanager):
     args = populateOptsFromArgv(argv)
-    initializeLogger()
+    init_logger()
     logger.info("Log file name: %s" % opts['log'])
     config = readTestRunOpts(opts['conf'], args.redefs)
     if config['RUN']['debug']:
@@ -39,6 +45,15 @@ def _main(plmanager):
     plmanager.configurators.configure_app(config)
     plmanager.application_liteners.on_application_start()
     runner.run()
+
+
+def init_logger():
+    if not opts['logdir']:
+        opts['logdir'] = '/var/tmp'
+    log_file = 'art_tests_%s.log' % strftime('%Y%m%d_%H%M%S')
+    opts['log'] = os.path.join(opts['logdir'], log_file)
+    initialize_logger(conf_file=find_config_file(LOGGER_ART_CONF),
+                      log_file=opts['log'])
 
 
 def _print_error(msg, ex):

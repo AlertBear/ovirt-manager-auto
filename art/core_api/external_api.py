@@ -17,16 +17,17 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-import os
 import logging
 from time import strftime
 from configobj import ConfigObj
 from art.test_handler.settings import opts
 from art.core_api.apis_exceptions import APICommandError
-from art.test_handler.reports import initializeLogger
+from utilities.logger_utils import initialize_logger
 from art.test_handler import find_config_file
 
 ELEMENTS = 'conf/elements.conf'
+LOGGER_ART_CONF = 'conf/logger_art.conf'
+
 
 class TestRunnerWrapper():
     '''
@@ -66,13 +67,13 @@ class TestRunnerWrapper():
         opts['media_type'] = kwargs.get('media_type', 'application/xml')
         opts['headers'] = kwargs.get('headers', {})
         opts['elements_conf'] = ConfigObj(find_config_file(ELEMENTS),
-                                                    raise_errors=True)
+                                          raise_errors=True)
         opts['validate'] = kwargs.get('validate', True)
         opts['secure'] = kwargs.get('secure', False)
-        opts['data_struct_mod'] = kwargs.get('data_struct_mod',
-                        'art.rhevm_api.data_struct.data_structures')
-        opts['log'] = kwargs.get('log', "/var/tmp/%sTests%s.log" % \
-                        (opts['engine'], strftime('%Y%m%d_%H%M%S')))
+        opts['data_struct_mod'] = kwargs.get(
+            'data_struct_mod', 'art.rhevm_api.data_struct.data_structures')
+        opts['log'] = kwargs.get('log', "/var/tmp/%s_tests_%s.log" %
+                                 (opts['engine'], strftime('%Y%m%d_%H%M%S')))
         opts['urisuffix'] = ''
         opts['uri'] = '%(scheme)s://%(host)s:%(port)s/%(entry_point)s%(urisuffix)s/' \
             % opts
@@ -85,7 +86,8 @@ class TestRunnerWrapper():
             if arg not in opts:
                 opts[arg] = kwargs[arg]
 
-        initializeLogger()
+        initialize_logger(conf_file=find_config_file(LOGGER_ART_CONF),
+                          log_file=opts['log'])
         self.logger = logging.getLogger(__name__)
         if opts['debug']:
             self.logger.setLevel(logging.DEBUG)

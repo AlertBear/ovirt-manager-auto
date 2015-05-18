@@ -75,26 +75,26 @@ def populateOptsFromArgv(argv):
     )
 
     parser.add_argument('--logdir', '-logdir',
-                                default='/var/tmp',
-                                help='path to the log directory (%(default)s)')
-    parser.add_argument('--log', '-log',
-    # log file will be generated when test_handler.reports.initializeLogger()
+                        default='/var/tmp',
+                        help='path to the log directory (%(default)s)')
+    # log file will generated when utilities.logger_utils.initialize_logger()
     # will be called in test suite runner
-                                default=None,
-                                help='path to the log files')
+    parser.add_argument('--log', '-log',
+                        default=None,
+                        help='path to the log files')
     parser.add_argument('--configFile', '-conf', required=True,
-                                help='path to the config file',
-                                dest='conf')
+                        help='path to the config file',
+                        dest='conf')
     parser.add_argument('--SpecFile', '-spec',
-                                default='conf/specs/main.spec',
-                                help='path to the main conf spec file',
-                                dest='confSpec')
+                        default='conf/specs/main.spec',
+                        help='path to the main conf spec file',
+                        dest='confSpec')
     parser.add_argument('--standalone', '-standalone', action='store_true',
-                                help='run without opts dependencies')
+                        help='run without opts dependencies')
     parser.add_argument('-D',   metavar='OPTION', action='append',
-                                default=[],
-                                help='modify the option in config',
-                                dest='redefs')
+                        default=[],
+                        help='modify the option in config',
+                        dest='redefs')
 
     plmanager.configurables.add_options(parser)
 
