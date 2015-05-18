@@ -6,6 +6,7 @@ It will cover scenarios for VM/non-VM networks.
 """
 
 import logging
+from art.rhevm_api.tests_lib.high_level.vms import start_vm_on_specific_host
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 from art.core_api.apis_exceptions import EntityNotFound
@@ -52,8 +53,9 @@ from rhevmtests.networking.sanity.helper import check_dummy_on_host_interfaces
 
 HOST_API = get_api("host", "hosts")
 HOST_NICS = None  # filled in setup module
-HOST_NAME0 = None  # Fill in setup_module
-DC_NAMES = [config.DC_NAME[0], config.EXTRA_DC]
+HOST_NAME_0 = None  # Fill in setup_module
+EXTRA_DC = config.EXTRA_DC[0]
+DC_NAMES = [config.DC_NAME[0], EXTRA_DC]
 
 logger = logging.getLogger("Sanity_Cases")
 
@@ -63,9 +65,9 @@ def setup_module():
     Obtain host IP and host nics
     """
     global HOST_NICS
-    global HOST_NAME0
+    global HOST_NAME_0
     HOST_NICS = config.VDS_HOSTS[0].nics
-    HOST_NAME0 = get_host_name_from_engine(config.VDS_HOSTS[0].ip)
+    HOST_NAME_0 = get_host_name_from_engine(config.VDS_HOSTS[0].ip)
 
 
 @attr(tier=0)
@@ -225,9 +227,11 @@ class TestSanityCase04(TestCase):
         Create vm network sw164
         """
         logger.info("Create network and attach it to the host")
-        local_dict = {cls.vlan: {"vlan_id": config.VLAN_ID[2],
-                                 "required": "false"}}
-
+        local_dict = {
+            cls.vlan: {
+                "vlan_id": config.VLAN_ID[2], "required": "false"
+            }
+        }
         if not createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             network_dict=local_dict
@@ -1115,7 +1119,7 @@ class TestSanityCase13(TestCase):
         if not rc:
             raise NetworkException("Cannot generate network object")
         sendSNRequest(
-            positive=True, host=HOST_NAME0, nics=[out["host_nic"]],
+            positive=True, host=HOST_NAME_0, nics=[out["host_nic"]],
             auto_nics=[config.VDS_HOSTS[0].nics[0]], check_connectivity="true",
             connectivity_timeout=60, force="false"
         )
@@ -1180,7 +1184,7 @@ class TestSanityCase14(TestCase):
         logger.info("sending SNRequest for bond012345678901")
         self.assertTrue(
             sendSNRequest(
-                False, host=HOST_NAME0, nics=net_obj,
+                False, host=HOST_NAME_0, nics=net_obj,
                 auto_nics=[config.VDS_HOSTS[0].nics[0]],
                 check_connectivity="true", connectivity_timeout=config.TIMEOUT,
                 force="false"
@@ -1217,7 +1221,7 @@ class TestSanityCase15(TestCase):
         logger.info("sending SNRequest: NET1515")
         self.assertTrue(
             sendSNRequest(
-                False, host=HOST_NAME0, nics=net_obj,
+                False, host=HOST_NAME_0, nics=net_obj,
                 auto_nics=[config.VDS_HOSTS[0].nics[0]],
                 check_connectivity="true", connectivity_timeout=config.TIMEOUT,
                 force="false"
@@ -1254,7 +1258,7 @@ class TestSanityCase16(TestCase):
         logger.info("sending SNRequest: bond1!")
         self.assertTrue(
             sendSNRequest(
-                False, host=HOST_NAME0, nics=net_obj,
+                False, host=HOST_NAME_0, nics=net_obj,
                 auto_nics=[config.VDS_HOSTS[0].nics[0]],
                 check_connectivity="true", connectivity_timeout=config.TIMEOUT,
                 force="false"
@@ -1288,7 +1292,7 @@ class TestSanityCase17(TestCase):
         logger.info("sending SNRequest: empty bond name")
         self.assertTrue(
             sendSNRequest(
-                False, host=HOST_NAME0, nics=net_obj,
+                False, host=HOST_NAME_0, nics=net_obj,
                 auto_nics=[config.VDS_HOSTS[0].nics[0]],
                 check_connectivity="true", connectivity_timeout=config.TIMEOUT,
                 force="false"
@@ -1380,7 +1384,7 @@ class TestSanityCase18(TestCase):
             ), "bridge_opts": config.DEFAULT_PRIORITY}
         }
         if not update_network_host(
-            HOST_NAME0, HOST_NICS[1], auto_nics=[HOST_NICS[0]], **kwargs
+            HOST_NAME_0, HOST_NICS[1], auto_nics=[HOST_NICS[0]], **kwargs
         ):
             raise NetworkException(
                 "Couldn't update ethtool and bridge_opts with default "
@@ -1438,10 +1442,6 @@ class TestSanityCase19(TestCase):
         Configure and update queue value on vNIC profile for exiting network
         (vNIC CustomProperties) and start vm
         """
-        logger.info("Stopping %s", config.VM_NAME[0])
-        if not stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Fail to stop %s" % config.VM_NAME[0])
-
         logger.info(
             "Update custom properties on %s to %s", config.MGMT_BRIDGE,
             config.PROP_QUEUES[0]
@@ -1454,15 +1454,13 @@ class TestSanityCase19(TestCase):
             raise NetworkException(
                 "Failed to set custom properties on %s" % config.MGMT_BRIDGE
             )
-        logger.info("Start %s on %s", config.VM_NAME[0], HOST_NAME0)
-        if not startVm(
-            positive=True, vm=config.VM_NAME[0], wait_for_ip=True,
-            placement_host=HOST_NAME0
+        logger.info("Start %s on %s", config.VM_NAME[1], config.HOSTS[1])
+        if not start_vm_on_specific_host(
+            vm=config.VM_NAME[1], host=config.HOSTS[1], wait_for_ip=True
         ):
             raise NetworkException(
-                "Failed to start %s on %s" % (
-                    config.VM_NAME[0], HOST_NAME0
-                )
+                "Cannot start VM %s on host %s" %
+                (config.VM_NAME[1], config.HOSTS[1])
             )
 
     @tcms(16421, 448121)
@@ -1472,7 +1470,7 @@ class TestSanityCase19(TestCase):
         """
         logger.info("Check that qemu have %s queues", config.NUM_QUEUES[0])
         if not check_queues_from_qemu(
-            host_obj=config.VDS_HOSTS[0], num_queues=config.NUM_QUEUES[0]
+            host_obj=config.VDS_HOSTS[1], num_queues=config.NUM_QUEUES[0]
         ):
             raise NetworkException(
                 "qemu did not return the expected number of queues"
@@ -1493,17 +1491,9 @@ class TestSanityCase19(TestCase):
             logger.error(
                 "Failed to set custom properties on %s", config.MGMT_BRIDGE
             )
-        logger.info("Restart VM")
-        if not stopVm(positive=True, vm=config.VM_NAME[0]):
-            logger.error("Failed to stop VM %s", config.VM_NAME[0])
-        logger.info("Start %s on %s", config.VM_NAME[0], HOST_NAME0)
-        if not startVm(
-            positive=True, vm=config.VM_NAME[0], wait_for_ip=True,
-            placement_host=HOST_NAME0
-        ):
-            logger.error(
-                "Failed to start %s on %s", config.VM_NAME[0], HOST_NAME0
-            )
+        logger.info("Stop VM %s", config.VM_NAME[1])
+        if not stopVm(positive=True, vm=config.VM_NAME[1]):
+            logger.error("Failed to stop VM %s", config.VM_NAME[1])
 
 
 @attr(tier=0)
@@ -1519,21 +1509,19 @@ class TestSanityCase20(TestCase):
         Create networks under 2 datacenters.
         """
         if not addDataCenter(
-            positive=True, name=config.EXTRA_DC,
+            positive=True, name=EXTRA_DC,
             storage_type=config.STORAGE_TYPE, version=config.COMP_VERSION
         ):
-            raise NetworkException("Failed to add DC %s" % config.EXTRA_DC)
+            raise NetworkException("Failed to add DC %s" % EXTRA_DC)
 
         logger.info("Create 10 networks under %s", DC_NAMES[0])
         if not create_networks_in_datacenter(DC_NAMES[0], 10, "dc1_net"):
             raise NetworkException(
                 "Fail to create 10 network on %s" % DC_NAMES[0]
             )
-        logger.info("Create 5 networks under %s", config.EXTRA_DC)
-        if not create_networks_in_datacenter(config.EXTRA_DC, 5, "dc2_net"):
-            raise NetworkException(
-                "Fail to create 5 network on %s" % config.EXTRA_DC
-            )
+        logger.info("Create 5 networks under %s", EXTRA_DC)
+        if not create_networks_in_datacenter(EXTRA_DC, 5, "dc2_net"):
+            raise NetworkException("Fail to create 5 network on %s" % EXTRA_DC)
 
     @tcms(16421, 448122)
     def test_get_networks_list(self):
@@ -1549,11 +1537,11 @@ class TestSanityCase20(TestCase):
                     "%s was expected to be in %s" % (net, DC_NAMES[0])
                 )
         dc2_net_list = ["_".join(["dc2_net", str(i)]) for i in xrange(5)]
-        engine_extra_dc_net_list = get_networks_in_datacenter(config.EXTRA_DC)
+        engine_extra_dc_net_list = get_networks_in_datacenter(EXTRA_DC)
         for net in dc2_net_list:
             if net not in [i.name for i in engine_extra_dc_net_list]:
                 raise NetworkException(
-                    "%s was expected to be in %s" % (net, config.EXTRA_DC)
+                    "%s was expected to be in %s" % (net, EXTRA_DC)
                 )
 
     @classmethod
@@ -1562,7 +1550,7 @@ class TestSanityCase20(TestCase):
         Remove extra DC from setup
         Remove networks from the setup.
         """
-        if not removeDataCenter(positive=True, datacenter=config.EXTRA_DC):
+        if not removeDataCenter(positive=True, datacenter=EXTRA_DC):
             logger.error("Cannot remove DC")
 
         logger.info("Remove all networks from %s", config.DC_NAME[0])
@@ -1624,7 +1612,7 @@ class TestSanityCase21(TestCase):
         logger.info("Wait till the Host is updated with the change")
         sample1 = TimeoutingSampler(
             timeout=config.SAMPLER_TIMEOUT, sleep=1,
-            func=checkHostNicParameters, host=HOST_NAME0,
+            func=checkHostNicParameters, host=HOST_NAME_0,
             nic=HOST_NICS[1], **bridge_dict1
         )
         if not sample1.waitForFuncStatus(result=True):
@@ -1640,7 +1628,7 @@ class TestSanityCase21(TestCase):
         ):
             raise NetworkException(
                 "Network on host %s was not updated to be non-VM network" %
-                HOST_NAME0
+                HOST_NAME_0
             )
 
         logger.info("Update network %s to be VM network", config.NETWORKS[0])
@@ -1653,7 +1641,7 @@ class TestSanityCase21(TestCase):
         logger.info("Wait till the Host is updated with the change")
         sample2 = TimeoutingSampler(
             timeout=config.SAMPLER_TIMEOUT, sleep=1,
-            func=checkHostNicParameters, host=HOST_NAME0,
+            func=checkHostNicParameters, host=HOST_NAME_0,
             nic=HOST_NICS[1], **bridge_dict2
         )
         if not sample2.waitForFuncStatus(result=True):
@@ -1666,7 +1654,7 @@ class TestSanityCase21(TestCase):
         ):
             raise NetworkException(
                 "Network on host %s was not updated to be VM network" %
-                HOST_NAME0
+                HOST_NAME_0
             )
 
     @classmethod
@@ -1781,7 +1769,7 @@ class TestSanityCase23(TestCase):
 
         if not add_label(
             label=config.LABEL_LIST[0], host_nic_dict={
-                HOST_NAME0: [HOST_NICS[1]]
+                HOST_NAME_0: [HOST_NICS[1]]
             }, networks=[config.NETWORKS[0]]
         ):
             raise NetworkException(
@@ -1790,10 +1778,10 @@ class TestSanityCase23(TestCase):
 
         logger.info(
             "Check network %s is attached to interface %s on Host %s",
-            config.NETWORKS[0], HOST_NICS[1], HOST_NAME0
+            config.NETWORKS[0], HOST_NICS[1], HOST_NAME_0
         )
         if not check_network_on_nic(
-            config.NETWORKS[0], HOST_NAME0, HOST_NICS[1]
+            config.NETWORKS[0], HOST_NAME_0, HOST_NICS[1]
         ):
             raise NetworkException(
                 "Network %s is not attached to NIC %s " %
@@ -1807,7 +1795,7 @@ class TestSanityCase23(TestCase):
         Remove network from setup
         """
         logger.info("Removing label from %s", HOST_NICS[1])
-        if not remove_label(host_nic_dict={HOST_NAME0: [HOST_NICS[1]]}):
+        if not remove_label(host_nic_dict={HOST_NAME_0: [HOST_NICS[1]]}):
             logger.error("Couldn't remove labels from %s", HOST_NICS[1])
 
         if not remove_net_from_setup(
@@ -1836,7 +1824,6 @@ class TestSanityCase24(TestCase):
         the VM
         4) Check that provided bw values are the same as the values
         configured on libvirt
-
         """
         logger.info("Create new Network QoS profile under DC")
         if not add_qos_to_datacenter(
@@ -1984,7 +1971,7 @@ class TestSanityCase25(TestCase):
 
         logger.info("sending SNRequest: 10 bonds on dummy interfaces")
         if not sendSNRequest(
-            True, host=HOST_NAME0, nics=net_obj,
+            True, host=HOST_NAME_0, nics=net_obj,
             auto_nics=[config.VDS_HOSTS[0].nics[0]],
             check_connectivity="true", connectivity_timeout=config.TIMEOUT,
             force="false"

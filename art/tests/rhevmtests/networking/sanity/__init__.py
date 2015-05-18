@@ -11,12 +11,12 @@ from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.high_level.networks import(
     prepareSetup, add_dummy_vdsm_support, remove_dummy_vdsm_support
 )
-from art.test_handler.exceptions import NetworkException
+import art.test_handler.exceptions as exceptions
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 from art.core_api.apis_utils import TimeoutingSampler
 
 logger = logging.getLogger("Sanity_Init")
-
+VDSMD_SERVICE = "vdsmd"
 #################################################
 
 
@@ -24,18 +24,22 @@ def setup_package():
     """
     Prepare environment
     """
-    logger.info("Configuring engine to support ethtool opts for 3.5 version")
-    cmd = ["UserDefinedNetworkCustomProperties=ethtool_opts=.*", "--cver=3.5"]
+    logger.info("Configuring engine to support ethtool opts for 3.6 version")
+    cmd = ["UserDefinedNetworkCustomProperties=ethtool_opts=.*", "--cver=3.6"]
     if not set_engine_properties(config.ENGINE, cmd, restart=False):
-        raise NetworkException("Failed to set ethtool via engine-config")
+        raise exceptions.NetworkException(
+            "Failed to set ethtool via engine-config"
+        )
 
-    logger.info("Configuring engine to support queues for 3.5 version")
+    logger.info("Configuring engine to support queues for 3.6 version")
     param = [
         "CustomDeviceProperties='{type=interface;prop={queues=[1-9][0-9]*}}'",
-        "'--cver=3.5'"
+        "'--cver=3.6'"
     ]
     if not set_engine_properties(engine_obj=config.ENGINE, param=param):
-        raise NetworkException("Failed to enable queue via engine-config")
+        raise exceptions.NetworkException(
+            "Failed to enable queue via engine-config"
+        )
 
     if not config.GOLDEN_ENV:
         logger.info("Creating data center, cluster, adding host and storage")
@@ -50,9 +54,36 @@ def setup_package():
             vmName=config.VM_NAME[0], vm_password=config.VMS_LINUX_PW,
             mgmt_network=config.MGMT_BRIDGE,
         ):
-            raise NetworkException("Cannot create setup")
+            raise exceptions.NetworkException("Cannot create setup")
 
-    else:
+    logger.info("Add dummy support in VDSM conf file")
+    if not add_dummy_vdsm_support(
+        host=config.HOSTS_IP[0], username=config.HOSTS_USER,
+        password=config.HOSTS_PW
+    ):
+        raise exceptions.NetworkException(
+            "Failed to add dummy support to VDSM conf file"
+        )
+
+    logger.info("Restarting %s service", VDSMD_SERVICE)
+    try:
+        hl_hosts.restart_vdsm_under_maintenance_state(
+            config.HOSTS[0], config.VDS_HOSTS[0]
+        )
+    except exceptions.HostException:
+        logger.error("Failed to restart %s service", VDSMD_SERVICE)
+        return False
+    logger.info("Put the Host in up state if it's not up")
+    sample = TimeoutingSampler(
+        timeout=config.SAMPLER_TIMEOUT, sleep=1,
+        func=hl_hosts.activate_host_if_not_up, host=config.HOSTS[0]
+    )
+    if not sample.waitForFuncStatus(result=True):
+        raise exceptions.NetworkException(
+            "Failed to activate host: %s" % config.HOSTS[0]
+        )
+
+    if config.GOLDEN_ENV:
         network_cleanup()
         logger.info(
             "Running on golden env, starting VM %s on host %s",
@@ -61,34 +92,10 @@ def setup_package():
         if not hl_vm.start_vm_on_specific_host(
             vm=config.VM_NAME[0], host=config.HOSTS[0]
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot start VM %s on host %s" %
                 (config.VM_NAME[0], config.HOSTS[0])
             )
-
-    logger.info("Add dummy support in VDSM conf file")
-    if not add_dummy_vdsm_support(
-        host=config.HOSTS_IP[0], username=config.HOSTS_USER,
-        password=config.HOSTS_PW
-    ):
-        raise NetworkException("Failed to add dummy support to VDSM conf file")
-
-    logger.info("Restart vdsm and supervdsm services")
-    if not (
-            config.VDS_HOSTS[0].service("supervdsmd").stop() and
-            config.VDS_HOSTS[0].service("vdsmd").restart()
-    ):
-        raise NetworkException("Failed to restart vdsmd service")
-
-    logger.info("Put the Host in up state if it's not up")
-    sample = TimeoutingSampler(
-        timeout=config.SAMPLER_TIMEOUT, sleep=1,
-        func=hl_hosts.activate_host_if_not_up, host=config.HOSTS[0]
-    )
-    if not sample.waitForFuncStatus(result=True):
-        raise NetworkException(
-            "Failed to activate host: %s" % config.HOSTS[0]
-        )
 
 
 def teardown_package():
