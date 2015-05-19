@@ -8,9 +8,10 @@ import logging
 import libvirt
 from random import randint
 from rhevmtests.networking import config
-from art.test_handler.exceptions import NetworkException
+import art.test_handler.exceptions as exceptions
 from art.rhevm_api.tests_lib.low_level.events import get_max_event_id
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 logger = logging.getLogger("ArbitraryVlanDeviceName_Helper")
@@ -182,6 +183,7 @@ def set_libvirtd_sasl(host_obj, sasl=True):
     # https://projects.engineering.redhat.com/browse/RHEVM-2049
     sed_cmd = ["sed", sed_arg, LIBVIRTD_CONF]
     host_exec = host_obj.executor()
+    host_name = ll_hosts.get_host_name_from_engine(host_obj.ip)
     logger_str = "Enable" if sasl else "Disable"
     logger.info("%s sasl in %s", logger_str, LIBVIRTD_CONF)
     rc, sed_out, err = host_exec.run_cmd(sed_cmd)
@@ -203,11 +205,15 @@ def set_libvirtd_sasl(host_obj, sasl=True):
 
     logger.info("Stop %s service", LIBVIRTD_SERVICE)
     if not host_obj.service(LIBVIRTD_SERVICE).stop():
-        logger.error("Failed to restart %s service", LIBVIRTD_SERVICE)
+        logger.error("Failed to stop %s service", LIBVIRTD_SERVICE)
         return False
 
     logger.info("Restarting %s service", VDSMD_SERVICE)
-    if not host_obj.service(VDSMD_SERVICE).restart():
+    try:
+        hl_hosts.restart_vdsm_under_maintenance_state(
+            host_name, host_obj
+        )
+    except exceptions.HostException:
         logger.error("Failed to restart %s service", VDSMD_SERVICE)
         return False
     return True
@@ -261,7 +267,9 @@ def check_if_nic_in_host_nics(nic, host):
     logger.info("Check that %s exists on %s via engine", nic, host)
     host_nics = ll_hosts.getHostNicsList(host=host)
     if nic not in [i.name for i in host_nics]:
-        raise NetworkException("%s not found in %s nics" % (nic, host))
+        raise exceptions.NetworkException(
+            "%s not found in %s nics" % (nic, host)
+        )
 
 
 def add_bridge_on_host_and_virsh(host_obj, bridge, network):
@@ -279,11 +287,13 @@ def add_bridge_on_host_and_virsh(host_obj, bridge, network):
     for br, net in zip(bridge, network):
         logger.info("Attaching %s to %s on %s", net, br, host_name)
         if not host_obj.network.add_bridge(bridge=br, network=net):
-            raise NetworkException("Failed to add %s with %s" % (br, net))
+            raise exceptions.NetworkException(
+                "Failed to add %s with %s" % (br, net)
+            )
 
         logger.info("Adding %s to %s via virsh", br, host_name)
         if not virsh_add_bridge(host_obj=host_obj, bridge=br):
-            raise NetworkException("Failed to add %s to virsh" % br)
+            raise exceptions.NetworkException("Failed to add %s to virsh" % br)
 
     refresh_capabilities(host=host_name)
 
@@ -302,7 +312,7 @@ def delete_bridge_on_host_and_virsh(host_obj, bridge):
     virsh_delete_bridges(host_obj=host_obj, bridges=[bridge])
     logger.info("Delete %s on %s", bridge, host_name)
     if not host_obj.network.delete_bridge(bridge=bridge):
-        raise NetworkException(
+        raise exceptions.NetworkException(
             "Failed to delete %s on %s" % (bridge, host_name)
         )
 
@@ -328,7 +338,7 @@ def add_vlans_to_host(host_obj, vlan_id, vlan_name, nic):
         if not host_add_vlan(
             host_obj=host_obj, vlan_id=vid, nic=nic, vlan_name=vname
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Failed to create %s on %s" % (vlan_name, host_name)
             )
 
@@ -389,7 +399,7 @@ def check_if_nic_in_vdscaps(host_obj, nic):
     ]
     rc, out, err = host_exec.run_cmd(cmd)
     if rc or not out:
-        raise NetworkException(
+        raise exceptions.NetworkException(
             "%s not found in getVdsCaps. err: %s" % (nic, err)
         )
 

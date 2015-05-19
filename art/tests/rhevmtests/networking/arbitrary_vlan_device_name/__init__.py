@@ -22,7 +22,7 @@ def setup_package():
     Prepare environment
     """
     if network.config.GOLDEN_ENV:
-        logger.info("Running on golden env, no setup")
+        logger.info("Running on golden env, calling network_cleanup")
         network.network_cleanup()
 
     else:
