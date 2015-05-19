@@ -5,6 +5,8 @@ import os
 from art.unittest_lib import BaseTestCase as TestCase
 
 from art.rhevm_api.utils import test_utils, cpumodel
+from art.core_api.apis_utils import TimeoutingSampler
+
 
 from art.rhevm_api.tests_lib.low_level import datacenters
 from art.rhevm_api.tests_lib.low_level import hosts
@@ -13,6 +15,7 @@ from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import clusters
 from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
+from art.rhevm_api.tests_lib.low_level import external_providers
 
 from art.rhevm_api.tests_lib.high_level import storagedomains
 
@@ -249,14 +252,14 @@ class CreateDC(TestCase):
             )
 
     def _clone_vm(self, vm_description, cloned_vms, cl_name):
+        suffix_num = 0
         if 'number_of_vms' in vm_description:
             number_of_vms = vm_description['number_of_vms']
+            vm_description['name'] += repr(suffix_num)
         else:
             number_of_vms = 1
 
-        suffix_num = 0
         vm_prefix = vm_description['name']
-        vm_description['name'] += repr(suffix_num)
 
         while suffix_num < number_of_vms:
             LOGGER.info(
@@ -264,6 +267,22 @@ class CreateDC(TestCase):
                 vm_description['name'],
                 vm_description['clone_from']
             )
+            sampler = TimeoutingSampler(
+                300,
+                10,
+                templates.check_template_existence,
+                vm_description['clone_from']
+            )
+
+            for status in sampler:
+                if status:
+                    break
+                else:
+                    LOGGER.info(
+                        "Waiting for import as template: %s from glance...",
+                        vm_description['clone_from']
+                    )
+
             vms.cloneVmFromTemplate(
                 True,
                 vm_description['name'],
@@ -491,7 +510,6 @@ class CreateDC(TestCase):
             address[0], path[0], host)
 
     def connect_glance(self, external_provider_def):
-        # TODO
         LOGGER.info(
             "Connecting %s to environment", external_provider_def['name']
         )
@@ -506,6 +524,18 @@ class CreateDC(TestCase):
             external_provider_def['authentication_url']
         )
 
+        glance = external_providers.OpenStackImageProvider(
+            name=external_provider_def['name'],
+            url=external_provider_def['url'],
+            requires_authentication=True,
+            username=external_provider_def['username'],
+            password=external_provider_def['password'],
+            authentication_url=external_provider_def['authentication_url'],
+            tenant_name=external_provider_def['tenant']
+        )
+
+        assert glance.add()
+
     def _add_external_providers(self, external_providers):
         for external_provider in external_providers:
             if external_provider['type'] == GLANCE:
@@ -518,6 +548,7 @@ class CreateDC(TestCase):
             self._add_external_providers(GOLDEN_ENV['external_providers'])
 
         dcs = GOLDEN_ENV['dcs']
+
         storage_conf = StorageConfiguration(config.STORAGE)
         host_conf = HostConfiguration(config.HOSTS, config.PASSWORDS)
         for dc in dcs:
