@@ -14,6 +14,20 @@ from art.rhevm_api import resources
 
 logger = logging.getLogger(__name__)
 
+
+def get_list(params, key):
+    """
+    Get element from configuration section as list
+
+    :param params: configuration section
+    :type params: ConfigObj section
+    :param key: element to get
+    :type key: str
+    :return: return element of configuration section as list
+    :rtype: list
+    """
+    return params.as_list(key) if key in params else []
+
 # RHEVM related constants
 ENUMS = opts['elements_conf']['RHEVM Enums']
 PERMITS = opts['elements_conf']['RHEVM Permits']
@@ -90,6 +104,8 @@ NUM_OF_DEVICES = int(STORAGE_CONF.get("%s_devices" % STORAGE_TYPE.lower(), 0))
 STORAGE_NAME = ["_".join([STORAGE_TYPE.lower(), str(i)])
                 for i in xrange(NUM_OF_DEVICES)]
 
+CPU_NAME = PARAMETERS['cpu_name']
+
 if 'prepared_env' in ART_CONFIG:
     GOLDEN_ENV = ART_CONFIG['prepared_env']
 
@@ -104,7 +120,6 @@ if 'prepared_env' in ART_CONFIG:
 
     CLUSTERS = DC['clusters']
     CLUSTER_NAME = [x['name'] for x in CLUSTERS]
-    CPU_NAME = CLUSTERS[0]['cpu_name']
 
     HOSTS = []
     HOSTS_IP = []
@@ -161,8 +176,11 @@ if 'prepared_env' in ART_CONFIG:
     for cluster in CLUSTERS:
         for templ in cluster['templates']:
             TEMPLATES.append(templ)
-        for external_template in cluster['external_templates']:
-            EXTERNAL_TEMPLATES.append(external_template)
+        for external_sources in cluster['external_templates']:
+            for source_type in ('glance', 'export_domain'):
+                if external_sources[source_type]:
+                    for external_template in external_sources[source_type]:
+                        EXTERNAL_TEMPLATES.append(external_template)
 
     TEMPLATE_NAME = [x['name'] for x in TEMPLATES]
     TEMPLATE_NAME = TEMPLATE_NAME + [x['name'] for x in EXTERNAL_TEMPLATES]
@@ -178,8 +196,9 @@ if 'prepared_env' in ART_CONFIG:
 
     iso_sds = GOLDEN_ENV['iso_domains']
     ISO_DOMAIN_NAME = iso_sds[0]['name']
-    ISO_DOMAIN_ADDRESS = PARAMETERS.as_list("tests_iso_domain_address")[0]
-    ISO_DOMAIN_PATH = PARAMETERS.as_list("tests_iso_domain_path")[0]
+    ISO_DOMAIN_ADDRESS = get_list(PARAMETERS, "tests_iso_domain_address")[0]
+    ISO_DOMAIN_ADDRESS = get_list(PARAMETERS, "tests_iso_domain_address")[0]
+    ISO_DOMAIN_PATH = get_list(PARAMETERS, "tests_iso_domain_path")[0]
 
     CPU_CORES = 1
     CPU_SOCKET = 1
@@ -199,46 +218,59 @@ if 'prepared_env' in ART_CONFIG:
 
     GOLDEN_GLANCE_IMAGE = 'golden_env_mixed_virtio_0_Disk1'
 
-    DATA_DOMAIN_ADDRESSES = PARAMETERS.as_list('data_domain_address')
-    DATA_DOMAIN_PATHS = PARAMETERS.as_list('data_domain_path')
-    logger.info("nfs storage for building GE: %s %s",
-                DATA_DOMAIN_ADDRESSES, DATA_DOMAIN_PATHS)
-
-    GLUSTER_DATA_DOMAIN_ADDRESSES = PARAMETERS.as_list(
-        'gluster_data_domain_address'
+    DATA_DOMAIN_ADDRESSES = get_list(PARAMETERS, 'data_domain_address')
+    DATA_DOMAIN_PATHS = get_list(PARAMETERS, 'data_domain_path')
+    logger.info(
+        "nfs storage for building GE: %s %s",
+        DATA_DOMAIN_ADDRESSES, DATA_DOMAIN_PATHS
     )
-    GLUSTER_DATA_DOMAIN_PATHS = PARAMETERS.as_list('gluster_data_domain_path')
-    logger.info("Gluster storage for building GE: %s %s",
-                GLUSTER_DATA_DOMAIN_ADDRESSES, GLUSTER_DATA_DOMAIN_PATHS)
 
-    LUNS = PARAMETERS.as_list('lun')
-    LUN_ADDRESSES = PARAMETERS.as_list('lun_address')
-    LUN_TARGETS = PARAMETERS.as_list('lun_target')
-    logger.info("iscsi luns for building GE: %s %s %s", LUNS,
-                LUN_ADDRESSES, LUN_TARGETS)
-
-    UNUSED_DATA_DOMAIN_ADDRESSES = PARAMETERS.as_list(
-        'extra_data_domain_address'
+    GLUSTER_DATA_DOMAIN_ADDRESSES = get_list(
+        PARAMETERS, 'gluster_data_domain_address'
     )
-    UNUSED_DATA_DOMAIN_PATHS = PARAMETERS.as_list('extra_data_domain_path')
-    logger.info("Free nfs shares: %s %s",
-                UNUSED_DATA_DOMAIN_ADDRESSES, UNUSED_DATA_DOMAIN_PATHS)
-
-    UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES = PARAMETERS.as_list(
-        'gluster_extra_data_domain_address'
+    GLUSTER_DATA_DOMAIN_PATHS = get_list(
+        PARAMETERS, 'gluster_data_domain_path'
     )
-    UNUSED_GLUSTER_DATA_DOMAIN_PATHS = PARAMETERS.as_list(
-        'gluster_extra_data_domain_path'
+    logger.info(
+        "Gluster storage for building GE: %s %s",
+        GLUSTER_DATA_DOMAIN_ADDRESSES, GLUSTER_DATA_DOMAIN_PATHS
     )
-    logger.info("Free Gluster shares: %s %s",
-                UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES,
-                UNUSED_GLUSTER_DATA_DOMAIN_PATHS)
 
-    UNUSED_LUNS = PARAMETERS.as_list('extra_lun')
-    UNUSED_LUN_ADDRESSES = PARAMETERS.as_list('extra_lun_address')
-    UNUSED_LUN_TARGETS = PARAMETERS.as_list('extra_lun_target')
-    logger.info("Free iscsi shares: %s %s %s", UNUSED_LUNS,
-                UNUSED_LUN_ADDRESSES, UNUSED_LUN_TARGETS)
+    LUNS = get_list(PARAMETERS, 'lun')
+    LUN_ADDRESSES = get_list(PARAMETERS, 'lun_address')
+    LUN_TARGETS = get_list(PARAMETERS, 'lun_target')
+    logger.info(
+        "iscsi luns for building GE: %s %s %s",
+        LUNS, LUN_ADDRESSES, LUN_TARGETS
+    )
+
+    UNUSED_DATA_DOMAIN_ADDRESSES = get_list(
+        PARAMETERS, 'extra_data_domain_address'
+    )
+    UNUSED_DATA_DOMAIN_PATHS = get_list(PARAMETERS, 'extra_data_domain_path')
+    logger.info(
+        "Free nfs shares: %s %s",
+        UNUSED_DATA_DOMAIN_ADDRESSES, UNUSED_DATA_DOMAIN_PATHS
+    )
+
+    UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES = get_list(
+        PARAMETERS, 'gluster_extra_data_domain_address'
+    )
+    UNUSED_GLUSTER_DATA_DOMAIN_PATHS = get_list(
+        PARAMETERS,  'gluster_extra_data_domain_path'
+    )
+    logger.info(
+        "Free Gluster shares: %s %s",
+        UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES, UNUSED_GLUSTER_DATA_DOMAIN_PATHS
+    )
+
+    UNUSED_LUNS = get_list(PARAMETERS, 'extra_lun')
+    UNUSED_LUN_ADDRESSES = get_list(PARAMETERS, 'extra_lun_address')
+    UNUSED_LUN_TARGETS = get_list(PARAMETERS, 'extra_lun_target')
+    logger.info(
+        "Free iscsi shares: %s %s %s",
+        UNUSED_LUNS, UNUSED_LUN_ADDRESSES, UNUSED_LUN_TARGETS
+    )
 
 else:
     GOLDEN_ENV = False
@@ -250,7 +282,6 @@ else:
     CLUSTER_NAME = ["".join([TEST_NAME, "_Cluster", str(i)]) for i in range(5)]
     PARAMETERS['cluster_name'] = CLUSTER_NAME[0]
 
-    CPU_NAME = PARAMETERS['cpu_name']
     COMP_VERSION = PARAMETERS['compatibility_version']
     HOSTS = PARAMETERS.as_list('vds')
     HOSTS_IP = list(HOSTS)

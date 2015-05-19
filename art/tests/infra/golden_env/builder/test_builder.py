@@ -472,6 +472,20 @@ class CreateDC(TestCase):
             network=config.MGMT_BRIDGE
         )
 
+    def add_export_templates(self, export_templates, data_center, cluster):
+        data_sds = self._get_data_storage_domains(data_center)
+        for export_template in export_templates:
+            export_domain, template = export_template['source'].split(':')
+
+            assert templates.import_template(
+                positive=True,
+                template=template,
+                source_storage_domain=export_domain,
+                destination_storage_domain=data_sds[0],
+                cluster=cluster,
+                name=export_template['name']
+            )
+
     def build_dc(self, dc_def, host_conf, storage_conf):
         datacenter_name = dc_def['name']
         local = bool(dc_def['local'])
@@ -506,25 +520,35 @@ class CreateDC(TestCase):
                     self.add_export_domain(
                         export_domain, storage_conf, datacenter_name, host
                     )
-
         else:
             LOGGER.info("No hosts, so no adding storages")
 
         for cluster in clusters:
             if cluster['external_templates']:
-                LOGGER.info("Adding templates")
-                self.add_glance_templates(
-                    cluster['external_templates'],
-                    datacenter_name,
-                    cluster['name']
-                )
-            else:
-                LOGGER.info("No glance templates to add")
+                for external_template in cluster['external_templates']:
+                    if external_template['glance']:
+                        LOGGER.info("Adding glance templates")
+                        self.add_glance_templates(
+                            external_template['glance'],
+                            datacenter_name,
+                            cluster['name']
+                        )
+                    if external_template['export_domain']:
+                        LOGGER.info("Adding export templates")
+                        self.add_export_templates(
+                            external_template['export_domain'],
+                            datacenter_name,
+                            cluster['name']
+                        )
+                else:
+                    LOGGER.info("No templates to add")
+
             vms_def = cluster['vms']
             if vms_def:
                 LOGGER.info("Adding vms")
                 self.add_vms(
-                    vms_def, datacenter_name, cluster['name'])
+                    vms_def, datacenter_name, cluster['name']
+                )
             else:
                 LOGGER.info("No vms to add")
 
@@ -561,7 +585,8 @@ class CreateDC(TestCase):
             name = export_domain['name']
             address, path = storage_conf.get_export_share()
             # Delete existed export domain
-            self.delete_all_data_from_nfs(address, path)
+            if config.CLEAN_EXPORT_DOMAIN:
+                self.delete_all_data_from_nfs(address, path)
             # Add export storage domain
             assert ll_sd.addStorageDomain(
                 True,

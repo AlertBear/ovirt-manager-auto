@@ -86,3 +86,4 @@ STORAGE['data_domain_address'] = PARAMETERS.as_list('data_domain_address')
 STORAGE['data_domain_path'] = PARAMETERS.as_list('data_domain_path')
 
 EPS = ART_CONFIG['EPS']
+CLEAN_EXPORT_DOMAIN = PARAMETERS.as_bool('clean_export_domain')
