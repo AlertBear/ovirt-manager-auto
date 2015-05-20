@@ -90,7 +90,7 @@ def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
     return True
 
 
-def remove_all_vm_test_snapshots(vm_name, description):
+def remove_all_vm_snapshots(vm_name, description):
     """
     Description: Removes all snapshots with given description from a given VM
     Author: ratamir

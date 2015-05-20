@@ -268,8 +268,8 @@ class BasicEnvironment(BaseTestCase):
         waitForVMState(self.vm_name, config.VM_DOWN)
         for disk in self.disks_names:
             assert deleteDisk(True, disk)
-        helpers.remove_all_vm_test_snapshots(self.vm_name,
-                                             self.snapshot_desc)
+        helpers.remove_all_vm_snapshots(self.vm_name,
+                                        self.snapshot_desc)
 
 
 @attr(tier=0)

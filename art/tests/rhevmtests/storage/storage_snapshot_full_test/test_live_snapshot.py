@@ -25,7 +25,7 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import (
 from art.rhevm_api.utils.test_utils import (
     get_api, raise_if_exception, wait_for_tasks,
 )
-from rhevmtests.storage.helpers import remove_all_vm_test_snapshots
+from rhevmtests.storage.helpers import remove_all_vm_snapshots
 from utilities.machine import Machine, LINUX
 
 
@@ -131,7 +131,7 @@ class BasicEnvironmentSetUp(TestCase):
         logger.info("The boot disk is: %s", self.boot_disk)
 
     def tearDown(self):
-        remove_all_vm_test_snapshots(self.vm_name, self.snapshot_desc)
+        remove_all_vm_snapshots(self.vm_name, self.snapshot_desc)
         if not vms.start_vms([self.vm_name]):
             raise exceptions.VMException(
                 "Failed to start vm %s" % self.vm_name)

@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 SNAPSHOT_TIMEOUT = 15 * 60
 
 
-def remove_all_vm_test_snapshots(vm_name, description):
+def remove_all_vm_snapshots(vm_name, description):
     """
     Description: Removes all snapshots of given VM which were created during
     live storage migration (according to snapshot description)
