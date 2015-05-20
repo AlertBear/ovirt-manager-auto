@@ -187,7 +187,8 @@ class BaseCaseIsoDomains(TestCase):
             assert ll_vms.attach_cdrom_vm(True, self.vm_name, config.ISO_IMAGE)
             assert ll_vms.startVm(True, self.vm_name)
 
-        logger.info("Waiting for tasks before deactivating the storage domain")
+        logger.info("Wait for tasks to complete before deactivating the "
+                    "storage domain")
         wait_for_tasks(config.VDC, config.VDC_PASSWORD, self.data_center_name)
         status = ll_sd.deactivateStorageDomain(
             False, self.data_center_name, self.iso_domain_name
@@ -198,7 +199,8 @@ class BaseCaseIsoDomains(TestCase):
         )
 
         assert ll_vms.eject_cdrom_vm(self.vm_name)
-        logger.info("Waiting for tasks before deactivating the storage domain")
+        logger.info("Wait for tasks to complete before deactivating the "
+                    "storage domain")
         wait_for_tasks(config.VDC, config.VDC_PASSWORD, self.data_center_name)
         status = ll_sd.deactivateStorageDomain(
             True, self.data_center_name, self.iso_domain_name)
@@ -220,6 +222,9 @@ class TestCase50769Shared(BaseCaseIsoDomains):
     # the Destroy option (which the code doesn't do)
     # Gluster doesn't support being used as an ISO domain
     __test__ = TestCase.storage != config.STORAGE_TYPE_GLUSTER
+    # TODO: Ticket is open for CLI support in ejecting CD:
+    # https://projects.engineering.redhat.com/browse/RHEVM-2163
+    apis = TestCase.apis - set(['cli'])
     local = False
     vm_name = "TestCasesPlan6458Shared"
     storagedomains = [config.ISCSI_DOMAIN]
