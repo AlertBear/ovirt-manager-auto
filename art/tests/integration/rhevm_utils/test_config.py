@@ -1,6 +1,6 @@
 from integration.rhevm_utils import base
 from utilities.rhevm_tools.config import ConfigUtility
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
 
 CONFIG_TEST_PLAN = 3727
@@ -15,7 +15,7 @@ class ConfigTestCase(base.RHEVMUtilsTestCase):
     utility_class = ConfigUtility
     _multiprocess_can_split_ = True
 
-    @tcms(CONFIG_TEST_PLAN, 86796)
+    @polarion("RHEVM3-7664")
     def test_config_list_long(self):
         """
         config list long option
@@ -25,7 +25,7 @@ class ConfigTestCase(base.RHEVMUtilsTestCase):
         self.ut('-l')
         self.ut.autoTest()
 
-    @tcms(CONFIG_TEST_PLAN, 86797)
+    @polarion("RHEVM3-7663")
     def test_config_get(self):
         """
         rhevm-config --get

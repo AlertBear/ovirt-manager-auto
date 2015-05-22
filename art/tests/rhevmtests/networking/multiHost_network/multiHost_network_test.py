@@ -8,7 +8,7 @@ scenarios.
 import time
 import logging
 from art.unittest_lib import attr
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from rhevmtests.networking import config
 from art.unittest_lib import NetworkTest as TestCase
 from art.rhevm_api.utils.test_utils import checkMTU
@@ -102,7 +102,7 @@ class TestMultiHostCase01(TestMultiHostTestCaseBase):
         ):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(12030, 331894)
+    @polarion("RHEVM3-4067")
     def test_update_with_vlan(self):
         """
         1) Update network with VLAN 162
@@ -236,7 +236,7 @@ class TestMultiHostCase02(TestMultiHostTestCaseBase):
         ):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(12030, 331895)
+    @polarion("RHEVM3-4080")
     def test_update_with_mtu(self):
         """
         1) Update network with MTU 9000
@@ -368,7 +368,7 @@ class TestMultiHostCase03(TestMultiHostTestCaseBase):
         ):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(12030, 331911)
+    @polarion("RHEVM3-4072")
     def test_update_with_non_vm_nonvm(self):
         """
         1) Update network to be non-VM network
@@ -474,7 +474,7 @@ class TestMultiHostCase04(TestMultiHostTestCaseBase):
         ):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(12030, 331896)
+    @polarion("RHEVM3-4079")
     def test_update_net_name(self):
         """
         1) Try to update network name when the network resides on the Host
@@ -593,7 +593,7 @@ class TestMultiHostCase05(TestMultiHostTestCaseBase):
                     % (config.NETWORKS[0], config.VM_NAME[i])
                 )
 
-    @tcms(12030, 331909)
+    @polarion("RHEVM3-4074")
     def test_update_net_on_vm(self):
         """
         1) Negative: Try to change MTU on net when running VM is using it
@@ -816,7 +816,7 @@ class TestMultiHostCase06(TestMultiHostTestCaseBase):
         ):
             raise NetworkException("Cannot add NIC to Template")
 
-    @tcms(12030, 331910)
+    @polarion("RHEVM3-4073")
     def test_update_net_on_template(self):
         """
         1) Negative: Try to update network from VM to non-VM
@@ -990,7 +990,7 @@ class TestMultiHostCase07(TestMultiHostTestCaseBase):
         ):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(12030, 331897)
+    @polarion("RHEVM3-4078")
     def test_update_with_vlan_mtu(self):
         """
         1) Update network with VLAN 162
@@ -1184,7 +1184,7 @@ class TestMultiHostCase08(TestMultiHostTestCaseBase):
                 (config.VLAN_NETWORKS[0], config.VDS_HOSTS[1])
             )
 
-    @tcms(12030, 331903)
+    @polarion("RHEVM3-4077")
     def test_update_with_vlan_mtu(self):
         """
         1) Update network with VLAN 162
@@ -1371,7 +1371,7 @@ class TestMultiHostCase09(TestMultiHostTestCaseBase):
         ):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(12030, 355193)
+    @polarion("RHEVM3-4069")
     def test_update_with_vlan(self):
         """
         There is a bz for updating network to be tagged - 1081489
@@ -1509,7 +1509,7 @@ class TestMultiHostCase10(TestMultiHostTestCaseBase):
         ):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(12030, 355194)
+    @polarion("RHEVM3-4068")
     def test_update_with_mtu(self):
         """
         1) Update network with MTU 9000
@@ -1644,7 +1644,7 @@ class TestMultiHostCase11(TestMultiHostTestCaseBase):
         ):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(12030, 355294)
+    @polarion("RHEVM3-4081")
     def test_update_with_non_vm_nonvm(self):
         """
         Fails due to existing bug - 1082275
@@ -1799,7 +1799,7 @@ class TestMultiHostCase12(TestMultiHostTestCaseBase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(12030, 331907)
+    @polarion("RHEVM3-4075")
     def test_move_host_unsupported_dc(self):
         """
         1) Update the network with VLAN
@@ -1979,7 +1979,7 @@ class TestMultiHostCase13(TestMultiHostTestCaseBase):
                 (config.VLAN_NETWORKS[0], HOST1_NICS[1])
             )
 
-    @tcms(12030, 331907)
+    @polarion("RHEVM3-4076")
     def test_move_host_unsupported_cl(self):
         """
         1) Update the network with another VLAN

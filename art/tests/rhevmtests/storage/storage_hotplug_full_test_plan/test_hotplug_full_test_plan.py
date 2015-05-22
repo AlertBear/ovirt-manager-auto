@@ -7,7 +7,7 @@ import common
 import logging
 from concurrent.futures import ThreadPoolExecutor
 import time
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
 from art.unittest_lib import StorageTest as TestCase
 from art.rhevm_api.utils import test_utils as utils
@@ -144,7 +144,7 @@ class TestCase286224(helpers.HotplugHookTest):
     action = [vms.activateVmDisk]
     hooks = {'before_disk_hotplug': [helpers.HOOKFILENAME]}
 
-    @tcms(9940, 286224)
+    @polarion("RHEVM3-5033")
     def test_before_disk_hotplug(self):
         """ Check if before_disk_hotplug is called
         """
@@ -164,7 +164,7 @@ class TestCase286365(helpers.HotplugHookTest):
     action = [vms.activateVmDisk]
     hooks = {'after_disk_hotplug': [helpers.HOOKFILENAME]}
 
-    @tcms(9940, 286365)
+    @polarion("RHEVM3-5034")
     def test_after_disk_hotplug(self):
         """ Check if after_disk_hotplug is called
         """
@@ -184,7 +184,7 @@ class TestCase286366(helpers.HotplugHookTest):
     action = [vms.deactivateVmDisk]
     hooks = {'before_disk_hotunplug': [helpers.HOOKFILENAME]}
 
-    @tcms(9940, 286366)
+    @polarion("RHEVM3-5035")
     def test_before_disk_hotunplug(self):
         """ Check if before_disk_hotunplug is called
         """
@@ -204,7 +204,7 @@ class TestCase286368(helpers.HotplugHookTest):
     action = [vms.deactivateVmDisk]
     hooks = {'after_disk_hotunplug': [helpers.HOOKFILENAME]}
 
-    @tcms(9940, 286368)
+    @polarion("RHEVM3-5036")
     def test_after_disk_hotunplug(self):
         """ Check if after_disk_hotunplug is called
         """
@@ -224,7 +224,7 @@ class TestCase286226(helpers.HotplugHookTest):
     action = [vms.activateVmDisk]
     hooks = {'after_disk_hotplug': [helpers.HOOKWITHSLEEPFILENAME]}
 
-    @tcms(9940, 286226)
+    @polarion("RHEVM3-5037")
     def test_after_disk_hotplug_10_disks_concurrently(self):
         """ try to hotplug 10 tests concurrently and check that all hooks
         were called
@@ -254,7 +254,7 @@ class TestCase287480(helpers.HotplugHookTest):
     action = [vms.deactivateVmDisk]
     hooks = {'after_disk_hotunplug': [helpers.HOOKWITHSLEEPFILENAME]}
 
-    @tcms(9940, 287480)
+    @polarion("RHEVM3-5038")
     def test_after_disk_hotunplug_10_disks_concurrently(self):
         """ Unplug concurrently 10 disks and check if after_unplug hook
             were called 10 times
@@ -298,7 +298,7 @@ class TestCase287249(helpers.HotplugHookTest):
     def put_disks_in_correct_state(self):
         pass
 
-    @tcms(9940, 287249)
+    @polarion("RHEVM3-5039")
     def test_before_disk_hotplug_attaching_new_disk(self):
         """ Check if after_disk_hotunplug is called
         """
@@ -353,7 +353,7 @@ class TestCase287481(helpers.HotplugHookTest):
         LOGGER.info("Hooks shouldn't have been called")
         assert not self.get_hooks_result_file()
 
-    @tcms(9940, 287481)
+    @polarion("RHEVM3-5044")
     def test_after_disk_hotplug_binary_executable_hook_file(self):
         """ check that activate succeed and hook fails if hook is binary
             executable file
@@ -388,7 +388,7 @@ class TestCase286369(helpers.HotplugHookTest):
         LOGGER.info("Hooks shouldn't have been called")
         assert not self.get_hooks_result_file()
 
-    @tcms(9940, 286369)
+    @polarion("RHEVM3-5041")
     def test_non_executable_hooks(self):
         """ check that vdsm skip a hook file if it is non-executable
         """
@@ -425,7 +425,7 @@ class TestCase286243(helpers.HotplugHookTest):
             len([x for x in result if x.strip() == TEXT]), 2,
             "'%s' should appear twice!" % TEXT)
 
-    @tcms(9940, 286243)
+    @polarion("RHEVM3-5040")
     def test_multiple_hooks(self):
         """ Multiple hooks for one action, checks that all will be called
         """
@@ -462,7 +462,7 @@ class TestCase286861(helpers.HotplugHookTest):
         LOGGER.info("File should be empty")
         assert not self.get_hooks_result_file()
 
-    @tcms(9940, 286861)
+    @polarion("RHEVM3-5042")
     def test_multiple_hooks(self):
         """ Restart vdsm during before_disk_hotplug, action should fail
         """

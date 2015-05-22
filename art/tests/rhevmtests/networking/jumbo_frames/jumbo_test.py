@@ -12,7 +12,7 @@ import logging
 from rhevmtests.networking import config
 from art.unittest_lib import NetworkTest as TestCase
 from art.unittest_lib import attr
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, polarion  # pylint: disable=E0611
 from art.test_handler.exceptions import NetworkException
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.utils.test_utils as utils
@@ -105,7 +105,7 @@ class TestJumboFramesCase01(TestJumboFramesTestCaseBase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(5848, 199743)
+    @polarion("RHEVM3-3718")
     def test_check_mtu(self):
         """
         Check physical and logical levels for network sw1 with Jumbo frames
@@ -155,7 +155,7 @@ class TestJumboFramesCase02(TestJumboFramesTestCaseBase):
         ):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(5848, 200156)
+    @polarion("RHEVM3-3721")
     def test_check_mtu_after_network_removal(self):
         """
         Check physical and logical levels for networks with Jumbo frames
@@ -229,7 +229,7 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
                 config.VLAN_NETWORKS[0]
             )
 
-    @tcms(5848, 197212)
+    @polarion("RHEVM3-3713")
     def test_bond_mode_change(self):
         """
         Check physical and logical levels for networks with Jumbo frames
@@ -355,7 +355,7 @@ class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
                 "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
             )
 
-    @tcms(5848, 199741)
+    @polarion("RHEVM3-3716")
     def test_increasing_bond_nics(self):
         """
         Check physical and logical levels for networks with Jumbo frames
@@ -396,7 +396,7 @@ class TestJumboFramesCase06(TestJumboFramesTestCaseBase):
     """
     __test__ = True
 
-    @tcms(5848, 199787)
+    @polarion("RHEVM3-3719")
     def test_neg_add_networks_with_different_mtu(self):
         """
         Trying to add two networks with different MTU to the
@@ -477,7 +477,7 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
         # Adding vnics to vms
         helper.add_vnics_to_vms(ips=cls.ips, mtu=str(config.MTU[1]))
 
-    @tcms(5848, 200118)
+    @polarion("RHEVM3-3720")
     def test_check_traffic_on_vms(self):
         """
         Send ping between 2 VMs
@@ -594,7 +594,7 @@ class TestJumboFramesCase08(TestJumboFramesTestCaseBase):
                 config.VLAN_NETWORKS[0],
             )
 
-    @tcms(5848, 199741)
+    @polarion("RHEVM3-3716")
     def test_check_mtu_with_two_different_mtu_networks(self):
         """
         Check physical and logical levels for networks with Jumbo frames
@@ -684,7 +684,7 @@ class TestJumboFramesCase09(TestJumboFramesTestCaseBase):
                 )
             )
 
-    @tcms(5848, 167549)
+    @polarion("RHEVM3-3734")
     def test_check_mtu_pre_configured(self):
         """
         checking that eth1"s MTU is changed to 1500
@@ -747,7 +747,7 @@ class TestJumboFramesCase10(TestJumboFramesTestCaseBase):
                 "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
             )
 
-    @tcms(5848, 148668)
+    @polarion("RHEVM3-3732")
     def test_check_configurations_and_traffic(self):
         """
         Checking configuration of the network on the first host, adding
@@ -809,7 +809,7 @@ class TestJumboFramesCase11(TestJumboFramesTestCaseBase):
         # Adding vnics to vms
         helper.add_vnics_to_vms(ips=cls.ips, mtu=str(config.MTU[0]))
 
-    @tcms(5848, 325531)
+    @polarion("RHEVM3-3722")
     def test_check_traffic_on_vm_over_bond(self):
         """
         Send ping with MTU 8500 between the two VMS
@@ -901,7 +901,7 @@ class TestJumboFramesCase12(TestJumboFramesTestCaseBase):
                 )
             )
 
-    @tcms(5848, 325544)
+    @polarion("RHEVM3-3736")
     def test_check_traffic_on_hosts_when_there_are_many_networks(self):
         """
         Checking that the highest MTU is configured on eth2, eth3 and bond0.
@@ -995,7 +995,7 @@ class TestJumboFramesCase13(TestJumboFramesTestCaseBase):
             network=config.VLAN_NETWORKS[1], set_ip=False
         )
 
-    @tcms(5848, 148654)
+    @polarion("RHEVM3-3731")
     def test_check_traffic_on_vms_when_host_has_many_networks(self):
         """
         Send ping with MTU 8500 between the two VMs
@@ -1062,7 +1062,7 @@ class TestJumboFramesCase14(TestJumboFramesTestCaseBase):
         # Adding vnics to vms
         helper.add_vnics_to_vms(ips=cls.ips, mtu=str(config.MTU[1]))
 
-    @tcms(5848, 167554)
+    @polarion("RHEVM3-3724")
     def test_check_traffic_on_vm_when_network_is_display(self):
         """
         Send ping between 2 VMS

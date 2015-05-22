@@ -12,7 +12,7 @@ from art.rhevm_api.utils.test_utils import wait_for_tasks
 
 from art.unittest_lib import SlaTest as TestCase
 from nose.tools import istest
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
@@ -123,7 +123,7 @@ class TestStartVmsUnderHardPositiveAffinity(StartVms):
         '1206875': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}
     }
 
-    @tcms(TCMS_PLAN_ID, '333894')
+    @polarion("RHEVM3-5539")
     def test_check_vms_host(self):
         """
         Check where vms started
@@ -150,7 +150,7 @@ class TestStartVmsUnderSoftPositiveAffinity(StartVms):
         '1206875': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}
     }
 
-    @tcms(TCMS_PLAN_ID, '390980')
+    @polarion("RHEVM3-5541")
     def test_check_vms_host(self):
         """
         Check where vms started
@@ -178,7 +178,7 @@ class TestStartVmsUnderHardNegativeAffinity(StartVms):
         '1206875': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}
     }
 
-    @tcms(TCMS_PLAN_ID, '333896')
+    @polarion("RHEVM3-5553")
     def test_check_vms_host(self):
         """
         Check where vms started
@@ -205,7 +205,7 @@ class TestStartVmsUnderSoftNegativeAffinity(StartVms):
         '1206875': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}
     }
 
-    @tcms(TCMS_PLAN_ID, '390984')
+    @polarion("RHEVM3-5542")
     def test_check_vms_host(self):
         """
         Check where vms started
@@ -268,7 +268,7 @@ class TestMigrateVmUnderHardPositiveAffinity(MigrateVm):
         '1206875': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}
     }
 
-    @tcms(TCMS_PLAN_ID, '333900')
+    @polarion("RHEVM3-5557")
     def test_check_vm_migration(self):
         """
         Check if vm success to migrate
@@ -298,7 +298,7 @@ class TestMigrateVmUnderSoftPositiveAffinity(MigrateVm):
         '1206875': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}
     }
 
-    @tcms(TCMS_PLAN_ID, '390998')
+    @polarion("RHEVM3-5543")
     def test_check_vm_migration(self):
         """
         Check if vm success to migrate
@@ -329,7 +329,7 @@ class TestMigrateVmUnderHardNegativeAffinity(MigrateVm):
         '1206875': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}
     }
 
-    @tcms(TCMS_PLAN_ID, '333901')
+    @polarion("RHEVM3-5558")
     def test_check_vm_migration(self):
         """
         Check if vm success to migrate
@@ -359,7 +359,7 @@ class TestMigrateVmUnderSoftNegativeAffinity(MigrateVm):
         '1206875': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}
     }
 
-    @tcms(TCMS_PLAN_ID, '391001')
+    @polarion("RHEVM3-5544")
     def test_check_vm_migration(self):
         """
         Check if vm success to migrate
@@ -389,7 +389,7 @@ class TestNegativeMigrateVmUnderHardPositiveAffinity(MigrateVm):
         '1206875': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}
     }
 
-    @tcms(TCMS_PLAN_ID, '333902')
+    @polarion("RHEVM3-5559")
     def test_check_vm_migration(self):
         """
         Check if vm success to migrate
@@ -414,7 +414,7 @@ class TestMigrateVmOppositeUnderSoftPositiveAffinity(MigrateVm):
         '1206875': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}
     }
 
-    @tcms(TCMS_PLAN_ID, '396271')
+    @polarion("RHEVM3-5546")
     @istest
     def test_check_vm_migration(self):
         """
@@ -441,7 +441,7 @@ class TestNegativeMigrateVmUnderHardNegativeAffinity(MigrateVm):
         '1206875': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}
     }
 
-    @tcms(TCMS_PLAN_ID, '396270')
+    @polarion("RHEVM3-5545")
     def test_check_vm_migration(self):
         """
         Check if vm success to migrate
@@ -466,7 +466,7 @@ class TestMigrateVmSameUnderSoftNegativeAffinity(MigrateVm):
         '1206875': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}
     }
 
-    @tcms(TCMS_PLAN_ID, '396272')
+    @polarion("RHEVM3-5547")
     def test_check_vm_migration(self):
         """
         Check if vm success to migrate
@@ -528,7 +528,7 @@ class TestRemoveVmFromAffinityGroupOnClusterChange(Affinity):
         ):
             raise errors.VMException("Failed update vm cluster")
 
-    @tcms(TCMS_PLAN_ID, '333904')
+    @polarion("RHEVM3-5560")
     def test_check_affinity_group(self):
         """
         Check if vm removed from affinity group
@@ -640,7 +640,7 @@ class TestPutHostToMaintenanceUnderHardNegativeAffinity(PutHostToMaintenance):
         '1206875': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}
     }
 
-    @tcms(TCMS_PLAN_ID, '413044')
+    @polarion("RHEVM3-5549")
     def test_check_affinity_group(self):
         """
         Check that after deactivate hosts vms migrated on different hosts
@@ -721,7 +721,7 @@ class TestTwoDifferentAffinitiesScenario1(AdditionalAffinityGroup):
         '1206875': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}
     }
 
-    @tcms(TCMS_PLAN_ID, '335565')
+    @polarion("RHEVM3-5562")
     def test_check_vms_placement(self):
         """
         Start vms under to opposite affinity groups,
@@ -753,7 +753,7 @@ class TestTwoDifferentAffinitiesScenario2(AdditionalAffinityGroup):
         '1206875': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}
     }
 
-    @tcms(TCMS_PLAN_ID, '335566')
+    @polarion("RHEVM3-5552")
     def test_check_vms_placement(self):
         """
         Start vms under to opposite affinity groups,
@@ -811,7 +811,7 @@ class TestTwoDifferentAffinitiesScenario3(Affinity):
             )
         super(TestTwoDifferentAffinitiesScenario3, cls).setup_class()
 
-    @tcms(TCMS_PLAN_ID, '335567')
+    @polarion("RHEVM3-5551")
     def test_start_vms(self):
         """
         Start vms
@@ -892,7 +892,7 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(MigrateVm):
                 "Failed to add vm to affinity group"
             )
 
-    @tcms(TCMS_PLAN_ID, '413043')
+    @polarion("RHEVM3-5548")
     def test_check_ha_vm(self):
         """
         Kill HA vm and check that vm failed to run because affinity policy
@@ -950,7 +950,7 @@ class TestStartHAVmsUnderHardPositiveAffinity(StartVms):
                 raise errors.VMException("Failed to update vm")
         super(TestStartHAVmsUnderHardPositiveAffinity, cls).setup_class()
 
-    @tcms(TCMS_PLAN_ID, '338997')
+    @polarion("RHEVM3-5550")
     def test_check_ha_vms(self):
         """
         Kill qemu process of HA vms and check if vms started on the same host
@@ -1028,7 +1028,7 @@ class TestSoftPositiveAffinityVsMemoryFilter(StartVms):
                 raise errors.VMException("Failed to update vm")
         super(TestSoftPositiveAffinityVsMemoryFilter, cls).setup_class()
 
-    @tcms(TCMS_PLAN_ID, '335358')
+    @polarion("RHEVM3-5561")
     def test_start_vms(self):
         """
         Check that affinity policy not prevent to start vms

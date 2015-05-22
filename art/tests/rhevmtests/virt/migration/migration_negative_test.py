@@ -10,7 +10,7 @@ import logging
 from art.test_handler.exceptions import VMException
 from rhevmtests.virt import config
 from art.unittest_lib import VirtTest as TestCase
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
@@ -53,7 +53,7 @@ class TestMigrateNoAvailableHostOnCluster(TestCase):
             config.CLUSTER_NAME[0]
         )
 
-    @tcms(TCMS_PLAN_ID, '301654')
+    @polarion("RHEVM3-5666")
     def test_migrate_vm(self):
         """
         Negative: Check vm migration
@@ -94,7 +94,7 @@ class TestMigrateVmOnOtherDataCenter(TestCase):
             config.CLUSTER_NAME[0]
         )
 
-    @tcms(TCMS_PLAN_ID, '301655')
+    @polarion("RHEVM3-5658")
     def test_migrate_vm(self):
         """
         Negative: Check vm migration
@@ -116,7 +116,7 @@ class TestMigrateVmOnSameHost(TestCase):
     """
     __test__ = True
 
-    @tcms(TCMS_PLAN_ID, '301656')
+    @polarion("RHEVM3-5657")
     def test_migrate_vm(self):
         """
         Negative: Check vm migration
@@ -252,7 +252,7 @@ class TestMigrationOverloadHost(TestCase):
                 cls.hosts[cls.host_index_max_mem]
             )
 
-    @tcms(TCMS_PLAN_ID, '301659')
+    @polarion("RHEVM3-5656")
     def test_check_host_and_vm_status(self):
         """
         Negative case:
@@ -338,7 +338,7 @@ class TestVMMigrateOptionsCase1(TestCase):
             )
             logger.error(e)
 
-    @tcms(TCMS_PLAN_ID, '447719')
+    @polarion("RHEVM3-5625")
     def test_migration_new_vm(self):
         """
          Negative test:
@@ -416,7 +416,7 @@ class TestVMMigrateOptionsCase2(TestCase):
             )
             logger.error(e)
 
-    @tcms(TCMS_PLAN_ID, '447720')
+    @polarion("RHEVM3-5665")
     def test_update_vm(self):
         """
         Negative test:
@@ -471,7 +471,7 @@ class TestMigrateVMWithLoadOnMemory(TestCase):
             )
             logger.error(e)
 
-    @tcms(TCMS_PLAN_ID, '447817')
+    @polarion("RHEVM3-5633")
     def test_check_migration_with_load_on_memory(self):
         """
          Negative test: Migrate VM with load on memory

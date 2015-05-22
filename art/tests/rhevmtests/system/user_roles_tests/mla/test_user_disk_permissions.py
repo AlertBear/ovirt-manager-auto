@@ -16,7 +16,7 @@ from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.high_level import storagedomains
 from art.rhevm_api.tests_lib.high_level import disks as h_disks
 from art.rhevm_api.tests_lib.low_level import users, vms, disks, mla
@@ -91,7 +91,7 @@ class DPCase147121(TestCase):
         )
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NO_DISK)
 
-    @tcms(TCMS_PLAN_ID, 147121)
+    @polarion("RHEVM3-7613")
     @istest
     def diskInheritedPermissions(self):
         """ Check inheritance of disk permissions """
@@ -149,7 +149,7 @@ class DPCase14722_2(TestCase):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID, 147122)
+    @polarion("RHEVM3-12079")
     def createDiskWithoutPermissions(self):
         """ Create disk without permissions """
         # Check if user has not StorageAdmin perms on SD he can't create Disk
@@ -195,7 +195,7 @@ class DPCase147122(TestCase):
             config.USER_PASSWORD, filter=False
         )
 
-    @tcms(TCMS_PLAN_ID, 147122)
+    @polarion("RHEVM3-7625")
     @istest
     def createDisk(self):
         """ Create disk with permissions """
@@ -247,7 +247,7 @@ class DPCase147123(TestCase):
             True, config.USER_NAME, config.VM_NO_DISK, role=self.vm_role
         )
 
-    @tcms(TCMS_PLAN_ID, 147123)
+    @polarion("RHEVM3-7626")
     @istest
     def attachDiskToVM(self):
         """ Attach disk to vm """
@@ -328,7 +328,7 @@ class DPCase147124(TestCase):
             True, config.USER_NAME, config.VM_NAME, role=self.tested_role
         )
 
-    @tcms(TCMS_PLAN_ID, 147124)
+    @polarion("RHEVM3-7627")
     @istest
     def detachDisk(self):
         """ Detach disk from vm """
@@ -385,7 +385,7 @@ class DPCase147125(TestCase):
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME)
 
     @istest
-    @tcms(TCMS_PLAN_ID, 147125)
+    @polarion("RHEVM3-7628")
     def activateDeactivateDisk(self):
         """ ActivateDeactivateDisk """
         users.loginAsUser(
@@ -430,7 +430,7 @@ class DPCase147126(TestCase):
             True, config.USER_NAME, config.MASTER_STORAGE, role=role.UserRole
         )
 
-    @tcms(TCMS_PLAN_ID, 147126)
+    @polarion("RHEVM3-7629")
     @istest
     def removeDisk(self):
         """ Remove disk as user with and without permissions """
@@ -485,7 +485,7 @@ class DPCase147127(TestCase):
         )
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME)
 
-    @tcms(TCMS_PLAN_ID, 147127)
+    @polarion("RHEVM3-7630")
     @istest
     def updateVmDisk(self):
         """ Update vm disk """
@@ -524,7 +524,7 @@ class DPCase147128(TestCase):
             True, config.USER_NAME, config.VM_NAME, role=role.StorageAdmin
         )
 
-    @tcms(TCMS_PLAN_ID, 147128)
+    @polarion("RHEVM3-7631")
     @istest
     @bz({'1209505': {'engine': None, 'version': ['3.6']}})
     def moveDisk(self):
@@ -614,7 +614,7 @@ class DPCase147129(TestCase):
             True, config.USER_NAME, config.VM_NO_DISK, role=role.UserRole
         )
 
-    @tcms(TCMS_PLAN_ID, 147129)
+    @polarion("RHEVM3-7632")
     @istest
     @bz({'1209505': {'engine': None, 'version': ['3.6']}})
     def addDiskToVm(self):
@@ -707,7 +707,7 @@ class DPCase147130(TestCase):
             True, config.CLUSTER_NAME[0], config.USER1
         )
 
-    @tcms(TCMS_PLAN_ID, 147130)
+    @polarion("RHEVM3-7624")
     @istest
     def removeVm(self):
         """ remove vm with disk without/with having apprirate permissions """
@@ -763,7 +763,7 @@ class DPCase147137(TestCase):
         )
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NO_DISK)
 
-    @tcms(TCMS_PLAN_ID, 147137)
+    @polarion("RHEVM3-7616")
     @istest
     def sharedDisk(self):
         """ Basic operations with shared disk """

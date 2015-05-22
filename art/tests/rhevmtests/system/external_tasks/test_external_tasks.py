@@ -5,7 +5,7 @@ External Tasks test
 from art.unittest_lib import CoreSystemTest as TestCase
 from nose.tools import istest
 from art.unittest_lib import attr
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
 from art.rhevm_api.utils.test_utils import get_api
 import art.rhevm_api.tests_lib.low_level.jobs as job_api
@@ -45,7 +45,7 @@ class AddJobWithCorrectDescription(AddingJob):
     """
     __test__ = True
 
-    @tcms('9767', '282631')
+    @polarion("RHEVM3-7154")
     @istest
     def add_job_with_correct_description(self):
         '''
@@ -76,7 +76,7 @@ class AddJobWithEmptyDescription(AddingJob):
     """
     __test__ = True
 
-    @tcms('9767', '282632')
+    @polarion("RHEVM3-7165")
     @istest
     def add_job_with_empty_description(self):
         '''
@@ -146,7 +146,7 @@ class AddStepWithCorrectParameters(AddingStep):
     """
     __test__ = True
 
-    @tcms('9767', '289362')
+    @polarion("RHEVM3-7159")
     @istest
     def add_step_with_correct_parameters(self):
         '''
@@ -163,7 +163,7 @@ class AddStepWithIncorrectType(AddingStep):
     """
     __test__ = True
 
-    @tcms('9767', '308838')
+    @polarion("RHEVM3-7166")
     @istest
     def add_step_with_incorrect_type(self):
         '''
@@ -198,7 +198,7 @@ class AddSubStepWithCorrectParameters(TestCase):
         ):
             logger.error("Adding step failed")
 
-    @tcms('9767', '289237')
+    @polarion("RHEVM3-7162")
     @istest
     def add_sub_step_with_correct_parameters(self):
         '''
@@ -260,7 +260,7 @@ class EndJobWithCorrectDescription(TestCase):
         ):
             logger.error("Adding job failed")
 
-    @tcms('9767', '289545')
+    @polarion("RHEVM3-7158")
     @istest
     def end_job_with_correct_description(self):
         '''
@@ -301,7 +301,7 @@ class EndStepWithCorrectDescription(TestCase):
         ):
             logger.error("Adding step to job was failed")
 
-    @tcms('9767', '308836')
+    @polarion("RHEVM3-7155")
 #    @bz(1087916)
     @istest
     def end_step_with_correct_description(self):

@@ -15,7 +15,7 @@ from nose.tools import istest
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from test_base import connectionTest
 from art.unittest_lib.common import is_bz_state
 
@@ -58,7 +58,7 @@ class LDAPCase289010(TestCase):
             role='UserRole', domain=config.LDAP_DOMAIN)
 
     @istest
-    @tcms(config.LDAP_TCMS_PLAN_ID, 289010)
+    @polarion("RHEVM3-8077")
     def normalUserAndGroupUser(self):
         """ Authenticate as normal user and user from group """
         msg_f = "%s user can't log in."
@@ -96,7 +96,7 @@ class LDAPCase289066(TestCase):
             role='UserRole', domain=config.LDAP_DOMAIN)
 
     @istest
-    @tcms(config.LDAP_TCMS_PLAN_ID, 289066)
+    @polarion("RHEVM3-8078")
     def expiredPassword(self):
         """ Login as user with disabled account """
         msg = "User with expired psw can login."
@@ -123,7 +123,7 @@ class LDAPCase289068(TestCase):
             role='UserRole', domain=config.LDAP_DOMAIN)
 
     @istest
-    @tcms(config.LDAP_TCMS_PLAN_ID, 289068)
+    @polarion("RHEVM3-8079")
     def expiredAccount(self):
         """ Login as user with expired password """
         msg = "User with expired acc can login."
@@ -150,7 +150,7 @@ class LDAPCase289069(TestCase):
         self.query = '/api/domains/' + domainID + '/%s?search={query}'
 
     @istest
-    @tcms(config.LDAP_TCMS_PLAN_ID, 289069)
+    @polarion("RHEVM3-8080")
     @bz({'1177367': {'engine': ['cli'], 'version': ['3.5']}})
     def searchForUsersAndGroups(self):
         """ Search within domain for users and groups """
@@ -191,7 +191,7 @@ class LDAPCase289071(TestCase):
         addUser(config.LDAP_TESTING_USER_NAME)
 
     @istest
-    @tcms(config.LDAP_TCMS_PLAN_ID, 289071)
+    @polarion("RHEVM3-8081")
     @bz(1125161)
     def updateInformation(self):
         """ Update information """
@@ -232,7 +232,7 @@ class LDAPCase289072(TestCase):
         addUser(config.LDAP_USER_FROM_GROUP)
 
     @istest
-    @tcms(config.LDAP_TCMS_PLAN_ID, 289072)
+    @polarion("RHEVM3-8082")
     @bz(1125161)
     def persistencyOfGroupRights(self):
         """ Persistency of group rights """
@@ -264,7 +264,7 @@ class LDAPCase289076(TestCase):
             role='UserRole', domain=config.LDAP_DOMAIN)
 
     @istest
-    @tcms(config.LDAP_TCMS_PLAN_ID, 289076)
+    @polarion("RHEVM3-8083")
     def userWithManyGroups(self):
         """ User with many groups """
         loginAsUser(config.LDAP_WITH_MANY_GROUPS_NAME, True)
@@ -298,7 +298,7 @@ class LDAPCase289078(TestCase):
             True, config.LDAP_GROUP2, config.MAIN_CLUSTER_NAME)
 
     @istest
-    @tcms(config.LDAP_TCMS_PLAN_ID, 289078)
+    @polarion("RHEVM3-8084")
     @bz(1099987)
     def removeUserFromOpenLDAP(self):
         """ remove user from OpenLDAP """

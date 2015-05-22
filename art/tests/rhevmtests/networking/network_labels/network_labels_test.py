@@ -27,7 +27,7 @@ import logging
 
 from art.unittest_lib import NetworkTest as TestCase
 from art.test_handler.exceptions import NetworkException
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 
 from art.rhevm_api.tests_lib.high_level.networks import(
     createAndAttachNetworkSN, remove_net_from_setup
@@ -115,7 +115,7 @@ class NetLabels01(TestLabelTestCaseBase):
         ):
             raise NetworkException("Cannot create network on DC and Cluster")
 
-    @tcms(12040, 332263)
+    @polarion("RHEVM3-4105")
     def test_label_restrictioin(self):
         """
         1) Negative case Try to attach label with incorrect format to the
@@ -252,7 +252,7 @@ class NetLabels02(TestLabelTestCaseBase):
                 (config.VLAN_NETWORKS[0], HOST0_NICS[1])
             )
 
-    @tcms(12040, 333128)
+    @polarion("RHEVM3-4104")
     def test_same_label_on_host(self):
         """
         1) Try to attach already attached label to bond and fail
@@ -364,7 +364,7 @@ class NetLabels03(TestLabelTestCaseBase):
                 (config.BOND[0], config.HOSTS[1])
             )
 
-    @tcms(12040, 332261)
+    @polarion("RHEVM3-4106")
     def test_label_several_interfaces(self):
         """
         1) Put label on Host NIC of one Host
@@ -490,7 +490,7 @@ class NetLabels04(TestLabelTestCaseBase):
                  config.VLAN_NETWORKS[0])
             )
 
-    @tcms(12040, 332262)
+    @polarion("RHEVM3-4107")
     def test_label_several_networks(self):
         """
         1) Put label on Host NIC of one Host
@@ -621,7 +621,7 @@ class NetLabels05(TestLabelTestCaseBase):
                     (config.VLAN_NETWORKS[0], host)
                 )
 
-    @tcms(12040, 332815)
+    @polarion("RHEVM3-4127")
     def test_unlabel_network(self):
         """
         1) Remove label from the network
@@ -734,7 +734,7 @@ class NetLabels06(TestLabelTestCaseBase):
                     (config.NETWORKS[0], config.BOND[0], host)
                 )
 
-    @tcms(12040, 332898)
+    @polarion("RHEVM3-4122")
     def test_break_labeled_bond(self):
         """
         1) Break Bond on both Hosts
@@ -841,7 +841,7 @@ class NetLabels07(TestLabelTestCaseBase):
                 (config.VLAN_NETWORKS[0], HOST0_NICS[1], config.HOSTS[0])
             )
 
-    @tcms(12040, 332578)
+    @polarion("RHEVM3-4130")
     def test_remove_label_host_NIC(self):
         """
        1) Negative case: Try to remove labeled network NET1 from labeled
@@ -946,7 +946,7 @@ class NetLabels08(TestLabelTestCaseBase):
         ):
             raise NetworkException("Cannot create network on DC only")
 
-    @tcms(12040, 332580)
+    @polarion("RHEVM3-4113")
     def test_network_on_host(self):
         """
         1) Attach label to that network
@@ -1069,7 +1069,7 @@ class NetLabels09(TestLabelTestCaseBase):
                     (config.VLAN_NETWORKS[i], HOST0_NICS[i + 2])
                 )
 
-    @tcms(12040, 332897)
+    @polarion("RHEVM3-4116")
     def test_create_bond(self):
         """
         1) Remove labels from both interfaces
@@ -1231,7 +1231,7 @@ class NetLabels10(TestLabelTestCaseBase):
                     (network, nic)
                 )
 
-    @tcms(12040, 361751)
+    @polarion("RHEVM3-4101")
     def test_create_bond(self):
         """
         1) Unlabel both interfaces
@@ -1400,7 +1400,7 @@ class NetLabels11(TestLabelTestCaseBase):
                     (network, nic)
                 )
 
-    @tcms(12040, 361750)
+    @polarion("RHEVM3-4102")
     def test_create_bond(self):
         """
         1) Unlabel both interfaces
@@ -1568,7 +1568,7 @@ class NetLabels12(TestLabelTestCaseBase):
                     (network, nic)
                 )
 
-    @tcms(12040, 361752)
+    @polarion("RHEVM3-4100")
     def test_create_bond(self):
         """
         1) Remove labels from both interfaces
@@ -1721,7 +1721,7 @@ class NetLabels13(TestLabelTestCaseBase):
                 (config.NETWORKS[0], HOST0_NICS[1])
             )
 
-    @tcms(12040, 332889)
+    @polarion("RHEVM3-4129")
     def test_remove_net_from_cluster_dc(self):
         """
         1) Remove network from the Cluster
@@ -1920,7 +1920,7 @@ class NetLabels14(TestLabelTestCaseBase):
             )
 
     @bz({"1184454": {"engine": ["rest", "sdk", "java"], "version": ["3.5"]}})
-    @tcms(12040, 332959)
+    @polarion("RHEVM3-4126")
     def test_move_host_supported_dc_cl(self):
         """
         1) Move the Host from the original DC to the newly created DC
@@ -2001,7 +2001,7 @@ class NetLabels14(TestLabelTestCaseBase):
         assert (activateHost(True, host=config.HOSTS[0]))
 
     @bz({"1184454": {"engine": ["rest", "sdk", "java"], "version": ["3.5"]}})
-    @tcms(12040, 337364)
+    @polarion("RHEVM3-4115")
     def test_move_host_unsupported_dc_cl(self):
         """
         1) Try to move the Host to the DC with 3.0 version
@@ -2133,7 +2133,7 @@ class NetLabels15(TestLabelTestCaseBase):
                 )
 
     @bz({"1184454": {"engine": ["rest", "sdk", "java"], "version": ["3.5"]}})
-    @tcms(12040, 332896)
+    @polarion("RHEVM3-4124")
     def test_move_host_supported_cl(self):
         """
         1) Move the Host to the 3.1 Cluster
@@ -2339,7 +2339,7 @@ class NetLabels16(TestLabelTestCaseBase):
             )
 
     @bz({"1184454": {"engine": ["rest", "sdk", "java"], "version": ["3.5"]}})
-    @tcms(12040, 333115)
+    @polarion("RHEVM3-4108")
     def test_move_host_cluster_same_label(self):
         """
         1) Move the Host from the original DC/Cluster to the newly created
@@ -2487,7 +2487,7 @@ class NetLabels17(TestLabelTestCaseBase):
                     config.LABEL_LIST[i]
                 )
 
-    @tcms(12040, 332911)
+    @polarion("RHEVM3-4121")
     def test_label_restrictioin(self):
         """
         1) Put label1 on Host NIC of the Host
@@ -2599,7 +2599,7 @@ class NetLabels18(TestLabelTestCaseBase):
                     (config.NETWORKS[0], HOST0_NICS[1])
                 )
 
-    @tcms(12040, 332910)
+    @polarion("RHEVM3-4117")
     def test_label_restrictioin_vm(self):
         """
         1) Put the same label on the sw3 VM network as on network sw1
@@ -2642,7 +2642,7 @@ class NetLabels18(TestLabelTestCaseBase):
                                    (config.NETWORKS[0], HOST0_NICS[1])
                                    )
 
-        @tcms(12040, 333061)
+        @polarion("RHEVM3-4118")
         def test_label_restrictioin_non_vm(self):
             """
         1) Attach the same label on the sw4 VM network as on network sw2
@@ -2766,7 +2766,7 @@ class NetLabels19(TestLabelTestCaseBase):
             )
 
     @bz({"1184454": {"engine": ["rest", "sdk", "java"], "version": ["3.5"]}})
-    @tcms(12040, 332962)
+    @polarion("RHEVM3-4125")
     def test_move_host(self):
         """
         1) Move the Host from the original Cluster to the newly created one

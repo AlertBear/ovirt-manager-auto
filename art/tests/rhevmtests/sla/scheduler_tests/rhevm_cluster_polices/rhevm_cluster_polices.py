@@ -9,7 +9,7 @@ import logging
 from nose.tools import istest
 from rhevmtests.sla import config
 from art.unittest_lib import attr
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import SlaTest as TestCase
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
@@ -176,7 +176,7 @@ class MigrateFromUnderUtilizedHost(PowerSaving):
                     config.HOSTS[1], AVERAGE_CPU_LOAD)
         cls._load_hosts_cpu([config.HOSTS[1]], AVERAGE_CPU_LOAD)
 
-    @tcms('9904', '50879')
+    @polarion("RHEVM3-9498")
     @istest
     def check_migration(self):
         """
@@ -212,7 +212,7 @@ class NoAvailableHostForMigrationPS(PowerSaving):
                     config.HOSTS[1], MAX_CPU_LOAD)
         cls._load_hosts_cpu([config.HOSTS[1]], MAX_CPU_LOAD)
 
-    @tcms('9904', '50882')
+    @polarion("RHEVM3-9489")
     @istest
     def check_migration(self):
         """
@@ -252,7 +252,7 @@ class MigrationFromLowCPUUtilization(PowerSaving):
                     config.HOSTS[1], AVERAGE_CPU_LOAD)
         cls._load_hosts_cpu([config.HOSTS[1]], AVERAGE_CPU_LOAD)
 
-    @tcms('9904', '50884')
+    @polarion("RHEVM3-9490")
     @istest
     def check_migration(self):
         """
@@ -291,7 +291,7 @@ class PutHostToMaintenancePS(PowerSaving):
                              config.HOSTS[1]], AVERAGE_CPU_LOAD)
         super(PutHostToMaintenancePS, cls).setup_class()
 
-    @tcms('9904', '50888')
+    @polarion("RHEVM3-9492")
     @istest
     def check_migration(self):
         """
@@ -332,7 +332,7 @@ class MigrateFromOverUtilizedHost(EvenlyDistributed):
         cls._load_hosts_cpu([config.HOSTS[0],
                              config.HOSTS[1]], MAX_CPU_LOAD)
 
-    @tcms('9904', '51149')
+    @polarion("RHEVM3-9493")
     @istest
     def check_migration(self):
         """
@@ -369,7 +369,7 @@ class NoAvailableHostForMigrationED(EvenlyDistributed):
         cls._load_hosts_cpu([config.HOSTS[1],
                              config.HOSTS[2]], MAX_CPU_LOAD)
 
-    @tcms('9904', '51152')
+    @polarion("RHEVM3-9494")
     @istest
     def check_migration(self):
         """
@@ -406,7 +406,7 @@ class PutHostToMaintenanceED(EvenlyDistributed):
                     config.HOSTS[2], MAX_CPU_LOAD)
         cls._load_hosts_cpu([config.HOSTS[2]], MAX_CPU_LOAD)
 
-    @tcms('9904', '51185')
+    @polarion("RHEVM3-9496")
     @istest
     def check_migration(self):
         """

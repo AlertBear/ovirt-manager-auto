@@ -2,10 +2,9 @@
 Ubuntu guest agent test
 '''
 import logging
-from rhevmtests.system.guest_tools.linux_guest_agent import config
 from rhevmtests.system.guest_tools.linux_guest_agent import common
 from nose.tools import istest
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 
 LOGGER = logging.getLogger(__name__)
 NAME = 'ovirt-guest-agent'
@@ -17,7 +16,7 @@ class UbuntuPostInstall(common.BasePostInstall):
     disk_name = 'ubuntu-12.04_Disk1'
 
     @istest
-    @tcms(config.TCMS_PLAN_ID_UBUNTU, 343363)
+    @polarion("RHEVM3-9333")
     def post_install(self):
         """ Ubuntu rhevm-guest-agent post-install """
         super(UbuntuPostInstall, self).post_install()
@@ -29,7 +28,7 @@ class UbuntuInstallGA(common.BaseInstallGA):
     disk_name = 'ubuntu-12.04_Disk1'
 
     @istest
-    @tcms(config.TCMS_PLAN_ID_UBUNTU, 343362)
+    @polarion("RHEVM3-9331")
     def install_guest_agent(self):
         """ Ubuntu rhevm-guest-agent install """
         super(UbuntuInstallGA, self).install_guest_agent()
@@ -41,7 +40,7 @@ class UbuntuUninstallGA(common.BaseUninstallGA):
     disk_name = 'ubuntu-12.04_Disk1'
 
     @istest
-    @tcms(config.TCMS_PLAN_ID_UBUNTU, 343365)
+    @polarion("RHEVM3-9337")
     def uninstall_guest_agent(self):
         """ Ubuntu rhevm-guest-agent uninstall """
         self.remove_command = 'purge'
@@ -54,7 +53,7 @@ class UbuntuServiceTest(common.BaseServiceTest):
     disk_name = 'ubuntu-12.04_Disk1'
 
     @istest
-    @tcms(config.TCMS_PLAN_ID_UBUNTU, 343364)
+    @polarion("RHEVM3-9335")
     def service_test(self):
         """ Ubuntu rhevm-guest-agent start-stop-restart-status """
         super(UbuntuServiceTest, self).service_test()
@@ -69,7 +68,7 @@ class UbuntuAgentData(common.BaseAgentData):
                         'xserver-xorg-video-qxl']
 
     @istest
-    @tcms(config.TCMS_PLAN_ID_UBUNTU, 343359)
+    @polarion("RHEVM3-9325")
     def agent_data(self):
         """ Ubuntu rhevm-guest-agent data """
         super(UbuntuAgentData, self).agent_data()
@@ -81,7 +80,7 @@ class UbuntuAgentDataUpdate(common.BaseAgentDataUpdate):
     disk_name = 'ubuntu-12.04_Disk1'
 
     @istest
-    @tcms(config.TCMS_PLAN_ID_UBUNTU, 343360)
+    @polarion("RHEVM3-9328")
     def agent_data_update(self):
         """ Ubuntu rhevm-guest-agent data update """
         super(UbuntuAgentDataUpdate, self).agent_data_update()
@@ -93,7 +92,7 @@ class UbuntuFunctionContinuity(common.BaseFunctionContinuity):
     disk_name = 'ubuntu-12.04_Disk1'
 
     @istest
-    @tcms(config.TCMS_PLAN_ID_UBUNTU, 343361)
+    @polarion("RHEVM3-9330")
     def function_continuity(self):
         """ Ubuntu rhevm-guest-agent function continuity """
         super(UbuntuFunctionContinuity, self).function_continuity()

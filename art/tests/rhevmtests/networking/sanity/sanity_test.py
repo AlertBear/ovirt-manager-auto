@@ -15,7 +15,7 @@ from art.rhevm_api.tests_lib.low_level.datacenters import(
     add_qos_to_datacenter, delete_qos_from_datacenter, addDataCenter,
     removeDataCenter
 )
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.exceptions import NetworkException
@@ -747,7 +747,7 @@ class TestSanityCase10(TestCase):
                 "Failed to add NIC %s to VM", config.NIC_NAME[1]
             )
 
-    @tcms(16421, 448114)
+    @polarion("RHEVM3-4329")
     def test_check_network_filter_on_nic(self):
         """
         Check that the new NIC has network filter
@@ -1086,7 +1086,7 @@ class TestSanityCase13(TestCase):
             raise NetworkException(
                 "Cannot create and attach network %s over Bond", cls.vlan_1)
 
-    @tcms(16421, 448116)
+    @polarion("RHEVM3-4341")
     def test_bond_mode_change(self):
         """
         Check physical and logical levels for networks with Jumbo frames
@@ -1156,7 +1156,6 @@ class TestSanityCase13(TestCase):
 
 
 @attr(tier=0)
-@tcms(16421, 448117)
 class TestSanityCase14(TestCase):
     """
     Negative: Try to create Bond with exceeded name length (more than 15 chars)
@@ -1166,6 +1165,7 @@ class TestSanityCase14(TestCase):
 
     __test__ = True
 
+    @polarion("RHEVM3-4340")
     def test_bond_max_length(self):
         """
         Create BOND: exceed allowed length (max 15 chars)
@@ -1191,6 +1191,7 @@ class TestSanityCase14(TestCase):
             )
         )
 
+    @polarion("RHEVM3-4340")
     def test_bond_prefix1(self):
         """
         Create BOND: use wrong prefix (eg. NET1515)
@@ -1216,6 +1217,7 @@ class TestSanityCase14(TestCase):
             )
         )
 
+    @polarion("RHEVM3-4340")
     def test_bond_empty(self):
         """
         Create BOND: leave name field empty
@@ -1238,6 +1240,7 @@ class TestSanityCase14(TestCase):
             )
         )
 
+    @polarion("RHEVM3-4340")
     def test_bond_suffix2(self):
         """
         Create BOND: use wrong suffix (e.g. bond1!)
@@ -1303,7 +1306,7 @@ class TestSanityCase15(TestCase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(16421, 448120)
+    @polarion("RHEVM3-4337")
     def test_update_ethtool_bridge_opts(self):
         """
         1) Verify ethtool_and bridge opts have updated values
@@ -1427,7 +1430,7 @@ class TestSanityCase16(TestCase):
                 (config.VM_NAME[1], config.HOSTS[1])
             )
 
-    @tcms(16421, 448121)
+    @polarion("RHEVM3-4336")
     def test_multiple_queue_nics(self):
         """
         Check that qemu has correct number of queues
@@ -1487,7 +1490,7 @@ class TestSanityCase17(TestCase):
         if not create_networks_in_datacenter(EXTRA_DC, 5, "dc2_net"):
             raise NetworkException("Fail to create 5 network on %s" % EXTRA_DC)
 
-    @tcms(16421, 448122)
+    @polarion("RHEVM3-4335")
     def test_get_networks_list(self):
         """
         Get all networks under the datacenter.
@@ -1551,7 +1554,7 @@ class TestSanityCase18(TestCase):
         ):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(16421, 448125)
+    @polarion("RHEVM3-4332")
     def test_update_with_non_vm_nonvm(self):
         """
         1) Update network to be non-VM network
@@ -1665,7 +1668,7 @@ class TestSanityCase19(TestCase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(16421, 448126)
+    @polarion("RHEVM3-4331")
     def test_check_ip_rule(self):
         """
         Check correct configuration with ip rule function
@@ -1719,7 +1722,7 @@ class TestSanityCase20(TestCase):
                 config.NETWORKS[0]
             )
 
-    @tcms(16421, 448127)
+    @polarion("RHEVM3-4330")
     def test_label_several_interfaces(self):
         """
         1) Put label on Host NIC
@@ -1779,7 +1782,7 @@ class TestSanityCase21(TestCase):
     QOS_NAME = "QoSProfile1"
     QOS_TYPE = "network"
 
-    @tcms(16421, 448128)
+    @polarion("RHEVM3-4342")
     def test_add_network_qos(self):
         """
         1) Create new Network QoS profile under DC
@@ -1913,7 +1916,7 @@ class TestSanityCase22(TestCase):
         if not sample.waitForFuncStatus(result=True):
             raise NetworkException("Dummy interface not exists on engine")
 
-    @tcms(16421, 448118)
+    @polarion("RHEVM3-4339")
     def test_dummy_bonds(self):
         """
         Create 10 BONDS using dummy interfaces

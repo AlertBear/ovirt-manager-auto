@@ -7,7 +7,7 @@ It will cover scenarios for VM/non-VM networks.
 
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 import logging
 from art.test_handler.exceptions import NetworkException
 from rhevmtests.networking import config
@@ -87,7 +87,7 @@ class TestNetCustPrCase01(TestNCPCaseBase):
                 (config.NETWORKS[0], config.NETWORKS[1])
             )
 
-    @tcms(13967, 372428)
+    @polarion("RHEVM3-4178")
     def test_check_bridge_opts_exist(self):
         """
         Check bridge_opts exists for VM network only
@@ -150,7 +150,7 @@ class TestNetCustPrCase02(TestNCPCaseBase):
                 (config.NETWORKS[0], config.NETWORKS[1])
             )
 
-    @tcms(13967, 372468)
+    @polarion("RHEVM3-4179")
     def test_check_bridge_opts_exist_bond(self):
         """
         Check bridge_opts exists for VLAN VM network only over Bond
@@ -212,7 +212,7 @@ class TestNetCustPrCase03(TestNCPCaseBase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(13967, 372628)
+    @polarion("RHEVM3-4180")
     def test_update_bridge_opts(self):
         """
         1) Verify bridge_opts have updated value for priority opts
@@ -293,7 +293,7 @@ class TestNetCustPrCase04(TestNCPCaseBase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(13967, 372701)
+    @polarion("RHEVM3-4181")
     def test_check_several_bridge_opts_exist_nic(self):
         """
         1) Update bridge_opts with additional parameter (multicast_querier)
@@ -393,7 +393,7 @@ class TestNetCustPrCase05(TestNCPCaseBase):
         ):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(13967, 372788)
+    @polarion("RHEVM3-4182")
     def test_check_several_bridge_opts_exist_bond(self):
         """
         1) Update bridge_opts with additional parameter (multicast_querier)
@@ -502,7 +502,7 @@ class TestNetCustPrCase06(TestNCPCaseBase):
                 (config.NETWORKS[0], config.VLAN_NETWORKS[0])
             )
 
-    @tcms(13967, 372857)
+    @polarion("RHEVM3-4183")
     def test_check_reattach_network(self):
         """
         1) Verify bridge_opts have updated values for both networks
@@ -598,7 +598,7 @@ class NetCustPrCase07(TestNCPCaseBase):
                 "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
             )
 
-    @tcms(13967, 372880)
+    @polarion("RHEVM3-4187")
     def test_update_ethtool_opts(self):
         """
         1) Verify ethtool_opts have updated value for tx_checksum opts
@@ -669,7 +669,7 @@ class TestNetCustPrCase08(TestNCPCaseBase):
             raise NetworkException("Cannot create and attach network %s" %
                                    config.NETWORKS[0])
 
-    @tcms(13967, 372881)
+    @polarion("RHEVM3-4188")
     def test_check_several_ethtool_opts_exist_nic(self):
         """
         1) Update ethtool_opts with additional parameter (autoneg)
@@ -762,7 +762,7 @@ class TestNetCustPrCase09(TestNCPCaseBase):
             raise NetworkException("tx-checksum value of ethtool_opts was not "
                                    "updated correctly")
 
-    @tcms(13967, 372886)
+    @polarion("RHEVM3-4191")
     def test_reattach_network(self):
         """
         1) Detach the network from the Host NIC
@@ -871,7 +871,7 @@ class TestNetCustPrCase10(TestNCPCaseBase):
             raise NetworkException("Cannot create and attach network %s" %
                                    config.NETWORKS[0])
 
-    @tcms(13967, 373094)
+    @polarion("RHEVM3-4192")
     def test_update_ethtool_bridge_opts(self):
         """
         1) Verify ethtool_and bridge opts have updated values
@@ -956,7 +956,7 @@ class TestNetCustPrCase11(TestNCPCaseBase):
             raise NetworkException("Cannot create and attach network %s" %
                                    config.NETWORKS[0])
 
-    @tcms(13967, 373096)
+    @polarion("RHEVM3-4193")
     def test_update_bridge_ethtool_opts(self):
         """
         1) Update existing network with non-default values for bridge and
@@ -1053,7 +1053,7 @@ class TestNetCustPrCase12(TestNCPCaseBase):
             raise NetworkException("Cannot create and attach network %s" %
                                    config.NETWORKS[0])
 
-    @tcms(13967, 373097)
+    @polarion("RHEVM3-4194")
     def test_check_several_bridge_ethtool_opts_exist(self):
         """
         1) Configure several ethtool_opts  with non-default value for the
@@ -1182,7 +1182,7 @@ class TestNetCustPrCase13(TestNCPCaseBase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(13967, 373098)
+    @polarion("RHEVM3-4195")
     def test_check_several_bridge_ethtool_opts_exist(self):
         """
         1) Update several ethtool_opts for the NIC with attached Network
@@ -1334,7 +1334,7 @@ class TestNetCustPrCase14(TestNCPCaseBase):
                 (config.NETWORKS[0], config.BOND[0])
             )
 
-    @tcms(13967, 421935)
+    @polarion("RHEVM3-4190")
     def test_update_ethtool_opts_bond(self):
         """
         1) Configure ethtool_opts tx_checksum value to be non-default on Bond
@@ -1435,7 +1435,7 @@ class TestNetCustPrCase15(TestNCPCaseBase):
                 (config.NETWORKS[0], config.BOND[0])
             )
 
-    @tcms(13967, 372883)
+    @polarion("RHEVM3-4189")
     def test_check_several_ethtool_opts_exist_bond(self):
         """
         1) Update ethtool_opts with non-default parameter (tx_checksum)
@@ -1571,7 +1571,7 @@ class TestNetCustPrCase16(TestNCPCaseBase):
                 (config.NETWORKS[0], config.BOND[0])
             )
 
-    @tcms(13967, 373100)
+    @polarion("RHEVM3-4196")
     def test_update_ethtool_bridge_opts_bond(self):
         """
         1) Verify ethtool_and bridge opts have updated values over Bond

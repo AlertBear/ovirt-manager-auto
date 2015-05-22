@@ -20,7 +20,7 @@ from art.test_handler.exceptions import NetworkException
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 from rhevmtests.networking import config
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from rhevmtests.networking.multiple_queue_nics.helper import(
     check_queues_from_qemu
 )
@@ -97,7 +97,7 @@ class TestMultipleQueueNics01(TestMultipleQueueNicsTearDown):
         if not startVm(positive=True, vm=config.VM_NAME[0], wait_for_ip=True):
             raise NetworkException("Failed to start %s" % config.VM_NAME[0])
 
-    @tcms(14895, 398707)
+    @polarion("RHEVM3-4309")
     def test_multiple_queue_nics(self):
         """
         Check that queue exist in qemu process, vdsm.log and engine.log
@@ -156,7 +156,7 @@ class TestMultipleQueueNics02(TestMultipleQueueNicsTearDown):
                 "qemu did not return the expected number of queues"
             )
 
-    @tcms(14895, 398856)
+    @polarion("RHEVM3-4310")
     def test_multiple_queue_nics_update(self):
         """
         Make sure that number of queues does not change on running VM
@@ -250,7 +250,7 @@ class TestMultipleQueueNics03(TestMultipleQueueNicsTearDown):
                 "qemu did not return the expected number of queues"
             )
 
-    @tcms(14895, 398859)
+    @polarion("RHEVM3-4312")
     def test_multiple_queue_nics(self):
         """
         hibernate the VM and check the queue still configured on qemu
@@ -358,7 +358,7 @@ class TestMultipleQueueNics04(TestMultipleQueueNicsTearDown):
                 "Failed to start %s", config.VM_FROM_TEMPLATE
             )
 
-    @tcms(14895, 399253)
+    @polarion("RHEVM3-4313")
     def test_multiple_queue_nics(self):
         """
         Check that queue exist on VM from template
@@ -445,7 +445,7 @@ class TestMultipleQueueNics05(TestMultipleQueueNicsTearDown):
             raise NetworkException("Failed to migrate %s from %s to %s" %
                                    (config.VM_NAME[0], HOST_NAME0, HOST_NAME1))
 
-    @tcms(14895, 398857)
+    @polarion("RHEVM3-4311")
     def test_multiple_queue_nics(self):
         """
         Check number of queues after VM migration

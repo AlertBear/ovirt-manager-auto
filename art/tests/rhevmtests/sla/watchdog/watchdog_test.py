@@ -28,7 +28,7 @@ from art.core_api.apis_utils import TimeoutingSampler
 
 import art.test_handler.exceptions as errors
 
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms, bz, polarion  # pylint: disable=E0611
 from art.unittest_lib.common import is_bz_state
 
 from utilities import machine
@@ -238,7 +238,7 @@ class WatchdogCRUD(WatchdogVM):
     """
     __test__ = True
 
-    @tcms('9846', '295149')
+    @polarion("RHEVM3-4953")
     def test_add_watchdog(self):
         """
         Add watchdog to clean VM
@@ -256,7 +256,7 @@ class WatchdogCRUD(WatchdogVM):
 
         logger.info("Watchdog added to VM")
 
-    @tcms('9846', '285329')
+    @polarion("RHEVM3-4952")
     def test_detect_watchdog(self):
         """
         Detect watchdog
@@ -268,7 +268,7 @@ class WatchdogCRUD(WatchdogVM):
             "VM is not running")
         self.lspci_watchdog(True, config.VM_NAME[0])
 
-    @tcms('9846', '285331')
+    @polarion("RHEVM3-4965")
     def test_remove_watchdog(self):
         """
         Deleting watchdog model
@@ -308,7 +308,7 @@ class WatchdogInstall(TestCase):
 
     __test__ = True
 
-    @tcms('9846', '295157')
+    @polarion("RHEVM3-4967")
     def test_install_watchdog(self):
         """
         Install watchdog and enable service
@@ -334,7 +334,7 @@ class WatchdogTestNone(WatchdogVM):
         change_watchdog_action(config.WATCHDOG_VM, 'none')
         run_watchdog_service(config.WATCHDOG_VM)
 
-    @tcms('9846', '285346')
+    @polarion("RHEVM3-4959")
     def test_action_none(self):
         """
         Test action none, wm should stay in kernel panic
@@ -380,7 +380,7 @@ class WatchdogTestReset(WatchdogVM):
         change_watchdog_action(config.WATCHDOG_VM, 'reset')
         run_watchdog_service(config.WATCHDOG_VM)
 
-    @tcms('9846', '285336')
+    @polarion("RHEVM3-4962")
     def test_action_reset(self):
         """
         Test action reset
@@ -436,7 +436,7 @@ class WatchdogTestPoweroff(WatchdogVM):
         change_watchdog_action(config.WATCHDOG_VM, 'poweroff')
         run_watchdog_service(config.WATCHDOG_VM)
 
-    @tcms('9846', '285335')
+    @polarion("RHEVM3-4963")
     def test_action_poweroff(self):
         """
         Test action poweroff
@@ -477,7 +477,7 @@ class WatchdogTestPause(WatchdogVM):
         change_watchdog_action(config.WATCHDOG_VM, 'pause')
         run_watchdog_service(config.WATCHDOG_VM)
 
-    @tcms('9846', '285339')
+    @polarion("RHEVM3-4961")
     def test_action_pause(self):
         """
         Test action pause
@@ -519,7 +519,7 @@ class WatchdogTestDump(WatchdogVM):
         change_watchdog_action(config.WATCHDOG_VM, 'dump')
         run_watchdog_service(config.WATCHDOG_VM)
 
-    @tcms('9846', '285345')
+    @polarion("RHEVM3-4960")
     def test_action_dump(self):
         """
         Test action pause
@@ -582,7 +582,7 @@ class WatchdogGeneralVMSubtab(TestCase):
     __test__ = True
 
     @bz({'996521': {'engine': None, 'version': None}})
-    @tcms('9846', '285333')
+    @polarion("RHEVM3-4964")
     def test_general_subtab(self):
         """
         Test if watchdog model and action are in general subtab of VM tab
@@ -607,7 +607,7 @@ class WatchdogMigration(TestCase):
         change_watchdog_action(config.WATCHDOG_VM, 'poweroff')
         run_watchdog_service(config.WATCHDOG_VM)
 
-    @tcms('9846', '294620')
+    @polarion("RHEVM3-4954")
     def test_migration(self):
         """
         Test migration of VM.
@@ -674,7 +674,7 @@ class WatchdogHighAvailability(WatchdogVM):
         change_watchdog_action(config.WATCHDOG_VM, 'poweroff')
         run_watchdog_service(config.WATCHDOG_VM)
 
-    @tcms('9846', '294619')
+    @polarion("RHEVM3-4955")
     def test_high_availability(self):
         """
         Test action poweroff with Vm set to highly available.
@@ -726,7 +726,7 @@ class WatchdogEvents(WatchdogVM):
         change_watchdog_action(config.WATCHDOG_VM, 'reset')
         run_watchdog_service(config.WATCHDOG_VM)
 
-    @tcms('9846', '294615')
+    @polarion("RHEVM3-4956")
     def test_event(self):
         """
         Test if event is displayed in log file
@@ -805,7 +805,7 @@ class WatchdogCRUDTemplate(WatchdogVM):
             raise errors.VMException(
                 "Cannot add template %s" % cls.template_name)
 
-    @tcms('9846', '294476')
+    @polarion("RHEVM3-4957")
     def test_add_watchdog_template(self):
         """
         Add watchdog to clean template

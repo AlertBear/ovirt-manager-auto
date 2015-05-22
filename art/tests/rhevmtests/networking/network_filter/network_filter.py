@@ -10,7 +10,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     addNic, getVmMacAddress, stopVm, startVm, removeNic, updateNic,
     hotUnplugNic,
 )
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.utils.test_utils import setNetworkFilterStatus
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level.hosts import(
@@ -42,7 +42,7 @@ class TestNetworkFilterCase01(TestCase):
         """
         logger.info("No need to run setup_class for this test")
 
-    @tcms(6955, 233972)
+    @polarion("RHEVM3-3775")
     def test_check_filter_status_engine(self):
         """
         Check that Network Filter is enabled by default on engine
@@ -54,7 +54,7 @@ class TestNetworkFilterCase01(TestCase):
         ):
             raise NetworkException("Network Filter is disabled on engine")
 
-    @tcms(6955, 198901)
+    @polarion("RHEVM3-3777")
     def test_check_filter_status_vdsm(self):
         """
         Check that Network Filter is enabled by default on VDSM
@@ -66,7 +66,7 @@ class TestNetworkFilterCase01(TestCase):
         ):
             raise NetworkException("Network Filter is disabled on VDSM")
 
-    @tcms(6955, 198903)
+    @polarion("RHEVM3-3779")
     def test_check_filter_status_dump_xml(self):
         """
         Check that Network Filter is enabled by default via dumpxml
@@ -102,7 +102,7 @@ class TestNetworkFilterCase02(TestCase):
                 "Failed to add NIC %s to VM" % config.NIC_NAME[1]
             )
 
-    @tcms(6955, 198914)
+    @polarion("RHEVM3-3780")
     def test_check_network_filter_on_nic(self):
         """
         Check that the new NIC has network filter
@@ -155,7 +155,7 @@ class TestNetworkFilterCase03(TestCase):
         """
         logger.info("No need to run setup_class for this test")
 
-    @tcms(6955, 198920)
+    @polarion("RHEVM3-3783")
     def test_check_network_filter_via_ebtables(self):
         """
         Check that VM NIC has network filter via ebtables
@@ -208,7 +208,7 @@ class TestNetworkFilterCase04(TestCase):
     """
     __test__ = True
 
-    @tcms(6955, 198966)
+    @polarion("RHEVM3-3784")
     def test_check_network_filter_via_ebtables(self):
         """
         Check that VM NICs has network filter via ebtables
@@ -305,7 +305,7 @@ class TestNetworkFilterCase05(TestCase):
         ):
             raise NetworkException("failed to start the VM")
 
-    @tcms(6955, 203261)
+    @polarion("RHEVM3-3785")
     def test_check_network_filter_on_nic(self):
         """
         Check that VM run without network filter.

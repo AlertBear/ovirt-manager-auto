@@ -5,7 +5,7 @@ import art.rhevm_api.tests_lib.low_level.storagedomains as llstoragedomains
 import art.rhevm_api.tests_lib.low_level.vms as llvms
 
 from art.test_handler.exceptions import VMException
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.unittest_lib import attr
 import unittest_conf
 from utilities.rhevm_tools.log_collector import LogCollectorUtility
@@ -61,7 +61,7 @@ class LogCollectorTestCaseBase(base.RHEVMUtilsTestCase):
 class LogCollectorSingleDC(LogCollectorTestCaseBase):
     """ Tests with single DC and single cluster setup """
 
-    @tcms(LOG_COLLECTOR_TEST_PLAN, 275493)
+    @polarion("RHEVM3-7998")
     def test_log_collector_list(self):
         """ log_collector list"""
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,
@@ -70,7 +70,7 @@ class LogCollectorSingleDC(LogCollectorTestCaseBase):
         self.ut.autoTest()
 
     @bz({'1218526': {}})
-    @tcms(LOG_COLLECTOR_TEST_PLAN, 95162)
+    @polarion("RHEVM3-7989")
     def test_log_collector_collect(self):
         """ log_collector collect"""
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,
@@ -78,7 +78,7 @@ class LogCollectorSingleDC(LogCollectorTestCaseBase):
         self.ut(action='collect', kwargs=self.kwargs)
         self.ut.autoTest()
 
-    @tcms(LOG_COLLECTOR_TEST_PLAN, 337745)
+    @polarion("RHEVM3-8003")
     def test_log_collector_collect_verbosity(self):
         """test different verbosity levels"""
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,
@@ -97,7 +97,7 @@ class LogCollectorSingleDC(LogCollectorTestCaseBase):
 
         assert verboseLines > normalLines > quietLines
 
-    @tcms(LOG_COLLECTOR_TEST_PLAN, 95174)
+    @polarion("RHEVM3-8019")
     def test_log_collector_version(self):
         """log_collector --version"""
         kwargs = {'version': None}
@@ -108,7 +108,7 @@ class LogCollectorSingleDC(LogCollectorTestCaseBase):
         self.ut.execute(None, cmd)
         assert reportedVersion in self.ut.out
 
-    @tcms(LOG_COLLECTOR_TEST_PLAN, 95172)
+    @polarion("RHEVM3-8017")
     def test_log_collector_help(self):
         """log_collector --help"""
         kwargs = {'help': None}
@@ -116,7 +116,7 @@ class LogCollectorSingleDC(LogCollectorTestCaseBase):
         self.ut.autoTest()
 
     @bz({'1218526': {}})
-    @tcms(LOG_COLLECTOR_TEST_PLAN, 95168)
+    @polarion("RHEVM3-8013")
     def test_log_collector_collect_no_postgres(self):
         """collect data skipping postregs"""
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,
@@ -127,7 +127,7 @@ class LogCollectorSingleDC(LogCollectorTestCaseBase):
         self.ut.autoTest()
 
     @bz({'1218526': {}})
-    @tcms(LOG_COLLECTOR_TEST_PLAN, 337746)
+    @polarion("RHEVM3-8004")
     def test_log_collector_collect_no_hypervisors(self):
         """skip host data"""
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,
@@ -138,7 +138,7 @@ class LogCollectorSingleDC(LogCollectorTestCaseBase):
         self.ut.autoTest()
 
     @bz({'1218526': {}})
-    @tcms(LOG_COLLECTOR_TEST_PLAN, 95169)
+    @polarion("RHEVM3-8014")
     def test_log_collector_collect_single_host(self):
         """collect logs from a specified host"""
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,
@@ -178,7 +178,7 @@ class LogCollectorMoreDCs(LogCollectorTestCaseBase):
         super(LogCollectorMoreDCs, self).tearDown()
 
     @bz({'1218526': {}})
-    @tcms(LOG_COLLECTOR_TEST_PLAN, 95167)
+    @polarion("RHEVM3-8012")
     def test_log_collector_empty_cluster(self):
         """collect logs from specific cluster"""
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,
@@ -190,7 +190,7 @@ class LogCollectorMoreDCs(LogCollectorTestCaseBase):
         assert 'No hypervisors were selected' in self.ut.out
 
     @bz({'1218526': {}})
-    @tcms(LOG_COLLECTOR_TEST_PLAN, 95166)
+    @polarion("RHEVM3-8011")
     def test_log_collector_collect_empty_DC(self):
         """collect logs from single data center"""
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,
@@ -201,7 +201,7 @@ class LogCollectorMoreDCs(LogCollectorTestCaseBase):
         self.ut.autoTest()
         assert 'No hypervisors were selected' in self.ut.out
 
-    @tcms(LOG_COLLECTOR_TEST_PLAN, 95165)
+    @polarion("RHEVM3-8010")
     def test_log_collector_list_empty_DC(self):
         """ log_collector list empty data center"""
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,
@@ -241,7 +241,7 @@ class LogCollectorRegressionBz1058894(LogCollectorTestCaseBase):
 
         super(LogCollectorRegressionBz1058894, self).tearDown()
 
-    @tcms(LOG_COLLECTOR_TEST_PLAN, 339921)
+    @polarion("RHEVM3-8023")
     def test_log_collector_bug_1058894(self):
         """ collect from host running a VM on iSCSI storage"""
         assert self.ut.setRestConnPassword(NAME, unittest_conf.LOG_COL_CONF,

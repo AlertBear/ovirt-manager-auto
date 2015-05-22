@@ -8,7 +8,7 @@ __test__ = True
 from art.rhevm_api.tests_lib.low_level import hooks, vms, hosts
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils import test_utils
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from nose.tools import istest
 from art.unittest_lib import attr
 from os import path
@@ -140,7 +140,7 @@ class TestCaseAfterVdsmStop(TestCaseVdsm):
     NAME = 'after_vdsm_stop'
 
     @istest
-    @tcms(config.TCMS_PLAN_CUSTOM, 289788)
+    @polarion("RHEVM3-8482")
     def after_vdsm_stop(self):
         """ test_after_vdsm_stop """
         hosts.stop_vdsm(config.HOSTS[0], config.HOSTS_PW)
@@ -154,7 +154,7 @@ class TestCaseBeforeVdsmStart(TestCaseVdsm):
     NAME = 'before_vdsm_start'
 
     @istest
-    @tcms(config.TCMS_PLAN_CUSTOM, 289789)
+    @polarion("RHEVM3-8483")
     def before_vdsm_start(self):
         """ test_before_vdsm_start """
         hosts.stop_vdsm(config.HOSTS[0], config.HOSTS_PW)
@@ -171,7 +171,7 @@ class TestCaseBeforeVmStart(TestCaseVm):
     NAME = 'before_vm_start'
 
     @istest
-    @tcms(config.TCMS_PLAN_CUSTOM, 289791)
+    @polarion("RHEVM3-8484")
     def before_vm_start(self):
         """ Check for file created by before_vm_start hook """
         self.assertTrue(vms.stopVm(True, vm=config.HOOKS_VM_NAME))
@@ -195,7 +195,7 @@ class TestCaseAfterVmPause(TestCaseVm):
     NAME = 'after_vm_pause'
 
     @istest
-    @tcms(config.TCMS_PLAN_CUSTOM, 289793)
+    @polarion("RHEVM3-8485")
     def after_vm_pause(self):
         """ Check for file created by after_vm_pause hook """
         self.assertTrue(

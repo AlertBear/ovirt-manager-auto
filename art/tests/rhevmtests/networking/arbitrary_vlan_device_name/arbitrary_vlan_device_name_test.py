@@ -16,7 +16,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.test_handler.exceptions as exceptions
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from rhevmtests.networking import config
 
 logger = logging.getLogger("ArbitraryVlanDeviceName_Cases")
@@ -70,7 +70,7 @@ class TestArbitraryVlanDeviceName01(TestArbitraryVlanDeviceNameTearDown):
             network=[helper.VLAN_NAMES[0]]
         )
 
-    @tcms(13961, 372421)
+    @polarion("RHEVM3-4170")
     def test_vlan_on_nic(self):
         """
         Check that the VLAN network exists on host via engine
@@ -122,7 +122,7 @@ class TestArbitraryVlanDeviceName02(TestArbitraryVlanDeviceNameTearDown):
             network=[helper.VLAN_NAMES[0]]
         )
 
-    @tcms(13961, 372422)
+    @polarion("RHEVM3-4171")
     def test_vlan_on_bond(self):
         """
         Check that the VLAN network exists on host via engine
@@ -164,7 +164,7 @@ class TestArbitraryVlanDeviceName03(TestArbitraryVlanDeviceNameTearDown):
             network=helper.VLAN_NAMES
         )
 
-    @tcms(13961, 372423)
+    @polarion("RHEVM3-4172")
     def test_multiple_vlans_on_nic(self):
         """
         Create 3 VLANs on the host
@@ -221,7 +221,7 @@ class TestArbitraryVlanDeviceName04(TestArbitraryVlanDeviceNameTearDown):
             network=helper.VLAN_NAMES
         )
 
-    @tcms(13961, 372424)
+    @polarion("RHEVM3-4173")
     def test_multiple_vlans_on_bond(self):
         """
         Create 3 VLANs on the host
@@ -284,7 +284,7 @@ class TestArbitraryVlanDeviceName05(TestArbitraryVlanDeviceNameTearDown):
             network=[helper.VLAN_NAMES[0]]
         )
 
-    @tcms(13961, 373616)
+    @polarion("RHEVM3-4174")
     def test_mixed_vlan_types(self):
         """
         Check that the VLAN network exists on host via engine
@@ -360,7 +360,7 @@ class TestArbitraryVlanDeviceName06(TestArbitraryVlanDeviceNameTearDown):
             network=[helper.VLAN_NAMES[0]]
         )
 
-    @tcms(13961, 373616)
+    @polarion("RHEVM3-4175")
     def test_vlan_with_non_vm(self):
         """
         Check that the VLAN network exists on host via engine

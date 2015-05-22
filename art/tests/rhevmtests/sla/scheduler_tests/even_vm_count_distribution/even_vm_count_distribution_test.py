@@ -10,7 +10,7 @@ import logging
 from rhevmtests.sla import config
 from nose.tools import istest
 from art.unittest_lib import attr
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 from art.unittest_lib import SlaTest as TestCase
@@ -157,7 +157,7 @@ class BalancingWithDefaultParameters(TwoHostsTests):
         cls._start_vms(NUM_OF_VM_NAME, 5)
         super(BalancingWithDefaultParameters, cls).setup_class()
 
-    @tcms('12212', '335371')
+    @polarion("RHEVM3-5565")
     @istest
     def check_migration(self):
         """
@@ -187,7 +187,7 @@ class NoHostForMigration(TwoHostsTests):
         cls._start_vms(NUM_OF_VM_NAME, HOST_START_INDEX)
         super(NoHostForMigration, cls).setup_class()
 
-    @tcms('12212', '335393')
+    @polarion("RHEVM3-5566")
     @istest
     def check_migration(self):
         """
@@ -220,7 +220,7 @@ class StartVmUnderClusterPolicy(TwoHostsTests):
         cls._start_vms(NUM_OF_VM_NAME - 1, HOST_START_INDEX)
         super(StartVmUnderClusterPolicy, cls).setup_class()
 
-    @tcms('12212', '335397')
+    @polarion("RHEVM3-5568")
     @istest
     def check_migration(self):
         """
@@ -281,7 +281,7 @@ class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
                 raise errors.VMException("Failed to run vm")
         super(HaVmStartOnHostAboveMaxLevel, cls).setup_class()
 
-    @tcms('12212', '338999')
+    @polarion("RHEVM3-5570")
     @istest
     def check_migration(self):
         """
@@ -345,7 +345,7 @@ class PutHostToMaintenance(EvenVmCountDistribution):
         cls._start_vms(NUM_OF_VM_NAME, HOST_START_INDEX)
         super(PutHostToMaintenance, cls).setup_class()
 
-    @tcms('12212', '335394')
+    @polarion("RHEVM3-5567")
     @istest
     def check_migration(self):
         """
@@ -388,7 +388,7 @@ class MigrateVmUnderPolicy(EvenVmCountDistribution):
             raise errors.VMException("Failed to start vm")
         super(MigrateVmUnderPolicy, cls).setup_class()
 
-    @tcms('12212', '335559')
+    @polarion("RHEVM3-5569")
     @istest
     def check_migration(self):
         """

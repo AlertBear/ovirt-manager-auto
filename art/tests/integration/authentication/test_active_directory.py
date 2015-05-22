@@ -15,7 +15,7 @@ from nose.tools import istest
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from test_base import connectionTest
 from art.core_api.apis_utils import TimeoutingSampler
 
@@ -106,7 +106,7 @@ class ActiveDirectory(TestCase):
                           config.USER_PASSWORD, False)
 
     @istest
-    @tcms(config.AD_TCMS_PLAN_ID, 47586)
+    @polarion("RHEVM3-7354")
     @attr(tier=0)
     def disabledAccount(self):
         """ Disabled account """
@@ -115,7 +115,7 @@ class ActiveDirectory(TestCase):
         LOGGER.info("User with disabled acc can't login.")
 
     @istest
-    @tcms(config.AD_TCMS_PLAN_ID, 47587)
+    @polarion("RHEVM3-7353")
     @attr(tier=0)
     def expiredPassword(self):
         """ Expired password """
@@ -124,7 +124,7 @@ class ActiveDirectory(TestCase):
         LOGGER.info("User with expired password can't login.")
 
     @istest
-    @tcms(config.AD_TCMS_PLAN_ID, 47585)
+    @polarion("RHEVM3-7355")
     @attr(tier=0)
     def expiredUser(self):
         """ Expired user """
@@ -133,7 +133,7 @@ class ActiveDirectory(TestCase):
         LOGGER.info("Expired user can't login.")
 
     @istest
-    @tcms(config.AD_TCMS_PLAN_ID, 91742)
+    @polarion("RHEVM3-7349")
     @attr(tier=0)
     def userFromGroup(self):
         """ Test if user from group can login """
@@ -172,14 +172,14 @@ class ActiveDirectory(TestCase):
         LOGGER.info("Authentication passed.")
 
     @istest
-    @tcms(config.AD_TCMS_PLAN_ID, 91745)
+    @polarion("RHEVM3-7348")
     def ldapEncryption(self):
         """ LDAP encryption """
         self._checkEnc(AUTH, True)
         self._checkEnc(AUTH_CONF, False)
 
     @istest
-    @tcms(config.AD_TCMS_PLAN_ID, 41716)
+    @polarion("RHEVM3-7362")
     def multipleDomains(self):
         """ Multiple domains: Two ADs, using FQDN names """
         self._loginAsUser(config.TEST_USER(self.domain))

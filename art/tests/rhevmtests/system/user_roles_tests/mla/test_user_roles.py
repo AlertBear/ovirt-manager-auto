@@ -12,7 +12,7 @@ from nose.tools import istest
 from art.core_api.apis_exceptions import EntityNotFound
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import (
     users, vms, disks, vmpools, templates, mla
 )
@@ -96,7 +96,7 @@ class RoleCase54413(TestCase):
     """
     __test__ = True
 
-    @tcms(TCMS_PLAN_ID, 54413)
+    @polarion("RHEVM3-7141")
     @istest
     def createRolePerms(self):
         """ Check if user can add/del role if he has permissions for it """
@@ -188,7 +188,7 @@ class RoleCase54401(TestCase):
     """
     __test__ = True
 
-    @tcms(TCMS_PLAN_ID, 54401)
+    @polarion("RHEVM3-7146")
     @istest
     def editRole(self):
         """ Try to update role and check if role is updated correctly """
@@ -279,7 +279,7 @@ class RoleCase54415(TestCase):
     """ Try to get list of roles as user and non-admin user """
     __test__ = True
 
-    @tcms(TCMS_PLAN_ID, 54415)
+    @polarion("RHEVM3-7140")
     @istest
     def listOfRoles(self):
         """ Check if user can see all roles in system """
@@ -336,7 +336,7 @@ class RoleCase54402(TestCase):
     """
     __test__ = True
 
-    @tcms(TCMS_PLAN_ID, 54402)
+    @polarion("RHEVM3-7145")
     @istest
     def removeRole(self):
         """ Try to remove roles which are associted to objects """
@@ -388,7 +388,7 @@ class RoleCase54366(TestCase):
     """ Try to create role with illegal characters. """
     __test__ = True
 
-    @tcms(TCMS_PLAN_ID, 54366)
+    @polarion("RHEVM3-7138")
     @istest
     def roleCreation(self):
         """ Try to create role name with invalid characters """
@@ -402,7 +402,7 @@ class RoleCase54540(TestCase):
     """ Try to remove predefined roles """
     __test__ = True
 
-    @tcms(TCMS_PLAN_ID, 54540)
+    @polarion("RHEVM3-7147")
     @istest
     def removePreDefinedRoles(self):
         """ Test that pre-defined roles can not be removed. """
@@ -422,7 +422,7 @@ class RoleCase54411(TestCase):
     """
     __test__ = True
 
-    @tcms(TCMS_PLAN_ID, 54411)
+    @polarion("RHEVM3-7143")
     @istest
     def predefinedRoles(self):
         """ Check if rhevm return still same predefined roles """
@@ -439,7 +439,7 @@ class RoleCase54403(TestCase):
     """
     __test__ = True
 
-    @tcms(TCMS_PLAN_ID, 54403)
+    @polarion("RHEVM3-7144")
     @istest
     def cloneRole(self):
         """ Clone role """
@@ -461,7 +461,7 @@ class RolesCase54412(TestCase):
     """
     __test__ = True
 
-    @tcms(TCMS_PLAN_ID, 54412)
+    @polarion("RHEVM3-7142")
     @bz({949950: {}, 977304: {}})
     @istest
     def rolesHiearchy(self):

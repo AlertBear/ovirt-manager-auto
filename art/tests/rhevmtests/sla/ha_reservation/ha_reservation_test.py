@@ -13,7 +13,7 @@ import logging
 from time import sleep
 
 from nose.plugins.attrib import attr
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import SlaTest as TestCase
 
 import art.test_handler.exceptions as errors
@@ -171,7 +171,7 @@ class Maintenance(HAReservation):
             )
         logger.info("VM %s is running", config.VM_NAME[2])
 
-    @tcms('12344', '339927')
+    @polarion("RHEVM3-4995")
     def test_host_maintenance(self):
         """
         Check if cluster is HA safe
@@ -205,7 +205,7 @@ class Maintenance(HAReservation):
             config.CLUSTER_NAME[0]
         )
 
-    @tcms('12344', '338501')
+    @polarion("RHEVM3-4992")
     def test_set_cluster_ha_safe(self):
         """
         Activate host
@@ -290,7 +290,7 @@ class NotCompatibleHost(HAReservation):
                 "Failed to start vms %s" % config.VM_NAME[:2]
             )
 
-    @tcms('12344', '336832')
+    @polarion("RHEVM3-4987")
     def test_insufficient_resources(self):
         """
         2 host scenario, 1st host has memory allocated,
@@ -386,7 +386,7 @@ class MultiVM(HAReservation):
         if not ll_vms.startVms(cls.vm_list):
             raise errors.VMException("Failed to start VMs")
 
-    @tcms('12344', '339926')
+    @polarion("RHEVM3-4994")
     def test_multi_vms(self):
         """
         Put host to maintenance and check cluster HA safe status

@@ -14,7 +14,7 @@ from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 from rhevmtests.networking import config
 from art.test_handler.exceptions import NetworkException
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level.networks import checkIPRule
 from art.rhevm_api.tests_lib.high_level.networks import (
     createAndAttachNetworkSN, remove_net_from_setup, removeNetwork,
@@ -76,7 +76,7 @@ class TestGatewaysCase1(TestCase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(9768, 282894)
+    @polarion("RHEVM3-3949")
     def test_check_ip_rule(self):
         """
         Check correct configuration with ip rule function
@@ -89,7 +89,7 @@ class TestGatewaysCase1(TestCase):
                 "Incorrect gateway configuration for %s" % config.NETWORKS[0]
             )
 
-    @tcms(9768, 289696)
+    @polarion("RHEVM3-3965")
     def test_detach_gw_net(self):
         """
         Remove network with gw configuration from setup
@@ -146,7 +146,7 @@ class TestGatewaysCase2(TestCase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(9768, 282901)
+    @polarion("RHEVM3-3953")
     def test_check_ip_rule(self):
         """
         Check correct configuration with ip rule function
@@ -204,7 +204,7 @@ class TestGatewaysCase3(TestCase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(9768, 282902)
+    @polarion("RHEVM3-3954")
     def test_check_ip_rule(self):
         """
         Check correct configuration with ip rule function
@@ -262,7 +262,7 @@ class TestGatewaysCase4(TestCase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(9768, 283407)
+    @polarion("RHEVM3-3956")
     def test_check_ip_rule(self):
         """
         Check correct configuration with ip rule function
@@ -313,7 +313,7 @@ class TestGatewaysCase5(TestCase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(9768, 283968)
+    @polarion("RHEVM3-3958")
     def test_check_incorrect_config(self):
         """
         Try to create logical  network on DC/Cluster/Hosts
@@ -382,7 +382,7 @@ class TestGatewaysCase6(TestCase):
     """
     __test__ = True
 
-    @tcms(9768, 289770)
+    @polarion("RHEVM3-3966")
     def test_check_ip_rule(self):
         """
         Create logical vm network on DC/Cluster/Hosts
@@ -444,7 +444,7 @@ class TestGatewaysCase7(TestCase):
         ):
             raise NetworkException("Cannot create and attach network %s")
 
-    @tcms(9768, 289694)
+    @polarion("RHEVM3-3963")
     def test_check_ip_rule(self):
         """
         Add additional NIC to the bond and check IP rule
@@ -530,7 +530,7 @@ class TestGatewaysCase8(TestCase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(9768, 289695)
+    @polarion("RHEVM3-3964")
     def test_check_ip_rule(self):
         """
         Check the appearance of the subnet with ip rule command
@@ -615,7 +615,7 @@ class TestGatewaysCase9(TestCase):
                 (cls.uncomp_dc, cls.uncomp_cl)
             )
 
-    @tcms(9768, 284029)
+    @polarion("RHEVM3-3961")
     def test_add_host_to_another_cluster(self):
         """
         Add host to the 3.2 Cluster
@@ -713,7 +713,7 @@ class TestGatewaysCase10(TestCase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(9768, 282904)
+    @polarion("RHEVM3-3955")
     def test_check_ip_rule(self):
         """
         Check correct configuration with ip rule function

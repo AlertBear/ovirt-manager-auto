@@ -1,5 +1,5 @@
 import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
 from integration.rhevm_utils import base
 import unittest_conf
@@ -45,7 +45,7 @@ class ImageUploaderTestCase(base.RHEVMUtilsTestCase):
     utility_class = ImageUploadUtility
     _multiprocess_can_split_ = True
 
-    @tcms(IMAGE_UPLOADER_TEST_PLAN, 287464)
+    @polarion("RHEVM3-7470")
     def test_image_uploader_upload(self):
         """ image_uploader_upload """
         assert self.ut.setRestConnPassword(NAME, unittest_conf.IMAGE_UP_CONF,
@@ -54,7 +54,7 @@ class ImageUploaderTestCase(base.RHEVMUtilsTestCase):
                 e=unittest_conf.EXPORT_DOMAIN_NAME)
         self.ut.autoTest()
 
-    @tcms(IMAGE_UPLOADER_TEST_PLAN, 287465)
+    @polarion("RHEVM3-7487")
     def test_image_uploader_list(self):
         """ image_uploader_list """
         assert self.ut.setRestConnPassword(NAME, unittest_conf.IMAGE_UP_CONF,
@@ -62,7 +62,7 @@ class ImageUploaderTestCase(base.RHEVMUtilsTestCase):
         self.ut('list')
         self.ut.autoTest()
 
-    @tcms(IMAGE_UPLOADER_TEST_PLAN, 129374)
+    @polarion("RHEVM3-7475")
     def test_image_uploader_upload_twice(self):
         """ image_uploader_upload_twice """
         assert self.ut.setRestConnPassword(NAME, unittest_conf.IMAGE_UP_CONF,
@@ -74,7 +74,7 @@ class ImageUploaderTestCase(base.RHEVMUtilsTestCase):
                 e=unittest_conf.EXPORT_DOMAIN_NAME)
         self.ut.autoTest()
 
-    @tcms(IMAGE_UPLOADER_TEST_PLAN, 129373)
+    @polarion("RHEVM3-7476")
     def test_image_uploader_upload_ovf_id(self):
         """ image_uploader_upload_twice_ovf_id """
         assert self.ut.setRestConnPassword(NAME, unittest_conf.IMAGE_UP_CONF,
@@ -88,7 +88,7 @@ class ImageUploaderTestCase(base.RHEVMUtilsTestCase):
         self.ut.autoTest()
         assert 'exists on' in self.ut.err
 
-    @tcms(IMAGE_UPLOADER_TEST_PLAN, 129468)
+    @polarion("RHEVM3-7471")
     def test_image_uploader_upload_bad_file(self):
         """ image_uploader_upload_bad_file """
         assert self.ut.setRestConnPassword(NAME, unittest_conf.IMAGE_UP_CONF,
@@ -100,7 +100,7 @@ class ImageUploaderTestCase(base.RHEVMUtilsTestCase):
         self.ut.autoTest(rc=1)
         assert 'not a gzip' in self.ut.err
 
-    @tcms(IMAGE_UPLOADER_TEST_PLAN, 129365)
+    @polarion("RHEVM3-7484")
     def test_image_uploader_upload_rename(self):
         """ image_uploader_upload_rename """
         assert self.ut.setRestConnPassword(NAME, unittest_conf.IMAGE_UP_CONF,
@@ -109,7 +109,7 @@ class ImageUploaderTestCase(base.RHEVMUtilsTestCase):
                 e=unittest_conf.EXPORT_DOMAIN_NAME, name='renamed')
         self.ut.autoTest()
 
-    @tcms(IMAGE_UPLOADER_TEST_PLAN, 129370)
+    @polarion("RHEVM3-7479")
     def test_image_uploader_upload_wrong_domain(self):
         """ image_uploader_wrong_domain """
         assert self.ut.setRestConnPassword(NAME, unittest_conf.IMAGE_UP_CONF,
@@ -119,7 +119,7 @@ class ImageUploaderTestCase(base.RHEVMUtilsTestCase):
         self.ut.autoTest(rc=1)
         assert 'was not found' in self.ut.err
 
-    @tcms(IMAGE_UPLOADER_TEST_PLAN, 129369)
+    @polarion("RHEVM3-7480")
     def test_image_uploader_upload_inactive(self):
         """ image_uploader_upload_inactive """
         assert self.ut.setRestConnPassword(NAME, unittest_conf.IMAGE_UP_CONF,

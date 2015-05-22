@@ -2,7 +2,7 @@ import sys
 
 from integration.rhevm_utils import base
 import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
 import unittest_conf
 from utilities.rhevm_tools.iso_uploader import ISOUploadUtility
@@ -65,7 +65,7 @@ class ISOUploaderTestCase(base.RHEVMUtilsTestCase):
                (option, option, value), unittest_conf.ISO_UP_CONF, '--copy']
         self.ut.execute(name=NAME, cmd=cmd)
 
-    @tcms(ISO_UPLOADER_TEST_PLAN, 275523)
+    @polarion("RHEVM3-7965")
     def test_iso_uploader_upload(self):
         """ iso_uploder_upload """
         isoFile = DUMMY_ISO_FILE_PATTERN % sys._getframe().f_code.co_name
@@ -79,13 +79,13 @@ class ISOUploaderTestCase(base.RHEVMUtilsTestCase):
                     i=unittest_conf.ISO_DOMAIN_NAME)
         self.ut.autoTest()
 
-    @tcms(ISO_UPLOADER_TEST_PLAN, 97800)
+    @polarion("RHEVM3-7963")
     def test_iso_uploader_list(self):
         """ iso_uploder_list """
         self.ut('list')
         self.ut.autoTest()
 
-    @tcms(ISO_UPLOADER_TEST_PLAN, 274429)
+    @polarion("RHEVM3-7951")
     def test_iso_uploader_upload_twice(self):
         """ iso_uploder_upload """
         isoFile = DUMMY_ISO_FILE_PATTERN % sys._getframe().f_code.co_name
@@ -101,7 +101,7 @@ class ISOUploaderTestCase(base.RHEVMUtilsTestCase):
         self.ut(ISO_UPLOAD_COMMAND, isoFile, i=unittest_conf.ISO_DOMAIN_NAME)
         self.ut.autoTest(rc=3)
 
-    @tcms(ISO_UPLOADER_TEST_PLAN, 97799)
+    @polarion("RHEVM3-7964")
     def test_iso_uploader_upload_local(self):
         """ iso_uploder_upload """
         isoFile = DUMMY_ISO_FILE_PATTERN % sys._getframe().f_code.co_name
@@ -116,7 +116,7 @@ class ISOUploaderTestCase(base.RHEVMUtilsTestCase):
                     i=unittest_conf.LOCAL_ISO_DOMAIN_NAME)
         self.ut.autoTest()
 
-    @tcms(ISO_UPLOADER_TEST_PLAN, 97803)
+    @polarion("RHEVM3-7960")
     def test_iso_uploader_upload_unatached(self):
         """ iso_uploder_upload """
         isoFile = DUMMY_ISO_FILE_PATTERN % sys._getframe().f_code.co_name
@@ -131,13 +131,13 @@ class ISOUploaderTestCase(base.RHEVMUtilsTestCase):
                     i=unittest_conf.LOCAL_ISO_DOMAIN_NAME)
         self.ut.autoTest()
 
-    @tcms(ISO_UPLOADER_TEST_PLAN, 97797)
+    @polarion("RHEVM3-7950")
     def test_iso_uploader_help(self):
         """ iso_uploder_help """
         self.ut(ISO_UPLOAD_COMMAND, help=None)
         self.ut.autoTest()
 
-    @tcms(ISO_UPLOADER_TEST_PLAN, 111216)
+    @polarion("RHEVM3-7952")
     def test_iso_uploader_upload_conf_file(self):
         """ iso_uploder_upload """
         isoFile = DUMMY_ISO_FILE_PATTERN % sys._getframe().f_code.co_name

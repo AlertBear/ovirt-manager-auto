@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.high_level.hosts import activate_host_if_not_up
 from art.rhevm_api.tests_lib.low_level.networks import remove_label, add_label
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from rhevmtests.networking import config
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.high_level.networks import (
@@ -89,7 +89,7 @@ class TestNicFault01(TestNicFaultTestCaseBase):
                 (config.LABEL_LIST[0], config.VDS_HOSTS[0].nics[1])
             )
 
-    @tcms(13885, 366409)
+    @polarion("RHEVM3-4153")
     def test_label_nic_fault(self):
         """
         Check NIC fault
@@ -122,7 +122,7 @@ class TestNicFault02(TestNicFaultTestCaseBase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(13885, 366410)
+    @polarion("RHEVM3-4167")
     def test_required_nic_fault(self):
         """
         Check NIC fault
@@ -149,7 +149,7 @@ class TestNicFault03(TestNicFaultTestCaseBase):
     """
     __test__ = True
 
-    @tcms(13885, 366412)
+    @polarion("RHEVM3-4166")
     def test_empty_nic_fault(self):
         """
         Check empty NIC fault
@@ -201,7 +201,7 @@ class TestNicFault04(TestNicFaultTestCaseBase):
                 (config.LABEL_LIST[0], config.BOND[0])
             )
 
-    @tcms(13885, 366414)
+    @polarion("RHEVM3-4165")
     def test_label_bond_fault(self):
         """
         Check BOND fault
@@ -243,7 +243,7 @@ class TestNicFault05(TestNicFaultTestCaseBase):
                 (config.NETWORKS[0], config.BOND[0])
             )
 
-    @tcms(13885, 366415)
+    @polarion("RHEVM3-4164")
     def test_required_bond_fault(self):
         """
         Check BOND fault
@@ -293,7 +293,7 @@ class TestNicFault06(TestNicFaultTestCaseBase):
         ):
             raise NetworkException("Cannot create bond %s " % config.BOND[0])
 
-    @tcms(13885, 366416)
+    @polarion("RHEVM3-4163")
     def test_empty_bond_fault(self):
         """
         Check empty BOND fault
@@ -330,7 +330,7 @@ class TestNicFault07(TestNicFaultTestCaseBase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(13885, 366418)
+    @polarion("RHEVM3-4162")
     def test_non_required_nic_fault(self):
         """
         Check NIC fault
@@ -371,7 +371,7 @@ class TestNicFault08(TestNicFaultTestCaseBase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(13885, 366419)
+    @polarion("RHEVM3-4161")
     def test_non_required_bond_fault(self):
         """
         Check BOND fault
@@ -408,7 +408,7 @@ class TestNicFault09(TestNicFaultTestCaseBase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(13885, 366420)
+    @polarion("RHEVM3-4160")
     def test_non_required_nic_fault(self):
         """
         Check NIC fault
@@ -450,7 +450,7 @@ class TestNicFault10(TestNicFaultTestCaseBase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(13885, 366421)
+    @polarion("RHEVM3-4159")
     def test_non_required_bond_fault(self):
         """
         Check BOND fault

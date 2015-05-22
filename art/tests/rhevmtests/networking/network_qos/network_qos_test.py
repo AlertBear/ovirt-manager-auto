@@ -12,7 +12,7 @@ from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 
 from art.test_handler.exceptions import NetworkException
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level.datacenters import(
     add_qos_to_datacenter, update_qos_in_datacenter,
     delete_qos_from_datacenter
@@ -45,7 +45,7 @@ class TestNetQOSCase01(TestCase):
     """
     __test__ = True
 
-    @tcms(10090, 293060)
+    @polarion("RHEVM3-3998")
     def test_add_network_qos(self):
         """
         1) Create new Network QoS profile under DC
@@ -182,7 +182,7 @@ class TestNetQOSCase02(TestCase):
                 "Couldn't add VNIC with QoS to VM %s" % config.VM_NAME[1]
             )
 
-    @tcms(10090, 293066)
+    @polarion("RHEVM3-3999")
     def test_update_network_qos(self):
         """
         1) Update existing QoS profile for DC
@@ -371,7 +371,7 @@ class TestNetQOSCase03(TestCase):
                 (QOS_NAME[0], config.VM_NAME[1])
             )
 
-    @tcms(10090, 293068)
+    @polarion("RHEVM3-4000")
     def test_remove_network_qos(self):
         """
         1) Remove QoS profile

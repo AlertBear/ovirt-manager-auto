@@ -18,7 +18,7 @@ from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.apis_utils import getDS
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from test_base import connectionTest
 
 LOGGER = logging.getLogger(__name__)
@@ -68,7 +68,7 @@ class IPACase93880(TestCase):
             role=USER_ROLE, domain=config.IPA_DOMAIN)
 
     @istest
-    @tcms(config.IPA_TCMS_PLAN_ID, 93880)
+    @polarion("RHEVM3-8953")
     def authenticateUsersNegative(self):
         """ Authenticate users - negative """
         msg_f = "%s user can log in."
@@ -112,7 +112,7 @@ class IPACase93879(TestCase):
             True, config.IPA_GROUP, config.MAIN_CLUSTER_NAME, role=USER_ROLE)
 
     @istest
-    @tcms(config.IPA_TCMS_PLAN_ID, 93880)
+    @polarion("RHEVM3-8952")
     def authenticateUsers(self):
         """ Authenticate users """
         # Login as regular user
@@ -151,7 +151,7 @@ class IPACase93881(TestCase):
             role=USER_ROLE, domain=config.IPA_DOMAIN)
 
     @istest
-    @tcms(config.IPA_TCMS_PLAN_ID, 93881)
+    @polarion("RHEVM3-8954")
     @bz(1123545)
     def loginFormats(self):
         """ Login formats """
@@ -181,7 +181,7 @@ class IPACase109871(TestCase):
             role=USER_ROLE, domain=config.IPA_DOMAIN)
 
     @istest
-    @tcms(config.IPA_TCMS_PLAN_ID, 109871)
+    @polarion("RHEVM3-8959")
     def userWithManyGroups(self):
         """ User with many groups """
         loginAsUser(config.IPA_WITH_MANY_GROUPS_NAME, True)
@@ -206,7 +206,7 @@ class IPACase109146(TestCase):
             True, config.IPA_GROUP, config.MAIN_CLUSTER_NAME)
 
     @istest
-    @tcms(config.IPA_TCMS_PLAN_ID, 109146)
+    @polarion("RHEVM3-8958")
     @bz(1125161)
     def persistencyOfGroupRights(self):
         """ Persistency of group rights """
@@ -235,7 +235,7 @@ class IPACase93882(TestCase):
     apis = TestCase.apis - set(['java', 'sdk'])
 
     @istest
-    @tcms(config.IPA_TCMS_PLAN_ID, 93882)
+    @polarion("RHEVM3-8955")
     @bz(1125161)
     def search(self):
         """ Search """
@@ -286,7 +286,7 @@ class IPACase93883(TestCase):
                               password=config.IPA_PASSWORD)[0])
 
     @istest
-    @tcms(config.IPA_TCMS_PLAN_ID, 93883)
+    @polarion("RHEVM3-8956")
     @bz(1117240)
     def update(self):
         """ Update """

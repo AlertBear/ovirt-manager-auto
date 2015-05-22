@@ -9,7 +9,7 @@ from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import (
     disks, storagedomains, vms, templates,
 )
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms, polarion  # pylint: disable=E0611
 from rhevmtests.storage import helpers
 
 
@@ -234,7 +234,7 @@ class TestCasesVms(BaseTestDiskImageVms):
     Collection of tests which utilize BaseTestDiskImageVms
     """
 
-    @tcms(TCMS_PLAN_ID, '232953')
+    @polarion("RHEVM3-11604")
     def test_format_and_snapshots(self):
         """
         TCMS case id: 232953
@@ -246,7 +246,7 @@ class TestCasesVms(BaseTestDiskImageVms):
         self.add_snapshots()
         self.check_disks({self.vm_prealloc: True})
 
-    @tcms(TCMS_PLAN_ID, '232954')
+    @polarion("RHEVM3-11621")
     def test_move_disk_offline(self):
         """
         TCMS case id: 232954
@@ -261,7 +261,7 @@ class TestCasesVms(BaseTestDiskImageVms):
 
         self.check_disks()
 
-    @tcms(TCMS_PLAN_ID, '232955')
+    @polarion("RHEVM3-11620")
     def test_add_snapshot_and_move_disk(self):
         """
         TCMS case id: 232955
@@ -279,7 +279,7 @@ class TestCasesVms(BaseTestDiskImageVms):
 
         self.check_disks({self.vm_prealloc: True})
 
-    @tcms(TCMS_PLAN_ID, '232956')
+    @polarion("RHEVM3-11619")
     def test_live_move_disk(self):
         """
         TCMS case id: 232956
@@ -303,7 +303,7 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
     Collection of test cases for export vms
     """
 
-    @tcms(TCMS_PLAN_ID, '232957')
+    @polarion("RHEVM3-11618")
     def test_export_vm(self):
         """
         TCMS case id: 232957
@@ -317,7 +317,7 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
             w, storage_domain=self.export_domain)
         self.check_disks()
 
-    @tcms(TCMS_PLAN_ID, '232958')
+    @polarion("RHEVM3-11617")
     def test_add_snapshot_and_export_vm(self):
         """
         TCMS case id: 232958
@@ -333,7 +333,7 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
             w, storage_domain=self.export_domain)
         self.check_disks({self.vm_prealloc: True})
 
-    @tcms(TCMS_PLAN_ID, '232959')
+    @polarion("RHEVM3-11616")
     def test_add_snapshot_export_vm_with_discard_snapshots(self):
         """
         TCMS case id: 232959
@@ -349,7 +349,7 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
             w, storage_domain=self.export_domain)
         self.check_disks()
 
-    @tcms(TCMS_PLAN_ID, '232960')
+    @polarion("RHEVM3-11615")
     def test_import_vm(self):
         """
         TCMS case id: 232960
@@ -363,7 +363,7 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
 
         self.check_disks()
 
-    @tcms(TCMS_PLAN_ID, '232961')
+    @polarion("RHEVM3-11614")
     def test_export_vm_after_snapshot_and_import(self):
         """
         TCMS case id: 232961
@@ -378,7 +378,7 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
 
         self.check_disks({self.vm_prealloc: True})
 
-    @tcms(TCMS_PLAN_ID, '232962')
+    @polarion("RHEVM3-11613")
     def test_export_vm_with_collapse(self):
         """
         TCMS case id: 232962
@@ -433,7 +433,7 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
             True, vm=self.vm_name, name=self.template_name)
         assert vms.removeVm(True, self.vm_name)
 
-    @tcms(TCMS_PLAN_ID, '232963')
+    @polarion("RHEVM3-11612")
     def test_import_link_to_template(self):
         """
         TCMS case id: 232963
@@ -452,7 +452,7 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
 
         self.check_disks()
 
-    @tcms(TCMS_PLAN_ID, '232964')
+    @polarion("RHEVM3-11611")
     def test_import_link_to_template_collapse(self):
         """
         TCMS case id: 232964
@@ -517,7 +517,7 @@ class TestCasesImportVmWithNewName(BaseTestDiskImageVms):
                             self.domain_0, config.CLUSTER_NAME,
                             name=self.new_vm_prealloc)
 
-    @tcms(TCMS_PLAN_ID, '232965')
+    @polarion("RHEVM3-11610")
     def test_import_vm_without_removing_old_vm(self):
         """
         TCMS case id: 232965
@@ -528,7 +528,7 @@ class TestCasesImportVmWithNewName(BaseTestDiskImageVms):
         """
         self.import_vm_with_new_name()
 
-    @tcms(TCMS_PLAN_ID, '232966')
+    @polarion("RHEVM3-11609")
     def test_import_vm_without_removing_old_vm_with_snapshot(self):
         """
         TCMS case id: 232966
@@ -581,7 +581,7 @@ class TestCasesCreateTemplate(BaseTestDiskImageVms):
         }
         self.check_disks()
 
-    @tcms(TCMS_PLAN_ID, '232967')
+    @polarion("RHEVM3-11608")
     def test_create_template_from_vm(self):
         """
         TCMS case id: 232967
@@ -591,7 +591,7 @@ class TestCasesCreateTemplate(BaseTestDiskImageVms):
         """
         self.create_template_from_vm()
 
-    @tcms(TCMS_PLAN_ID, '232968')
+    @polarion("RHEVM3-11607")
     def test_create_template_from_vm_with_snapshots(self):
         """
         TCMS case id: 232968

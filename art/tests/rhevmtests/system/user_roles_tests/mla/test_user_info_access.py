@@ -12,7 +12,7 @@ import logging
 from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
-from art.test_handler.tools import tcms
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import (
     users, vms, templates, mla, clusters, datacenters, hosts,
     storagedomains, networks, events
@@ -121,7 +121,7 @@ class VmUserInfoTests(TestCase):
         templates.removeTemplate(True, config.TEMPLATE_NAME2)
 
     @istest
-    @tcms(TCMS_PLAN_ID, 171856)
+    @polarion("RHEVM3-7642")
     def eventFilter_parentObjectEvents(self):
         """ testEventFilter_parentObjectEvents """
         CHECK_OBJ = {
@@ -207,7 +207,7 @@ class VmUserInfoTests2(TestCase):
         vms.removeVm(True, config.VM_NAME2)
 
     @istest
-    @tcms(TCMS_PLAN_ID, 171878)
+    @polarion("RHEVM3-7640")
     def filter_parentObjects(self):
         """ filter_parentObjects """
         # TODO: Extend with /templates, /storagedomains, /users, ...
@@ -241,7 +241,7 @@ class VmUserInfoTests2(TestCase):
         assert len(cls) == 1, msgVisible % ('clusters', cls)
 
     @istest
-    @tcms(TCMS_PLAN_ID, 171076)
+    @polarion("RHEVM3-7639")
     def filter_vms(self):
         """ testFilter_vms """
         msgBlind = "The user can't see VM '%s' where he has permissions"
@@ -268,7 +268,7 @@ class VmUserInfoTests2(TestCase):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID, 171077)
+    @polarion("RHEVM3-7641")
     def eventFilter_vmEvents(self):
         """ testEventFilter_vmEvents """
         msgBlind = "User cannot see VM events where he has permissions"
@@ -294,7 +294,7 @@ class VmUserInfoTests2(TestCase):
         LOGGER.info(msgBlind)
 
     @istest
-    @tcms(TCMS_PLAN_ID, 171079)
+    @polarion("RHEVM3-7643")
     def specificId(self):
         """ testSpecificId """
         msgBlind = "User cannot see VM where he has permmissions"
@@ -308,7 +308,7 @@ class VmUserInfoTests2(TestCase):
         LOGGER.info(msgBlind)
 
     @istest
-    @tcms(TCMS_PLAN_ID, 168714)
+    @polarion("RHEVM3-7644")
     def accessDenied(self):
         """ testAccessDenied """
         msg = "User can see %s where he has no permissions. Can see %s"
@@ -326,7 +326,7 @@ class VmUserInfoTests2(TestCase):
         LOGGER.info("User see and don't see resources he can/can't.")
 
     @istest
-    @tcms(TCMS_PLAN_ID, 175445)
+    @polarion("RHEVM3-7645")
     def hostInfo(self):
         """ testHostPowerManagementInfo """
         self.assertRaises(
@@ -378,7 +378,7 @@ class ViewviewChildrenInfoTests(TestCase):
         vms.removeVm(True, config.VM_NAME1)
 
     @istest
-    @tcms(TCMS_PLAN_ID, 230017)
+    @polarion("RHEVM3-7638")
     def canViewChildren(self):
         """ CanViewChildren """
         err_msg = "User can't see vms"
@@ -396,7 +396,7 @@ class ViewviewChildrenInfoTests(TestCase):
             LOGGER.info("%s can see children", role_can)
 
     @istest
-    @tcms(TCMS_PLAN_ID, 230018)
+    @polarion("RHEVM3-7637")
     def cantViewChildren(self):
         """ CantViewChildren """
         for role_can in self.roles_cant:
@@ -455,7 +455,7 @@ class VmCreatorClusterAdminInfoTests(TestCase):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID, 174404)
+    @polarion("RHEVM3-7647")
     def vmCreatorClusterAdmin_filter_vms(self):
         """ vmCreatorClusterAdmin_filter_vms """
         err_msg_can = "User can see %s"
@@ -494,7 +494,7 @@ class VmCreatorInfoTests(TestCase):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID, 171080)
+    @polarion("RHEVM3-7646")
     def vmCreator_filter_vms(self):
         """ vmCreator_filter_vms """
         msg = "User can see vms where he has no permissions. Can see %s"
@@ -556,7 +556,7 @@ class TemplateCreatorInfoTests(TestCase):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID, 174403)
+    @polarion("RHEVM3-7648")
     def templateCreator_filter_templatesAndVms(self):
         """ Template creator with user role filter template and vms """
         msgCant = "User can't see %s '%s' which should see"
@@ -637,7 +637,7 @@ class TemplateCreatorAndDCAdminInfoTest(TestCase):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID, 174405)
+    @polarion("RHEVM3-7649")
     def templateCreatorDataCenterAdmin_filter_templates(self):
         """ Template creator with datacenter admin filter templates """
         loginAsUser()
@@ -708,7 +708,7 @@ class ComplexCombinationTest(TestCase):
 
     # Check BZ 881109 - behaviour could be changed in future.
     @istest
-    @tcms(TCMS_PLAN_ID, 174406)
+    @polarion("RHEVM3-7650")
     def complexCombination1_filter_templatesAndVms(self):
         """ ComplexCombination filter templatesAndVms """
         # TODO: extend, there could be tested more than this

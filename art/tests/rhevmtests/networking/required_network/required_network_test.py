@@ -8,7 +8,7 @@ Testing RequiredNetwork network feature.
 import logging
 from rhevmtests.networking import config
 from art.unittest_lib import NetworkTest as TestCase, attr
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.high_level.hosts import activate_host_if_not_up
 from art.rhevm_api.tests_lib.high_level.networks import (
@@ -80,7 +80,7 @@ class TestRequiredNetwork01(TearDownRequiredNetwork):
     """
     __test__ = True
 
-    @tcms(5868, 166462)
+    @polarion("RHEVM3-3753")
     def test_mgmt(self):
         """
         Check that MGMT network is required by default and try to set it to
@@ -141,7 +141,7 @@ class TestRequiredNetwork02(TearDownRequiredNetwork):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(5868, 167539)
+    @polarion("RHEVM3-3757")
     def test_1operational_network(self):
         """
         Validate that sw1 is operational.
@@ -155,7 +155,7 @@ class TestRequiredNetwork02(TearDownRequiredNetwork):
                 "%s status is not operational" % config.NETWORKS[0]
             )
 
-    @tcms(5868, 165850)
+    @polarion("RHEVM3-3738")
     def test_2nonrequired(self):
         """
         Turn down eth1 and check that Host is OPERATIONAL
@@ -217,7 +217,7 @@ class TestRequiredNetwork03(TearDownRequiredNetwork):
         ):
             raise NetworkException("Failed to turn down %s" % HOST_NICS[1])
 
-    @tcms(5868, 165851)
+    @polarion("RHEVM3-3750")
     def test_operational(self):
         """
         Check that Host is non-operational
@@ -273,7 +273,7 @@ class TestRequiredNetwork04(TearDownRequiredNetwork):
                 (config.VLAN_NETWORKS[0], config.BOND[0])
             )
 
-    @tcms(5868, 166460)
+    @polarion("RHEVM3-3752")
     def test_1operational_nic_down(self):
         """
         Check that host in operational after turn down eth2
@@ -348,7 +348,7 @@ class TestRequiredNetwork05(TearDownRequiredNetwork):
                 "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
             )
 
-    @tcms(5868, 166460)
+    @polarion("RHEVM3-3752")
     def test_nonoperational(self):
         """
         Check that host in non-operational after turn down eth1
@@ -405,7 +405,7 @@ class TestRequiredNetwork06(TearDownRequiredNetwork):
         ):
             raise NetworkException("Cannot create and attach networks")
 
-    @tcms(5868, 217612)
+    @polarion("RHEVM3-3744")
     def test_nonoperational(self):
         """
         Check that host in non-operational after turn down eth1

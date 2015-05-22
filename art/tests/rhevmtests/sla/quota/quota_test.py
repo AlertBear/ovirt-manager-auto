@@ -44,7 +44,7 @@ from raut.tests.webadmin.quota import QuotaTest
 from utilities.errors import GeneralException
 
 # BZ, TCMS plugins
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 
 LOGGER = logging.getLogger(__name__)
 
@@ -143,7 +143,7 @@ class QuotaTestCRUD(TestCase):
                                 mem_limit=0, vcpu_limit=0, storage_limit=0)
 
     @istest
-    @tcms(TCMS_PLAN_ID, 231136)
+    @polarion("RHEVM3-9375")
     def a_create_quota(self):
         """ Create Quota with some limits """
         quota_ui.create_quota(config.DC_NAME[0], QUOTA2_NAME,
@@ -153,7 +153,7 @@ class QuotaTestCRUD(TestCase):
         self.assertTrue(db.check_quota_exists(QUOTA2_NAME))
 
     @istest
-    @tcms(TCMS_PLAN_ID, 231138)
+    @polarion("RHEVM3-9390")
     def b_edit_quota(self):
         """ Edit Quota """
         quota_ui.edit_quota(config.DC_NAME[0], QUOTA2_NAME,
@@ -173,7 +173,7 @@ class QuotaTestCRUD(TestCase):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID, 231141)
+    @polarion("RHEVM3-9392")
     def c_copy_quota(self):
         """ Copy Quota """
         quota_ui.copy_quota(config.DC_NAME[0], QUOTA_NAME, name=QUOTA3_NAME,
@@ -181,7 +181,7 @@ class QuotaTestCRUD(TestCase):
         self.assertTrue(db.check_quota_exists(QUOTA3_NAME))
 
     @istest
-    @tcms(TCMS_PLAN_ID, 231139)
+    @polarion("RHEVM3-9391")
     def d_delete_quota(self):
         """ Delete Quota """
         quota_ui.remove_quota(config.DC_NAME[0], QUOTA2_NAME)
@@ -223,7 +223,7 @@ class QuotaTestMode(TestCase):
         return events.wait_for_event(message, start_id=max_id)
 
     @istest
-    @tcms('9428', '268989')
+    @polarion("RHEVM3-9418")
     def a_quota_memory_limit(self):
         """ Quota RAM limit.
         Create VM with RAM 1024, quota level to 1024MB, try to run VM.
@@ -236,7 +236,7 @@ class QuotaTestMode(TestCase):
         self.assertTrue(vms.stopVm(True, VM_NAME))
 
     @istest
-    @tcms('9428', '268990')
+    @polarion("RHEVM3-9419")
     def b_quota_memory_limit_in_grace(self):
         """ Quota RAM Limit in grace.
         Create quota with 1024MB limit (Grace 120%)
@@ -249,7 +249,7 @@ class QuotaTestMode(TestCase):
         self.assertTrue(self._check_quota_message(max_id, GRACE_MODE))
 
     @istest
-    @tcms('9428', '268991')
+    @polarion("RHEVM3-9409")
     def c_quota_memory_limit_over_grace(self):
         """ Quota RAM Limit over grace.
         Create quota with 1024MB limit (Grace 120%)
@@ -264,7 +264,7 @@ class QuotaTestMode(TestCase):
         self.assertTrue(self._check_quota_message(max_id, EXCEED_MODE))
 
     @istest
-    @tcms('9428', '268992')
+    @polarion("RHEVM3-9408")
     def d_quota_vcpu_limit(self):
         """ Quota vCPU limit.
         Set vCPU to 1 from unlimited
@@ -278,7 +278,7 @@ class QuotaTestMode(TestCase):
         self.assertTrue(vms.stopVm(True, VM_NAME))
 
     @istest
-    @tcms('9428', '268993')
+    @polarion("RHEVM3-9402")
     def e_quota_vcpu_limit_in_grace(self):
         """ Quota vCPU limit in grace """
         max_id = events.get_max_event_id(None)
@@ -289,7 +289,7 @@ class QuotaTestMode(TestCase):
         self.assertTrue(self._check_quota_message(max_id, GRACE_MODE))
 
     @istest
-    @tcms('9428', '268994')
+    @polarion("RHEVM3-9403")
     def f_quota_vcpu_limit_over_grace(self):
         """ Quota vCPU limit over grace """
         max_id = events.get_max_event_id(None)
@@ -352,7 +352,7 @@ class QuotaTestMode(TestCase):
             config.ENUMS['vm_state_powering_up'], EXCEED_MODE, 3)
 
     @istest
-    @tcms('9428', '268995')
+    @polarion("RHEVM3-9405")
     def k_quota_storage_limit(self):
         """ Quota storage limit.
         Disable cluster quota
@@ -373,7 +373,7 @@ class QuotaTestMode(TestCase):
         )
 
     @istest
-    @tcms('9428', '268996')
+    @polarion("RHEVM3-9407")
     def l_quota_storage_limit_in_grace(self):
         """ Quota storage limit in grace """
         max_id = events.get_max_event_id(None)
@@ -388,7 +388,7 @@ class QuotaTestMode(TestCase):
         self.assertTrue(self._check_quota_message(max_id, GRACE_MODE))
 
     @istest
-    @tcms('9428', '268997')
+    @polarion("RHEVM3-9404")
     def m_quota_storage_limit_over_grace(self):
         """ Quota storage limit over grace """
         max_id = events.get_max_event_id(None)
@@ -408,7 +408,7 @@ class QuotaTestMode(TestCase):
             )
 
     @istest
-    @tcms('9428', '268998')
+    @polarion("RHEVM3-9406")
     def n_delete_quota_in_use(self):
         """ Delete quota in use """
         with ui_setup(quota_ui):
@@ -492,7 +492,7 @@ class QuotaTestObjectWithoutQuota(TestCase):
         assert disks.waitForDisksGone(True, DISK_NAME)
 
     @istest
-    @tcms(TCMS_PLAN_ID, '236244')
+    @polarion("RHEVM3-9399")
     def update_vm(self):
         """ Update vm with quota enforce mode """
         LOGGER.info("Updating vm '%s' memory" % VM_NAME)
@@ -503,7 +503,7 @@ class QuotaTestObjectWithoutQuota(TestCase):
                                          memory=512*MB,
                                          memory_guaranteed=512*MB))
 
-    @tcms(TCMS_PLAN_ID, '236240')
+    @polarion("RHEVM3-9396")
     @istest
     def run_vm(self):
         """ Run vm """
@@ -514,7 +514,7 @@ class QuotaTestObjectWithoutQuota(TestCase):
             self.assertTrue(vms.stopVm(True, VM_NAME))
             LOGGER.info("Stopping vm '%s'" % VM_NAME)
 
-    @tcms(TCMS_PLAN_ID, '237011')
+    @polarion("RHEVM3-9397")
     @istest
     def create_snapshot(self):
         """ Create snapshot """
@@ -587,7 +587,7 @@ class QuotaConsumptionCalc(TestCase):
 
     @istest
     @bz({'1159642': {'engine': None, 'version': ['3.5']}})
-    @tcms(TCMS_PLAN_ID, 236236)
+    @polarion("RHEVM3-9393")
     def remove_vm(self):
         """ Remove vm """
         q_id = db.get_quota_id_by_name(QUOTA_NAME)
@@ -611,7 +611,7 @@ class QuotaConsumptionCalc(TestCase):
         self.assertTrue(vms.removeVm(True, TMP_VM_NAME))
 
     @istest
-    @tcms(TCMS_PLAN_ID, 236237)
+    @polarion("RHEVM3-9394")
     def remove_template(self):
         """ Remove template """
         self.assertTrue(templates.createTemplate(True, vm=VM_NAME,
@@ -628,7 +628,7 @@ class QuotaConsumptionCalc(TestCase):
                                                     storage_size_gb_usage=10))
 
     @istest
-    @tcms(TCMS_PLAN_ID, 236238)
+    @polarion("RHEVM3-9395")
     def vm_basic_operations(self):
         """ Vm basic operations """
         db.check_global_consumption(QUOTA_NAME, mem_size_mb_usage=0,
@@ -655,7 +655,7 @@ class QuotaConsumptionCalc(TestCase):
                                                     virtual_cpu_usage=0))
 
     @istest
-    @tcms(TCMS_PLAN_ID, 236240)
+    @polarion("RHEVM3-9396")
     def run_vm_once(self):
         """ Run vm once """
         self.assertTrue(vms.runVmOnce(True, VM_NAME))

@@ -12,7 +12,7 @@ from art.unittest_lib import attr, CoreSystemTest as TestCase
 from nose.tools import istest
 from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import vms, users, templates, mla
 
 TCMS_PLAN_ID = '9798'
@@ -178,7 +178,7 @@ class CopyPermissions299326(TestCase):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID, '299326')
+    @polarion("RHEVM3-7367")
     def createVmWithCopyPermissionsOption(self):
         """ create vm with copy permissions option """
         checkForVmPermissions(True)
@@ -202,7 +202,7 @@ class CopyPermissions299330(TestCase):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID, '299330')
+    @polarion("RHEVM3-7371")
     def createVmWithoutCopyPermissionsOption(self):
         """ create vm without copy permissions option """
         checkForVmPermissions(False)
@@ -225,7 +225,7 @@ class CopyPermissions299328(TestCase):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID, '299328')
+    @polarion("RHEVM3-7369")
     def makeTemplateWithCopyPermissionsOption(self):
         """ make template with copy permissions option """
         checkForTemplatePermissions(True)
@@ -250,7 +250,7 @@ class CopyPermissions299331(TestCase):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID, '299331')
+    @polarion("RHEVM3-7372")
     def makeTemplateWithoutCopyPermissionsOption(self):
         """ make template without copy permissions option """
         checkForTemplatePermissions(False)

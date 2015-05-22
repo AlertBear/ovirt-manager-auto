@@ -13,7 +13,7 @@ from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import clusters
 import art.test_handler.exceptions as errors
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, polarion  # pylint: disable=E0611
 from art.unittest_lib import SlaTest as TestCase
 from art.unittest_lib import attr
 
@@ -180,7 +180,7 @@ class TestProtectedVmCase1(BasicSlaClass):
     vm_basic_parameters["protected"] = True
     protected = True
 
-    @tcms("9514", "274178")
+    @polarion("RHEVM3-9512")
     def test_remove_protected_vm(self):
         """
         Attempt to remove the protected VM
@@ -206,7 +206,7 @@ class TestProtectedVmCase2(BasicSlaClass):
     vm_basic_parameters["protected"] = True
     protected = True
 
-    @tcms("9514", "274179")
+    @polarion("RHEVM3-9519")
     def test_force_remove_protected_vm(self):
         """
         Attempt to force remove the protected VM
@@ -507,7 +507,7 @@ class TestThreadsOff(BasicThreadSlaClass):
     cpu_cores = 1
     cpu_sockets = 1
 
-    @tcms("9520", "274230")
+    @polarion("RHEVM3-9518")
     def test_cores_as_threads_off(self):
         """
         Setting VM with number of cores equal to number of
@@ -530,7 +530,7 @@ class TestNegativeThreadsOff(BasicThreadSlaClass):
     cpu_sockets = 1
     negative = True
 
-    @tcms("9520", "274231")
+    @polarion("RHEVM3-9517")
     def test_cores_as_threads_off(self):
         """
         Negative: Setting VM with number of cores equal to double the number of
@@ -553,7 +553,7 @@ class TestThreadsOn(BasicThreadSlaClass):
     cpu_threads = 1
     thread_on = True
 
-    @tcms("9520", "274234")
+    @polarion("RHEVM3-9515")
     def test_cores_as_threads_on1(self):
         """
         Setting VM with number of cores equal to double the number of
@@ -578,7 +578,7 @@ class TestThreadsOnNegative(BasicThreadSlaClass):
     negative = True
     thread_on = True
 
-    @tcms("9520", "274233")
+    @polarion("RHEVM3-9516")
     def test_cores_as_threads_on2(self):
         """
         Negative: Setting VM with number of cores equal to double the number of

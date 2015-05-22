@@ -9,7 +9,7 @@ from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 import logging
 from art.test_handler.exceptions import NetworkException
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from rhevmtests.networking import config
 from art.rhevm_api.tests_lib.high_level.networks import checkICMPConnectivity
 from art.rhevm_api.tests_lib.low_level.vms import (
@@ -42,7 +42,7 @@ class TestPortMirroringCase01(TestCase):
     """
     __test__ = True
 
-    @tcms(10475, 302095)
+    @polarion("RHEVM3-4020")
     def test_a1_migrate_mirroring_vm(self):
         """
         Check that mirroring still works after migrating listening VM to
@@ -69,7 +69,7 @@ class TestPortMirroringCase01(TestCase):
                 srcVM=MGMT_IPS[1], srcIP=NET1_IPS[1], dstIP=NET1_IPS[dstVM]
             )
 
-    @tcms(10475, 302098)
+    @polarion("RHEVM3-4017")
     def test_a2_migrate_all_vms(self):
         """
         Check that mirroring still works after migrating all VMs involved to
@@ -123,7 +123,7 @@ class TestPortMirroringCase02(TestCase):
 
     __test__ = True
 
-    @tcms(10475, 302105)
+    @polarion("RHEVM3-4010")
     def test_check_mirroring_after_replacing_network(self):
         """
         Replace the network on a mirrored VM with a non-mirrored network and
@@ -168,7 +168,7 @@ class TestPortMirroringCase03(TestCase):
     """
     __test__ = True
 
-    @tcms(10475, 302101)
+    @polarion("RHEVM3-4014")
     def test_check_pm_one_machine_multiple_networks(self):
         """
         Check that VM1 gets all traffic on both MGMT network and sw1
@@ -201,7 +201,7 @@ class TestPortMirroringCase04(TestCase):
             config.VM_NAME[1], config.NIC_NAME[1], config.VLAN_NETWORKS[0]
         )
 
-    @tcms(10475, 302100)
+    @polarion("RHEVM3-4015")
     def test_a1_check_pm_two_machines_diff_networks(self):
         """
         Check mirroring when it's enabled on different machines on different
@@ -235,7 +235,7 @@ class TestPortMirroringCase04(TestCase):
             nic=config.VM_NICS[0], expectTraffic=False
         )
 
-    @tcms(10475, 302093)
+    @polarion("RHEVM3-4006")
     def test_a2_check_pm_two_machines_same_network(self):
         """
         Check port mirroring when two machines are listening to the same
@@ -290,7 +290,7 @@ class TestPortMirroringCase05(TestCase):
     """
     __test__ = True
 
-    @tcms(10475, 302106)
+    @polarion("RHEVM3-4009")
     def test_restart_vdsmd_on_host(self):
         """
         Check that mirroring still occurs after restarting VDSM on the host

@@ -6,7 +6,7 @@ from integration.rhevm_utils.base import RHEVMUtilsTestCase
 from utilities.rhevm_tools.cleanup import CleanUpUtility
 import os
 import logging
-from art.test_handler.tools import tcms
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 import unittest_conf
 from art.unittest_lib import attr
 
@@ -43,14 +43,14 @@ class CleanUpTestCase(CleanUpTestCaseBase):
 
     __test__ = True
 
-    @tcms(TCMS_PLAN, 296506)
+    @polarion("RHEVM3-7246")
     def test_clean_up(self):
         """ clean_Up """
         self.create_answer_file()
         self.ut(config_append=self.c['cleanup_answer_file'])
         self.ut.autoTest()
 
-    @tcms(TCMS_PLAN, 296481)
+    @polarion("RHEVM3-7247")
     def test_generating_answer_file(self):
         """ generating_Answer_File """
         self.create_answer_file()
@@ -58,7 +58,7 @@ class CleanUpTestCase(CleanUpTestCaseBase):
                 generate_answer=self.c['new_cleanup_ans_file'])
         self.ut.testGenerateAnswerFile()
 
-    @tcms(TCMS_PLAN, 296462)
+    @polarion("RHEVM3-7248")
     def test_generating_log(self):
         """ generating_log """
         self.create_answer_file()

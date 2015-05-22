@@ -11,7 +11,7 @@ from art.rhevm_api.tests_lib.low_level.jobs import check_recent_job
 from art.rhevm_api.tests_lib.low_level.vms import checkVmState
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.settings import opts
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import CoreSystemTest as TestCase
 from nose.tools import istest
 from art.rhevm_api.tests_lib.low_level import vms
@@ -92,7 +92,7 @@ class SoftFencingPassedWithoutPM(SoftFencing):
     """
     __test__ = True
 
-    @tcms('9867', '289205')
+    @polarion("RHEVM3-8403")
     @istest
     def check_host_state(self):
         """
@@ -110,7 +110,7 @@ class SoftFencingFailedWithPM(SoftFencing):
 
     __test__ = True
 
-    @tcms('9867', '285811')
+    @polarion("RHEVM3-8402")
     @istest
     def check_host_state(self):
         """
@@ -129,7 +129,7 @@ class SoftFencingPassedWithPM(SoftFencing):
 
     __test__ = True
 
-    @tcms('9867', '285782')
+    @polarion("RHEVM3-8407")
     @istest
     def check_host_state(self):
         """
@@ -169,7 +169,7 @@ class CheckVmAfterSoftFencing(SoftFencing):
             raise errors.VMException("VM failed change state to UP")
         logger.info("Vm started")
 
-    @tcms('9867', '295256')
+    @polarion("RHEVM3-8406")
     @istest
     def check_vm_state(self):
         """
@@ -214,7 +214,7 @@ class SoftFencingToHostNoProxies(SoftFencing):
             raise errors.HostException("Attempt to remove host %s failed"
                                        % config.host_without_pm)
 
-    @tcms('9867', '289208')
+    @polarion("RHEVM3-8405")
     @istest
     def check_soft_fencing_without_proxies(self):
         """

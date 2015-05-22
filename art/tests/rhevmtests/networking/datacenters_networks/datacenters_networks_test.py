@@ -10,7 +10,7 @@ import logging
 from rhevmtests.networking import config
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level.networks import(
     get_networks_in_datacenter, get_network_in_datacenter,
@@ -55,7 +55,7 @@ class TestDataCenterNetworksCase1(TestCase):
                 "Fail to create 5 network on %s" % DC_NAMES[1]
             )
 
-    @tcms(12098, 333370)
+    @polarion("RHEVM3-4132")
     def test_get_networks_list(self):
         """
         Get all networks under the datacenter.
@@ -114,7 +114,7 @@ class TestDataCenterNetworksCase2(TestCase):
                     "Fail to create %s network on %s" % (name, DC_NAMES[0])
                 )
 
-    @tcms(12098, 333360)
+    @polarion("RHEVM3-4135")
     def test_verify_network_parameters(self):
         """
         Verify that all networks have the correct parameters.
@@ -169,7 +169,7 @@ class TestDataCenterNetworksCase3(TestCase):
                 "Fail to create 5 network on %s" % DC_NAMES[0]
             )
 
-    @tcms(12098, 333363)
+    @polarion("RHEVM3-4133")
     def test_update_networks_parameters(self):
         """
         Update network under datacenter with:
@@ -223,7 +223,7 @@ class TestDataCenterNetworksCase4(TestCase):
                 "Fail to create 5 network on %s" % DC_NAMES[0]
             )
 
-    @tcms(12098, 333361)
+    @polarion("RHEVM3-4134")
     def test_delete_networks(self):
         """
         Delete networks under datacenter.

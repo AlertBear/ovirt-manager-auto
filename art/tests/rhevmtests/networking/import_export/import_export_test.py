@@ -20,7 +20,7 @@ from art.rhevm_api.tests_lib.low_level.templates import(
 from art.rhevm_api.tests_lib.low_level.storagedomains import(
     getStorageDomainNamesForType
 )
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.exceptions import NetworkException
 
 logger = logging.getLogger("Import_Export_Cases")
@@ -66,7 +66,7 @@ class TestIECase01(TestCase):
                     "Cannot import %s created in the same DC version" % log_vm
                 )
 
-    @tcms(6915, 194246)
+    @polarion("RHEVM3-3760")
     def test_01_imported_vm_vnics(self):
         """
         Check that the VM is imported with all VNIC profiles from the same
@@ -87,7 +87,7 @@ class TestIECase01(TestCase):
                         vnic, nic)
                 )
 
-    @tcms(6915, 194253)
+    @polarion("RHEVM3-3769")
     def test_02_import_vm_more_than_once(self):
         """
         Check that VM imported more than once keeps all it's VNIC profiles
@@ -156,7 +156,7 @@ class TestIECase02(TestCase):
                     "Cannot import %s created in lower version" % log_temp
                 )
 
-    @tcms(6915, 194552)
+    @polarion("RHEVM3-3766")
     def test_01_imported_temp_vnics(self):
         """
         Check that the Template is imported with all VNIC profiles from the
@@ -180,7 +180,7 @@ class TestIECase02(TestCase):
                         vnic, nic)
                 )
 
-    @tcms(6915, 194554)
+    @polarion("RHEVM3-3764")
     def test_02_import_more_than_once(self):
         """
         Check that Template imported more than once keeps all its VNIC
@@ -295,7 +295,7 @@ class TestIECase03(TestCase):
         ):
             raise NetworkException("Cannot import VM to the setup")
 
-    @tcms(6915, 194247)
+    @polarion("RHEVM3-3771")
     def test_01_import_vm_vnic_profiles(self):
         """
         Check that the VNIC that had sw1 and sw2 on VM before import
@@ -318,7 +318,7 @@ class TestIECase03(TestCase):
                         vnic, nic)
                 )
 
-    @tcms(6915, 194553)
+    @polarion("RHEVM3-3765")
     def test_02_import_temp_vnicp_rofiles(self):
         """
         Check that the Template that had sw1 and sw2 on VM before import
@@ -340,7 +340,7 @@ class TestIECase03(TestCase):
                         vnic, nic)
                 )
 
-    @tcms(6915, 378808)
+    @polarion("RHEVM3-3761")
     def test_03_start_vm(self):
         """
         1) Negative - Start VM when one of the networks attached to it doesn't
@@ -374,7 +374,7 @@ class TestIECase03(TestCase):
                 "Couldn't start VM %s, when should" % config.IE_VM
             )
 
-    @tcms(6915, 378809)
+    @polarion("RHEVM3-3772")
     def test_04_start_vm_from_template(self):
         """
         1) Create VM from imported template

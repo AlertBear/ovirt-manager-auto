@@ -12,7 +12,7 @@ import time
 from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms, bz, polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 from art.rhevm_api.tests_lib.high_level import storagedomains as h_sd
 from art.rhevm_api.utils import test_utils
@@ -115,7 +115,7 @@ class PermissionsCase54408(TestCase):
     # Check that there are two types of Permissions sub-tabs in the system:
     # for objects on which you can define permissions and for users.
     @istest
-    @tcms(TCMS_PLAN_ID, 54408)
+    @polarion("RHEVM3-7168")
     def objectsAndUserPermissions(self):
         """ objects and user permissions """
         msg = '%s has permissions subcollection.'
@@ -145,7 +145,7 @@ class PermissionsCase54409(TestCase):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID, 54409)
+    @polarion("RHEVM3-7185")
     def permissionsInheritence(self):
         """ permissions inheritence """
         loginAsUser(config.USER_NAME, filter=False)
@@ -225,7 +225,7 @@ class PermissionsCase5441854419(TestCase):
     __test__ = True
 
     @istest
-    @tcms(TCMS_PLAN_ID, 54418)
+    @polarion("RHEVM3-7188")
     def lastPermOnObject(self):
         """ last permission on object """
         loginAsAdmin()
@@ -233,7 +233,7 @@ class PermissionsCase5441854419(TestCase):
         mla.removeUserPermissionsFromVm(True, config.VM_NAME, config.USER1)
 
     @istest
-    @tcms(TCMS_PLAN_ID, 54419)
+    @polarion("RHEVM3-7189")
     def removalOfSuperUser(self):
         """ test removal of SuperUser """
         assert users.removeUser(False, 'admin@internal', 'internal')
@@ -272,7 +272,7 @@ class PermissionsCase54425(TestCase):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID, 54425)
+    @polarion("RHEVM3-7191")
     def delegatePerms(self):
         """ delegate perms """
         # Test SuperUser that he can add permissions
@@ -350,7 +350,7 @@ class PermissionsCase54425(TestCase):
     # storage domain" permission on the "system" object,to create a new Host/VM
     # you will need appropriate permission on the relevant cluster.
     @istest
-    @tcms(TCMS_PLAN_ID, 54432)
+    @polarion("RHEVM3-7192")
     def newObjectCheckPerms(self):
         """ Adding new business entity/new object. """
         msg = "This functionality tests modules admin_tests and user_tests"
@@ -382,7 +382,7 @@ class PermissionsCase54446(TestCase):
         users.deleteGroup(True, config.GROUP_NAME)
 
     @istest
-    @tcms(TCMS_PLAN_ID, 54446)
+    @polarion("RHEVM3-7193")
     def usersPermissions(self):
         """ users permissions """
         loginAsUser(config.GROUP_USER)
@@ -410,7 +410,7 @@ class PermissionsCase54420(TestCase):
 
     @istest
     @bz(881145)
-    @tcms(TCMS_PLAN_ID, 54420)
+    @polarion("RHEVM3-7190")
     def objAdminUser(self):
         """ Object creating from User and Admin portal """
         # This is already implemented in test_user_roles
@@ -516,7 +516,7 @@ class PermissionsCase108233(TestCase):
         common.removeUser(True, config.GROUP_USER)
         users.deleteGroup(True, config.GROUP_NAME)
 
-    @tcms(TCMS_PLAN_ID, 108233)
+    @polarion("RHEVM3-7169")
     def testRemoveUserFromGroup(self):
         """ Removing user that part of the group. """
         loginAsUser(config.GROUP_USER)
@@ -550,7 +550,7 @@ class PermissionsCase109086(TestCase):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID, 109086)
+    @polarion("RHEVM3-7170")
     def permsInhForVmPools(self):
         """ Permission inheritance for desktop pools """
         loginAsUser(config.USER_NAME)
@@ -615,7 +615,7 @@ class PermissionsCase111082(TestCase):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID, 111082)
+    @polarion("RHEVM3-7171")
     def permsRemovedAfterObjectRemove(self):
         """ perms removed after object is removed """
         def checkIfObjectHasRole(obj, role):

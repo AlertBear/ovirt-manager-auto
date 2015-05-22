@@ -29,7 +29,7 @@ import art.rhevm_api.tests_lib.high_level.hosts as h_hosts
 import art.test_handler.exceptions as errors
 
 from art.test_handler import find_test_file
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.rhevm_api.utils.test_utils import getStat
 
 from nose.plugins.attrib import attr
@@ -457,7 +457,7 @@ class KSM(MOM):
             MEMORY_OVERCOMMITMENT
         )
 
-    @tcms("9860", "326204")
+    @polarion("RHEVM3-4969")
     def test_a_ksm_progressive(self):
         """
         Finds the threshold where KSM starts
@@ -496,7 +496,7 @@ class KSM(MOM):
         vms.stop_vms_safely(vm_started)
         self.assertTrue(self.threshold[0], "KSM was not triggered")
 
-    @tcms("9860", "326206")
+    @polarion("RHEVM3-4977")
     def test_b_ksm_kicking(self):
         """
         Run VMs in one moment to trigger KSM
@@ -517,7 +517,7 @@ class KSM(MOM):
         )
         logger.info("KSM successfully triggered")
 
-    @tcms("9860", "326207")
+    @polarion("RHEVM3-4976")
     def test_c_ksm_migration(self):
         """
         Migrate VMs with KSM enabled
@@ -542,7 +542,7 @@ class KSM(MOM):
             )
         logger.info("KSM successfully turned off after migration")
 
-    @tcms("9860", "326207")
+    @polarion("RHEVM3-4975")
     def test_d_ksm_stop(self):
         """
         Stop KSM by migrating to other host
@@ -620,7 +620,7 @@ class Balloon(MOM):
             ):
                 raise errors.VMException("Failed to update vm %s" % vm)
 
-    @tcms("9860", "326209")
+    @polarion("RHEVM3-4974")
     def test_a_balloon_usage(self):
         """
         Tests inflation and deflation of balloon
@@ -628,7 +628,7 @@ class Balloon(MOM):
         self.vm_list = ["%s-1" % config.POOL_NAME]
         self.balloon_usage(self.vm_list)
 
-    @tcms("9860", "326211")
+    @polarion("RHEVM3-4973")
     def test_b_balloon_multi_memory(self):
         """
         Tests inflation and deflation of balloon on 2 VMs
@@ -653,7 +653,7 @@ class Balloon(MOM):
     # last version of guest agent
     # @bz({"1125331": {"engine": ["cli"], "version": None},
     #      "1132833": {"engine": None, "version": None}})
-    # @tcms("9860", "326212")
+    # @polarion("RHEVM3-4972")
     # def test_c_balloon_multi_os(self):
     #     """
     #     Test usage of balloon on different OS types
@@ -661,7 +661,7 @@ class Balloon(MOM):
     #     self.vm_list = ["balloon-1", config.W7, config.W2K]
     #     self.balloon_usage(self.vm_list)
 
-    @tcms("9860", "326216")
+    @polarion("RHEVM3-4978")
     def test_d_balloon_max(self):
         """
         Negative test case of balloon with minimum
@@ -682,7 +682,7 @@ class Balloon(MOM):
         self.balloon_usage_negative(vm)
 
     @bz({"1184135": {"engine": None, "version": None}})
-    @tcms("9860", "326214")
+    @polarion("RHEVM3-4971")
     def test_e_balloon_no_agent(self):
         """
         Negative test case to test balloon without agent
@@ -714,7 +714,7 @@ class Balloon(MOM):
 
         self.balloon_usage_negative(vm)
 
-    @tcms("9860", "326215")
+    @polarion("RHEVM3-4970")
     def test_f_balloon_multiple_vms(self):
         """
         Test ballooning with multiple (8) small VMs

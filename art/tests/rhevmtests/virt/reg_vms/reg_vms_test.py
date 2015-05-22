@@ -6,7 +6,7 @@ from rhevmtests.virt import config
 import logging
 from art.unittest_lib import VirtTest as TestCase
 from nose.tools import istest
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
@@ -175,7 +175,7 @@ class AddVm(TestCase):
                         boot_list[1] == ENUMS['boot_sequence_hd'])
 
     @istest
-    @tcms('13398', '366252')
+    @polarion("RHEVM3-10087")
     def add_default_vm_without_special_parameters(self):
         """
         Positive: Add default vm without special parameters
@@ -224,7 +224,7 @@ class AddVm(TestCase):
                                      cluster=config.CLUSTER_NAME[0],
                                      memory=2*GB, memory_guaranteed=2*GB))
 
-    @tcms('13398', '366252')
+    @polarion("RHEVM3-10087")
     @istest
     def add_vm_with_disk(self):
         """
@@ -405,7 +405,7 @@ class UpdateVm(BaseVm):
                                         initrd='/initrd-new-path',
                                         cmdline='rd_NO_LUKS'))
 
-    @tcms('13398', '377892')
+    @polarion("RHEVM3-10098")
     @istest
     def update_vm_name(self):
         """
@@ -472,7 +472,7 @@ class UpdateVm(BaseVm):
                                         placement_host=ANY_HOST,
                                         placement_affinity=affinity))
 
-    @tcms('13398', '377892')
+    @polarion("RHEVM3-10098")
     @istest
     def update_vm_description(self):
         """
@@ -910,7 +910,7 @@ class VmSnapshots(BaseVmWithDisk):
                 % (cls.vm_name, export_domain))
         super(VmSnapshots, cls).teardown_class()
 
-    @tcms('13398', '366363')
+    @polarion("RHEVM3-10089")
     @istest
     def basic_vm_snapshots(self):
         """
@@ -1222,7 +1222,7 @@ class VmPool(BaseVmWithDiskTemplate):
     new_vm_pool = 'new_vm_pool'
     new_vm = 'new_vm_pool-1'
 
-    @tcms('13398', '366362')
+    @polarion("RHEVM3-10090")
     @istest
     def crud_vm_pool(self):
         """

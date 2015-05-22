@@ -12,7 +12,7 @@ from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
 from art.unittest_lib import attr
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.core_api.apis_exceptions import EntityNotFound
 from test_network_permissions_negative import (
     ignoreAllExceptions, loginAsUser, loginAsAdmin, NetworkingNegative
@@ -75,7 +75,7 @@ class PositiveNetworkPermissions231821(NetworkingPossitive):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 231821)
+    @polarion("RHEVM3-8369")
     def createNetworkInDC(self):
         """ CreateNetworkInDc """
         for u in [config.USER_NAME, config.USER_NAME2, config.USER_NAME3]:
@@ -110,7 +110,7 @@ class PositiveNetworkPermissions231822(NetworkingPossitive):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 231822)
+    @polarion("RHEVM3-8384")
     def editNetworkInDC(self):
         """ Edit network in DC """
         mtu = 800
@@ -142,7 +142,7 @@ class PositiveNetworkPermissions231823(NetworkingPossitive):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 231823)
+    @polarion("RHEVM3-8383")
     def attachingNetworkToCluster(self):
         """ Attaching network to cluster """
         loginAsUser(config.USER_NAME, filter_=False)
@@ -208,7 +208,7 @@ class PositiveNetworkPermissions231824(TestSwitching):
     __test__ = True
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 231824)
+    @polarion("RHEVM3-8382")
     def requiredToNonRequiredAndViceVersa(self):
         """ Required to non-required and vice versa """
         self._test_switching_display_and_required(required=True)
@@ -218,7 +218,7 @@ class PositiveNetworkPermissions236073(TestSwitching):
     __test__ = True
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 236073)
+    @polarion("RHEVM3-8377")
     def displayNetwork(self):
         """ Display network """
         self._test_switching_display_and_required(
@@ -248,7 +248,7 @@ class PositiveNetworkPermissions231826(NetworkingPossitive):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 231826)
+    @polarion("RHEVM3-8381")
     def attachDetachNetworkToVM(self):
         """ Attach/Detach a network to VM  """
         loginAsUser(config.USER_NAME)
@@ -287,7 +287,7 @@ class PositiveNetworkPermissions231827(NetworkingPossitive):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 231827)
+    @polarion("RHEVM3-8380")
     def visibleNetworksAndManipulations(self):
         """ Visible networks and manipulations """
         loginAsUser(config.USER_NAME)
@@ -432,7 +432,7 @@ class PositiveNetworkPermissions231830(NetworkingPossitive):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 231830)
+    @polarion("RHEVM3-8379")
     def networkVisibilityInAPI(self):
         """ Network visibility in RestAPI """
         self._testPermissionsOnVnicProfile()
@@ -488,7 +488,7 @@ class PositiveNetworkPermissions231832(NetworkingPossitive):
             )
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 231832)
+    @polarion("RHEVM3-8378")
     def portMirroring(self):
         """ Port mirroring """
         loginAsUser(userName=config.USER_NAME2)
@@ -539,7 +539,7 @@ class PositiveNetworkPermissions236367(NetworkingPossitive):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 236367)
+    @polarion("RHEVM3-8376")
     def addVNICToVM(self):
         """ Add a VNIC to VM  """
         loginAsUser(config.USER_NAME)
@@ -583,7 +583,7 @@ class PositiveNetworkPermissions236406(NetworkingPossitive):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 236406)
+    @polarion("RHEVM3-8375")
     def updateVNICOnVM(self):
         """ Update a VNIC on VM """
         loginAsUser(config.USER_NAME)
@@ -624,7 +624,7 @@ class PositiveNetworkPermissions236408(NetworkingPossitive):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 236408)
+    @polarion("RHEVM3-8374")
     @bz({'1209505': {'engine': None, 'version': ['3.6']}})
     def addVNICToTemplate(self):
         """ Add a VNIC to template """
@@ -682,7 +682,7 @@ class PositiveNetworkPermissions236409(NetworkingPossitive):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 236409)
+    @polarion("RHEVM3-8373")
     def updateVNICOnTemplate(self):
         """ Update a VNIC on the template """
         loginAsUser(config.USER_NAME)
@@ -716,7 +716,7 @@ class PositiveNetworkPermissions236577(NetworkingPossitive):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 236577)
+    @polarion("RHEVM3-8372")
     def removeNetworkFromDC(self):
         """ RemoveNetwokFromDC """
         msg = "NetworkAdmin role wasn't removed after network %s was removed."
@@ -754,7 +754,7 @@ class PositiveNetworkPermissions236664(NetworkingPossitive):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 236664)
+    @polarion("RHEVM3-8371")
     def customRole(self):
         """ Custom Role """
         loginAsUser(config.USER_NAME, filter_=False)
@@ -784,7 +784,7 @@ class PositiveNetworkPermissions317269(NetworkingPossitive):
         datacenters.removeDataCenter(True, self.dc_name)
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 317269)
+    @polarion("RHEVM3-4031")
     def automaticCreateionOfPermissions(self):
         """ Check auto permission creation on new datacenter """
         # newly created dc, vnicprofile has VnicProfileUser role on Everyone
@@ -815,7 +815,7 @@ class PositiveNetworkPermissions317133(NetworkingPossitive):
         datacenters.removeDataCenter(True, self.dc_name)
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 317133)
+    @polarion("RHEVM3-4030")
     def automaticCreationToUser(self):
         """ Check that networkadmin permissions are added automatically  """
         loginAsAdmin()
@@ -874,7 +874,7 @@ class PositiveNetworkPermissions320610(NetworkingPossitive):
         mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME)
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 320610)
+    @polarion("RHEVM3-4044")
     def vnicPermisAreRestrictedToSpecificProfile(self):
         """
         vnicProfile perms on vNIC profile are restricted to specific profile
@@ -915,7 +915,7 @@ class PositiveNetworkPermissions317270(NetworkingPossitive):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_POS, 317270)
+    @polarion("RHEVM3-4032")
     def nonVmToVmNetwork(self):
         """ When network is switched to nonvm permissions should be removed """
         vnic = networks.getVnicProfileObj(

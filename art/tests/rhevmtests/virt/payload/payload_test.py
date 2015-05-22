@@ -34,7 +34,6 @@ VM_DSC = 'payload test'
 TMP_DIR = '/tmp'
 TIMEOUT = 60
 CONN_TIMEOUT = 30
-TCMS_PLAN_ID = 7775
 
 
 @attr(tier=0)
@@ -209,7 +208,7 @@ class CreateVmWithCdromPayload(PayloadViaCreate):
     payload_content = PAYLOADS_CONTENT[0]
     payload_type = PAYLOADS_TYPE[0]
 
-    @tcms(TCMS_PLAN_ID, '222049')
+    @tcms(7775, '222049')
     @istest
     def check_existence_of_payload(self):
         """
@@ -217,7 +216,7 @@ class CreateVmWithCdromPayload(PayloadViaCreate):
         """
         self.assertTrue(self._check_existence_of_payload(PAYLOADS_DEVICES[0]))
 
-    @tcms(TCMS_PLAN_ID, '304572')
+    @tcms(7775, '304572')
     @istest
     def check_object_existence(self):
         """
@@ -239,7 +238,7 @@ class UpdateVmWithCdromPayloadAndCheckPayloadObject(PayloadViaUpdate):
     payload_content = PAYLOADS_CONTENT[1]
     payload_type = PAYLOADS_TYPE[0]
 
-    @tcms(TCMS_PLAN_ID, '222050')
+    @tcms(7775, '222050')
     @istest
     def check_existence_of_payload(self):
         """
@@ -263,7 +262,7 @@ class CdromPayloadComplexContent(PayloadViaUpdate):
     payload_content = PAYLOADS_CONTENT[4]
     payload_type = PAYLOADS_TYPE[0]
 
-    @tcms(TCMS_PLAN_ID, '304571')
+    @tcms(7775, '304571')
     @istest
     def check_existence_of_payload(self):
         """
@@ -285,7 +284,7 @@ class CreateVmWithFloppyPayload(PayloadViaCreate):
     payload_content = PAYLOADS_CONTENT[2]
     payload_type = PAYLOADS_TYPE[1]
 
-    @tcms(TCMS_PLAN_ID, '302730')
+    @tcms(7775, '302730')
     @istest
     def check_existence_of_payload(self):
         """
@@ -307,7 +306,7 @@ class UpdateVmWithFloppyPayload(PayloadViaUpdate):
     payload_content = PAYLOADS_CONTENT[3]
     payload_type = PAYLOADS_TYPE[1]
 
-    @tcms(TCMS_PLAN_ID, '302731')
+    @tcms(7775, '302731')
     @istest
     def check_existence_of_payload(self):
         """

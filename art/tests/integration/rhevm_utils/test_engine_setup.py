@@ -9,7 +9,7 @@ from integration.rhevm_utils import base
 from utilities.rhevm_tools.setup import SetupUtility
 import unittest_conf
 
-from art.test_handler.tools import tcms
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class SetupTestCase(base.RHEVMUtilsTestCase):
         self.ut.setup.fillAnswerFile(ans, **params)
         logger.info("%s: install setup with %s", host, pformat(params))
 
-    @tcms(TCMS_PLAN, 296387)
+    @polarion("RHEVM3-8037")
     def test_generating_answer_file(self):
         """ generating_Answer_File """
         self.create_answer_file()
@@ -48,7 +48,7 @@ class SetupTestCase(base.RHEVMUtilsTestCase):
         self.ut.testGenerateAnswerFile()
         self.ut.setup.clean(unittest_conf.config)
 
-    @tcms(TCMS_PLAN, 296383)
+    @polarion("RHEVM3-8039")
     def test_install_setup(self):
         """ install_Setup """
         self.create_answer_file()

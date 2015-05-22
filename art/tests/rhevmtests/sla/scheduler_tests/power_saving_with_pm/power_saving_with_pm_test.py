@@ -11,7 +11,7 @@ from nose.tools import istest
 from art.unittest_lib import attr
 from art.unittest_lib import SlaTest as TestCase
 
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
 import art.rhevm_api.tests_lib.low_level.sla as sla_api
@@ -184,7 +184,7 @@ class SPMHostNotKilledByPolicy(PowerSavingWithPM):
     hosts_to_load = [config.HOSTS_WITH_DUMMY[1]]
     host_down = config.HOSTS_WITH_DUMMY[2]
 
-    @tcms('12295', '336561')
+    @polarion("RHEVM3-5572")
     @istest
     def check_spm(self):
         """
@@ -207,7 +207,7 @@ class HostWithoutCPULoadingShutdownByPolicy(PowerSavingWithPM):
     hosts_to_load = [config.HOSTS_WITH_DUMMY[1]]
     host_down = config.HOSTS_WITH_DUMMY[2]
 
-    @tcms('12295', '336562')
+    @polarion("RHEVM3-5580")
     @istest
     def check_host_with_loading(self):
         """
@@ -231,7 +231,7 @@ class HostStartedByPowerManagement(PowerSavingWithPM):
     vms_to_start = config.VM_NAME[:2]
     hosts_to_load = [config.HOSTS_WITH_DUMMY[1]]
 
-    @tcms('12295', '336569')
+    @polarion("RHEVM3-5577")
     @istest
     def start_host(self):
         """
@@ -266,7 +266,7 @@ class CheckPolicyControlOfPowerManagementFlag(PowerSavingWithPM):
         cls._policy_control_flag(config.HOSTS[1], False)
         super(CheckPolicyControlOfPowerManagementFlag, cls).setup_class()
 
-    @tcms('12295', '336563')
+    @polarion("RHEVM3-5579")
     @istest
     def disable_policy_control_flag(self):
         """
@@ -296,7 +296,7 @@ class StartHostWhenNoReservedHostLeft(PowerSavingWithPM):
     vms_to_start = [config.VM_NAME[0]]
     additional_vm = None
 
-    @tcms('12295', '336602')
+    @polarion("RHEVM3-5576")
     @istest
     def no_reserve_left(self):
         """
@@ -330,7 +330,7 @@ class NoExcessHosts(PowerSavingWithPM):
     __test__ = True
     vms_to_start = config.VM_NAME[0:2]
 
-    @tcms('12295', '336603')
+    @polarion("RHEVM3-5575")
     @istest
     def reserved_equal_to_up_hosts(self):
         """
@@ -357,7 +357,7 @@ class HostStoppedUnexpectedly(PowerSavingWithPM):
         cls._policy_control_flag(config.HOSTS[1], False)
         super(HostStoppedUnexpectedly, cls).setup_class()
 
-    @tcms('12295', '338994')
+    @polarion("RHEVM3-5573")
     @istest
     def host_stopped_unexpectedly(self):
         """
@@ -422,7 +422,7 @@ class HostStoppedByUser(PowerSavingWithPM):
         if not host_api.fenceHost(True, config.HOSTS[1], 'stop'):
             raise errors.HostException("Fail to stop host")
 
-    @tcms('12295', '338775')
+    @polarion("RHEVM3-5574")
     @istest
     def host_stopped_by_user(self):
         """

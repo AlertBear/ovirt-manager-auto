@@ -12,7 +12,7 @@ from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
 from art.unittest_lib import attr, CoreSystemTest as TestCase
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.tests_lib.low_level import (mla, networks, users, vms,
                                                templates)
@@ -114,7 +114,7 @@ class NegativeNetworkPermissions231915(NetworkingNegative):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_NEG, 231915)
+    @polarion("RHEVM3-8676")
     def createDeleteNetworkinDC(self):
         """ Create/Delete network in DC """
         msg = "User %s with %s can't add/remove network."
@@ -140,7 +140,7 @@ class NegativeNetworkPermissions231916(NetworkingNegative):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_NEG, 231916)
+    @polarion("RHEVM3-8677")
     def editNetworkInDC(self):
         """  Edit network in DC """
         msg = "User %s with %s can't update network."
@@ -196,7 +196,7 @@ class NegativeNetworkPermissions231917(NetworkingNegative):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_NEG, 231917)
+    @polarion("RHEVM3-8678")
     def attachingDetachingNetworkToFromCluster(self):
         """ Attaching/Detaching network to/from Cluster """
         for user in [config.USER_NAME, config.USER_NAME2]:
@@ -246,7 +246,7 @@ class NegativeNetworkPermissions231918(NetworkingNegative):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_NEG, 231918)
+    @polarion("RHEVM3-8679")
     def networkRequiredToNonRequiredAndViceVersa(self):
         """ Network required to non-required and vice versa """
         loginAsUser(config.USER_NAME, filter_=False)
@@ -284,7 +284,7 @@ class NegativeNetworkPermissions231919(NetworkingNegative):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_NEG, 231919)
+    @polarion("RHEVM3-8680")
     def attachingVNICToVM(self):
         """ Attaching VNIC to VM """
         loginAsUser(config.USER_NAME, filter_=False)
@@ -316,7 +316,7 @@ class NegativeNetworkPermissions234215(NetworkingNegative):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_NEG, 234215)
+    @polarion("RHEVM3-8682")
     def attachVNICToTemplate(self):
         """ Attach VNIC to Template """
         loginAsUser(config.USER_NAME, filter_=False)
@@ -357,7 +357,7 @@ class NegativeNetworkPermissions236686(NetworkingNegative):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_NEG, 236686)
+    @polarion("RHEVM3-8683")
     def attachNetworkToVM(self):
         """ Attach a network to VM """
         loginAsUser(config.USER_NAME)
@@ -409,7 +409,7 @@ class NegativeNetworkPermissions236736(NetworkingNegative):
         )
 
     @istest
-    @tcms(TCMS_PLAN_ID_NEG, 236736)
+    @polarion("RHEVM3-8684")
     def visibleNetworksAndManipulation(self):
         """ Visible networks and manipulation """
         loginAsUser(config.USER_NAME)

@@ -13,7 +13,7 @@ from art.rhevm_api.tests_lib.high_level.vms import start_vm_on_specific_host
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 from rhevmtests.networking import config
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.core_api.apis_utils import TimeoutingSampler
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.high_level.networks import removeNetwork
@@ -71,7 +71,7 @@ class TestLinkedCase1(TestCase):
                 "Cannot add VNIC %s to VM" % config.NIC_NAME[5]
             )
 
-    @tcms(8046, 231692)
+    @polarion("RHEVM3-3829")
     def test_check_combination_plugged_linked_values(self):
         """
         Check all permutation for the Plugged/Linked options on VNIC
@@ -151,7 +151,7 @@ class TestLinkedCase2(TestCase):
                 "Cannot add VNIC %s to VM" % config.NIC_NAME[1]
             )
 
-    @tcms(8046, 231696)
+    @polarion("RHEVM3-3817")
     def test_check_default_values(self):
         """
         Check the default values for the Plugged/Linked options on VNIC
@@ -217,7 +217,7 @@ class TestLinkedCase3(TestCase):
                 "Cannot add VNIC %s to VM" % config.NIC_NAME[2]
             )
 
-    @tcms(8046, 231697)
+    @polarion("RHEVM3-3834")
     def test_check_ombination_plugged_linked_values(self):
         """
         Check all permutation for the Plugged/Linked options on VNIC
@@ -392,7 +392,7 @@ class TestLinkedCase4(TestCase):
                 "Cannot add VNIC %s to VM" % config.NIC_NAME[5]
             )
 
-    @tcms(8046, 231691)
+    @polarion("RHEVM3-3833")
     def test_check_start_vm(self):
         """
         Try to start VM when there is no network on the host
@@ -469,7 +469,7 @@ class TestLinkedCase5(TestCase):
                 "Cannot add VNIC %s to VM" % config.NIC_NAME[1]
             )
 
-    @tcms(8046, 239344)
+    @polarion("RHEVM3-3823")
     def test_check_port_mirroring_network(self):
         """
         Check scenarios for port mirroring network
@@ -541,7 +541,7 @@ class TestLinkedCase6(TestCase):
                     "Cannot add VNIC %s to VM" % config.NIC_NAME[i + 1]
                 )
 
-    @tcms(8046, 239348)
+    @polarion("RHEVM3-3825")
     def test_change_net_param_values(self):
         """
         Check network parameters changes for VNICS
@@ -723,7 +723,7 @@ class TestLinkedCase7(TestCase):
                     config.CLUSTER_NAME[0])
             )
 
-    @tcms(8046, 239368)
+    @polarion("RHEVM3-3826")
     def test_change_net_param_values(self):
         """
         Change plugged, network and name at once on VNIC of VM

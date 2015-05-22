@@ -3,7 +3,7 @@ from os.path import relpath
 from sys import modules
 
 from art.test_handler import exceptions
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.test_handler.settings import ART_CONFIG as config
 from art.unittest_lib import attr
 
@@ -85,7 +85,7 @@ class ManageDomainsTestCaseAdd(ManageDomainsTestCaseBase):
     https://tcms.engineering.redhat.com/case/175847/?from_plan=4580
     """
 
-    @tcms(4580, 175847)
+    @polarion("RHEVM3-9166")
     def test_manage_domains_add_file(self):
         """
         rhevm-manage-domains -action=add
@@ -95,7 +95,7 @@ class ManageDomainsTestCaseAdd(ManageDomainsTestCaseBase):
         self.ut.autoTest()
         self.ut(action='delete', domain=self.domainName, force=None)
 
-    @tcms(4580, 175847)
+    @polarion("RHEVM3-11363")
     def test_manage_domains_add_multiline_file(self):
         cmd = ['echo', '>>', self.passwordFile]
         _run_ssh_command(self.host, self.sshPassword, cmd)
@@ -104,7 +104,7 @@ class ManageDomainsTestCaseAdd(ManageDomainsTestCaseBase):
         self.ut.autoTest()
         self.ut(action='delete', domain=self.domainName, force=None)
 
-    @tcms(4580, 175847)
+    @polarion("RHEVM3-11364")
     def test_manage_domains_add_relative_file(self):
         cwd = _run_ssh_command(self.host, self.sshPassword, 'pwd')
         self.passwordFile = relpath(self.passwordFile, cwd)
@@ -114,7 +114,7 @@ class ManageDomainsTestCaseAdd(ManageDomainsTestCaseBase):
         self.ut(action='delete', domain=self.domainName, force=None)
 
     @bz(1083033)
-    @tcms(4580, 175847)
+    @polarion("RHEVM3-11365")
     def test_manage_domains_add_missing_options(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
                 user=self.domainUser)
@@ -126,7 +126,7 @@ class ManageDomainsTestCaseAdd(ManageDomainsTestCaseBase):
         self.ut(action='add')
         self.ut.autoTest(rc=1)
 
-    @tcms(4580, 175847)
+    @polarion("RHEVM3-11366")
     def test_manage_domains_add_empty_file(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
                 user=self.domainUser, password_file=self.emptyFile)
@@ -153,7 +153,7 @@ class ManageDomainsTestCaseEdit(ManageDomainsTestCaseBase):
 
     @bz(1083033)
     @bz(1055417)
-    @tcms(4580, 175882)
+    @polarion("RHEVM3-9165")
     def test_manage_domains_edit(self):
         """
         rhevm-manage-domains -action=edit
@@ -197,7 +197,7 @@ class ManageDomainsTestCaseList(ManageDomainsTestCaseBase):
         self.ut(action='delete', domain=self.domainName, force=None)
         super(ManageDomainsTestCaseList, self).tearDown()
 
-    @tcms(4580, 107969)
+    @polarion("RHEVM3-9171")
     def test_manage_domains_list(self):
         """
         rhevm-manage-domains -action=list
@@ -221,7 +221,7 @@ class ManageDomainsTestCaseValidate(ManageDomainsTestCaseBase):
         super(ManageDomainsTestCaseValidate, self).tearDown()
 
     @bz(1083033)
-    @tcms(4580, 334273)
+    @polarion("RHEVM3-9163")
     def test_manage_domains_validate(self):
         """
         rhevm-manage-domains -action=validate
@@ -243,7 +243,7 @@ class ManageDomainsTestCaseDelete(ManageDomainsTestCaseBase):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
                 user=self.domainUser, password_file=self.passwordFile)
 
-    @tcms(4580, 108231)
+    @polarion("RHEVM3-9176")
     def test_manage_domains_delete(self):
         """
         rhevm-manage-domains -action=delete
@@ -261,7 +261,7 @@ class ManageDomainsTestCaseHelp(RHEVMUtilsTestCase):
     utility_class = ManageDomainsUtility
     _multiprocess_can_split_ = True
 
-    @tcms(4580, 107969)
+    @polarion("RHEVM3-11367")
     def test_manage_domains_help(self):
         """
         rhevm-manage-domains
@@ -299,7 +299,7 @@ class ManageDomainsTimeSkew(ManageDomainsTestCaseBase):
             self._shiftTime(timedelta())
 
     @bz(1083033)
-    @tcms(4580, 110044)
+    @polarion("RHEVM3-9168")
     def test_time_skew(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
                 user=self.domainUser, password_file=self.passwordFile)
@@ -317,7 +317,7 @@ class ManageDomainsUnpriviledgedUser(ManageDomainsTestCaseBase):
 
     @bz(1102065)
     @bz(1083411)
-    @tcms(4580, 127947)
+    @polarion("RHEVM3-9167")
     def test_unprivileged_user(self):
         # user needs permissions on current working directorty, that's why /tmp
         cmd = ('cd /tmp; su postgres -c "rhevm-manage-domains add --domain=%s '
@@ -341,7 +341,7 @@ class ManageDomainsUppercaseLowercase(ManageDomainsTestCaseBase):
         return ".".join(labels)
 
     @bz(1078147)
-    @tcms(4580, 107971)
+    @polarion("RHEVM3-9174")
     def test_upercase_lowercase(self):
         self.ut(action='add', domain=self.domainName.upper(),
                 provider=self.provider, user=self.domainUser,
@@ -396,7 +396,7 @@ class ManageDomainsMultipleProviders(RHEVMUtilsTestCase):
         _run_ssh_command(self.host, self.sshPassword, cmd)
         super(ManageDomainsMultipleProviders, self).tearDown()
 
-    @tcms(4580, 109297)
+    @polarion("RHEVM3-9170")
     def test_use_all_providers(self):
         for (domainName, user, provider) in self.directoryServices:
             self.ut(action='add', domain=domainName, provider=provider,
@@ -425,21 +425,21 @@ class ManageDomainsTestCaseNegativeScenarios(ManageDomainsTestCaseBase):
     """
 
     @bz(1083033)
-    @tcms(4580, 107972)
+    @polarion("RHEVM3-9175")
     def test_manage_domains_nonexistent_user(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
                 user='chucknorris', password_file=self.passwordFile)
         assert 'Authentication Failed' in self.ut.out
         self.assertRaises(errors.MissingDmainError, self.ut.autoTest)
 
-    @tcms(4580, 107972)
+    @polarion("RHEVM3-11368")
     def test_manage_domains_nonexistent_domain(self):
         self.ut(action='add', domain='~!@#$%^*_+=-[]',
                 provider=self.provider, user=self.domainUser,
                 password_file=self.passwordFile)
         assert 'No LDAP servers can be obtained' in self.ut.out
 
-    @tcms(4580, 107972)
+    @polarion("RHEVM3-11369")
     def test_manage_domains_nonexistent_provider(self):
         self.ut(action='add', domain=self.domainName,
                 provider='~!@#$%^*_+=-[]', user=self.domainUser,

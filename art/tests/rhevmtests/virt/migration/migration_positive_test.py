@@ -13,7 +13,7 @@ from rhevmtests.networking import config
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import vms
 from art.unittest_lib import VirtTest as TestCase
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level.networks import updateClusterNetwork
 from rhevmtests.networking.helper import create_random_ips
@@ -102,7 +102,7 @@ class TestMigrationCase01(TestMigrationCaseBase):
         vms_kwargs = {"host": host_for_vms}
         run_vms_once(vms=cls.vms, **vms_kwargs)
 
-    @tcms(8735, 256582)
+    @polarion("RHEVM3-3847")
     def test_a1_dedicated_migration(self):
         """
         Check dedicated network migration for 5 VMs
@@ -113,7 +113,7 @@ class TestMigrationCase01(TestMigrationCaseBase):
         )
         dedicated_migration(vms=config.VM_NAME[:5])
 
-    @tcms(8735, 250476)
+    @polarion("RHEVM3-3878")
     def test_a2_dedicated_migration_nic(self):
         """
         Check dedicated network migration for 5 VMs
@@ -183,7 +183,7 @@ class TestMigrationCase02(TestMigrationCaseBase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(8735, 250464)
+    @polarion("RHEVM3-3846")
     def test_default_migration(self):
         """
         Check default migration on mgmt network network
@@ -228,7 +228,7 @@ class TestMigrationCase03(TestMigrationCaseBase):
                 "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
             )
 
-    @tcms(8735, 250466)
+    @polarion("RHEVM3-3851")
     def test_dedicated_tagged_migration(self):
         """
         Check dedicated migration over tagged network over NIC
@@ -274,7 +274,7 @@ class TestMigrationCase04(TestMigrationCaseBase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(8735, 260555)
+    @polarion("RHEVM3-3849")
     def test_nonvm_migration(self):
         """
         Check dedicated migration over non-VM network over NIC
@@ -322,7 +322,7 @@ class TestMigrationCase05(TestMigrationCaseBase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(8735, 250810)
+    @polarion("RHEVM3-3885")
     def test_dedicated_migration_display(self):
         """
         Check dedicated network migration over display network
@@ -376,7 +376,7 @@ class TestMigrationCase06(TestMigrationCaseBase):
         ):
             raise NetworkException("Cannot add VNIC to VM")
 
-    @tcms(8735, 256582)
+    @polarion("RHEVM3-3847")
     def test_dedicated_migration_reside_vm(self):
         """
         Check dedicated network migration when network resides on VM
@@ -434,7 +434,7 @@ class TestMigrationCase07(TestMigrationCaseBase):
         ):
             raise NetworkException("Cannot create and attach network to DC/CL")
 
-    @tcms(8735, 256582)
+    @polarion("RHEVM3-3847")
     def test_mgmt_network_migration(self):
         """
         Check mgmt network migration
@@ -480,7 +480,7 @@ class TestMigrationCase08(TestMigrationCaseBase):
         ):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(8735, 260607)
+    @polarion("RHEVM3-3848")
     def test_dedicated_migration_bond(self):
         """
         Check dedicated network migration over bond
@@ -526,7 +526,7 @@ class TestMigrationCase09(TestMigrationCaseBase):
         ):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(8735, 260606)
+    @polarion("RHEVM3-3850")
     def test_dedicated_migration_nonvm_bond(self):
         """
         Check migration over dedicated non-vm network over bond
@@ -576,7 +576,7 @@ class TestMigrationCase10(TestMigrationCaseBase):
         ):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(8735, 260608)
+    @polarion("RHEVM3-3852")
     def test_dedicated_migration_vlan_bond(self):
         """
         Check migration over dedicated tagged network over bond
@@ -623,7 +623,7 @@ class TestMigrationCase11(TestMigrationCaseBase):
         ):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(8735, 250469)
+    @polarion("RHEVM3-3859")
     def test_tmgmt_network_migration(self):
         """
         Check migration over mgmt network when migration network is changed to
@@ -675,7 +675,7 @@ class TestMigrationCase12(TestMigrationCaseBase):
         ):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(8735, 260613)
+    @polarion("RHEVM3-3872")
     def test_dedicated_migration_mgmt(self):
         """
         Check dedicated network migration

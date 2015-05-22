@@ -8,7 +8,7 @@ import logging
 from rhevmtests.sla import config
 
 from art.unittest_lib import attr
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import SlaTest as TestCase
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
@@ -99,7 +99,7 @@ class TestCRUD(TestCase):
         }
     }
 
-    @tcms(TCMS_PLAN_ID, '287142')
+    @polarion("RHEVM3-9486")
     def test_crud_check(self):
         """
         Create, update and remove cluster policy
@@ -209,7 +209,7 @@ class TestDeletePolicyInUse(AttachPolicyToCluster):
         }
     }
 
-    @tcms(TCMS_PLAN_ID, '287260')
+    @polarion("RHEVM3-9477")
     def test_delete_policy(self):
         """
         Delete attached policy
@@ -229,7 +229,7 @@ class TestRemoveBuildInPolicy(TestCase):
         }
     }
 
-    @tcms(TCMS_PLAN_ID, '287261')
+    @polarion("RHEVM3-9478")
     def test_delete_policy(self):
         """
         Delete build-in policy.
@@ -259,7 +259,7 @@ class TestPinToHostFilter(UpdateVms):
         }
     }
 
-    @tcms(TCMS_PLAN_ID, '287262')
+    @polarion("RHEVM3-9479")
     def test_check_filter(self):
         """
         Check filter.
@@ -315,7 +315,7 @@ class TestNegativePinToHostFilter(UpdateVms):
         if not host_api.deactivateHost(True, config.HOSTS[0]):
             raise errors.HostException("Failed to deactivate host.")
 
-    @tcms(TCMS_PLAN_ID, '447691')
+    @polarion("RHEVM3-9485")
     def test_check_filter(self):
         """
         Check filter.
@@ -381,7 +381,7 @@ class TestMemoryFilter(UpdateVms):
         logger.info("Start vms %s", config.VM_NAME[:2])
         vm_api.start_vms(config.VM_NAME[:2], max_workers=2, wait_for_ip=False)
 
-    @tcms(TCMS_PLAN_ID, '287263')
+    @polarion("RHEVM3-9480")
     def test_check_filter(self):
         """
         Check if vms start on different hosts, because memory filter and
@@ -436,7 +436,7 @@ class TestCpuFilter(UpdateVms):
         }
         super(TestCpuFilter, cls).setup_class()
 
-    @tcms(TCMS_PLAN_ID, '287453')
+    @polarion("RHEVM3-9481")
     def test_check_filter(self):
         """
         Check if vm success to run
@@ -500,7 +500,7 @@ class TestNegativeCpuFilter(UpdateVms):
         }
         super(TestNegativeCpuFilter, cls).setup_class()
 
-    @tcms(TCMS_PLAN_ID, '447692')
+    @polarion("RHEVM3-9476")
     def test_check_filter(self):
         """
         Check if vm success to run
@@ -569,7 +569,7 @@ class TestNetworkFilter(UpdateVms):
             ):
                 raise errors.VMException("Failed to update vm nic")
 
-    @tcms(TCMS_PLAN_ID, '287454')
+    @polarion("RHEVM3-9482")
     def test_check_filter(self):
         """
         Check if vms success to run

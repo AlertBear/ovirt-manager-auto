@@ -3,7 +3,7 @@ Power Management test
 """
 
 from art.rhevm_api.tests_lib.low_level import vms
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms, polarion
 from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.high_level import hosts
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
@@ -276,7 +276,7 @@ class T01AddPMWithNoPassword(TestPMWithBadParameters):
 
     __test__ = True
 
-    @tcms('3480', '356456')
+    @polarion("RHEVM3-8919")
     def test_add_power_management_with_no_password(self):
         self.assertRaises(HostException, hosts.add_power_management,
                           host=HOST_WITH_PM, pm_type=config.PM1_TYPE,
@@ -288,7 +288,7 @@ class T02AddPMWithNoUsername(TestPMWithBadParameters):
 
     __test__ = True
 
-    @tcms('3480', '356459')
+    @polarion("RHEVM3-8917")
     def test_add_power_management_with_no_username(self):
         self.assertRaises(HostException, hosts.add_power_management,
                           host=HOST_WITH_PM, pm_type=config.PM1_TYPE,
@@ -300,7 +300,7 @@ class T03AddPMWithNoAddress(TestPMWithBadParameters):
 
     __test__ = True
 
-    @tcms('3480', '356458')
+    @polarion("RHEVM3-8918")
     def test_add_power_management_with_no_address(self):
         self.assertRaises(HostException, hosts.add_power_management,
                           host=HOST_WITH_PM, pm_type=config.PM1_TYPE,
@@ -314,7 +314,7 @@ class T04AddPMWithInvalidType(TestPMWithBadParameters):
 
     invalid_type = 'invalid_type'
 
-    @tcms('3480', '356458')
+    @polarion("RHEVM3-8916")
     def test_add_power_management_with_invalid_type(self):
         self.assertRaises(HostException, hosts.add_power_management,
                           host=HOST_WITH_PM, pm_type=self.invalid_type,
@@ -371,7 +371,7 @@ class T07StartHostInUpState(TestFenceOnHost):
 
     up = True
 
-    @tcms('3480', '79327')
+    @polarion("RHEVM3-8914")
     def test_start_host_in_up_state(self):
         _fence_host(False, config.FENCE_START)
 
@@ -382,11 +382,11 @@ class T08StopThenStartHostInMaintenance(TestFenceOnHost):
 
     maintenance = True
 
-    @tcms('3480', '79329')
+    @polarion("RHEVM3-8927")
     def test_1_stop_host_in_maintenance(self):
         _fence_host(True, config.FENCE_STOP)
 
-    @tcms('3480', '286195')
+    @polarion("RHEVM3-8920")
     def test_2_start_host_in_down_state(self):
         _fence_host(True, config.FENCE_START)
 
@@ -397,7 +397,7 @@ class T09RestartHostInUpState(TestFenceOnHost):
 
     up = True
 
-    @tcms('3480', '79332')
+    @polarion("RHEVM3-8925")
     def test_restart_host_in_up_state(self):
         _fence_host(True, config.FENCE_RESTART)
 
@@ -408,7 +408,7 @@ class T10RestartHostInMaintenance(TestFenceOnHost):
 
     maintenance = True
 
-    @tcms('3480', '79334')
+    @polarion("RHEVM3-8923")
     def test_restart_host_in_maintenance(self):
         _fence_host(True, config.FENCE_RESTART)
 
@@ -419,7 +419,7 @@ class T11NoFallbackToSecondaryPMAgent(TestFenceHostWithTwoPMAgents):
 
     pm2_address = 'blabla.blibli.com'
 
-    @tcms('8177', '235276')
+    @polarion("RHEVM3-8930")
     def test_no_fallback_to_secondary_pm_agent(self):
         _fence_host(True, config.FENCE_RESTART)
 
@@ -430,7 +430,7 @@ class T12FallbackToSecondaryPMAgent(TestFenceHostWithTwoPMAgents):
 
     pm1_address = 'blabla.blibli.com'
 
-    @tcms('8177', '235277')
+    @polarion("RHEVM3-8929")
     def test_fallback_to_secondary_pm_agent(self):
         _fence_host(True, config.FENCE_RESTART)
 
@@ -444,7 +444,7 @@ class T13ProxyChosenFromCluster(TestFenceProxySelection):
     event = cluster_proxy_event.format(HOST_1, config.CLUSTER_NAME[0],
                                        HOST_WITH_PM)
 
-    @tcms('8173', '234134')
+    @polarion("RHEVM3-9159")
     def test_proxy_chosen_from_cluster(self):
         _fence_host(True, config.FENCE_RESTART)
         if not events.searchForRecentEvent(True, win_start_query=self.event,

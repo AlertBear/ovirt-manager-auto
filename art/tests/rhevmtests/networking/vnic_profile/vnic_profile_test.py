@@ -14,7 +14,7 @@ from art.unittest_lib import NetworkTest as TestCase
 from art.test_handler.exceptions import(
     NetworkException
 )
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.tests_lib.low_level.datacenters import(
     addDataCenter, removeDataCenter
@@ -67,7 +67,7 @@ class TestVNICProfileCase01(TestCase):
                 "Cannot create new DataCenter %s" % cls.dc_name2
             )
 
-    @tcms(10053, 289787)
+    @polarion("RHEVM3-3991")
     def test_check_mgmt_profile(self):
         """
         Check MGMT VNIC profile is created when creating the new DC
@@ -122,7 +122,7 @@ class TestVNICProfileCase02(TestCase):
                 "Cannot create and attach networks %s" % config.NETWORKS[:2]
             )
 
-    @tcms(10053, 293514)
+    @polarion("RHEVM3-3973")
     def test_create_new_profiles(self):
         """
         Check you can create a profile for sw2 with the same name as sw1
@@ -211,7 +211,7 @@ class TestVNICProfileCase03(TestCase):
                 "Couldn't create second VNIC profile %s" % config.NETWORKS[1]
             )
 
-    @tcms(10053, 289764)
+    @polarion("RHEVM3-3989")
     def test_update_to_non_vm(self):
         """
         Update VM network to non-VM network
@@ -287,7 +287,7 @@ class TestVNICProfileCase04(TestCase):
             raise NetworkException(
                 "Couldn't create second VNIC profile %s" % config.NETWORKS[1])
 
-    @tcms(10053, 289778)
+    @polarion("RHEVM3-3990")
     def test_remove_network(self):
         """
         Remove VM network
@@ -354,7 +354,7 @@ class TestVNICProfileCase05(TestCase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(10053, 293513)
+    @polarion("RHEVM3-3972")
     def test_check_non_vm(self):
         """
         Check no VNIC profile exists for non-VM network
@@ -424,7 +424,7 @@ class TestVNICProfileCase06(TestCase):
         ):
             raise NetworkException("Cannot create and attach networks")
 
-    @tcms(10053, 293519)
+    @polarion("RHEVM3-3978")
     def test_check_profile(self):
         """"
         1) Check that VNIC profile exists for VM network
@@ -505,7 +505,7 @@ class TestVNICProfileCase07(TestCase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(10053, 321137)
+    @polarion("RHEVM3-3995")
     def test_check_profile(self):
         """"
         1) Check that VNIC profile exists for VM network
@@ -604,7 +604,7 @@ class TestVNICProfileCase08(TestCase):
         ):
             raise NetworkException("Cannot add VNIC to VM")
 
-    @tcms(10053, 300692)
+    @polarion("RHEVM3-3981")
     def test_update_network_unplugged_nic(self):
         """
         1) Update VNIC profile on nic2 with profile from different network
@@ -709,7 +709,7 @@ class TestVNICProfileCase09(TestCase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-    @tcms(10053, 289896)
+    @polarion("RHEVM3-3993")
     def test_create_new_profiles_template(self):
         """
         1) Check that you can create non-empty VNIC profile on Template
@@ -764,7 +764,7 @@ class TestVNICProfileCase09(TestCase):
         ):
             raise NetworkException("Couldn't get empty VNIC profile on VM ")
 
-    @tcms(10053, 293518)
+    @polarion("RHEVM3-3977")
     def test_remove_new_profiles_template(self):
         """
         1) Remove VM created from the previous test
@@ -881,7 +881,7 @@ class TestVNICProfileCase10(TestCase):
             ):
                 raise NetworkException("Cannot add VNIC to VM")
 
-    @tcms(10053, 293517)
+    @polarion("RHEVM3-3976")
     def test_update_vnic_profile(self):
         """
         1) Try to update VNIC profile on nic2 to have port mirroring enabled
@@ -993,7 +993,7 @@ class TestVNICProfileCase11(TestCase):
         ):
             raise NetworkException("Cannot add VNIC to VM")
 
-    @tcms(10053, 289729)
+    @polarion("RHEVM3-3986")
     def test_update_network_plugged_nic(self):
         """
         1) Update VNIC profile on nic2 with profile from different network
@@ -1146,7 +1146,7 @@ class TestVNICProfileCase12(TestCase):
         ):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(10053, 293516)
+    @polarion("RHEVM3-3975")
     def test_create_new_profiles(self):
         """
         Negative case: Try to update network for existing profile
@@ -1205,7 +1205,7 @@ class TestVNICProfileCase13(TestCase):
         ):
             raise NetworkException("Cannot create and attach networks")
 
-    @tcms(10053, 289730)
+    @polarion("RHEVM3-3987")
     def test_hotplug_link_unlink(self):
         """
         1) Hotplug VNIC profile to the VMs nic2
@@ -1295,7 +1295,7 @@ class TestVNICProfileCase14(TestCase):
         ):
             raise NetworkException("Cannot add VNIC to VM")
 
-    @tcms(10053, 289728)
+    @polarion("RHEVM3-3985")
     def test_remove_used_profile(self):
         """
         Try to remove VNIC profile while VM is using it (negative case)
@@ -1371,7 +1371,7 @@ class TestVNICProfileCase15(TestCase):
         ):
             raise NetworkException("Couldn't create second VNIC profile")
 
-    @tcms(10053, 289724)
+    @polarion("RHEVM3-3970")
     def test_check_attr(self):
         """
         Check VNIC profile created with parameters has these parameters

@@ -8,7 +8,7 @@ with valid/invalid names, IPs, netmask, VLAN, usages.
 import logging
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.high_level.networks import(
     createAndAttachNetworkSN, remove_net_from_setup
 )
@@ -55,7 +55,7 @@ class TestIOTest01(TestIOTestCaseBase):
     """
     __test__ = True
 
-    @tcms(14499, 390936)
+    @polarion("RHEVM3-4381")
     def test_check_network_names(self):
         """
         Positive: Should succeed creating networks with valid names
@@ -139,7 +139,7 @@ class TestIOTest02(TestIOTestCaseBase):
         ):
             raise NetworkException("Cannot create new Network")
 
-    @tcms(14499, 390938)
+    @polarion("RHEVM3-4380")
     def test_check_invalid_ips(self):
         """
         Negative: Trying to create networks with invalid IPs
@@ -205,7 +205,7 @@ class TestIOTest03(TestIOTestCaseBase):
         ):
             raise NetworkException("Cannot create new Network")
 
-    @tcms(14499, 390940)
+    @polarion("RHEVM3-4379")
     def test_check_invalid_netmask(self):
         """
         Negative: Trying to create networks with invalid netmask
@@ -248,7 +248,7 @@ class TestIOTest04(TestIOTestCaseBase):
     """
     __test__ = True
 
-    @tcms(14499, 390942)
+    @polarion("RHEVM3-4378")
     def test_check_netmask_without_ip(self):
         """
         Negative: Trying to create a network with netmask but without an
@@ -281,7 +281,7 @@ class TestIOTest05(TestIOTestCaseBase):
     """
     __test__ = True
 
-    @tcms(14499, 393107)
+    @polarion("RHEVM3-4371")
     def test_check_static_ip_without_netmask(self):
         """
         Negative: Trying to create a network with static IP but without netmask
@@ -313,7 +313,7 @@ class TestIOTest06(TestIOTestCaseBase):
     """
     __test__ = True
 
-    @tcms(14499, 390944)
+    @polarion("RHEVM3-4377")
     def test_check_mtu(self):
         """
         Positive: Creating networks with valid MTUs and adding them to a
@@ -369,7 +369,7 @@ class TestIOTest07(TestIOTestCaseBase):
     """
     __test__ = True
 
-    @tcms(14499, 390946)
+    @polarion("RHEVM3-4376")
     def test_check_invalid_usages(self):
         """
         Trying to create a network with invalid usages value
@@ -393,7 +393,7 @@ class TestIOTest08(TestIOTestCaseBase):
     """
     __test__ = True
 
-    @tcms(14499, 390948)
+    @polarion("RHEVM3-4375")
     def test_check_vlan_ids(self):
         """
         Positive: Creating networks with valid VLAN IDs & adding them to a
@@ -488,7 +488,7 @@ class TestIOTest09(TestIOTestCaseBase):
                 )
             )
 
-    @tcms(14499, 390950)
+    @polarion("RHEVM3-4374")
     def test_edit_network_name(self, initial_name=initial_name):
         """
         Positive: Should succeed editing network to valid name
@@ -557,7 +557,7 @@ class TestIOTest10(TestIOTestCaseBase):
                 (default_name, config.DC_NAME[0])
             )
 
-    @tcms(14499, 390952)
+    @polarion("RHEVM3-4373")
     def test_edit_network_tag(self, default_name=default_name):
         """
         Positive: Should succeed editing network to valid VLAN tags
@@ -627,7 +627,7 @@ class TestIOTest11(TestIOTestCaseBase):
                 (default_name, config.DC_NAME[0])
             )
 
-    @tcms(14499, 390954)
+    @polarion("RHEVM3-4372")
     def test_edit_vm_network(self, default_name=default_name):
         """
         Positive: Should succeed changing VM network to non-VM network
