@@ -852,14 +852,20 @@ class StorageUtils:
             * storageServerIp - IP of storage server
         '''
         storageMngr = self.getStorageManager(stype, storageServerIp)
-        initiators = self.vdsData.values() if 'tgt' not in \
-            storageMngr.__class__.__name__.lower() and 'fcp' not in \
-            storageMngr.__class__.__name__.lower() else self.vdsData.keys()
+        storageMngr_name = storageMngr.__class__.__name__.lower()
+        initiators = (
+            self.vdsData.values() if 'tgt' not in storageMngr_name and
+                                     'fcp' not in storageMngr_name else
+            self.vdsData.keys()
+        )
         hostGroup = self.host_group
         if initiators:
             self.logger.info('Unmap initiators %s from host group %s',
                              initiators, self.host_group)
-            if 'solaris' in storageMngr.__class__.__name__.lower():
+            if (
+                'solaris' in storageMngr_name or
+                    storageMngr_name == "newnetappstoragemanageriscsi"
+            ):
                 # real host group name has suffix added to distinguish it
                 # from target group
                 hostGroups = storageMngr.getInitiatorHostGroups(initiators[0])
