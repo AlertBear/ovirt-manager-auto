@@ -253,13 +253,12 @@ class CreateDC(TestCase):
 
     def _clone_vm(self, vm_description, cloned_vms, cl_name):
         suffix_num = 0
+        vm_prefix = vm_description['name']
         if 'number_of_vms' in vm_description:
             number_of_vms = vm_description['number_of_vms']
             vm_description['name'] += repr(suffix_num)
         else:
             number_of_vms = 1
-
-        vm_prefix = vm_description['name']
 
         while suffix_num < number_of_vms:
             LOGGER.info(
