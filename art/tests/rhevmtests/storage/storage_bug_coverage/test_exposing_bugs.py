@@ -647,47 +647,6 @@ class TestCase315489(EnvironmentWithTwoHosts):
 
 
 """
-Test exposing BZ 960430
-
-TCMS plan: https://tcms.engineering.redhat.com/plan/9583
-"""
-
-
-@attr(tier=1)
-class TestCase284324(TestCase):
-    """ Test exposing https://bugzilla.redhat.com/show_bug.cgi?id=960430
-    Tries to create a disk via REST API without specifying 'sparse' tag.
-
-    https://tcms.engineering.redhat.com/case/284324/?from_plan=9583
-    """
-    __test__ = True
-    tcms_plan_id = '9583'
-    tcms_test_case = '284324'
-
-    @tcms(tcms_plan_id, tcms_test_case)
-    def test_create_raw_disk_without_sparse_tag_test(self):
-        """
-        Tries to create a raw disk via REST API without specifying 'sparse'
-        flag. Such call should fail.
-        """
-        self.storage_domain = storagedomains.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage,
-        )[0]
-        self.disk_name = "disk_%s" % self.tcms_test_case
-
-        assert ll_disks.addDisk(
-            False, alias=self.disk_name, shareable=False, bootable=False,
-            size=1 * GB, storagedomain=self.storage_domain, sparse=None,
-            format=ENUMS['format_raw'], interface=ENUMS['interface_ide'])
-
-    def tearDown(self):
-        """Remove the disk in case the test fails (since disk is created)"""
-        if ll_disks.checkDiskExists(True, self.disk_name):
-            ll_disks.waitForDisksState([self.disk_name])
-            assert ll_disks.deleteDisk(True, self.disk_name)
-
-
-"""
 Test exposing BZ 962549
 
 TCMS plan: https://tcms.engineering.redhat.com/plan/9583
