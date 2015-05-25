@@ -549,10 +549,11 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
                 config.SD_ACTIVE, timeOut=DEFAULT_DC_TIMEOUT)
 
         wait_for_jobs()
-        cls.sds_for_cleanup = [cls.sd_1, cls.sd_2, cls.sd_exp]
-        for sd_remove in cls.sds_for_cleanup:
-            ll_st.deactivateStorageDomain(
-                True, config.DATA_CENTER_NAME, sd_remove)
+        for sd_remove in [cls.sd_1, cls.sd_2, cls.sd_exp]:
+            if ll_st.checkIfStorageDomainExist(True, sd_remove):
+                cls.sds_for_cleanup.append(sd_remove)
+                ll_st.deactivateStorageDomain(
+                    True, config.DATA_CENTER_NAME, sd_remove)
         try:
             logger.info("Removing host %s", cls.host_for_dc)
             if ll_hosts.getHostState(cls.host_for_dc) == config.HOST_UP:

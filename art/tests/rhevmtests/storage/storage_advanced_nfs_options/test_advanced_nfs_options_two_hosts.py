@@ -354,5 +354,10 @@ class TestCase148697(helpers.TestCaseNFSOptions):
     def tearDown(self):
         """ removes created datacenter
         """
-        helpers.clean_dc(
-            self.dc_name, self.host_for_dc, self.cl_name, self.sd_name)
+        if self.dc_name:
+            helpers.clean_dc(
+                self.dc_name, self.host_for_dc, self.cl_name, self.sd_name,
+            )
+        else:
+            # In case there's an error try to remove the storage domain
+            ll_st.removeStorageDomain(True, self.sd_name, self.host, 'true')
