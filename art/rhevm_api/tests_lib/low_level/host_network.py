@@ -28,6 +28,7 @@ NETWORK_ATTACHMENT = "network_attachment"
 UNMANAGEDNETWORKS = "unmanagednetworks"
 UNMANAGED_NETWORK = "unmanaged_network"
 NETWORK_ATTACHMENT_API = get_api(NETWORK_ATTACHMENT, NETWORKATTACHMENTS)
+UNMANAGED_NETWORKS_API = get_api(UNMANAGED_NETWORK, UNMANAGEDNETWORKS)
 
 
 def get_host_network_attachments(host_name):
@@ -88,13 +89,13 @@ def get_networks_attachments(host_name, networks, nic=None):
     ]
 
 
-def get_host_unmanaged_networks(host_name):
+def get_host_unmanaged_objects(host_name):
     """
-    Get host unmanaged networks
+    Get host unmanaged objects
 
     :param host_name: Host name
     :type host_name: str
-    :return: Host unmanaged networks
+    :return: Host unmanaged objects
     :rtype: list
     """
     host = ll_hosts.HOST_API.find(host_name)
@@ -344,3 +345,38 @@ def prepare_ip_object(network_attachment, ip_dict):
         ip_configuration.set_ipv4s(ipv4s_obj)
         network_attachment.set_ip_configuration(ip_configuration)
     return network_attachment
+
+
+def get_host_unmanaged_networks(host_name, networks=list()):
+    """
+    Get unmanaged network object from host
+
+    :param host_name: Host name
+    :type host_name: str
+    :param networks: Networks names
+    :type networks: list
+    :return: Unmanaged networks
+    :rtype: list
+    """
+    unmanaged_networks = get_host_unmanaged_objects(host_name)
+    if not networks:
+        return unmanaged_networks
+    return filter(lambda x: x.name in networks, unmanaged_networks)
+
+
+def remove_unmanaged_networks(host_name, networks=list()):
+    """
+    Remove unmanaged networks from host
+
+    :param host_name: Host name
+    :type host_name: str
+    :param networks: Networks to remove
+    :type networks: list
+    :return: True/False
+    :rtype: bool
+    """
+    unmanged_networks = get_host_unmanaged_networks(host_name, networks)
+    for unmanaged_network in unmanged_networks:
+        if not UNMANAGED_NETWORKS_API.delete(unmanaged_network, True):
+            return False
+    return True

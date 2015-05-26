@@ -292,7 +292,8 @@ def clean_host_interfaces(host_name):
             BONDS: bonds
         }
     }
-
+    if not ll_host_network.remove_unmanaged_networks(host_name):
+        return False
     return setup_networks(host_name, **kwargs)
 
 
@@ -352,7 +353,7 @@ def get_host_unmanaged_networks_info(host_name):
     :rtype: dict
     """
     res = dict()
-    unmanaged_networks = ll_host_network.get_host_unmanaged_networks(host_name)
+    unmanaged_networks = ll_host_network.get_host_unmanaged_objects(host_name)
     for un in unmanaged_networks:
         name = un.get_name()
         host_nic = un.get_host_nic().get_name()
