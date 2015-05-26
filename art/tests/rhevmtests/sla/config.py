@@ -100,3 +100,7 @@ DEFAULT_VM_PARAMETERS = {
     'watchdog_model': '',
     'highly_available': False
 }
+
+VDS_HOSTS_WITH_DUMMY = list(VDS_HOSTS)
+while len(VDS_HOSTS_WITH_DUMMY) < 3:
+    VDS_HOSTS_WITH_DUMMY.append(None)

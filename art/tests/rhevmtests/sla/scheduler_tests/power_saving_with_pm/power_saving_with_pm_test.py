@@ -7,7 +7,6 @@ is Power Saving with power management enable
 import time
 import socket
 import logging
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.unittest_lib import SlaTest as TestCase
 
@@ -66,9 +65,12 @@ class PowerSavingWithPM(TestCase):
             if not vm_api.runVmOnce(True, vm, host=config.HOST_VM_MAP[vm]):
                 raise errors.VMException("Failed to run vm")
         if cls.hosts_to_load:
-            logger.info("Load host %s cpu to %d percent",
-                        cls.hosts_to_load, AVERAGE_CPU_LOAD)
-            cls._load_hosts_cpu(cls.hosts_to_load, AVERAGE_CPU_LOAD)
+            if not sla_api.start_cpu_loading_on_resources(
+                cls.hosts_to_load, AVERAGE_CPU_LOAD
+            ):
+                raise errors.HostException(
+                    "Failed to load CPU on hosts %s" % cls.hosts_to_load
+                )
         cls._update_hosts_in_reserve(1)
 
     @classmethod
@@ -77,15 +79,18 @@ class PowerSavingWithPM(TestCase):
         Stop vms and update cluster policy to None
         """
         if cls.hosts_to_load:
-            logger.info("Release host %s CPU", cls.hosts_to_load)
-            cls._release_hosts_cpu(cls.hosts_to_load)
+            sla_api.stop_cpu_loading_on_resources(cls.hosts_to_load)
         logger.info("Stopping vms")
         vm_api.stop_vms_safely(cls.vms_to_start)
         logger.info("Update cluster policy to none")
-        if not updateCluster(True, config.CLUSTER_NAME[0],
-                             scheduling_policy=CLUSTER_POLICY_NONE):
-            raise errors.ClusterException("Update cluster %s failed" %
-                                          config.CLUSTER_NAME[0])
+        if not updateCluster(
+            True,
+            config.CLUSTER_NAME[0],
+            scheduling_policy=CLUSTER_POLICY_NONE
+        ):
+            logger.error(
+                "Update cluster %s failed", config.CLUSTER_NAME[0]
+            )
         if cls.host_down:
             logger.info(
                 "Wait %d seconds between fence operations",
@@ -94,64 +99,62 @@ class PowerSavingWithPM(TestCase):
             time.sleep(config.FENCE_TIMEOUT)
             logger.info("Start host %s", cls.host_down)
             if not host_api.fenceHost(True, cls.host_down, 'start'):
-                raise errors.HostException("Failed to start host")
-
-    @classmethod
-    def _load_hosts_cpu(cls, hosts, load):
-        """
-        Load CPU of given hosts
-        """
-        for host in hosts:
-            num_of_cpu = sla_api.get_num_of_cpus(
-                host, config.HOSTS_USER, config.HOSTS_PW
-            )
-            load_cpu = num_of_cpu / (100 / load)
-            status = sla_api.load_cpu(
-                host, config.HOSTS_USER, config.HOSTS_PW, load_cpu
-            )
-            if not status:
-                raise errors.HostException("Loading host CPU failed")
-
-    @classmethod
-    def _release_hosts_cpu(cls, hosts):
-        """
-        Release hosts cpu's
-        """
-        for host in hosts:
-            status = sla_api.stop_loading_cpu(
-                host, config.HOSTS_USER, config.HOSTS_PW
-            )
-            if not status:
-                raise errors.HostException("Release host CPU failed")
+                logger.error("Failed to start host %s", cls.host_down)
 
     @classmethod
     def _check_hosts_num_with_status(cls, num_of_hosts, hosts_state):
         """
-        Check that given number of hosts in given state
+        Check that given number of hosts are in given state
+
+        :param num_of_hosts: number of hosts
+        :type num_of_hosts: int
+        :param hosts_state: hosts state
+        :type hosts_state: str
+        :returns: True, if given number of hosts has correct state,
+        otherwise False
+        :rtype: bool
         """
         cluster = config.CLUSTER_NAME[0]
         return host_api.wait_until_num_of_hosts_in_state(
-            num_of_hosts, WAIT_FOR_MIGRATION,
-            SAMPLE_TIME, cluster, state=hosts_state
+            num_of_hosts,
+            WAIT_FOR_MIGRATION,
+            SAMPLE_TIME,
+            cluster,
+            state=hosts_state
         )
 
     @classmethod
     def _check_host_status(cls, host, state):
         """
         Check that given host in given state
+
+        :param host: host name
+        :type host: str
+        :param state: host state
+        :type state: str
+        :return: True, if host is in correct state, otherwise False
+        :rtype: bool
         """
         return host_api.getHostState(host).lower() == state
 
     @classmethod
     def _policy_control_flag(cls, host_name, flag):
         """
-        Enable/Disable Policy Control Flag
+        Enable/Disable Policy Control Flag on host
+
+        :param host_name: host name
+        :type host_name: str
+        :param flag: policy control flag
+        :type flag: bool
         """
         logger.info("Set host %s policy control flag to %s", host_name, flag)
         if not host_api.updateHost(
-                True, host_name, pm=True, pm_automatic=flag
+            True,
+            host_name,
+            pm=True,
+            pm_automatic=flag
         ):
-            raise errors.HostException("Update host failed")
+            logger.error("Failed to update host %s", host_name)
 
     @classmethod
     def _update_hosts_in_reserve(cls, hosts_in_reserve):
@@ -167,26 +170,27 @@ class PowerSavingWithPM(TestCase):
         }
         logger.info("Update cluster policy hosts in reserve")
         if not updateCluster(
-                True, config.CLUSTER_NAME[0],
-                scheduling_policy=CLUSTER_POLICY_PS, properties=properties
+            True,
+            config.CLUSTER_NAME[0],
+            scheduling_policy=CLUSTER_POLICY_PS,
+            properties=properties
         ):
-            raise errors.ClusterException(
-                "Update cluster %s failed" % config.CLUSTER_NAME[0]
+            logger.error(
+                "Failed to update cluster %s", config.CLUSTER_NAME[0]
             )
 
 
-class SPMHostNotKilledByPolicy(PowerSavingWithPM):
+class TestSPMHostNotKilledByPolicy(PowerSavingWithPM):
     """
     Check that SPM host not killed by policy
     """
     __test__ = True
     vms_to_start = config.VM_NAME[1:3]
-    hosts_to_load = [config.HOSTS_WITH_DUMMY[1]]
+    hosts_to_load = [config.VDS_HOSTS_WITH_DUMMY[1]]
     host_down = config.HOSTS_WITH_DUMMY[2]
 
     @polarion("RHEVM3-5572")
-    @istest
-    def check_spm(self):
+    def test_check_spm(self):
         """
         Positive: Check that SPM host not turned off by cluster policy with
         enable_automatic_host_power_management=true, also when no vms on it
@@ -198,18 +202,17 @@ class SPMHostNotKilledByPolicy(PowerSavingWithPM):
         )
 
 
-class HostWithoutCPULoadingShutdownByPolicy(PowerSavingWithPM):
+class TestHostWithoutCPULoadingShutdownByPolicy(PowerSavingWithPM):
     """
     Check that host without cpu loading shutdown by policy
     """
     __test__ = True
     vms_to_start = config.VM_NAME[1:3]
-    hosts_to_load = [config.HOSTS_WITH_DUMMY[1]]
+    hosts_to_load = [config.VDS_HOSTS_WITH_DUMMY[1]]
     host_down = config.HOSTS_WITH_DUMMY[2]
 
     @polarion("RHEVM3-5580")
-    @istest
-    def check_host_with_loading(self):
+    def test_check_host_with_loading(self):
         """
         Positive: Check that host without CPU loading turned off by cluster
         policy with enable_automatic_host_power_management=true
@@ -223,17 +226,16 @@ class HostWithoutCPULoadingShutdownByPolicy(PowerSavingWithPM):
         )
 
 
-class HostStartedByPowerManagement(PowerSavingWithPM):
+class TestHostStartedByPowerManagement(PowerSavingWithPM):
     """
     Host started by power management
     """
     __test__ = True
     vms_to_start = config.VM_NAME[:2]
-    hosts_to_load = [config.HOSTS_WITH_DUMMY[1]]
+    hosts_to_load = [config.VDS_HOSTS_WITH_DUMMY[1]]
 
     @polarion("RHEVM3-5577")
-    @istest
-    def start_host(self):
+    def test_start_host(self):
         """
         Positive: Change cluster policy to Power_Saving with default
         parameters and wait until one of hosts turned off.
@@ -250,7 +252,7 @@ class HostStartedByPowerManagement(PowerSavingWithPM):
         self.assertTrue(self._check_hosts_num_with_status(3, config.HOST_UP))
 
 
-class CheckPolicyControlOfPowerManagementFlag(PowerSavingWithPM):
+class TestCheckPolicyControlOfPowerManagementFlag(PowerSavingWithPM):
     """
     Check policy control of power management flag
     """
@@ -264,11 +266,10 @@ class CheckPolicyControlOfPowerManagementFlag(PowerSavingWithPM):
         Disable host policy_control_flag
         """
         cls._policy_control_flag(config.HOSTS[1], False)
-        super(CheckPolicyControlOfPowerManagementFlag, cls).setup_class()
+        super(TestCheckPolicyControlOfPowerManagementFlag, cls).setup_class()
 
     @polarion("RHEVM3-5579")
-    @istest
-    def disable_policy_control_flag(self):
+    def test_disable_policy_control_flag(self):
         """
         Positive: Disable host_1 policy_control_flag, wait until
         one host will power off by policy, it must be host_2
@@ -285,10 +286,12 @@ class CheckPolicyControlOfPowerManagementFlag(PowerSavingWithPM):
         Enable host policy_control_flag
         """
         cls._policy_control_flag(config.HOSTS[1], True)
-        super(CheckPolicyControlOfPowerManagementFlag, cls).teardown_class()
+        super(
+            TestCheckPolicyControlOfPowerManagementFlag, cls
+        ).teardown_class()
 
 
-class StartHostWhenNoReservedHostLeft(PowerSavingWithPM):
+class TestStartHostWhenNoReservedHostLeft(PowerSavingWithPM):
     """
     Start host when no reserved host left
     """
@@ -297,15 +300,16 @@ class StartHostWhenNoReservedHostLeft(PowerSavingWithPM):
     additional_vm = None
 
     @polarion("RHEVM3-5576")
-    @istest
-    def no_reserve_left(self):
+    def test_no_reserve_left(self):
         """
         Positive: Run vm on host with zero vms, policy must power on host,
         because no hosts in reserve remain.
         """
         logger.info("Wait until one host turned off")
-        if not self._check_hosts_num_with_status(1, config.HOST_DOWN):
-            raise errors.HostException("All hosts still in state UP")
+        self.assertTrue(
+            self._check_hosts_num_with_status(1, config.HOST_DOWN),
+            "Still no host in state DOWN"
+        )
         logger.info("Check what host have state DOWN")
         host_status = host_api.getHostState(config.HOSTS[1]) == config.HOST_UP
         host_up = config.HOSTS[1] if host_status else config.HOSTS[2]
@@ -313,8 +317,10 @@ class StartHostWhenNoReservedHostLeft(PowerSavingWithPM):
         for vm, host in config.HOST_VM_MAP.iteritems():
             if host == host_up:
                 logger.info("Run vm %s on host %s", vm, host)
-                if not vm_api.runVmOnce(True, vm, host=host):
-                    raise errors.VMException("Failed to run vm")
+                self.assertTrue(
+                    vm_api.runVmOnce(True, vm, host=host),
+                    "Failed to run vm %s" % vm
+                )
                 additional_vm = vm
                 break
         self.assertTrue(self._check_hosts_num_with_status(3, config.HOST_UP))
@@ -322,7 +328,7 @@ class StartHostWhenNoReservedHostLeft(PowerSavingWithPM):
         vm_api.stop_vms_safely([additional_vm])
 
 
-class NoExcessHosts(PowerSavingWithPM):
+class TestNoExcessHosts(PowerSavingWithPM):
     """
     Check that host not turned off by power management,
     when is not enough hosts
@@ -331,8 +337,7 @@ class NoExcessHosts(PowerSavingWithPM):
     vms_to_start = config.VM_NAME[0:2]
 
     @polarion("RHEVM3-5575")
-    @istest
-    def reserved_equal_to_up_hosts(self):
+    def test_reserved_equal_to_up_hosts(self):
         """
         Positive: Vms runs on host_0 and host_1, wait some time and check that
         engine not power off host without vm, because it must have one host in
@@ -342,7 +347,7 @@ class NoExcessHosts(PowerSavingWithPM):
         self.assertTrue(self._check_hosts_num_with_status(3, config.HOST_UP))
 
 
-class HostStoppedUnexpectedly(PowerSavingWithPM):
+class TestHostStoppedUnexpectedly(PowerSavingWithPM):
     """
     Check that if host stopped unexpectedly, cluster policy start another host
     """
@@ -355,11 +360,10 @@ class HostStoppedUnexpectedly(PowerSavingWithPM):
         Disable host policy_control_flag
         """
         cls._policy_control_flag(config.HOSTS[1], False)
-        super(HostStoppedUnexpectedly, cls).setup_class()
+        super(TestHostStoppedUnexpectedly, cls).setup_class()
 
     @polarion("RHEVM3-5573")
-    @istest
-    def host_stopped_unexpectedly(self):
+    def test_host_stopped_unexpectedly(self):
         """
         Positive: Kill not SPM host network, engine must power on another
         host, because it not have hosts in reserve.
@@ -379,11 +383,14 @@ class HostStoppedUnexpectedly(PowerSavingWithPM):
         logger.info(
             "Check if host %s in non-responsive state", config.HOSTS[1]
         )
-        if not host_api.waitForHostsStates(
-                True, config.HOSTS[1], states=config.HOST_NONRESPONSIVE
-        ):
-            raise errors.HostException(
-                "Host %s not in non-responsive state" % config.HOSTS[1])
+        self.assertTrue(
+            host_api.waitForHostsStates(
+                True,
+                config.HOSTS[1],
+                states=config.HOST_NONRESPONSIVE
+            ),
+            "Host %s not in non-responsive state" % config.HOSTS[1]
+        )
         logger.info("Wait until another host up")
         self.assertTrue(
             self._check_hosts_num_with_status(2, config.HOST_UP)
@@ -397,10 +404,10 @@ class HostStoppedUnexpectedly(PowerSavingWithPM):
         cls._update_hosts_in_reserve(2)
         cls._check_hosts_num_with_status(3, config.HOST_UP)
         cls._policy_control_flag(config.HOSTS[1], True)
-        super(HostStoppedUnexpectedly, cls).teardown_class()
+        super(TestHostStoppedUnexpectedly, cls).teardown_class()
 
 
-class HostStoppedByUser(PowerSavingWithPM):
+class TestHostStoppedByUser(PowerSavingWithPM):
     """
     Check that host shutdown by user not started by power management
     """
@@ -413,7 +420,7 @@ class HostStoppedByUser(PowerSavingWithPM):
         """
         Deactivate and stop host
         """
-        super(HostStoppedByUser, cls).setup_class()
+        super(TestHostStoppedByUser, cls).setup_class()
         cls._update_hosts_in_reserve(2)
         logger.info("Deactivate host %s", config.HOSTS[1])
         if not host_api.deactivateHost(True, config.HOSTS[1]):
@@ -423,8 +430,7 @@ class HostStoppedByUser(PowerSavingWithPM):
             raise errors.HostException("Fail to stop host")
 
     @polarion("RHEVM3-5574")
-    @istest
-    def host_stopped_by_user(self):
+    def test_host_stopped_by_user(self):
         """
         Positive: User manually stop host, and this host must not be started
         by engine, also when no reserve hosts.

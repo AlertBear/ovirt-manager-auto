@@ -1,3 +1,4 @@
+import os
 import socket
 import netaddr
 from art.rhevm_api.resources.common import fqdn2ip
@@ -255,3 +256,36 @@ class Host(Resource):
     @property
     def os_info(self):
         return self.get_os_info()
+
+    def create_script(
+        self, content, name_of_script, destination_path
+    ):
+        """
+        Create script on resource
+
+        :param content: content of the script
+        :type content: str
+        :param name_of_script: name of script to create
+        :type name_of_script: str
+        :param destination_path: directory on host to copy script
+        :type destination_path: str
+        :returns: Script absolute path, if creation success,
+        otherwise empty string
+        :rtype: str
+        """
+        dst = os.path.join(destination_path, name_of_script)
+        self.logger.info("Create script %s on resource %s", dst, self)
+        with self.executor().session() as resource_session:
+            with resource_session.open_file(dst, 'wb') as resource_file:
+                resource_file.write(content)
+            self.logger.info("Make script %s executable", name_of_script)
+            cmd = ["chmod", "+x", dst]
+            rc, out, err = resource_session.run_cmd(cmd)
+            if rc:
+                self.logger.error(
+                    "Running command %s on resource %s failed; "
+                    "out: %s; err: %s",
+                    " ".join(cmd), self, out, err
+                )
+                return ''
+        return dst

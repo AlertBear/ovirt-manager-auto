@@ -58,12 +58,7 @@ def teardown_package():
     if os.environ.get("JENKINS_URL"):
         logger.info("Teardown...")
         logger.info("Free all host CPU's from loading")
-        for host in config.HOSTS:
-            status = sla_api.stop_loading_cpu(
-                host, config.HOSTS_USER, config.HOSTS_PW
-            )
-            if not status:
-                raise errors.HostException("Failed to release hosts CPU")
+        sla_api.stop_cpu_loading_on_resources(config.VDS_HOSTS[:3])
         if not config.GOLDEN_ENV:
             if not dc_api.clean_datacenter(
                     True, config.DC_NAME[0], vdc=config.VDC_HOST,

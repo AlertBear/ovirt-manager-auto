@@ -8,6 +8,7 @@ import logging
 from rhevmtests.sla import config
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
+import art.rhevm_api.tests_lib.low_level.sla as sla_api
 import art.rhevm_api.tests_lib.low_level.hosts as host_api
 import art.rhevm_api.tests_lib.high_level.datacenters as dc_api
 
@@ -75,9 +76,11 @@ def teardown_package():
                 time.sleep(config.FENCE_TIMEOUT)
                 logger.info("Start host %s", host)
                 if not host_api.fenceHost(True, host, 'start'):
-                    raise errors.HostException("Failed to start host")
+                    logger.error("Failed to start host %s", host)
             if not host_api.updateHost(True, host, pm=False):
-                raise errors.HostException("Can not update host %s" % host)
+                logger.error("Can not update host %s", host)
+        logger.info("Free all host CPU's from loading")
+        sla_api.stop_cpu_loading_on_resources(config.VDS_HOSTS[:3])
         if not config.GOLDEN_ENV:
             if not dc_api.clean_datacenter(
                     True, config.DC_NAME[0], vdc=config.VDC_HOST,

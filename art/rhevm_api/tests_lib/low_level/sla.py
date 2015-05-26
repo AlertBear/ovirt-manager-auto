@@ -183,112 +183,137 @@ def test_pinning_load(host, host_user, host_pwd, vm):
     return True
 
 
-def get_num_of_cpus(host, host_user, host_passwd):
+def get_list_of_online_cpus_on_resource(resource):
     """
-    Return number of physical cpus on host
+    Return number of online cpus on resource
 
-    :param host: name of host
-    :param host_user: user for connection to host
-    :param host_passwd: password for connection to host
-
-    :returns: number of physical cpu's
+    :param resource: resource
+    :type resource: instance of VDS
+    :returns: list of online cpu's on host
+    :rtype: list
     """
-    host_machine = get_linux_machine_obj(host, host_user, host_passwd)
-    logger.debug("Run lscpu command on host %s", host)
-    rc, output = host_machine.runCmd(['lscpu'])
-    num_of_cpus = re.findall(r'CPU\(s\):\s*\d+', output)
-    num_of_cpus = num_of_cpus[0].split(':')[1].strip()
-    return int(num_of_cpus)
+    online_cpus_l = []
+    command = ['lscpu']
+    rc, out, err = resource.executor().run_cmd(command)
+    if rc:
+        logger.error(
+            "Failed to run command %s on resource %s; out: %s; err: %s",
+            command, resource, out, err
+        )
+        return online_cpus_l
+    online_cpus = re.search(r'On-line CPU\(s\) list:\s+(\S+)', out).group(1)
+    online_cpus = online_cpus.split(',')
+    for cpus in online_cpus:
+        if '-' in cpus:
+            t_cpus = cpus.split('-')
+            online_cpus_l.extend(xrange(int(t_cpus[0]), int(t_cpus[1]) + 1))
+        else:
+            online_cpus_l.append(int(cpus))
+    return online_cpus_l
 
 
-def cpu_load_script(num_of_cpus, script_name, target,
-                    host, host_user, host_passwd):
+def start_cpu_loading_on_resources(
+    resources,
+    load,
+    name_of_script=LOAD_SCRIPT_NAME,
+    dir_of_script=LOAD_SCRIPT_DIR
+):
     """
-    Create bash script for loading cpu's on host
+    Load resources CPU to specific value
 
-    :param num_of_cpus: number of cpu's to load
-    :param script_name: name of script to create
-    :param target: directory on host to copy script
-    :param host: name of host
-    :param host_user: user for connection to host
-    :param host_passwd: password for connection to host
-
-    :returns: True, if script was created, else False
-    """
-    host_machine = get_linux_machine_obj(host, host_user, host_passwd)
-    with open(script_name, 'w+') as fd:
-        fd.write("#!/bin/bash\n"
-                 "for i in `seq 1 %d`;\n"
-                 "do while :\n do :\n done &\n done" % num_of_cpus)
-    try:
-        host_machine.copyTo(script_name, target, 300)
-    except IOError as error:
-        logger.error("Copy data to %s : %s" % (host, error))
-    except Exception as error:
-        logger.error("%s\nConnecting or copying data to %s", host, error)
-    cmd = ["chmod", "755", os.path.join(target, script_name)]
-    rc, out = host_machine.runCmd(cmd)
-    if rc == -1:
-        logger.error("Running command %s on host %s failed",
-                     " ".join(cmd), host)
-        return False
-    if out:
-        logger.info("Output of command %s: %s", " ".join(cmd), out)
-    return True
-
-
-def load_cpu(host, host_user, host_passwd, load,
-             name_of_script=LOAD_SCRIPT_NAME,
-             dir_of_script=LOAD_SCRIPT_DIR):
-    """
-    Load cpu on given host
-
-    :param host: name of host
-    :param host_user: user for connection to host
-    :param host_passwd: password for connection to host
-    :param load: number of CPU's to load
+    :param resources: list of resources
+    :type resources: list
+    :param load: CPU load to create
+    :type load: int
     :param name_of_script: name of loading script(by default load_host.sh)
+    :type name_of_script: str
     :param dir_of_script: directory where to put script(by default /tmp)
-    :returns: True, if method was succeeded, else False
+    :type dir_of_script: str
+    :returns: True, if method succeeded, else False
+    :rtype: bool
     """
-    if not cpu_load_script(load, name_of_script, dir_of_script,
-                           host, host_user, host_passwd):
-        logger.info("Creating loading script failed")
-        return False
-    host_machine = get_linux_machine_obj(host, host_user, host_passwd)
-    cmd = ["sh", os.path.join(dir_of_script, name_of_script)]
-    rc, out = host_machine.runCmd(cmd)
-    if rc == -1:
-        logger.error("Running command %s on host %s failed",
-                     " ".join(cmd), host)
-        return False
-    if out:
-        logger.info("Output of command %s: %s", " ".join(cmd), out)
+    for resource in resources:
+        logger.info("Get number of online CPU's from resource %s", resource)
+        num_of_cpus = len(get_list_of_online_cpus_on_resource(resource))
+        if not num_of_cpus:
+            logger.error(
+                "Failed to get number of online CPU's from resource %s",
+                resource
+            )
+            return False
+        logger.info(
+            "Number of online CPU's on resource %s: %d", resource, num_of_cpus
+        )
+        num_of_cpus /= 100 / load
+        logger.info(
+            "Create CPU load script on resource %s", resource
+        )
+        script_body = (
+            "#!/bin/bash\n"
+            "for i in `seq 1 %d`;\n"
+            "do while :\n"
+            " do :\n"
+            " done &\n"
+            " done" %
+            num_of_cpus
+        )
+        script_path = resource.create_script(
+            script_body, name_of_script, dir_of_script
+        )
+        if not script_path:
+            logger.error(
+                "Failed to create CPU load script on resource %s", resource
+            )
+            return False
+        cmd = [
+            "sh", script_path, "&>", "/tmp/OUT1", "&", "echo", "$!"
+        ]
+        logger.info(
+            "Run CPU load script '%s' on resource %s", script_path, resource
+        )
+        logger.info(
+            "Running command %s on resource %s", " ".join(cmd), resource
+        )
+        rc, out, err = resource.executor().run_cmd(cmd)
+        if rc:
+            logger.error(
+                "Running command %s on resource %s failed; err: %s; out: %s",
+                " ".join(cmd), resource, err, out
+            )
+            return False
+        if out:
+            logger.info("Output of command %s: %s", " ".join(cmd), out)
     return True
 
 
-def stop_loading_cpu(host, host_user, host_passwd,
-                     name_of_script=LOAD_SCRIPT_NAME,
-                     dir_of_script=LOAD_SCRIPT_DIR):
+def stop_cpu_loading_on_resources(
+        resources,
+        name_of_script=LOAD_SCRIPT_NAME,
+        dir_of_script=LOAD_SCRIPT_DIR
+):
     """
-    Stop loading cpu on host
+    Stop CPU loading on resources
 
-    :param host: name of host
-    :param host_user: user for connection to host
-    :param host_passwd: password for connection to host
+    :param resources: list of resources
+    :type resources: list
     :param name_of_script: name of loading script(by default load_host.sh)
+    :type name_of_script: str
     :param dir_of_script: directory where to put script(by default /tmp)
-    :returns: True, if method was succeeded, else False
+    :type dir_of_script: str
     """
-    host_machine = get_linux_machine_obj(host, host_user, host_passwd)
-    cmd = ["kill", "$(pidof", "sh",
-           os.path.join(dir_of_script, name_of_script) + ")"]
-    logger.info("Running command %s on host %s", " ".join(cmd), host)
-    rc, out = host_machine.runCmd(cmd)
-    if rc == -1:
-        logger.error("Running command %s on host %s failed",
-                     " ".join(cmd), host)
-        return False
-    if out:
-        logger.info("Output of command %s: %s", " ".join(cmd), out)
-    return True
+    cmd = [
+        "kill", "$(pidof", "sh", "%s)" % os.path.join(
+            dir_of_script, name_of_script
+        )
+    ]
+    for resource in resources:
+        logger.info("Stop CPU loading on resource %s", resource)
+        logger.info(
+            "Running command %s on resource %s", " ".join(cmd), resource
+        )
+        rc, out, err = resource.executor().run_cmd(cmd)
+        if rc:
+            logger.error(
+                "Running command %s on host %s failed; err: %s; out: %s",
+                " ".join(cmd), resource, err, out
+            )
