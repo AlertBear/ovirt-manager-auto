@@ -135,15 +135,27 @@ if 'prepared_env' in ART_CONFIG:
                 VMS.append(vm)
 
     VM_NAME = [x['name'] for x in VMS]
-    VMS_LINUX_USER = VMS[0]['user']
-    VMS_LINUX_PW = VMS[0]['password']
 
+    logger.info(
+        "VMS in golden environment: %s", VM_NAME
+    )
+    VMS_LINUX_USER = VDC_ROOT_USER
+    VMS_LINUX_PW = VDC_ROOT_PASSWORD
+
+    EXTERNAL_TEMPLATES = []
     TEMPLATES = []
     for cluster in CLUSTERS:
         for templ in cluster['templates']:
             TEMPLATES.append(templ)
-    TEMPLATE_NAME = [x['name'] for x in TEMPLATES]
+        for external_template in cluster['external_templates']:
+            EXTERNAL_TEMPLATES.append(external_template)
 
+    TEMPLATE_NAME = [x['name'] for x in TEMPLATES]
+    TEMPLATE_NAME = TEMPLATE_NAME + [x['name'] for x in EXTERNAL_TEMPLATES]
+
+    logger.info(
+        "Templates in golden environment: %s", TEMPLATE_NAME
+    )
     storage_domains = DC['storage_domains']
     STORAGE_NAME = [x['name'] for x in storage_domains]
 
@@ -155,8 +167,12 @@ if 'prepared_env' in ART_CONFIG:
     ISO_DOMAIN_ADDRESS = PARAMETERS.as_list("tests_iso_domain_address")[0]
     ISO_DOMAIN_PATH = PARAMETERS.as_list("tests_iso_domain_path")[0]
 
-    CPU_CORES = int(VMS[0]['cpu_cores'])
-    CPU_SOCKET = int(VMS[0]['cpu_socket'])
+    EXTERNAL_PROVIDERS = [x['name'] for x in GOLDEN_ENV['external_providers']]
+    logger.info(
+        "external providers in golden environment: %s", EXTERNAL_PROVIDERS
+    )
+    CPU_CORES = 1
+    CPU_SOCKET = 1
 
     DATA_DOMAIN_ADDRESSES = PARAMETERS.as_list('data_domain_address')
     DATA_DOMAIN_PATHS = PARAMETERS.as_list('data_domain_path')
@@ -198,6 +214,7 @@ if 'prepared_env' in ART_CONFIG:
     UNUSED_LUN_TARGETS = PARAMETERS.as_list('extra_lun_target')
     logger.info("Free iscsi shares: %s %s %s", UNUSED_LUNS,
                 UNUSED_LUN_ADDRESSES, UNUSED_LUN_TARGETS)
+
 else:
     GOLDEN_ENV = False
     # DATA CENTER SECTION
