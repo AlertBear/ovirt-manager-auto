@@ -11,6 +11,8 @@ from rhevmtests.networking import config
 from art.unittest_lib import attr
 import art.test_handler.exceptions as exceptions
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import rhevmtests.networking.host_network_api as hna
 
 logger = logging.getLogger("Host_Network_API_Host_Cases")
@@ -383,3 +385,59 @@ class TestHostNetworkApiHost12(hna.TestHostNetworkApiTestCaseBase):
                         (helper.NETWORKS[12][i], helper.HOST_0)
                     )
                 )
+
+
+@attr(tier=1)
+class TestHostNetworkApiHost13(hna.TestHostNetworkApiTestCaseBase):
+    """
+    1. Create network on DC/Cluster/Host
+    2. Remove the network from DC
+    3. Remove the unmanaged network from host
+    """
+    __test__ = True
+    unmamanged_net = "unmanaged_net"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network to host NIC
+        """
+        network_dict = {
+            cls.unmamanged_net: {
+                "required": "false"
+            }
+        }
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=helper.DC_NAME, cluster=helper.CLUSTER,
+            network_dict=network_dict
+        ):
+            raise exceptions.NetworkException(
+                "Failed to add networks to %s/%s" %
+                (helper.DC_NAME, helper.CLUSTER)
+            )
+        network_host_api_dict = {
+            "network": cls.unmamanged_net,
+            "nic": hna.HOST_NICS[1]
+        }
+        helper.attach_network_attachment(
+            network_host_api_dict, cls.unmamanged_net
+        )
+        if not hl_networks.removeNetwork(
+            True, cls.unmamanged_net, helper.DC_NAME
+        ):
+            raise exceptions.NetworkException(
+                "Failed to delete %s from %s" %
+                (cls.unmamanged_net, helper.DC_NAME)
+            )
+
+    def test_remove_unmanaged_network(self):
+        """
+        Update the network to have IP
+        """
+        if not ll_host_network.remove_unmanaged_networks(
+            helper.HOST_0, networks=[self.unmamanged_net]
+        ):
+            raise exceptions.NetworkException(
+                "Failed to remove %s from %s" %
+                (self.unmamanged_net, helper.HOST_0)
+            )
