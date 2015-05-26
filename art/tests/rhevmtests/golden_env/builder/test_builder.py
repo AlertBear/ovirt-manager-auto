@@ -266,21 +266,6 @@ class CreateDC(TestCase):
                 vm_description['name'],
                 vm_description['clone_from']
             )
-            sampler = TimeoutingSampler(
-                300,
-                10,
-                templates.check_template_existence,
-                vm_description['clone_from']
-            )
-
-            for status in sampler:
-                if status:
-                    break
-                else:
-                    LOGGER.info(
-                        "Waiting for import as template: %s from glance...",
-                        vm_description['clone_from']
-                    )
 
             vms.cloneVmFromTemplate(
                 True,
@@ -416,6 +401,32 @@ class CreateDC(TestCase):
                 import_as_template=True,
                 async=False
             )
+
+            self.add_nic_to_glance_template(glance_template['name'])
+
+    def add_nic_to_glance_template(self, template_name):
+        sampler = TimeoutingSampler(
+            300,
+            10,
+            templates.check_template_existence,
+            template_name
+        )
+
+        for status in sampler:
+            if status:
+                break
+            else:
+                LOGGER.info(
+                    "Wait for import template: %s from glance has completed",
+                    template_name
+                )
+
+        assert templates.addTemplateNic(
+            positive=True,
+            template=template_name,
+            name=config.NIC_NAME,
+            network=config.MGMT_BRIDGE
+        )
 
     def build_dc(self, dc_def, host_conf, storage_conf):
         datacenter_name = dc_def['name']

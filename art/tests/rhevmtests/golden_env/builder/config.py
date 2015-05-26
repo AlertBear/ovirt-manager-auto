@@ -66,6 +66,7 @@ COBBLER_PASSWORD = PARAMETERS.get('cobbler_passwd', None)
 COBBLER_PROFILE = PARAMETERS.get('cobbler_profile', None)
 
 MGMT_BRIDGE = PARAMETERS['mgmt_bridge']
+NIC_NAME = 'nic1'
 
 USE_AGENT = PARAMETERS['useAgent']
 
