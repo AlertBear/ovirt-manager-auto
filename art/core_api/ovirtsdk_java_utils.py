@@ -1261,9 +1261,11 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
         res = getattr(self.api, collection_name)
         return res
 
+# TODO: Need to implement 'all_content' parameter
+# https://projects.engineering.redhat.com/browse/RHEVM-2158
     @jvm_thread_care
     def getElemFromLink(self, elm, link_name=None, attr=None, get_href=False,
-                        pythonic=True):
+                        pythonic=True, all_content=False):
         '''
         Description: get element's collection from specified link
         Parameters:
