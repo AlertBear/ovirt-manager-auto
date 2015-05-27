@@ -30,6 +30,7 @@ def import_image(diskName):
     )
     glance_image.import_image(
         destination_storage_domain=config.STORAGE_NAME[0],
+        cluster_name=None,
         new_disk_alias=diskName,
         async=True
     )
@@ -105,6 +106,7 @@ class Windows(TestCase):
             True, mac, subnetClassB=config.SUBNET_CLASS
         )[1].get('ip', None)
         cls.machine = WindowsGuest(ip)
+        assert cls.machine.wait_for_machine_ready()
 
     @property
     def platfPrefix(self):
@@ -124,10 +126,6 @@ class Windows(TestCase):
     @istest
     def a00_install_guest_tools(self):
         """ Install all supported apps of Windows version """
-        self.assertTrue(
-            self.machine.wait_for_machine_ready(),
-            'Windows machine is not ready, timeout expired.',
-        )
         self.assertTrue(
             self.machine.install_guest_tools(),
             'Installation of guest tools failed.'
@@ -247,6 +245,21 @@ class Windows(TestCase):
     def checkServiceSpiceAgent(self):
         """ Check service spice agent """
         self._checkService('vdservice')
+
+    @istest
+    @skipIfUnsupported
+    def checkGuestInfo(self):
+        """ Check agent data are reported """
+        guest_info = VM_API.find(config.WINDOWS_VM).get_guest_info()
+        self.assertTrue(
+            self.machine.ip in [
+                ip.get_address() for ip in guest_info.get_ips().get_ip() if ip
+            ],
+            "Ip %s not found in guest info" % self.machine.ip
+        )
+        self.assertTrue(
+            guest_info.get_fqdn() and len(guest_info.get_fqdn()) > 0
+        )
 
     @istest
     def z_unistallGuestTools(self):
