@@ -23,7 +23,7 @@ from art.core_api.apis_exceptions import EntityNotFound, APITimeout
 from art.core_api.apis_utils import data_st, TimeoutingSampler
 from art.rhevm_api.data_struct.data_structures import Fault
 from art.rhevm_api.tests_lib.low_level.datacenters import get_sd_datacenter
-from art.rhevm_api.utils.test_utils import get_api, waitUntilGone
+from art.rhevm_api.utils.test_utils import get_api, waitUntilGone, split
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.core_api import is_action
 from art.test_handler.settings import opts
@@ -398,9 +398,10 @@ def wait_for_disks_status(disks, key='name', status=ENUMS['disk_state_ok'],
     :rtype: bool
     """
     if isinstance(disks, basestring):
-        disks_list = disks.split()
+        # 'vm1, vm2' -> [vm1, vm2]
+        disks_list = split(disks)
     else:
-        disks_list = disks[:]
+        disks_list = disks
 
     logger.info("Waiting for status %s on disks %s", status, disks_list)
     [DISKS_API.find(disk, attribute=key) for disk in disks_list]
