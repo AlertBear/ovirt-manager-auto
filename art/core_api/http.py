@@ -22,11 +22,12 @@ import base64
 import re
 import cgi
 import copy
+import ssl
 from art.core_api.apis_exceptions import APIException
 from socket import error as SocketError
-
 import logging
-logger=logging.getLogger('http')
+
+logger = logging.getLogger('http')
 
 
 class HTTPProxy():
@@ -44,7 +45,6 @@ class HTTPProxy():
 
         self.default_conn = self.add_connection()
 
-
     def __del__(self):
         '''
         Close the http connections
@@ -52,20 +52,26 @@ class HTTPProxy():
         for conn in self.connections_pool:
             conn.close()
 
-
     def add_connection(self):
         '''
         Create a connection and pull it to the pool
         '''
         if self.opts['scheme'] == 'https':
-            conn = httplib.HTTPSConnection(self.opts['host'], self.opts['port'])
+            try:
+                conn = httplib.HTTPSConnection(
+                    self.opts['host'], self.opts['port'],
+                    context=ssl._create_unverified_context()
+                )
+            except AttributeError:
+                conn = httplib.HTTPSConnection(
+                    self.opts['host'], self.opts['port']
+                )
         else:
             conn = httplib.HTTPConnection(self.opts['host'], self.opts['port'])
 
         self.connections_pool.append(conn)
 
         return conn
-
 
     def connect(self, conn=None):
         '''
@@ -148,13 +154,11 @@ class HTTPProxy():
             logger.exception("Socket connection problem for %s", url)
             raise
 
-
     def GET(self, url):
         '''
         GET HTTP request
         '''
         return self.__do_request("GET", url)
-
 
     def POST(self, url, body):
         '''
@@ -162,20 +166,17 @@ class HTTPProxy():
         '''
         return self.__do_request("POST", url, body)
 
-
     def PUT(self, url, body):
         '''
         PUT HTTP request
         '''
         return self.__do_request("PUT", url, body)
 
-
     def DELETE(self, url, body=None):
         '''
         DELETE HTTP request
         '''
         return self.__do_request("DELETE", url, body)
-
 
     def basic_auth(self):
         '''
@@ -184,10 +185,10 @@ class HTTPProxy():
         user = '%s' % self.opts['user']
         if self.opts['user_domain']:
             user += '@%s' % self.opts['user_domain']
-        credentials = base64.encodestring('%s:%s' \
-                %  (user, self.opts['password']))[:-1]
+        credentials = base64.encodestring(
+            '%s:%s' % (user, self.opts['password'])
+        )[:-1]
         return "Basic %s" % credentials.replace('\n', '')
-
 
     def basic_headers(self):
         '''
@@ -205,7 +206,6 @@ class HTTPProxy():
 
         return headers
 
-
     def __parse_link(self, s, links):
         '''
         Build links matrix
@@ -221,13 +221,11 @@ class HTTPProxy():
         links[rel] = url
         return links
 
-
     def __get_user(self):
         '''
         Return user@domain who is currenlty specified in opts.
         '''
         return '%s@%s' % (self.opts['user'], self.opts['user_domain'])
-
 
     def HEAD_for_links(self):
         '''
