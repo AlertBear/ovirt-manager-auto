@@ -5,11 +5,10 @@
 Job for new host network API via host NIC href
 """
 
+import config as c
 import logging
 import helper
-from rhevmtests.networking import config
 from art.unittest_lib import attr
-import art.test_handler.exceptions as exceptions
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import rhevmtests.networking.host_network_api as hna
 
@@ -28,10 +27,10 @@ class TestHostNetworkApiHostNic01(hna.TestHostNetworkApiTestCaseBase):
         Attach network to host NIC
         """
         network_host_api_dict = {
-            "network": helper.NETWORKS[1][0]
+            "network": c.NETWORKS[1][0]
         }
         helper.attach_network_attachment(
-            network_host_api_dict, helper.NETWORKS[1][0], hna.HOST_NICS[1]
+            network_host_api_dict, c.NETWORKS[1][0], hna.c.HOST_NICS[1]
         )
 
 
@@ -47,10 +46,10 @@ class TestHostNetworkApiHostNic02(hna.TestHostNetworkApiTestCaseBase):
         Attach VLAN network to host NIC
         """
         network_host_api_dict = {
-            "network": helper.NETWORKS[2][0]
+            "network": c.NETWORKS[2][0]
         }
         helper.attach_network_attachment(
-            network_host_api_dict, helper.NETWORKS[2][0], hna.HOST_NICS[1]
+            network_host_api_dict, c.NETWORKS[2][0], hna.c.HOST_NICS[1]
         )
 
 
@@ -66,10 +65,10 @@ class TestHostNetworkApiHostNic03(hna.TestHostNetworkApiTestCaseBase):
         Attach Non-VM network to host NIC
         """
         network_host_api_dict = {
-            "network": helper.NETWORKS[3][0]
+            "network": c.NETWORKS[3][0]
         }
         helper.attach_network_attachment(
-            network_host_api_dict, helper.NETWORKS[3][0], hna.HOST_NICS[1]
+            network_host_api_dict, c.NETWORKS[3][0], hna.c.HOST_NICS[1]
         )
 
 
@@ -85,11 +84,11 @@ class TestHostNetworkApiHostNic04(hna.TestHostNetworkApiTestCaseBase):
         Attach network with IP to host NIC
         """
         network_host_api_dict = {
-            "network": helper.NETWORKS[4][0],
-            "ip": helper.BASIC_IP_DICT
+            "network": c.NETWORKS[4][0],
+            "ip": c.BASIC_IP_DICT
         }
         helper.attach_network_attachment(
-            network_host_api_dict, helper.NETWORKS[4][0], hna.HOST_NICS[1]
+            network_host_api_dict, c.NETWORKS[4][0], hna.c.HOST_NICS[1]
         )
 
 
@@ -105,11 +104,11 @@ class TestHostNetworkApiHostNic05(hna.TestHostNetworkApiTestCaseBase):
         Attach VLAN network with IP to host NIC
         """
         network_host_api_dict = {
-            "network": helper.NETWORKS[5][0],
-            "ip": helper.BASIC_IP_DICT
+            "network": c.NETWORKS[5][0],
+            "ip": c.BASIC_IP_DICT
         }
         helper.attach_network_attachment(
-            network_host_api_dict, helper.NETWORKS[5][0], hna.HOST_NICS[1]
+            network_host_api_dict, c.NETWORKS[5][0], hna.c.HOST_NICS[1]
         )
 
 
@@ -125,11 +124,11 @@ class TestHostNetworkApiHostNic06(hna.TestHostNetworkApiTestCaseBase):
         Attach Non-VM network with IP to host NIC
         """
         network_host_api_dict = {
-            "network": helper.NETWORKS[6][0],
-            "ip": helper.BASIC_IP_DICT
+            "network": c.NETWORKS[6][0],
+            "ip": c.BASIC_IP_DICT
         }
         helper.attach_network_attachment(
-            network_host_api_dict, helper.NETWORKS[6][0], hna.HOST_NICS[1]
+            network_host_api_dict, c.NETWORKS[6][0], hna.c.HOST_NICS[1]
         )
 
 
@@ -145,17 +144,17 @@ class TestHostNetworkApiHostNic07(hna.TestHostNetworkApiTestCaseBase):
         Attach network with custom properties to host NIC
         """
         properties_dict = {
-            "bridge_opts": config.PRIORITY,
-            "ethtool_opts": config.TX_CHECKSUM.format(
-                nic=hna.HOST_NICS[1], state="off"
+            "bridge_opts": c.PRIORITY,
+            "ethtool_opts": c.TX_CHECKSUM.format(
+                nic=hna.c.HOST_NICS[1], state="off"
             )
         }
         network_host_api_dict = {
-            "network": helper.NETWORKS[7][0],
+            "network": c.NETWORKS[7][0],
             "properties": properties_dict
         }
         helper.attach_network_attachment(
-            network_host_api_dict, helper.NETWORKS[7][0], hna.HOST_NICS[1]
+            network_host_api_dict, c.NETWORKS[7][0], hna.c.HOST_NICS[1]
         )
 
 
@@ -173,10 +172,10 @@ class TestHostNetworkApiHostNic08(hna.TestHostNetworkApiTestCaseBase):
         Attach Non-VM network with 5000 MTU size to host NIC
         """
         network_host_api_dict = {
-            "network": helper.NETWORKS[8][0]
+            "network": c.NETWORKS[8][0]
         }
         helper.attach_network_attachment(
-            network_host_api_dict, helper.NETWORKS[8][0], hna.HOST_NICS[1]
+            network_host_api_dict, c.NETWORKS[8][0], hna.c.HOST_NICS[1]
         )
 
     def test_network_mtu_on_host_nic(self):
@@ -184,11 +183,10 @@ class TestHostNetworkApiHostNic08(hna.TestHostNetworkApiTestCaseBase):
         Negative: Try to attach VLAN network with 9000 MTU size to the same NIC
         """
         network_host_api_dict = {
-            "network": helper.NETWORKS[8][1]
+            "network": c.NETWORKS[8][1]
         }
         helper.attach_network_attachment(
-            network_host_api_dict, helper.NETWORKS[8][1], hna.HOST_NICS[1],
-            False
+            network_host_api_dict, c.NETWORKS[8][1], hna.c.HOST_NICS[1], False
         )
 
 
@@ -205,10 +203,10 @@ class TestHostNetworkApiHostNic09(hna.TestHostNetworkApiTestCaseBase):
         Create network on DC/Cluster
         """
         network_host_api_dict = {
-            "network": helper.NETWORKS[9][0]
+            "network": c.NETWORKS[9][0]
         }
         helper.attach_network_attachment(
-            network_host_api_dict, helper.NETWORKS[9][0], hna.HOST_NICS[1]
+            network_host_api_dict, c.NETWORKS[9][0], hna.c.HOST_NICS[1]
         )
 
     def test_network_remove_from_host_nic(self):
@@ -217,14 +215,14 @@ class TestHostNetworkApiHostNic09(hna.TestHostNetworkApiTestCaseBase):
         """
         logger.info(
             "Removing net_case10 from %s NIC of %s",
-            hna.HOST_NICS[1], helper.HOST_0
+            hna.c.HOST_NICS[1], c.HOST_0
         )
         if not hl_host_network.remove_networks_from_host(
-            helper.HOST_0, [helper.NETWORKS[9][0]], hna.HOST_NICS[1]
+            c.HOST_0, [c.NETWORKS[9][0]], hna.c.HOST_NICS[1]
         ):
-            raise exceptions.NetworkException(
+            raise c.NET_EXCEPTION(
                 "Failed to remove net_case9 from %s of %s" % (
-                    hna.HOST_NICS[1], helper.HOST_0
+                    hna.c.HOST_NICS[1], c.HOST_0
                 )
             )
 
@@ -243,10 +241,10 @@ class TestHostNetworkApiHostNic10(hna.TestHostNetworkApiTestCaseBase):
         Attach network to host NIC
         """
         network_host_api_dict = {
-            "network": helper.NETWORKS[10][0]
+            "network": c.NETWORKS[10][0]
         }
         helper.attach_network_attachment(
-            network_host_api_dict, helper.NETWORKS[10][0], hna.HOST_NICS[1]
+            network_host_api_dict, c.NETWORKS[10][0], hna.c.HOST_NICS[1]
         )
 
     def test_update_network_with_ip_host_nic(self):
@@ -254,20 +252,20 @@ class TestHostNetworkApiHostNic10(hna.TestHostNetworkApiTestCaseBase):
         Update the network to have IP
         """
         network_host_api_dict = {
-            "network": helper.NETWORKS[10][0],
-            "ip": helper.BASIC_IP_DICT
+            "network": c.NETWORKS[10][0],
+            "ip": c.BASIC_IP_DICT
         }
         logger.info(
             "Updating net_case10 network to have IP on %s NIC of %s",
-            hna.HOST_NICS[1], helper.HOST_0
+            hna.c.HOST_NICS[1], c.HOST_0
         )
         if not hl_host_network.update_network_on_host(
-            helper.HOST_0, helper.NETWORKS[10][0], hna.HOST_NICS[1],
+            c.HOST_0, c.NETWORKS[10][0], hna.c.HOST_NICS[1],
             **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
+            raise c.NET_EXCEPTION(
                 "Failed to update net_case10 network with IP on %s of %s" %
-                (hna.HOST_NICS[1], helper.HOST_0)
+                (hna.c.HOST_NICS[1], c.HOST_0)
             )
 
 
@@ -288,29 +286,27 @@ class TestHostNetworkApiHostNic11(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond11",
                     "slaves": [
-                        hna.HOST_NICS[2],
-                        hna.HOST_NICS[3]
+                        hna.c.HOST_NICS[2],
+                        hna.c.HOST_NICS[3]
                     ]
                 }
             }
         }
-        logger.info("Creating bond11 on %s", helper.HOST_0)
+        logger.info("Creating bond11 on %s", c.HOST_0)
         if not hl_host_network.setup_networks(
-            helper.HOST_0, **network_host_api_dict
+            c.HOST_0, **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
-                "Failed to create bond11 on %s" % helper.HOST_0
-            )
+            raise c.NET_EXCEPTION("Failed to create bond11 on %s" % c.HOST_0)
 
     def test_network_on_bond_host_nic(self):
         """
         Attach network on BOND
         """
         network_host_api_dict = {
-            "network": helper.NETWORKS[11][0]
+            "network": c.NETWORKS[11][0]
         }
         helper.attach_network_attachment(
-            network_host_api_dict, helper.NETWORKS[11][0], "bond11"
+            network_host_api_dict, c.NETWORKS[11][0], "bond11"
         )
 
 
@@ -332,29 +328,28 @@ class TestHostNetworkApiHostNic12(hna.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "nic": "bond12",
-                    "slaves": [hna.HOST_NICS[2], hna.HOST_NICS[3]]
+                    "slaves": [hna.c.HOST_NICS[2], hna.c.HOST_NICS[3]]
                 },
                 "2": {
                     "nic": "bond12",
-                    "network": helper.NETWORKS[12][0]
+                    "network": c.NETWORKS[12][0]
                 },
                 "3": {
                     "nic": "bond12",
-                    "network": helper.NETWORKS[12][1]
+                    "network": c.NETWORKS[12][1]
                 },
                 "4": {
                     "nic": "bond12",
-                    "network": helper.NETWORKS[12][2]
+                    "network": c.NETWORKS[12][2]
                 }
             }
         }
-        logger.info("Creating bond12 with 3 networks on %s", helper.HOST_0)
+        logger.info("Creating bond12 with 3 networks on %s", c.HOST_0)
         if not hl_host_network.setup_networks(
-            helper.HOST_0, **network_host_api_dict
+            c.HOST_0, **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
-                "Failed to create bond12 with 3 networks on %s" %
-                helper.HOST_0
+            raise c.NET_EXCEPTION(
+                "Failed to create bond12 with 3 networks on %s" % c.HOST_0
             )
 
     def test_remove_networks_from_bond_host_nic(self):
@@ -363,14 +358,12 @@ class TestHostNetworkApiHostNic12(hna.TestHostNetworkApiTestCaseBase):
         """
         for i in range(1, 3):
             logger.info(
-                "Removing %s from bond12 of %s",
-                helper.NETWORKS[12][i], helper.HOST_0
-            )
+                "Removing %s from bond12 of %s", c.NETWORKS[12][i], c.HOST_0)
             if not hl_host_network.remove_networks_from_host(
-                helper.HOST_0, [helper.NETWORKS[12][i]]
+                c.HOST_0, [c.NETWORKS[12][i]]
             ):
-                raise exceptions.NetworkException(
+                raise c.NET_EXCEPTION(
                     "Failed to remove %s from bond12 of %s" % (
-                        (helper.NETWORKS[12][i], helper.HOST_0)
+                        (c.NETWORKS[12][i], c.HOST_0)
                     )
                 )

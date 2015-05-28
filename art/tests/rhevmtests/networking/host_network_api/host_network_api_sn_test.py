@@ -5,11 +5,9 @@
 Job for new host network API via SetupNetworks
 """
 
+import config as c
 import logging
-import helper
-from rhevmtests.networking import config
 from art.unittest_lib import attr
-import art.test_handler.exceptions as exceptions
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import rhevmtests.networking.host_network_api as hna
 
@@ -30,21 +28,21 @@ class TestHostNetworkApiSetupNetworks01(hna.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": helper.NETWORKS[1][0],
-                    "nic": hna.HOST_NICS[1]
+                    "network": c.NETWORKS[1][0],
+                    "nic": hna.c.HOST_NICS[1]
                 }
             }
         }
         logger.info(
             "Attaching %s to %s on %s",
-            helper.NETWORKS[1][0], hna.HOST_NICS[1], helper.HOST_0
+            c.NETWORKS[1][0], hna.c.HOST_NICS[1], c.HOST_0
         )
         if not hl_host_network.setup_networks(
-            host_name=helper.HOST_0, **network_host_api_dict
+            host_name=c.HOST_0, **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
+            raise c.NET_EXCEPTION(
                 "Failed to attach %s to %s on %s" % (
-                    helper.NETWORKS[1][0], hna.HOST_NICS[1], helper.HOST_0
+                    c.NETWORKS[1][0], hna.c.HOST_NICS[1], c.HOST_0
                 )
             )
 
@@ -63,21 +61,21 @@ class TestHostNetworkApiSetupNetworks02(hna.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": helper.NETWORKS[2][0],
-                    "nic": hna.HOST_NICS[1]
+                    "network": c.NETWORKS[2][0],
+                    "nic": hna.c.HOST_NICS[1]
                 }
             }
         }
         logger.info(
             "Attaching %s to %s on %s",
-            helper.NETWORKS[2][0], hna.HOST_NICS[1], helper.HOST_0
+            c.NETWORKS[2][0], hna.c.HOST_NICS[1], c.HOST_0
         )
         if not hl_host_network.setup_networks(
-            host_name=helper.HOST_0, **network_host_api_dict
+            host_name=c.HOST_0, **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
+            raise c.NET_EXCEPTION(
                 "Failed to attach %s to %s on %s" % (
-                    helper.NETWORKS[2][0], hna.HOST_NICS[1], helper.HOST_0
+                    c.NETWORKS[2][0], hna.c.HOST_NICS[1], c.HOST_0
                 )
             )
 
@@ -96,21 +94,21 @@ class TestHostNetworkApiSetupNetworks03(hna.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": helper.NETWORKS[3][0],
-                    "nic": hna.HOST_NICS[1]
+                    "network": c.NETWORKS[3][0],
+                    "nic": hna.c.HOST_NICS[1]
                 }
             }
         }
         logger.info(
             "Attaching %s to %s on %s",
-            helper.NETWORKS[3][0], hna.HOST_NICS[1], helper.HOST_0
+            c.NETWORKS[3][0], hna.c.HOST_NICS[1], c.HOST_0
         )
         if not hl_host_network.setup_networks(
-            host_name=helper.HOST_0, **network_host_api_dict
+            host_name=c.HOST_0, **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
+            raise c.NET_EXCEPTION(
                 "Failed to attach %s to %s on %s" % (
-                    helper.NETWORKS[3][0], hna.HOST_NICS[1], helper.HOST_0
+                    c.NETWORKS[3][0], hna.c.HOST_NICS[1], c.HOST_0
                 )
             )
 
@@ -129,22 +127,22 @@ class TestHostNetworkApiSetupNetworks04(hna.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": helper.NETWORKS[4][0],
-                    "nic": hna.HOST_NICS[1],
-                    "ip": helper.BASIC_IP_DICT
+                    "network": c.NETWORKS[4][0],
+                    "nic": hna.c.HOST_NICS[1],
+                    "ip": c.BASIC_IP_DICT
                 }
             }
         }
         logger.info(
             "Attaching %s to %s on %s",
-            helper.NETWORKS[4][0], hna.HOST_NICS[1], helper.HOST_0
+            c.NETWORKS[4][0], hna.c.HOST_NICS[1], c.HOST_0
         )
         if not hl_host_network.setup_networks(
-            host_name=helper.HOST_0, **network_host_api_dict
+            host_name=c.HOST_0, **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
+            raise c.NET_EXCEPTION(
                 "Failed to attach %s to %s on %s" % (
-                    helper.NETWORKS[4][0], hna.HOST_NICS[1], helper.HOST_0
+                    c.NETWORKS[4][0], hna.c.HOST_NICS[1], c.HOST_0
                 )
             )
 
@@ -163,22 +161,22 @@ class TestHostNetworkApiSetupNetworks05(hna.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": helper.NETWORKS[5][0],
-                    "nic": hna.HOST_NICS[1],
-                    "ip": helper.BASIC_IP_DICT
+                    "network": c.NETWORKS[5][0],
+                    "nic": hna.c.HOST_NICS[1],
+                    "ip": c.BASIC_IP_DICT
                 }
             }
         }
         logger.info(
             "Attaching %s to %s on %s",
-            helper.NETWORKS[5][0], hna.HOST_NICS[1], helper.HOST_0
+            c.NETWORKS[5][0], hna.c.HOST_NICS[1], c.HOST_0
         )
         if not hl_host_network.setup_networks(
-            host_name=helper.HOST_0, **network_host_api_dict
+            host_name=c.HOST_0, **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
+            raise c.NET_EXCEPTION(
                 "Failed to attach %s to %s on %s" % (
-                    helper.NETWORKS[5][0], hna.HOST_NICS[1], helper.HOST_0
+                    c.NETWORKS[5][0], hna.c.HOST_NICS[1], c.HOST_0
                 )
             )
 
@@ -197,22 +195,22 @@ class TestHostNetworkApiSetupNetworks06(hna.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": helper.NETWORKS[6][0],
-                    "nic": hna.HOST_NICS[1],
-                    "ip": helper.BASIC_IP_DICT
+                    "network": c.NETWORKS[6][0],
+                    "nic": hna.c.HOST_NICS[1],
+                    "ip": c.BASIC_IP_DICT
                 }
             }
         }
         logger.info(
             "Attaching %s to %s on %s",
-            helper.NETWORKS[6][0], hna.HOST_NICS[1], helper.HOST_0
+            c.NETWORKS[6][0], hna.c.HOST_NICS[1], c.HOST_0
         )
         if not hl_host_network.setup_networks(
-            host_name=helper.HOST_0, **network_host_api_dict
+            host_name=c.HOST_0, **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
+            raise c.NET_EXCEPTION(
                 "Failed to attach %s to %s on %s" % (
-                    helper.NETWORKS[6][0], hna.HOST_NICS[1], helper.HOST_0
+                    c.NETWORKS[6][0], hna.c.HOST_NICS[1], c.HOST_0
                 )
             )
 
@@ -229,30 +227,30 @@ class TestHostNetworkApiSetupNetworks07(hna.TestHostNetworkApiTestCaseBase):
         Attach network with custom properties to host NIC
         """
         properties_dict = {
-            "bridge_opts": config.PRIORITY,
-            "ethtool_opts": config.TX_CHECKSUM.format(
-                nic=hna.HOST_NICS[1], state="off"
+            "bridge_opts": c.PRIORITY,
+            "ethtool_opts": c.TX_CHECKSUM.format(
+                nic=hna.c.HOST_NICS[1], state="off"
             )
         }
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": helper.NETWORKS[7][0],
-                    "nic": hna.HOST_NICS[1],
+                    "network": c.NETWORKS[7][0],
+                    "nic": hna.c.HOST_NICS[1],
                     "properties": properties_dict
                 }
             }
         }
         logger.info(
             "Attaching %s to %s on %s",
-            helper.NETWORKS[7][0], hna.HOST_NICS[1], helper.HOST_0
+            c.NETWORKS[7][0], hna.c.HOST_NICS[1], c.HOST_0
         )
         if not hl_host_network.setup_networks(
-            host_name=helper.HOST_0, **network_host_api_dict
+            host_name=c.HOST_0, **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
+            raise c.NET_EXCEPTION(
                 "Failed to attach %s to %s on %s" % (
-                    helper.NETWORKS[7][0], hna.HOST_NICS[1], helper.HOST_0
+                    c.NETWORKS[7][0], hna.c.HOST_NICS[1], c.HOST_0
                 )
             )
 
@@ -273,27 +271,26 @@ class TestHostNetworkApiSetupNetworks08(hna.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": helper.NETWORKS[8][0],
-                    "nic": hna.HOST_NICS[1]
+                    "network": c.NETWORKS[8][0],
+                    "nic": hna.c.HOST_NICS[1]
                 },
                 "2": {
-                    "network": helper.NETWORKS[8][1],
-                    "nic": hna.HOST_NICS[1]
+                    "network": c.NETWORKS[8][1],
+                    "nic": hna.c.HOST_NICS[1]
                 }
             }
         }
         logger.info(
             "Attaching %s(MTU5000) and %s(MTU9000) to %s on %s",
-            helper.NETWORKS[8][0], helper.NETWORKS[8][0], hna.HOST_NICS[1],
-            helper.HOST_0
+            c.NETWORKS[8][0], c.NETWORKS[8][0], hna.c.HOST_NICS[1], c.HOST_0
         )
         if hl_host_network.setup_networks(
-            host_name=helper.HOST_0, **network_host_api_dict
+            host_name=c.HOST_0, **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
+            raise c.NET_EXCEPTION(
                 "%s and %s is attached to %s on %s but shouldn't" % (
-                    helper.NETWORKS[8][0], helper.NETWORKS[8][1],
-                    hna.HOST_NICS[1], helper.HOST_0
+                    c.NETWORKS[8][0], c.NETWORKS[8][1], hna.c.HOST_NICS[1],
+                    c.HOST_0
                 )
             )
 
@@ -313,21 +310,21 @@ class TestHostNetworkApiSetupNetworks09(hna.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": helper.NETWORKS[9][0],
-                    "nic": hna.HOST_NICS[1]
+                    "network": c.NETWORKS[9][0],
+                    "nic": hna.c.HOST_NICS[1]
                 }
             }
         }
         logger.info(
             "Attaching %s to %s on %s",
-            helper.NETWORKS[9][0], hna.HOST_NICS[1], helper.HOST_0
+            c.NETWORKS[9][0], hna.c.HOST_NICS[1], c.HOST_0
         )
         if not hl_host_network.setup_networks(
-            host_name=helper.HOST_0, **network_host_api_dict
+            host_name=c.HOST_0, **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
+            raise c.NET_EXCEPTION(
                 "Failed to attach %s to %s on %s" % (
-                    helper.NETWORKS[9][0], hna.HOST_NICS[1], helper.HOST_0
+                    c.NETWORKS[9][0], hna.c.HOST_NICS[1], c.HOST_0
                 )
             )
 
@@ -337,19 +334,19 @@ class TestHostNetworkApiSetupNetworks09(hna.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "remove": {
-                "networks": [helper.NETWORKS[9][0]]
+                "networks": [c.NETWORKS[9][0]]
                 }
             }
         logger.info(
             "Removing %s from %s on %s",
-            helper.NETWORKS[9][0], hna.HOST_NICS[1], helper.HOST_0
+            c.NETWORKS[9][0], hna.c.HOST_NICS[1], c.HOST_0
         )
         if not hl_host_network.setup_networks(
-            host_name=helper.HOST_0, **network_host_api_dict
+            host_name=c.HOST_0, **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
+            raise c.NET_EXCEPTION(
                 "Failed to remove %s from %s on %s" % (
-                    helper.NETWORKS[9][0], hna.HOST_NICS[1], helper.HOST_0
+                    c.NETWORKS[9][0], hna.c.HOST_NICS[1], c.HOST_0
                 )
             )
 
@@ -370,20 +367,20 @@ class TestHostNetworkApiSetupNetworks10(hna.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": helper.NETWORKS[10][0],
-                    "nic": hna.HOST_NICS[1]
+                    "network": c.NETWORKS[10][0],
+                    "nic": hna.c.HOST_NICS[1]
                 }
             }
         }
         logger.info(
             "Attaching %s to %s on %s",
-            helper.NETWORKS[10][0], hna.HOST_NICS[1], helper.HOST_0)
+            c.NETWORKS[10][0], hna.c.HOST_NICS[1], c.HOST_0)
         if not hl_host_network.setup_networks(
-            host_name=helper.HOST_0, **network_host_api_dict
+            host_name=c.HOST_0, **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
+            raise c.NET_EXCEPTION(
                 "Failed to attach %s to %s on %s" % (
-                    helper.NETWORKS[10][0], hna.HOST_NICS[1], helper.HOST_0
+                    c.NETWORKS[10][0], hna.c.HOST_NICS[1], c.HOST_0
                 )
             )
 
@@ -394,21 +391,21 @@ class TestHostNetworkApiSetupNetworks10(hna.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": helper.NETWORKS[10][0],
-                    "nic": hna.HOST_NICS[1],
-                    "ip": helper.BASIC_IP_DICT
+                    "network": c.NETWORKS[10][0],
+                    "nic": hna.c.HOST_NICS[1],
+                    "ip": c.BASIC_IP_DICT
                 }
             }
         }
         logger.info(
             "Updating %s to have IP on %s of %s",
-            helper.NETWORKS[10][0], hna.HOST_NICS[1], helper.HOST_0)
+            c.NETWORKS[10][0], hna.c.HOST_NICS[1], c.HOST_0)
         if not hl_host_network.setup_networks(
-            host_name=helper.HOST_0, **network_host_api_dict
+            host_name=c.HOST_0, **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
+            raise c.NET_EXCEPTION(
                 "Failed to update %s to have IP on %s of %s" % (
-                    helper.NETWORKS[10][0], hna.HOST_NICS[1], helper.HOST_0
+                    c.NETWORKS[10][0], hna.c.HOST_NICS[1], c.HOST_0
                 )
             )
 
@@ -432,19 +429,17 @@ class TestHostNetworkApiSetupNetworks11(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond11",
                     "slaves": [
-                        hna.HOST_NICS[2],
-                        hna.HOST_NICS[3]
+                        hna.c.HOST_NICS[2],
+                        hna.c.HOST_NICS[3]
                     ]
                 }
             }
         }
-        logger.info("Creating bond11 on %s", config.HOSTS[0])
+        logger.info("Creating bond11 on %s", c.HOSTS[0])
         if not hl_host_network.setup_networks(
-            config.HOSTS[0], **network_host_api_dict
+            c.HOSTS[0], **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
-                "Failed to create bond11 on %s" % config.HOSTS[0]
-            )
+            raise c.NET_EXCEPTION("Failed to create bond11 on %s" % c.HOSTS[0])
 
     def test_attach_networks_to_bond(self):
         """
@@ -453,28 +448,28 @@ class TestHostNetworkApiSetupNetworks11(hna.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": helper.NETWORKS[11][0],
+                    "network": c.NETWORKS[11][0],
                     "nic": "bond11"
                 },
                 "2": {
                     "nic": "bond11",
-                    "network": helper.NETWORKS[11][1]
+                    "network": c.NETWORKS[11][1]
                 },
                 "3": {
                     "nic": "bond11",
-                    "network": helper.NETWORKS[11][2]
+                    "network": c.NETWORKS[11][2]
                 }
             }
         }
         logger.info(
-            "Attach %s to bond11 on %s", helper.NETWORKS[11][0], helper.HOST_0
+            "Attach %s to bond11 on %s", c.NETWORKS[11][0], c.HOST_0
         )
         if not hl_host_network.setup_networks(
-            host_name=helper.HOST_0, **network_host_api_dict
+            host_name=c.HOST_0, **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
+            raise c.NET_EXCEPTION(
                 "Failed to attach %s to bond11 on %s" % (
-                    helper.NETWORKS[11][0], helper.HOST_0
+                    c.NETWORKS[11][0], c.HOST_0
                 )
             )
 
@@ -499,19 +494,17 @@ class TestHostNetworkApiSetupNetworks12(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond12",
                     "slaves": [
-                        hna.HOST_NICS[2],
-                        hna.HOST_NICS[3]
+                        hna.c.HOST_NICS[2],
+                        hna.c.HOST_NICS[3]
                     ]
                 }
             }
         }
-        logger.info("Creating bond12 on %s", config.HOSTS[0])
+        logger.info("Creating bond12 on %s", c.HOSTS[0])
         if not hl_host_network.setup_networks(
-            config.HOSTS[0], **network_host_api_dict
+            c.HOSTS[0], **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
-                "Failed to create bond12 on %s" % config.HOSTS[0]
-            )
+            raise c.NET_EXCEPTION("Failed to create bond12 on %s" % c.HOSTS[0])
 
     def test_02update_bond_add_slave(self):
         """
@@ -522,19 +515,18 @@ class TestHostNetworkApiSetupNetworks12(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond12",
                     "slaves": [
-                        hna.HOST_NICS[1],
-                        hna.HOST_NICS[2],
-                        hna.HOST_NICS[3]
+                        hna.c.HOST_NICS[1],
+                        hna.c.HOST_NICS[2],
+                        hna.c.HOST_NICS[3]
                     ]
                 }
             }
         }
         if not hl_host_network.setup_networks(
-            config.HOSTS[0], **network_host_api_dict
+            c.HOSTS[0], **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
-                "Failed to update bond12 to have 3 slaves on %s" %
-                config.HOSTS[0]
+            raise c.NET_EXCEPTION(
+                "Failed to update bond12 to have 3 slaves on %s" % c.HOSTS[0]
             )
 
     def test_03update_bond_remove_slave(self):
@@ -546,18 +538,17 @@ class TestHostNetworkApiSetupNetworks12(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond12",
                     "slaves": [
-                        hna.HOST_NICS[2],
-                        hna.HOST_NICS[3]
+                        hna.c.HOST_NICS[2],
+                        hna.c.HOST_NICS[3]
                     ]
                 }
             }
         }
         if not hl_host_network.setup_networks(
-            config.HOSTS[0], **network_host_api_dict
+            c.HOSTS[0], **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
-                "Failed to update bond12 to have 2 slaves on %s" %
-                config.HOSTS[0]
+            raise c.NET_EXCEPTION(
+                "Failed to update bond12 to have 2 slaves on %s" % c.HOSTS[0]
             )
 
     def test_04update_bond_mode(self):
@@ -569,19 +560,18 @@ class TestHostNetworkApiSetupNetworks12(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond12",
                     "slaves": [
-                        hna.HOST_NICS[2],
-                        hna.HOST_NICS[3]
+                        hna.c.HOST_NICS[2],
+                        hna.c.HOST_NICS[3]
                     ],
                     "mode": "1"
                 }
             }
         }
         if not hl_host_network.setup_networks(
-            config.HOSTS[0], **network_host_api_dict
+            c.HOSTS[0], **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
-                "Failed to update bond12 mode to mode 1 on %s" %
-                config.HOSTS[0]
+            raise c.NET_EXCEPTION(
+                "Failed to update bond12 mode to mode 1 on %s" % c.HOSTS[0]
             )
 
     def test_05update_bond_with_ip(self):
@@ -592,17 +582,17 @@ class TestHostNetworkApiSetupNetworks12(hna.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "nic": "bond12",
-                    "network": helper.NETWORKS[14][0],
-                    "ip": helper.BASIC_IP_DICT
+                    "network": c.NETWORKS[14][0],
+                    "ip": c.BASIC_IP_DICT
                 }
             }
         }
         if not hl_host_network.setup_networks(
-            config.HOSTS[0], **network_host_api_dict
+            c.HOSTS[0], **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
+            raise c.NET_EXCEPTION(
                 "Failed to attach %s with IP to bond12 on %s" %
-                (helper.NETWORKS[14][0], config.HOSTS[0])
+                (c.NETWORKS[14][0], c.HOSTS[0])
             )
 
 
@@ -633,12 +623,12 @@ class TestHostNetworkApiSetupNetworks13(hna.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        logger.info("Creating bond131/2/3 on %s", config.HOSTS[0])
+        logger.info("Creating bond131/2/3 on %s", c.HOSTS[0])
         if not hl_host_network.setup_networks(
-            config.HOSTS[0], **network_host_api_dict
+            c.HOSTS[0], **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
-                "Failed to create bond131/2/3 on %s" % config.HOSTS[0]
+            raise c.NET_EXCEPTION(
+                "Failed to create bond131/2/3 on %s" % c.HOSTS[0]
             )
 
 
@@ -667,13 +657,11 @@ class TestHostNetworkApiSetupNetworks14(hna.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        logger.info("Creating bond14 on %s", config.HOSTS[0])
+        logger.info("Creating bond14 on %s", c.HOSTS[0])
         if not hl_host_network.setup_networks(
-            config.HOSTS[0], **network_host_api_dict
+            c.HOSTS[0], **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
-                "Failed to create bond14 on %s" % config.HOSTS[0]
-            )
+            raise c.NET_EXCEPTION("Failed to create bond14 on %s" % c.HOSTS[0])
 
 
 @attr(tier=1)
@@ -694,31 +682,29 @@ class TestHostNetworkApiSetupNetworks15(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond15",
                     "slaves": [
-                        hna.HOST_NICS[2],
-                        hna.HOST_NICS[3]
+                        hna.c.HOST_NICS[2],
+                        hna.c.HOST_NICS[3]
                     ]
                 },
                 "2": {
-                    "network": helper.NETWORKS[15][0],
+                    "network": c.NETWORKS[15][0],
                     "nic": "bond15"
                 },
                 "3": {
                     "nic": "bond15",
-                    "network": helper.NETWORKS[15][1]
+                    "network": c.NETWORKS[15][1]
                 },
                 "4": {
                     "nic": "bond15",
-                    "network": helper.NETWORKS[15][2]
+                    "network": c.NETWORKS[15][2]
                 }
             }
         }
-        logger.info("Creating bond15 on %s", helper.HOST_0)
+        logger.info("Creating bond15 on %s", c.HOST_0)
         if not hl_host_network.setup_networks(
-            config.HOSTS[0], **network_host_api_dict
+            c.HOSTS[0], **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
-                "Failed to create bond15 on %s" % helper.HOST_0
-            )
+            raise c.NET_EXCEPTION("Failed to create bond15 on %s" % c.HOST_0)
 
     def test_remove_networks_from_bond_host(self):
         """
@@ -726,19 +712,18 @@ class TestHostNetworkApiSetupNetworks15(hna.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "remove": {
-                "networks": [helper.NETWORKS[15][1], helper.NETWORKS[15][2]]
+                "networks": [c.NETWORKS[15][1], c.NETWORKS[15][2]]
             }
         }
         logger.info(
             "Removing %s and %s from bond15 on %s",
-            helper.NETWORKS[15][1], helper.NETWORKS[15][2], helper.HOST_0
+            c.NETWORKS[15][1], c.NETWORKS[15][2], c.HOST_0
         )
         if not hl_host_network.setup_networks(
-            host_name=helper.HOST_0, **network_host_api_dict
+            host_name=c.HOST_0, **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
+            raise c.NET_EXCEPTION(
                 "Failed to remove %s and %s from bond15 on %s" % (
-                    helper.NETWORKS[15][1], helper.NETWORKS[15][2],
-                    helper.HOST_0
+                    c.NETWORKS[15][1], c.NETWORKS[15][2], c.HOST_0
                 )
             )
