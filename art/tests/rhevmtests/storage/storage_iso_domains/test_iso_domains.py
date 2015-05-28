@@ -227,12 +227,10 @@ class TestCase50769Shared(BaseCaseIsoDomains):
         or config.STORAGE_TYPE_ISCSI in opts['storages']
     )
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
-    # TODO: Ticket is open for CLI support in ejecting CD:
-    # https://projects.engineering.redhat.com/browse/RHEVM-2163
-    apis = TestCase.apis - set(['cli'])
     local = False
     vm_name = "TestCasesPlan6458Shared"
     storagedomains = [config.ISCSI_DOMAIN]
+    bz = {'1225356': {'engine': ['cli'], 'version': ['3.5', '3.6']}}
 
     @tcms(NEW_TCMS_TEST_PLAN, NEW_TCMS_CASE_ID)
     def test_detaching_iso_vm_and_vm_runonce(self):
