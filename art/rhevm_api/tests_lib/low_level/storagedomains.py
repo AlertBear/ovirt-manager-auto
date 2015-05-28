@@ -1840,25 +1840,6 @@ def getStorageDomainNamesForType(datacenter_name, storage_type):
             ENUMS['storage_domain_state_active']]
 
 
-def get_storage_domain_images(storage_domain_name):
-    """
-    Get all images in storage domain
-
-    :param storage_domain_name: Storage domain to use in finding disk images
-    :type storage_domain_name: str
-    :return: List of disk image names
-    :rtype: list
-    """
-    storage_domain_obj = getStorageDomainObj(storage_domain_name)
-    all_images = util.getElemFromLink(
-        storage_domain_obj,
-        link_name='images',
-        attr='image',
-        get_href=False,
-    )
-    return [image.get_name() for image in all_images]
-
-
 class GlanceImage(object):
     """Represents an image resides in glance like storage domain.
 

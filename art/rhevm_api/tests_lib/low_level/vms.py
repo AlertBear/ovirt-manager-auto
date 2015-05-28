@@ -34,13 +34,11 @@ from art.rhevm_api.tests_lib.high_level.disks import delete_disks
 from art.rhevm_api.tests_lib.low_level.disks import (
     _prepareDiskObject, getVmDisk, getObjDisks, get_other_storage_domain,
     wait_for_disks_status, get_disk_storage_domain_name,
-    deleteDisk, attachDisk, updateDisk,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.networks import (
     getVnicProfileObj, MGMT_NETWORK,
 )
-from art.rhevm_api.tests_lib.low_level.storagedomains import GlanceImage
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.test_utils import (
     searchForObj, getImageByOsType, convertMacToIpAddress,
@@ -4583,67 +4581,3 @@ def get_vm_nic_statistics(vm, nic):
     return NIC_API.getElemFromLink(
         vm_nic, link_name="statistics", attr="statistic"
     )
-
-
-def create_vm_using_glance_image(
-        glance_repo, glance_image, vm_name, storage_domain, cluster, **kwargs
-):
-    """
-    Create a vm using an imported disk from glance repository
-
-    :param glance_repo: Name of the glance repository
-    :type glance_repo: str
-    :param glance_image: Name of the desired image to use
-    :type glance_image: str
-    :param vm_name: Name of the vm to create
-    :type vm_name: str
-    :param storage_domain: Target storage domain to use
-    :type storage_domain: str
-    :param cluster: Target cluster to use
-    :type cluster: str
-    :return: True on success, False otherwise
-    :rtype: bool
-    """
-    vm_args = {
-        'cluster': cluster,
-        'type': kwargs.pop('type', None),
-        'placement_affinity': kwargs.pop('placement_affinity', None),
-        'placement_host': kwargs.pop('placement_host', None),
-        'highly_available': kwargs.pop('highly_available', None),
-        'storageDomainName': None,  # To avoid installation process
-        'installation': False,  # To avoid installation process
-        'start': 'false'
-    }
-    kwargs.update(vm_args)
-    glance = GlanceImage(glance_image, glance_repo)
-    disk_alias = "{0}_Disk_glance".format(vm_name)
-    if not glance.import_image(
-        destination_storage_domain=storage_domain,
-        cluster_name=cluster,
-        new_disk_alias=disk_alias,
-    ):
-        logger.error(
-            "Failed to import image %s from glance repository", glance_image
-        )
-        return False
-    wait_for_jobs([ENUMS['job_import_repo_image']])
-    if not createVm(
-        True, vm_name, kwargs.pop('vmDescription', vm_name), **kwargs
-    ):
-        logger.error("Failed to add vm %s", vm_name)
-        logger.info("Removing imported image %s", glance_image)
-        if not deleteDisk(True, glance_image):
-            logger.error("Failed to remove image %s", glance_image)
-        return False
-    if not attachDisk(True, disk_alias, vm_name):
-        logger.error(
-            "Failed to attach disk %s to vm %s", glance_image, vm_name
-        )
-        return False
-    if not updateDisk(
-        True, vmName=vm_name, alias=disk_alias,
-        interface=kwargs.get('diskInterface'), bootable=True
-    ):
-        logger.error("Failed to update disk's attributes")
-        return False
-    return True

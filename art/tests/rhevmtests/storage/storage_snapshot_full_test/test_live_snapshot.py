@@ -58,8 +58,7 @@ vm_args = {
     'useAgent': True,
     'os_type': config.ENUMS['rhel6'],
     'user': config.VM_USER,
-    'password': config.VM_PASSWORD,
-    'network': config.MGMT_BRIDGE
+    'password': config.VM_PASSWORD
 }
 
 VM_LIST = []
