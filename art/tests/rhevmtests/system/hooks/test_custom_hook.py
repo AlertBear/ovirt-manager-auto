@@ -50,7 +50,11 @@ def check_vdsmd():
 
 def check_vm():
     if not vms.checkVmState(True, config.HOOKS_VM_NAME, config.VM_UP):
-        vms.restartVm(config.HOOKS_VM_NAME, wait_for_ip=True)
+        vms.restartVm(
+            config.HOOKS_VM_NAME,
+            wait_for_ip=True,
+            placement_host=config.HOSTS[0] if config.GOLDEN_ENV else None,
+        )
 
 
 class TestCaseVm(TestCase):
@@ -63,11 +67,13 @@ class TestCaseVm(TestCase):
         """ create shell script """
         check_vm()
         hooks.createPythonScriptToVerifyCustomHook(
-            ip=config.HOSTS_IP[0], password=config.HOSTS_PW,
+            ip=config.HOSTS_IP[0],
+            password=config.HOSTS_PW,
             scriptName=self._hook_name(ext=self.PY),
             customHook=self.CUSTOM_HOOK,
             target=path.join(HOOK_DIR, self.NAME),
-            outputFile=path.join(TMP, self._hook_name()))
+            outputFile=path.join(TMP, self._hook_name()),
+        )
 
     def check_for_file(self, positive):
         """ Check for file created by vdsm_stop hook """
@@ -170,9 +176,15 @@ class TestCaseBeforeVmStart(TestCaseVm):
         """ Check for file created by before_vm_start hook """
         self.assertTrue(vms.stopVm(True, vm=config.HOOKS_VM_NAME))
         self.assertFalse(self.check_for_file(positive=False))
-        self.assertTrue(vms.startVm(True, vm=config.HOOKS_VM_NAME,
-                                    wait_for_status=config.VM_UP,
-                                    wait_for_ip=True))
+        self.assertTrue(
+            vms.startVm(
+                True,
+                vm=config.HOOKS_VM_NAME,
+                wait_for_status=config.VM_UP,
+                wait_for_ip=True,
+                placement_host=config.HOSTS[0] if config.GOLDEN_ENV else None,
+            )
+        )
         self.assertTrue(self.check_for_file(positive=True))
 
 

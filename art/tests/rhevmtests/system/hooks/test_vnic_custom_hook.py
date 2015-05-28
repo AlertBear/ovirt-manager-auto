@@ -43,9 +43,13 @@ def setup_module():
                         cluster=config.CLUSTER_NAME[0],
                         display_type=config.DISPLAY_TYPE,
                         template=config.TEMPLATE_NAME)
-    assert vms.startVm(True, vm=config.HOOKS_VM_NAME,
-                       wait_for_status=config.VM_UP,
-                       wait_for_ip=True)
+    assert vms.startVm(
+        True,
+        vm=config.HOOKS_VM_NAME,
+        wait_for_status=config.VM_UP,
+        wait_for_ip=True,
+        placement_host=config.HOSTS[0] if config.GOLDEN_ENV else None,
+    )
     assert networks.addVnicProfile(True, name=PROFILE_A,
                                    cluster=config.CLUSTER_NAME[0],
                                    network=config.MGMT_BRIDGE,
