@@ -9,7 +9,9 @@ TESTNAME = "GlobalStorage"
 DATA_CENTER_NAME = DC_NAME[0]
 CLUSTER_NAME = CLUSTER_NAME[0]
 EXPORT_DOMAIN_NAME = PARAMETERS.get('export_domain_name', 'export_domain')
-
+GLANCE_DOMAIN = 'rhevm-qe-infra-glance'
+GLANCE_IMAGE_COW = 'cow_sparse_disk'
+GLANCE_IMAGE_RAW = 'raw_preallocated_disk'
 # CLUSTER SECTION
 COMPATIBILITY_VERSION = COMP_VERSION
 

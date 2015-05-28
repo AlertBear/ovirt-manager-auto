@@ -4,15 +4,14 @@ Storage helper functions
 import logging
 import os
 import shlex
+import art.rhevm_api.tests_lib.high_level.vms as high_vms
+import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost, getHostIP
 from utilities.machine import Machine, LINUX
 from art.rhevm_api.tests_lib.low_level.disks import (
     wait_for_disks_status, attachDisk, addDisk, get_all_disk_permutation,
     updateDisk,
-)
-from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    getStorageDomainObj,
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
     get_vm_disk_logical_name, stop_vms_safely, get_vm_snapshots,
@@ -132,7 +131,7 @@ def create_disks_from_requested_permutations(domain_to_use,
     logger.info("Generating a list of disk permutations")
     # Get the storage domain object and its type, use this to ascertain
     # whether the storage is of a block or file type
-    storage_domain_object = getStorageDomainObj(domain_to_use)
+    storage_domain_object = storagedomains.getStorageDomainObj(domain_to_use)
     storage_type = storage_domain_object.get_storage().get_type()
     is_block = storage_type in config.BLOCK_TYPES
     disk_permutations = get_all_disk_permutation(block=is_block,
@@ -279,48 +278,64 @@ def create_vm_or_clone(positive, vmName, vmDescription,
     :return: True if successful in creating the vm, False otherwise
     :rtype: bool
     """
-    diskInterface = kwargs.get('diskInterface')
+    storage_domain = kwargs.get('storageDomainName')
+    disk_interface = kwargs.get('diskInterface')
+    vol_format = kwargs.get('volumeFormat', 'cow')
+    vol_allocation_policy = kwargs.get('volumeType', 'true')
     installation = kwargs.get('installation', False)
     # If the vm doesn't need installation don't waste time cloning the vm
     if config.GOLDEN_ENV and installation:
-        logger.info("Cloning vm %s", vmName)
-        template_name = get_golden_template_name(cluster)
-        if not template_name:
-            logger.error("Cannot find any templates to use under cluster %s",
-                         cluster)
-            return False
+        storage_domains = storagedomains.get_storagedomain_names()
+        if config.GLANCE_DOMAIN in storage_domains:
+            glance_image = config.GLANCE_IMAGE_COW
+            if vol_allocation_policy == 'false':
+                glance_image = config.GLANCE_IMAGE_RAW
 
-        # Clone a vm from a template with the correct parameters
-        args_clone = {
-            'positive': True,
-            'name': vmName,
-            'cluster': cluster,
-            'template': template_name,
-            'clone': True,  # Always clone
-            # If sparse is not defined, use thin by default to speed up
-            # the test run
-            'vol_sparse': kwargs.get('volumeType', 'true'),
-            'vol_format': kwargs.get('volumeFormat'),
-            'storagedomain': kwargs.get('storageDomainName'),
-            'virtio_scsi': True,
-        }
-        update_keys = [
-            'vmDescription', 'type', 'placement_host', 'placement_affinity',
-            'highly_available',
-        ]
-        update_args = dict((key, kwargs.get(key)) for key in update_keys)
-        args_clone.update(update_args)
-        assert cloneVmFromTemplate(**args_clone)
-        # Because alias is not a unique property and a lot of test use it
-        # as identifier, rename the vm's disk alias to be safe
-        # Since cloning doesn't allow to specify disk interface, change it
-        disks_obj = getVmDisks(vmName)
-        for i in range(len(disks_obj)):
-            updateDisk(
-                True, vmName=vmName, id=disks_obj[i].get_id(),
-                alias="{0}_Disk_{1}".format(vmName, i),
-                interface=diskInterface)
-        # createVm always leaves the vm up when installation is True
+            assert high_vms.create_vm_using_glance_image(
+                config.GLANCE_DOMAIN, glance_image, vmName, **kwargs
+            )
+        else:
+            logger.info("Cloning vm %s", vmName)
+            template_name = get_golden_template_name(cluster)
+            if not template_name:
+                logger.error(
+                    "Cannot find any templates to use under cluster %s",
+                    cluster
+                )
+                return False
+
+            # Clone a vm from a template with the correct parameters
+            args_clone = {
+                'positive': True,
+                'name': vmName,
+                'cluster': cluster,
+                'template': template_name,
+                'clone': True,  # Always clone
+                # If sparse is not defined, use thin by default to speed up
+                # the test run
+                'vol_sparse': vol_allocation_policy,
+                'vol_format': vol_format,
+                'storagedomain': storage_domain,
+                'virtio_scsi': True,
+            }
+            update_keys = [
+                'vmDescription', 'type', 'placement_host',
+                'placement_affinity', 'highly_available',
+            ]
+            update_args = dict((key, kwargs.get(key)) for key in update_keys)
+            args_clone.update(update_args)
+            assert cloneVmFromTemplate(**args_clone)
+            # Because alias is not a unique property and a lot of test use it
+            # as identifier, rename the vm's disk alias to be safe
+            # Since cloning doesn't allow to specify disk interface, change it
+            disks_obj = getVmDisks(vmName)
+            for i in range(len(disks_obj)):
+                updateDisk(
+                    True, vmName=vmName, id=disks_obj[i].get_id(),
+                    alias="{0}_Disk_{1}".format(vmName, i),
+                    interface=disk_interface
+                )
+            # createVm always leaves the vm up when installation is True
         return startVm(positive, vmName, wait_for_status=config.VM_UP)
     else:
         return createVm(positive, vmName, vmDescription, cluster, **kwargs)

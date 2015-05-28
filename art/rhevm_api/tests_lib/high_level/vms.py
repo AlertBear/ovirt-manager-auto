@@ -7,6 +7,8 @@ from concurrent.futures import ThreadPoolExecutor
 from art.core_api import is_action
 import art.rhevm_api.tests_lib.low_level.vms as vms
 import art.rhevm_api.tests_lib.low_level.hosts as hosts
+import art.rhevm_api.tests_lib.low_level.disks as disks
+import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
 from art.rhevm_api.utils.test_utils import get_api, setPersistentNetwork
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
@@ -594,4 +596,79 @@ def update_vms_memory(test_vms, memory):
                 vm
             )
             return False
+    return True
+
+
+def create_vm_using_glance_image(
+        glance_storage_domain_name, glance_image, vm_name, **kwargs
+):
+    """
+    Create a vm using an imported disk from glance repository
+
+    :param glance_storage_domain_name: Name of the glance repository
+    :type glance_storage_domain_name: str
+    :param glance_image: Name of the desired image to use
+    :type glance_image: str
+    :param vm_name: Name of the vm to create
+    :type vm_name: str
+    :param storage_domain: Target storage domain to use
+    :type storage_domain: str
+    :param cluster: Target cluster to use
+    :type cluster: str
+    :return: True on success, False otherwise
+    :rtype: bool
+    """
+    LOGGER.info(
+        "Verifies whether image %s exists in glance repository %s",
+        glance_image, glance_storage_domain_name
+    )
+    if not storagedomains.verify_image_exists_in_storage_domain(
+        glance_storage_domain_name, glance_image
+    ):
+        LOGGER.error(
+            "Glance image %s is not in glance storage domain %s",
+            glance_image, glance_storage_domain_name
+        )
+        return False
+    target_storage_domain = kwargs.get('storageDomainName')
+    update_args = {
+        'storageDomainName': None,  # To avoid installation process
+        'installation': False,  # To avoid installation process
+    }
+    kwargs.update(update_args)
+    # Create a class instance for GlanceImage
+    glance = storagedomains.GlanceImage(
+        glance_image, glance_storage_domain_name
+    )
+    disk_alias = "{0}_Disk_glance".format(vm_name)
+    LOGGER.info("Importing image from %s", glance_storage_domain_name)
+    if not glance.import_image(
+        destination_storage_domain=target_storage_domain,
+        cluster_name=kwargs.get('cluster'),
+        new_disk_alias=disk_alias,
+    ):
+        LOGGER.error(
+            "Failed to import image %s from glance repository", glance_image
+        )
+        return False
+    LOGGER.info("Creating vm %s with nic", vm_name)
+    if not vms.createVm(
+            positive=True, vmName=vm_name, vmDescription=vm_name, **kwargs
+    ):
+        LOGGER.error("Failed to add vm %s", vm_name)
+        return False
+    LOGGER.info("Attaching imported disk to vm")
+    if not disks.attachDisk(True, disk_alias, vm_name):
+        LOGGER.error(
+            "Failed to attach disk %s to vm %s", glance_image, vm_name
+        )
+        return False
+    disk_interface = kwargs.get('diskInterface')
+    LOGGER.info("Updating disk's interface to: %s", disk_interface)
+    if not disks.updateDisk(
+        positive=True, vmName=vm_name, alias=disk_alias,
+        interface=disk_interface, bootable=True
+    ):
+        LOGGER.error("Failed to update disk's attributes")
+        return False
     return True
