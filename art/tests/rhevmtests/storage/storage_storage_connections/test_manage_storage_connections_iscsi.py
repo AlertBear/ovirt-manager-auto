@@ -14,63 +14,197 @@ from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.high_level import datastructures
+from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 
-LOGGER = logging.getLogger(__name__)
+from art.test_handler.settings import opts
+
+from utilities.machine import Machine
+logger = logging.getLogger(__name__)
 
 api = test_utils.get_api('storage_connection', 'storageconnections')
 sd_api = test_utils.get_api('storage_domain', 'storagedomains')
 dc_api = test_utils.get_api('data_center', 'datacenters')
 
-GB = 1024 ** 3
+vmArgs = {
+    'vmDescription': 'storage_connections_description',
+    'diskInterface': config.VIRTIO, 'volumeFormat': config.COW_DISK,
+    'cluster': config.CLUSTER_ISCSI_CONNECTIONS,
+    'installation': True, 'size': config.DISK_SIZE, 'nic': config.NIC_NAME[0],
+    'useAgent': True, 'os_type': config.ENUMS['rhel6'], 'user': config.VM_USER,
+    'password': config.VM_PASSWORD, 'network': config.MGMT_BRIDGE,
+    'image': config.COBBLER_PROFILE,
+}
+
+
+def setup_module():
+    """
+    Remove all the storage domains since we need an empty DC
+    """
+    if not config.GOLDEN_ENV:
+        datacenters.build_setup(
+            config.PARAMETERS, config.PARAMETERS, config.STORAGE_TYPE,
+            basename=config.TESTNAME,
+            local=config.STORAGE_TYPE == config.ENUMS['storage_type_local']
+        )
+
+        # for iscsi tests we want to have an empty DC
+        if config.STORAGE_TYPE == config.STORAGE_TYPE_ISCSI:
+            sds = sd_api.get(absLink=False)
+            for sd in sds:
+                # Don't remove sds by providers
+                if sd.get_storage().get_type() not in \
+                        config.STORAGE_TYPE_PROVIDERS:
+                    assert storagedomains.removeStorageDomain(
+                        True, sd.get_name(), config.HOSTS[0]
+                    )
+    else:
+        # All of the storage connections need to be removed, and the host
+        # should be logged out from all targets for these tests. This is due
+        # to the fact that when adding a new storage domain or direct lun,
+        # ovirt will automatically link the storage  domains with the existing
+        # host's logged targets
+        logger.info("Removing all iscsi storage domains for test")
+        iscsi_sds = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, config.STORAGE_TYPE_ISCSI
+        )
+        storagedomains.removeStorageDomains(
+            True, iscsi_sds, config.HOST_FOR_MOUNT, 'true'
+        )
+        assert ll_dc.addDataCenter(
+            True, name=config.DATACENTER_ISCSI_CONNECTIONS,
+            storage_type=config.STORAGE_TYPE_ISCSI,
+            version=config.COMP_VERSION
+        )
+        assert clusters.addCluster(
+            True, name=config.CLUSTER_ISCSI_CONNECTIONS,
+            cpu=config.CPU_NAME,
+            data_center=config.DATACENTER_ISCSI_CONNECTIONS,
+            version=config.COMP_VERSION
+        )
+        hl_hosts.switch_host_to_cluster(
+            config.HOST_FOR_MOUNT, config.CLUSTER_ISCSI_CONNECTIONS
+        )
+        _logout_from_all_iscsi_targets()
+
+
+def teardown_module():
+    """
+    Remove empty DC
+    """
+    if not config.GOLDEN_ENV:
+        datacenters.clean_datacenter(True, config.DATACENTER_ISCSI_CONNECTIONS)
+    else:
+        hl_hosts.switch_host_to_cluster(
+            config.HOST_FOR_MOUNT, config.CLUSTER_NAME
+        )
+        if not ll_dc.removeDataCenter(
+            True, config.DATACENTER_ISCSI_CONNECTIONS
+        ):
+            logger.error(
+                "Error removing data center %s",
+                config.DATACENTER_ISCSI_CONNECTIONS
+            )
+        if not clusters.removeCluster(True, config.CLUSTER_ISCSI_CONNECTIONS):
+            logger.error(
+                "Error removing cluster %s", config.CLUSTER_ISCSI_CONNECTIONS
+            )
+        _logout_from_all_iscsi_targets()
+        logger.info("Adding iscsi storage domains back")
+        names = [sd['name'] for sd in config.DC['storage_domains']
+                 if sd['storage_type'] == config.STORAGE_TYPE_ISCSI]
+        for name, lun, target, address in zip(
+                names, config.LUNS, config.LUN_TARGETS, config.LUN_ADDRESSES
+        ):
+            hl_sd.addISCSIDataDomain(
+                config.HOST_FOR_MOUNT, name, config.DATA_CENTER_NAME,
+                lun, address, target, override_luns=True
+            )
 
 
 def _compare_connections(conn_1, conn_2):
     return conn_1.__dict__ == conn_2.__dict__
 
 
-def _restore_empty_dc():
+def _get_all_storage_connections():
+    return api.get(absLink=False)
+
+
+def _logout_from_all_iscsi_targets():
+    """
+    Logout from all the targets used in the test
+    """
+    machine = Machine(
+        host=config.HOST_FOR_MOUNT_IP, user=config.HOSTS_USER,
+        password=config.HOSTS_PW
+    ).util('linux')
+    for connection in config.CONNECTIONS:
+        machine.logoutTargets(
+            mode='node', targetName=connection['lun_target'],
+            portalIp=connection['lun_address']
+        )
+
+
+def _filter_storage_connections(connection_list1, connection_list2):
+    """
+    Return a list of all connection objects from conn_list2 that are not
+    in conn_list1
+    """
+    return_connection = []
+    connection_list1_ids = [connection.id for connection in connection_list1]
+    for connection in connection_list2:
+        if connection.id not in connection_list1_ids:
+            return_connection.append(connection)
+    return return_connection
+
+
+def _restore_empty_dc(datacenter=config.DATACENTER_ISCSI_CONNECTIONS):
     found_master, master_sd = storagedomains.findMasterStorageDomain(
-        True, config.DATA_CENTER_NAME)
+        True, datacenter
+    )
     if found_master:
         non_master_sds = storagedomains.findNonMasterStorageDomains(
-            True, config.DATA_CENTER_NAME)[1]['nonMasterDomains']
+            True, datacenter
+        )[1]['nonMasterDomains']
         if non_master_sds:
             for sd in non_master_sds:
-                hl_sd.detach_and_deactivate_domain(config.DATA_CENTER_NAME, sd)
+                hl_sd.remove_storage_domain(
+                    sd, datacenter, config.HOST_FOR_MOUNT, 'True'
+                )
         master_sd = master_sd['masterDomain']
-        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        logger.info("Waiting for tasks before deactivating the storage domain")
         test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                                  config.DATA_CENTER_NAME)
+                                  datacenter)
         assert storagedomains.deactivateStorageDomain(
-            True, config.DATA_CENTER_NAME, master_sd)
-        dcObj = dc_api.find(config.DATA_CENTER_NAME)
+            True, datacenter, master_sd
+        )
+        dcObj = dc_api.find(datacenter)
         cluster = dc_api.getElemFromLink(
             dcObj, link_name='clusters', attr='cluster',
-            get_href=False)[0].name
-        assert ll_dc.removeDataCenter(True, config.DATA_CENTER_NAME)
+            get_href=False
+        )[0].name
+        assert ll_dc.removeDataCenter(True, datacenter)
         assert storagedomains.removeStorageDomain(
-            True, master_sd, config.HOSTS[0])
+            True, master_sd, config.HOST_FOR_MOUNT, 'true'
+        )
         assert ll_dc.addDataCenter(
-            True, storage_type=config.STORAGE_TYPE,
-            name=config.DATA_CENTER_NAME,
-            version=config.PARAMETERS['compatibility_version'])
-        assert hosts.deactivateHost(True, config.HOSTS[0])
+            True, storage_type=config.STORAGE_TYPE_ISCSI,
+            name=datacenter, version=config.COMP_VERSION
+        )
+        assert hosts.deactivateHost(True, config.HOST_FOR_MOUNT)
         assert clusters.connectClusterToDataCenter(
-            True, cluster, config.DATA_CENTER_NAME)
-        assert hosts.activateHost(True, config.HOSTS[0])
-        assert hosts.waitForHostsStates(True, config.HOSTS[0])
-    unattached_sds = sd_api.get(absLink=False)
-    for sd in unattached_sds:
-        if sd.get_storage().get_type() not in \
-                config.STORAGE_TYPE_PROVIDERS:
-            assert storagedomains.removeStorageDomain(
-                True, sd.name, config.HOSTS[0])
-    assert storageconnections.remove_all_storage_connections()
+            True, cluster, datacenter
+        )
+        assert hosts.activateHost(True, config.HOST_FOR_MOUNT)
+        assert hosts.waitForHostsStates(True, config.HOST_FOR_MOUNT)
 
 
-@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
 class TestCase(StorageTest):
-    pass
+    storages = set([config.STORAGE_TYPE_ISCSI])
+
+    def get_all_new_connections(self):
+        return _filter_storage_connections(
+            self.original_conn, _get_all_storage_connections()
+        )
 
 
 @attr(tier=0)
@@ -80,7 +214,7 @@ class TestCase288967(TestCase):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = True
+    __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
     tcms_plan_id = '9985'
     tcms_test_case = '288967'
     conn = None
@@ -91,28 +225,35 @@ class TestCase288967(TestCase):
         """ test adding a storage connection to a dc without storage domains
             and to a dc with a storage domain
         """
-        # add a connection to an empty dc
+        logger.info(
+            "Add a connection to the empty dc %s",
+            config.DATACENTER_ISCSI_CONNECTIONS
+        )
         conn = dict(config.CONNECTIONS[0])
-        conn['type'] = config.STORAGE_TYPE
+        conn['type'] = config.STORAGE_TYPE_ISCSI
         self.conn, success = storageconnections.add_connection(**conn)
         assert success
 
         storageconnections.remove_storage_connection(self.conn.id)
         self.conn = None
         self.sd_name = 'sd_%s' % self.tcms_test_case
-        storagedomains.addStorageDomain(
-            True, host=config.HOSTS[0], name=self.sd_name,
+        assert storagedomains.addStorageDomain(
+            True, host=config.HOST_FOR_MOUNT, name=self.sd_name,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.STORAGE_TYPE,
-            lun=config.CONNECTIONS[1]['luns'][0], **(config.CONNECTIONS[1]))
+            storage_type=config.STORAGE_TYPE_ISCSI, override_luns=True,
+            lun=config.CONNECTIONS[0]['luns'][0], **(config.CONNECTIONS[0])
+        )
         old_conns_for_sd = storagedomains.getConnectionsForStorageDomain(
             self.sd_name)
         assert len(old_conns_for_sd) == 1
         old_conn = old_conns_for_sd[0]
 
-        # add the same connection to a dc with a storage domain
+        logger.info(
+            "Add the same connection to a data center with a storage domain "
+            "- should fail"
+        )
         self.conn, success = storageconnections.add_connection(**conn)
-        assert success
+        assert not success
         conns_for_sd = storagedomains.getConnectionsForStorageDomain(
             self.sd_name)
         assert len(conns_for_sd) == 1
@@ -120,7 +261,16 @@ class TestCase288967(TestCase):
         assert _compare_connections(old_conn, new_conn)
 
     def tearDown(self):
-        _restore_empty_dc()
+        """
+        Remove the storage domain and the storage connection
+        """
+        if self.sd_name:
+            storagedomains.removeStorageDomain(
+                True, self.sd_name, config.HOST_FOR_MOUNT, 'true'
+            )
+        if self.conn:
+            storageconnections.remove_storage_connection(self.conn.id)
+        _logout_from_all_iscsi_targets()
 
 
 @attr(tier=0)
@@ -130,7 +280,7 @@ class TestCase288985(TestCase):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = True
+    __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
     tcms_plan_id = '9985'
     tcms_test_case = '288985'
     conn = None
@@ -138,7 +288,7 @@ class TestCase288985(TestCase):
 
     def add_connection_without_sth(self, param, value=None):
         conn = dict(config.CONNECTIONS[0])
-        conn['type'] = config.STORAGE_TYPE
+        conn['type'] = config.STORAGE_TYPE_ISCSI
         conn[param] = value
         self.conn, success = storageconnections.add_connection(**conn)
         if not success:
@@ -147,7 +297,7 @@ class TestCase288985(TestCase):
 
     def add_connection_with_empty_sth(self, param):
         conn = dict(config.CONNECTIONS[0])
-        conn['type'] = config.STORAGE_TYPE
+        conn['type'] = config.STORAGE_TYPE_ISCSI
         conn[param] = ''
         self.conn, success = storageconnections.add_connection(**conn)
         if not success:
@@ -197,7 +347,7 @@ class TestCase288985(TestCase):
             and add it after it was removed
         """
         conn = dict(config.CONNECTIONS[0])
-        conn['type'] = config.STORAGE_TYPE
+        conn['type'] = config.STORAGE_TYPE_ISCSI
         self.conn, success = storageconnections.add_connection(**conn)
         assert success
         _, success = storageconnections.add_connection(**conn)
@@ -207,7 +357,11 @@ class TestCase288985(TestCase):
         assert success
 
     def tearDown(self):
-        storageconnections.remove_all_storage_connections()
+        """
+        Remove the added storage connection
+        """
+        if self.conn:
+            storageconnections.remove_storage_connection(self.conn.id)
 
 
 @attr(tier=1)
@@ -217,7 +371,7 @@ class TestCase288986(TestCase):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = True
+    __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
     tcms_plan_id = '9985'
     tcms_test_case = '288986'
     conn_1 = None
@@ -226,13 +380,16 @@ class TestCase288986(TestCase):
 
     @classmethod
     def setup_class(cls):
+        """
+        Add two storage connections
+        """
         conn = dict(config.CONNECTIONS[0])
-        conn['type'] = config.STORAGE_TYPE
+        conn['type'] = config.STORAGE_TYPE_ISCSI
         cls.conn_1, success = storageconnections.add_connection(**conn)
         assert success
 
         conn = dict(config.CONNECTIONS[1])
-        conn['type'] = config.STORAGE_TYPE
+        conn['type'] = config.STORAGE_TYPE_ISCSI
         cls.conn_2_params = conn
         cls.conn_2, success = storageconnections.add_connection(**conn)
         assert success
@@ -240,7 +397,7 @@ class TestCase288986(TestCase):
     def change_connection_without_sth(self, conn, param):
         conn_params = {}
         conn_params[param] = ''
-        conn_params['type'] = config.STORAGE_TYPE
+        conn_params['type'] = config.STORAGE_TYPE_ISCSI
         _, success = storageconnections.update_connection(
             conn.id, **conn_params)
         assert (not success)
@@ -278,7 +435,11 @@ class TestCase288986(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        _restore_empty_dc()
+        """
+        Remove the storage connections
+        """
+        storageconnections.remove_storage_connection(cls.conn_1.id)
+        storageconnections.remove_storage_connection(cls.conn_2.id)
 
 
 @attr(tier=1)
@@ -288,7 +449,7 @@ class TestCase288983(TestCase):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = True
+    __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
     tcms_plan_id = '9985'
     tcms_test_case = '288983'
     sd_name_1 = "sd_%s_1" % tcms_test_case
@@ -296,32 +457,43 @@ class TestCase288983(TestCase):
     master_sd = "master_%s" % tcms_test_case
 
     def setUp(self):
+        """
+        Add one storage domain and then another 2 storage domains that all
+        use the same storage connection
+        """
         assert storagedomains.addStorageDomain(
-            True, host=config.HOSTS[0], name=self.master_sd,
+            True, host=config.HOST_FOR_MOUNT, name=self.master_sd,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.STORAGE_TYPE,
-            lun=config.CONNECTIONS[1]['luns'][0], **(config.CONNECTIONS[1]))
+            storage_type=config.STORAGE_TYPE_NFS,
+            address=config.EXTRA_DOMAIN_ADDRESSES[0],
+            path=config.EXTRA_DOMAIN_PATHS[0]
+        )
 
         assert storagedomains.attachStorageDomain(
-            True, config.DATA_CENTER_NAME, self.master_sd)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.master_sd
+        )
 
         assert storagedomains.addStorageDomain(
-            True, host=config.HOSTS[0], name=self.sd_name_1,
+            True, host=config.HOST_FOR_MOUNT, name=self.sd_name_1,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.STORAGE_TYPE,
-            lun=config.CONNECTIONS[0]['luns'][0], **(config.CONNECTIONS[0]))
+            storage_type=config.STORAGE_TYPE_ISCSI, override_luns=True,
+            lun=config.CONNECTIONS[0]['luns'][1], **(config.CONNECTIONS[0])
+        )
 
         assert storagedomains.attachStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name_1)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1
+        )
 
         assert storagedomains.addStorageDomain(
-            True, host=config.HOSTS[0], name=self.sd_name_2,
+            True, host=config.HOST_FOR_MOUNT, name=self.sd_name_2,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.STORAGE_TYPE,
-            lun=config.CONNECTIONS[0]['luns'][1], **(config.CONNECTIONS[0]))
+            storage_type=config.STORAGE_TYPE_ISCSI, override_luns=True,
+            lun=config.CONNECTIONS[0]['luns'][2], **(config.CONNECTIONS[0])
+        )
 
         assert storagedomains.attachStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name_2)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2
+        )
 
     def test_removing_storage_connection(self):
         """ Test scenario:
@@ -335,50 +507,63 @@ class TestCase288983(TestCase):
             * detach the storage connection from the storage domain
             * try to delete the storage connection
         """
+        logger.info("Try to remove the storage connection - should fail")
         conns = storagedomains.getConnectionsForStorageDomain(self.sd_name_1)
         conn_id = conns[0].id
-        host = config.HOSTS[0]
-        assert not storageconnections.remove_storage_connection(conn_id, host)
-        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        assert not storageconnections.remove_storage_connection(conn_id)
+
         test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                                  config.DATA_CENTER_NAME)
+                                  config.DATACENTER_ISCSI_CONNECTIONS)
+        logger.info("Put the first domain into maintenance")
         assert storagedomains.deactivateStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name_1)
-        assert not storageconnections.remove_storage_connection(conn_id, host)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1)
+        logger.info("Try to remove the storage connection - should fail")
+        assert not storageconnections.remove_storage_connection(conn_id)
+
+        logger.info("Deatch the storage connection from the first domain")
         assert storagedomains.detachConnectionFromStorageDomain(
             self.sd_name_1, conn_id)
-        assert not storageconnections.remove_storage_connection(conn_id, host)
-        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        logger.info("Try to remove the storage connection - should fail")
+        assert not storageconnections.remove_storage_connection(conn_id)
+
+        logger.info("Put the second sorage domain into maintenance")
         test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                                  config.DATA_CENTER_NAME)
+                                  config.DATACENTER_ISCSI_CONNECTIONS)
         assert storagedomains.deactivateStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name_2)
-        assert not storageconnections.remove_storage_connection(conn_id, host)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2)
+        logger.info("Try to remove the storage connection - should fail")
+        assert not storageconnections.remove_storage_connection(conn_id)
+
+        logger.info("Deatch the storage connection from the second domain")
         assert storagedomains.detachConnectionFromStorageDomain(
             self.sd_name_2, conn_id)
-        assert storageconnections.remove_storage_connection(conn_id, host)
+        logger.info("Try to remove the storage connection - should succeed")
+        assert storageconnections.remove_storage_connection(conn_id)
 
     def tearDown(self):
-        # try to clean it as clearly as possible
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  config.DATACENTER_ISCSI_CONNECTIONS)
         if self.sd_name_1 is not None and self.sd_name_2 is not None:
             conn = dict(config.CONNECTIONS[0])
-            conn['type'] = config.STORAGE_TYPE
-            conn_1, _ = storageconnections.add_connection(**conn)
-            storagedomains.addConnectionToStorageDomain(
-                self.sd_name_1, conn_1.id)
-            storagedomains.addConnectionToStorageDomain(
-                self.sd_name_2, conn_1.id)
+            conn['type'] = config.STORAGE_TYPE_ISCSI
+            conn_1, success = storageconnections.add_connection(**conn)
+            if success:
+                storagedomains.addConnectionToStorageDomain(
+                    self.sd_name_1, conn_1.id)
+                storagedomains.addConnectionToStorageDomain(
+                    self.sd_name_2, conn_1.id)
         _restore_empty_dc()
+        _logout_from_all_iscsi_targets()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase295262(TestCase):
     """
     https://tcms.engineering.redhat.com/case/295262/?from_plan=9985
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = True
+    __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
     tcms_plan_id = '9985'
     tcms_test_case = '295262'
     conns = []
@@ -391,7 +576,7 @@ class TestCase295262(TestCase):
         for i in range(cls.no_of_conn):
             conn = dict(config.CONNECTIONS[0])
             conn['lun_target'] = 'sth%d.%s' % (i, conn['lun_target'])
-            conn['type'] = config.STORAGE_TYPE
+            conn['type'] = config.STORAGE_TYPE_ISCSI
             cls.con_params.append(conn)
             conn, success = storageconnections.add_connection(**conn)
             assert success
@@ -404,14 +589,16 @@ class TestCase295262(TestCase):
             * try to switch 2 connections
             * try to change 10 connections at once
         """
-        LOGGER.info("Trying to switch 2 connections")
+        logger.info("Trying to switch 2 connections")
         with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
             result_1 = executor.submit(
                 storageconnections.update_connection,
-                self.conns[0].id, ** self.con_params[1])
+                self.conns[0].id, ** self.con_params[1]
+            )
             result_2 = executor.submit(
                 storageconnections.update_connection,
-                self.conns[1].id, ** self.con_params[0])
+                self.conns[1].id, ** self.con_params[0]
+            )
         assert result_1.result()[1] == result_2.result()[1]
 
         conn_1 = api.find(self.conns[0].id, 'id')
@@ -419,7 +606,7 @@ class TestCase295262(TestCase):
 
         assert not _compare_connections(conn_1, conn_2)
 
-        LOGGER.info("Trying to change 10 connections at once")
+        logger.info("Trying to change 10 connections at once")
         results = []
         with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
             for conn in self.conns:
@@ -428,165 +615,188 @@ class TestCase295262(TestCase):
                         storageconnections.update_connection,
                         conn.id,
                         lun_target="aaa" + conn.target,
-                        type=config.STORAGE_TYPE))
+                        type=config.STORAGE_TYPE_ISCSI
+                    )
+                )
         for result in results:
             assert result.result()
 
     @classmethod
     def teardown_class(cls):
-        _restore_empty_dc()
-
-
-def _get_all_connections():
-    return api.get(absLink=False)
-
-
-def _add_disk(conn_params, alias):
-    return disks.addDisk(
-        True, alias=alias, interface=config.ENUMS["interface_virtio"],
-        format=config.ENUMS["format_cow"],
-        type_=config.ENUMS['storage_type_iscsi'],
-        lun_id=conn_params['luns'][0],
-        lun_address=conn_params['lun_address'],
-        lun_target=conn_params['lun_target'])
+        for conn in cls.conns:
+            storageconnections.remove_storage_connection(conn.id)
 
 
 @attr(tier=0)
 class TestCase288963(TestCase):
     """
+    Verify the GET call works for various storage connection/storage domains
+    combinations
     https://tcms.engineering.redhat.com/case/288963/?from_plan=9985
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = True
+    __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
     tcms_plan_id = '9985'
     tcms_test_case = '288963'
-    disks = []
 
-    def verify_one_orphaned_connection(self):
+    def setUp(self):
+        self.disks = []
+        self.storage_domains = []
+        self.storage_connections = []
+        self.original_conn = _get_all_storage_connections()
+
+    @tcms(tcms_plan_id, tcms_test_case)
+    def test_verify_one_orphaned_connection(self):
+        """
+        Verifying GET for one orphaned connection
+        """
+        logger.info("Verifying get for one orphaned connection")
         conn_1 = dict(config.CONNECTIONS[0])
-        conn_1['type'] = config.STORAGE_TYPE
-        storageconnections.add_connection(**conn_1)
-        assert len(_get_all_connections()) == 1
-        storageconnections.remove_all_storage_connections()
+        conn_1['type'] = config.STORAGE_TYPE_ISCSI
+        self.conn, success = storageconnections.add_connection(**conn_1)
+        self.assertTrue(success, "Error adding storage connection %s" % conn_1)
+        self.storage_connections.append(self.conn.id)
+        new_conn = self.get_all_new_connections()
+        assert len(new_conn) == 1
+        storageconnections.remove_storage_connection(self.conn.id)
+        self.storage_connections.remove(self.conn.id)
 
-    def verify_one_storage_domain(self):
+    @tcms(tcms_plan_id, tcms_test_case)
+    def test_verify_one_storage_domain(self):
+        """
+        Verifying GET for one storage domain
+        """
+        logger.info("Verifying get for one orphaned connection")
         sd_name = "sd_1_%s" % self.tcms_test_case
-        storagedomains.addStorageDomain(
-            True, host=config.HOSTS[0], name=sd_name,
+        assert storagedomains.addStorageDomain(
+            True, host=config.HOST_FOR_MOUNT, name=sd_name,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.STORAGE_TYPE,
+            storage_type=config.STORAGE_TYPE_ISCSI, override_luns=True,
             lun=config.CONNECTIONS[0]['luns'][0], **(config.CONNECTIONS[0]))
-        all_conn = _get_all_connections()
+        self.storage_domains.append(sd_name)
+        new_conn = self.get_all_new_connections()
         conn_for_sd = storagedomains.getConnectionsForStorageDomain(sd_name)
-        assert len(all_conn) == 1
+        assert len(new_conn) == 1
         assert len(conn_for_sd) == 1
-        assert _compare_connections(all_conn[0], conn_for_sd[0])
-        storagedomains.removeStorageDomain(True, sd_name, config.HOSTS[0])
-        storageconnections.remove_all_storage_connections()
-        assert not _get_all_connections()
+        assert _compare_connections(new_conn[0], conn_for_sd[0])
+        assert storagedomains.removeStorageDomain(
+            True, sd_name, config.HOST_FOR_MOUNT
+        )
+        self.storage_domains.remove(sd_name)
+        new_conn = self.get_all_new_connections()
+        assert len(new_conn) == 0
 
-    def verify_no_connections(self):
-        sds = storagedomains.getDCStorages(config.DATA_CENTER_NAME, False)
-        assert not sds
-        assert not _get_all_connections()
-
-    def verify_storage_domain_with_two_connections(self):
+    @tcms(tcms_plan_id, tcms_test_case)
+    def test_verify_storage_domain_with_two_connections(self):
+        """
+        Verifying GET for one storage domain using multiple
+        storage connections
+        """
+        logger.info("Verifying get for one storage domain")
         sd_name = "sd_2_%s" % self.tcms_test_case
         assert storagedomains.addStorageDomain(
-            True, host=config.HOSTS[0], name=sd_name,
+            True, host=config.HOST_FOR_MOUNT, name=sd_name,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.STORAGE_TYPE,
-            lun=config.CONNECTIONS[0]['luns'][0], **(config.CONNECTIONS[0]))
+            storage_type=config.STORAGE_TYPE_ISCSI, override_luns=True,
+            lun=config.CONNECTIONS[0]['luns'][0], **(config.CONNECTIONS[0])
+        )
+        self.storage_domains.append(sd_name)
         assert storagedomains.attachStorageDomain(
-            True, config.DATA_CENTER_NAME, sd_name)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, sd_name)
+        self.storage_domains.remove(sd_name)
         assert storagedomains.waitForStorageDomainStatus(
-            True, config.DATA_CENTER_NAME, sd_name,
+            True, config.DATACENTER_ISCSI_CONNECTIONS, sd_name,
             config.ENUMS['storage_domain_state_active'])
         assert storagedomains.extendStorageDomain(
-            True, sd_name, storage_type=config.STORAGE_TYPE,
-            host=config.HOSTS[0], lun=config.CONNECTIONS[1]['luns'][0],
-            **(config.CONNECTIONS[1]))
+            True, sd_name, storage_type=config.STORAGE_TYPE_ISCSI,
+            host=config.HOST_FOR_MOUNT, lun=config.CONNECTIONS[1]['luns'][1],
+            **(config.CONNECTIONS[1])
+        )
 
-        all_conn = _get_all_connections()
+        new_conn = self.get_all_new_connections()
         conn_for_sd = storagedomains.getConnectionsForStorageDomain(sd_name)
-        assert len(all_conn) == 2
+        assert len(new_conn) == 2
         assert len(conn_for_sd) == 2
-        _restore_empty_dc()
 
-    def verify_two_storage_domains_with_the_same_connection(self):
+    @tcms(tcms_plan_id, tcms_test_case)
+    def test_verify_two_storage_domains_with_the_same_connection(self):
+        """
+        Verifying get for a storage domain with 2 connections
+        """
+        logger.info("Verifying get for a storage domain with 2 connections")
         sd_name_1 = "sd_3_%s" % self.tcms_test_case
         storagedomains.addStorageDomain(
-            True, host=config.HOSTS[0], name=sd_name_1,
+            True, host=config.HOST_FOR_MOUNT, name=sd_name_1,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.STORAGE_TYPE,
-            lun=config.CONNECTIONS[0]['luns'][0], **(config.CONNECTIONS[0]))
+            storage_type=config.STORAGE_TYPE_ISCSI, override_luns=True,
+            lun=config.CONNECTIONS[0]['luns'][0], **(config.CONNECTIONS[0])
+        )
+        self.storage_domains.append(sd_name_1)
         sd_name_2 = "sd_4_%s" % self.tcms_test_case
         storagedomains.addStorageDomain(
-            True, host=config.HOSTS[0], name=sd_name_2,
+            True, host=config.HOST_FOR_MOUNT, name=sd_name_2,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.STORAGE_TYPE,
-            lun=config.CONNECTIONS[0]['luns'][1], **(config.CONNECTIONS[0]))
+            storage_type=config.STORAGE_TYPE_ISCSI, override_luns=True,
+            lun=config.CONNECTIONS[0]['luns'][1], **(config.CONNECTIONS[0])
+        )
+        self.storage_domains.append(sd_name_2)
 
-        all_conn = _get_all_connections()
         conn_sd_1 = storagedomains.getConnectionsForStorageDomain(sd_name_1)
         conn_sd_2 = storagedomains.getConnectionsForStorageDomain(sd_name_2)
-        assert len(all_conn) == 1
-        assert len(conn_sd_1) == 1
-        assert len(conn_sd_2) == 1
+        assert len(conn_sd_1) == len(conn_sd_2)
         assert _compare_connections(conn_sd_1[0], conn_sd_2[0])
-        storagedomains.removeStorageDomain(True, sd_name_1, config.HOSTS[0])
-        storagedomains.removeStorageDomain(True, sd_name_2, config.HOSTS[0])
-        storageconnections.remove_all_storage_connections()
-        assert not _get_all_connections()
+        storagedomains.removeStorageDomain(
+            True, sd_name_1, config.HOST_FOR_MOUNT
+        )
+        self.storage_domains.remove(sd_name_1)
+        storagedomains.removeStorageDomain(
+            True, sd_name_2, config.HOST_FOR_MOUNT
+        )
+        self.storage_domains.remove(sd_name_2)
+        new_conn = self.get_all_new_connections()
+        assert not new_conn
 
-    def verify_one_direct_lun(self):
-        assert not _get_all_connections()
+    @tcms(tcms_plan_id, tcms_test_case)
+    def test_verify_one_direct_lun(self):
+        """
+        Verifying get for direct LUN
+        """
+        logger.info("Verifying get for direct LUN")
         alias = "disk_1_%s" % self.tcms_test_case
-        _add_disk(config.CONNECTIONS[0], alias)
+        disks.addDisk(
+            True, alias=alias, interface=config.DISK_INTERFACE_VIRTIO,
+            format=config.DISK_FORMAT_COW, type_=config.STORAGE_TYPE_ISCSI,
+            lun_id=config.CONNECTIONS[0]['luns'][0],
+            lun_address=config.CONNECTIONS[0]['lun_address'],
+            lun_target=config.CONNECTIONS[0]['lun_target']
+        )
+
         self.disks.append(alias)
-        all_conn = _get_all_connections()
-        # uncomment following lines when the call
-        # /disks/<id>/storageconnections is done
-#        conn_disk = disks.getConnectionsForDisk(alias)
-        assert len(all_conn) == 1
-#        assert len(conn_disk) == 1
-#        assert _compare_connections(all_conn, conn_disk)
+        new_conn = self.get_all_new_connections()
+        assert len(new_conn) == 1
+        # TODO: When the API allows it, check the storage connection of
+        # a direct lun, something like:
+        # conn_disk = disks.getConnectionsForDisk(alias)
+        # assert _compare_connections(all_conn, conn_disk)
+        # https://bugzilla.redhat.com/show_bug.cgi?id=1227322
         assert disks.deleteDisk(True, alias)
         self.disks.remove(alias)
 
-    @tcms(tcms_plan_id, tcms_test_case)
-    def test_get_storage_connections(self):
-        """ Verify that GET call works for various connection/storage domains
-        combinations
+    def tearDown(self):
         """
-        self.disks = []
-        LOGGER.info("Verifying get for no connections")
-        self.verify_no_connections()
-
-        LOGGER.info("Verifying get for one orphaned connection")
-        self.verify_one_orphaned_connection()
-
-        LOGGER.info("Verifying get for one storage domain")
-        self.verify_one_storage_domain()
-
-        LOGGER.info("Verifying get for a storage domain with 2 connections")
-        self.verify_storage_domain_with_two_connections()
-
-        LOGGER.info("Verifying get for 2 domains with same connection")
-        self.verify_two_storage_domains_with_the_same_connection()
-
-        LOGGER.info("Verifying get for direct LUN")
-        self.verify_one_direct_lun()
-
-    @classmethod
-    def teardown_class(cls):
-        LOGGER.info("Tear down")
-        for alias in cls.disks:
-            LOGGER.info("Deleting disk %s" % alias)
+        Remove leftover disks, storage domains and storage connections
+        """
+        for alias in self.disks:
             disks.deleteDisk(True, alias)
-
+        for storage_domain in self.storage_domains:
+            storagedomains.removeStorageDomain(
+                True, storage_domain, config.HOST_FOR_MOUNT, 'true'
+            )
+        for storage_connection in self.storage_connections:
+            storageconnections.remove_storage_connection(storage_connection)
         _restore_empty_dc()
+        _logout_from_all_iscsi_targets()
 
 
 @attr(tier=0)
@@ -596,7 +806,7 @@ class TestCase288975(TestCase):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = True
+    __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
     tcms_plan_id = '9985'
     tcms_test_case = '288975'
     conn = None
@@ -604,39 +814,49 @@ class TestCase288975(TestCase):
     sd_name_2 = "sd_%s_2" % tcms_test_case
 
     def setUp(self):
+        """
+        Add and attach two storage domains
+        """
         assert storagedomains.addStorageDomain(
-            True, host=config.HOSTS[0], name=self.sd_name_1,
+            True, host=config.HOST_FOR_MOUNT, name=self.sd_name_1,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.STORAGE_TYPE,
-            lun=config.CONNECTIONS[0]['luns'][0], **(config.CONNECTIONS[0]))
+            storage_type=config.STORAGE_TYPE_ISCSI, override_luns=True,
+            lun=config.CONNECTIONS[0]['luns'][0], **(config.CONNECTIONS[0])
+        )
 
         assert storagedomains.addStorageDomain(
-            True, host=config.HOSTS[0], name=self.sd_name_2,
+            True, host=config.HOST_FOR_MOUNT, name=self.sd_name_2,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.STORAGE_TYPE,
-            lun=config.CONNECTIONS[0]['luns'][1], **(config.CONNECTIONS[0]))
+            storage_type=config.STORAGE_TYPE_ISCSI, override_luns=True,
+            lun=config.CONNECTIONS[0]['luns'][1], **(config.CONNECTIONS[0])
+        )
 
         assert storagedomains.attachStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name_1)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1)
         assert storagedomains.attachStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name_2)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2)
         storagedomains.waitForStorageDomainStatus(
-            True, config.DATA_CENTER_NAME, self.sd_name_1,
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1,
             config.ENUMS['storage_domain_state_active'])
         storagedomains.waitForStorageDomainStatus(
-            True, config.DATA_CENTER_NAME, self.sd_name_2,
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2,
             config.ENUMS['storage_domain_state_active'])
 
     def _try_to_change_connection(self, conn_id, should_pass):
-        assert should_pass is storageconnections.update_connection(
-            conn_id, lun_address=config.CONNECTIONS[1]['lun_address'],
-            type=config.STORAGE_TYPE)[1]
-        assert should_pass is storageconnections.update_connection(
-            conn_id, lun_target=config.CONNECTIONS[1]['lun_target'],
-            type=config.STORAGE_TYPE)[1]
-        assert should_pass is storageconnections.update_connection(
-            conn_id, lun_port=config.CONNECTIONS[1]['lun_port'],
-            type=config.STORAGE_TYPE)[1]
+        """
+        Try to update connection conn_id, should succeed if should_pass is True
+        """
+        for parameter in ['lun_address', 'lun_target', 'lun_port']:
+            fail_action = 'Unable' if should_pass else 'Able'
+            self.assertTrue(
+                should_pass == storageconnections.update_connection(
+                    conn_id, type=config.STORAGE_TYPE_ISCSI,
+                    **{parameter: config.CONNECTIONS[1][parameter]}
+                )[1],
+                "{0} to update the storage connection {1}".format(
+                    fail_action, conn_id
+                )
+            )
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_change_connection_in_sd(self):
@@ -655,27 +875,37 @@ class TestCase288975(TestCase):
             * try to change parameters of non existent storage domain
         """
         conn = storagedomains.getConnectionsForStorageDomain(self.sd_name_1)[0]
+        logger.info("Trying to change the connection - should fail")
         self._try_to_change_connection(conn.id, False)
-        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        logger.info("Waiting for tasks before deactivating the storage domain")
         test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                                  config.DATA_CENTER_NAME)
+                                  config.DATACENTER_ISCSI_CONNECTIONS)
+
+        logger.info("Deactivating one of the storage domains")
         assert storagedomains.deactivateStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name_2)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2)
+        logger.info("Trying to change the connection - should fail")
         self._try_to_change_connection(conn.id, False)
-        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        logger.info("Waiting for tasks before deactivating the storage domain")
         test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                                  config.DATA_CENTER_NAME)
+                                  config.DATACENTER_ISCSI_CONNECTIONS)
+
+        logger.info("Deactivating both storage domains")
         assert storagedomains.deactivateStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name_1)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1)
+        logger.info("Trying to change the connection - should succeed")
         self._try_to_change_connection(conn.id, True)
         assert storagedomains.activateStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name_1)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1)
         assert storagedomains.activateStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name_2)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2)
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
+        """
+        Remove added storage domains
+        """
         _restore_empty_dc()
+        _logout_from_all_iscsi_targets()
 
 
 @attr(tier=1)
@@ -685,7 +915,7 @@ class TestCase288968(TestCase):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = True
+    __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
     tcms_plan_id = '9985'
     tcms_test_case = '288968'
     conn = None
@@ -693,25 +923,31 @@ class TestCase288968(TestCase):
     sd_name_2 = "sd_%s_2" % tcms_test_case
 
     def setUp(self):
+        """
+        Add two storage domains sharing the same storage connection
+        Add a new storage connection
+        """
         assert storagedomains.addStorageDomain(
-            True, host=config.HOSTS[0], name=self.sd_name_1,
+            True, host=config.HOST_FOR_MOUNT, name=self.sd_name_1,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.STORAGE_TYPE,
-            lun=config.CONNECTIONS[0]['luns'][0], **(config.CONNECTIONS[0]))
+            storage_type=config.STORAGE_TYPE_ISCSI, override_luns=True,
+            lun=config.CONNECTIONS[0]['luns'][0], **(config.CONNECTIONS[0])
+        )
 
         assert storagedomains.addStorageDomain(
-            True, host=config.HOSTS[0], name=self.sd_name_2,
+            True, host=config.HOST_FOR_MOUNT, name=self.sd_name_2,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.STORAGE_TYPE,
-            lun=config.CONNECTIONS[0]['luns'][1], **(config.CONNECTIONS[0]))
+            storage_type=config.STORAGE_TYPE_ISCSI, override_luns=True,
+            lun=config.CONNECTIONS[0]['luns'][1], **(config.CONNECTIONS[0])
+        )
 
         assert storagedomains.attachStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name_1)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1)
         assert storagedomains.attachStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name_2)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2)
 
         conn = dict(config.CONNECTIONS[1])
-        conn['type'] = config.STORAGE_TYPE
+        conn['type'] = config.STORAGE_TYPE_ISCSI
         self.conn, success = storageconnections.add_connection(**conn)
         assert success
 
@@ -729,41 +965,41 @@ class TestCase288968(TestCase):
         """
         assert not storagedomains.addConnectionToStorageDomain(
             self.sd_name_1, self.conn.id)
-        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        logger.info("Waiting for tasks before deactivating the storage domain")
         test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                                  config.DATA_CENTER_NAME)
+                                  config.DATACENTER_ISCSI_CONNECTIONS)
         assert storagedomains.deactivateStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name_1)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1)
         assert storagedomains.addConnectionToStorageDomain(
             self.sd_name_1, self.conn.id)
         assert storagedomains.activateStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name_1)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_1)
 
-        LOGGER.info("Waiting for tasks before deactivating the storage domain")
+        logger.info("Waiting for tasks before deactivating the storage domain")
         test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                                  config.DATA_CENTER_NAME)
+                                  config.DATACENTER_ISCSI_CONNECTIONS)
         assert storagedomains.deactivateStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name_2)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2)
         assert storagedomains.addConnectionToStorageDomain(
             self.sd_name_2, self.conn.id)
         assert not storagedomains.addConnectionToStorageDomain(
             self.sd_name_2, self.conn.id)
         assert storagedomains.activateStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name_2)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2)
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         _restore_empty_dc()
+        _logout_from_all_iscsi_targets()
 
 
-@attr(tier=2)
+@attr(tier=1)
 class TestCase289552(TestCase):
     """
     https://tcms.engineering.redhat.com/case/289552/?from_plan=9985
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = True
+    __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
     tcms_plan_id = '9985'
     tcms_test_case = '289552'
     conn = None
@@ -775,66 +1011,50 @@ class TestCase289552(TestCase):
 
     def setUp(self):
         assert storagedomains.addStorageDomain(
-            True, host=config.HOSTS[0], name=self.sd_name,
+            True, host=config.HOST_FOR_MOUNT, name=self.sd_name,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.STORAGE_TYPE,
-            lun=config.CONNECTIONS[1]['luns'][0], **(config.CONNECTIONS[1]))
+            storage_type=config.STORAGE_TYPE_NFS,
+            address=config.EXTRA_DOMAIN_ADDRESSES[0],
+            path=config.EXTRA_DOMAIN_PATHS[0],
+        )
 
         assert storagedomains.attachStorageDomain(
-            True, config.DATA_CENTER_NAME, self.sd_name)
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name)
 
         assert storagedomains.waitForStorageDomainStatus(
-            True, config.DATA_CENTER_NAME, self.sd_name,
+            True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name,
             config.ENUMS['storage_domain_state_active'])
 
         assert vms.createVm(
-            True, self.vm_name_1, self.vm_name_1, cluster=config.CLUSTER_NAME,
-            storageDomainName=self.sd_name,
-            nic=config.NIC_NAME[0], size=config.DISK_SIZE,
-            diskType=config.DISK_TYPE_SYSTEM, volumeType=True,
-            volumeFormat=config.ENUMS['format_cow'], memory=GB,
-            diskInterface=config.INTERFACE_VIRTIO,
-            cpu_socket=config.CPU_SOCKET,
-            cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
-            display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
-            user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
-            type=config.VM_TYPE_DESKTOP, installation=True, slim=True,
-            image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE)
-
+            True, vmName=self.vm_name_1, storageDomainName=self.sd_name,
+            **vmArgs
+        )
         assert vms.createVm(
-            True, self.vm_name_2, self.vm_name_2, cluster=config.CLUSTER_NAME,
-            storageDomainName=self.sd_name,
-            nic=config.NIC_NAME[0], size=config.DISK_SIZE,
-            diskType=config.DISK_TYPE_SYSTEM, volumeType=True,
-            volumeFormat=config.ENUMS['format_cow'], memory=GB,
-            diskInterface=config.INTERFACE_VIRTIO,
-            cpu_socket=config.CPU_SOCKET,
-            cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
-            display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
-            user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
-            type=config.VM_TYPE_DESKTOP, installation=True, slim=True,
-            image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE)
-
+            True, vmName=self.vm_name_2, storageDomainName=self.sd_name,
+            **vmArgs
+        )
         assert vms.stopVm(True, self.vm_name_1)
         assert vms.stopVm(True, self.vm_name_2)
 
         assert disks.addDisk(
             True, alias=self.disk_1,
-            interface=config.ENUMS["interface_virtio"],
-            format=config.ENUMS["format_cow"],
-            lun_id=config.CONNECTIONS[0]['luns'][0],
-            lun_address=config.CONNECTIONS[0]['lun_address'],
-            lun_target=config.CONNECTIONS[0]['lun_target'],
-            type_=config.ENUMS['storage_type_iscsi'])
-
-        assert disks.addDisk(
-            True, alias=self.disk_2,
-            interface=config.ENUMS["interface_virtio"],
-            format=config.ENUMS["format_cow"],
+            interface=config.VIRTIO,
+            format=config.DISK_FORMAT_COW,
             lun_id=config.CONNECTIONS[0]['luns'][1],
             lun_address=config.CONNECTIONS[0]['lun_address'],
             lun_target=config.CONNECTIONS[0]['lun_target'],
-            type_=config.ENUMS['storage_type_iscsi'])
+            type_=config.STORAGE_TYPE_ISCSI
+        )
+
+        assert disks.addDisk(
+            True, alias=self.disk_2,
+            interface=config.VIRTIO,
+            format=config.DISK_FORMAT_COW,
+            lun_id=config.CONNECTIONS[0]['luns'][2],
+            lun_address=config.CONNECTIONS[0]['lun_address'],
+            lun_target=config.CONNECTIONS[0]['lun_target'],
+            type_=config.STORAGE_TYPE_ISCSI
+        )
 
         assert disks.attachDisk(True, self.disk_1, self.vm_name_1)
         assert disks.attachDisk(True, self.disk_2, self.vm_name_2)
@@ -855,8 +1075,9 @@ class TestCase289552(TestCase):
         assert vms.waitForVMState(self.vm_name_1)
         assert vms.waitForVMState(self.vm_name_2)
 
-        # find connection - we cannot just call /disk/<id>/connections
-        # as the call is postponed :/
+        # TODO: When the API allows it, get the storage connection of
+        # a direct lun, instead of looping through all of them
+        # https://bugzilla.redhat.com/show_bug.cgi?id=1227322
         connections = api.get(absLink=False)
         lun_conn = None
         for conn in connections:
@@ -868,7 +1089,8 @@ class TestCase289552(TestCase):
 
         assert not storageconnections.update_connection(
             lun_conn.id, lun_address=config.CONNECTIONS[1]['lun_address'],
-            type=config.STORAGE_TYPE)[1]
+            type=config.STORAGE_TYPE_ISCSI
+        )[1]
 
         assert vms.stopVm(True, self.vm_name_1)
         assert vms.waitForVMState(
@@ -876,29 +1098,28 @@ class TestCase289552(TestCase):
 
         assert not storageconnections.update_connection(
             lun_conn.id, lun_address=config.CONNECTIONS[1]['lun_address'],
-            type=config.STORAGE_TYPE)[1]
+            type=config.STORAGE_TYPE_ISCSI
+        )[1]
 
         assert vms.stopVm(True, self.vm_name_2)
         assert vms.waitForVMState(
             self.vm_name_2, config.ENUMS['vm_state_down'])
 
         assert storageconnections.update_connection(
-            lun_conn.id, type=config.STORAGE_TYPE,
-            **(config.CONNECTIONS[1]))[1]
+            lun_conn.id, type=config.STORAGE_TYPE_ISCSI,
+            **(config.CONNECTIONS[1])
+        )[1]
 
         assert vms.startVm(True, self.vm_name_1)
         assert vms.startVm(True, self.vm_name_2)
 
-    @classmethod
-    def teardown_class(cls):
-        datacenters.clean_datacenter(
-            True, config.DATA_CENTER_NAME, vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD
-        )
-        storageconnections.remove_all_storage_connections()
-        datacenters.build_setup(
-            config.PARAMETERS, config.PARAMETERS, config.STORAGE_TYPE,
-            basename=config.TESTNAME)
+    def tearDown(self):
+        """
+        Remove vms and added storage domains
+        """
+        vms.safely_remove_vms([self.vm_name_1, self.vm_name_2])
+        _restore_empty_dc()
+        _logout_from_all_iscsi_targets()
 
 
 @attr(tier=0)
@@ -908,18 +1129,18 @@ class TestCase288988(TestCase):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = True
+    __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
     tcms_plan_id = '9985'
     tcms_test_case = '288988'
     conn = None
-    sds = []
 
-    @classmethod
-    def setup_class(cls):
+    def setUp(self):
+        self.storage_domains = []
         conn = dict(config.CONNECTIONS[0])
-        conn['type'] = config.STORAGE_TYPE
-        cls.conn, success = storageconnections.add_connection(**conn)
+        conn['type'] = config.STORAGE_TYPE_ISCSI
+        self.conn, success = storageconnections.add_connection(**conn)
         assert success
+        self.original_conn = _get_all_storage_connections()
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_adding_storage_domains(self):
@@ -929,26 +1150,45 @@ class TestCase288988(TestCase):
               the connection params are the same of an existing connection
             In the last case, new connection should not be added.
         """
+        logger.info("Adding a new storage domain with a new connection")
         sd_name_2 = "sd_%s_2" % self.tcms_test_case
+        assert storagedomains.addStorageDomain(
+            True, name=sd_name_2, host=config.HOST_FOR_MOUNT,
+            type=config.ENUMS['storage_dom_type_data'],
+            storage_type=config.STORAGE_TYPE_ISCSI, override_luns=True,
+            lun=config.CONNECTIONS[1]['luns'][0], **(config.CONNECTIONS[1])
+        )
+        self.storage_domains.append(sd_name_2)
+
+        sd_name_2_conn = storagedomains.getConnectionsForStorageDomain(
+            sd_name_2
+        )
+        assert len(sd_name_2_conn) == 1
+        assert storagedomains.removeStorageDomain(
+            True, sd_name_2, config.HOST_FOR_MOUNT, 'true'
+        )
+        self.storage_domains.remove(sd_name_2)
+
+        logger.info(
+            "Adding a new domain specifying the parameters but using the "
+            "existing connection"
+        )
         sd_name_3 = "sd_%s_3" % self.tcms_test_case
-
         assert storagedomains.addStorageDomain(
-            True, name=sd_name_2, host=config.HOSTS[0],
+            True, name=sd_name_3, host=config.HOST_FOR_MOUNT,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.STORAGE_TYPE,
-            lun=config.CONNECTIONS[1]['luns'][0], **(config.CONNECTIONS[1]))
-        self.sds.append(sd_name_2)
-
-        assert storagedomains.addStorageDomain(
-            True, name=sd_name_3, host=config.HOSTS[0],
-            type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.STORAGE_TYPE,
+            storage_type=config.STORAGE_TYPE_ISCSI, override_luns=True,
             lun=config.CONNECTIONS[0]['luns'][1],
-            **(config.CONNECTIONS[0]))
-        self.sds.append(sd_name_3)
+            **(config.CONNECTIONS[0])
+        )
+        self.storage_domains.append(sd_name_3)
 
-        assert len(_get_all_connections()) == 2
-
-    @classmethod
-    def teardown_class(cls):
-        _restore_empty_dc()
+    def tearDown(self):
+        """
+        Remove added storage domains
+        """
+        for storage_domain in self.storage_domains:
+            storagedomains.removeStorageDomain(
+                True, storage_domain, config.HOST_FOR_MOUNT, 'true'
+            )
+        _logout_from_all_iscsi_targets()

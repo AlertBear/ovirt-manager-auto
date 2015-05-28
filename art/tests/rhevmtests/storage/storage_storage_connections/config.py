@@ -5,23 +5,41 @@ Config module for manage storage connections tests
 __test__ = False
 
 import copy
+from art.rhevm_api.tests_lib.low_level import hosts
 from rhevmtests.storage.config import * # flake8: noqa
 
-
-# Name of the test
 TESTNAME = "manage_storage_conn"
 
 STORAGE = copy.deepcopy(ART_CONFIG['PARAMETERS'])
 
+CONNECTIONS = []
 if GOLDEN_ENV:
-    CONNECTIONS = []
-    DOMAIN_ADDRESSES = []
-    DOMAIN_PATHS = []
-    HOST_FOR_MNT = ''
-    PASSWD_FOR_MNT = ''
+    CONNECTIONS.append({
+        'lun_address': MIRROR_LUN_ADDRESS[0],
+        'lun_target':  MIRROR_LUN_TARGET[0],
+        'lun_port': LUN_PORT,
+        'luns': UNUSED_LUNS,
+    })
+    CONNECTIONS.append({
+        'lun_address': MIRROR_LUN_ADDRESS[1],
+        'lun_target':  MIRROR_LUN_TARGET[1],
+        'lun_port': LUN_PORT,
+        'luns': UNUSED_LUNS,
+    })
+    # After each test, we logout from all the targets by looping through
+    # CONNECTIONS. Add the default target/ip so the host will also logout
+    # from it
+    CONNECTIONS.append({
+        'lun_address': UNUSED_LUN_ADDRESSES[0],
+        'lun_target':  UNUSED_LUN_TARGETS[0],
+    })
+
+    DOMAIN_ADDRESSES = UNUSED_DATA_DOMAIN_ADDRESSES[0:1]
+    DOMAIN_PATHS = UNUSED_DATA_DOMAIN_PATHS[0:1]
+    EXTRA_DOMAIN_ADDRESSES = UNUSED_DATA_DOMAIN_ADDRESSES[1:]
+    EXTRA_DOMAIN_PATHS = UNUSED_DATA_DOMAIN_PATHS[1:]
 else:
     if STORAGE_TYPE == STORAGE_TYPE_ISCSI:
-        CONNECTIONS = []
         CONNECTIONS.append({
             'lun_address': PARAMETERS.as_list('lun_address')[0],
             'lun_target': PARAMETERS.as_list('lun_target')[0],
@@ -38,12 +56,22 @@ else:
         PARAMETERS['lun_target'] = []
         PARAMETERS['lun_port'] = []
 
-    if STORAGE_TYPE == 'nfs' or STORAGE_TYPE.startswith('posixfs'):
+    if STORAGE_TYPE == STORAGE_TYPE_NFS or STORAGE_TYPE.startswith('posixfs'):
         DOMAIN_ADDRESSES = PARAMETERS.as_list('data_domain_address')[1:]
         DOMAIN_PATHS = PARAMETERS.as_list('data_domain_path')[1:]
         PARAMETERS['data_domain_address'] = PARAMETERS.as_list(
             'data_domain_address')[0]
         PARAMETERS['data_domain_path'] = PARAMETERS.as_list(
             'data_domain_path')[0]
-        HOST_FOR_MNT = HOSTS[1]
-        PASSWD_FOR_MNT = HOSTS_PW
+        EXTRA_DOMAIN_ADDRESSES = PARAMETERS.as_list('another_address')
+        EXTRA_DOMAIN_PATHS = PARAMETERS.as_list('another_path')
+
+# A host will be use to copy data between domains and clean them
+# afterwards. This hosts needs to be removed from the data center
+HOST_FOR_MOUNT = HOSTS[1]
+HOST_FOR_MOUNT_IP = hosts.getHostIP(HOST_FOR_MOUNT)
+HOSTS_FOR_TEST = HOSTS[:]
+HOSTS_FOR_TEST.remove(HOST_FOR_MOUNT)
+
+DATACENTER_ISCSI_CONNECTIONS = "dc_iscsi_{0}".format(TESTNAME)
+CLUSTER_ISCSI_CONNECTIONS = "cl_iscsi_{0}".format(TESTNAME)

@@ -136,3 +136,6 @@ HOST_NONRESPONSIVE = ENUMS["search_host_state_non_responsive"]
 
 VM_PINNED = ENUMS['vm_affinity_pinned']
 VM_ANY_HOST = ENUMS['vm_affinity_migratable']
+
+MIRROR_LUN_TARGET = PARAMETERS.as_list('mirror_lun_target')
+MIRROR_LUN_ADDRESS = PARAMETERS.as_list('mirror_lun_address')

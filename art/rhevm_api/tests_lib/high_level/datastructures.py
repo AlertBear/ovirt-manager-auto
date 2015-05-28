@@ -32,7 +32,8 @@ class BaseClass(object):
 
     def exportChildren(
             self, outfile, level, namespace_='', name_='',
-            fromsubclass_=False):
+            fromsubclass_=False, pretty_print=True,
+    ):
         for member_name, member_spec in self.member_data_items_.iteritems():
             if member_spec.data_type in ['xs:string', 'xs:boolean']:
                 self._write_one_member(member_name, outfile, level, namespace_,
@@ -148,7 +149,8 @@ class Storage(data_structures.Storage, BaseClass):
 
     def exportChildren(
             self, outfile, level, namespace_='', name_='Storage',
-            fromsubclass_=False):
+            fromsubclass_=False, pretty_print=True
+    ):
         super(data_structures.Storage, self).exportChildren(
             outfile, level, namespace_, name_, True)
         BaseClass.exportChildren(
@@ -206,7 +208,8 @@ class StorageConnection(data_structures.StorageConnection, BaseClass):
 
     def exportChildren(
             self, outfile, level, namespace_='', name_='Storage',
-            fromsubclass_=False):
+            fromsubclass_=False, pretty_print=True
+    ):
         super(data_structures.StorageConnection, self).exportChildren(
             outfile, level, namespace_, name_, True)
         BaseClass.exportChildren(

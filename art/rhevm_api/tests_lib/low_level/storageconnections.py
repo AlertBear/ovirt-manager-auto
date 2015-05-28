@@ -129,7 +129,7 @@ def update_connection(conn_id, **kwargs):
                  host will lead to just update the details in engine db."
     Return: status of the operation
     """
-    LOGGER.info("Changing connection %s" % conn_id)
+    LOGGER.debug("Changing connection %s", conn_id)
     old_conn = api.find(conn_id, attribute='id')
     new_conn = _prepare_connection_object(**kwargs)
     result = api.update(old_conn, new_conn, True)
@@ -139,22 +139,24 @@ def update_connection(conn_id, **kwargs):
 @is_action('removeStorageConnection')
 def remove_storage_connection(conn_id, host=None):
     """
-    Description: remove a storage connection
-    Author: kjachim
-    Parameters:
-        * conn_id - id of the changed connection
-        * host - host where connection should be removed
-    Return: status of the operation
+    Remove a storage connection
+
+    __author__ = "cmestreg"
+    :param conn_id: id of the changed connection
+    :type conn_id: str
+    :param host: host name from which connection should be removed
+    :type host: str
+    :returns: status of the operation
+    :rtype: bool
     """
     conn_obj = api.find(conn_id, attribute='id')
-    LOGGER.info("Removing connection %s" % conn_id)
-    if host is None:
-        host_id = "00000000-0000-0000-0000-000000000000"
-    else:
-        host = hostApi.find(host)
-        host_id = host.id
-    host = Host(id=host_id)
-    return api.delete(conn_obj, True, body=host, element_name='host')
+    LOGGER.debug("Removing connection %s", conn_id)
+    body = apis_utils.data_st.Action()
+    if host:
+        host_obj = hostApi.find(host)
+        host = Host(id=host_obj.get_id())
+        body.set_host(host)
+    return api.delete(conn_obj, True, body=body, element_name='action')
 
 
 @is_action('removeAllStorageConnections')
