@@ -7,15 +7,15 @@ __test__ = False
 from rhevmtests.config import *  # flake8: noqa
 from collections import OrderedDict
 from random import randint
+import art.test_handler.exceptions as exceptions
 
 # Adjust parameters if running on golden environment
 if GOLDEN_ENV:
     STORAGE_TYPE = "nfs"
     VDS_HOSTS = [resources.VDS(h, HOSTS_PW) for h in HOSTS_IP]
-else:
-    HOSTS_IP = [host.ip for host in VDS_HOSTS]
 
 # Global parameters
+HOSTS_IP = [host.ip for host in VDS_HOSTS]
 EXTRA_DC = ["_".join(["EXTRA_DC", str(i)]) for i in range(6)]
 MTU = [9000, 5000, 2000, 1500]
 NETMASK = '255.255.255.0'
@@ -25,6 +25,12 @@ VLAN_ID = PARAMETERS.as_list('vlan_id')
 BOND = PARAMETERS.as_list('bond')
 NETWORKS = PARAMETERS.as_list('networks')
 TIMEOUT = 60
+NET_EXCEPTION = exceptions.NetworkException
+DEFAULT_MAC_POOL = "Default"
+VM_NICS = ['eth0', 'eth1', 'eth2', 'eth3']
+FIREWALL_SRV = "iptables"
+BOND_MODES = PARAMETERS.as_list("bond_modes")
+LABEL_LIST = ["_".join(["label", str(elm)]) for elm in range(10)]
 
 # Network Custom Priority parameters
 BRIDGE_OPTS = OrderedDict({"priority": ["32768", "1"],
@@ -38,17 +44,10 @@ DEFAULT_MULT_QUERIER = "=".join([KEY2, BRIDGE_OPTS[KEY2][0]])
 TX_CHECKSUM = "-K {nic} tx {state}"
 AUTONEG = "-A {nic} autoneg {state}"
 
-# Network Migration
-NM_SOURCE_IP = '5.5.5.10'
-NM_DEST_IP = '5.5.5.20'
-
 # MultiHost and multiple_gw parameters
 SUBNET = "1.1.1.0"
 MG_GATEWAY = "1.1.1.254"
 MG_IP_ADDR = "1.1.1.1"
-
-# Network migration parameters
-FIREWALL_SRV = "iptables"
 
 # Jumbo frame parameters
 NUM_PACKETS = 1000
@@ -67,8 +66,6 @@ IE_TEMPLATE = "IE_TEMP"
 IMP_MORE_THAN_ONCE_VM = "MoreThanOnceVM"
 IMP_MORE_THAN_ONCE_TEMP = "MoreThanOnceTEMPLATE"
 EXPORT_TYPE = ENUMS['storage_dom_type_export']
-# take following parameters from global config:
-# EXPORT_STORAGE_NAME, EXPORT_STORAGE_ADDRESS, EXPORT_STORAGE_PATH
 
 # Topologies parameters
 # Due to the switch configuration with specific IP
@@ -77,7 +74,6 @@ ADDR_AND_MASK = ["10.35.147.50", "255.255.255.240"]
 DST_HOST_IP = "10.35.147.62"
 
 # Port mirroring parameters
-VM_NICS = ['eth0', 'eth1', 'eth2', 'eth3']
 PM_VNIC_PROFILE = ['%s_PM' % net for net in [MGMT_BRIDGE] + VLAN_NETWORKS]
 NUM_VMS = 5
 MGMT_IPS = []  # Gets filled up during the test
@@ -92,12 +88,6 @@ NET2_IPS = [
     ) for i in range(NUM_VMS + 1)
 ]
 
-# Topologies parameters
-BOND_MODES = PARAMETERS.as_list("bond_modes")
-
-# Labels parameters
-LABEL_LIST = ["_".join(["label", str(elm)]) for elm in range(10)]
-
 # Queues parameters
 NUM_QUEUES = [5, 6]
 PROP_QUEUES = ["=".join(["queues", str(i)]) for i in NUM_QUEUES]
@@ -106,14 +96,3 @@ VM_FROM_TEMPLATE = "vm_from_queues_template"
 # Big MAC pool range
 BMPR_VM_NAME = "BigRangeMacPool_VM1"
 MAC_POOL_RANGE_CMD = "MacPoolRanges"
-
-# MAC pool range per DC
-MAC_POOL_NAME = ["_".join(["MAC_POOL", str(i)]) for i in range(6)]
-MAC_POOL_RANGE_LIST = [
-    ("00:00:00:10:10:10", "00:00:00:10:10:11"),
-    ("00:00:00:20:10:10", "00:00:00:20:10:12"),
-    ("00:00:00:30:10:10", "00:00:00:30:10:12")
-]
-DEFAULT_MAC_POOL = "Default"
-MAC_POOL_CL = "MAC_POOL_CL"
-MP_VM_NAMES = ["_".join(["MAC_POOL_VM", str(i)]) for i in range(6)]
