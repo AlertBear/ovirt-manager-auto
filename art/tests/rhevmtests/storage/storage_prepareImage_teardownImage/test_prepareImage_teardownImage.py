@@ -22,17 +22,14 @@ from art.rhevm_api.tests_lib.low_level.vms import (
 )
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.test_handler import exceptions
+from art.test_handler.settings import opts
 from art.test_handler.tools import tcms  # pylint: disable=E0611
-from helpers import (
-    get_spuuid, get_sduuid, get_imguuid, get_voluuid,
-)
-
 from art.unittest_lib import StorageTest as BaseTestCase
 from art.unittest_lib import attr
 from rhevmtests.storage.helpers import (
-    create_vm_or_clone, perform_dd_to_disk, host_to_use,
+    create_vm_or_clone, perform_dd_to_disk, host_to_use, get_spuuid,
+    get_sduuid, get_imguuid, get_voluuid,
 )
-from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
 

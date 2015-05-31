@@ -7,11 +7,12 @@ import shlex
 import art.rhevm_api.tests_lib.high_level.vms as high_vms
 import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
 from art.core_api.apis_utils import TimeoutingSampler
+from art.rhevm_api.tests_lib.low_level.datacenters import get_data_center
 from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost, getHostIP
 from utilities.machine import Machine, LINUX
 from art.rhevm_api.tests_lib.low_level.disks import (
     wait_for_disks_status, attachDisk, addDisk, get_all_disk_permutation,
-    updateDisk,
+    updateDisk, get_disk_obj,
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
     get_vm_disk_logical_name, stop_vms_safely, get_vm_snapshots,
@@ -20,7 +21,6 @@ from art.rhevm_api.tests_lib.low_level.vms import (
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.test_handler import exceptions
-
 from rhevmtests.helpers import get_golden_template_name
 from rhevmtests.storage import config
 
@@ -225,7 +225,7 @@ def perform_dd_to_disk(
         # Create a partition of the size of the disk but take into account the
         # usual offset for logical partitions, setting to 10 MB
         partition = vm_machine.createPartition(
-            disk_logical_volume_name, dev_size*config.GB - config.MB * 10,
+            disk_logical_volume_name, dev_size * config.GB - config.MB * 10,
         )
         assert partition
         mount_point = vm_machine.createFileSystem(
@@ -237,7 +237,7 @@ def perform_dd_to_disk(
         destination = disk_logical_volume_name
 
     command = DD_COMMAND % (
-        size/config.MB, "/dev/{0}".format(boot_disk), destination,
+        size / config.MB, "/dev/{0}".format(boot_disk), destination,
     )
     logger.info("Performing command '%s'", command)
 
@@ -252,7 +252,7 @@ def get_vm_ip(vm_name):
 
     __author__ = "ratamir"
     :param vm_name: vm name
-    :type: str
+    :type vm_name: str
     :return: ip address of a vm, or raise EntityNotFound exception
     :rtype: str or EntityNotFound exception
     """
@@ -374,3 +374,95 @@ def wait_for_dd_to_start(vm_name, timeout=20, interval=1):
         if code:
             return True
     return False
+
+
+def get_spuuid(dc_obj):
+    """
+    Returns the Storage Pool UUID of the provided Data center object
+
+    __author__ = "glazarov"
+    :param dc_obj: Data center object
+    :type dc_obj: object
+    :returns: Storage Pool UUID
+    :rtype: str
+    """
+    return dc_obj.get_id()
+
+
+def get_sduuid(disk_object):
+    """
+    Returns the Storage Domain UUID using the provided disk object.  Note
+    that this assumes the disk only has one storage domain (i.e. in the case of
+    a template with a disk copy or a vm created from such as template,
+    the first instance will be returned which may either be the original
+    disk or its copy)
+
+    __author__ = "glazarov"
+    :param disk_object: disk object from which the Storage Domain ID will be
+    :type disk_object: Disk from disks collection
+    :returns: Storage Domain UUID
+    :rtype: str
+    """
+    return disk_object.get_storage_domains().get_storage_domain()[0].get_id()
+
+
+def get_imguuid(disk_object):
+    """
+    Returns the imgUUID using the provided disk object
+
+    __author__ = "glazarov"
+    :param disk_object: disk object from which the Image ID will be retrieved
+    :type disk_object: Disk from disks collection
+    :returns: Image UUID
+    :rtype: str
+    """
+    return disk_object.get_id()
+
+
+def get_voluuid(disk_object):
+    """
+    Returns the volUUID using the provided disk object
+
+    __author__ = "glazarov"
+    :param disk_object: disk_object from which to retrieve the Volume ID
+    :type disk_object: Disk from disks collection
+    :returns: Volume UUID
+    :rtype: str
+    """
+    return disk_object.get_image_id()
+
+
+def get_lv_count_by_storage_type(storage_type, disk_names=None):
+    """
+    Returns the logical volume count, with logic for block and file domain
+    types
+
+    __author__ = "glazarov"
+    :param storage_type: The type of storage to run with
+    :type storage_type: str
+    :param disk_names: List of disk aliases (only used with file domain type to
+    retrieve the individual number of volumes per disk)
+    :type disk_names: list
+    :returns: Number of volumes retrieved across the disk names (file domain
+    type) or the total logical volumes (block domain type)
+    :rtype: int
+    """
+    host_machine = host_to_use()
+    if storage_type in config.BLOCK_TYPES:
+        return host_machine.get_amount_of_volumes()
+    else:
+        data_center_obj = get_data_center(config.DATA_CENTER_NAME)
+        sp_id = get_spuuid(data_center_obj)
+        logger.debug("The Storage Pool ID is: '%s'", sp_id)
+        # Initialize the volume count before iterating through the disk aliases
+        volume_count = 0
+        for disk in disk_names:
+            disk_obj = get_disk_obj(disk)
+            sd_id = get_sduuid(disk_obj)
+            logger.debug("The Storage Domain ID is: '%s'", sd_id)
+            image_id = get_imguuid(disk_obj)
+            logger.debug("The Image ID is: '%s'", image_id)
+            volume_count += host_machine.get_amount_of_file_type_volumes(
+                sp_id, sd_id, image_id
+            )
+        return volume_count

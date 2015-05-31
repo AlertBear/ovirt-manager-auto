@@ -2,7 +2,6 @@
 3.4 Single disk snapshot
 https://tcms.engineering.redhat.com/plan/12057
 """
-
 import logging
 import shlex
 import os
@@ -16,31 +15,29 @@ from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainNamesForType, getDomainAddress,
 )
+from art.rhevm_api.tests_lib.low_level.vms import (
+    addSnapshot, stop_vms_safely, preview_snapshot, start_vms,
+    waitForVMState, suspendVm, startVm, commit_snapshot,
+    get_vm_bootable_disk, undo_snapshot_preview, cloneVmFromSnapshot, addNic,
+    removeNic, get_snapshot_disks, shutdownVm, removeSnapshot,
+    wait_for_vm_snapshots, get_vm_state, safely_remove_vms,
+    get_vms_disks_storage_domain_name,
+)
+from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
 from art.rhevm_api.utils.test_utils import restartVdsmd, restartOvirtEngine
 from rhevmtests.storage.helpers import (
     get_vm_ip, create_vm_or_clone, prepare_disks_for_vm,
+    get_lv_count_by_storage_type,
 )
-from rhevmtests.storage.storage_single_disk_snapshot import helpers
+from rhevmtests.storage.storage_single_disk_snapshot import config, helpers
 from art.unittest_lib import StorageTest as BaseTestCase
-from art.rhevm_api.tests_lib.high_level import datacenters
-from art.rhevm_api.tests_lib.low_level.vms import (
-    addSnapshot, stop_vms_safely, preview_snapshot,
-    start_vms, waitForVMState, suspendVm, startVm, commit_snapshot,
-    get_vm_bootable_disk, undo_snapshot_preview, cloneVmFromSnapshot, addNic,
-    removeNic, get_snapshot_disks, shutdownVm, removeSnapshot,
-    wait_for_vm_snapshots, get_vm_state, safely_remove_vms,
-    get_vms_disks_storage_domain_name,
-)
 from art.unittest_lib import attr
-from utilities.machine import Machine, LINUX
-from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler import exceptions
-from rhevmtests.storage.storage_single_disk_snapshot import config
-from art.test_handler.settings import opts
-
+from art.test_handler.tools import tcms  # pylint: disable=E0611
+from utilities.machine import Machine, LINUX
 
 logger = logging.getLogger(__name__)
 
@@ -242,18 +239,19 @@ class BasicEnvironment(BaseTestCase):
         self.check_file_existence_operation(True, 'Writing')
         return True
 
-    def _perform_snapshot_with_verification(self, disks_for_snap,
-                                            live=False):
-
-        vol_before = self.host.get_amount_of_volumes()
-        logger.info("Before snapshot: %s volumes", vol_before)
+    def _perform_snapshot_with_verification(self, disks_for_snap, live=False):
+        initial_vol_count = get_lv_count_by_storage_type(self.storage,
+                                                         disks_for_snap)
+        logger.info("Before snapshot: %s volumes", initial_vol_count)
 
         self._perform_snapshot_operation(disks_for_snap, live=live)
 
-        vol_after = self.host.get_amount_of_volumes()
-        logger.info("After snapshot: %s volumes", vol_after)
+        current_vol_count = get_lv_count_by_storage_type(self.storage,
+                                                         disks_for_snap)
+        logger.info("After snapshot: %s volumes", current_vol_count)
 
-        self.assertEqual(vol_after, vol_before + len(disks_for_snap))
+        self.assertEqual(current_vol_count,
+                         initial_vol_count + len(disks_for_snap))
 
     def _prepare_environment(self):
         start_vms([self.vm_name], 1, wait_for_ip=False)
@@ -282,10 +280,7 @@ class TestCase333023(BasicEnvironment):
     snapshot was created successfully
     https://tcms.engineering.redhat.com/case/333023/?from_plan=12057
     """
-    # TODO: Change implementation of get_amount_of_volumes() to work with
-    # non block devices
-    __test__ = (ISCSI in opts['storages'])
-    storages = set([ISCSI])
+    __test__ = True
     tcms_test_case = '333023'
 
     def setUp(self):
@@ -295,9 +290,9 @@ class TestCase333023(BasicEnvironment):
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_create_snapshot_of_first_disk(self):
         """
-        - Create VM with 4 disk.
-        - Create snapshot to the VM and pick only one disk
-          from the list of disks.
+        - Create VM with 4 disks
+        - Create snapshot to the VM and pick only one disk from the list of
+        disks
         """
         self._perform_snapshot_with_verification(self.disks_names[0:2])
 
@@ -327,10 +322,10 @@ class TestCase333028(BasicEnvironment):
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_preview_snapshot(self):
         """
-        - Write file on the first disk.
-        - Create snapshot to all disks.
-        - Delete the file from the disk.
-        - Preview the snapshot of the first disk.
+        - Write file on the first disk
+        - Create snapshot to all disks
+        - Delete the file from the disk
+        - Preview the snapshot of the first disk
         """
         self._perform_snapshot_operation()
         start_vms([self.vm_name], 1, wait_for_ip=True)
@@ -479,11 +474,11 @@ class TestCase333031(BasicEnvironment):
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_create_snapshot_of_first_disk(self):
         """
-        - Write some files on first and fourth disks.
-        - Create snapshot from the first and fourth disks.
+        - Write some files on first and fourth disks
+        - Create snapshot from the first and fourth disks
         - Delete the files that you have written from the first
           and fourth disks
-        - Preview first and fourth snapshots.
+        - Preview the first and fourth snapshots
         """
         disks_for_snap = [self.disks_names[0],
                           self.disks_names[3]]
@@ -538,7 +533,7 @@ class TestCase333031(BasicEnvironment):
 @attr(tier=1)
 class TestCase333049(BasicEnvironment):
     """
-    Create snapshot of all vm's disks, preview it and undo the snapshot.
+    Create snapshot of all vm's disks, preview it and undo the snapshot
     https://tcms.engineering.redhat.com/case/333049/?from_plan=12057
     """
     __test__ = True
@@ -553,15 +548,15 @@ class TestCase333049(BasicEnvironment):
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_flow_create_preview_and_undo_snapshot_of_all_disks(self):
         """
-        - Create VM with 4 disks.
-        - Write file A to all disks.
+        - Create VM with 4 disks
+        - Write file A to all disks
         - Create snapshot from the whole VM (all disks)
         - Delete files from all disks
-        - Preview snapshot.
-        - Start VM.
-        - Stop Vm.
-        - Undo previewed snapshot.
-        - Start VM.
+        - Preview snapshot
+        - Start VM
+        - Stop VM
+        - Undo previewed snapshot
+        - Start VM
         """
         logger.info("Creating snapshot")
         self._perform_snapshot_operation()
@@ -613,7 +608,7 @@ class TestCase333049(BasicEnvironment):
 @attr(tier=1)
 class TestCase333050(BasicEnvironment):
     """
-    Create snapshot of first disk out of 4, preview it and undo the snapshot.
+    Create snapshot of first disk out of 4, preview it and undo the snapshot
     https://tcms.engineering.redhat.com/case/333050/?from_plan=12057
     """
     __test__ = True
@@ -634,15 +629,15 @@ class TestCase333050(BasicEnvironment):
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_preview_snapshot(self):
         """
-        - Create VM with 4 disks.
-        - Write file to first disk.
+        - Create VM with 4 disks
+        - Write file to first disk
         - Create snapshot from first disk
         - delete the file
-        - Preview snapshot.
+        - Preview snapshot
         - Start VM, check that the file exists under the first VM disk
-        - Stop Vm.
-        - Undo previewed snapshot.
-        - Start VM.
+        - Stop VM
+        - Undo previewed snapshot
+        - Start VM
         """
         disks_for_snap = [self.boot_disk]
         logger.info("Creating snapshot")
@@ -689,8 +684,8 @@ class TestCase342783(BasicEnvironment):
     Check that the new cloned VM was created only with 1 disk and the
     configuration file of the original VM
     https://tcms.engineering.redhat.com/case/342783/?from_plan=12057
-    This case is False until
-    RFE: https://bugzilla.redhat.com/show_bug.cgi?id=1115440 is solved
+    TODO: This case is False until RFE/bug:
+    https://bugzilla.redhat.com/show_bug.cgi?id=1115440 is solved
     """
     __test__ = False
     tcms_test_case = '342783'
@@ -706,9 +701,9 @@ class TestCase342783(BasicEnvironment):
     def test_clone_vm_from_snapshot(self):
         """
         - Create a VM with 3 disks attached
-        - Create a snapshot to the VM, pick only one disk and
-          configuration file.
-        - Clone VM from the snapshot.
+        - Create a snapshot to the VM, pick only one disk and configuration
+        file
+        - Clone VM from the snapshot
         """
         self._perform_snapshot_operation(disks=[self.boot_disk])
         wait_for_jobs()
@@ -755,14 +750,14 @@ class TestCase333055(BasicEnvironment):
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_custom_preview_with_configuration_and_two_disks(self):
         """
-        - Create a Vm with 4 disks  (file system on all of them).
+        - Create a Vm with 4 disks (file system on all of them)
         - Create files on all the VM's disks
-        - Create snapshot to all of the VM's disks.
+        - Create snapshot to all of the VM's disks
         - Delete all new files created on step 2
         - Go to custom preview
         - Choose VM's configuration and snapshot only from 2 of the disks
-        - Preview snapshots.
-        - Start VM.
+        - Preview snapshots
+        - Start VM
         """
         self._perform_snapshot_operation()
 
@@ -926,9 +921,9 @@ class TestCase336096(BasicEnvironment):
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_create_snapshot_from_vm_configuration(self):
         """
-        - Create VM with a disk and 2 NICs.
+        - Create VM with a disk and 2 NICs
         - Create files on the disk
-        - Create snapshot only from VM configuration.
+        - Create snapshot only from VM configuration
         - Delete one of the VM's NICs
         - Restore the snapshot (which includes only the OVF - conf file)
         """
@@ -964,13 +959,10 @@ class TestCase336096(BasicEnvironment):
 @attr(tier=1)
 class TestCase336105(BasicEnvironment):
     """
-    Create 3 snapshot and delete the second.
+    Create 3 snapshot and delete the second
     https://tcms.engineering.redhat.com/case/336105/?from_plan=12057
     """
-    # TODO: Change implementation of get_amount_of_volumes() to work with
-    # non block devices
-    __test__ = (ISCSI in opts['storages'])
-    storages = set([ISCSI])
+    __test__ = True
     tcms_test_case = '336105'
     snap_1 = 'snapshot_1'
     snap_2 = 'snapshot_2'
@@ -989,18 +981,17 @@ class TestCase336105(BasicEnvironment):
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_delete_second_snapshot_out_of_three(self):
         """
-        - Create VM with 4 disks.
-        - Write file A on disk #2.
-        - Create snapshot from disk #2.
-        - Write more files on disk #2 (file B) and create second snapshot.
-        - Write more files on disk #2 (file C) and create third snapshot.
-        - Now you have 3 snapshots from disk #2. Delete snapshot #2.
+        - Create VM with 4 disks
+        - Write file A on disk #2
+        - Create snapshot from disk #2
+        - Write more files on disk #2 (file B) and create second snapshot
+        - Write more files on disk #2 (file C) and create third snapshot
+        - Now you have 3 snapshots from disk #2. Delete snapshot #2
         """
         for index, snap_desc in enumerate(self.snaps):
             start_vms([self.vm_name], 1, wait_for_ip=False)
             waitForVMState(self.vm_name)
             for dev in self.devices:
-
                 logger.info("writing file to disk %s", dev)
                 self.vm.runCmd(shlex.split(self.cmd_create
                                            % ((self.mount_path % dev), index)))
@@ -1014,7 +1005,10 @@ class TestCase336105(BasicEnvironment):
         wait_for_jobs()
         start_vms([self.vm_name], 1, wait_for_ip=False)
         waitForVMState(self.vm_name)
-        vol_count = self.host.get_amount_of_volumes()
+
+        initial_vol_count = get_lv_count_by_storage_type(self.storage,
+                                                         self.disks_names)
+        logger.info("The number of volumes is: %s", initial_vol_count)
 
         stop_vms_safely([self.vm_name])
         waitForVMState(self.vm_name, config.VM_DOWN)
@@ -1024,8 +1018,13 @@ class TestCase336105(BasicEnvironment):
 
         start_vms([self.vm_name], 1, wait_for_ip=False)
         waitForVMState(self.vm_name)
-        self.assertEqual(self.host.get_amount_of_volumes(),
-                         vol_count - 1)
+
+        current_vol_count = get_lv_count_by_storage_type(self.storage,
+                                                         self.disks_names)
+        logger.info("The number of volumes after removing one snapshot is: "
+                    "%s", current_vol_count)
+
+        self.assertEqual(current_vol_count, initial_vol_count - 1)
 
         self.check_file_existence_operation(True, 'snapshot')
 
