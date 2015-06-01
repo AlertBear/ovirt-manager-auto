@@ -287,12 +287,15 @@ def create_vm_or_clone(positive, vmName, vmDescription,
     if config.GOLDEN_ENV and installation:
         storage_domains = storagedomains.get_storagedomain_names()
         if config.GLANCE_DOMAIN in storage_domains:
+            kwargs['cluster'] = cluster
+            kwargs['vmName'] = vmName
+            kwargs['vmDescription'] = vmDescription
             glance_image = config.GLANCE_IMAGE_COW
             if vol_allocation_policy == 'false':
                 glance_image = config.GLANCE_IMAGE_RAW
 
             assert high_vms.create_vm_using_glance_image(
-                config.GLANCE_DOMAIN, glance_image, vmName, **kwargs
+                config.GLANCE_DOMAIN, glance_image, **kwargs
             )
         else:
             logger.info("Cloning vm %s", vmName)

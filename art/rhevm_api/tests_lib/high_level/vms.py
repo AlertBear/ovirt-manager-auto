@@ -600,7 +600,7 @@ def update_vms_memory(test_vms, memory):
 
 
 def create_vm_using_glance_image(
-        glance_storage_domain_name, glance_image, vm_name, **kwargs
+        glance_storage_domain_name, glance_image, **kwargs
 ):
     """
     Create a vm using an imported disk from glance repository
@@ -609,12 +609,6 @@ def create_vm_using_glance_image(
     :type glance_storage_domain_name: str
     :param glance_image: Name of the desired image to use
     :type glance_image: str
-    :param vm_name: Name of the vm to create
-    :type vm_name: str
-    :param storage_domain: Target storage domain to use
-    :type storage_domain: str
-    :param cluster: Target cluster to use
-    :type cluster: str
     :return: True on success, False otherwise
     :rtype: bool
     """
@@ -634,7 +628,11 @@ def create_vm_using_glance_image(
     update_args = {
         'storageDomainName': None,  # To avoid installation process
         'installation': False,  # To avoid installation process
+        'start': 'false'  # To avoid starting vm before attaching the image
+                          # to it
     }
+    vm_name = kwargs.pop('vmName')
+    vm_description = kwargs.pop('vmDescription', vm_name)
     kwargs.update(update_args)
     # Create a class instance for GlanceImage
     glance = storagedomains.GlanceImage(
@@ -653,7 +651,8 @@ def create_vm_using_glance_image(
         return False
     LOGGER.info("Creating vm %s with nic", vm_name)
     if not vms.createVm(
-            positive=True, vmName=vm_name, vmDescription=vm_name, **kwargs
+            positive=True, vmName=vm_name,
+            vmDescription=vm_description, **kwargs
     ):
         LOGGER.error("Failed to add vm %s", vm_name)
         return False
