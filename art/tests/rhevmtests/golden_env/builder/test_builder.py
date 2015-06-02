@@ -16,7 +16,7 @@ from art.rhevm_api.tests_lib.low_level import clusters
 from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 from art.rhevm_api.tests_lib.low_level import external_providers
-
+from art.rhevm_api.tests_lib.high_level import mac_pool as hl_mac_pool
 from art.rhevm_api.tests_lib.high_level import storagedomains
 
 from art.rhevm_api.resources import VDS
@@ -552,6 +552,9 @@ class CreateDC(TestCase):
                 self.connect_glance(external_provider)
 
     def test_build_env(self):
+
+        hl_mac_pool.update_default_mac_pool()
+
         GOLDEN_ENV = config.ART_CONFIG['prepared_env']
 
         if GOLDEN_ENV['external_providers']:
