@@ -98,6 +98,7 @@ class TestCase231819(TestCase):
     tcms_plan_id = '2339'
     tcms_test_case = '231819'
     storages = set([ISCSI])
+    bz = {'1220824': {'engine': None, 'version': ['3.6']}}
 
     def setUp(self):
         """ Create vms and templates"""

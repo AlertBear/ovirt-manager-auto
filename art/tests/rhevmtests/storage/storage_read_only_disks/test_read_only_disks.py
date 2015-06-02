@@ -305,7 +305,10 @@ class TestCase332473(BaseTestCase):
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
     tcms_test_case = '332473'
-    bz = {'1194695': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
+    bz = {
+        '1194695': {'engine': ['rest', 'sdk'], 'version': ["3.5"]},
+        '1220824': {'engine': None, 'version': ['3.6']},
+    }
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_attach_RO_direct_LUN_disk(self):

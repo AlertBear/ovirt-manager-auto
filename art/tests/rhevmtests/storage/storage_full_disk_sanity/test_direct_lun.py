@@ -70,6 +70,7 @@ class DirectLunAttachTestCase(TestCase):
     storages = set([ISCSI])
     vm_name = None
     tcms_test_case = ""
+    bz = {'1220824': {'engine': None, 'version': ['3.6']}}
 
     def setUp(self):
         """
