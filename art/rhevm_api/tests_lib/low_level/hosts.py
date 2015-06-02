@@ -19,7 +19,6 @@
 
 import time
 import shlex
-import json
 import re
 import tempfile
 
@@ -31,7 +30,6 @@ from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 from art.core_api.apis_utils import getDS
 from art.core_api import is_action
 
-from art.test_handler import find_test_file
 from art.test_handler import settings
 
 from art.rhevm_api.utils.test_utils import get_api, split, getStat, \
@@ -83,10 +81,6 @@ IP_PATTERN = '10.35.*'
 TIMEOUT = 120
 TIMEOUT_NON_RESPONSIVE_HOST = 360
 FIND_QEMU = 'ps aux |grep qemu | grep -e "-name %s"'
-MOM_CONF = '/etc/vdsm/mom.conf'
-MOM_SCRIPT_LOCAL = 'tests/rhevmtests/sla/mom/momStats.py'
-MOM_SCRIPT_PATH = '/tmp/momStats.py'
-MOM_DEFAULT_PORT = 8080
 
 virsh_cmd = ['nwfilter-dumpxml', 'vdsm-no-mac-spoofing']
 search_for = ["<filterref filter='no-mac-spoofing'/>",
@@ -2043,94 +2037,6 @@ def kill_qemu_process(vm_name, host, user, password):
     HOST_API.logger.info("QEMU pid: %s", qemu_pid)
 
     return linux_machine.runCmd(['kill', '-9', qemu_pid])
-
-
-def change_mom_rpc_port(host_resource, port=MOM_DEFAULT_PORT):
-    """
-    Change port for mom rpc communication
-
-    :param host_resource: Host instance
-    :type host_resource: VDS instance
-    :param port: port for xmlrpc communication
-    :type port: int
-    :returns: True if function success, otherwise False
-    :rtype: bool
-    """
-    rc, out, err = host_resource.executor().run_cmd(
-        [
-            'sed', '-i', 's/rpc-port: [-0-9]\\+/rpc-port: %s/' % str(port),
-            MOM_CONF
-        ]
-    )
-    if rc:
-        HOST_API.logger.error(
-            "Failed to edit rpc port for mom on host %s, output: %s",
-            host_resource.ip, err
-        )
-        return False
-    return True
-
-
-def set_mom_script(
-        engine_resource, host_resource,
-        src=MOM_SCRIPT_LOCAL, dst=MOM_SCRIPT_PATH
-):
-    """
-    Set script for xmlrpc communication with mom
-
-    :param engine_resource: Host instance of engine
-    :type engine_resource: VDS instance
-    :param host_resource: Host instance
-    :type host_resource: VDS instance
-    :param src: path to source file
-    :type src: str
-    :param dst: path to destination file
-    :type dst: str
-    """
-    host_resource.copy_to(engine_resource, find_test_file(src), dst)
-
-
-def remove_mom_script(host_resource, path=MOM_SCRIPT_PATH):
-    """
-    Remove script for xmlrpc communication with mom
-
-    :param host_resource: Host instance
-    :type host_resource: VDS instance
-    :param path: path to destination file
-    :type path: str
-    :returns: True if operation success, otherwise False
-    :rtype: bool
-    """
-    return host_resource.fs.remove(path)
-
-
-def get_mom_statistics(
-        host_resource, port=MOM_DEFAULT_PORT, path=MOM_SCRIPT_PATH
-):
-    """
-    Get statistics from mom through xmlrpc
-    first need to set the script for usage by setMomScript()
-
-    :param host_resource: Host instance
-    :type host_resource: VDS instance
-    :param port: port for xmlrpc communication
-    :type port: int
-    :param path: path to mom script
-    :type path: str
-    :returns: True, dictionary of stats on success
-     otherwise False and output of run commands
-    :rtype: tuple
-    """
-    rc, out, err = host_resource.executor().run_cmd(
-        ['python', path, str(port)]
-    )
-    if not rc:
-        try:
-            stats_dict = json.loads(out.replace('\'', '"'))
-        except TypeError:
-            return True, out, err
-        return True, stats_dict, err
-    return False, out, err
 
 
 def get_host_object(host_name):

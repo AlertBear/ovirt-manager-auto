@@ -178,6 +178,8 @@ def _prepareVmObject(**kwargs):
     :type stateless: bool
     :param memory_guaranteed: size of guaranteed memory in bytes
     :type memory_guaranteed: int
+    :param ballooning: True of False - enable ballooning on vm
+    :type ballooning: bool
     :param quota: vm quota id
     :type quota: str
     :param protected: true if vm is delete protected
@@ -200,8 +202,6 @@ def _prepareVmObject(**kwargs):
     :type cpu_profile_id: str
     :param numa_mode: numa mode for vm(strict, preferred, interleave)
     :type numa_mode: str
-    :param balloon: True of False - enable ballooning on vm
-    :type balloon: bool
     :returns: vm object
     :rtype: instance of VM
     """
@@ -342,12 +342,15 @@ def _prepareVmObject(**kwargs):
         vm.set_custom_properties(createCustomPropertiesFromArg(custom_prop))
 
     # memory policy memory_guaranteed and ballooning
-    vm.set_memory_policy(
-        data_st.MemoryPolicy(
-            guaranteed=kwargs.pop("memory_guaranteed", None),
-            ballooning=kwargs.pop("balloon", None),
+    guaranteed = kwargs.pop("memory_guaranteed", None)
+    ballooning = kwargs.pop('ballooning', None)
+    if ballooning or guaranteed:
+        vm.set_memory_policy(
+            data_st.MemoryPolicy(
+                guaranteed=guaranteed,
+                ballooning=ballooning,
+            )
         )
-    )
 
     # placement policy: placement_affinity & placement_host
     affinity = kwargs.pop("placement_affinity", None)
@@ -521,6 +524,8 @@ def addVm(positive, wait=True, **kwargs):
     :type stateless: bool
     :param memory_guaranteed: size of guaranteed memory in bytes
     :type memory_guaranteed: int
+    :param ballooning: memory ballooning device enable or disable
+    :type balloning: bool
     :param quota: vm quota id
     :type quota: str
     :param protected: true if vm is delete protected
@@ -553,8 +558,6 @@ def addVm(positive, wait=True, **kwargs):
                            relevant parameters
                            (sysprep, ovf, username, root_password etc)
     :type initialization: Initialization
-    :param balloon: True of False - enable ballooning on vm
-    :type numa_mode: bool
     :returns: True, if add vm success, otherwise False
     :rtype: bool
     """
@@ -637,6 +640,8 @@ def updateVm(positive, vm, **kwargs):
     :type stateless: bool
     :param memory_guaranteed: size of guaranteed memory in bytes
     :type memory_guaranteed: int
+    :param ballooning: memory ballooning device enable or disable
+    :type ballooning: bool
     :param domainName: sys.prep domain name
     :type domainName: str
     :param placement_affinity: vm to host affinity
@@ -662,6 +667,7 @@ def updateVm(positive, vm, **kwargs):
     :returns: True, if update success, otherwise False
     :rtype: bool
     """
+
     vm_obj = VM_API.find(vm)
     vm_new_obj = _prepareVmObject(**kwargs)
     compare = kwargs.get("compare", True)
@@ -2428,24 +2434,24 @@ def checkVmStatistics(positive, vm):
 
 @is_action()
 def createVm(
-    positive, vmName, vmDescription, cluster='Default', nic=None,
-    nicType=None, mac_address=None, storageDomainName=None, size=None,
-    diskType=ENUMS['disk_type_data'], volumeType='true',
-    volumeFormat=ENUMS['format_cow'], diskActive=True,
-    diskInterface=ENUMS['interface_virtio'], bootable='true',
-    wipe_after_delete='false', start='false', template='Blank',
-    templateUuid=None, type=None, os_type=None, memory=None,
-    cpu_socket=None, cpu_cores=None, cpu_mode=None, display_type=None,
-    installation=False, slim=False, user=None, password=None,
-    attempt=60, interval=60, cobblerAddress=None, cobblerUser=None,
-    cobblerPasswd=None, image=None, async=False, hostname=None,
-    network=None, vnic_profile=None, useAgent=False,
-    placement_affinity=None, placement_host=None, vcpu_pinning=None,
-    highly_available=None, availablity_priority=None, vm_quota=None,
-    disk_quota=None, plugged='true', linked='true', protected=None,
-    copy_permissions=False, custom_properties=None,
-    watchdog_model=None, watchdog_action=None, cpu_profile_id=None,
-    numa_mode=None, balloon=None,
+        positive, vmName, vmDescription, cluster='Default', nic=None,
+        nicType=None, mac_address=None, storageDomainName=None, size=None,
+        diskType=ENUMS['disk_type_data'], volumeType='true',
+        volumeFormat=ENUMS['format_cow'], diskActive=True,
+        diskInterface=ENUMS['interface_virtio'], bootable='true',
+        wipe_after_delete='false', start='false', template='Blank',
+        templateUuid=None, type=None, os_type=None, memory=None,
+        cpu_socket=None, cpu_cores=None, cpu_mode=None, display_type=None,
+        installation=False, slim=False, user=None, password=None,
+        attempt=60, interval=60, cobblerAddress=None, cobblerUser=None,
+        cobblerPasswd=None, image=None, async=False, hostname=None,
+        network=None, vnic_profile=None, useAgent=False,
+        placement_affinity=None, placement_host=None, vcpu_pinning=None,
+        highly_available=None, availablity_priority=None, vm_quota=None,
+        disk_quota=None, plugged='true', linked='true', protected=None,
+        copy_permissions=False, custom_properties=None,
+        watchdog_model=None, watchdog_action=None, cpu_profile_id=None,
+        numa_mode=None, ballooning=None
 ):
     """
     Create new vm with nic, disk and OS
@@ -2538,8 +2544,8 @@ def createVm(
     :type cpu_profile_id: str
     :param numa_mode: numa mode for vm(strict, preferred, interleave)
     :type numa_mode: str
-    :param balloon: True of False - enable ballooning on vm
-    :type balloon: bool
+    :param ballooning: memory ballooning device enable or disable
+    :type ballooning: bool
     :returns: True, if create vm success, otherwise False
     :rtype: bool
     """
@@ -2557,7 +2563,8 @@ def createVm(
         protected=protected, cpu_mode=cpu_mode,
         copy_permissions=copy_permissions,
         custom_properties=custom_properties,
-        cpu_profile_id=cpu_profile_id, numa_mode=numa_mode, balloon=balloon,
+        cpu_profile_id=cpu_profile_id, numa_mode=numa_mode,
+        ballooning=ballooning
     ):
         return False
 

@@ -8,6 +8,7 @@ from art.core_api import is_action
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.test_handler.exceptions as errors
 from art.test_handler.settings import opts
+import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 
 LOGGER = logging.getLogger(__name__)
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -200,3 +201,37 @@ def restart_services_under_maintenance_state(services, host_resource):
         raise errors.HostException(
             "Failed to activate host %s" % host_name
         )
+
+
+def restart_vdsm_and_wait_for_activation(
+        hosts_resource, dc_name, storage_domain_name
+):
+    """
+    Restart vdsmd service and wait until storage will be active,
+
+    :param hosts_resource: list of host resource
+    :type hosts_resource: list of host resource
+    :param dc_name: dc name
+    :type dc_name: str
+    :param storage_domain_name: storage domain name
+    :type storage_domain_name: str
+    :raises: HostException or StorageDomainException
+    """
+
+    for host in hosts_resource:
+        host_name = ll_hosts.get_host_name_from_engine(host.ip)
+        restart_services_under_maintenance_state(['vdsmd'], host)
+        ll_hosts.waitForHostsStates(True, host_name)
+    ll_hosts.waitForSPM(dc_name, 200, 5)
+
+    for host in hosts_resource:
+        host_name = ll_hosts.get_host_name_from_engine(host.ip)
+        if ll_hosts.checkHostSpmStatus(True, host_name):
+            if not ll_sd.waitForStorageDomainStatus(
+                True, dc_name, storage_domain_name,
+                ENUMS["storage_domain_state_active"]
+            ):
+                raise errors.StorageDomainException(
+                    "Failed to activate storage domain"
+                    " %s after restart of VDSM" % storage_domain_name
+                )

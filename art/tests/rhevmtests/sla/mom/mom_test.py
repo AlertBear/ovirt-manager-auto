@@ -14,25 +14,21 @@ Tests covers:
         agent, multiple VMs on one host with ballooning enabled
 """
 from art.unittest_lib import SlaTest as TestCase
-
 import logging
 import config
-
 from time import sleep
-
+from art.rhevm_api.resources.package_manager import YumPackageManager
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import clusters
-from art.rhevm_api.tests_lib.low_level import storagedomains
 import art.rhevm_api.tests_lib.high_level.hosts as h_hosts
-
 import art.test_handler.exceptions as errors
-
 from art.test_handler import find_test_file
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.utils.test_utils import getStat
-
 from nose.plugins.attrib import attr
+import rhevmtests.helpers as helpers
 
 logger = logging.getLogger(__name__)
 find_test_file.__test__ = False
@@ -40,16 +36,12 @@ find_test_file.__test__ = False
 SLEEP_TIME = 20
 WAIT_FOR_IP_TIMEOUT = 300
 BALLOON_ITERATIONS = 25  # number of iterations for testing test ballooning
-MULTI_VMS_ITERATIONS = 25  # number of iterations VMs with different memory
-NEGATIVE_ITERATIONS = 10  # number of iterations for negative test cases
-RESTART_VDSM_INDEX = 12  # index of restarting VDSM
 MEMORY_OVERCOMMITMENT = 200
+NONE_MEMORY_OVERCOMMITMENT = 100
 HOST_ALLOC_PATH = "/tmp/hostAlloc.py"
 ALLOC_SCRIPT_LOCAL = "tests/rhevmtests/sla/mom/hostAlloc.py"
-CURRENT = 0
-MAX = 1
-
-
+SERVICE_PUPPET = "puppet"
+SERVICE_GUEST_AGENT = "ovirt-guest-agent"
 ########################################################################
 #                             Base Class                               #
 ########################################################################
@@ -74,18 +66,19 @@ class MOM(TestCase):
         :rtype: bool
         :raises: HostException
         """
-        rc, out, err = hosts.get_mom_statistics(host_resource)
-        if not rc:
-            raise errors.HostException(
-                "Failed to obtain ksm_run, output - %s" % err
-            )
-        return out["host"]["ksm_run"]
+        rc, out, err = host_resource.executor().run_cmd(
+            [
+                "vdsClient", "-s", host_resource.ip,
+                "getVdsStats", "|", "grep", "-i", "ksmState"
+            ]
+        )
+        return True if "True" in out else False
 
     def allocate_host_memory(
-            self, host_resource, perc=0.9, path=HOST_ALLOC_PATH
+            self, host_resource, perc=0.7, path=HOST_ALLOC_PATH
     ):
         """
-        Saturate host memory to 90%
+        Saturate host memory to 70%
 
         :param host_resource: host resource
         :type host_resource: instance of VDS
@@ -98,6 +91,7 @@ class MOM(TestCase):
         """
         out = None
         memory_allocated = False
+        logger.info("copying allocate test file to host %s", host_resource)
         host_resource.copy_to(
             config.ENGINE_HOST, find_test_file(ALLOC_SCRIPT_LOCAL), path
         )
@@ -187,31 +181,26 @@ class MOM(TestCase):
             SLEEP_TIME, config.HOSTS[host_id]
         )
         sleep(SLEEP_TIME)
-
-        logger.info("Testing deflation of balloon")
         return out
 
-    def balloon_usage(self, vm_list, host_id=1, multi_os=False):
+    def balloon_usage(self, vm_list, host_id=1):
         """
-        Test inflation and deflation of balloons
+        Run balloon inflation and deflation tests
 
         :param vm_list: list of VMs to be tested
         :type vm_list: list
         :param host_id: host index
         :type host_id: int
-        :param multi_os: different number of iterations for multi os test
-        :type multi_os: bool
         """
         logger.info("Start vms: %s", vm_list)
         vms.start_vms(vm_list)
-
         pid = self.prepare_balloon(len(vm_list))
-        deflated = self.wait_for_balloon_change(True, True, vm_list, multi_os)
 
+        logger.info("Testing deflation of balloon")
         self.assertTrue(
-            deflated, "Deflation of balloons not working properly"
+            self.deflation(vm_list),
+            "Deflation of balloons is not working properly"
         )
-
         self.balloon_clean([], pid)
 
         logger.info(
@@ -219,18 +208,15 @@ class MOM(TestCase):
             SLEEP_TIME, config.HOSTS[host_id]
         )
         sleep(SLEEP_TIME)
-
         logger.info("Testing inflation of balloon")
-        inflated = self.wait_for_balloon_change(
-            True, False, vm_list, multi_os
+        self.assertTrue(
+            self.deflation(vm_list, False),
+            "Inflation of balloon not working properly"
         )
-
-        self.assertTrue(inflated, "Inflation of balloon not working properly")
-        logger.info("inflation successful")
 
     def balloon_usage_negative(self, vm):
         """
-        Negative test, tests inflation and deflation of balloons
+        Run negative tests,of deflation of balloons
         Testing should succeed on VMs without guest agent and
         with memory set to Minimum Guaranteed memory
 
@@ -240,54 +226,37 @@ class MOM(TestCase):
         :rtype: bool
         """
         self.prepare_balloon()
+        return self.deflation([vm], True, True)
 
-        return self.wait_for_balloon_change(False, True, [vm])
-
-    def get_mem_stats(self, i, vm_list, host_id):
+    def get_vm_mem_stats(self, vm_list):
         """
-        Get current and max memory of VM
+        Create dict with vm name and his current balloon and max balloon
+        the information comes from vdsClient command.
 
-        :param i: iteration index
-        :type i: int
-        :param vm_list: list of vms
+        :param vm_list: list of vm names
         :type vm_list: list
-        :param host_id: host index
-        :type host_id: int
-        :returns: dictionary of mom stats
-        :rtype: dict
+        :return: dict with vm name and his current balloon and max balloon
         """
-        rc, stats, err = hosts.get_mom_statistics(config.VDS_HOSTS[host_id])
-        self.assertTrue(rc, "Failed to obtain mom statistics")
-
+        mom_dict = {}
         for vm in vm_list:
-            if vm not in stats["guests"]:
-                logger.warning("VM %s not in MOM statistics", vm)
-                return False
-
-        maxb = stats["guests"][vm_list[0]]["balloon_max"]
-        curb = stats["guests"][vm_list[0]]["balloon_cur"]
-
-        mom_off = maxb == curb
-
-        if (not i % RESTART_VDSM_INDEX) and mom_off:
-            self.assertTrue(
-                config.VDS_HOSTS[host_id].service("vdsmd").restart(),
-                "Restart of vdsm failed"
+            vm_id = vms.get_vm(vm).get_id()
+            rc, out, error = config.VDS_HOSTS[1].executor().run_cmd(
+                [
+                    "vdsClient", "-s", config.VDS_HOSTS[1].ip,
+                    "getVmStats", str(vm_id), "|", "grep",
+                    "balloonInfo", "|", "cut", "-d=", "-f2"
+                ]
             )
-
-        for vm in vm_list:
-            logger.info(
-                "VM %s - balloons max: %s, current: %s",
-                vm, stats["guests"][vm]["balloon_max"],
-                stats["guests"][vm]["balloon_cur"]
-            )
-
-        guests = stats["guests"]
-        return dict(
-            (
-                vm, [guests[vm]["balloon_cur"], guests[vm]["balloon_max"]]
-            ) for vm in vm_list
-        )
+            try:
+                mom_dict[vm] = eval(out.strip())
+                logger.info(
+                    "VM %s - balloons max: %s, current: %s",
+                    vm, mom_dict[vm]["balloon_max"],
+                    mom_dict[vm]["balloon_cur"]
+                )
+            except SyntaxError:
+                logger.error("failed to obtain ballooning statistics")
+        return mom_dict
 
     def balloon_clean(self, vm_list, pid, dealloc=True, host_id=1):
         """
@@ -315,77 +284,61 @@ class MOM(TestCase):
             )
             self.pid_list.pop()
 
-    def wait_for_balloon_change(
-            self, positive, deflate, vm_list, multi_vms=False, host_id=1
-    ):
+    def deflation(self, vm_list, deflation=True, negative_test=False):
         """
-        Test balloon usage in number of iterations
+        If deflation is True, checking ballooning deflation
+        it means if the current memory < max memory
 
-        :param positive: testing should be positive
-        :type positive: bool
-        :param deflate: True if testing deflation False if testing inflation
-        :type deflate: bool
-        :param vm_list: list of vms to test ballooning on
+        if deflation is False, checking ballooning Inflation
+        it means if the current memory = max memory
+
+        :param vm_list: list of vms on which the deflation/inflation will run
         :type vm_list: list
-        :param multi_vms: adjusts test for multi vms case
-        :type multi_vms: bool
-        :param host_id: host index
-        :type host_id: int
-        :returns: True, if method success, otherwise False
-        :rtype: bool
+        :param deflation: True if deflation, False if Inflation
+        :type deflation: bool
+        :param negative_test: True if negative test, False otherwise
+        :type negative_test: bool
+        :return: True if deflation or inflation passed, False otherwise
+
         """
-        iterations = MULTI_VMS_ITERATIONS if multi_vms else BALLOON_ITERATIONS
-        if not positive:
-            iterations = NEGATIVE_ITERATIONS
 
-        failed_attempts = 0
-        for i in range(iterations):
-            logger.info("Iteration number %d out of %d", i+1, iterations)
-            mem_dict = self.get_mem_stats(i, vm_list, host_id)
-
+        for i in range(BALLOON_ITERATIONS):
+            logger.info(
+                "Iteration number %d out of %d", i + 1, BALLOON_ITERATIONS
+            )
+            mem_dict = self.get_vm_mem_stats(vm_list)
             if not mem_dict:
                 logger.warning("Failed to obtain information from mom")
-                if not positive:
-                    return True
-                failed_attempts += 1
-                sleep(SLEEP_TIME)
                 continue
 
-            if failed_attempts >= 10:
-                config.VDS_HOSTS[host_id].service("vdsmd").restart()
-                failed_attempts = 0
-
-            for vm in vm_list:
-                logger.info(
-                    "VM stats: max - %d, current - %d",
-                    mem_dict[vm][MAX], mem_dict[vm][CURRENT]
-                )
-
-            if not positive:
+            if negative_test and deflation:
                 vm = vm_list[0]
                 self.assertEqual(
-                    mem_dict[vm][MAX], mem_dict[vm][CURRENT], "Balloon edited")
+                    mem_dict[vm]["balloon_max"], mem_dict[vm]["balloon_cur"]
+                )
 
-            if deflate and multi_vms:
-                if mem_dict[
-                    vm_list[0]
-                ][CURRENT] != mem_dict[
-                    vm_list[1]
-                ][CURRENT]:
-                    return positive
-            else:
+            if deflation and not negative_test:
+
                 for vm in vm_list:
-                    vm_cur = mem_dict[vm][CURRENT]
-                    vm_max = mem_dict[vm][MAX]
-                    if ((deflate and vm_cur == vm_max) or
-                       (not deflate and vm_cur != vm_max)):
+                    if (int(mem_dict[vm]["balloon_max"]) >
+                       int(mem_dict[vm]["balloon_cur"])):
+                        logger.info("deflation is working!!!")
+                        return True
+
+            if not deflation:
+                for vm in vm_list:
+                    if (
+                        mem_dict[vm]["balloon_max"] !=
+                        mem_dict[vm]["balloon_cur"]
+                    ):
                         break
                 else:
-                    return positive
+                    logger.info("inflation is working!!!")
+                    return True
 
             logger.info(
                 "Waiting %d s for host %s to compute ballooning info",
-                SLEEP_TIME, config.HOSTS[host_id]
+                SLEEP_TIME, config.HOSTS[1]
             )
             sleep(SLEEP_TIME)
         return False
@@ -394,6 +347,7 @@ class MOM(TestCase):
 ########################################################################
 #                             Test Cases                               #
 ########################################################################
+
 
 class KSM(MOM):
     """
@@ -406,7 +360,10 @@ class KSM(MOM):
     @classmethod
     def setup_class(cls):
         """
-        Create pool of 8 VMs from template
+        KSM setup-
+        pin all VMs to host
+        change VMs memory
+        disable balloon and enable ksm on cluster
         """
         stats = getStat(config.HOSTS[0], "host", "hosts", ["memory.free"])
         host_mem = stats["memory.free"]
@@ -442,16 +399,11 @@ class KSM(MOM):
         ):
             raise errors.VMException("Failed to update cluster")
 
-        h_hosts.restart_vdsm_under_maintenance_state(
-            config.HOSTS[cls.host_id], config.VDS_HOSTS[cls.host_id]
+        h_hosts.restart_vdsm_and_wait_for_activation(
+            [config.VDS_HOSTS[cls.host_id]],
+            config.DC_NAME[0], config.STORAGE_NAME[0]
         )
-        if not storagedomains.waitForStorageDomainStatus(
-                True, config.DC_NAME[0], config.STORAGE_NAME[0],
-                config.ENUMS["storage_domain_state_active"]
-        ):
-            raise errors.StorageDomainException(
-                "Failed to activate storage domain after restart of VDSM"
-            )
+
         logger.info(
             "Cluster memory overcommitment percentage set to %d",
             MEMORY_OVERCOMMITMENT
@@ -468,7 +420,7 @@ class KSM(MOM):
             self.assertTrue(
                 vms.startVm(
                     positive=True, vm=vm,
-                    wait_for_status=config.ENUMS["vm_state_up"]
+                    wait_for_status=config.VM_UP
                 ),
                 "Failed to run Vm %s" % vm
             )
@@ -510,7 +462,7 @@ class KSM(MOM):
             "VMs started, waiting %d for start of VM and guest agent",
             SLEEP_TIME * self.threshold[0]
         )
-        sleep(SLEEP_TIME*self.threshold[0])
+        sleep(SLEEP_TIME * self.threshold[0])
         self.assertTrue(
             self.ksm_running(config.VDS_HOSTS[0]),
             "KSM not running on %d vms" % self.threshold[0]
@@ -550,7 +502,7 @@ class KSM(MOM):
         if (len(config.HOSTS)) < 2:
             raise errors.SkipTest("Too few hosts.")
 
-        for vm in self.threshold_list[:len(self.threshold_list)/2]:
+        for vm in self.threshold_list[:len(self.threshold_list) / 2]:
             self.assertTrue(
                 vms.migrateVm(True, vm, force=True),
                 "Cannot migrate VM %s" % vm
@@ -567,7 +519,7 @@ class KSM(MOM):
     @classmethod
     def teardown_class(cls):
         """
-        teardown ksm tests
+        Teardown ksm tests
         """
         logger.info("Stop vms: %s", cls.threshold_list)
         vms.stop_vms_safely(cls.threshold_list)
@@ -576,16 +528,10 @@ class KSM(MOM):
                 ksm_enabled=True
         ):
             raise errors.VMException("Failed to update cluster")
-
-        h_hosts.restart_vdsm_under_maintenance_state(
-            config.HOSTS[cls.host_id], config.VDS_HOSTS[cls.host_id]
+        h_hosts.restart_vdsm_and_wait_for_activation(
+            [config.VDS_HOSTS[cls.host_id]],
+            config.DC_NAME[0], config.STORAGE_NAME[0]
         )
-        if not storagedomains.waitForStorageDomainStatus(
-                True, config.DC_NAME[0], config.STORAGE_NAME[0],
-                config.ENUMS["storage_domain_state_active"]
-        ):
-            raise errors.StorageDomainException(
-                "Failed to activate storage domain after restart of VDSM")
 
 
 ####################################################################
@@ -604,19 +550,24 @@ class Balloon(MOM):
         """
         if not clusters.updateCluster(
                 True, config.CLUSTER_NAME[0], ballooning_enabled=True,
-                ksm_enabled=False
+                ksm_enabled=False, mem_ovrcmt_prc=NONE_MEMORY_OVERCOMMITMENT
         ):
             raise errors.VMException("Failed to update cluster")
+
+        h_hosts.restart_vdsm_and_wait_for_activation(
+            config.VDS_HOSTS[:2], config.DC_NAME[0], config.STORAGE_NAME[0]
+        )
         # vms for ballooning
         list_id = range(int(config.VM_NUM))
-        vm_list = ["%s-%s" % (config.POOL_NAME, str(i+1)) for i in list_id]
-        # vm_list.append(config.W7)
-        # vm_list.append(config.W2K)
+        vm_list = ["%s-%s" % (config.POOL_NAME, str(i + 1)) for i in list_id]
+        # vm_list.extend(i["name"] for i in config.windows_images)
+
         for vm in vm_list:
             if not vms.updateVm(
                     True, vm, placement_host=config.HOSTS[1],
-                    placement_affinity=config.ENUMS["vm_affinity_pinned"],
-                    memory=2*config.GB, memory_guaranteed=config.GB
+                    placement_affinity=config.VM_PINNED,
+                    memory=2 * config.GB, memory_guaranteed=config.GB,
+                    ballooning=True
             ):
                 raise errors.VMException("Failed to update vm %s" % vm)
 
@@ -647,18 +598,15 @@ class Balloon(MOM):
             )
             counter += 1
 
-        self.balloon_usage(self.vm_list, 1, True)
+        self.balloon_usage(self.vm_list, 1)
 
-    # TODO: test need export domain with windows vms with
-    # last version of guest agent
-    # @bz({"1125331": {"engine": ["cli"], "version": None},
-    #      "1132833": {"engine": None, "version": None}})
+    # TODO - create windows vm's in glance
     # @polarion("RHEVM3-4972")
     # def test_c_balloon_multi_os(self):
     #     """
     #     Test usage of balloon on different OS types
     #     """
-    #     self.vm_list = ["balloon-1", config.W7, config.W2K]
+    #     self.vm_list = [i["image"] for i in config.windows_images]
     #     self.balloon_usage(self.vm_list)
 
     @polarion("RHEVM3-4978")
@@ -671,17 +619,16 @@ class Balloon(MOM):
         self.vm_list = [vm]
         self.assertTrue(
             vms.updateVm(
-                True, vm, memory=2*config.GB, memory_guaranteed=2*config.GB
+                True, vm, memory=2*config.GB, memory_guaranteed=2 * config.GB
             ),
             "Failed to update rhel vm %s" % vm
         )
         self.assertTrue(
-            vms.startVm(True, vm, wait_for_status=config.ENUMS["vm_state_up"]),
+            vms.startVm(True, vm, wait_for_status=config.VM_UP),
             "Failed to start vm %s" % vm
         )
         self.balloon_usage_negative(vm)
 
-    @bz({"1184135": {"engine": None, "version": None}})
     @polarion("RHEVM3-4971")
     def test_e_balloon_no_agent(self):
         """
@@ -691,27 +638,33 @@ class Balloon(MOM):
         self.vm_list = [vm]
         self.assertTrue(
             vms.updateVm(
-                True, vm, memory=2*config.GB, memory_guaranteed=config.GB
+                True, vm, memory=2 * config.GB, memory_guaranteed=config.GB
             ),
             "Failed to update rhel vm"
         )
 
         self.assertTrue(
-            vms.startVm(True, vm, wait_for_status=config.ENUMS["vm_state_up"]),
+            vms.startVm(True, vm, wait_for_status=config.VM_UP),
             "Failed to start vm %s" % vm
         )
-        vm_machine = vms.get_vm_machine(
-            vm, config.VMS_LINUX_USER, config.VMS_LINUX_PW
-        )
-        for i in range(BALLOON_ITERATIONS):
-            if vm_machine.stopService("ovirt-guest-agent"):
-                break
-            sleep(SLEEP_TIME)
-        else:
-            self.assertTrue(vms.stopVm(True, vm), "Failed to stop vm %s" % vm)
-            raise errors.VMException(
-                "Failed to stop guest agent on VM %s" % vm)
 
+        vm_resource = helpers.get_host_resource_with_root_user(
+            hl_vms.get_vm_ip(vm), config.VMS_LINUX_PW
+        )
+        vm_yum_manager = YumPackageManager(vm_resource)
+        if vm_yum_manager.exist(SERVICE_PUPPET):
+            logger.info("remove %s", SERVICE_PUPPET)
+            if not vm_yum_manager.remove(SERVICE_PUPPET):
+                raise errors.VMException(
+                    "Failed to remove %s" % SERVICE_PUPPET
+                )
+
+        logger.info("Stop %s service", SERVICE_GUEST_AGENT)
+        if not vm_resource.service(SERVICE_GUEST_AGENT).stop():
+            raise errors.VMException(
+                "Failed to stop service %s on VM %s" %
+                (SERVICE_GUEST_AGENT, vm)
+            )
         self.balloon_usage_negative(vm)
 
     @polarion("RHEVM3-4970")
@@ -720,7 +673,7 @@ class Balloon(MOM):
         Test ballooning with multiple (8) small VMs
         """
         list_id = range(config.VM_NUM)
-        self.vm_list = ["%s-%d" % (config.POOL_NAME, i+1) for i in list_id]
+        self.vm_list = ["%s-%d" % (config.POOL_NAME, i + 1) for i in list_id]
         for vm in self.vm_list:
             self.assertTrue(
                 vms.updateVm(
@@ -736,7 +689,7 @@ class Balloon(MOM):
         if hosts.getHostState(config.HOSTS[1]) == config.HOST_NONOPERATIONAL:
             logger.info("Activate host %s.", config.HOSTS[1])
             if not hosts.activateHost(True, config.HOSTS[1]):
-                raise errors.HostException("Failed to activate host.")
+                raise errors.HostException("Failed to activate host")
         logger.info(
             "Wait %d second to get time to host up all vdsm services",
             SLEEP_TIME
@@ -752,9 +705,8 @@ class Balloon(MOM):
     @classmethod
     def teardown_class(cls):
         """
-        remove all VMS
+        Remove memory load from hosts
         """
-        # if any test fail remove memory load from hosts
         logger.info(
             "Pids of processes allocating memory - %s",
             " ".join(str(i) for i in cls.pid_list)
@@ -765,6 +717,11 @@ class Balloon(MOM):
 
         if not clusters.updateCluster(
                 True, config.CLUSTER_NAME[0], ballooning_enabled=False,
-                ksm_enabled=True
+                ksm_enabled=True,
+                mem_ovrcmt_prc=NONE_MEMORY_OVERCOMMITMENT
         ):
-            raise errors.VMException("Failed to disable ballooning on cluster")
+            logger.error("Failed to disable ballooning on cluster")
+
+        h_hosts.restart_vdsm_and_wait_for_activation(
+            config.VDS_HOSTS[:2], config.DC_NAME[0], config.STORAGE_NAME[0]
+        )
