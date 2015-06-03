@@ -28,10 +28,10 @@ logger = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
 UPDATE_OVF_INTERVAL_CMD = 'engine-config -s OvfUpdateIntervalInMinutes=%s'
-IMPORT_DOMAIN = ''
 
 TEST_PLAN_ID = '14281'
 VM_NAMES = dict()
+IMPORT_DOMAIN = dict()
 SPM_TIMEOUT = 600
 SPM_SLEEP = 5
 MIN_UNUSED_LUNS = 1
@@ -126,21 +126,21 @@ def setup_module():
                     "Creating Gluster domain '%s' failed" % sd_name
                 )
         wait_for_jobs()
-
         # This domain will be the domain to import during the whole run.
         # Deactivate it before creating the vm for the job to make sure that
         # the vm is not created on it.
-        IMPORT_DOMAIN = sd_name
+        IMPORT_DOMAIN[storage_type] = sd_name
         logger.info(
-            "Non-master domain to import into during test run: %s",
-            IMPORT_DOMAIN
+            "Non-master domain to import into during test "
+            "run: %s for storage type %s",
+            IMPORT_DOMAIN[storage_type], storage_type
         )
 
         test_utils.wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
         storagedomains.detach_and_deactivate_domain(
-            config.DATA_CENTER_NAME, IMPORT_DOMAIN
+            config.DATA_CENTER_NAME, IMPORT_DOMAIN[storage_type]
         )
         wait_for_jobs()
 
@@ -161,9 +161,11 @@ def setup_module():
         logger.info('Shutting down VM %s', vm_name)
         ll_vms.stop_vms_safely([vm_name])
 
-        logger.info("Attaching storage domain %s", IMPORT_DOMAIN)
+        logger.info(
+            "Attaching storage domain %s", IMPORT_DOMAIN[storage_type]
+        )
         storagedomains.attach_and_activate_domain(
-            config.DATA_CENTER_NAME, IMPORT_DOMAIN
+            config.DATA_CENTER_NAME, IMPORT_DOMAIN[storage_type]
         )
         wait_for_jobs()
     engine = Machine(
@@ -176,6 +178,12 @@ def setup_module():
             "Filed to update OVF update interval: %s" % out
         )
 
+    # Make sure there are no running tasks in DB before restarting
+    # ovirt-engine service in order to work around bug:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1213850
+    test_utils.wait_for_tasks(
+        config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+    )
     logger.info("Restarting ovirt-engine service")
     test_utils.restartOvirtEngine(engine, 10, 15, 300)
 
@@ -194,29 +202,46 @@ def teardown_module():
     if not rc:
         logger.error("Filed to update OVF update interval: %s", out)
         exception_flag = True
+
+    # Make sure there are no running tasks in DB before restarting
+    # ovirt-engine service in order to work around bug:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1213850
+    test_utils.wait_for_tasks(
+        config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+    )
     logger.info("Restarting ovirt-engine service")
     test_utils.restartOvirtEngine(engine, 10, 15, 300)
 
     for storage_type in config.STORAGE_SELECTOR:
-        if not ll_vms.removeVms(True, VM_NAMES[storage_type], stop='true'):
-            logger.error("Failed to remove vms %s", VM_NAMES[storage_type])
+        try:
+            if not ll_vms.removeVms(True, VM_NAMES[storage_type], stop='true'):
+                logger.error("Failed to remove vms %s", VM_NAMES[storage_type])
+                exception_flag = True
+        # Continue the tearDown even if removeVms function fails
+        # or raises on exception
+        except ValueError:
+            logger.error("removeVms function threw an exception")
             exception_flag = True
 
-    test_utils.wait_for_tasks(
-        config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
-    )
-    if not storagedomains.detach_and_deactivate_domain(
-            config.DATA_CENTER_NAME, IMPORT_DOMAIN
-    ):
-        logger.error(
-            'Failed to deactivate storage domain %s', IMPORT_DOMAIN
+        test_utils.wait_for_tasks(
+            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
-        exception_flag = True
-    if not ll_sd.removeStorageDomain(True, IMPORT_DOMAIN, host, format='true'):
-        logger.error(
-            'Failed to remove storage domain %s', IMPORT_DOMAIN
-        )
-        exception_flag = True
+        if not storagedomains.detach_and_deactivate_domain(
+            config.DATA_CENTER_NAME, IMPORT_DOMAIN[storage_type]
+        ):
+            logger.error(
+                'Failed to deactivate storage domain %s',
+                IMPORT_DOMAIN[storage_type]
+            )
+            exception_flag = True
+        if not ll_sd.removeStorageDomain(
+            True, IMPORT_DOMAIN[storage_type], host, format='true'
+        ):
+            logger.error(
+                'Failed to remove storage domain %s',
+                IMPORT_DOMAIN[storage_type]
+            )
+            exception_flag = True
 
     if not config.GOLDEN_ENV:
         logger.info('Cleaning datacenter')
@@ -255,7 +280,7 @@ class BasicEnvironment(BaseTestCase):
                 "Unable to find master storage domain"
             )
 
-        self.non_master = IMPORT_DOMAIN
+        self.non_master = IMPORT_DOMAIN[self.storage]
 
     def _secure_detach_storage_domain(self, datacenter_name, domain_name):
         logger.info("Detaching storage domain %s", domain_name)
