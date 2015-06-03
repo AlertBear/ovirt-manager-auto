@@ -278,10 +278,7 @@ def clean_host_interfaces(host_name):
         if nic_name.startswith(BOND) and "." not in nic_name:
             nic_network = nic.get_network()
             if nic_network:
-                att_network_name = ll_general.get_object_name_by_id(
-                    ll_networks.NET_API, nic_network.get_id()
-                )
-                if att_network_name != mgmt_net_name:
+                if nic_network.get_name() != mgmt_net_name:
                     bonds.append(nic_name)
             else:
                 bonds.append(nic_name)

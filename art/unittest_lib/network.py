@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_HOST_NICS_NUM = 4
 NUM_OF_NETWORKS = 5
 DEFAULT_MTU = "1500"
+PREFIX = "net"
 
 
 def find_ip(vm, host_list, nic_index, vlan=None, bond=None):
@@ -103,7 +104,9 @@ def vlan_int_name(interface, vlan):
     return ".".join([interface, vlan])
 
 
-def generate_networks_names(cases, num_of_networks=NUM_OF_NETWORKS):
+def generate_networks_names(
+    cases, num_of_networks=NUM_OF_NETWORKS, prefix=PREFIX
+):
     """
     Generate networks names per case
 
@@ -111,13 +114,17 @@ def generate_networks_names(cases, num_of_networks=NUM_OF_NETWORKS):
     :type cases: int
     :param num_of_networks: Number of networks for each case
     :type num_of_networks: int
+    :param prefix: Network name prefix
+    :type prefix: str
     :return: {case_num:[net_name, ...]}
     :rtype: dict
     """
     cases = [(i + 1) for i in range(cases)]
     return dict(
         [(c, [
-            "case%s_net%d" % (c, (i + 1)) for i in range(num_of_networks)
+            "case%s_%s%d" % (
+                c, prefix, (i + 1)
+            ) for i in range(num_of_networks)
         ]) for c in cases]
     )
 

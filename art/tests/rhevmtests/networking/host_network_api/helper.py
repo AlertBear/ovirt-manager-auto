@@ -82,94 +82,12 @@ def prepare_networks_on_dc():
 
     :raise: NetworkException
     """
-    network_dict = {
-        c.NETWORKS[1][0]: {
-            "required": "false"
-        },
-        c.NETWORKS[2][0]: {
-            "vlan_id": "2",
-            "required": "false"
-        },
-        c.NETWORKS[3][0]: {
-            "usages": "",
-            "required": "false"
-        },
-        c.NETWORKS[4][0]: {
-            "required": "false"
-        },
-        c.NETWORKS[5][0]: {
-            "vlan_id": "5",
-            "required": "false"
-        },
-        c.NETWORKS[6][0]: {
-            "required": "false",
-            "usages": ""
-        },
-        c.NETWORKS[7][0]: {
-            "required": "false"
-        },
-        c.NETWORKS[8][0]: {
-            "required": "false",
-            "usages": "",
-            "mtu": c.MTU[1]
-        },
-        c.NETWORKS[8][1]: {
-            "required": "false",
-            "vlan_id": "82",
-            "mtu": c.MTU[0]
-        },
-        c.NETWORKS[9][0]: {
-            "required": "false"
-        },
-        c.NETWORKS[10][0]: {
-            "required": "false"
-        },
-        c.NETWORKS[11][0]: {
-            "required": "false",
-            "usages": ""
-        },
-        c.NETWORKS[11][1]: {
-            "required": "false",
-            "vlan_id": "111"
-        },
-        c.NETWORKS[11][2]: {
-            "required": "false",
-            "vlan_id": "112"
-        },
-        c.NETWORKS[12][0]: {
-            "required": "false",
-            "usages": ""
-        },
-        c.NETWORKS[12][1]: {
-            "required": "false",
-            "vlan_id": "121"
-        },
-        c.NETWORKS[12][2]: {
-            "required": "false",
-            "vlan_id": "122"
-        },
-        c.NETWORKS[14][0]: {
-            "required": "false",
-            "usages": ""
-        },
-        c.NETWORKS[15][0]: {
-            "required": "false",
-            "usages": ""
-        },
-        c.NETWORKS[15][1]: {
-            "required": "false",
-            "vlan_id": "151"
-        },
-        c.NETWORKS[15][2]: {
-            "required": "false",
-            "vlan_id": "152"
-        }
-    }
+    nets_dict = dict(dict(c.SN_DICT, **c.NIC_DICT), **c.HOST_DICT)
     logger.info(
         "Create and attach networks on %s/%s", c.DC_NAME, c.CLUSTER
     )
     if not hl_networks.createAndAttachNetworkSN(
-        data_center=c.DC_NAME, cluster=c.CLUSTER, network_dict=network_dict
+        data_center=c.DC_NAME, cluster=c.CLUSTER, network_dict=nets_dict
     ):
         raise c.NET_EXCEPTION(
             "Failed to add networks to %s/%s" % (c.DC_NAME, c.CLUSTER)
