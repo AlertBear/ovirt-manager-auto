@@ -1156,6 +1156,7 @@ class TestSanityCase13(TestCase):
 
 
 @attr(tier=0)
+@tcms(16421, 448117)
 class TestSanityCase14(TestCase):
     """
     Negative: Try to create Bond with exceeded name length (more than 15 chars)
@@ -1165,7 +1166,6 @@ class TestSanityCase14(TestCase):
 
     __test__ = True
 
-    @tcms(16421, 448117)
     def test_bond_max_length(self):
         """
         Create BOND: exceed allowed length (max 15 chars)
@@ -1191,19 +1191,7 @@ class TestSanityCase14(TestCase):
             )
         )
 
-
-@attr(tier=0)
-class TestSanityCase15(TestCase):
-    """
-    Negative:  Try to create bond with wrong prefix
-    """
-    vlan_1 = config.VLAN_NETWORKS[0]
-    vlan_id_1 = config.VLAN_ID[0]
-
-    __test__ = True
-
-    @tcms(16421, 448117)
-    def test_bond_prefix(self):
+    def test_bond_prefix1(self):
         """
         Create BOND: use wrong prefix (eg. NET1515)
         """
@@ -1228,19 +1216,29 @@ class TestSanityCase15(TestCase):
             )
         )
 
+    def test_bond_empty(self):
+        """
+        Create BOND: leave name field empty
+        """
+        logger.info("Generating bond object with 2 NIC bond and empty name")
+        net_obj = []
+        rc, out = genSNNic(nic="", slaves=[config.VDS_HOSTS[0].nics[2],
+                                           config.VDS_HOSTS[0].nics[3]])
+        if not rc:
+            raise NetworkException("Cannot generate NIC object")
+        net_obj.append(out["host_nic"])
 
-@attr(tier=0)
-class TestSanityCase16(TestCase):
-    """
-    Negative: Try to create bond with wrong suffix
-    """
-    vlan_1 = config.VLAN_NETWORKS[0]
-    vlan_id_1 = config.VLAN_ID[0]
+        logger.info("sending SNRequest: empty bond name")
+        self.assertTrue(
+            sendSNRequest(
+                False, host=HOST_NAME_0, nics=net_obj,
+                auto_nics=[config.VDS_HOSTS[0].nics[0]],
+                check_connectivity="true", connectivity_timeout=config.TIMEOUT,
+                force="false"
+            )
+        )
 
-    __test__ = True
-
-    @tcms(16421, 448117)
-    def test_bond_suffix(self):
+    def test_bond_suffix2(self):
         """
         Create BOND: use wrong suffix (e.g. bond1!)
         """
@@ -1267,41 +1265,7 @@ class TestSanityCase16(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase17(TestCase):
-    """
-    Negative: Try to create bond with empty name
-    """
-    vlan_1 = config.VLAN_NETWORKS[0]
-    vlan_id_1 = config.VLAN_ID[0]
-
-    __test__ = True
-
-    @tcms(16421, 448117)
-    def test_bond_empty(self):
-        """
-        Create BOND: leave name field empty
-        """
-        logger.info("Generating bond object with 2 NIC bond and empty name")
-        net_obj = []
-        rc, out = genSNNic(nic="", slaves=[config.VDS_HOSTS[0].nics[2],
-                                           config.VDS_HOSTS[0].nics[3]])
-        if not rc:
-            raise NetworkException("Cannot generate NIC object")
-        net_obj.append(out["host_nic"])
-
-        logger.info("sending SNRequest: empty bond name")
-        self.assertTrue(
-            sendSNRequest(
-                False, host=HOST_NAME_0, nics=net_obj,
-                auto_nics=[config.VDS_HOSTS[0].nics[0]],
-                check_connectivity="true", connectivity_timeout=config.TIMEOUT,
-                force="false"
-            )
-        )
-
-
-@attr(tier=0)
-class TestSanityCase18(TestCase):
+class TestSanityCase15(TestCase):
     """
     Configure ethtool and bridge opts with non-default value
     Verify ethtool and bridge_opts were updated with non-default values
@@ -1430,7 +1394,7 @@ class TestSanityCase18(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase19(TestCase):
+class TestSanityCase16(TestCase):
     """
     Configure queue for existing network
     """
@@ -1497,7 +1461,7 @@ class TestSanityCase19(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase20(TestCase):
+class TestSanityCase17(TestCase):
     """
     List all networks under datacenter.
     """
@@ -1563,7 +1527,7 @@ class TestSanityCase20(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase21(TestCase):
+class TestSanityCase18(TestCase):
     """
     Update VM network to be non-VM network
     Update non-VM network to be VM network
@@ -1671,7 +1635,7 @@ class TestSanityCase21(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase22(TestCase):
+class TestSanityCase19(TestCase):
     """
     Verify you can configure additional VLAN network with static IP and gateway
     """
@@ -1727,7 +1691,7 @@ class TestSanityCase22(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase23(TestCase):
+class TestSanityCase20(TestCase):
     """
     1) Put label on Host NIC of one Host
     2) Check network is attached to Host
@@ -1806,7 +1770,7 @@ class TestSanityCase23(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase24(TestCase):
+class TestSanityCase21(TestCase):
     """
     Add new network QOS
     """
@@ -1914,7 +1878,7 @@ class TestSanityCase24(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase25(TestCase):
+class TestSanityCase22(TestCase):
     """
     Negative: Create more than 5 BONDS using dummy interfaces
     """
