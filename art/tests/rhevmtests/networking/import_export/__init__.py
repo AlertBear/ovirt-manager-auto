@@ -4,26 +4,15 @@ Import Export Test
 """
 
 import logging
-from art.rhevm_api.utils.test_utils import setPersistentNetwork
+import art.rhevm_api.utils.test_utils as test_utils
 from rhevmtests.networking import config, network_cleanup
-from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
-from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    addStorageDomain,
-    getStorageDomainNamesForType
-)
-from art.rhevm_api.tests_lib.high_level.networks import(
-    prepareSetup, createAndAttachNetworkSN, remove_net_from_setup
-)
-from art.rhevm_api.tests_lib.low_level.templates import(
-    exportTemplate, removeTemplate,
-    addTemplateNic, removeTemplateFromExportDomain,
-    createTemplate
-)
-from art.rhevm_api.tests_lib.low_level.vms import(
-    stopVm, addNic, exportVm, removeVm,
-    removeVmFromExportDomain, waitForIP, createVm
-)
-from art.test_handler.exceptions import NetworkException
+import art.rhevm_api.tests_lib.high_level.datacenters as hl_datacenters
+import art.rhevm_api.tests_lib.low_level.storagedomains as ll_storagedomains
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.templates as ll_templates
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.test_handler.exceptions as exceptions
 
 logger = logging.getLogger("Import_Export_Init")
 
@@ -38,7 +27,7 @@ def setup_package():
         logger.info(
             "Creating data center, cluster, adding host and export domain"
         )
-        if not prepareSetup(
+        if not hl_networks.prepareSetup(
             hosts=config.VDS_HOSTS[0], cpuName=config.CPU_NAME,
             username=config.HOSTS_USER, password=config.HOSTS_PW,
             datacenter=config.DC_NAME[0],
@@ -49,57 +38,64 @@ def setup_package():
             vmName=config.IE_VM, vm_password=config.VMS_LINUX_PW,
             mgmt_network=config.MGMT_BRIDGE, template_name=config.IE_TEMPLATE
         ):
-            raise NetworkException("Cannot create setup")
+            raise exceptions.NetworkException("Cannot create setup")
 
         logger.info("Stopping VM %s", config.IE_VM)
-        if not stopVm(True, vm=config.IE_VM):
-            raise NetworkException(
+        if not ll_vms.stopVm(True, vm=config.IE_VM):
+            raise exceptions.NetworkException(
                 "Failed to stop VM: %s" % config.VM_NAME[0]
             )
 
         logger.info("Adding export domain (NFS) to %s", config.DC_NAME[0])
-        if not addStorageDomain(
+        if not ll_storagedomains.addStorageDomain(
             True, host=config.HOSTS[0], name=config.EXPORT_STORAGE_NAME,
             type=config.EXPORT_TYPE, storage_type="nfs",
             address=config.EXPORT_STORAGE_ADDRESS,
             path=config.EXPORT_STORAGE_PATH
         ):
-            raise NetworkException("Cannot create Export Storage Domain ")
+            raise exceptions.NetworkException(
+                "Cannot create Export Storage Domain"
+            )
     else:
         logger.info("Cleaning the GE setup")
         network_cleanup()
         logger.info("Creating new VM %s", config.IE_VM)
-        sd_name = getStorageDomainNamesForType(
+        sd_name = ll_storagedomains.getStorageDomainNamesForType(
             datacenter_name=config.DC_NAME[0],
             storage_type=config.STORAGE_TYPE
         )[0]
-        if not createVm(
-            True, vmName=config.IE_VM, vmDescription="linux vm",
+        glance_name = config.EXTERNAL_PROVIDERS[config.GLANCE]
+        if not hl_vms.create_vm_using_glance_image(
+            vmName=config.IE_VM, vmDescription="linux vm",
             cluster=config.CLUSTER_NAME[0], nic=config.NIC_NAME[0],
-            storageDomainName=sd_name, size=config.DISK_SIZE,
-            diskInterface=config.INTERFACE_VIRTIO,
-            nicType=config.NIC_TYPE_VIRTIO,
-            start="true", display_type=config.DISPLAY_TYPE,
-            os_type=config.OS_TYPE, image=config.COBBLER_PROFILE,
-            user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
-            installation=True, network=config.MGMT_BRIDGE,
-            useAgent=True, diskType=config.DISK_TYPE_SYSTEM
-        ):
-            raise NetworkException("Cannot create VM %s" % config.IE_VM)
+            storageDomainName=sd_name, network=config.MGMT_BRIDGE,
+            glance_storage_domain_name=glance_name,
+            glance_image=config.GOLDEN_GLANCE_IMAGE
 
+        ):
+            raise exceptions.NetworkException(
+                "Cannot create VM %s" % config.IE_VM
+            )
+        logger.info("Starting %s", config.IE_VM)
+        if not ll_vms.startVm(True, config.IE_VM):
+            raise exceptions.NetworkException(
+                "Failed to start %s" % config.IE_VM
+            )
         logger.info("Creating new Template %s", config.IE_TEMPLATE)
-        ip_addr = waitForIP(config.IE_VM)[1]["ip"]
-        if not setPersistentNetwork(
+        ip_addr = ll_vms.waitForIP(config.IE_VM)[1]["ip"]
+        if not test_utils.setPersistentNetwork(
             host=ip_addr, password=config.VMS_LINUX_PW
         ):
-            raise NetworkException("Set persistent network failed")
-        if not stopVm(True, vm=config.IE_VM):
-            raise NetworkException("Cannot stop vm %s" % config.IE_VM)
-        if not createTemplate(
+            raise exceptions.NetworkException("Set persistent network failed")
+        if not ll_vms.stopVm(True, vm=config.IE_VM):
+            raise exceptions.NetworkException(
+                "Cannot stop vm %s" % config.IE_VM
+            )
+        if not ll_templates.createTemplate(
             True, vm=config.IE_VM, cluster=config.CLUSTER_NAME[0],
             name=config.IE_TEMPLATE
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot create template %s" % config.IE_TEMPLATE
             )
 
@@ -114,68 +110,68 @@ def setup_package():
     }
 
     logger.info("Attaching bridged, MTU and VLAN networks to host")
-    if not createAndAttachNetworkSN(
+    if not hl_networks.createAndAttachNetworkSN(
         data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
         host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0, 3]
     ):
-        raise NetworkException(
+        raise exceptions.NetworkException(
             "Cannot create and attach networks to setup"
         )
 
     logger.info("Adding 4 NICs to new VM and Template ")
     net_list = config.NETWORKS[:3] + [None]
     for index, net in enumerate(net_list):
-        if not addNic(
+        if not ll_vms.addNic(
                 True, config.IE_VM, name=config.NIC_NAME[index + 1],
                 network=net, vnic_profile=net
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot add vnic_profile %s to VM %s" % (net, config.IE_VM)
             )
 
-        if not addTemplateNic(
+        if not ll_templates.addTemplateNic(
                 True, config.IE_TEMPLATE, name=config.NIC_NAME[index + 1],
                 data_center=config.DC_NAME[0], network=net
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot add NIC to Template %s" % config.IE_TEMPLATE
             )
 
     logger.info(
         "Export %s to Export domain", config.IE_TEMPLATE
     )
-    if not exportTemplate(
+    if not ll_templates.exportTemplate(
             positive=True, template=config.IE_TEMPLATE,
             storagedomain=config.EXPORT_STORAGE_NAME
     ):
-        raise NetworkException(
+        raise exceptions.NetworkException(
             "Couldn't export Template %s to export Domain" % config.IE_TEMPLATE
         )
 
     logger.info("Export %s to Export domain", config.IE_VM)
-    if not exportVm(
+    if not ll_vms.exportVm(
             positive=True, vm=config.IE_VM,
             storagedomain=config.EXPORT_STORAGE_NAME
     ):
-        raise NetworkException(
+        raise exceptions.NetworkException(
             "Couldn't export VM %s to export Domain" % config.IE_VM
         )
 
     logger.info(
         "Remove %s from setup: %s", config.IE_VM, config.DC_NAME[0]
     )
-    if not removeVm(positive=True, vm=config.IE_VM, stopVM="true"):
-        raise NetworkException(
+    if not ll_vms.removeVm(positive=True, vm=config.IE_VM, stopVM="true"):
+        raise exceptions.NetworkException(
             "Couldn't remove imported VM %s" % config.IE_VM
         )
 
     logger.info(
         "Remove %s from setup: %s", config.IE_TEMPLATE, config.DC_NAME[0]
     )
-    if not removeTemplate(
+    if not ll_templates.removeTemplate(
             positive=True, template=config.IE_TEMPLATE
     ):
-        raise NetworkException(
+        raise exceptions.NetworkException(
             "Couldn't remove %s" % config.IE_TEMPLATE
         )
 
@@ -187,7 +183,7 @@ def teardown_package():
     logger.info("Starting teardown process")
     if not config.GOLDEN_ENV:
         logger.info("Removing setup: %s", config.DC_NAME[0])
-        if not clean_datacenter(
+        if not hl_datacenters.clean_datacenter(
                 positive=True, datacenter=config.DC_NAME[0],
                 vdc=config.VDC_HOST,
                 vdc_password=config.VDC_ROOT_PASSWORD
@@ -198,7 +194,7 @@ def teardown_package():
     else:
         logger.info("Starting teardown in the GE")
         logger.info("Removing VM %s from Export Domain", config.IE_VM)
-        if not removeVmFromExportDomain(
+        if not ll_vms.removeVmFromExportDomain(
                 True, vm=config.IE_VM,
                 datacenter=config.DC_NAME[0],
                 export_storagedomain=config.EXPORT_STORAGE_NAME
@@ -209,7 +205,7 @@ def teardown_package():
 
         logger.info("Removing Template %s from Export Domain",
                     config.IE_TEMPLATE)
-        if not removeTemplateFromExportDomain(
+        if not ll_templates.removeTemplateFromExportDomain(
                 True, template=config.IE_TEMPLATE,
                 datacenter=config.DC_NAME[0],
                 export_storagedomain=config.EXPORT_STORAGE_NAME
@@ -221,7 +217,7 @@ def teardown_package():
 
         logger.info(
             "Remove all networks besides MGMT from DC/Cluster and Host")
-        if not remove_net_from_setup(
+        if not hl_networks.remove_net_from_setup(
                 host=config.VDS_HOSTS[0], auto_nics=[0], all_net=True,
                 mgmt_network=config.MGMT_BRIDGE,
                 data_center=config.DC_NAME[0]
