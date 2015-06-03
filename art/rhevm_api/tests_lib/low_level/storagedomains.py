@@ -1919,12 +1919,12 @@ class GlanceImage(object):
     def is_imported_as_template(self):
         return self._is_imported_as_template
 
-    def _is_import_success(self):
+    def _is_import_success(self, timeout=None):
 
         if self.imported_disk_name is not None:
             if not wait_for_disks_status(
                     disks=[self.imported_disk_name],
-                    timeout=self._timeout
+                    timeout=timeout if timeout else self._timeout,
             ):
                 return False
 

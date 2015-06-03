@@ -3,15 +3,15 @@ import logging
 from art.rhevm_api.tests_lib.high_level import (
     datacenters, storagedomains as h_sd
 )
-from art.rhevm_api.tests_lib.low_level import storagedomains, templates, vms
-from art.rhevm_api.utils import test_utils
+from art.rhevm_api.tests_lib.low_level import storagedomains, vms
+from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.settings import opts
-from rhevmtests.system.guest_tools.linux_guest_agent import config
+from rhevmtests.system.guest_tools.linux_guest_agent import config, common
 
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 LOGGER = logging.getLogger(__name__)
-VM_API = test_utils.get_api('vm', 'vms')
+VM_API = get_api('vm', 'vms')
 
 
 def setup_package():
@@ -22,6 +22,7 @@ def setup_package():
             config.STORAGE_TYPE,
             config.TEST_NAME,
         )
+        # FIXME: change it to import of glance
         storagedomains.importStorageDomain(
             True, type='export',
             storage_type='nfs',
@@ -33,41 +34,25 @@ def setup_package():
         h_sd.attach_and_activate_domain(
             config.DC_NAME[0], config.EXPORT_STORAGE_DOMAIN
         )
-    for os, template in config.TEMPLATES.iteritems():
-        vm_name = 'vm_%s' % template['name']
-        assert templates.import_template(
-            True, template=template['name'],
-            source_storage_domain=config.EXPORT_STORAGE_DOMAIN,
-            destination_storage_domain=config.STORAGE_NAME[0],
-            cluster=config.CLUSTER_NAME[0], name=template['name']
-        )
+    for image_id, image in enumerate(sorted(config.TEST_IMAGES)):
+        config.TEST_IMAGES[image]['image'] = common.import_image(image)
         assert vms.createVm(
-            True, vm_name, vm_name,
+            positive=True,
+            vmName=image,
+            vmDescription=image,
             cluster=config.CLUSTER_NAME[0],
-            template=template['name'],
-            display_type=ENUMS['display_type_spice'],
             network=config.MGMT_BRIDGE,
+            nic=config.NIC_NAME,
+            nicType=config.NIC_TYPE_E1000,
         )
-        assert vms.startVm(True, vm_name, wait_for_status=ENUMS['vm_state_up'])
-        mac = vms.getVmMacAddress(True, vm=vm_name, nic='nic1')
-        assert mac[0], "vm %s MAC was not found." % vm_name
-        mac = mac[1].get('macAddress', None)
-        LOGGER.info("Mac adress is %s", mac)
-
-        guest_ip = test_utils.convertMacToIpAddress(
-            True, mac, subnetClassB=config.SUBNET_CLASS
-        )
-        assert guest_ip[0], "MacToIp was not corretly converted."
-        config.TEMPLATES[os]['ip'] = guest_ip[1].get('ip', None)
-        config.TEMPLATES[os]['vm_name'] = vm_name
-        config.TEMPLATES[os]['vm_id'] = VM_API.find(vm_name).id
+        config.TEST_IMAGES[image]['id'] = VM_API.find(image).id
+        if image_id == 0:
+            assert config.TEST_IMAGES[image]['image']._is_import_success()
 
 
 def teardown_package():
-    for os, template in config.TEMPLATES.iteritems():
-        vms.removeVm(True, vm='vm_%s' % template['name'], stopVM='true')
-        templates.removeTemplate(True, template['name'])
-
+    for image in config.TEST_IMAGES:
+        vms.removeVm(True, image, stopVM='true')
     if not config.GOLDEN_ENV:
         h_sd.detach_and_deactivate_domain(
             config.DC_NAME[0],

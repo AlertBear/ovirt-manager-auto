@@ -1,19 +1,34 @@
 import ast
 import logging
-from rhevmtests.system.guest_tools.linux_guest_agent import config
+
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 from art.test_handler.settings import opts
-from art.rhevm_api.tests_lib.low_level import vms
+from art.rhevm_api.tests_lib.low_level import vms, storagedomains, hosts, disks
 from art.rhevm_api.utils.resource_utils import runMachineCommand
-from art.rhevm_api.utils.test_utils import get_api
+from art.rhevm_api.utils import test_utils
+from rhevmtests.system.guest_tools.linux_guest_agent import config
 from utilities import machine
 
 __test__ = False
 
-VM_API = get_api('vm', 'vms')
-HOST_API = get_api('host', 'hosts')
+VM_API = test_utils.get_api('vm', 'vms')
+HOST_API = test_utils.get_api('host', 'hosts')
 ENUMS = opts['elements_conf']['RHEVM Enums']
 LOGGER = logging.getLogger(__name__)
+
+
+def import_image(diskName, async=True):
+    glance_image = storagedomains.GlanceImage(
+        image_name=diskName,
+        glance_repository_name=config.GLANCE_NAME,
+    )
+    glance_image.import_image(
+        destination_storage_domain=config.STORAGE_NAME[0],
+        cluster_name=None,
+        new_disk_alias=diskName,
+        async=async
+    )
+    return glance_image
 
 
 def runOnHost(cmd, vm_name):
@@ -25,13 +40,24 @@ def runOnHost(cmd, vm_name):
 
 
 def start_vdsm(vm_name):
-    runOnHost('service supervdsmd start', vm_name)
-    runOnHost('service vdsmd start', vm_name)
+    hosts.start_vdsm(
+        HOST_API.find(
+            VM_API.find(vm_name).get_id(),
+            'id',
+        ).get_name(),
+        config.HOSTS_PW,
+        config.DC_NAME[0],
+    )
 
 
 def stop_vdsm(vm_name):
-    runOnHost('service supervdsmd stop', vm_name)
-    runOnHost('service vdsmd stop', vm_name)
+    hosts.stop_vdsm(
+        HOST_API.find(
+            VM_API.find(vm_name).get_id(),
+            'id',
+        ).get_name(),
+        config.HOSTS_PW,
+    )
 
 
 def get_data(cmd):
@@ -62,16 +88,72 @@ class MyLinuxMachine(machine.LinuxMachine):
         )
 
 
-@attr(tier=1)
-class BasePostInstall(TestCase):
-    """ rhevm-guest-agent post-install """
+class GABaseTestCase(TestCase):
+    """ Base class handles preparation of glance image """
+    __test__ = False
 
-    os = None
+    @classmethod
+    def getMachine(cls, diskName):
+        """
+        Will return machine instance which handle acccess to vm with rhel
+
+        :param diskName: name of the machine disk
+        :type diskName: str
+        :returns: vm machine object
+        :rtype: instance of MyLinuxMachine
+        """
+        if config.TEST_IMAGES[diskName]['machine'] is None:
+            assert disks.attachDisk(True, diskName, diskName)
+            assert vms.startVm(True, diskName, wait_for_status=config.VM_UP)
+            mac = vms.getVmMacAddress(
+                True, vm=diskName, nic=config.NIC_NAME
+            )[1].get('macAddress', None)
+            LOGGER.info("Mac address is %s", mac)
+
+            ip = test_utils.convertMacToIpAddress(
+                True, mac, subnetClassB=config.SUBNET_CLASS
+            )[1].get('ip', None)
+            myMachine = MyLinuxMachine(ip)
+            config.TEST_IMAGES[diskName]['machine'] = myMachine
+            assert myMachine.isConnective(attempt=6)
+
+            # FIXME: not flexible, get rid of this
+            if 'rhel' in cls.__name__.lower() and not config.UPSTREAM:
+                assert myMachine.runCmd(
+                    ['wget', config.RHEL_GA_RPM, '-O', '/tmp/ovirt.rpm']
+                )[0]
+                runPackagerCommand(
+                    myMachine,
+                    cls.package_manager,
+                    'install',
+                    '/tmp/ovirt.rpm',
+                )
+            runPackagerCommand(
+                myMachine, cls.package_manager, 'install', config.GA_NAME
+            )
+            LOGGER.info(
+                'guest agent started %s',
+                myMachine.startService(config.AGENT_SERVICE_NAME)
+            )
+
+        return config.TEST_IMAGES[diskName]['machine']
+
+    @classmethod
+    def setup_class(cls):
+        image = config.TEST_IMAGES[cls.disk_name]
+        assert image['image']._is_import_success(timeout=1800)
+        cls.vm_id = image['id']
+        cls.package_manager = image['manager']
+        cls.machine = cls.getMachine(cls.disk_name)
+
+
+@attr(tier=1)
+class BasePostInstall(GABaseTestCase):
+    """ rhevm-guest-agent post-install """
     cmd_chkconf = None
 
     def post_install(self):
         """ rhevm-guest-agent post-install """
-        self.machine = config.TEMPLATES[self.os]['machine']
         cmd_ls = ['ls', '-l', '/etc/ovirt-guest-agent.conf']
         cmd_passwd = ['grep', 'ovirtagent', '/etc/{passwd,group}']
 
@@ -82,7 +164,7 @@ class BasePostInstall(TestCase):
 
 
 @attr(tier=1)
-class BaseUninstallGA(TestCase):
+class BaseUninstallGA(GABaseTestCase):
     """ rhevm-guest-agent uninstall """
     package_manager = 'yum'
     package = 'ovirt-guest-agent'
@@ -91,7 +173,6 @@ class BaseUninstallGA(TestCase):
 
     def uninstall(self):
         """ uninstall guest agent """
-        self.machine = config.TEMPLATES[self.os]['machine']
         self.assertTrue(runPackagerCommand(self.machine, self.package_manager,
                                            self.remove_command, self.package))
         LOGGER.info("Uninstallation of GA passed.")
@@ -103,27 +184,31 @@ class BaseUninstallGA(TestCase):
 
 
 @attr(tier=1)
-class BaseServiceTest(TestCase):
+class BaseServiceTest(GABaseTestCase):
     """ rhevm-guest-agent service test """
     os = None
 
     def service_test(self):
         """ rhevm-guest-agent start-stop-restart-status """
-        machine = config.TEMPLATES[self.os]['machine']
+        if self.machine.isServiceRunning(config.AGENT_SERVICE_NAME):
+            self.machine.stopService(config.AGENT_SERVICE_NAME)
 
-        if machine.isServiceRunning(config.AGENT_SERVICE_NAME):
-            machine.stopService(config.AGENT_SERVICE_NAME)
-
-        self.assertTrue(machine.startService(config.AGENT_SERVICE_NAME))
-        self.assertTrue(machine.isServiceRunning(config.AGENT_SERVICE_NAME))
-        self.assertTrue(machine.stopService(config.AGENT_SERVICE_NAME))
-        self.assertFalse(machine.isServiceRunning(config.AGENT_SERVICE_NAME))
-        self.assertTrue(machine.restartService(config.AGENT_SERVICE_NAME))
-        self.assertTrue(machine.isServiceRunning(config.AGENT_SERVICE_NAME))
+        self.assertTrue(self.machine.startService(config.AGENT_SERVICE_NAME))
+        self.assertTrue(
+            self.machine.isServiceRunning(config.AGENT_SERVICE_NAME)
+        )
+        self.assertTrue(self.machine.stopService(config.AGENT_SERVICE_NAME))
+        self.assertFalse(
+            self.machine.isServiceRunning(config.AGENT_SERVICE_NAME)
+        )
+        self.assertTrue(self.machine.restartService(config.AGENT_SERVICE_NAME))
+        self.assertTrue(
+            self.machine.isServiceRunning(config.AGENT_SERVICE_NAME)
+        )
 
 
 @attr(tier=1)
-class BaseAgentDataUpdate(TestCase):
+class BaseAgentDataUpdate(GABaseTestCase):
     """ rhevm-guest-agent agent function agent data update """
 
     def agent_data(self):
@@ -140,7 +225,7 @@ class BaseAgentDataUpdate(TestCase):
 
 
 @attr(tier=1)
-class BaseFunctionContinuity(TestCase):
+class BaseFunctionContinuity(GABaseTestCase):
     """ rhevm-guest-agent agent function continuity """
     os = None
 
@@ -154,24 +239,23 @@ class BaseFunctionContinuity(TestCase):
         """ rhevm-guest-agent function continuity """
         ag = self.agent_data()
 
-        vm_name = config.TEMPLATES[self.os]['vm_name']
-        self.assertTrue(vms.migrateVm(True, vm_name))
+        self.assertTrue(vms.migrateVm(True, self.disk_name))
         self.assertTrue(self._isAgentRunning())
         ag.agent_data()
 
-        self.assertTrue(vms.suspendVm(True, vm_name))
-        self.assertTrue(vms.startVm(True, vm_name,
+        self.assertTrue(vms.suspendVm(True, self.disk_name))
+        self.assertTrue(vms.startVm(True, self.disk_name,
                                     wait_for_status=ENUMS['vm_state_up'],
                                     wait_for_ip=True))
         self.assertTrue(self._isAgentRunning())
         ag.agent_data()
-        stop_vdsm(vm_name)
+        stop_vdsm(self.disk_name)
         self.assertTrue(self._isAgentRunning())
-        start_vdsm(vm_name)
+        start_vdsm(self.disk_name)
 
 
 @attr(tier=1)
-class BaseAgentData(TestCase):
+class BaseAgentData(GABaseTestCase):
     """ rhevm-guest-agent agent data """
     success_msg = "%s of guest agent was successfull on %s"
     stats = 'vdsClient -s 0 getVmStats'
@@ -183,10 +267,10 @@ class BaseAgentData(TestCase):
     def _check_fqdn(self):
         cmd = "%s %s | egrep %s | grep -Po '(?<== )[A-Za-z0-9-.]*'"
         fqdn_cmd = ['hostname', '--fqdn']
-        fqdn_agent = runOnHost(cmd % (self.stats,
-                                      config.TEMPLATES[self.os]['vm_id'],
-                                      'FQDN'),
-                               config.TEMPLATES[self.os]['vm_name'])
+        fqdn_agent = runOnHost(
+            cmd % (self.stats, self.vm_id, 'FQDN'),
+            self.disk_name,
+        )
         fqdn_agent = get_data(fqdn_agent)
         res, fqdn_real = self.machine.runCmd(fqdn_cmd)
 
@@ -196,9 +280,8 @@ class BaseAgentData(TestCase):
 
     def _check_net_ifaces(self):
         cmd = "%s %s | egrep %s | grep -Po '(?<== ).*'"
-        cmd = cmd % (self.stats, config.TEMPLATES[self.os]['vm_id'],
-                     'netIfaces')
-        iface_agent = runOnHost(cmd, config.TEMPLATES[self.os]['vm_name'])
+        cmd = cmd % (self.stats, self.vm_id, 'netIfaces')
+        iface_agent = runOnHost(cmd, self.disk_name)
         LOGGER.info(iface_agent)
         iface_agent = get_data(iface_agent)
         self.assertTrue(iface_agent is not None)
@@ -213,9 +296,8 @@ class BaseAgentData(TestCase):
 
     def _check_diskusage(self):
         cmd = "%s %s | egrep %s | grep -Po '(?<== ).*'"
-        cmd = cmd % (self.stats, config.TEMPLATES[self.os]['vm_id'],
-                     'disksUsage')
-        df_agent = runOnHost(cmd, config.TEMPLATES[self.os]['vm_name'])
+        cmd = cmd % (self.stats, self.vm_id, 'disksUsage')
+        df_agent = runOnHost(cmd, self.disk_name)
         df_agent = get_data(df_agent)
         df_dict = ast.literal_eval(df_agent)
 
@@ -228,9 +310,8 @@ class BaseAgentData(TestCase):
 
     def _check_applist(self):
         cmd = "%s %s | egrep %s | grep -Po '(?<== ).*'"
-        cmd = cmd % (self.stats, config.TEMPLATES[self.os]['vm_id'],
-                     'appsList')
-        app_agent = runOnHost(cmd, config.TEMPLATES[self.os]['vm_name'])
+        cmd = cmd % (self.stats, self.vm_id, 'appsList')
+        app_agent = runOnHost(cmd, self.disk_name)
         app_agent = get_data(app_agent)
         app_list = ast.literal_eval(app_agent)
 
@@ -252,9 +333,8 @@ class BaseAgentData(TestCase):
         ip = ['ifconfig', '|', 'grep', 'inet addr:', '|', 'cut', '-d:',
               '-f2', '|', 'cut', '-d', ' ', '-f', '1']
         cmd = "%s %s | egrep %s | grep -Po '(?<== ).*'"
-        cmd = cmd % (self.stats, config.TEMPLATES[self.os]['vm_id'],
-                     'guestIPs')
-        ip_agent = runOnHost(cmd, config.TEMPLATES[self.os]['vm_name'])
+        cmd = cmd % (self.stats, self.vm_id, 'guestIPs')
+        ip_agent = runOnHost(cmd, self.disk_name)
         ip_agent = get_data(ip_agent)
         ip_list = ip_agent.split(' ')
 
@@ -266,8 +346,6 @@ class BaseAgentData(TestCase):
 
     def agent_data(self):
         """ rhevm-guest-agent data """
-        self.machine = config.TEMPLATES[self.os]['machine']
-
         self._check_fqdn()
         self._check_net_ifaces()
         self._check_diskusage()
@@ -276,7 +354,7 @@ class BaseAgentData(TestCase):
 
 
 @attr(tier=1)
-class BaseInstallGA(TestCase):
+class BaseInstallGA(GABaseTestCase):
     """ rhevm-guest-agent install """
     __test__ = False
 

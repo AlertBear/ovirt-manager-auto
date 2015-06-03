@@ -1,75 +1,34 @@
 """
 Test installation and uninstallation of guest agent on RHEL 5/6 32b/64b
 """
-import os
 import logging
-import urlparse
 
 from rhevmtests.system.guest_tools.linux_guest_agent import config
 from rhevmtests.system.guest_tools.linux_guest_agent import common
 from nose.tools import istest
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 
-package_manager = '/usr/bin/yum'
-repo_path = '/etc/yum.repos.d/'
+
 LOGGER = logging.getLogger(__name__)
-eOS = config.eOS
-NAME = 'ovirt-guest-agent'
-repo_name = 'latest_rhel'
+NAME = config.GA_NAME
 
 
-def setup_module():
-    for vm_os in [eOS.RHEL_5_64b, eOS.RHEL_5_32b,
-                  eOS.RHEL_6_64b, eOS.RHEL_6_32b]:
-        rhel5 = vm_os in (eOS.RHEL_5_64b, eOS.RHEL_5_32b)
-        machine = common.MyLinuxMachine(config.TEMPLATES[vm_os]['ip'])
-        path = os.path.join(repo_path, 'latest_rhevm.repo')
-        url = urlparse.urljoin(
-            config.RHEL_REPOSITORY,
-            '%s/%s' % (
-                '5' if rhel5 else '6',
-                'x86_64' if '64b' in vm_os else 'i386'
-            ),
-        )
-        lines = ['[%s]' % repo_name, 'name=%s' % repo_name,
-                 'baseurl=%s' % url, 'enabled=1', 'gpgcheck=0']
-        repo_cmd = ['cat', '>', path]
-        res, out = machine.runCmd(repo_cmd, data="\n".join(lines),
-                                  timeout=config.TIMEOUT)
-        if not res:
-            LOGGER.error("Fail to run cmd %s: %s", repo_cmd, out)
-
-        repo_to_disable = 'rhevm'
-        if rhel5:
-            common.runPackagerCommand(machine, package_manager, 'install',
-                                      '--disablerepo=%s' % repo_to_disable,
-                                      NAME, '-x', 'rhevm-guest-agent-common')
-        else:
-            repo_to_disable = 'rhevm33'
-            common.runPackagerCommand(machine, package_manager, 'install',
-                                      '--disablerepo=%s' % repo_to_disable,
-                                      NAME)
-        LOGGER.info('Service started %s',
-                    machine.startService(config.AGENT_SERVICE_NAME))
-        config.TEMPLATES[vm_os]['machine'] = machine
-
-
-class RHEL64b6Install(common.BaseInstallGA):
+class RHEL6x64Install(common.BaseInstallGA):
     ''' test installation of guest agent on rhel 6 64b '''
     __test__ = True
-    os = eOS.RHEL_6_64b
+    disk_name = 'rhel6_x64_Disk1'
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 325219)
     def install_guest_agent(self):
         """ RHEL6_64b install_guest_agent """
-        super(RHEL64b6Install, self).install_guest_agent()
+        super(RHEL6x64Install, self).install_guest_agent()
 
 
-class RHEL64b6Uninstall(common.BaseUninstallGA):
+class RHEL6x64Uninstall(common.BaseUninstallGA):
     ''' '''
     __test__ = True
-    os = eOS.RHEL_6_64b
+    disk_name = 'rhel6_x64_Disk1'
     package = '%s-*' % NAME
 
     @istest
@@ -81,47 +40,49 @@ class RHEL64b6Uninstall(common.BaseUninstallGA):
     def tearDown(self):
         ''' install GA back '''
         common.runPackagerCommand(self.machine, self.package_manager,
-                                  'install', '--disablerepo=rhevm33',
-                                  self.package)
+                                  'install', self.package)
 
 
-class RHEL64b6PostInstall(common.BasePostInstall):
+class RHEL6x64PostInstall(common.BasePostInstall):
     ''' '''
     __test__ = True
-    os = eOS.RHEL_6_64b
+    disk_name = 'rhel6_x64_Disk1'
     cmd_chkconf = ['chkconfig', '--list', '|', 'grep',
                    'ovirt', '|', 'egrep', '3:on']
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 325446)
-    @bz({'1230755': {'engine': None, 'version': ['3.6']}})
     def post_install(self):
         """ RHEL6_64b rhevm-guest-agent post-install """
-        super(RHEL64b6PostInstall, self).post_install()
+        super(RHEL6x64PostInstall, self).post_install()
         stat = ['stat', '-L', '/dev/virtio-ports/*rhevm*', '|', 'grep', 'Uid',
                 '|', 'grep', '660']
-        tuned_cmd = ['tuned-adm', 'list', '|', 'grep', '^Current', '|', 'grep',
-                     '-i', 'virtual']
-        self.assertTrue(self.machine.runCmd(tuned_cmd)[0])
         self.assertTrue(self.machine.runCmd(stat)[0])
+        if not config.UPSTREAM:
+            tuned_cmd = [
+                'tuned-adm', 'list', '|',
+                'grep', '^Current', '|',
+                'grep', '-i', 'virtual'
+            ]
+            self.assertTrue(self.machine.runCmd(tuned_cmd)[0])
 
 
-class RHEL64b6ServiceTest(common.BaseServiceTest):
+class RHEL6x64ServiceTest(common.BaseServiceTest):
     ''' '''
     __test__ = True
-    os = eOS.RHEL_6_64b
+    disk_name = 'rhel6_x64_Disk1'
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 325497)
     def service_test(self):
         """ RHEL6_64b rhevm-guest-agent start-stop-restart-status """
-        super(RHEL64b6ServiceTest, self).service_test()
+        super(RHEL6x64ServiceTest, self).service_test()
 
 
-class RHEL64b6AgentData(common.BaseAgentData):
+class RHEL6x64AgentData(common.BaseAgentData):
     ''' '''
     __test__ = True
-    os = eOS.RHEL_6_64b
+    disk_name = 'rhel6_x64_Disk1'
     list_app = ['rpm', '-qa']
     application_list = ['kernel', 'rhevm-guest-agent-common']
 
@@ -129,49 +90,49 @@ class RHEL64b6AgentData(common.BaseAgentData):
     @tcms(config.TCMS_PLAN_ID_RHEL, 325504)
     def agent_data(self):
         """ RHEL6_64b rhevm-guest-agent data """
-        super(RHEL64b6AgentData, self).agent_data()
+        super(RHEL6x64AgentData, self).agent_data()
 
 
-class RHEL64b6AgentDataUpdate(common.BaseAgentDataUpdate):
+class RHEL6x64AgentDataUpdate(common.BaseAgentDataUpdate):
     ''' '''
     __test__ = False
-    os = eOS.RHEL_6_64b
+    disk_name = 'rhel6_x64_Disk1'
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 325498)
     def agent_data_update(self):
         """ RHEL6_64b, rhevm-guest-agent data update """
-        super(RHEL64b6AgentData, self).agent_data_update()
+        super(RHEL6x64AgentData, self).agent_data_update()
 
 
-class RHEL64b6FunctionContinuity(common.BaseFunctionContinuity):
+class RHEL6x64FunctionContinuity(common.BaseFunctionContinuity):
     ''' '''
     __test__ = False
-    os = eOS.RHEL_6_64b
+    disk_name = 'rhel6_x64_Disk1'
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 325532)
     def function_continuity(self):
         """ RHEL6_64b, rhevm-guest-agent function continuity """
-        super(RHEL64b6FunctionContinuity, self).function_continuity()
+        super(RHEL6x64FunctionContinuity, self).function_continuity()
 
 
-class RHEL32b6Install(common.BaseInstallGA):
+class RHEL6x86Install(common.BaseInstallGA):
     ''' test installation of guest agent on rhel 6 32b '''
     __test__ = True
-    os = eOS.RHEL_6_32b
+    disk_name = 'rhel6_x86_Disk1'
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 325218)
     def install_guest_agent(self):
         """ RHEL6_32b install_guest_agent """
-        super(RHEL32b6Install, self).install_guest_agent()
+        super(RHEL6x86Install, self).install_guest_agent()
 
 
-class RHEL32b6Uninstall(common.BaseUninstallGA):
+class RHEL6x86Uninstall(common.BaseUninstallGA):
     ''' '''
     __test__ = True
-    os = eOS.RHEL_6_32b
+    disk_name = 'rhel6_x86_Disk1'
     package = '%s-*' % NAME
 
     @istest
@@ -183,47 +144,49 @@ class RHEL32b6Uninstall(common.BaseUninstallGA):
     def tearDown(self):
         ''' install GA back '''
         common.runPackagerCommand(self.machine, self.package_manager,
-                                  'install', self.package,
-                                  '--disablerepo=rhevm33')
+                                  'install', self.package)
 
 
-class RHEL32b6PostInstall(common.BasePostInstall):
+class RHEL6x86PostInstall(common.BasePostInstall):
     ''' '''
     __test__ = True
-    os = eOS.RHEL_6_32b
+    disk_name = 'rhel6_x86_Disk1'
     cmd_chkconf = ['chkconfig', '--list', '|', 'grep',
                    'ovirt', '|', 'egrep', '3:on']
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 175514)
-    @bz({'1230755': {'engine': None, 'version': ['3.6']}})
     def post_install(self):
         """ RHEL6_32b rhevm-guest-agent post-install """
-        super(RHEL32b6PostInstall, self).post_install()
+        super(RHEL6x86PostInstall, self).post_install()
         stat = ['stat', '-L', '/dev/virtio-ports/*rhevm*', '|', 'grep', 'Uid',
                 '|', 'grep', '660']
-        tuned_cmd = ['tuned-adm', 'list', '|', 'grep', '^Current', '|', 'grep',
-                     '-i', 'virtual']
-        self.assertTrue(self.machine.runCmd(tuned_cmd)[0])
         self.assertTrue(self.machine.runCmd(stat)[0])
+        if not config.UPSTREAM:
+            tuned_cmd = [
+                'tuned-adm', 'list', '|',
+                'grep', '^Current', '|',
+                'grep', '-i', 'virtual'
+            ]
+            self.assertTrue(self.machine.runCmd(tuned_cmd)[0])
 
 
-class RHEL32b6ServiceTest(common.BaseServiceTest):
+class RHEL6x86ServiceTest(common.BaseServiceTest):
     ''' '''
     __test__ = True
-    os = eOS.RHEL_6_32b
+    disk_name = 'rhel6_x86_Disk1'
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 325496)
     def service_test(self):
         """ RHEL6_32b rhevm-guest-agent start-stop-restart-status """
-        super(RHEL32b6ServiceTest, self).service_test()
+        super(RHEL6x86ServiceTest, self).service_test()
 
 
-class RHEL32b6AgentData(common.BaseAgentData):
+class RHEL6x86AgentData(common.BaseAgentData):
     ''' '''
     __test__ = True
-    os = eOS.RHEL_6_32b
+    disk_name = 'rhel6_x86_Disk1'
     application_list = ['kernel', 'rhevm-guest-agent-common']
     list_app = ['rpm', '-qa']
 
@@ -231,49 +194,49 @@ class RHEL32b6AgentData(common.BaseAgentData):
     @tcms(config.TCMS_PLAN_ID_RHEL, 69880)
     def agent_data(self):
         """ RHEL6_32b rhevm-guest-agent data """
-        super(RHEL32b6AgentData, self).agent_data()
+        super(RHEL6x86AgentData, self).agent_data()
 
 
-class RHEL32b6AgentDataUpdate(common.BaseAgentDataUpdate):
+class RHEL6x86AgentDataUpdate(common.BaseAgentDataUpdate):
     ''' '''
     __test__ = False
-    os = eOS.RHEL_6_32b
+    disk_name = 'rhel6_x86_Disk1'
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 325503)
     def agent_data_update(self):
         """ RHEL6_32b, rhevm-guest-agent data update """
-        super(RHEL32b6AgentData, self).agent_data_update()
+        super(RHEL6x86AgentData, self).agent_data_update()
 
 
-class RHEL32b6FunctionContinuity(common.BaseFunctionContinuity):
+class RHEL6x86FunctionContinuity(common.BaseFunctionContinuity):
     ''' '''
     __test__ = False
-    os = eOS.RHEL_6_32b
+    disk_name = 'rhel6_x86_Disk1'
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 325530)
     def function_continuity(self):
         """ RHEL6_32b, rhevm-guest-agent function continuity """
-        super(RHEL32b6FunctionContinuity, self).function_continuity()
+        super(RHEL6x86FunctionContinuity, self).function_continuity()
 
 
-class RHEL64b5Install(common.BaseInstallGA):
+class RHEL5x64Install(common.BaseInstallGA):
     ''' test installation of guest agent on rhel 6 64b '''
     __test__ = True
-    os = eOS.RHEL_5_64b
+    disk_name = 'rhel5_x64_Disk1'
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 325217)
     def install_guest_agent(self):
         """ RHEL6_64b install_guest_agent """
-        super(RHEL64b5Install, self).install_guest_agent()
+        super(RHEL5x64Install, self).install_guest_agent()
 
 
-class RHEL64b5Uninstall(common.BaseUninstallGA):
+class RHEL5x64Uninstall(common.BaseUninstallGA):
     ''' '''
     __test__ = True
-    os = eOS.RHEL_5_64b
+    disk_name = 'rhel5_x64_Disk1'
     package = NAME
 
     @istest
@@ -286,14 +249,13 @@ class RHEL64b5Uninstall(common.BaseUninstallGA):
         ''' install GA back '''
         common.runPackagerCommand(self.machine, self.package_manager,
                                   'install', self.package,
-                                  '--disablerepo=rhevm', '-x',
-                                  'rhevm-guest-agent-common')
+                                  '-x', 'rhevm-guest-agent-common')
 
 
-class RHEL64b5PostInstall(common.BasePostInstall):
+class RHEL5x64PostInstall(common.BasePostInstall):
     ''' '''
     __test__ = True
-    os = eOS.RHEL_5_64b
+    disk_name = 'rhel5_x64_Disk1'
     cmd_chkconf = ['chkconfig', '--list', '|', 'grep',
                    'ovirt', '|', 'egrep', '3:on']
 
@@ -301,25 +263,25 @@ class RHEL64b5PostInstall(common.BasePostInstall):
     @tcms(config.TCMS_PLAN_ID_RHEL, 325493)
     def post_install(self):
         """ RHEL6_64b rhevm-guest-agent post-install """
-        super(RHEL64b5PostInstall, self).post_install()
+        super(RHEL5x64PostInstall, self).post_install()
 
 
-class RHEL64b5ServiceTest(common.BaseServiceTest):
+class RHEL5x64ServiceTest(common.BaseServiceTest):
     ''' '''
     __test__ = True
-    os = eOS.RHEL_5_64b
+    disk_name = 'rhel5_x64_Disk1'
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 325495)
     def service_test(self):
         """ RHEL6_64b rhevm-guest-agent start-stop-restart-status """
-        super(RHEL64b5ServiceTest, self).service_test()
+        super(RHEL5x64ServiceTest, self).service_test()
 
 
-class RHEL64b5AgentData(common.BaseAgentData):
+class RHEL5x64AgentData(common.BaseAgentData):
     ''' '''
     __test__ = True
-    os = eOS.RHEL_5_64b
+    disk_name = 'rhel5_x64_Disk1'
     application_list = ['kernel', 'rhevm-guest-agent']
     list_app = ['rpm', '-qa']
 
@@ -327,49 +289,49 @@ class RHEL64b5AgentData(common.BaseAgentData):
     @tcms(config.TCMS_PLAN_ID_RHEL, 325502)
     def agent_data(self):
         """ RHEL6_64b rhevm-guest-agent data """
-        super(RHEL64b5AgentData, self).agent_data()
+        super(RHEL5x64AgentData, self).agent_data()
 
 
-class RHEL64b5AgentDataUpdate(common.BaseAgentDataUpdate):
+class RHEL5x64AgentDataUpdate(common.BaseAgentDataUpdate):
     ''' '''
     __test__ = False
-    os = eOS.RHEL_5_64b
+    disk_name = 'rhel5_x64_Disk1'
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 325499)
     def agent_data_update(self):
         """ RHEL6_64b, rhevm-guest-agent data update """
-        super(RHEL64b5AgentData, self).agent_data_update()
+        super(RHEL5x64AgentData, self).agent_data_update()
 
 
-class RHEL64b5FunctionContinuity(common.BaseFunctionContinuity):
+class RHEL5x64FunctionContinuity(common.BaseFunctionContinuity):
     ''' '''
     __test__ = False
-    os = eOS.RHEL_5_64b
+    disk_name = 'rhel5_x64_Disk1'
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 325529)
     def function_continuity(self):
         """ RHEL6_64b, rhevm-guest-agent function continuity """
-        super(RHEL64b5FunctionContinuity, self).function_continuity()
+        super(RHEL5x64FunctionContinuity, self).function_continuity()
 
 
-class RHEL32b5Install(common.BaseInstallGA):
+class RHEL5x86Install(common.BaseInstallGA):
     ''' test installation of guest agent on rhel 5 32b '''
     __test__ = True
-    os = eOS.RHEL_5_32b
+    disk_name = 'rhel5_x86_Disk1'
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 325215)
     def install_guest_agent(self):
         """ RHEL5_32b install_guest_agent """
-        super(RHEL32b5Install, self).install_guest_agent()
+        super(RHEL5x86Install, self).install_guest_agent()
 
 
-class RHEL32b5Uninstall(common.BaseUninstallGA):
+class RHEL5x86Uninstall(common.BaseUninstallGA):
     ''' RHEL5_32b uninstall_guest_agent '''
     __test__ = True
-    os = eOS.RHEL_5_32b
+    disk_name = 'rhel5_x86_Disk1'
     package = NAME
 
     @istest
@@ -382,14 +344,13 @@ class RHEL32b5Uninstall(common.BaseUninstallGA):
         ''' install GA back '''
         common.runPackagerCommand(self.machine, self.package_manager,
                                   'install', self.package,
-                                  '--disablerepo=rhevm', '-x',
-                                  'rhevm-guest-agent-common')
+                                  '-x', 'rhevm-guest-agent-common')
 
 
-class RHEL32b5PostInstall(common.BasePostInstall):
+class RHEL5x86PostInstall(common.BasePostInstall):
     ''' RHEL5_32b rhevm-guest-agent post-install '''
     __test__ = True
-    os = eOS.RHEL_5_32b
+    disk_name = 'rhel5_x86_Disk1'
     cmd_chkconf = ['chkconfig', '--list', '|', 'grep',
                    'ovirt', '|', 'egrep', '3:on']
 
@@ -397,25 +358,25 @@ class RHEL32b5PostInstall(common.BasePostInstall):
     @tcms(config.TCMS_PLAN_ID_RHEL, 325492)
     def post_install(self):
         """ RHEL5_32b rhevm-guest-agent post-install """
-        super(RHEL32b5PostInstall, self).post_install()
+        super(RHEL5x86PostInstall, self).post_install()
 
 
-class RHEL32b5ServiceTest(common.BaseServiceTest):
+class RHEL5x86ServiceTest(common.BaseServiceTest):
     ''' RHEL5_32b rhevm-guest-agent start-stop-restart-status '''
     __test__ = True
-    os = eOS.RHEL_5_32b
+    disk_name = 'rhel5_x86_Disk1'
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 325494)
     def service_test(self):
         """ RHEL5_32b rhevm-guest-agent start-stop-restart-status """
-        super(RHEL32b5ServiceTest, self).service_test()
+        super(RHEL5x86ServiceTest, self).service_test()
 
 
-class RHEL32b5AgentData(common.BaseAgentData):
+class RHEL5x86AgentData(common.BaseAgentData):
     ''' RHEL5_32b rhevm-guest-agent data '''
     __test__ = True
-    os = eOS.RHEL_5_32b
+    disk_name = 'rhel5_x86_Disk1'
     application_list = ['kernel', 'rhevm-guest-agent']
     list_app = ['rpm', '-qa']
 
@@ -423,28 +384,28 @@ class RHEL32b5AgentData(common.BaseAgentData):
     @tcms(config.TCMS_PLAN_ID_RHEL, 325500)
     def agent_data(self):
         """ RHEL5_32b rhevm-guest-agent data """
-        super(RHEL32b5AgentData, self).agent_data()
+        super(RHEL5x86AgentData, self).agent_data()
 
 
-class RHEL32b5AgentDataUpdate(common.BaseAgentDataUpdate):
+class RHEL5x86AgentDataUpdate(common.BaseAgentDataUpdate):
     ''' RHEL5_32b, rhevm-guest-agent data update '''
     __test__ = False
-    os = eOS.RHEL_5_32b
+    disk_name = 'rhel5_x86_Disk1'
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 325501)
     def agent_data_update(self):
         """ RHEL5_32b, rhevm-guest-agent data update """
-        super(RHEL32b5AgentData, self).agent_data_update()
+        super(RHEL5x86AgentData, self).agent_data_update()
 
 
-class RHEL32b5FunctionContinuity(common.BaseFunctionContinuity):
+class RHEL5x86FunctionContinuity(common.BaseFunctionContinuity):
     ''' RHEL5_32b, rhevm-guest-agent function continuity '''
     __test__ = False
-    os = eOS.RHEL_5_32b
+    disk_name = 'rhel5_x86_Disk1'
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 69882)
     def function_continuity(self):
         """ RHEL5_32b, rhevm-guest-agent function continuity """
-        super(RHEL32b5FunctionContinuity, self).function_continuity()
+        super(RHEL5x86FunctionContinuity, self).function_continuity()
