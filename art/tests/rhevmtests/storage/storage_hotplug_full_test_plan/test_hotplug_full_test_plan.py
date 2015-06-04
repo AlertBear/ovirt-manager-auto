@@ -106,17 +106,15 @@ def teardown_module():
     delete_disks(DISK_NAMES)
 
     plug_disks = []
-    for disks_per_storage in (
+    for disk_per_storage in (
             helpers.UNATTACHED_DISKS_PER_STORAGE_TYPE.values()
     ):
-        for disk in disks_per_storage:
-            if disks.checkDiskExists(True, disk):
-                plug_disks += disk
+        if disks.checkDiskExists(True, disk_per_storage):
+            plug_disks += disk_per_storage
 
-    for disks_per_storage in helpers.DISKS_TO_PLUG.values():
-        for disk in disks_per_storage:
-            if disks.checkDiskExists(True, disk):
-                plug_disks += disk
+    for disk in helpers.DISKS_TO_PLUG.values():
+        if disks.checkDiskExists(True, disk):
+            plug_disks += disk
 
     LOGGER.info("Removing disks from plug tests %s", plug_disks)
     delete_disks(plug_disks)
