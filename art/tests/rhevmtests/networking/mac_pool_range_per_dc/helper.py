@@ -5,9 +5,15 @@
 MAC pool range per DC networking feature helper
 """
 import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
+import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
+import art.rhevm_api.tests_lib.low_level.vms as ll_vm
+from art.unittest_lib import NetworkTest as TestCase
 import config as c
 import logging
+import utilities.utils as utils
+import art.core_api.apis_exceptions as api_exc
+
 logger = logging.getLogger("MAC_Pool_Range_Per_DC_Helper")
 
 
@@ -40,7 +46,9 @@ def create_mac_pool(
         )
 
 
-def update_dc_with_mac_pool(dc=c.DC_NAME[0], mac_pool_name=c.MAC_POOL_NAME[0]):
+def update_dc_with_mac_pool(
+    dc=c.DC_NAME[0], mac_pool_name=c.MAC_POOL_NAME[0], teardown=False
+):
     """
     Update DC with MAC pool
 
@@ -51,15 +59,19 @@ def update_dc_with_mac_pool(dc=c.DC_NAME[0], mac_pool_name=c.MAC_POOL_NAME[0]):
     :raise: NetworkException
     """
     logger.info(
-        "Update the DC %s with MAC pool %s", c.DC_NAME[0], c.MAC_POOL_NAME[0]
+        "Update the DC %s with MAC pool %s", dc, mac_pool_name
     )
     if not ll_dc.updateDataCenter(
-        True, datacenter=c.DC_NAME[0],
-        mac_pool=ll_mac_pool.get_mac_pool(c.MAC_POOL_NAME[0])
+        True, datacenter=dc,
+        mac_pool=ll_mac_pool.get_mac_pool(mac_pool_name)
     ):
+        if teardown:
+            logger.info(
+                "Couldn't update DC %s with MAC pool %s", dc, mac_pool_name
+            )
+            TestCase.test_failed = True
         raise c.NET_EXCEPTION(
-            "Couldn't update DC %s with MAC pool %s" %
-            (c.DC_NAME[0], c.MAC_POOL_NAME[0])
+            "Couldn't update DC %s with MAC pool %s" % (dc, mac_pool_name)
         )
 
 
@@ -69,13 +81,75 @@ def remove_mac_pool(mac_pool_name=c.MAC_POOL_NAME[0]):
 
     :param mac_pool_name: MAC pool name
     :type mac_pool_name: str
-    :return: True if remove succeeded. False otherwise
-    :rtype: bool
     """
     logger.info("Remove MAC pool %s ", mac_pool_name)
     if not ll_mac_pool.remove_mac_pool(mac_pool_name):
         logger.error(
-            "Couldn't remove MAC pool %s", c.MAC_POOL_NAME[0]
+            "Couldn't remove MAC pool %s", mac_pool_name
         )
-        return False
-    return True
+        TestCase.test_failed = True
+
+
+def update_mac_pool_range_size(
+    mac_pool_name=c.MAC_POOL_NAME[0], extend=True, size=(1, 1)
+):
+    """
+    Update MAC pool range size
+
+    :param mac_pool_name: Name of the MAC pool
+    :type mac_pool_name: str
+    :param extend: Extend or shrink the MAC pool range
+    :type extend: bool
+    :param size: (number to decrease from low MAC, number to add to high MAC)
+    :type size: tuple
+    :raise: NetworkException
+    """
+    log = "Extend" if extend else "Shrink"
+    logger.info("%s the MAC pool range by %s MAC", log, size[0] + size[1])
+    mac_pool = ll_mac_pool.get_mac_pool(mac_pool_name)
+    mac_pool_range = ll_mac_pool.get_mac_range_values(mac_pool)[0]
+    low_mac = utils.MAC(mac_pool_range[0])
+    high_mac = utils.MAC(mac_pool_range[1])
+    if not hl_mac_pool.update_ranges_on_mac_pool(
+        mac_pool_name=mac_pool_name, range_dict={
+            mac_pool_range: (low_mac - size[0], high_mac + size[1])
+        }
+    ):
+        raise c.NET_EXCEPTION(
+            "Couldn't %s the MAC pool range for %s" % (log, mac_pool_name)
+        )
+
+
+def add_nic(positive=True, vm=c.VM_NAME[0], name=c.NIC_NAME[1]):
+    """
+    Add NIC to VM
+
+    :param positive: Expected result
+    :type positive: bool
+    :param vm: name of the VM to add NIC to
+    :type vm: str
+    :param name: NIC to add to VM
+    :type name: str
+    :raise: NetworkException
+    """
+    log = "Failed" if positive else "Succeeded"
+    logger.info("Adding %s to %s", name, vm)
+    if not ll_vm.addNic(positive=positive, vm=vm, name=name):
+        raise c.NET_EXCEPTION("%s to add %s to %s" % (log, name, vm))
+
+
+def remove_nic(vm=c.VM_NAME[0], nic=c.NIC_NAME[1]):
+    """
+    Remove vNIC from VM
+
+    :param vm: name of the VM to add NIC to
+    :type vm: str
+    :param nic: NIC to add to VM
+    :type nic: str
+    :raise: NetworkException
+    """
+    try:
+        ll_vm.removeNic(True, vm=vm, nic=nic)
+    except api_exc.EntityNotFound:
+        logger.error("Couldn't remove VNIC %s from VM", nic)
+        TestCase.test_failed = True

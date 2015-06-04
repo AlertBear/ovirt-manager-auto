@@ -69,33 +69,13 @@ class TestMacPoolRange02(TestCase):
         MAC pool values
         Update the MAC pool to its original default values
         """
-        default_mac_pool = ll_mac_pool.get_default_mac_pool()
-        default_mac_pool_range = ll_mac_pool.get_mac_range_values(
-            default_mac_pool
+        logger.info("Extend and shrink the default MAC pool range")
+        helper.update_mac_pool_range_size(
+            mac_pool_name=c.DEFAULT_MAC_POOL, size=(2, 2)
         )
-        if not default_mac_pool_range:
-            raise c.NET_EXCEPTION("Failed to get default MAC pool range")
-        default_mac_pool_range = default_mac_pool_range[0]
-
-        low_mac = utils.MAC(default_mac_pool_range[0])
-        high_mac = utils.MAC(default_mac_pool_range[1])
-
-        logger.info("Extend the default MAC pool range by 4 MACs")
-        if not hl_mac_pool.update_ranges_on_mac_pool(
-            mac_pool_name=c.DEFAULT_MAC_POOL, range_dict={
-                default_mac_pool_range: (str(low_mac - 2), str(high_mac + 2))
-            }
-        ):
-            raise c.NET_EXCEPTION("Couldn't extend the Default MAC pool range")
-
-        logger.info("Shrink the updated default MAC pool range by 4 MACs")
-        if not hl_mac_pool.update_ranges_on_mac_pool(
-            mac_pool_name=c.DEFAULT_MAC_POOL, range_dict={
-                (str(low_mac - 2), str(high_mac + 2)):
-                    (str(low_mac + 2), str(high_mac - 2))
-            }
-        ):
-            raise c.NET_EXCEPTION("Couldn't shrink the default MAC pool range")
+        helper.update_mac_pool_range_size(
+            mac_pool_name=c.DEFAULT_MAC_POOL, size=(-2, -2)
+        )
 
         logger.info("Add new ranges to the Default MAC pool")
         if not hl_mac_pool.add_ranges_to_mac_pool(
@@ -135,16 +115,6 @@ class TestMacPoolRange02(TestCase):
                 "values"
             )
 
-        logger.info("Update the Default MAC pool to its original values")
-        if not hl_mac_pool.update_ranges_on_mac_pool(
-            mac_pool_name=c.DEFAULT_MAC_POOL, range_dict={
-                (str(low_mac + 2), str(high_mac - 2)): default_mac_pool_range
-            }
-        ):
-            raise c.NET_EXCEPTION(
-                "Couldn't update Default MAC pool range to its original value"
-            )
-
     @classmethod
     def teardown_class(cls):
         """
@@ -153,6 +123,7 @@ class TestMacPoolRange02(TestCase):
         logger.info("Remove a DC %s", c.EXT_DC_1)
         if not ll_dc.removeDataCenter(positive=True, datacenter=c.EXT_DC_1):
             logger.error("Failed to remove DC %s", c.EXT_DC_1)
+            cls.test_failed = True
 
 
 @attr(tier=1)
@@ -167,6 +138,7 @@ class TestMacPoolRange03(TestCase):
         """
         Create 2 MAC pools
         Update DC with 1 of created MAC pools
+        Add vNIC to VM
         """
         logger.info("Create 2 MAC pools")
         for i in range(2):
@@ -177,25 +149,8 @@ class TestMacPoolRange03(TestCase):
                     "Cannot create new MAC pool %s" % c.MAC_POOL_NAME[i]
                 )
 
-        logger.info(
-            "Update the DC %s with MAC pool %s", c.ORIG_DC, c.MAC_POOL_NAME[0]
-        )
-        if not ll_dc.updateDataCenter(
-            positive=True, datacenter=c.ORIG_DC,
-            mac_pool=ll_mac_pool.get_mac_pool(c.MAC_POOL_NAME[0])
-        ):
-            raise c.NET_EXCEPTION(
-                "Couldn't update DC %s with MAC pool %s" %
-                (c.ORIG_DC, c.MAC_POOL_NAME[0])
-            )
-
-        logger.info("Adding %s to %s", c.NIC_NAME[1], c.VM_NAME[0])
-        if not ll_vm.addNic(
-            positive=True, vm=c.VM_NAME[0], name=c.NIC_NAME[1]
-        ):
-            raise c.NET_EXCEPTION(
-                "Failed to add %s to %s" % (c.NIC_NAME[1], c.VM_NAME[0])
-            )
+        helper.update_dc_with_mac_pool()
+        helper.add_nic(name=c.NIC_NAME[1])
 
     def test_update_mac_pool_vm(self):
         """
@@ -233,13 +188,7 @@ class TestMacPoolRange03(TestCase):
                 (c.ORIG_DC, c.MAC_POOL_NAME[1])
             )
 
-        logger.info("Adding %s to %s", c.NIC_NAME[2], c.VM_NAME[0])
-        if not ll_vm.addNic(
-            positive=True, vm=c.VM_NAME[0], name=c.NIC_NAME[2]
-        ):
-            raise c.NET_EXCEPTION(
-                "Failed to add %s to %s" % (c.NIC_NAME[2], c.VM_NAME[0])
-            )
+        helper.add_nic(name=c.NIC_NAME[2])
 
         logger.info("Find the MAC of the VM NIC %s", c.NIC_NAME[2])
         nic_mac = ll_vm.get_vm_nic_mac_address(
@@ -269,22 +218,15 @@ class TestMacPoolRange03(TestCase):
         """
         logger.info("Remove VNICs from %s", c.VM_NAME[0])
         for nic in c.NIC_NAME[1:3]:
-            if not ll_vm.removeNic(positive=True, vm=c.VM_NAME[0], nic=nic):
-                logger.error("Couldn't remove VNIC %s from VM", nic)
+            helper.remove_nic(nic=nic)
 
-        logger.info("Update DC %s with default MAC pool", c.ORIG_DC)
-        if not ll_dc.updateDataCenter(
-            positive=True, datacenter=c.ORIG_DC,
-            mac_pool=ll_mac_pool.get_mac_pool(c.DEFAULT_MAC_POOL)
-        ):
-            logger.error(
-                "Couldn't update DC %s with default MAC pool", c.ORIG_DC
-            )
+        helper.update_dc_with_mac_pool(
+            mac_pool_name=c.DEFAULT_MAC_POOL, teardown=True
+        )
 
         logger.info("Remove MAC pools %s ", c.MAC_POOL_NAME[:2])
         for mac_pool in c.MAC_POOL_NAME[:2]:
-            if not helper.remove_mac_pool(mac_pool_name=mac_pool):
-                cls.test_failed = False
+            helper.remove_mac_pool(mac_pool_name=mac_pool)
 
 
 @attr(tier=1)
@@ -332,8 +274,7 @@ class TestMacPoolRange04(TestCase):
             logger.error("Failed to remove DC %s", c.EXT_DC_1)
             cls.test_failed = False
 
-        if not helper.remove_mac_pool():
-            cls.test_failed = False
+        helper.remove_mac_pool()
 
 
 @attr(tier=1)
@@ -381,8 +322,7 @@ class TestMacPoolRange05(TestCase):
         """
         logger.info("Remove MAC pools %s ", c.MAC_POOL_NAME[:2])
         for mac_pool in c.MAC_POOL_NAME[:2]:
-            if not helper.remove_mac_pool(mac_pool_name=mac_pool):
-                cls.test_failed = False
+            helper.remove_mac_pool(mac_pool_name=mac_pool)
 
 
 @attr(tier=1)
@@ -412,60 +352,18 @@ class TestMacPoolRange06(TestCase):
         Fail when you try to overcome that limit
         """
         for i in range(3):
-            logger.info(
-                "Adding %s to %s", c.NIC_NAME[i+1], c.VM_NAME[0]
-            )
-            if not ll_vm.addNic(
-                positive=True, vm=c.VM_NAME[0], name=c.NIC_NAME[i+1]
-            ):
-                raise c.NET_EXCEPTION(
-                    "Failed to add %s to %s" %
-                    (c.NIC_NAME[i+1], c.VM_NAME[0])
-                )
+            helper.add_nic(name=c.NIC_NAME[i+1])
 
         logger.info("Trying to add VNIC when there are no spare MACs to use")
-        if ll_vm.addNic(
-            positive=True, vm=c.VM_NAME[0], name=c.NIC_NAME[4]
-        ):
-            raise c.NET_EXCEPTION(
-                "Succeeded to add %s to %s when shouldn't" %
-                (c.NIC_NAME[4], c.VM_NAME[0])
-            )
+        helper.add_nic(positive=False, name=c.NIC_NAME[4])
 
-        logger.info("Extend the MAC pool range by 2 MACs")
-        mac_pool = ll_mac_pool.get_mac_pool(c.MAC_POOL_NAME[0])
-        mac_pool_range = ll_mac_pool.get_mac_range_values(mac_pool)[0]
-        low_mac = utils.MAC(mac_pool_range[0])
-        high_mac = utils.MAC(mac_pool_range[1])
-        if not hl_mac_pool.update_ranges_on_mac_pool(
-            mac_pool_name=c.MAC_POOL_NAME[0], range_dict={
-                mac_pool_range: (low_mac - 1, high_mac + 1)
-            }
-        ):
-            raise c.NET_EXCEPTION(
-                "Couldn't extend the %s range" % c.MAC_POOL_NAME[0]
-            )
+        helper.update_mac_pool_range_size()
 
         for i in range(4, 6):
-            logger.info(
-                "Adding %s to %s", c.NIC_NAME[i], c.VM_NAME[0]
-            )
-            if not ll_vm.addNic(
-                positive=True, vm=c.VM_NAME[0], name=c.NIC_NAME[i]
-            ):
-                raise c.NET_EXCEPTION(
-                    "Failed to add %s to %s" %
-                    (c.NIC_NAME[i], c.VM_NAME[0])
-                )
+            helper.add_nic(name=c.NIC_NAME[i])
 
         logger.info("Trying to add VNIC when there are no spare MACs to use")
-        if ll_vm.addNic(
-            positive=True, vm=c.VM_NAME[0], name=c.NIC_NAME[6]
-        ):
-            raise c.NET_EXCEPTION(
-                "Succeeded to add %s to %s when shouldn't" %
-                (c.NIC_NAME[6], c.VM_NAME[0])
-            )
+        helper.add_nic(positive=False, name=c.NIC_NAME[6])
 
     @classmethod
     def teardown_class(cls):
@@ -476,20 +374,341 @@ class TestMacPoolRange06(TestCase):
         """
         logger.info("Remove VNICs from VM")
         for nic in c.NIC_NAME[1:6]:
-            if not ll_vm.removeNic(True, vm=c.VM_NAME[0], nic=nic):
-                logger.error("Couldn't remove VNIC %s from VM", nic)
-                cls.test_failed = False
+            helper.remove_nic(nic=nic)
 
-        logger.info("Update DC %s with default MAC pool", c.DC_NAME[0])
+        logger.info("Update DC %s with default MAC pool", c.ORIG_DC)
         if not ll_dc.updateDataCenter(
-            True, datacenter=c.DC_NAME[0],
+            True, datacenter=c.ORIG_DC,
             mac_pool=ll_mac_pool.get_mac_pool(c.DEFAULT_MAC_POOL)
         ):
             logger.error(
                 "Couldn't update DC %s with default MAC pool",
-                c.DC_NAME[0]
+                c.ORIG_DC
             )
             cls.test_failed = False
 
-        if not helper.remove_mac_pool():
-            cls.test_failed = False
+        helper.remove_mac_pool()
+
+
+@attr(tier=1)
+class TestMacPoolRange07(TestCase):
+    """
+    RHEVM3-6447 - Extend MAC pool range
+    Check that you can add VNICs till you reach the limit of the MAC pool range
+    Extending the MAC pool range by 2 will let you add 2 additional VNICs only
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create a new MAC pool
+        Update DC with a new MAC pool
+        """
+        logger.info(
+            "Create a new MAC pool %s and update with it DC %s",
+            c.MAC_POOL_NAME[0], c.ORIG_DC
+        )
+        helper.create_mac_pool(mac_pool_ranges=[c.MAC_POOL_RANGE_LIST[1]])
+        helper.update_dc_with_mac_pool()
+
+    def test_range_limit_extend(self):
+        """
+        Add 3 VNICs to the VM till you reach the MAC pool range limit
+        Add another VNIC and fail
+        Extend the MAC pool range
+        Add another VNICs (till you reach range limit again)
+        Fail when you try to overcome that limit
+        """
+        for i in range(3):
+            helper.add_nic(name=c.NIC_NAME[i+1])
+
+        logger.info("Trying to add VNIC when there are no spare MACs to use")
+        helper.add_nic(positive=False, name=c.NIC_NAME[4])
+
+        helper.update_mac_pool_range_size()
+
+        for i in range(4, 6):
+            helper.add_nic(name=c.NIC_NAME[i])
+
+        logger.info("Trying to add VNIC when there are no spare MACs to use")
+        helper.add_nic(positive=False, name=c.NIC_NAME[6])
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove 6 VNICs from the VM
+        Update DC with the Default MAC pool
+        Remove MAC pool
+        """
+        logger.info("Remove VNICs from VM")
+        for nic in c.NIC_NAME[1:6]:
+            helper.remove_nic(nic=nic)
+
+        logger.info(
+            "Update DC %s with default MAC pool and remove MAC pool %s",
+            c.ORIG_DC, c.MAC_POOL_NAME[0]
+        )
+        helper.update_dc_with_mac_pool(
+            mac_pool_name=c.DEFAULT_MAC_POOL, teardown=True
+        )
+        helper.remove_mac_pool()
+
+
+@attr(tier=1)
+class TestMacPoolRange08(TestCase):
+    """
+    RHEVM3-6448 - Shrink MAC pool range
+    Check that you can add VNICs if you don't reach the limit of the
+    MAC pool range
+    Shrinking the MAC pool to the size equal to the number of VM NICs
+    will not allow adding additional VNICs to VM
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create a new MAC pool
+        Update DC with a new MAC pool
+        """
+        logger.info(
+            "Create a new MAC pool %s and update with it DC %s",
+            c.MAC_POOL_NAME[0], c.ORIG_DC
+        )
+        helper.create_mac_pool(mac_pool_ranges=[c.MAC_POOL_RANGE_LIST[1]])
+        helper.update_dc_with_mac_pool()
+
+    def test_range_limit_shrink(self):
+        """
+        Add VNICs to the VM
+        Shrink the MAC pool, so you can add only one new VNIC
+        Add one VNIC and succeed
+        Try to add additional VNIC to VM and fail
+        """
+        helper.add_nic()
+
+        helper.update_mac_pool_range_size(extend=False, size=(0, -1))
+        helper.add_nic(name=c.NIC_NAME[2])
+
+        logger.info("Trying to add VNIC when there are no spare MACs to use")
+        helper.add_nic(positive=False, name=c.NIC_NAME[3])
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove 2 VNICs from the VM
+        Update DC with the Default MAC pool
+        Remove MAC pool
+        """
+        logger.info("Remove VNICs from VM")
+        for nic in c.NIC_NAME[1:3]:
+            helper.remove_nic(nic=nic)
+
+        logger.info(
+            "Update DC %s with default MAC pool and remove MAC pool %s",
+            c.ORIG_DC, c.MAC_POOL_NAME[0]
+        )
+        helper.update_dc_with_mac_pool(
+            mac_pool_name=c.DEFAULT_MAC_POOL, teardown=True
+        )
+        helper.remove_mac_pool()
+
+
+@attr(tier=1)
+class TestMacPoolRange09(TestCase):
+    """
+    RHEVM3-6449 - Add/remove ranges from pool
+    Check that add and remove ranges from MAC pool is working as expected
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create a new MAC pool
+        """
+        helper.create_mac_pool()
+
+    def test_add_remove_ranges(self):
+        """
+        Add 2 new ranges
+        Remove one of the added ranges
+        Check that the correct ranges still exist in the Range list
+        """
+        logger.info("Add new ranges to the %s", c.MAC_POOL_NAME[0])
+        if not hl_mac_pool.add_ranges_to_mac_pool(
+            mac_pool_name=c.MAC_POOL_NAME[0],
+            range_list=c.MAC_POOL_RANGE_LIST[1:3]
+        ):
+            raise c.NET_EXCEPTION(
+                "Couldn't add ranges to the %s" % c.MAC_POOL_NAME[0]
+            )
+        logger.info(
+            "Remove one of the added ranges from the %s",
+            c.MAC_POOL_NAME[0]
+        )
+        if not hl_mac_pool.remove_ranges_from_mac_pool(
+            mac_pool_name=c.MAC_POOL_NAME[0],
+            range_list=[c.MAC_POOL_RANGE_LIST[1]]
+        ):
+            raise c.NET_EXCEPTION(
+                "Couldn't remove the range from the %s",
+                c.MAC_POOL_NAME[0]
+            )
+
+        logger.info(
+            "Check that the correct ranges exist in the %s after add/remove "
+            "ranges action", c.MAC_POOL_NAME[0]
+        )
+        ranges = ll_mac_pool.get_mac_range_values(
+            ll_mac_pool.get_mac_pool(c.MAC_POOL_NAME[0])
+        )
+        if len(ranges) != 2 or (
+                c.MAC_POOL_RANGE_LIST[1] in ranges
+        ):
+            raise c.NET_EXCEPTION(
+                "Ranges are incorrect after add/remove ranges action"
+            )
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove MAC pool
+        """
+
+        helper.remove_mac_pool()
+
+
+@attr(tier=1)
+class TestMacPoolRange10(TestCase):
+    """
+    RHEVM3-6450 - Non-Continues ranges in MAC pool
+    Check that you can add VNICs according to the number of MAC ranges when
+    each MAC range has only one MAC address in the pool
+    """
+    __test__ = True
+    MAC_POOL_RANGES = [
+        ("00:00:00:10:10:10", "00:00:00:10:10:10"),
+        ("00:00:00:10:10:20", "00:00:00:10:10:20"),
+        ("00:00:00:10:10:30", "00:00:00:10:10:30"),
+        ("00:00:00:10:10:40", "00:00:00:10:10:40"),
+        ("00:00:00:10:10:50", "00:00:00:10:10:50"),
+        ("00:00:00:10:10:60", "00:00:00:10:10:60")
+    ]
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create a new MAC pool
+        Update DC with new MAC pool
+        Add 3 VNICs to VM on that DC
+        """
+        logger.info(
+            "Create a new MAC pool %s and update with it DC %s",
+            c.MAC_POOL_NAME[0], c.ORIG_DC
+        )
+        helper.create_mac_pool(mac_pool_ranges=cls.MAC_POOL_RANGES[:3])
+        helper.update_dc_with_mac_pool()
+
+        for i in range(3):
+            helper.add_nic(name=c.NIC_NAME[i+1])
+
+    def test_non_continuous_ranges(self):
+        """
+        Test VNICs have non-continuous MACs (according to the Ranges values)
+        """
+        logger.info("Check that 3 MACs on the VNICs correspond to 3 Ranges")
+        ranges = [i[0] for i in self.MAC_POOL_RANGES[:3]]
+        for i in range(1, 4):
+            nic_mac = ll_vm.get_vm_nic_mac_address(
+                vm=c.VM_NAME[0], nic=c.NIC_NAME[i]
+            )
+
+            if nic_mac in ranges:
+                ranges.remove(nic_mac)
+            else:
+                raise c.NET_EXCEPTION(
+                    "VNIC MAC %s is not in the MAC pool range for %s" %
+                    (nic_mac, c.MAC_POOL_NAME[0])
+                )
+
+        logger.info("Add 2 additional ranges to %s", c.MAC_POOL_NAME[0])
+        if not hl_mac_pool.add_ranges_to_mac_pool(
+            c.MAC_POOL_NAME[0], self.MAC_POOL_RANGES[3:5]
+        ):
+            raise c.NET_EXCEPTION(
+                "Couldn't add 2 additional ranges to %s" %
+                c.MAC_POOL_NAME[0]
+            )
+
+        for i in range(4, 6):
+            helper.add_nic(name=c.NIC_NAME[i])
+
+        logger.info(
+            "Check that 2 MACs on the VNICs correspond to 2 added Ranges"
+        )
+        ranges = [i[0] for i in self.MAC_POOL_RANGES[3:5]]
+        for i in range(4, 6):
+            nic_mac = ll_vm.get_vm_nic_mac_address(
+                vm=c.VM_NAME[0], nic=c.NIC_NAME[i]
+            )
+
+            if nic_mac in ranges:
+                ranges.remove(nic_mac)
+            else:
+                raise c.NET_EXCEPTION(
+                    "VNIC MAC %s is not in the MAC pool range for %s" %
+                    (nic_mac, c.MAC_POOL_NAME[0])
+                )
+
+        logger.info("Remove the last added range and add another one")
+        if not hl_mac_pool.remove_ranges_from_mac_pool(
+            c.MAC_POOL_NAME[0], [self.MAC_POOL_RANGES[4]]
+        ):
+            raise c.NET_EXCEPTION(
+                "Couldn't remove the last added range from %s" %
+                c.MAC_POOL_NAME[0]
+            )
+        if not hl_mac_pool.add_ranges_to_mac_pool(
+            c.MAC_POOL_NAME[0], [self.MAC_POOL_RANGES[5]]
+        ):
+            raise c.NET_EXCEPTION(
+                "Couldn't add  additional ranges to %s" %
+                c.MAC_POOL_NAME[0]
+            )
+
+        helper.add_nic(name=c.NIC_NAME[6])
+
+        logger.info(
+            "Check that adding VNIC takes MAC from the last added Range"
+        )
+        nic_mac = ll_vm.get_vm_nic_mac_address(
+            vm=c.VM_NAME[0], nic=c.NIC_NAME[6]
+        )
+
+        if nic_mac != self.MAC_POOL_RANGES[-1][0]:
+            raise c.NET_EXCEPTION(
+                "VNIC MAC %s is not in the MAC pool range for %s" %
+                (nic_mac, c.MAC_POOL_NAME[0])
+            )
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove VNICs from VM
+        Update DC with default MAC pool
+        Remove MAC pool
+        """
+        logger.info("Remove VNICs from VM")
+        for nic in c.NIC_NAME[1:7]:
+            helper.remove_nic(nic=nic)
+
+        logger.info(
+            "Update DC %s with default MAC pool and remove MAC pool %s",
+            c.ORIG_DC, c.MAC_POOL_NAME[0]
+        )
+        helper.update_dc_with_mac_pool(
+            mac_pool_name=c.DEFAULT_MAC_POOL, teardown=True
+        )
+        helper.remove_mac_pool()

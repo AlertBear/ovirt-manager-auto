@@ -22,7 +22,6 @@ def setup_package():
     """
     Prepare environment
     """
-
     network_cleanup()
 
     logger.info("Create new setup with DC, cluster and host")
@@ -65,7 +64,6 @@ def teardown_package():
     """
     Remove extra DC, Cluster, Storage, VM and move the Host to original Cluster
     """
-
     logger.info("Remove VM %s", c.MP_VM)
     if not ll_vms.removeVm(positive=True, vm=c.MP_VM):
         logger.error("Couldn't remove VM %s" % c.MP_VM)
