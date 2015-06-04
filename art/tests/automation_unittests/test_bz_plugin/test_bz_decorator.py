@@ -15,6 +15,9 @@ from automation_unittests.verify_results import VerifyUnittestResults
 
 logger = logging.getLogger(__name__)
 
+NFS = 'nfs'
+GLUSTERFS = 'glusterfs'
+
 
 class TestCaseBzPlugin(TestCase):
 
@@ -81,10 +84,52 @@ class TestCaseBzPlugin(TestCase):
         logger.info('**************** Verify multiple bugs ****************')
 
 
+class TestCaseBzPluginWithStorage(TestCase):
+
+    __test__ = True
+
+    storages = set([NFS, GLUSTERFS])
+
+    @classmethod
+    def setup_class(cls):
+        logger.info('************** setup class **************')
+
+    @classmethod
+    def teardown_class(cls):
+        logger.info('************** teardown class **************')
+
+    def setUp(self):
+        logger.info('************** setup test **************')
+
+    def tearDown(self):
+        logger.info('************** teardown test **************')
+
+    @istest  # should skip for glusterfs run for nfs
+    @bzd({'1': {'storage': [GLUSTERFS], 'version': ['3.5']}})
+    def t01(self):
+        if self.storage == NFS:
+            logger.info('************ NEW BUG for glusetrfs only **********')
+
+    @istest  # should skip
+    @bzd({'2': {'storage': [NFS, GLUSTERFS], 'version': ['3.5']}})
+    def t02(self):
+        logger.info('************** ON QA BUG current engine **************')
+
+    @istest  # should run
+    @bzd({'4': {
+        'engine': ['java', 'sdk'],
+        'storage': NFS}
+    })
+    def t03(self):
+        logger.info('** verified bug should run for %s *****', self.storage)
+
+
 class VerifyResults(VerifyUnittestResults):
 
     __test__ = True
 
+    apis = set(['rest'])
+
     @istest
     def verify(self):
-        self.assert_expected_results(6, 0, 3, 0)
+        self.assert_expected_results(39, 0, 21, 0)

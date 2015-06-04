@@ -87,6 +87,24 @@ class FakeBugs(object):
                 "bug_status": 'CLOSED',
                 "target_release": ['1.0'],
             }
+        elif bz_id == '10':
+            bug_dict = {
+                "bug_id": 10,
+                "product": 'dont care at this point',
+                "version": ['1.0'],
+                "resolution": '',
+                "bug_status": 'NEW',
+                "target_release": ['1.0'],
+            }
+        elif bz_id == '11':
+            bug_dict = {
+                "bug_id": 11,
+                "product": 'dont care at this point',
+                "version": ['3.5'],
+                "resolution": 'CURRENTRELEASE',
+                "bug_status": 'VERIFIED',
+                "target_release": ['3.5'],
+            }
         else:
             raise BugNotFound(bz_id)
 

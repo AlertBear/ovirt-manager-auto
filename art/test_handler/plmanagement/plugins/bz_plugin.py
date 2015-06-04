@@ -149,12 +149,12 @@ def bz(bug_dict):
     """
     def real_bz(func):
 
-        def check_should_skip(bz_id, engine=None, version=None):
+        def check_should_skip(bz_id, engine=None, version=None, storage=None):
             plmanager = initPlmanager()
             BZ_PLUGIN = [pl for pl in plmanager.application_liteners
                          if pl.name == "Bugzilla"][0]
             try:
-                BZ_PLUGIN.should_be_skipped(bz_id, engine, version)
+                BZ_PLUGIN.should_be_skipped(bz_id, engine, version, storage)
             except BugzillaSkipTest:
                 logger.warn("Skipping test because BZ%s for "
                             "engine %s, version %s",
@@ -174,7 +174,8 @@ def bz(bug_dict):
                     for bz_id, options in bug_dict.iteritems():
                         engine = options.get('engine')
                         version = options.get('version')
-                        check_should_skip(bz_id, engine, version)
+                        storage = options.get('storage')
+                        check_should_skip(bz_id, engine, version, storage)
                 return func(*args, **kwargs)
             except IndexError:
                 logger.warning("Failed to get Bugzilla plugin")
@@ -378,7 +379,9 @@ class Bugzilla(Component):
             return
         res['bugzilla'] = ",".join(bug_dict.iterkeys())
 
-    def should_be_skipped(self, bz_id, engines=None, versions=None):
+    def should_be_skipped(
+            self, bz_id, engines=None, versions=None, storages=None
+    ):
         """
         Raises BugzillaSkipTest if the bug is in non-resolved state
         (not verified or closed) and it's open for the current running engine
@@ -408,6 +411,7 @@ class Bugzilla(Component):
 
         # check if the bz is open for the current engine
         engine_in = engines is None or opts['engine'] in engines
+        storage_in = storages is None or opts['storage_type'] in storages
 
         if versions is None:
             from art.rhevm_api.tests_lib.low_level import general
@@ -417,26 +421,38 @@ class Bugzilla(Component):
             self.version = Version(version)
             # if the bug is open & should skip for engine &
             # relevant for this version
-            if (not self.is_state_by_bug(bz) and engine_in and
-                    self.__check_version(bz)):
-                logger.info("skipping due to in_state=%s, engine_in=%s",
-                            self.is_state_by_bug(bz), engine_in)
+            if (
+                    not self.is_state_by_bug(bz)
+                    and storage_in
+                    and engine_in
+                    and self.__check_version(bz)
+            ):
+                logger.info(
+                    "skipping due to in_state=%s, engine_in=%s, storage_in=%s",
+                    self.is_state_by_bug(bz), engine_in, storage_in
+                )
                 raise BugzillaSkipTest(bz_id, self.url)
 
             # if the bug is closed or verified on current release resolution,
             # but was fixed in later version
             if bz.bug_status in ('CLOSED', 'VERIFIED'):
-                if self.__check_fixed_at(bz) and engine_in:
+                if self.__check_fixed_at(bz) and engine_in and storage_in:
                     raise BugzillaSkipTest(bz_id, self.url)
 
         for version in versions:
             self.version = Version(version)
             # if the bug is closed but should skip due to resolution cause
-            if (bz.bug_status == 'CLOSED' and engine_in and
+            if (
+                    bz.bug_status == 'CLOSED' and
+                    storage_in and
+                    engine_in and
                     self.__check_version(bz) and
-                    bz.resolution in SKIP_FOR_RESOLUTION):
-                logger.info("skipping due to in_state=%s, resolution=%s",
-                            self.is_state(bz_id), bz.resolution)
+                    bz.resolution in SKIP_FOR_RESOLUTION
+            ):
+                logger.info(
+                    "skipping due to in_state=%s, resolution=%s",
+                    self.is_state(bz_id), bz.resolution
+                )
                 raise BugzillaSkipTest(bz_id, self.url)
 
     def __check_version(self, bug):
@@ -489,12 +505,19 @@ class Bugzilla(Component):
 
     def should_be_test_group_skipped(self, g):
         bug_dict = g.attrs.get(BZ_ID)
+
+        # from nose.tools import set_trace
+        # set_trace()
+
         if not bug_dict or not isinstance(bug_dict, dict):
             return
+
         for bz_id, options in bug_dict.iteritems():
             engine = options.get('engine')
             version = options.get('version')
-            self.should_be_skipped(bz_id, engine, version)
+            storage = options.get('storage')
+
+            self.should_be_skipped(bz_id, engine, version, storage)
 
     def should_be_test_case_skipped(self, t):
         pass
