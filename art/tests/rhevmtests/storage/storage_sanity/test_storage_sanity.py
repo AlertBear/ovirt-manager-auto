@@ -165,7 +165,7 @@ class TestCase94950(TestCase):
                 raise exceptions.StorageDomainException(
                     "Creating iSCSI domain '%s' failed" % self.sd_name
                 )
-        elif self.storage in config.STORAGE_TYPE_NFS:
+        elif self.storage == config.STORAGE_TYPE_NFS:
             self.sd_name = "{0}_{1}".format(self.tcms_test_case,
                                             "NFS_Domain")
             self.nfs_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[0]
@@ -182,7 +182,7 @@ class TestCase94950(TestCase):
                 raise exceptions.StorageDomainException(
                     "Creating NFS domain '%s' failed" % self.sd_name
                 )
-        elif self.storage in config.STORAGE_TYPE_GLUSTER:
+        elif self.storage == config.STORAGE_TYPE_GLUSTER:
             self.sd_name = "{0}_{1}".format(self.tcms_test_case,
                                             "Gluster_Domain")
             self.gluster_address = \
