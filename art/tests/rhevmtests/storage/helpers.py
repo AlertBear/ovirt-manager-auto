@@ -21,7 +21,7 @@ from art.rhevm_api.tests_lib.low_level.disks import (
 from art.rhevm_api.tests_lib.low_level.vms import (
     get_vm_disk_logical_name, stop_vms_safely, get_vm_snapshots,
     removeSnapshot, activateVmDisk, waitForIP, cloneVmFromTemplate,
-    createVm, startVm, getVmDisks,
+    createVm, startVm, getVmDisks, run_cmd_on_vm,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.test_handler import exceptions
@@ -48,6 +48,7 @@ GET_FILE_SD_NUM_DISK_VOLUMES = 'ls %s | wc -l'
 LV_COUNT = 'lvs -o lv_name,lv_tags | grep %s | wc -l'
 PVSCAN_CMD = 'pvscan --cache'
 ENUMS = config.ENUMS
+LSBLK_CMD = 'lsblk -o NAME'
 
 disk_args = {
     # Fixed arguments
@@ -594,3 +595,23 @@ def get_disks_volume_count(
                 image_id=image_id
             )
     return volume_count
+
+
+def execute_lsblk_cmd(vm_name):
+    """
+    Retrieves a list of storage devices returned by running the lsblk command.
+    Sample return is ['vda', 'vda1', 'vda2', 'vda3', 'vdb', 'sda', 'sdb']
+
+    :param vm_name: Name of the VM on which to execute the lsblk command
+    :type vm_name: str
+    :return: List of the storage devices returned by the lsblk command
+    :rtype: list
+    """
+    rc, out = run_cmd_on_vm(vm_name, LSBLK_CMD, config.VMS_LINUX_USER,
+                            config.VMS_LINUX_PW)
+    if not rc:
+        raise exceptions.HostException("lsblk failed to execute on '%s'" %
+                                       vm_name)
+    # The values are retrieved as one long string
+    output_values = out.values()[0]
+    return shlex.split(output_values)

@@ -3980,7 +3980,7 @@ def stop_vms_safely(vms_list):
     Stop all vms passed in. Raise an exception if any of the vms were not
     stopped
 
-    __authoer__ = ratamir, cmestreg
+    __author__ = "ratamir, cmestreg"
     :param vms_list: list of vm names
     :type vms_list: list
     """
@@ -4148,16 +4148,24 @@ def get_vm_display_address(vm_name):
     return vm_obj.get_display().get_address()
 
 
-def get_vm_obj(vm_name):
+def get_vm_obj(vm_name, all_content=False):
     """
-    Get vm object by name
-    **Author**: alukiano
+    Get VM object by using the VM name
 
-    **Parameters**:
-        * *vm_name* - vm name
-    **Returns**: vm object
+    __author__ = "alukiano, glazarov"
+    :param vm_name: The VM name from which the VM object should be retrieved
+    :type vm_name: str
+    :param all_content: Specifies whether the entire content for the VM
+    should be retrieved, False is the default
+    :type all_content: bool
+    :returns: The VM object for the input vm_name
+    :rtype: VM object
     """
     vm_name_query = "name=%s" % vm_name
+    # Retrieve the entire object content only in the case where this is
+    # requested
+    if all_content:
+        return VM_API.query(vm_name_query, all_content=all_content)[0]
     return VM_API.query(vm_name_query)[0]
 
 
@@ -4730,7 +4738,7 @@ def safely_remove_vms(vms):
 
 def get_vm_disk_logical_name(
     vm_name, disk_alias, wait=True, timeout=GUEST_AGENT_TIMEOUT,
-    interval=DEF_SLEEP,
+    interval=DEF_SLEEP, parse_logical_name=False
 ):
     """
     Retrieves the logical name of a disk that is attached to a VM
@@ -4748,8 +4756,13 @@ def get_vm_disk_logical_name(
     :type wait: bool
     :param timeout: how long to wait in seconds
     :type timeout: int
-    :param internal: internal time in seconds
-    :type internal: int
+    :param interval: sleep interval time in seconds
+    :type interval: int
+    :param parse_logical_name: Determines whether the logical name (e.g.
+    /dev/vdb) is returned in the full format when False is set (this is the
+    default), otherwise the logical name will be parsed to remove the /dev/
+    (e.g. /dev/vdb -> vdb) when True is set
+    :type parse_logical_name: bool
     :returns: Disk logical name, None in case is not set
     :rtype: str
     """
@@ -4764,6 +4777,8 @@ def get_vm_disk_logical_name(
             timeout, interval, get_logical_name, vm_name, disk_alias,
     ):
         if logical_name:
+            if parse_logical_name:
+                logical_name = logical_name.replace("/dev/", "")
             return logical_name
 
     return None
