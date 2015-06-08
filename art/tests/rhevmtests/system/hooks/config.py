@@ -8,3 +8,4 @@ from rhevmtests.system.config import *  # flake8: noqa
 
 VM_UP = ENUMS['vm_state_up']
 HOOKS_VM_NAME = 'test_vm_hooks'
+TEMPLATE_NAME = PARAMETERS.get('template', 'hooks_template')

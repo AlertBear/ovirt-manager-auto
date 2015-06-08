@@ -19,12 +19,8 @@ CDROM_IMAGE_1 = PARAMETERS.get('cdrom_image_1')
 CDROM_IMAGE_2 = PARAMETERS.get('cdrom_image_2')
 FLOPPY_IMAGE = PARAMETERS.get('floppy_image')
 
-TEMPLATE_NAME = ["".join([TEST_NAME, '_', elm]) for elm in
-                 PARAMETERS.as_list('template_name')]
-
 INSTALLATION = True
 
-TEMPLATE_NAME = PARAMETERS.get('template', 'hooks_template')
 TCMS_PLAN_CUSTOM = 10054
 TCMS_PLAN_VNIC = 10167
 VER = COMP_VERSION
