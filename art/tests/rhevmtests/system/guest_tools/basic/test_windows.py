@@ -223,7 +223,7 @@ class Windows(TestCase):
 
     @istest
     @skipIfUnsupported
-    @bz({'1218937': {'engine': None, 'version': ['3.5', '3.6']}})
+    @bz({'1218937': {'engine': None, 'version': ['7.1']}})
     def checkServiceQemuGAVssProvider(self):
         """ Check service qqmu GA Vss provider """
         self._checkService('QEMU Guest Agent VSS Provider')
