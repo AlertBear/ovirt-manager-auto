@@ -14,30 +14,30 @@ def setup_module():
                                 storage_type=config.STORAGE_TYPE,
                                 basename=config.TEST_NAME)
 
-    storage_domain = storagedomains.getDCStorages(
-        config.DC_NAME[0], False)[0].get_name()
-    assert vms.createVm(
-        True, config.HOOKS_VM_NAME, '', cluster=config.CLUSTER_NAME[0],
-        nic='nic1', storageDomainName=storage_domain,
-        size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
-        diskInterface=config.DISK_INTERFACE, memory=config.GB,
-        cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
-        nicType=config.NIC_TYPE_VIRTIO,
-        display_type=config.DISPLAY_TYPE,
-        os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
-        password=config.VMS_LINUX_PW, installation=True,
-        slim=True, useAgent=True, image=config.COBBLER_PROFILE,
-        network=config.MGMT_BRIDGE)
+        storage_domain = storagedomains.getDCStorages(
+            config.DC_NAME[0], False)[0].get_name()
+        assert vms.createVm(
+            True, config.HOOKS_VM_NAME, '', cluster=config.CLUSTER_NAME[0],
+            nic='nic1', storageDomainName=storage_domain,
+            size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
+            diskInterface=config.DISK_INTERFACE, memory=config.GB,
+            cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
+            nicType=config.NIC_TYPE_VIRTIO,
+            display_type=config.DISPLAY_TYPE,
+            os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
+            password=config.VMS_LINUX_PW, installation=True,
+            slim=True, useAgent=True, image=config.COBBLER_PROFILE,
+            network=config.MGMT_BRIDGE)
 
-    ip = vms.waitForIP(config.HOOKS_VM_NAME)
-    assert ip[0]
-    assert test_utils.setPersistentNetwork(ip[1]['ip'],
-                                           config.VMS_LINUX_PW)
-    assert vms.stopVm(True, vm=config.HOOKS_VM_NAME)
-    assert templates.createTemplate(True, vm=config.HOOKS_VM_NAME,
-                                    name=config.TEMPLATE_NAME,
-                                    cluster=config.CLUSTER_NAME[0])
-    assert vms.removeVm(True, config.HOOKS_VM_NAME)
+        ip = vms.waitForIP(config.HOOKS_VM_NAME)
+        assert ip[0]
+        assert test_utils.setPersistentNetwork(ip[1]['ip'],
+                                               config.VMS_LINUX_PW)
+        assert vms.stopVm(True, vm=config.HOOKS_VM_NAME)
+        assert templates.createTemplate(True, vm=config.HOOKS_VM_NAME,
+                                        name=config.TEMPLATE_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0])
+        assert vms.removeVm(True, config.HOOKS_VM_NAME)
 
     machine = Machine(config.VDC_HOST, config.VDC_ROOT_USER,
                       config.VDC_ROOT_PASSWORD).util(LINUX)
@@ -54,8 +54,8 @@ def setup_module():
 
 
 def teardown_module():
-    assert templates.removeTemplate(True, config.TEMPLATE_NAME)
     if not config.GOLDEN_ENV:
+        assert templates.removeTemplate(True, config.TEMPLATE_NAME[0])
         datacenters.clean_datacenter(
             True, config.DC_NAME[0],
             vdc=config.VDC_HOST,

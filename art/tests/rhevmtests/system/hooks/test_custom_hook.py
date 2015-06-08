@@ -29,7 +29,7 @@ def setup_module():
     assert vms.createVm(True, config.HOOKS_VM_NAME, '',
                         cluster=config.CLUSTER_NAME[0],
                         display_type=config.DISPLAY_TYPE,
-                        template=config.TEMPLATE_NAME,
+                        template=config.TEMPLATE_NAME[0],
                         custom_properties=CUSTOM_HOOK)
 
 
