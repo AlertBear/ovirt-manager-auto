@@ -55,20 +55,7 @@ def setup_module():
         ) if getattr(x[1], '__test__', False)
     ]
     assert len(WIN_IMAGES) > 0, "There are no test cases to run"
-    assert vms.createVm(
-        positive=True,
-        vmName=config.WINDOWS_VM,
-        vmDescription=config.WINDOWS_VM,
-        cluster=config.CLUSTER_NAME[0],
-        network=config.MGMT_BRIDGE,
-        nic=config.NIC_NAME,
-        nicType=config.NIC_TYPE_E1000,
-    )
     GLANCE_IMAGE = import_image(WIN_IMAGES.pop())
-
-
-def teardown_module():
-    assert vms.removeVm(positive=True, vm=config.WINDOWS_VM, stopVM='true')
 
 
 @attr(tier=1)
@@ -92,13 +79,22 @@ class Windows(TestCase):
     @classmethod
     def setup_class(cls):
         cls.__prepare_image()
-        assert disks.attachDisk(True, cls.diskName, config.WINDOWS_VM)
-        assert vms.runVmOnce(
-            True, config.WINDOWS_VM, cdrom_image=config.CD_WITH_TOOLS
+        assert vms.createVm(
+            positive=True,
+            vmName=cls.diskName,
+            vmDescription=cls.diskName,
+            cluster=config.CLUSTER_NAME[0],
+            network=config.MGMT_BRIDGE,
+            nic=config.NIC_NAME,
+            nicType=config.NIC_TYPE_E1000,
         )
-        vms.waitForVMState(vm=config.WINDOWS_VM, state=config.VM_UP)
+        assert disks.attachDisk(True, cls.diskName, cls.diskName)
+        assert vms.runVmOnce(
+            True, cls.diskName, cdrom_image=config.CD_WITH_TOOLS
+        )
+        vms.waitForVMState(vm=cls.diskName, state=config.VM_UP)
         mac = vms.getVmMacAddress(
-            True, vm=config.WINDOWS_VM, nic=config.NIC_NAME
+            True, vm=cls.diskName, nic=config.NIC_NAME
         )[1].get('macAddress', None)
         LOGGER.info("Mac address is %s", mac)
 
@@ -119,9 +115,7 @@ class Windows(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        assert vms.stopVm(True, config.WINDOWS_VM)
-        assert disks.detachDisk(True, cls.diskName, config.WINDOWS_VM)
-        assert disks.deleteDisk(True, cls.diskName)
+        assert vms.removeVm(positive=True, vm=cls.diskName, stopVM='true')
 
     @istest
     def a00_install_guest_tools(self):
@@ -250,7 +244,7 @@ class Windows(TestCase):
     @skipIfUnsupported
     def checkGuestInfo(self):
         """ Check agent data are reported """
-        guest_info = VM_API.find(config.WINDOWS_VM).get_guest_info()
+        guest_info = VM_API.find(self.diskName).get_guest_info()
         self.assertTrue(
             self.machine.ip in [
                 ip.get_address() for ip in guest_info.get_ips().get_ip() if ip

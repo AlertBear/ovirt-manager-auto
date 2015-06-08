@@ -23,7 +23,6 @@ WIN2008R2_DISK_64b = 'Windows_2008R2_x64_Disk1'
 WIN2012_DISK_64b = 'Windows_2012_x64_Disk1'
 WIN2012R2_DISK_64b = 'Windows_20012R2_x64_Disk1'
 
-WINDOWS_VM = 'windows_vm'
 NIC_NAME = 'nic1'
 
 # TODO: add genric name to this iso, currently need to be updated manually
