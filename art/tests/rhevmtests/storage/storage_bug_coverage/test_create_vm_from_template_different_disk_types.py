@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level import (
     templates, disks, storagedomains,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
 from art.test_handler.settings import opts
 
@@ -86,17 +86,17 @@ def teardown_module():
 
 
 @attr(tier=1)
-class TestCase231819(TestCase):
+class TestCase11843(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=1000789
     scenario:
     * create a VM from a template without disks
 
-    https://tcms.engineering.redhat.com/case/231819/?from_plan=2339
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/2_3_Storage_Templates_General
     """
     __test__ = (ISCSI in opts['storages'])
-    tcms_plan_id = '2339'
-    tcms_test_case = '231819'
+    polarion_test_case = '11843'
     storages = set([ISCSI])
     bz = {'1220824': {'engine': None, 'version': ['3.6']}}
 
@@ -133,7 +133,7 @@ class TestCase231819(TestCase):
         self.vms.append(VM_SHARED_DISK)
 
         # Add a shared disk
-        self.shared_disk_alias = "sharable_disk_%s" % self.tcms_test_case
+        self.shared_disk_alias = "sharable_disk_%s" % self.polarion_test_case
         shared_disk_kwargs = {
             "interface": "virtio",
             "alias": self.shared_disk_alias,
@@ -195,7 +195,7 @@ class TestCase231819(TestCase):
                                            "from vm %s" % VM_DIRECT_LUN)
         self.templates.append(TEMPLATE_DIRECT_LUN)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11843")
     def test_create_vm_from_template(self):
         """ creates vms from templates
         """

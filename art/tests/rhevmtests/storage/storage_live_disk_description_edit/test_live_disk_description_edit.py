@@ -1,6 +1,7 @@
 """
 3.5 Live Disk Description Edit
-https://tcms.engineering.redhat.com/plan/14844
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_5_Storage_Allow_Online_Vdisk_Editing
 """
 import logging
 from art.rhevm_api.tests_lib.low_level.disks import (
@@ -18,7 +19,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, waitForVMState, startVm, removeVm,
     remove_all_vm_lsm_snapshots, live_migrate_vm_disk,
 )
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler import exceptions
 from rhevmtests.storage.helpers import (
     create_disks_from_requested_permutations, create_vm_or_clone,
@@ -30,8 +31,6 @@ from rhevmtests.storage.storage_live_disk_description_edit.helpers import (
 from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
-
-TEST_PLAN_ID = '14844'
 
 VM1_NAME = "vm1_" + config.TESTNAME
 VM2_NAME = "vm2_" + config.TESTNAME
@@ -124,7 +123,7 @@ class BasicEnvironment(BaseTestCase):
 
 class BaseClassEditDescription(BasicEnvironment):
     """
-    Base class to be used by test cases 396316 and 396321
+    Base class to be used by test cases 11500 and 11501
     """
     __test__ = False
 
@@ -174,17 +173,18 @@ class BaseClassEditDescription(BasicEnvironment):
 
 
 @attr(tier=0)
-class TestCase396316(BaseClassEditDescription):
+class TestCase11500(BaseClassEditDescription):
     """
     Edit Disk description for a machine on a block domain
-    https://tcms.engineering.redhat.com/case/396316/?from_plan=14844 (block)
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Allow_Online_Vdisk_Editing
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '396316'
+    polarion_test_case = '11500'
     bz = {'1211314': {'engine': ['cli'], 'version': ['3.5', '3.6']}}
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11500")
     def test_edit_description_on_block_or_file_domain(self):
         """
         1. Add VM with a block based disk, add a description and run the VM,
@@ -199,17 +199,18 @@ class TestCase396316(BaseClassEditDescription):
 
 
 @attr(tier=0)
-class TestCase396321(BaseClassEditDescription):
+class TestCase11501(BaseClassEditDescription):
     """
     Edit Disk description for a machine on a file domain
-    https://tcms.engineering.redhat.com/case/396321/?from_plan=14844
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Allow_Online_Vdisk_Editing
     """
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
-    tcms_test_case = '396321'
+    polarion_test_case = '11501'
     bz = {'1211314': {'engine': ['cli'], 'version': ['3.5', '3.6']}}
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11501")
     def test_edit_description_on_block_or_file_domain(self):
         """
         1. Add VM with a file based disk, add a description and run the VM,
@@ -224,14 +225,15 @@ class TestCase396321(BaseClassEditDescription):
 
 
 @attr(tier=1)
-class TestCase396320(BasicEnvironment):
+class TestCase11503(BasicEnvironment):
     """
     Hot plug disk from one running VM to another, ensuring that the
     description does not change
-    https://tcms.engineering.redhat.com/case/396320/?from_plan=14844
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Allow_Online_Vdisk_Editing
     """
     __test__ = True
-    tcms_test_case = '396320'
+    polarion_test_case = '11503'
 
     def setUp(self):
         self.setup_with_disks()
@@ -253,12 +255,12 @@ class TestCase396320(BasicEnvironment):
         attachDisk(True, VM2_DISK1_ALIAS, VM2_NAME)
 
     def tearDown(self):
-        super(TestCase396320, self).tearDown()
+        super(TestCase11503, self).tearDown()
         stop_vms_safely([VM2_NAME])
         waitForVMState(VM2_NAME, config.VM_DOWN)
         removeVm(True, VM2_NAME)
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11503")
     def test_verify_disk_description_edit_works_across_hot_plug(self):
         """
         1. Add VM with a disk, run the VM and add a description while the VM
@@ -307,19 +309,20 @@ class TestCase396320(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase396322(BasicEnvironment):
+class TestCase11504(BasicEnvironment):
     """
     Attempt to edit a disk's description on a running VM while running a
     Live storage migration
-    https://tcms.engineering.redhat.com/case/396322/?from_plan=14844
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Allow_Online_Vdisk_Editing
     """
     __test__ = True
-    tcms_test_case = '396322'
+    polarion_test_case = '11504'
 
     def setUp(self):
         self.setup_with_disks()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11504")
     def test_ensure_disk_description_is_locked_during_lsm(self):
         """
         1. Add VM with a disk, run the VM and add a description while the VM
@@ -378,4 +381,4 @@ class TestCase396322(BasicEnvironment):
         stop_vms_safely([VM1_NAME])
         waitForVMState(VM1_NAME, config.VM_DOWN)
         remove_all_vm_lsm_snapshots(VM1_NAME)
-        super(TestCase396322, self).tearDown()
+        super(TestCase11504, self).tearDown()

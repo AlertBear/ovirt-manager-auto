@@ -1,6 +1,7 @@
 """
-3.3 Feature: Storage Virtual disk resize - 9949
-https://tcms.engineering.redhat.com/plan/9949
+3.3 Feature: Storage Virtual disk resize
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_3_Storage_Virtual_Disk_Resize
 """
 import config
 import helpers
@@ -37,7 +38,7 @@ import rhevmtests.storage.helpers as storage_helpers
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.rhevm_api.utils.storage_api import flushIptables
 from art.test_handler import exceptions
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
@@ -48,7 +49,6 @@ ENUMS = config.ENUMS
 FILE_TO_WATCH = "/var/log/vdsm/vdsm.log"
 REGEX = "lvextend"
 
-TEST_PLAN_ID = '9949'
 NFS = config.STORAGE_TYPE_NFS
 ISCSI = config.STORAGE_TYPE_ISCSI
 
@@ -112,7 +112,7 @@ def setup_module():
 
             logger.info('Creating vm %s and installing OS on it', vm_name)
 
-            # TODO: TestCase297017 will fail if the vm is created with
+            # TODO: TestCase5063 will fail if the vm is created with
             #       create_vm_or_clone, (which clones a VM from a template),
             #       investigate and fix the failure
             exs.append(
@@ -214,7 +214,7 @@ class BasicResize(BaseTestCase):
         self.disk_args = disk_args.copy()
         self.disk_args.update(self.test_disk_args)
         self.disk_args['storagedomain'] = self.storage_domain
-        self.disk_args['alias'] = "disk_%s" % self.tcms_test_case
+        self.disk_args['alias'] = "disk_%s" % self.polarion_test_case
         self.disk_name = self.disk_args['alias']
 
         self.assertTrue(
@@ -353,16 +353,17 @@ class BasicResize(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase336099(DisksPermutationEnvironment):
+class TestCase5061(DisksPermutationEnvironment):
     """
     Resize virtual disk after snapshot creation
-    https://tcms.engineering.redhat.com/case/336099/?from_plan=9949
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Virtual_Disk_Resize
     """
     __test__ = True
-    tcms_test_case = '336099'
-    snap_description = 'snap_%s' % tcms_test_case
+    polarion_test_case = '5061'
+    snap_description = 'snap_%s' % polarion_test_case
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5061")
     def test_virtual_disk_resize_after_snapshot_creation(self):
         """
         - VM with 6G disk and OS
@@ -396,7 +397,7 @@ class TestCase336099(DisksPermutationEnvironment):
             self.assertEqual(int(size), (self.new_size / config.GB))
 
     def tearDown(self):
-        super(TestCase336099, self).tearDown()
+        super(TestCase5061, self).tearDown()
 
         if not removeSnapshot(True, self.vm, self.snap_description):
             raise exceptions.SnapshotException("Failed to remove snapshot %s"
@@ -404,18 +405,19 @@ class TestCase336099(DisksPermutationEnvironment):
 
 
 @attr(tier=1)
-class TestCase336100(DisksPermutationEnvironment):
+class TestCase5060(DisksPermutationEnvironment):
     """
     Commit snapshot after resizing the disk
-    https://tcms.engineering.redhat.com/case/336100/?from_plan=9949
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Virtual_Disk_Resize
     """
     __test__ = True
-    tcms_test_case = '336100'
-    snap_description = 'snap_%s' % tcms_test_case
+    polarion_test_case = '5060'
+    snap_description = 'snap_%s' % polarion_test_case
     is_preview = False
     new_size = config.DISK_SIZE + config.GB
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5060")
     def test_Commit_snapshot_after_disk_resize(self):
         """
         - VM with 6G disk and OS
@@ -462,7 +464,7 @@ class TestCase336100(DisksPermutationEnvironment):
             undo_snapshot_preview(True, self.vm)
             wait_for_vm_snapshots(self.vm, config.SNAPSHOT_OK)
 
-        super(TestCase336100, self).tearDown()
+        super(TestCase5060, self).tearDown()
 
         if not removeSnapshot(True, self.vm, self.snap_description):
             raise exceptions.SnapshotException("Failed to remove snapshot %s"
@@ -470,20 +472,21 @@ class TestCase336100(DisksPermutationEnvironment):
 
 
 @attr(tier=0)
-class TestCase287466(BasicResize):
+class TestCase5062(BasicResize):
     """
     Virtual disk resize - preallocated  block disk
-    https://tcms.engineering.redhat.com/case/287466/?from_plan=9949
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Virtual_Disk_Resize
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '287466'
+    polarion_test_case = '5062'
     test_disk_args = {
         'sparse': False,
         'format': config.RAW_DISK,
     }
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5062")
     def test_preallocated_block_resize(self):
         """
         - VM with 6G preallocated disk and OS
@@ -495,20 +498,21 @@ class TestCase287466(BasicResize):
 
 
 @attr(tier=0)
-class TestCase297017(BasicResize):
+class TestCase5063(BasicResize):
     """
     Virtual disk resize - Thin block disk
-    https://tcms.engineering.redhat.com/case/297017/?from_plan=9949
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Virtual_Disk_Resize
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '297017'
+    polarion_test_case = '5063'
     test_disk_args = {
         'sparse': True,
         'format': config.COW_DISK,
     }
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5063")
     def test_thin_block_resize(self):
         """
         - VM with 6G thin disk and OS
@@ -520,20 +524,21 @@ class TestCase297017(BasicResize):
 
 
 @attr(tier=0)
-class TestCase287467(BasicResize):
+class TestCase5064(BasicResize):
     """
     Virtual disk resize - preallocated file disk
-    https://tcms.engineering.redhat.com/case/287467/?from_plan=9949
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Virtual_Disk_Resize
     """
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
-    tcms_test_case = '287467'
+    polarion_test_case = '5064'
     test_disk_args = {
         'sparse': False,
         'format': config.RAW_DISK,
     }
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5064")
     def test_preallocated_file_resize(self):
         """
         - VM with 6G preallocated disk and OS
@@ -545,20 +550,21 @@ class TestCase287467(BasicResize):
 
 
 @attr(tier=0)
-class TestCase297018(BasicResize):
+class TestCase5065(BasicResize):
     """
     Virtual disk resize - Thin file disk
-    https://tcms.engineering.redhat.com/case/297018/?from_plan=9949
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Virtual_Disk_Resize
     """
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
-    tcms_test_case = '297018'
+    polarion_test_case = '5065'
     test_disk_args = {
         'sparse': True,
         'format': config.COW_DISK,
     }
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5065")
     def test_thin_file_resize(self):
         """
         - VM with 6G preallocated disk and OS
@@ -570,20 +576,21 @@ class TestCase297018(BasicResize):
 
 
 @attr(tier=3)
-class TestCase297090(BasicResize):
+class TestCase5066(BasicResize):
     """
     block connectivity from host to storage domain - preallocated disk
-    https://tcms.engineering.redhat.com/case/297090/?from_plan=9949
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Virtual_Disk_Resize
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '297090'
+    polarion_test_case = '5066'
     test_disk_args = {
         'sparse': False,
         'format': config.RAW_DISK,
     }
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5066")
     def test_block_connection_preallocated_resize(self):
         """
         - VM with 6G preallocated disk and OS
@@ -596,20 +603,21 @@ class TestCase297090(BasicResize):
 
 
 @attr(tier=3)
-class TestCase297089(BasicResize):
+class TestCase5067(BasicResize):
     """
     block connectivity from host to storage domain - sparse disk
-    https://tcms.engineering.redhat.com/case/297089/?from_plan=9949
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Virtual_Disk_Resize
     """
     __test__ = __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '297089'
+    polarion_test_case = '5067'
     test_disk_args = {
         'sparse': False,
         'format': config.RAW_DISK,
     }
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5067")
     def test_block_connection_sparse_resize(self):
         """
         - VM with 6G thin disk and OS
@@ -622,18 +630,19 @@ class TestCase297089(BasicResize):
 
 
 @attr(tier=1)
-class TestCase287468(BasicResize):
+class TestCase5069(BasicResize):
     """
     Resize shared disk
-    https://tcms.engineering.redhat.com/case/287468/?from_plan=9949
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Virtual_Disk_Resize
     """
     __test__ = (
         config.STORAGE_TYPE_NFS in opts['storages']
         or config.STORAGE_TYPE_ISCSI in opts['storages']
     )
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
-    tcms_test_case = '287468'
-    test_vm_name = "vm_%s" % tcms_test_case
+    polarion_test_case = '5069'
+    test_vm_name = "vm_%s" % polarion_test_case
     test_disk_args = {
         'sparse': False,
         'format': config.RAW_DISK,
@@ -644,8 +653,9 @@ class TestCase287468(BasicResize):
         """
         Creating disk
         """
-        super(TestCase287468, self).setUp()
-        self.test_vm_name = 'test_%s' % self.tcms_test_case
+        super(TestCase5069, self).setUp()
+        self.test_vm_name = 'test_%s' % self.polarion_test_case
+
         vmArgs['vmName'] = self.test_vm_name
         vmArgs['storageDomainName'] = self.storage_domain
 
@@ -660,7 +670,7 @@ class TestCase287468(BasicResize):
         assert wait_for_disks_status(self.disk_name)
         stop_vms_safely([self.vm, self.test_vm_name])
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5069")
     def test_shared_block_disk_resize(self):
         """
         - 2 VM with 6G RAW disk and OS
@@ -683,20 +693,21 @@ class TestCase287468(BasicResize):
 
     def tearDown(self):
         stop_vms_safely([self.test_vm_name, self.vm])
-        super(TestCase287468, self).tearDown()
-
+        super(TestCase5069, self).tearDown()
         assert removeVm(True, self.test_vm_name, stopVM='true', wait=True)
 
 
 @attr(tier=1)
-class TestCase287469(BasicResize):
+class TestCase5070(BasicResize):
     """
     Extend disk to more than available capacity
-    https://tcms.engineering.redhat.com/case/287469/?from_plan=9949
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Virtual_Disk_Resize
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '287469'
+
+    polarion_test_case = '5070'
     test_disk_args = {
         'sparse': False,
         'format': config.RAW_DISK,
@@ -706,11 +717,11 @@ class TestCase287469(BasicResize):
         """
         Creating disk
         """
-        super(TestCase287469, self).setUp()
+        super(TestCase5070, self).setUp()
         storage_domain_size = get_total_size(self.storage_domain)
         self.new_size = (config.DISK_SIZE + config.GB * storage_domain_size)
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5070")
     def test_thin_block_resize(self):
         """
         - VM with 6G thin disk and OS
@@ -725,24 +736,26 @@ class TestCase287469(BasicResize):
 
     def tearDown(self):
         assert wait_for_disks_status(self.disk_name)
-        super(TestCase287469, self).tearDown()
+        super(TestCase5070, self).tearDown()
 
 
 @attr(tier=3)
-class TestCase297085(BasicResize):
+class TestCase5071(BasicResize):
     """
     Stop libvirt service during disk extension
-    https://tcms.engineering.redhat.com/case/297085/?from_plan=9949
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Virtual_Disk_Resize
     """
     __test__ = True
-    tcms_test_case = '297085'
+    polarion_test_case = '5071'
     look_for_regex = 'Run and protect: extendVolumeSize'
+
     test_disk_args = {
         'sparse': True,
         'format': config.COW_DISK,
     }
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5071")
     def test_stop_libvirt_during_resize(self):
         """
         - VM with 6G thin disk and OS
@@ -788,14 +801,15 @@ class TestCase297085(BasicResize):
 
 
 @attr(tier=1)
-class TestCase287477(BasicResize):
+class TestCase5073(BasicResize):
     """
     Increase and decrease multiple disks
-    https://tcms.engineering.redhat.com/case/287477/?from_plan=9949
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Virtual_Disk_Resize
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '287477'
+    polarion_test_case = '5073'
     vm_name = "vm_%s_%s"
     vm_count = 3
 
@@ -816,14 +830,14 @@ class TestCase287477(BasicResize):
 
         for i in range(self.vm_count):
             self.vm_name = "vm_%s_%s_%s" % (
-                self.tcms_test_case, self.storage, i)
+                self.polarion_test_case, self.storage, i)
             vmArgs['vmName'] = self.vm_name
             if not storage_helpers.create_vm_or_clone(**vmArgs):
                 raise exceptions.VMException('Unable to create vm %s for test'
                                              % self.vm_name)
             self.vm_names.append(self.vm_name)
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5073")
     def test_multiple_disks_resize_same_SD(self):
         """
         - 5 vms with OS, disks on same SD
@@ -840,15 +854,16 @@ class TestCase287477(BasicResize):
 
 
 @attr(tier=1)
-class TestCase287478(BasicResize):
+class TestCase11862(BasicResize):
     """
     Increase and decrease multiple disks
-    https://tcms.engineering.redhat.com/case/287478/?from_plan=9949
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Virtual_Disk_Resize
     Currently __test__ = False - disk shrink doesn't support
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '287478'
+    polarion_test_case = '11862'
     vm_name = "vm_%s_%s"
     vm_count = 2
     new_size = (config.VM_DISK_SIZE + config.GB)
@@ -867,14 +882,14 @@ class TestCase287478(BasicResize):
         for i, sd in zip(range(self.vm_count), sd_list):
             self.vm_name = "vm_%s_%s"
             vmArgs['storageDomainName'] = sd
-            self.vm_name = self.vm_name % (self.tcms_test_case, i)
+            self.vm_name = self.vm_name % (self.polarion_test_case, i)
             vmArgs['vmName'] = self.vm_name
             if not storage_helpers.create_vm_or_clone(**vmArgs):
                 raise exceptions.VMException('Unable to create vm %s for test'
                                              % self.vm_name)
             self.vm_names.append(self.vm_name)
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11862")
     def test_multiple_disks_resize_different_SD(self):
         """
         - 5 vms with OS, disks on different SD

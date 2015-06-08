@@ -1,5 +1,8 @@
 """
-Test Direct Lun Sanity - TCMS plan 5426
+Test Direct Lun Sanity
+
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/Storage/
+3_1_Storage_Direct_Lun_General
 """
 import logging
 from art.rhevm_api.tests_lib.low_level.hosts import getHostIP
@@ -32,12 +35,10 @@ from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 import common
 
 from art.test_handler import exceptions
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
-
-TCMS_PLAN_ID = "5426"
 
 BASE_KWARGS = {
     "interface": config.VIRTIO_SCSI,
@@ -69,7 +70,7 @@ class DirectLunAttachTestCase(TestCase):
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
     vm_name = None
-    tcms_test_case = ""
+    polarion_test_case = ""
     bz = {'1220824': {'engine': None, 'version': ['3.6']}}
 
     def setUp(self):
@@ -78,7 +79,7 @@ class DirectLunAttachTestCase(TestCase):
         """
         self.vm_name = config.VM1_NAME % self.storage
         BASE_KWARGS.update({'type_': self.storage})
-        self.disk_alias = "direct_lun_%s" % self.tcms_test_case
+        self.disk_alias = "direct_lun_%s" % self.polarion_test_case
 
         self.storage_domains = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)
@@ -137,20 +138,20 @@ class DirectLunAttachTestCase(TestCase):
 
 
 @attr(tier=1)
-class TestCase138746(DirectLunAttachTestCase):
+class TestCase5927(DirectLunAttachTestCase):
     """
     Attach a lun when vm is running
     """
-    tcms_test_case = "138746"
+    polarion_test_case = "5927"
 
     def setUp(self):
         """
         Start the vm
         """
-        super(TestCase138746, self).setUp()
+        super(TestCase5927, self).setUp()
         assert startVm(True, self.vm_name, config.VM_UP)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5927")
     def test_attach_lun_vm_running(self):
         """
         Attach the lun when vm is up
@@ -159,13 +160,13 @@ class TestCase138746(DirectLunAttachTestCase):
 
 
 @attr(tier=1)
-class TestCase231815(DirectLunAttachTestCase):
+class TestCase5920(DirectLunAttachTestCase):
     """
     Suspend vm with direct lun attached
     """
-    tcms_test_case = "231815"
+    polarion_test_case = "5920"
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5920")
     def test_suspend_vm(self):
         """
         attach direct lun and suspend vm
@@ -181,22 +182,22 @@ class TestCase231815(DirectLunAttachTestCase):
         """
         assert startVm(True, self.vm_name)
         waitForVMState(self.vm_name)
-        super(TestCase231815, self).tearDown()
+        super(TestCase5920, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase138755(DirectLunAttachTestCase):
+class TestCase5930(DirectLunAttachTestCase):
     """
     Add more then one direct lun to the same vm
     """
-    tcms_test_case = "138755"
+    polarion_test_case = "5930"
     disk_to_add = 'disk_%s'
 
     def setUp(self):
-        super(TestCase138755, self).setUp()
-        self.disk_to_add = 'disk_2_%s' % self.tcms_test_case
+        super(TestCase5930, self).setUp()
+        self.disk_to_add = 'disk_2_%s' % self.polarion_test_case
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5930")
     def test_more_then_one_direct_lun(self):
         """
         Adds and attach two different direct luns to the same vm
@@ -221,23 +222,23 @@ class TestCase138755(DirectLunAttachTestCase):
         """
         Remove disks
         """
-        super(TestCase138755, self).tearDown()
+        super(TestCase5930, self).tearDown()
 
         self.detach_and_delete_disk_from_vm(self.disk_to_add)
 
 
 @attr(tier=1)
-class TestCase138756(DirectLunAttachTestCase):
+class TestCase5931(DirectLunAttachTestCase):
     """
     Attach lun vm, create a template and verify the direct lun will not be
     part of the template
     """
     # TODO: verify template's disks
-    tcms_test_case = "138756"
-    template_name = "template_%s" % tcms_test_case
+    polarion_test_case = "5931"
+    template_name = "template_%s" % polarion_test_case
     temp_created = False
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5931")
     def test_create_template_from_vm_with_lun(self):
         """
         Create template from vm with direct lun attached
@@ -256,20 +257,20 @@ class TestCase138756(DirectLunAttachTestCase):
             logger.info("Removing template %s", self.template_name)
             assert removeTemplate(True, self.template_name)
             wait_for_jobs()
-        super(TestCase138756, self).tearDown()
+        super(TestCase5931, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase138757(DirectLunAttachTestCase):
+class TestCase5932(DirectLunAttachTestCase):
     """
     attach lun to vm, run vm as stateless and create snapshot.
     snapshot should not be created
     """
-    tcms_test_case = "138757"
-    snap_desc = "snapshot_name_%s" % tcms_test_case
+    polarion_test_case = "5932"
+    snap_desc = "snapshot_name_%s" % polarion_test_case
     snap_added = False
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5932")
     def test_create_snapshot_from_stateless_vm(self):
         """
         """
@@ -296,20 +297,20 @@ class TestCase138757(DirectLunAttachTestCase):
             assert removeSnapshot(True, self.vm_name, self.snap_desc)
             wait_for_jobs()
 
-        super(TestCase138757, self).tearDown()
+        super(TestCase5932, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase138758(DirectLunAttachTestCase):
+class TestCase5933(DirectLunAttachTestCase):
     """
     Attach lun to vm and verify the direct lun will not be
     part of the snapshot
     """
-    tcms_test_case = "138758"
-    snap_desc = "snapshot_name_%s" % tcms_test_case
+    polarion_test_case = "5933"
+    snap_desc = "snapshot_name_%s" % polarion_test_case
     snap_added = False
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5933")
     def test_create_snapshot_from_vm_with_lun(self):
         """
         Create snapshot with direct lun
@@ -338,17 +339,17 @@ class TestCase138758(DirectLunAttachTestCase):
             logger.info("Removing snapshot %s", self.snap_desc)
             assert removeSnapshot(True, self.vm_name, self.snap_desc)
             wait_for_jobs()
-        super(TestCase138758, self).tearDown()
+        super(TestCase5933, self).tearDown()
 
 
 @attr(tier=3)
-class TestCase138760(DirectLunAttachTestCase):
+class TestCase5934(DirectLunAttachTestCase):
     """
     HA vm with direct lun
     """
-    tcms_test_case = "138760"
+    polarion_test_case = "5934"
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5934")
     def test_ha_vm_with_direct_lun(self):
         """
         * Run vm with direct lun in HA mode
@@ -371,18 +372,18 @@ class TestCase138760(DirectLunAttachTestCase):
     def tearDown(self):
         wait_for_jobs()
         assert updateVm(True, self.vm_name, highly_available='false')
-        super(TestCase138760, self).tearDown()
+        super(TestCase5934, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase138763(DirectLunAttachTestCase):
+class TestCase5937(DirectLunAttachTestCase):
     """
     direct lun and disk interface
     """
-    __test__ = False  # TODO: Why?
-    tcms_test_case = "138763"
+    __test__ = False  # TODO: Why?  IDE disk cannot be hot plugged
+    polarion_test_case = "5937"
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5937")
     def test_direct_lun_interface_ide(self):
         """
         Create direct lun - interface ide
@@ -392,7 +393,7 @@ class TestCase138763(DirectLunAttachTestCase):
         assert addDisk(True, **self.lun_kwargs)
         wait_for_jobs()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5937")
     def test_direct_lun_interface_virtio(self):
         """
         Create direct lun - interface virtio
@@ -402,7 +403,7 @@ class TestCase138763(DirectLunAttachTestCase):
         assert addDisk(True, **self.lun_kwargs)
         wait_for_jobs()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5937")
     def test_direct_lun_interface_virtio_scsi(self):
         """
         Create direct lun - interface virtio-scsi
@@ -419,20 +420,20 @@ class TestCase138763(DirectLunAttachTestCase):
 
 
 @attr(tier=1)
-class TestCase138764(DirectLunAttachTestCase):
+class TestCase5938(DirectLunAttachTestCase):
     """
     direct lun as bootable disk
     """
-    tcms_test_case = '138764'
+    polarion_test_case = '5938'
 
     def setUp(self):
         """
         Create direct lun as bootable disk
         """
-        super(TestCase138764, self).setUp()
+        super(TestCase5938, self).setUp()
         self.lun_kwargs["bootable"] = True
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5938")
     def test_bootable_disk(self):
 
         assert addDisk(True, **self.lun_kwargs)
@@ -446,20 +447,20 @@ class TestCase138764(DirectLunAttachTestCase):
 
 
 @attr(tier=1)
-class TestCase138765(DirectLunAttachTestCase):
+class TestCase5939(DirectLunAttachTestCase):
     """
     shared disk from direct lun
     """
-    tcms_test_case = '138765'
+    polarion_test_case = '5939'
 
     def setUp(self):
         """
         Create a direct lun as shared disk
         """
-        super(TestCase138765, self).setUp()
+        super(TestCase5939, self).setUp()
         self.lun_kwargs["shareable"] = True
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5939")
     def test_shared_direct_lun(self):
 
         assert addDisk(True, **self.lun_kwargs)
@@ -473,14 +474,14 @@ class TestCase138765(DirectLunAttachTestCase):
 
 
 @attr(tier=1)
-class TestCase138766(DirectLunAttachTestCase):
+class TestCase5940(DirectLunAttachTestCase):
     """
     move vm with direct lun
     """
-    tcms_test_case = "138766"
+    polarion_test_case = "5940"
     target_domain = None
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5940")
     def test_migrate_vm_direct_lun(self):
         """
         Attache a direct lun to vm and move it to other domain
@@ -504,17 +505,17 @@ class TestCase138766(DirectLunAttachTestCase):
         if self.target_sd and self.vm_moved:
             moveVm(True, self.vm_name, self.original_sd)
         wait_for_jobs()
-        super(TestCase138766, self).tearDown()
+        super(TestCase5940, self).tearDown()
 
 
 @attr(tier=0)
-class TestCase138769(DirectLunAttachTestCase):
+class TestCase5924(DirectLunAttachTestCase):
     """
     Full flow direct lun
     """
-    tcms_test_case = "138769"
+    polarion_test_case = "5924"
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5924")
     def test_remove_direct_lun(self):
         """
         * Create direct lun and attach it to vm.
@@ -536,13 +537,13 @@ class TestCase138769(DirectLunAttachTestCase):
 
 
 @attr(tier=1)
-class TestCase138770(DirectLunAttachTestCase):
+class TestCase5911(DirectLunAttachTestCase):
     """
     remove a vm with a direct lun
     """
-    tcms_test_case = "138770"
+    polarion_test_case = "5911"
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5911")
     def test_remove_vm_with_direct_lun(self):
         """
         Remove vm with direct lun attached
@@ -564,24 +565,24 @@ class TestCase138770(DirectLunAttachTestCase):
                 storage_domain=self.vm_storage_domain)
             wait_for_jobs()
         else:
-            super(TestCase138770, self).tearDown()
+            super(TestCase5911, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase138773(DirectLunAttachTestCase):
+class TestCase5913(DirectLunAttachTestCase):
     """
     Direct lun - wipe after delete
     """
-    tcms_test_case = '138773'
+    polarion_test_case = '5913'
 
     def setUp(self):
         """
         Create a direct lun with wipe after delete
         """
-        super(TestCase138773, self).setUp()
+        super(TestCase5913, self).setUp()
         self.lun_kwargs["wipe_after_delete"] = True
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5913")
     def test_wipe_after_delete_with_direct_lun(self):
 
         assert addDisk(True, **self.lun_kwargs)

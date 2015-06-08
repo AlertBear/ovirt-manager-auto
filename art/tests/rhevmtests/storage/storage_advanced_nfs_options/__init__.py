@@ -1,5 +1,6 @@
 """
-https://tcms.engineering.redhat.com/plan/5849
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_1_Storage_NFS_Options
 
 Test suite for checking if setting advanced NFS options
 (timeout, # retransmissions, NFS versions) works correctly

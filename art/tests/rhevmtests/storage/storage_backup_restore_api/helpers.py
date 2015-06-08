@@ -1,6 +1,7 @@
 """
-Storage backup restore API - 10435
-https://tcms.engineering.redhat.com/plan/10435
+Storage backup restore API
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_3_Storage_Backup_API
 """
 
 import logging

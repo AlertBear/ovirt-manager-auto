@@ -1,8 +1,9 @@
 """
-Storage live wipe after delete - 14205
-https://tcms.engineering.redhat.com/plan/14205/
+Storage live wipe after delete
+TODO: The following link will change to 3_5 from 3_6
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_6_Storage_Wipe_After_Delete
 """
-
 import logging
 import threading
 import time
@@ -28,7 +29,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
 )
 from art.rhevm_api.utils.test_utils import get_api
 
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
 from rhevmtests.storage.storage_wipe_after_delete import config
 from rhevmtests.storage.helpers import create_vm_or_clone
@@ -40,8 +41,6 @@ VM_API = get_api('vm', 'vms')
 
 ENUMS = config.ENUMS
 BLOCK_TYPES = (ENUMS['storage_type_iscsi'], ENUMS['storage_type_fcp'])
-
-TCMS_PLAN_ID = '14205'
 
 FILE_TO_WATCH = "/var/log/vdsm/vdsm.log"
 
@@ -203,15 +202,16 @@ class CommonUsage(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase379370(CommonUsage):
+class TestCase5116(CommonUsage):
     """
     wipe after delete on hotplugged disks
-    https://tcms.engineering.redhat.com/case/379370/
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_6_Storage_Wipe_After_Delete
     """
     __test__ = True
-    tcms_test_case = '379370'
+    polarion_test_case = '5116'
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5116")
     def test_behavior_on_hotplugged_disks(self):
         """
         Actions:
@@ -238,18 +238,19 @@ class TestCase379370(CommonUsage):
 
 
 @attr(tier=0)
-class TestCase379367(CommonUsage):
+class TestCase11863(CommonUsage):
     """
     Checking functionality - checked box
-    https://tcms.engineering.redhat.com/case/379367/
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_6_Storage_Wipe_After_Delete
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '379367'
+    polarion_test_case = '11863'
     disk_name = None
     regex = 'dd oflag=direct if=/dev/zero of=.*/%s'
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11863")
     def test_live_edit_wipe_after_delete(self):
         """
         Actions:
@@ -264,21 +265,22 @@ class TestCase379367(CommonUsage):
 
 
 @attr(tier=1)
-class TestCase384228(CommonUsage):
+class TestCase11864(CommonUsage):
     """
     Wipe after delete with LSM
-    https://tcms.engineering.redhat.com/case/384228/
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_6_Storage_Wipe_After_Delete
     """
     __test__ = True
-    tcms_test_case = '384228'
-    disk_name = "disk_%s" % tcms_test_case
+    polarion_test_case = '11864'
+    disk_name = "disk_%s" % polarion_test_case
     regex = 'dd oflag=direct if=/dev/zero of=.*/%s'
 
     def setUp(self):
         """
         Prepares disk with wipe_after_delete=True for VM
         """
-        super(TestCase384228, self).setUp()
+        super(TestCase11864, self).setUp()
         assert addDisk(True, self.vm_name, config.DISK_SIZE,
                        storagedomain=self.storage_domain, sparse=True,
                        wipe_after_delete=True, interface=config.VIRTIO,
@@ -287,7 +289,7 @@ class TestCase384228(CommonUsage):
         start_vms([self.vm_name], 1, wait_for_ip=False)
         waitForVMState(self.vm_name)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11864")
     def test_live_migration_wipe_after_delete(self):
         """
         Actions:

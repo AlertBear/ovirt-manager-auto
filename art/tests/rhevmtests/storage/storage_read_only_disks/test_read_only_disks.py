@@ -1,6 +1,7 @@
 """
-3.4 Feature: Read only (RO) disk - 12049
-https://tcms.engineering.redhat.com/plan/12049
+3.4 Feature: Read only (RO) disk
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_4_Storage_RO_Disks
 """
 import config
 import helpers
@@ -40,7 +41,7 @@ from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
 import rhevmtests.storage.helpers as storage_helpers
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler import exceptions
 from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest as TestCase
@@ -52,7 +53,6 @@ DISK_TIMEOUT = 600
 REMOVE_SNAPSHOT_TIMEOUT = 900
 TEMPLATE_TIMOUT = 360
 
-TEST_PLAN_ID = '12049'
 ENUMS = config.ENUMS
 READ_ONLY = 'Read-only'
 NOT_PERMITTED = 'Operation not permitted'
@@ -83,11 +83,12 @@ def setup_module():
     Create a data center with 2 hosts, 2 storage domains and 1 export domain.
     Create a vm and install an OS on it
 
-    For this TCMS plan we need 3 SD, but only two of them should be created on
-    setup. the other SD will be created manually in the test case 334923.
-    To accomplish this, the lists containing luns and paths are saved and
-    overridden with only two lun/path to sent as parameter to build_setup.
-    After the build_setup finishes, we return to the original lists
+    For this Polarion plan we need 3 SD, but only two of them should be
+    created on setup. the other SD will be created manually in the test case
+    334923.  To accomplish this, the lists containing luns and paths are
+    saved and overridden with only two lun/path to sent as parameter to
+    build_setup.  After the build_setup finishes, we return to the original
+    lists
     """
     if not config.GOLDEN_ENV:
         logger.info("Preparing datacenter %s with hosts %s",
@@ -273,15 +274,16 @@ class DefaultSnapshotEnvironment(DefaultEnvironment):
 
 
 @attr(tier=0)
-class TestCase332472(DefaultEnvironment):
+class TestCase4906(DefaultEnvironment):
     """
     Attach a RO disk to vm and try to write to the disk
-    https://tcms.engineering.redhat.com/case/332472/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     """
     __test__ = True
-    tcms_test_case = '332472'
+    polarion_test_case = '4906'
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4906")
     def test_attach_RO_disk(self):
         """
         - VM with OS
@@ -298,20 +300,21 @@ class TestCase332472(DefaultEnvironment):
 
 
 @attr(tier=1)
-class TestCase332473(BaseTestCase):
+class TestCase4907(BaseTestCase):
     """
     Attach a RO direct LUN disk to vm and try to write to the disk
-    https://tcms.engineering.redhat.com/case/332473/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '332473'
+    polarion_test_case = '4907'
     bz = {
         '1194695': {'engine': ['rest', 'sdk'], 'version': ["3.5"]},
         '1220824': {'engine': None, 'version': ['3.6']},
     }
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4907")
     def test_attach_RO_direct_LUN_disk(self):
         """
         - VM with OS
@@ -367,10 +370,11 @@ class TestCase332473(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase332474(DefaultEnvironment):
+class TestCase4908(DefaultEnvironment):
     """
     Attach a RO shared disk to vm and try to write to the disk
-    https://tcms.engineering.redhat.com/case/332474/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     """
     # Gluster doesn't support shareable disks
     __test__ = (
@@ -378,18 +382,18 @@ class TestCase332474(DefaultEnvironment):
         or config.STORAGE_TYPE_ISCSI in opts['storages']
     )
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
-    tcms_test_case = '332474'
+    polarion_test_case = '4908'
     test_vm_name = ''
 
     def setUp(self):
         self.shared = True
-        super(TestCase332474, self).setUp()
+        super(TestCase4908, self).setUp()
 
         self.prepare_disks_for_vm(read_only=False)
         start_vms([self.vm_name], 1, wait_for_ip=False)
         assert waitForVMState(self.vm_name)
 
-        self.test_vm_name = 'test_%s' % self.tcms_test_case
+        self.test_vm_name = 'test_%s' % self.polarion_test_case
         vmArgs['vmName'] = self.test_vm_name
         vmArgs['storageDomainName'] = self.storage_domains[0]
 
@@ -400,7 +404,7 @@ class TestCase332474(DefaultEnvironment):
             )
         assert waitForVMState(self.test_vm_name)
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4908")
     def test_shared_RO_disk(self):
         """
         - 2 VMs with OS
@@ -421,15 +425,16 @@ class TestCase332474(DefaultEnvironment):
 
     def tearDown(self):
         safely_remove_vms([self.test_vm_name])
-        super(TestCase332474, self).tearDown()
+        super(TestCase4908, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase337630(DefaultEnvironment):
+class TestCase4909(DefaultEnvironment):
     """
     Verifies that RO shared disk is persistent after snapshot is taken to a
     shared disk
-    https://tcms.engineering.redhat.com/case/337630/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     """
     # Gluster doesn't support shareable disks
     __test__ = (
@@ -437,19 +442,19 @@ class TestCase337630(DefaultEnvironment):
         or config.STORAGE_TYPE_ISCSI in opts['storages']
     )
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
-    tcms_test_case = '337630'
+    polarion_test_case = '4909'
     snapshot_description = 'test_snap'
     test_vm_name = ''
 
     def setUp(self):
         self.shared = True
-        super(TestCase337630, self).setUp()
+        super(TestCase4909, self).setUp()
 
         self.prepare_disks_for_vm(read_only=False)
         start_vms([self.vm_name], 1, wait_for_ip=False)
         assert waitForVMState(self.vm_name)
 
-        self.test_vm_name = 'test_%s' % self.tcms_test_case
+        self.test_vm_name = 'test_%s' % self.polarion_test_case
         vmArgs['vmName'] = self.test_vm_name
         vmArgs['storageDomainName'] = self.storage_domains[0]
 
@@ -459,7 +464,7 @@ class TestCase337630(DefaultEnvironment):
                                          % self.test_vm_name)
         assert waitForVMState(self.test_vm_name)
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4909")
     def test_RO_persistent_after_snapshot_creation_to_a_shared_disk(self):
         """
         - 2 VMs with OS
@@ -510,7 +515,7 @@ class TestCase337630(DefaultEnvironment):
     def tearDown(self):
         safely_remove_vms([self.test_vm_name])
         stop_vms_safely([self.vm_name])
-        super(TestCase337630, self).tearDown()
+        super(TestCase4909, self).tearDown()
 
         if not removeSnapshot(
                 True, self.vm_name, self.snapshot_description,
@@ -522,19 +527,20 @@ class TestCase337630(DefaultEnvironment):
 
 
 @attr(tier=1)
-class TestCase332475(BaseTestCase):
+class TestCase4910(BaseTestCase):
     """
     Checks that changing disk's write policy from RW to RO will fails
     when the disk is active
-    https://tcms.engineering.redhat.com/case/332475/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
 
     Currently __test__ = False because update operation is needed:
     https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     """
     __test__ = False
-    tcms_test_case = '332475'
+    polarion_test_case = '4910'
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4910")
     def test_change_disk_from_RW_to_RO(self):
         """
         - VM with OS
@@ -564,18 +570,19 @@ class TestCase332475(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase337936(BaseTestCase):
+class TestCase4912(BaseTestCase):
     """
     Check that booting from RO disk should be impossible
-    https://tcms.engineering.redhat.com/case/337936/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
 
     Currently __test__ = False because update operation is needed:
     https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     """
     __test__ = False
-    tcms_test_case = '337936'
+    polarion_test_case = '4912'
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4912")
     def test_boot_from_RO_disk(self):
         """
         - VM with OS
@@ -586,19 +593,20 @@ class TestCase337936(BaseTestCase):
 
 
 @attr(tier=3)
-class TestCase332489(DefaultEnvironment):
+class TestCase4913(DefaultEnvironment):
     """
     Block connectivity from vdsm to the storage domain
     where the VM RO disk is located
-    https://tcms.engineering.redhat.com/case/332489/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     """
     __test__ = True
-    tcms_test_case = '332489'
+    polarion_test_case = '4913'
     blocked = False
     storage_domain_ip = ''
     bz = {'1138144': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4913")
     def test_RO_persistent_after_block_connectivity_to_storage(self):
         """
         - VM with OS
@@ -690,20 +698,21 @@ class TestCase332489(DefaultEnvironment):
                     "Failed to unblock connectivity from host %s to "
                     "storage domain %s" % (self.host, self.storage_domain_ip)
                 )
-        super(TestCase332489, self).tearDown()
+        super(TestCase4913, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase332484(DefaultEnvironment):
+class TestCase4914(DefaultEnvironment):
     """
     Migrate a vm with RO disk, and check the disk is still visible as RO
-    https://tcms.engineering.redhat.com/case/332484/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     """
     __test__ = True
-    tcms_test_case = '332484'
+    polarion_test_case = '4914'
     is_migrated = False
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4914")
     def test_migrate_vm_with_RO_disk(self):
         """
         - VM with OS
@@ -750,20 +759,21 @@ class TestCase332484(DefaultEnvironment):
         if self.is_migrated:
             if not migrateVm(True, self.vm_name):
                 logger.error("Failed to migrate vm %s", self.vm_name)
-        super(TestCase332484, self).tearDown()
+        super(TestCase4914, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase332476(DefaultEnvironment):
+class TestCase4915(DefaultEnvironment):
     """
     Checks that suspending a vm with RO disk shouldn't
     change disk configuration
-    https://tcms.engineering.redhat.com/case/332476/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     """
     __test__ = True
-    tcms_test_case = '332476'
+    polarion_test_case = '4915'
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4915")
     def test_RO_disk_persistent_after_suspend_the_vm(self):
         """
         - VM with OS
@@ -789,19 +799,20 @@ class TestCase332476(DefaultEnvironment):
 
 
 @attr(tier=1)
-class TestCase334878(DefaultEnvironment):
+class TestCase4917(DefaultEnvironment):
     """
     Import more than once VM with RO disk, and verify that it's impossible
     to write to the disk for both the original and the imported VMs
-    https://tcms.engineering.redhat.com/case/334878/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     """
     __test__ = True
-    tcms_test_case = '334878'
+    polarion_test_case = '4917'
     imported_vm_1 = 'imported_vm_1'
     imported_vm_2 = 'imported_vm_2'
     export_domain = ''
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4917")
     def test_import_more_than_once_VM_with_RO_disk(self):
         """
         - VM with OS
@@ -866,21 +877,22 @@ class TestCase334878(DefaultEnvironment):
                 "Failed to remove vm %s from export domain %s",
                 self.imported_vm, self.export_domain
             )
-        super(TestCase334878, self).tearDown()
+        super(TestCase4917, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase332483(DefaultSnapshotEnvironment):
+class TestCase4918(DefaultSnapshotEnvironment):
     """
     Check that the RO disk is part of vm snapshot, and also after preview
-    https://tcms.engineering.redhat.com/case/332483/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     """
     __test__ = True
-    tcms_test_case = '332483'
+    polarion_test_case = '4918'
     snapshot_description = 'test_snap'
     create_snapshot = False
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4918")
     def test_preview_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -937,7 +949,7 @@ class TestCase332483(DefaultSnapshotEnvironment):
                 logger.error("Error undoing snapshot snapshot preview for %s",
                              self.vm_name)
 
-        super(TestCase332483, self).tearDown()
+        super(TestCase4918, self).tearDown()
         waitForDisksStat(self.vm_name)
 
         if not removeSnapshot(
@@ -952,18 +964,19 @@ class TestCase332483(DefaultSnapshotEnvironment):
 
 
 @attr(tier=1)
-class TestCase337931(DefaultSnapshotEnvironment):
+class TestCase4919(DefaultSnapshotEnvironment):
     """
     Check that the RO disk is part of vm snapshot, and the disk
     should be remain RO for the VM after undoing the snapshot.
-    https://tcms.engineering.redhat.com/case/337931/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     """
     __test__ = True
-    tcms_test_case = '337931'
+    polarion_test_case = '4919'
     snapshot_description = 'test_snap'
     create_snapshot = False
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4919")
     def test_preview_and_undo_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -1027,7 +1040,7 @@ class TestCase337931(DefaultSnapshotEnvironment):
             if not undo_snapshot_preview(True, self.vm_name):
                 logger.error("Error previewing snapshot for %s", self.vm_name)
 
-        super(TestCase337931, self).tearDown()
+        super(TestCase4919, self).tearDown()
         if not removeSnapshot(
                 True, self.vm_name, self.snapshot_description,
                 timeout=REMOVE_SNAPSHOT_TIMEOUT
@@ -1039,18 +1052,19 @@ class TestCase337931(DefaultSnapshotEnvironment):
 
 
 @attr(tier=1)
-class TestCase337930(DefaultSnapshotEnvironment):
+class TestCase4920(DefaultSnapshotEnvironment):
     """
     Check that the RO disk is part of vm snapshot, and the disk
     should be remain RO for the VM after committing the snapshot.
-    https://tcms.engineering.redhat.com/case/337930/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     """
     __test__ = True
-    tcms_test_case = '337930'
+    polarion_test_case = '4920'
     snapshot_description = 'test_snap'
     create_snapshot = False
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4920")
     def test_preview_and_commit_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -1119,7 +1133,7 @@ class TestCase337930(DefaultSnapshotEnvironment):
                 self.ensure_vm_exists()
                 remove_snapshot = False
 
-        super(TestCase337930, self).tearDown()
+        super(TestCase4920, self).tearDown()
         if remove_snapshot and not removeSnapshot(
                 True, self.vm_name, self.snapshot_description,
                 timeout=REMOVE_SNAPSHOT_TIMEOUT
@@ -1131,18 +1145,19 @@ class TestCase337930(DefaultSnapshotEnvironment):
 
 
 @attr(tier=1)
-class TestCase337934(DefaultSnapshotEnvironment):
+class TestCase4921(DefaultSnapshotEnvironment):
     """
     Checks that deleting a snapshot with RO disk shouldn't effect
     the RO disk
-    https://tcms.engineering.redhat.com/case/337934/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     """
     __test__ = True
-    tcms_test_case = '337934'
+    polarion_test_case = '4921'
     snapshot_description = 'test_snap'
     snapshot_removed = False
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4921")
     def test_delete_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -1205,25 +1220,26 @@ class TestCase337934(DefaultSnapshotEnvironment):
                 logger.error(
                     "Failed to remove snapshot %s", self.snapshot_description
                 )
-        super(TestCase337934, self).tearDown()
+        super(TestCase4921, self).tearDown()
         wait_for_jobs()
 
 
 @attr(tier=1)
-class TestCase337935(DefaultEnvironment):
+class TestCase4922(DefaultEnvironment):
     """
     Checks that a cloned vm from a snapshot with RO disk shouldn't
     be able to write to the RO disk as well
-    https://tcms.engineering.redhat.com/case/337935/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     """
     __test__ = True
-    tcms_test_case = '337935'
+    polarion_test_case = '4922'
     snapshot_description = 'test_snap'
     cloned = False
     cloned_vm_name = 'cloned_vm'
     bz = {'1201268': {'engine': None, 'version': ['3.5']}}
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4922")
     def test_clone_vm_from_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -1300,7 +1316,7 @@ class TestCase337935(DefaultEnvironment):
                 )
 
         stop_vms_safely([self.vm_name])
-        super(TestCase337935, self).tearDown()
+        super(TestCase4922, self).tearDown()
 
         if not removeSnapshot(
                 True, self.vm_name, self.snapshot_description,
@@ -1314,21 +1330,22 @@ class TestCase337935(DefaultEnvironment):
 
 
 @attr(tier=1)
-class TestCase332481(DefaultEnvironment):
+class TestCase4923(DefaultEnvironment):
     """
     Create 2 VMs from a template with RO disk in 2 provisioning methods:
     the first cloned from template and the second as thin copy.
-    https://tcms.engineering.redhat.com/case/332481/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     """
     __test__ = True
-    tcms_test_case = '332481'
+    polarion_test_case = '4923'
     template_name = 'test_template'
     cloned_vm_name = 'cloned_vm'
     thin_cloned_vm_name = 'thin_cloned_vm'
     cloned_vms = [cloned_vm_name, thin_cloned_vm_name]
     cloned = False
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4923")
     def test_create_vms_from_template_with_RO_disk(self):
         """
         - VM with OS
@@ -1405,18 +1422,19 @@ class TestCase332481(DefaultEnvironment):
         ):
             logger.error("Failed to remove template %s",
                          self.template_name)
-        super(TestCase332481, self).tearDown()
+        super(TestCase4923, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase334877(DefaultEnvironment):
+class TestCase4924(DefaultEnvironment):
     """
     Checks that moving RO disk to a second storage domain will
     cause that the disk should remain RO for the VM after the move
-    https://tcms.engineering.redhat.com/case/334877/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     """
     __test__ = True
-    tcms_test_case = '334877'
+    polarion_test_case = '4924'
     bz = {
         '1196049': {
             'engine': None,
@@ -1430,7 +1448,7 @@ class TestCase334877(DefaultEnvironment):
         },
     }
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4924")
     def test_moving_RO_disk(self):
         """
         - 2 storage domains
@@ -1484,13 +1502,14 @@ class TestCase334877(DefaultEnvironment):
 
 
 @attr(tier=1)
-class TestCase332477(DefaultEnvironment):
+class TestCase4925(DefaultEnvironment):
     """
     Checks that Live Storage Migration of RO disk should be possible
-    https://tcms.engineering.redhat.com/case/332477/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     """
     __test__ = True
-    tcms_test_case = '332477'
+    polarion_test_case = '4925'
     bz = {
         '1196049': {
             'engine': None,
@@ -1503,7 +1522,7 @@ class TestCase332477(DefaultEnvironment):
         },
     }
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4925")
     def test_live_migrate_RO_disk(self):
         """
         - 2 storage domains
@@ -1539,23 +1558,23 @@ class TestCase332477(DefaultEnvironment):
             )
 
     def tearDown(self):
-        super(TestCase332477, self).tearDown()
+        super(TestCase4925, self).tearDown()
         remove_all_vm_lsm_snapshots(self.vm_name)
 
 
 @attr(tier=1)
-class TestCase332482(BaseTestCase):
+class TestCase4927(BaseTestCase):
     """
-
-    https://tcms.engineering.redhat.com/case/332482/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
 
     Currently __test__ = False because update operation is needed:
     https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     """
     __test__ = False
-    tcms_test_case = '332482'
+    polarion_test_case = '4927'
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4927")
     def test_copy_template_RO_disk_to_second_SD(self):
         """
         - 2 storage domains
@@ -1571,14 +1590,15 @@ class TestCase332482(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase334876(DefaultEnvironment):
+class TestCase4926(DefaultEnvironment):
     """
     Checks that Live Storage Migration of RW disk should be possible, even
     when a RO disk is attached to vm
-    https://tcms.engineering.redhat.com/case/334876/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     """
     __test__ = True
-    tcms_test_case = '334876'
+    polarion_test_case = '4926'
     bz = {
         '1196049': {
             'engine': None,
@@ -1592,7 +1612,7 @@ class TestCase334876(DefaultEnvironment):
         },
     }
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4926")
     def test_live_migrate_RW_disk(self):
         """
         - 2 storage domains
@@ -1617,15 +1637,16 @@ class TestCase334876(DefaultEnvironment):
 
 
 @attr(tier=3)
-class TestCase334921(DefaultEnvironment):
+class TestCase4930(DefaultEnvironment):
     """
     Check that the VM sees its second disk as RO, after killing qemu process
-    https://tcms.engineering.redhat.com/case/334921/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     """
     __test__ = True
-    tcms_test_case = '334921'
+    polarion_test_case = '4930'
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4930")
     def test_kill_qemu_of_vm_with_RO_disk_attached(self):
         """
         - VM with OS
@@ -1659,17 +1680,18 @@ class TestCase334921(DefaultEnvironment):
 
 
 @attr(tier=3)
-class TestCase332485(BaseTestCase):
+class TestCase4931(BaseTestCase):
     """
     Restart vdsm during RO disk activation
-    https://tcms.engineering.redhat.com/case/332485/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     Currently __test__ = False because update operation is needed:
     https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     """
     __test__ = False
-    tcms_test_case = '332485'
+    polarion_test_case = '4931'
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4931")
     def test_restart_vdsm_during_hotplug_of_RO_disk(self):
         """
         - VM with OS
@@ -1683,17 +1705,18 @@ class TestCase332485(BaseTestCase):
 
 
 @attr(tier=3)
-class TestCase332486(BaseTestCase):
+class TestCase4932(BaseTestCase):
     """
     Restart ovirt-engine during RO disk activation
-    https://tcms.engineering.redhat.com/case/332486/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     Currently __test__ = False because update operation is needed:
     https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     """
     __test__ = False
-    tcms_test_case = '332486'
+    polarion_test_case = '4932'
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4932")
     def test_restart_ovirt_engine_during_hotplug_of_RO_disk(self):
         """
         - VM with OS
@@ -1707,17 +1730,18 @@ class TestCase332486(BaseTestCase):
 
 
 @attr(tier=3)
-class TestCase332488(BaseTestCase):
+class TestCase4933(BaseTestCase):
     """
     Restart libvirt during RO disk activation
-    https://tcms.engineering.redhat.com/case/332488/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     Currently __test__ = False because update operation is needed:
     https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     """
     __test__ = False
-    tcms_test_case = '332488'
+    polarion_test_case = '4933'
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4933")
     def test_restart_libvirt_during_hotplug_of_RO_disk(self):
         """
         - VM with OS
@@ -1733,17 +1757,18 @@ class TestCase332488(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase332487(BaseTestCase):
+class TestCase4934(BaseTestCase):
     """
     Changing RW disk to RO while disk is plugged to a running VM
-    https://tcms.engineering.redhat.com/case/332487/?from_plan=12049
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_RO_Disks
     Currently __test__ = False because update operation is needed:
     https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     """
     __test__ = False
-    tcms_test_case = '332487'
+    polarion_test_case = '4934'
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4934")
     def test_change_RW_disk_to_RO_while_disk_is_plugged_to_running_vm(self):
         """
         - VM with OS

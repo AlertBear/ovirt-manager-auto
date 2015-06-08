@@ -1,9 +1,7 @@
 """
 Test exposing BZ 908327, checks if roll-back of the import removes
 already imported disks - if it doesn't, the second import will fail
-
 """
-
 import config
 import logging
 
@@ -18,7 +16,7 @@ from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 
 from common import _create_vm
 
@@ -30,7 +28,7 @@ STORAGE_DOMAIN_API = test_utils.get_api('storage_domain', 'storagedomains')
 
 
 @attr(tier=3)
-class TestCase281164(TestCase):
+class TestCase11628(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=908327
     scenario:
@@ -40,13 +38,13 @@ class TestCase281164(TestCase):
     * fail the import by restarting vdsm daemon
     * try to import the template once again
 
-    https://tcms.engineering.redhat.com/case/281164/?from_plan=9583
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Bug_Coverage
     """
     __test__ = not config.GOLDEN_ENV
-    tcms_plan_id = '9583'
-    tcms_test_case = '281164'
-    vm_name = "vm_%s" % tcms_test_case
-    templ_name = "templ_%s" % tcms_test_case
+    polarion_test_case = '11628'
+    vm_name = "vm_%s" % polarion_test_case
+    templ_name = "templ_%s" % polarion_test_case
 
     def setUp(self):
         """
@@ -62,7 +60,7 @@ class TestCase281164(TestCase):
         assert vms.shutdownVm(True, self.vm_name, 'false')
 
         LOGGER.info("Create second VM disk")
-        disk_name, disk_size = "disk_%s_1" % self.tcms_test_case, GB
+        disk_name, disk_size = "disk_%s_1" % self.polarion_test_case, GB
 
         assert disks.addDisk(
             True, alias=disk_name, shareable=False, bootable=False,
@@ -79,7 +77,7 @@ class TestCase281164(TestCase):
         LOGGER.info("Remove the VM")
         assert vms.removeVm(True, self.vm_name)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11628")
     def test_import_template_after_failed_import(self):
         """
         * exports the template

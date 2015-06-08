@@ -1,6 +1,7 @@
 """
 3.5 - Import Storage Domain
-https://tcms.engineering.redhat.com/plan/14281
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_5_Storage_ImportDomain_DetachAttach
 """
 import logging
 import shlex
@@ -20,7 +21,7 @@ from art.rhevm_api.tests_lib.high_level import storagedomains
 from art.rhevm_api.utils import storage_api as utils
 from art.rhevm_api.utils import test_utils as test_utils
 from art.test_handler.settings import opts
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
 from art.unittest_lib import StorageTest as BaseTestCase
 from utilities.machine import Machine, LINUX
@@ -32,7 +33,6 @@ ENUMS = config.ENUMS
 NFS = config.STORAGE_TYPE_NFS
 UPDATE_OVF_INTERVAL_CMD = 'engine-config -s OvfUpdateIntervalInMinutes=%s'
 
-TEST_PLAN_ID = '14281'
 VM_NAMES = dict()
 IMPORT_DOMAIN = dict()
 SPM_TIMEOUT = 600
@@ -267,7 +267,7 @@ class BasicEnvironment(BaseTestCase):
     # TODO: Run only on rest:
     # https://projects.engineering.redhat.com/browse/RHEVM-1654
     apis = BaseTestCase.apis - set(['cli', 'java', 'sdk'])
-    tcms_test_case = None
+    polarion_test_case = None
 
     def setUp(self):
         """
@@ -425,15 +425,16 @@ class CommonSetUp(BasicEnvironment):
 
 
 @attr(tier=0)
-class TestCase384692(BasicEnvironment):
+class TestCase11861(BasicEnvironment):
     """
     Detach/Attach a new Domain
-    https://tcms.engineering.redhat.com/case/384692
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_ImportDomain_DetachAttach
     """
     __test__ = True
-    tcms_test_case = '384692'
+    polarion_test_case = '11861'
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11861")
     def test_detach_attach_new_domain(self):
         """
         - Detach a domain and then re-attach it
@@ -449,21 +450,22 @@ class TestCase384692(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase384693(BasicEnvironment):
+class TestCase5297(BasicEnvironment):
     """
     create vm from imported domain's Template
-    https://tcms.engineering.redhat.com/case/384693
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_ImportDomain_Between_DifferentSetups
     """
     __test__ = True
-    tcms_test_case = '384693'
+    polarion_test_case = '5297'
     vm_from_template = 'vm_from_temp'
     bz = {'1138142': {'engine': ['rest', 'sdk'], 'version': ['3.5', '3.6']}}
 
     def setUp(self):
         self.vm_created = False
         self.template_exists = False
-        self.template_name = 'temp_%s' % self.tcms_test_case
-        super(TestCase384693, self).setUp()
+        self.template_name = 'temp_%s' % self.polarion_test_case
+        super(TestCase5297, self).setUp()
         ll_vms.stop_vms_safely([self.vm_name])
         ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
 
@@ -480,7 +482,7 @@ class TestCase384693(BasicEnvironment):
             config.DATA_CENTER_NAME, self.non_master
         )
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5297")
     def test_new_vm_from_imported_domain_template(self):
         """
         - import data domain
@@ -540,19 +542,20 @@ class TestCase384693(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase385823(BasicEnvironment):
+class TestCase5299(BasicEnvironment):
     """
     Register vm without disks
-    https://tcms.engineering.redhat.com/case/385823
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_ImportDomain_Between_DifferentSetups
     """
     __test__ = True
-    tcms_test_case = '385823'
+    polarion_test_case = '5299'
     vm_no_disks = "vm_without_disks"
     bz = {'1138142': {'engine': ['rest', 'sdk'], 'version': ["3.5", "3.6"]}}
 
     def setUp(self):
         self.vm_created = False
-        super(TestCase385823, self).setUp()
+        super(TestCase5299, self).setUp()
 
         self.vm_created = ll_vms.addVm(
             True, name=self.vm_no_disks, cluster=config.CLUSTER_NAME,
@@ -567,7 +570,7 @@ class TestCase385823(BasicEnvironment):
             config.DATA_CENTER_NAME, self.non_master
         )
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5299")
     def test_register_vm_without_disks(self):
         """
         - Detach domain
@@ -606,19 +609,20 @@ class TestCase385823(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase392631(BasicEnvironment):
+class TestCase5300(BasicEnvironment):
     """
     import domain, preview snapshots and create vm from a snapshot
-    https://tcms.engineering.redhat.com/case/392631
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_ImportDomain_Between_DifferentSetups
     """
     __test__ = True
-    tcms_test_case = '392631'
+    polarion_test_case = '5300'
     cloned_vm = 'cloned_vm'
 
     def setUp(self):
-        self.snap_desc = 'snap_%s' % self.tcms_test_case
+        self.snap_desc = 'snap_%s' % self.polarion_test_case
         self.previewed = False
-        super(TestCase392631, self).setUp()
+        super(TestCase5300, self).setUp()
         self._prepare_environment()
 
         if not ll_vms.addSnapshot(True, self.vm_name, self.snap_desc):
@@ -631,7 +635,7 @@ class TestCase392631(BasicEnvironment):
             config.DATA_CENTER_NAME, self.non_master
         )
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5300")
     def test_detach_attach_new_domain(self):
         """
         - create vm + disk
@@ -711,24 +715,25 @@ class TestCase392631(BasicEnvironment):
 
 
 @attr(tier=3)
-class TestCase387991(BasicEnvironment):
+class TestCase5302(BasicEnvironment):
     """
     IP block during import domain
-    https://tcms.engineering.redhat.com/case/387991
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_ImportDomain_Between_DifferentSetups
     """
     __test__ = True
-    tcms_test_case = '387991'
+    polarion_test_case = '5302'
 
     def setUp(self):
         self.imported = False
-        super(TestCase387991, self).setUp()
+        super(TestCase5302, self).setUp()
 
         self._secure_detach_storage_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
         self.host_ip = ll_hosts.getHostIP(config.HOSTS[0])
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5302")
     def test_block_connection_during_import(self):
         """
         - verify that there are no IP blocks from vdsm->engine
@@ -803,24 +808,26 @@ class TestCase387991(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase396396(BasicEnvironment):
+class TestCase5193(BasicEnvironment):
     """
     test mounted meta-data files when attaching a file domain
-    https://tcms.engineering.redhat.com/case/396396
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_ImportDomain_DetachAttach
     """
     __test__ = NFS in opts['storages']
     storages = set([NFS])
-    tcms_test_case = '396396'
+    polarion_test_case = '5193'
+    __test__ = config.STORAGE_TYPE is config.STORAGE_TYPE_NFS
 
     def setUp(self):
-        super(TestCase396396, self).setUp()
+        super(TestCase5193, self).setUp()
         self._prepare_environment()
         self._secure_detach_storage_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
         wait_for_jobs()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5193")
     def test_attach_file_domain(self):
         """
         - detach an nfs domain
@@ -843,23 +850,24 @@ class TestCase396396(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase396397(BasicEnvironment):
+class TestCase5194(BasicEnvironment):
     """
     test lv's existence when importing a block domain
-    https://tcms.engineering.redhat.com/case/396397
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_ImportDomain_DetachAttach
     """
     __test__ = BaseTestCase.storage in config.BLOCK_TYPES
-    tcms_test_case = '396397'
+    polarion_test_case = '5194'
 
     def setUp(self):
-        super(TestCase396397, self).setUp()
+        super(TestCase5194, self).setUp()
         self._prepare_environment()
         self._secure_detach_storage_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
         wait_for_jobs()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5194")
     def test_lv_exists_after_import_block_domain(self):
         """
         - detach block domain
@@ -901,13 +909,14 @@ class TestCase396397(BasicEnvironment):
 
 
 @attr(tier=3)
-class TestCase396398(CommonSetUp):
+class TestCase5205(CommonSetUp):
     """
     detach/attach domain during vdsm/engine restart
-    https://tcms.engineering.redhat.com/case/396398
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_ImportDomain_DetachAttach
     """
     __test__ = True
-    tcms_test_case = '396398'
+    polarion_test_case = '5205'
 
     def _restart_component(self, restart_function, *args):
         logger.info(
@@ -943,7 +952,7 @@ class TestCase396398(CommonSetUp):
             sd['nonMasterDomains'] for sd in non_master_domains
         ]
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5205")
     def test_restart_vdsm_during_import_domain(self):
         """
         - import data domain on different dc
@@ -953,7 +962,7 @@ class TestCase396398(CommonSetUp):
             test_utils.restartVdsmd, config.HOSTS[0], config.HOSTS_PW
         )
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5205")
     def test_restart_engine_during_import_domain(self):
         """
         - import data domain on different dc
@@ -987,16 +996,17 @@ class TestCase396398(CommonSetUp):
 
 
 @attr(tier=3)
-class TestCase396399(CommonSetUp):
+class TestCase5304(CommonSetUp):
     """
     Import domain during host reboot
-    https://tcms.engineering.redhat.com/case/396399
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_ImportDomain_Between_DifferentSetups
     """
     __test__ = True
-    tcms_test_case = '396399'
+    polarion_test_case = '5304'
     bz = {'1210771': {'engine': ['rest', 'sdk'], 'version': ["3.5", "3.6"]}}
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5304")
     def test_reboot_host_during_import_domain(self):
         """
         - Import data domain to different dc
@@ -1063,22 +1073,22 @@ class TestCase396399(CommonSetUp):
 
 
 @attr(tier=1)
-class TestCase396401(BasicEnvironment):
+class TestCase5201(BasicEnvironment):
     """
     Initialize DC from an unattached imported domain
-    https://tcms.engineering.redhat.com/case/396401
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_ImportDomain_DetachAttach
     TODO: __test__ = False due to
-    https://projects.engineering.redhat.com/browse/RHEVM-2141
     which is needed for importing block storage domain
     """
     __test__ = False
-    tcms_test_case = '396401'
+    polarion_test_case = '5201'
     dc_name = 'test_dc'
     cluster_name = 'test_cluster'
 
     def setUp(self):
-        self.test_vm = 'test_vm_%s' % self.tcms_test_case
-        super(TestCase396401, self).setUp()
+        self.test_vm = 'test_vm_%s' % self.polarion_test_case
+        super(TestCase5201, self).setUp()
         self._add_storage()
         self._create_environment(self.dc_name, self.cluster_name)
 
@@ -1101,7 +1111,7 @@ class TestCase396401(BasicEnvironment):
             raise errors.StorageDomainException(
                 "Failed to remove storage domain" % self.sd_name)
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5201")
     def test_initialize_dc_with_imported_domain(self):
         """
         - Configure 2 DCs: DC1 with 2 storage domains
@@ -1166,12 +1176,12 @@ class TestCase12207(BasicEnvironment):
     which is needed for importing block storage domain
     """
     __test__ = False
-    tcms_test_case = '12207'
+    polarion_test_case = '12207'
     dc_name = 'test_dc'
     cluster_name = 'test_cluster'
 
     def setUp(self):
-        self.test_vm = 'test_vm_%s' % self.tcms_test_case
+        self.test_vm = 'test_vm_%s' % self.polarion_test_case
         super(TestCase12207, self).setUp()
         self._add_storage()
         self._create_environment(self.dc_name, self.cluster_name)

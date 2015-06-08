@@ -2,7 +2,7 @@ import config
 import logging
 from art.unittest_lib import StorageTest, attr
 from concurrent.futures import ThreadPoolExecutor
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import storageconnections
@@ -213,19 +213,19 @@ class TestCase(StorageTest):
 
 
 @attr(tier=0)
-class TestCase288967(TestCase):
+class TestCase5243(TestCase):
     """
-    https://tcms.engineering.redhat.com/case/288967/?from_plan=9985
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Manage_Storage_Connections
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
-    tcms_plan_id = '9985'
-    tcms_test_case = '288967'
+    polarion_test_case = '5243'
     conn = None
     sd_name = None
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5243")
     def test_adding_storage_connections(self):
         """ test adding a storage connection to a dc without storage domains
             and to a dc with a storage domain
@@ -241,7 +241,7 @@ class TestCase288967(TestCase):
 
         storageconnections.remove_storage_connection(self.conn.id)
         self.conn = None
-        self.sd_name = 'sd_%s' % self.tcms_test_case
+        self.sd_name = 'sd_%s' % self.polarion_test_case
         assert storagedomains.addStorageDomain(
             True, host=config.HOST_FOR_MOUNT, name=self.sd_name,
             type=config.ENUMS['storage_dom_type_data'],
@@ -279,9 +279,10 @@ class TestCase288967(TestCase):
 
 
 @attr(tier=1)
-class TestCase288985(TestCase):
+class TestCase5247(TestCase):
     """
-    https://tcms.engineering.redhat.com/case/288985/?from_plan=9985
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Manage_Storage_Connections
 
     **Author**: Katarzyna Jachim
     """
@@ -289,8 +290,7 @@ class TestCase288985(TestCase):
     # Other apis try convert the value type so this cases will not work, only
     # execute on rest
     apis = set(['rest'])
-    tcms_plan_id = '9985'
-    tcms_test_case = '288985'
+    polarion_test_case = '5247'
     conn = None
     sd_name = None
 
@@ -312,14 +312,14 @@ class TestCase288985(TestCase):
             self.conn = None
         assert (not success)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5247")
     def test_adding_storage_connection_without_ip(self):
         """ try to add an iscsi storage connection without LUN address
         """
         self.add_connection_without_sth('lun_address')
         self.add_connection_with_empty_sth('lun_address')
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5247")
     def test_adding_storage_connection_without_port(self):
         """ try to add an iscsi storage connection without LUN port
         """
@@ -331,14 +331,14 @@ class TestCase288985(TestCase):
         finally:
             storageconnections.StorageConnection = old_conn
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5247")
     def test_adding_storage_connection_without_target(self):
         """ try to add an iscsi storage connection without LUN target
         """
         self.add_connection_without_sth('lun_target')
         self.add_connection_with_empty_sth('lun_target')
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5247")
     def test_adding_storage_connection_with_string_as_port(self):
         """ try to add an iscsi storage connection with a string as a port
         """
@@ -349,7 +349,7 @@ class TestCase288985(TestCase):
         finally:
             storageconnections.StorageConnection = old_conn
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5247")
     def test_add_the_same_connection_twice(self):
         """ try to add an iscsi storage connection twice
             and add it after it was removed
@@ -373,15 +373,15 @@ class TestCase288985(TestCase):
 
 
 @attr(tier=1)
-class TestCase288986(TestCase):
+class TestCase5248(TestCase):
     """
-    https://tcms.engineering.redhat.com/case/288986/?from_plan=9985
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Manage_Storage_Connections
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
-    tcms_plan_id = '9985'
-    tcms_test_case = '288986'
+    polarion_test_case = '5248'
     conn_1 = None
     conn_2 = None
     sd_name = None
@@ -410,13 +410,13 @@ class TestCase288986(TestCase):
             conn.id, **conn_params)
         assert (not success)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5248")
     def test_changing_storage_connection_without_ip(self):
         """ try to change an iscsi connection and set LUN address to nothing
         """
         self.change_connection_without_sth(self.conn_1, 'lun_address')
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5248")
     def test_changing_storage_connection_without_port(self):
         """ try to change an iscsi connection and set LUN port to nothing
         """
@@ -427,13 +427,13 @@ class TestCase288986(TestCase):
         finally:
             storageconnections.StorageConnection = old_conn
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5248")
     def test_changing_storage_connection_without_target(self):
         """ try to change an iscsi connection and set LUN target to nothing
         """
         self.change_connection_without_sth(self.conn_1, 'lun_target')
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5248")
     def test_changing_storage_connection_to_existing_one(self):
         """ try to change an iscsi connection and set all values as in another
         """
@@ -451,18 +451,18 @@ class TestCase288986(TestCase):
 
 
 @attr(tier=1)
-class TestCase288983(TestCase):
+class TestCase5246(TestCase):
     """
-    https://tcms.engineering.redhat.com/case/288983/?from_plan=9985
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Manage_Storage_Connections
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
-    tcms_plan_id = '9985'
-    tcms_test_case = '288983'
-    sd_name_1 = "sd_%s_1" % tcms_test_case
-    sd_name_2 = "sd_%s_2" % tcms_test_case
-    master_sd = "master_%s" % tcms_test_case
+    polarion_test_case = '5246'
+    sd_name_1 = "sd_%s_1" % polarion_test_case
+    sd_name_2 = "sd_%s_2" % polarion_test_case
+    master_sd = "master_%s" % polarion_test_case
 
     def setUp(self):
         """
@@ -503,6 +503,7 @@ class TestCase288983(TestCase):
             True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2
         )
 
+    @polarion("RHEVM3-5246")
     def test_removing_storage_connection(self):
         """ Test scenario:
             * try to delete the connection
@@ -565,15 +566,15 @@ class TestCase288983(TestCase):
 
 
 @attr(tier=1)
-class TestCase295262(TestCase):
+class TestCase5240(TestCase):
     """
-    https://tcms.engineering.redhat.com/case/295262/?from_plan=9985
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Manage_Storage_Connections
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
-    tcms_plan_id = '9985'
-    tcms_test_case = '295262'
+    polarion_test_case = '5240'
     conns = []
     no_of_conn = 10
     con_params = []
@@ -590,7 +591,7 @@ class TestCase295262(TestCase):
             assert success
             cls.conns.append(conn)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5240")
     def test_change_multiple_connections(self):
         """
             Test steps:
@@ -636,17 +637,17 @@ class TestCase295262(TestCase):
 
 
 @attr(tier=1)
-class TestCase288963(TestCase):
+class TestCase5242(TestCase):
     """
     Verify the GET call works for various storage connection/storage domains
     combinations
-    https://tcms.engineering.redhat.com/case/288963/?from_plan=9985
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Manage_Storage_Connections
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
-    tcms_plan_id = '9985'
-    tcms_test_case = '288963'
+    polarion_test_case = '5242'
 
     def setUp(self):
         self.disks = []
@@ -654,7 +655,7 @@ class TestCase288963(TestCase):
         self.storage_connections = []
         self.original_conn = _get_all_storage_connections()
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5242")
     def test_verify_one_orphaned_connection(self):
         """
         Verifying GET for one orphaned connection
@@ -670,13 +671,13 @@ class TestCase288963(TestCase):
         storageconnections.remove_storage_connection(self.conn.id)
         self.storage_connections.remove(self.conn.id)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5242")
     def test_verify_one_storage_domain(self):
         """
         Verifying GET for one storage domain
         """
         logger.info("Verifying get for one orphaned connection")
-        sd_name = "sd_1_%s" % self.tcms_test_case
+        sd_name = "sd_1_%s" % self.polarion_test_case
         assert storagedomains.addStorageDomain(
             True, host=config.HOST_FOR_MOUNT, name=sd_name,
             type=config.ENUMS['storage_dom_type_data'],
@@ -695,14 +696,14 @@ class TestCase288963(TestCase):
         new_conn = self.get_all_new_connections()
         assert len(new_conn) == 0
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5242")
     def test_verify_storage_domain_with_two_connections(self):
         """
         Verifying GET for one storage domain using multiple
         storage connections
         """
         logger.info("Verifying get for one storage domain")
-        sd_name = "sd_2_%s" % self.tcms_test_case
+        sd_name = "sd_2_%s" % self.polarion_test_case
         assert storagedomains.addStorageDomain(
             True, host=config.HOST_FOR_MOUNT, name=sd_name,
             type=config.ENUMS['storage_dom_type_data'],
@@ -727,13 +728,13 @@ class TestCase288963(TestCase):
         assert len(new_conn) == 2
         assert len(conn_for_sd) == 2
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5242")
     def test_verify_two_storage_domains_with_the_same_connection(self):
         """
         Verifying get for a storage domain with 2 connections
         """
         logger.info("Verifying get for a storage domain with 2 connections")
-        sd_name_1 = "sd_3_%s" % self.tcms_test_case
+        sd_name_1 = "sd_3_%s" % self.polarion_test_case
         storagedomains.addStorageDomain(
             True, host=config.HOST_FOR_MOUNT, name=sd_name_1,
             type=config.ENUMS['storage_dom_type_data'],
@@ -741,7 +742,7 @@ class TestCase288963(TestCase):
             lun=config.CONNECTIONS[0]['luns'][0], **(config.CONNECTIONS[0])
         )
         self.storage_domains.append(sd_name_1)
-        sd_name_2 = "sd_4_%s" % self.tcms_test_case
+        sd_name_2 = "sd_4_%s" % self.polarion_test_case
         storagedomains.addStorageDomain(
             True, host=config.HOST_FOR_MOUNT, name=sd_name_2,
             type=config.ENUMS['storage_dom_type_data'],
@@ -765,13 +766,13 @@ class TestCase288963(TestCase):
         new_conn = self.get_all_new_connections()
         assert not new_conn
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5242")
     def test_verify_one_direct_lun(self):
         """
         Verifying get for direct LUN
         """
         logger.info("Verifying get for direct LUN")
-        alias = "disk_1_%s" % self.tcms_test_case
+        alias = "disk_1_%s" % self.polarion_test_case
         disks.addDisk(
             True, alias=alias, interface=config.DISK_INTERFACE_VIRTIO,
             format=config.DISK_FORMAT_COW, type_=config.STORAGE_TYPE_ISCSI,
@@ -808,18 +809,18 @@ class TestCase288963(TestCase):
 
 
 @attr(tier=1)
-class TestCase288975(TestCase):
+class TestCase5245(TestCase):
     """
-    https://tcms.engineering.redhat.com/case/288975/?from_plan=9985
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Manage_Storage_Connections
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
-    tcms_plan_id = '9985'
-    tcms_test_case = '288975'
+    polarion_test_case = '5245'
     conn = None
-    sd_name_1 = "sd_%s_1" % tcms_test_case
-    sd_name_2 = "sd_%s_2" % tcms_test_case
+    sd_name_1 = "sd_%s_1" % polarion_test_case
+    sd_name_2 = "sd_%s_2" % polarion_test_case
 
     def setUp(self):
         """
@@ -866,7 +867,7 @@ class TestCase288975(TestCase):
                 )
             )
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5245")
     def test_change_connection_in_sd(self):
         """ test steps:
             * try to change the connection (IP address, port, target, user,
@@ -917,18 +918,18 @@ class TestCase288975(TestCase):
 
 
 @attr(tier=1)
-class TestCase288968(TestCase):
+class TestCase5244(TestCase):
     """
-    https://tcms.engineering.redhat.com/case/288968/?from_plan=9985
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Manage_Storage_Connections
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
-    tcms_plan_id = '9985'
-    tcms_test_case = '288968'
+    polarion_test_case = '5244'
     conn = None
-    sd_name_1 = "sd_%s_1" % tcms_test_case
-    sd_name_2 = "sd_%s_2" % tcms_test_case
+    sd_name_1 = "sd_%s_1" % polarion_test_case
+    sd_name_2 = "sd_%s_2" % polarion_test_case
 
     def setUp(self):
         """
@@ -959,7 +960,7 @@ class TestCase288968(TestCase):
         self.conn, success = storageconnections.add_connection(**conn)
         assert success
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5244")
     def test_add_connection_to_sd(self):
         """ test steps:
                 * try to add the connection to one of the storage domains
@@ -1001,21 +1002,21 @@ class TestCase288968(TestCase):
 
 
 @attr(tier=1)
-class TestCase289552(TestCase):
+class TestCase5241(TestCase):
     """
-    https://tcms.engineering.redhat.com/case/289552/?from_plan=9985
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Manage_Storage_Connections
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
-    tcms_plan_id = '9985'
-    tcms_test_case = '289552'
+    polarion_test_case = '5241'
     conn = None
-    vm_name_1 = "vm_%s_1" % tcms_test_case
-    vm_name_2 = "vm_%s_2" % tcms_test_case
-    disk_1 = "disk_%s_1" % tcms_test_case
-    sd_name = "sd_%s" % tcms_test_case
-    disk_2 = "disk_%s_2" % tcms_test_case
+    vm_name_1 = "vm_%s_1" % polarion_test_case
+    vm_name_2 = "vm_%s_2" % polarion_test_case
+    disk_1 = "disk_%s_1" % polarion_test_case
+    sd_name = "sd_%s" % polarion_test_case
+    disk_2 = "disk_%s_2" % polarion_test_case
 
     def setUp(self):
         assert storagedomains.addStorageDomain(
@@ -1070,7 +1071,7 @@ class TestCase289552(TestCase):
         assert vms.startVm(True, self.vm_name_1)
         assert vms.startVm(True, self.vm_name_2)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5241")
     def test_change_connection_in_lun(self):
         """ test steps:
             * try to change the connection (IP address, port, target)
@@ -1131,15 +1132,15 @@ class TestCase289552(TestCase):
 
 
 @attr(tier=0)
-class TestCase288988(TestCase):
+class TestCase5249(TestCase):
     """
-    https://tcms.engineering.redhat.com/case/288988/?from_plan=9985
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Manage_Storage_Connections
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
-    tcms_plan_id = '9985'
-    tcms_test_case = '288988'
+    polarion_test_case = '5249'
     conn = None
 
     def setUp(self):
@@ -1150,7 +1151,7 @@ class TestCase288988(TestCase):
         assert success
         self.original_conn = _get_all_storage_connections()
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5249")
     def test_adding_storage_domains(self):
         """ Adds:
             * a storage domain using a new connection (old flow)
@@ -1159,7 +1160,8 @@ class TestCase288988(TestCase):
             In the last case, new connection should not be added.
         """
         logger.info("Adding a new storage domain with a new connection")
-        sd_name_2 = "sd_%s_2" % self.tcms_test_case
+        sd_name_2 = "sd_%s_2" % self.polarion_test_case
+
         assert storagedomains.addStorageDomain(
             True, name=sd_name_2, host=config.HOST_FOR_MOUNT,
             type=config.ENUMS['storage_dom_type_data'],
@@ -1181,7 +1183,7 @@ class TestCase288988(TestCase):
             "Adding a new domain specifying the parameters but using the "
             "existing connection"
         )
-        sd_name_3 = "sd_%s_3" % self.tcms_test_case
+        sd_name_3 = "sd_%s_3" % self.polarion_test_case
         assert storagedomains.addStorageDomain(
             True, name=sd_name_3, host=config.HOST_FOR_MOUNT,
             type=config.ENUMS['storage_dom_type_data'],

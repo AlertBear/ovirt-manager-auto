@@ -8,22 +8,22 @@ from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_datacenters
 from art.rhevm_api.tests_lib.low_level import hosts, clusters, storagedomains
 from art.rhevm_api.utils.test_utils import wait_for_tasks
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 
 logger = logging.getLogger(__name__)
 
 
 @attr(tier=1)
-class TestCase99062(TestCase):
+class TestCase11594(TestCase):
     """
     storage sanity test, clean up the environment
-    https://tcms.engineering.redhat.com/case/99062/?from_plan=4038
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Sanity
 
     This test case expects one host
     """
     __test__ = not config.GOLDEN_ENV
-    tcms_plan_id = '6458'
-    tcms_test_case = '99062'
+    polarion_test_case = '11594'
     host = config.HOSTS[0]
 
     def setUp(self):
@@ -62,7 +62,7 @@ class TestCase99062(TestCase):
             config.DATA_CENTER_NAME)
         assert self.export_domains
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11594")
     def test_cleanup(self):
         """
         Verifies the environment can be clean up properly

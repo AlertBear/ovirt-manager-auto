@@ -1,5 +1,7 @@
 """
 Storage Disk Image Format
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_2_Storage_Disk_Image_Format
 """
 import config
 import logging
@@ -9,11 +11,9 @@ from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import (
     disks, storagedomains, vms, templates,
 )
-from art.test_handler.tools import tcms, polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from rhevmtests.storage import helpers
 
-
-TCMS_PLAN_ID = '8090'
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +35,9 @@ VM_ARGS = {
 @attr(tier=1)
 class BaseTestDiskImage(TestCase):
     """
-    Base Test Class for test plan 8090:
-    https://tcms.engineering.redhat.com/plan/8090
+    Base Test Class for test plan:
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_2_Storage_Disk_Image_Format
     """
     installation = False
     disk_interface = None
@@ -110,8 +111,8 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
         Create one vm with thin provisioned disk and other one with
         preallocated disk
         """
-        self.vm_thin = "vm_thin_%s" % TCMS_PLAN_ID
-        self.vm_prealloc = "vm_prealloc_%s" % TCMS_PLAN_ID
+        self.vm_thin = "vm_thin_disk_image"
+        self.vm_prealloc = "vm_prealloc_disk_image"
         self.vms = [self.vm_thin, self.vm_prealloc]
         # Define the disk objects' retriever function
         self.retrieve_disk_obj = lambda x: vms.getVmDisks(x)
@@ -146,7 +147,7 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
 
         self.disk_thin = vms.getVmDisks(self.vm_thin)[0].get_alias()
         self.disk_prealloc = vms.getVmDisks(self.vm_prealloc)[0].get_alias()
-        self.snapshot_desc = "snapshot_{0}".format(TCMS_PLAN_ID)
+        self.snapshot_desc = "snapshot_disk_image_format"
 
     def execute_concurrent_vms(self, fn):
         """
@@ -237,7 +238,7 @@ class TestCasesVms(BaseTestDiskImageVms):
     @polarion("RHEVM3-11604")
     def test_format_and_snapshots(self):
         """
-        TCMS case id: 232953
+        Polarion case id: 11604
         Create a snapshot
         * Thin provisioned disk should remain the same
         * Preallocated disk should change to thin provisioned
@@ -249,7 +250,7 @@ class TestCasesVms(BaseTestDiskImageVms):
     @polarion("RHEVM3-11621")
     def test_move_disk_offline(self):
         """
-        TCMS case id: 232954
+        Polarion case id: 11621
         Move the disk
         * Thin provisioned disk should remain the same
         * Preallocated disk should remain the same
@@ -264,7 +265,7 @@ class TestCasesVms(BaseTestDiskImageVms):
     @polarion("RHEVM3-11620")
     def test_add_snapshot_and_move_disk(self):
         """
-        TCMS case id: 232955
+        Polarion case id: 11620
         Create a snapshot and move the disk
         * Thin provisioned disk should remain the same
         * Preallocated disk should change to thin provisioned
@@ -282,7 +283,7 @@ class TestCasesVms(BaseTestDiskImageVms):
     @polarion("RHEVM3-11619")
     def test_live_move_disk(self):
         """
-        TCMS case id: 232956
+        Polarion case id: 11619
         Start a live disk migration
         * Thin provisioned disk should remain the same
         * Preallocated disk should change to thin provisioned
@@ -306,7 +307,7 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
     @polarion("RHEVM3-11618")
     def test_export_vm(self):
         """
-        TCMS case id: 232957
+        Polarion case id: 11618
         Export a vm
         * Thin provisioned disk should remain the same
         * Preallocated disk should remain the same
@@ -320,7 +321,7 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
     @polarion("RHEVM3-11617")
     def test_add_snapshot_and_export_vm(self):
         """
-        TCMS case id: 232958
+        Polarion case id: 11617
         Create a snapshot and export the vm
         * Thin provisioned disk in the export domain should remain the same
         * Preallocated disk in the export domain should change to thin
@@ -336,7 +337,7 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
     @polarion("RHEVM3-11616")
     def test_add_snapshot_export_vm_with_discard_snapshots(self):
         """
-        TCMS case id: 232959
+        Polarion case id: 11616
         Create a snapshot and export the vm choosing to discard the existing
         snapshots.
         * Thin provisioned disk in the export domain should remain the same
@@ -352,7 +353,7 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
     @polarion("RHEVM3-11615")
     def test_import_vm(self):
         """
-        TCMS case id: 232960
+        Polarion case id: 11615
         Export a vm and import it back
         * Thin provisioned disk should remain the same
         * Preallocated disk should remain the same
@@ -366,7 +367,7 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
     @polarion("RHEVM3-11614")
     def test_export_vm_after_snapshot_and_import(self):
         """
-        TCMS case id: 232961
+        Polarion case id: 11614
         Create snapshot on vm, export the vm and import it back
         * Thin provisioned disk should remain the same
         * Preallocated disk should change to thin provisioned
@@ -381,7 +382,7 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
     @polarion("RHEVM3-11613")
     def test_export_vm_with_collapse(self):
         """
-        TCMS case id: 232962
+        Polarion case id: 11613
         Create a snapshot to a vm, export the vm and import choosing to
         collapse the existing snapshots
         * Thin provisioned disk should remain the same
@@ -415,8 +416,8 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
         """
         Create a template
         """
-        self.vm_name = "vm_%s" % TCMS_PLAN_ID
-        self.template_name = "template_%s" % TCMS_PLAN_ID
+        self.vm_name = "vm_disk_image_format"
+        self.template_name = "template_disk_image_format"
         self.default_disks = {
             self.vm_name: True,
         }
@@ -436,7 +437,7 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
     @polarion("RHEVM3-11612")
     def test_import_link_to_template(self):
         """
-        TCMS case id: 232963
+        Polarion case id: 11612
         Create a vm from a thin provisioned template, export the vm and
         re-import it back
         * Thin provisioned disk should remain the same
@@ -455,7 +456,7 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
     @polarion("RHEVM3-11611")
     def test_import_link_to_template_collapse(self):
         """
-        TCMS case id: 232964
+        Polarion case id: 11611
         Create a vm from a thin provisioned template, export the vm and the
         template, remove both of them and import the vm back
         * Thin provisioned disk should remain the same
@@ -520,7 +521,7 @@ class TestCasesImportVmWithNewName(BaseTestDiskImageVms):
     @polarion("RHEVM3-11610")
     def test_import_vm_without_removing_old_vm(self):
         """
-        TCMS case id: 232965
+        Polarion case id: 11610
         Import a vm without removing the original vm used in the export
         process
         * Thin provisioned disk should remain the same
@@ -531,7 +532,7 @@ class TestCasesImportVmWithNewName(BaseTestDiskImageVms):
     @polarion("RHEVM3-11609")
     def test_import_vm_without_removing_old_vm_with_snapshot(self):
         """
-        TCMS case id: 232966
+        Polarion case id: 11609
         Create a snapshot to a vm, export the vm and import without removing
         the original vm used in the export process
         * Thin provisioned disk should remain the same
@@ -584,7 +585,7 @@ class TestCasesCreateTemplate(BaseTestDiskImageVms):
     @polarion("RHEVM3-11608")
     def test_create_template_from_vm(self):
         """
-        TCMS case id: 232967
+        Polarion case id: 11608
         Create a template from a vm
         * Thin provisioned disk should remain the same
         * Preallocated disk should remain the same
@@ -594,7 +595,7 @@ class TestCasesCreateTemplate(BaseTestDiskImageVms):
     @polarion("RHEVM3-11607")
     def test_create_template_from_vm_with_snapshots(self):
         """
-        TCMS case id: 232968
+        Polarion case id: 11607
         Create a snapshot to the vm and create a template
         * Thin provisioned disk should remain the same
         * Preallocated disk should remain the same
@@ -611,18 +612,18 @@ class TestCasesCreateTemplate(BaseTestDiskImageVms):
             assert templates.removeTemplate(True, template)
 
 
-class TestCase232969(BaseTestDiskImage):
+class TestCase11606(BaseTestDiskImage):
     """
     Test vm with both disk formats
     """
-    tcms_test_id = '232969'
+    polarion_test_id = '11606'
 
     def setUp(self):
         """
         Create a vm with a thin provisioned disk and a preallocated disk
          """
-        self.vm_name = "vm_%s" % TCMS_PLAN_ID
-        self.template_name = "template_%s" % TCMS_PLAN_ID
+        self.vm_name = "vm_%s" % self.polarion_test_id
+        self.template_name = "template_%s" % self.polarion_test_id
 
         # First disk is thin provisioned
         vm_args = VM_ARGS.copy()
@@ -681,20 +682,20 @@ class TestCase232969(BaseTestDiskImage):
         assert templates.createTemplate(
             True, vm=self.vm_name, name=self.template_name)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_id)
+    @polarion("RHEVM3-11606")
     def test_different_format_same_vm(self):
         """
-        TCMS case id: 232969 - no snapshot
+        Polarion case id: 11606 - no snapshot
         * Thin provisioned disk should remain the same
         * Preallocated disk should remain the same
         """
         self.action_test()
         self.check_disks()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_id)
+    @polarion("RHEVM3-11606")
     def test_different_format_same_vm_with_snapshot(self):
         """
-        TCMS case id: 232969 - with snapshot
+        Polarion case id: 11606 - with snapshot
         * Thin provisioned disk should remain the same
         * Preallocated disk should remain the same
         """
@@ -759,13 +760,13 @@ class TestCasesCreateTemplateIDE(TestCasesCreateTemplate):
     disk_interface = config.INTERFACE_IDE
 
 
-class TestCase232969VIRTIO(TestCase232969):
+class TestCase11606VIRTIO(TestCase11606):
     """"""
     __test__ = True
     disk_interface = config.INTERFACE_VIRTIO
 
 
-class TestCase232969IDE(TestCase232969):
+class TestCase11606IDE(TestCase11606):
     """"""
     __test__ = True
     disk_interface = config.INTERFACE_IDE

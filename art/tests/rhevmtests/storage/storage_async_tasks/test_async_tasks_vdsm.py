@@ -5,7 +5,7 @@ from art.unittest_lib import StorageTest as TestCase
 import time
 from threading import Thread
 from art.rhevm_api.utils import log_listener
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from nose.plugins.attrib import attr
 from art.rhevm_api.tests_lib.low_level.vms import (
     validateSnapshot, removeSnapshot,
@@ -85,20 +85,20 @@ class RestartVDSM(TestCase):
         pass
 
 
-class TestCase287892(RestartVDSM):
+class TestCase6157(RestartVDSM):
     """
     Restart VDSM during creation of a snapshot
 
-    https://tcms.engineering.redhat.com/case/287892/?from_plan=10029
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki
+    /Storage/3_3_Storage_Async_Tasks
     """
     __test__ = True
-    tcms_plan_id = '10029'
-    tcms_test_case = '287892'
-    snapshot_name = 'snapshot_%s' % tcms_test_case
+    polarion_test_case = '6157'
+    snapshot_name = 'snapshot_%s' % polarion_test_case
     bz = {'1069610': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
     def tearDown(self):
-        super(TestCase287892, self).tearDown()
+        super(TestCase6157, self).tearDown()
         if validateSnapshot(True, config.VM_NAME[0], self.snapshot_name):
             LOGGER.info("Stopping vm %s", config.VM_NAME[0])
             stop_vms_safely([config.VM_NAME[0]])
@@ -125,7 +125,7 @@ class TestCase287892(RestartVDSM):
             validateSnapshot(True, config.VM_NAME[0], self.snapshot_name),
             "Snapshot %s doesn't exists!" % self.snapshot_name)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-6157")
     def test_restart_before_tasks_start(self):
         """
         Restart VDSM before tasks were sent to it - snapshot creation
@@ -138,7 +138,7 @@ class TestCase287892(RestartVDSM):
     # TODO: Commented out due to:
     #    https://projects.engineering.redhat.com/browse/RHEVM-1940
     #
-    # @tcms(tcms_plan_id, tcms_test_case)
+    # @polarion("RHEVM3-6157")
     # def test_restart_during_tasks(self):
     #     """
     #     Restart VDSM when only part of the tasks were finished
@@ -150,16 +150,16 @@ class TestCase287892(RestartVDSM):
     #     self.restart_during_tasks('CreateAllSnapshotsFromVm')
 
 
-class TestCase287893(RestartVDSM):
+class TestCase6158(RestartVDSM):
     """
     Restart VDSM during cloning VM from a template
 
-    https://tcms.engineering.redhat.com/case/287893/?from_plan=10029
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki
+    /Storage/3_3_Storage_Async_Tasks
     """
     __test__ = True
-    tcms_plan_id = '10029'
-    tcms_test_case = '287893'
-    cloned_vm = 'vm_%s' % tcms_test_case
+    polarion_test_case = '6158'
+    cloned_vm = 'vm_%s' % polarion_test_case
 
     def check_action_failed(self):
         assert waitForVmsGone(True, self.cloned_vm, 600)
@@ -173,20 +173,20 @@ class TestCase287893(RestartVDSM):
         """
         Just in case: if one of the tests failed and vm was created - remove it
         """
-        super(TestCase287893, self).tearDown()
+        super(TestCase6158, self).tearDown()
         if VM_API.query("name=%s" % self.cloned_vm):
             removeVm(True, self.cloned_vm)
         wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-6158")
     def test_restart_before_tasks_start(self):
         """
         Restart VDSM before tasks were sent to it - cloning vm from template
         """
         self.restart_before_tasks_start()
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-6158")
     def test_restart_during_tasks(self):
         """
         Restart VDSM when only part of the tasks were finished
@@ -195,15 +195,15 @@ class TestCase287893(RestartVDSM):
         self.restart_during_tasks('AddVmFromTemplate')
 
 
-class TestCase288203(RestartVDSM):
+class TestCase6159(RestartVDSM):
     """
     Restart VDSM during hibernate a VM
 
-    https://tcms.engineering.redhat.com/case/288203/?from_plan=10029
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki
+    /Storage/3_3_Storage_Async_Tasks
     """
     __test__ = True
-    tcms_plan_id = '10029'
-    tcms_test_case = '288203'
+    polarion_test_case = '6159'
 
     def perform_action(self):
         assert suspendVm(True, config.VM_NAME[0], False)
@@ -222,19 +222,19 @@ class TestCase288203(RestartVDSM):
         common.start_vm()
 
     def tearDown(self):
-        super(TestCase288203, self).tearDown()
+        super(TestCase6159, self).tearDown()
         common.start_vm()
         wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
 
 # commented out as it is failing
-#    @tcms(tcms_plan_id, tcms_test_case)
+#    @polarion("RHEVM3-6159")
 #    def test_restart_before_tasks_start(self):
 #        """ restart VDSM before tasks were sent to it - pausing vm
 #        """
 #        self.restart_before_tasks_start()
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-6159")
     def test_restart_during_tasks(self):
         """
         Restart VDSM when only part of the tasks were finished - pausing vm

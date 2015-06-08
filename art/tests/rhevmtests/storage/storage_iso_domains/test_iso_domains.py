@@ -1,6 +1,11 @@
 """
 Test Iso Storage Domain
-https://tcms.engineering.redhat.com/plan/6107
+
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/2_3_Storage_Import_ISO_Export_Domains
+
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_1_Storage_Sanity
 
 Check with shared and local DCs
 Check with RHEL and windows OSs
@@ -18,7 +23,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost
 from art.rhevm_api.utils.test_utils import wait_for_tasks
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from utilities import machine
 from utilities.rhevm_tools.base import Utility, Setup
 from art.test_handler.settings import opts
@@ -26,11 +31,6 @@ from art.test_handler.settings import opts
 logger = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
-TCMS_TEST_PLAN = '6107'
-NEW_TCMS_TEST_PLAN = '6458'
-NEW_TCMS_CASE_ID = '50769'
-TCMS_CASE_ATTACH = '340691'
-TCMS_CASE_RUNONCE = '347379'
 
 
 def setup_module():
@@ -212,7 +212,7 @@ class BaseCaseIsoDomains(TestCase):
 
 
 @attr(tier=0)
-class TestCase50769Shared(BaseCaseIsoDomains):
+class TestCase11576Shared(BaseCaseIsoDomains):
     """
     Test detaching iso domains when an iso image is inserted in a vm under a
     shared DC
@@ -228,11 +228,11 @@ class TestCase50769Shared(BaseCaseIsoDomains):
     )
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
     local = False
-    vm_name = "TestCasesPlan6458Shared"
+    vm_name = "TestCase11576Shared"
     storagedomains = [config.ISCSI_DOMAIN]
     bz = {'1225356': {'engine': ['cli'], 'version': ['3.5', '3.6']}}
 
-    @tcms(NEW_TCMS_TEST_PLAN, NEW_TCMS_CASE_ID)
+    @polarion("RHEVM3-11576")
     def test_detaching_iso_vm_and_vm_runonce(self):
         """
         Try detaching a posixfs/nfs iso domain from vm while iso is attached
@@ -260,7 +260,7 @@ class TestCase50769Shared(BaseCaseIsoDomains):
 
 
 @attr(tier=1)
-class Plan6107Local(BaseCaseIsoDomains):
+class PlanIsoDomainLocal(BaseCaseIsoDomains):
     """
     Test detaching iso domains when an iso image is inserted in a vm under a
     local DC
@@ -268,18 +268,18 @@ class Plan6107Local(BaseCaseIsoDomains):
     # Local data center tests are not supported by the golden environment
     __test__ = not config.GOLDEN_ENV
     local = True
-    vm_name = "TestCasesPlan6107Local"
+    vm_name = "TestCasePlanIsoDomainLocal"
     storagedomains = [config.LOCAL_DOMAIN]
     bz = {'1188326': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
-    @tcms(TCMS_TEST_PLAN, TCMS_CASE_ATTACH)
+    @polarion("RHEVM3-11859")
     def test_detaching_local_iso_vm(self):
         """
         Try detaching a local iso domain from vm while iso is attached
         """
         self.attach_iso_and_maintenance(iso_domain=config.ISO_LOCAL_DOMAIN)
 
-    @tcms(TCMS_TEST_PLAN, TCMS_CASE_RUNONCE)
+    @polarion("RHEVM3-11860")
     def test_detaching_local_iso_vm_runonce(self):
         """
         Try detaching a local iso domain from vm after attaching it with

@@ -1,28 +1,28 @@
 """
 Storage VM Floating Disk
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_3_Storage_Hosted_Engine_Sanity
 """
+import config
 import logging
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import StorageTest as TestCase, attr
 from art.rhevm_api.tests_lib.low_level import disks, vms, storagedomains
 
-import config
 ENUMS = config.ENUMS
 
 logger = logging.getLogger(__name__)
 
 
 @attr(tier=0)
-class TestCase174614(TestCase):
+class TestCase11518(TestCase):
     """
     Test Floating disk is functional
     Spected system: 2 vms with state down
     """
     __test__ = True
-
     disk_name = "floating"
-    tcms_plan_id = '6458'
-    tcms_test_case = '174614'
+    polarion_test_case = '11518'
 
     def setUp(self):
         self.vm_1 = config.VM1_NAME % self.storage
@@ -33,7 +33,7 @@ class TestCase174614(TestCase):
         assert vms.checkVmState(True, self.vm_1, ENUMS["vm_state_down"])
         assert vms.checkVmState(True, self.vm_2, ENUMS["vm_state_down"])
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11518")
     def test_floating_disk(self):
         """Creates a floating disk and assign it to different vms"""
         logger.info("Creating Floating Disk")

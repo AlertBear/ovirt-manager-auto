@@ -1,20 +1,16 @@
 """
 Clone Vm From Snapshot
 """
+import config
 import logging
 from art.unittest_lib.common import StorageTest as TestCase
-
-from art.test_handler.tools import tcms
-
-import config
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainNamesForType,
 )
-
 from art.rhevm_api.tests_lib.low_level.disks import (
     addDisk, wait_for_disks_status, attachDisk,
 )
-
 from art.rhevm_api.tests_lib.low_level.vms import (
     waitForVmDiskStatus, removeVm, waitForVMState,
     cloneVmFromSnapshot, startVm, searchForVm,
@@ -26,7 +22,6 @@ from art.unittest_lib import attr
 from common import _create_vm
 
 
-TCMS_PLAIN_ID = "5290"
 logger = logging.getLogger(__name__)
 
 
@@ -76,17 +71,19 @@ class BaseTestCase(TestCase):
 
 
 @attr(tier=0)
-class TestCase134130(BaseTestCase):
+class TestCase6103(BaseTestCase):
     """
     Clone a vm from snapshot.
     verify: 1. VM is successfully created
             2. VM's info is cloned from original VM.
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_2_Storage_Clone_VM_From_Snapshot
     """
     __test__ = True
-    tcms_case_id = "134130"
-    cloned_vm = "vm_%s" % tcms_case_id
+    polarion_case_id = "6103"
+    cloned_vm = "vm_%s" % polarion_case_id
 
-    @tcms(TCMS_PLAIN_ID, tcms_case_id)
+    @polarion("RHEVM3-6103")
     def test_clone_vm_from_snapshot(self):
         """
         Test that Clone from a vm snapshot works.
@@ -103,18 +100,20 @@ class TestCase134130(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase134131(BaseTestCase):
+class TestCase6119(BaseTestCase):
     """
     Create a VM from snapshot for a DC with multiple storage domains
     verify: storage domain destination can be selected.
             volume type can be selected
             format can be selected
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_2_Storage_Clone_VM_From_Snapshot
     """
     __test__ = True
-    tcms_case_id = "134131"
-    cloned_vm = "vm_%s" % tcms_case_id
+    polarion_case_id = "6119"
+    cloned_vm = "vm_%s" % polarion_case_id
 
-    @tcms(TCMS_PLAIN_ID, tcms_case_id)
+    @polarion("RHEVM3-6119")
     def test_clone_vm_from_snapshot_select_storage(self):
         """
         Test the sd, type and format can be selected
@@ -129,17 +128,21 @@ class TestCase134131(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase134132(BaseTestCase):
+class TestCase6120(BaseTestCase):
     """
     Create VM from snapshot while original VM is Down    ->  Success
     Create VM from snapshot while original VM is Up      ->  Success
+
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_2_Storage_Clone_VM_From_Snapshot
     """
-    tcms_case_id = "134132"
-    cloned_vm_up = "vm_up_%s" % tcms_case_id
-    cloned_vm_down = "vm_down_%s" % tcms_case_id
+    polarion_case_id = "6120"
+    cloned_vm_up = "vm_up_%s" % polarion_case_id
+    cloned_vm_down = "vm_down_%s" % polarion_case_id
     temp_name = 'test_template'
     __test__ = True
 
+    @polarion("RHEVM3-6120")
     def test_clone_vm_from_snapshot_vm_status(self):
         """
         Try to clone vm's snapshot from different states
@@ -176,16 +179,20 @@ class TestCase134132(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase137688(BaseTestCase):
+class TestCase6122(BaseTestCase):
     """
     Clone vm from snapshot:
     Verify that name can be chosen, that no illegal characters can be entered,
     and that duplicate name can't be entered.
+
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_2_Storage_Clone_VM_From_Snapshot
     """
     __test__ = True
-    tcms_case_id = "137688"
-    cloned_vm = "vm_%s" % tcms_case_id
+    polarion_case_id = "6122"
+    cloned_vm = "vm_%s" % polarion_case_id
 
+    @polarion("RHEVM3-6122")
     def test_clone_vm_name_validation(self):
         """
         Test for vm name property and duplicity
@@ -219,16 +226,20 @@ class TestCase137688(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase166174(BaseTestCase):
+class TestCase6108(BaseTestCase):
     """
     Clone a vm with multiple nics.
     Verify the clone is successful and all nics are cloned.
+
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_2_Storage_Clone_VM_From_Snapshot
     """
     __test__ = True
-    tcms_case_id = "166174"
-    cloned_vm = "vm_%s" % tcms_case_id
+    polarion_case_id = "6108"
+    cloned_vm = "vm_%s" % polarion_case_id
     snapshot_two_nics = "snapshot with two nics"
 
+    @polarion("RHEVM3-6108")
     def test_clone_vm_multiple_nics(self):
         """
         Add a new nic to the self.vm, make a snapshot and clone it.
@@ -263,21 +274,25 @@ class TestCase166174(BaseTestCase):
         removeNic(True, self.vm, "nic2")
         removeSnapshot(True, self.vm, self.snapshot_two_nics)
         wait_for_jobs()
-        super(TestCase166174, self).tearDown()
+        super(TestCase6108, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase166175(BaseTestCase):
+class TestCase6109(BaseTestCase):
     """
     Clone a vm with multiple disks.
     Verify the clone is successful and all disks are cloned.
+
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_2_Storage_Clone_VM_From_Snapshot
     """
     __test__ = True
-    tcms_case_id = "166175"
-    cloned_vm = "cloned_vm_%s" % tcms_case_id
+    polarion_case_id = "6109"
+    cloned_vm = "cloned_vm_%s" % polarion_case_id
     snapshot_two_disks = "snapshot with two disks"
-    disk_alias = "second_disk_%s" % tcms_case_id
+    disk_alias = "second_disk_%s" % polarion_case_id
 
+    @polarion("RHEVM3-6109")
     def test_clone_vm_multiple_disks(self):
         """
         Verify the cloned vm contains multiple disks
@@ -310,28 +325,31 @@ class TestCase166175(BaseTestCase):
         removeDisk(True, self.vm, self.disk_alias)
         removeSnapshot(True, self.vm, self.snapshot_two_disks)
         wait_for_jobs()
-        super(TestCase166175, self).tearDown()
+        super(TestCase6109, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase166179(BaseTestCase):
+class TestCase6111(BaseTestCase):
     """
     Clone a desktop and a server VM.
     Verify that clone is successful and is the proper type.
-    """
-    tcms_case_id = "166179"
-    __test__ = True
-    cloned_vm_desktop = "cloned_desktop_%s" % tcms_case_id
 
-    vm_server = "vm_server_%s" % tcms_case_id
-    snapshot_server = "snapshot_server_%s" % tcms_case_id
-    cloned_vm_server = "cloned_server_%s" % tcms_case_id
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_2_Storage_Clone_VM_From_Snapshot
+    """
+    polarion_case_id = "6111"
+    __test__ = True
+    cloned_vm_desktop = "cloned_desktop_%s" % polarion_case_id
+
+    vm_server = "vm_server_%s" % polarion_case_id
+    snapshot_server = "snapshot_server_%s" % polarion_case_id
+    cloned_vm_server = "cloned_server_%s" % polarion_case_id
 
     def setUp(self):
         """
         Create a server type vm
         """
-        super(TestCase166179, self).setUp()
+        super(TestCase6111, self).setUp()
         _create_vm(self.vm_server,
                    disk_interface=config.VIRTIO_SCSI,
                    vm_type=config.VM_TYPE_SERVER, installation=False)
@@ -339,6 +357,7 @@ class TestCase166179(BaseTestCase):
         addSnapshot(True, self.vm_server, self.snapshot_server)
         wait_for_jobs()
 
+    @polarion("RHEVM3-6111")
     def test_clone_vm_type_desktop_server(self):
         """
         Verify that desktop and server types are preserved after cloning
@@ -375,19 +394,23 @@ class TestCase166179(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase166182(BaseTestCase):
+class TestCase6112(BaseTestCase):
     """
     Make a snapshot of a vm with three disks.
     Remove one of the disks.
     Verify the snapshot clone success, and only has 2 disk.
+
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_2_Storage_Clone_VM_From_Snapshot
     """
     __test__ = True
-    tcms_case_id = "166182"
-    cloned_vm = "vm_%s" % tcms_case_id
-    disk_alias = "second_disk_%s" % tcms_case_id
-    disk_alias2 = "third_disk_%s" % tcms_case_id
-    snapshot_multiple_disks = "snapshot multiple disks %s" % tcms_case_id
+    polarion_case_id = "6112"
+    cloned_vm = "vm_%s" % polarion_case_id
+    disk_alias = "second_disk_%s" % polarion_case_id
+    disk_alias2 = "third_disk_%s" % polarion_case_id
+    snapshot_multiple_disks = "snapshot multiple disks %s" % polarion_case_id
 
+    @polarion("RHEVM3-6112")
     def test_clone_vm_after_deleting_disk(self):
         """
         Test only existing disks are cloned even if it were snapshoted.

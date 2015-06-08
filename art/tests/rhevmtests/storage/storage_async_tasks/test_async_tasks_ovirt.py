@@ -5,7 +5,7 @@ import time
 from utilities.machine import Machine, LINUX
 from art.unittest_lib import StorageTest as TestCase
 from concurrent.futures import ThreadPoolExecutor
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from nose.plugins.attrib import attr
 from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, waitForVMState, addSnapshot, removeSnapshot,
@@ -99,19 +99,19 @@ class RestartOvirt(TestCase):
         pass
 
 
-class TestCase288728(RestartOvirt):
+class TestCase6160(RestartOvirt):
     """
     Restart ovirt-engine during creation of a snapshot
 
-    https://tcms.engineering.redhat.com/case/288728/?from_plan=10029
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki
+    /Storage/3_3_Storage_Async_Tasks
     """
     __test__ = True
-    tcms_plan_id = '10029'
-    tcms_test_case = '288728'
-    snapshot_name = "snap_%s" % tcms_test_case
+    polarion_test_case = '6160'
+    snapshot_name = "snap_%s" % polarion_test_case
 
     def tearDown(self):
-        super(TestCase288728, self).tearDown()
+        super(TestCase6160, self).tearDown()
         if validateSnapshot(True, config.VM_NAME[0], self.snapshot_name):
             LOGGER.info("Stopping vm %s", config.VM_NAME[0])
             stop_vms_safely([config.VM_NAME[0]])
@@ -140,7 +140,7 @@ class TestCase288728(RestartOvirt):
             validateSnapshot(True, config.VM_NAME[0], self.snapshot_name),
             "Snapshot %s exists!" % self.snapshot_name)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-6160")
     def test_restart_before_tasks_start(self):
         """
         Restart ovirt engine before it gets info about tasks from UI
@@ -151,7 +151,7 @@ class TestCase288728(RestartOvirt):
 
         self.restart_before_tasks_start()
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-6160")
     def test_restart_during_tasks(self):
         """
         Restart ovirt engine when only part of the tasks were sent
@@ -162,8 +162,8 @@ class TestCase288728(RestartOvirt):
 
         self.restart_during_tasks('CreateAllSnapshotsFromVm')
 
-# commented out as it is failing
-#    @tcms(tcms_plan_id, tcms_test_case)
+# TODO: commented out as it is failing
+#    @polarion("RHEVM3-")
 #    def test_restart_after_finish_before_notified(self):
 #        """
 #        Restart ovirt engine when tasks were finished but engine weren't
@@ -172,21 +172,21 @@ class TestCase288728(RestartOvirt):
 #        self.restart_after_finish_before_notified()
 
 
-class TestCase288964(RestartOvirt):
+class TestCase6161(RestartOvirt):
     """
     Restart ovirt-engine during hibernate a VM
 
-    https://tcms.engineering.redhat.com/case/288964/?from_plan=10029
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki
+    /Storage/3_3_Storage_Async_Tasks
     """
     __test__ = True
-    tcms_plan_id = '10029'
-    tcms_test_case = '288964'
+    polarion_test_case = '6161'
 
     def setUp(self):
         common.start_vm()
 
     def tearDown(self):
-        super(TestCase288964, self).tearDown()
+        super(TestCase6161, self).tearDown()
         common.start_vm()
         wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
@@ -204,7 +204,7 @@ class TestCase288964(RestartOvirt):
             "VM %s status incorrect, is: %s, should be: %s" %
             (config.VM_NAME[0], status, config.VM_UP))
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-6161")
     def test_restart_before_tasks_start(self):
         """
         Restart ovirt engine before it gets info about tasks from UI
@@ -212,16 +212,16 @@ class TestCase288964(RestartOvirt):
         """
         self.restart_before_tasks_start()
 
-# commented out as it is failing
-#    @tcms(tcms_plan_id, tcms_test_case)
+# TODO: commented out as it is failing
+#    @polarion("RHEVM3-")
 #    def test_restart_during_tasks(self):
 #        """ restart ovirt engine when only part of the tasks were sent
 #            - pausing vm
 #        """
 #        self.restart_during_tasks('HibernateVm')
 
-# commented out as it is failing
-#    @tcms(tcms_plan_id, tcms_test_case)
+# TODO: commented out as it is failing
+#    @polarion("RHEVM3-")
 #    def test_restart_after_finish_before_notified(self):
 #        """ restart ovirt engine when tasks were finished
 #            but engine weren't notified - pausing vm
@@ -229,22 +229,22 @@ class TestCase288964(RestartOvirt):
 #        self.restart_after_finish_before_notified()
 
 
-class TestCase288972(RestartOvirt):
+class TestCase6162(RestartOvirt):
     """
     Restart ovirt-engine during cloning a VM from a template
 
-    https://tcms.engineering.redhat.com/case/288972/?from_plan=10029
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki
+    /Storage/3_3_Storage_Async_Tasks
     """
     __test__ = True
-    tcms_plan_id = '10029'
-    tcms_test_case = '288972'
-    cloned_vm = "vm_%s" % tcms_test_case
+    polarion_test_case = '6162'
+    cloned_vm = "vm_%s" % polarion_test_case
 
     def tearDown(self):
         """
         Just in case: if one of the tests failed and vm was created - remove it
         """
-        super(TestCase288972, self).tearDown()
+        super(TestCase6162, self).tearDown()
         if VM_API.query("name=%s" % self.cloned_vm):
             removeVm(True, self.cloned_vm)
         wait_for_tasks(
@@ -261,7 +261,7 @@ class TestCase288972(RestartOvirt):
             True, self.cloned_vm, config.TEMPLATE_NAME, config.CLUSTER_NAME,
             wait=False)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-6162")
     def test_restart_before_tasks_start(self):
         """
         Restart ovirt engine before it gets info about tasks from UI
@@ -269,7 +269,7 @@ class TestCase288972(RestartOvirt):
         """
         self.restart_before_tasks_start()
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-6162")
     def test_restart_during_tasks(self):
         """
         Restart ovirt engine when only part of the tasks were sent
@@ -277,8 +277,8 @@ class TestCase288972(RestartOvirt):
         """
         self.restart_during_tasks('AddVmFromTemplate')
 
-# commented out as it is failing
-#    @tcms(tcms_plan_id, tcms_test_case)
+# TODO: commented out as it is failing
+#    @polarion("RHEVM3-")
 #    def test_restart_after_finish_before_notified(self):
 #        """ restart ovirt engine when tasks were finished
 #            but engine weren't notified - cloning vm from template

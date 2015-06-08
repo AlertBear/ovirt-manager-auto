@@ -3,7 +3,7 @@ import logging
 import time
 from multiprocessing import Process
 from art.unittest_lib import attr
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import vms, storagedomains, disks, hosts
 from art.rhevm_api.tests_lib.low_level.vms import (
     addDisk, get_vms_disks_storage_domain_name, get_vm_disk_logical_name,
@@ -16,7 +16,6 @@ import config
 
 LOGGER = logging.getLogger(__name__)
 
-TCMS_PLAN_ID = '9852'
 DC_TYPE = config.STORAGE_TYPE
 FILE_TO_WRITE = "/tmp/resume_guests_tests"
 
@@ -182,13 +181,13 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
 
 
 @attr(tier=3)
-class TestCase285357(TestCaseBlockedConnection):
+class TestCase5012(TestCaseBlockedConnection):
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
-    tcms_test_case = '285357'
+    polarion_test_case = '5012'
     bz = {'1138144': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5012")
     def test_nfs_blocked_connection(self):
         """ checks if VM is paused after connection to sd is lost,
             checks if VM is unpaused after connection is restored
@@ -197,14 +196,14 @@ class TestCase285357(TestCaseBlockedConnection):
 
 
 @attr(tier=1)
-class TestCase285370(TestNoSpaceLeftOnDevice):
+class TestCase5013(TestNoSpaceLeftOnDevice):
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
-    tcms_test_case = '285370'
+    polarion_test_case = '5013'
     left_space = 10 * GB
     bz = {'1024353': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5013")
     def test_nfs_no_space_left_on_device(self):
         """ checks if VM is paused after no-space-left error on sd,
             checks if VM is unpaused after there is again free space on sd
@@ -213,13 +212,13 @@ class TestCase285370(TestNoSpaceLeftOnDevice):
 
 
 @attr(tier=3)
-class TestCase285371(TestCaseBlockedConnection):
+class TestCase5014(TestCaseBlockedConnection):
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '285371'
+    polarion_test_case = '5014'
     bz = {'1138144': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5014")
     def test_iscsi_blocked_connection(self):
         """ checks if VM is paused after connection to sd is lost,
             checks if VM is unpaused after connection is restored
@@ -228,14 +227,14 @@ class TestCase285371(TestCaseBlockedConnection):
 
 
 @attr(tier=1)
-class TestCase285372(TestNoSpaceLeftOnDevice):
+class TestCase5015(TestNoSpaceLeftOnDevice):
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '285372'
+    polarion_test_case = '5015'
 
     def setUp(self):
         storage = get_vms_disks_storage_domain_name(self.vm)
-        self.disk_alias = "second_disk_%s" % self.tcms_test_case
+        self.disk_alias = "second_disk_%s" % self.polarion_test_case
         LOGGER.info("Adding disk %s to vm %s", self.disk_alias, self.vm)
         if not addDisk(
             True, self.vm, config.DISK_SIZE, storagedomain=storage,
@@ -259,7 +258,7 @@ class TestCase285372(TestNoSpaceLeftOnDevice):
         # TODO: change the sleep to check the operation started
         time.sleep(5)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5015")
     def test_iscsi_no_space_left_on_device(self):
         """ checks if VM is paused after no-space-left error on sd,
             checks if VM is unpaused after there is again free space on sd
@@ -278,17 +277,17 @@ class TestCase285372(TestNoSpaceLeftOnDevice):
             LOGGER.error(
                 "Error removing disk %s from vm %s", self.disk_alias, self.vm,
             )
-        super(TestCase285372, self).tearDown()
+        super(TestCase5015, self).tearDown()
 
 
 @attr(tier=3)
-class TestCase285375(TestCaseBlockedConnection):
+class TestCase5016(TestCaseBlockedConnection):
     __test__ = ('fcp' in opts['storages'])
     storages = set(['fcp'])
-    tcms_test_case = '285375'
+    polarion_test_case = '5016'
     bz = {'1138144': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5016")
     def test_fc_blocked_connection(self):
         """ checks if VM is paused after connection to sd is lost,
             checks if VM is unpaused after connection is restored
@@ -297,12 +296,12 @@ class TestCase285375(TestCaseBlockedConnection):
 
 
 @attr(tier=1)
-class TestCase285376(TestNoSpaceLeftOnDevice):
+class TestCase5017(TestNoSpaceLeftOnDevice):
     __test__ = ('fcp' in opts['storages'])
     storages = set(['fcp'])
-    tcms_test_case = '285376'
+    polarion_test_case = '5017'
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5017")
     def test_fc_no_space_left_on_device(self):
         """ checks if VM is paused after no-space-left error on sd,
             checks if VM is unpaused after there is again free space on sd

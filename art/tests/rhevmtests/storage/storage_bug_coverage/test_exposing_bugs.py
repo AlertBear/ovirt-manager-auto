@@ -1,5 +1,3 @@
-#!/usr/bin/python
-# -*- coding: utf8 -*-
 """
 All test-exposing bugs
 """
@@ -22,7 +20,7 @@ from art.rhevm_api.tests_lib.low_level import disks as ll_disks
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
 from rhevmtests.storage.helpers import create_vm_or_clone
 
@@ -153,22 +151,22 @@ class EnvironmentWithTwoHosts(TestCase):
 
 
 """
-TCMS Test Case 355191 355191, exposing BZ 1066834
+Polarion Test Case 11909 11909, exposing BZ 1066834
 Add a second bootable disks to a vm should fail
 """
 
 
 @attr(tier=1)
-class TestCase355191(TestCase):
+class TestCase11909(TestCase):
     """
-    Test case 355191 - Test that exposes BZ1066834
+    Test case 11909 - Test that exposes BZ1066834
 
-    https://tcms.engineering.redhat.com/case/355191/edit/?from_plan=2515
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_0_Storage_Virtual_Machines_Vdisks
     """
-    tcms_plan_id = '2515'
-    tcms_test_case = '355191'
+    polarion_test_case = '11909'
     expected_disk_number = 2
-    vm_name = "vm_%s" % tcms_test_case
+    vm_name = "vm_%s" % polarion_test_case
     bz_id = '1066834'
     __test__ = True
 
@@ -184,7 +182,7 @@ class TestCase355191(TestCase):
             installation=False,
         )
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11909")
     def test_add_multiple_bootable_disks(self):
         """
         Verify adding a second bootable disk should fail
@@ -232,18 +230,18 @@ from a vm with non-ascii character in its name is working
 
 
 @attr(tier=1)
-class TestCase305452(TestCase):
+class TestCase4833(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=1002249
     scenario:
     * create a VM with a non-ascii char in the disk's name
     * Create a template from the vm
 
-    https://tcms.engineering.redhat.com/case/305452/?from_plan=6468
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Virtual_Disks
     """
     __test__ = True
-    tcms_plan_id = '6468'
-    tcms_test_case = '305452'
+    polarion_test_case = '4833'
 
     def setUp(self):
         """Create the vm"""
@@ -276,7 +274,7 @@ class TestCase305452(TestCase):
 
         wait_for_jobs()
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4833")
     def test_create_template_from_vm(self):
         """ creates template from vm
         """
@@ -308,7 +306,7 @@ Test exposing BZ 969343
 
 
 @attr(tier=1)
-class TestCase289683(EnvironmentWithTwoHosts):
+class TestCase11630(EnvironmentWithTwoHosts):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=969343
     scenario:
@@ -319,15 +317,15 @@ class TestCase289683(EnvironmentWithTwoHosts):
         * reboot the old SPM host
         * wait for everything being up (host & VMs)
 
-    https://tcms.engineering.redhat.com/case/289683/?from_plan=9583
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Bug_Coverage
     """
     # TODO: Due to BZ1210771 this test case couldn't be fully verified (as in
     # is sure to PASS after the bz is fixed), so marking it as False until it
     # can be fully verified.
     __test__ = False
-    tcms_plan_id = '9583'
-    tcms_test_case = '289683'
-    vm_name_base = "vm_%s" % tcms_test_case
+    polarion_test_case = '11630'
+    vm_name_base = "vm_%s" % polarion_test_case
     num_of_vms = 6
     vm_names = []
     vm_ips = []
@@ -370,7 +368,7 @@ class TestCase289683(EnvironmentWithTwoHosts):
                                      config.VMS_LINUX_PW).util(LINUX)
         machine.shutdown()
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11630")
     def test_elect_new_spm_after_failure(self):
         """
             * stop vdsm and prevent it from restarting
@@ -472,14 +470,14 @@ Test image lock free after engine restart
 
 
 @attr(tier=3)
-class TestCase320223(TestCase):
+class TestCase11907(TestCase):
     """
     bug coverage test, restart engine during template creation
-    https://tcms.engineering.redhat.com/case/320223/
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_0_Storage_Templates_Negative
     """
     __test__ = True
-    tcms_plan_id = '5392'
-    tcms_test_case = '320223'
+    polarion_test_case = '11907'
 
     vm_name = "base_vm"
     vm_desc = "VM for creating template"
@@ -510,7 +508,7 @@ class TestCase320223(TestCase):
                         "Failed to create template from vm %s" % self.vm_name)
         logger.info("Successfully created template")
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11907")
     def test_restart_engine_while_image_lock(self):
         """ test checks if restarting the engine while creating a new template
             (image lock) works properly
@@ -596,19 +594,19 @@ Maintenance spm with a running vm
 
 
 @attr(tier=0)
-class TestCase315489(EnvironmentWithTwoHosts):
+class TestCase11956(EnvironmentWithTwoHosts):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=986961
     scenario:
         * on 2 host cluster with connected pool and running VM on SPM
         * maintenance SPM
 
-    https://tcms.engineering.redhat.com/case/315489/?from_plan=2337
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/2_2_Storage_Hosts_Spm_General
     """
     __test__ = True
-    tcms_plan_id = '2337'
-    tcms_test_case = '315489'
-    vm_name_base = "vm_%s" % tcms_test_case
+    polarion_test_case = '11956'
+    vm_name_base = "vm_%s" % polarion_test_case
 
     def setUp(self):
         """
@@ -623,7 +621,7 @@ class TestCase315489(EnvironmentWithTwoHosts):
                           placement_host=self.spm_host,
                           highly_available=True)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11956")
     def test_maintenance_spm_with_running_vm(self):
         """
             * maintenance SPM
@@ -649,12 +647,13 @@ class TestCase315489(EnvironmentWithTwoHosts):
 """
 Test exposing BZ 962549
 
-TCMS plan: https://tcms.engineering.redhat.com/plan/9583
+Polarion plan: https://polarion.engineering.redhat.com/polarion/#/project/
+RHEVM3/wiki/Storage/3_3_Storage_Bug_Coverage
 """
 
 
 @attr(tier=1)
-class TestCase280628(TestCase):
+class TestCase11625(TestCase):
     """ Test exposing https://bugzilla.redhat.com/show_bug.cgi?id=962549
 
     Test scenario:
@@ -666,12 +665,11 @@ class TestCase280628(TestCase):
     * run the VM again on the same HSM
     """
     __test__ = True
-    tcms_plan_id = '9583'
-    tcms_test_case = '280628'
-    vm_name = "vm_%s" % tcms_test_case
-    snap_name = "snap_%s" % tcms_test_case
+    polarion_test_case = '11625'
+    vm_name = "vm_%s" % polarion_test_case
+    snap_name = "snap_%s" % polarion_test_case
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11625")
     def test_merge_snapshots_on_hsm(self):
         """
         checks that a VM with a snapshot, which where created when the VM was
@@ -726,15 +724,16 @@ class TestCase280628(TestCase):
 
 
 @attr(tier=3)
-class TestCase398664(TestCase):
+class TestCase11624(TestCase):
     """
     Test exposing https://bugzilla.redhat.com/show_bug.cgi?id=1119664
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Bug_Coverage
     """
     __test__ = True
-    tcms_plan_id = '9583'
-    tcms_test_case = '398664'
-    vm_name = "vm_%s" % tcms_test_case
-    snap_name = "snap_%s" % tcms_test_case
+    polarion_test_case = '11624'
+    vm_name = "vm_%s" % polarion_test_case
+    snap_name = "snap_%s" % polarion_test_case
 
     def setUp(self):
         # on the spm host - trigger "read error" by manipulating dd behaviour
@@ -848,7 +847,7 @@ class TestCase398664(TestCase):
             if not hosts.isHostUp(True, host):
                 hosts.activateHost(True, host, True)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11624")
     def test_io_error(self):
         """
         Simulate IO Read Error while expand request

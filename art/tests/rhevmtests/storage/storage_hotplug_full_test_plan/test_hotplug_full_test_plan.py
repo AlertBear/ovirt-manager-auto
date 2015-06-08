@@ -7,7 +7,7 @@ import common
 import logging
 from concurrent.futures import ThreadPoolExecutor
 import time
-from art.test_handler.tools import tcms, polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
 from art.unittest_lib import StorageTest as TestCase
 from art.rhevm_api.utils import test_utils as utils
@@ -133,11 +133,12 @@ def teardown_module():
 
 
 @attr(tier=0)
-class TestCase286224(helpers.HotplugHookTest):
+class TestCase5033(helpers.HotplugHookTest):
     """
     Check if before_disk_hotplug is called
 
-    https://tcms.engineering.redhat.com/case/286224/?from_plan=9940
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_HotPlug_Hooks
     """
     __test__ = True
     active_disk = False
@@ -153,11 +154,12 @@ class TestCase286224(helpers.HotplugHookTest):
 
 
 @attr(tier=0)
-class TestCase286365(helpers.HotplugHookTest):
+class TestCase5034(helpers.HotplugHookTest):
     """
     Check if after_disk_hotplug is called
 
-    https://tcms.engineering.redhat.com/case/286365/?from_plan=9940
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_HotPlug_Hooks
     """
     __test__ = True
     active_disk = False
@@ -173,11 +175,12 @@ class TestCase286365(helpers.HotplugHookTest):
 
 
 @attr(tier=0)
-class TestCase286366(helpers.HotplugHookTest):
+class TestCase5035(helpers.HotplugHookTest):
     """
     Check if before_disk_hotunplug is called
 
-    https://tcms.engineering.redhat.com/case/286366/?from_plan=9940
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_HotPlug_Hooks
     """
     __test__ = True
     active_disk = True
@@ -193,11 +196,12 @@ class TestCase286366(helpers.HotplugHookTest):
 
 
 @attr(tier=0)
-class TestCase286368(helpers.HotplugHookTest):
+class TestCase5036(helpers.HotplugHookTest):
     """
     Check if after_disk_hotunplug is called
 
-    https://tcms.engineering.redhat.com/case/286368/?from_plan=9940
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_HotPlug_Hooks
     """
     __test__ = True
     active_disk = True
@@ -213,11 +217,12 @@ class TestCase286368(helpers.HotplugHookTest):
 
 
 @attr(tier=1)
-class TestCase286226(helpers.HotplugHookTest):
+class TestCase5037(helpers.HotplugHookTest):
     """
     Check after_disk_hotplug for plugging 10 disks concurrently
 
-    https://tcms.engineering.redhat.com/case/286226/?from_plan=9940
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_HotPlug_Hooks
     """
     __test__ = True
     active_disk = False
@@ -243,11 +248,12 @@ class TestCase286226(helpers.HotplugHookTest):
 
 
 @attr(tier=1)
-class TestCase287480(helpers.HotplugHookTest):
+class TestCase5038(helpers.HotplugHookTest):
     """
     Check after_disk_hotunplug for unplugging 10 disks concurrently
 
-    https://tcms.engineering.redhat.com/case/287480/?from_plan=9940
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_HotPlug_Hooks
     """
     __test__ = True
     active_disk = True
@@ -273,12 +279,13 @@ class TestCase287480(helpers.HotplugHookTest):
 
 
 @attr(tier=1)
-class TestCase287249(helpers.HotplugHookTest):
+class TestCase5039(helpers.HotplugHookTest):
     """
     Check if before_disk_hotplug is called when attaching & activating
     new disk
 
-    https://tcms.engineering.redhat.com/case/287249/?from_plan=9940
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_HotPlug_Hooks
     """
     __test__ = True
     active_disk = False
@@ -306,7 +313,7 @@ class TestCase287249(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
     def tearDown(self):
-        super(TestCase287249, self).tearDown()
+        super(TestCase5039, self).tearDown()
         vm_disks = vms.getVmDisks(self.vm_name)
         disk_names = [disk.get_name() for disk in vm_disks]
         if self.use_disks[0] in disk_names:
@@ -314,13 +321,14 @@ class TestCase287249(helpers.HotplugHookTest):
 
 
 @attr(tier=1)
-class TestCase287481(helpers.HotplugHookTest):
+class TestCase5044(helpers.HotplugHookTest):
     """
     Check that activation will succeed and the hook will fail if
     after_disk_hotplug is a binary, executable file.
     Check that after removing the hook everything act normal
 
-    https://tcms.engineering.redhat.com/case/287481/?from_plan=9940
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_HotPlug_Hooks
     """
     __test__ = True
     active_disk = False
@@ -363,11 +371,12 @@ class TestCase287481(helpers.HotplugHookTest):
 
 
 @attr(tier=1)
-class TestCase286369(helpers.HotplugHookTest):
+class TestCase5041(helpers.HotplugHookTest):
     """
     Check that non-executable hooks will not be called
 
-    https://tcms.engineering.redhat.com/case/286369/?from_plan=9940
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_HotPlug_Hooks
     """
     __test__ = True
     active_disk = False
@@ -397,11 +406,12 @@ class TestCase286369(helpers.HotplugHookTest):
 
 
 @attr(tier=1)
-class TestCase286243(helpers.HotplugHookTest):
+class TestCase5040(helpers.HotplugHookTest):
     """
     Multiple hooks for one action, checks that all will be called
 
-    https://tcms.engineering.redhat.com/case/286243/?from_plan=9940
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_HotPlug_Hooks
     """
     __test__ = True
     active_disk = False
@@ -434,14 +444,15 @@ class TestCase286243(helpers.HotplugHookTest):
 
 
 @attr(tier=3)
-class TestCase286861(helpers.HotplugHookTest):
+class TestCase5042(helpers.HotplugHookTest):
     """
     Restart vdsm during before_disk_hotplug, action should fail
 
-    https://tcms.engineering.redhat.com/case/286861/?from_plan=9940
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_HotPlug_Hooks
     """
     __test__ = True
-    tcms_test_case = '286861'
+    polarion_test_case = '5042'
     active_disk = False
     action = None
     hooks = {'before_disk_hotplug': [helpers.HOOKWITHSLEEPFILENAME]}
@@ -473,7 +484,7 @@ class TestCase286861(helpers.HotplugHookTest):
         """Give vdsm time to restart and clean the environment"""
         ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME)
         hosts.waitForHostsStates(True, [self.host_name])
-        super(TestCase286861, self).tearDown()
+        super(TestCase5042, self).tearDown()
 
 
 class BasePlugDiskTest(TestCase):
@@ -521,19 +532,18 @@ class BasePlugDiskTest(TestCase):
 
 
 @attr(tier=0)
-class TestCase231521(BasePlugDiskTest):
+class TestCase6231(BasePlugDiskTest):
     """Activate/Deactivate an already attached disk
     on a running VM with supported OS"""
     __test__ = True
 
-    tcms_plan_id = '5291'
-    tcms_test_case = '231521'
+    polarion_test_case = '6231'
     interfaces = [config.VIRTIO, config.VIRTIO_SCSI]
 
     @classmethod
     def setup_class(cls):
         """Create a VM with 2 disks extra disks - 1 active and 1 inactive"""
-        super(TestCase231521, cls).setup_class()
+        super(TestCase6231, cls).setup_class()
         vms.stop_vms_safely(cls.vm_names)
         for vm_name, interface in zip(cls.vm_names, cls.interfaces):
             # add disk and deactivate it
@@ -563,7 +573,7 @@ class TestCase231521(BasePlugDiskTest):
             if not vms.startVm(positive, vm=vm_name, wait_for_ip=True):
                 raise exceptions.VMException("Unable to start VM %s" % vm_name)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-6231")
     def test_activate_deactivate_disk(self):
         """Activate an already attached disk on a running VM"""
         for vm in self.vm_names:
@@ -591,7 +601,7 @@ class TestCase231521(BasePlugDiskTest):
 
 
 @attr(tier=1)
-class TestCase139348(BasePlugDiskTest):
+class TestCase6243(BasePlugDiskTest):
     """Hotplug floating disk (shareable and non-shareable)"""
     # Gluster doesn't support shareable disks
     __test__ = (
@@ -599,10 +609,9 @@ class TestCase139348(BasePlugDiskTest):
         or config.STORAGE_TYPE_ISCSI in opts['storages']
     )
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
-    tcms_plan_id = '5291'
-    tcms_test_case = '139348'
+    polarion_test_case = '6243'
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-6243")
     def test_plug_floating_disk(self):
         """
         Hotplug floating disk (shareable/non-shareable) to vm
@@ -626,7 +635,7 @@ class TestCase139348(BasePlugDiskTest):
 
 
 @attr(tier=1)
-class TestCase174616(TestCase):
+class TestCase6230(TestCase):
     """
     2 vms, 1 shareable disk attached to both of them.
     test ensure hotplug works fine
@@ -638,8 +647,7 @@ class TestCase174616(TestCase):
     )
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
 
-    tcms_plan_id = '6458'
-    tcms_test_case = '174616'
+    polarion_test_case = '6230'
 
     disk_count = 2
     first_vm = 'first'
@@ -710,7 +718,7 @@ class TestCase174616(TestCase):
 
         vms.stop_vms_safely(cls.vm_names)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-6230")
     def test_deactivate_and_activate_disk(self):
         """
             Deactivate an already attached disk on a running VM

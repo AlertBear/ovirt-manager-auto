@@ -1,6 +1,6 @@
 """
 Import more than once vm/template
-TCMS case 174617
+Polarion case 11588
 """
 import config
 import logging
@@ -8,7 +8,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 
 from art.unittest_lib import StorageTest as TestCase, attr
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.utils.test_utils import get_api, setPersistentNetwork
 from art.rhevm_api.tests_lib.low_level import storagedomains, vms, templates
 
@@ -21,9 +21,9 @@ STORAGE_DOMAIN_API = get_api('storage_domain', 'storagedomains')
 
 
 @attr(tier=1)
-class TestCase174617(TestCase):
+class TestCase11588(TestCase):
     """
-    Test Case 174617 - Import more than once
+    Test Case 11588 - Import more than once
 
     * Import the same VM twice
     * Import the same template twice
@@ -31,13 +31,13 @@ class TestCase174617(TestCase):
     * Remove VMs and templates
     ** Verify all should pass
 
-    https://tcms.engineering.redhat.com/case/174617/
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Sanity
     """
     __test__ = True
-    tcms_plan_id = '6458'
-    tcms_test_case = '174617'
-    vm_name = 'original_%s' % tcms_test_case
-    template_name = "template_%s" % tcms_test_case
+    polarion_test_case = '11588'
+    vm_name = 'original_%s' % polarion_test_case
+    template_name = "template_%s" % polarion_test_case
 
     from_vm1, from_vm2 = 'vm1_from_vm', 'vm2_from_vm'
     from_template1, from_template2 = 'vm1_from_template', 'vm2_from_template'
@@ -73,7 +73,7 @@ class TestCase174617(TestCase):
         assert vms.removeVm(True, self.vm_name)
         assert templates.removeTemplate(True, self.template_name)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11588")
     def test_import_more_than_once(self):
         """
         Import a vm and a template more than once and make sure it works

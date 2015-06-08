@@ -1,13 +1,11 @@
 import config
 import helpers
 import logging
-
 from art.unittest_lib import attr
-
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_st
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
@@ -16,19 +14,19 @@ NFS = config.STORAGE_TYPE_NFS
 
 
 @attr(tier=1)
-class TestCase232975(helpers.TestCaseNFSOptions):
+class TestCase4816(helpers.TestCaseNFSOptions):
     """
     Imports existing storage domain with custom advanced NFS options.
 
-    https://tcms.engineering.redhat.com/case/232975/?from_plan=5849
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_NFS_Options
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (NFS in opts['storages'])
-    tcms_plan_id = '5849'
-    tcms_test_case = '232975'
-    export_domain = 'test_%s_export' % tcms_test_case
-    iso_domain = 'test_%s_iso' % tcms_test_case
+    polarion_test_case = "4816"
+    export_domain = 'test_%s_export' % polarion_test_case
+    iso_domain = 'test_%s_iso' % polarion_test_case
     datacenter = config.DATA_CENTER_NAME
     nfs_version = 'v3'
     nfs_timeout = 60
@@ -53,7 +51,7 @@ class TestCase232975(helpers.TestCaseNFSOptions):
             config.VDC_PASSWORD)
         self.sds_for_cleanup.append(self.export_domain)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4816")
     def test_import_existing_export_domain(self):
         """ Imports existing export storage domain with custom NFS options
         """
@@ -76,29 +74,29 @@ class TestCase232975(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=1)
-class TestCase148670(helpers.TestCaseNFSOptions):
+class TestCase4829(helpers.TestCaseNFSOptions):
     """
     Negative test - tests if passed values are correctly validated.
 
-    https://tcms.engineering.redhat.com/case/148670/?from_plan=5849
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_NFS_Options
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (NFS in opts['storages'])
-    tcms_plan_id = '5849'
-    tcms_test_case = '148670'
+    polarion_test_case = "4829"
     nfs_address = config.NFS_ADDRESSES[0]
     nfs_path = config.NFS_PATHS[0]
 
     def setUp(self):
         self.name = None
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4829")
     def test_create_nfs_storage_with_out_of_range_retransmissions(self):
         """ Tries to create an NFS storage domain with an out of range
         retransmission number
         """
-        self.name = 'test_%s_oor_retrans' % self.tcms_test_case
+        self.name = 'test_%s_oor_retrans' % self.polarion_test_case
         nfs_retrans = 65536 * 2 + 5
         nfs_timeout = 730
         nfs_version = 'v3'
@@ -108,12 +106,12 @@ class TestCase148670(helpers.TestCaseNFSOptions):
             self.nfs_address, self.nfs_path, retrans=nfs_retrans,
             version=nfs_version, timeo=nfs_timeout, positive=False)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4829")
     def test_create_nfs_storage_with_out_of_range_timeout(self):
         """ Tries to create an NFS storage domain with an out of range
         NFS timeout
         """
-        self.name = 'test_%s_oor_timeout' % self.tcms_test_case
+        self.name = 'test_%s_oor_timeout' % self.polarion_test_case
         nfs_retrans = 7
         nfs_timeout = 65536 * 2 + 5
         nfs_version = 'v3'
@@ -123,12 +121,12 @@ class TestCase148670(helpers.TestCaseNFSOptions):
             self.nfs_address, self.nfs_path, retrans=nfs_retrans,
             version=nfs_version, timeo=nfs_timeout, positive=False)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4829")
     def test_create_nfs_storage_with_incorrect_nfs_version(self):
         """ Tries to create an NFS storage domain with a random string
         passed as an NFS version
         """
-        self.name = 'test_%s_incorrect_ver' % self.tcms_test_case
+        self.name = 'test_%s_incorrect_ver' % self.polarion_test_case
         nfs_retrans = 7
         nfs_timeout = 1000
         nfs_version = 'v7'
@@ -147,27 +145,27 @@ class TestCase148670(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=0)
-class TestCase148641(helpers.TestCaseNFSOptions):
+class TestCase4826(helpers.TestCaseNFSOptions):
     """
     Creates NFS data storage domain without specifying advanced NFS options and
     checks that the default values were used. Also checks that the NFS versions
     used is the highest possible.
 
-    https://tcms.engineering.redhat.com/case/148641/?from_plan=5849
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_NFS_Options
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (NFS in opts['storages'])
-    tcms_plan_id = '5849'
-    tcms_test_case = '148641'
+    polarion_test_case = '4826'
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4826")
     def test_create_nfs_storage_with_default_options(self):
         """ Creates storage domains with default options and checks if they are
         correct.
         """
         version = 'v3'  # TODO: fix it! it should depend on the host os version
-        self.name = 'test_%s' % self.tcms_test_case
+        self.name = 'test_%s' % self.polarion_test_case
         storage = helpers.NFSStorage(
             name=self.name, address=config.NFS_ADDRESSES[0],
             path=config.NFS_PATHS[0], timeout_to_set=None,
@@ -182,18 +180,18 @@ class TestCase148641(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=1)
-class TestCase153290(helpers.TestCaseNFSOptions):
+class TestCase4830(helpers.TestCaseNFSOptions):
     """
     Creates ISO and export storage domains with custom advanced NFS options
     and verifies they were really used.
 
-    https://tcms.engineering.redhat.com/case/153290/?from_plan=5849
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_NFS_Options
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (NFS in opts['storages'])
-    tcms_plan_id = '5849'
-    tcms_test_case = '153290'
+    polarion_test_case = '4830'
     nfs_retrans = 7
     nfs_timeout = 740
     nfs_version = 'v3'
@@ -202,7 +200,7 @@ class TestCase153290(helpers.TestCaseNFSOptions):
         """ Creates NFS storage domain of specified type. Suffix - suffix of
         domain name.
         """
-        self.name = 'test_%s_%s' % (self.tcms_test_case, suffix)
+        self.name = 'test_%s_%s' % (self.polarion_test_case, suffix)
         storage = helpers.NFSStorage(
             name=self.name, sd_type=sd_type, address=config.NFS_ADDRESSES[idx],
             path=config.NFS_PATHS[idx], timeout_to_set=self.nfs_timeout,
@@ -212,14 +210,14 @@ class TestCase153290(helpers.TestCaseNFSOptions):
         self.create_nfs_domain_and_verify_options([storage])
         self.sds_for_cleanup.append(self.name)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4830")
     def test_create_change_nfs_options_export(self):
         """ Creates export storage domain with advanced NFS options and checks
         that they were really used.
         """
         self._create_and_check(ENUMS['storage_dom_type_export'], 'export', 0)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4830")
     def test_create_change_nfs_options_iso(self):
         """ Creates ISO storage domain with advanced NFS options and checks
         that they were really used.
@@ -228,26 +226,26 @@ class TestCase153290(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=1)
-class TestCase153368(helpers.TestCaseNFSOptions):
+class TestCase4822(helpers.TestCaseNFSOptions):
     """
     Creates multiple storage domains with different custom advanced NFS options
     and checks that all of them have the correct values.
 
-    https://tcms.engineering.redhat.com/case/153368/?from_plan=5849
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_NFS_Options
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (NFS in opts['storages'])
-    tcms_plan_id = '5849'
-    tcms_test_case = '153368'
+    polarion_test_case = '4822'
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4822")
     def test_multiple_storage_domains(self):
         """
         creates multiple storage domains with different advanced NFS options
         and checks they are correct
         """
-        self.name_prefix = 'test_%s_' % self.tcms_test_case
+        self.name_prefix = 'test_%s_' % self.polarion_test_case
         nfs_resources = []
         for i in range(len(config.NFS_ADDRESSES)):
             if i:
@@ -271,7 +269,7 @@ class TestCase153368(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=1)
-class TestCase166534(helpers.TestCaseNFSOptions):
+class TestCase4821(helpers.TestCaseNFSOptions):
     """
     Test steps:
     * creates an export NFS storage domain with custom advanced NFS options
@@ -281,24 +279,24 @@ class TestCase166534(helpers.TestCaseNFSOptions):
     * import the removed storage domain without specifying advanced NFS options
     * checks that this time the storage domain was mounted with default options
 
-    https://tcms.engineering.redhat.com/case/166534/?from_plan=5849
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_NFS_Options
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (NFS in opts['storages'])
-    tcms_plan_id = '5849'
-    tcms_test_case = '166534'
+    polarion_test_case = '4821'
     nfs_retrans = 7
     nfs_timeout = 760
     nfs_version = 'v3'
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4821")
     def test_import_storage_domain_created_with_nfs_options(self):
         """ Checks that importing storage domain which was created with custom
         advanced NFS options by default use default NFS options, not the ones
         defined when creating the storage domain.
         """
-        self.name = 'test_%s_create' % self.tcms_test_case
+        self.name = 'test_%s_create' % self.polarion_test_case
         address = config.NFS_ADDRESSES[0]
         path = config.NFS_PATHS[0]
         datacenter = config.DATA_CENTER_NAME
@@ -339,24 +337,24 @@ class TestCase166534(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=1)
-class TestCase166616(helpers.TestCaseNFSOptions):
+class TestCase4818(helpers.TestCaseNFSOptions):
     """
     Test checks that removing and destroying NFS storage domain with custom
     advanced NFS options work correctly and that adding again storage domain
     created with advanced NFS options doesn't preserve these options.
 
-    https://tcms.engineering.redhat.com/case/166616/?from_plan=5849
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_NFS_Options
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (NFS in opts['storages'])
-    tcms_plan_id = '5849'
-    tcms_test_case = '166616'
+    polarion_test_case = '4818'
     nfs_retrans = 7
     nfs_timeout = 770
     nfs_version = 'v3'
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4818")
     def test_remove_and_add_again_storage_domain_with_nfs_options(self):
         """ Test steps:
         * creates storage domain with custom advanced options
@@ -368,7 +366,7 @@ class TestCase166616(helpers.TestCaseNFSOptions):
         address = config.NFS_ADDRESSES[0]
         path = config.NFS_PATHS[0]
         datacenter = config.DATA_CENTER_NAME
-        self.name = 'test_%s_custom' % self.tcms_test_case
+        self.name = 'test_%s_custom' % self.polarion_test_case
         self.sds_for_cleanup.append(self.name)
 
         logger.info("Creating first time with custom options")
@@ -400,7 +398,7 @@ class TestCase166616(helpers.TestCaseNFSOptions):
             config.VDC_PASSWORD)
 
         logger.info("Creating third time with default options")
-        self.name = 'test_%s_default' % self.tcms_test_case
+        self.name = 'test_%s_default' % self.polarion_test_case
         storage = helpers.NFSStorage(
             name=self.name, address=address, path=path, timeout_to_set=None,
             retrans_to_set=None, vers_to_set=None,

@@ -2,18 +2,19 @@
 Test supervdsm
 Make sure to run this test with "remove_packages"  plugin to test the
 installation of supervdsm when adding the host to the Data Center
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_3_Storage_SuperVdsm
 """
-import logging
 import config
+import logging
 import time
 from art.unittest_lib import StorageTest as TestCase
-from nose.tools import istest
 from art.unittest_lib import attr
 
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import hosts
 
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 
 from utilities.machine import LINUX, Machine
 
@@ -108,18 +109,17 @@ class SuperVDSMTestBase(TestCase):
 
 
 @attr(tier=0)
-class TestCase289230(SuperVDSMTestBase):
+class TestCase6269(SuperVDSMTestBase):
     """
     supervdsm test case, sanity
-    https://tcms.engineering.redhat.com/case/289230/?from_plan=10030
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_SuperVdsm
     """
     __test__ = True
-    tcms_plan_id = '10030'
-    tcms_test_case = '289230'
+    polarion_test_case = '6269'
 
-    @istest
-    @tcms(tcms_plan_id, tcms_test_case)
-    def supervdsm_sanity(self):
+    @polarion("RHEVM3-6269")
+    def test_supervdsm_sanity(self):
         """
         Test basic functionality is running after host is installed
         """
@@ -142,16 +142,16 @@ class TestCase289230(SuperVDSMTestBase):
 
 
 @attr(tier=3)
-class TestCase289539(SuperVDSMTestBase):
+class TestCase6270(SuperVDSMTestBase):
     """
     supervdsm test case, command options
-    https://tcms.engineering.redhat.com/case/289539/?from_plan=10030
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_SuperVdsm
     """
     __test__ = True
-    tcms_plan_id = '10030'
-    tcms_test_case = '289539'
+    polarion_test_case = '6270'
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-6270")
     def command_options_test(self):
         """
         Test command options
@@ -189,16 +189,16 @@ class TestCase289539(SuperVDSMTestBase):
 
 
 @attr(tier=3)
-class TestCase289547(SuperVDSMTestBase):
+class TestCase6271(SuperVDSMTestBase):
     """
     supervdsm test case, communication between supervdsm and vdsm
-    https://tcms.engineering.redhat.com/case/289547/?from_plan=10030
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_SuperVdsm
     """
     __test__ = True
-    tcms_plan_id = '10030'
-    tcms_test_case = '289547'
+    polarion_test_case = '6271'
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-6271")
     def test_communication(self):
         """
         Test that both services work when one is stopped
@@ -243,16 +243,16 @@ class TestCase289547(SuperVDSMTestBase):
 
 
 @attr(tier=3)
-class TestCase289565(SuperVDSMTestBase):
+class TestCase6272(SuperVDSMTestBase):
     """
     supervdsm test case, supervdsm stress test
-    https://tcms.engineering.redhat.com/case/289565/?from_plan=10030
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_SuperVdsm
     """
     __test__ = True
-    tcms_plan_id = '10030'
-    tcms_test_case = '289565'
+    polarion_test_case = '6272'
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-6272")
     def supervdsm_stress_test(self):
         """
         supervdsm stress tests
@@ -276,18 +276,17 @@ class TestCase289565(SuperVDSMTestBase):
 
 
 @attr(tier=3)
-class TestCase293152(SuperVDSMTestBase):
+class TestCase6273(SuperVDSMTestBase):
     """
     deleting supervdsm log and changing log file permissions
-    https://tcms.engineering.redhat.com/case/293152/?from_plan=10030
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_SuperVdsm
     """
     __test__ = True
-    tcms_plan_id = '10030'
-    tcms_test_case = '293152'
+    polarion_test_case = '6273'
 
-    @istest
-    @tcms(tcms_plan_id, tcms_test_case)
-    def change_supervdsm_log(self):
+    @polarion("RHEVM3-6273")
+    def test_change_supervdsm_log(self):
         """
         change permissions and delete supervdsm log
         """

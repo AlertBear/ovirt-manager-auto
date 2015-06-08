@@ -1,15 +1,14 @@
 """
 Test mixed types DC suite
-https://tcms.engineering.redhat.com/plan/12285
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_4_Storage_Mixed_Types_Data_Center]
 """
 import config
 import helpers
 import logging
 
 from utilities.machine import Machine
-from art.core_api.apis_exceptions import (
-    EntityNotFound,
-)
+from art.core_api.apis_exceptions import EntityNotFound
 from art.unittest_lib import attr, StorageTest as TestCase
 
 from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
@@ -26,13 +25,12 @@ from art.rhevm_api.utils import test_utils
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
-from rhevmtests.storage.helpers import get_vm_ip
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
 
-logger = logging.getLogger(__name__)
+from rhevmtests.storage.helpers import get_vm_ip
 
-TCMS_TEST_PLAN = '12285'
+logger = logging.getLogger(__name__)
 
 TIMEOUT_DATA_CENTER_RECONSTRUCT = 900
 TIMEOUT_DATA_CENTER_NON_RESPONSIVE = 300
@@ -166,14 +164,14 @@ class IscsiNfsSdVMs(IscsiNfsSD):
 
 # TODO: doesn't work - need verification when FC is available
 @attr(tier=1)
-class TestCase336356(BaseCaseDCMixed):
+class TestCase4558(BaseCaseDCMixed):
     """
     * Create FC and iSCSI Storage Domains.
     * Create disks on each domain.
     * Move disk (offline movement) between domains
       (FC to iSCSI and iSCSI to FC).
     """
-    tcms_test_case = '336356'
+    polarion_test_case = '4558'
     __test__ = False  # No host with HBA port in broker
 
     storage_domains = [config.FC_DOMAIN, config.ISCSI_DOMAIN_0]
@@ -183,7 +181,7 @@ class TestCase336356(BaseCaseDCMixed):
         """
         * Create disks on each domain.
         """
-        super(TestCase336356, self).setUp()
+        super(TestCase4558, self).setUp()
 
         logger.info("Add a disk to each storage domain")
         self.iscsi_disk = "iscsi_disk"
@@ -192,7 +190,7 @@ class TestCase336356(BaseCaseDCMixed):
         helpers.add_disk_to_sd(self.iscsi, self.iscsi_disk)
         helpers.add_disk_to_sd(self.fc, self.fc_disk)
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-4558")
     def test_move_disks(self):
         """
         Move disk (offline movement) between domains
@@ -207,7 +205,7 @@ class TestCase336356(BaseCaseDCMixed):
 
 
 @attr(tier=1)
-class TestCase336360(IscsiNfsSD):
+class TestCase4561(IscsiNfsSD):
     """
     * Create a shared DC.
     * Create ISCSI and NFS storage domains.
@@ -217,20 +215,20 @@ class TestCase336360(IscsiNfsSD):
     * Export/Import VM.
     """
     __test__ = True
-    tcms_test_case = '336360'
+    polarion_test_case = '4561'
 
     storagedomains = [config.ISCSI_DOMAIN_0, config.NFS_DOMAIN,
                       config.EXPORT_DOMAIN]
     export_domain = config.EXPORT_DOMAIN['name']
-    vm_name = "vm_%s" % tcms_test_case
+    vm_name = "vm_%s" % polarion_test_case
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-4561")
     def test_export_import_vm(self):
         """
         Export-import VMs
         """
         for sd in self.iscsi, self.nfs:
-            vm = "vm_%s_%s" % (sd, self.tcms_test_case)
+            vm = "vm_%s_%s" % (sd, self.polarion_test_case)
             logger.info("Creating vm %s in storage domain %s", vm, sd)
             helpers.create_and_start_vm(vm, sd, installation=False)
             self.vms_to_remove.append(vm)
@@ -250,7 +248,7 @@ class TestCase336360(IscsiNfsSD):
         helpers.create_and_start_vm(self.vm_name, self.iscsi,
                                     installation=False)
         self.vms_to_remove.append(self.vm_name)
-        second_disk = "vm_%s_Disk2" % self.tcms_test_case
+        second_disk = "vm_%s_Disk2" % self.polarion_test_case
         helpers.add_disk_to_sd(second_disk, self.nfs,
                                attach_to_vm=self.vm_name)
 
@@ -263,7 +261,7 @@ class TestCase336360(IscsiNfsSD):
 
 
 @attr(tier=1)
-class TestCase336361(IscsiNfsSdVMs):
+class TestCase4562(IscsiNfsSdVMs):
     """
     * Create a shared DC.
     * Create ISCSI and NFS storage domains.
@@ -273,13 +271,13 @@ class TestCase336361(IscsiNfsSdVMs):
     * Clone VM from snapshot.
     """
     __test__ = True
-    tcms_test_case = '336361'
+    polarion_test_case = '4562'
 
     def setUp(self):
         """
         * Add a new disk to each vms on different sd
         """
-        super(TestCase336361, self).setUp()
+        super(TestCase4562, self).setUp()
 
         nfs_vm_disk2 = "%s_Disk2" % self.nfs_vm
         iscsi_vm_disk2 = "%s_Disk2" % self.iscsi_vm
@@ -290,7 +288,7 @@ class TestCase336361(IscsiNfsSdVMs):
             iscsi_vm_disk2, self.nfs, attach_to_vm=self.iscsi_vm,
         )
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-4562")
     def test_clone_from_snapshot(self):
         """
         Creates a new snapshots and clones vm from it for both vms
@@ -324,7 +322,7 @@ class TestCase336361(IscsiNfsSdVMs):
 
 
 @attr(tier=1)
-class TestCase336522(IscsiNfsSD):
+class TestCase4563(IscsiNfsSD):
     """
     * Create a shared DC.
     * Create 2 SDs - ISCSI and NFS
@@ -335,22 +333,22 @@ class TestCase336522(IscsiNfsSD):
     domain
     """
     __test__ = True
-    tcms_test_case = '336522'
+    polarion_test_case = '4563'
 
-    vm_name = "vm_%s" % tcms_test_case
+    vm_name = "vm_%s" % polarion_test_case
     template_name = "%s_template" % vm_name
 
     def setUp(self):
         """
         * Create a vm on a nfs storage domain
         """
-        super(TestCase336522, self).setUp()
+        super(TestCase4563, self).setUp()
 
         helpers.create_and_start_vm(self.vm_name, self.nfs, installation=False)
         ll_vms.stop_vms_safely([self.vm_name])
         self.vms_to_remove.append(self.vm_name)
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-4563")
     def test_copy_template(self):
         """
         Make template and copy it
@@ -370,7 +368,8 @@ class TestCase336522(IscsiNfsSD):
         def clone_and_verify(storagedomain):
             logger.info("Clone a vm from the Template for storage domains %s",
                         storagedomain)
-            vm_name = "vm_cloned_%s_%s" % (self.tcms_test_case, storagedomain)
+            vm_name = "vm_cloned_%s_%s" % (self.polarion_test_case,
+                                           storagedomain)
             assert ll_vms.cloneVmFromTemplate(
                 True, vm_name, self.template_name,
                 self.cluster_name, storagedomain=storagedomain, clone='true')
@@ -391,7 +390,7 @@ class TestCase336522(IscsiNfsSD):
 
 
 @attr(tier=1)
-class TestCase336529(IscsiNfsSD):
+class TestCase4565(IscsiNfsSD):
     """
     Create a shared DC.
     Create 2 SDs - ISCSI and NFS
@@ -399,15 +398,15 @@ class TestCase336529(IscsiNfsSD):
     Perform basic snapshot sanity (create,preview,commit,undo,delete)
     """
     __test__ = True
-    tcms_test_case = '336529'
-    vm_name = "vm_%s" % tcms_test_case
+    polarion_test_case = '4565'
+    vm_name = "vm_%s" % polarion_test_case
 
     def setUp(self):
         """
         * Create a vm on nfs sd.
         * Add a disk on iscsi sd to the vm.
         """
-        super(TestCase336529, self).setUp()
+        super(TestCase4565, self).setUp()
 
         helpers.create_and_start_vm(self.vm_name, self.nfs)
         disk_name = "%s_Disk2" % self.vm_name
@@ -416,7 +415,7 @@ class TestCase336529(IscsiNfsSD):
         )
         self.vms_to_remove.append(self.vm_name)
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-4565")
     def test_snapshot_operations(self):
         """
         Perform basic snapshot sanity (create, preview, commit, undo, delete)
@@ -449,7 +448,7 @@ class TestCase336529(IscsiNfsSD):
 
 
 @attr(tier=1)
-class TestCase336530(IscsiNfsSD):
+class TestCase4557(IscsiNfsSD):
     """
     Create a shared DC.
     Create 2 SDs - ISCSI and NFS
@@ -458,9 +457,9 @@ class TestCase336530(IscsiNfsSD):
     storage pool like disk creation, removal and move.
     """
     __test__ = True
-    tcms_test_case = '336530'
+    polarion_test_case = '4557'
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-4557")
     def test_basic_operations_reconstruct(self):
         """
         Perform basic disk sanity after reconstruct
@@ -491,7 +490,7 @@ class TestCase336530(IscsiNfsSD):
             self.data_center_name, new_master_domain,
         )
 
-        disk_name = "disk_%s" % self.tcms_test_case
+        disk_name = "disk_%s" % self.polarion_test_case
         logger.info("Add disk %s", disk_name)
         helpers.add_disk_to_sd(disk_name, new_master_domain)
 
@@ -520,7 +519,7 @@ class TestCase336530(IscsiNfsSD):
 # TODO: doesn't work - wait until reinitialize is on rest
 # RFE https://bugzilla.redhat.com/show_bug.cgi?id=1092374
 @attr(tier=1)
-class TestCase336594(BaseCaseDCMixed):
+class TestCase4556(BaseCaseDCMixed):
     """
     Create a shared DC.
     Create SD of ISCSI type.
@@ -531,11 +530,11 @@ class TestCase336594(BaseCaseDCMixed):
     the list.
     """
     __test__ = False
-    tcms_test_case = '336594'
+    polarion_test_case = '4556'
 
     storagedomains = [config.ISCSI_DOMAIN_0]
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-4556")
     def test_reinitialize(self):
         """
         Reinitialize from unattached storage domain
@@ -562,7 +561,7 @@ class TestCase336594(BaseCaseDCMixed):
 
 # TODO: doesn't work, need FC
 @attr(tier=1)
-class TestCase343102(IscsiNfsSD):
+class TestCase4555(IscsiNfsSD):
     """
     Create DataCenter of shared type.
     Create FC/iSCSI and NFS/Gluster/POSIX Storage Domains.
@@ -571,18 +570,18 @@ class TestCase343102(IscsiNfsSD):
     to file).
     """
     __test__ = False
-    tcms_test_case = '343102'
+    polarion_test_case = '4555'
 
     def setUp(self):
         """
         * Create ISCSI and NFS SDs.
         * Create a disk on each SD.
         """
-        super(TestCase343102, self).setUp()
+        super(TestCase4555, self).setUp()
 
         # create disks
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-4555")
     def test_move_between_types(self):
         """
         Move disk (offline movement) between domains (file to block and
@@ -593,7 +592,7 @@ class TestCase343102(IscsiNfsSD):
 
 
 @attr(tier=1)
-class TestCase343101(BaseCaseDCMixed):
+class TestCase4554(BaseCaseDCMixed):
     """
     Create DataCenter of shared type.
     Create NFS and GlusterFS Storage Domains.
@@ -602,11 +601,11 @@ class TestCase343101(BaseCaseDCMixed):
     Gluster to NFS).
     """
     __test__ = True
-    tcms_test_case = '343101'
+    polarion_test_case = '4554'
 
     storagedomains = [config.NFS_DOMAIN, config.GLUSTER_DOMAIN]
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-4554")
     def test_move_nfs_to_nfs(self):
         """
         Move disks from one nfs storage to another
@@ -637,11 +636,11 @@ class TestCase343101(BaseCaseDCMixed):
                 True, [self.gluster_disk_name, self.nfs_disk_name],
             )
 
-        super(TestCase343101, self).tearDown()
+        super(TestCase4554, self).tearDown()
 
 
 @attr(tier=3)
-class TestCase343383(IscsiNfsSD):
+class TestCase4566(IscsiNfsSD):
     """
     Create a shared DC.
     Create two Storage Domains - NFS and ISCSI
@@ -651,7 +650,7 @@ class TestCase343383(IscsiNfsSD):
     pool like disk creation, removal and move
     """
     __test__ = True
-    tcms_test_case = '343383'
+    polarion_test_case = '4566'
 
     def setUp(self):
         """
@@ -668,10 +667,10 @@ class TestCase343383(IscsiNfsSD):
         else:
             self.host = config.HOSTS[0]
         self.host_ip = ll_hosts.getHostIP(self.host)
-        super(TestCase343383, self).setUp()
-        self.disk_alias = "disk_{0}".format(self.tcms_test_case)
+        super(TestCase4566, self).setUp()
+        self.disk_alias = "disk_{0}".format(self.polarion_test_case)
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-4566")
     def test_reconstruct_master(self):
         """
         Block connectivity from the host to the storage.
@@ -763,12 +762,12 @@ class TestCase343383(IscsiNfsSD):
                 if ll_hosts.isHostInMaintenance(True, host):
                     ll_hosts.activateHost(True, host)
 
-        super(TestCase343383, self).tearDown()
+        super(TestCase4566, self).tearDown()
 
 
 # TODO: doesn't work - FC
 @attr(tier=1)
-class TestCase336357(BaseCaseDCMixed):
+class TestCase4559(BaseCaseDCMixed):
     """
     Create a shared DC.
     Create 2 Storage Domains of same type (ISCSI and FC, NFS and Gluster)
@@ -783,7 +782,7 @@ class TestCase336357(BaseCaseDCMixed):
 # TODO: syncAction in doesn't return the response, only the status
 # compare the message after is implemented in the framework
 @attr(tier=1)
-class TestCase336358(IscsiNfsSdVMs):
+class TestCase4560(IscsiNfsSdVMs):
     """
     Live Storage Migration between storage domains not of same type: block/file
 
@@ -797,11 +796,11 @@ class TestCase336358(IscsiNfsSdVMs):
     """
     __test__ = True
 
-    tcms_test_case = '336358'
+    polarion_test_case = '4560'
     # message = "Cannot move Virtual Machine Disk. Source and target domains" \
     #           " must both be either file domains or block domains."
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-4560")
     def test_move_disks_between_different_sd_types(self):
         """
         Live Storage Migration between storage domains not of same type
@@ -822,7 +821,7 @@ class TestCase336358(IscsiNfsSdVMs):
 
 
 @attr(tier=0)
-class TestCase336526(IscsiNfsSD):
+class TestCase4564(IscsiNfsSD):
     """
     Create a shared DC.
     Create 2 SDs - ISCSI and NFS.
@@ -831,10 +830,10 @@ class TestCase336526(IscsiNfsSD):
     """
     __test__ = True
 
-    tcms_test_case = '336526'
-    vm_name = "vm_%s" % tcms_test_case
+    polarion_test_case = '4564'
+    vm_name = "vm_%s" % polarion_test_case
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-4564")
     def test_vm_disk_two_domain_types(self):
         """
         Test having two disks in two different storage domain types
@@ -861,7 +860,7 @@ class TestCase336526(IscsiNfsSD):
 
 
 @attr(tier=1)
-class TestCase336601(BaseCaseDCMixed):
+class TestCase4548(BaseCaseDCMixed):
     """
     Create a shared DC version 3.0
     Create Storage Domain ISCSI and attacht it to DC.            success
@@ -870,14 +869,14 @@ class TestCase336601(BaseCaseDCMixed):
     Remove ISCSI domains from DC and attach NFS domain.           success
     """
     __test__ = True
-    tcms_test_case = '336601'
+    polarion_test_case = '4548'
 
     compatibility_version = "3.0"
-    data_center_name = "data_center_{0}".format(tcms_test_case)
-    cluster_name = "cluster_name_{0}".format(tcms_test_case)
+    data_center_name = "data_center_{0}".format(polarion_test_case)
+    cluster_name = "cluster_name_{0}".format(polarion_test_case)
     new_datacenter_for_ge = True
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-4548")
     def test_data_centers_compabitility_version_30(self):
         """
         Data centers with compatibility version of 3.0
@@ -939,18 +938,18 @@ class TestCase336601(BaseCaseDCMixed):
 
 
 @attr(tier=1)
-class TestCase336617(TestCase):
+class TestCase4549(TestCase):
     """
     Create shared DCs versions 3.0, 3.1, 3.2 and 3.3.
     Create ISCSI domain in this DC.
     Create Gluster Storage Domain and try to attach it to DC. should fail
     """
     __test__ = True
-    tcms_test_case = '336617'
+    polarion_test_case = '4549'
     storages = 'N/A'
 
-    data_center_name = "data_center_{0}".format(tcms_test_case)
-    cluster_name = "cluster_name_{0}".format(tcms_test_case)
+    data_center_name = "data_center_{0}".format(polarion_test_case)
+    cluster_name = "cluster_name_{0}".format(polarion_test_case)
 
     def setUp(self):
         """
@@ -989,7 +988,7 @@ class TestCase336617(TestCase):
             )
             ll_hosts.waitForHostsStates(True, self.host)
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-4549")
     def test_gluster_different_compatibility_versions(self):
         """
         Ensure older data center versions do not allow gluster storage domains
@@ -1031,23 +1030,24 @@ class TestCase336617(TestCase):
 
 
 @attr(tier=1)
-class TestCase336874(BaseCaseDCMixed):
+class TestCase4550(BaseCaseDCMixed):
     """
     Create a shared Data Center version 3.0.
     Create POSIX Storage domain.
     Try to attach POSIX SD to Data Center -> should fail with message
     """
     __test__ = True
-    tcms_test_case = '336874'
+    polarion_test_case = '4550'
     compatibility_version = "3.0"
 
-    data_center_name = "data_center_{0}".format(tcms_test_case)
-    cluster_name = "cluster_name_{0}".format(tcms_test_case)
+    data_center_name = "data_center_{0}".format(polarion_test_case)
+    cluster_name = "cluster_name_{0}".format(polarion_test_case)
     new_datacenter_for_ge = True
 
     message = "The Action add Storage is not supported for this Cluster " \
               "or Data Center compatibility version"
 
+    @polarion("RHEVM3-4550")
     def test_posix_data_center_30(self):
         """
         Posix domain and Data Center 3.0
@@ -1066,7 +1066,7 @@ class TestCase336874(BaseCaseDCMixed):
 
 
 @attr(tier=1)
-class TestCase336876(IscsiNfsSD):
+class TestCase4551(IscsiNfsSD):
     """
     Create a shared DC with two Storage Domans - ISCSI and NFS.
     Create VM with disks on NFS.
@@ -1076,17 +1076,16 @@ class TestCase336876(IscsiNfsSD):
     choose thin copy in Resource Allocation.
     """
     __test__ = True
-
-    tcms_test_case = '336876'
-    vm_name = "vm_%s" % tcms_test_case
-    template_name = "template_%s" % tcms_test_case
-    vm_cloned_name = "vm_cloned_%s" % tcms_test_case
+    polarion_test_case = '4551'
+    vm_name = "vm_%s" % polarion_test_case
+    template_name = "template_%s" % polarion_test_case
+    vm_cloned_name = "vm_cloned_%s" % polarion_test_case
 
     def setUp(self):
         """
         Create a vm in nfs storage and create a template
         """
-        super(TestCase336876, self).setUp()
+        super(TestCase4551, self).setUp()
         helpers.create_and_start_vm(self.vm_name, self.nfs)
         self.vms_to_remove.append(self.vm_name)
         assert ll_vms.shutdownVm(True, self.vm_name, async='false')
@@ -1096,7 +1095,7 @@ class TestCase336876(IscsiNfsSD):
         )
         self.templates_to_remove.append(self.template_name)
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-4551")
     def test_thin_provision_on_block(self):
         """
         Thin provision disk on block form template that resides on NFS
@@ -1120,7 +1119,7 @@ class TestCase336876(IscsiNfsSD):
 
 
 @attr(tier=1)
-class TestCase337426(TestCase):
+class TestCase4552(TestCase):
     """
     have a RHEV 3.3 with DC 3.3 of type ISCSI
     upgrade ovirt to 3.4
@@ -1133,7 +1132,7 @@ class TestCase337426(TestCase):
 
 
 @attr(tier=1)
-class TestCase339619(IscsiNfsSD):
+class TestCase4553(IscsiNfsSD):
     """
     Create shared DC.
     Create ISCSI and NFS domains
@@ -1142,16 +1141,16 @@ class TestCase339619(IscsiNfsSD):
     Import VM and choose disk location on different SD.
     """
     __test__ = True
-    tcms_test_case = '339619'
+    polarion_test_case = '4553'
     storagedomains = [config.ISCSI_DOMAIN_0, config.NFS_DOMAIN,
                       config.EXPORT_DOMAIN]
 
     export_domain = config.EXPORT_DOMAIN['name']
 
-    vm_name = "vm_%s" % tcms_test_case
-    vm_imported = "vm_imported_%s" % tcms_test_case
+    vm_name = "vm_%s" % polarion_test_case
+    vm_imported = "vm_imported_%s" % polarion_test_case
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-4553")
     def test_export_import(self):
         """
         Import VM and choose disk location on different SD

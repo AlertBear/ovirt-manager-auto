@@ -1,23 +1,23 @@
 """
 Storage live snapshot sanity tests - full test
-https://tcms.engineering.redhat.com/plan/5588/
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_1_Storage_Live_Snapshot
 """
-from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-from art.test_handler import exceptions
-import helpers
-import shlex
 import config
+import helpers
 import logging
 import os
+import shlex
 from rhevmtests.storage import helpers as storage_helpers
 
 from concurrent.futures import ThreadPoolExecutor
 
+from art.test_handler import exceptions
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import StorageTest as TestCase, attr
-from art.test_handler.tools import tcms  # pylint: disable=E0611
 
 from art.rhevm_api.tests_lib.high_level.vms import restore_snapshot
-
+from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level import hosts, templates, vms
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainNamesForType)
@@ -102,7 +102,6 @@ class BasicEnvironmentSetUp(TestCase):
     This class implements setup, teardowns and common functions
     """
     __test__ = False
-    tcms_plan_id = '5588'
     vm_name = ''
     file_name = 'test_file'
     mount_path = '/root'
@@ -115,8 +114,8 @@ class BasicEnvironmentSetUp(TestCase):
         """
         self.vm_on_hsm = VM_ON_HSM % self.storage
         self.vm_on_spm = VM_ON_SPM % self.storage
-        self.disk_name = 'test_disk_%s' % self.tcms_test_case
-        self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
+        self.disk_name = 'test_disk_%s' % self.polarion_test_case
+        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
         self.storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )[0]
@@ -185,7 +184,6 @@ class BaseTestCase(TestCase):
     This class implements setup and teardowns of common things
     """
     __test__ = False
-    tcms_plan_id = '5588'
 
     def setUp(self):
         """
@@ -209,10 +207,11 @@ class BaseTestCase(TestCase):
 
 
 @attr(tier=0)
-class TestCase141612(BasicEnvironmentSetUp):
+class TestCase11660(BasicEnvironmentSetUp):
     """
-    Full flow Live snapshot - Test case 141612
-    https://tcms.engineering.redhat.com/case/141612
+    Full flow Live snapshot
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Snapshot?selection=RHEVM3-11660
 
     Create live snapshot
     Add file to the VM
@@ -225,13 +224,14 @@ class TestCase141612(BasicEnvironmentSetUp):
     Verify that the file no longer exists both after preview and after commit
     """
     __test__ = True
-    tcms_test_case = '141612'
+    polarion_test_case = '11660'
     bz = {'1211588': {'engine': ['cli'], 'version': ['3.5', '3.6']}}
 
     def setUp(self):
         self.previewed = False
+
         self.vm_name = VM_ON_SPM % self.storage
-        super(TestCase141612, self).setUp()
+        super(TestCase11660, self).setUp()
 
     def _test_Live_snapshot(self, vm_name):
         """
@@ -286,7 +286,7 @@ class TestCase141612(BasicEnvironmentSetUp):
                 "Snapshot operation failed"
             )
 
-    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11660")
     def test_live_snapshot(self):
         """
         Create a snapshot while VM is running on SPM host
@@ -303,9 +303,10 @@ class TestCase141612(BasicEnvironmentSetUp):
 
 
 @attr(tier=1)
-class TestCase141646(BasicEnvironmentSetUp):
+class TestCase11679(BasicEnvironmentSetUp):
     """
-    https://tcms.engineering.redhat.com/case/141646/
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Snapshot?selection=RHEVM3-11679
 
     Add a disk to the VMs
     Create live snapshot
@@ -318,14 +319,14 @@ class TestCase141646(BasicEnvironmentSetUp):
     Verify that a new data is written on new volumes
     """
     __test__ = True
-    tcms_test_case = '141646'
+    polarion_test_case = '11679'
     mount_path = '/new_fs_%s'
     cmd_create = 'echo "test_txt" > %s/test_file'
 
     def setUp(self):
         self.previewed = False
         self.vm_name = VM_ON_SPM % self.storage
-        super(TestCase141646, self).setUp()
+        super(TestCase11679, self).setUp()
         logger.info("Adding disk to vm %s", self.vm_name)
         assert vms.addDisk(
             True, vm=self.vm_name, size=3 * config.GB, wait='True',
@@ -433,7 +434,7 @@ class TestCase141646(BasicEnvironmentSetUp):
         logger.info("Checking that files no longer exist after commit")
         self.check_file_existence_operation(False)
 
-    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11679")
     def test_live_snapshot(self):
         """
         Create a snapshot while VM is running on SPM host
@@ -451,9 +452,10 @@ class TestCase141646(BasicEnvironmentSetUp):
 
 
 @attr(tier=1)
-class TestCase141636(BaseTestCase):
+class TestCase11676(BaseTestCase):
     """
-    https://tcms.engineering.redhat.com/case/141636
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Snapshot?selection=RHEVM3-11676
 
     Try to create a snapshot with max chars length
     Try to create a snapshot with special characters
@@ -464,7 +466,7 @@ class TestCase141636(BaseTestCase):
     should not limit chars length
     """
     __test__ = True
-    tcms_test_case = '141636'
+    polarion_test_case = '11676'
 
     def _test_snapshot_desc_length(self, positive, length, vm_name):
         """
@@ -478,7 +480,7 @@ class TestCase141636(BaseTestCase):
         self.assertTrue(
             vms.addSnapshot(positive, vm=vm_name, description=description))
 
-    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11676")
     def test_snapshot_description_length_positive(self):
         """
         Try to create a snapshot with max chars length
@@ -486,7 +488,7 @@ class TestCase141636(BaseTestCase):
         self._test_snapshot_desc_length(True, config.MAX_DESC_LENGTH,
                                         self.vm_on_hsm)
 
-    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11676")
     def test_special_characters(self):
         """
         Try to create snapshots containing special characters
@@ -498,9 +500,10 @@ class TestCase141636(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase147751(BaseTestCase):
+class TestCase11665(BaseTestCase):
     """
-    https://tcms.engineering.redhat.com/case/147751
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Snapshot?selection=RHEVM3-11665
 
     Create 2 additional disks in a different storage domain
     to the VM on HSM
@@ -511,7 +514,7 @@ class TestCase147751(BaseTestCase):
     You should be able to create a snapshot
     """
     __test__ = True
-    tcms_test_case = '147751'
+    polarion_test_case = '11665'
 
     def setUp(self):
         """
@@ -524,7 +527,7 @@ class TestCase147751(BaseTestCase):
         storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[1]
         for index in range(2):
-            alias = "disk_%s_%d" % (self.tcms_test_case, index)
+            alias = "disk_%s_%d" % (self.polarion_test_case, index)
             logger.info("Adding disk %s to vm %s", alias, self.vm_on_hsm)
             assert vms.addDisk(
                 True, vm=self.vm_on_hsm, size=3 * config.GB, wait='True',
@@ -532,9 +535,9 @@ class TestCase147751(BaseTestCase):
                 interface=ENUMS['interface_ide'], format=ENUMS['format_cow'],
                 sparse='true', alias=alias)
             self.disks_names.append(alias)
-        super(TestCase147751, self).setUp()
+        super(TestCase11665, self).setUp()
 
-    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11665")
     def test_snapshot_on_multiple_domains(self):
         """
         Tests whether snapshot can be created on vm that has disks on multiple
@@ -545,9 +548,10 @@ class TestCase147751(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase141738(BaseTestCase):
+class TestCase11680(BaseTestCase):
     """
-    https://tcms.engineering.redhat.com/case/141738
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Snapshot?selection=RHEVM3-11680
 
     Migrate a VM without waiting
     Add snapshot to the same VM while migrating it
@@ -557,16 +561,17 @@ class TestCase141738(BaseTestCase):
     It should be impossible to create a snapshot while VMs migration
     """
     __test__ = True
-    tcms_test_case = '141738'
+    polarion_test_case = '11680'
 
     def tearDown(self):
         """
         Waits until migration finishes
         """
-        vms.waitForVMState(self.vm_on_hsm)
-        super(TestCase141738, self).tearDown()
 
-    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
+        vms.waitForVMState(self.vm_on_hsm)
+        super(TestCase11680, self).tearDown()
+
+    @polarion("RHEVM3-11680")
     def test_migration(self):
         """
         Tests live snapshot during migration
@@ -577,9 +582,10 @@ class TestCase141738(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase141614(BaseTestCase):
+class TestCase11674(BaseTestCase):
     """
-    https://tcms.engineering.redhat.com/case/141614/
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Snapshot?selection=RHEVM3-11674/
 
     Add a second disk to a VM
     Add snapshot
@@ -591,7 +597,7 @@ class TestCase141614(BaseTestCase):
     you have.
     """
     __test__ = True
-    tcms_test_case = '141614'
+    polarion_test_case = '11674'
 
     def setUp(self):
         """
@@ -601,7 +607,7 @@ class TestCase141614(BaseTestCase):
         self.vm_on_spm = VM_ON_SPM % self.storage
         storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[1]
-        self.disk_name = "disk_%s" % self.tcms_test_case
+        self.disk_name = "disk_%s" % self.polarion_test_case
         logger.info("Adding disk %s to vm %s", self.disk_name, self.vm_on_spm)
         assert vms.addDisk(
             True, vm=self.vm_on_spm, size=3 * config.GB, wait='True',
@@ -609,9 +615,9 @@ class TestCase141614(BaseTestCase):
             interface=ENUMS['interface_ide'], format=ENUMS['format_cow'],
             sparse='true', alias=self.disk_name
         )
-        super(TestCase141614, self).setUp()
+        super(TestCase11674, self).setUp()
 
-    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11674")
     def test_snapshot_with_multiple_disks(self):
         """
         Checks that created snapshot appears only once although vm has more
@@ -626,9 +632,10 @@ class TestCase141614(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase286330(BaseTestCase):
+class TestCase11684(BaseTestCase):
     """
-    https://tcms.engineering.redhat.com/case/286330
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Snapshot?selection=RHEVM3-11684
 
     Create a template
     Create a thin provisioned VM from that template
@@ -641,7 +648,7 @@ class TestCase286330(BaseTestCase):
     Live snapshots should be created for both cases
     """
     __test__ = True
-    tcms_test_case = '286330'
+    polarion_test_case = '11684'
 
     def setUp(self):
         """
@@ -676,7 +683,7 @@ class TestCase286330(BaseTestCase):
             vdc_password=config.PARAMETERS['vdc_root_password'],
             datacenter=config.DATA_CENTER_NAME)
 
-    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11684")
     def test_snapshot_on_thin_vm(self):
         """
         Try to make a live snapshot from thinly provisioned VM
@@ -684,7 +691,7 @@ class TestCase286330(BaseTestCase):
         self.assertTrue(
             vms.addSnapshot(True, vm='vm_thin', description=SNAP_1))
 
-    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11684")
     def test_snapshot_on_cloned_vm(self):
         """
         Try to make a live snapshot from cloned VM

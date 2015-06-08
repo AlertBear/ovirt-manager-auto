@@ -1,6 +1,7 @@
 """
-Storage live migration sanity test - 6128
-https://tcms.engineering.redhat.com/plan/6128/
+Storage live migration sanity test
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_1_Storage_Live_Storage_Migration
 """
 import config
 import logging
@@ -11,7 +12,7 @@ from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest
 
 from art.test_handler import exceptions
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 
 from utilities.machine import Machine
 
@@ -70,9 +71,6 @@ VM_API = get_api('vm', 'vms')
 
 ENUMS = config.ENUMS
 
-
-TCMS_PLAN_ID = '6128'
-
 CREATE_VM_TIMEOUT = 15 * 60
 VM_SHUTDOWN_TIMEOUT = 2 * 60
 MIGRATION_TIMEOUT = 10 * 60
@@ -121,8 +119,8 @@ def setup_module():
     """
     Sets up the environment - creates vms with all disk types and formats
 
-    for this TCMS plan we need 2 SD but only two of them should be created on
-    setup. the other SD will be created manually in test case 373597.
+    for this test plan, we need 2 SD but only two of them should be created on
+    setup. the other SD will be created manually in test case 5975.
     so to accomplish this behaviour, the luns and paths lists are saved
     and overridden with only two lun/path to sent as parameter to build_setup.
     after the build_setup finish, we return to the original lists
@@ -307,16 +305,17 @@ class AllPermutationsDisks(BaseTestCase):
 
 
 @attr(tier=0)
-class TestCase165965(AllPermutationsDisks):
+class TestCase6004(AllPermutationsDisks):
     """
     live migrate
-    https://tcms.engineering.redhat.com/case/165965/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '165965'
+    polarion_test_case = '6004'
     bz = {'1230270': {'engine': ['cli'], 'version': ["3.5", "3.6"]}}
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6004")
     def test_vms_live_migration(self):
         """
         Actions:
@@ -329,15 +328,16 @@ class TestCase165965(AllPermutationsDisks):
 
 
 @attr(tier=1)
-class TestCase166167(BaseTestCase):
+class TestCase5990(BaseTestCase):
     """
     vm in paused mode
-    https://tcms.engineering.redhat.com/case/166167/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '166167'
+    polarion_test_case = '5990'
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5990")
     def test_vms_live_migration(self):
         """
         Actions:
@@ -359,18 +359,19 @@ class TestCase166167(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase166089(BaseTestCase):
+class TestCase5994(BaseTestCase):
     """
     different vm status
-    https://tcms.engineering.redhat.com/case/166089/?from_plan=6128
+        https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
 
     __test__ = False : A race situation can occur here. Manual test only
     """
     # TODO: Make sure this is really a problem
     __test__ = False
-    tcms_test_case = '166089'
+    polarion_test_case = '5994'
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5994")
     def test_lsm_during_waiting_for_launch_state(self):
         """
         Actions:
@@ -383,7 +384,7 @@ class TestCase166089(BaseTestCase):
         self.assertRaises(exceptions.DiskException, live_migrate_vm,
                           self.vm_name)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5994")
     def test_lsm_during_powering_up_state(self):
         """
         Actions:
@@ -396,7 +397,7 @@ class TestCase166089(BaseTestCase):
         self.assertRaises(exceptions.DiskException, live_migrate_vm,
                           self.vm_name)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5994")
     def test_lsm_during_powering_off_state(self):
         """
         Actions:
@@ -413,15 +414,16 @@ class TestCase166089(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase166090(StorageTest):
+class TestCase5993(StorageTest):
     """
     live migration with thin provision copy
-    https://tcms.engineering.redhat.com/case/166090/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     # TODO: This has not been verified since the bz prevents to run it,
     # make sure it works properly
     __test__ = False
-    tcms_test_case = '166090'
+    polarion_test_case = '5993'
     test_templates = ['template_single', 'template_both']
     base_vm = config.VM_NAME % BaseTestCase.storage
     vm_names = ['vm_from_both', 'vm_from_single']
@@ -497,7 +499,7 @@ class TestCase166090(StorageTest):
         start_vms(self.base_vm, 1)
         waitForVMState(self.base_vm)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5993")
     def test_thin_provision_copy_template_on_both_domains(self):
         """
         template is copied to both domains:
@@ -507,7 +509,7 @@ class TestCase166090(StorageTest):
         live_migrate_vm(self.vm_names[0], LIVE_MIGRATION_TIMEOUT)
         wait_for_jobs()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5993")
     def test_thin_provision_copy_template_on_one_domain(self):
         """
         template is copied on only one domain
@@ -533,13 +535,14 @@ class TestCase166090(StorageTest):
 
 
 @attr(tier=1)
-class TestCase166137(BaseTestCase):
+class TestCase5992(BaseTestCase):
     """
     snapshots and move vm
-    https://tcms.engineering.redhat.com/case/166137/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '166137'
+    polarion_test_case = '5992'
     snapshot_desc = 'snap1'
 
     def _prepare_snapshots(self, vm_name):
@@ -561,10 +564,10 @@ class TestCase166137(BaseTestCase):
         """
         Creates snapshot
         """
-        super(TestCase166137, self).setUp()
+        super(TestCase5992, self).setUp()
         self._prepare_snapshots(self.vm_name)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5992")
     def test_snapshot(self):
         """
         Tests live migrating vm containing snapshot
@@ -576,10 +579,11 @@ class TestCase166137(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase166166(BaseTestCase):
+class TestCase5991(BaseTestCase):
     """
     live migration with shared disk
-    https://tcms.engineering.redhat.com/case/166166
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     # Gluster doesn't support shareable disks
     __test__ = (
@@ -587,10 +591,10 @@ class TestCase166166(BaseTestCase):
         or config.STORAGE_TYPE_ISCSI in opts['storages']
     )
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
-    tcms_test_case = '166166'
-    test_vm_name = 'test_vm_%s' % tcms_test_case
+    polarion_test_case = '5991'
+    test_vm_name = 'test_vm_%s' % polarion_test_case
     permutation = {}
-    disk_name = "disk_%s" % tcms_test_case
+    disk_name = "disk_%s" % polarion_test_case
 
     def _prepare_shared_disk_environment(self):
             """
@@ -625,10 +629,10 @@ class TestCase166166(BaseTestCase):
         """
         Prepare environment with shared disk
         """
-        super(TestCase166166, self).setUp()
+        super(TestCase5991, self).setUp()
         self._prepare_shared_disk_environment()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5991")
     def test_lsm_with_shared_disk(self):
         """
         create and run several vm's with the same shared disk
@@ -656,20 +660,21 @@ class TestCase166166(BaseTestCase):
                 )
         if not removeVm(True, self.test_vm_name):
             logger.error("Cannot remove vm %s", self.vm_name)
-        super(TestCase166166, self).tearDown()
+        super(TestCase5991, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase166168(BaseTestCase):
+class TestCase5989(BaseTestCase):
     """
     suspended vm
-    https://tcms.engineering.redhat.com/case/166168
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '166168'
+    polarion_test_case = '5989'
 
     def setUp(self):
-        super(TestCase166168, self).setUp()
+        super(TestCase5989, self).setUp()
         startVm(True, self.vm_name, config.VM_UP)
 
     def _suspended_vm_and_wait_for_state(self, state):
@@ -683,7 +688,7 @@ class TestCase166168(BaseTestCase):
         )
         wait_for_jobs()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5989")
     def test_lsm_while_saving_state(self):
         """
         1) saving state
@@ -696,7 +701,7 @@ class TestCase166168(BaseTestCase):
                           self._suspended_vm_and_wait_for_state,
                           config.VM_SAVING)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5989")
     def test_lsm_while_suspended_state(self):
         """
         2) suspended state
@@ -714,23 +719,24 @@ class TestCase166168(BaseTestCase):
         # Make sure the vm is in suspended state before stopping it
         waitForVMState(self.vm_name, config.VM_SUSPENDED)
         stopVm(True, self.vm_name)
-        super(TestCase166168, self).tearDown()
+        super(TestCase5989, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase166170(AllPermutationsDisks):
+class TestCase5988(AllPermutationsDisks):
     """
     Create live snapshot during live storage migration
-    https://tcms.engineering.redhat.com/case/166170
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '166170'
-    snapshot_desc = 'snap_%s' % tcms_test_case
+    polarion_test_case = '5988'
+    snapshot_desc = 'snap_%s' % polarion_test_case
     snap_created = None
 
     def setUp(self):
         """Start the vm"""
-        super(TestCase166170, self).setUp()
+        super(TestCase5988, self).setUp()
         startVm(True, self.vm_name, config.VM_UP)
 
     def _prepare_snapshots(self, vm_name):
@@ -746,7 +752,7 @@ class TestCase166170(AllPermutationsDisks):
             vm_name, config.SNAPSHOT_OK, self.snapshot_desc,
         )
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5988")
     def test_lsm_before_snapshot(self):
         """
         1) move -> create snapshot
@@ -759,7 +765,7 @@ class TestCase166170(AllPermutationsDisks):
         self.verify_lsm()
         self._prepare_snapshots(self.vm_name)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5988")
     def test_lsm_after_snapshot(self):
         """
         2) create snapshot -> move
@@ -772,7 +778,7 @@ class TestCase166170(AllPermutationsDisks):
         live_migrate_vm(self.vm_name, LIVE_MIGRATION_TIMEOUT)
         self.verify_lsm()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5988")
     def test_lsm_while_snapshot(self):
         """
         3) move + create snapshots
@@ -794,21 +800,22 @@ class TestCase166170(AllPermutationsDisks):
 
 
 @attr(tier=1)
-class TestCase166173(CommonUsage):
+class TestCase5986(CommonUsage):
     """
     Time out
-    https://tcms.engineering.redhat.com/case/166173/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     # TODO: Fix this case
     __test__ = False
-    tcms_test_case = '166173'
-    disk_name = "disk_%s" % tcms_test_case
+    polarion_test_case = '5986'
+    disk_name = "disk_%s" % polarion_test_case
 
     def setUp(self):
         """
         Prepares a floating disk
         """
-        super(TestCase166173, self).setUp()
+        super(TestCase5986, self).setUp()
         helpers.add_new_disk_for_test(self.vm_name, self.disk_name,
                                       provisioned_size=(60 * config.GB),
                                       wipe_after_delete=True, attach=True,
@@ -816,7 +823,7 @@ class TestCase166173(CommonUsage):
         wait_for_disks_status(self.disk_name)
         startVm(True, self.vm_name, config.VM_UP)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5986")
     def test_vms_live_migration(self):
         """
         Actions:
@@ -838,19 +845,20 @@ class TestCase166173(CommonUsage):
         """
         Restore environment
         """
-        super(TestCase166173, self).tearDown()
+        super(TestCase5986, self).tearDown()
         self._remove_disks([self.disk_name])
 
 
 @attr(tier=1)
-class TestCase166177(AllPermutationsDisks):
+class TestCase5955(AllPermutationsDisks):
     """
     Images located on different domain
-    https://tcms.engineering.redhat.com/case/166177
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '166177'
-    snapshot_desc = 'snap_%s' % tcms_test_case
+    polarion_test_case = '5955'
+    snapshot_desc = 'snap_%s' % polarion_test_case
     disk_to_move = ''
 
     def _perform_action(self, vm_name, disk_name):
@@ -874,7 +882,7 @@ class TestCase166177(AllPermutationsDisks):
         )
         wait_for_jobs()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5955")
     def test_lsm_with_image_on_target(self):
         """
         move disk images to a domain that already has one of the images on it
@@ -884,7 +892,7 @@ class TestCase166177(AllPermutationsDisks):
 
 
 @attr(tier=1)
-class TestCase166180(CommonUsage):
+class TestCase5996(CommonUsage):
     """
     hot plug disk
     1) inactive disk
@@ -896,19 +904,20 @@ class TestCase166180(CommonUsage):
     - hot plug a disk and activate it
     - move the images to a different domain
 
-    https://tcms.engineering.redhat.com/case/166180
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '166180'
+    polarion_test_case = '5996'
     disk_name_pattern = "floating_%s_%s"
 
     def setUp(self):
         """
         Prepares a floating disk
         """
-        super(TestCase166180, self).setUp()
+        super(TestCase5996, self).setUp()
         self.disk_name_pattern = self.disk_name_pattern \
-            % (self.tcms_test_case, self.__class__.__name__)
+            % (self.polarion_test_case, self.__class__.__name__)
         startVm(True, self.vm_name, config.VM_UP)
         helpers.add_new_disk_for_test(
             self.vm_name, self.disk_name_pattern, sparse=True,
@@ -951,14 +960,14 @@ class TestCase166180(CommonUsage):
         start_vms([vm_name], 1, wait_for_ip=False)
         waitForVMState(vm_name)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5996")
     def test_inactive_disk(self):
         """
         Tests storage live migration with one disk in inactive status
         """
         self._test_plugged_disk(self.vm_name, False)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5996")
     def test_active_disk(self):
         """
         Tests storage live migration with floating disk in active status
@@ -969,31 +978,32 @@ class TestCase166180(CommonUsage):
         """Remove floating disk"""
         if not deleteDisk(True, self.disk_name_pattern):
             logger.error("Failure to remove disk %s", self.disk_name_pattern)
-        super(TestCase166180, self).tearDown()
+        super(TestCase5996, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase168768(BaseTestCase):
+class TestCase6003(BaseTestCase):
     """
     Attach disk during migration
-    https://tcms.engineering.redhat.com/case/168768
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '168768'
-    disk_alias = 'disk_%s' % tcms_test_case
+    polarion_test_case = '6003'
+    disk_alias = 'disk_%s' % polarion_test_case
 
     def setUp(self):
         """
         Prepares a floating disk
         """
-        super(TestCase168768, self).setUp()
+        super(TestCase6003, self).setUp()
         startVm(True, self.vm_name, config.VM_UP)
         helpers.add_new_disk_for_test(
             self.vm_name, self.disk_alias, sparse=True,
             disk_format=config.COW_DISK,
             sd_name=self.storage_domains[0])
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6003")
     def test_attach_disk_during_lsm(self):
         """
         migrate vm's images -> try to attach a disk during migration
@@ -1008,25 +1018,26 @@ class TestCase168768(BaseTestCase):
         """Remove floating disk"""
         if not deleteDisk(True, self.disk_alias):
             logger.error("Failure to remove disk %s", self.disk_alias)
-        super(TestCase168768, self).tearDown()
+        super(TestCase6003, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase168839(BaseTestCase):
+class TestCase6001(BaseTestCase):
     """
     LSM to domain in maintenance
-    https://tcms.engineering.redhat.com/case/168839
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '168839'
-    disk_alias = 'disk_%s' % tcms_test_case
+    polarion_test_case = '6001'
+    disk_alias = 'disk_%s' % polarion_test_case
     succeeded = False
 
     def setUp(self):
         """
         Prepares one domain in maintenance
         """
-        super(TestCase168839, self).setUp()
+        super(TestCase6001, self).setUp()
         startVm(True, self.vm_name, config.VM_UP)
         self.vm_disk = getVmDisks(self.vm_name)[0]
         self.target_sd = get_other_storage_domain(
@@ -1041,7 +1052,7 @@ class TestCase168839(BaseTestCase):
             True, config.DATA_CENTER_NAME, self.target_sd,
             ENUMS['storage_domain_state_maintenance'])
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6001")
     def test_lsm_to_maintenance_domain(self):
         """
         try to migrate to a domain in maintenance
@@ -1056,17 +1067,18 @@ class TestCase168839(BaseTestCase):
         wait_for_jobs()
         assert activateStorageDomain(
             True, config.DATA_CENTER_NAME, self.target_sd)
-        super(TestCase168839, self).tearDown()
+        super(TestCase6001, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase174424(CommonUsage):
+class TestCase5972(CommonUsage):
     """
     live migrate vm with multiple disks on multiple domains
-    https://tcms.engineering.redhat.com/case/174424/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '174424'
+    polarion_test_case = '5972'
     disk_name = "disk_%s_%s"
     disk_count = 3
 
@@ -1074,7 +1086,7 @@ class TestCase174424(CommonUsage):
         """
         Prepares disks on different domains
         """
-        super(TestCase174424, self).setUp()
+        super(TestCase5972, self).setUp()
         self.disks_names = []
         stop_vms_safely([self.vm_name])
         self._prepare_disks_for_vm(self.vm_name)
@@ -1095,8 +1107,8 @@ class TestCase174424(CommonUsage):
             }
 
             for index in range(self.disk_count):
-                disk_params['alias'] = self.disk_name % (index,
-                                                         self.tcms_test_case)
+                disk_params['alias'] = \
+                    self.disk_name % (index, self.polarion_test_case)
                 disk_params['storagedomain'] = self.storage_domains[index]
                 if not addDisk(True, **disk_params):
                     raise exceptions.DiskException(
@@ -1107,7 +1119,7 @@ class TestCase174424(CommonUsage):
                 self.disks_names.append(disk_params['alias'])
                 assert attachDisk(True, disk_params['alias'], vm_name)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5972")
     def test_live_migration_with_multiple_disks(self):
         """
         Actions:
@@ -1121,28 +1133,29 @@ class TestCase174424(CommonUsage):
 
 
 @attr(tier=1)
-class TestCase231544(CommonUsage):
+class TestCase5970(CommonUsage):
     """
     Wipe after delete
-    https://tcms.engineering.redhat.com/case/231544/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '231544'
-    disk_name = "disk_%s" % tcms_test_case
+    polarion_test_case = '5970'
+    disk_name = "disk_%s" % polarion_test_case
     regex = 'dd oflag=direct if=/dev/zero of=.*/%s'
 
     def setUp(self):
         """
         Prepares disk with wipe_after_delete=True for VM
         """
-        super(TestCase231544, self).setUp()
+        super(TestCase5970, self).setUp()
         helpers.add_new_disk_for_test(self.vm_name, self.disk_name,
                                       wipe_after_delete=True, attach=True,
                                       sd_name=self.storage_domains[0])
         startVm(True, self.vm_name, config.VM_UP)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5970")
     def test_live_migration_wipe_after_delete(self):
         """
         Actions:
@@ -1185,18 +1198,19 @@ class TestCase231544(CommonUsage):
 
 
 @attr(tier=1)
-class TestCase232947(AllPermutationsDisks):
+class TestCase5969(AllPermutationsDisks):
     """
     Power off/Shutdown of vm during LSM
-    https://tcms.engineering.redhat.com/case/232947/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     # TODO: Fix this case
     __test__ = False
-    tcms_test_case = '232947'
+    polarion_test_case = '5969'
 
     def setUp(self):
         """Start the vm"""
-        super(TestCase232947, self).setUp()
+        super(TestCase5969, self).setUp()
         startVm(True, self.vm_name, config.VM_UP)
 
     def turn_off_method(self):
@@ -1235,7 +1249,7 @@ class TestCase232947(AllPermutationsDisks):
             "Succeeded to live migrate vm disk %s" % disk_name,
         )
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5969")
     def test_power_off_createVolume(self):
         """
         Actions:
@@ -1249,7 +1263,7 @@ class TestCase232947(AllPermutationsDisks):
                 disk_name, 'createVolume',
             )
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5969")
     def test_power_off_cloneImageStructure(self):
         """
         Actions:
@@ -1263,7 +1277,7 @@ class TestCase232947(AllPermutationsDisks):
                 disk_name, 'cloneImageStructure',
             )
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5969")
     def test_power_off_syncImageData(self):
         """
         Actions:
@@ -1277,7 +1291,7 @@ class TestCase232947(AllPermutationsDisks):
                 disk_name, 'syncImageData',
             )
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5969")
     def test_power_off_deleteImage(self):
         """
         Actions:
@@ -1292,7 +1306,7 @@ class TestCase232947(AllPermutationsDisks):
             )
 
 
-class TestCase232947PowerOff(TestCase232947):
+class TestCase5969PowerOff(TestCase5969):
     # TODO: Fix this case
     __test__ = False
 
@@ -1300,7 +1314,7 @@ class TestCase232947PowerOff(TestCase232947):
         stopVm(True, self.vm_name, 'false')
 
 
-class TestCase232947Shutdown(TestCase232947):
+class TestCase5969Shutdown(TestCase5969):
     # TODO: Fix this case
     __test__ = False
 
@@ -1309,15 +1323,16 @@ class TestCase232947Shutdown(TestCase232947):
 
 
 @attr(tier=1)
-class TestCase233434(AllPermutationsDisks):
+class TestCase5968(AllPermutationsDisks):
     """
     Auto-Shrink - Live Migration
-    https://tcms.engineering.redhat.com/case/233434/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '233434'
+    polarion_test_case = '5968'
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5968")
     def test_live_migration_auto_shrink(self):
         """
         Actions:
@@ -1355,15 +1370,16 @@ class TestCase233434(AllPermutationsDisks):
 
 
 @attr(tier=1)
-class TestCase233436(AllPermutationsDisks):
+class TestCase5967(AllPermutationsDisks):
     """
     Auto-Shrink - Live Migration failure
-    https://tcms.engineering.redhat.com/case/233436/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '233436'
+    polarion_test_case = '5967'
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5967")
     def test_live_migration_auto_shrink(self):
         """
         Actions:
@@ -1404,15 +1420,16 @@ class TestCase233436(AllPermutationsDisks):
 
 
 @attr(tier=1)
-class TestCase281156(AllPermutationsDisks):
+class TestCase5982(AllPermutationsDisks):
     """
     merge snapshot
-    https://tcms.engineering.redhat.com/case/281156/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '281156'
+    polarion_test_case = '5982'
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5982")
     def test_merge_snapshot_live_migration(self):
         """
         Actions:
@@ -1447,14 +1464,15 @@ class TestCase281156(AllPermutationsDisks):
 
 
 @attr(tier=1)
-class TestCase281168(BaseTestCase):
+class TestCase5979(BaseTestCase):
     """
     offline migration for disk attached to running vm
-    https://tcms.engineering.redhat.com/case/281168/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '281168'
-    disk_name = "disk_%s" % tcms_test_case
+    polarion_test_case = '5979'
+    disk_name = "disk_%s" % polarion_test_case
     expected_lsm_snap_count = 0
 
     def setUp(self):
@@ -1465,7 +1483,7 @@ class TestCase281168(BaseTestCase):
         # the disk movement in this case is cold move and not live storage
         # migration
 
-        super(TestCase281168, self).setUp()
+        super(TestCase5979, self).setUp()
         remove_all_vm_lsm_snapshots(self.vm_name)
         wait_for_jobs()
         helpers.add_new_disk_for_test(self.vm_name, self.disk_name,
@@ -1474,7 +1492,7 @@ class TestCase281168(BaseTestCase):
         assert deactivateVmDisk(True, self.vm_name, self.disk_name)
         startVm(True, self.vm_name, config.VM_UP)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5979")
     def test_offline_migration(self):
         """
         Actions:
@@ -1501,27 +1519,28 @@ class TestCase281168(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase281206(BaseTestCase):
+class TestCase5976(BaseTestCase):
     """
     Deactivate vm disk during live migrate
-    https://tcms.engineering.redhat.com/case/281206/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     # TODO: Fix this case
     __test__ = False
-    tcms_test_case = '281206'
-    disk_name = "disk_%s" % tcms_test_case
+    polarion_test_case = '5976'
+    disk_name = "disk_%s" % polarion_test_case
 
     def setUp(self):
         """
         Prepares disk with wipe_after_delete=True for VM
         """
-        super(TestCase281206, self).setUp()
+        super(TestCase5976, self).setUp()
         helpers.add_new_disk_for_test(self.vm_name, self.disk_name,
                                       attach=True,
                                       sd_name=self.storage_domains[0])
         startVm(True, self.vm_name, config.VM_UP)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5976")
     def test_deactivate_disk_during_lsm(self):
         """
         Actions:
@@ -1546,17 +1565,18 @@ class TestCase281206(BaseTestCase):
         wait_for_disks_status([self.disk_name])
         if not removeDisk(True, self.vm_name, self.disk_name):
             logger.error("Unable to remove disk %s", self.disk_name)
-        super(TestCase281206, self).tearDown()
+        super(TestCase5976, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase281203(BaseTestCase):
+class TestCase5977(BaseTestCase):
     """
     migrate a vm between hosts + LSM
-    https://tcms.engineering.redhat.com/case/281203/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '281203'
+    polarion_test_case = '5977'
 
     def _migrate_vm_during_lsm_ops(self, wait):
         live_migrate_vm(self.vm_name, wait=wait)
@@ -1564,7 +1584,7 @@ class TestCase281203(BaseTestCase):
         wait_for_jobs()
         return status
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5977")
     def test_LSM_during_vm_migration(self):
         """
         Actions:
@@ -1583,7 +1603,7 @@ class TestCase281203(BaseTestCase):
         self.assertRaises(exceptions.DiskException, live_migrate_vm_disk,
                           self.vm_name, disk_name, target_sd)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5977")
     def test_migrate_vm_during_snap_creation_of_LSM(self):
         """
         Actions:
@@ -1597,7 +1617,7 @@ class TestCase281203(BaseTestCase):
         status = self._migrate_vm_during_lsm_ops(wait=False)
         self.assertFalse(status, "Succeeded to migrate vm during LSM")
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5977")
     def test_migrate_vm_after_LSM(self):
         """
         Actions:
@@ -1613,13 +1633,14 @@ class TestCase281203(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase373597(BaseTestCase):
+class TestCase5975(BaseTestCase):
     """
     Extend storage domain while lsm
-    https://tcms.engineering.redhat.com/case/373597/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = False  # Needs 4 iscsi storage domains (only on block device)
-    tcms_test_case = '373597'
+    polarion_test_case = '5975'
 
     def generate_sd_dict(self, index):
         return {
@@ -1633,8 +1654,8 @@ class TestCase373597(BaseTestCase):
 
     def setUp(self):
         """Set the args with luns"""
-        self.sd_src = "src_domain_%s" % self.tcms_test_case
-        self.sd_target = "target_domain_%s" % self.tcms_test_case
+        self.sd_src = "src_domain_%s" % self.polarion_test_case
+        self.sd_target = "target_domain_%s" % self.polarion_test_case
         for index, sd_name in [self.sd_src, self.sd_target]:
             sd_name_dict = self.generate_sd_dict(index)
             sd_name_dict.update(
@@ -1647,9 +1668,9 @@ class TestCase373597(BaseTestCase):
                            config.DATA_CENTER_NAME)
 
         self.vm_sd = self.sd_src
-        super(TestCase373597, self).setUp()
+        super(TestCase5975, self).setUp()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5975")
     def test_extend_domains_during_LSM(self):
         """
         Actions:
@@ -1672,7 +1693,7 @@ class TestCase373597(BaseTestCase):
 
     def tearDown(self):
         """Remove the added storage domains"""
-        super(TestCase373597, self).tearDown()
+        super(TestCase5975, self).tearDown()
         for sd_name in [self.sd_src, self.sd_target]:
             remove_storage_domain(sd_name, config.HOSTS[0], True)
             wait_for_tasks(config.VDC, config.VDC_PASSWORD,
@@ -1680,15 +1701,16 @@ class TestCase373597(BaseTestCase):
 
 
 @attr(tier=3)
-class TestCase168840(BaseTestCase):
+class TestCase6000(BaseTestCase):
     """
     live migrate - storage connectivity issues
-    https://tcms.engineering.redhat.com/case/168840/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     # TODO: tier3 jobs have not been verified
     __test__ = False
     bz = {'1106593': {'engine': None, 'version': ["3.5"]}}
-    tcms_test_case = '168840'
+    polarion_test_case = '6000'
 
     def _migrate_vm_disk_and_block_connection(self, disk, source, username,
                                               password, target,
@@ -1701,7 +1723,7 @@ class TestCase168840(BaseTestCase):
         self.assertTrue(status, "Failed to block connection")
         wait_for_jobs()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6000")
     def test_LSM_block_from_host_to_target(self):
         """
         Actions:
@@ -1736,20 +1758,21 @@ class TestCase168840(BaseTestCase):
         unblockOutgoingConnection(self.source_ip, self.username,
                                   self.password, self.target_sd_ip)
 
-        super(TestCase168840, self).setUp()
+        super(TestCase6000, self).setUp()
 
 
 @attr(tier=3)
-class TestCase168836(BaseTestCase):
+class TestCase6002(BaseTestCase):
     """
     VDSM restart during live migration
-    https://tcms.engineering.redhat.com/case/168836/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '168836'
+    polarion_test_case = '6002'
     bz = {'1210771': {'engine': None, 'version': ["3.5", "3.6"]}}
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6002")
     def test_restart_spm_during_lsm(self):
         """
         Actions:
@@ -1765,16 +1788,17 @@ class TestCase168836(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase174418(BaseTestCase):
+class TestCase5999(BaseTestCase):
     """
     live migrate during host restart
-    https://tcms.engineering.redhat.com/case/174418/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '174418'
+    polarion_test_case = '5999'
     bz = {'1210771': {'engine': None, 'version': ["3.5", "3.6"]}}
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5999")
     def test_reboot_spm_during_lsm(self):
         """
         Actions:
@@ -1808,7 +1832,7 @@ class TestCase174418(BaseTestCase):
             vm_disk,
         )
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5999")
     def test_reboot_hsm_during_lsm(self):
         """
         Actions:
@@ -1841,14 +1865,15 @@ class TestCase174418(BaseTestCase):
 
 
 @attr(tier=3)
-class TestCase174419(BaseTestCase):
+class TestCase5998(BaseTestCase):
     """
     reboot host during live migration on HA vm
-    https://tcms.engineering.redhat.com/case/174419/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
     bz = {'1210771': {'engine': None, 'version': ["3.5", "3.6"]}}
-    tcms_test_case = '174419'
+    polarion_test_case = '5998'
 
     def _perform_action(self, host):
         vm_disk = getVmDisks(self.vm_name)[0].get_alias()
@@ -1865,7 +1890,7 @@ class TestCase174419(BaseTestCase):
         self.assertFalse(status, "Succeeded to live migrate vm disk %s"
                                  % vm_disk)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5998")
     def test_reboot_spm_during_lsm(self):
         """
         Actions:
@@ -1883,7 +1908,7 @@ class TestCase174419(BaseTestCase):
         startVm(True, self.vm_name, config.VM_UP)
         self._perform_action(spm_host)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5998")
     def test_reboot_hsm_during_lsm(self):
         """
         Actions:
@@ -1904,14 +1929,15 @@ class TestCase174419(BaseTestCase):
 
 
 @attr(tier=3)
-class TestCase174420(BaseTestCase):
+class TestCase5997(BaseTestCase):
     """
     kill vm's pid during live migration
-    https://tcms.engineering.redhat.com/case/174420/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     # TODO: tier3 jobs have not been verified
     __test__ = False
-    tcms_test_case = '174420'
+    polarion_test_case = '5997'
 
     def _kill_vm_pid(self):
         host = getVmHost(self.vm_name)[1]['vmHoster']
@@ -1936,7 +1962,7 @@ class TestCase174420(BaseTestCase):
 
         wait_for_jobs()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5997")
     def test_kill_ha_vm_pid_during_lsm(self):
         """
         Actions:
@@ -1951,7 +1977,7 @@ class TestCase174420(BaseTestCase):
         assert updateVm(True, self.vm_name, highly_available='true')
         self.perform_action()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5997")
     def test_kill_regular_vm_pid_during_lsm(self):
         """
         Actions:
@@ -1967,18 +1993,19 @@ class TestCase174420(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase174421(BaseTestCase):
+class TestCase5985(BaseTestCase):
     """
     no space left
-    https://tcms.engineering.redhat.com/case/174421/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     # TODO: Fix, our storage domains are too big for creating preallocated
     # disks
     __test__ = False
-    tcms_test_case = '174421'
-    disk_name = "disk_%s" % tcms_test_case
+    polarion_test_case = '5985'
+    disk_name = "disk_%s" % polarion_test_case
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5985")
     def test_no_space_disk_during_lsm(self):
         """
         Actions:
@@ -2010,17 +2037,18 @@ class TestCase174421(BaseTestCase):
         wait_for_jobs()
         wait_for_disks_status(self.disk_name)
         assert deleteDisk(True, self.disk_name)
-        super(TestCase174421, self).tearDown()
+        super(TestCase5985, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase174426(CommonUsage):
+class TestCase5971(CommonUsage):
     """
     multiple domains - only one domain unreachable
-    https://tcms.engineering.redhat.com/case/174426/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '174426'
+    polarion_test_case = '5971'
     disk_count = 3
 
     def _prepare_disks_for_vm(self, vm_name):
@@ -2040,7 +2068,7 @@ class TestCase174426(CommonUsage):
             for index in range(self.disk_count):
 
                 disk_params['alias'] = "disk_%s_%s" % \
-                                       (index, self.tcms_test_case)
+                                       (index, self.polarion_test_case)
                 disk_params['storagedomain'] = self.storage_domains[index]
                 if index == 2:
                     disk_params['active'] = False
@@ -2059,7 +2087,7 @@ class TestCase174426(CommonUsage):
         Prepares disks on different domains
         """
         self.disks_names = []
-        super(TestCase174426, self).setUp()
+        super(TestCase5971, self).setUp()
         stop_vms_safely([self.vm_name])
         self._prepare_disks_for_vm(self.vm_name)
         logger.info("Waiting for tasks before deactivating the storage domain")
@@ -2076,7 +2104,7 @@ class TestCase174426(CommonUsage):
 
         startVm(True, self.vm_name, config.VM_UP)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5971")
     def test_lsm_with_multiple_disks_one_sd_in_maintenance(self):
         """
         Actions:
@@ -2118,30 +2146,31 @@ class TestCase174426(CommonUsage):
         waitForStorageDomainStatus(
             True, config.DATA_CENTER_NAME, self.storage_domains[2],
             ENUMS['storage_domain_state_active'])
-        super(TestCase174426, self).tearDown()
+        super(TestCase5971, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase281166(BaseTestCase):
+class TestCase5980(BaseTestCase):
     """
     offline migration + LSM
-    https://tcms.engineering.redhat.com/case/281166/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '281166'
-    disk_name = "disk_%s" % tcms_test_case
+    polarion_test_case = '5980'
+    disk_name = "disk_%s" % polarion_test_case
 
     def setUp(self):
         """
         Prepares disk with wipe_after_delete=True for VM
         """
-        super(TestCase281166, self).setUp()
+        super(TestCase5980, self).setUp()
         helpers.add_new_disk_for_test(
             self.vm_name, self.disk_name, sd_name=self.storage_domains[0],
         )
         startVm(True, self.vm_name, config.VM_UP)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5980")
     def test_offline_migration_and_lsm(self):
         """
         Actions:
@@ -2160,21 +2189,22 @@ class TestCase281166(BaseTestCase):
     def tearDown(self):
         """Remove the floating disk"""
         wait_for_jobs()
-        super(TestCase281166, self).tearDown()
+        super(TestCase5980, self).tearDown()
         assert deleteDisk(True, self.disk_name)
 
 
 @attr(tier=3)
-class TestCase280750(BaseTestCase):
+class TestCase5966(BaseTestCase):
     """
     kill vdsm during LSM
-    https://tcms.engineering.redhat.com/case/280750/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     # TODO: tier3 jobs have not been verified
     __test__ = False
-    tcms_test_case = '280750'
+    polarion_test_case = '5966'
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5966")
     def test_kill_vdsm_during_lsm(self):
         """
         Actions:
@@ -2194,7 +2224,7 @@ class TestCase280750(BaseTestCase):
         host_machine.kill_vdsm_service()
         wait_for_jobs()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5966")
     def test_kill_vdsm_during_second_lsm(self):
         """
         Actions:
@@ -2219,16 +2249,17 @@ class TestCase280750(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase281162(AllPermutationsDisks):
+class TestCase5981(AllPermutationsDisks):
     """
     merge after a failure in LSM
-    https://tcms.engineering.redhat.com/case/281162/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     # TODO: Fix this case
     __test__ = False
-    tcms_test_case = '281162'
+    polarion_test_case = '5981'
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5981")
     def test_merge_snapshot_live_migration_failure(self):
         """
         Actions:
@@ -2283,26 +2314,27 @@ class TestCase281162(AllPermutationsDisks):
 
 
 @attr(tier=1)
-class TestCase281152(BaseTestCase):
+class TestCase5983(BaseTestCase):
     """
     migrate multiple vm's disks
-    https://tcms.engineering.redhat.com/case/281152/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    tcms_test_case = '281152'
+    polarion_test_case = '5983'
     vm_name_format = 'vm_%s_%s'
     vm_count = 5
     vm_names = None
     vm_args = vmArgs.copy()
 
     def setUp(self):
-        super(TestCase281152, self).setUp()
+        super(TestCase5983, self).setUp()
         self.vm_names = []
         self.vm_args['installation'] = False
         for index in range(self.vm_count):
             self.vm_args['storageDomainName'] = self.storage_domains[0]
             self.vm_args['vmName'] = self.vm_name_format % (
-                index, self.tcms_test_case,
+                index, self.polarion_test_case,
             )
 
             logger.info('Creating vm %s', self.vm_args['vmName'])
@@ -2321,7 +2353,7 @@ class TestCase281152(BaseTestCase):
         for vm in self.vm_names:
             live_migrate_vm(vm)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5983")
     def test_migrate_multiple_vms_on_spm(self):
         """
         Actions:
@@ -2333,7 +2365,7 @@ class TestCase281152(BaseTestCase):
         spm = getSPMHost(config.HOSTS)
         self._perform_action(spm)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5983")
     def test_migrate_multiple_vms_on_hsm(self):
         """
         Actions:
@@ -2349,20 +2381,21 @@ class TestCase281152(BaseTestCase):
         """Remove created vms"""
         stop_vms_safely(self.vm_names)
         removeVms(True, self.vm_names)
-        super(TestCase281152, self).tearDown()
+        super(TestCase5983, self).tearDown()
 
 
 @attr(tier=3)
-class TestCase281145(BaseTestCase):
+class TestCase5984(BaseTestCase):
     """
     connectivity issues to pool
-    https://tcms.engineering.redhat.com/case/281145/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     - https://bugzilla.redhat.com/show_bug.cgi?id=1078095
     """
     # TODO: tier3 jobs have not been verified
     __test__ = False
     bz = {'1106593': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
-    tcms_test_case = '281145'
+    polarion_test_case = '5984'
 
     def _migrate_vm_disk_and_block_connection(self, disk, source, username,
                                               password, target,
@@ -2375,7 +2408,7 @@ class TestCase281145(BaseTestCase):
         self.assertTrue(status, "Failed to block connection")
         wait_for_jobs()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5984")
     def test_LSM_block_from_hsm_to_domain(self):
         """
         Actions:
@@ -2410,23 +2443,24 @@ class TestCase281145(BaseTestCase):
         unblockOutgoingConnection(self.source_ip, self.username,
                                   self.password, self.target_sd_ip)
         wait_for_jobs()
-        super(TestCase281145, self).tearDown()
+        super(TestCase5984, self).tearDown()
 
 
 @attr(tier=3)
-class TestCase281142(BaseTestCase):
+class TestCase5974(BaseTestCase):
     """
     LSM during pause due to EIO
-    https://tcms.engineering.redhat.com/case/281142/?from_plan=6128
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Live_Storage_Migration
     """
     # TODO: tier3 jobs have not been verified
     __test__ = False
-    tcms_test_case = '281142'
+    polarion_test_case = '5974'
     source_ip = ''
     username = ''
     password = ''
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-5974")
     def test_LSM_block_from_host_to_target(self):
         """
         Actions:
@@ -2467,4 +2501,4 @@ class TestCase281142(BaseTestCase):
         unblockOutgoingConnection(self.source_ip, self.username,
                                   self.password, self.target_sd_ip)
         wait_for_jobs()
-        super(TestCase281142, self).tearDown()
+        super(TestCase5974, self).tearDown()

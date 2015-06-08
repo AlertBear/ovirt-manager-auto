@@ -2,18 +2,17 @@ import config
 import helpers
 import logging
 
-from art.core_api.apis_exceptions import EntityNotFound
-from art.test_handler import exceptions
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
 from art.rhevm_api.tests_lib.low_level import clusters as ll_cl
 from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_st
 
-from art.test_handler.tools import tcms   # pylint: disable=E0611
-from art.unittest_lib import attr
+from art.core_api.apis_exceptions import EntityNotFound
+from art.test_handler import exceptions
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
-
+from art.unittest_lib import attr
 
 logger = logging.getLogger(__name__)
 ENUMS = helpers.ENUMS
@@ -60,42 +59,42 @@ def teardown_module():
 
 
 @attr(tier=1)
-class TestCase166613(helpers.TestCaseStandardOperations):
+class TestCase4820(helpers.TestCaseStandardOperations):
     """
     Creates NFS storage domain in 3.1 data center. Then changes settings
     in vdsm.conf and checks that data center functionality works correctly
 
-    https://tcms.engineering.redhat.com/case/166613/?from_plan=5849
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_NFS_Options
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (NFS in opts['storages'])
-    tcms_plan_id = '5849'
-    tcms_test_case = '166613'
-    dc_v30_name = 'dc_v30_%s' % tcms_test_case
-    cluster_name = 'cluster_%s' % tcms_test_case
-    sd_1 = 'test_%s_1' % tcms_test_case
-    sd_2 = 'test_%s_2' % tcms_test_case
-    sd_exp = 'test_%s_exp' % tcms_test_case
-    disk_1 = 'test_%s_disk_1' % tcms_test_case
-    disk_2 = 'test_%s_disk_2' % tcms_test_case
-    vm_1 = 'vm_%s_1' % tcms_test_case
-    vm_2 = 'vm_%s_2' % tcms_test_case
-    template = 'templ_%s' % tcms_test_case
+    polarion_test_case = '4820'
+    dc_v30_name = 'dc_v30_%s' % polarion_test_case
+    cluster_name = 'cluster_%s' % polarion_test_case
+    sd_1 = 'test_%s_1' % polarion_test_case
+    sd_2 = 'test_%s_2' % polarion_test_case
+    sd_exp = 'test_%s_exp' % polarion_test_case
+    disk_1 = 'test_%s_disk_1' % polarion_test_case
+    disk_2 = 'test_%s_disk_2' % polarion_test_case
+    vm_1 = 'vm_%s_1' % polarion_test_case
+    vm_2 = 'vm_%s_2' % polarion_test_case
+    template = 'templ_%s' % polarion_test_case
 
     @classmethod
     def setup_class(cls):
         """Defining host to use"""
         cls.host_for_dc = config.HOST_FOR_30_DC['ip']
-        super(TestCase166613, cls).setup_class()
+        super(TestCase4820, cls).setup_class()
 
     def setUp(self):
         """ Creates storage domains with custom advanced NFS options
         """
         self.vdsm_copy_file = None
-        super(TestCase166613, self).setUp()
+        super(TestCase4820, self).setUp()
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4820")
     def test_change_vdsm_conf_and_perform_standard_operations(self):
         """ Changes vdsm.conf and checks that datacenter works correctly
         afterwards.
@@ -120,7 +119,7 @@ class TestCase166613(helpers.TestCaseStandardOperations):
 
 
 @attr(tier=1)
-class TestCase148672(helpers.TestCaseStandardOperations):
+class TestCase4831(helpers.TestCaseStandardOperations):
     """
     Tests if data center with NFS storage domains with custom NFS options works
     correctly. Performed operations:
@@ -131,29 +130,29 @@ class TestCase148672(helpers.TestCaseStandardOperations):
      * switching SPM
      * reconstruction of master storage domain
 
-    https://tcms.engineering.redhat.com/case/148672/?from_plan=5849
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_NFS_Options
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (NFS in opts['storages'])
-    tcms_plan_id = '5849'
-    tcms_test_case = '148672'
-    sd_1 = 'test_%s_1' % tcms_test_case
-    sd_2 = 'test_%s_2' % tcms_test_case
-    sd_exp = 'test_%s_exp' % tcms_test_case
-    disk_1 = 'test_%s_disk_1' % tcms_test_case
-    disk_2 = 'test_%s_disk_2' % tcms_test_case
-    vm_1 = 'vm_%s_1' % tcms_test_case
-    vm_2 = 'vm_%s_2' % tcms_test_case
-    template = 'templ_%s' % tcms_test_case
+    polarion_test_case = '4831'
+    sd_1 = 'test_%s_1' % polarion_test_case
+    sd_2 = 'test_%s_2' % polarion_test_case
+    sd_exp = 'test_%s_exp' % polarion_test_case
+    disk_1 = 'test_%s_disk_1' % polarion_test_case
+    disk_2 = 'test_%s_disk_2' % polarion_test_case
+    vm_1 = 'vm_%s_1' % polarion_test_case
+    vm_2 = 'vm_%s_2' % polarion_test_case
+    template = 'templ_%s' % polarion_test_case
 
     @classmethod
     def setup_class(cls):
         """Defining host to use"""
         cls.host_for_dc = config.HOST_FOR_30_DC['ip']
-        super(TestCase148672, cls).setup_class()
+        super(TestCase4831, cls).setup_class()
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4831")
     def test_functionality_with_custom_nfs_options(self):
         """ Tests basic data center functionality with storage domain with
         custom NFS options
@@ -164,27 +163,27 @@ class TestCase148672(helpers.TestCaseStandardOperations):
 
 
 @attr(tier=1)
-class TestCase166615(helpers.TestCaseNFSOptions):
+class TestCase4819(helpers.TestCaseNFSOptions):
     """
     Creates NFS storage domain in 3.0 data center. Upgrades data center.
     Checks that after upgrade storage domain is still mounted with default
     options.
 
-    https://tcms.engineering.redhat.com/case/166615/?from_plan=5849
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_NFS_Options
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (NFS in opts['storages'])
-    tcms_plan_id = '5849'
-    tcms_test_case = '166615'
-    dc_v30_name = 'dc_v30_%s' % tcms_test_case
-    cl_name = 'cluster_%s' % tcms_test_case
+    polarion_test_case = '4819'
+    dc_v30_name = 'dc_v30_%s' % polarion_test_case
+    cl_name = 'cluster_%s' % polarion_test_case
 
     @classmethod
     def setup_class(cls):
         """ Creates 3.0 data center, adds cluster & host to it
         """
-        super(TestCase166615, cls).setup_class()
+        super(TestCase4819, cls).setup_class()
         cls.host_for_dc = config.HOST_FOR_30_DC['ip']
         logger.info("Creating 3.0 datacenter")
         if not ll_dc.addDataCenter(
@@ -213,7 +212,7 @@ class TestCase166615(helpers.TestCaseNFSOptions):
                 cls.cl_name,
             )
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4819")
     def test_upgrade_datacenter(self):
         """ Creates NFS storage domain in 3.0 data center. Upgrades data center
         to 3.1. Checks that storage domain is still mounted with default
@@ -221,7 +220,7 @@ class TestCase166615(helpers.TestCaseNFSOptions):
         """
         address = config.NFS_ADDRESSES[0]
         path = config.NFS_PATHS[0]
-        name = 'test_%s' % self.tcms_test_case
+        name = 'test_%s' % self.polarion_test_case
 
         version = 'v3'  # TODO: fix
         storage = helpers.NFSStorage(
@@ -262,11 +261,11 @@ class TestCase166615(helpers.TestCaseNFSOptions):
     @classmethod
     def teardown_class(cls):
         helpers.clean_dc(cls.dc_v30_name, cls.host, cls.cl_name)
-        super(TestCase166615, cls).teardown_class()
+        super(TestCase4819, cls).teardown_class()
 
 
 @attr(tier=1)
-class TestCase148697(helpers.TestCaseNFSOptions):
+class TestCase4828(helpers.TestCaseNFSOptions):
     """
     Tests checks that
     * storage domain created with custom advanced NFS options cannot be
@@ -274,17 +273,17 @@ class TestCase148697(helpers.TestCaseNFSOptions):
     * storage domain created with custom advanced NFS options after attaching
       to another 3.1+ datacenter preserves its advanced NFS options
 
-    https://tcms.engineering.redhat.com/case/148697/?from_plan=5849
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_NFS_Options
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (NFS in opts['storages'])
-    tcms_plan_id = '5849'
-    tcms_test_case = '148697'
+    polarion_test_case = '4828'
     nfs_retrans = 7
     nfs_timeout = 780
     nfs_version = 'v3'
-    sd_name = 'test_%s' % tcms_test_case
+    sd_name = 'test_%s' % polarion_test_case
     nfs_address = config.NFS_ADDRESSES[1]
     nfs_path = config.NFS_PATHS[1]
 
@@ -292,7 +291,7 @@ class TestCase148697(helpers.TestCaseNFSOptions):
     def setup_class(cls):
         """Defining host to use"""
         cls.host_for_dc = config.HOST_FOR_30_DC['ip']
-        super(TestCase148697, cls).setup_class()
+        super(TestCase4828, cls).setup_class()
 
     def setUp(self):
         """ creates storage domain with custom advanced 3.0 options
@@ -309,24 +308,24 @@ class TestCase148697(helpers.TestCaseNFSOptions):
         hl_st.detach_and_deactivate_domain(
             config.DATA_CENTER_NAME, self.sd_name)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4828")
     def test_nfs_options_in_30_datacenter(self):
         """ Checks that storage domain with custom NFS options cannot be
         added to 3.0 datacenter
         """
-        self.dc_name = "test_%s_30" % self.tcms_test_case
-        self.cl_name = "test_%s_30" % self.tcms_test_case
+        self.dc_name = "test_%s_30" % self.polarion_test_case
+        self.cl_name = "test_%s_30" % self.polarion_test_case
         self.create_dc(helpers.VERSION_30)
         if not ll_st.attachStorageDomain(False, self.dc_name, self.sd_name):
             self.fail("It should be impossible to attach storage domain with "
                       "custom nfs options to 3.0 datacenter")
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4828")
     def test_nfs_options_in_31_datacenter(self):
         """ Adds storage domain with custom nfs options to 3.1 datacenter
         """
-        self.dc_name = "test_%s_31" % self.tcms_test_case
-        self.cl_name = "test_%s_31" % self.tcms_test_case
+        self.dc_name = "test_%s_31" % self.polarion_test_case
+        self.cl_name = "test_%s_31" % self.polarion_test_case
         self.create_dc(helpers.VERSION_31)
         if not ll_st.attachStorageDomain(True, self.dc_name, self.sd_name):
             self.fail("It should be possible to attach storage domain with "

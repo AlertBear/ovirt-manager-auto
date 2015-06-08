@@ -1,6 +1,7 @@
 """
 3.4 Single disk snapshot
-https://tcms.engineering.redhat.com/plan/12057
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_4_Storage_Single_Snapshot
 """
 import logging
 import shlex
@@ -36,14 +37,13 @@ from rhevmtests.storage.storage_single_disk_snapshot import config, helpers
 from art.unittest_lib import StorageTest as BaseTestCase
 from art.unittest_lib import attr
 from art.test_handler import exceptions
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from utilities.machine import Machine, LINUX
 
 logger = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
 
-TEST_PLAN_ID = '12057'
 ACTIVE_VM = 'Active VM'
 VM_NAMES = []
 ISCSI = config.STORAGE_TYPE_ISCSI
@@ -108,7 +108,7 @@ class BasicEnvironment(BaseTestCase):
     This class implements setup and teardowns of common things
     """
     __test__ = False
-    tcms_test_case = None
+    polarion_test_case = None
     snapshot_desc = None
     disk_count = 4
     file_name = 'test_file'
@@ -135,8 +135,8 @@ class BasicEnvironment(BaseTestCase):
         self.host = Machine(host_ip, config.HOSTS_USER,
                             config.HOSTS_PW).util(LINUX)
 
-        self.disks_names = ['disk_%s_%s' % (d, self.tcms_test_case) for d in
-                            range(self.disk_count)]
+        self.disks_names = ['disk_%s_%s' % (d, self.polarion_test_case)
+                            for d in range(self.disk_count)]
         logger.info("DISKS: %s", self.disks_names)
         for disk_name in self.disks_names:
             addDisk(
@@ -272,20 +272,21 @@ class BasicEnvironment(BaseTestCase):
 
 
 @attr(tier=0)
-class TestCase333023(BasicEnvironment):
+class TestCase6022(BasicEnvironment):
     """
     Create snapshot of first disk out of 4 and verify that the
     snapshot was created successfully
-    https://tcms.engineering.redhat.com/case/333023/?from_plan=12057
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_Single_Snapshot
     """
     __test__ = True
-    tcms_test_case = '333023'
+    polarion_test_case = '6022'
 
     def setUp(self):
-        self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
-        super(TestCase333023, self).setUp()
+        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
+        super(TestCase6022, self).setUp()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6022")
     def test_create_snapshot_of_first_disk(self):
         """
         - Create VM with 4 disks
@@ -296,14 +297,15 @@ class TestCase333023(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase333028(BasicEnvironment):
+class TestCase6023(BasicEnvironment):
     """
     Preview snapshot of first disk out of 4 and verify
     that the snapshot being presented is the correct one
-    https://tcms.engineering.redhat.com/case/333028/?from_plan=12057
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_Single_Snapshot
     """
     __test__ = True
-    tcms_test_case = '333028'
+    polarion_test_case = '6023'
     file_name = '/root/test_file'
     cmd_create = 'echo "test_txt" > %s' % file_name
     cm_del = 'rm -f %s' % file_name
@@ -313,11 +315,11 @@ class TestCase333028(BasicEnvironment):
         """
         Prepares the environment
         """
-        super(TestCase333028, self).setUp()
-        self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
+        super(TestCase6023, self).setUp()
+        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
         self._prepare_environment()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6023")
     def test_preview_snapshot(self):
         """
         - Write file on the first disk
@@ -363,27 +365,28 @@ class TestCase333028(BasicEnvironment):
                 [self.snapshot_desc],
             )
         wait_for_jobs()
-        super(TestCase333028, self).tearDown()
+        super(TestCase6023, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase289572(BasicEnvironment):
+class TestCase6034(BasicEnvironment):
     """
     Create a snapshot to the VM while it's suspended and pick only one disk
     and configuration file
-    https://tcms.engineering.redhat.com/case/289572/?from_plan=12057
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_Single_Snapshot
     """
     __test__ = True
-    tcms_test_case = '289572'
+    polarion_test_case = '6034'
     bz = {'1120232': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
     def setUp(self):
         self.disk_count = 2
-        self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
-        super(TestCase289572, self).setUp()
+        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
+        super(TestCase6034, self).setUp()
         assert self._prepare_fs_on_devs()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6034")
     def test_suspended_vm(self):
         """
         - Create a VM with 2 disks  (with file system on both disks)
@@ -450,26 +453,27 @@ class TestCase289572(BasicEnvironment):
         for path in self.mounted_paths:
             self.vm.runCmd(shlex.split(self.umount_cmd % path))
 
-        super(TestCase289572, self).tearDown()
+        super(TestCase6034, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase333031(BasicEnvironment):
+class TestCase6024(BasicEnvironment):
     """
     Preview snapshot of 2 disks out of 4 and verify that the
     snapshot being presented is the correct one
-    https://tcms.engineering.redhat.com/case/333031/?from_plan=12057
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_Single_Snapshot
     """
     __test__ = True
-    tcms_test_case = '333031'
+    polarion_test_case = '6024'
     previewed = False
 
     def setUp(self):
-        self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
-        super(TestCase333031, self).setUp()
+        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
+        super(TestCase6024, self).setUp()
         assert self._prepare_fs_on_devs()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6024")
     def test_create_snapshot_of_first_disk(self):
         """
         - Write some files on first and fourth disks
@@ -525,25 +529,26 @@ class TestCase333031(BasicEnvironment):
         if self.previewed:
             assert undo_snapshot_preview(True, self.vm_name)
 
-        super(TestCase333031, self).tearDown()
+        super(TestCase6024, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase333049(BasicEnvironment):
+class TestCase6026(BasicEnvironment):
     """
     Create snapshot of all vm's disks, preview it and undo the snapshot
-    https://tcms.engineering.redhat.com/case/333049/?from_plan=12057
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_Single_Snapshot
     """
     __test__ = True
-    tcms_test_case = '333049'
+    polarion_test_case = '6026'
     previewed = False
 
     def setUp(self):
-        self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
-        super(TestCase333049, self).setUp()
+        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
+        super(TestCase6026, self).setUp()
         assert self._prepare_fs_on_devs()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6026")
     def test_flow_create_preview_and_undo_snapshot_of_all_disks(self):
         """
         - Create VM with 4 disks
@@ -600,17 +605,18 @@ class TestCase333049(BasicEnvironment):
         for path in self.mounted_paths:
             self.vm.runCmd(shlex.split(self.umount_cmd % path))
 
-        super(TestCase333049, self).tearDown()
+        super(TestCase6026, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase333050(BasicEnvironment):
+class TestCase6027(BasicEnvironment):
     """
     Create snapshot of first disk out of 4, preview it and undo the snapshot
-    https://tcms.engineering.redhat.com/case/333050/?from_plan=12057
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_Single_Snapshot
     """
     __test__ = True
-    tcms_test_case = '333050'
+    polarion_test_case = '6027'
     file_name = '/root/test_file'
     cmd_create = 'echo "test_txt" > %s' % file_name
     cm_del = 'rm -f %s' % file_name
@@ -620,11 +626,11 @@ class TestCase333050(BasicEnvironment):
         """
         Prepares the environment
         """
-        super(TestCase333050, self).setUp()
-        self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
+        super(TestCase6027, self).setUp()
+        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
         self._prepare_environment()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6027")
     def test_preview_snapshot(self):
         """
         - Create VM with 4 disks
@@ -672,29 +678,30 @@ class TestCase333050(BasicEnvironment):
             assert undo_snapshot_preview(True, self.vm_name)
 
         wait_for_jobs()
-        super(TestCase333050, self).tearDown()
+        super(TestCase6027, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase342783(BasicEnvironment):
+class TestCase6013(BasicEnvironment):
     """
     Check that the new cloned VM was created only with 1 disk and the
     configuration file of the original VM
-    https://tcms.engineering.redhat.com/case/342783/?from_plan=12057
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_Single_Snapshot
     TODO: This case is False until RFE/bug:
     https://bugzilla.redhat.com/show_bug.cgi?id=1115440 is solved
     """
     __test__ = False
-    tcms_test_case = '342783'
-    new_vm_name = 'new_vm_%s' % tcms_test_case
+    polarion_test_case = '6013'
+    new_vm_name = 'new_vm_%s' % polarion_test_case
 
     def setUp(self):
         self.disk_count = 2
-        self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
-        super(TestCase342783, self).setUp()
+        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
+        super(TestCase6013, self).setUp()
         assert self._prepare_fs_on_devs()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6013")
     def test_clone_vm_from_snapshot(self):
         """
         - Create a VM with 3 disks attached
@@ -722,17 +729,18 @@ class TestCase342783(BasicEnvironment):
         for path in self.mounted_paths:
             self.vm.runCmd(shlex.split(self.umount_cmd % path))
 
-        super(TestCase342783, self).tearDown()
+        super(TestCase6013, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase333055(BasicEnvironment):
+class TestCase6030(BasicEnvironment):
     """
     Custom preview of vm configuration and 2 disks
-    https://tcms.engineering.redhat.com/case/333055/?from_plan=12057
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_Single_Snapshot
     """
     __test__ = True
-    tcms_test_case = '333055'
+    polarion_test_case = '6030'
     disks_for_custom_preview = 2
     previewed = False
 
@@ -740,11 +748,11 @@ class TestCase333055(BasicEnvironment):
         """
         Prepares the environment
         """
-        self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
-        super(TestCase333055, self).setUp()
+        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
+        super(TestCase6030, self).setUp()
         assert self._prepare_fs_on_devs()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6030")
     def test_custom_preview_with_configuration_and_two_disks(self):
         """
         - Create a Vm with 4 disks (file system on all of them)
@@ -793,31 +801,32 @@ class TestCase333055(BasicEnvironment):
         if self.previewed:
             assert undo_snapshot_preview(True, self.vm_name)
         wait_for_jobs()
-        super(TestCase333055, self).tearDown()
+        super(TestCase6030, self).tearDown()
 
 
 @attr(tier=3)
-class TestCase343074(BasicEnvironment):
+class TestCase6014(BasicEnvironment):
     """
     Restart vdsm during snapshot creation, check that snapshot creation
     fails nicely, rollback should be done and the leftover volumes should be
     deleted
-    https://tcms.engineering.redhat.com/case/343074/?from_plan=12057
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_Single_Snapshot
 
     __test__ = False :
        https://bugzilla.redhat.com/show_bug.cgi?id=1119203
     """
     __test__ = False
-    tcms_test_case = '343074'
+    polarion_test_case = '6014'
 
     def setUp(self):
         """
         Prepares the environment
         """
-        self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
-        super(TestCase343074, self).setUp()
+        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
+        super(TestCase6014, self).setUp()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6014")
     def test_restart_VDSM_during_snapshot_creation(self):
         """
         - Create a VM with 4 disks and OS installed
@@ -836,31 +845,32 @@ class TestCase343074(BasicEnvironment):
         stop_vms_safely([self.vm_name])
         waitForVMState(self.vm_name, config.VM_DOWN)
         wait_for_jobs()
-        super(TestCase343074, self).tearDown()
+        super(TestCase6014, self).tearDown()
 
 
 @attr(tier=3)
-class TestCase343077(BasicEnvironment):
+class TestCase6006(BasicEnvironment):
     """
     Restart ovirt-engine service during snapshot creation, check that
     snapshot creation fails nicely, rollback should be done and the leftover
     volumes should be deleted
-    https://tcms.engineering.redhat.com/case/343077/?from_plan=12057
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_Single_Snapshot
 
     __test__ = False :
        https://bugzilla.redhat.com/show_bug.cgi?id=1119203
     """
     __test__ = False
-    tcms_test_case = '343077'
+    polarion_test_case = '6006'
 
     def setUp(self):
         """
         Prepares the environment
         """
-        self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
-        super(TestCase343077, self).setUp()
+        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
+        super(TestCase6006, self).setUp()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6006")
     def test_restart_engine_during_snapshot_creation(self):
         """
         - Create a VM with 4 disks and OS installed
@@ -885,26 +895,27 @@ class TestCase343077(BasicEnvironment):
         stop_vms_safely([self.vm_name])
         waitForVMState(self.vm_name, config.VM_DOWN)
         wait_for_jobs()
-        super(TestCase343077, self).tearDown()
+        super(TestCase6006, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase336096(BasicEnvironment):
+class TestCase6032(BasicEnvironment):
     """
     Create snapshot only from VM configuration.
-    https://tcms.engineering.redhat.com/case/336096/?from_plan=12057
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_Single_Snapshot
     """
     __test__ = True
-    tcms_test_case = '336096'
-    nic = 'nic_%s' % tcms_test_case
+    polarion_test_case = '6032'
+    nic = 'nic_%s' % polarion_test_case
     commit = False
 
     def setUp(self):
         """
         Prepares the environment
         """
-        super(TestCase336096, self).setUp()
-        self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
+        super(TestCase6032, self).setUp()
+        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
         profile = vmArgs['network']
         if not addNic(True, vm=self.vm_name, name=self.nic,
                       mac_address=None,
@@ -914,7 +925,7 @@ class TestCase336096(BasicEnvironment):
 
         assert self._prepare_fs_on_devs()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6032")
     def test_create_snapshot_from_vm_configuration(self):
         """
         - Create VM with a disk and 2 NICs
@@ -949,17 +960,18 @@ class TestCase336096(BasicEnvironment):
         if not self.commit:
             assert undo_snapshot_preview(True, self.vm_name)
             wait_for_jobs()
-        super(TestCase336096, self).tearDown()
+        super(TestCase6032, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase336105(BasicEnvironment):
+class TestCase6033(BasicEnvironment):
     """
     Create 3 snapshot and delete the second
-    https://tcms.engineering.redhat.com/case/336105/?from_plan=12057
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_Single_Snapshot
     """
     __test__ = True
-    tcms_test_case = '336105'
+    polarion_test_case = '6033'
     snap_1 = 'snapshot_1'
     snap_2 = 'snapshot_2'
     snap_3 = 'snapshot_3'
@@ -968,13 +980,13 @@ class TestCase336105(BasicEnvironment):
         """
         Prepares the environment
         """
-        self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
+        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
         self.snaps = [self.snap_1, self.snap_2, self.snap_3]
-        super(TestCase336105, self).setUp()
+        super(TestCase6033, self).setUp()
         assert self._prepare_fs_on_devs()
         self.cmd_create = 'echo "test_txt" > %s/test_file_%s'
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6033")
     def test_delete_second_snapshot_out_of_three(self):
         """
         - Create VM with 4 disks
@@ -1023,19 +1035,20 @@ class TestCase336105(BasicEnvironment):
 
 
 @attr(tier=3)
-class TestCase343076(BasicEnvironment):
+class TestCase6015(BasicEnvironment):
     """
     Block connectivity to storage server during snapshot creation, Check that
     snapshot creation fails nicely, rollback should be done and the leftover
     volumes should be deleted
-    https://tcms.engineering.redhat.com/case/343076/?from_plan=12057
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_4_Storage_Single_Snapshot
     """
     __test__ = True
-    tcms_test_case = '343076'
+    polarion_test_case = '6015'
 
     def setUp(self):
-        self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
-        super(TestCase343076, self).setUp()
+        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
+        super(TestCase6015, self).setUp()
         self.host = getSPMHost(config.HOSTS)
         self.host_ip = getHostIP(self.host)
         self.sd = get_vms_disks_storage_domain_name(self.vm_name)
@@ -1043,7 +1056,7 @@ class TestCase343076(BasicEnvironment):
         self.assertTrue(found, "IP for storage domain %s not found" % self.sd)
         self.sd_ip = address['address']
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6015")
     def test_block_connectivity_to_storage(self):
         """
         - Create a VM with 4 disks and OS installed
@@ -1065,4 +1078,4 @@ class TestCase343076(BasicEnvironment):
         except AttributeError, err:
             logger.error(
                 "AttributeError calling unblockOutgoingConnection: %s", err)
-        super(TestCase343076, self).tearDown()
+        super(TestCase6015, self).tearDown()

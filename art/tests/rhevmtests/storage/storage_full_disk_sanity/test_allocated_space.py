@@ -1,5 +1,8 @@
 """
 Test Allocation/Total size properties
+
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/2_3_Storage_Data_Domains_General
 """
 import config
 import logging
@@ -27,14 +30,13 @@ from art.rhevm_api.tests_lib.low_level.templates import (
 )
 from art.rhevm_api.tests_lib.low_level.vms import createVm, removeVm
 from art.rhevm_api.utils.test_utils import restartVdsmd
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from rhevmtests.storage.helpers import host_to_use
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
 
-TCMS_PLAN_ID = '2517'
 VM_DISK_SIZE = 2 * config.GB
 
 THIN_PROVISION = 'thin_provision'
@@ -183,12 +185,12 @@ class BaseCase(TestCase):
 # TBD: Remove this when is implemented in the main story, storage sanity
 # http://rhevm-qe-storage.pad.engineering.redhat.com/11?
 @attr(tier=0)
-class TestCase286305(BaseCase):
+class TestCase11536(BaseCase):
     """
-    TCMS Test Case 286305 - Create new disk and check storage details
+    Polarion Test Case 11536 - Create new disk and check storage details
     """
     __test__ = True
-    tcms_test_case = '286305'
+    polarion_test_case = '11536'
 
     def perform_action(self):
         """
@@ -196,7 +198,7 @@ class TestCase286305(BaseCase):
         """
         self.create_disks()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11536")
     def test_create_disks_and_check_size(self):
         """
         Create preallocated and thin provision disk then check if storage
@@ -215,13 +217,14 @@ class TestCase286305(BaseCase):
 
 
 @attr(tier=1)
-class TestCase286768(BaseCase):
+class TestCase11537(BaseCase):
     """
-    TCMS Test Case 286768 - Delete disk and check storage details
-    https://tcms.engineering.redhat.com/case/286768/
+    Polarion Test Case 11537 - Delete disk and check storage details
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/2_3_Storage_Data_Domains_General
     """
     __test__ = True
-    tcms_test_case = '286768'
+    polarion_test_case = '11537'
 
     def setUp(self):
         """
@@ -229,7 +232,7 @@ class TestCase286768(BaseCase):
         """
         self.create_disks()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11537")
     def test_delete_disks(self):
         """
         Delete disk and check storage details are updated
@@ -252,15 +255,15 @@ class TestCase286768(BaseCase):
 # TBD: Remove this when is implemented in the main story, storage sanity
 # http://rhevm-qe-storage.pad.engineering.redhat.com/11?
 @attr(tier=1)
-class TestCase286772(BaseCase):
+class TestCase11547(BaseCase):
     """
-    TCMS Test Case 286772 - Move disks and check storage details of both
+    Polarion Test Case 11547 - Move disks and check storage details of both
     domains
     """
     # TODO: Move floating disk through REST not working development -
     # enable test once this feature works
     __test__ = False
-    tcms_test_case = '286772'
+    polarion_test_case = '11547'
 
     disk_types = ('thin_provision', 'preallocated')
     disk_sizes = [160 * config.GB, 7 * config.GB]
@@ -290,7 +293,7 @@ class TestCase286772(BaseCase):
             self.expected_allocated_size[self.domains[1]] += \
                 disk.get_size()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11547")
     def test_move_disks(self):
         """
         Move disks and check domain details
@@ -307,17 +310,18 @@ class TestCase286772(BaseCase):
 
 
 @attr(tier=1)
-class TestCase286775(BaseCase):
+class TestCase11546(BaseCase):
     """
-    TCMS Test Case 286775 - Extend domain and check storage details
-    https://tcms.engineering.redhat.com/case/286775
+    Polarion Test Case 11546 - Extend domain and check storage details
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/2_3_Storage_Data_Domains_General
     """
     # test case only relevant to iscsi domains
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
     apis = BaseCase.apis - set(['sdk'])
-    tcms_test_case = '286775'
-    new_sd_name = "storage_domain_%s" % tcms_test_case
+    polarion_test_case = '11546'
+    new_sd_name = "storage_domain_%s" % polarion_test_case
 
     @classmethod
     def setup_class(cls):
@@ -357,7 +361,7 @@ class TestCase286775(BaseCase):
         # 380 MB of its physical usable space.  In addition, when first
         # creating a storage domain, 4 GB of free space is taken out for
         # metadata, headers and other internal usage
-        super(TestCase286775, cls).setup_class()
+        super(TestCase11546, cls).setup_class()
 
     @classmethod
     def teardown_class(cls):
@@ -407,7 +411,7 @@ class TestCase286775(BaseCase):
         self.assertEqual(self.current_used_size[self.new_sd_name],
                          get_used_size(self.new_sd_name))
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11546")
     def test_extend_domain_and_check_details(self):
         """
         Extend storage domain and check if total size is updated
@@ -416,13 +420,14 @@ class TestCase286775(BaseCase):
 
 
 @attr(tier=1)
-class TestCase321336(BaseCase):
+class TestCase11541(BaseCase):
     """
-    TCMS Test Case 321336 - Create template and check storage details
-    https://tcms.engineering.redhat.com/case/321336
+    Polarion Test Case 11541 - Create template and check storage details
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/2_3_Storage_Data_Domains_General
     """
     __test__ = True
-    tcms_test_case = '321336'
+    polarion_test_case = '11541'
     vms = (THIN_PROVISION, PREALLOCATED)
 
     def setUp(self):
@@ -498,7 +503,7 @@ class TestCase321336(BaseCase):
                     self.expected_allocated_size[self.domains[0]] += \
                         VM_DISK_SIZE
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11541")
     def test_create_templates(self):
         """
         Create templates and check storage domain details
@@ -507,15 +512,16 @@ class TestCase321336(BaseCase):
 
 
 @attr(tier=3)
-class TestCase286779(BaseCase):
+class TestCase11545(BaseCase):
     """
-    TCMS Test Case 286779 - Check  storage domain details after rollback
-    https://tcms.engineering.redhat.com/case/286779
+    Polarion Test Case 11545 - Check  storage domain details after rollback
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/2_3_Storage_Data_Domains_General
     """
     # TODO: Move floating disk through REST not working development -
     # enable test once this feature works
     __test__ = False
-    tcms_test_case = '286779'
+    polarion_test_case = '11545'
 
     def perform_action(self):
         """
@@ -558,7 +564,7 @@ class TestCase286779(BaseCase):
         self.disk_names = [self.disk_name]
         self.create_disks()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11545")
     def test_rollback_disk_move(self):
         """
         Start disk move and fail it, then check details after rollback

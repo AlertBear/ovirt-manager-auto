@@ -1,5 +1,7 @@
 """
 Storage full snapshot test - ram snapshot
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_3_Storage_Ram_Snapshots
 """
 import config
 import logging
@@ -7,7 +9,7 @@ from helpers import is_pid_running_on_vm, start_cat_process_on_vm
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
 from art.test_handler import exceptions as errors
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level.datacenters import (
     waitForDataCenterState,
 )
@@ -31,7 +33,6 @@ from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from rhevmtests.storage.helpers import create_vm_or_clone, get_vm_ip
 
 logger = logging.getLogger(__name__)
-TCMS_TEST_PLAN = '10134'
 
 vmArgs = {
     'positive': True,
@@ -194,7 +195,7 @@ class CreateSnapshotWithMemoryState(DCWithStoragesActive):
     """
 
     __test__ = False
-    tcms_test_case = None
+    polarion_test_case = None
     run_test_on_spm = True
     host_for_test = None
     snapshot = config.RAM_SNAPSHOT % 0
@@ -248,15 +249,15 @@ class CreateSnapshotWithMemoryState(DCWithStoragesActive):
 
 
 @attr(tier=1)
-class TestCase294432(CreateSnapshotWithMemoryState):
+class TestCase5129(CreateSnapshotWithMemoryState):
     """
-    TCMS Test Case 294432 - Create Snapshot with Memory State on SPM
+    Polarion Test Case 5129 - Create Snapshot with Memory State on SPM
     """
     __test__ = True
     run_test_on_spm = True
-    tcms_test_case = '294432'
+    polarion_test_case = '5129'
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-5129")
     def test_create_snapshot_spm(self):
         """
         Create ram snapshot on spm
@@ -265,15 +266,15 @@ class TestCase294432(CreateSnapshotWithMemoryState):
 
 
 @attr(tier=1)
-class TestCase294434(CreateSnapshotWithMemoryState):
+class TestCase5140(CreateSnapshotWithMemoryState):
     """
-    TCMS Test Case 294434 - Create Snapshot with Memory State on HSM
+    Polarion Test Case 5140 - Create Snapshot with Memory State on HSM
     """
     __test__ = True
     run_test_on_spm = False
-    tcms_test_case = '294434'
+    polarion_test_case = '5140'
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-5140")
     def test_create_snapshot_hsm(self):
         """
         Create ram snapshot on hsm
@@ -287,7 +288,7 @@ class ReturnToSnapshot(VMWithMemoryStateSnapshot):
     commit as specified)
     """
     __test__ = False
-    tcms_test_case = None
+    polarion_test_case = None
     test_action = None
 
     def return_to_ram_snapshot(self):
@@ -319,16 +320,16 @@ class ReturnToSnapshot(VMWithMemoryStateSnapshot):
 
 
 @attr(tier=0)
-class TestCase294435(ReturnToSnapshot):
+class TestCase5139(ReturnToSnapshot):
     """
-    TCMS Test Case 294435 - Preview to RAM Snapshot
+    Polarion Test Case 5139 - Preview to RAM Snapshot
     """
     __test__ = True
-    tcms_test_case = '294435'
+    polarion_test_case = '5139'
     test_action = staticmethod(preview_snapshot)
     bz = {'1211588': {'engine': ['cli'], 'version': ['3.5', '3.6']}}
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-5139")
     def test_preview_snapshot(self):
         """
         preview snapshot
@@ -343,19 +344,19 @@ class TestCase294435(ReturnToSnapshot):
                     self.vm)
         assert undo_snapshot_preview(True, self.vm, True)
         wait_for_vm_snapshots(self.vm, config.SNAPSHOT_OK)
-        super(TestCase294435, self).tearDown()
+        super(TestCase5139, self).tearDown()
 
 
 @attr(tier=0)
-class TestCase294437(ReturnToSnapshot):
+class TestCase5138(ReturnToSnapshot):
     """
-    TCMS Test Case 294437 - Restore RAM Snapshot
+    Polarion Test Case 5138 - Restore RAM Snapshot
     """
     __test__ = True
-    tcms_test_case = '294437'
+    polarion_test_case = '5138'
     test_action = staticmethod(restoreSnapshot)
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-5138")
     def test_restore_snasphot(self):
         """
         restore snapshot
@@ -364,13 +365,12 @@ class TestCase294437(ReturnToSnapshot):
 
 
 @attr(tier=1)
-class TestCase294439(VMWithMemoryStateSnapshot):
+class TestCase5137(VMWithMemoryStateSnapshot):
     """
-    TCMS Test Case 294439 - VM with multiple RAM Snapshots
+    Polarion Test Case 5137 - VM with multiple RAM Snapshots
     """
-
     __test__ = False
-    tcms_test_case = '294439'
+    polarion_test_case = '5137'
     second_snapshot_name = config.RAM_SNAPSHOT % 1
     previewed_snapshot = None
 
@@ -378,7 +378,7 @@ class TestCase294439(VMWithMemoryStateSnapshot):
         """
         Restore first ram snapshot and resume the vm
         """
-        super(TestCase294439, self).setUp()
+        super(TestCase5137, self).setUp()
         self.cmdlines.append('/dev/urandom')
 
         logger.info('Restoring first ram snapshot (%s) on vm %s', self.vm,
@@ -390,7 +390,7 @@ class TestCase294439(VMWithMemoryStateSnapshot):
         assert startVm(True, self.vm, wait_for_ip=True,
                        wait_for_status=config.VM_UP)
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-5137")
     def test_vm_with_multiple_ram_snapshots(self):
         """
         * Start another process on the vm and create a new memory snapshot.
@@ -480,18 +480,18 @@ class TestCase294439(VMWithMemoryStateSnapshot):
                         self.previewed_snapshot)
             assert undo_snapshot_preview(True, self.vm)
             self.previewed_snapshot = None
-        super(TestCase294439, self).tearDown()
+        super(TestCase5137, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase294617(VMWithMemoryStateSnapshot):
+class TestCase5136(VMWithMemoryStateSnapshot):
     """
-    TCMS test case 294617 - Create vm from snapshot with memory
+    Polarion test case 5136 - Create vm from snapshot with memory
     """
 
     __test__ = True
     persist_network = True
-    tcms_test_case = '294617'
+    polarion_test_case = '5136'
     bz = {'1178508': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
     def setUp(self):
@@ -499,9 +499,9 @@ class TestCase294617(VMWithMemoryStateSnapshot):
         Set cloned vm name
         """
         self.cloned_vm_name = '%s_%s_cloned' % (VM_PREFIX, self.storage)
-        super(TestCase294617, self).setUp()
+        super(TestCase5136, self).setUp()
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-5136")
     def test_create_vm_from_memory_state_snapshot(self):
         """
         Create vm from memory snapshot and check process is **not** running
@@ -543,22 +543,22 @@ class TestCase294617(VMWithMemoryStateSnapshot):
 
         logger.info('Removing vm %s', self.cloned_vm_name)
         assert removeVm(True, self.cloned_vm_name)
-        super(TestCase294617, self).tearDown()
+        super(TestCase5136, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase294624(VMWithMemoryStateSnapshot):
+class TestCase5134(VMWithMemoryStateSnapshot):
     """
-    TCMS test case 294624 - Import a vm with memory snapshot
+    Polarion test case 5134 - Import a vm with memory snapshot
     """
 
     __test__ = True
     persist_network = True
-    tcms_test_case = '294624'
+    polarion_test_case = '5134'
     original_vm = '%s_%s_original' % (
                   VM_PREFIX, VMWithMemoryStateSnapshot.storage)
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-5134")
     def test_import_vm_with_memory_state_snapshot(self):
         """
         Import a vm that has memory state snapshot and ensure it resumes memory
@@ -614,19 +614,18 @@ class TestCase294624(VMWithMemoryStateSnapshot):
         logger.info('Stopping vm %s', self.vm)
         assert stopVm(True, self.vm)
 
-        super(TestCase294624, self).tearDown()
+        super(TestCase5134, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase294631(VMWithMemoryStateSnapshot):
+class TestCase5133(VMWithMemoryStateSnapshot):
     """
-    TCMS test case 294631 - Remove a snapshot with memory state
+    Polarion test case 5133 - Remove a snapshot with memory state
     """
-
     __test__ = True
-    tcms_test_case = '294631'
+    polarion_test_case = '5133'
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-5133")
     def test_remove_memory_state_snapshot(self):
         """
         Remove snapshot with memory state and check that vm starts
@@ -649,14 +648,14 @@ class TestCase294631(VMWithMemoryStateSnapshot):
 
 
 @attr(tier=3)
-class TestCase305433(VMWithMemoryStateSnapshot):
+class TestCase5131(VMWithMemoryStateSnapshot):
     """
-    TCMS test case 305433 - Stateless vm with memory snapshot
+    Polarion test case 5131 - Stateless vm with memory snapshot
     """
     __test__ = True
-    tcms_test_case = '305433'
+    polarion_test_case = '5131'
 
-    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @polarion("RHEVM3-5131")
     def test_stateless_vm_with_memory_snapshot(self):
         """
         * Restore memory snapshot
@@ -702,4 +701,4 @@ class TestCase305433(VMWithMemoryStateSnapshot):
         """
         logger.info('Setting vm %s to not be stateless', self.vm)
         assert updateVm(True, self.vm, stateless=False)
-        super(TestCase305433, self).tearDown()
+        super(TestCase5131, self).tearDown()

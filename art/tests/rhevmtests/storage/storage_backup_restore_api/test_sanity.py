@@ -1,6 +1,7 @@
 """
-Storage backup restore API - 10435
-https://tcms.engineering.redhat.com/plan/10435
+Storage backup restore API
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_3_Storage_Backup_API
 """
 import config
 import helpers
@@ -18,7 +19,7 @@ from rhevmtests.storage.helpers import get_vm_ip
 import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.utils import test_utils as utils
 from utilities.machine import Machine
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler import exceptions
 
 logger = logging.getLogger(__name__)
@@ -26,8 +27,6 @@ logger = logging.getLogger(__name__)
 TASK_TIMEOUT = 1500
 BACKUP_DISK_SIZE = 10 * config.GB
 MOVING_DISK_TIMEOUT = 600
-
-TEST_PLAN_ID = '10435'
 
 VM_NAMES = {}
 
@@ -77,7 +76,7 @@ class BaseTestCase(TestCase):
     This class implements setup and teardowns of common things
     """
     __test__ = False
-    tcms_test_case = None
+    polarion_test_case = None
 
     def setUp(self):
         self.vm_names = VM_NAMES[self.storage]
@@ -112,7 +111,8 @@ class BaseTestCase(TestCase):
 class CreateTemplateFromVM(BaseTestCase):
     """
     Create a template of a backup VM
-    https://tcms.engineering.redhat.com/case/304166/?from_plan=10435
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Backup_API
     """
     __test__ = False
     template_name = "%s-template"
@@ -152,17 +152,18 @@ class CreateTemplateFromVM(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase303842(BaseTestCase):
+class TestCase6178(BaseTestCase):
     """
     Shutdown backup VM with attached snapshot of source vm and verify
     that on VDSM, the folder /var/lib/vdsm/transient is empty and backup
     disk still attached
-    https://tcms.engineering.redhat.com/case/303842/?from_plan=10435
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    tcms_test_case = '303842'
+    polarion_test_case = '6178'
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6178")
     def test_shutdown_backup_vm_with_attached_snapshot(self):
         """
         Shutdown backup VM with attached snapshot
@@ -188,15 +189,16 @@ class TestCase303842(BaseTestCase):
 
 
 @attr(tier=3)
-class TestCase303854(BaseTestCase):
+class TestCase6182(BaseTestCase):
     """
     Restart vdsm / engine while snapshot disk attached to backup vm
-    https://tcms.engineering.redhat.com/case/303854/?from_plan=10435
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    tcms_test_case = '303854'
+    polarion_test_case = '6182'
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6182")
     def test_restart_VDSM_and_engine_while_disk_attached_to_backup_vm(self):
         """
         Restart vdsm and engine
@@ -270,15 +272,16 @@ class TestCase303854(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase304134(BaseTestCase):
+class TestCase6183(BaseTestCase):
     """
     Attach snapshot disk of source VM to backup VM
     Make sure tempfile (i.e. /var/lib/vdsm/transient/) is not created
     and then Start backup VM and check again
-    https://tcms.engineering.redhat.com/case/304134/?from_plan=10435
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    tcms_test_case = '304134'
+    polarion_test_case = '6183'
 
     def setUp(self):
         self.vm_names = VM_NAMES[self.storage]
@@ -295,7 +298,7 @@ class TestCase304134(BaseTestCase):
                                      helpers.SNAPSHOT_TEMPLATE_DESC
                                      % self.vm_names[0])
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6183")
     def test_temporary_snapshot_is_created_after_backup_vm_starts(self):
         """
         Make sure that before starting backup vm, /var/lib/vdsm/transient/
@@ -322,21 +325,22 @@ class TestCase304134(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase304156(BaseTestCase):
+class TestCase6176(BaseTestCase):
     """
     Attach snapshot disk of source VM to running backup VM
     and Hotplug the snapshot disk
-    https://tcms.engineering.redhat.com/case/304156/?from_plan=10435
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    tcms_test_case = '304156'
+    polarion_test_case = '6176'
 
     def setUp(self):
         self.vm_names = VM_NAMES[self.storage]
         vms.start_vms(self.vm_names, 2, wait_for_ip=False)
         vms.waitForVmsStates(True, self.vm_names)
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6176")
     def test_attach_and_hotplug_snapshot_disk_of_source_vm_to_backup_vm(self):
         """
         Make sure that before hotplugging the backup disk,
@@ -373,22 +377,23 @@ class TestCase304156(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase304159(BaseTestCase):
+class TestCase6174(BaseTestCase):
     """
     Create source VM snapshot, attach snapshot to backup VM
     and try to delete original snapshot of source VM
-    https://tcms.engineering.redhat.com/case/304159/?from_plan=10435
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    tcms_test_case = '304159'
+    polarion_test_case = '6174'
     snap_desc = None
 
     def setUp(self):
         self.vm_names = VM_NAMES[self.storage]
         self.snap_desc = helpers.SNAPSHOT_TEMPLATE_DESC % self.vm_names[0]
-        super(TestCase304159, self).setUp()
+        super(TestCase6174, self).setUp()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6174")
     def test_delete_original_snapshot_while_attached_to_another_vm(self):
         """
         Try to delete original snapshot of source VM that is attached to
@@ -411,16 +416,17 @@ class TestCase304159(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase304161(TestCase):
+class TestCase6165(TestCase):
     """
     Try to perform snapshot operations on the source VM:
     - Preview snapshot, undo it
     - Preview snapshot, commit it
     - Delete snapshot
-    https://tcms.engineering.redhat.com/case/304161/?from_plan=10435
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    tcms_test_case = '304161'
+    polarion_test_case = '6165'
     snapshot_name_format = "%s-%s"
 
     first_snapshot = ""
@@ -439,7 +445,7 @@ class TestCase304161(TestCase):
                                      self.vm_names[1],
                                      self.first_snapshot)
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6165")
     def test_operations_with_attached_snapshot(self):
         """
         Shut down the source VM
@@ -512,19 +518,20 @@ class TestCase304161(TestCase):
 
 
 @attr(tier=1)
-class TestCase304166(CreateTemplateFromVM):
+class TestCase6166(CreateTemplateFromVM):
     """
     Create a template of a backup VM
-    https://tcms.engineering.redhat.com/case/304166/?from_plan=10435
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    tcms_test_case = '304166'
+    polarion_test_case = '6166'
 
     def setUp(self):
         super(CreateTemplateFromVM, self).setUp()
         self.vm_name_for_template = self.vm_names[1]
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6166")
     def test_create_template_of_backup_vm(self):
         """
         Create a template of a backup VM after attaching snapshot disk of
@@ -534,19 +541,20 @@ class TestCase304166(CreateTemplateFromVM):
 
 
 @attr(tier=1)
-class TestCase304167(CreateTemplateFromVM):
+class TestCase6167(CreateTemplateFromVM):
     """
     Create a template of a source VM
-    https://tcms.engineering.redhat.com/case/304167/?from_plan=10435
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    tcms_test_case = '304167'
+    polarion_test_case = '6167'
 
     def setUp(self):
-        super(TestCase304167, self).setUp()
+        super(TestCase6167, self).setUp()
         self.vm_name_for_template = self.vm_names[0]
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6167")
     def test_create_template_of_source_vm(self):
         """
         Create a template of source VM after attaching snapshot disk of
@@ -556,11 +564,12 @@ class TestCase304167(CreateTemplateFromVM):
 
 
 @attr(tier=3)
-class TestCase304168(TestCase):
+class TestCase6168(TestCase):
     """
     Block connection from host to storage domain 2 that contains
     snapshot of attached disk
-    https://tcms.engineering.redhat.com/case/304168/?from_plan=10435
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Backup_API
 
     This case is currently not part of the plan (__test__ = False) due to bug:
     https://bugzilla.redhat.com/show_bug.cgi?id=1063336 which cause
@@ -569,7 +578,7 @@ class TestCase304168(TestCase):
     solve the problem completely.
     """
     __test__ = False
-    tcms_test_case = '304168'
+    polarion_test_case = '6168'
     storage_domain_ip = None
     blocked = False
 
@@ -601,7 +610,7 @@ class TestCase304168(TestCase):
             self.vm_names[0], self.vm_names[1],
             helpers.SNAPSHOT_TEMPLATE_DESC % self.vm_names[0])
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6168")
     def test_storage_failure_of_snapshot(self):
         """
         Test checks that blocking connection from host to storage domain that
@@ -683,10 +692,11 @@ class TestCase304168(TestCase):
 
 
 @attr(tier=0)
-class TestCase304197(TestCase):
+class TestCase6169(TestCase):
     """
     Full flow of backup/restore API
-    https://tcms.engineering.redhat.com/case/304197/?from_plan=10435
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Backup_API
     """
     __test__ = True
     bz = {
@@ -695,7 +705,7 @@ class TestCase304197(TestCase):
     }
     # TODO: Ticket is open for CLI and Java support:
     # https://projects.engineering.redhat.com/browse/RHEVM-1901
-    tcms_test_case = '304197'
+    polarion_test_case = '6169'
 
     def setUp(self):
         self.vm_names = VM_NAMES[self.storage]
@@ -706,7 +716,7 @@ class TestCase304197(TestCase):
         self.storage_domains = storagedomains.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6169")
     def test_full_flow_of_backup_restore(self):
         """
         Full backup API flow:
@@ -826,19 +836,20 @@ class TestCase304197(TestCase):
 
 
 @attr(tier=1)
-class TestCase322485(TestCase):
+class TestCase6170(TestCase):
     """
     Attach more than 1 backup disks (i.e. snapshot disks) to backup vm
-    https://tcms.engineering.redhat.com/case/322485/?from_plan=10435
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    tcms_test_case = '322485'
+    polarion_test_case = '6170'
     snapshot_template_name = "%s-snapshot"
 
     def setUp(self):
         self.vm_names = VM_NAMES[self.storage]
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6170")
     def test_attach_multiple_disks(self):
         """
          Create a snapshot to source VM and
@@ -894,13 +905,14 @@ class TestCase322485(TestCase):
 
 
 @attr(tier=1)
-class TestCase322486(TestCase):
+class TestCase6171(TestCase):
     """
     During a vm disk migration, try to attach the snapshot disk to backup vm
-    https://tcms.engineering.redhat.com/case/322486/?from_plan=10435
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    tcms_test_case = '322486'
+    polarion_test_case = '6171'
 
     def setUp(self):
         self.vm_names = VM_NAMES[self.storage]
@@ -914,7 +926,7 @@ class TestCase322486(TestCase):
         self.destination_sd = [
             sd for sd in storage_domains if sd != self.original_sd][0]
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6171")
     def test_attach_snapshot_disk_while_the_disk_is_locked(self):
         """
         - Move source vm disk to the second storage domain
@@ -953,18 +965,19 @@ class TestCase322486(TestCase):
 
 
 @attr(tier=1)
-class TestCase322487(BaseTestCase):
+class TestCase6172(BaseTestCase):
     """
     Attach snapshot disk to backup vm more than once
-    https://tcms.engineering.redhat.com/case/322487/?from_plan=10435
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    tcms_test_case = '322487'
+    polarion_test_case = '6172'
 
     def setUp(self):
         self.vm_names = VM_NAMES[self.storage]
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6172")
     def test_attach_the_same_disk_twice_to_a_VM(self):
         """
         Attach the snapshot disk of source VM to backup VM and
@@ -987,14 +1000,15 @@ class TestCase322487(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase322886(TestCase):
+class TestCase6173(TestCase):
     """
     During a vm disk live migration,
     try to attach the snapshot disk to backup vm
-    https://tcms.engineering.redhat.com/case/322886/?from_plan=10435
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    tcms_test_case = '322886'
+    polarion_test_case = '6173'
     bz = {
         '1196049': {
             'engine': None,
@@ -1015,7 +1029,7 @@ class TestCase322886(TestCase):
         vms.start_vms(self.vm_names, 2, wait_for_ip=False)
         vms.waitForVmsStates(True, self.vm_names)
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-6173")
     def test_Attach_disk_while_performing_LSM(self):
         """
         Live migrate a disk from the source VM.

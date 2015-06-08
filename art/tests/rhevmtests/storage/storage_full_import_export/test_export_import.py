@@ -6,20 +6,14 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from art.unittest_lib import StorageTest as TestCase, attr
 from art.test_handler import exceptions
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import storagedomains, vms, templates
 from common import _create_vm
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
 BLANK_TEMPLATE_ID = "00000000-0000-0000-0000-000000000000"
-TCMS_PLAN_ID = '2092'
 MAX_WORKERS = config.MAX_WORKERS
-
-# Remove this part when is integrated in stories
-# http://rhevm-qe-storage.pad.engineering.redhat.com/11
-# class TestCase41240(TestCase):
-#     """ Attach export domain, and verify that it works
 
 
 class BaseExportImportTestCase(TestCase):
@@ -28,14 +22,14 @@ class BaseExportImportTestCase(TestCase):
     * Creates one vm
     """
     __test__ = False
-    tcms_test_case = ''
+    polarion_test_case = ''
     vm_type = config.VM_TYPE_SERVER
 
     def setUp(self):
         """
         * Creates a vm and shuts it down
         """
-        self.vm_name = "original_vm_%s" % self.tcms_test_case
+        self.vm_name = "original_vm_%s" % self.polarion_test_case
         self.export_domain = storagedomains.findExportStorageDomains(
             config.DATA_CENTER_NAME)[0]
         self.storage_domain = storagedomains.getStorageDomainNamesForType(
@@ -61,24 +55,24 @@ class BaseExportImportTestCase(TestCase):
 
 
 @attr(tier=1)
-class TestCase42054(BaseExportImportTestCase):
+class TestCase4665(BaseExportImportTestCase):
     """
     Test Force Override option
     """
     __test__ = True
-    tcms_test_case = '42054'
+    polarion_test_case = '4665'
 
     def setUp(self):
         """
         * Creates a template from the vm
         """
-        super(TestCase42054, self).setUp()
-        self.template_name = "origial_template_%s" % self.tcms_test_case
+        super(TestCase4665, self).setUp()
+        self.template_name = "origial_template_%s" % self.polarion_test_case
 
         assert templates.createTemplate(
             True, vm=self.vm_name, name=self.template_name)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4665")
     def test_import_force_override(self):
         """
         * export VM with force override enabled/disabled
@@ -130,19 +124,19 @@ class TestCase42054(BaseExportImportTestCase):
             True, self.vm_name, config.CLUSTER_NAME, self.export_domain)
         assert templates.removeTemplate(True, self.template_name)
 
-        super(TestCase42054, self).tearDown()
+        super(TestCase4665, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase41256(BaseExportImportTestCase):
+class TestCase4684(BaseExportImportTestCase):
     """
-    Test Case 41256 -  Collapse Snapshots
+    Test Case 4684 -  Collapse Snapshots
     """
     __test__ = True
-    tcms_test_case = '41256'
-    imported_vm = 'imported_%s' % tcms_test_case
+    polarion_test_case = '4684'
+    imported_vm = 'imported_%s' % polarion_test_case
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4684")
     def test_collapse_snapshots(self):
         """
         Test export/import with collapse snapshots option works
@@ -172,29 +166,31 @@ class TestCase41256(BaseExportImportTestCase):
         """
         Remove newly Vm imported
         """
-        super(TestCase41256, self).tearDown()
+        super(TestCase4684, self).tearDown()
         assert vms.removeVm(True, self.imported_vm, stopVM="true")
         assert vms.removeVmFromExportDomain(
             True, self.vm_name, config.CLUSTER_NAME, self.export_domain)
 
 
 @attr(tier=0)
-class TestCase41242(BaseExportImportTestCase):
+class TestCase11987(BaseExportImportTestCase):
     """
-    Test case 41242 - Export a VM sanity
+    Test case 11987 - Export a VM sanity
     Test import from Blank and from template
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/2_3_Storage_VM_Import_Export_Sanity
     """
     __test__ = True
-    tcms_test_case = '41242'
-    vm_from_template = "vm_from_template_%s" % tcms_test_case
+    polarion_test_case = '11987'
+    vm_from_template = "vm_from_template_%s" % polarion_test_case
     prefix = "imported"
 
     def setUp(self):
         """
         * Create a new template where to clone a vm from
         """
-        super(TestCase41242, self).setUp()
-        self.template_name = "origial_template_%s" % self.tcms_test_case
+        super(TestCase11987, self).setUp()
+        self.template_name = "origial_template_%s" % self.polarion_test_case
 
         assert templates.createTemplate(
             True, vm=self.vm_name, name=self.template_name)
@@ -206,7 +202,7 @@ class TestCase41242(BaseExportImportTestCase):
 
         assert templates.removeTemplate(True, self.template_name)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11987")
     def test_export_vm(self):
         """
         * Sanity export from Blank
@@ -244,7 +240,7 @@ class TestCase41242(BaseExportImportTestCase):
         """
         * Remove import and exported vms
         """
-        super(TestCase41242, self).tearDown()
+        super(TestCase11987, self).tearDown()
         assert vms.removeVmFromExportDomain(
             True, self.vm_name, config.CLUSTER_NAME, self.export_domain)
         assert vms.removeVmFromExportDomain(

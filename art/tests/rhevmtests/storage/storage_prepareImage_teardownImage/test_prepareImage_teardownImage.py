@@ -1,6 +1,7 @@
 """
 3.5 prepareImage and teardownImage
-https://tcms.engineering.redhat.com/plan/14466
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
 """
 import config
 import logging
@@ -23,7 +24,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import StorageTest as BaseTestCase
 from art.unittest_lib import attr
 from rhevmtests.storage.helpers import (
@@ -33,11 +34,9 @@ from rhevmtests.storage.helpers import (
 
 logger = logging.getLogger(__name__)
 
-TEST_PLAN_ID = '14466'
-
 VM1_NAME = "vm_%s" % config.TESTNAME
 VM1_SNAPSHOT1_DESCRIPTION = "vm1_snap1_description"
-VM2_NAME = "case_389924_wipe_after_delete"
+VM2_NAME = "case_4602_wipe_after_delete"
 
 vm1_args = {'positive': True,
             'vmName': VM1_NAME,
@@ -97,13 +96,13 @@ def setup_module():
 
     # Pick the 1st domain from the current storage type used, this is
     # irrelevant for the test since the disk created here is bootable and
-    # will run the OS needed for a single test case (389924)
+    # will run the OS needed for a single test case (4602)
     sd_name = getStorageDomainNamesForType(config.DATA_CENTER_NAME,
                                            config.STORAGE_SELECTOR[0])[0]
     vm2_args['storageDomainName'] = sd_name
 
-    logger.info('Creating VM to be used for all tests except for case 389924')
-    logger.info('Creating VM to be used only for case 389924')
+    logger.info('Creating VM to be used for all tests except for case 4602')
+    logger.info('Creating VM to be used only for case 4602')
     for args in [vm1_args, vm2_args]:
         if not create_vm_or_clone(**args):
             raise exceptions.VMException("Unable to create or clone VM '%s'"
@@ -173,7 +172,7 @@ class BasicEnvironment(BaseTestCase):
         # across the added disks: Storage Pool ID, Storage domain ID,
         # Image ID and Volume ID
 
-        # In the case of a wipe after delete disk (case 389924), only add
+        # In the case of a wipe after delete disk (case 4602), only add
         # one disk, starting the name with the last existing index (from
         # prior disk additions)
         if wipe_after_delete:
@@ -220,7 +219,7 @@ class BasicEnvironment(BaseTestCase):
         # functions including tearDown
         for _ in xrange(disk_count):
             self.disk_alias = "disk_%s_%s_%s_alias" % (len(self.disk_aliases),
-                                                       self.tcms_test_case,
+                                                       self.polarion_test_case,
                                                        self.storage_domain)
             self.disk_aliases.append(self.disk_alias)
             self.assertTrue(addDisk(True, alias=self.disk_alias,
@@ -400,17 +399,18 @@ class BasicEnvironment(BaseTestCase):
 
 
 @attr(tier=0)
-class TestCase388747(BasicEnvironment):
+class TestCase4581(BasicEnvironment):
     """
     Prepare image with all the correct parameters
-    https://tcms.engineering.redhat.com/case/388747/?from_plan=14466
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '388747'
+    polarion_test_case = '4581'
     disk_count = 2
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4581")
     def test_prepare_image_with_all_parameters(self):
         """
         1. Create a VM with 2 disks
@@ -429,17 +429,18 @@ class TestCase388747(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase388748(BasicEnvironment):
+class TestCase4595(BasicEnvironment):
     """
     Prepare image with no parameters
-    https://tcms.engineering.redhat.com/case/388748/?from_plan=14466
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '388748'
+    polarion_test_case = '4595'
     disk_count = 2
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4595")
     def test_prepare_image_with_no_parameters(self):
         """
         1. Create a VM with 2 disks
@@ -476,20 +477,21 @@ class TestCase388748(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase389851(BasicEnvironment):
+class TestCase4596(BasicEnvironment):
     """
     Prepare image with optional flag unset
-    https://tcms.engineering.redhat.com/case/388851/?from_plan=14466
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '389851'
+    polarion_test_case = '4596'
     disk_count = 2
     snapshot_success = False
     bz = {'1115556': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
     def setUp(self):
-        super(TestCase389851, self).setUp()
+        super(TestCase4596, self).setUp()
         logger.info("Create a snapshot that includes all attached disks")
         self.snapshot_success = addSnapshot(True, VM1_NAME,
                                             VM1_SNAPSHOT1_DESCRIPTION,
@@ -504,9 +506,9 @@ class TestCase389851(BasicEnvironment):
                     "the way for the disk to be detached and removed")
         if self.snapshot_success:
             removeSnapshot(True, VM1_NAME, VM1_SNAPSHOT1_DESCRIPTION)
-        super(TestCase389851, self).tearDown()
+        super(TestCase4596, self).tearDown()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4596")
     def test_prepare_image_without_volume_id(self):
         """
         1. Create a VM with 2 disks
@@ -523,18 +525,19 @@ class TestCase389851(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase389852(BasicEnvironment):
+class TestCase4597(BasicEnvironment):
     """
     Prepare image with 1 erroneous flag value
-    https://tcms.engineering.redhat.com/case/389852/?from_plan=14466
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '389852'
+    polarion_test_case = '4597'
     disk_count = 1
     bz = {'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4597")
     def test_prepare_image_with_1_invalid_parameter(self):
         """
         1. Create a VM with 1 disk
@@ -568,18 +571,19 @@ class TestCase389852(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase389853(BasicEnvironment):
+class TestCase4598(BasicEnvironment):
     """
     Prepare image with several erroneous parameters
-    https://tcms.engineering.redhat.com/case/389853/?from_plan=14466
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '389853'
+    polarion_test_case = '4598'
     disk_count = 2
     bz = {'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4598")
     def test_prepare_image_with_several_invalid_parameters(self):
         """
         1. Create a VM with 2 disks
@@ -607,14 +611,15 @@ class TestCase389853(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase389921(BasicEnvironment):
+class TestCase4599(BasicEnvironment):
     """
     Prepare image on VM with multiple disks
-    https://tcms.engineering.redhat.com/case/389921/?from_plan=14466
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '389921'
+    polarion_test_case = '4599'
     disk_count = 5
     snapshot_success = False
 
@@ -623,9 +628,9 @@ class TestCase389921(BasicEnvironment):
                     "the way for the disk to be detached and removed")
         if self.snapshot_success:
             removeSnapshot(True, VM1_NAME, VM1_SNAPSHOT1_DESCRIPTION)
-        super(TestCase389921, self).tearDown()
+        super(TestCase4599, self).tearDown()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4599")
     def test_prepare_image_with_multiple_disks(self):
         """
         1. Create a VM with 5 disks
@@ -652,19 +657,20 @@ class TestCase389921(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase389922(BasicEnvironment):
+class TestCase4600(BasicEnvironment):
     """
     Prepare image on VM with disks from different Storage Domains
-    https://tcms.engineering.redhat.com/case/389922/?from_plan=14466
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '389922'
+    polarion_test_case = '4600'
     disk_count = 4
     snapshot_success = False
 
     def setUp(self):
-        super(TestCase389922, self).setUp()
+        super(TestCase4600, self).setUp()
         logger.info("Migrate the last two disks added to a secondary storage "
                     "domain")
         target_storage_domain = getStorageDomainNamesForType(
@@ -685,9 +691,9 @@ class TestCase389922(BasicEnvironment):
                     "the way for the disk to be detached and removed")
         if self.snapshot_success:
             removeSnapshot(True, VM1_NAME, VM1_SNAPSHOT1_DESCRIPTION)
-        super(TestCase389922, self).tearDown()
+        super(TestCase4600, self).tearDown()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4600")
     def test_prepare_image_disks_on_multiple_domains(self):
         """
         1. Create a VM with 4 disks from 2 different Storage Domains
@@ -714,20 +720,21 @@ class TestCase389922(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase389923(BasicEnvironment):
+class TestCase4601(BasicEnvironment):
     """
     Prepare image for Disks on a VM created from template
-    https://tcms.engineering.redhat.com/case/389923/?from_plan=14466
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '389923'
+    polarion_test_case = '4601'
     disk_count = 3
 
     def setUp(self):
-        super(TestCase389923, self).setUp()
+        super(TestCase4601, self).setUp()
         logger.info("Create a template with 3 disks")
-        template_name = "template_%s" % self.tcms_test_case
+        template_name = "template_%s" % self.polarion_test_case
         self.assertTrue(createTemplate(True, wait=True, vm=VM1_NAME,
                                        name=template_name,
                                        cluster=config.CLUSTER_NAME),
@@ -759,7 +766,7 @@ class TestCase389923(BasicEnvironment):
         self.disk_aliases = disk_aliases_backup
         self.register_required_storage_uuids()
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4601")
     def test_prepare_image_from_template(self):
         """
         1. Create a VM from a VM template with 3 disks
@@ -772,14 +779,15 @@ class TestCase389923(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase389924(BasicEnvironment):
+class TestCase4602(BasicEnvironment):
     """
     Prepare image with 1 disk missing/corrupted from VM
-    https://tcms.engineering.redhat.com/case/389924/?from_plan=14466
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '389924'
+    polarion_test_case = '4602'
     disk_count = 4
     vm_name = VM2_NAME
 
@@ -789,7 +797,7 @@ class TestCase389924(BasicEnvironment):
         waitForVMState(self.vm_name, config.VM_DOWN)
 
         logger.info("Register the %s standard disks", self.disk_count)
-        super(TestCase389924, self).setUp()
+        super(TestCase4602, self).setUp()
 
         logger.info("Create and attach a 5 GB disk with wipe after delete "
                     "marked to existing VM")
@@ -806,7 +814,7 @@ class TestCase389924(BasicEnvironment):
             detachDisk(True, disk_alias, self.vm_name)
             deleteDisk(True, disk_alias)
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4602")
     def test_prepare_image_with_large_disk_marked_for_wipe_after_delete(self):
         """
         1. Create a VM with 5 disks one of 5 GB in size (with wipe after
@@ -864,17 +872,18 @@ class TestCase389924(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase389927(BasicEnvironment):
+class TestCase4605(BasicEnvironment):
     """
     Prepare image followed by Tear Down, then run Prepare image once more
-    https://tcms.engineering.redhat.com/case/389927/?from_plan=14466
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '389927'
+    polarion_test_case = '4605'
     disk_count = 5
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4605")
     def test_multiple_disks_using_prepare_teardown_then_prepare_image(self):
         """
         1. Create a VM with 5 disks
@@ -893,17 +902,18 @@ class TestCase389927(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase389931(BasicEnvironment):
+class TestCase4594(BasicEnvironment):
     """
     Prepare image followed by Tear down
-    https://tcms.engineering.redhat.com/case/389931/?from_plan=14466
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '389931'
+    polarion_test_case = '4594'
     disk_count = 5
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4594")
     def test_multiple_disks_using_prepare_and_teardown_of_image(self):
         """
         1. Create a VM with 5 disks
@@ -928,17 +938,18 @@ class TestCase389931(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase389935(BasicEnvironment):
+class TestCase4593(BasicEnvironment):
     """
     Tear down image with a powered off VM
-    https://tcms.engineering.redhat.com/case/389935/?from_plan=14466
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '389935'
+    polarion_test_case = '4593'
     disk_count = 5
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4593")
     def test_multiple_disks_using_only_teardown_image(self):
         """
         1. Create a VM with 5 disks
@@ -951,17 +962,18 @@ class TestCase389935(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase389936(BasicEnvironment):
+class TestCase4582(BasicEnvironment):
     """
     Tear down image with all flags set
-    https://tcms.engineering.redhat.com/case/389936/?from_plan=14466
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '389936'
+    polarion_test_case = '4582'
     disk_count = 5
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4582")
     def test_multiple_disks_using_prepare_then_teardown_image(self):
         """
         1. Create a VM with 5 disks
@@ -974,17 +986,18 @@ class TestCase389936(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase389939(BasicEnvironment):
+class TestCase4584(BasicEnvironment):
     """
     Tear down image with optional flags unset
-    https://tcms.engineering.redhat.com/case/389939/?from_plan=14466
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '389939'
+    polarion_test_case = '4584'
     disk_count = 5
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4584")
     def test_multiple_disks_without_optional_volume_id_on_teardown(self):
         """
         1. Create a VM with 5 disks
@@ -1001,18 +1014,19 @@ class TestCase389939(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase389940(BasicEnvironment):
+class TestCase4585(BasicEnvironment):
     """
     Tear down image with 1 erroneous flag value
-    https://tcms.engineering.redhat.com/case/389940/?from_plan=14466
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '389940'
+    polarion_test_case = '4585'
     disk_count = 1
     bz = {'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4585")
     def test_teardown_image_with_1_invalid_parameter(self):
         """
         1. Create a VM with 1 disk
@@ -1045,18 +1059,19 @@ class TestCase389940(BasicEnvironment):
 
 
 @attr(tier=1)
-class TestCase389943(BasicEnvironment):
+class TestCase4586(BasicEnvironment):
     """
     Tear down image with several erroneous parameters
-    https://tcms.engineering.redhat.com/case/389943/?from_plan=14466
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '389943'
+    polarion_test_case = '4586'
     disk_count = 2
     bz = {'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
-    @tcms(TEST_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4586")
     def test_prepare_image_with_several_invalid_parameters(self):
         """
         1. Create a VM with 1 disk

@@ -1,5 +1,6 @@
 """
-https://tcms.engineering.redhat.com/plan/9985
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_3_Storage_Manage_Storage_Connections
 
 Test suite for restarting VDSM ovirt-engine during async tasks
 

@@ -1,10 +1,12 @@
 """
 Storage VM Floating Disk
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_3_Storage_Hosted_Engine_Sanity
 """
 import config
 import logging
 from art.rhevm_api.tests_lib.low_level import disks, storagedomains, vms
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import StorageTest as TestCase, attr
 from art.test_handler.settings import opts
 
@@ -14,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 @attr(tier=0)
-class TestCase174621(TestCase):
+class TestCase11513(TestCase):
     """
     Test sharing disk
     Expected system: 2 vms with state down
@@ -26,8 +28,7 @@ class TestCase174621(TestCase):
     )
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
 
-    tcms_plan_id = '6458'
-    tcms_test_case = '174621'
+    polarion_test_case = '11513'
     disk_name = "shareableDisk"
 
     def setUp(self):
@@ -39,7 +40,7 @@ class TestCase174621(TestCase):
         for vm in [self.vm_1, self.vm_2]:
             assert vms.startVm(True, vm, wait_for_status=ENUMS['vm_state_up'])
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11513")
     def test_shared(self):
         """Creates a shared disk and assign it to different vms
         """
@@ -84,7 +85,7 @@ class TestCase174621(TestCase):
 
 
 @attr(tier=1)
-class TestCase275816(TestCase):
+class TestCase11624(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=834893
     scenario:
@@ -93,7 +94,8 @@ class TestCase275816(TestCase):
     * attaches the disk to the vms one at a time
     * runs all the vms on one host
 
-    https://tcms.engineering.redhat.com/case/275816/?from_plan=9583
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Bug_Coverage
     """
     # Gluster doesn't support shareable disks
     __test__ = (
@@ -101,19 +103,18 @@ class TestCase275816(TestCase):
         or config.STORAGE_TYPE_ISCSI in opts['storages']
     )
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
-    tcms_plan_id = '9583'
-    tcms_test_case = '275816'
+    polarion_test_case = '11624'
     disk_name = None
     disk_size = 1 * config.GB
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11624")
     def test_several_vms_with_same_shared_disk_on_one_host_test(self):
         """ tests if running a few VMs with the same shared disk on the same
             host works correctly
         """
         self.vm_names = []
         for i in range(4):
-            vm_name = "vm_%s_%s" % (self.tcms_test_case, i)
+            vm_name = "vm_%s_%s" % (self.polarion_test_case, i)
             nic = "nic_%s" % i
             vms.createVm(
                 True, vm_name, vm_name, config.CLUSTER_NAME, nic=nic,
@@ -121,7 +122,7 @@ class TestCase275816(TestCase):
             self.vm_names.append(vm_name)
         storage_domain = storagedomains.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[0]
-        self.disk_name = 'disk_%s' % self.tcms_test_case
+        self.disk_name = 'disk_%s' % self.polarion_test_case
         logger.info("Creating disk")
         assert disks.addDisk(
             True, alias=self.disk_name, shareable=True, bootable=False,

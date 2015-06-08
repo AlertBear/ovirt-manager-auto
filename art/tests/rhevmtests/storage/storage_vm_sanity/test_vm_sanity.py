@@ -1,6 +1,7 @@
 """
 Storage VM sanity
-TCMS plan: https://tcms.engineering.redhat.com/plan/8676
+Polarion plan: https://polarion.engineering.redhat.com/polarion/#/project/
+RHEVM3/wiki/Storage/3_1_Virtual_Machines_Sanity
 """
 import config
 import logging
@@ -16,7 +17,7 @@ from art.rhevm_api.tests_lib.low_level import vms, disks
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.utils import log_listener
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from rhevmtests.storage.helpers import get_vm_ip, create_vm_or_clone
 
 LOGGER = logging.getLogger(__name__)
@@ -112,14 +113,14 @@ def _prepare_data(sparse, vol_format, template_names, storage_type):
 
 
 @attr(tier=1)
-class TestCase248138(TestCase):
+class TestCase11834(TestCase):
     """
     storage vm sanity test, creates and removes snapshots
-    https://tcms.engineering.redhat.com/case/248138/?from_plan=8676
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Virtual_Machines_Sanity
     """
     __test__ = True
-    tcms_plan_id = '8676'
-    tcms_test_case = '248138'
+    polarion_test_case = '11834'
     data_for_vm = []
     vms_ip_address = None
 
@@ -218,7 +219,7 @@ class TestCase248138(TestCase):
         LOGGER.info("Verifying data on VM %s" % self.vm_name)
         self._verify_data_on_vm(expected_data)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11834")
     def test_delete_snapshots_advanced(self):
         """ Deleting snapshots
         """
@@ -276,16 +277,16 @@ class TestCase248138(TestCase):
 
 
 @attr(tier=0)
-class TestCase300867(TestCase):
+class TestCase11586(TestCase):
     """
     storage vm sanity test, creates 2 snapshots and removes them.
     Check that actual disk size became the same it was
     before snapshots were made.
-    https://tcms.engineering.redhat.com/case/300867/?from_plan=6458
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Sanity
     """
     __test__ = True
-    tcms_plan_id = '6458'
-    tcms_test_case = '300867'
+    polarion_test_case = '11586'
     data_for_vm = []
     vms_ip_address = None
     snapShot1_name = "%s_snapshot1" % config.VM_BASE_NAME
@@ -339,7 +340,7 @@ class TestCase300867(TestCase):
                     timeout=2100),
                 "Removing snapshot %s failed!" % snapshot)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11586")
     def test_delete_snapshot(self):
         """
         Create 2 snapshot, Deleting them and Check that actual disk
@@ -382,14 +383,15 @@ class TestCase300867(TestCase):
 
 
 @attr(tier=0)
-class TestCase320225(TestCase):
+class TestCase11830(TestCase):
     """
     Create a template from a VM, then start to create 2 VMs from
     this template at once.
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Virtual_Machines_General
     """
     __test__ = True
-    tcms_plan_id = '8040'
-    tcms_test_case = '320225'
+    polarion_test_case = '11830'
     vm_type = config.VM_TYPE_SERVER
     vm_name = None
     template_name = None
@@ -414,7 +416,7 @@ class TestCase320225(TestCase):
                                          self.vm_name)
         vms.waitForVMState(self.vm_name, state=config.VM_DOWN)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11830")
     def test_create_vm_from_template_basic_flow(self):
         """
         Create template from vm

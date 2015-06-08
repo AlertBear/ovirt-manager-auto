@@ -7,14 +7,13 @@ from art.test_handler import exceptions
 from art.unittest_lib import StorageTest as TestCase, attr
 from art.rhevm_api.tests_lib.high_level import datacenters, storagedomains
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level.hosts import (
     getSPMHost, waitForSPM, select_host_as_spm,
 )
 from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
-TCMS_PLAN_ID = '6458'
 
 SPM_TIMEOUT = 600
 SPM_SLEEP = 5
@@ -48,14 +47,15 @@ def teardown_module():
 
 
 @attr(tier=0)
-class TestCase94947(TestCase):
+class TestCase11591(TestCase):
     """
     storage sanity test, create and extend a Data domain
-    https://tcms.engineering.redhat.com/case/94947/
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Sanity
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
-    tcms_test_case = '94947'
+    polarion_test_case = '11591'
 
     def setUp(self):
         """
@@ -69,7 +69,7 @@ class TestCase94947(TestCase):
         self.assertTrue(len(config.UNUSED_LUNS) >= MIN_UNUSED_LUNS,
                         "There are less than %s unused LUNs, aborting test"
                         % MIN_UNUSED_LUNS)
-        self.sd_name = "{0}_{1}".format(self.tcms_test_case,
+        self.sd_name = "{0}_{1}".format(self.polarion_test_case,
                                         "iSCSI_Domain")
         logger.info("The unused LUNs found are: '%s'", config.UNUSED_LUNS)
         status_attach_and_activate = storagedomains.addISCSIDataDomain(
@@ -103,7 +103,7 @@ class TestCase94947(TestCase):
                         "Failed to remove domain '%s'" % self.sd_name)
         wait_for_jobs()
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11591")
     def test_create_and_extend_storage_domain(self):
         """
         Creates and extends a storage domain
@@ -127,13 +127,14 @@ class TestCase94947(TestCase):
 
 
 @attr(tier=1)
-class TestCase94950(TestCase):
+class TestCase11592(TestCase):
     """
     Storage sanity test, changing domain status
-    https://tcms.engineering.redhat.com/case/94950/
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Sanity
     """
     __test__ = True
-    tcms_test_case = '94950'
+    polarion_test_case = '11592'
     sd_name = None
 
     def setUp(self):
@@ -150,7 +151,7 @@ class TestCase94950(TestCase):
                 raise exceptions.StorageDomainException(
                     "There are no unused LUNs, aborting test"
                 )
-            self.sd_name = "{0}_{1}".format(self.tcms_test_case,
+            self.sd_name = "{0}_{1}".format(self.polarion_test_case,
                                             "iSCSI_Domain")
             status_attach_and_activate = storagedomains.addISCSIDataDomain(
                 self.spm_host,
@@ -166,7 +167,7 @@ class TestCase94950(TestCase):
                     "Creating iSCSI domain '%s' failed" % self.sd_name
                 )
         elif self.storage == config.STORAGE_TYPE_NFS:
-            self.sd_name = "{0}_{1}".format(self.tcms_test_case,
+            self.sd_name = "{0}_{1}".format(self.polarion_test_case,
                                             "NFS_Domain")
             self.nfs_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[0]
             self.nfs_path = config.UNUSED_DATA_DOMAIN_PATHS[0]
@@ -183,7 +184,7 @@ class TestCase94950(TestCase):
                     "Creating NFS domain '%s' failed" % self.sd_name
                 )
         elif self.storage == config.STORAGE_TYPE_GLUSTER:
-            self.sd_name = "{0}_{1}".format(self.tcms_test_case,
+            self.sd_name = "{0}_{1}".format(self.polarion_test_case,
                                             "Gluster_Domain")
             self.gluster_address = \
                 config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0]
@@ -223,7 +224,7 @@ class TestCase94950(TestCase):
                 logger.info("Storage domain '%s' wasn't added successfully, "
                             "nothing to remove", self.sd_name)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11592")
     def test_change_domain_status_test(self):
         """
         Test checks if attaching/detaching storage domains works properly,
@@ -297,15 +298,16 @@ class TestCase94950(TestCase):
 
 
 @attr(tier=1)
-class TestCase94954(TestCase):
+class TestCase11593(TestCase):
     """
     storage sanity test, changing master domain
-    https://tcms.engineering.redhat.com/case/94954/
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Sanity
     """
     __test__ = True
-    tcms_test_case = '94954'
+    polarion_test_case = '11593'
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11593")
     def test_change_master_domain_test(self):
         """ test checks if changing master domain works correctly
         """
@@ -338,13 +340,12 @@ class TestCase94954(TestCase):
 
 
 @attr(tier=0)
-class TestCase288461(TestCase):
+class TestCase5830(TestCase):
     """
-    TCMS Test Case 288461 - Manually Re-assign SPM
+    Polarion Test Case 5830 - Manually Re-assign SPM
     """
     __test__ = True
-    tcms_test_plan = '9953'
-    tcms_test_case = '288461'
+    polarion_test_case = '5830'
     original_spm_host = None
 
     def setUp(self):
@@ -383,7 +384,7 @@ class TestCase288461(TestCase):
                                                "the SPM to host '%s'" %
                                                self.original_spm_host)
 
-    @tcms(tcms_test_plan, tcms_test_case)
+    @polarion("RHEVM3-5830")
     def test_reassign_spm(self):
         """
         Assign first HSM host to be the SPM

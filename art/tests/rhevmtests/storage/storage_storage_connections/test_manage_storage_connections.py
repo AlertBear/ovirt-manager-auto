@@ -1,7 +1,6 @@
 import config
 import helpers
 import logging
-
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import storageconnections
@@ -11,7 +10,7 @@ from art.rhevm_api.tests_lib.low_level import datacenters
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 
 from art.test_handler.settings import opts
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, StorageTest as TestCase
 
 from utilities.machine import Machine
@@ -229,19 +228,19 @@ class TestCasePosixFS(TestCasePosix):
 
 
 @attr(tier=0)
-class TestCase288707(TestCasePosixFS):
+class TestCase5251(TestCasePosixFS):
     """
-    https://tcms.engineering.redhat.com/case/288707/?from_plan=9985
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Manage_Storage_Connections
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
-    tcms_plan_id = '9985'
-    tcms_test_case = '288707'
-    sd_name = "sd_%s" % tcms_test_case
+    polarion_test_case = '5251'
+    sd_name = "sd_%s" % polarion_test_case
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5251")
     def test_change_posixfs_connection(self):
         """ Tries to change a posixfs connection
         """
@@ -249,20 +248,19 @@ class TestCase288707(TestCasePosixFS):
 
 
 @attr(tier=0)
-class TestCase288597(TestCaseNFS):
+class TestCase5250(TestCaseNFS):
     """
-    https://tcms.engineering.redhat.com/case/288597/?from_plan=9985
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Manage_Storage_Connections
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
+    polarion_test_case = '5250'
+    sd_name = "sd_%s" % polarion_test_case
 
-    tcms_plan_id = '9985'
-    tcms_test_case = '288597'
-    sd_name = "sd_%s" % tcms_test_case
-
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5250")
     def test_change_nfs_connection(self):
         """ Tries to change an nfs connection
         """
@@ -270,20 +268,20 @@ class TestCase288597(TestCaseNFS):
 
 
 @attr(tier=1)
-class TestCase289001(TestCasePosixFS):
+class TestCase5255(TestCasePosixFS):
     """
-    https://tcms.engineering.redhat.com/case/289001/?from_plan=9985
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Manage_Storage_Connections
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
-    tcms_plan_id = '9985'
-    tcms_test_case = '289001'
-    sd_name = "sd_%s" % tcms_test_case
+    polarion_test_case = '5255'
+    sd_name = "sd_%s" % polarion_test_case
     conn = None
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5255")
     def test_change_posixfs_connection_in_active_sd(self):
         """ Tries to change a posixfs connection used by an active domain,
             action should fail.
@@ -292,20 +290,20 @@ class TestCase289001(TestCasePosixFS):
 
 
 @attr(tier=1)
-class TestCase288991(TestCaseNFS):
+class TestCase5254(TestCaseNFS):
     """
-    https://tcms.engineering.redhat.com/case/288991/?from_plan=9985
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Manage_Storage_Connections
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
-    tcms_plan_id = '9985'
-    tcms_test_case = '288991'
-    sd_name = "sd_%s" % tcms_test_case
+    polarion_test_case = '5254'
+    sd_name = "sd_%s" % polarion_test_case
     conn = None
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5254")
     def test_change_nfs_connection_in_active_sd(self):
         """ Tries to change an nfs connection used by an active domain,
             action should fail
@@ -314,19 +312,19 @@ class TestCase288991(TestCaseNFS):
 
 
 @attr(tier=1)
-class TestCase288710(TestCaseNFS):
+class TestCase5253(TestCaseNFS):
     """
-    https://tcms.engineering.redhat.com/case/288710/?from_plan=9985
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Manage_Storage_Connections
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
-    tcms_plan_id = '9985'
-    tcms_test_case = '288710'
-    sd_name = "sd_%s" % tcms_test_case
+    polarion_test_case = '5253'
+    sd_name = "sd_%s" % polarion_test_case
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5253")
     def test_change_conn_more_than_once(self):
         """ Tries to change the same connection twice.
         """
@@ -398,22 +396,22 @@ class TestCase288710(TestCaseNFS):
 
 
 @attr(tier=1)
-class TestCase293074(TestCaseNFS):
+class TestCase5257(TestCaseNFS):
     """
-    https://tcms.engineering.redhat.com/case/293074/?from_plan=9985
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Manage_Storage_Connections
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
-    tcms_plan_id = '9985'
-    tcms_test_case = '293074'
-    sd_name = "sd_%s" % tcms_test_case
-    cluster = 'cl_%s' % tcms_test_case
-    data_center = 'dc_%s' % tcms_test_case
+    polarion_test_case = '5257'
+    sd_name = "sd_%s" % polarion_test_case
+    cluster = 'cl_%s' % polarion_test_case
+    data_center = 'dc_%s' % polarion_test_case
     old_cluster = None
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5257")
     def test_editing_with_no_active_host(self):
         """
         Tries to edit storage connection when there is no host in
@@ -460,22 +458,22 @@ class TestCase293074(TestCaseNFS):
         assert datacenters.waitForDataCenterState(config.DATA_CENTER_NAME)
         clusters.removeCluster(True, self.cluster)
         datacenters.removeDataCenter(True, self.data_center)
-        super(TestCase293074, self).tearDown()
+        super(TestCase5257, self).tearDown()
 
 
 @attr(tier=0)
-class TestCase288708(TestCaseLocalFS):
+class TestCase5252(TestCaseLocalFS):
     """
-    https://tcms.engineering.redhat.com/case/288708/?from_plan=9985
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Manage_Storage_Connections
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (config.STORAGE_TYPE == 'localfs')
-    tcms_plan_id = '9985'
-    tcms_test_case = '288708'
-    path = "/home/manage_conn_test_%s" % tcms_test_case
+    polarion_test_case = '5252'
+    path = "/home/manage_conn_test_%s" % polarion_test_case
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5252")
     def test_change_local_connection(self):
         """ Tries to change a local connection
         """
@@ -516,22 +514,22 @@ class TestCase288708(TestCaseLocalFS):
         storagedomains.activateStorageDomain(True, config.DATA_CENTER_NAME,
                                              self.sd_name)
 
-        super(TestCase288708, self).tearDown()
+        super(TestCase5252, self).tearDown()
 
 
 @attr(tier=1)
-class TestCase289228(TestCaseLocalFS):
+class TestCase5256(TestCaseLocalFS):
     """
-    https://tcms.engineering.redhat.com/case/289228/?from_plan=9985
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_Manage_Storage_Connections
 
     **Author**: Katarzyna Jachim
     """
     __test__ = (config.STORAGE_TYPE == 'localfs')
-    tcms_plan_id = '9985'
-    tcms_test_case = '289228'
-    path = "/home/manage_conn_test_%s" % tcms_test_case
+    polarion_test_case = '5256'
+    path = "/home/manage_conn_test_%s" % polarion_test_case
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-5256")
     def test_try_to_change_local_connection_in_active_sd(self):
         """ Tries to change a local connection used by an active domain,
             action should fail.

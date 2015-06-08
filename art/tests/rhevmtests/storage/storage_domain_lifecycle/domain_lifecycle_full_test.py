@@ -10,7 +10,7 @@ from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.high_level import hosts as hi_hosts
 from art.rhevm_api.tests_lib.high_level import datacenters, storagedomains
 from utilities.utils import getIpAddressByHostName
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.rhevm_api.utils.storage_api as st_api
 import art.rhevm_api.utils.iptables as ip_action
 from art.rhevm_api.utils.test_utils import get_api, wait_for_tasks
@@ -20,7 +20,6 @@ from sys import modules
 from art.test_handler.settings import opts
 
 
-TCMS_PLAN_ID = '6458'
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
 
@@ -46,11 +45,11 @@ def setup_module():
     creates datacenter, adds hosts, clusters, storages according to
     the config file
 
-    for this TCMS plan we need 3 SD but only one of them should be created on
-    setup. the other two SDs will be created manually in the test cases.
-    so to accomplish this behaviour, the luns and paths lists are saved
-    and overridden with only one lun/path to sent as parameter to build_setup.
-    after the build_setup finish, we return to the original lists
+    for this Polarion plan we need 3 SD but only one of them should be
+    created on setup. the other two SDs will be created manually in the test
+    cases.  In order to accomplish this behaviour, the luns and paths lists
+    are saved and overridden with only one lun/path to sent as parameter to
+    build_setup.  After the build_setup finish, we return to the original lists
     """
     if not config.GOLDEN_ENV:
         if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
@@ -152,7 +151,7 @@ class BaseTestCase(TestCase):
     This class implements setup and teardowns of common things
     """
     __test__ = False
-    tcms_test_case = None
+    polarion_test_case = None
     master_domain_ip = None
     engine_ip = None
 
@@ -235,18 +234,19 @@ def _create_vm(vm_name, vm_description, disk_interface,
 
 
 @attr(tier=3)
-class TestCase174610(BaseTestCase):
+class TestCase11598(BaseTestCase):
     """
     * Block connection from engine to host.
     * Wait until host goes to non-responsive.
     * Unblock connection.
     * Check that the host is UP again.
-    https://tcms.engineering.redhat.com/case/174610/?from_plan=6458
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Sanity
     """
     __test__ = True
-    tcms_test_case = '174610'
+    polarion_test_case = '11598'
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11598")
     def test_disconnect_engine_from_host(self):
         """
         Block connection from one engine to host.
@@ -289,23 +289,24 @@ class TestCase174610(BaseTestCase):
 
 
 @attr(tier=1)
-class TestCase174613(TestCase):
+class TestCase4817(TestCase):
     """
     test check if creating storage domain with defined values
     is working properly
-    https://tcms.engineering.redhat.com/case/174613/
+
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_NFS_Options
     """
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
-    tcms_plan_id = '5849'
-    tcms_test_case = '174613'
+    polarion_test_case = '4817'
     nfs_retrans = 5
     nfs_timeout = 10
     nfs_version = 'v3'
     mount_options = 'sync'
     sd_names = config.LIFECYCLE_DOMAIN_NAMES[1:]
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4817")
     def test_create_sd_with_defined_values(self):
         """
         test checks if creating NFS SD with defined values work fine
@@ -399,17 +400,18 @@ class TestCase174613(TestCase):
 
 
 @attr(tier=1)
-class TestCase147888(TestCase):
+class TestCase4815(TestCase):
     """
     test check if bad and conflict parameters for creating storage
     domain are blocked
-    https://tcms.engineering.redhat.com/case/147888/
+
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_NFS_Options
     """
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
 
-    tcms_plan_id = '5849'
-    tcms_test_case = '147888'
+    polarion_test_case = '4815'
 
     sds_params = []
     sds_params.append({
@@ -457,7 +459,7 @@ class TestCase147888(TestCase):
 
     sd_names = config.LIFECYCLE_DOMAIN_NAMES[1:]
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4815")
     def test_create_sd_with_defined_values(self):
         """
         test check if bad and conflict parameters for creating storage
@@ -514,14 +516,15 @@ class TestCase147888(TestCase):
 
 
 @attr(tier=1)
-class TestCase174631(TestCase):
+class TestCase11581(TestCase):
     """
     test checks if creating vm disks on different storage
     domain works fine and the disks are functional within guest OS
-    https://tcms.engineering.redhat.com/case/174631/?from_plan=6458
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Sanity
     """
     __test__ = True
-    tcms_test_case = '174631'
+    polarion_test_case = '11581'
     sd_names = config.LIFECYCLE_DOMAIN_NAMES[1:]
     interfaces = [config.INTERFACE_VIRTIO, config.INTERFACE_IDE]
     formats = [ENUMS['format_cow'], ENUMS['format_raw']]
@@ -553,7 +556,7 @@ class TestCase174631(TestCase):
             raise exceptions.VMException("Failed to shutdown vm %s"
                                          % config.LIFECYCLE_VM)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-11581")
     def test_multiple_disks_on_different_sd(self):
         """
         creates disks on different SD
@@ -605,17 +608,17 @@ class TestCase174631(TestCase):
 
 
 @attr(tier=1)
-class TestCase284310(TestCase):
+class TestCase11784(TestCase):
     """
     Starting version 3.3 attaching domains should activate them automatically.
-    https://tcms.engineering.redhat.com/case/284310/?from_plan=5292
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Multiple_Storage_Domains_General
     """
     __test__ = True
-    tcms_plan_id = '5292'
-    tcms_test_case = '284310'
+    polarion_test_case = '11784'
     sd_names = config.LIFECYCLE_DOMAIN_NAMES[1:]
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11784")
     def test_add_another_storage_domain_test(self):
         """
         Check that both storage domains were automatically activated
@@ -654,6 +657,8 @@ class TestCase284310(TestCase):
 class TestUpgrade(TestCase):
     """
     Base class for upgrade testing
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_Storage_Domain_Live_Upgrade
     """
     __test__ = False
     dc_name = None
@@ -668,8 +673,7 @@ class TestUpgrade(TestCase):
     host = config.FIRST_HOST
     vm_name = 'TestUpgrade_vm_test'
     domain_kw = None
-    tcms_plan_id = '6127'
-    tcms_test_case = '165844'
+    polarion_test_case = '11743'
 
     @classmethod
     def setup_class(cls):
@@ -742,7 +746,7 @@ class TestUpgrade(TestCase):
 
         LOGGER.info("Class %s teardown finished", cls.__name__)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-11743")
     def test_data_center_upgrade(self):
         """
         Changes DC version while installing a VM

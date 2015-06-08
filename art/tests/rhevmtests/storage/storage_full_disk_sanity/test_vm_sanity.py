@@ -1,17 +1,16 @@
 """
 Storage VM sanity
-TCMS plan: https://tcms.engineering.redhat.com/plan/8676
+Polarion plan: https://polarion.engineering.redhat.com/polarion/#/project/
+RHEVM3/wiki/Storage/3_3_Storage_VM_Sanity
 """
+import config
 import logging
 from art.unittest_lib import StorageTest as TestCase, attr
 from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
-
 from art.rhevm_api.tests_lib.low_level import vms, templates, storagedomains
 from art.rhevm_api.utils import log_listener
-from art.test_handler.tools import tcms  # pylint: disable=E0611
-
-import config
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from common import create_vm
 
 LOGGER = logging.getLogger(__name__)
@@ -20,14 +19,14 @@ ENUMS = config.ENUMS
 
 # TBD: Remove this when is implemented in the main story, storage sanity
 # http://rhevm-qe-storage.pad.engineering.redhat.com/11?
-# class TestCase248112(TestCase):
+# class TestCase4709(TestCase):
 #     """
 #     storage vm sanity test, creates and removes vm with a cow disk
-#     https://tcms.engineering.redhat.com/case/248112/?from_plan=8676
+#     https://polarion.engineering.redhat.com/polarion/#/project/
+#     RHEVM3/wiki/Storage/3_3_Storage_VM_Sanity
 #     """
 #     __test__ = True
-#     tcms_plan_id = '8676'
-#     tcms_test_case = '248112'
+#     polarion_test_case = '4709'
 
 
 def _prepare_data(sparse, vol_format, template_names, storage_type):
@@ -69,14 +68,14 @@ def _prepare_data(sparse, vol_format, template_names, storage_type):
 
 
 @attr(tier=1)
-class TestCase248132(TestCase):
+class TestCase4710(TestCase):
     """
     storage vm sanity test, cloning vm from template with changing disk type
-    https://tcms.engineering.redhat.com/case/248132/?from_plan=8676
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_3_Storage_VM_Sanity
     """
     __test__ = True
-    tcms_plan_id = '8676'
-    tcms_test_case = '248132'
+    polarion_test_case = '4710'
     template_names = {}
 
     @classmethod
@@ -95,11 +94,11 @@ class TestCase248132(TestCase):
     def setUp(self):
         self.vm_names = []
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4710")
     def create_vm_from_template_validate_disks(
             self, name, template_name, sparse, vol_format):
         vm_name = "%s_%s_clone_%s" % (
-            self.tcms_test_case, self.storage, name)
+            self.polarion_test_case, self.storage, name)
         LOGGER.info("Clone vm %s, from %s, sparse=%s, volume format = %s" % (
             vm_name, template_name, sparse, vol_format))
         self.assertTrue(
@@ -130,14 +129,14 @@ class TestCase248132(TestCase):
         self.create_vm_from_template_validate_disks(
             name, template_name, False, ENUMS['format_raw'])
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4710")
     def test_disk_conv_from_sparse_cow_test(self):
         """ creates vms from template with sparse cow disk
         """
         self.create_vms_from_template_convert_disks(
             True, ENUMS['format_cow'], 'from_sparse_cow')
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4710")
     def test_disk_conv_from_sparse_raw_test(self):
         """ creates vms from template with sparse raw disk
         """
@@ -145,7 +144,7 @@ class TestCase248132(TestCase):
             self.create_vms_from_template_convert_disks(
                 True, ENUMS['format_raw'], 'from_sparse_raw')
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4710")
     def test_disk_conv_from_preallocated_raw_test(self):
         """ creates vms from templates with preallocated raw disk
         """
@@ -164,12 +163,13 @@ class TestCase248132(TestCase):
 
 # TBD: Remove this when is implemented in the main story, storage sanity
 # http://rhevm-qe-storage.pad.engineering.redhat.com/11?
-# class TestCase300867(TestCase):
+# class TestCase4711(TestCase):
 #     """
 #     storage vm sanity test, creates 2 snapshots and removes them.
 #     Check that actual disk size became the same it was
 #     before snapshots were made.
-#     https://tcms.engineering.redhat.com/case/248138/?from_plan=8676
+#     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+#     Storage/3_3_Storage_VM_Sanity
 #     """
 
 class TestReadLock(TestCase):
@@ -178,13 +178,12 @@ class TestReadLock(TestCase):
     this template at once.
     """
     __test__ = False
-    tcms_plan_id = '8040'
-    tcms_test_case = None
+    polarion_test_case = None
     vm_type = None
     vm_name = None
     template_name = None
-    vm_name_1 = '%s_readlock_1' % (config.TEST_NAME)
-    vm_name_2 = '%s_readlock_2' % (config.TEST_NAME)
+    vm_name_1 = '%s_readlock_1' % config.TEST_NAME
+    vm_name_2 = '%s_readlock_2' % config.TEST_NAME
     SLEEP_AMOUNT = 5
 
     @classmethod

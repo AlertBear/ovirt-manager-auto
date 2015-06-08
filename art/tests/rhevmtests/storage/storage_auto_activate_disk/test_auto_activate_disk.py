@@ -10,16 +10,16 @@ from art.rhevm_api.utils import test_utils
 
 from art.rhevm_api.tests_lib.low_level import vms, disks
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    getStorageDomainNamesForType)
+    getStorageDomainNamesForType,
+)
 
 import art.test_handler.exceptions as exceptions
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 
 from art.unittest_lib import StorageTest as TestCase, attr
 
 logger = logging.getLogger(__name__)
 
-TCMS_PLAN_ID = '12632'
 DISK_PERMUTATIONS = helpers.get_all_disk_permutation()
 TIMEOUT_RESUME_VM = 500
 
@@ -33,7 +33,7 @@ class VmWithOs(TestCase):
 
     vm_name = None
 
-    tcms_test_case = ''
+    polarion_test_case = ''
 
     @classmethod
     def setup_class(cls):
@@ -42,7 +42,7 @@ class VmWithOs(TestCase):
         """
         logger.info("setup class %s", cls.__name__)
 
-        cls.vm_name = "vm_%s" % (cls.tcms_test_case)
+        cls.vm_name = "vm_%s" % cls.polarion_test_case
 
         storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, cls.storage)[0]
@@ -59,16 +59,16 @@ class VmWithOs(TestCase):
 
 
 @attr(tier=1)
-class TestCase334691(VmWithOs):
+class TestCase4936(VmWithOs):
     """
     Add disks while vm is running
     """
 
     __test__ = True
 
-    tcms_test_case = '334691'
+    polarion_test_case = '4936'
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4936")
     def test_attach_new_disk_while_running(self):
         """
         Attach different types of disks while the vm is running
@@ -103,16 +103,16 @@ class VmWithAnotherDiskWhileStatus(VmWithOs):
 
 
 @attr(tier=1)
-class TestCase334692(VmWithAnotherDiskWhileStatus):
+class TestCase4937(VmWithAnotherDiskWhileStatus):
     """
     Add disks while VM is in a certain state
     """
 
     __test__ = True
 
-    tcms_test_case = '334692'
+    polarion_test_case = '4937'
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4937")
     def test_attach_new_disk_powering_up(self):
         """
         Attach different types of disks while the vm is powering up
@@ -132,7 +132,7 @@ class TestCase334692(VmWithAnotherDiskWhileStatus):
             logger.info("Waiting for VM to shut down")
             vms.waitForVMState(self.vm_name)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4937")
     def test_attach_new_disk_powering_down(self):
         """
         Attach different types of disks while the vm is powering down
@@ -153,7 +153,7 @@ class TestCase334692(VmWithAnotherDiskWhileStatus):
             assert vms.startVm(True, self.vm_name,
                                wait_for_status=config.VM_UP)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @polarion("RHEVM3-4937")
     def test_attach_new_disk_suspend(self):
         """
         Attach different types of disks while the vm is suspended

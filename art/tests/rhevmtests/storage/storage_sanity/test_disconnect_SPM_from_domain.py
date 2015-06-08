@@ -5,7 +5,7 @@ from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
 from art.rhevm_api.tests_lib.low_level.hosts import waitForSPM
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import hosts
 import art.rhevm_api.utils.storage_api as st_api
 
@@ -35,14 +35,14 @@ def teardown_module():
 
 
 @attr(tier=3)
-class TestCase68536(TestCase):
+class TestCase4742(TestCase):
     """
     storage sanity test, disconnect SPM from storage
-    https://tcms.engineering.redhat.com/case/68536/
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/2_2_Storage_Host%20Failure
     """
     __test__ = True
-    tcms_plan_id = '2347'
-    tcms_test_case = '68536'
+    polarion_test_case = '4742'
     master_domain_ip = None
     spm = None
     bz = {'1017207': {'engine': None, 'version': None}}
@@ -63,7 +63,7 @@ class TestCase68536(TestCase):
         cls.master_domain_ip = cls.master_domain_ip['address']
         logger.info("Master domain ip found : %s", cls.master_domain_ip)
 
-    @tcms(tcms_plan_id, tcms_test_case)
+    @polarion("RHEVM3-4742")
     def test_disconnect_SPM_from_storage(self):
         """ test checks if disconnecting SPM from storage domain
             works properly
