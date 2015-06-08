@@ -65,6 +65,22 @@ def set_passwordless_ssh(src_host, dst_host):
     return True
 
 
+def get_host_resource_with_root_user(ip, root_password):
+    """
+    Return remote resource with user root on give ip
+
+    :param ip: host ip
+    :type: ip: str
+    :param root_password: root password
+    :type: root_password: str
+    :return: Host with root user
+    :rtype: Host
+    """
+    host = art.rhevm_api.resources.Host(ip)
+    host.users.append(users.RootUser(root_password))
+    return host
+
+
 def get_host_executor_with_root_user(ip, root_password):
     """
     Return remote executor with user root on give ip
@@ -76,6 +92,4 @@ def get_host_executor_with_root_user(ip, root_password):
     :return: RemoteExecutor with root user
     :rtype: RemoteExecutor
     """
-    host = art.rhevm_api.resources.Host(ip)
-    host.users.append(users.RootUser(root_password))
-    return host.executor()
+    return get_host_resource_with_root_user(ip, root_password).executor()
