@@ -155,8 +155,7 @@ class BasicEnvironment(BaseTestCase):
     def check_file_existence_operation(self, should_exist=True,
                                        operation='snapshot'):
 
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        start_vms([self.vm_name], 1, wait_for_ip=True)
         lst = []
         state = not should_exist
         for dev in self.devices:
@@ -205,8 +204,7 @@ class BasicEnvironment(BaseTestCase):
             )
 
     def _prepare_fs_on_devs(self):
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        start_vms([self.vm_name], 1, wait_for_ip=True)
 
         vm_devices = self.vm.get_storage_devices()
         if not vm_devices:
@@ -315,9 +313,9 @@ class TestCase333028(BasicEnvironment):
         """
         Prepares the environment
         """
+        super(TestCase333028, self).setUp()
         self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
         self._prepare_environment()
-        super(TestCase333028, self).setUp()
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_preview_snapshot(self):
@@ -622,9 +620,9 @@ class TestCase333050(BasicEnvironment):
         """
         Prepares the environment
         """
+        super(TestCase333050, self).setUp()
         self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
         self._prepare_environment()
-        super(TestCase333050, self).setUp()
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_preview_snapshot(self):
@@ -663,8 +661,7 @@ class TestCase333050(BasicEnvironment):
             [self.snapshot_desc],
         )
 
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        start_vms([self.vm_name], 1, wait_for_ip=True)
 
         assert self.vm.isFileExists(self.file_name)
 
@@ -777,8 +774,7 @@ class TestCase333055(BasicEnvironment):
 
         wait_for_jobs()
 
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        start_vms([self.vm_name], 1, wait_for_ip=True)
 
         lst = []
         for dev in self.devices:
@@ -907,6 +903,7 @@ class TestCase336096(BasicEnvironment):
         """
         Prepares the environment
         """
+        super(TestCase336096, self).setUp()
         self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
         profile = vmArgs['network']
         if not addNic(True, vm=self.vm_name, name=self.nic,
@@ -915,7 +912,6 @@ class TestCase336096(BasicEnvironment):
                       vnic_profile=profile, plugged='true', linked='true'):
             raise exceptions.NetworkException("Can't add nic %s" % self.nic)
 
-        super(TestCase336096, self).setUp()
         assert self._prepare_fs_on_devs()
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
@@ -989,8 +985,7 @@ class TestCase336105(BasicEnvironment):
         - Now you have 3 snapshots from disk #2. Delete snapshot #2
         """
         for index, snap_desc in enumerate(self.snaps):
-            start_vms([self.vm_name], 1, wait_for_ip=False)
-            waitForVMState(self.vm_name)
+            start_vms([self.vm_name], 1, wait_for_ip=True)
             for dev in self.devices:
                 logger.info("writing file to disk %s", dev)
                 self.vm.runCmd(shlex.split(self.cmd_create
@@ -1003,8 +998,7 @@ class TestCase336105(BasicEnvironment):
                         disks_lst=[self.disks_names[0]], wait=True)
 
         wait_for_jobs()
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        start_vms([self.vm_name], 1, wait_for_ip=True)
 
         initial_vol_count = get_lv_count_by_storage_type(self.storage,
                                                          self.disks_names)
@@ -1016,8 +1010,7 @@ class TestCase336105(BasicEnvironment):
                        helpers.SNAPSHOT_TIMEOUT)
         wait_for_jobs()
 
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        start_vms([self.vm_name], 1, wait_for_ip=True)
 
         current_vol_count = get_lv_count_by_storage_type(self.storage,
                                                          self.disks_names)
