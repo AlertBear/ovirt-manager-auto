@@ -35,7 +35,7 @@ DISK_INTERFACES = (ENUMS['interface_virtio'],)
 positive = True
 VM_NAMES = []
 TEMPLATE_NAMES = []
-DISK_NAMES = []
+DISK_NAMES = dict()
 
 
 def setup_module():
@@ -61,7 +61,7 @@ def setup_module():
         disks_tuple = common.start_creating_disks_for_test(
             storage_domain, block, storage_type)
 
-        DISK_NAMES = [disk[0] for disk in disks_tuple]
+        DISK_NAMES[storage_type] = [disk[0] for disk in disks_tuple]
         disk_results = [disk[1] for disk in disks_tuple]
 
         TEMPLATE_NAMES.append(
@@ -102,22 +102,24 @@ def teardown_module():
     LOGGER.info("Try to safely remove vms if they exist: %s", vm_names)
     vms.safely_remove_vms(vm_names)
 
-    LOGGER.info("Removing disks %s", DISK_NAMES)
-    delete_disks(DISK_NAMES)
+    for disks_to_remove in DISK_NAMES.values():
+        LOGGER.info("Removing disks %s", DISK_NAMES.values())
+        delete_disks(disks_to_remove)
 
-    plug_disks = []
-    for disk_per_storage in (
+    disks_to_remove = []
+    for unattached_disks_per_storage in (
             helpers.UNATTACHED_DISKS_PER_STORAGE_TYPE.values()
     ):
-        if disks.checkDiskExists(True, disk_per_storage):
-            plug_disks += disk_per_storage
+        for disk_to_remove in unattached_disks_per_storage:
+            if disks.checkDiskExists(True, disk_to_remove):
+                disks_to_remove.append(disk_to_remove)
+    for unpluged_disks_per_storage in helpers.DISKS_TO_PLUG.values():
+        for disk_to_remove in unpluged_disks_per_storage:
+            if disks.checkDiskExists(True, disk_to_remove):
+                disks_to_remove.append(disk_to_remove)
 
-    for disk in helpers.DISKS_TO_PLUG.values():
-        if disks.checkDiskExists(True, disk):
-            plug_disks += disk
-
-    LOGGER.info("Removing disks from plug tests %s", plug_disks)
-    delete_disks(plug_disks)
+    LOGGER.info("Removing disks %s", disks_to_remove)
+    delete_disks(disks_to_remove)
 
     LOGGER.info("Removing templates %s", TEMPLATE_NAMES)
     for template in TEMPLATE_NAMES:
