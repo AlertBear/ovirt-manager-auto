@@ -157,27 +157,31 @@ def getHostIP(host):
 
 def getHostCluster(host):
     """
-    Description: Returns name of cluster with given host
-    Parameters:
-        * host - host name in rhevm to check
-    Return: Returns the cluster name [str] or raises EntityNotFound
+    Returns the name of the cluster that contains the input host
+
+    :param host: host name
+    :type host: str
+    :returns: Returns the cluster name or raises EntityNotFound
+    :rtype: str
     """
     host_obj = HOST_API.find(host)
-    cluster = CL_API.get(host_obj.get_cluster().get_href())
+    cluster = CL_API.find(host_obj.get_cluster().get_id(), attribute='id')
     return cluster.get_name()
 
 
 def getHostDC(host):
     """
-    Description: Returns name of data center with given host
-    Parameters:
-        * host - host name in rhevm to check
-    Return: Returns the data center name [str] or raises EntityNotFound
+    Returns the name of the data center that contains the input host
+
+    :param host: host name
+    :type host: str
+    :returns: Returns the data center name or raises EntityNotFound
+    :rtype: str
     """
     HOST_API.logger.info("Host: %s", host)
     cl_name = getHostCluster(host)
     cl_obj = CL_API.find(cl_name)
-    dc = DC_API.get(cl_obj.get_data_center().get_href())
+    dc = DC_API.find(cl_obj.get_data_center().get_id(), attribute='id')
     return dc.get_name()
 
 
