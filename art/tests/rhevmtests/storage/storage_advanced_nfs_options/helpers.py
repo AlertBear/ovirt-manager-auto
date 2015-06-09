@@ -230,6 +230,10 @@ class TestCaseNFSOptions(TestCase):
             logger.info("Removing storage domain %s", storage_domain)
             if ll_st.checkIfStorageDomainExist(True, storage_domain):
                 try:
+                    test_utils.wait_for_tasks(
+                        config.VDC, config.VDC_PASSWORD,
+                        config.DATA_CENTER_NAME
+                    )
                     hl_st.remove_storage_domain(
                         storage_domain, config.DATA_CENTER_NAME,
                         cls.host, True
