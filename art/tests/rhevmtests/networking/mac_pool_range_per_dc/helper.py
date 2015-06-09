@@ -120,7 +120,7 @@ def update_mac_pool_range_size(
         )
 
 
-def add_nic(positive=True, vm=c.VM_NAME[0], name=c.NIC_NAME[1]):
+def add_nic(positive=True, vm=c.VM_NAME[0], name=c.NIC_NAME[1], **kwargs):
     """
     Add NIC to VM
 
@@ -130,12 +130,17 @@ def add_nic(positive=True, vm=c.VM_NAME[0], name=c.NIC_NAME[1]):
     :type vm: str
     :param name: NIC to add to VM
     :type name: str
+    :param kwargs: dictionary of parameters when adding a new NIC
+    :type kwargs: dict
     :raise: NetworkException
     """
-    log = "Failed" if positive else "Succeeded"
-    logger.info("Adding %s to %s", name, vm)
-    if not ll_vm.addNic(positive=positive, vm=vm, name=name):
-        raise c.NET_EXCEPTION("%s to add %s to %s" % (log, name, vm))
+    status_log = "Failed" if positive else "Succeeded"
+    mac_log = " with manual MAC" if kwargs.get("mac_address") else "from pool"
+    logger.info("Adding %s to %s %s", name, vm, mac_log)
+    if not ll_vm.addNic(positive=positive, vm=vm, name=name, **kwargs):
+        raise c.NET_EXCEPTION(
+            "%s to add %s to %s %s" % (status_log, name, vm, mac_log)
+        )
 
 
 def remove_nic(vm=c.VM_NAME[0], nic=c.NIC_NAME[1]):
@@ -153,3 +158,31 @@ def remove_nic(vm=c.VM_NAME[0], nic=c.NIC_NAME[1]):
     except api_exc.EntityNotFound:
         logger.error("Couldn't remove VNIC %s from VM", nic)
         TestCase.test_failed = True
+
+
+def check_single_mac_range_match(mac_ranges, start_idx, end_idx):
+    """
+    Check that MAC on the vNIC matches the MAC on the mac_ranges, where each
+    range consists of a single MAC
+
+    :param mac_ranges: MAC ranges of MAC pool
+    :type mac_ranges: list
+    :param start_idx: Starting index for vNIC in vNIC list
+    :type start_idx: int
+    :param end_idx: Ending index for vNIC in vNIc list
+    :type end_idx: int
+    :raise :NetworkException
+    """
+    logger.info("Check that MACs on the VNICs correspond to Ranges")
+    macs = [i[0] for i in mac_ranges]
+    for i in range(start_idx, end_idx):
+        nic_mac = ll_vm.get_vm_nic_mac_address(
+            vm=c.VM_NAME[0], nic=c.NIC_NAME[i]
+        )
+        if nic_mac in macs:
+            macs.remove(nic_mac)
+        else:
+            raise c.NET_EXCEPTION(
+                "VNIC MAC %s is not in the MAC pool range for %s" %
+                (nic_mac, c.MAC_POOL_NAME[0])
+            )

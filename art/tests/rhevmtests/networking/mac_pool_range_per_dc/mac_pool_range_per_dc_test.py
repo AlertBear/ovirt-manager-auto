@@ -13,6 +13,7 @@ import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
 import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
+from art.test_handler.tools import bz  # pylint: disable=E0611
 import helper
 import config as c
 
@@ -618,20 +619,9 @@ class TestMacPoolRange10(TestCase):
         """
         Test VNICs have non-continuous MACs (according to the Ranges values)
         """
-        logger.info("Check that 3 MACs on the VNICs correspond to 3 Ranges")
-        ranges = [i[0] for i in self.MAC_POOL_RANGES[:3]]
-        for i in range(1, 4):
-            nic_mac = ll_vm.get_vm_nic_mac_address(
-                vm=c.VM_NAME[0], nic=c.NIC_NAME[i]
-            )
-
-            if nic_mac in ranges:
-                ranges.remove(nic_mac)
-            else:
-                raise c.NET_EXCEPTION(
-                    "VNIC MAC %s is not in the MAC pool range for %s" %
-                    (nic_mac, c.MAC_POOL_NAME[0])
-                )
+        helper.check_single_mac_range_match(
+            mac_ranges=self.MAC_POOL_RANGES[:3], start_idx=1, end_idx=4
+        )
 
         logger.info("Add 2 additional ranges to %s", c.MAC_POOL_NAME[0])
         if not hl_mac_pool.add_ranges_to_mac_pool(
@@ -645,22 +635,9 @@ class TestMacPoolRange10(TestCase):
         for i in range(4, 6):
             helper.add_nic(name=c.NIC_NAME[i])
 
-        logger.info(
-            "Check that 2 MACs on the VNICs correspond to 2 added Ranges"
+        helper.check_single_mac_range_match(
+            mac_ranges=self.MAC_POOL_RANGES[3:5], start_idx=4, end_idx=6
         )
-        ranges = [i[0] for i in self.MAC_POOL_RANGES[3:5]]
-        for i in range(4, 6):
-            nic_mac = ll_vm.get_vm_nic_mac_address(
-                vm=c.VM_NAME[0], nic=c.NIC_NAME[i]
-            )
-
-            if nic_mac in ranges:
-                ranges.remove(nic_mac)
-            else:
-                raise c.NET_EXCEPTION(
-                    "VNIC MAC %s is not in the MAC pool range for %s" %
-                    (nic_mac, c.MAC_POOL_NAME[0])
-                )
 
         logger.info("Remove the last added range and add another one")
         if not hl_mac_pool.remove_ranges_from_mac_pool(
@@ -689,7 +666,7 @@ class TestMacPoolRange10(TestCase):
 
         if nic_mac != self.MAC_POOL_RANGES[-1][0]:
             raise c.NET_EXCEPTION(
-                "VNIC MAC %s is not in the MAC pool range for %s" %
+                "vNIC MAC %s is not in the MAC pool range for %s" %
                 (nic_mac, c.MAC_POOL_NAME[0])
             )
 
@@ -708,6 +685,273 @@ class TestMacPoolRange10(TestCase):
             "Update DC %s with default MAC pool and remove MAC pool %s",
             c.ORIG_DC, c.MAC_POOL_NAME[0]
         )
+        helper.update_dc_with_mac_pool(
+            mac_pool_name=c.DEFAULT_MAC_POOL, teardown=True
+        )
+        helper.remove_mac_pool()
+
+
+@attr(tier=1)
+class TestMacPoolRange11(TestCase):
+    """
+    RHEVM3-6451 - Manually assign MAC from/not from MAC pool range
+    Check that when MAC pool is exhausted, adding new VNIC to VM is possible
+    only with manual MAC configuration
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create a new MAC pool
+        Update DC with a new MAC pool
+        """
+        logger.info(
+            "Create a new MAC pool %s and update with it DC %s",
+            c.MAC_POOL_NAME[0], c.ORIG_DC
+        )
+        helper.create_mac_pool()
+        helper.update_dc_with_mac_pool()
+
+    def test_auto_assigned_vs_manual(self):
+        """
+        Add VNICs to the VM till MAC pool is exhausted
+        Try to add additional VNIC with autoassigned MAC to VM and fail
+        Add MAC manually (not from a range) and succeed
+        """
+        for i in range(2):
+            helper.add_nic(name=c.NIC_NAME[i+1])
+
+        helper.add_nic(positive=False, name=c.NIC_NAME[3])
+        helper.add_nic(name=c.NIC_NAME[3], mac_address="00:00:00:12:34:56")
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove 3 VNICs from the VM
+        Update DC with the Default MAC pool
+        Remove MAC pool
+        """
+        logger.info("Remove VNICs from VM")
+        for nic in c.NIC_NAME[1:4]:
+            helper.remove_nic(nic=nic)
+
+        logger.info(
+            "Update DC %s with default MAC pool and remove MAC pool %s",
+            c.ORIG_DC, c.MAC_POOL_NAME[0]
+        )
+        helper.update_dc_with_mac_pool(
+            mac_pool_name=c.DEFAULT_MAC_POOL, teardown=True)
+        helper.remove_mac_pool()
+
+
+@attr(tier=1)
+class TestMacPoolRange12(TestCase):
+    """
+    RHEVM3-6452 - Assign same pool to multiple DC's -Disallow Duplicates
+    Check that if "Allow duplicates" is False, it's impossible to add VNIC
+    with manual MAC allocation to VM
+    """
+    __test__ = True
+    log = "%s: Check adding vNIC to VM on DC %s when allow duplicates is False"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create a new MAC pool
+        Update 2 DCs with a new MAC pool
+        Add vNIC with auto assignment to VM
+        """
+        helper.create_mac_pool()
+
+        for dc in (c.DC_NAME[0], c.EXT_DC_0):
+            helper.update_dc_with_mac_pool(dc=dc)
+
+        helper.add_nic(name=c.NIC_NAME[1])
+
+    def test_auto_assigned_vs_manual(self):
+        """
+        Negative:Try to add a new VNIC to VM when explicitly providing MAC
+        on the first VM NIC (manual MAC configuration) when allow duplicate
+        is False
+        Negative: Try to add this NIC to VM on another DC
+        Add NIC to VM on the second DC with auto assignment
+        """
+        logger.info("Getting MAC address for NIC %s", c.NIC_NAME[1])
+        mac_address = ll_vm.get_vm_nic_mac_address(
+            vm=c.VM_NAME[0], nic=c.NIC_NAME[1]
+        )
+        if not mac_address:
+            raise c.NET_EXCEPTION(
+                "Failed to get MAC from %s on %s" %
+                (c.NIC_NAME[1], c.VM_NAME[0])
+            )
+
+        logger.info(self.log, "Negative", c.DC_NAME[0])
+        helper.add_nic(
+            positive=False, name=c.NIC_NAME[2], mac_address=mac_address
+        )
+
+        logger.info(self.log, "Negative", c.EXT_DC_0)
+        helper.add_nic(
+            positive=False, vm=c.MP_VM_NAMES[0], name=c.NIC_NAME[1],
+            mac_address=mac_address
+        )
+
+        helper.add_nic(vm=c.MP_VM_NAMES[0], name=c.NIC_NAME[1])
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove VNIC from both VMs
+        Update DCs with the Default MAC pool
+        Remove MAC pool
+        """
+        logger.info("Remove VNICs from VM")
+        for vm in (c.VM_NAME[0], c.MP_VM_NAMES[0]):
+            helper.remove_nic(vm=vm)
+
+        for dc in (c.DC_NAME[0], c.EXT_DC_0):
+            logger.info(
+                "Update DC %s with default MAC pool", dc
+            )
+            helper.update_dc_with_mac_pool(
+                dc=dc, mac_pool_name=c.DEFAULT_MAC_POOL, teardown=True
+            )
+
+        helper.remove_mac_pool()
+
+
+@attr(tier=1)
+class TestMacPoolRange13(TestCase):
+    """
+    RHEVM3-6452 - Assign same pool to multiple DCs -Allow Duplicates
+    Check that if "Allow duplicates" is True, it's possible to add vNIC
+    with manual MAC allocation to VM
+    """
+    __test__ = True
+    log = "Check adding vNIC to VM on DC %s when allow duplicates is True"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create a new MAC pool
+        Update 2 DCs with a new MAC pool
+        """
+        helper.create_mac_pool()
+
+        for dc in (c.DC_NAME[0], c.EXT_DC_0):
+            helper.update_dc_with_mac_pool(dc=dc)
+        helper.add_nic()
+
+    @bz({"1212461": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}})
+    def test_allow_duplicates(self):
+        """
+        Add VNIC with auto assignment to VM
+        Add a new VNIC to VM with manual MAC configuration and
+        allow_duplicates is True
+        Add VNIC to VM on another DC with the same MAC (manual configuration)
+        Add NIC to VM on the second DC with auto assignment
+        Fail on adding additional VNIC as MAC pool exhausted
+        Succeed on adding VNIC with MAC pool manual configuration
+        """
+        logger.info("Getting MAC address for NIC %s", c.NIC_NAME[1])
+        mac_address = ll_vm.get_vm_nic_mac_address(
+            vm=c.VM_NAME[0], nic=c.NIC_NAME[1]
+        )
+        if not mac_address:
+            raise c.NET_EXCEPTION(
+                "Failed to get MAC from %s on %s" %
+                (c.NIC_NAME[1], c.VM_NAME[0])
+            )
+
+        logger.info(self.log, c.DC_NAME[0])
+        helper.add_nic(name=c.NIC_NAME[2], mac_address=mac_address)
+
+        logger.info(self.log, c.EXT_DC_0)
+        helper.add_nic(
+            vm=c.MP_VM_NAMES[0], name=c.NIC_NAME[1], mac_address=mac_address
+        )
+
+        helper.add_nic(vm=c.MP_VM_NAMES[0], name=c.NIC_NAME[2])
+        helper.add_nic(positive=False, vm=c.MP_VM_NAMES[0], name=c.NIC_NAME[3])
+
+        logger.info(self.log, c.EXT_DC_0)
+        helper.add_nic(
+            vm=c.MP_VM_NAMES[0], name=c.NIC_NAME[3], mac_address=mac_address
+        )
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove VNIC from both VMs
+        Update DCs with the Default MAC pool
+        Remove MAC pool
+        """
+        logger.info("Remove VNICs from VMs")
+        for vm in (c.VM_NAME[0], c.MP_VM_NAMES[0]):
+            for nic in (c.NIC_NAME[1], c.NIC_NAME[2]):
+                helper.remove_nic(vm=vm, nic=nic)
+
+        helper.remove_nic(vm=c.MP_VM_NAMES[0], nic=c.NIC_NAME[3])
+
+        for dc in (c.DC_NAME[0], c.EXT_DC_0):
+            logger.info("Update DC %s with default MAC pool", dc)
+            helper.update_dc_with_mac_pool(
+                dc=dc, mac_pool_name=c.DEFAULT_MAC_POOL, teardown=True
+            )
+        helper.remove_mac_pool()
+
+
+@attr(tier=1)
+class TestMacPoolRange14(TestCase):
+    """
+    RHEVM3-6454 - Combine MAC pool range of Unicast and multicast MAC's
+    Check that when having a combined range of multicast and unicast addresses
+    the new VNICs will be created with unicast addresses only
+    """
+    __test__ = True
+    MAC_POOL_RANGES = [
+        ("00:ff:ff:ff:ff:ff", "02:00:00:00:00:01")
+    ]
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create a new MAC pool with range having multicast and unicast MACs
+        Update DC with a new MAC pool
+        """
+        helper.create_mac_pool(mac_pool_ranges=cls.MAC_POOL_RANGES)
+        helper.update_dc_with_mac_pool()
+
+    @bz({"1219383": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}})
+    def test_multicast_unicast_mix(self):
+        """
+        Add 2 VNICs to VM
+        Negative: Try to add 3rd VNIC and fail as all the available MACs
+        in the MAC pool are multicast MACs
+        """
+        logger.info("Add 2 VNICs to %s", c.VM_NAME[0])
+        for i in range(2):
+            helper.add_nic(name=c.NIC_NAME[i+1])
+
+        logger.info(
+            "Negative: Try to add 3rd VNIC when MAC pool has only "
+            "multicast MACs available"
+        )
+        helper.add_nic(positive=False, name=c.NIC_NAME[3])
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove VNIC from VM
+        Update DC with the Default MAC pool
+        Remove MAC pool
+        """
+        logger.info("Remove VNICs from VM")
+        for nic in (c.NIC_NAME[1], c.NIC_NAME[2]):
+            helper.remove_nic(nic=nic)
+
         helper.update_dc_with_mac_pool(
             mac_pool_name=c.DEFAULT_MAC_POOL, teardown=True
         )
