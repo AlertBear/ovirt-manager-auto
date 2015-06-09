@@ -695,7 +695,6 @@ class TestCase304197(TestCase):
     }
     # TODO: Ticket is open for CLI and Java support:
     # https://projects.engineering.redhat.com/browse/RHEVM-1901
-    apis = TestCase.apis - set(['java', 'cli'])
     tcms_test_case = '304197'
 
     def setUp(self):
