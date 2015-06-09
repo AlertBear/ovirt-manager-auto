@@ -3923,7 +3923,7 @@ def get_vm_snapshot_ovf_obj(vm, snapshot):
     return snap_obj.get_initialization()
 
 
-def get_vm_snapshots(vm):
+def get_vm_snapshots(vm, all_content=False):
     """
     Description: Return vm's snapshots
     Author: ratamir
@@ -3931,7 +3931,7 @@ def get_vm_snapshots(vm):
         * vm - vm name
     Return: list of snapshots, or raise EntityNotFound exception
     """
-    snapshots = _getVmSnapshots(vm, get_href=False)
+    snapshots = _getVmSnapshots(vm, get_href=False, all_content=all_content)
     return snapshots
 
 

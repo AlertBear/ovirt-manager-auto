@@ -48,7 +48,11 @@ import org.ovirt.engine.sdk
 DEF_TIMEOUT = 900
 # default sleep
 DEF_SLEEP = 10
-STYLE_EXCEPTIONS_JAVA_COLLECTIONS = {'vms': 'vMs', 'vmpools': 'vmPools'}
+STYLE_EXCEPTIONS_JAVA_COLLECTIONS = {
+    'vms': 'vMs',
+    'vmpools': 'vmPools',
+    'snapshots': 'VMSnapshots'
+}
 JAVA_IGNORE_LIST = ['getClass', 'getLinks']
 PYTHON_IGNORE_LIST = ['get_link']
 STYLE_EXCEPTIONS_PYTHON_JAVA_METHODS = {
@@ -498,6 +502,7 @@ class JavaTranslator(object):
     def __init__(self, java_object):
         self._refs_dict = {}
         self.java_object = java_object
+
         _, _, getters, setters = \
             get_getters_and_setters(java_object=self.java_object)
         java_object_methods = getters + setters
@@ -1235,20 +1240,46 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
 
     @jvm_thread_care
     def find(self, val, attribute='name', absLink=True, collection=None,
-             pythonic=True):
+             pythonic=True, **kwargs):
         '''
-        Description: find entity by name
+        Find entity by name or id
         Author: imeerovi
-        Parameters:
-           * val - name of entity to look for
-           * attribute - attribute name for searching
-           * absLink - absolute link or just a  suffix
-        Return: found entity or exception EntityNotFound
+        :param val: name or id to look for
+        :type val: str
+        :param attribute: name or id, the key to look for
+        :type attribute: str
+        :param absLink: True: absolute link, suffix otherwise
+        :type absLink: bool
+        :param collection: list of entities, where to find your val
+        :type collection: object
+        :param pythonic: True if we are python context, java otherwise
+        :type pythonic: bool
+        :param all_content: parameter to get more info about entities
+        :type all_content: bool
+        :param max: max number of entities to list
+        :type max: int
+        :return: entity found or None if not found
         '''
-
         if not collection:
-            collection = \
-                self.__getCollection(self.java_sdk_collection_name).list()
+            collection = self.__getCollection(
+                self.java_sdk_collection_name
+            )
+            list_method_args_length, sorted_list_method_args_list = (
+                self.__java_method_selector(collection, 'list')
+            )
+            self.logger.debug(
+                "Using %s.list(%s)", get_object_name(collection),
+                ', '.join(sorted_list_method_args_list)
+            )
+            all_content = kwargs.pop('all_content', False)
+            max = kwargs.pop('max', -1)
+
+            if all_content:
+                collection = collection.list(
+                    val, False, max, str(all_content).lower()
+                )
+            else:
+                collection = collection.list()
         else:
             if not isinstance(collection, java.util.List) and \
                     not isinstance(collection, list):
@@ -1282,28 +1313,86 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
         res = getattr(self.api, collection_name)
         return res
 
-# TODO: Need to implement 'all_content' parameter
-# https://projects.engineering.redhat.com/browse/RHEVM-2158
+    def _get_results_by_best_list_function(self, entities, all_content, max_):
+        '''
+        Java classes may have more than one method called list(). In java it
+        is called function overloading.
+        This function tries to use the one depending on number of params.
+        Currently getElemFromLink calls this function and this will run list()
+        or list(Integer max) or list(Integer max, String all_content)
+        :param entities: Name of element (vms, snapshots...)
+        :type entities str
+        :param all_content: True to get more data from object false otherwise
+        :type all_content: bool
+        :param max_: max number of objects to list
+        :type max_: int
+        :return: list of object
+        '''
+        # TODO: Try to handle 3 & 4 parameters as well, and use it for find
+        #       query and getElmfromLink
+        # This function is selecting by assumption that all list with 1 params
+        # will invoke list(integer max)
+        # all list with 2 params will invoke list(max, all_content)
+        # otherwise will invoke list()
+        list_method_args_length, sorted_list_method_args_list = (
+            self.__java_method_selector(
+                entities.java_object, 'list'
+            )
+        )
+        self.logger.info(
+            "Using %s.list(%s)", get_object_name(
+                entities.java_object
+            ), ', '.join(sorted_list_method_args_list)
+        )
+        if list_method_args_length == 1:
+            elements = entities.list(max_)
+        elif list_method_args_length == 2:
+            elements = entities.list(
+                max_, str(all_content).lower()
+            )
+        else:
+            elements = entities.list()
+
+        return elements
+
     @jvm_thread_care
     def getElemFromLink(self, elm, link_name=None, attr=None, get_href=False,
-                        pythonic=True, all_content=False):
+                        pythonic=True, **kwargs):
         '''
-        Description: get element's collection from specified link
-        Parameters:
-           * elm - element object
-           * link_name - link name
-           * attr - unused param. used only in restapi
-        Return: element obj or None if not found
+        get collection of elements from specified link for example:
+        vms/snapshots
+        :param elm: object like vms, disks..
+        :type elm: object
+        :param link_name: another object to get like vms/snapshots
+        :type link_name: str
+        :param attr: used in restapi only
+        :type attr: str
+        :param get_href: True if it is a link False otherwise
+        :type get_href: bool
+        :param pythonic: True if python, False if java
+        :type pythonic: bool
+        :param all_content: True get more info about object, False otherwise
+        :type all_content: bool
+        :param max: maximum number of elements to list
+        :type max: int
+        :return: list of objects
         '''
         if not link_name:
             link_name = self.java_sdk_collection_name
         # TODO: to check if translation of link name
         # to java sdk convention is needed
+
+        all_content = kwargs.pop('all_content', False)
+        max = kwargs.pop('max', -1)
+
         if not pythonic:
             if get_href:
                 return getattr(elm, link_name)
             else:
-                return getattr(elm, link_name).list()
+                entities = getattr(elm, link_name)
+                return self._get_results_by_best_list_function(
+                    entities, all_content, max
+                )
         else:
             if get_href:
                 data = getattr(elm, link_name)
@@ -1312,10 +1401,19 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                     return data
                 return JavaTranslator(getattr(elm, link_name))
             else:
+                entities = getattr(elm, link_name)
+
+                if all_content:
+                    entities = self._get_results_by_best_list_function(
+                        entities, all_content, max
+                    )
+                else:
+                    entities = getattr(elm, link_name).list()
+
                 return [JavaTranslator(entity)
                         if not isinstance(entity, JavaTranslator)
                         else entity
-                        for entity in getattr(elm, link_name).list()]
+                        for entity in entities]
 
     @jvm_thread_care
     def syncAction(self, entity, action, positive, async=False, **params):
