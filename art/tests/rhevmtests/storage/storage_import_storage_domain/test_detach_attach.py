@@ -18,6 +18,7 @@ from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.high_level import storagedomains
 from art.rhevm_api.utils import storage_api as utils
 from art.rhevm_api.utils import test_utils as test_utils
+from art.test_handler.settings import opts
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import attr
 from art.unittest_lib import StorageTest as BaseTestCase
@@ -27,6 +28,7 @@ from rhevmtests.storage.storage_import_storage_domain import config
 logger = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
+NFS = config.STORAGE_TYPE_NFS
 UPDATE_OVF_INTERVAL_CMD = 'engine-config -s OvfUpdateIntervalInMinutes=%s'
 
 TEST_PLAN_ID = '14281'
@@ -92,7 +94,7 @@ def setup_module():
                     "Creating iSCSI domain '%s' failed" % sd_name
                 )
             wait_for_jobs()
-        elif storage_type in config.STORAGE_TYPE_NFS:
+        elif storage_type == NFS:
             sd_name = "{0}_{1}".format(config.TESTNAME, "NFS")
             nfs_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[0]
             nfs_path = config.UNUSED_DATA_DOMAIN_PATHS[0]
@@ -108,7 +110,7 @@ def setup_module():
                 raise errors.StorageDomainException(
                     "Creating NFS domain '%s' failed" % sd_name
                 )
-        elif storage_type in config.STORAGE_TYPE_GLUSTER:
+        elif storage_type == config.STORAGE_TYPE_GLUSTER:
             sd_name = "{0}_{1}".format(config.TESTNAME, "Gluster")
             gluster_address = \
                 config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0]
@@ -265,13 +267,13 @@ class BasicEnvironment(BaseTestCase):
     # https://projects.engineering.redhat.com/browse/RHEVM-1654
     apis = BaseTestCase.apis - set(['cli', 'java', 'sdk'])
     tcms_test_case = None
-    vm_name = config.VM_NAME % BaseTestCase.storage
 
     def setUp(self):
         """
         Create disks for case
         """
         self.test_failed = False
+        self.vm_name = config.VM_NAME % self.storage
         status, master_domain = ll_sd.findMasterStorageDomain(
             True, config.DATA_CENTER_NAME
         )
@@ -806,7 +808,8 @@ class TestCase396396(CommonSetUp):
     test mounted meta-data files when attaching a file domain
     https://tcms.engineering.redhat.com/case/396396
     """
-    __test__ = config.STORAGE_TYPE is config.STORAGE_TYPE_NFS
+    __test__ = NFS in opts['storages']
+    storages = set([NFS])
     tcms_test_case = '396396'
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
@@ -1113,9 +1116,9 @@ class TestCase396401(BasicEnvironment):
                 lun_target=config.UNUSED_LUNS["lun_targets"][0]
             )
 
-        elif self.storage == config.STORAGE_TYPE_NFS:
+        elif self.storage == NFS:
             status = ll_sd.importStorageDomain(
-                True, config.TYPE_DATA, config.STORAGE_TYPE_NFS,
+                True, config.TYPE_DATA, NFS,
                 config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
                 config.UNUSED_DATA_DOMAIN_PATHS[0], self.spm
             )
