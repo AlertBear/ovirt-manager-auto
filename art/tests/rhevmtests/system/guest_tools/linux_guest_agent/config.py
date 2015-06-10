@@ -38,6 +38,12 @@ TEST_IMAGES = {
         'id': None,
         'manager': YUM,
     },
+    'rhel7.1_x64_Disk1': {
+        'image': None,
+        'machine': None,
+        'id': None,
+        'manager': YUM,
+    },
     'ubuntu-12.04_Disk1': {
         'image': None,
         'machine': None,
@@ -55,6 +61,8 @@ if UPSTREAM:
     GA_NAME = 'ovirt-guest-agent'
 else:
     GA_NAME = 'rhevm-guest-agent'
+
+PACKAGE_NAME = '%s-common' % GA_NAME
 
 # TCMS plans
 TCMS_PLAN_ID_RHEL = 3146
