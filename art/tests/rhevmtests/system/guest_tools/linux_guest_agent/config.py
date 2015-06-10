@@ -31,7 +31,7 @@ TCMS_PLAN_ID_SUSE = 12287
 # GA repositories
 UBUNTU_REPOSITORY = 'http://download.opensuse.org/repositories/home:/evilissimo:/ubuntu:/14.04/xUbuntu_14.04/'
 SUSE_REPOSITORY = 'http://download.opensuse.org/repositories/home:/evilissimo/openSUSE_13.1/home:evilissimo.repo'
-RHEL_REPOSITORY = 'http://bob.eng.lab.tlv.redhat.com/builds/'
+RHEL_REPOSITORY = 'http://download.englab.brq.redhat.com/pub/fedora/epel/'
 LATEST_RHEL_REPOSITORY = 'http://bob.eng.lab.tlv.redhat.com/builds/latest_vt/'
 
 GUEST_ROOT_USER = 'root'

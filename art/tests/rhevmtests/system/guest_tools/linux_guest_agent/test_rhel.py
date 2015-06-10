@@ -14,7 +14,7 @@ package_manager = '/usr/bin/yum'
 repo_path = '/etc/yum.repos.d/'
 LOGGER = logging.getLogger(__name__)
 eOS = config.eOS
-NAME = 'rhevm-guest-agent'
+NAME = 'ovirt-guest-agent'
 repo_name = 'latest_rhel'
 
 
@@ -26,7 +26,10 @@ def setup_module():
         path = os.path.join(repo_path, 'latest_rhevm.repo')
         url = urlparse.urljoin(
             config.RHEL_REPOSITORY,
-            '%s/%s' % (config.PRODUCT_BUILD, 'el5' if rhel5 else 'el6'),
+            '%s/%s' % (
+                '5' if rhel5 else '6',
+                'x86_64' if '64b' in vm_os else 'i386'
+            ),
         )
         lines = ['[%s]' % repo_name, 'name=%s' % repo_name,
                  'baseurl=%s' % url, 'enabled=1', 'gpgcheck=0']

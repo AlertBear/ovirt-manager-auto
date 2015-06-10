@@ -28,3 +28,14 @@ NIC_NAME = 'nic1'
 # TODO: add genric name to this iso, currently need to be updated manually
 CD_WITH_TOOLS = 'RHEV-toolsSetup_3.5_9.iso'
 SUBNET_CLASS = '10'
+
+if GOLDEN_ENV:
+    EXPORT_STORAGE_DOMAIN = EXPORT_STORAGE_NAME
+    ISO_STORAGE_DOMAIN = ISO_DOMAIN_NAME
+else:
+    EXPORT_STORAGE_DOMAIN = PARAMETERS.get('export_name', None)
+    ISO_STORAGE_DOMAIN = PARAMETERS.get('iso_name', None)
+    ISO_DOMAIN_PATH = PARAMETERS.get('iso_path' ,None)
+    ISO_DOMAIN_ADDRESS = PARAMETERS.get('iso_address', None)
+    EXPORT_DOMAIN_PATH = PARAMETERS.get('export_path', None)
+    EXPORT_DOMAIN_ADDRESS = PARAMETERS.get('export_address', None)

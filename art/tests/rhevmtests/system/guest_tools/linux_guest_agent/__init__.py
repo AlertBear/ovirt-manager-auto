@@ -38,12 +38,15 @@ def setup_package():
         assert templates.import_template(
             True, template=template['name'],
             source_storage_domain=config.EXPORT_STORAGE_DOMAIN,
-            destination_storage_domain=config.STORAGE_DOMAIN,
+            destination_storage_domain=config.STORAGE_NAME[0],
             cluster=config.CLUSTER_NAME[0], name=template['name']
         )
         assert vms.createVm(
-            True, vm_name, vm_name, cluster=config.CLUSTER_NAME[0],
-            template=template['name'], network=config.MGMT_BRIDGE
+            True, vm_name, vm_name,
+            cluster=config.CLUSTER_NAME[0],
+            template=template['name'],
+            display_type=ENUMS['display_type_spice'],
+            network=config.MGMT_BRIDGE,
         )
         assert vms.startVm(True, vm_name, wait_for_status=ENUMS['vm_state_up'])
         mac = vms.getVmMacAddress(True, vm=vm_name, nic='nic1')
