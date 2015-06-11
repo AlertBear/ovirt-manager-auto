@@ -11,7 +11,7 @@ import time
 import art.test_handler.exceptions as errors
 from art.core_api.apis_exceptions import EntityNotFound
 
-from rhevmtests.system.user_roles_tests import config
+from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
 from art.unittest_lib import attr, CoreSystemTest as TestCase
@@ -38,7 +38,7 @@ def loginAsAdmin():
 
 
 def setUpModule():
-    users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+    common.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
     if not config.GOLDEN_ENV:
         storagedomains.addNFSDomain(
             config.HOSTS[0],
@@ -51,7 +51,7 @@ def setUpModule():
 
 def tearDownModule():
     loginAsAdmin()
-    users.removeUser(True, config.USER_NAME)
+    common.removeUser(True, config.USER_NAME)
     if not config.GOLDEN_ENV:
         test_utils.wait_for_tasks(
             config.VDC_HOST,
@@ -144,7 +144,7 @@ class DPCase14722_2(TestCase):
             True, config.USER_NAME, config.MASTER_STORAGE, role=role.UserRole
         )
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
 
@@ -191,7 +191,7 @@ class DPCase147122(TestCase):
 
     def setUp(self):
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=False
         )
 
@@ -257,7 +257,7 @@ class DPCase147123(TestCase):
             'attach disk.'
         )
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
         self.assertTrue(
@@ -333,7 +333,7 @@ class DPCase147124(TestCase):
     def detachDisk(self):
         """ Detach disk from vm """
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
         self.assertTrue(
@@ -389,7 +389,7 @@ class DPCase147125(TestCase):
     def activateDeactivateDisk(self):
         """ ActivateDeactivateDisk """
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
         self.assertTrue(
@@ -435,7 +435,7 @@ class DPCase147126(TestCase):
     def removeDisk(self):
         """ Remove disk as user with and without permissions """
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
         self.assertTrue(
@@ -450,7 +450,7 @@ class DPCase147126(TestCase):
             role=role.DiskOperator
         )
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
         self.assertTrue(
@@ -490,7 +490,7 @@ class DPCase147127(TestCase):
     def updateVmDisk(self):
         """ Update vm disk """
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
         self.assertTrue(
@@ -531,7 +531,7 @@ class DPCase147128(TestCase):
         """ Move disk with and without having permissions on sds """
         # Move disk without permissions
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=False
         )
 
@@ -548,7 +548,7 @@ class DPCase147128(TestCase):
             role=role.StorageAdmin
         )
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=False
         )
         try:
@@ -566,7 +566,7 @@ class DPCase147128(TestCase):
         )
 
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=False
         )
         vms.move_vm_disk(
@@ -620,7 +620,7 @@ class DPCase147129(TestCase):
     def addDiskToVm(self):
         """ add disk to vm with and without permissions """
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
         self.assertTrue(
@@ -638,7 +638,7 @@ class DPCase147129(TestCase):
             True, config.USER_NAME, config.VM_NO_DISK, role=role.UserVmManager
         )
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
         self.assertTrue(
@@ -658,7 +658,7 @@ class DPCase147129(TestCase):
         )
 
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
         self.assertTrue(
@@ -712,7 +712,7 @@ class DPCase147130(TestCase):
     def removeVm(self):
         """ remove vm with disk without/with having apprirate permissions """
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
         self.assertTrue(
@@ -727,7 +727,7 @@ class DPCase147130(TestCase):
         )
 
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
         self.assertTrue(
@@ -768,7 +768,7 @@ class DPCase147137(TestCase):
     def sharedDisk(self):
         """ Basic operations with shared disk """
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
         self.assertTrue(

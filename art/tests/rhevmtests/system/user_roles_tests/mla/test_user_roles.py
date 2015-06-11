@@ -6,7 +6,7 @@ This will cover scenario for create/remove/editin/using roles.
 
 import logging
 
-from rhevmtests.system.user_roles_tests import config
+from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role as role_e
 from nose.tools import istest
 from art.core_api.apis_exceptions import EntityNotFound
@@ -31,7 +31,7 @@ def loginAsAdmin():
 
 
 def setUpModule():
-    users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+    common.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
     vms.createVm(
         True, config.VM_NO_DISK, '', cluster=config.CLUSTER_NAME[0],
         network=config.MGMT_BRIDGE
@@ -63,7 +63,7 @@ def setUpModule():
 
 def tearDownModule():
     loginAsAdmin()
-    users.removeUser(True, config.USER_NAME)
+    common.removeUser(True, config.USER_NAME)
     vms.removeVm(True, config.VM_NAME)
     vms.removeVm(True, config.VM_NO_DISK)
     disks.deleteDisk(True, config.DISK_NAME)
@@ -111,8 +111,9 @@ class RoleCase54413(TestCase):
                 )
             )
             loginAsAdmin()
-            users.addUser(True, user_name=config.USER_NAME,
-                          domain=config.USER_DOMAIN)
+            common.addUser(
+                True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
+            )
             # need to retrieve the roles again since inside the loop we logout
             # which means disconnect from the server and reconnect again
             curr_role = _retrieve_current_role(curr_role)
@@ -129,7 +130,7 @@ class RoleCase54413(TestCase):
                 "Testing if role %s can add new role.", curr_role.get_name()
             )
             users.loginAsUser(
-                config.USER_NAME, config.USER_DOMAIN, config.USER_PASSWORD,
+                config.USER_NAME, config.PROFILE, config.USER_PASSWORD,
                 filter=not curr_role.administrative
             )
             if 'manipulate_roles' in permit_list:
@@ -166,14 +167,14 @@ class RoleCase54413(TestCase):
                     "%s can't manipulate with roles.", curr_role.get_name()
                 )
             loginAsAdmin()
-            users.removeUser(True, config.USER_NAME)
+            common.removeUser(True, config.USER_NAME)
 
     @classmethod
     def teardown_class(cls):
         """ Recreate user """
         loginAsAdmin()
-        users.removeUser(True, config.USER_NAME)
-        users.addUser(
+        common.removeUser(True, config.USER_NAME)
+        common.addUser(
             True,
             user_name=config.USER_NAME,
             domain=config.USER_DOMAIN
@@ -192,7 +193,7 @@ class RoleCase54401(TestCase):
     def editRole(self):
         """ Try to update role and check if role is updated correctly """
         mla.addRole(True, name=config.USER_ROLE, permits='login')
-        users.addUser(
+        common.addUser(
             True, user_name=config.USER_NAME2, domain=config.USER_DOMAIN
         )
         # 1. Edit created role.
@@ -214,7 +215,7 @@ class RoleCase54401(TestCase):
         )
         # 3.Create a new user and associate it with the role.
         self.assertTrue(
-            users.addUser(
+            common.addUser(
                 True, user_name=config.USER_NAME3, domain=config.USER_DOMAIN
             )
         )
@@ -225,7 +226,7 @@ class RoleCase54401(TestCase):
         )
         # 4.Edit new user's role.
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
         self.assertRaises(
@@ -246,13 +247,13 @@ class RoleCase54401(TestCase):
         # 5.Check that after editing(changing) a role effect will be immediate.
         # User should operate vm now
         users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN,
+            config.USER_NAME, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
         self.assertTrue(vms.startVm(True, config.VM_NAME))
         self.assertTrue(vms.stopVm(True, config.VM_NAME))
         users.loginAsUser(
-            config.USER_NAME3, config.USER_DOMAIN,
+            config.USER_NAME3, config.PROFILE,
             config.USER_PASSWORD, filter=True
         )
         self.assertTrue(vms.startVm(True, config.VM_NAME))
@@ -262,14 +263,14 @@ class RoleCase54401(TestCase):
     def teardown_class(cls):
         """ Recreate user """
         loginAsAdmin()
-        users.removeUser(True, config.USER_NAME)
-        users.addUser(
+        common.removeUser(True, config.USER_NAME)
+        common.addUser(
             True,
             user_name=config.USER_NAME,
             domain=config.USER_DOMAIN
         )
-        users.removeUser(True, config.USER_NAME2)
-        users.removeUser(True, config.USER_NAME3)
+        common.removeUser(True, config.USER_NAME2)
+        common.removeUser(True, config.USER_NAME3)
         mla.removeRole(True, config.USER_ROLE)
 
 
@@ -294,7 +295,7 @@ class RoleCase54415(TestCase):
             )
             loginAsAdmin()
             self.assertTrue(
-                users.addUser(
+                common.addUser(
                     True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
                 )
             )
@@ -307,7 +308,7 @@ class RoleCase54415(TestCase):
                 continue
 
             self.assertTrue(
-                users.addUser(
+                common.addUser(
                     True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
                 )
             )
@@ -317,7 +318,7 @@ class RoleCase54415(TestCase):
                 )
             )
             users.loginAsUser(
-                config.USER_NAME, config.USER_DOMAIN, config.USER_PASSWORD,
+                config.USER_NAME, config.PROFILE, config.USER_PASSWORD,
                 filter=not curr_role.administrative
             )
             self.assertEqual(len(mla.util.get(absLink=False)), size)
@@ -325,7 +326,7 @@ class RoleCase54415(TestCase):
                 "User with role %s can see all roles.", curr_role.get_name()
             )
             loginAsAdmin()
-            self.assertTrue(users.removeUser(True, config.USER_NAME))
+            self.assertTrue(common.removeUser(True, config.USER_NAME))
 
 
 @attr(tier=1)
@@ -374,8 +375,8 @@ class RoleCase54402(TestCase):
     @classmethod
     def teardown_class(cls):
         """ Recreate user """
-        users.removeUser(True, config.USER_NAME)
-        users.addUser(
+        common.removeUser(True, config.USER_NAME)
+        common.addUser(
             True,
             user_name=config.USER_NAME,
             domain=config.USER_DOMAIN
@@ -525,10 +526,10 @@ class RolesCase54412(TestCase):
     def teardown_class(cls):
         """ Recreate user """
         try:
-            users.removeUser(True, config.USER_NAME)
+            common.removeUser(True, config.USER_NAME)
         except EntityNotFound:
             pass
-        users.addUser(
+        common.addUser(
             True,
             user_name=config.USER_NAME,
             domain=config.USER_DOMAIN

@@ -9,7 +9,7 @@ __test__ = True
 import logging
 import time
 
-from rhevmtests.system.user_roles_tests import config
+from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
@@ -33,7 +33,7 @@ TEMPLATE_PREDEFINED = role.TemplateOwner
 
 def loginAsUser(user_name, filter=True):
     users.loginAsUser(
-        user_name, config.USER_DOMAIN, config.USER_PASSWORD, filter=filter
+        user_name, config.PROFILE, config.USER_PASSWORD, filter=filter
     )
 
 
@@ -45,9 +45,13 @@ def loginAsAdmin():
 
 
 def setUpModule():
-    users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
-    users.addUser(True, user_name=config.USER_NAME2, domain=config.USER_DOMAIN)
-    users.addUser(True, user_name=config.USER_NAME3, domain=config.USER_DOMAIN)
+    common.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+    common.addUser(
+        True, user_name=config.USER_NAME2, domain=config.USER_DOMAIN
+    )
+    common.addUser(
+        True, user_name=config.USER_NAME3, domain=config.USER_DOMAIN
+    )
 
     vms.createVm(
         True, config.VM_NAME, '', cluster=config.CLUSTER_NAME[0],
@@ -72,9 +76,9 @@ def setUpModule():
 
 def tearDownModule():
     loginAsAdmin()
-    users.removeUser(True, config.USER_NAME)
-    users.removeUser(True, config.USER_NAME2)
-    users.removeUser(True, config.USER_NAME3)
+    common.removeUser(True, config.USER_NAME)
+    common.removeUser(True, config.USER_NAME2)
+    common.removeUser(True, config.USER_NAME3)
     vms.removeVm(True, config.VM_NAME)
     disks.deleteDisk(True, config.DISK_NAME)
     disks.waitForDisksGone(True, config.DISK_NAME)
@@ -135,8 +139,8 @@ class PermissionsCase54409(TestCase):
     @classmethod
     def tearDownClass(cls):
         loginAsAdmin()
-        users.removeUser(True, config.USER_NAME)
-        users.addUser(
+        common.removeUser(True, config.USER_NAME)
+        common.addUser(
             True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
         )
 
@@ -155,8 +159,8 @@ class PermissionsCase54409(TestCase):
         LOGGER.info("User can create/remove vm with vm permissions.")
 
         loginAsAdmin()
-        users.removeUser(True, config.USER_NAME)
-        users.addUser(
+        common.removeUser(True, config.USER_NAME)
+        common.addUser(
             True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
         )
         # To be able login
@@ -262,8 +266,8 @@ class PermissionsCase54425(TestCase):
     def tearDownClass(cls):
         loginAsAdmin()
         vms.removeVm(True, config.VM_NAME1)
-        users.removeUser(True, config.USER_NAME)
-        users.addUser(
+        common.removeUser(True, config.USER_NAME)
+        common.addUser(
             True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
         )
 
@@ -336,8 +340,8 @@ class PermissionsCase54425(TestCase):
                 LOGGER.info("'%s' can't manipulate permisisons." % r)
 
             loginAsAdmin()
-            users.removeUser(True, config.USER_NAME)
-            users.addUser(
+            common.removeUser(True, config.USER_NAME)
+            common.addUser(
                 True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
             )
 
@@ -374,7 +378,7 @@ class PermissionsCase54446(TestCase):
     def tearDownClass(self):
         loginAsAdmin()
         vms.removeVm(True, config.VM_NAME1)
-        users.removeUser(True, config.GROUP_USER)
+        common.removeUser(True, config.GROUP_USER)
         users.deleteGroup(True, config.GROUP_NAME)
 
     @istest
@@ -478,8 +482,8 @@ class PermissionsCase54420(TestCase):
                 disks.deleteDisk(True, config.DISK_NAME1)
                 disks.waitForDisksGone(True, config.DISK_NAME1)
 
-            users.removeUser(True, config.USER_NAME)
-            users.addUser(
+            common.removeUser(True, config.USER_NAME)
+            common.addUser(
                 True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
             )
         if b:
@@ -509,7 +513,7 @@ class PermissionsCase108233(TestCase):
     @classmethod
     def tearDownClass(self):
         loginAsAdmin()
-        users.removeUser(True, config.GROUP_USER)
+        common.removeUser(True, config.GROUP_USER)
         users.deleteGroup(True, config.GROUP_NAME)
 
     @tcms(TCMS_PLAN_ID, 108233)
@@ -600,8 +604,8 @@ class PermissionsCase111082(TestCase):
     @classmethod
     def tearDownClass(self):
         loginAsAdmin()
-        users.removeUser(True, config.USER_NAME)
-        users.addUser(
+        common.removeUser(True, config.USER_NAME)
+        common.addUser(
             True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
         )
         storagedomains.remove_storage_domain(

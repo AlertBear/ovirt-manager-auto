@@ -9,7 +9,7 @@ __test__ = True
 
 import logging
 
-from rhevmtests.system.user_roles_tests import config
+from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
 from art.test_handler.tools import tcms
@@ -31,7 +31,7 @@ ALT_HOST_ID = None
 
 
 def setUpModule():
-    users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+    common.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
 
     if not config.GOLDEN_ENV:
         clusters.addCluster(
@@ -68,7 +68,7 @@ def setUpModule():
 
 
 def tearDownModule():
-    users.removeUser(True, config.USER_NAME)
+    common.removeUser(True, config.USER_NAME)
 
     if not config.GOLDEN_ENV:
         clusters.removeCluster(True, config.CLUSTER_NAME[1])
@@ -77,8 +77,7 @@ def tearDownModule():
 
 def loginAsUser(**kwargs):
     users.loginAsUser(
-        config.USER_NAME, config.USER_DOMAIN, config.USER_PASSWORD,
-        filter=True
+        config.USER_NAME, config.PROFILE, config.USER_PASSWORD, filter=True
     )
 
 
@@ -755,7 +754,7 @@ class ComplexCombinationTest(TestCase):
         templates.removeTemplate(True, config.TEMPLATE_NAME2)
         templates.removeTemplate(True, config.TEMPLATE_NAME3)
         templates.removeTemplate(True, config.TEMPLATE_NAME4)
-        users.removeUser(True, config.USER_NAME)
-        users.addUser(
+        common.removeUser(True, config.USER_NAME)
+        common.addUser(
             True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
         )

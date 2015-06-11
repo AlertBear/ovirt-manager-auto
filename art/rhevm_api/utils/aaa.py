@@ -43,7 +43,7 @@ class Extension(object):
     module_name = ''
     INTERVAL = 5
     TIMEOUT = 60
-    CONFIG_DIRECTORY = 'art/tests/ldap/'
+    CONFIG_DIRECTORY = 'tests/ldap/'
     EXTENSIONS_DIR = '/etc/ovirt-engine/extensions.d/'
 
     def __init__(self, host, engine):

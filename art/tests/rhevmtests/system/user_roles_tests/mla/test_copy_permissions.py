@@ -10,7 +10,7 @@ __test__ = True
 import logging
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 from nose.tools import istest
-from rhevmtests.system.user_roles_tests import config
+from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import vms, users, templates, mla
@@ -26,8 +26,10 @@ USER2_TEMPLATE_ROLES = [role.TemplateOwner, role.DiskCreator]
 
 
 def setUpModule():
-    users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
-    users.addUser(True, user_name=config.USER_NAME2, domain=config.USER_DOMAIN)
+    common.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+    common.addUser(
+        True, user_name=config.USER_NAME2, domain=config.USER_DOMAIN
+    )
     vms.createVm(
         True, config.VM_NAME, '', cluster=config.CLUSTER_NAME[0],
         storageDomainName=config.MASTER_STORAGE, size=config.GB,
@@ -99,8 +101,8 @@ def setUpModule():
 
 
 def tearDownModule():
-    users.removeUser(True, config.USER_NAME)
-    users.removeUser(True, config.USER_NAME2)
+    common.removeUser(True, config.USER_NAME)
+    common.removeUser(True, config.USER_NAME2)
     vms.removeVm(True, config.VM_NAME)
     templates.removeTemplate(True, config.TEMPLATE_NAME)
 

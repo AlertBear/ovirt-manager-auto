@@ -11,19 +11,22 @@ NETWORK_NAME3 = 'rhevm3'
 NETWORK_NAME4 = 'rhevm4'
 
 # Users
+AUTHZ = 'qa.lab.tlv.redhat.com-authz'
+PROFILE = 'qa.lab.tlv.redhat.com'
+USER_DOMAIN = AUTHZ
+
 USER_NAME = 'userportal1'
 USER_NAME2 = 'userportal2'
 USER_NAME3 = 'userportal3'
-USER_DOMAIN = 'qa.lab.tlv.redhat.com'
 USER_PASSWORD = '123456'
 
-USER1 = 'userportal1@qa.lab.tlv.redhat.com'
-USER2 = 'userportal2@qa.lab.tlv.redhat.com'
-USER3 = 'userportal3@qa.lab.tlv.redhat.com'
+USER1 = 'userportal1@%s@%s' % (PROFILE, AUTHZ)
+USER2 = 'userportal2@%s@%s' % (PROFILE, AUTHZ)
+USER3 = 'userportal3@%s@%s' % (PROFILE, AUTHZ)
 USER = USER1
 
 GROUP_USER = 'q-student'
-GROUP_NAME = 'Users/q-Students@qa.lab.tlv.redhat.com'
+GROUP_NAME = 'q-Students'
 
 # Misc
 ALT_CLUSTER_NAME = 'user_info_access__cluster'

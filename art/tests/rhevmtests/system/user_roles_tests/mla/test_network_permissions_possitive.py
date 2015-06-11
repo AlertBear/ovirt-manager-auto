@@ -8,7 +8,7 @@ if user is permittied for it.
 __test__ = True
 
 import logging
-from rhevmtests.system.user_roles_tests import config
+from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
 from art.unittest_lib import attr
@@ -40,13 +40,13 @@ def setUpModule():
     VM_NAME = config.VM_NAME
     TEMPLATE_NAME = config.TEMPLATE_NAME
     for user in [config.USER_NAME, config.USER_NAME2, config.USER_NAME3]:
-        assert users.addUser(True, user_name=user, domain=config.USER_DOMAIN)
+        assert common.addUser(True, user_name=user, domain=config.USER_DOMAIN)
 
 
 def tearDownModule():
     loginAsAdmin()
     for user in [config.USER_NAME, config.USER_NAME2, config.USER_NAME3]:
-        assert users.removeUser(True, user)
+        assert common.removeUser(True, user)
 
 
 @attr(tier=1)
@@ -413,8 +413,8 @@ class PositiveNetworkPermissions231830(NetworkingPossitive):
     def _testPermissionsOnSystem(self):
         users.addRoleToUser(True, config.USER_NAME, role.UserRole)
         self._testWrap(True, True, True, True)
-        users.removeUser(True, config.USER_NAME)
-        users.addUser(
+        common.removeUser(True, config.USER_NAME)
+        common.addUser(
             True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
         )
 

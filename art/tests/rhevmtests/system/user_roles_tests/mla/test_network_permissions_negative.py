@@ -8,7 +8,7 @@ if user is not permittied for it.
 __test__ = True
 
 import logging
-from rhevmtests.system.user_roles_tests import config
+from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
 from art.unittest_lib import attr, CoreSystemTest as TestCase
@@ -29,7 +29,7 @@ TCMS_PLAN_ID_NEG = 10640
 
 def loginAsUser(userName, filter_=True):
     users.loginAsUser(
-        userName, config.USER_DOMAIN, config.USER_PASSWORD, filter_
+        userName, config.PROFILE, config.USER_PASSWORD, filter_
     )
 
 
@@ -48,13 +48,13 @@ def setUpModule():
     VM_NAME = config.VM_NAME
     TEMPLATE_NAME = config.TEMPLATE_NAME
     for user in [config.USER_NAME, config.USER_NAME2, config.USER_NAME3]:
-        assert users.addUser(True, user_name=user, domain=config.USER_DOMAIN)
+        assert common.addUser(True, user_name=user, domain=config.USER_DOMAIN)
 
 
 def tearDownModule():
     loginAsAdmin()
     for user in [config.USER_NAME, config.USER_NAME2, config.USER_NAME3]:
-        assert users.removeUser(True, user)
+        assert common.removeUser(True, user)
 
 
 def ignoreAllExceptions(method, **kwargs):
