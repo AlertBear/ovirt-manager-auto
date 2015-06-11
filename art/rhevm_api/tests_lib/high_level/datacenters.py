@@ -12,6 +12,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.hosts as hosts
 import art.rhevm_api.tests_lib.high_level.storagedomains as storagedomains
 import art.rhevm_api.tests_lib.high_level.clusters as hl_clusters
+import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
 from art.rhevm_api.tests_lib.low_level.disks import (
     getStorageDomainDisks,
     deleteDisk,
@@ -40,6 +41,7 @@ def build_setup(config, storage, storage_type, basename="testname",
         * basename - baseword for naming objects in setup
     Returns names of created storage domains
     """
+    hl_mac_pool.update_default_mac_pool()
     datacenter_name = config.get('dc_name', '%s_DC_1' % basename)
     cluster_name = config.get('cluster_name', '%s_Cluster_1' % basename)
     config['dc_name'] = datacenter_name
