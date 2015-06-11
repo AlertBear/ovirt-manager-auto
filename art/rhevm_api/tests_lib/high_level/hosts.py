@@ -162,6 +162,8 @@ def restart_vdsm_under_maintenance_state(host_name, host_resource):
         )
     logging.info("Restart host %s vdsmd service", host_name)
     if not host_resource.service("vdsmd").restart():
+        logging.info("Failed to restart vdsm, activating host %s", host_name)
+        hosts.activateHost(True, host_name)
         raise errors.HostException(
             "Failed to restart vdsmd service on host %s" % host_name
         )
