@@ -8,7 +8,7 @@ import urlparse
 from rhevmtests.system.guest_tools.linux_guest_agent import config
 from rhevmtests.system.guest_tools.linux_guest_agent import common
 from nose.tools import istest
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 
 package_manager = '/usr/bin/yum'
 repo_path = '/etc/yum.repos.d/'
@@ -94,6 +94,7 @@ class RHEL64b6PostInstall(common.BasePostInstall):
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 325446)
+    @bz({'1230755': {'engine': None, 'version': ['3.6']}})
     def post_install(self):
         """ RHEL6_64b rhevm-guest-agent post-install """
         super(RHEL64b6PostInstall, self).post_install()
@@ -195,6 +196,7 @@ class RHEL32b6PostInstall(common.BasePostInstall):
 
     @istest
     @tcms(config.TCMS_PLAN_ID_RHEL, 175514)
+    @bz({'1230755': {'engine': None, 'version': ['3.6']}})
     def post_install(self):
         """ RHEL6_32b rhevm-guest-agent post-install """
         super(RHEL32b6PostInstall, self).post_install()
