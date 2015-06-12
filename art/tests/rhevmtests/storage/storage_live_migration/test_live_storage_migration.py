@@ -1561,7 +1561,6 @@ class TestCase281203(BaseTestCase):
         live_migrate_vm(self.vm_name, wait=wait)
         status = migrateVm(True, self.vm_name, wait=False)
         wait_for_jobs()
-        startVm(True, self.vm_name, config.VM_UP)
         return status
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
