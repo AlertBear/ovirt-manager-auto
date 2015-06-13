@@ -156,10 +156,10 @@ class BaseTestCase(TestCase):
     """
 
     __test__ = False
-    vm_name = config.VM_NAME % TestCase.storage
 
     def setUp(self):
         """Initialize DISKS_NAMES variable"""
+        self.vm_name = config.VM_NAME % self.storage
         helpers.DISKS_NAMES[self.storage] = list()
 
     def prepare_disks_for_vm(self, read_only, vm_name=None):
@@ -205,6 +205,7 @@ class DefaultEnvironment(BaseTestCase):
         """
         Creating all possible combinations of disks for test
         """
+        super(DefaultEnvironment, self).setUp()
         self.storage_domains = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )
