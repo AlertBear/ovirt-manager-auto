@@ -89,7 +89,7 @@ def setup_module():
             VM_LIST.append(args['vmName'])
 
 
-def teardown():
+def teardown_module():
     """
     Removes vms
     """
@@ -102,8 +102,6 @@ class BasicEnvironmentSetUp(TestCase):
     This class implements setup, teardowns and common functions
     """
     __test__ = False
-    vm_on_hsm = VM_ON_HSM % TestCase.storage
-    vm_on_spm = VM_ON_SPM % TestCase.storage
     tcms_plan_id = '5588'
     vm_name = ''
     file_name = 'test_file'
@@ -115,6 +113,8 @@ class BasicEnvironmentSetUp(TestCase):
         """
         Prepare environment
         """
+        self.vm_on_hsm = VM_ON_HSM % self.storage
+        self.vm_on_spm = VM_ON_SPM % self.storage
         self.disk_name = 'test_disk_%s' % self.tcms_test_case
         self.snapshot_desc = 'snapshot_%s' % self.tcms_test_case
         self.storage_domain = getStorageDomainNamesForType(
@@ -186,25 +186,23 @@ class BaseTestCase(TestCase):
     """
     __test__ = False
     tcms_plan_id = '5588'
-    vm_on_hsm = VM_ON_HSM % TestCase.storage
-    vm_on_spm = VM_ON_SPM % TestCase.storage
 
-    @classmethod
-    def setup_class(cls):
+    def setUp(self):
         """
         Start machines
         """
-        cls.vm_list = [cls.vm_on_spm, cls.vm_on_hsm]
-        vms.start_vms(cls.vm_list, config.MAX_WORKERS)
+        self.vm_on_hsm = VM_ON_HSM % self.storage
+        self.vm_on_spm = VM_ON_SPM % self.storage
+        self.vm_list = [self.vm_on_spm, self.vm_on_hsm]
+        vms.start_vms(self.vm_list, config.MAX_WORKERS)
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
         Returns VM to the base snapshot and cleans out all other snapshots
         """
         results = list()
         with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-            for vm_name in cls.vm_list:
+            for vm_name in self.vm_list:
                 results.append(
                     executor.submit(restore_snapshot, vm_name, BASE_SNAP))
         raise_if_exception(results)
@@ -232,7 +230,7 @@ class TestCase141612(BasicEnvironmentSetUp):
 
     def setUp(self):
         self.previewed = False
-        self.vm_name = VM_ON_SPM % TestCase.storage
+        self.vm_name = VM_ON_SPM % self.storage
         super(TestCase141612, self).setUp()
 
     def _test_Live_snapshot(self, vm_name):
@@ -301,6 +299,7 @@ class TestCase141612(BasicEnvironmentSetUp):
                     True, self.vm_name, ensure_vm_down=True):
                 raise exceptions.SnapshotException(
                     "Failed to undo snapshot for vm %s" % self.vm_name)
+        remove_all_vm_snapshots(self.vm_name, self.snapshot_desc)
 
 
 @attr(tier=1)
@@ -325,7 +324,7 @@ class TestCase141646(BasicEnvironmentSetUp):
 
     def setUp(self):
         self.previewed = False
-        self.vm_name = VM_ON_SPM % TestCase.storage
+        self.vm_name = VM_ON_SPM % self.storage
         super(TestCase141646, self).setUp()
         logger.info("Adding disk to vm %s", self.vm_name)
         assert vms.addDisk(
@@ -514,33 +513,26 @@ class TestCase147751(BaseTestCase):
     __test__ = True
     tcms_test_case = '147751'
 
-    @classmethod
-    def setup_class(cls):
+    def setUp(self):
         """
         Adds disk to vm_on_spm that will be on second domain
         """
-        cls.vm_list = [cls.vm_on_spm, cls.vm_on_hsm]
+        self.disks_names = []
+        self.vm_on_hsm = VM_ON_HSM % self.storage
+        self.vm_on_spm = VM_ON_SPM % self.storage
+        self.vm_list = [self.vm_on_spm, self.vm_on_hsm]
         storage_domain = getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, cls.storage)[1]
-        for _ in range(2):
-            logger.info("Adding disk to vm %s", cls.vm_on_hsm)
+            config.DATA_CENTER_NAME, self.storage)[1]
+        for index in range(2):
+            alias = "disk_%s_%d" % (self.tcms_test_case, index)
+            logger.info("Adding disk %s to vm %s", alias, self.vm_on_hsm)
             assert vms.addDisk(
-                True, vm=cls.vm_on_hsm, size=3 * config.GB, wait='True',
+                True, vm=self.vm_on_hsm, size=3 * config.GB, wait='True',
                 storagedomain=storage_domain, type=ENUMS['disk_type_data'],
                 interface=ENUMS['interface_ide'], format=ENUMS['format_cow'],
-                sparse='true')
-        super(TestCase147751, cls).setup_class()
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Removes the second disk of vm vm_on_spm
-        """
-        super(TestCase147751, cls).teardown_class()
-        for disk_index in [2, 3]:
-            disk_name = "%s_Disk%d" % (cls.vm_on_hsm, disk_index)
-            logger.info("Removing disk %s of vm %s", disk_name, cls.vm_on_hsm)
-            assert vms.removeDisk(True, cls.vm_on_hsm, disk_name)
+                sparse='true', alias=alias)
+            self.disks_names.append(alias)
+        super(TestCase147751, self).setUp()
 
     @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
     def test_snapshot_on_multiple_domains(self):
@@ -567,13 +559,12 @@ class TestCase141738(BaseTestCase):
     __test__ = True
     tcms_test_case = '141738'
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
         Waits until migration finishes
         """
-        vms.waitForVMState(cls.vm_on_hsm)
-        super(TestCase141738, cls).teardown_class()
+        vms.waitForVMState(self.vm_on_hsm)
+        super(TestCase141738, self).tearDown()
 
     @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
     def test_migration(self):
@@ -602,30 +593,23 @@ class TestCase141614(BaseTestCase):
     __test__ = True
     tcms_test_case = '141614'
 
-    @classmethod
-    def setup_class(cls):
+    def setUp(self):
         """
         Adds disk to vm_on_spm that will be on second domain
         """
+        self.vm_on_hsm = VM_ON_HSM % self.storage
+        self.vm_on_spm = VM_ON_SPM % self.storage
         storage_domain = getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, cls.storage)[1]
-        logger.info("Adding disk to vm %s", cls.vm_on_spm)
+            config.DATA_CENTER_NAME, self.storage)[1]
+        self.disk_name = "disk_%s" % self.tcms_test_case
+        logger.info("Adding disk %s to vm %s", self.disk_name, self.vm_on_spm)
         assert vms.addDisk(
-            True, vm=cls.vm_on_spm, size=3 * config.GB, wait='True',
+            True, vm=self.vm_on_spm, size=3 * config.GB, wait='True',
             storagedomain=storage_domain, type=ENUMS['disk_type_data'],
             interface=ENUMS['interface_ide'], format=ENUMS['format_cow'],
-            sparse='true')
-        super(TestCase141614, cls).setup_class()
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Removes the second disk of vm vm_on_spm
-        """
-        super(TestCase141614, cls).teardown_class()
-        disk_name = "%s_Disk2" % cls.vm_on_spm
-        logger.info("Removing disk %s of vm %s", disk_name, cls.vm_on_spm)
-        assert vms.removeDisk(True, cls.vm_on_spm, disk_name)
+            sparse='true', alias=self.disk_name
+        )
+        super(TestCase141614, self).setUp()
 
     @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
     def test_snapshot_with_multiple_disks(self):
@@ -659,16 +643,17 @@ class TestCase286330(BaseTestCase):
     __test__ = True
     tcms_test_case = '286330'
 
-    @classmethod
-    def setup_class(cls):
+    def setUp(self):
         """
         Prepares template and two VMs based on this template: one clone and one
         thinly provisioned
         """
+        self.vm_on_hsm = VM_ON_HSM % self.storage
+        self.vm_on_spm = VM_ON_SPM % self.storage
         storage_domain = getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, cls.storage)[0]
+            config.DATA_CENTER_NAME, self.storage)[0]
         assert templates.createTemplate(
-            True, vm=cls.vm_on_spm, name='template_test',
+            True, vm=self.vm_on_spm, name='template_test',
             cluster=config.CLUSTER_NAME)
         assert vms.addVm(
             True, name='vm_thin', description='', cluster=config.CLUSTER_NAME,
@@ -679,8 +664,7 @@ class TestCase286330(BaseTestCase):
             disk_clone='True')
         vms.start_vms(['vm_thin', 'vm_clone'], config.MAX_WORKERS)
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
         Removes cloned, thinly provisioned vm and template
         """

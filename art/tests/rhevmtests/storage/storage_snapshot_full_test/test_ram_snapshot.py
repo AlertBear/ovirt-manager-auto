@@ -108,44 +108,43 @@ class DCWithStoragesActive(TestCase):
     hsm = None
     storage_domain = None
     base_snapshot = config.BASE_SNAPSHOT
-    vm = VM_NAME % TestCase.storage
 
-    @classmethod
-    def setup_class(cls):
+    def setUp(self):
         """
         Ensure DC is up, all storages are active and SPM is elected
         """
+        self.vm = VM_NAME % self.storage
         logger.info('Checking DC %s state', config.DATA_CENTER_NAME)
         if not waitForDataCenterState(config.DATA_CENTER_NAME):
             raise errors.DataCenterException('DC %s is not up' %
                                              config.DATA_CENTER_NAME)
 
-        cls.spm = getSPMHost(config.HOSTS)
-        rc, cls.hsm = getAnyNonSPMHost(config.HOSTS,
-                                       expected_states=[config.HOST_UP],
-                                       cluster_name=config.CLUSTER_NAME)
-        logger.info('Status: %s, Got HSM host: %s', rc, cls.hsm)
-        cls.hsm = cls.hsm['hsmHost']
+        self.spm = getSPMHost(config.HOSTS)
+        rc, self.hsm = getAnyNonSPMHost(
+            config.HOSTS, expected_states=[config.HOST_UP],
+            cluster_name=config.CLUSTER_NAME
+        )
+        logger.info('Status: %s, Got HSM host: %s', rc, self.hsm)
+        self.hsm = self.hsm['hsmHost']
 
-        logger.info('SPM is: %s, HSM is %s', cls.spm, cls.hsm)
+        logger.info('SPM is: %s, HSM is %s', self.spm, self.hsm)
 
-        assert cls.spm
-        assert cls.hsm
+        assert self.spm
+        assert self.hsm
 
-        cls.storage_domain = getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, cls.storage)[0]
+        self.storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)[0]
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
         Return to vm's base snapshot (with OS clean installation)
         """
-        logger.info('Shutting down vm %s if it is up', cls.vm)
-        assert shutdown_vm_if_up(cls.vm)
+        logger.info('Shutting down vm %s if it is up', self.vm)
+        assert shutdown_vm_if_up(self.vm)
         logger.info('Restoring base snapshot %s on vm %s',
-                    cls.base_snapshot, cls.vm)
-        assert restoreSnapshot(True, cls.vm, cls.base_snapshot)
-        wait_for_vm_snapshots(cls.vm, config.SNAPSHOT_OK)
+                    self.base_snapshot, self.vm)
+        assert restoreSnapshot(True, self.vm, self.base_snapshot)
+        wait_for_vm_snapshots(self.vm, config.SNAPSHOT_OK)
 
 
 class VMWithMemoryStateSnapshot(DCWithStoragesActive):
@@ -160,38 +159,41 @@ class VMWithMemoryStateSnapshot(DCWithStoragesActive):
     pids = []
     cmdlines = ['/dev/zero']
 
-    @classmethod
-    def setup_class(cls):
+    def setUp(self):
         """
         Start vm, run process on vm and create RAM snapshot
         """
-        super(VMWithMemoryStateSnapshot, cls).setup_class()
-        logger.info('Starting vm %s and waiting for it to boot', cls.vm)
-        if not startVm(True, cls.vm, wait_for_ip=True):
-            raise errors.VMException('Error waiting for vm %s to boot', cls.vm)
+        super(VMWithMemoryStateSnapshot, self).setUp()
+        logger.info('Starting vm %s and waiting for it to boot', self.vm)
+        if not startVm(True, self.vm, wait_for_ip=True):
+            raise errors.VMException(
+                'Error waiting for vm %s to boot', self.vm
+            )
 
-        status, pid = start_cat_process_on_vm(cls.vm, cls.cmdlines[0])
+        status, pid = start_cat_process_on_vm(self.vm, self.cmdlines[0])
         logger.info('PID for first cat process is: %s', pid)
-        cls.pids = [pid]
+        self.pids = [pid]
 
         assert status
 
-        if cls.persist_network:
-            vm_ip = get_vm_ip(cls.vm)
-            logger.info('Setting persistent network on vm %s', cls.vm)
+        if self.persist_network:
+            vm_ip = get_vm_ip(self.vm)
+            logger.info('Setting persistent network on vm %s', self.vm)
             assert setPersistentNetwork(vm_ip, config.VM_PASSWORD)
 
-        logger.info('Creating snapshot %s with RAM state', cls.memory_snapshot)
-        if not addSnapshot(True, cls.vm, cls.memory_snapshot,
+        logger.info(
+            'Creating snapshot %s with RAM state', self.memory_snapshot
+        )
+        if not addSnapshot(True, self.vm, self.memory_snapshot,
                            persist_memory=True):
             raise errors.VMException('Unable to create RAM snapshot %s on vm '
-                                     '%s' % (cls.memory_snapshot, cls.vm))
-        logger.info('Wait for snapshot %s to be created', cls.memory_snapshot)
-        wait_for_vm_snapshots(cls.vm, config.SNAPSHOT_OK)
+                                     '%s' % (self.memory_snapshot, self.vm))
+        logger.info('Wait for snapshot %s to be created', self.memory_snapshot)
+        wait_for_vm_snapshots(self.vm, config.SNAPSHOT_OK)
         logger.info('Snapshot created successfully')
 
-        logger.info('Stopping vm %s', cls.vm)
-        assert stopVm(True, cls.vm)
+        logger.info('Stopping vm %s', self.vm)
+        assert stopVm(True, self.vm)
 
 
 class CreateSnapshotWithMemoryState(DCWithStoragesActive):
@@ -206,19 +208,18 @@ class CreateSnapshotWithMemoryState(DCWithStoragesActive):
     host_for_test = None
     snapshot = config.RAM_SNAPSHOT % 0
 
-    @classmethod
-    def setup_class(cls):
+    def setUp(self):
         """
         Set vm to run on specified host the start vm
         """
-        super(CreateSnapshotWithMemoryState, cls).setup_class()
-        startVms([cls.vm], wait_for_status=config.VM_UP)
+        super(CreateSnapshotWithMemoryState, self).setUp()
+        startVms([self.vm], wait_for_status=config.VM_UP)
         logger.info("Wait for running jobs to complete")
         wait_for_jobs()
-        logger.info('VM %s', cls.vm)
-        cls.host_for_test = getVmHost(cls.vm)[1]['vmHoster']
-        logger.info('Setting vm %s to run on host: %s', cls.vm,
-                    cls.host_for_test)
+        logger.info('VM %s', self.vm)
+        self.host_for_test = getVmHost(self.vm)[1]['vmHoster']
+        logger.info('Setting vm %s to run on host: %s', self.vm,
+                    self.host_for_test)
 
     def create_snapshot(self):
         """
@@ -240,20 +241,19 @@ class CreateSnapshotWithMemoryState(DCWithStoragesActive):
                         'Snapshot %s does not contain memory state'
                         % self.snapshot)
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
         Reset vm host placement to be on any host
         """
-        logger.info('Shutting down vm %s if up', cls.vm)
-        assert shutdown_vm_if_up(cls.vm)
+        logger.info('Shutting down vm %s if up', self.vm)
+        assert shutdown_vm_if_up(self.vm)
 
-        logger.info('Setting vm %s to run on any host', cls.vm)
+        logger.info('Setting vm %s to run on any host', self.vm)
 
         kwargs = {'placement_affinity': config.VM_ANY_HOST,
                   'placement_host': None}
-        assert updateVm(True, cls.vm, **kwargs)
-        super(CreateSnapshotWithMemoryState, cls).teardown_class()
+        assert updateVm(True, self.vm, **kwargs)
+        super(CreateSnapshotWithMemoryState, self).tearDown()
 
 
 @attr(tier=1)
@@ -344,16 +344,15 @@ class TestCase294435(ReturnToSnapshot):
         """
         self.return_to_ram_snapshot()
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
         Undo preview snapshot
         """
-        logger.info('Undo preview snapshot %s on vm %s', cls.memory_snapshot,
-                    cls.vm)
-        assert undo_snapshot_preview(True, cls.vm, True)
-        wait_for_vm_snapshots(cls.vm, config.SNAPSHOT_OK)
-        super(TestCase294435, cls).teardown_class()
+        logger.info('Undo preview snapshot %s on vm %s', self.memory_snapshot,
+                    self.vm)
+        assert undo_snapshot_preview(True, self.vm, True)
+        wait_for_vm_snapshots(self.vm, config.SNAPSHOT_OK)
+        super(TestCase294435, self).tearDown()
 
 
 @attr(tier=0)
@@ -384,21 +383,20 @@ class TestCase294439(VMWithMemoryStateSnapshot):
     second_snapshot_name = config.RAM_SNAPSHOT % 1
     previewed_snapshot = None
 
-    @classmethod
-    def setup_class(cls):
+    def setUp(self):
         """
         Restore first ram snapshot and resume the vm
         """
-        super(TestCase294439, cls).setup_class()
-        cls.cmdlines.append('/dev/urandom')
+        super(TestCase294439, self).setUp()
+        self.cmdlines.append('/dev/urandom')
 
-        logger.info('Restoring first ram snapshot (%s) on vm %s', cls.vm,
-                    cls.memory_snapshot)
-        assert restoreSnapshot(True, cls.vm, cls.memory_snapshot,
+        logger.info('Restoring first ram snapshot (%s) on vm %s', self.vm,
+                    self.memory_snapshot)
+        assert restoreSnapshot(True, self.vm, self.memory_snapshot,
                                restore_memory=True)
 
-        logger.info('Resuming vm %s', cls.vm)
-        assert startVm(True, cls.vm, wait_for_ip=True,
+        logger.info('Resuming vm %s', self.vm)
+        assert startVm(True, self.vm, wait_for_ip=True,
                        wait_for_status=config.VM_UP)
 
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
@@ -480,19 +478,18 @@ class TestCase294439(VMWithMemoryStateSnapshot):
                         'Processes not both running on vm. First process: %s '
                         'second process: %s' % (first, second))
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
         Undo snapshot preview then continue with teardown
         """
-        assert shutdown_vm_if_up(cls.vm)
+        assert shutdown_vm_if_up(self.vm)
 
-        if cls.previewed_snapshot:
+        if self.previewed_snapshot:
             logger.info('Undoing preview snapshot for snapshot %s',
-                        cls.previewed_snapshot)
-            assert undo_snapshot_preview(True, cls.vm)
-            cls.previewed_snapshot = None
-        super(TestCase294439, cls).teardown_class()
+                        self.previewed_snapshot)
+            assert undo_snapshot_preview(True, self.vm)
+            self.previewed_snapshot = None
+        super(TestCase294439, self).tearDown()
 
 
 @attr(tier=1)
@@ -504,9 +501,14 @@ class TestCase294617(VMWithMemoryStateSnapshot):
     __test__ = True
     persist_network = True
     tcms_test_case = '294617'
-    cloned_vm_name = '%s_%s_cloned' % (
-                     VM_PREFIX, VMWithMemoryStateSnapshot.storage)
     bz = {'1178508': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
+
+    def setUp(self):
+        """
+        Set cloned vm name
+        """
+        self.cloned_vm_name = '%s_%s_cloned' % (VM_PREFIX, self.storage)
+        super(TestCase294617, self).setUp()
 
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
     def test_create_vm_from_memory_state_snapshot(self):
@@ -541,17 +543,16 @@ class TestCase294617(VMWithMemoryStateSnapshot):
         self.assertFalse(is_pid_running_on_vm(self.cloned_vm_name,
                                               self.pids[0], self.cmdlines[0]))
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
         Remove cloned vm
         """
-        logger.info('Stopping vm %s', cls.cloned_vm_name)
-        assert stopVm(True, cls.cloned_vm_name)
+        logger.info('Stopping vm %s', self.cloned_vm_name)
+        assert stopVm(True, self.cloned_vm_name)
 
-        logger.info('Removing vm %s', cls.cloned_vm_name)
-        assert removeVm(True, cls.cloned_vm_name)
-        super(TestCase294617, cls).teardown_class()
+        logger.info('Removing vm %s', self.cloned_vm_name)
+        assert removeVm(True, self.cloned_vm_name)
+        super(TestCase294617, self).tearDown()
 
 
 @attr(tier=1)
@@ -611,19 +612,18 @@ class TestCase294624(VMWithMemoryStateSnapshot):
                         'process is not running on vm %s, memory state not '
                         'correctly restored' % self.vm)
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
         Remove vm from export domain
         """
-        logger.info('Removing vm %s from export domain %s', cls.vm,
+        logger.info('Removing vm %s from export domain %s', self.vm,
                     config.EXPORT_DOMAIN)
-        removeVmFromExportDomain(True, cls.vm, config.DATA_CENTER_NAME,
+        removeVmFromExportDomain(True, self.vm, config.DATA_CENTER_NAME,
                                  config.EXPORT_DOMAIN)
-        logger.info('Stopping vm %s', cls.vm)
-        assert stopVm(True, cls.vm)
+        logger.info('Stopping vm %s', self.vm)
+        assert stopVm(True, self.vm)
 
-        super(TestCase294624, cls).teardown_class()
+        super(TestCase294624, self).tearDown()
 
 
 @attr(tier=1)
@@ -705,11 +705,10 @@ class TestCase305433(VMWithMemoryStateSnapshot):
         self.assertTrue(is_pid_running_on_vm(self.vm, self.pids[0],
                                              self.cmdlines[0]))
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
         Set vm to not be stateless
         """
-        logger.info('Setting vm %s to not be stateless', cls.vm)
-        assert updateVm(True, cls.vm, stateless=False)
-        super(TestCase305433, cls).teardown_class()
+        logger.info('Setting vm %s to not be stateless', self.vm)
+        assert updateVm(True, self.vm, stateless=False)
+        super(TestCase305433, self).tearDown()
