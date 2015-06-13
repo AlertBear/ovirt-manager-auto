@@ -147,17 +147,15 @@ class DisksPermutationEnvironment(BaseTestCase):
     __test__ = False
     shared = False
     new_size = (config.DISK_SIZE + config.GB)
-    vm = "%s_%s" % (config.VM_NAME, BaseTestCase.storage)
-
-    @classmethod
-    def setup_class(cls):
-        cls.storage_domain = getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, cls.storage)[0]
 
     def setUp(self):
         """
         Creating all possible combinations of disks for test
         """
+        self.storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )[0]
+        self.vm = "%s_%s" % (config.VM_NAME, self.storage)
         block = self.storage in config.BLOCK_TYPES
         helpers.DISKS_NAMES = create_all_legal_disk_permutations(
             self.storage_domain, shared=self.shared,
@@ -197,34 +195,36 @@ class BasicResize(BaseTestCase):
     A class with common setup and teardown methods
     """
     __test__ = False
-    vm = "%s_%s" % (config.VM_NAME, BaseTestCase.storage)
     new_size = (config.DISK_SIZE + config.GB)
     host_ip = None
     disk_name = ''
     block_cmd = "iptables -I OUTPUT -d %s -p tcp -j DROP"
     stop_libvirt = "service libvirtd stop"
     start_libvirt = "service libvirtd start"
-    disk_args = {}
-
-    @classmethod
-    def setup_class(cls):
-        cls.storage_domain = getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, cls.storage)[0]
+    test_disk_args = {}
 
     def setUp(self):
         """
         Prepare environment
         """
-        args = disk_args.copy()
-        args.update(self.disk_args)
-        args['storagedomain'] = self.storage_domain
+        self.vm = "%s_%s" % (config.VM_NAME, self.storage)
+        self.storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )[0]
+        self.disk_args = disk_args.copy()
+        self.disk_args.update(self.test_disk_args)
+        self.disk_args['storagedomain'] = self.storage_domain
+        self.disk_args['alias'] = "disk_%s" % self.tcms_test_case
+        self.disk_name = self.disk_args['alias']
 
-        self.assertTrue(addDisk(True, **args), "Failed to add disk %s"
-                                               % self.disk_args['alias'])
+        self.assertTrue(
+            addDisk(True, **self.disk_args),
+            "Failed to add disk %s" % self.disk_name
+        )
         assert wait_for_disks_status(self.disk_name)
         stop_vms_safely([self.vm])
         waitForVMState(vm=self.vm, state=ENUMS['vm_state_down'])
-        attachDisk(True, self.disk_args['alias'], self.vm)
+        attachDisk(True, self.disk_name, self.vm)
         assert wait_for_disks_status(self.disk_name)
         start_vms([self.vm], 1, wait_for_ip=False)
         waitForVMState(vm=self.vm)
@@ -478,16 +478,10 @@ class TestCase287466(BasicResize):
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
     tcms_test_case = '287466'
-
-    def setUp(self):
-        """
-        Creating disk
-        """
-        self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
-        self.disk_name = self.disk_args['alias']
-        self.disk_args['sparse'] = False
-        self.disk_args['format'] = config.RAW_DISK
-        super(TestCase287466, self).setUp()
+    test_disk_args = {
+        'sparse': False,
+        'format': config.RAW_DISK,
+    }
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_preallocated_block_resize(self):
@@ -509,16 +503,10 @@ class TestCase297017(BasicResize):
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
     tcms_test_case = '297017'
-
-    def setUp(self):
-        """
-        Creating disk
-        """
-        self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
-        self.disk_name = self.disk_args['alias']
-        self.disk_args['sparse'] = True
-        self.disk_args['format'] = config.COW_DISK
-        super(TestCase297017, self).setUp()
+    test_disk_args = {
+        'sparse': True,
+        'format': config.COW_DISK,
+    }
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_thin_block_resize(self):
@@ -540,16 +528,10 @@ class TestCase287467(BasicResize):
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
     tcms_test_case = '287467'
-
-    def setUp(self):
-        """
-        Creating disk
-        """
-        self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
-        self.disk_name = self.disk_args['alias']
-        self.disk_args['sparse'] = False
-        self.disk_args['format'] = config.RAW_DISK
-        super(TestCase287467, self).setUp()
+    test_disk_args = {
+        'sparse': False,
+        'format': config.RAW_DISK,
+    }
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_preallocated_file_resize(self):
@@ -571,16 +553,10 @@ class TestCase297018(BasicResize):
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
     tcms_test_case = '297018'
-
-    def setUp(self):
-        """
-        Creating disk
-        """
-        self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
-        self.disk_name = self.disk_args['alias']
-        self.disk_args['sparse'] = True
-        self.disk_args['format'] = config.COW_DISK
-        super(TestCase297018, self).setUp()
+    test_disk_args = {
+        'sparse': True,
+        'format': config.COW_DISK,
+    }
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_thin_file_resize(self):
@@ -602,16 +578,10 @@ class TestCase297090(BasicResize):
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
     tcms_test_case = '297090'
-
-    def setUp(self):
-        """
-        Creating disk
-        """
-        self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
-        self.disk_name = self.disk_args['alias']
-        self.disk_args['sparse'] = False
-        self.disk_args['format'] = config.RAW_DISK
-        super(TestCase297090, self).setUp()
+    test_disk_args = {
+        'sparse': False,
+        'format': config.RAW_DISK,
+    }
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_block_connection_preallocated_resize(self):
@@ -634,16 +604,10 @@ class TestCase297089(BasicResize):
     __test__ = __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
     tcms_test_case = '297089'
-
-    def setUp(self):
-        """
-        Creating disk
-        """
-        self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
-        self.disk_name = self.disk_args['alias']
-        self.disk_args['sparse'] = False
-        self.disk_args['format'] = config.RAW_DISK
-        super(TestCase297089, self).setUp()
+    test_disk_args = {
+        'sparse': False,
+        'format': config.RAW_DISK,
+    }
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_block_connection_sparse_resize(self):
@@ -670,16 +634,16 @@ class TestCase287468(BasicResize):
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
     tcms_test_case = '287468'
     test_vm_name = "vm_%s" % tcms_test_case
+    test_disk_args = {
+        'sparse': False,
+        'format': config.RAW_DISK,
+        'shareable': True,
+    }
 
     def setUp(self):
         """
         Creating disk
         """
-        self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
-        self.disk_name = self.disk_args['alias']
-        self.disk_args['sparse'] = False
-        self.disk_args['format'] = config.RAW_DISK
-        self.disk_args['shareable'] = True
         super(TestCase287468, self).setUp()
         self.test_vm_name = 'test_%s' % self.tcms_test_case
         vmArgs['vmName'] = self.test_vm_name
@@ -690,7 +654,7 @@ class TestCase287468(BasicResize):
             raise exceptions.VMException("Failed to create vm %s"
                                          % self.test_vm_name)
         assert waitForVMState(self.test_vm_name)
-        assert attachDisk(True, self.disk_args['alias'], self.test_vm_name)
+        assert attachDisk(True, self.disk_name, self.test_vm_name)
         start_vms([self.test_vm_name], max_workers=1, wait_for_ip=False)
         assert waitForVMState(self.test_vm_name)
         assert wait_for_disks_status(self.disk_name)
@@ -720,7 +684,6 @@ class TestCase287468(BasicResize):
     def tearDown(self):
         stop_vms_safely([self.test_vm_name, self.vm])
         super(TestCase287468, self).tearDown()
-        self.disk_args['shareable'] = False
 
         assert removeVm(True, self.test_vm_name, stopVM='true', wait=True)
 
@@ -734,18 +697,18 @@ class TestCase287469(BasicResize):
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
     tcms_test_case = '287469'
+    test_disk_args = {
+        'sparse': False,
+        'format': config.RAW_DISK,
+    }
 
     def setUp(self):
         """
         Creating disk
         """
+        super(TestCase287469, self).setUp()
         storage_domain_size = get_total_size(self.storage_domain)
         self.new_size = (config.DISK_SIZE + config.GB * storage_domain_size)
-        self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
-        self.disk_name = self.disk_args['alias']
-        self.disk_args['sparse'] = False
-        self.disk_args['format'] = config.RAW_DISK
-        super(TestCase287469, self).setUp()
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_thin_block_resize(self):
@@ -774,16 +737,10 @@ class TestCase297085(BasicResize):
     __test__ = True
     tcms_test_case = '297085'
     look_for_regex = 'Run and protect: extendVolumeSize'
-
-    def setUp(self):
-        """
-        Creating disk
-        """
-        self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
-        self.disk_name = self.disk_args['alias']
-        self.disk_args['sparse'] = True
-        self.disk_args['format'] = config.COW_DISK
-        super(TestCase297085, self).setUp()
+    test_disk_args = {
+        'sparse': True,
+        'format': config.COW_DISK,
+    }
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_stop_libvirt_during_resize(self):
