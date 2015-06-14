@@ -145,28 +145,33 @@ def activate_host_if_not_up(host):
     return True
 
 
-def restart_vdsm_under_maintenance_state(host_name, host_resource):
+def restart_services_under_maintenance_state(services, host_resource):
     """
-    Put host to maintenance, restart vdsm service and activate host
+    Put host to maintenance, restart given services then activate host.
+    The services will be restarted by the list order.
 
-    :param host_name: host name
-    :type host_name: str
+    :param services: List of services to restart
+    :type services: list
     :param host_resource: host resource
     :type host_resource: instance of VDS
     :raises: HostException
     """
+    host_name = hosts.get_host_name_from_engine(host_resource.ip)
     logging.info("Put host %s to maintenance", host_name)
     if not hosts.deactivateHost(True, host_name):
         raise errors.HostException(
             "Failed to put host %s to maintenance" % host_name
         )
-    logging.info("Restart host %s vdsmd service", host_name)
-    if not host_resource.service("vdsmd").restart():
-        logging.info("Failed to restart vdsm, activating host %s", host_name)
-        hosts.activateHost(True, host_name)
-        raise errors.HostException(
-            "Failed to restart vdsmd service on host %s" % host_name
-        )
+    logging.info("Restart services %s on %s ", services, host_name)
+    for srv in services:
+        if not host_resource.service(srv).restart():
+            logging.error(
+                "Failed to restart %s, activating host %s", srv, host_name
+            )
+            hosts.activateHost(True, host_name)
+            raise errors.HostException(
+                "Failed to restart %s services on host %s" % (host_name, srv)
+            )
     logging.info("Activate host %s", host_name)
     if not hosts.activateHost(True, host_name):
         raise errors.HostException(
