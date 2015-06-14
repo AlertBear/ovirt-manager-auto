@@ -72,8 +72,8 @@ def setup_package():
             "Failed to add dummy support to VDSM conf file"
         )
     logger.info("Restarting %s service on %s", VDSMD_SERVICE, config.HOSTS[0])
-    hl_hosts.restart_vdsm_under_maintenance_state(
-        config.HOSTS[0], config.VDS_HOSTS[0]
+    hl_hosts.restart_services_under_maintenance_state(
+        [VDSMD_SERVICE], config.VDS_HOSTS[0]
     )
     if config.GOLDEN_ENV:
         network_cleanup()
@@ -115,8 +115,8 @@ def teardown_package():
 
     logger.info("Restarting %s service on %s", VDSMD_SERVICE, config.HOSTS[0])
     try:
-        hl_hosts.restart_vdsm_under_maintenance_state(
-            config.HOSTS[0], config.VDS_HOSTS[0]
+        hl_hosts.restart_services_under_maintenance_state(
+            [VDSMD_SERVICE], config.VDS_HOSTS[0]
         )
     except exceptions.HostException:
         logger.error(

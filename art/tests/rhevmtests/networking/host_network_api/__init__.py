@@ -36,8 +36,9 @@ def setup_package():
         raise c.NET_EXCEPTION("Failed to add dummy support to VDSM conf file")
 
     logger.info("Restart vdsm and supervdsm services")
-    hl_hosts.restart_vdsm_under_maintenance_state(c.HOST_0, c.VDS_HOSTS_0)
-
+    hl_hosts.restart_services_under_maintenance_state(
+        [c.VDSMD_SERVICE], c.VDS_HOSTS_0
+    )
     logger.info("Creating 10 dummy interfaces")
     if not hl_networks.create_dummy_interfaces(
         host=c.HOST_0_IP, username=c.HOSTS_USER, password=c.HOSTS_PW,
@@ -77,8 +78,8 @@ def teardown_package():
 
     logger.info("Restarting %s service", c.VDSMD_SERVICE)
     try:
-        hl_hosts.restart_vdsm_under_maintenance_state(
-            c.HOSTS[0], c.VDS_HOSTS[0]
+        hl_hosts.restart_services_under_maintenance_state(
+            [c.VDSMD_SERVICE], c.VDS_HOSTS_0
         )
     except exceptions.HostException:
         logger.error("Failed to restart %s service", c.VDSMD_SERVICE)
