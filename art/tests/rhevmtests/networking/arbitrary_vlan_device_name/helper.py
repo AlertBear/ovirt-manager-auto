@@ -183,7 +183,6 @@ def set_libvirtd_sasl(host_obj, sasl=True):
     # https://projects.engineering.redhat.com/browse/RHEVM-2049
     sed_cmd = ["sed", sed_arg, LIBVIRTD_CONF]
     host_exec = host_obj.executor()
-    host_name = ll_hosts.get_host_name_from_engine(host_obj.ip)
     logger_str = "Enable" if sasl else "Disable"
     logger.info("%s sasl in %s", logger_str, LIBVIRTD_CONF)
     rc, sed_out, err = host_exec.run_cmd(sed_cmd)
@@ -203,15 +202,12 @@ def set_libvirtd_sasl(host_obj, sasl=True):
         )
         return False
 
-    logger.info("Stop %s service", LIBVIRTD_SERVICE)
-    if not host_obj.service(LIBVIRTD_SERVICE).stop():
-        logger.error("Failed to stop %s service", LIBVIRTD_SERVICE)
-        return False
-
-    logger.info("Restarting %s service", VDSMD_SERVICE)
+    logger.info(
+        "Restarting %s and %s services", LIBVIRTD_SERVICE, VDSMD_SERVICE
+    )
     try:
-        hl_hosts.restart_vdsm_under_maintenance_state(
-            host_name, host_obj
+        hl_hosts.restart_services_under_maintenance_state(
+            [LIBVIRTD_SERVICE, VDSMD_SERVICE], host_obj
         )
     except exceptions.HostException:
         logger.error("Failed to restart %s service", VDSMD_SERVICE)
