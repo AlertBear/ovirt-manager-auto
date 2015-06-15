@@ -2416,3 +2416,120 @@ def get_host_nic_statistics(host, nic):
     return HOST_NICS_API.getElemFromLink(
         host_nic, link_name="statistics", attr="statistic"
     )
+
+
+def get_numa_nodes_from_host(host_name):
+    """
+    Get list of host numa nodes objects
+
+    :param host_name: name of host
+    :type host_name: str
+    :returns: list of NumaNode objects
+    :rtype: list
+    """
+    host_obj = get_host_object(host_name)
+    return HOST_API.getElemFromLink(host_obj, "numanodes", "host_numa_node")
+
+
+def get_numa_node_memory(numa_node_obj):
+    """
+    Get numa node memory
+
+    :param numa_node_obj: object of NumaNode
+    :type numa_node_obj: instance of NumaNode
+    :returns: total amount of memory of numa node
+    :rtype: int
+    """
+    return numa_node_obj.get_memory()
+
+
+def get_numa_node_cpus(numa_node_obj):
+    """
+    Get numa node cpu's
+
+    :param numa_node_obj: object of NumaNode
+    :type numa_node_obj: instance of NumaNode
+    :returns: list of cores indexes of numa node
+    :rtype: list
+    """
+    cores = []
+    numa_node_cpus = numa_node_obj.get_cpu()
+    if numa_node_cpus:
+        numa_node_cores = numa_node_cpus.get_cores().get_core()
+        cores = [numa_node_core.index for numa_node_core in numa_node_cores]
+    return cores
+
+
+def get_numa_node_index(numa_node_obj):
+    """
+
+    :param numa_node_obj: object of NumaNode
+    :type numa_node_obj: instance of NumaNode
+    :returns: index of numa node
+    :rtype: int
+    """
+    return numa_node_obj.get_index()
+
+
+def get_numa_node_statistics(numa_node_obj):
+    """
+    Get numa node statistics
+
+    :param numa_node_obj: object of NumaNode
+    :type numa_node_obj: instance of NumaNode
+    :returns: dictionary of numa node statistics
+    :rtype: dict
+    """
+    numa_statistics = {}
+    statistics = numa_node_obj.get_statistics()
+    for statistic in statistics:
+        numa_statistics[statistic.name] = []
+        for value in statistic.values:
+            numa_statistics[statistic.name].append(value.datum)
+    return numa_statistics
+
+
+def get_numa_node_by_index(host_name, index):
+    """
+    Get numa node by index
+
+    :param host_name: name of host
+    :type host_name: str
+    :param index: index of numa node
+    :type index: int
+    :returns: NumaNode object or None
+    :rtype: instance of NumaNode or None
+    """
+    numa_nodes = get_numa_nodes_from_host(host_name)
+    for numa_node in numa_nodes:
+        if numa_node.index == index:
+            return numa_node
+    return None
+
+
+def get_num_of_numa_nodes_on_host(host_name):
+    """
+    Get number of numa nodes that host has
+
+    :param host_name: name of host
+    :type host_name: str
+    :returns: number of numa nodes
+    :rtype: int
+    """
+    return len(get_numa_nodes_from_host(host_name))
+
+
+def get_numa_nodes_indexes(host_name):
+    """
+    Get list of host numa indexes
+
+    :param host_name: name of host
+    :type host_name: str
+    :returns: list of host numa indexes
+    :rtype: list
+    """
+    return [
+        get_numa_node_index(
+            node_obj
+        ) for node_obj in get_numa_nodes_from_host(host_name)
+    ]
