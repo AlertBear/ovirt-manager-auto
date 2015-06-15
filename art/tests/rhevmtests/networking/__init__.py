@@ -2,6 +2,7 @@
 """
 network team init file
 """
+
 import logging
 import config
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
@@ -15,6 +16,28 @@ logger = logging.getLogger("GE_Network_cleanup")
 
 DEFAULT_DC_CL = "Default"
 BLANK_TEMPLATE = "Blank"
+
+
+def ignore_exception(func):
+    """
+    Decorator to catch exception
+
+    :param func: Function
+    :return: function return
+    :rtype: function return
+    """
+    def inner(**kwargs):
+        """
+        The call for the function
+
+        :param kwargs: Function kwargs
+        :type kwargs: dict
+        """
+        try:
+            func(**kwargs)
+        except Exception as e:
+            logger.error(e)
+    return inner
 
 
 def network_cleanup():
@@ -49,6 +72,7 @@ def network_cleanup():
         delete_dummy_interfaces_from_hosts()
 
 
+@ignore_exception
 def set_hosts_up():
     """
     Set all hosts UP
@@ -59,6 +83,7 @@ def set_hosts_up():
             logger.error("Failed to activate host: %s", host)
 
 
+@ignore_exception
 def stop_all_vms():
     """
     Stop all VMs
@@ -74,6 +99,7 @@ def stop_all_vms():
                 logger.error("Failed to stop VM: %s", vm_name)
 
 
+@ignore_exception
 def clean_hosts_interfaces_labels():
     """
     Clean hosts interfaces labels
@@ -86,6 +112,7 @@ def clean_hosts_interfaces_labels():
             logger.error("Couldn't remove labels from %s", host_name)
 
 
+@ignore_exception
 def remove_unneeded_vms_nics():
     """
     Remove all NICs from VM besides nic1
@@ -124,6 +151,7 @@ def remove_unneeded_vms_nics():
                     logger.error("Failed to remove %s from %s", nic, vm)
 
 
+@ignore_exception
 def remove_unneeded_templates_nics():
     """
     Remove all NICs from templates besides nic1
@@ -147,6 +175,7 @@ def remove_unneeded_templates_nics():
                 logger.error("Failed to remove %s from %s", nic, template.name)
 
 
+@ignore_exception
 def remove_unneeded_networks():
     """
     Remove all networks besides MGMT_NETWORK
@@ -159,6 +188,7 @@ def remove_unneeded_networks():
     )
 
 
+@ignore_exception
 def remove_unneeded_vnic_profiles():
     """
     Remove all vNIC profiles besides MGMT_PROFILE
@@ -185,6 +215,7 @@ def remove_unneeded_vms():
                 logger.error("Failed to remove %s", vm.name)
 
 
+@ignore_exception
 def remove_unneeded_templates():
     """
     Remove all templates besides [config.TEMPLATE_NAME]
@@ -202,6 +233,7 @@ def remove_unneeded_templates():
                 logger.info("Failed to remove %s", template.name)
 
 
+@ignore_exception
 def remove_unneeded_dcs():
     """
     Remove all DCs besides [config.DC_NAME]
@@ -217,6 +249,7 @@ def remove_unneeded_dcs():
                 logger.error("Failed to delete %s", dc.name)
 
 
+@ignore_exception
 def remove_unneeded_clusters():
     """
     Remove all clusters besides [config.CLUSTER_NAME]
@@ -232,6 +265,7 @@ def remove_unneeded_clusters():
                 logger.error("Failed to delete %s", cl.name)
 
 
+@ignore_exception
 def clean_hosts_interfaces():
     """
     Clean all hosts interfaces
@@ -242,6 +276,7 @@ def clean_hosts_interfaces():
         logger.error("Failed to clean hosts interfaces")
 
 
+@ignore_exception
 def delete_dummy_interfaces_from_hosts():
     """
     Delete all dummy interfaces from hosts
