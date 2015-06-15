@@ -35,6 +35,7 @@ from art.rhevm_api.tests_lib.low_level.disks import (
     _prepareDiskObject, getVmDisk, getObjDisks, get_other_storage_domain,
     wait_for_disks_status, get_disk_storage_domain_name,
 )
+import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.networks import (
     getVnicProfileObj, MGMT_NETWORK,
@@ -80,9 +81,10 @@ DD_COMMAND = 'dd if=/dev/%s of=/dev/%s bs=1M oflag=direct'
 DD_TIMEOUT = 1500
 
 BLANK_TEMPLATE = '00000000-0000-0000-0000-000000000000'
-ADD_DISK_KWARGS = ['size', 'type', 'interface', 'format', 'bootable',
-                   'sparse', 'wipe_after_delete', 'propagate_errors',
-                   'alias', 'active', 'read_only']
+ADD_DISK_KWARGS = [
+    'size', 'type', 'interface', 'format', 'bootable', 'sparse',
+    'wipe_after_delete', 'propagate_errors', 'alias', 'active', 'read_only'
+]
 VM_WAIT_FOR_IP_TIMEOUT = 600
 SNAPSHOT_TIMEOUT = 15 * 60
 PREVIEW = ENUMS['preview_snapshot']
@@ -105,13 +107,16 @@ CDROM_API = get_api('cdrom', 'cdroms')
 NETWORK_API = get_api('network', 'networks')
 WATCHDOG_API = get_api('watchdog', 'watchdogs')
 CAP_API = get_api('version', 'capabilities')
+NUMA_NODE_API = get_api("vm_numa_node", "vm_numa_nodes")
 Snapshots = getDS('Snapshots')
+
+NUMA_NODE_LINK = "numanodes"
 
 logger = logging.getLogger(__name__)
 xpathMatch = is_action('xpathVms', id_name='xpathMatch')(XPathMatch(VM_API))
 xpathVmsLinks = is_action(
-    'xpathVmsLinks', id_name='xpathVmsLinks')(XPathLinks(VM_API))
-
+    'xpathVmsLinks', id_name='xpathVmsLinks'
+)(XPathLinks(VM_API))
 
 ProvisionContext = ProvisionProvider.Context()
 
@@ -121,33 +126,109 @@ class DiskNotFound(Exception):
 
 
 def _prepareVmObject(**kwargs):
+    """
+    Prepare vm object
 
-    add = kwargs.pop('add', False)
-    description = kwargs.pop('description', None)
-    if description is None or description == '':
-        vm = data_st.VM(name=kwargs.pop('name', None))
+    :param name: vm name
+    :type name: str
+    :param description: new vm description
+    :type description: str
+    :param cluster: new vm cluster
+    :type cluster: str
+    :param memory: vm memory size in bytes
+    :type memory: int
+    :param cpu_socket: number of cpu sockets
+    :type cpu_socket: int
+    :param cpu_cores: number of cpu cores
+    :type cpu_cores: int
+    :param cpu_mode: mode of cpu
+    :type cpu_mode: str
+    :param os_type: OS type of new vm
+    :type os_type: str
+    :param boot: type of boot
+    :type boot: str
+    :param template: name of template that should be used
+    :type template: str
+    :param type: vm type (SERVER or DESKTOP)
+    :type type: str
+    :param display_monitors: number of display monitors
+    :type display_monitors: int
+    :param display_type: type of vm display (VNC or SPICE)
+    :type display_type: str
+    :param kernel: kernel path
+    :type kernel: str
+    :param initrd: initrd path
+    :type initrd: str
+    :param cmdline: kernel parameters
+    :type cmdline: str
+    :param vcpu_pinning: vcpu pinning affinity
+    :type vcpu_pinning: dict
+    :param highly_available: set high-availability for vm ('true' or 'false')
+    :type highly_available: str
+    :param placement_affinity: vm to host affinity
+    :type placement_affinity: str
+    :param placement_host: host that the affinity holds for
+    :type placement_host: str
+    :param availablity_priority: priority for high-availability
+    (an integer in range 0-100 where 0 - Low, 50 - Medium, 100 - High priority)
+    :type availablity_priority: int
+    :param custom_properties: custom properties set to the vm
+    :type custom_properties: str
+    :param stateless: if vm stateless or not
+    :type stateless: bool
+    :param memory_guaranteed: size of guaranteed memory in bytes
+    :type memory_guaranteed: int
+    :param quota: vm quota id
+    :type quota: str
+    :param protected: true if vm is delete protected
+    :type protected: bool
+    :param templateUuid: id of template to be used
+    :type templateUuid: str
+    :param clusterUuid: uuid of cluster
+    :type clusterUuid: str
+    :param storagedomain: name of storagedomain
+    :type storagedomain: str
+    :param disk_clone: defines whether disk should be cloned from template
+    :type disk_clone: str
+    :param domainName: sys.prep domain name
+    :type domainName: str
+    :param snapshot: description of snapshot to use. Causes error if not unique
+    :type snapshot: str
+    :param copy_permissions: True if perms should be copied from template
+    :type : bool
+    :param cpu_profile_id: cpu profile id
+    :type cpu_profile_id: str
+    :param numa_mode: numa mode for vm(strict, preferred, interleave)
+    :type numa_mode: str
+    :returns: vm object
+    :rtype: instance of VM
+    """
+    add = kwargs.pop("add", False)
+    description = kwargs.pop("description", None)
+    if description is None or description == "":
+        vm = data_st.VM(name=kwargs.pop("name", None))
     else:
-        vm = data_st.VM(name=kwargs.pop('name', None), description=description)
+        vm = data_st.VM(name=kwargs.pop("name", None), description=description)
 
     # snapshot
-    snapshot_name = kwargs.pop('snapshot', None)
+    snapshot_name = kwargs.pop("snapshot", None)
     if snapshot_name:
         add = False
         vms = VM_API.get(absLink=False)
-        for vmachine in vms:
+        for temp_vm in vms:
             try:
-                snObj = _getVmSnapshot(vmachine.name, snapshot_name)
+                snapshot_obj = _getVmSnapshot(temp_vm.name, snapshot_name)
             except EntityNotFound:
                 pass
             else:
                 snapshots = Snapshots()
-                snapshots.add_snapshot(snObj)
+                snapshots.add_snapshot(snapshot_obj)
                 vm.set_snapshots(snapshots)
                 break
 
     # template
-    template_name = kwargs.pop('template', 'Blank' if add else None)
-    template_id = kwargs.pop('templateUuid', None)
+    template_name = kwargs.pop("template", "Blank" if add else None)
+    template_id = kwargs.pop("templateUuid", None)
     search_by = NAME_ATTR
     if template_id:
         template_name = template_id
@@ -157,8 +238,8 @@ def _prepareVmObject(**kwargs):
         vm.set_template(data_st.Template(id=template.id))
 
     # cluster
-    cluster_name = kwargs.pop('cluster', DEFAULT_CLUSTER if add else None)
-    cluster_id = kwargs.pop('clusterUuid', None)
+    cluster_name = kwargs.pop("cluster", DEFAULT_CLUSTER if add else None)
+    cluster_id = kwargs.pop("clusterUuid", None)
     search_by = NAME_ATTR
     if cluster_id:
         cluster_name = cluster_id
@@ -168,20 +249,26 @@ def _prepareVmObject(**kwargs):
         vm.set_cluster(cluster)
 
     # memory
-    vm.memory = kwargs.pop('memory', None)
+    vm.memory = kwargs.pop("memory", None)
 
     # cpu topology & cpu pinning
-    cpu_socket = kwargs.pop('cpu_socket', None)
-    cpu_cores = kwargs.pop('cpu_cores', None)
-    vcpu_pinning = kwargs.pop('vcpu_pinning', None)
-    cpu_mode = kwargs.pop('cpu_mode', None)
-    if cpu_socket or cpu_cores or vcpu_pinning is not None or \
-       cpu_mode is not None:
+    cpu_socket = kwargs.pop("cpu_socket", None)
+    cpu_cores = kwargs.pop("cpu_cores", None)
+    vcpu_pinning = kwargs.pop("vcpu_pinning", None)
+    cpu_mode = kwargs.pop("cpu_mode", None)
+    if (
+        cpu_socket or cpu_cores
+        or vcpu_pinning is not None
+        or cpu_mode is not None
+    ):
         cpu = data_st.CPU()
         if cpu_socket or cpu_cores:
-            cpu.set_topology(topology=data_st.CpuTopology(sockets=cpu_socket,
-                                                          cores=cpu_cores))
-        if vcpu_pinning is not None and vcpu_pinning == "":
+            cpu.set_topology(
+                topology=data_st.CpuTopology(
+                    sockets=cpu_socket, cores=cpu_cores
+                )
+            )
+        if vcpu_pinning is not None and vcpu_pinning == []:
             cpu.set_cpu_tune(data_st.CpuTune())
         elif vcpu_pinning:
             cpu.set_cpu_tune(
@@ -202,17 +289,17 @@ def _prepareVmObject(**kwargs):
 
     # os options
     apply_os = False
-    os_type = kwargs.pop('os_type', None)
+    os_type = kwargs.pop("os_type", None)
     if os_type is not None:
         os_type = ENUMS.get(os_type.lower(), os_type.lower())
         apply_os = True
     os_type = data_st.OperatingSystem(type_=os_type)
-    for opt_name in 'kernel', 'initrd', 'cmdline':
+    for opt_name in "kernel", "initrd", "cmdline":
         opt_val = kwargs.pop(opt_name, None)
         if opt_val:
             apply_os = True
             setattr(os_type, opt_name, opt_val)
-    boot_seq = kwargs.pop('boot', None)
+    boot_seq = kwargs.pop("boot", None)
     if boot_seq:
         if isinstance(boot_seq, basestring):
             boot_seq = boot_seq.split()
@@ -222,83 +309,91 @@ def _prepareVmObject(**kwargs):
         vm.set_os(os_type)
 
     # type
-    vm.set_type(kwargs.pop('type', None))
+    vm.set_type(kwargs.pop("type", None))
 
     # display monitors and type
-    display_type = kwargs.pop('display_type', None)
-    display_monitors = kwargs.pop('display_monitors', None)
+    display_type = kwargs.pop("display_type", None)
+    display_monitors = kwargs.pop("display_monitors", None)
     if display_monitors or display_type:
-        vm.set_display(data_st.Display(type_=display_type,
-                                       monitors=display_monitors))
+        vm.set_display(
+            data_st.Display(
+                type_=display_type, monitors=display_monitors
+            )
+        )
 
     # stateless
-    vm.set_stateless(kwargs.pop('stateless', None))
+    vm.set_stateless(kwargs.pop("stateless", None))
 
     # high availablity
-    ha = kwargs.pop('highly_available', None)
-    ha_priority = kwargs.pop('availablity_priority', None)
+    ha = kwargs.pop("highly_available", None)
+    ha_priority = kwargs.pop("availablity_priority", None)
     if ha is not None or ha_priority:
         vm.set_high_availability(
-            data_st.HighAvailability(enabled=ha,
-                                     priority=ha_priority))
+            data_st.HighAvailability(
+                enabled=ha, priority=ha_priority
+            )
+        )
 
     # custom properties
-    custom_prop = kwargs.pop('custom_properties', None)
+    custom_prop = kwargs.pop("custom_properties", None)
     if custom_prop:
         vm.set_custom_properties(createCustomPropertiesFromArg(custom_prop))
 
     # memory policy memory_guaranteed
-    guaranteed = kwargs.pop('memory_guaranteed', None)
+    guaranteed = kwargs.pop("memory_guaranteed", None)
     if guaranteed:
         vm.set_memory_policy(data_st.MemoryPolicy(guaranteed))
 
     # placement policy: placement_affinity & placement_host
-    affinity = kwargs.pop('placement_affinity', None)
-    phost = kwargs.pop('placement_host', None)
-    if phost or affinity:
-        ppolicy = data_st.VmPlacementPolicy()
+    affinity = kwargs.pop("placement_affinity", None)
+    placement_host = kwargs.pop("placement_host", None)
+    if placement_host or affinity:
+        placement_policy = data_st.VmPlacementPolicy()
         if affinity:
-            ppolicy.set_affinity(affinity)
-        if phost and phost == ENUMS['placement_host_any_host_in_cluster']:
-            ppolicy.set_host(data_st.Host())
-        elif phost:
-            aff_host = HOST_API.find(phost)
-            ppolicy.set_host(data_st.Host(id=aff_host.id))
-        vm.set_placement_policy(ppolicy)
+            placement_policy.set_affinity(affinity)
+        if placement_host and placement_host == ENUMS[
+            "placement_host_any_host_in_cluster"
+        ]:
+            placement_policy.set_host(data_st.Host())
+        elif placement_host:
+            aff_host = HOST_API.find(placement_host)
+            placement_policy.set_host(data_st.Host(id=aff_host.id))
+        vm.set_placement_policy(placement_policy)
 
     # storagedomain
-    sd_name = kwargs.pop('storagedomain', None)
+    sd_name = kwargs.pop("storagedomain", None)
     if sd_name:
         sd = STORAGE_DOMAIN_API.find(sd_name)
         vm.set_storage_domain(sd)
 
     #  domain_name
-    domain_name = kwargs.pop('domainName', None)
+    domain_name = kwargs.pop("domainName", None)
     if domain_name:
         vm.set_domain(data_st.Domain(name=domain_name))
 
     # disk_clone
-    disk_clone = kwargs.pop('disk_clone', None)
-    if disk_clone and disk_clone.lower() == 'true':
+    disk_clone = kwargs.pop("disk_clone", None)
+    if disk_clone and disk_clone.lower() == "true":
         disk_array = data_st.Disks()
         disk_array.set_clone(disk_clone)
         vm.set_disks(disk_array)
 
     # quota
-    quota_id = kwargs.pop('quota', None)
+    quota_id = kwargs.pop("quota", None)
     if quota_id == '':
         vm.set_quota(data_st.Quota())
     elif quota_id:
         vm.set_quota(data_st.Quota(id=quota_id))
 
     # payloads
-    payloads = kwargs.pop('payloads', None)
+    payloads = kwargs.pop("payloads", None)
     if payloads:
         payload_array = []
         payload_files = data_st.Files()
         for payload_type, payload_fname, payload_file_content in payloads:
-            payload_file = data_st.File(name=payload_fname,
-                                        content=payload_file_content)
+            payload_file = data_st.File(
+                name=payload_fname, content=payload_file_content
+            )
             payload_files.add_file(payload_file)
             payload = data_st.Payload(payload_type, payload_files)
             payload_array.append(payload)
@@ -306,34 +401,39 @@ def _prepareVmObject(**kwargs):
         vm.set_payloads(payloads)
 
     # delete protection
-    protected = kwargs.pop('protected', None)
+    protected = kwargs.pop("protected", None)
     if protected is not None:
         vm.set_delete_protected(protected)
 
     # copy_permissions
-    copy_permissions = kwargs.pop('copy_permissions', None)
+    copy_permissions = kwargs.pop("copy_permissions", None)
     if copy_permissions:
         perms = data_st.Permissions()
         perms.set_clone(True)
         vm.set_permissions(perms)
 
     # initialization
-    initialization = kwargs.pop('initialization', None)
+    initialization = kwargs.pop("initialization", None)
     if initialization:
         vm.set_initialization(initialization)
 
     # timezone
-    vm.timezone = kwargs.pop('timezone', None)
+    vm.timezone = kwargs.pop("timezone", None)
 
     # cpu_profile
-    cpu_profile_id = kwargs.pop('cpu_profile', None)
+    cpu_profile_id = kwargs.pop("cpu_profile", None)
     if cpu_profile_id:
         vm.set_cpu_profile(data_st.CpuProfile(id=cpu_profile_id))
 
     # virtio_scsi
-    virtio_scsi = kwargs.pop('virtio_scsi', None)
+    virtio_scsi = kwargs.pop("virtio_scsi", None)
     if virtio_scsi is not None:
         vm.set_virtio_scsi(data_st.VirtIO_SCSI(enabled=virtio_scsi))
+
+    # numa mode
+    numa_mode = kwargs.pop("numa_mode", None)
+    if numa_mode:
+        vm.set_numa_tune_mode(numa_mode)
     return vm
 
 
@@ -366,129 +466,206 @@ def createCustomPropertiesFromArg(prop_arg):
 
 @is_action()
 def addVm(positive, wait=True, **kwargs):
-    '''
+    """
     Description: add new vm (without starting it)
-    Parameters:
-       * name - name of a new vm
-       * description - vm description
-       * cluster - vm cluster
-       * memory - vm memory size in bytes
-       * cpu_socket - number of cpu sockets
-       * cpu_cores - number of cpu cores
-       * os_type - OS type of new vm
-       * boot - type of boot
-       * template - name of template that should be used
-       * type - vm type (SERVER or DESKTOP)
-       * display_type - type of vm display (VNC or SPICE)
-       * display_monitors - number of display monitors
-       * kernel - kernel path
-       * initrd - initrd path
-       * cmdline - kernel paramters
-       * vcpu_pinning - vcpu pinning affinity (dictionary)
-       * placement_affinity - vm to host affinity
-       * placement_host - host that the affinity holds for
-       * highly_available - if to set high-availablity for vm
-       * availablity_priority - availablity priority
-       * custom_properties - custom properties set to the vm
-       * stateless - if vm stateless or not
-       * templateUuid - id of template to be used
-       * memory_guaranteed - size of guaranteed memory in bytes
-       * wait - When True wait until end of action,False return without waiting
-       * clusterUuid - uuid of cluster
-       * storagedomain - name of storagedomain
-       * disk_type - type of disk to add to vm
-       * disk_clone - defines whether disk should be cloned from template
-       * disk parameters - same as in addDisk function
-       * domainName = sys.prep domain name
-       * quota - vm quota
-       * snapshot - description of snapshot to use. Causes error if not unique
-       * copy_permissions - True if perms should be copied from template
-       * timeout - waiting timeout
-       * protected - true if VM is delete protected
-       * cpu_profile_id - id of cpu profile
-       * initialization - should be created as an Initialization object with
-         relevant parameters (sysprep, ovf, username, root_password etc).
-    Return: status (True if vm was added properly, False otherwise)
-    '''
-    kwargs.update(add=True)
-    vmObj = _prepareVmObject(**kwargs)
-    status = False
 
-    # Workaround for framework validator:
-    #     if disk_clone==false Tempalte_Id will be set to BLANK_TEMPLATE
-    # expectedVm = deepcopy(vmObj)
-    expectedVm = _prepareVmObject(**kwargs)
+    :param name: vm name
+    :type name: str
+    :param description: new vm description
+    :type description: str
+    :param cluster: new vm cluster
+    :type cluster: str
+    :param memory: vm memory size in bytes
+    :type memory: int
+    :param cpu_socket: number of cpu sockets
+    :type cpu_socket: int
+    :param cpu_cores: number of cpu cores
+    :type cpu_cores: int
+    :param cpu_mode: mode of cpu
+    :type cpu_mode: str
+    :param os_type: OS type of new vm
+    :type os_type: str
+    :param boot: type of boot
+    :type boot: str
+    :param template: name of template that should be used
+    :type template: str
+    :param type: vm type (SERVER or DESKTOP)
+    :type type: str
+    :param display_monitors: number of display monitors
+    :type display_monitors: int
+    :param display_type: type of vm display (VNC or SPICE)
+    :type display_type: str
+    :param kernel: kernel path
+    :type kernel: str
+    :param initrd: initrd path
+    :type initrd: str
+    :param cmdline: kernel parameters
+    :type cmdline: str
+    :param vcpu_pinning: vcpu pinning affinity
+    :type vcpu_pinning: dict
+    :param highly_available: set high-availability for vm ('true' or 'false')
+    :type highly_available: str
+    :param placement_affinity: vm to host affinity
+    :type placement_affinity: str
+    :param placement_host: host that the affinity holds for
+    :type placement_host: str
+    :param availablity_priority: priority for high-availability
+    (an integer in range 0-100 where 0 - Low, 50 - Medium, 100 - High priority)
+    :type availablity_priority: int
+    :param custom_properties: custom properties set to the vm
+    :type custom_properties: str
+    :param stateless: if vm stateless or not
+    :type stateless: bool
+    :param memory_guaranteed: size of guaranteed memory in bytes
+    :type memory_guaranteed: int
+    :param quota: vm quota id
+    :type quota: str
+    :param protected: true if vm is delete protected
+    :type protected: bool
+    :param templateUuid: id of template to be used
+    :type templateUuid: str
+    :param wait: if True wait until end of action, False return without waiting
+    :type wait: bool
+    :param clusterUuid: uuid of cluster
+    :type clusterUuid: str
+    :param storagedomain: name of storagedomain
+    :type storagedomain: str
+    :param disk_clone: defines whether disk should be cloned from template
+    :type disk_clone: str
+    :param disk_parameters: disk parameters
+    :type disk_parameters: dict
+    :param domainName: sys.prep domain name
+    :type domainName: str
+    :param snapshot: description of snapshot to use. Causes error if not unique
+    :type snapshot: str
+    :param copy_permissions: True if perms should be copied from template
+    :type : bool
+    :param timeout: waiting timeout
+    :type timeout: int
+    :param cpu_profile_id: cpu profile id
+    :type cpu_profile_id: str
+    :param numa_mode: numa mode for vm(strict, preferred, interleave)
+    :type numa_mode: str
+    :param initialization: should be created as an Initialization object with
+                           relevant parameters
+                           (sysprep, ovf, username, root_password etc)
+    :type initialization: Initialization
+    :returns: True, if add vm success, otherwise False
+    :rtype: bool
+    """
+    kwargs.update(add=True)
+    vm_obj = _prepareVmObject(**kwargs)
+    expected_vm = _prepareVmObject(**kwargs)
 
     if False in [positive, wait]:
-        vmObj, status = VM_API.create(vmObj, positive,
-                                      expectedEntity=expectedVm)
+        vm_obj, status = VM_API.create(
+            vm_obj, positive, expectedEntity=expected_vm
+        )
         return status
 
     disk_clone = kwargs.pop('disk_clone', None)
 
     wait_timeout = kwargs.pop('timeout', VM_ACTION_TIMEOUT)
     if disk_clone and disk_clone.lower() == 'true':
-        expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
+        expected_vm.set_template(data_st.Template(id=BLANK_TEMPLATE))
         wait_timeout = VM_DISK_CLONE_TIMEOUT
 
-    vmObj, status = VM_API.create(vmObj, positive, expectedEntity=expectedVm)
+    vm_obj, status = VM_API.create(
+        vm_obj, positive, expectedEntity=expected_vm
+    )
 
     if status:
-        status = VM_API.waitForElemStatus(vmObj, "DOWN", wait_timeout)
+        status = VM_API.waitForElemStatus(vm_obj, "DOWN", wait_timeout)
 
     return status
 
 
 @is_action()
 def updateVm(positive, vm, **kwargs):
-    '''
-    Description: update existed vm
-    Parameters:
-       * vm - name of vm
-       * name - new vm name
-       * description - new vm description
-       * data_center - new vm data center
-       * cluster - new vm cluster
-       * memory - vm memory size in bytes
-       * cpu_socket - number of cpu sockets
-       * cpu_cores - number of cpu cores
-       * cpu_mode - mode of cpu
-       * os_type - OS type of new vm
-       * boot - type of boot
-       * template - name of template that should be used
-       * type - vm type (SERVER or DESKTOP)
-       * display_type - type of vm display (VNC or SPICE)
-       * display_monitors - number of display monitors
-       * kernel - kernel path
-       * initrd - initrd path
-       * cmdline - kernel parameters
-       * highly_available - set high-availability for vm ('true' or 'false')
-       * availablity_priority - priority for high-availability (an integer in
-                   range 0-100 where 0 - Low, 50 - Medium, 100 - High priority)
-       * custom_properties - custom properties set to the vm
-       * stateless - if vm stateless or not
-       * memory_guaranteed - size of guaranteed memory in bytes
-       * domainName = sys.prep domain name
-       * placement_affinity - vm to host affinity
-       * placement_host - host that the affinity holds for
-       * quota - vm quota
-       * protected - true if vm is delete protected
-       * watchdog_model - model of watchdog card (ib6300)
-       * watchdog_action - action of watchdog card
-       * timezone - set to timezone out of product possible timezones.
-                    There must be a match between timezone and OS.
-       * compare - disable or enable validation for update
-       * cpu_profile_id - cpu profile id
-    Return: status (True if vm was updated properly, False otherwise)
-    '''
+    """
+    Update existed vm
+
+    :param vm: name of vm
+    :type : str
+    :param name: new vm name
+    :type name: str
+    :param description: new vm description
+    :type description: str
+    :param data_center: new vm data center
+    :type data_center: str
+    :param cluster: new vm cluster
+    :type cluster: str
+    :param memory: vm memory size in bytes
+    :type memory: int
+    :param cpu_socket: number of cpu sockets
+    :type cpu_socket: int
+    :param cpu_cores: number of cpu cores
+    :type cpu_cores: int
+    :param cpu_mode: mode of cpu
+    :type cpu_mode: str
+    :param os_type: OS type of new vm
+    :type os_type: str
+    :param boot: type of boot
+    :type boot: str
+    :param template: name of template that should be used
+    :type template: str
+    :param type: vm type (SERVER or DESKTOP)
+    :type type: str
+    :param display_monitors: number of display monitors
+    :type display_monitors: int
+    :param display_type: type of vm display (VNC or SPICE)
+    :type display_type: str
+    :param kernel: kernel path
+    :type kernel: str
+    :param initrd: initrd path
+    :type initrd: str
+    :param cmdline: kernel parameters
+    :type cmdline: str
+    :param highly_available: set high-availability for vm ('true' or 'false')
+    :type highly_available: str
+    :param availablity_priority: priority for high-availability
+    (an integer in range 0-100 where 0 - Low, 50 - Medium, 100 - High priority)
+    :type availablity_priority: int
+    :param custom_properties: custom properties set to the vm
+    :type custom_properties: str
+    :param stateless: if vm stateless or not
+    :type stateless: bool
+    :param memory_guaranteed: size of guaranteed memory in bytes
+    :type memory_guaranteed: int
+    :param domainName: sys.prep domain name
+    :type domainName: str
+    :param placement_affinity: vm to host affinity
+    :type placement_affinity: str
+    :param placement_host: host that the affinity holds for
+    :type placement_host: str
+    :param quota: vm quota id
+    :type quota: str
+    :param protected: true if vm is delete protected
+    :type protected: bool
+    :param watchdog_model: model of watchdog card (ib6300)
+    :type watchdog_model: str
+    :param watchdog_action: action of watchdog card
+    :type watchdog_action: str
+    :param timezone: set to timezone out of product possible timezones
+    :type timezone: str
+    :param compare: disable or enable validation for update
+    :type compare: bool
+    :param cpu_profile_id: cpu profile id
+    :type cpu_profile_id: str
+    :param numa_mode: numa mode for vm(strict, preferred, interleave)
+    :type numa_mode: str
+    :returns: True, if update success, otherwise False
+    :rtype: bool
+    """
     vm_obj = VM_API.find(vm)
     vm_new_obj = _prepareVmObject(**kwargs)
-    compare = kwargs.get('compare', True)
-    vm_new_obj, status = VM_API.update(vm_obj, vm_new_obj, positive,
-                                       compare=compare)
+    compare = kwargs.get("compare", True)
+    vm_new_obj, status = VM_API.update(
+        vm_obj, vm_new_obj, positive, compare=compare
+    )
 
-    watchdog_model = kwargs.pop('watchdog_model', None)
-    watchdog_action = kwargs.pop('watchdog_action', None)
+    watchdog_model = kwargs.pop("watchdog_model", None)
+    watchdog_action = kwargs.pop("watchdog_action", None)
 
     if status and watchdog_model is not None:
         status = updateWatchdog(vm, watchdog_model, watchdog_action)
@@ -2224,107 +2401,155 @@ def checkVmStatistics(positive, vm):
 
 
 @is_action()
-def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
-             nicType=None, mac_address=None, storageDomainName=None, size=None,
-             diskType=ENUMS['disk_type_data'], volumeType='true',
-             volumeFormat=ENUMS['format_cow'], diskActive=True,
-             diskInterface=ENUMS['interface_virtio'], bootable='true',
-             wipe_after_delete='false', start='false', template='Blank',
-             templateUuid=None, type=None, os_type=None, memory=None,
-             cpu_socket=None, cpu_cores=None, cpu_mode=None, display_type=None,
-             installation=False, slim=False, user=None, password=None,
-             attempt=60, interval=60, cobblerAddress=None, cobblerUser=None,
-             cobblerPasswd=None, image=None, async=False, hostname=None,
-             network=MGMT_NETWORK, vnic_profile=None, useAgent=False,
-             placement_affinity=None, placement_host=None, vcpu_pinning=None,
-             highly_available=None, availablity_priority=None, vm_quota=None,
-             disk_quota=None, plugged='true', linked='true', protected=None,
-             copy_permissions=False, custom_properties=None,
-             watchdog_model=None, watchdog_action=None, cpu_profile_id=None):
-    '''
-    Description: The function createStartVm adding new vm with nic,disk
-                 and started new created vm.
-    Parameters:
-        vmName = VM name
-        vmDescription = Description of VM
-        cluster = cluster name
-        nic = nic name
-        storageDomainName = storage domain name
-        size = size of disk (in bytes)
-        diskType = disk type (SYSTEM, DATA)
-        volumeType = true means sparse (thin provision),
-                     false - pre-allocated
-        volumeFormat = format type (COW)
-        diskInterface = disk interface (VIRTIO or IDE ...)
-        bootable = True when disk bootable otherwise False
-        wipe_after_delete = Can be true or false
-        type - vm type (SERVER or DESKTOP)
-        start = in case of true the function start vm
-        template = name of already created template or Blank
-                   (start from scratch)
-        display_type - type of vm display (VNC or SPICE)
-        installation - true for install os and check connectivity in the end
-        user - user to connect to vm after installation
-        password - password to connect to vm after installation
-        attempt- attempts to connect after installation
-        interval - interval between attempts
-        osType - type of OS as it appears in art/conf/elements.conf
-        useAgent - Set to 'true', if desired to read the ip from VM
-                   (agent exist on VM)
-        placement_affinity - vm to host affinity
-        placement_host - host that the affinity holds for
-        vcpu_pinning - vcpu pinning affinity (dictionary)
-        vm_quota - quota for vm
-        disk_quota - quota for vm disk
-        plugged - shows if specific VNIC is plugged/unplugged
-        linked - shows if specific VNIC is linked or not
-        protected - true if VM is delete protected
-        cpu_mode - cpu mode
-        cobbler* - backward compatibility with cobbler provisioning,
-                   should be removed
-        network - The network that the VM's VNIC will be attached to. (If
-                  'vnic_profile' is not specified as well, a profile without
-                  port mirroring will be selected for the VNIC arbitrarily
-                  from the network's profiles).
-        vnic_profile - The VNIC profile to set on the VM's VNIC. (It should be
-                       for the network specified above).
-        watchdog_model - model of watchdog card
-        watchdog_action - action of watchdog card
-        cpu_profile_id - cpu profile id
-    return values : Boolean value (True/False )
-                    True in case of success otherwise False
-    '''
+def createVm(
+        positive, vmName, vmDescription, cluster='Default', nic=None,
+        nicType=None, mac_address=None, storageDomainName=None, size=None,
+        diskType=ENUMS['disk_type_data'], volumeType='true',
+        volumeFormat=ENUMS['format_cow'], diskActive=True,
+        diskInterface=ENUMS['interface_virtio'], bootable='true',
+        wipe_after_delete='false', start='false', template='Blank',
+        templateUuid=None, type=None, os_type=None, memory=None,
+        cpu_socket=None, cpu_cores=None, cpu_mode=None, display_type=None,
+        installation=False, slim=False, user=None, password=None,
+        attempt=60, interval=60, cobblerAddress=None, cobblerUser=None,
+        cobblerPasswd=None, image=None, async=False, hostname=None,
+        network=MGMT_NETWORK, vnic_profile=None, useAgent=False,
+        placement_affinity=None, placement_host=None, vcpu_pinning=None,
+        highly_available=None, availablity_priority=None, vm_quota=None,
+        disk_quota=None, plugged='true', linked='true', protected=None,
+        copy_permissions=False, custom_properties=None,
+        watchdog_model=None, watchdog_action=None, cpu_profile_id=None,
+        numa_mode=None
+):
+    """
+    Create new vm with nic, disk and OS
+
+    :param vmName: vm name
+    :type vmName: str
+    :param vmDescription: description of vm
+    :type vmDescription: str
+    :param cluster: cluster name
+    :type cluster: str
+    :param nic: nic name
+    :type nic: str
+    :param storageDomainName: storage domain name
+    :type storageDomainName: str
+    :param size: size of disk (in bytes)
+    :type size: int
+    :param diskType: disk type (SYSTEM, DATA)
+    :type diskType: str
+    :param volumeType: true means sparse (thin provision),
+    false - pre-allocated
+    :type volumeType: str
+    :param volumeFormat: format type (COW)
+    :type volumeFormat: str
+    :param diskInterface: disk interface (VIRTIO or IDE ...)
+    :type diskInterface: str
+    :param bootable: if disk bootable
+    :type bootable: str
+    :param wipe_after_delete: wipe after delete
+    :type wipe_after_delete: str
+    :param type: vm type (SERVER or DESKTOP)
+    :type type: str
+    :param start: in case of true the function start vm
+    :type start: str
+    :param display_type: type of vm display (VNC or SPICE)
+    :type display_type: str
+    :param installation: true for install os and check connectivity in the end
+    :type installation: bool
+    :param user: user to connect to vm after installation
+    :type user: str
+    :param password: password to connect to vm after installation
+    :type password: str
+    :param attempt: attempts to connect after installation
+    :type attempt: int
+    :param interval: interval between attempts
+    :type interval: int
+    :param os_type: type of OS as it appears in art/conf/elements.conf
+    :type os_type: str
+    :param useAgent: Set to True, if desired to read the ip from VM
+    :type useAgent: bool
+    :param placement_affinity: vm to host affinity
+    :type placement_affinity: str
+    :param placement_host: host that the affinity holds for
+    :type placement_host: str
+    :param vcpu_pinning: vcpu pinning affinity
+    :type vcpu_pinning: dict
+    :param vm_quota: quota id for vm
+    :type vm_quota: str
+    :param disk_quota: quota id for vm disk
+    :type disk_quota: str
+    :param plugged: shows if specific VNIC is plugged/unplugged
+    :type plugged: str
+    :param linked: shows if specific VNIC is linked or not
+    :type linked: str
+    :param protected: true if VM is delete protected
+    :type protected: str
+    :param cpu_mode: cpu mode
+    :type cpu_mode: str
+    :param cobblerAddress: backward compatibility with cobbler provisioning,
+    should be removed
+    :type cobblerAddress: str
+    :param cobblerUser: backward compatibility with cobbler provisioning,
+    should be removed
+    :type cobblerUser: str
+    :param cobblerPasswd: backward compatibility with cobbler provisioning,
+    should be removed
+    :type cobblerPasswd: str
+    :param network: The network that the VM's VNIC will be attached to
+    (If 'vnic_profile' is not specified as well, a profile without port
+    mirroring will be selected for the VNIC arbitrarily
+    from the network's profiles)
+    :type network: str
+    :param vnic_profile: The VNIC profile to set on the VM VNIC
+    (It should be for the network specified above)
+    :type vnic_profile: str
+    :param watchdog_model: model of watchdog card
+    :type watchdog_model: str
+    :param watchdog_action: action of watchdog card
+    :type watchdog_action: str
+    :param cpu_profile_id: cpu profile id
+    :type cpu_profile_id: str
+    :param numa_mode: numa mode for vm(strict, preferred, interleave)
+    :type numa_mode: str
+    :returns: True, if create vm success, otherwise False
+    :rtype: bool
+    """
     ip = False
-    if not addVm(positive, name=vmName, description=vmDescription,
-                 cluster=cluster, template=template, templateUuid=templateUuid,
-                 os_type=os_type, type=type, memory=memory,
-                 cpu_socket=cpu_socket, cpu_cores=cpu_cores,
-                 display_type=display_type, async=async,
-                 placement_affinity=placement_affinity,
-                 placement_host=placement_host, vcpu_pinning=vcpu_pinning,
-                 highly_available=highly_available,
-                 availablity_priority=availablity_priority, quota=vm_quota,
-                 protected=protected, cpu_mode=cpu_mode,
-                 copy_permissions=copy_permissions,
-                 custom_properties=custom_properties,
-                 cpu_profile_id=cpu_profile_id):
+    if not addVm(
+        positive, name=vmName, description=vmDescription,
+        cluster=cluster, template=template, templateUuid=templateUuid,
+        os_type=os_type, type=type, memory=memory,
+        cpu_socket=cpu_socket, cpu_cores=cpu_cores,
+        display_type=display_type, async=async,
+        placement_affinity=placement_affinity,
+        placement_host=placement_host, vcpu_pinning=vcpu_pinning,
+        highly_available=highly_available,
+        availablity_priority=availablity_priority, quota=vm_quota,
+        protected=protected, cpu_mode=cpu_mode,
+        copy_permissions=copy_permissions,
+        custom_properties=custom_properties,
+        cpu_profile_id=cpu_profile_id, numa_mode=numa_mode
+    ):
         return False
 
     if nic:
         profile = vnic_profile if vnic_profile is not None else network
-        if not addNic(positive, vm=vmName, name=nic, interface=nicType,
-                      mac_address=mac_address,
-                      network=network,
-                      vnic_profile=profile, plugged=plugged, linked=linked):
+        if not addNic(
+            positive, vm=vmName, name=nic, interface=nicType,
+            mac_address=mac_address, network=network, vnic_profile=profile,
+            plugged=plugged, linked=linked
+        ):
                 return False
 
-    if template == 'Blank' and storageDomainName and templateUuid is None:
-        if not addDisk(positive, vm=vmName, size=size, type=diskType,
-                       storagedomain=storageDomainName, sparse=volumeType,
-                       interface=diskInterface, format=volumeFormat,
-                       bootable=bootable, quota=disk_quota,
-                       wipe_after_delete=wipe_after_delete,
-                       active=diskActive):
+    if template == "Blank" and storageDomainName and templateUuid is None:
+        if not addDisk(
+            positive, vm=vmName, size=size, type=diskType,
+            storagedomain=storageDomainName, sparse=volumeType,
+            interface=diskInterface, format=volumeFormat,
+            bootable=bootable, quota=disk_quota,
+            wipe_after_delete=wipe_after_delete, active=diskActive
+        ):
             return False
 
     if watchdog_action and watchdog_model:
@@ -2337,8 +2562,8 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
             status, res = getImageByOsType(positive, os_type, slim)
             if not status:
                 return False
-            image = res['osBoot']
-            floppy = res['floppy']
+            image = res["osBoot"]
+            floppy = res["floppy"]
 
         try:
             if not unattendedInstallation(
@@ -2351,7 +2576,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
             mac = getVmMacAddress(positive, vmName, nic=nic)
             if not mac[0]:
                 return False
-            mac = mac[1]['macAddress']
+            mac = mac[1]["macAddress"]
 
             if not waitForSystemIsReady(
                 mac,
@@ -2361,7 +2586,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
                 return False
 
             if useAgent:
-                ip = waitForIP(vmName)[1]['ip']
+                ip = waitForIP(vmName)[1]["ip"]
 
             logger.debug("%s has ip %s", vmName, ip)
             if not checkVMConnectivity(
@@ -2374,7 +2599,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
             ProvisionContext.clear()
         return True
     else:
-        if (start.lower() == 'true'):
+        if start.lower() == "true":
             return startVm(positive, vmName)
 
         return True
@@ -4581,3 +4806,226 @@ def get_vm_nic_statistics(vm, nic):
     return NIC_API.getElemFromLink(
         vm_nic, link_name="statistics", attr="statistic"
     )
+
+
+def get_vm_memory(vm_name):
+    """
+    Get vm memory size from engine
+
+    :param vm_name: name of vm
+    :type vm_name: str
+    :returns: memory of vm
+    :rtype: int
+    """
+    vm_obj = get_vm_obj(vm_name)
+    if not vm_obj:
+        logger.error("Vm with name %s not exist under engine", vm_name)
+        return 0
+    return vm_obj.get_memory()
+
+
+def get_vm_cores(vm_name):
+    """
+    Get number of cores on vm from engine
+
+    :param vm_name: name of vm
+    :type vm_name: str
+    :returns: cores of vm
+    :rtype: int
+    """
+    vm_obj = get_vm_obj(vm_name)
+    if not vm_obj:
+        logger.error("Vm with name %s not exist under engine", vm_name)
+        return 0
+    return vm_obj.get_cpu().get_topology().get_cores()
+
+
+def get_vm_numa_nodes(vm_name):
+    """
+    Get vm numa nodes
+
+    :param vm_name: name of vm
+    :type vm_name: str
+    :returns: list of numa nodes
+    :rtype: list
+    """
+    vm_obj = get_vm_obj(vm_name)
+    return VM_API.getElemFromLink(
+        elm=vm_obj, link_name=NUMA_NODE_LINK, attr="vm_numa_node"
+    )
+
+
+def get_vm_numa_node_by_index(vm_name, numa_node_index):
+    """
+    Get vm numa node by index
+
+    :param vm_name: name of vm
+    :type vm_name: str
+    :param numa_node_index: index of vm numa node
+    :type numa_node_index: int
+    :returns: vm numa node with specific index or None
+    :rtype: instance of VirtualNumaNode or None
+    """
+    numa_nodes = get_vm_numa_nodes(vm_name)
+    for numa_node in numa_nodes:
+        if numa_node.index == numa_node_index:
+            return numa_node
+    return None
+
+
+def __prepare_numa_node_object(
+    host_name, **kwargs
+):
+    """
+    Prepare virtual numa node obj
+
+    :param host_name: host, where to pin virtual numa node
+    :type host_name: str
+    :param index: index of virtual numa node
+    :type index: int
+    :param memory: amount of memory to attach to numa node(MB)
+    :type memory: int
+    :param cores: list of cores to attach to numa node
+    :type cores: list
+    :param pin_list: list of host numa nodes to pin virtual numa node
+    :type pin_list: list
+    :returns: VirtualNumaNode object
+    :rtype: VirtualNumaNode instance
+    """
+    cores = kwargs.pop("cores", None)
+    pin_list = kwargs.pop("pin_list", None)
+    v_numa_node_obj = ll_general.prepare_ds_object("VirtualNumaNode", **kwargs)
+
+    if pin_list:
+        numa_node_pins_obj = data_st.NumaNodePins()
+        for h_numa_node_index in pin_list:
+            import hosts
+            h_numa_node_obj = hosts.get_numa_node_by_index(
+                host_name, h_numa_node_index
+            )
+            if not h_numa_node_obj:
+                logger.error(
+                    "Numa node with index %d not found on host %s",
+                    h_numa_node_index, host_name
+                )
+                return None
+            numa_node_pin_obj = data_st.NumaNodePin(
+                pinned=True,
+                index=h_numa_node_index,
+                host_numa_node=h_numa_node_obj
+            )
+            numa_node_pins_obj.add_numa_node_pin(numa_node_pin_obj)
+        v_numa_node_obj.set_numa_node_pins(numa_node_pins_obj)
+
+    if cores:
+        cpu_obj = data_st.CPU()
+        cores_obj = data_st.Cores()
+        for core in cores:
+            core_obj = data_st.Core(index=core)
+            cores_obj.add_core(core_obj)
+        cpu_obj.set_cores(cores_obj)
+        v_numa_node_obj.set_cpu(cpu_obj)
+
+    return v_numa_node_obj
+
+
+def add_numa_node_to_vm(
+    vm_name, host_name, index, memory, **kwargs
+):
+    """
+    Add numa node to vm
+
+    :param vm_name: vm, where to create new numa node
+    :type vm_name: str
+    :param host_name: host, where to pin virtual numa node
+    :type host_name: str
+    :param index: index of virtual numa node
+    :type index: int
+    :param memory: amount of memory to attach to numa node(MB)
+    :type memory: int
+    :param cores: list of cores to attach to numa node
+    :type cores: list
+    :param pin_list: list of host numa nodes to pin virtual numa node
+    :type pin_list: list
+    :returns: True, if action success, otherwise False
+    :rtype: bool
+    """
+    try:
+        numa_node_obj = __prepare_numa_node_object(
+            host_name=host_name, index=index, memory=memory, **kwargs
+        )
+    except exceptions.HostException as ex:
+        logger.error("Failed to create virtual numa node object, err: %s", ex)
+        return False
+    vm_obj = get_vm_obj(vm_name)
+    numa_nodes_link = VM_API.getElemFromLink(
+        elm=vm_obj, link_name=NUMA_NODE_LINK, get_href=True
+    )
+    return NUMA_NODE_API.create(
+        entity=numa_node_obj, positive=True, collection=numa_nodes_link
+    )[1]
+
+
+def update_numa_node_on_vm(
+    vm_name, host_name, old_index, **kwargs
+):
+    """
+    Update vm numa node
+
+    :param vm_name: vm, where to update numa node
+    :type vm_name: str
+    :param host_name: host, where to pin virtual numa node
+    :type host_name: str
+    :param old_index: index of vm numa node to update
+    :type old_index: int
+    :param new_index: new index of virtual numa node
+    :type new_index: int
+    :param memory: amount of memory to attach to numa node(MB)
+    :type memory: int
+    :param cores: list of cores to attach to numa node
+    :type cores: list
+    :param pin_list: list of host numa nodes to pin virtual numa node
+    :type pin_list: list
+    :returns: True, if action success, otherwise False
+    :rtype: bool
+    """
+    old_numa_node_obj = get_vm_numa_node_by_index(vm_name, old_index)
+    if not old_numa_node_obj:
+        logger.error(
+            "Failed to get numa node with index %d from vm %s",
+            old_index, vm_name
+        )
+        return False
+    new_numa_node_obj = __prepare_numa_node_object(
+        host_name=host_name, **kwargs
+    )
+    if not new_numa_node_obj:
+        logger.error(
+            "Failed to create virtual numa node object with parameters: %s",
+            kwargs
+        )
+        return False
+    return NUMA_NODE_API.update(
+        old_numa_node_obj, new_numa_node_obj, True
+    )[1]
+
+
+def remove_numa_node_from_vm(vm_name, numa_node_index):
+    """
+    Remove numa node from vm
+
+    :param vm_name: vm from where to remove numa node
+    :type vm_name: str
+    :param numa_node_index: index of numa node for remove
+    :type numa_node_index: int
+    :returns: True, if action success, otherwise False
+    :rtype: bool
+    """
+    numa_node_obj = get_vm_numa_node_by_index(vm_name, numa_node_index)
+    if not numa_node_obj:
+        logger.error(
+            "Failed to get numa node with index %d from vm %s",
+            numa_node_index, vm_name
+        )
+        return False
+    return NUMA_NODE_API.delete(numa_node_obj, True)
