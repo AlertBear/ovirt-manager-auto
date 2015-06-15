@@ -5,7 +5,6 @@ MultiHost will be tested for untagged, tagged, MTU, VM/non-VM and bond
 scenarios.
 """
 
-import time
 import logging
 from art.unittest_lib import attr
 from art.test_handler.tools import polarion  # pylint: disable=E0611
@@ -21,8 +20,7 @@ from art.rhevm_api.tests_lib.low_level.networks import(
     updateNetwork, checkVlanNet, isVmHostNetwork
 )
 from art.rhevm_api.tests_lib.low_level.hosts import(
-    sendSNRequest, deactivateHost, updateHost, activateHost, attachHostNic,
-    detachHostNic
+    sendSNRequest, deactivateHost, updateHost, activateHost
 )
 from art.rhevm_api.tests_lib.low_level.vms import addNic, removeNic, updateNic
 from art.rhevm_api.tests_lib.low_level.templates import(
@@ -31,10 +29,6 @@ from art.rhevm_api.tests_lib.low_level.templates import(
 from art.rhevm_api.tests_lib.low_level.clusters import (
     addCluster, removeCluster
 )
-from art.rhevm_api.tests_lib.low_level.datacenters import (
-    addDataCenter, removeDataCenter
-)
-
 
 logger = logging.getLogger("MultiHost_Cases")
 HOST1_NICS, HOST2_NICS = None, None  # filled in setup module
@@ -350,6 +344,7 @@ class TestMultiHostCase03(TestMultiHostTestCaseBase):
     Update non-VM network to be VM network
     """
     __test__ = True
+    bz = {"1237032": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -1624,6 +1619,7 @@ class TestMultiHostCase11(TestMultiHostTestCaseBase):
     the Host bond
     """
     __test__ = True
+    bz = {"1237032": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -1717,352 +1713,4 @@ class TestMultiHostCase11(TestMultiHostTestCaseBase):
             raise NetworkException(
                 "Network on host %s was not updated to be VM network" %
                 config.HOSTS[0]
-            )
-
-
-@attr(tier=1)
-class TestMultiHostCase12(TestMultiHostTestCaseBase):
-    """
-    1)Check that for unsupported DC version multiHost feature is not
-    working
-    """
-    __test__ = True
-    UNCOMP_DC_NAME = "MultiHost_DC30"
-    UNCOMP_CL_NAME = "MultiHost_CL31"
-
-    @classmethod
-    def setup_class(cls):
-        """
-        1) Create a new DC with 3.0 version
-        2) Create a Cluster with 3.1 version
-        3) Move the Host from the original DC to the newly created DC and
-        Cluster
-        4) Create a VM network on DC/Cluster and Host
-        """
-
-        logger.info("Create new DC with version 3.0 in the setup ")
-        if not addDataCenter(
-            positive=True, name=cls.UNCOMP_DC_NAME,
-            storage_type=config.STORAGE_TYPE, version=config.VERSION[0],
-            local=False
-        ):
-            raise NetworkException(
-                "Couldn't add a new DC with %s version to the setup" %
-                config.VERSION[0]
-            )
-
-        logger.info(
-            "Create new Cluster with version %s in the setup ",
-            config.VERSION[1]
-        )
-        if not addCluster(
-            positive=True, name=cls.UNCOMP_CL_NAME, cpu=config.CPU_NAME,
-            version=config.VERSION[1], data_center=cls.UNCOMP_DC_NAME
-        ):
-            raise NetworkException(
-                "Couldn't add a new Cluster with %s version to the setup" %
-                config.VERSION[1]
-            )
-
-        logger.info(
-            "Deactivate host, move it to the new DC %s and reactivate it",
-            cls.UNCOMP_DC_NAME
-        )
-        if not deactivateHost(True, host=config.HOSTS[0]):
-            raise NetworkException(
-                "Cannot deactivate host %s" % config.HOSTS[0]
-            )
-        if not updateHost(
-            True, host=config.HOSTS[0], cluster=cls.UNCOMP_CL_NAME
-        ):
-            raise NetworkException(
-                "Cannot move host %s to Cluster %s" %
-                (config.HOSTS[0], cls.UNCOMP_CL_NAME)
-            )
-        if not activateHost(True, host=config.HOSTS[0]):
-            raise NetworkException(
-                "Cannot activate host %s" % config.HOSTS[0]
-            )
-
-        local_dict = {
-            config.NETWORKS[0]: {"nic": 1, "required": "false"}
-        }
-        logger.info(
-            "Attach network %s to DC and Cluster and Host for Cluster version"
-            " %s", config.NETWORKS[0], config.VERSION[1]
-        )
-        if not createAndAttachNetworkSN(
-            data_center=cls.UNCOMP_DC_NAME, cluster=cls.UNCOMP_CL_NAME,
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
-        ):
-            raise NetworkException(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
-
-    @polarion("RHEVM3-4075")
-    def test_move_host_unsupported_dc(self):
-        """
-        1) Update the network with VLAN
-        2) Make sure the change for the logical network is not projected to
-        the Host
-        """
-
-        logger.info("Update network with VLAN %s", config.VLAN_ID[1])
-        if not updateNetwork(
-            True, network=config.NETWORKS[0],
-            data_center=self.UNCOMP_DC_NAME, vlan_id=config.VLAN_ID[1]
-        ):
-            raise NetworkException(
-                "Cannot update network to be tagged with VLAN %s" %
-                config.VLAN_ID[1]
-            )
-
-        logger.info("Check that the change is not reflected to Host")
-        time.sleep(10)
-        if checkVlanNet(
-            host=config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, interface=HOST1_NICS[1],
-            vlan=config.VLAN_ID[1]
-        ):
-            raise NetworkException(
-                "Host %s was updated with VLAN %s, but shouldn't" %
-                (config.HOSTS[0], config.VLAN_ID[1])
-            )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        1) Remove network from setup
-        2) Move the Host to the original DC and Cluster
-        3)Remove created DCs and Clusters from the setup.
-        """
-
-        logger.info(
-            "Deactivate host, remove network %s from Host %s",
-            config.NETWORKS[0], config.HOSTS[0])
-        if not deactivateHost(True, host=config.HOSTS[0]):
-            logger.error(
-                "Cannot deactivate Host %s", config.HOSTS[0]
-            )
-
-        if not detachHostNic(
-            True, config.HOSTS[0], HOST1_NICS[1], config.NETWORKS[0]
-        ):
-            logger.error(
-                "Cannot remove network %s from Host %s",
-                config.NETWORKS[0], config.HOSTS[0]
-            )
-
-        logger.info(
-            "Move Host %s back to the original cluster %s and reactivate it",
-            config.HOSTS[0], config.CLUSTER_NAME[0]
-        )
-        if not updateHost(
-            True, host=config.HOSTS[0], cluster=config.CLUSTER_NAME[0]
-        ):
-            logger.error(
-                "Cannot move host %s to the original cluster",
-                config.HOSTS[0])
-
-        if not activateHost(True, host=config.HOSTS[0]):
-            logger.error(
-                "Cannot activate host %s in cluster %s",
-                config.HOSTS[0], config.CLUSTER_NAME[0])
-
-        logger.info("Removing the DC %s with 3.0 version", cls.UNCOMP_DC_NAME)
-        if not removeDataCenter(positive=True, datacenter=cls.UNCOMP_DC_NAME):
-            logger.error(
-                "Failed to remove datacenter %s ", cls.UNCOMP_DC_NAME
-            )
-
-        logger.info(
-            "Removing the Cluster %s with %s version",
-            cls.UNCOMP_CL_NAME, config.VERSION[1])
-        if not removeCluster(positive=True, cluster=cls.UNCOMP_CL_NAME):
-            logger.error(
-                "Failed to remove cluster %s with %s version",
-                cls.UNCOMP_CL_NAME, config.VERSION[1]
-            )
-
-
-@attr(tier=1)
-class TestMultiHostCase13(TestMultiHostTestCaseBase):
-    """
-    1)Check that for unsupported Cluster version multiHost feature is not
-    working
-    """
-    __test__ = True
-    UNCOMP_DC_NAME = "MultiHost_DC30"
-    UNCOMP_CL_NAME = "MultiHost_CL30"
-    uncomp_cpu = "Intel Conroe Family"
-
-    @classmethod
-    def setup_class(cls):
-        """
-        1) Create a new DC with 3.0 version
-        2) Create a Cluster with 3.0 version
-        3) Move the Host from the original DC to the newly created DC and
-        Cluster 3.0
-        4) Create a VM VLAN network on DC/Cluster and Host
-        """
-
-        logger.info("Create new DC with version 3.0 in the setup ")
-        if not addDataCenter(
-            positive=True, name=cls.UNCOMP_DC_NAME,
-            storage_type=config.STORAGE_TYPE, version=config.VERSION[0],
-            local=False
-        ):
-            raise NetworkException(
-                "Couldn't add a new DC with %s version to the setup" %
-                config.VERSION[0]
-            )
-
-        logger.info(
-            "Create new Cluster with version %s in the setup ",
-            config.VERSION[0]
-        )
-        if not addCluster(
-            positive=True, name=cls.UNCOMP_CL_NAME, cpu=cls.uncomp_cpu,
-            version=config.VERSION[0], data_center=cls.UNCOMP_DC_NAME,
-        ):
-            raise NetworkException(
-                "Couldn't add a new Cluster with %s version to the setup" %
-                config.VERSION[0]
-            )
-
-        logger.info(
-            "Deactivate host %s, move it to the new DC %s and reactivate it",
-            config.HOSTS[0], cls.UNCOMP_DC_NAME
-        )
-        if not deactivateHost(True, host=config.HOSTS[0]):
-            raise NetworkException(
-                "Cannot deactivate host %s" % config.HOSTS[0]
-            )
-        if not updateHost(
-            True, host=config.HOSTS[0], cluster=cls.UNCOMP_CL_NAME
-        ):
-            raise NetworkException(
-                "Cannot move host %s to Cluster %s" %
-                (config.HOSTS[0], cls.UNCOMP_CL_NAME)
-            )
-        if not activateHost(True, host=config.HOSTS[0]):
-            raise NetworkException(
-                "Cannot activate host %s" % config.HOSTS[0]
-            )
-
-        local_dict = {
-            config.VLAN_NETWORKS[0]: {
-                "nic": 1, "vlan_id": config.VLAN_ID[0], "required": "false"
-            }
-        }
-        logger.info(
-            "Attach network %s to DC and Cluster for Cluster version %s",
-            config.VLAN_NETWORKS[0], config.VERSION[0]
-        )
-        if not createAndAttachNetworkSN(
-            data_center=cls.UNCOMP_DC_NAME, cluster=cls.UNCOMP_CL_NAME,
-            network_dict=local_dict
-        ):
-            raise NetworkException(
-                "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
-            )
-
-        logger.info(
-            "Adding network %s to NIC %s", config.VLAN_NETWORKS[0],
-            HOST1_NICS[1]
-        )
-        if not attachHostNic(
-            True, config.HOSTS[0], HOST1_NICS[1], config.VLAN_NETWORKS[0]
-        ):
-            raise NetworkException(
-                "Cannot add network %s to Host NIC %s" %
-                (config.VLAN_NETWORKS[0], HOST1_NICS[1])
-            )
-
-    @polarion("RHEVM3-4076")
-    def test_move_host_unsupported_cl(self):
-        """
-        1) Update the network with another VLAN
-        2) Make sure the change for the logical network is not projected to
-        the Host
-        """
-
-        logger.info("Update network with VLAN %s", config.VLAN_ID[1])
-        if not updateNetwork(
-            True, network=config.VLAN_NETWORKS[0],
-            data_center=self.UNCOMP_DC_NAME, vlan_id=config.VLAN_ID[1]
-        ):
-            raise NetworkException(
-                "Cannot update network to be tagged with VLAN %s" %
-                config.VLAN_ID[1]
-            )
-
-        logger.info("Check that the change is not reflected to Host")
-        time.sleep(10)
-        if checkVlanNet(
-            host=config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, interface=HOST1_NICS[1],
-            vlan=config.VLAN_ID[1]
-        ):
-            raise NetworkException(
-                "Host %s was updated with VLAN %s, but shouldn't" %
-                (config.HOSTS[0], config.VLAN_ID[1])
-            )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        1) Remove network from setup
-        2) Move the Host to the original DC and Cluster
-        3)Remove created DCs and Clusters from the setup.
-        """
-
-        logger.info(
-            "Deactivate host %s, remove network %s from Host %s",
-            config.HOSTS[0], config.VLAN_NETWORKS[0], config.HOSTS[0]
-        )
-        if not deactivateHost(True, host=config.HOSTS[0]):
-            logger.error(
-                "Cannot deactivate host %s", config.HOSTS[0]
-            )
-        if not detachHostNic(
-            True, config.HOSTS[0],
-            ".".join([HOST1_NICS[1], config.VLAN_ID[0]]),
-            config.VLAN_NETWORKS[0]
-        ):
-            logger.error("Cannot remove network from Host %s", config.HOSTS[0])
-
-        logger.info(
-            "Move Host %s back to the original Cluster %s and reactivate it",
-            config.HOSTS[0], config.CLUSTER_NAME[0]
-        )
-        if not updateHost(
-            True, host=config.HOSTS[0], cluster=config.CLUSTER_NAME[0]
-        ):
-            logger.error(
-                "Cannot move host %s to the original Cluster %s",
-                config.HOSTS[0], config.CLUSTER_NAME[0]
-            )
-
-        if not activateHost(True, host=config.HOSTS[0]):
-            logger.error(
-                "Cannot activate host %s", config.HOSTS[0]
-            )
-
-        logger.info("Removing the DC %s with 3.0 version", cls.UNCOMP_DC_NAME)
-        if not removeDataCenter(
-            positive=True, datacenter=cls.UNCOMP_DC_NAME
-        ):
-            logger.error(
-                "Failed to remove datacenter %s ", cls.UNCOMP_DC_NAME
-            )
-
-        logger.info(
-            "Removing the Cluster with %s version", config.VERSION[0]
-        )
-        if not removeCluster(
-            positive=True, cluster=cls.UNCOMP_CL_NAME
-        ):
-            logger.error(
-                "Failed to remove cluster with %s version", config.VERSION[0]
             )
