@@ -89,15 +89,16 @@ def setup_module():
             config.LIFECYCLE_LUN_TARGET = config.LUN_TARGET
             config.PARAMETERS['lun'] = luns
         elif config.STORAGE_TYPE == config.STORAGE_TYPE_GLUSTER:
-            config.LIFECYCLE_ADDRESS = config.GLUSTER_ADDRESS
-            config.LIFECYCLE_PATH = config.GLUSTER_PATH
+            config.GLUSTER_LIFECYCLE_ADDRESS = config.GLUSTER_ADDRESS
+            config.GLUSTER_LIFECYCLE_PATH = config.GLUSTER_PATH
             config.PARAMETERS['gluster_data_domain_path'] = domain_path
     else:
         config.LIFECYCLE_ADDRESS = config.UNUSED_DATA_DOMAIN_ADDRESSES
         config.LIFECYCLE_PATH = config.UNUSED_DATA_DOMAIN_PATHS
-        config.LIFECYCLE_GLUSTER_ADDRESS = \
+        config.GLUSTER_LIFECYCLE_ADDRESS = \
             config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES
-        config.LIFECYCLE_GLUSTER_PATH = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS
+        config.GLUSTER_LIFECYCLE_PATH = \
+            config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS
         config.LIFECYCLE_LUNS = config.UNUSED_LUNS
         config.LIFECYCLE_LUN_ADDRESS = config.UNUSED_LUN_ADDRESSES
         config.LIFECYCLE_LUN_TARGET = config.UNUSED_LUN_TARGETS
@@ -200,6 +201,7 @@ def _create_sds(storage_type, host):
         elif storage_type == config.STORAGE_TYPE_GLUSTER:
             sd_args['address'] = config.GLUSTER_LIFECYCLE_ADDRESS[index]
             sd_args['path'] = config.GLUSTER_LIFECYCLE_PATH[index]
+            sd_args['vfs_type'] = config.ENUMS['vfs_type_glusterfs']
 
         logger.info('Creating storage domain with parameters: %s', sd_args)
         status = ll_st_domains.addStorageDomain(True, **sd_args) and status
@@ -404,7 +406,6 @@ class TestCase147888(TestCase):
     https://tcms.engineering.redhat.com/case/147888/
     """
     __test__ = (NFS in opts['storages'])
-
     storages = set([NFS])
 
     tcms_plan_id = '5849'
@@ -589,7 +590,7 @@ class TestCase174631(TestCase):
         Removes disks, vm and SDs
         """
         logger.info('Removing vm %s', config.LIFECYCLE_VM)
-        if not vms.removeVm(True, config.LIFECYCLE_VM, wait=True):
+        if not vms.safely_remove_vms([config.LIFECYCLE_VM]):
             raise exceptions.VMException(
                 "Failed to remove vm %s" % config.LIFECYCLE_VM)
 
@@ -732,7 +733,8 @@ class TestUpgrade(TestCase):
         # use the additional storage device for their own domain
         for i in range(len(config.PARAMETERS.as_list(cls.domain_kw)) - 1):
             assert ll_st_domains.removeStorageDomain(
-                True, cls.sd_name_pattern % i, cls.host)
+                True, cls.sd_name_pattern % i, cls.host, 'true'
+            )
             LOGGER.info("%s storage domain %s was removed successfully",
                         cls.storage_type, cls.sd_name_pattern % i)
         put_host_to_cluster(cls.host, config.TMP_CLUSTER_NAME)
@@ -915,6 +917,10 @@ TYPE_TO_CLASS = {
 
 storage_v3_format = config.ENUMS['storage_format_version_v3']
 for storage_type in config.STORAGE_SELECTOR:
+    logger.debug("Generating TestUpgrade for storage type %s", storage_type)
+    if storage_type == config.STORAGE_TYPE_GLUSTER:
+        # TODO: Implement TestUpgradeGluster (3.3 and up)
+        continue
     for dc_version in config.DC_VERSIONS:
         dc_version_name = dc_version.replace('.', '')
         for dc_upgrade_version in config.DC_UPGRADE_VERSIONS:
@@ -943,7 +949,8 @@ for storage_type in config.STORAGE_SELECTOR:
                 'dc_version': dc_version,
                 'dc_upgraded_version': dc_upgrade_version,
                 'storage_format': storage_format,
-                'upgraded_storage_format': storage_v3_format
+                'upgraded_storage_format': storage_v3_format,
+                'storages': set([storage_type]),
             }
             new_class = type(class_name, (TYPE_TO_CLASS[storage_type],),
                              class_attrs)
