@@ -18,7 +18,7 @@ logger = logging.getLogger("MAC_Pool_Range_Per_DC_Helper")
 
 
 def create_mac_pool(
-    mac_pool_name=c.MAC_POOL_NAME[0], mac_pool_ranges=list(), positive=True
+    mac_pool_name=c.MAC_POOL_NAME_0, mac_pool_ranges=list(), positive=True
 ):
     """
     Create MAC pool with MAC pool range
@@ -47,7 +47,7 @@ def create_mac_pool(
 
 
 def update_dc_with_mac_pool(
-    dc=c.DC_NAME[0], mac_pool_name=c.MAC_POOL_NAME[0], teardown=False
+    dc=c.DC_NAME[0], mac_pool_name=c.MAC_POOL_NAME_0, teardown=False
 ):
     """
     Update DC with MAC pool
@@ -75,7 +75,7 @@ def update_dc_with_mac_pool(
         )
 
 
-def remove_mac_pool(mac_pool_name=c.MAC_POOL_NAME[0]):
+def remove_mac_pool(mac_pool_name=c.MAC_POOL_NAME_0):
     """
     Remove MAC pool
 
@@ -91,7 +91,7 @@ def remove_mac_pool(mac_pool_name=c.MAC_POOL_NAME[0]):
 
 
 def update_mac_pool_range_size(
-    mac_pool_name=c.MAC_POOL_NAME[0], extend=True, size=(1, 1)
+    mac_pool_name=c.MAC_POOL_NAME_0, extend=True, size=(1, 1)
 ):
     """
     Update MAC pool range size
@@ -120,7 +120,7 @@ def update_mac_pool_range_size(
         )
 
 
-def add_nic(positive=True, vm=c.VM_NAME[0], name=c.NIC_NAME[1], **kwargs):
+def add_nic(positive=True, vm=c.VM_NAME[0], name=c.NIC_NAME_1, **kwargs):
     """
     Add NIC to VM
 
@@ -143,7 +143,7 @@ def add_nic(positive=True, vm=c.VM_NAME[0], name=c.NIC_NAME[1], **kwargs):
         )
 
 
-def remove_nic(vm=c.VM_NAME[0], nic=c.NIC_NAME[1]):
+def remove_nic(vm=c.VM_NAME[0], nic=c.NIC_NAME_1):
     """
     Remove vNIC from VM
 
@@ -184,5 +184,5 @@ def check_single_mac_range_match(mac_ranges, start_idx, end_idx):
         else:
             raise c.NET_EXCEPTION(
                 "VNIC MAC %s is not in the MAC pool range for %s" %
-                (nic_mac, c.MAC_POOL_NAME[0])
+                (nic_mac, c.MAC_POOL_NAME_0)
             )
