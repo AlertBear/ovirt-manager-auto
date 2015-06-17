@@ -3,7 +3,6 @@ Base for setup the environment
 This creates builds the environment in the systems plus 2 VMs for disks tests
 """
 import logging
-from concurrent.futures import ThreadPoolExecutor
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import storagedomains, vms
 
@@ -27,23 +26,18 @@ def setup_module():
             config=config.PARAMETERS, storage=config.PARAMETERS,
             storage_type=config.STORAGE_TYPE)
 
-    executions = []
-    with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-        for storage_type in config.STORAGE_SELECTOR:
-            storage_domain = storagedomains.getStorageDomainNamesForType(
-                config.DATA_CENTER_NAME, storage_type)[0]
+    for storage_type in config.STORAGE_SELECTOR:
+        storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, storage_type
+        )[0]
 
-            for vm_prefix in [config.VM1_NAME, config.VM2_NAME]:
-                vm_name = vm_prefix % storage_type
-                VM_NAMES.append(vm_name)
-                executions.append(
-                    executor.submit(
-                        create_vm, **{"vm_name": vm_name,
-                                      "disk_interface": config.VIRTIO_BLK,
-                                      "storage_domain": storage_domain}))
-
-    # Ensure all threads have completed their execution
-    [execution.result() for execution in executions]
+        for vm_prefix in [config.VM1_NAME, config.VM2_NAME]:
+            vm_name = vm_prefix % storage_type
+            assert create_vm(
+                vm_name=vm_name, disk_interface=config.VIRTIO_BLK,
+                storage_domain=storage_domain
+            )
+            VM_NAMES.append(vm_name)
 
     logger.info("Stopping vms %s", VM_NAMES)
     vms.stop_vms_safely(VM_NAMES)

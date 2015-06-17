@@ -40,6 +40,7 @@ VM_DISK_SIZE = 2 * config.GB
 THIN_PROVISION = 'thin_provision'
 PREALLOCATED = 'preallocated'
 MIN_UNUSED_LUNS = 1
+DISK_CREATION_TIMEOUT = 300
 # The delta between the expected storage domain size and the actual size (
 # given that engine returns the SD total size in GB as an integer)
 SD_SIZE_DELTA = 1 * config.GB + 10 * config.MB
@@ -93,7 +94,13 @@ class BaseCase(TestCase):
                         self.expected_allocated_size)
             self.disk_names.append(disk_name)
         logger.info('Waiting for disks to be OK')
-        self.assertTrue(wait_for_disks_status(self.disk_names))
+        # Storage may take more than the default of 3 minutes to create a 7GB
+        # Raw disk, increased the timeout to 5 minutes
+        self.assertTrue(
+            wait_for_disks_status(
+                self.disk_names, timeout=DISK_CREATION_TIMEOUT
+            )
+        )
 
     @classmethod
     def setup_class(cls):

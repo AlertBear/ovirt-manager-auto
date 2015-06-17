@@ -4,7 +4,6 @@ Storage full snapshot test - ram snapshot
 import config
 import logging
 from helpers import is_pid_running_on_vm, start_cat_process_on_vm
-from concurrent.futures import ThreadPoolExecutor
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
 from art.test_handler import exceptions as errors
@@ -53,48 +52,40 @@ vmArgs = {
 
 VM_PREFIX = "vm_ram_snapshot"
 VM_NAME = VM_PREFIX + "_%s"
-VMS_NAMES = []
+VM_NAMES = []
 
 
 def setup_module():
     """
     Create vm and install OS on it, with snapshot after OS installation
     """
-
-    def create_vm_and_snapshot(**vmArgs):
-        vm_name = vmArgs['vmName']
+    for storage_type in config.STORAGE_SELECTOR:
+        storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, storage_type
+        )[0]
+        vm_name = VM_NAME % storage_type
+        args = vmArgs.copy()
+        args['storageDomainName'] = storage_domain
+        args['vmName'] = vm_name
         logger.info('Creating vm %s and installing OS on it', vm_name)
-        assert create_vm_or_clone(**vmArgs)
-        logger.info('Creating base snapshot %s for vm %s',
-                    config.BASE_SNAPSHOT, vm_name)
+        assert create_vm_or_clone(**args)
+        VM_NAMES.append(vm_name)
+        logger.info(
+            'Creating base snapshot %s for vm %s', config.BASE_SNAPSHOT,
+            vm_name
+        )
         assert addSnapshot(True, vm_name, config.BASE_SNAPSHOT)
 
-    execution = []
-    with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-        for storage_type in config.STORAGE_SELECTOR:
-            storage_domain = getStorageDomainNamesForType(
-                config.DATA_CENTER_NAME, storage_type)[0]
-
-            vm_name = VM_NAME % storage_type
-            VMS_NAMES.append(vm_name)
-
-            args = vmArgs.copy()
-            args['storageDomainName'] = storage_domain
-            args['vmName'] = vm_name
-
-            execution.append(executor.submit(create_vm_and_snapshot, **args))
-
-    [ex.result() for ex in execution]
-    logger.info('Shutting down vms %s', VMS_NAMES)
-    stop_vms_safely(VMS_NAMES)
+    logger.info('Shutting down vms %s', VM_NAMES)
+    stop_vms_safely(VM_NAMES)
 
 
 def teardown_module():
     """
     Remove created vms
     """
-    stop_vms_safely(VMS_NAMES)
-    removeVms(True, VMS_NAMES)
+    stop_vms_safely(VM_NAMES)
+    removeVms(True, VM_NAMES)
 
 
 class DCWithStoragesActive(TestCase):
