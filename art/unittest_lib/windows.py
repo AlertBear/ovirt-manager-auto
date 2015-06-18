@@ -175,6 +175,24 @@ class WindowsGuest(object):
                 return True
         return False
 
+    def get_all_products(self):
+        """
+        Description: return list of all products installed on windows machine
+        :returns: list of installed products
+        :rtype: list of str
+        """
+        return [product['Name'] for product in self.vm.getAllProducts()]
+
+    def get_all_services(self):
+        """
+        Description: return dic of all services on windows machine
+        :returns: dict of services info
+        :rtype: dict of services info
+        """
+        return dict(
+            (service['Name'], service) for service in self.vm.getAllServices()
+        )
+
     def is_product_installed(self, product):
         """
         Description: Searches for product installed on guest.

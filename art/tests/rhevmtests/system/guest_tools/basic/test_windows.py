@@ -65,6 +65,8 @@ class Windows(TestCase):
     machine = None
     diskName = None
     glance_image = None
+    products = []
+    services = []
 
     @classmethod
     def __prepare_image(self):
@@ -128,8 +130,10 @@ class Windows(TestCase):
         )
 
     def _checkProduct(self, product):
+        if not self.products:
+            self.products = self.machine.get_all_products()
         self.assertTrue(
-            self.machine.is_product_installed(product),
+            product in self.products,
             '%s was not installed' % product
         )
         LOGGER.info('%s is installed', product)
@@ -201,12 +205,14 @@ class Windows(TestCase):
         self._checkProduct('RHEV-SCSI%s' % self.platfPrefix)
 
     def _checkService(self, service):
+        if not self.services:
+            self.services = self.machine.get_all_services()
         self.assertTrue(
-            self.machine.is_service_running(service),
+            self.services[service]['State'] == 'Running',
             '%s is not running' % service
         )
         self.assertTrue(
-            self.machine.is_service_enabled(service),
+            self.services[service]['StartMode'] == 'Auto',
             '%s is not enabled' % service
         )
         LOGGER.info('Service %s is running/enabled', service)
