@@ -3,6 +3,7 @@ Test installation and uninstallation of guest agent on RHEL 7
 """
 import logging
 
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from rhevmtests.system.guest_tools.linux_guest_agent import config, common
 
 LOGGER = logging.getLogger(__name__)
@@ -14,6 +15,7 @@ class RHEL7_1x64Install(common.BaseInstallGA):
     __test__ = True
     disk_name = 'rhel7.1_x64_Disk1'
 
+    @polarion('RHEVM3-7378')
     def test_install_guest_agent(self):
         """ RHEL7_1_64b install_guest_agent """
         self.install_guest_agent()
@@ -25,6 +27,7 @@ class RHEL7_1x64Uninstall(common.BaseUninstallGA):
     disk_name = 'rhel7.1_x64_Disk1'
     package = '%s-*' % NAME
 
+    @polarion('RHEVM3-7400')
     def test_uninstall_guest_agent(self):
         """ RHEL7_1_64b uninstall_guest_agent """
         self.uninstall()
@@ -45,6 +48,7 @@ class RHEL7_1x64PostInstall(common.BasePostInstall):
         'grep', 'enabled',
     ]
 
+    @polarion('RHEVM3-7380')
     def test_post_install(self):
         """ RHEL7_1_64b rhevm-guest-agent post-install """
         self.post_install()
@@ -65,6 +69,7 @@ class RHEL7_1x64ServiceTest(common.BaseServiceTest):
     __test__ = True
     disk_name = 'rhel7.1_x64_Disk1'
 
+    @polarion('RHEVM3-7382')
     def test_service_test(self):
         """ RHEL7_1_64b rhevm-guest-agent start-stop-restart-status """
         self.service_test()
@@ -95,6 +100,7 @@ class RHEL7_1x64AgentData(common.BaseAgentData):
             ip_real = ip_real[:-2]
             self.assertTrue(ip_real in ip_list)
 
+    @polarion('RHEVM3-7384')
     def test_agent_data(self):
         """ RHEL7_1_64b rhevm-guest-agent data """
         self.agent_data()
