@@ -627,7 +627,7 @@ class TestCase295262(TestCase):
             storageconnections.remove_storage_connection(conn.id)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase288963(TestCase):
     """
     Verify the GET call works for various storage connection/storage domains
@@ -681,7 +681,7 @@ class TestCase288963(TestCase):
         assert len(conn_for_sd) == 1
         assert _compare_connections(new_conn[0], conn_for_sd[0])
         assert storagedomains.removeStorageDomain(
-            True, sd_name, config.HOST_FOR_MOUNT
+            True, sd_name, config.HOST_FOR_MOUNT, 'true',
         )
         self.storage_domains.remove(sd_name)
         new_conn = self.get_all_new_connections()
@@ -710,8 +710,8 @@ class TestCase288963(TestCase):
             config.ENUMS['storage_domain_state_active'])
         assert storagedomains.extendStorageDomain(
             True, sd_name, storage_type=config.STORAGE_TYPE_ISCSI,
-            host=config.HOST_FOR_MOUNT, lun=config.CONNECTIONS[1]['luns'][1],
-            **(config.CONNECTIONS[1])
+            host=config.HOST_FOR_MOUNT, override_luns=True,
+            lun=config.CONNECTIONS[1]['luns'][1], **(config.CONNECTIONS[1])
         )
 
         new_conn = self.get_all_new_connections()
@@ -747,11 +747,11 @@ class TestCase288963(TestCase):
         assert len(conn_sd_1) == len(conn_sd_2)
         assert _compare_connections(conn_sd_1[0], conn_sd_2[0])
         storagedomains.removeStorageDomain(
-            True, sd_name_1, config.HOST_FOR_MOUNT
+            True, sd_name_1, config.HOST_FOR_MOUNT, 'true',
         )
         self.storage_domains.remove(sd_name_1)
         storagedomains.removeStorageDomain(
-            True, sd_name_2, config.HOST_FOR_MOUNT
+            True, sd_name_2, config.HOST_FOR_MOUNT, 'true',
         )
         self.storage_domains.remove(sd_name_2)
         new_conn = self.get_all_new_connections()
@@ -799,7 +799,7 @@ class TestCase288963(TestCase):
         _logout_from_all_iscsi_targets()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase288975(TestCase):
     """
     https://tcms.engineering.redhat.com/case/288975/?from_plan=9985
