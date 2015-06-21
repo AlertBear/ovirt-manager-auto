@@ -85,6 +85,11 @@ FAKE_ISSUES = {
         summary="Skip for CLI",
         components=['oVirt-API-CLI'],
     ),
+    'ISSUE-8': FakeIssue(
+        'ISSUE-8',
+        summary="Skip for NFS storage",
+        components=['oVirt-Storage-NFS'],
+    ),
 }
 
 

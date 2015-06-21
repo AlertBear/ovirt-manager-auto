@@ -67,11 +67,14 @@ PATH_TO_ISSUEDB = 'path_to_issuedb'
 JIRA_URL = 'url'
 JIRA_USER = 'user'
 JIRA_PASSWORD = 'password'
-API_MAP = {
+COMPONENT_MAP = {
     'oVirt-API-REST': 'rest',
     'oVirt-API-PythonSDK': 'sdk',
     'oVirt-API-JavaSDK': 'java',
     'oVirt-API-CLI': 'cli',
+    'oVirt-Storage-iSCSI': 'iscsi',
+    'oVirt-Storage-Glusterfs': 'glusterfs',
+    'oVirt-Storage-NFS': 'nfs',
 }
 
 
@@ -189,11 +192,16 @@ class Jira(Component):
                 resolved,
             )
             engine_api = opts['engine']
+            storage_type = opts['storage_type']
             if not resolved:
                 # Ticket is open
+                affects_api_or_storage = (
+                    self._is_affected(engine_api, ticket) or
+                    self._is_affected(storage_type, ticket)
+                )
                 if (
                     self._affects_version(ticket) and
-                    self._is_api_affected(engine_api, ticket)
+                    affects_api_or_storage
                 ):
                     # Skip when it affects version and component
                     raise JiraSkipTest(id_, self.site)
@@ -209,18 +217,22 @@ class Jira(Component):
                 # NOTE: (lbednar) I think that there is no reason to check
                 # component in this case
 
-    def _is_api_affected(self, engine_api, ticket):
+    def _is_affected(self, component, ticket):
+
         components = [
-            API_MAP[c.name]
-            for c in ticket.fields.components if c.name in API_MAP
+            COMPONENT_MAP[c.name]
+            for c in ticket.fields.components if c.name in COMPONENT_MAP
         ]
+
         if not components:
             logger.info("  No component specified in ticket, considering all.")
             return True
-        if engine_api in components:
-            logger.info("  It affects your specific API: %s", engine_api)
+        if component in components and component is not None:
+            logger.info("It affects specific component: %s", component)
             return True
-        logger.info("  It doesn't affect your APIs: %s", engine_api)
+
+        logger.info("%s is not specified in ticket", component)
+
         return False
 
     def _affects_version(self, ticket):

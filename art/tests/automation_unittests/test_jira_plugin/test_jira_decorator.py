@@ -1,6 +1,5 @@
 import logging
 
-from art.test_handler.settings import opts
 from art.test_handler.tools import jira  # pylint: disable=E0611
 
 from art.unittest_lib import BaseTestCase as TestCase
@@ -13,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class TestCaseJiraPlugin(TestCase):
 
-    __test__ = False
+    __test__ = True
     version = None
     b_version = None
     engine = None
@@ -24,21 +23,18 @@ class TestCaseJiraPlugin(TestCase):
         pl = get_plugin("Jira")
         cls.b_version = pl.version
         pl._set_version(cls.version)
-        cls.b_engine = opts['engine']
-        opts['engine'] = cls.engine
 
     @classmethod
     def teardown_class(cls):
         pl = get_plugin("Jira")
         pl.version = cls.b_version
-        opts['engine'] = cls.b_engine
 
 
 class Test34SpecificCase(TestCaseJiraPlugin):
 
     __test__ = True
     version = "3.4"
-    engine = 'rest'
+    apis = set(['rest'])
 
     @jira({'ISSUE-1': None})
     def test_01(self):
@@ -69,7 +65,7 @@ class Test35SpecificCase(TestCaseJiraPlugin):
 
     __test__ = True
     version = "3.5"
-    engine = 'sdk'
+    apis = set(['sdk'])
 
     @jira({'ISSUE-3': None})
     def test_01(self):
@@ -92,7 +88,7 @@ class Test34SDKSpecificCase(TestCaseJiraPlugin):
 
     __test__ = True
     version = "3.4"
-    engine = 'sdk'
+    apis = set(['sdk'])
 
     @jira({'ISSUE-6': None})
     def test_01(self):
@@ -103,16 +99,31 @@ class Test34CLISpecificCase(TestCaseJiraPlugin):
 
     __test__ = True
     version = "3.4"
-    engine = 'cli'
+    apis = set(['cli'])
 
     @jira({'ISSUE-7': None})
     def test_01(self):
         raise Exception('Should not run, becuase it is CLI')
 
 
+class TestNFSSpecificCase(TestCaseJiraPlugin):
+
+    __test__ = True
+    version = "3.4"
+    storages = set(['iscsi', 'nfs', 'glusterfs'])
+
+    @jira({'ISSUE-8': None})
+    def test_01(self):
+        if self.storage == 'nfs':
+            raise Exception('Should not run, becuase it is NFS')
+        logging.info("Passing test case if not NFS")
+
+
 class VerifyResults(VerifyUnittestResults):
 
     __test__ = True
 
+    apis = set(['rest'])
+
     def test_verify(self):
-        self.assert_expected_results(6, 0, 6, 0)
+        self.assert_expected_results(14, 0, 10, 0)

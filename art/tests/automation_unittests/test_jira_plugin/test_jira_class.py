@@ -44,9 +44,42 @@ class TestJiraPluginRunWholeClass(TestCase):
         logger.info("Verify all TestCase class is executed 2")
 
 
+class TestJiraPluginSkipClassWhenNFS(TestCase):
+    """
+    This classs and all its testcases should be skipped
+    """
+    __test__ = True
+    jira = {'ISSUE-8': None}
+
+    storages = set(['glusterfs', 'nfs', 'iscsi'])
+
+    def setUp(self):
+        if self.storage == 'nfs':
+            raise Exception("Setup should not run")
+        logging.info("Passing test case if not NFS")
+
+    @classmethod
+    def setupClass(cls):
+        if cls.storage == 'nfs':
+            raise Exception("Setup should not run")
+        logging.info("Passing test case if not NFS")
+
+    def test_01(self):
+        if self.storage == 'nfs':
+            raise Exception("Setup should not run")
+        logging.info("Passing test case if not NFS")
+
+    def test_02(self):
+        if self.storage == 'nfs':
+            raise Exception("Setup should not run")
+        logging.info("Passing test case if not NFS")
+
+
 class VerifyResults(VerifyUnittestResults):
 
     __test__ = True
 
+    apis = set(['rest'])
+
     def test_verify(self):
-        self.assert_expected_results(2, 0, 2, 0)
+        self.assert_expected_results(24, 0, 16, 0)
