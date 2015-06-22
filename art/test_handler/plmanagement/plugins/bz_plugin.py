@@ -56,6 +56,8 @@ Issues DB syntax
 
 import re
 import copy
+import time
+from requests import ConnectionError
 from functools import wraps
 
 from art.test_handler.exceptions import SkipTest
@@ -133,6 +135,29 @@ BZ_ID = 'bz'
 
 URL_RE = re.compile("^(https?://[^/]+)")
 
+ATTEMPTS = 3
+SLEEP_TIME = 30
+
+
+def dec_polling(attempts, sleep_time):
+    def inner_wrapper(func):
+        @wraps(func)
+        def try_it_multiple_times(*args, **kwargs):
+            for attempt in xrange(1, attempts + 1):
+                try:
+                    return func(*args, **kwargs)
+                except ConnectionError as ex:
+                    logger.warn(
+                        "Failed to connect to BZ server, remaining "
+                        "attempts(%d/%d): %s", attempt, attempts, ex,
+                    )
+                    if attempt != attempts:
+                        time.sleep(sleep_time)
+                    else:
+                        raise
+        return try_it_multiple_times
+    return inner_wrapper
+
 
 def bz(bug_dict):
     """
@@ -148,17 +173,14 @@ def bz(bug_dict):
     * returns: function object
     """
     def real_bz(func):
-
         def check_should_skip(bz_id, engine=None, version=None, storage=None):
             plmanager = initPlmanager()
             BZ_PLUGIN = [pl for pl in plmanager.application_liteners
                          if pl.name == "Bugzilla"][0]
             try:
                 BZ_PLUGIN.should_be_skipped(bz_id, engine, version, storage)
-            except BugzillaSkipTest:
-                logger.warn("Skipping test because BZ%s for "
-                            "engine %s, version %s",
-                            bz_id, opts['engine'], version)
+            except SkipTest as ex:
+                logger.warn(str(ex))
                 raise
 
         @wraps(func)
@@ -200,13 +222,34 @@ def transform_ovirt_comp(comp):
 
 
 class BugzillaSkipTest(SkipTest):
-    def __init__(self, bz_id, site):
+    def __init__(
+        self, bz_id, site, version, engine
+    ):
         super(BugzillaSkipTest, self).__init__()
         self.bz = bz_id
         self.site = site
+        self.engine = engine
+        self.version = version
 
     def __str__(self):
-        msg = "Known issue %s/show_bug.cgi?id=%s" % (self.site, self.bz)
+        msg = (
+            "Skipping test case due to: known issue %s/show_bug.cgi?id=%s\n"
+            "for version: %s, engine: %s"
+            % (self.site, self.bz, self.version, self.engine)
+        )
+        return msg
+
+
+class BugzillaConnectivityErrorSkipTest(SkipTest):
+    def __init__(self, site):
+        super(BugzillaConnectivityErrorSkipTest, self).__init__()
+        self.site = site
+
+    def __str__(self):
+        msg = (
+            "Skipping test case due to problem with connecting to bugzilla "
+            "server %s" % self.site
+        )
         return msg
 
 
@@ -257,6 +300,7 @@ class Bugzilla(Component):
     name = "Bugzilla"
     enabled = True
     depends_on = []
+    query_sleep_time = 5
 
     def __init__(self):
         super(Bugzilla, self).__init__()
@@ -280,6 +324,14 @@ class Bugzilla(Component):
         group.add_argument('--bz-host', action="store", dest='bz_host',
                            help="url address for bugzilla")
 
+    @dec_polling(attempts=ATTEMPTS, sleep_time=SLEEP_TIME)
+    def _login(self):
+        self.bugzilla.login(self.user, self.passwd)
+
+    @dec_polling(attempts=ATTEMPTS, sleep_time=query_sleep_time)
+    def _query(self, q):
+        return self.bugzilla.query(q)
+
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
             return
@@ -289,7 +341,7 @@ class Bugzilla(Component):
         self.user = params.bz_user or bz_cfg.get('user')
         self.passwd = params.bz_pass or bz_cfg.get('password')
         self.bugzilla = bugzilla.Bugzilla44(url=self.url)
-        self.bugzilla.login(self.user, self.passwd)
+        self._login()
 
         self.const_list = bz_cfg.get('constant_list', "Closed,Verified")
         self.const_list = self.const_list.upper().replace(',', ' ').split()
@@ -342,7 +394,10 @@ class Bugzilla(Component):
         bz_id = str(bz_id)
         if bz_id not in self.cache:
             q = {'bug_id': bz_id}
-            bug = self.bugzilla.query(q)
+            try:
+                bug = self._query(q)
+            except ConnectionError:
+                raise BugzillaConnectivityErrorSkipTest(self.url)
             if not bug:
                 raise BugNotFound(bz_id)
             bug = bug[0]
@@ -410,7 +465,8 @@ class Bugzilla(Component):
                 return
 
         # check if the bz is open for the current engine
-        engine_in = engines is None or opts['engine'] in engines
+        engine = opts.get('engine')
+        engine_in = engines is None or engine in engines
         storage_in = storages is None or opts['storage_type'] in storages
 
         if versions is None:
@@ -431,13 +487,18 @@ class Bugzilla(Component):
                     "skipping due to in_state=%s, engine_in=%s, storage_in=%s",
                     self.is_state_by_bug(bz), engine_in, storage_in
                 )
-                raise BugzillaSkipTest(bz_id, self.url)
+                raise BugzillaSkipTest(
+                    bz_id, self.url, version, engine
+                )
 
             # if the bug is closed or verified on current release resolution,
             # but was fixed in later version
             if bz.bug_status in ('CLOSED', 'VERIFIED'):
                 if self.__check_fixed_at(bz) and engine_in and storage_in:
-                    raise BugzillaSkipTest(bz_id, self.url)
+                    logger.info("skipping due to closed or verified")
+                    raise BugzillaSkipTest(
+                        bz_id, self.url, version, engine
+                    )
 
         for version in versions:
             self.version = Version(version)
@@ -453,7 +514,9 @@ class Bugzilla(Component):
                     "skipping due to in_state=%s, resolution=%s",
                     self.is_state(bz_id), bz.resolution
                 )
-                raise BugzillaSkipTest(bz_id, self.url)
+                raise BugzillaSkipTest(
+                    bz_id, self.url, version, engine
+                )
 
     def __check_version(self, bug):
         """
@@ -516,8 +579,11 @@ class Bugzilla(Component):
             engine = options.get('engine')
             version = options.get('version')
             storage = options.get('storage')
-
-            self.should_be_skipped(bz_id, engine, version, storage)
+            try:
+                self.should_be_skipped(bz_id, engine, version, storage)
+            except SkipTest as ex:
+                logger.warn(str(ex))
+                raise
 
     def should_be_test_case_skipped(self, t):
         pass
@@ -526,7 +592,11 @@ class Bugzilla(Component):
         if self.issuedb:
             bz_ids = self.issuedb.lookup(t.test_name, self.config_name)
             for bz_id in bz_ids:
-                self.should_be_skipped(bz_id)
+                try:
+                    self.should_be_skipped(bz_id)
+                except SkipTest as ex:
+                    logger.warn(str(ex))
+                    raise
 
     def post_test_case(self, t):
         pass
