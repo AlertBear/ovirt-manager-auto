@@ -2,7 +2,6 @@
 Storage VM sanity
 TCMS plan: https://tcms.engineering.redhat.com/plan/8676
 """
-from concurrent.futures import ThreadPoolExecutor
 import logging
 from art.unittest_lib import StorageTest as TestCase, attr
 from art.rhevm_api.utils import test_utils
@@ -82,20 +81,16 @@ class TestCase248132(TestCase):
 
     @classmethod
     def setup_class(cls):
-        results = list()
-        with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-            for sparse in (True, False):
-                for vol_format in (ENUMS['format_cow'], ENUMS['format_raw']):
-                    if not sparse and vol_format == ENUMS['format_cow']:
-                        continue
-                    if (cls.storage != ENUMS['storage_type_nfs']
-                            and sparse and vol_format == ENUMS['format_raw']):
-                        continue
-                    results.append(executor.submit(
-                        _prepare_data, sparse, vol_format, cls.template_names,
-                        cls.storage))
-
-        test_utils.raise_if_exception(results)
+        for sparse in (True, False):
+            for vol_format in (ENUMS['format_cow'], ENUMS['format_raw']):
+                if not sparse and vol_format == ENUMS['format_cow']:
+                    continue
+                if (cls.storage != ENUMS['storage_type_nfs']
+                        and sparse and vol_format == ENUMS['format_raw']):
+                    continue
+                _prepare_data(
+                    sparse, vol_format, cls.template_names, cls.storage
+                )
 
     def setUp(self):
         self.vm_names = []
@@ -104,7 +99,7 @@ class TestCase248132(TestCase):
     def create_vm_from_template_validate_disks(
             self, name, template_name, sparse, vol_format):
         vm_name = "%s_%s_clone_%s" % (
-            config.TESTNAME, self.storage, name)
+            self.tcms_test_case, self.storage, name)
         LOGGER.info("Clone vm %s, from %s, sparse=%s, volume format = %s" % (
             vm_name, template_name, sparse, vol_format))
         self.assertTrue(
