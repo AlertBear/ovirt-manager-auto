@@ -921,6 +921,7 @@ for storage_type in config.STORAGE_SELECTOR:
             if dc_version == dc_upgrade_version:
                 continue
             dc_upgrade_version_name = dc_upgrade_version.replace('.', '')
+            storage_format = None
             if storage_type == config.ENUMS['storage_type_iscsi']:
                 storage_format = config.ENUMS['storage_format_version_v2']
             elif storage_type == config.ENUMS['storage_type_nfs']:
