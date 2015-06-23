@@ -42,25 +42,18 @@ logger = logging.getLogger("Network_Labels_Cases")
 
 HOST0_NICS = None  # filled in setup module
 HOST1_NICS = None  # filled in setup module
-VLAN_NIC = ""  # filled in setup module
+VLAN_NIC_0 = ""  # filled in setup module
 VLAN_BOND = ""  # filled in setup module
-
-
-#
-
-#
-# Test Cases                               #
-#
 
 
 def setup_module():
     """
     obtain host NICs for the first Network Host
     """
-    global HOST0_NICS, HOST1_NICS, VLAN_NIC, VLAN_BOND
+    global HOST0_NICS, HOST1_NICS, VLAN_NIC_0, VLAN_BOND
     HOST0_NICS = config.VDS_HOSTS[0].nics
     HOST1_NICS = config.VDS_HOSTS[1].nics
-    VLAN_NIC = vlan_int_name(HOST0_NICS[1], config.VLAN_ID[0])
+    VLAN_NIC_0 = vlan_int_name(HOST0_NICS[1], config.VLAN_ID[0])
     VLAN_BOND = vlan_int_name(config.BOND[0], config.VLAN_ID[0])
 
 
@@ -249,10 +242,10 @@ class NetLabels02(TestLabelTestCaseBase):
 
         logger.info(
             "Check that the network %s is attached to Host NIC %s",
-            config.VLAN_NETWORKS[0], VLAN_NIC
+            config.VLAN_NETWORKS[0], VLAN_NIC_0
         )
         if not check_network_on_nic(
-            config.VLAN_NETWORKS[0], config.HOSTS[0], VLAN_NIC
+            config.VLAN_NETWORKS[0], config.HOSTS[0], VLAN_NIC_0
         ):
             raise NetworkException(
                 "Network %s is not attached to Host NIC %s " %
@@ -528,7 +521,7 @@ class NetLabels04(TestLabelTestCaseBase):
         )
         if not (
                 check_network_on_nic(config.VLAN_NETWORKS[0],
-                                     config.HOSTS[0], VLAN_NIC) and
+                                     config.HOSTS[0], VLAN_NIC_0) and
                 check_network_on_nic(config.VLAN_NETWORKS[0],
                                      config.HOSTS[1], VLAN_BOND)
         ):
@@ -612,13 +605,16 @@ class NetLabels05(TestLabelTestCaseBase):
                 )
             )
 
-        for host in config.HOSTS[:2]:
+        for idx, host in enumerate(config.HOSTS[:2]):
+            vlan_nic = vlan_int_name(
+                config.VDS_HOSTS[idx].nics[1], config.VLAN_ID[0]
+            )
             logger.info(
                 "Check that the network %s is attached to Host %s before "
                 "un-labeling ", config.VLAN_NETWORKS[0], host
             )
             if not check_network_on_nic(
-                config.VLAN_NETWORKS[0], host, VLAN_NIC
+                config.VLAN_NETWORKS[0], host, vlan_nic
             ):
                 raise NetworkException(
                     "Network %s is not attached to the first NIC on host %s" %
@@ -652,7 +648,7 @@ class NetLabels05(TestLabelTestCaseBase):
             sample = TimeoutingSampler(
                 timeout=config.SAMPLER_TIMEOUT, sleep=1,
                 func=check_network_on_nic, network=config.VLAN_NETWORKS[0],
-                host=host, nic=VLAN_NIC
+                host=host, nic=VLAN_NIC_0
             )
 
             if not sample.waitForFuncStatus(result=False):
@@ -838,7 +834,7 @@ class NetLabels07(TestLabelTestCaseBase):
         )
 
         if not check_network_on_nic(
-            config.VLAN_NETWORKS[0], config.HOSTS[0], VLAN_NIC
+            config.VLAN_NETWORKS[0], config.HOSTS[0], VLAN_NIC_0
         ):
             raise NetworkException(
                 "Network %s was not attached to interface %s on host %s " %
@@ -888,7 +884,7 @@ class NetLabels07(TestLabelTestCaseBase):
             config.VLAN_NETWORKS[0], config.HOSTS[0]
         )
         if check_network_on_nic(
-            config.VLAN_NETWORKS[0], config.HOSTS[0], VLAN_NIC
+            config.VLAN_NETWORKS[0], config.HOSTS[0], VLAN_NIC_0
         ):
             raise NetworkException(
                 "Network %s is attached to Host NIC %s on Host %s when "
