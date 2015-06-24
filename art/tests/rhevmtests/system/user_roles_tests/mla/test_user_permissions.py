@@ -12,7 +12,7 @@ import time
 from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
-from art.test_handler.tools import tcms, bz, polarion  # pylint: disable=E0611
+from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 from art.rhevm_api.tests_lib.high_level import storagedomains as h_sd
 from art.rhevm_api.utils import test_utils
@@ -187,7 +187,7 @@ class PermissionsCase5441054414(TestCase):
     __test__ = True
 
     @istest
-    @tcms(TCMS_PLAN_ID, '54410,54414')
+    @polarion("RHEVM3-7186")  # Also RHEVM3-7187, can not have multiple IDs
     def permissionsSubTab(self):
         """ permissions subtab """
         # Try to add UserRole and AdminRole to object, then

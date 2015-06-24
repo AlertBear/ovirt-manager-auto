@@ -28,7 +28,7 @@ from art.core_api.apis_utils import TimeoutingSampler
 
 import art.test_handler.exceptions as errors
 
-from art.test_handler.tools import tcms, bz, polarion  # pylint: disable=E0611
+from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
 from art.unittest_lib.common import is_bz_state
 
 from utilities import machine
@@ -818,7 +818,7 @@ class WatchdogCRUDTemplate(WatchdogVM):
                         "Can't add watchdog model to template")
         logger.info("Watchdog added to template")
 
-    @tcms('9846', ' 285330')
+    @polarion("RHEVM3-4966")
     def test_detect_watchdog_template(self):
         """
         Detect watchdog
@@ -837,7 +837,7 @@ class WatchdogCRUDTemplate(WatchdogVM):
         vms.startVm(positive=True, vm=self.vm_name1)
         self.lspci_watchdog(True, self.vm_name1)
 
-    @tcms('9846', ' 294457')
+    @polarion("RHEVM3-4958")
     def test_remove_watchdog_template(self):
         """
         Deleting watchdog model
