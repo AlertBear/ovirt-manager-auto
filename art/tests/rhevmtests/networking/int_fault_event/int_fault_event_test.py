@@ -8,12 +8,12 @@ Testing Display of NIC Slave/Bond fault on RHEV-M Event Log
 
 import helper
 import logging
-from art.rhevm_api.tests_lib.high_level.hosts import activate_host_if_not_up
-from art.rhevm_api.tests_lib.low_level.networks import remove_label, add_label
+import config as c
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from rhevmtests.networking import config
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.high_level.networks import (
     createAndAttachNetworkSN, remove_net_from_setup
@@ -21,13 +21,12 @@ from art.rhevm_api.tests_lib.high_level.networks import (
 
 logger = logging.getLogger("Int_Fault_Event_Cases")
 
-EVENT_API = helper.EVENT_API
-HOST_INTERFACE_STATE_UP = helper.HOST_INTERFACE_STATE_UP
-HOST_INTERFACE_STATE_DOWN = helper.HOST_INTERFACE_STATE_DOWN
-HOST_BOND_SLAVE_STATE_UP = helper.HOST_BOND_SLAVE_STATE_UP
-HOST_BOND_SLAVE_STATE_DOWN = helper.HOST_BOND_SLAVE_STATE_DOWN
-STATE_UP = helper.STATE_UP
-STATE_DOWN = helper.STATE_DOWN
+HOST_INTERFACE_STATE_UP = c.HOST_INTERFACE_STATE_UP
+HOST_INTERFACE_STATE_DOWN = c.HOST_INTERFACE_STATE_DOWN
+HOST_BOND_SLAVE_STATE_UP = c.HOST_BOND_SLAVE_STATE_UP
+HOST_BOND_SLAVE_STATE_DOWN = c.HOST_BOND_SLAVE_STATE_DOWN
+STATE_UP = c.STATE_UP
+STATE_DOWN = c.STATE_DOWN
 
 
 class TestNicFaultTestCaseBase(TestCase):
@@ -42,23 +41,21 @@ class TestNicFaultTestCaseBase(TestCase):
         Remove networks from the setup.
         """
         logger.info("Starting teardown")
-        logger.info("Removing all labels from %s interfaces", config.HOSTS[0])
-        if not remove_label(
-            host_nic_dict={config.HOSTS[0]: config.VDS_HOSTS[0].nics}
-        ):
+        logger.info("Removing all labels from %s interfaces", c.HOST_0)
+        if not ll_networks.remove_label(host_nic_dict={c.HOST_0: c.HOST_NICS}):
             logger.error("Couldn't remove labels from Hosts")
 
         logger.info("Removing all networks from setup")
         if not remove_net_from_setup(
-                host=config.VDS_HOSTS[0], auto_nics=[0],
-                data_center=config.DC_NAME[0], all_net=True,
-                mgmt_network=config.MGMT_BRIDGE
+                host=c.VDS_HOSTS_0, auto_nics=[0],
+                data_center=c.DC_0, all_net=True,
+                mgmt_network=c.MGMT_BRIDGE
         ):
             logger.error("Cannot remove network from setup")
 
-        logger.info("Setting all %s interfaces UP", config.HOSTS[0])
-        for nic in config.VDS_HOSTS[0].nics[1:]:
-            if not helper.if_up_nic(nic=nic):
+        logger.info("Setting all %s interfaces UP", c.HOST_0)
+        for nic in c.HOST_NICS[1:]:
+            if not helper.set_nic_up(nic=nic, sleep=False):
                 logger.error("Couldn't set up nic %s", nic)
 
 
@@ -77,16 +74,14 @@ class TestNicFault01(TestNicFaultTestCaseBase):
         Attach label to host interface
         """
         logger.info(
-            "Attach label %s to %s on %s", config.LABEL_LIST[0],
-            config.VDS_HOSTS[0].nics[1], config.HOSTS[0]
+            "Attach label %s to %s on %s", c.LABEL_0, c.HOST_NICS[1], c.HOST_0
         )
-        if not add_label(
-            label=config.LABEL_LIST[0],
-            host_nic_dict={config.HOSTS[0]: [config.VDS_HOSTS[0].nics[1]]}
+        if not ll_networks.add_label(
+            label=c.LABEL_0, host_nic_dict={c.HOST_0: [c.HOST_NICS[1]]}
         ):
             raise NetworkException(
                 "Couldn't add label %s to the Host NIC %s but should" %
-                (config.LABEL_LIST[0], config.VDS_HOSTS[0].nics[1])
+                (c.LABEL_0, c.HOST_NICS[1])
             )
 
     @polarion("RHEVM3-4153")
@@ -111,15 +106,15 @@ class TestNicFault02(TestNicFaultTestCaseBase):
         """
         Attach required network to host NIC
         """
-        local_dict = {config.NETWORKS[0]: {"nic": 1}}
+        local_dict = {c.NETWORK_0: {"nic": 1}}
 
-        logger.info("Attach %s network to DC/Cluster/Host", config.NETWORKS[0])
+        logger.info("Attach %s network to DC/Cluster/Host", c.NETWORK_0)
         if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
+            data_center=c.DC_0, cluster=c.CL_0,
+            host=c.VDS_HOSTS_0, network_dict=local_dict, auto_nics=[0]
         ):
             raise NetworkException(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
+                "Cannot create and attach network %s" % c.NETWORK_0
             )
 
     @polarion("RHEVM3-4167")
@@ -135,7 +130,7 @@ class TestNicFault02(TestNicFaultTestCaseBase):
         Remove network from the setup.
         """
         logger.info("Activating the host if needed")
-        if not activate_host_if_not_up(config.HOSTS[0]):
+        if not hl_hosts.activate_host_if_not_up(c.HOST_0):
             logger.error("Failed to activate the host")
 
         logger.info("Call LabelTestCaseBase teardown")
@@ -169,6 +164,7 @@ class TestNicFault04(TestNicFaultTestCaseBase):
     7. ifconfig up the BOND interface
     """
     __test__ = True
+    bz = {"1164533": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -177,28 +173,27 @@ class TestNicFault04(TestNicFaultTestCaseBase):
         """
         local_dict1 = {
             None: {
-                "nic": config.BOND[0], "slaves": [2, 3], "required": "false"
+                "nic": c.BOND_0, "slaves": [2, 3], "required": "false"
             }
         }
 
-        logger.info("Create Bond %s", config.BOND[0])
+        logger.info("Create Bond %s", c.BOND_0)
         if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict1, auto_nics=[0]
+            data_center=c.DC_0, cluster=c.CL_0,
+            host=c.VDS_HOSTS_0, network_dict=local_dict1, auto_nics=[0]
         ):
-            raise NetworkException("Cannot create bond %s " % config.BOND[0])
+            raise NetworkException("Cannot create bond %s " % c.BOND_0)
 
         logger.info(
-            "Attach label %s to %s on %s", config.LABEL_LIST[0],
-            config.BOND[0], config.HOSTS[0]
+            "Attach label %s to %s on %s", c.LABEL_0,
+            c.BOND_0, c.HOST_0
         )
-        if not add_label(
-            label=config.LABEL_LIST[0],
-            host_nic_dict={config.HOSTS[0]: [config.BOND[0]]}
+        if not ll_networks.add_label(
+            label=c.LABEL_0, host_nic_dict={c.HOST_0: [c.BOND_0]}
         ):
             raise NetworkException(
                 "Couldn't add label %s to the Host NIC %s but should" %
-                (config.LABEL_LIST[0], config.BOND[0])
+                (c.LABEL_0, c.BOND_0)
             )
 
     @polarion("RHEVM3-4165")
@@ -221,6 +216,7 @@ class TestNicFault05(TestNicFaultTestCaseBase):
     7. ip link set up the BOND interface
     """
     __test__ = True
+    bz = {"1164533": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -229,18 +225,18 @@ class TestNicFault05(TestNicFaultTestCaseBase):
         """
         logger.info("Create and attach network over BOND")
         local_dict = {
-            config.NETWORKS[0]: {
-                "nic": config.BOND[0], "slaves": [2, 3]
+            c.NETWORK_0: {
+                "nic": c.BOND_0, "slaves": [2, 3]
             }
         }
 
         if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
+            data_center=c.DC_0, cluster=c.CL_0,
+            host=c.VDS_HOSTS_0, network_dict=local_dict, auto_nics=[0]
         ):
             raise NetworkException(
                 "Cannot create and attach network %s to bond %s" %
-                (config.NETWORKS[0], config.BOND[0])
+                (c.NETWORK_0, c.BOND_0)
             )
 
     @polarion("RHEVM3-4164")
@@ -256,7 +252,7 @@ class TestNicFault05(TestNicFaultTestCaseBase):
         Remove network from the setup.
         """
         logger.info("Activating the host if needed")
-        if not activate_host_if_not_up(config.HOSTS[0]):
+        if not hl_hosts.activate_host_if_not_up(c.HOST_0):
             logger.error("Failed to activate the host")
 
         logger.info("Call LabelTestCaseBase teardown")
@@ -284,14 +280,14 @@ class TestNicFault06(TestNicFaultTestCaseBase):
         logger.info("Create BOND")
         local_dict1 = {
             None: {
-                "nic": config.BOND[0], "slaves": [2, 3]
+                "nic": c.BOND_0, "slaves": [2, 3]
             }
         }
         if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict1, auto_nics=[0]
+            data_center=c.DC_0, cluster=c.CL_0,
+            host=c.VDS_HOSTS_0, network_dict=local_dict1, auto_nics=[0]
         ):
-            raise NetworkException("Cannot create bond %s " % config.BOND[0])
+            raise NetworkException("Cannot create bond %s " % c.BOND_0)
 
     @polarion("RHEVM3-4163")
     def test_empty_bond_fault(self):
@@ -316,18 +312,18 @@ class TestNicFault07(TestNicFaultTestCaseBase):
         Attach non-required network to host NIC
         """
         local_dict = {
-            config.NETWORKS[0]: {
+            c.NETWORK_0: {
                 "nic": 1, "required": "false"
             }
         }
 
-        logger.info("Attach %s network to DC/Cluster/Host", config.NETWORKS[0])
+        logger.info("Attach %s network to DC/Cluster/Host", c.NETWORK_0)
         if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
+            data_center=c.DC_0, cluster=c.CL_0,
+            host=c.VDS_HOSTS_0, network_dict=local_dict, auto_nics=[0]
         ):
             raise NetworkException(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
+                "Cannot create and attach network %s" % c.NETWORK_0
             )
 
     @polarion("RHEVM3-4162")
@@ -350,6 +346,7 @@ class TestNicFault08(TestNicFaultTestCaseBase):
     7. ip link set up the BOND interface
     """
     __test__ = True
+    bz = {"1164533": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -358,17 +355,17 @@ class TestNicFault08(TestNicFaultTestCaseBase):
         """
         logger.info("Create and attach network over BOND")
         local_dict = {
-            config.NETWORKS[0]: {
-                "nic": config.BOND[0], "slaves": [2, 3], "required": "false"
+            c.NETWORK_0: {
+                "nic": c.BOND_0, "slaves": [2, 3], "required": "false"
             }
         }
 
         if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
+            data_center=c.DC_0, cluster=c.CL_0,
+            host=c.VDS_HOSTS_0, network_dict=local_dict, auto_nics=[0]
         ):
             raise NetworkException(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
+                "Cannot create and attach network %s" % c.NETWORK_0
             )
 
     @polarion("RHEVM3-4161")
@@ -394,18 +391,18 @@ class TestNicFault09(TestNicFaultTestCaseBase):
         Attach non-vm network to host NIC
         """
         local_dict = {
-            config.NETWORKS[0]: {
+            c.NETWORK_0: {
                 "nic": 1, "required": "false", "usages": ""
             }
         }
 
-        logger.info("Attach %s network to DC/Cluster/Host", config.NETWORKS[0])
+        logger.info("Attach %s network to DC/Cluster/Host", c.NETWORK_0)
         if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
+            data_center=c.DC_0, cluster=c.CL_0,
+            host=c.VDS_HOSTS_0, network_dict=local_dict, auto_nics=[0]
         ):
             raise NetworkException(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
+                "Cannot create and attach network %s" % c.NETWORK_0
             )
 
     @polarion("RHEVM3-4160")
@@ -428,6 +425,7 @@ class TestNicFault10(TestNicFaultTestCaseBase):
     7. ip link set up the BOND interface
     """
     __test__ = True
+    bz = {"1164533": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -436,18 +434,18 @@ class TestNicFault10(TestNicFaultTestCaseBase):
         """
         logger.info("Create and attach network over BOND")
         local_dict = {
-            config.NETWORKS[0]: {
-                "nic": config.BOND[0], "slaves": [2, 3], "required": "false",
+            c.NETWORK_0: {
+                "nic": c.BOND_0, "slaves": [2, 3], "required": "false",
                 "usages": ""
             }
         }
 
         if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
+            data_center=c.DC_0, cluster=c.CL_0,
+            host=c.VDS_HOSTS_0, network_dict=local_dict, auto_nics=[0]
         ):
             raise NetworkException(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
+                "Cannot create and attach network %s" % c.NETWORK_0
             )
 
     @polarion("RHEVM3-4159")

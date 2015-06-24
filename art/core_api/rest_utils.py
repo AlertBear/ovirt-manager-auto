@@ -522,7 +522,7 @@ class RestUtil(APIUtil):
         if event_id:
             qhref = templ.sub({"query": constraint, "event_id": event_id})
         else:
-            qhref = qhref.replace("from=;", '')
+            qhref = qhref.replace("from=", '')
 
         self.logger.debug(
             "SEARCH request content is --  url:%(uri)s" % {'uri': qhref})
