@@ -129,6 +129,7 @@ class WindowsGuest(object):
     INSTALL_LOG = '%sgt.log' % WINDOWS_PATH
     ANSWER_FILE = '%ssetup.iss' % WINDOWS_PATH
     TOOLS_EXE = 'RHEV-toolsSetup.exe'
+    DRIVERS = 'C:\\Program Files%s\\Redhat\\RHEV\\Drivers\\%s'
     logger = logging.getLogger('guest')
 
     @property
@@ -224,6 +225,37 @@ class WindowsGuest(object):
         """
         serviceStat = self.vm.checkServiceRunningAndEnabled(service)
         return serviceStat['StartMode'] == 'Auto'
+
+    def contains_driver(self, driver):
+        """
+        Description: Simply check if directory driver exists in path DRIVERS
+        :param driver: driver name to check
+        :type driver: str
+        :returns: tuple with cmd status and list with content of dir
+        :rtype: tuple(boolean, list)
+        """
+        ret = self.vm.getDirContent(
+            self.DRIVERS % (' (x86)' if self.platf == '64' else '', driver)
+        )
+        if ret[0]:
+            self.logger.info(
+                "Content of driver directory '%s' is '%s'", driver, ret[1]
+            )
+        else:
+            self.logger.error(
+                "Directory for driver '%s' doesn't exists", driver
+            )
+        return (ret[0], [i for i in ret[1].split('\r\n') if i])
+
+    def get_device_info(self, name):
+        """
+        Description: Fetch info from device manager about driver
+        :param name: name of driver to fetch info about
+        :type name: str
+        :returns: dictionary with device driver information
+        :rtype: dict
+        """
+        return self.vm.getDeviceInfo(name)
 
     def __run_setup_tool(self, answer_file):
         """

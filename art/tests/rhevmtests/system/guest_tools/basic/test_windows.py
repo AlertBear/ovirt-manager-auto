@@ -1,5 +1,5 @@
 """
-Test installation via APT on all windows machines. Then check if all
+Test installation of guest tools on all windows machines. Then check if all
 product/services/drivers relevant to windows machine are installed/running.
 """
 import copy
@@ -38,10 +38,10 @@ def import_image(diskName):
     return glance_image
 
 
-def skipIfUnsupported(method):
+def checkIfSupported(method):
     @wraps(method)
     def f(self, *args, **kwargs):
-        if method.__name__ in self.SKIP_METHODS:
+        if method.__name__ in self.UNSUPPORTED:
             raise SkipTest('Not supported on this windows version. Skipping.')
         return method(self, *args, **kwargs)
     return f
@@ -61,8 +61,15 @@ def setup_module():
 
 @attr(tier=1)
 class Windows(TestCase):
-    """ Base class for all Windows basic sanity tests """
+    """
+    Class that implements testing of windows guest tools.
+    Every child(win version) of this class needs to specify relevant
+    drivers/services/products to tests.
+    """
     __test__ = False
+    # List with method names which should not be tested for relevant windows
+    # version and thus be skipped. By default empty.
+    UNSUPPORTED = []
     machine = None
     diskName = None
     glance_image = None
@@ -106,6 +113,14 @@ class Windows(TestCase):
             nicType=config.NIC_TYPE_E1000,
             cpu_cores=4,
             memory=4*config.GB,
+            balloon=True,  # Need for test driver balloon
+        )
+        assert vms.addNic(  # Need for test_driver_network
+            positive=True,
+            vm=cls.diskName,
+            name='virtioNIC',
+            network=config.MGMT_BRIDGE,
+            interface=config.NIC_TYPE_VIRTIO,
         )
         assert disks.attachDisk(True, cls.diskName, cls.diskName)
         assert vms.runVmOnce(
@@ -154,67 +169,67 @@ class Windows(TestCase):
         LOGGER.info('%s is installed', product)
 
     @istest
-    @skipIfUnsupported
+    @checkIfSupported
     def checkProductQemuAgent(self):
         """ Check product qemu agent """
         self._checkProduct('QEMU guest agent')
 
     @istest
-    @skipIfUnsupported
+    @checkIfSupported
     def checkProductSpice(self):
         """ Check product spice """
         self._checkProduct('RHEV-Spice%s' % self.platfPrefix)
 
     @istest
-    @skipIfUnsupported
+    @checkIfSupported
     def checkProductSpiceAgent(self):
         """ Check product spice agent """
         self._checkProduct('RHEV-Spice-Agent%s' % self.platfPrefix)
 
     @istest
-    @skipIfUnsupported
+    @checkIfSupported
     def checkProductSerial(self):
         """ Check product serial """
         self._checkProduct('RHEV-Serial%s' % self.platfPrefix)
 
     @istest
-    @skipIfUnsupported
+    @checkIfSupported
     def checkProductNetwork(self):
         """ Check product network """
         self._checkProduct('RHEV-Network%s' % self.platfPrefix)
 
     @istest
-    @skipIfUnsupported
+    @checkIfSupported
     def checkProductAgent(self):
         """ Check product agent """
         self._checkProduct('RHEV-Agent%s' % self.platfPrefix)
 
     @istest
-    @skipIfUnsupported
+    @checkIfSupported
     def checkProductUSB(self):
         """ Check product USB """
         self._checkProduct('RHEV-USB')
 
     @istest
-    @skipIfUnsupported
+    @checkIfSupported
     def checkProductSSO(self):
         """ Check product SSO """
         self._checkProduct('RHEV-SSO%s' % self.platfPrefix)
 
     @istest
-    @skipIfUnsupported
+    @checkIfSupported
     def checkProductBlock(self):
         """ Check product block """
         self._checkProduct('RHEV-Block%s' % self.platfPrefix)
 
     @istest
-    @skipIfUnsupported
+    @checkIfSupported
     def checkProductBalloon(self):
         """ Check product balloon """
         self._checkProduct('RHEV-Balloon%s' % self.platfPrefix)
 
     @istest
-    @skipIfUnsupported
+    @checkIfSupported
     def checkProductSCSI(self):
         """ Check product SCSI """
         self._checkProduct('RHEV-SCSI%s' % self.platfPrefix)
@@ -233,38 +248,38 @@ class Windows(TestCase):
         LOGGER.info('Service %s is running/enabled', service)
 
     @istest
-    @skipIfUnsupported
+    @checkIfSupported
     def checkServiceQemuGA(self):
         """ Check service qqmu GA """
         self._checkService('QEMU-GA')
 
     @istest
-    @skipIfUnsupported
+    @checkIfSupported
     @bz({'1218937': {'engine': None, 'version': ['7.1']}})
     def checkServiceQemuGAVssProvider(self):
         """ Check service qqmu GA Vss provider """
         self._checkService('QEMU Guest Agent VSS Provider')
 
     @istest
-    @skipIfUnsupported
+    @checkIfSupported
     def checkServiceUSBRedirector(self):
         """ Check service USB redirector """
         self._checkService('spiceusbredirector')
 
     @istest
-    @skipIfUnsupported
+    @checkIfSupported
     def checkServiceAgent(self):
         """ Check service agent """
         self._checkService('RHEV-Agent')
 
     @istest
-    @skipIfUnsupported
+    @checkIfSupported
     def checkServiceSpiceAgent(self):
         """ Check service spice agent """
         self._checkService('vdservice')
 
     @istest
-    @skipIfUnsupported
+    @checkIfSupported
     def checkGuestInfo(self):
         """ Check agent data are reported """
         guest_info = VM_API.find(self.diskName).get_guest_info()
@@ -277,6 +292,63 @@ class Windows(TestCase):
         self.assertTrue(
             guest_info.get_fqdn() and len(guest_info.get_fqdn()) > 0
         )
+
+    def _checkDeviceManager(self, deviceName):
+        """
+        Check correct status of device in device manager.
+        :param deviceName: name of device to check
+        :type deviceName: str
+        """
+        device = self.machine.get_device_info(deviceName)
+        assert device, "Device driver '%s' was not found" % deviceName
+        device = device[0]
+        self.assertTrue(device['Status'].upper() == 'OK', '%s' % device)
+        self.assertTrue(device['ConfigManagerErrorCode'] == '0', '%s' % device)
+
+    @checkIfSupported
+    def test_driver_balloon(self):
+        """ Check driver balloon """
+        self._checkDeviceManager('VirtIO Balloon Driver')
+
+    @checkIfSupported
+    def test_driver_network(self):
+        """ Check driver Network """
+        self._checkDeviceManager('Red Hat VirtIO Ethernet Adapter')
+
+    @checkIfSupported
+    def test_driver_qxl_gpu(self):
+        """ Check driver qxl """
+        self._checkDeviceManager('Red Hat QXL GPU')
+
+    @checkIfSupported
+    def test_driver_usb_bus(self):
+        """ Check driver usb bus """
+        self._checkDeviceManager('Red Hat USB Bus Driver')
+
+    @checkIfSupported
+    def test_driver_usb_host_controller(self):
+        """ Check driver usb host controller """
+        self._checkDeviceManager('Red Hat Virtual USB Host Controller Driver')
+
+    @checkIfSupported
+    def test_driver_vioscsi_pass_through(self):
+        """ Check driver SCSI pass-through """
+        self._checkDeviceManager('Red Hat VirtIO SCSI pass-through controller')
+
+    @checkIfSupported
+    def test_driver_vioscsi_disk(self):
+        """ Check driver SCSI disk device """
+        self._checkDeviceManager('Red Hat VirtIO SCSI Disk Device')
+
+    @checkIfSupported
+    def test_driver_vioserial(self):
+        """ Check driver serial """
+        self._checkDeviceManager('VirtIO-Serial Driver')
+
+    @checkIfSupported
+    def test_driver_viostor(self):
+        """ Check driver viostor """
+        self._checkDeviceManager('Red Hat VirtIO SCSI controller')
 
     @istest
     def z_unistallGuestTools(self):
@@ -295,16 +367,17 @@ class Windows(TestCase):
 
 class WindowsDesktop(Windows):
     __test__ = False
-    SKIP_METHODS = []
 
 
 class WindowsServer(Windows):
     __test__ = False
-    SKIP_METHODS = [
+    UNSUPPORTED = Windows.UNSUPPORTED + [
         'checkProductSpice',
         'checkProductUSB',
         'checkProductSSO',
         'checkServiceUSBRedirector',
+        'test_driver_usb_bus',
+        'test_driver_usb_host_controller',
     ]
 
 
@@ -328,6 +401,15 @@ class Windows7_64bit(WindowsDesktop):
         'checkProductSpiceAgent': 'RHEVM3-13362',
         'checkProductAgent': 'RHEVM3-13363',
         'checkProductSCSI': 'RHEVM3-13364',
+        'test_driver_vioscsi_pass_through': 'RHEVM3-13365',
+        'test_driver_vioscsi_disk': 'RHEVM3-13366',
+        'test_driver_vioserial': 'RHEVM3-13367',
+        'test_driver_network': 'RHEVM3-13368',
+        'test_driver_usb_bus': 'RHEVM3-13369',
+        'test_driver_usb_host_controller': 'RHEVM3-13370',
+        'test_driver_viostor': 'RHEVM3-13371',
+        'test_driver_qxl_gpu': 'RHEVM3-13372',
+        'test_driver_balloon': 'RHEVM3-13373',
         'checkServiceAgent': 'RHEVM3-13374',
         'checkServiceQemuGA': 'RHEVM3-13375',
         'checkServiceUSBRedirector': 'RHEVM3-13376',
@@ -335,6 +417,7 @@ class Windows7_64bit(WindowsDesktop):
         'checkServiceQemuGAVssProvider': 'RHEVM3-13378',
 
     }
+    SUPPORTED = ['test_driver_qxl_gpu']
 
 
 class Windows7_32b(WindowsDesktop):
@@ -356,12 +439,22 @@ class Windows7_32b(WindowsDesktop):
         'checkProductSpiceAgent': 'RHEVM3-13286',
         'checkProductAgent': 'RHEVM3-13287',
         'checkProductSCSI': 'RHEVM3-13288',
+        'test_driver_vioscsi_pass_through': 'RHEVM3-13289',
+        'test_driver_vioscsi_disk': 'RHEVM3-13290',
+        'test_driver_vioserial': 'RHEVM3-13291',
+        'test_driver_network': 'RHEVM3-13292',
+        'test_driver_usb_bus': 'RHEVM3-13293',
+        'test_driver_usb_host_controller': 'RHEVM3-13294',
+        'test_driver_viostor': 'RHEVM3-13295',
+        'test_driver_qxl_gpu': 'RHEVM3-13296',
+        'test_driver_balloon': 'RHEVM3-13297',
         'checkServiceAgent': 'RHEVM3-13298',
         'checkServiceQemuGA': 'RHEVM3-13299',
         'checkServiceUSBRedirector': 'RHEVM3-13300',
         'checkServiceSpiceAgent': 'RHEVM3-13301',
         'checkServiceQemuGAVssProvider': 'RHEVM3-13302',
     }
+    SUPPORTED = ['test_driver_qxl_gpu']
 
 
 class Windows8_64bit(WindowsDesktop):
@@ -371,9 +464,10 @@ class Windows8_64bit(WindowsDesktop):
     """
     __test__ = False
     diskName = config.WIN8_DISK_64b
-    SKIP_METHODS = [
+    UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
         'checkProductSpice',
         'checkProductUSB',
+        'test_driver_qxl_gpu',
     ]
 
 
@@ -384,9 +478,10 @@ class Windows8_32b(WindowsDesktop):
     """
     __test__ = False
     diskName = config.WIN8_DISK_32b
-    SKIP_METHODS = [
+    UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
         'checkProductSpice',
         'checkProductUSB',
+        'test_driver_qxl_gpu',
     ]
 
 
@@ -397,9 +492,10 @@ class Windows8_1_64bit(WindowsDesktop):
     """
     __test__ = True
     diskName = config.WIN8_1_DISK_64b
-    SKIP_METHODS = [
+    UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
         'checkProductSpice',
         'checkProductUSB',
+        'test_driver_qxl_gpu',
     ]
     polarion_map = {
         'checkProductNetwork': 'RHEVM3-13228',
@@ -413,6 +509,15 @@ class Windows8_1_64bit(WindowsDesktop):
         'checkProductSpiceAgent': 'RHEVM3-13236',
         'checkProductAgent': 'RHEVM3-13237',
         'checkProductSCSI': 'RHEVM3-13238',
+        'test_driver_vioscsi_pass_through': 'RHEVM3-13239',
+        'test_driver_vioscsi_disk': 'RHEVM3-13240',
+        'test_driver_vioserial': 'RHEVM3-13241',
+        'test_driver_network': 'RHEVM3-13242',
+        'test_driver_usb_bus': 'RHEVM3-13243',
+        'test_driver_usb_host_controller': 'RHEVM3-13244',
+        'test_driver_viostor': 'RHEVM3-13245',
+        'test_driver_qxl_gpu': 'RHEVM3-13246',
+        'test_driver_balloon': 'RHEVM3-13247',
         'checkServiceAgent': 'RHEVM3-13248',
         'checkServiceQemuGA': 'RHEVM3-13249',
         'checkServiceUSBRedirector': 'RHEVM3-13250',
@@ -428,9 +533,10 @@ class Windows8_1_32b(WindowsDesktop):
     """
     __test__ = True
     diskName = config.WIN8_1_DISK_32b
-    SKIP_METHODS = [
+    UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
         'checkProductSpice',
         'checkProductUSB',
+        'test_driver_qxl_gpu',
     ]
     polarion_map = {
         'checkProductNetwork': 'RHEVM3-13178',
@@ -444,6 +550,15 @@ class Windows8_1_32b(WindowsDesktop):
         'checkProductSpiceAgent': 'RHEVM3-13186',
         'checkProductAgent': 'RHEVM3-13187',
         'checkProductSCSI': 'RHEVM3-13188',
+        'test_driver_vioscsi_pass_through': 'RHEVM3-13189',
+        'test_driver_vioscsi_disk': 'RHEVM3-13190',
+        'test_driver_vioserial': 'RHEVM3-13191',
+        'test_driver_network': 'RHEVM3-13192',
+        'test_driver_usb_bus': 'RHEVM3-13193',
+        'test_driver_usb_host_controller': 'RHEVM3-13194',
+        'test_driver_viostor': 'RHEVM3-13195',
+        'test_driver_qxl_gpu': 'RHEVM3-13196',
+        'test_driver_balloon': 'RHEVM3-13197',
         'checkServiceAgent': 'RHEVM3-13198',
         'checkServiceQemuGA': 'RHEVM3-13199',
         'checkServiceUSBRedirector': 'RHEVM3-13200',
@@ -459,6 +574,7 @@ class Windows2008_32b(WindowsServer):
     """
     __test__ = False
     diskName = config.WIN2008_DISK_32b
+    UNSUPPORTED = WindowsServer.UNSUPPORTED + ['test_driver_qxl_gpu']
 
 
 class Windows2008_64b(WindowsServer):
@@ -480,12 +596,22 @@ class Windows2008_64b(WindowsServer):
         'checkProductSpiceAgent': 'RHEVM3-13261',
         'checkProductAgent': 'RHEVM3-13262',
         'checkProductSCSI': 'RHEVM3-13263',
+        'test_driver_vioscsi_pass_through': 'RHEVM3-13264',
+        'test_driver_vioscsi_disk': 'RHEVM3-13265',
+        'test_driver_vioserial': 'RHEVM3-13266',
+        'test_driver_network': 'RHEVM3-13267',
+        'test_driver_usb_bus': 'RHEVM3-13268',
+        'test_driver_usb_host_controller': 'RHEVM3-13269',
+        'test_driver_viostor': 'RHEVM3-13270',
+        'test_driver_qxl_gpu': 'RHEVM3-13271',
+        'test_driver_balloon': 'RHEVM3-13272',
         'checkServiceAgent': 'RHEVM3-13273',
         'checkServiceQemuGA': 'RHEVM3-13274',
         'checkServiceUSBRedirector': 'RHEVM3-13275',
         'checkServiceSpiceAgent': 'RHEVM3-13276',
         'checkServiceQemuGAVssProvider': 'RHEVM3-13277',
     }
+    UNSUPPORTED = WindowsServer.UNSUPPORTED + ['test_driver_qxl_gpu']
 
 
 class Windows2008R2_64b(WindowsServer):
@@ -507,12 +633,22 @@ class Windows2008R2_64b(WindowsServer):
         'checkProductSpiceAgent': 'RHEVM3-13311',
         'checkProductAgent': 'RHEVM3-13312',
         'checkProductSCSI': 'RHEVM3-13313',
+        'test_driver_vioscsi_pass_through': 'RHEVM3-13314',
+        'test_driver_vioscsi_disk': 'RHEVM3-13315',
+        'test_driver_vioserial': 'RHEVM3-13316',
+        'test_driver_network': 'RHEVM3-13317',
+        'test_driver_usb_bus': 'RHEVM3-13318',
+        'test_driver_usb_host_controller': 'RHEVM3-13319',
+        'test_driver_viostor': 'RHEVM3-13320',
+        'test_driver_qxl_gpu': 'RHEVM3-13321',
+        'test_driver_balloon': 'RHEVM3-13322',
         'checkServiceAgent': 'RHEVM3-13323',
         'checkServiceQemuGA': 'RHEVM3-13324',
         'checkServiceUSBRedirector': 'RHEVM3-13325',
         'checkServiceSpiceAgent': 'RHEVM3-13326',
         'checkServiceQemuGAVssProvider': 'RHEVM3-13327',
     }
+    UNSUPPORTED = WindowsServer.UNSUPPORTED
 
 
 class Windows2012_64b(WindowsServer):
@@ -534,12 +670,22 @@ class Windows2012_64b(WindowsServer):
         'checkProductSpiceAgent': 'RHEVM3-13336',
         'checkProductAgent': 'RHEVM3-13337',
         'checkProductSCSI': 'RHEVM3-13338',
+        'test_driver_vioscsi_pass_through': 'RHEVM3-13339',
+        'test_driver_vioscsi_disk': 'RHEVM3-13340',
+        'test_driver_vioserial': 'RHEVM3-13341',
+        'test_driver_network': 'RHEVM3-13342',
+        'test_driver_usb_bus': 'RHEVM3-13344',
+        'test_driver_usb_host_controller': 'RHEVM3-13345',
+        'test_driver_viostor': 'RHEVM3-13346',
+        'test_driver_qxl_gpu': 'RHEVM3-13347',
+        'test_driver_balloon': 'RHEVM3-13348',
         'checkServiceAgent': 'RHEVM3-13349',
         'checkServiceQemuGA': 'RHEVM3-13350',
         'checkServiceUSBRedirector': 'RHEVM3-13351',
         'checkServiceSpiceAgent': 'RHEVM3-13352',
         'checkServiceQemuGAVssProvider': 'RHEVM3-13353',
     }
+    UNSUPPORTED = WindowsServer.UNSUPPORTED + ['test_driver_qxl_gpu']
 
 
 class Windows2012R2_64b(WindowsServer):
@@ -561,12 +707,22 @@ class Windows2012R2_64b(WindowsServer):
         'checkProductSpiceAgent': 'RHEVM3-13161',
         'checkProductAgent': 'RHEVM3-13162',
         'checkProductSCSI': 'RHEVM3-13163',
+        'test_driver_vioscsi_pass_through': 'RHEVM3-13164',
+        'test_driver_vioscsi_disk': 'RHEVM3-13165',
+        'test_driver_vioserial': 'RHEVM3-13166',
+        'test_driver_network': 'RHEVM3-13167',
+        'test_driver_usb_bus': 'RHEVM3-13168',
+        'test_driver_usb_host_controller': 'RHEVM3-13169',
+        'test_driver_viostor': 'RHEVM3-13170',
+        'test_driver_qxl_gpu': 'RHEVM3-13171',
+        'test_driver_balloon': 'RHEVM3-13172',
         'checkServiceAgent': 'RHEVM3-13173',
         'checkServiceQemuGA': 'RHEVM3-13174',
         'checkServiceUSBRedirector': 'RHEVM3-13175',
         'checkServiceSpiceAgent': 'RHEVM3-13176',
         'checkServiceQemuGAVssProvider': 'RHEVM3-13177',
     }
+    UNSUPPORTED = WindowsServer.UNSUPPORTED + ['test_driver_qxl_gpu']
 
 
 class Windows10_64b(WindowsDesktop):
@@ -588,9 +744,21 @@ class Windows10_64b(WindowsDesktop):
         'checkProductSpiceAgent': 'RHEVM3-13211',
         'checkProductAgent': 'RHEVM3-13212',
         'checkProductSCSI': 'RHEVM3-13213',
+        'test_driver_vioscsi_pass_through': 'RHEVM3-13214',
+        'test_driver_vioscsi_disk': 'RHEVM3-13215',
+        'test_driver_vioserial': 'RHEVM3-13216',
+        'test_driver_network': 'RHEVM3-13217',
+        'test_driver_usb_bus': 'RHEVM3-13218',
+        'test_driver_usb_host_controller': 'RHEVM3-13219',
+        'test_driver_viostor': 'RHEVM3-13220',
+        'test_driver_qxl_gpu': 'RHEVM3-13221',
+        'test_driver_balloon': 'RHEVM3-13222',
         'checkServiceAgent': 'RHEVM3-13223',
         'checkServiceQemuGA': 'RHEVM3-13224',
         'checkServiceUSBRedirector': 'RHEVM3-13225',
         'checkServiceSpiceAgent': 'RHEVM3-13226',
         'checkServiceQemuGAVssProvider': 'RHEVM3-13227',
     }
+    UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
+        'test_driver_qxl_gpu',
+    ]
