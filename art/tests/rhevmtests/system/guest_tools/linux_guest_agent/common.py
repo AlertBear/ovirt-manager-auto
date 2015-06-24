@@ -225,36 +225,6 @@ class BaseAgentDataUpdate(GABaseTestCase):
 
 
 @attr(tier=1)
-class BaseFunctionContinuity(GABaseTestCase):
-    """ rhevm-guest-agent agent function continuity """
-    os = None
-
-    def _isAgentRunning(self):
-        raise NotImplementedError("User should implement it in child class!")
-
-    def agent_data(self):
-        raise NotImplementedError("User should implement it in child class!")
-
-    def function_continuity(self):
-        """ rhevm-guest-agent function continuity """
-        ag = self.agent_data()
-
-        self.assertTrue(vms.migrateVm(True, self.disk_name))
-        self.assertTrue(self._isAgentRunning())
-        ag.agent_data()
-
-        self.assertTrue(vms.suspendVm(True, self.disk_name))
-        self.assertTrue(vms.startVm(True, self.disk_name,
-                                    wait_for_status=ENUMS['vm_state_up'],
-                                    wait_for_ip=True))
-        self.assertTrue(self._isAgentRunning())
-        ag.agent_data()
-        stop_vdsm(self.disk_name)
-        self.assertTrue(self._isAgentRunning())
-        start_vdsm(self.disk_name)
-
-
-@attr(tier=1)
 class BaseAgentData(GABaseTestCase):
     """ rhevm-guest-agent agent data """
     success_msg = "%s of guest agent was successfull on %s"
@@ -351,6 +321,21 @@ class BaseAgentData(GABaseTestCase):
         self._check_diskusage()
         self._check_applist()
         self._check_guestIP()
+
+
+@attr(tier=1)
+class BaseFunctionContinuity(BaseAgentData):
+    """ rhevm-guest-agent agent function continuity """
+
+    def isAgentRunning(self):
+        return self.machine.isServiceRunning(config.AGENT_SERVICE_NAME)
+
+    def function_continuity(self):
+        """ rhevm-guest-agent function continuity """
+        self.assertTrue(self.isAgentRunning())
+        self.assertTrue(vms.migrateVm(True, self.disk_name))
+        self.assertTrue(self.isAgentRunning())
+        self.agent_data()
 
 
 @attr(tier=1)

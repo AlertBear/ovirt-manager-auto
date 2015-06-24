@@ -12,6 +12,10 @@ from art.test_handler.tools import polarion  # pylint: disable=E0611
 LOGGER = logging.getLogger(__name__)
 NAME = config.GA_NAME
 
+RHEL5_APP_LIST = ['kernel', 'rhevm-guest-agent']
+RHEL6_APP_LIST = ['kernel', 'rhevm-guest-agent-common']
+RHEL_CMD_LIST_APP = ['rpm', '-qa']
+
 
 class RHEL6x64Install(common.BaseInstallGA):
     ''' test installation of guest agent on rhel 6 64b '''
@@ -83,8 +87,8 @@ class RHEL6x64AgentData(common.BaseAgentData):
     ''' '''
     __test__ = True
     disk_name = 'rhel6_x64_Disk1'
-    list_app = ['rpm', '-qa']
-    application_list = ['kernel', 'rhevm-guest-agent-common']
+    list_app = RHEL_CMD_LIST_APP
+    application_list = RHEL6_APP_LIST
 
     @istest
     @polarion("RHEVM3-7439")
@@ -107,8 +111,10 @@ class RHEL6x64AgentDataUpdate(common.BaseAgentDataUpdate):
 
 class RHEL6x64FunctionContinuity(common.BaseFunctionContinuity):
     ''' '''
-    __test__ = False
+    __test__ = True
     disk_name = 'rhel6_x64_Disk1'
+    list_app = RHEL_CMD_LIST_APP
+    application_list = RHEL6_APP_LIST
 
     @istest
     @polarion("RHEVM3-7441")
@@ -187,8 +193,8 @@ class RHEL6x86AgentData(common.BaseAgentData):
     ''' '''
     __test__ = True
     disk_name = 'rhel6_x86_Disk1'
-    application_list = ['kernel', 'rhevm-guest-agent-common']
-    list_app = ['rpm', '-qa']
+    list_app = RHEL_CMD_LIST_APP
+    application_list = RHEL6_APP_LIST
 
     @istest
     @polarion("RHEVM3-7412")
@@ -211,8 +217,10 @@ class RHEL6x86AgentDataUpdate(common.BaseAgentDataUpdate):
 
 class RHEL6x86FunctionContinuity(common.BaseFunctionContinuity):
     ''' '''
-    __test__ = False
+    __test__ = True
     disk_name = 'rhel6_x86_Disk1'
+    list_app = RHEL_CMD_LIST_APP
+    application_list = RHEL6_APP_LIST
 
     @istest
     @polarion("RHEVM3-7414")
@@ -282,8 +290,8 @@ class RHEL5x64AgentData(common.BaseAgentData):
     ''' '''
     __test__ = True
     disk_name = 'rhel5_x64_Disk1'
-    application_list = ['kernel', 'rhevm-guest-agent']
-    list_app = ['rpm', '-qa']
+    list_app = RHEL_CMD_LIST_APP
+    application_list = RHEL5_APP_LIST
 
     @istest
     @polarion("RHEVM3-7433")
@@ -306,8 +314,10 @@ class RHEL5x64AgentDataUpdate(common.BaseAgentDataUpdate):
 
 class RHEL5x64FunctionContinuity(common.BaseFunctionContinuity):
     ''' '''
-    __test__ = False
+    __test__ = True
     disk_name = 'rhel5_x64_Disk1'
+    list_app = RHEL_CMD_LIST_APP
+    application_list = RHEL5_APP_LIST
 
     @istest
     @polarion("RHEVM3-7435")
@@ -377,8 +387,8 @@ class RHEL5x86AgentData(common.BaseAgentData):
     ''' RHEL5_32b rhevm-guest-agent data '''
     __test__ = True
     disk_name = 'rhel5_x86_Disk1'
-    application_list = ['kernel', 'rhevm-guest-agent']
-    list_app = ['rpm', '-qa']
+    list_app = RHEL_CMD_LIST_APP
+    application_list = RHEL5_APP_LIST
 
     @istest
     @polarion("RHEVM3-7427")
@@ -401,8 +411,10 @@ class RHEL5x86AgentDataUpdate(common.BaseAgentDataUpdate):
 
 class RHEL5x86FunctionContinuity(common.BaseFunctionContinuity):
     ''' RHEL5_32b, rhevm-guest-agent function continuity '''
-    __test__ = False
+    __test__ = True
     disk_name = 'rhel5_x86_Disk1'
+    list_app = RHEL_CMD_LIST_APP
+    application_list = RHEL5_APP_LIST
 
     @istest
     @polarion("RHEVM3-7429")

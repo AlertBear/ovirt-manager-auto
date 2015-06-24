@@ -104,3 +104,34 @@ class RHEL7_1x64AgentData(common.BaseAgentData):
     def test_agent_data(self):
         """ RHEL7_1_64b rhevm-guest-agent data """
         self.agent_data()
+
+
+class RHEL7_1x64FunctionContinuity(common.BaseFunctionContinuity):
+    ''' RHEL7_1x64, rhevm-guest-agent function continuity '''
+    __test__ = True
+    disk_name = 'rhel7.1_x64_Disk1'
+    list_app = ['rpm', '-qa']
+    application_list = ['kernel', config.PACKAGE_NAME]
+
+    def _check_guestIP(self):
+        ip = [
+            'ifconfig', '|',
+            'grep', '-Eo', 'inet [0-9\.]+', '|',
+            'cut', '-d', ' ', '-f2',
+        ]
+        cmd = "%s %s | egrep %s | grep -Po '(?<== ).*'"
+        cmd = cmd % (self.stats, self.vm_id, 'guestIPs')
+        ip_agent = common.runOnHost(cmd, self.disk_name)
+        ip_agent = common.get_data(ip_agent)
+        ip_list = ip_agent.split(' ')
+
+        for iface in self.iface_dict:
+            ip.insert(1, iface['name'])
+            rc, ip_real = self.machine.runCmd(ip)
+            ip_real = ip_real[:-2]
+            self.assertTrue(ip_real in ip_list)
+
+    @polarion("RHEVM3-7388")
+    def test_function_continuity(self):
+        """ RHEL7_1x64, rhevm-guest-agent function continuity """
+        self.function_continuity()
