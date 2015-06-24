@@ -27,7 +27,8 @@ def setup_package():
     logger.info("Running network cleanup")
     network.network_cleanup()
     logger.info(
-        "Create and attach networks on %s/%s", c.DC_NAME, c.CLUSTER_NAME[0])
+        "Create and attach networks on %s/%s", c.DC_NAME, c.CLUSTER_NAME[0]
+    )
     helper.prepare_networks_on_dc()
     logger.info("Add dummy support in VDSM conf file")
     if not hl_networks.add_dummy_vdsm_support(

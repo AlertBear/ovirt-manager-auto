@@ -9,6 +9,7 @@ import config as c
 import logging
 import helper
 from art.unittest_lib import attr
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
@@ -18,6 +19,7 @@ logger = logging.getLogger("Host_Network_API_Host_Cases")
 
 
 @attr(tier=1)
+@polarion("RHEVM3-10456")
 class TestHostNetworkApiHost01(hna.TestHostNetworkApiTestCaseBase):
     """
     Attach network to host NIC
@@ -38,6 +40,7 @@ class TestHostNetworkApiHost01(hna.TestHostNetworkApiTestCaseBase):
 
 
 @attr(tier=1)
+@polarion("RHEVM3-10458")
 class TestHostNetworkApiHost02(hna.TestHostNetworkApiTestCaseBase):
     """
     Attach VLAN network to host NIC
@@ -58,6 +61,7 @@ class TestHostNetworkApiHost02(hna.TestHostNetworkApiTestCaseBase):
 
 
 @attr(tier=1)
+@polarion("RHEVM3-10457")
 class TestHostNetworkApiHost03(hna.TestHostNetworkApiTestCaseBase):
     """
     Attach Non-VM network to host NIC
@@ -78,69 +82,115 @@ class TestHostNetworkApiHost03(hna.TestHostNetworkApiTestCaseBase):
 
 
 @attr(tier=1)
+@polarion("RHEVM3-10460")
 class TestHostNetworkApiHost04(hna.TestHostNetworkApiTestCaseBase):
     """
-    Attach network with IP to host NIC
+    Attach network with IP (netmask) to host NIC
+    Attach network with IP (prefix) to host NIC
     """
     __test__ = True
 
-    def test_ip_network_on_host(self):
+    def test_ip_netmask_network_on_host(self):
         """
         Attach network with IP to host NIC
         """
         network_host_api_dict = {
             "network": c.HOST_NETS[4][0],
             "nic": hna.c.HOST_NICS[1],
-            "ip": c.BASIC_IP_DICT
+            "ip": c.BASIC_IP_DICT_NETMASK
         }
         helper.attach_network_attachment(
             network_host_api_dict, c.HOST_NETS[4][0]
         )
 
+    def test_ip_prefix_network_on_host(self):
+        """
+        Attach network with IP (prefix) to host NIC
+        """
+        network_host_api_dict = {
+            "network": c.HOST_NETS[4][1],
+            "nic": hna.c.HOST_NICS[2],
+            "ip": c.BASIC_IP_DICT_PREFIX
+        }
+        helper.attach_network_attachment(
+            network_host_api_dict, c.HOST_NETS[4][1]
+        )
+
 
 @attr(tier=1)
+@polarion("RHEVM3-10461")
 class TestHostNetworkApiHost05(hna.TestHostNetworkApiTestCaseBase):
     """
-    Attach VLAN network with IP to host NIC
+    Attach VLAN network with IP (netmask) to host NIC
+    Attach VLAN network with IP (prefix) to host NIC
     """
     __test__ = True
 
-    def test_ip_vlan_network_on_host(self):
+    def test_ip_netmask_vlan_network_on_host(self):
         """
-        Attach VLAN network with IP to host NIC
+        Attach VLAN network with IP (netmask) to host NIC
         """
         network_host_api_dict = {
             "network": c.HOST_NETS[5][0],
             "nic": hna.c.HOST_NICS[1],
-            "ip": c.BASIC_IP_DICT
+            "ip": c.BASIC_IP_DICT_NETMASK
         }
         helper.attach_network_attachment(
             network_host_api_dict, c.HOST_NETS[5][0]
         )
 
+    def test_ip_prefix_vlan_network_on_host(self):
+        """
+        Attach VLAN network with IP (prefix) to host NIC
+        """
+        network_host_api_dict = {
+            "network": c.HOST_NETS[5][1],
+            "nic": hna.c.HOST_NICS[2],
+            "ip": c.BASIC_IP_DICT_PREFIX
+        }
+        helper.attach_network_attachment(
+            network_host_api_dict, c.HOST_NETS[5][1]
+        )
+
 
 @attr(tier=1)
+@polarion("RHEVM3-10462")
 class TestHostNetworkApiHost06(hna.TestHostNetworkApiTestCaseBase):
     """
-    Attach Non-VM network with IP to host NIC
+    Attach Non-VM network with IP (netmask) to host NIC
+    Attach Non-VM network with IP (prefix) to host NIC
     """
     __test__ = True
 
-    def test_ip_non_vm_network_on_host(self):
+    def test_ip_netmask_non_vm_network_on_host(self):
         """
-        Attach Non-VM network with IP to host NIC
+        Attach Non-VM network with IP (netmask) to host NIC
         """
         network_host_api_dict = {
             "network": c.HOST_NETS[6][0],
             "nic": hna.c.HOST_NICS[1],
-            "ip": c.BASIC_IP_DICT
+            "ip": c.BASIC_IP_DICT_NETMASK
         }
         helper.attach_network_attachment(
             network_host_api_dict, c.HOST_NETS[6][0]
         )
 
+    def test_ip_prefix_non_vm_network_on_host(self):
+        """
+        Attach Non-VM network with IP (prefix) to host NIC
+        """
+        network_host_api_dict = {
+            "network": c.HOST_NETS[6][1],
+            "nic": hna.c.HOST_NICS[2],
+            "ip": c.BASIC_IP_DICT_PREFIX
+        }
+        helper.attach_network_attachment(
+            network_host_api_dict, c.HOST_NETS[6][1]
+        )
+
 
 @attr(tier=1)
+@polarion("RHEVM3-10464")
 class TestHostNetworkApiHost07(hna.TestHostNetworkApiTestCaseBase):
     """
     Attach network with custom properties to host NIC
@@ -168,6 +218,7 @@ class TestHostNetworkApiHost07(hna.TestHostNetworkApiTestCaseBase):
 
 
 @attr(tier=1)
+@polarion("RHEVM3-10465")
 class TestHostNetworkApiHost08(hna.TestHostNetworkApiTestCaseBase):
     """
     1.Attach Non-VM network with 5000 MTU size to host NIC
@@ -202,6 +253,7 @@ class TestHostNetworkApiHost08(hna.TestHostNetworkApiTestCaseBase):
 
 
 @attr(tier=1)
+@polarion("RHEVM3-10466")
 class TestHostNetworkApiHost09(hna.TestHostNetworkApiTestCaseBase):
     """
     Remove network from host NIC
@@ -240,17 +292,19 @@ class TestHostNetworkApiHost09(hna.TestHostNetworkApiTestCaseBase):
 
 
 @attr(tier=1)
+@polarion("RHEVM3-10467")
 class TestHostNetworkApiHost10(hna.TestHostNetworkApiTestCaseBase):
     """
-    1.Attach network to host NIC
-    2.Update the network to have IP
+    1.Attach networks to host NICs
+    2.Update the network to have IP (netmask)
+    3.Update the network to have IP (prefix)
     """
     __test__ = True
 
     @classmethod
     def setup_class(cls):
         """
-        Attach network to host NIC
+        Attach networks to host NICs
         """
         network_host_api_dict = {
             "network": c.HOST_NETS[10][0],
@@ -259,29 +313,57 @@ class TestHostNetworkApiHost10(hna.TestHostNetworkApiTestCaseBase):
         helper.attach_network_attachment(
             network_host_api_dict, c.HOST_NETS[10][0]
         )
+        network_host_api_dict = {
+            "network": c.HOST_NETS[10][1],
+            "nic": hna.c.HOST_NICS[2]
+        }
+        helper.attach_network_attachment(
+            network_host_api_dict, c.HOST_NETS[10][1]
+        )
 
-    def test_update_network_with_ip_host_nic(self):
+    def test_update_network_with_ip_netmask_host_nic(self):
         """
-        Update the network to have IP
+        Update the network to have IP (netmask)
         """
         network_host_api_dict = {
             "network": c.HOST_NETS[10][0],
-            "ip": c.BASIC_IP_DICT
+            "ip": c.BASIC_IP_DICT_NETMASK
         }
         logger.info(
-            "Updating net_case10 network to have IP on %s NIC of %s",
-            hna.c.HOST_NICS[1], c.HOST_0
+            "Updating %s network to have IP on %s NIC of %s",
+            c.HOST_NETS[10][0], hna.c.HOST_NICS[1], c.HOST_0
         )
         if not hl_host_network.update_network_on_host(
             c.HOST_0, c.HOST_NETS[10][0], **network_host_api_dict
         ):
             raise c.NET_EXCEPTION(
-                "Failed to update net_case10 network with IP on %s of %s" %
-                (hna.c.HOST_NICS[1], c.HOST_0)
+                "Failed to update %s network with IP on %s of %s" %
+                (c.HOST_NETS[10][0], hna.c.HOST_NICS[1], c.HOST_0)
+            )
+
+    def test_update_network_with_ip_prefix_host_nic(self):
+        """
+        Update the network to have IP (prefix)
+        """
+        network_host_api_dict = {
+            "network": c.HOST_NETS[10][1],
+            "ip": c.BASIC_IP_DICT_PREFIX
+        }
+        logger.info(
+            "Updating %s network to have IP on %s NIC of %s",
+            c.HOST_NETS[10][1], hna.c.HOST_NICS[2], c.HOST_0
+        )
+        if not hl_host_network.update_network_on_host(
+            c.HOST_0, c.HOST_NETS[10][1], **network_host_api_dict
+        ):
+            raise c.NET_EXCEPTION(
+                "Failed to update %s network with IP on %s of %s" %
+                (c.HOST_NETS[10][1], hna.c.HOST_NICS[2], c.HOST_0)
             )
 
 
 @attr(tier=1)
+@polarion("RHEVM3-10468")
 class TestHostNetworkApiHost11(hna.TestHostNetworkApiTestCaseBase):
     """
     1.Create BOND
@@ -322,6 +404,7 @@ class TestHostNetworkApiHost11(hna.TestHostNetworkApiTestCaseBase):
 
 
 @attr(tier=1)
+@polarion("RHEVM3-10469")
 class TestHostNetworkApiHost12(hna.TestHostNetworkApiTestCaseBase):
     """
     1.Attach 3 networks to BOND
@@ -386,6 +469,7 @@ class TestHostNetworkApiHost12(hna.TestHostNetworkApiTestCaseBase):
 
 
 @attr(tier=1)
+@polarion("RHEVM3-12165")
 class TestHostNetworkApiHost13(hna.TestHostNetworkApiTestCaseBase):
     """
     1. Create network on DC/Cluster/Host
@@ -450,6 +534,7 @@ class TestHostNetworkApiHost13(hna.TestHostNetworkApiTestCaseBase):
 
 
 @attr(tier=1)
+@polarion("RHEVM3-10459")
 class TestHostNetworkApiHost14(hna.TestHostNetworkApiTestCaseBase):
     """
     Attach Non-VM VLAN network to host NIC
@@ -470,27 +555,43 @@ class TestHostNetworkApiHost14(hna.TestHostNetworkApiTestCaseBase):
 
 
 @attr(tier=1)
+@polarion("RHEVM3-10463")
 class TestHostNetworkApiHost15(hna.TestHostNetworkApiTestCaseBase):
     """
-    Attach Non-VM VLAN network with IP to host NIC
+    Attach Non-VM VLAN network with IP (netmask) to host NIC
+    Attach Non-VM VLAN network with IP (prefix) to host NIC
     """
     __test__ = True
 
     def test_non_vm_vlan_ip_network_on_host(self):
         """
-        Attach Non-VM VLAN network with IP to host NIC
+        Attach Non-VM VLAN network with IP (netmask) to host NIC
         """
         network_host_api_dict = {
             "network": c.HOST_NETS[15][0],
             "nic": hna.c.HOST_NICS[1],
-            "ip": c.BASIC_IP_DICT
+            "ip": c.BASIC_IP_DICT_NETMASK
         }
         helper.attach_network_attachment(
             network_host_api_dict, c.HOST_NETS[15][0]
         )
 
+    def test_non_vm_vlan_ip_prefix_on_host(self):
+        """
+        Attach Non-VM VLAN network with IP (prefix) to host NIC
+        """
+        network_host_api_dict = {
+            "network": c.HOST_NETS[15][1],
+            "nic": hna.c.HOST_NICS[2],
+            "ip": c.BASIC_IP_DICT_PREFIX
+        }
+        helper.attach_network_attachment(
+            network_host_api_dict, c.HOST_NETS[15][1]
+        )
+
 
 @attr(tier=1)
+@polarion("RHEVM3-12166")
 class TestHostNetworkApiHost16(hna.TestHostNetworkApiTestCaseBase):
     """
     1. Create network on DC/Cluster/Host (BOND)
@@ -567,3 +668,49 @@ class TestHostNetworkApiHost16(hna.TestHostNetworkApiTestCaseBase):
             raise c.NET_EXCEPTION(
                 "Failed to remove %s from %s" % (self.unmamanged_net, c.HOST_0)
             )
+
+
+@attr(tier=1)
+@polarion("RHEVM3-11879")
+class TestHostNetworkApiHost17(hna.TestHostNetworkApiTestCaseBase):
+    """
+    Attach network with custom properties to BOND
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        sn_dict = {
+            "add": {
+                "1": {
+                    "nic": "bond17",
+                    "slaves": [
+                        hna.c.HOST_NICS[2],
+                        hna.c.HOST_NICS[3]
+                    ]
+                }
+            }
+        }
+        if not hl_host_network.setup_networks(c.HOST_0, **sn_dict):
+            raise c.NET_EXCEPTION(
+                "Failed to create bond17 on %s" % c.HOST_0
+            )
+
+    def test_network_custom_properties_on_bond_host(self):
+        """
+        Attach network with custom properties to BOND
+        """
+        properties_dict = {
+            "bridge_opts": c.PRIORITY,
+            "ethtool_opts": c.TX_CHECKSUM.format(
+                nic=hna.c.HOST_NICS[1], state="off"
+            )
+        }
+        network_host_api_dict = {
+            "network": c.HOST_NETS[17][0],
+            "nic": "bond17",
+            "properties": properties_dict
+        }
+        helper.attach_network_attachment(
+            network_host_api_dict, c.HOST_NETS[17][0]
+        )

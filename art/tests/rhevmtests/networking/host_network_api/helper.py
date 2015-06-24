@@ -92,3 +92,14 @@ def prepare_networks_on_dc():
         raise c.NET_EXCEPTION(
             "Failed to add networks to %s/%s" % (c.DC_NAME, c.CLUSTER)
         )
+
+
+def generate_vlan_id():
+    """
+    Generate unique VLAN id for cases
+
+    :return: VLAN id
+    :rtype: str
+    """
+    c.VLAN_ID += 1
+    return str(c.VLAN_ID)
