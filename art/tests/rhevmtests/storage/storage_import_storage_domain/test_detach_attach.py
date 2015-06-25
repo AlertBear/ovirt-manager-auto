@@ -4,6 +4,7 @@ https://tcms.engineering.redhat.com/plan/14281
 """
 import logging
 import shlex
+from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost
 import art.test_handler.exceptions as errors
 import rhevmtests.storage.helpers as storage_helpers
 from art.rhevm_api.tests_lib.low_level import clusters as ll_clusters
@@ -801,9 +802,8 @@ class TestCase387991(BasicEnvironment):
         self.teardown_exception()
 
 
-# TODO: Check expected results
 @attr(tier=1)
-class TestCase396396(CommonSetUp):
+class TestCase396396(BasicEnvironment):
     """
     test mounted meta-data files when attaching a file domain
     https://tcms.engineering.redhat.com/case/396396
@@ -811,6 +811,14 @@ class TestCase396396(CommonSetUp):
     __test__ = NFS in opts['storages']
     storages = set([NFS])
     tcms_test_case = '396396'
+
+    def setUp(self):
+        super(TestCase396396, self).setUp()
+        self._prepare_environment()
+        self._secure_detach_storage_domain(
+            config.DATA_CENTER_NAME, self.non_master
+        )
+        wait_for_jobs()
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_attach_file_domain(self):
@@ -827,14 +835,13 @@ class TestCase396396(CommonSetUp):
 
         unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
         vm_names = [vm.get_name() for vm in unregistered_vms]
-        logger.info("Unregistered templates: %s", vm_names)
+        logger.info("Unregistered vms: %s", vm_names)
         assert ll_sd.register_object(
             unregistered_vms[0], cluster=config.CLUSTER_NAME
         )
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_detach_storage_domain']])
 
 
-# TODO: Check expected results
 @attr(tier=1)
 class TestCase396397(BasicEnvironment):
     """
@@ -893,7 +900,6 @@ class TestCase396397(BasicEnvironment):
         wait_for_jobs()
 
 
-# TODO: Check expected results
 @attr(tier=3)
 class TestCase396398(CommonSetUp):
     """
@@ -980,7 +986,6 @@ class TestCase396398(CommonSetUp):
         self.teardown_exception()
 
 
-# TODO: Check expected results
 @attr(tier=3)
 class TestCase396399(CommonSetUp):
     """
@@ -1065,7 +1070,6 @@ class TestCase396401(BasicEnvironment):
     TODO: __test__ = False due to
     https://projects.engineering.redhat.com/browse/RHEVM-2141
     which is needed for importing block storage domain
-
     """
     __test__ = False
     tcms_test_case = '396401'
@@ -1116,7 +1120,7 @@ class TestCase396401(BasicEnvironment):
                 lun_target=config.UNUSED_LUNS["lun_targets"][0]
             )
 
-        elif self.storage == NFS:
+        elif self.storage == config.STORAGE_TYPE_NFS:
             status = ll_sd.importStorageDomain(
                 True, config.TYPE_DATA, NFS,
                 config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
@@ -1142,6 +1146,103 @@ class TestCase396401(BasicEnvironment):
             unregistered_vms[0], cluster=self.cluster_name
         )
         wait_for_jobs()
+
+    def tearDown(self):
+        self._clean_environment(
+            self.dc_name, self.cluster_name, self.storage_domain
+        )
+        self.teardown_exception()
+
+
+@attr(tier=1)
+class TestCase12207(BasicEnvironment):
+    """
+    Initialize DC from a destroyed domain
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_5_Storage_ImportDomain_DetachAttach
+
+    TODO: __test__ = False due to
+    https://projects.engineering.redhat.com/browse/RHEVM-2141
+    which is needed for importing block storage domain
+    """
+    __test__ = False
+    tcms_test_case = '12207'
+    dc_name = 'test_dc'
+    cluster_name = 'test_cluster'
+
+    def setUp(self):
+        self.test_vm = 'test_vm_%s' % self.tcms_test_case
+        super(TestCase12207, self).setUp()
+        self._add_storage()
+        self._create_environment(self.dc_name, self.cluster_name)
+
+        vmArgs['storageDomainName'] = self.sd_name
+        vmArgs['vmName'] = self.test_vm
+        vmArgs['vmDescription'] = self.test_vm
+        vmArgs['installation'] = False
+        self.vm_created = storage_helpers.create_vm_or_clone(**vmArgs)
+
+        if not self.vm_created:
+            raise errors.VMException(
+                'Unable to create vm %s for test' % self.test_vm
+            )
+        test_utils.wait_for_tasks(
+            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+        )
+        logger.info(
+            'Deactivating domain  %s in dc %s', self.sd_name,
+            config.DATA_CENTER_NAME
+        )
+        if not ll_sd.deactivateStorageDomain(
+                True, config.DATA_CENTER_NAME, self.sd_name
+        ):
+            raise errors.StorageDomainException(
+                'Unable to deactivate domain %s on dc %s',
+                self.sd_name, config.DATA_CENTER_NAME
+            )
+        host_to_use = getSPMHost(config.HOSTS)
+        if not ll_sd.removeStorageDomain(
+                True, self.sd_name, host_to_use, destroy=True
+        ):
+            raise errors.StorageDomainException(
+                "Failed to destroy storage domain" % self.sd_name)
+
+    def test_initialize_dc_with_destroyed_domain(self):
+        """
+        - Configure 2 DCs: DC1 with 2 storage domains
+          and DC2 without a storage domain
+        - Create a VM with a disk on the non-master domain in DC1
+        - Destroy the domain which holds the disk from DC1
+        - Import it back again
+        - Attach the domain to DC2 as the first domain (initialize DC)
+        """
+        status = False
+        if self.storage == config.STORAGE_TYPE_ISCSI:
+            status = ll_sd.importBlockStorageDomain(
+                self.spm, lun_address=config.UNUSED_LUNS["lun_addresses"][0],
+                lun_target=config.UNUSED_LUNS["lun_targets"][0]
+            )
+
+        elif self.storage == config.STORAGE_TYPE_NFS:
+            status = ll_sd.importStorageDomain(
+                True, config.TYPE_DATA, NFS,
+                config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
+                config.UNUSED_DATA_DOMAIN_PATHS[0], self.spm
+            )
+        elif self.storage == config.STORAGE_TYPE_GLUSTER:
+            status = ll_sd.importStorageDomain(
+                True, config.TYPE_DATA, config.STORAGE_TYPE_GLUSTER,
+                config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
+                config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0], self.spm
+            )
+        self.assertTrue(status, "Failed to import storage domain")
+        logger.info("Attaching storage domain %s", self.sd_name)
+        self.assertRaises(
+            errors.StorageDomainException,
+            storagedomains.attach_and_activate_domain(
+                self.dc_name, self.sd_name
+            ), "Initialize data center with destroyed domain should fail"
+        )
 
     def tearDown(self):
         self._clean_environment(
