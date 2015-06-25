@@ -139,3 +139,5 @@ VM_ANY_HOST = ENUMS['vm_affinity_migratable']
 
 MIRROR_LUN_TARGET = PARAMETERS.as_list('mirror_lun_target')
 MIRROR_LUN_ADDRESS = PARAMETERS.as_list('mirror_lun_address')
+
+ISCSI_TARGETS = dict(zip(MIRROR_LUN_ADDRESS, MIRROR_LUN_TARGET))

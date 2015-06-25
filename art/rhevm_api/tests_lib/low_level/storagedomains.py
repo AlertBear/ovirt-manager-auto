@@ -29,13 +29,15 @@ from art.rhevm_api.tests_lib.low_level.disks import (
     wait_for_disks_status,
 )
 from art.rhevm_api.tests_lib.low_level.hosts import (
-    getHostCompatibilityVersion)
+    getHostCompatibilityVersion,
+)
 from art.rhevm_api.utils.storage_api import (
     getVmsInfo, getImagesList, getVolumeInfo, getVolumesList,
 )
 from art.rhevm_api.utils.test_utils import (
     validateElementStatus, get_api, searchForObj, getImageAndVolumeID,
-    getAllImages)
+    getAllImages,
+)
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from utilities.utils import getIpAddressByHostName
 from art.core_api import is_action
@@ -447,22 +449,41 @@ def iscsiDiscover(positive, host, address):
 
 
 @is_action()
-def iscsiLogin(positive, host, address, target, username=None, password=None):
-    '''
-    Description: run iscsi login
-    Author: edolinin
-    Parameters:
-       * host - name of host
-       * address - iscsi address
-       * target - iscsi target name
-       * username - iscsi username
-       * password - iscsi password
-    Return: status (True if iscsi login succeeded, False otherwise)
-    '''
+def iscsiLogin(
+        positive, host, addresses, targets, username=None, password=None
+):
+    """
+    Run iscsi login
+
+    :param positive: determines whether the call for this function is
+    positive of negative
+    :type positive: bool
+    :param host: name of host
+    :type host: str
+    :param addresses: iscsi addresses
+    :type addresses: list
+    :param targets: iscsi target names
+    :type targets: list
+    :param username: iscsi username
+    :type username: str
+    :param password: iscsi password
+    :type password: str
+    :return: True if iscsi login succeeded, False otherwise
+    :rtype: bool
+    """
     hostObj = hostUtil.find(host)
-    iscsi = IscsiDetails(address=address, target=target, username=username,
-                         password=password)
-    return hostUtil.syncAction(hostObj, "iscsilogin", positive, iscsi=iscsi)
+    for address, target in zip(addresses, targets):
+        iscsi = IscsiDetails(
+            address=address, target=target, username=username,
+            password=password
+        )
+        util.logger.info("Log in to address %s, target %s",
+                         address, target)
+        if not hostUtil.syncAction(
+            hostObj, "iscsilogin", positive, iscsi=iscsi
+        ):
+            return False
+    return True
 
 
 @is_action()
@@ -1457,7 +1478,7 @@ def importBlockStorageDomain(host, lun_address, lun_target):
         )
         return False
 
-    if not iscsiLogin('True', host, lun_address, lun_target):
+    if not iscsiLogin(True, host, [lun_address], [lun_target], login_all=True):
         util.logger.error(
             'Failed to login %s on target %s from %s',
             lun_address, lun_target, host

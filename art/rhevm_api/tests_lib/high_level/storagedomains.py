@@ -47,7 +47,7 @@ def _ISCSIdiscoverAndLogin(host, lun_address, lun_target):
                      (lun_address, host))
         return False
 
-    if not storagedomains.iscsiLogin('True', host, lun_address, lun_target):
+    if not storagedomains.iscsiLogin(True, host, [lun_address], [lun_target]):
         logger.error('Failed to login %s on target %s from %s' %
                      (lun_address, lun_target, host))
         return False
