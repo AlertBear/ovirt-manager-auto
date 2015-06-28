@@ -522,7 +522,7 @@ def exportTemplate(positive, template, storagedomain, exclusive='false',
     result = TEMPLATE_API.syncAction(templObj, "export", positive,
                                      **actionParams)
     if wait and result:
-        return waitForTemplatesStates(names=template)
+        return wait_for_export_domain_template_state(storagedomain, template)
 
     return result
 
