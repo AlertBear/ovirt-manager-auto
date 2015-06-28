@@ -314,6 +314,7 @@ class TestCase165965(AllPermutationsDisks):
     """
     __test__ = True
     tcms_test_case = '165965'
+    bz = {'1230270': {'engine': ['cli'], 'version': ["3.5", "3.6"]}}
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_vms_live_migration(self):
