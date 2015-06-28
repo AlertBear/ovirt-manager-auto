@@ -8,7 +8,7 @@ import logging
 from nose.tools import istest
 from art.unittest_lib import attr
 from art.unittest_lib import VirtTest as TestCase
-from art.test_handler.tools import tcms   # pylint: disable=E0611
+from art.test_handler.tools import polarion   # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vms
@@ -208,7 +208,7 @@ class CreateVmWithCdromPayload(PayloadViaCreate):
     payload_content = PAYLOADS_CONTENT[0]
     payload_type = PAYLOADS_TYPE[0]
 
-    @tcms(7775, '222049')
+    @polarion("RHEVM3-10061")
     @istest
     def check_existence_of_payload(self):
         """
@@ -216,7 +216,7 @@ class CreateVmWithCdromPayload(PayloadViaCreate):
         """
         self.assertTrue(self._check_existence_of_payload(PAYLOADS_DEVICES[0]))
 
-    @tcms(7775, '304572')
+    @polarion("RHEVM3-10074")
     @istest
     def check_object_existence(self):
         """
@@ -238,7 +238,7 @@ class UpdateVmWithCdromPayloadAndCheckPayloadObject(PayloadViaUpdate):
     payload_content = PAYLOADS_CONTENT[1]
     payload_type = PAYLOADS_TYPE[0]
 
-    @tcms(7775, '222050')
+    @polarion("RHEVM3-10063")
     @istest
     def check_existence_of_payload(self):
         """
@@ -262,7 +262,7 @@ class CdromPayloadComplexContent(PayloadViaUpdate):
     payload_content = PAYLOADS_CONTENT[4]
     payload_type = PAYLOADS_TYPE[0]
 
-    @tcms(7775, '304571')
+    @polarion("RHEVM3-12155")
     @istest
     def check_existence_of_payload(self):
         """
@@ -284,7 +284,7 @@ class CreateVmWithFloppyPayload(PayloadViaCreate):
     payload_content = PAYLOADS_CONTENT[2]
     payload_type = PAYLOADS_TYPE[1]
 
-    @tcms(7775, '302730')
+    @polarion("RHEVM3-10070")
     @istest
     def check_existence_of_payload(self):
         """
@@ -306,7 +306,7 @@ class UpdateVmWithFloppyPayload(PayloadViaUpdate):
     payload_content = PAYLOADS_CONTENT[3]
     payload_type = PAYLOADS_TYPE[1]
 
-    @tcms(7775, '302731')
+    @polarion("RHEVM3-10072")
     @istest
     def check_existence_of_payload(self):
         """
