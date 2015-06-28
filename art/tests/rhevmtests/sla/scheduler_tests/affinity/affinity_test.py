@@ -12,7 +12,7 @@ from art.rhevm_api.utils.test_utils import wait_for_tasks
 
 from art.unittest_lib import SlaTest as TestCase
 from nose.tools import istest
-from art.test_handler.tools import tcms, polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
@@ -609,7 +609,7 @@ class TestPutHostToMaintenanceUnderHardPositiveAffinity(StartVms):
         '1206875': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}
     }
 
-    @tcms(TCMS_PLAN_ID, '335350')
+    @polarion("RHEVM3-5563")
     def test_check_affinity_group(self):
         """
         Check that after deactivate hosts vms migrated on the same host

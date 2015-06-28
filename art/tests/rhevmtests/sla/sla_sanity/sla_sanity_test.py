@@ -13,7 +13,7 @@ from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import clusters
 import art.test_handler.exceptions as errors
-from art.test_handler.tools import tcms, polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import SlaTest as TestCase
 from art.unittest_lib import attr
 
@@ -231,7 +231,7 @@ class TestCPUHostCase1(BasicSlaClass):
     vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
     protected = False
 
-    @tcms("8140", "234089")
+    @polarion("RHEVM3-9527")
     def test_set_migratable_cpuhost(self):
         """
         Negative: Attempt to set a migratable VM to use CPU host
@@ -256,7 +256,7 @@ class TestCPUHostCase2(BasicSlaClass):
     vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
     protected = False
 
-    @tcms("8140", "274202")
+    @polarion("RHEVM3-9531")
     def test_set_cpuhost_user_migratable(self):
         """
         Negative: Attempt to change a VM to use CPU host + user migratable
@@ -292,7 +292,7 @@ class TestCPUHostCase3(BasicSlaClass):
     )
     protected = False
 
-    @tcms("8140", "234088")
+    @polarion("RHEVM3-9523")
     def test_set_pinned_cpuhost_vm_migratable(self):
         """
         Attempt to change a non migratable VM with CPU host
@@ -329,7 +329,7 @@ class TestCPUHostCase4(BasicSlaClass):
         }
     )
 
-    @tcms("8140", "274226")
+    @polarion("RHEVM3-9533")
     def test_set_non_migratable_cpuhost_no_host(self):
         """
         Attempt to change a non migratable VM with CPU host
@@ -368,7 +368,7 @@ class TestCPUHostCase5(BasicSlaClass):
         }
     )
 
-    @tcms("8140", "274227")
+    @polarion("RHEVM3-9535")
     def test_set_pinned_cpuhost_vm_user_migratable(self):
         """
         Attempt to change a non migratable VM with CPU host
@@ -406,7 +406,7 @@ class TestCPUHostCase6(BasicSlaClass):
         }
     )
 
-    @tcms("8140", "274229")
+    @polarion("RHEVM3-9536")
     def test_check_qemu_params(self):
         """
         Check if VM is running with correct "-cpu" value on QEMU
@@ -618,7 +618,7 @@ class TestCPUPinCase1(BasicSlaClass):
         cls.cores = hosts.get_host_topology(config.HOSTS[0]).cores
         logger.info("Number of cores per socket on host: %s" % cls.cores)
 
-    @tcms("6302", "233224")
+    @polarion("RHEVM3-9541")
     def test_cpupin_format1(self):
         """
         Set pinning to 0#0
@@ -632,7 +632,7 @@ class TestCPUPinCase1(BasicSlaClass):
         )
         logger.info("Successfully changed VCPU pinning to 0#0.")
 
-    @tcms("6302", "233224")
+    @polarion("RHEVM3-12221")
     def test_cpupin_format2(self):
         """
         Set pinning to 0#0-(number of cores-1)
@@ -650,7 +650,7 @@ class TestCPUPinCase1(BasicSlaClass):
         )
 
     @attr(tier=1)
-    @tcms("6302", "233224")
+    @polarion("RHEVM3-12222")
     def test_cpupin_format3(self):
         """
         Negative: Set pinning to 0#^1
@@ -665,7 +665,7 @@ class TestCPUPinCase1(BasicSlaClass):
         logger.info("Unable to change VCPU pinning to 0#^1")
 
     @attr(tier=1)
-    @tcms("6302", "233224")
+    @polarion("RHEVM3-12223")
     def test_cpupin_format4(self):
         """
         Negative: Set pinning to 0#^1,^2
@@ -680,7 +680,7 @@ class TestCPUPinCase1(BasicSlaClass):
         )
         logger.info("Unable to change VCPU pinning to 0#^1,^2")
 
-    @tcms("6302", "233224")
+    @polarion("RHEVM3-12224")
     def test_cpupin_format5(self):
         """
         Set pinning to 0#0-3,^1
@@ -698,7 +698,7 @@ class TestCPUPinCase1(BasicSlaClass):
         )
         logger.info("Successfully changed VCPU pinning to 0#0-3,^1")
 
-    @tcms("6302", "233224")
+    @polarion("RHEVM3-12225")
     def test_cpupin_format6(self):
         """
         Set pinning to 0#0-3,^1,^2
@@ -716,7 +716,7 @@ class TestCPUPinCase1(BasicSlaClass):
         )
         logger.info("Successfully changed VCPU pinning to 0#0-3,^1,^2")
 
-    @tcms("6302", "233224")
+    @polarion("RHEVM3-12226")
     def test_cpupin_format7(self):
         """
         Set pinning to 0#1,2,3
@@ -735,7 +735,7 @@ class TestCPUPinCase1(BasicSlaClass):
         logger.info("Successfully changed VCPU pinning to 0#1,2,3")
 
     @attr(tier=1)
-    @tcms("6302", "233224")
+    @polarion("RHEVM3-12227")
     def test_cpupin_format8(self):
         """
         Negative: Set pinning to 0#0_0#1
@@ -750,7 +750,7 @@ class TestCPUPinCase1(BasicSlaClass):
         logger.info("Successfully changed VCPU pinning to 0#0_0#1.")
 
     @attr(tier=1)
-    @tcms("6302", "233224")
+    @polarion("RHEVM3-12228")
     def test_cpupin_format9(self):
         """
         Negative: Letter instead of pCPU
@@ -763,7 +763,7 @@ class TestCPUPinCase1(BasicSlaClass):
         logger.info("Unable to change VCPU pinning to 0#A.")
 
     @attr(tier=1)
-    @tcms("6302", "233224")
+    @polarion("RHEVM3-12229")
     def test_cpupin_format10(self):
         """
         Negative: Letter instead of pCPU
@@ -775,7 +775,7 @@ class TestCPUPinCase1(BasicSlaClass):
             logger.info("Unable to change VCPU pinning to A#0")
 
     @attr(tier=1)
-    @tcms("6302", "233224")
+    @polarion("RHEVM3-12230")
     def test_cpupin_format15(self):
         """
         Negative: Pinning to empty range
@@ -789,7 +789,7 @@ class TestCPUPinCase1(BasicSlaClass):
         logger.info("Unable to change VCPU pinning to 0#0-1,^0,^1")
 
     @attr(tier=1)
-    @tcms("6302", "233224")
+    @polarion("RHEVM3-12231")
     def test_cpupin_format16(self):
         """
         Negative: Pinning to non-existing pCPU
@@ -807,7 +807,7 @@ class TestCPUPinCase1(BasicSlaClass):
         )
 
     @attr(tier=1)
-    @tcms("6302", "233224")
+    @polarion("RHEVM3-12232")
     def test_cpupin_format17(self):
         """
         Negative: Pinning to an empty string
@@ -820,7 +820,7 @@ class TestCPUPinCase1(BasicSlaClass):
         logger.info("Unable to change VCPU pinning to 0#")
 
     @attr(tier=1)
-    @tcms("6302", "233224")
+    @polarion("RHEVM3-12233")
     def test_cpupin_format18(self):
         """
         Negative: Pinning non-existing vCPU
@@ -845,7 +845,7 @@ class TestCPUPinCase2(BasicSlaClass):
     vm_desc = "CPU Pin Vm"
     vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
 
-    @tcms("6302", "232940")
+    @polarion("RHEVM3-9532")
     def test_set_migratable_cpupin(self):
         """
         Attempt to set a migratable VM to use CPU pinning
@@ -876,7 +876,7 @@ class TestCPUPinCase3(BasicSlaClass):
         }
     )
 
-    @tcms("6302", "232941")
+    @polarion("RHEVM3-9534")
     def test_set_pinned_cpupin_vm_migratable(self):
         """
         Attempt to change a non migratable VM with CPU pinning
@@ -910,7 +910,7 @@ class TestCPUPinCase4(BasicSlaClass):
         {"placement_affinity": config.VM_USER_MIGRATABLE}
     )
 
-    @tcms("6302", "274165")
+    @polarion("RHEVM3-9543")
     def test_set_user_migratable_cpupin(self):
         """
         Attempt to set a user migratable VM to use CPU pinning
@@ -943,7 +943,7 @@ class TestCPUPinCase5(BasicSlaClass):
         }
     )
 
-    @tcms("6302", "274164")
+    @polarion("RHEVM3-9542")
     def set_pinned_cpupin_vm_user_migratable(self):
         """
         Attempt to change a non migratable VM with CPU pinning
@@ -995,7 +995,7 @@ class TestCPUPinCase6(BasicSlaClass):
         logger.info("Number of cores per socket on host: %s" % cores)
         cls.total_cores = sockets * cores
 
-    @tcms("6302", "232936")
+    @polarion("RHEVM3-9529")
     def test_check_random_pinning(self):
         """
         Set CPU pinning to random pCPU cores and check if pining holds
@@ -1077,7 +1077,7 @@ class TestCPUPinCase7(BasicSlaClass):
             raise errors.VMException("Failed to update vm")
         cls.total_cores = sockets * cores
 
-    @tcms("6302", "232944")
+    @polarion("RHEVM3-9539")
     def test_check_pinning_load(self):
         """
         Set CPU pinning to random pCPU cores and check if pining holds
@@ -1119,7 +1119,7 @@ class TestCPUPinCase8(BasicSlaClass):
     vm_desc = "Placement policy VM"
     vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
 
-    @tcms("6302", "274174")
+    @polarion("RHEVM3-9544")
     def test_set_pinned_cpupin_vm_a(self):
         """
         Negative: Attempt to change VM to use CPU pinning, be non-migratable
@@ -1156,7 +1156,7 @@ class TestPlacementPolicyCase1(BasicSlaClass):
         }
     )
 
-    @tcms("9521", "274237")
+    @polarion("RHEVM3-9522")
     def test_migrate_migratable(self):
         """
         Migrate a migratable VM
@@ -1189,7 +1189,7 @@ class TestPlacementPolicyCase2(BasicSlaClass):
         }
     )
 
-    @tcms("9521", "274239")
+    @polarion("RHEVM3-9525")
     def test_migrate_user_migratable(self):
         """
         Migrate a user-migratable VM
@@ -1224,7 +1224,7 @@ class TestPlacementPolicyCase3(BasicSlaClass):
         }
     )
 
-    @tcms("9521", "274240")
+    @polarion("RHEVM3-9526")
     def test_migrate_non_migratable(self):
         """
         Migrate a non-migratable VM
@@ -1251,7 +1251,7 @@ class TestPlacementPolicyCase4(BasicSlaClass):
     vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
     vm_basic_parameters.update({"placement_affinity": config.VM_PINNED})
 
-    @tcms("9521", "274241")
+    @polarion("RHEVM3-9530")
     def test_run_non_migratable_no_specific(self):
         """
         Start a non-migratable VM with no specific host to run on
