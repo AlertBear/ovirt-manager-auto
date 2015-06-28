@@ -1143,7 +1143,7 @@ class TestHostNetworkApiSetupNetworks22(hna.TestHostNetworkApiTestCaseBase):
 
 
 @attr(tier=1)
-@polarion("RHEVM3-9823")
+@polarion("RHEVM3-9824")
 class TestHostNetworkApiSetupNetworks23(hna.TestHostNetworkApiTestCaseBase):
     """
     Attach multiple VLANs to BOND
