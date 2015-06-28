@@ -5,16 +5,15 @@
 MAC pool range per DC networking feature test
 """
 
-
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.vms as ll_vm
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
-import utilities.utils as utils
 import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
 import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
-from art.test_handler.tools import bz  # pylint: disable=E0611
+
 import helper
 import config as c
 
@@ -25,13 +24,14 @@ logger = logging.getLogger("MAC_Pool_Range_Per_DC_Cases")
 @attr(tier=1)
 class TestMacPoolRange01(TestCase):
     """
-    RHEVM3-6442 - Try to use old configuration with engine-config
+    Try to use old configuration with engine-config
     Check that invalid engine commands are deprecated:
         1) MAC pool range
         2) Max MAC count pool
     """
     __test__ = True
 
+    @polarion("RHEVM3-6442")
     def test_invalid_engine_commands(self):
         """
         Negative:Try to configure MAC range (should be deprecated)
@@ -57,10 +57,11 @@ class TestMacPoolRange01(TestCase):
 @attr(tier=1)
 class TestMacPoolRange02(TestCase):
     """
-    RHEVM3-6443 - Default MAC pool range
+    Default MAC pool range
     """
     __test__ = True
 
+    @polarion("RHEVM3-6443")
     def test_default_mac_pool(self):
         """`
         Extend the default range values of Default MAC pool
@@ -95,14 +96,7 @@ class TestMacPoolRange02(TestCase):
                 "Couldn't remove the ranges from the Default MAC pool"
             )
 
-        logger.info("Create a new DC %s", c.EXT_DC_1)
-        if not ll_dc.addDataCenter(
-            positive=True, name=c.EXT_DC_1, storage_type=c.STORAGE_TYPE,
-            version=c.COMP_VERSION, local=False
-        ):
-            raise c.NET_EXCEPTION(
-                "Couldn't add a new DC with default MAC pool to the setup"
-            )
+        helper.create_dc(mac_pool_name='')
 
         logger.info(
             "Check that the new DC was created with the updated "
@@ -122,10 +116,7 @@ class TestMacPoolRange02(TestCase):
         """
         Remove the DC
         """
-        logger.info("Remove a DC %s", c.EXT_DC_1)
-        if not ll_dc.removeDataCenter(positive=True, datacenter=c.EXT_DC_1):
-            logger.error("Failed to remove DC %s", c.EXT_DC_1)
-            cls.test_failed = True
+        helper.remove_dc()
 
 
 @attr(tier=1)
@@ -144,72 +135,28 @@ class TestMacPoolRange03(TestCase):
         """
         logger.info("Create 2 MAC pools")
         for i in range(2):
-            if not ll_mac_pool.create_mac_pool(
-                name=c.MAC_POOL_NAME[i], ranges=[c.MAC_POOL_RANGE_LIST[i]]
-            ):
-                raise c.NET_EXCEPTION(
-                    "Cannot create new MAC pool %s" % c.MAC_POOL_NAME[i]
-                )
+            helper.create_mac_pool(
+                mac_pool_name=c.MAC_POOL_NAME[i],
+                mac_pool_ranges=[c.MAC_POOL_RANGE_LIST[i]]
+            )
 
         helper.update_dc_with_mac_pool()
         helper.add_nic(name=c.NIC_NAME_1)
 
+    @polarion("RHEVM3-6444")
     def test_update_mac_pool_vm(self):
         """
         Check that for updated DC with new MAC pool, the NICs on the VM on
         that DC are created with MACs from the new MAC pool range
         """
-        logger.info("Find the MAC of the VM NIC %s", c.NIC_NAME_1)
-        nic_mac = ll_vm.get_vm_nic_mac_address(
-            vm=c.VM_NAME[0], nic=c.NIC_NAME_1
-        )
-        if not nic_mac:
-            raise c.NET_EXCEPTION(
-                "MAC was not found on NIC %s" % c.NIC_NAME_1
-            )
-
-        logger.info("Find the MAC range for %s", c.MAC_POOL_RANGE_LIST[0])
-        mac_range = utils.MACRange(
-            c.MAC_POOL_RANGE_LIST[0][0], c.MAC_POOL_RANGE_LIST[0][1]
-        )
-        if nic_mac not in mac_range:
-            raise c.NET_EXCEPTION(
-                "MAC %s is not in the MAC pool range for %s" %
-                (nic_mac, c.MAC_POOL_NAME_0)
-            )
-
-        logger.info(
-            "Update the DC %s with MAC pool %s", c.ORIG_DC, c.MAC_POOL_NAME_1
-        )
-        if not ll_dc.updateDataCenter(
-            positive=True, datacenter=c.ORIG_DC,
-            mac_pool=ll_mac_pool.get_mac_pool(c.MAC_POOL_NAME_1)
-        ):
-            raise c.NET_EXCEPTION(
-                "Couldn't update DC %s with MAC pool %s" %
-                (c.ORIG_DC, c.MAC_POOL_NAME_1)
-            )
+        helper.check_mac_in_range(vm=c.VM_NAME[0])
+        helper.update_dc_with_mac_pool(mac_pool_name=c.MAC_POOL_NAME_1)
 
         helper.add_nic(name=c.NIC_NAME[2])
-
-        logger.info("Find the MAC of the VM NIC %s", c.NIC_NAME[2])
-        nic_mac = ll_vm.get_vm_nic_mac_address(
-            vm=c.VM_NAME[0], nic=c.NIC_NAME[2]
+        helper.check_mac_in_range(
+            vm=c.VM_NAME[0], nic=c.NIC_NAME[2],
+            mac_range=c.MAC_POOL_RANGE_LIST[1]
         )
-        if not nic_mac:
-            raise c.NET_EXCEPTION(
-                "MAC was not found on NIC %s" % c.NIC_NAME[2]
-            )
-
-        logger.info("Find the MAC range for %s", c.MAC_POOL_RANGE_LIST[1])
-        mac_range = utils.MACRange(
-            c.MAC_POOL_RANGE_LIST[1][0], c.MAC_POOL_RANGE_LIST[1][1]
-        )
-        if nic_mac not in mac_range:
-            raise c.NET_EXCEPTION(
-                "MAC %s is not in the MAC pool range for %s" %
-                (nic_mac, c.MAC_POOL_NAME_1)
-            )
 
     @classmethod
     def teardown_class(cls):
@@ -234,7 +181,7 @@ class TestMacPoolRange03(TestCase):
 @attr(tier=1)
 class TestMacPoolRange04(TestCase):
     """
-    RHEVM3-6444 - Define new DC with new MAC address pool
+    Define new DC with new MAC address pool
     Test creation of a new DC with non-Default MAC pool
     """
     __test__ = True
@@ -251,19 +198,7 @@ class TestMacPoolRange04(TestCase):
         """
         Test creation of a new DC with non-Default MAC pool
         """
-        logger.info(
-            "Create a new DC %s with MAC pool %s",
-            c.EXT_DC_1, c.MAC_POOL_NAME_0
-        )
-        mac_pool_obj = ll_mac_pool.get_mac_pool(c.MAC_POOL_NAME_0)
-        if not ll_dc.addDataCenter(
-            positive=True, name=c.EXT_DC_1, storage_type=c.STORAGE_TYPE,
-            version=c.COMP_VERSION, local=False, mac_pool=mac_pool_obj
-        ):
-            raise c.NET_EXCEPTION(
-                "Couldn't add a new DC %s with non default MAC pool %s to "
-                "the setup" % (c.EXT_DC_1, c.MAC_POOL_NAME_0)
-            )
+        helper.create_dc()
 
     @classmethod
     def teardown_class(cls):
@@ -271,19 +206,16 @@ class TestMacPoolRange04(TestCase):
         Remove DC
         Remove MAC pool
         """
-        logger.info("Remove a DC %s", c.EXT_DC_1)
-        if not ll_dc.removeDataCenter(positive=True, datacenter=c.EXT_DC_1):
-            logger.error("Failed to remove DC %s", c.EXT_DC_1)
-            cls.test_failed = False
-
+        helper.remove_dc()
         helper.remove_mac_pool()
 
 
 @attr(tier=1)
 class TestMacPoolRange05(TestCase):
     """
-    RHEVM3-6445 - Two pools with same name
+     Two pools with same name
      Negative: Try to create two pools with the same name
+     Create two pools with the same range
     """
     __test__ = True
 
@@ -295,6 +227,7 @@ class TestMacPoolRange05(TestCase):
 
         helper.create_mac_pool()
 
+    @polarion("RHEVM3-6445")
     def test_creation_pool_same_name(self):
         """
         Test creation of a new pool with the same name, but different range
@@ -307,6 +240,7 @@ class TestMacPoolRange05(TestCase):
             mac_pool_ranges=[c.MAC_POOL_RANGE_LIST[1]], positive=False
         )
 
+    @polarion("RHEVM3-6446")
     def test_creation_pool_same_range(self):
         """
         Test creation of a new pool with the same range, but different names
@@ -330,7 +264,7 @@ class TestMacPoolRange05(TestCase):
 @attr(tier=1)
 class TestMacPoolRange06(TestCase):
     """
-    RHEVM3-6447 - Extend MAC pool range
+    Extend MAC pool range
     Check that you can add VNICs till you reach the limit of the MAC pool range
     Extending the MAC pool range by 2 will let you add 2 additional VNICs only
     """
@@ -345,6 +279,7 @@ class TestMacPoolRange06(TestCase):
         helper.create_mac_pool(mac_pool_ranges=[c.MAC_POOL_RANGE_LIST[1]])
         helper.update_dc_with_mac_pool()
 
+    @polarion("RHEVM3-6447")
     def test_range_limit_extend(self):
         """
         Add 3 VNICs to the VM till you reach the MAC pool range limit
@@ -378,79 +313,6 @@ class TestMacPoolRange06(TestCase):
         for nic in c.NIC_NAME[1:6]:
             helper.remove_nic(nic=nic)
 
-        logger.info("Update DC %s with default MAC pool", c.ORIG_DC)
-        if not ll_dc.updateDataCenter(
-            True, datacenter=c.ORIG_DC,
-            mac_pool=ll_mac_pool.get_mac_pool(c.DEFAULT_MAC_POOL)
-        ):
-            logger.error(
-                "Couldn't update DC %s with default MAC pool",
-                c.ORIG_DC
-            )
-            cls.test_failed = False
-
-        helper.remove_mac_pool()
-
-
-@attr(tier=1)
-class TestMacPoolRange07(TestCase):
-    """
-    RHEVM3-6447 - Extend MAC pool range
-    Check that you can add VNICs till you reach the limit of the MAC pool range
-    Extending the MAC pool range by 2 will let you add 2 additional VNICs only
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create a new MAC pool
-        Update DC with a new MAC pool
-        """
-        logger.info(
-            "Create a new MAC pool %s and update with it DC %s",
-            c.MAC_POOL_NAME_0, c.ORIG_DC
-        )
-        helper.create_mac_pool(mac_pool_ranges=[c.MAC_POOL_RANGE_LIST[1]])
-        helper.update_dc_with_mac_pool()
-
-    def test_range_limit_extend(self):
-        """
-        Add 3 VNICs to the VM till you reach the MAC pool range limit
-        Add another VNIC and fail
-        Extend the MAC pool range
-        Add another VNICs (till you reach range limit again)
-        Fail when you try to overcome that limit
-        """
-        for i in range(3):
-            helper.add_nic(name=c.NIC_NAME[i+1])
-
-        logger.info("Trying to add VNIC when there are no spare MACs to use")
-        helper.add_nic(positive=False, name=c.NIC_NAME[4])
-
-        helper.update_mac_pool_range_size()
-
-        for i in range(4, 6):
-            helper.add_nic(name=c.NIC_NAME[i])
-
-        logger.info("Trying to add VNIC when there are no spare MACs to use")
-        helper.add_nic(positive=False, name=c.NIC_NAME[6])
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove 6 VNICs from the VM
-        Update DC with the Default MAC pool
-        Remove MAC pool
-        """
-        logger.info("Remove VNICs from VM")
-        for nic in c.NIC_NAME[1:6]:
-            helper.remove_nic(nic=nic)
-
-        logger.info(
-            "Update DC %s with default MAC pool and remove MAC pool %s",
-            c.ORIG_DC, c.MAC_POOL_NAME_0
-        )
         helper.update_dc_with_mac_pool(
             mac_pool_name=c.DEFAULT_MAC_POOL, teardown=True
         )
@@ -458,9 +320,9 @@ class TestMacPoolRange07(TestCase):
 
 
 @attr(tier=1)
-class TestMacPoolRange08(TestCase):
+class TestMacPoolRange07(TestCase):
     """
-    RHEVM3-6448 - Shrink MAC pool range
+    Shrink MAC pool range
     Check that you can add VNICs if you don't reach the limit of the
     MAC pool range
     Shrinking the MAC pool to the size equal to the number of VM NICs
@@ -481,6 +343,7 @@ class TestMacPoolRange08(TestCase):
         helper.create_mac_pool(mac_pool_ranges=[c.MAC_POOL_RANGE_LIST[1]])
         helper.update_dc_with_mac_pool()
 
+    @polarion("RHEVM3-6448")
     def test_range_limit_shrink(self):
         """
         Add VNICs to the VM
@@ -518,9 +381,9 @@ class TestMacPoolRange08(TestCase):
 
 
 @attr(tier=1)
-class TestMacPoolRange09(TestCase):
+class TestMacPoolRange08(TestCase):
     """
-    RHEVM3-6449 - Add/remove ranges from pool
+    Add/remove ranges from pool
     Check that add and remove ranges from MAC pool is working as expected
     """
     __test__ = True
@@ -532,6 +395,7 @@ class TestMacPoolRange09(TestCase):
         """
         helper.create_mac_pool()
 
+    @polarion("RHEVM3-6449")
     def test_add_remove_ranges(self):
         """
         Add 2 new ranges
@@ -583,9 +447,9 @@ class TestMacPoolRange09(TestCase):
 
 
 @attr(tier=1)
-class TestMacPoolRange10(TestCase):
+class TestMacPoolRange09(TestCase):
     """
-    RHEVM3-6450 - Non-Continues ranges in MAC pool
+    Non-Continues ranges in MAC pool
     Check that you can add VNICs according to the number of MAC ranges when
     each MAC range has only one MAC address in the pool
     """
@@ -616,6 +480,7 @@ class TestMacPoolRange10(TestCase):
         for i in range(3):
             helper.add_nic(name=c.NIC_NAME[i+1])
 
+    @polarion("RHEVM3-6450")
     def test_non_continuous_ranges(self):
         """
         Test VNICs have non-continuous MACs (according to the Ranges values)
@@ -693,9 +558,9 @@ class TestMacPoolRange10(TestCase):
 
 
 @attr(tier=1)
-class TestMacPoolRange11(TestCase):
+class TestMacPoolRange10(TestCase):
     """
-    RHEVM3-6451 - Manually assign MAC from/not from MAC pool range
+    Manually assign MAC from/not from MAC pool range
     Check that when MAC pool is exhausted, adding new VNIC to VM is possible
     only with manual MAC configuration
     """
@@ -714,6 +579,7 @@ class TestMacPoolRange11(TestCase):
         helper.create_mac_pool()
         helper.update_dc_with_mac_pool()
 
+    @polarion("RHEVM3-6451")
     def test_auto_assigned_vs_manual(self):
         """
         Add VNICs to the VM till MAC pool is exhausted
@@ -747,9 +613,9 @@ class TestMacPoolRange11(TestCase):
 
 
 @attr(tier=1)
-class TestMacPoolRange12(TestCase):
+class TestMacPoolRange11(TestCase):
     """
-    RHEVM3-6452 - Assign same pool to multiple DC's -Disallow Duplicates
+    Assign same pool to multiple DC's -Disallow Duplicates
     Check that if "Allow duplicates" is False, it's impossible to add VNIC
     with manual MAC allocation to VM
     """
@@ -770,6 +636,7 @@ class TestMacPoolRange12(TestCase):
 
         helper.add_nic(name=c.NIC_NAME_1)
 
+    @polarion("RHEVM3-6452")
     def test_auto_assigned_vs_manual(self):
         """
         Negative:Try to add a new VNIC to VM when explicitly providing MAC
@@ -795,11 +662,11 @@ class TestMacPoolRange12(TestCase):
 
         logger.info(self.log, "Negative", c.EXT_DC_0)
         helper.add_nic(
-            positive=False, vm=c.MP_VM_NAMES[0], name=c.NIC_NAME_1,
+            positive=False, vm=c.MP_VM, name=c.NIC_NAME_1,
             mac_address=mac_address
         )
 
-        helper.add_nic(vm=c.MP_VM_NAMES[0], name=c.NIC_NAME_1)
+        helper.add_nic(vm=c.MP_VM, name=c.NIC_NAME_1)
 
     @classmethod
     def teardown_class(cls):
@@ -809,7 +676,7 @@ class TestMacPoolRange12(TestCase):
         Remove MAC pool
         """
         logger.info("Remove VNICs from VM")
-        for vm in (c.VM_NAME[0], c.MP_VM_NAMES[0]):
+        for vm in (c.VM_NAME[0], c.MP_VM):
             helper.remove_nic(vm=vm)
 
         for dc in (c.DC_NAME[0], c.EXT_DC_0):
@@ -824,13 +691,14 @@ class TestMacPoolRange12(TestCase):
 
 
 @attr(tier=1)
-class TestMacPoolRange13(TestCase):
+class TestMacPoolRange12(TestCase):
     """
-    RHEVM3-6452 - Assign same pool to multiple DCs -Allow Duplicates
+    Assign same pool to multiple DCs -Allow Duplicates
     Check that if "Allow duplicates" is True, it's possible to add vNIC
     with manual MAC allocation to VM
     """
     __test__ = True
+    bz = {"1212461": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
     log = "Check adding vNIC to VM on DC %s when allow duplicates is True"
 
     @classmethod
@@ -845,7 +713,7 @@ class TestMacPoolRange13(TestCase):
             helper.update_dc_with_mac_pool(dc=dc)
         helper.add_nic()
 
-    @bz({"1212461": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}})
+    @polarion("RHEVM3-6453")
     def test_allow_duplicates(self):
         """
         Add VNIC with auto assignment to VM
@@ -871,15 +739,15 @@ class TestMacPoolRange13(TestCase):
 
         logger.info(self.log, c.EXT_DC_0)
         helper.add_nic(
-            vm=c.MP_VM_NAMES[0], name=c.NIC_NAME_1, mac_address=mac_address
+            vm=c.MP_VM, name=c.NIC_NAME_1, mac_address=mac_address
         )
 
-        helper.add_nic(vm=c.MP_VM_NAMES[0], name=c.NIC_NAME[2])
-        helper.add_nic(positive=False, vm=c.MP_VM_NAMES[0], name=c.NIC_NAME[3])
+        helper.add_nic(vm=c.MP_VM, name=c.NIC_NAME[2])
+        helper.add_nic(positive=False, vm=c.MP_VM, name=c.NIC_NAME[3])
 
         logger.info(self.log, c.EXT_DC_0)
         helper.add_nic(
-            vm=c.MP_VM_NAMES[0], name=c.NIC_NAME[3], mac_address=mac_address
+            vm=c.MP_VM, name=c.NIC_NAME[3], mac_address=mac_address
         )
 
     @classmethod
@@ -890,11 +758,11 @@ class TestMacPoolRange13(TestCase):
         Remove MAC pool
         """
         logger.info("Remove VNICs from VMs")
-        for vm in (c.VM_NAME[0], c.MP_VM_NAMES[0]):
+        for vm in (c.VM_NAME[0], c.MP_VM):
             for nic in (c.NIC_NAME_1, c.NIC_NAME[2]):
                 helper.remove_nic(vm=vm, nic=nic)
 
-        helper.remove_nic(vm=c.MP_VM_NAMES[0], nic=c.NIC_NAME[3])
+        helper.remove_nic(vm=c.MP_VM, nic=c.NIC_NAME[3])
 
         for dc in (c.DC_NAME[0], c.EXT_DC_0):
             logger.info("Update DC %s with default MAC pool", dc)
@@ -905,13 +773,14 @@ class TestMacPoolRange13(TestCase):
 
 
 @attr(tier=1)
-class TestMacPoolRange14(TestCase):
+class TestMacPoolRange13(TestCase):
     """
-    RHEVM3-6454 - Combine MAC pool range of Unicast and multicast MAC's
+    Combine MAC pool range of Unicast and multicast MAC's
     Check that when having a combined range of multicast and unicast addresses
     the new VNICs will be created with unicast addresses only
     """
     __test__ = True
+    bz = {"1219383": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
     MAC_POOL_RANGES = [
         ("00:ff:ff:ff:ff:ff", "02:00:00:00:00:01")
     ]
@@ -925,7 +794,7 @@ class TestMacPoolRange14(TestCase):
         helper.create_mac_pool(mac_pool_ranges=cls.MAC_POOL_RANGES)
         helper.update_dc_with_mac_pool()
 
-    @bz({"1219383": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}})
+    @polarion("RHEVM3-6454")
     def test_multicast_unicast_mix(self):
         """
         Add 2 VNICs to VM
@@ -960,9 +829,9 @@ class TestMacPoolRange14(TestCase):
 
 
 @attr(tier=1)
-class TestMacPoolRange15(TestCase):
+class TestMacPoolRange14(TestCase):
     """
-    RHEVM3-6455 - Create VM from Template
+    Create VM from Template
     Check that VNIC created from template uses the correct MAC POOL value
     Add 2 more VNICs to template, so it will be impossible to create a new VM
     from that template
@@ -1010,28 +879,17 @@ class TestMacPoolRange15(TestCase):
                     "Cannot add NIC %s to Template" % c.NIC_NAME[i+1]
                 )
 
+    @polarion("RHEVM3-6455")
     def test_vm_from_template(self):
         """
         Check that VNIC created from template uses the correct MAC POOL values
         Negative: Try to create new VM from template when there are not enough
         MACs for its VNICs
         """
-        logger.info(
-            "Check that VNIC created from template uses the correct "
-            "MAC POOL values"
+        helper.check_mac_in_range(
+            vm=c.MP_VM_NAMES[1], nic=c.NIC_NAME[0],
+            mac_range=c.MAC_POOL_RANGE_LIST[1]
         )
-        nic_mac = ll_vm.get_vm_nic_mac_address(
-            vm=c.MP_VM_NAMES[1], nic=c.NIC_NAME[0]
-        )
-
-        mac_range = utils.MACRange(
-            c.MAC_POOL_RANGE_LIST[1][0], c.MAC_POOL_RANGE_LIST[1][1]
-        )
-        if nic_mac not in mac_range:
-            raise c.NET_EXCEPTION(
-                "MAC %s is not in the MAC pool range for %s" %
-                (nic_mac, c.MAC_POOL_NAME_0)
-            )
 
         logger.info(
             "Negative: Try to create new VM from template when there are "
@@ -1081,12 +939,13 @@ class TestMacPoolRange15(TestCase):
 
 
 @attr(tier=1)
-class TestMacPoolRange16(TestCase):
+class TestMacPoolRange15(TestCase):
     """
-    RHEVM3-6457 - Negative: Try to remove the default MAC pool
+    Negative: Try to remove the default MAC pool
     """
     __test__ = True
 
+    @polarion("RHEVM3-6457")
     def test_remove_default_mac_pool(self):
         """
         Negative: Remove of Default MAC pool should fail
@@ -1099,9 +958,9 @@ class TestMacPoolRange16(TestCase):
 
 
 @attr(tier=1)
-class TestMacPoolRange17(TestCase):
+class TestMacPoolRange16(TestCase):
     """
-    RHEVM3-6458 - Removal of MAC pool assigned to DC
+    Removal of MAC pool assigned to DC
     """
     __test__ = True
 
@@ -1118,6 +977,7 @@ class TestMacPoolRange17(TestCase):
         helper.create_mac_pool(mac_pool_ranges=[c.MAC_POOL_RANGE_LIST[1]])
         helper.update_dc_with_mac_pool()
 
+    @polarion("RHEVM3-6458")
     def test_remove_used_mac_pool(self):
         """
         Negative:Try to remove the MAC pool that is already assigned to DC
@@ -1143,9 +1003,9 @@ class TestMacPoolRange17(TestCase):
 
 
 @attr(tier=1)
-class TestMacPoolRange18(TestCase):
+class TestMacPoolRange17(TestCase):
     """
-    RHEVM3-6459 - Removal of MAC pool that is not assigned to DC
+    Removal of MAC pool that is not assigned to DC
     """
     __test__ = True
 
@@ -1163,6 +1023,7 @@ class TestMacPoolRange18(TestCase):
             )
         helper.update_dc_with_mac_pool()
 
+    @polarion("RHEVM3-6459")
     def test_remove_unused_mac_pool(self):
         """
         Remove the MAC pool that is not assigned to any DC
@@ -1191,9 +1052,9 @@ class TestMacPoolRange18(TestCase):
 
 
 @attr(tier=1)
-class TestMacPoolRange19(TestCase):
+class TestMacPoolRange18(TestCase):
     """
-    RHEVM3-6460 - Removal of DC with custom MAC pool
+    Removal of DC with custom MAC pool
     """
     __test__ = True
 
@@ -1204,33 +1065,15 @@ class TestMacPoolRange19(TestCase):
         Create a new DC with MAC pool
         """
         helper.create_mac_pool()
+        helper.create_dc()
 
-        logger.info(
-            "Create a new DC %s with MAC pool %s",
-            c.EXTRA_DC[1], c.MAC_POOL_NAME_0
-        )
-        mac_pool_obj = ll_mac_pool.get_mac_pool(c.MAC_POOL_NAME_0)
-        if not ll_dc.addDataCenter(
-            positive=True, name=c.EXTRA_DC[1],
-            storage_type=c.STORAGE_TYPE, version=c.COMP_VERSION,
-            local=False, mac_pool=mac_pool_obj
-        ):
-            raise c.NET_EXCEPTION(
-                "Couldn't add a new DC with non default MAC pool to the setup"
-            )
-
+    @polarion("RHEVM3-6460")
     def test_remove_dc(self):
         """
         Remove DC
         Make sure that the MAC pool is not removed
         """
-        logger.info("Remove a DC %s", c.EXTRA_DC[1])
-        if not ll_dc.removeDataCenter(
-            positive=True, datacenter=c.EXTRA_DC[1]
-        ):
-            raise c.NET_EXCEPTION(
-                "Failed to remove DC %s" % c.EXTRA_DC[1]
-            )
+        helper.remove_dc()
 
         logger.info(
             "Make sure %s exists after DC removal" % c.MAC_POOL_NAME_0
@@ -1245,4 +1088,241 @@ class TestMacPoolRange19(TestCase):
         """
         Remove MAC pool
         """
+        helper.remove_mac_pool()
+
+
+@attr(tier=1)
+class TestMacPoolRange19(TestCase):
+    """
+    Removal of DC with custom MAC pool when that MAC pool is assigned to 2 DCs
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create MAC pool
+        Create 2 new DCs with MAC pool
+        """
+        helper.create_mac_pool()
+
+        logger.info("Create 2 new DCs with %s", c.MAC_POOL_NAME_0)
+        for i in range(1, 3):
+            helper.create_dc(dc_name=c.EXTRA_DC[i])
+
+    @polarion("RHEVM3-6461")
+    def test_remove_two_dcs(self):
+        """
+        Remove DCs
+        Make sure that the MAC pool is not removed
+        """
+        for i in range(1, 3):
+            helper.remove_dc(dc_name=c.EXTRA_DC[i])
+
+            logger.info(
+                "Make sure %s exists after DC removal" % c.MAC_POOL_NAME_0
+            )
+            mac_pool_obj = ll_mac_pool.get_mac_pool(c.MAC_POOL_NAME_0)
+            if not mac_pool_obj:
+                raise c.NET_EXCEPTION(
+                    "MAC pool was removed during %s removal" % c.EXTRA_DC[i]
+                )
+            if i == 1:
+                logger.info(
+                    "Make sure %s is attached to %s after removal of the "
+                    "first DC", c.MAC_POOL_NAME_0, c.EXTRA_DC[i+1]
+                )
+                mac_on_dc = ll_mac_pool.get_mac_pool_from_dc(c.EXTRA_DC[2])
+                if not mac_on_dc.name == mac_pool_obj.name:
+                    raise c.NET_EXCEPTION(
+                        "MAC pool on the DC %s changed after removal of the DC"
+                        " %s" % (c.EXTRA_DC[2], c.EXTRA_DC[1])
+                    )
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove MAC pool
+        """
+        helper.remove_mac_pool()
+
+
+@attr(tier=1)
+class TestMacPoolRange20(TestCase):
+    """
+    Recreate DC with custom MAC pool and make sure it was
+    recreated with the Default MAC pool
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create MAC pool
+        Create a new DC with MAC pool
+        Remove a created DC
+        """
+        helper.create_mac_pool()
+        helper.create_dc()
+        helper.remove_dc()
+
+    @polarion("RHEVM3-6462")
+    def test_recreate_dc(self):
+        """
+        Recreate just removed DC
+        Make sure that the DC was recreated with the Default MAC pool
+        Remove DC
+        Make sure Default MAC pool still exists
+        """
+        logger.info(
+            "Recreate removed DC without explicitly providing MAC pool"
+        )
+        helper.create_dc(mac_pool_name="")
+
+        logger.info(
+            "Check that the new DC was created with the Default MAC pool"
+        )
+        if not (
+            ll_mac_pool.get_default_mac_pool().id ==
+            ll_mac_pool.get_mac_pool_from_dc(c.EXT_DC_1).id
+        ):
+            raise c.NET_EXCEPTION(
+                "New DC was not created with the Default MAC pool values"
+            )
+
+        helper.remove_dc()
+
+        logger.info(
+            "Make sure %s exists after DC removal", c.DEFAULT_MAC_POOL
+        )
+        if not ll_mac_pool.get_mac_pool(c.DEFAULT_MAC_POOL):
+            raise c.NET_EXCEPTION("MAC pool was removed during DC removal")
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove MAC pool
+        """
+        helper.remove_mac_pool()
+
+
+@attr(tier=1)
+class TestMacPoolRange21(TestCase):
+    """
+    MAC pool support for DCs with versions less than 3.6
+    """
+    __test__ = True
+    DC_VER_NAME = ["_".join(["MAC_POOL_DC", str(i)]) for i in range(1, 6)]
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create MAC pool
+
+        """
+        helper.create_mac_pool()
+
+    @polarion("RHEVM3-6463")
+    def test_create_dc_all_ver(self):
+        """
+        Create DCs with version 3.1 and up with non-Default MAC pool
+        """
+        logger.info(
+            "Create DCs with versions 3.1 and up with %s MAC pool",
+            c.MAC_POOL_NAME_0
+        )
+        for i in range(1, 6):
+            helper.create_dc(dc_name=c.EXTRA_DC[i], version=c.VERSION[i])
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove all created DCs
+        Remove MAC pool
+        """
+        logger.info("Remove DCs with version less that 3.6")
+        for i in range(1, 6):
+            helper.remove_dc(dc_name=c.EXTRA_DC[i])
+
+        helper.remove_mac_pool()
+
+
+@attr(tier=1)
+class TestMacPoolRange22(TestCase):
+    """
+     Assign MAC's for vNIC's from custom MAC pool range for DC with 3.5 version
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Update additional DC to be 3.5
+        Create a new MAC pool
+        Update DCs with a new MAC pool
+        Add NIC to VM
+        """
+        logger.info("Update DC %s to have 3.5 version", c.EXT_DC_0)
+        if not ll_dc.updateDataCenter(
+            positive=True, datacenter=c.EXT_DC_0, version="3.5"
+        ):
+            raise c.NET_EXCEPTION(
+                "Couldn't update DC %s to have 3.5 version" % c.EXT_DC_0
+            )
+
+        helper.create_mac_pool()
+
+        for dc in (c.ORIG_DC, c.EXT_DC_0):
+            helper.update_dc_with_mac_pool(dc=dc)
+
+        helper.add_nic(vm=c.MP_VM)
+
+    @polarion("RHEVM3-6464")
+    def test_dif_ver_dcs(self):
+        """
+        Add additional VNIC to VM and succeed
+        Negative: Try to add 3rd VNIC and fail
+        """
+        helper.check_mac_in_range()
+
+        logger.info(
+            "Add VNIC to VM %s on DC %s", c.VM_NAME[0], c.DC_NAME[0]
+        )
+        helper.add_nic()
+
+        logger.info(
+            "Negative: Try to add VNIC to VM %s on DC %s when no available "
+            "MAC exists in the MAC pool used by both DCs",
+            c.VM_NAME[0], c.ORIG_DC
+        )
+
+        helper.add_nic(positive=False, name=c.NIC_NAME[2])
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Update additional DC to have 3.6 version
+        Remove VNICs from both VMs
+        Update DC with the Default MAC pool
+        Remove MAC pool
+        """
+        logger.info("Update DC %s to have 3.6 version", c.EXT_DC_0)
+        if not ll_dc.updateDataCenter(
+            positive=True, datacenter=c.EXT_DC_0, version=c.COMP_VERSION
+        ):
+            logger.error(
+                "Couldn't update DC %s to have 3.5 version" % c.EXT_DC_0
+            )
+
+        for vm in (c.VM_NAME[0], c.MP_VM):
+            helper.remove_nic(vm=vm)
+
+        logger.info(
+            "Update DCs %s with default MAC pool"
+        )
+        for dc in (c.ORIG_DC, c.EXT_DC_0):
+            helper.update_dc_with_mac_pool(
+                dc=dc, mac_pool_name=c.DEFAULT_MAC_POOL, teardown=True
+            )
+
         helper.remove_mac_pool()

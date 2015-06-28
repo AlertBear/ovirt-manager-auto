@@ -56,8 +56,11 @@ def update_dc_with_mac_pool(
     :type dc: str
     :param mac_pool_name: Name of the MAC pool
     :type mac_pool_name: str
+    :param teardown: flag if function run in teardown
+    :type teardown: bool
     :raise: NetworkException
     """
+    log_error = "Couldn't update DC %s with MAC pool %s"
     logger.info(
         "Update the DC %s with MAC pool %s", dc, mac_pool_name
     )
@@ -66,13 +69,10 @@ def update_dc_with_mac_pool(
         mac_pool=ll_mac_pool.get_mac_pool(mac_pool_name)
     ):
         if teardown:
-            logger.info(
-                "Couldn't update DC %s with MAC pool %s", dc, mac_pool_name
-            )
+            logger.info(log_error, dc, mac_pool_name)
             TestCase.test_failed = True
-        raise c.NET_EXCEPTION(
-            "Couldn't update DC %s with MAC pool %s" % (dc, mac_pool_name)
-        )
+        else:
+            raise c.NET_EXCEPTION(log_error % (dc, mac_pool_name))
 
 
 def remove_mac_pool(mac_pool_name=c.MAC_POOL_NAME_0):
@@ -186,3 +186,91 @@ def check_single_mac_range_match(mac_ranges, start_idx, end_idx):
                 "VNIC MAC %s is not in the MAC pool range for %s" %
                 (nic_mac, c.MAC_POOL_NAME_0)
             )
+
+
+def create_dc(
+    dc_name=c.EXT_DC_1, mac_pool_name=c.MAC_POOL_NAME_0,
+    mac_pool_ranges=list(), version=c.COMP_VERSION
+):
+    """
+    Create a new DC with MAC pool
+
+    :param dc_name: DC name
+    :type dc_name: str
+    :param mac_pool_name: MAC pool name
+    :type mac_pool_name: str
+    :param mac_pool_ranges: MAC pool ranges
+    :type mac_pool_ranges: list
+    :raise :NetworkException
+    """
+    if not mac_pool_name:
+        mac_pool_obj = None
+        mac_pool_name = "Default"
+    else:
+        try:
+            mac_pool_obj = ll_mac_pool.get_mac_pool(mac_pool_name)
+        except api_exc.EntityNotFound:
+            create_mac_pool(
+                mac_pool_name=mac_pool_name, mac_pool_ranges=mac_pool_ranges
+            )
+            mac_pool_obj = ll_mac_pool.get_mac_pool(mac_pool_name)
+
+    logger.info("Create a new DC with %s", mac_pool_name)
+    if not ll_dc.addDataCenter(
+        positive=True, name=dc_name,
+        storage_type=c.STORAGE_TYPE, version=version,
+        local=False, mac_pool=mac_pool_obj
+    ):
+        raise c.NET_EXCEPTION("Couldn't add a DC %s to the setup" % dc_name)
+
+
+def remove_dc(dc_name=c.EXT_DC_1, teardown=True):
+    """
+    Remove DC
+
+    :param dc_name: DC name
+    :type dc_name: str
+    :param teardown: flag if function run in teardown
+    :type teardown: bool
+    :raise :NetworkException
+    """
+    log_error = "Failed to remove DC %s"
+    logger.info("Remove a DC %s", dc_name)
+    if not ll_dc.removeDataCenter(
+        positive=True, datacenter=dc_name
+    ):
+        if teardown:
+            logger.error(log_error, dc_name)
+            TestCase.test_failed = True
+        else:
+            raise c.NET_EXCEPTION(log_error, dc_name)
+
+
+def check_mac_in_range(
+    vm=c.MP_VM, nic=c.NIC_NAME_1, mac_range=c.MAC_POOL_RANGE_LIST[0]
+):
+    """
+    Check if MAC of VM is in the given range
+
+    :param vm: VM name
+    :type vm: str
+    :param nic: NIC of VM
+    :type nic: str
+    :param mac_range: MAC Range
+    :type mac_range: tuple
+    :raise :NetworkException
+    """
+    logger.info(
+        "Check that vNIC added to VM %s uses the correct MAC POOL value", vm
+    )
+
+    nic_mac = ll_vm.get_vm_nic_mac_address(vm=vm, nic=nic)
+    if not nic_mac:
+        raise c.NET_EXCEPTION(
+            "MAC was not found on NIC %s" % c.NIC_NAME_1
+        )
+    mac_range = utils.MACRange(mac_range[0], mac_range[1])
+    if nic_mac not in mac_range:
+        raise c.NET_EXCEPTION(
+            "MAC %s is not in the MAC pool range  %s" % (nic_mac, mac_range)
+        )
