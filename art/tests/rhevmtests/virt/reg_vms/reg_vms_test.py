@@ -920,7 +920,17 @@ class VmSnapshots(BaseVmWithDisk):
             config.DC_NAME[0])[0]
         logger.info("Create two new snapshots of vm %s", self.vm_name)
         for dsc in self.snapshot_dsc:
-            self.assertTrue(vm_api.addSnapshot(True, self.vm_name, dsc))
+            job_dsc = "Creating VM Snapshot %s for VM %s" % (
+                dsc, self.vm_name
+            )
+            logger.info("add snapshot job description: %s", job_dsc)
+            self.assertTrue(
+                vm_api.addSnapshot(
+                    positive=True,
+                    vm=self.vm_name,
+                    description=dsc,
+                ), "Failed to add snapshot to VM."
+            )
         logger.info("Restore vm %s from snapshot %s",
                     self.vm_name, self.snapshot_dsc[1])
         self.assertTrue(vm_api.restoreSnapshot(True, self.vm_name,

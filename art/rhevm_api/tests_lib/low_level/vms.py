@@ -1590,16 +1590,25 @@ def addSnapshot(positive, vm, description, wait=True, persist_memory=None,
                 disks_lst=None):
     '''
     Description: add snapshot to vm
-    Author: edolinin, ratamir
-    Parameters:
-       * vm - vm where snapshot should be added
-       * description - snapshot name
-       * wait - wait until finish when True or exist without waiting when False
-       * persist_memory - True to save memory state snapshot, default is False
-       * disks_lst - if not None, this list of disks names will be included in
+    :param vm: vm where snapshot should be added
+    :type: str
+    :param description: snapshot name
+    :type: str
+    :param wait:wait until finish when True or exist without
+          waiting when False
+    :type:bool
+    :param persist_memory:True to save memory state snapshot, default is False
+    :type:bool
+    :param disks_lst:if not None, this list of disks names will be included in
          snapshot's disks (Single disk snapshot)
-    Return: status (True if snapshot was added properly, False otherwise)
+    :type: list
+    :param job_descriptions: if not none will send job description to
+         wait_for_jobs as list
+    :type:str
+    :return: status (True if snapshot was added properly, False otherwise)
+    :rtype:bool
     '''
+
     snapshot = data_st.Snapshot()
     snapshot.set_description(description)
     snapshot.set_persist_memorystate(persist_memory)
@@ -1624,7 +1633,7 @@ def addSnapshot(positive, vm, description, wait=True, persist_memory=None,
                                            compare=wait)
 
     if wait:
-        wait_for_jobs()
+        wait_for_jobs(job_descriptions=[ENUMS['job_create_snapshot']])
 
     try:
         snapshot = _getVmSnapshot(vm, description)
