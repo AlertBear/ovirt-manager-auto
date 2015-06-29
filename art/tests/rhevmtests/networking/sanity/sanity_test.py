@@ -35,7 +35,7 @@ from art.rhevm_api.tests_lib.low_level.vms import(
 )
 from art.rhevm_api.tests_lib.low_level.networks import(
     updateClusterNetwork, isVMNetwork, isNetworkRequired, updateNetwork,
-    addVnicProfile, removeVnicProfile, removeNetwork, check_ethtool_opts,
+    addVnicProfile, removeVnicProfile, check_ethtool_opts,
     check_bridge_opts, updateVnicProfile, create_networks_in_datacenter,
     get_networks_in_datacenter, delete_networks_in_datacenter, isVmHostNetwork,
     checkIPRule, check_network_on_nic, add_label, remove_label
@@ -77,6 +77,7 @@ class TestSanityCase01(TestCase):
     """
     __test__ = True
 
+    @polarion("RHEVM3-12267")
     def test_validate_mgmt(self):
         """
         Check that MGMT is a required network
@@ -105,6 +106,7 @@ class TestSanityCase02(TestCase):
     __test__ = True
     vlan = config.VLAN_NETWORKS[0]
 
+    @polarion("RHEVM3-12244")
     def test_check_static_ip(self):
         """
         Create vlan sw162 with static ip (1.1.1.1) on first non-mgmt interface
@@ -178,6 +180,7 @@ class TestSanityCase03(TestCase):
         ):
             raise NetworkException("Cannot create and attach network")
 
+    @polarion("RHEVM3-12245")
     def test_check_networks_usages(self):
         """
         Checking that sw162 is a vm network & sw163 is a non-vm network
@@ -211,74 +214,6 @@ class TestSanityCase03(TestCase):
 
 @attr(tier=0)
 class TestSanityCase04(TestCase):
-    """
-    Check VM network & non_VM network:
-    1. Check that the creation of the network created a proper network (VM).
-    2. Update sw164 to be NON_VM
-    3. Check that the update of the network is proper (NON_VM).
-    Finally, removing the networks.
-    """
-    __test__ = True
-    vlan = config.VLAN_NETWORKS[2]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create vm network sw164
-        """
-        logger.info("Create network and attach it to the host")
-        local_dict = {
-            cls.vlan: {
-                "vlan_id": config.VLAN_ID[2], "required": "false"
-            }
-        }
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            network_dict=local_dict
-        ):
-            raise NetworkException("Cannot create and attach network")
-
-    def test_check_networks_usages(self):
-        """
-        Checking that sw164 is a vm network, Changing it to non_VM network
-        and checking that it is not non_VM
-        """
-        logger.info("Checking bridged network %s", self.vlan)
-        self.assertTrue(isVMNetwork(
-            network=self.vlan, cluster=config.CLUSTER_NAME[0]
-        ), "%s is NON_VM network but it should be VM" % self.vlan)
-
-        logger.info("Updating %s to be non_VM network", self.vlan)
-        if not updateNetwork(
-            positive=True, network=self.vlan, usages="",
-            cluster=config.CLUSTER_NAME[0]
-        ):
-            raise NetworkException(
-                "Failed to update %s to be non_VM network" % self.vlan
-            )
-
-        logger.info("Checking non-VM network %s", self.vlan)
-        self.assertFalse(
-            isVMNetwork(network=self.vlan, cluster=config.CLUSTER_NAME[0]),
-            "%s is VM network when it should be NON_VM" % self.vlan
-        )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Removing sw164 network from the setup
-        """
-        logger.info("Starting the teardown_class")
-        if not removeNetwork(True, cls.vlan):
-            logger.error("Cannot remove network from setup")
-
-########################################################################
-
-########################################################################
-
-
-@attr(tier=0)
-class TestSanityCase05(TestCase):
     """
     Checking Port Mirroring:
     Creating vnic profile with network sw162 and port mirroring enabled,
@@ -324,6 +259,7 @@ class TestSanityCase05(TestCase):
                 "Failed to add %s profile with %s network to %s" %
                 (config.VNIC_PROFILE[0], cls.vlan, config.CLUSTER_NAME[0]))
 
+    @polarion("RHEVM3-12251")
     def test_attach_vnic_to_vm(self):
         """
         Attaching vnic to VM
@@ -369,7 +305,7 @@ class TestSanityCase05(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase06(TestCase):
+class TestSanityCase05(TestCase):
     """
     Checking required network:
     Creating network sw162 as required and attaching it to the host NIC,
@@ -400,6 +336,7 @@ class TestSanityCase06(TestCase):
         ):
             raise NetworkException("Cannot create and attach network")
 
+    @polarion("RHEVM3-12252")
     def test_check_required(self):
         """
         Verifying that the network is required,
@@ -449,7 +386,7 @@ class TestSanityCase06(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase07(TestCase):
+class TestSanityCase06(TestCase):
     """
     Checking required network over Bond:
     Creating network sw163 as required and attaching it to the host Bond
@@ -480,6 +417,7 @@ class TestSanityCase07(TestCase):
         ):
             raise NetworkException("Cannot create and attach network")
 
+    @polarion("RHEVM3-12253")
     def test_check_required(self):
         """
         Verifying that the network is required, updating network to be
@@ -526,7 +464,7 @@ class TestSanityCase07(TestCase):
 ########################################################################
 
 @attr(tier=0)
-class TestSanityCase08(TestCase):
+class TestSanityCase07(TestCase):
     """
     Checking Jumbo Frame (vlan test):
     Creating and adding sw162 (MTU 9000) & sw163 (MTU 5000) to the host
@@ -575,6 +513,7 @@ class TestSanityCase08(TestCase):
                 (cls.vlan_1, cls.vlan_2)
             )
 
+    @polarion("RHEVM3-12254")
     def test_check_mtu(self):
         """
         1. Check that MTU=9000 on sw162
@@ -657,7 +596,7 @@ class TestSanityCase08(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase09(TestCase):
+class TestSanityCase08(TestCase):
     """
     Checking Jumbo Frame - VLAN over Bond:
     Creating and adding sw162 (MTU 2000) to the host Bond, then checking that
@@ -691,6 +630,7 @@ class TestSanityCase09(TestCase):
                                         auto_nics=[0]):
             raise NetworkException("Cannot create and attach network")
 
+    @polarion("RHEVM3-12255")
     def test_check_mtu(self):
         """
         Check that MTU on sw162 is really 2000
@@ -727,7 +667,7 @@ class TestSanityCase09(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase10(TestCase):
+class TestSanityCase09(TestCase):
     """
     Check that network filter is enabled for hot-plug  NIC to on VM
     """
@@ -789,7 +729,7 @@ class TestSanityCase10(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase11(TestCase):
+class TestSanityCase10(TestCase):
     """
     Checking Linking:
     Creating 4 networks (sw162, sw163, sw164 & sw165) and adding them to
@@ -850,6 +790,7 @@ class TestSanityCase11(TestCase):
             ):
                 raise NetworkException("Cannot add nic %s to VM" % nic)
 
+    @polarion("RHEVM3-12256")
     def test_check_combination_plugged_linked_values(self):
         """
         Check all permutation for the Plugged/Linked options on VNIC
@@ -912,7 +853,7 @@ class TestSanityCase11(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase12(TestCase):
+class TestSanityCase11(TestCase):
     """
     Checking Linking Nic (bond test):
     Creating 4 networks (sw162, sw163, sw164 & sw165) and adding them to
@@ -982,6 +923,7 @@ class TestSanityCase12(TestCase):
             ):
                 raise NetworkException("Cannot add nic %s to VM" % nic)
 
+    @polarion("RHEVM3-12266")
     def test_check_combination_plugged_linked_values(self):
         """
         Checking that all the permutations of plugged & linked are correct
@@ -1051,7 +993,7 @@ class TestSanityCase12(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase13(TestCase):
+class TestSanityCase12(TestCase):
     """
     Creates bridged network over bond with custom name and MTU of 5000
     Check physical and logical layers for the Bond
@@ -1156,7 +1098,7 @@ class TestSanityCase13(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase14(TestCase):
+class TestSanityCase13(TestCase):
     """
     Negative: Try to create Bond with exceeded name length (more than 15 chars)
     """
@@ -1268,7 +1210,7 @@ class TestSanityCase14(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase15(TestCase):
+class TestSanityCase14(TestCase):
     """
     Configure ethtool and bridge opts with non-default value
     Verify ethtool and bridge_opts were updated with non-default values
@@ -1397,7 +1339,7 @@ class TestSanityCase15(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase16(TestCase):
+class TestSanityCase15(TestCase):
     """
     Configure queue for existing network
     """
@@ -1464,7 +1406,7 @@ class TestSanityCase16(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase17(TestCase):
+class TestSanityCase16(TestCase):
     """
     List all networks under datacenter.
     """
@@ -1530,7 +1472,7 @@ class TestSanityCase17(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase18(TestCase):
+class TestSanityCase17(TestCase):
     """
     Update VM network to be non-VM network
     Update non-VM network to be VM network
@@ -1638,7 +1580,7 @@ class TestSanityCase18(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase19(TestCase):
+class TestSanityCase18(TestCase):
     """
     Verify you can configure additional VLAN network with static IP and gateway
     """
@@ -1694,7 +1636,7 @@ class TestSanityCase19(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase20(TestCase):
+class TestSanityCase19(TestCase):
     """
     1) Put label on Host NIC of one Host
     2) Check network is attached to Host
@@ -1773,7 +1715,7 @@ class TestSanityCase20(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase21(TestCase):
+class TestSanityCase20(TestCase):
     """
     Add new network QOS
     """
@@ -1881,7 +1823,7 @@ class TestSanityCase21(TestCase):
 
 
 @attr(tier=0)
-class TestSanityCase22(TestCase):
+class TestSanityCase21(TestCase):
     """
     Negative: Create more than 5 BONDS using dummy interfaces
     """
