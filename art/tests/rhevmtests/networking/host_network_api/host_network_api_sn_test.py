@@ -1189,3 +1189,163 @@ class TestHostNetworkApiSetupNetworks23(hna.TestHostNetworkApiTestCaseBase):
                 (c.SN_NETS[23][0], c.SN_NETS[23][1], c.SN_NETS[23][2],
                  c.HOST_0)
             )
+
+
+@attr(tier=1)
+class TestHostNetworkApiSetupNetworks24(hna.TestHostNetworkApiTestCaseBase):
+    """
+    Create:
+    Attach Non-VM + 2 VLAN networks (IP and custom properties) to NIC1
+    Create BOND and attach Non-VM + 1 VLAN network with IP to BOND
+    Create empty BOND
+
+    Update:
+    Move network from NIC to existing BOND
+    Change NIC for existing network
+    Add slave to existing BOND and Move network from another BOND to it
+    Create new BOND with network attached to it
+    Remove network from NIC
+    Remove network from BOND
+    Remove BOND
+    """
+
+    __test__ = True
+
+    @polarion("RHEVM3-9850")
+    def test_01_multiple_actions(self):
+        """
+        Attach Non-VM + 2 VLAN networks (IP and custom properties) to NIC1
+        Create BOND and attach Non-VM + 1 VLAN network with IP to BOND
+        Create empty BOND
+        """
+        properties_dict = {
+            "bridge_opts": c.PRIORITY,
+            "ethtool_opts": c.TX_CHECKSUM.format(
+                nic=hna.c.HOST_NICS[2], state="off"
+            )
+        }
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": hna.c.HOST_NICS[1],
+                    "network": c.SN_NETS[24][0]
+                },
+                "2": {
+                    "nic": hna.c.HOST_NICS[1],
+                    "network": c.SN_NETS[24][1],
+                },
+                "3": {
+                    "nic": hna.c.HOST_NICS[1],
+                    "network": c.SN_NETS[24][2],
+                    "ip": c.BASIC_IP_DICT_PREFIX,
+                    "properties": properties_dict
+                },
+                "4": {
+                    "nic": "bond241",
+                    "slaves": [
+                        hna.c.HOST_NICS[2],
+                        hna.c.HOST_NICS[3]
+                    ]
+                },
+                "5": {
+                    "nic": "bond241",
+                    "network": c.SN_NETS[24][3],
+                    "ip": c.BASIC_IP_DICT_NETMASK
+                },
+                "6": {
+                    "nic": "bond241",
+                    "network": c.SN_NETS[24][4],
+                },
+                "7": {
+                    "nic": "bond242",
+                    "slaves": [
+                        "dummy1",
+                        "dummy2"
+                    ]
+                },
+                "8": {
+                    "nic": "bond243",
+                    "slaves": [
+                        "dummy5",
+                        "dummy6",
+                        "dummy7"
+                    ]
+                },
+                "9": {
+                    "nic": "bond244",
+                    "slaves": [
+                        "dummy8",
+                        "dummy9"
+                    ]
+                }
+
+            }
+        }
+        logger.info("Perform SetupNetwork action on %s",  c.HOST_0)
+        if not hl_host_network.setup_networks(
+            c.HOSTS[0], **network_host_api_dict
+        ):
+            raise c.NET_EXCEPTION(
+                "SetupNetwork action failed on %s" % c.HOST_0
+            )
+
+    @polarion("RHEVM3-9851")
+    def test_02_multiple_actions(self):
+        """
+        Move network from NIC to existing BOND
+        Change NIC for existing network
+        Add slave to existing BOND and Move network from another BOND to it
+        Create new BOND with network attached to it
+        Remove network from NIC
+        Remove network from BOND
+        Remove BOND
+        """
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "nic": "bond241",
+                    "network": c.SN_NETS[24][1],
+                },
+                "2": {
+                    "nic": "dummy3",
+                    "network": c.SN_NETS[24][2],
+                    "ip": c.BASIC_IP_DICT_PREFIX
+                },
+                "3": {
+                    "nic": "bond242",
+                    "network": c.SN_NETS[24][4],
+                },
+                "4": {
+                    "nic": "bond242",
+                    "slaves": [
+                        "dummy1",
+                        "dummy2",
+                        "dummy4"
+                    ]
+                },
+                "5": {
+                    "nic": "bond243",
+                    "slaves": [
+                        "dummy5",
+                        "dummy6",
+                    ]
+                },
+            },
+            "remove": {
+                "networks": [c.SN_NETS[24][0], c.SN_NETS[24][3]],
+                "bonds": ["bond244"]
+            },
+            "add": {
+                "1": {
+                    "nic": "bond243",
+                    "network": c.SN_NETS[24][5]
+                }
+            }
+        }
+        logger.info("Perform SetupNetwork update action on %s",  c.HOST_0)
+        if not hl_host_network.setup_networks(
+            c.HOSTS[0], **network_host_api_dict
+        ):
+            raise c.NET_EXCEPTION(
+                "Update SetupNetwork action failed on %s" % c.HOST_0
+            )

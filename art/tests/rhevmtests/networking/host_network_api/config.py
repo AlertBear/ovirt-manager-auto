@@ -19,7 +19,9 @@ DC_NAME = DC_NAME[0]
 CLUSTER = CLUSTER_NAME[0]
 NIC_NETS = network_lib.generate_networks_names(cases=20, prefix="nic")
 HOST_NETS = network_lib.generate_networks_names(cases=20, prefix="host")
-SN_NETS = network_lib.generate_networks_names(cases=25, prefix="sn")
+SN_NETS = network_lib.generate_networks_names(
+    cases=35, num_of_networks=10, prefix="sn"
+)
 VDSMD_SERVICE = "vdsmd"
 VLAN_ID = 2
 
@@ -257,6 +259,30 @@ SN_DICT = {
     SN_NETS[23][2]: {
         "required": "false",
         "vlan_id": helper.generate_vlan_id()
+    },
+    SN_NETS[24][0]: {
+        "required": "false",
+        "usages": ""
+    },
+    SN_NETS[24][1]: {
+        "required": "false",
+        "vlan_id": helper.generate_vlan_id()
+    },
+    SN_NETS[24][2]: {
+        "required": "false",
+        "vlan_id": helper.generate_vlan_id()
+    },
+    SN_NETS[24][3]: {
+        "required": "false",
+        "usages": ""
+    },
+    SN_NETS[24][4]: {
+        "required": "false",
+        "vlan_id": helper.generate_vlan_id()
+    },
+    SN_NETS[24][5]: {
+        "required": "false",
+        "usages": ""
     }
 }
 
