@@ -806,6 +806,9 @@ class TestCase287477(BasicResize):
         Creating disk
         """
         self.vm_names = list()
+        self.storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )[0]
         vmArgs['storageDomainName'] = self.storage_domain
         vmArgs['installation'] = False
 
