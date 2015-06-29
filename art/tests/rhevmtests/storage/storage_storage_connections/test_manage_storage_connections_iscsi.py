@@ -200,6 +200,11 @@ def _restore_empty_dc(datacenter=config.DATACENTER_ISCSI_CONNECTIONS):
 
 class TestCase(StorageTest):
     storages = set([config.STORAGE_TYPE_ISCSI])
+    # TODO: enable cli after http://bugzilla.redhat.com/show_bug.cgi?id=1236718
+    # is fixed
+    # TODO: enable java after
+    # https://projects.engineering.redhat.com/browse/RHEVM-2234 is fixed
+    apis = StorageTest.apis - set(['cli', 'java'])
 
     def get_all_new_connections(self):
         return _filter_storage_connections(
@@ -273,7 +278,7 @@ class TestCase288967(TestCase):
         _logout_from_all_iscsi_targets()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase288985(TestCase):
     """
     https://tcms.engineering.redhat.com/case/288985/?from_plan=9985
@@ -281,6 +286,9 @@ class TestCase288985(TestCase):
     **Author**: Katarzyna Jachim
     """
     __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
+    # Other apis try convert the value type so this cases will not work, only
+    # execute on rest
+    apis = set(['rest'])
     tcms_plan_id = '9985'
     tcms_test_case = '288985'
     conn = None
