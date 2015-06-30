@@ -100,15 +100,21 @@ def update_ranges_on_mac_pool(mac_pool_name, range_dict):
     )[1]
 
 
-def update_default_mac_pool(mac_range=ART_CONFIG['PARAMETERS']['mac_range']):
+def update_default_mac_pool(mac_range=None):
     """
-    Update the Default mac pool with mac range
-    Add the mac_range and remove all the others mac ranges
+    Update the Default MAC pool with MAC range
+    Add the mac_range and remove all the other MAC ranges
     if mac_range is empty takes it from ART_CONFIG['PARAMETERS']['mac_range']
-    :param mac_range: string of mac range 'start_from_mac-to_mac'
+
+    :param mac_range: string of MAC range 'start_from_mac-to_mac'
                       for example: '00:1A:4A:16:88:85-00:1A:4A:16:88:98'
     :type mac_range: str
+    :return: True if the update succeeded False otherwise
+    :rtype: bool
     """
+    if mac_range is None:
+        mac_range = ART_CONFIG['PARAMETERS'].get('mac_range')
+    utils.logger.debug("MAC range is: %s", mac_range)
     if mac_range:
         mac_range_obj = MACRange.from_string(mac_range)
         default_mac_pool = ll_mac_pool.get_default_mac_pool()
@@ -116,19 +122,31 @@ def update_default_mac_pool(mac_range=ART_CONFIG['PARAMETERS']['mac_range']):
             default_mac_pool
         )
 
-        utils.logger.info("Add new range {0} to the Default "
-                          "MAC pool".format(mac_range))
-        add_ranges_to_mac_pool(
-            mac_pool_name=DEFAULT_MAC_POOL,
-            range_list=[(mac_range_obj.start, mac_range_obj.end)]
+        utils.logger.info(
+            "Add new range {0} to the Default MAC pool".format(mac_range)
         )
+        if not add_ranges_to_mac_pool(
+                mac_pool_name=DEFAULT_MAC_POOL,
+                range_list=[(mac_range_obj.start, mac_range_obj.end)]
+        ):
+            utils.logger.error(
+                "Failed to add new range to the Default MAC pool"
+            )
+            return False
 
         utils.logger.info("Remove all other ranges from Default MAC pool")
-        remove_ranges_from_mac_pool(
-            mac_pool_name=DEFAULT_MAC_POOL,
-            range_list=default_mac_pool_range
-        )
+        if not remove_ranges_from_mac_pool(
+                mac_pool_name=DEFAULT_MAC_POOL,
+                range_list=default_mac_pool_range
+        ):
+            utils.logger.error(
+                "Failed to remove all other ranges from Default MAC pool"
+            )
+            return False
+        return True
     else:
-        utils.logger.error("Please check the mac_range under PARAMETERS in "
-                           "yours conf file or maybe the mac broker didn't"
-                           "allocate mac range")
+        utils.logger.error(
+            "Please check the mac_range under PARAMETERS in yours conf file "
+            "or maybe the MAC broker didn't allocate MAC range"
+        )
+        return False
