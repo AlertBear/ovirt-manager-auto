@@ -30,15 +30,18 @@ TCMS_PLAIN_ID = "5290"
 logger = logging.getLogger(__name__)
 
 
-# TODO: enable tests after https://bugzilla.redhat.com/show_bug.cgi?id=1201268
-# is fixed
-@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
+# TODO: Might fail on bug https://bugzilla.redhat.com/show_bug.cgi?id=1201268
+# if it does, uncomment:
+# @attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
 class BaseTestCase(TestCase):
     """
     Base Test Case for clone snapshot
     """
     vm = config.VM_NAME % TestCase.storage
     snapshot = "snapshot_%s"
+    # TODO: enable cli after bug
+    # http://bugzilla.redhat.com/show_bug.cgi?id=1236718 is fixed
+    apis = TestCase.apis - set(['cli'])
     __test__ = False
 
     def setUp(self):
