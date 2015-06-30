@@ -113,6 +113,10 @@ class StorageConfiguration(object):
 class CreateDC(TestCase):
     __test__ = True
 
+    def __init__(self, *args, **kwargs):
+        super(CreateDC, self).__init__(*args, **kwargs)
+        self.vds_objs = list()
+
     def build_cluster(self, cl_def, dc_name, comp_version, host_conf):
         cluster_name = cl_def['name']
         cpu_name = cl_def['cpu_name']
@@ -130,12 +134,11 @@ class CreateDC(TestCase):
         if not hosts_def:
             LOGGER.info("No hosts in cluster")
             return
-        vds_objs = list()
         for host_def in hosts_def:
             host_ip, host_pwd = host_conf.get_unused_host()
             vds_obj = VDS(host_ip, host_pwd)
             vds_fqdn = vds_obj.fqdn
-            vds_objs.append(vds_obj)
+            self.vds_objs.append(vds_obj)
             if not hosts.addHost(
                     True, host_def['name'], address=host_ip,
                     root_password=host_pwd, wait=False, cluster=cluster_name,
@@ -152,7 +155,7 @@ class CreateDC(TestCase):
         cpu_den = cpumodel.CpuModelDenominator()
         try:
             cpu_info = cpu_den.get_common_cpu_model(
-                vds_objs,
+                self.vds_objs,
                 version=comp_version,
             )
         except cpumodel.CpuModelError as ex:
@@ -491,24 +494,48 @@ class CreateDC(TestCase):
             else:
                 LOGGER.info("No templates to add")
 
+    def _get_executor(self):
+        return self.vds_objs[0].executor()
+
+    def _execute_cmd(self, cmd):
+        if not hasattr(self, 'executor'):
+            self.executor = self._get_executor()
+        rc, out, err = self.executor.run_cmd(cmd)
+        assert rc == 0, "Return code %s != 0" % rc
+
+    def delete_all_data_from_nfs(self, address, path):
+        mount_dir = "/tmp/nfsDir"
+        nfs_path = "%s:%s" % (address, path)
+        create_dir_cmd = ['mkdir', '-p', mount_dir]
+        mount_nfs_cmd = ['mount', nfs_path, mount_dir]
+        rm_cmd = ['rm', '-rf', mount_dir + '/*']
+        umount_cmd = ['umount', mount_dir]
+        self._execute_cmd(create_dir_cmd)
+        self._execute_cmd(mount_nfs_cmd)
+        self._execute_cmd(rm_cmd)
+        self._execute_cmd(umount_cmd)
+
     def add_export_domain(self, export_domain, storage_conf, dc, host):
         if export_domain['name']:
             name = export_domain['name']
             address, path = storage_conf.get_export_share()
-            assert ll_sd.importStorageDomain(
+            # Delete existed export domain
+            self.delete_all_data_from_nfs(address, path)
+            # Add export storage domain
+            assert ll_sd.addStorageDomain(
                 True,
+                name=name,
                 type=ENUMS['storage_dom_type_export'],
                 storage_type=ENUMS['storage_type_nfs'],
                 address=address,
                 host=host,
-                path=path
+                path=path,
             )
             assert ll_sd.attachStorageDomain(
                 True, datacenter=dc, storagedomain=name
             )
-            assert ll_sd.activateStorageDomain(
-                True, datacenter=dc, storagedomain=name
-            )
+            # Attach storage domain
+            LOGGER.info("Export SD %s has been successfully attached", name)
         else:
             LOGGER.info("Please provide name to your export domain")
 
@@ -552,7 +579,6 @@ class CreateDC(TestCase):
                 self.connect_glance(external_provider)
 
     def test_build_env(self):
-
         hl_mac_pool.update_default_mac_pool()
 
         GOLDEN_ENV = config.ART_CONFIG['prepared_env']
