@@ -1478,6 +1478,7 @@ class TestSanityCase17(TestCase):
     Update non-VM network to be VM network
     """
     __test__ = True
+    bz = {"1237032": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -1828,6 +1829,7 @@ class TestSanityCase21(TestCase):
     Negative: Create more than 5 BONDS using dummy interfaces
     """
     apis = set(["rest"])
+    bz = {"1237103": {"engine": None, "version": ["3.5"]}}
     vlan_1 = config.VLAN_NETWORKS[0]
     vlan_id_1 = config.VLAN_ID[0]
 
