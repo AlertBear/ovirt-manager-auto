@@ -118,7 +118,7 @@ class BasicEnvironment(BaseTestCase):
         ensure no conflict between runs including Rest API and SDK
         """
         for disk_dict in self.disk_aliases_and_descriptions:
-            deleteDisk(True, disk_dict['alias'])
+            deleteDisk(True, disk_dict[ALIAS])
 
 
 class BaseClassEditDescription(BasicEnvironment):
@@ -344,23 +344,23 @@ class TestCase11504(BasicEnvironment):
         # Find a storage domain of the same type to migrate the disk into
         target_sd = get_other_storage_domain(disk_dict[ALIAS], VM1_NAME,
                                              self.storage)
-        live_migrate_vm_disk(VM1_NAME, disk_dict[ALIAS], target_sd,
-                             wait=False)
-        disk_description_expected_to_fail = \
-            "LSM_disk_description_will_not_work_at_all"
-        logger.info('Waiting until disk is locked, expected to be the'
-                    'case when the Snapshot operation commences')
-        assert wait_for_disks_status(
-            disk_dict[ALIAS],
-            status=config.DISK_LOCKED
-        )
-
         for disk_dict in self.disk_aliases_and_descriptions:
+            live_migrate_vm_disk(VM1_NAME, disk_dict[ALIAS], target_sd,
+                                 wait=False)
+            disk_description_expected_to_fail = \
+                "LSM_disk_description_will_not_work_at_all"
+            logger.info('Waiting until disk is locked, expected to be the'
+                        'case when the Snapshot operation commences')
+            assert wait_for_disks_status(
+                disk_dict[ALIAS],
+                status=config.DISK_LOCKED
+            )
             assert updateDisk(False, alias=disk_dict[ALIAS],
                               description=disk_description_expected_to_fail,
                               vmName=VM1_NAME)
             assert verify_vm_disk_description(VM1_NAME, disk_dict[ALIAS],
                                               disk_dict[DESCRIPTION])
+            assert wait_for_disks_status(disk_dict[ALIAS])
 
     def tearDown(self):
         """
@@ -369,16 +369,16 @@ class TestCase11504(BasicEnvironment):
         # Power off VM, remove snapshot created during Live storage
         # migration and then delete each disk
         logger.info(
-            'Wait until all jobs have completed and the disk is no longer '
-            'locked, this will be the case once Live storage migration has '
-            'completed'
+            'Wait until all the disks are no longer locked, this will be the'
+            ' case once Live storage migration has completed'
         )
-
-        wait_for_jobs()
-        for disk_dict in self.disk_aliases_and_descriptions:
-            wait_for_disks_status(disk_dict[ALIAS], timeout=900, sleep=5)
+        wait_for_jobs([config.ENUMS['job_live_migrate_disk']])
+        assert wait_for_disks_status([
+            disk[ALIAS] for disk in self.disk_aliases_and_descriptions
+            ], timeout=900, sleep=5
+        )
 
         stop_vms_safely([VM1_NAME])
         waitForVMState(VM1_NAME, config.VM_DOWN)
-        remove_all_vm_lsm_snapshots(VM1_NAME)
         super(TestCase11504, self).tearDown()
+        remove_all_vm_lsm_snapshots(VM1_NAME)

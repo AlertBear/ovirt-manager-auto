@@ -156,12 +156,16 @@ def create_disks_from_requested_permutations(domain_to_use,
             "description": disk_description,
             "description_orig": disk_description
         })
-        assert addDisk(True, alias=disk_alias, description=disk_description,
-                       size=size, interface=disk_permutation['interface'],
-                       sparse=disk_permutation['sparse'],
-                       format=disk_permutation['format'],
-                       storagedomain=domain_to_use, bootable=False)
-        assert wait_for_disks_status([disk_alias])
+        assert addDisk(
+            True, alias=disk_alias, description=disk_description,
+            size=size, interface=disk_permutation['interface'],
+            sparse=disk_permutation['sparse'],
+            format=disk_permutation['format'],
+            storagedomain=domain_to_use, bootable=False
+        )
+    assert wait_for_disks_status(
+        [disk['alias'] for disk in lst_aliases_and_descriptions]
+    )
     return lst_aliases_and_descriptions
 
 
