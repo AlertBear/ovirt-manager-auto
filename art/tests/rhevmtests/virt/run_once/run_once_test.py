@@ -4,7 +4,7 @@ Virt test
 
 import logging
 from art.unittest_lib import VirtTest as TestCase
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
 from rhevmtests.virt import config
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
@@ -54,7 +54,7 @@ class TestRunVmOnce(TestCase):
     """
     __test__ = True
 
-    @tcms(2524, 78098)
+    @polarion("RHEVM3-9794")
     def test_boot_from_cd(self):
         """
         Run once VM boot from CD
@@ -65,7 +65,7 @@ class TestRunVmOnce(TestCase):
             )
         )
 
-    @tcms(2524, 51298)
+    @polarion("RHEVM3-9808")
     def test_boot_from_network(self):
         """
         Run once VM boot from Network
@@ -76,7 +76,7 @@ class TestRunVmOnce(TestCase):
             )
         )
 
-    @tcms(2524, 51303)
+    @polarion("RHEVM3-9803")
     def test_start_in_pause_mode(self):
         """
         Run once VM in paused mode
@@ -121,7 +121,7 @@ class TestRunVmOnce(TestCase):
             )
         )
 
-    @tcms(2524, 78098)
+    @polarion("RHEVM3-9794")
     def test_run_once_vm_with_attached_floppy(self):
         """
         Run once VM with attached floppy
@@ -138,7 +138,7 @@ class TestRunVmOnce(TestCase):
             )
         )
 
-    @tcms(2524, 78098)
+    @polarion("RHEVM3-9794")
     def test_run_once_with_specific_host(self):
         """
         Run once VM on specific host
@@ -151,7 +151,7 @@ class TestRunVmOnce(TestCase):
             ll_vms.runVmOnce(True, config.VM_NAME[0], host=config.HOSTS[1])
         )
 
-    @tcms(2524, 389950)
+    @polarion("RHEVM3-9810")
     def test_run_once_with_administrator(self):
         """
         Run once VM as administrator
@@ -202,7 +202,7 @@ class TestRunVmOnceStatelessNoDisk(TestCase):
             raise errors.VMException(
                 "Failed tp remove CD from vm %s", config.VM_NAME[0])
 
-    @tcms(2524, 81157)
+    @polarion("RHEVM3-9781")
     def test_run_once_stateless_no_disk(self):
         """
         run once VM with no CD in statless mode
@@ -250,7 +250,7 @@ class TestNegativeBootFromNetwork(TestCase):
                 (config.NIC_NAME[0], config.VM_NAME[0])
             )
 
-    @tcms(2524, 81157)
+    @polarion("RHEVM3-9781")
     def test_negative_boot_from_network(self):
         """
         negative test - run once VM without nic to boot from network
@@ -294,7 +294,7 @@ class TesNegativeHAStatlessVM(TestCase):
         if not ll_vms.updateVm(True, config.VM_NAME[0], highly_available=True):
             raise errors.VMException("Failed to set VM as highly available")
 
-    @tcms(2524, 86788)
+    @polarion("RHEVM3-9783")
     def test_negative_HA_and_statless(self):
         """
         Nagtive test - run once HA VM in statless mode
