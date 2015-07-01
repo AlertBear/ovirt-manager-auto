@@ -7,7 +7,7 @@ Testing Topologies feature.
 """
 import logging
 from rhevmtests.networking import config
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 from art.rhevm_api.tests_lib.high_level.vms import start_vm_on_specific_host
@@ -80,14 +80,14 @@ class TestTopologiesCase01(TestCase):
                 (config.VM_NAME[0], config.HOSTS[0])
             )
 
-    @tcms(4139, 385829)
+    @polarion("RHEVM3-12286")
     def test_vlan_network_01_virtio(self):
         """
         Check connectivity to VLAN network with virtIO driver
         """
         check_vm_connect_and_log(driver=config.NIC_TYPE_VIRTIO, vlan=True)
 
-    @tcms(4139, 385831)
+    @polarion("RHEVM3-12287")
     def test_vlan_network_02_e1000(self):
         """
         Check connectivity to VLAN network with e1000 driver
@@ -98,7 +98,7 @@ class TestTopologiesCase01(TestCase):
 
         check_vm_connect_and_log(driver=config.NIC_TYPE_E1000, vlan=True)
 
-    @tcms(4139, 385834)
+    @polarion("RHEVM3-12288")
     def test_vlan_network_03_rtl8139(self):
         """
         Check connectivity to VLAN network with rtl8139 driver
@@ -187,7 +187,7 @@ class TestTopologiesCase02(TestCase):
                 (config.VM_NAME[0], config.HOSTS[0])
             )
 
-    @tcms(4139, 385844)
+    @polarion("RHEVM3-12290")
     def test_vlan_over_bond_network_01_virtio(self):
         """
         Check connectivity to VLAN over BOND mode 1 network with virtIO driver
@@ -197,7 +197,7 @@ class TestTopologiesCase02(TestCase):
             mode=config.BOND_MODES[1]
         )
 
-    @tcms(4139, 386258)
+    @polarion("RHEVM3-12291")
     def test_vlan_over_bond_network_02_e1000(self):
         """
         Check connectivity to VLAN over BOND mode 1 network with e1000 driver
@@ -210,7 +210,7 @@ class TestTopologiesCase02(TestCase):
             mode=config.BOND_MODES[1]
         )
 
-    @tcms(4139, 386260)
+    @polarion("RHEVM3-12292")
     def test_vlan_over_bond_network_03_rtl8139(self):
         """
         Check connectivity to VLAN over BOND mode 1 network with rtl8139
@@ -288,7 +288,7 @@ class TestTopologiesCase03(TestCase):
                 (config.VM_NAME[0], config.HOSTS[0])
             )
 
-    @tcms(4139, 385847)
+    @polarion("RHEVM3-12293")
     def test_bond_network_01_virtio(self):
         """
         Check connectivity to BOND mode 2 network with virtIO driver
@@ -297,7 +297,7 @@ class TestTopologiesCase03(TestCase):
             driver=config.NIC_TYPE_VIRTIO, mode=config.BOND_MODES[2]
         )
 
-    @tcms(4139, 386261)
+    @polarion("RHEVM3-12294")
     def test_bond_network_02_e1000(self):
         """
         Check connectivity to BOND mode 2 network with e1000 driver
@@ -309,7 +309,7 @@ class TestTopologiesCase03(TestCase):
             driver=config.NIC_TYPE_E1000, mode=config.BOND_MODES[2]
         )
 
-    @tcms(4139, 386262)
+    @polarion("RHEVM3-12295")
     def test_bond_network_03_rtl8139(self):
         """
         Check connectivity to BOND mode 2 network with rtl8139 driver
@@ -383,7 +383,7 @@ class TestTopologiesCase04(TestCase):
         if not startVm(positive=True, vm=config.VM_NAME[0]):
             raise NetworkException("Fail to start VM %s" % config.VM_NAME[0])
 
-    @tcms(4139, 385848)
+    @polarion("RHEVM3-12299")
     def test_bond_network_01_virtio(self):
         """
         Check connectivity to BOND mode 4 network with virtIO driver
@@ -392,7 +392,7 @@ class TestTopologiesCase04(TestCase):
             driver=config.NIC_TYPE_VIRTIO, mode=config.BOND_MODES[4]
         )
 
-    @tcms(4139, 386264)
+    @polarion("RHEVM3-12300")
     def test_bond_network_02_e1000(self):
         """
         Check connectivity to BOND mode 4 network with e1000 driver
@@ -404,7 +404,7 @@ class TestTopologiesCase04(TestCase):
             driver=config.NIC_TYPE_E1000, mode=config.BOND_MODES[4]
         )
 
-    @tcms(4139, 386265)
+    @polarion("RHEVM3-12301")
     def test_bond_network_03_rtl8139(self):
         """
         Check connectivity to BOND mode 4 network with rtl8139 driver
@@ -462,7 +462,7 @@ class TestTopologiesCase05(TestCase):
         if not create_and_attach_bond(config.BOND_MODES[3]):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(4139, 385855)
+    @polarion("RHEVM3-12289")
     def test_bond_non_vm_network(self):
         """
         Check connectivity to BOND mode 3 network
@@ -504,7 +504,7 @@ class TestTopologiesCase06(TestCase):
         if not create_and_attach_bond(config.BOND_MODES[0]):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(4139, 385855)
+    @polarion("RHEVM3-12289")
     def test_bond_non_vm_network(self):
         """
         Check connectivity to BOND mode 0 network
@@ -546,7 +546,7 @@ class TestTopologiesCase07(TestCase):
         if not create_and_attach_bond(config.BOND_MODES[5]):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(4139, 385856)
+    @polarion("RHEVM3-12302")
     def test_bond_non_vm_network(self):
         """
         Check connectivity to BOND mode 5 network
@@ -588,7 +588,7 @@ class TestTopologiesCase08(TestCase):
         if not create_and_attach_bond(config.BOND_MODES[6]):
             raise NetworkException("Cannot create and attach network")
 
-    @tcms(4139, 385857)
+    @polarion("RHEVM3-12303")
     def test_bond_non_vm_network(self):
         """
         Check connectivity to BOND mode 6 network

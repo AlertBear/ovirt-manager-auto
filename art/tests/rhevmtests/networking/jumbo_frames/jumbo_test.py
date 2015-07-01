@@ -12,7 +12,7 @@ import logging
 from rhevmtests.networking import config
 from art.unittest_lib import NetworkTest as TestCase
 from art.unittest_lib import attr
-from art.test_handler.tools import tcms, polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.exceptions import NetworkException
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.utils.test_utils as utils
@@ -302,7 +302,7 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
                 )
             )
 
-    @tcms(5848, 199742)
+    @polarion("RHEVM3-3717")
     def test_check_mtu_values_in_files(self):
         """
         Check physical and logical levels for bridged VLAN networks
