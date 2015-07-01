@@ -224,6 +224,10 @@ class Host(Resource):
         Get OS info (Distro, version and code name)
 
         :return: Results {dist: , ver: , name:}
+            example:
+            {'dist': 'Red Hat Enterprise Linux Server',
+             'name': 'Maipo',
+             'ver': '7.1'}
         :rtype: dict
         """
         values = ["dist", "ver", "name"]
@@ -234,9 +238,7 @@ class Host(Resource):
         rc, out, _ = self.executor().run_cmd(cmd)
         if rc:
             return dict([(x, None) for x in values])
-        return dict([
-            (x, y) for x, y in zip(values, [i.strip() for i in out.split(",")])
-        ])
+        return dict(zip(values, [i.strip() for i in out.split(",")]))
 
     def get_network(self):
         return Network(self)

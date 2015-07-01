@@ -108,16 +108,29 @@ if 'prepared_env' in ART_CONFIG:
     HOSTS = []
     HOSTS_IP = []
     HOST_OBJS = []
+    HOSTS_RHEVH = []
+    HOSTS_RHEL = []
 
     for cluster in CLUSTERS:
         for host in cluster['hosts']:
             host_obj = hosts.HostObject(
                 host['name'], host['passwd'])
-            HOST_OBJS.append(host_obj)
-            HOSTS.append(host_obj.name)
-            HOSTS_PW = host_obj.password
-            HOSTS_IP.append(host_obj.ip)
-            logger.info("host ips: %s", HOSTS_IP)
+            vds_obj = resources.VDS(host_obj.ip, host_obj.password)
+            os_info = vds_obj.get_os_info()
+            if "hypervisor" in os_info['dist'].lower():
+                HOSTS_RHEVH.append(host_obj)
+            else:
+                HOSTS_RHEL.append(host_obj)
+    HOST_OBJS = HOSTS_RHEL + HOSTS_RHEVH
+    if ('host_order' in PARAMETERS and
+            PARAMETERS['host_order'] == 'rhevh_first'):
+        HOST_OBJS = HOSTS_RHEVH + HOSTS_RHEL
+
+    for host_obj in HOST_OBJS:
+        HOSTS.append(host_obj.name)
+        HOSTS_PW = host_obj.password
+        HOSTS_IP.append(host_obj.ip)
+    logger.info("host ips: %s", HOSTS_IP)
 
     VMS = []
     for cluster in CLUSTERS:
