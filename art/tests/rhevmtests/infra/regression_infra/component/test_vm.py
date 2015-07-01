@@ -9,7 +9,6 @@ test_vms
 import logging
 
 from nose.tools import istest
-from art.test_handler.tools import bz  # pylint: disable=E0611
 from art.test_handler.settings import opts
 from art.unittest_lib import attr
 
@@ -100,7 +99,6 @@ class TestCaseVM(TestCase):
         self.assertTrue(status, 'Add disk to vm - wrong interface')
 
     @istest
-    @bz({'1193848': {'engine': ['sdk'], 'version': ['3.5']}})
     def t04_add_disk_to_vm(self):
         """
         test verifies vm functionality
@@ -129,7 +127,6 @@ class TestCaseVM(TestCase):
         self.assertTrue(status, 'Create template')
 
     @istest
-    @bz({'1193848': {'engine': ['sdk'], 'version': ['3.5']}})
     def t06_remove_disk_from_vm(self):
         """
         test verifies vm functionality
