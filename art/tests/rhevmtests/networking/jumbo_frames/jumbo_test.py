@@ -302,7 +302,7 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
                 )
             )
 
-    @tcms(5848, 197742)
+    @tcms(5848, 199742)
     def test_check_mtu_values_in_files(self):
         """
         Check physical and logical levels for bridged VLAN networks
