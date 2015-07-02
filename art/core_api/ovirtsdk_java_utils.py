@@ -1097,14 +1097,23 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                         response = java_entity.update(correlation_id)
                 elif upd_method_args_length == 2:
                     with measure_time('PUT'):
-                        response = java_entity.update(async,
-                                                      correlation_id)
+                        response = java_entity.update(correlation_id, async)
+
                 elif upd_method_args_length == 3:
                     with measure_time('PUT'):
-                        response = java_entity.update(async, current,
-                                                      correlation_id)
+                        if (
+                            'hosts' == self.collection_name.lower() or
+                            'storagedomains' == self.collection_name.lower()
+                        ):
+                            response = java_entity.update(
+                                async, correlation_id, current
+                            )
+                        else:
+                            response = java_entity.update(
+                                correlation_id, async, current
+                            )
                 else:
-                    msg = "We shouldn't get here, unknown update signatur"\
+                    msg = "We shouldn't get here, unknown update signature"\
                         "e: update(%s)" % sorted_upd_method_args_list
                     self.logger.error(msg)
                     raise Exception(msg)
