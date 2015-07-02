@@ -141,3 +141,84 @@ MIRROR_LUN_TARGET = PARAMETERS.as_list('mirror_lun_target')
 MIRROR_LUN_ADDRESS = PARAMETERS.as_list('mirror_lun_address')
 
 ISCSI_TARGETS = dict(zip(MIRROR_LUN_ADDRESS, MIRROR_LUN_TARGET))
+
+# These lists of keywords are useful for low_level addStorageDomain:
+# addStorageDomain(True, name='my_name', **NFS_DOMAINS_KWARGS[0])
+NFS_DOMAINS_KWARGS = [
+    {
+        'type': ENUMS['storage_dom_type_data'],
+        'storage_type': STORAGE_TYPE_NFS,
+        'address': UNUSED_DATA_DOMAIN_ADDRESSES[0],
+        'path': UNUSED_DATA_DOMAIN_PATHS[0],
+    },
+    {
+        'type': ENUMS['storage_dom_type_data'],
+        'storage_type': STORAGE_TYPE_NFS,
+        'address': UNUSED_DATA_DOMAIN_ADDRESSES[1],
+        'path': UNUSED_DATA_DOMAIN_PATHS[1],
+    },
+    {
+        'type': ENUMS['storage_dom_type_data'],
+        'storage_type': STORAGE_TYPE_NFS,
+        'address': UNUSED_DATA_DOMAIN_ADDRESSES[2],
+        'path': UNUSED_DATA_DOMAIN_PATHS[2],
+    },
+]
+
+ISCSI_DOMAINS_KWARGS = [
+    {
+        'type': ENUMS['storage_dom_type_data'],
+        'storage_type': ENUMS['storage_type_iscsi'],
+        'lun_port': LUN_PORT,
+        'lun_address': UNUSED_LUN_ADDRESSES[0],
+        'lun_target': UNUSED_LUN_TARGETS[0],
+        'lun': UNUSED_LUNS[0],
+    },
+    {
+        'type': ENUMS['storage_dom_type_data'],
+        'storage_type': ENUMS['storage_type_iscsi'],
+        'lun_port': LUN_PORT,
+        'lun_address': UNUSED_LUN_ADDRESSES[1],
+        'lun_target': UNUSED_LUN_TARGETS[1],
+        'lun': UNUSED_LUNS[1],
+    },
+    {
+        'type': ENUMS['storage_dom_type_data'],
+        'storage_type': ENUMS['storage_type_iscsi'],
+        'lun_port': LUN_PORT,
+        'lun_address': UNUSED_LUN_ADDRESSES[2],
+        'lun_target': UNUSED_LUN_TARGETS[2],
+        'lun': UNUSED_LUNS[2],
+    },
+]
+
+GLUSTER_DOMAINS_KWARGS = [
+    {
+        'type': ENUMS['storage_dom_type_data'],
+        'storage_type': STORAGE_TYPE_GLUSTER,
+        'vfs_type': ENUMS['vfs_type_glusterfs'],
+        'address': UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
+        'path': UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0],
+    },
+    {
+        'type': ENUMS['storage_dom_type_data'],
+        'vfs_type': ENUMS['vfs_type_glusterfs'],
+        'storage_type': STORAGE_TYPE_GLUSTER,
+        'address': UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[1],
+        'path': UNUSED_GLUSTER_DATA_DOMAIN_PATHS[1],
+    },
+    {
+        'type': ENUMS['storage_dom_type_data'],
+        'vfs_type': ENUMS['vfs_type_glusterfs'],
+        'storage_type': STORAGE_TYPE_GLUSTER,
+        'address': UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[2],
+        'path': UNUSED_GLUSTER_DATA_DOMAIN_PATHS[2],
+    },
+]
+
+# addStorageDomain(True, name='my_name', **STORAGE_DOMAINS_KWARGS['nfs'][0])
+STORAGE_DOMAINS_KWARGS = {
+    STORAGE_TYPE_NFS: NFS_DOMAINS_KWARGS,
+    STORAGE_TYPE_ISCSI: ISCSI_DOMAINS_KWARGS,
+    STORAGE_TYPE_GLUSTER: GLUSTER_DOMAINS_KWARGS,
+}
