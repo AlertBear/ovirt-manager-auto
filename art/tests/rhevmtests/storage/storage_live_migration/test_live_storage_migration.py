@@ -1177,8 +1177,10 @@ class TestCase5970(CommonUsage):
         def f(q):
             q.put(
                 watch_logs(
-                    FILE_TO_WATCH, self.regex, '', LIVE_MIGRATION_TIMEOUT,
-                    self.host_ip, config.HOSTS_USER, config.HOSTS_PW
+                    files_to_watch=FILE_TO_WATCH, regex=self.regex,
+                    time_out=LIVE_MIGRATION_TIMEOUT,
+                    ip_for_files=self.host_ip,
+                    username=config.HOSTS_USER, password=config.HOSTS_PW
                 )
             )
 
@@ -1225,8 +1227,9 @@ class TestCase5969(AllPermutationsDisks):
         def f(q):
             q.put(
                 watch_logs(
-                    FILE_TO_WATCH, regex, '', MIGRATION_TIMEOUT,
-                    self.host_ip, config.HOSTS_USER, config.HOSTS_PW
+                    files_to_watch=FILE_TO_WATCH, regex=regex,
+                    time_out=MIGRATION_TIMEOUT, ip_for_files=self.host_ip,
+                    username=config.HOSTS_USER, password=config.HOSTS_PW
                 )
             )
         q = Queue()

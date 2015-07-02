@@ -437,8 +437,9 @@ class TestCase11830(TestCase):
                 "Failed creating template %s" % self.template_name)
 
         t = Thread(target=log_listener.watch_logs, args=(
-            config.ENGINE_LOG, REGEX, '', 60,
-            config.VDC, config.HOSTS_USER, config.VDC_ROOT_PASSWORD))
+            config.ENGINE_LOG, REGEX, None, 60, config.VDC,
+            config.HOSTS_USER, config.VDC_ROOT_PASSWORD
+        ))
         LOGGER.info("Waiting for createVolume command in engine.log")
         t.start()
 

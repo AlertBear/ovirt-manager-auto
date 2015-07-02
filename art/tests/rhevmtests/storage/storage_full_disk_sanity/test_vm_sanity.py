@@ -233,13 +233,14 @@ class TestReadLock(TestCase):
                             template=self.template_name,
                             cluster=config.CLUSTER_NAME)
         LOGGER.info("Waiting for createVolume command in engine.log")
-        log_listener.watch_logs(config.ENGINE_LOG,
-                                'createVolume',
-                                '',
-                                time_out=60,
-                                ip_for_files=config.VDC,
-                                username='root',
-                                password=config.VDC_ROOT_PASSWORD)
+        log_listener.watch_logs(
+            files_to_watch=config.ENGINE_LOG,
+            regex='createVolume',
+            time_out=60,
+            ip_for_files=config.VDC,
+            username='root',
+            password=config.VDC_ROOT_PASSWORD
+        )
         LOGGER.info("Starting to create vm %s from template %s" %
                     (self.vm_name_2, self.template_name))
         assert vms.createVm(True, self.vm_name_2, self.vm_name_2,

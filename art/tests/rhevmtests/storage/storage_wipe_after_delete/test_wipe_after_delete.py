@@ -182,7 +182,7 @@ class CommonUsage(BaseTestCase):
             args=(
                 FILE_TO_WATCH,
                 self.regex,
-                '',
+                None,
                 TASK_TIMEOUT,
                 self.host_ip,
                 'root',

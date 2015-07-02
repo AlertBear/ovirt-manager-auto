@@ -228,7 +228,6 @@ def search_log(
         "time_out": logger_timeout,
         "files_to_watch": VDSM_LOG,
         "regex": log_msg,
-        "command_to_exec": "",
         "ip_for_execute_command": None,
         "remote_username": None,
         "remote_password": None

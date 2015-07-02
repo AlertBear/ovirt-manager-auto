@@ -874,12 +874,14 @@ class TestCase11624(TestCase):
 
         # parse /var/log/vdsm.log for making sure that an expand request
         for i in range(1, IO_ERROR_READ_RETRIES):
-            regex_flag, rc = watch_logs(VDSM_LOG_FILE,
-                                        IO_ERROR_IN_VDSM_LOG_REGEX,
-                                        '', IO_ERROR_TIMEOUT,
-                                        self.spm_host_ip,
-                                        config.HOSTS_USER,
-                                        config.HOSTS_PW)
+            regex_flag, rc = watch_logs(
+                files_to_watch=VDSM_LOG_FILE,
+                regex=IO_ERROR_IN_VDSM_LOG_REGEX,
+                time_out=IO_ERROR_TIMEOUT,
+                ip_for_files=self.spm_host_ip,
+                username=config.HOSTS_USER,
+                password=config.HOSTS_PW
+            )
         self.assertTrue(regex_flag,
                         "Couldn't find expend request for %s sec" %
                         IO_ERROR_TIMEOUT)

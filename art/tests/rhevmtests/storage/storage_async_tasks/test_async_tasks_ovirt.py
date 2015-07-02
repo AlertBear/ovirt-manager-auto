@@ -50,10 +50,11 @@ class RestartOvirt(TestCase):
         OPERATION_FINISHED = False
         LOGGER.info("Waiting for the first task to be sent")
         regex = "Adding task .*Parent Command %s.*" % action_name
-        cmd = ':'
         watch_logs(
-            config.ENGINE_LOG, regex, cmd, ip_for_files=config.VDC,
-            username=config.VDC_ROOT_USER, password=config.VDC_PASSWORD)
+            files_to_watch=config.ENGINE_LOG, regex=regex,
+            ip_for_files=config.VDC, username=config.VDC_ROOT_USER,
+            password=config.VDC_PASSWORD
+        )
         OPERATION_FINISHED = True
         restartOvirtEngine(self.ovirt_host, 10, 30, 75)
         LOGGER.info("ovirt-engine restarted")
@@ -81,11 +82,11 @@ class RestartOvirt(TestCase):
         self.perform_action()
         LOGGER.info("Waiting for function to finish")
         regex = ALL_TASKS_FINISHED
-        cmd = ':'
         watch_logs(
-            VDSM_LOG, regex, cmd, ip_for_files=config.HOSTS[0],
-            username=config.HOSTS_USER, password=config.HOSTS_PW,
-            time_out=TIMEOUT)
+            files_to_watch=VDSM_LOG, regex=regex,
+            ip_for_files=config.HOSTS[0], username=config.HOSTS_USER,
+            password=config.HOSTS_PW, time_out=TIMEOUT
+        )
         restartOvirtEngine(self.ovirt_host, 10, 30, 75)
         LOGGER.info("ovirt-engine restarted")
         wait_for_tasks(

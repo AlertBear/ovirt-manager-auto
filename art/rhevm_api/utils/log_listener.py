@@ -187,7 +187,7 @@ class LogListener():
             return self.watch_for_local_changes(files_to_watch, regex)
 
 
-def watch_logs(files_to_watch, regex, command_to_exec, time_out=None,
+def watch_logs(files_to_watch, regex, command_to_exec=None, time_out=None,
                ip_for_files=None, username=None, password=None,
                ip_for_execute_command=None, remote_username=None,
                remote_password=None):
@@ -200,7 +200,7 @@ def watch_logs(files_to_watch, regex, command_to_exec, time_out=None,
         watched
         * regex - a regular expression that need to be watched for
         * command_to_exec - the command that need to execute when event in
-        the file occurs
+        the file occurs. If not needed, pass None
         * ip_for_files - in case that the files are located on a remote
         machine - the IP of that machine
         * username - the user name for the remote machine
@@ -241,9 +241,11 @@ def watch_logs(files_to_watch, regex, command_to_exec, time_out=None,
                                              regex)
 
     if found_regex:
-        cmd_rc = listener.execute_command(run_locally, command_to_exec,
-                                          ip_for_execute_command,
-                                          remote_username, remote_password)
+        if command_to_exec:
+            cmd_rc = listener.execute_command(
+                run_locally, command_to_exec, ip_for_execute_command,
+                remote_username, remote_password
+            )
     else:
         logger.debug("Didn't find regex %s in files %s" % (regex,
                                                            files_to_watch))
@@ -265,7 +267,7 @@ def main():
           start with "/")
         - regex: regular expression to look for
         - command_to_exec: the command that should be executed in case that
-          the regex has found
+          the regex has found. If not needed, pass None
         - ip_for_execute_command: the !!! IP !!! of the machine that the
           command should exec on
         - remote_username: username for the second machine
