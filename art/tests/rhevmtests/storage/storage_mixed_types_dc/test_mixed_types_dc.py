@@ -8,13 +8,11 @@ import helpers
 import logging
 
 from utilities.machine import Machine
-from art.core_api.apis_exceptions import EntityNotFound
 from art.unittest_lib import attr, StorageTest as TestCase
 
 from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
-import art.rhevm_api.tests_lib.low_level.clusters as ll_cl
 import art.rhevm_api.tests_lib.low_level.disks as ll_disks
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
@@ -26,9 +24,8 @@ from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.test_handler.settings import opts
-
 from rhevmtests.storage.helpers import get_vm_ip
+
 
 logger = logging.getLogger(__name__)
 
@@ -429,6 +426,9 @@ class TestCase4565(IscsiNfsSD):
         assert ll_vms.preview_snapshot(True, self.vm_name,
                                        snap_name, ensure_vm_down=True)
 
+        ll_vms.wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_IN_PREVIEW], [snap_name]
+        )
         logger.info("Commit a snapshot")
         assert ll_vms.commit_snapshot(True, self.vm_name,
                                       ensure_vm_down=True)
@@ -662,6 +662,8 @@ class TestCase4566(IscsiNfsSD):
                 config.HOSTS, cluster_name=self.cluster_name
             )
             self.host = host['hsmHost']
+            # TODO: Remember to make sure there are no tasks running on host
+            # before deactivate it
             for host in config.HOSTS:
                 if host != self.host:
                     ll_hosts.deactivateHost(True, host)
@@ -766,61 +768,6 @@ class TestCase4566(IscsiNfsSD):
         super(TestCase4566, self).tearDown()
 
 
-# TODO: doesn't work - FC
-@attr(tier=1)
-class TestCase4559(BaseCaseDCMixed):
-    """
-    Create a shared DC.
-    Create 2 Storage Domains of same type (ISCSI and FC, NFS and Gluster)
-    Create 2 VMs - First VM with disk on NFS and second VM with disk on ISCSI
-    Start VMs.
-    Move disk of first VM from NFS domain to Gluster domain
-    Move disk of second VM from ISCSI domain to FC domain.
-    """
-    __test__ = False  # No FC, write test when FC is available
-
-
-# TODO: syncAction in doesn't return the response, only the status
-# compare the message after is implemented in the framework
-@attr(tier=1)
-class TestCase4560(IscsiNfsSdVMs):
-    """
-    Live Storage Migration between storage domains not of same type: block/file
-
-    Create DC of mixed type and 2 sds, ISCSI domain and NFS domain
-    Create 2 VMs - First VM with disk on NFS and second VM with disk on ISCSI.
-    Start VMs.
-    Move disk of first VM from NFS domain to ISCSI domain
-    Move disk of second VM from ISCSI to NFS.
-
-    Both moves should fail with a proper message
-    """
-    __test__ = True
-
-    polarion_test_case = '4560'
-    # message = "Cannot move Virtual Machine Disk. Source and target domains" \
-    #           " must both be either file domains or block domains."
-
-    @polarion("RHEVM3-4560")
-    def test_move_disks_between_different_sd_types(self):
-        """
-        Live Storage Migration between storage domains not of same type
-        """
-        logger.info("Moving a disk while the VM is running to a different "
-                    "storage domain type should fail")
-        self.nfs_vm_disk = ll_vms.getVmDisks(self.nfs_vm)[0].get_alias()
-        self.iscsi_vm_disk = ll_vms.getVmDisks(self.iscsi_vm)[0].get_alias()
-
-        assert ll_disks.move_disk(
-            disk_name=self.nfs_vm_disk, target_domain=self.iscsi,
-            positive=False,
-        )
-        assert ll_disks.move_disk(
-            disk_name=self.iscsi_vm_disk, target_domain=self.nfs,
-            positive=False,
-        )
-
-
 @attr(tier=0)
 class TestCase4564(IscsiNfsSD):
     """
@@ -858,212 +805,6 @@ class TestCase4564(IscsiNfsSD):
 
         success, output = linux_machine.runCmd('mkfs.ext4 /dev/sda1'.split())
         self.assertTrue(success, "Failed to create filesystem: %s" % output)
-
-
-@attr(tier=1)
-class TestCase4548(BaseCaseDCMixed):
-    """
-    Create a shared DC version 3.0
-    Create Storage Domain ISCSI and attacht it to DC.            success
-    Create Storage Domain NFS and try to attach it to DC.        failure
-    Create another Storage Domain ISCSI and try to attach to DC  success
-    Remove ISCSI domains from DC and attach NFS domain.           success
-    """
-    __test__ = True
-    polarion_test_case = '4548'
-
-    compatibility_version = "3.0"
-    data_center_name = "data_center_{0}".format(polarion_test_case)
-    cluster_name = "cluster_name_{0}".format(polarion_test_case)
-    new_datacenter_for_ge = True
-
-    @polarion("RHEVM3-4548")
-    def test_data_centers_compabitility_version_30(self):
-        """
-        Data centers with compatibility version of 3.0
-        """
-        self.nfs = config.NFS_DOMAIN['name']
-        self.iscsi = config.ISCSI_DOMAIN_0['name']
-        self.iscsi2 = config.ISCSI_DOMAIN_1['name']
-
-        assert helpers.add_storage_domain(
-            self.data_center_name, self.host_ip, **config.ISCSI_DOMAIN_0)
-
-        logger.info("Try attaching NFS storage domain to the data center")
-        assert ll_sd.addStorageDomain(True, host=self.host_ip,
-                                      **config.NFS_DOMAIN)
-        assert ll_sd.attachStorageDomain(
-            False, self.data_center_name, self.nfs, True,
-        )
-
-        logger.info("Ading a second iscsi storage domain")
-        assert helpers.add_storage_domain(
-            self.data_center_name, self.host_ip, **config.ISCSI_DOMAIN_1
-        )
-
-        logger.info("Waiting for tasks before deactivating/removing the "
-                    "storage domain")
-        test_utils.wait_for_tasks(config.VDC, config.VDC_ROOT_PASSWORD,
-                                  self.data_center_name)
-        logger.info("Removing storage domain")
-        assert ll_sd.removeStorageDomains(
-            True, [self.iscsi2], self.host_ip, 'true',
-        )
-
-        logger.info("Waiting for tasks before deactivating the storage domain")
-        test_utils.wait_for_tasks(config.VDC, config.VDC_ROOT_PASSWORD,
-                                  self.data_center_name)
-        assert ll_sd.deactivateStorageDomain(
-            True, self.data_center_name, self.iscsi,
-        )
-
-        logger.info("Make sure to remove Data Center")
-        assert ll_dc.removeDataCenter(True, self.data_center_name)
-        assert ll_dc.addDataCenter(
-            True, name=self.data_center_name, local=False,
-            version=self.compatibility_version,
-        )
-        assert ll_sd.removeStorageDomain(
-            True, self.iscsi, self.host_ip, 'true',
-        )
-        assert ll_hosts.deactivateHost(True, self.host_ip)
-        assert ll_cl.updateCluster(
-            True, self.cluster_name, data_center=self.data_center_name,
-        )
-        assert ll_hosts.activateHost(True, self.host_ip)
-
-        logger.info("Attaching a NFS now should work")
-        assert ll_sd.attachStorageDomain(
-            True, self.data_center_name, self.nfs,
-        )
-
-
-@attr(tier=1)
-class TestCase4549(TestCase):
-    """
-    Create shared DCs versions 3.0, 3.1, 3.2 and 3.3.
-    Create ISCSI domain in this DC.
-    Create Gluster Storage Domain and try to attach it to DC. should fail
-    """
-    __test__ = True
-    polarion_test_case = '4549'
-    storages = 'N/A'
-
-    data_center_name = "data_center_{0}".format(polarion_test_case)
-    cluster_name = "cluster_name_{0}".format(polarion_test_case)
-
-    def setUp(self):
-        """
-        For Golden Environment remove one host from the data center
-        to be used in this test
-        """
-        if config.GOLDEN_ENV:
-            status, host = ll_hosts.getAnyNonSPMHost(
-                config.HOSTS, cluster_name=config.CLUSTER_NAME,
-            )
-            self.host = host['hsmHost']
-            self.host_ip = ll_hosts.getHostIP(self.host)
-            ll_hosts.deactivateHost(True, self.host)
-            ll_hosts.removeHost(True, self.host)
-        else:
-            self.host = config.HOSTS[0]
-            self.host_ip = self.host
-
-    def tearDown(self):
-        """
-        For Golden Environment put the host back in the original data center
-        """
-        # In case the test fails, the data center needs to be removed
-        try:
-            clean_datacenter(
-                True, self.data_center_name, vdc=config.VDC,
-                vdc_password=config.VDC_ROOT_PASSWORD,
-            )
-        except EntityNotFound:
-            pass
-
-        if config.GOLDEN_ENV:
-            ll_hosts.addHost(
-                True, name=self.host, root_password=config.HOSTS_PW,
-                cluster=config.CLUSTER_NAME, address=self.host_ip,
-            )
-            ll_hosts.waitForHostsStates(True, self.host)
-
-    @polarion("RHEVM3-4549")
-    def test_gluster_different_compatibility_versions(self):
-        """
-        Ensure older data center versions do not allow gluster storage domains
-        """
-        for version in ["3.0", "3.1", "3.2", "3.3"]:
-            logger.info("Trying to add glusterfs for DC version %s", version)
-            helpers.build_environment(
-                compatibility_version=version,
-                storage_domains=[config.ISCSI_DOMAIN_0],
-                datacenter_name=self.data_center_name,
-                cluster_name=self.cluster_name,
-                hosts_for_cluster=[self.host_ip],
-            )
-
-            # For data center version 3.0, the gluster domain cannot even be
-            # added, so don't try to attach the domain
-            if version == "3.0":
-                added_successfully = False
-            else:
-                added_successfully = True
-            assert ll_sd.addStorageDomain(
-                added_successfully, host=self.host_ip, **config.GLUSTER_DOMAIN
-            )
-
-            if added_successfully:
-                assert ll_sd.attachStorageDomain(
-                    False, self.data_center_name,
-                    config.GLUSTER_DOMAIN['name'], True,
-                )
-
-                assert ll_sd.removeStorageDomain(
-                    True, config.GLUSTER_DOMAIN['name'], self.host_ip, 'true'
-                )
-
-            clean_datacenter(
-                True, self.data_center_name, vdc=config.VDC,
-                vdc_password=config.VDC_ROOT_PASSWORD,
-            )
-
-
-@attr(tier=1)
-class TestCase4550(BaseCaseDCMixed):
-    """
-    Create a shared Data Center version 3.0.
-    Create POSIX Storage domain.
-    Try to attach POSIX SD to Data Center -> should fail with message
-    """
-    __test__ = True
-    polarion_test_case = '4550'
-    compatibility_version = "3.0"
-
-    data_center_name = "data_center_{0}".format(polarion_test_case)
-    cluster_name = "cluster_name_{0}".format(polarion_test_case)
-    new_datacenter_for_ge = True
-
-    message = "The Action add Storage is not supported for this Cluster " \
-              "or Data Center compatibility version"
-
-    @polarion("RHEVM3-4550")
-    def test_posix_data_center_30(self):
-        """
-        Posix domain and Data Center 3.0
-        """
-        sd = ll_sd._prepareStorageDomainObject(
-            positive=False, host=self.host_ip, **config.POSIX_DOMAIN
-        )
-        response, status = ll_sd.util.create(sd, positive=False, async=False)
-
-        # status is True since we're expecting to fail
-        self.assertTrue(
-            status, "Adding a POSIX storage domain to a DC 3.0 should fail")
-        if opts['engine'] != SDK_ENGINE:
-            self.assertTrue(self.message in response.get_detail(),
-                            "Error message should be %s" % self.message)
 
 
 @attr(tier=1)

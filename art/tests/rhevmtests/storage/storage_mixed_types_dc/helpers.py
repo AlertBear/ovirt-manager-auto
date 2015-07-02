@@ -57,10 +57,10 @@ def build_environment(
     if not ll_clusters.addCluster(True, name=cluster_name,
                                   cpu=config.PARAMETERS['cpu_name'],
                                   data_center=datacenter_name,
-                                  version=compatibility_version):
+                                  version=config.COMP_VERSION):
         raise exceptions.ClusterException(
             "addCluster %s with version %s to datacenter %s failed" %
-            (cluster_name, compatibility_version, datacenter_name))
+            (cluster_name, config.COMP_VERSION, datacenter_name))
 
     hosts.add_hosts(
         hosts_for_cluster,

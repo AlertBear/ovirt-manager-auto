@@ -207,8 +207,8 @@ class TestCase4830(helpers.TestCaseNFSOptions):
             retrans_to_set=self.nfs_retrans, vers_to_set=self.nfs_version,
             expected_timeout=self.nfs_timeout,
             expected_retrans=self.nfs_retrans, expected_vers=self.nfs_version)
-        self.create_nfs_domain_and_verify_options([storage])
         self.sds_for_cleanup.append(self.name)
+        self.create_nfs_domain_and_verify_options([storage])
 
     @polarion("RHEVM3-4830")
     def test_create_change_nfs_options_export(self):

@@ -8,8 +8,12 @@ from rhevmtests.storage.config import *  # flake8: noqa
 
 TESTNAME = "domain_lifecycle"
 
-DC_VERSIONS = ["3.0", "3.1", "3.2"]
-DC_UPGRADE_VERSIONS = ["3.1", "3.2", "3.3"]
+# For 3.5 only test upgrade from 3.4
+# TODO: Only execute upgrad from 3.5 because bug:
+# https://bugzilla.redhat.com/show_bug.cgi?id=1244174
+# DC_VERSIONS = ["3.4", "3.5",]
+DC_VERSIONS = ["3.4"]
+DC_UPGRADE_VERSIONS = ["3.5", "3.6"]
 LIFECYCLE_VM = "%s_vm" % TESTNAME
 
 FIRST_HOST = HOSTS[0]

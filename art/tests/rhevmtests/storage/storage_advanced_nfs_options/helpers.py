@@ -308,10 +308,11 @@ class TestCaseNFSOptions(TestCase):
             self.fail("Adding %s datacenter failed" % self.dc_name)
         logger.info("Datacenter %s was created successfully", self.dc_name)
 
-        logger.info("Adding cluster to 3.0 datacenter")
+        logger.info("Adding cluster to the datacenter")
         if not ll_cl.addCluster(
-                True, name=self.cl_name, version=version, cpu=config.CPU_NAME,
-                data_center=self.dc_name):
+                True, name=self.cl_name, version=config.COMP_VERSION,
+                cpu=config.CPU_NAME, data_center=self.dc_name
+        ):
             self.fail("Adding cluster to datacenter %s failed" % self.dc_name)
         logger.info("Cluster was created successfully")
 
@@ -320,7 +321,7 @@ class TestCaseNFSOptions(TestCase):
             True, name=self.host_for_dc, root_password=self.password,
             cluster=self.cl_name, reboot=True,
             ), "Unable to add host %s to cluster %s" % (
-            self.host_for_dc, self.host_for_dc)
+            self.host_for_dc, self.cl_name)
         )
         logger.info("Datacenter %s prepared successfully", version)
 
@@ -434,7 +435,7 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
 
         self.assertTrue(ll_hosts.addHost(
             True, name=self.host_for_dc, root_password=self.password,
-            cluster=config.CLUSTER_NAME, reboot=True,
+            cluster=config.CLUSTER_NAME,
             ), "Unable to add host %s to cluster %s" % (
             self.host_for_dc, config.CLUSTER_NAME)
         )

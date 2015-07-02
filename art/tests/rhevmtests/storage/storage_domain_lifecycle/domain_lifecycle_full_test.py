@@ -346,34 +346,11 @@ class TestCase4817(TestCase):
             version = self.nfs_version
             mount_options = self.mount_options
 
-        logger.info('Creating vm and installing OS on it')
-        if not _create_vm(config.LIFECYCLE_VM,
-                          config.LIFECYCLE_VM,
-                          config.INTERFACE_IDE,
-                          storageDomainName=config.LIFECYCLE_DOMAIN_NAMES[2]):
-            raise exceptions.VMException("Failed to create VM")
-
-        logger.info("Waiting for vm %s state 'up'", config.LIFECYCLE_VM)
-        if not vms.waitForVMState(config.LIFECYCLE_VM):
-            raise exceptions.VMException("Waiting for VM %s status 'up' failed"
-                                         % config.LIFECYCLE_VM)
-
-        rc, out = vms.run_cmd_on_vm(config.LIFECYCLE_VM, CLI_CMD_DF,
-                                    config.VMS_LINUX_USER, config.VMS_LINUX_PW)
-        if not rc:
-            raise exceptions.VMException("fail to run %s on %s, output is %s" %
-                                         CLI_CMD_DF, config.LIFECYCLE_VM, out)
-        logger.info("%s output on %s, is %s",
-                    CLI_CMD_DF, config.LIFECYCLE_VM, out)
-
     @classmethod
     def teardown_class(cls):
         """
-        Removes VM and SD
+        Remove storage domains
         """
-        if not vms.safely_remove_vms([config.LIFECYCLE_VM]):
-            logger.info("Failed to remove vm %s", config.LIFECYCLE_VM)
-
         logger.info("Waiting for tasks before deactivating/removing the "
                     "storage domain")
         wait_for_tasks(config.VDC, config.VDC_PASSWORD,
@@ -669,7 +646,7 @@ class TestUpgrade(TestCase):
     dc_upgraded_version = None
     storage_format = None
     upgraded_storage_format = None
-    cluster_version = "3.3"
+    cluster_version = config.COMP_VERSION
     host = config.FIRST_HOST
     vm_name = 'TestUpgrade_vm_test'
     domain_kw = None
