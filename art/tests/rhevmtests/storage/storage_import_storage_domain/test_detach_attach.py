@@ -216,15 +216,7 @@ def teardown_module():
     test_utils.restartOvirtEngine(engine, 10, 15, 300)
 
     for storage_type in config.STORAGE_SELECTOR:
-        try:
-            if not ll_vms.removeVms(True, VM_NAMES[storage_type], stop='true'):
-                logger.error("Failed to remove vms %s", VM_NAMES[storage_type])
-                exception_flag = True
-        # Continue the tearDown even if removeVms function fails
-        # or raises on exception
-        except ValueError:
-            logger.error("removeVms function threw an exception")
-            exception_flag = True
+        ll_vms.safely_remove_vms(VM_NAMES[storage_type])
 
         test_utils.wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
