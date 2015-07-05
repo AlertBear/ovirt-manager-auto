@@ -270,7 +270,10 @@ class TestNegativeBootFromNetwork(TestCase):
         if not ll_vms.stopVm(True, config.VM_NAME[0]):
             raise errors.VMException("Failed to stop vm %s", config.VM_NAME[0])
         logger.info("add nic to %s", config.VM_NAME[0])
-        if not ll_vms.addNic(True, config.VM_NAME[0], name=config.NIC_NAME[0]):
+        if not ll_vms.addNic(
+                True, config.VM_NAME[0],
+                name=config.NIC_NAME[0], network=config.MGMT_BRIDGE
+        ):
             raise errors.VMException(
                 "Failed to add nic to %s" % config.VM_NAME[0]
             )
