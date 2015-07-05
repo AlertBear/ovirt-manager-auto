@@ -73,6 +73,20 @@ class PuppetPlugin(Component):
             help="enable plugin",
         )
 
+    def _filter_rhevh_machines(self):
+
+        logger.info(
+            "Remove RHEV-H from list where puppet {dis,en}able executed"
+        )
+
+        for machine in self.machines[:]:
+            _, os_type = machine.getHostOsType()
+            if os_type.startswith("RHEV_"):
+                logger.info(
+                    "Puppet plugin won't run on %s", machine.host
+                )
+                self.machines.remove(machine)
+
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
             return
@@ -88,6 +102,8 @@ class PuppetPlugin(Component):
         for name, passwd in zip(vds, vds_passwd):
             self.machines.append(Machine(name, user, passwd).util(LINUX))
 
+        self._filter_rhevh_machines()
+
         self.reason = conf[PUPPET_SEC][REASON]
 
     @classmethod
@@ -95,27 +111,28 @@ class PuppetPlugin(Component):
         conf_en = conf[PUPPET_SEC].as_bool(ENABLED)
         return params.puppet_enabled or conf_en
 
-    def on_plugins_loaded(self):pass
+    def on_plugins_loaded(self):
+        pass
 
     def on_application_start(self):
-        self.__exec_toogle_puppet(OPT_DISABLE)
+        self.__exec_toggle_puppet(OPT_DISABLE)
 
     def on_application_exit(self):
-        self.__exec_toogle_puppet(OPT_ENABLE)
+        self.__exec_toggle_puppet(OPT_ENABLE)
 
-    def __exec_toogle_puppet(self, opt):
-        toogle_cmd = [PUPPET_DAEMON, 'agent', '--detailed-exitcodes', opt]
+    def __exec_toggle_puppet(self, opt):
+        toggle_cmd = [PUPPET_DAEMON, 'agent', '--detailed-exitcodes', opt]
         test_cmd = [PUPPET_DAEMON, 'agent', '--test', '--detailed-exitcodes']
         error_log_msg = "%s: failed execute %s with %s err: %s; out: %s"
 
         if opt == OPT_ENABLE:
-            cmds = (toogle_cmd, test_cmd)
+            cmds = (toggle_cmd, test_cmd)
             action_msg = 'enabled'
         elif opt == OPT_DISABLE:
-            cmds = (test_cmd, toogle_cmd)
+            cmds = (test_cmd, toggle_cmd)
             action_msg = 'disabled'
             if self.reason:
-                toogle_cmd.append(self.reason)
+                toggle_cmd.append(self.reason)
         else:
             assert False, "opt argument must be %s or %s, but got %s" % (
                 OPT_ENABLE, OPT_DISABLE, opt,
