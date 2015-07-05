@@ -2321,7 +2321,8 @@ def cloneVmFromTemplate(positive, name, template, cluster,
 
     if clone == 'true':
         expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
-    vm, status = VM_API.create(newVm, positive, expectedEntity=expectedVm)
+    vm, status = VM_API.create(newVm, positive, expectedEntity=expectedVm,
+                               async=(not wait))
     if positive and status and wait:
         return VM_API.waitForElemStatus(vm, "DOWN", timeout)
     return status

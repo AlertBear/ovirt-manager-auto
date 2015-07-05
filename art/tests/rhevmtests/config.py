@@ -371,6 +371,11 @@ VM_POWERING_UP = ENUMS['vm_state_powering_up']
 VM_TYPE_DESKTOP = ENUMS['vm_type_desktop']
 VM_TYPE_SERVER = ENUMS['vm_type_server']
 
+# Template states
+TEMPLATE_ILLEGAL = ENUMS['template_state_illegal']
+TEMPLATE_LOCKED = ENUMS['template_state_locked']
+TEMPLATE_OK = ENUMS['template_state_ok']
+
 # Host states
 HOST_UP = ENUMS['host_state_up']
 HOST_DOWN = ENUMS['host_state_down']

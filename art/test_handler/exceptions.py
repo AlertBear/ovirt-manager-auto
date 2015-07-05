@@ -81,6 +81,14 @@ class StorageDomainException(RHEVMEntityException):
     pass
 
 
+class GlanceRepositoryException(RHEVMEntityException):
+    pass
+
+
+class GlanceImageException(RHEVMEntityException):
+    pass
+
+
 class HostException(RHEVMEntityException):
     pass
 

@@ -613,6 +613,19 @@ def copyTemplateDisk(template, disk_name, target_sd):
                                    % (disk_name, template, target_sd))
 
 
+def get_template_state(template_name):
+    """
+    Return the template state
+
+    :param template_name: Get the state of the template name
+    :type template_name: str
+    :return: Template state (illegal, locked, ok)
+    :rtype: str
+    """
+    template = TEMPLATE_API.find(template_name)
+    return template.get_status().get_state()
+
+
 @is_action()
 def waitForTemplatesStates(names, state=ENUMS['template_state_ok'],
                            timeout=CREATE_TEMPLATE_TIMEOUT, sleep=10):

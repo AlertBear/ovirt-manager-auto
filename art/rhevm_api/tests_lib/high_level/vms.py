@@ -631,6 +631,7 @@ def create_vm_using_glance_image(
         'start': 'false'  # To avoid starting vm before attaching the image
                           # to it
     }
+    positive = kwargs.pop('positive', True)
     vm_name = kwargs.pop('vmName')
     vm_description = kwargs.pop('vmDescription', vm_name)
     kwargs.update(update_args)
@@ -651,7 +652,7 @@ def create_vm_using_glance_image(
         return False
     LOGGER.info("Creating vm %s with nic", vm_name)
     if not vms.createVm(
-            positive=True, vmName=vm_name,
+            positive=positive, vmName=vm_name,
             vmDescription=vm_description, **kwargs
     ):
         LOGGER.error("Failed to add vm %s", vm_name)

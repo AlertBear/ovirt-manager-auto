@@ -1976,7 +1976,7 @@ class GlanceImage(object):
         :type new_template_name: str
         :param import_as_template: True for template, False otherwise
         :type import_as_template: bool.
-        :param async: False don't wait for response, wait otherwise
+        :param async: True when not waiting for response, False otherwise
         :type async: bool
         :returns: status of creation of disk/template
         :rtype: bool
@@ -2027,9 +2027,59 @@ class GlanceImage(object):
         if not async and new_disk_alias:
             return self._is_import_success()
 
-        util.logger.warn(
-            "Note that async is %s or disk name unknown, you are responsible "
-            "to check if the disk is added", async
-        )
+        if async or new_disk_alias is None:
+            util.logger.warn(
+                "Note that if async is True or disk name unknown, you are "
+                "responsible to check if the disk is added"
+            )
 
         return status
+
+
+def import_glance_image(
+        glance_repository, glance_image, target_storage_domain,
+        target_cluster, new_disk_alias=None, new_template_name=None,
+        import_as_template=False, async=False
+):
+    """
+    Import images from glance type storage domain
+
+    :param glance_repository: Name of glance repository
+    :type glance_repository: str
+    :param glance_image: Name of glance image to import
+    :type glance_image: str
+    :param target_storage_domain: Name of the storage domain into which
+    the glance image will be imported
+    :type target_storage_domain: str
+    :param target_cluster: Name of the cluster into which the glance
+    image will be imported
+    :type target_cluster: str
+    :param new_disk_alias: New name for the imported disk
+    :type new_disk_alias: str
+    :param new_template_name: New name for the imported template
+    :type new_template_name: str
+    :param import_as_template: True for template, False otherwise
+    :type import_as_template: bool
+    :param async: False don't wait for response, wait otherwise
+    :type async: bool
+    :returns: status of creation of disk/template
+    :rtype: bool
+    """
+    # Create a class instance for GlanceImage
+    glance = GlanceImage(
+        glance_image, glance_repository
+    )
+
+    util.logger.info("Importing glance image from %s", glance_repository)
+    if not glance.import_image(
+        destination_storage_domain=target_storage_domain,
+        cluster_name=target_cluster,
+        new_disk_alias=new_disk_alias, new_template_name=new_template_name,
+        import_as_template=import_as_template, async=async
+    ):
+        util.logger.error(
+            "Failed to import image %s from glance repository %s",
+            glance_image, glance_repository
+        )
+        return False
+    return True
