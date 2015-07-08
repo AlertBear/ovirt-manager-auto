@@ -94,9 +94,7 @@ class DCWithStoragesActive(TestCase):
     """
     A class that ensures DC is up with all storages active and SPM elected.
     """
-
     __test__ = False
-
     spm = None
     hsm = None
     storage_domain = None
@@ -145,7 +143,6 @@ class VMWithMemoryStateSnapshot(DCWithStoragesActive):
     Class with VM with base RAM snapshot to be used as base for tests that
     do not need to create RAM snapshot
     """
-
     __test__ = False
     memory_snapshot = config.RAM_SNAPSHOT % '0'
     persist_network = False
@@ -194,7 +191,6 @@ class CreateSnapshotWithMemoryState(DCWithStoragesActive):
     Create a snapshot with memory state on specified host according to
     run_test_on_spm
     """
-
     __test__ = False
     polarion_test_case = None
     run_test_on_spm = True
@@ -372,6 +368,7 @@ class TestCase5137(VMWithMemoryStateSnapshot):
     """
     Polarion Test Case 5137 - VM with multiple RAM Snapshots
     """
+    # TODO: Why is this case disabled?
     __test__ = False
     polarion_test_case = '5137'
     second_snapshot_name = config.RAM_SNAPSHOT % 1

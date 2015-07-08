@@ -95,6 +95,7 @@ class TestCase11843(TestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/2_3_Storage_Templates_General
     """
+    # TODO: Why is this only for ISCSI?
     __test__ = (ISCSI in opts['storages'])
     polarion_test_case = '11843'
     storages = set([ISCSI])

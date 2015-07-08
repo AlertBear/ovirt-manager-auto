@@ -182,8 +182,6 @@ class BaseCase(TestCase):
             )
 
 
-# TBD: Remove this when is implemented in the main story, storage sanity
-# http://rhevm-qe-storage.pad.engineering.redhat.com/11?
 @attr(tier=0)
 class TestCase11536(BaseCase):
     """
@@ -252,8 +250,6 @@ class TestCase11537(BaseCase):
                 disk.get_size()
 
 
-# TBD: Remove this when is implemented in the main story, storage sanity
-# http://rhevm-qe-storage.pad.engineering.redhat.com/11?
 @attr(tier=1)
 class TestCase11547(BaseCase):
     """
@@ -319,6 +315,7 @@ class TestCase11546(BaseCase):
     # test case only relevant to iscsi domains
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
+    # TODO: Why is this disabled for SDK?
     apis = BaseCase.apis - set(['sdk'])
     polarion_test_case = '11546'
     new_sd_name = "storage_domain_%s" % polarion_test_case
@@ -570,51 +567,3 @@ class TestCase11545(BaseCase):
         Start disk move and fail it, then check details after rollback
         """
         self.run_scenario()
-
-
-# This test for a weird behaviour in which the second time the storage domain
-# is extended the used value changes without reason
-# Disabling while is being investigated
-class TestCaseUsedSpace(BaseCase):
-    """
-    Checking behaviour used space
-    """
-    __test__ = False
-    apis = BaseCase.apis - set(['sdk'])
-
-    def test_used_space(self):
-        """
-        Test extending an iscsi domain doesn't remove used space
-        """
-        self.storage_domain = self.domains[0]
-        for extend_lun in config.EXTEND_LUNS:
-            logger.info('Extending storage domain %s', self.storage_domain)
-            extend_storage_domain(self.domains[0],
-                                  config.STORAGE_TYPE,
-                                  config.HOSTS[0],
-                                  **extend_lun)
-
-            # Waits until total size changes (extend is done)
-            # wait_for_tasks doesn't work (value is not updated properly)
-            wait_for_change_total_size(
-                self.storage_domain,
-                self.current_total_size[self.storage_domain])
-
-            # Assert size hasn't changed during the extend
-            # TODO: The logic is pretty strange here, why isn't this captured
-            # TODO: before the extend operation?
-            previous = self.current_used_size[self.storage_domain]
-            current = get_used_size(self.storage_domain)
-            total = get_total_size(self.storage_domain)
-            allocated = get_allocated_size(self.storage_domain)
-
-            logger.info("Storage domain %s. Allocated: %s Total: %d Used: %d",
-                        self.storage_domain, allocated, total, current)
-
-            if previous != current:
-                logger.error("Used size for %s is %d, before extend was %d",
-                             self.storage_domain, current, previous)
-
-            self.current_total_size[self.storage_domain] = total
-            self.current_used_size[self.storage_domain] = current
-            self.current_allocated_size[self.storage_domain] = allocated

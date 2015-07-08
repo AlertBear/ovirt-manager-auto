@@ -380,7 +380,8 @@ class TestCase5937(DirectLunAttachTestCase):
     """
     direct lun and disk interface
     """
-    __test__ = False  # TODO: Why?  IDE disk cannot be hot plugged
+    # TODO: Why? IDE disk cannot be hot plugged - fix whole test
+    __test__ = False
     polarion_test_case = "5937"
 
     @polarion("RHEVM3-5937")

@@ -155,7 +155,6 @@ class BaseTestCase(TestCase):
     """
     Common class for all tests with some common methods
     """
-
     __test__ = False
 
     def setUp(self):
@@ -533,10 +532,9 @@ class TestCase4910(BaseTestCase):
     when the disk is active
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_RO_Disks
-
-    Currently __test__ = False because update operation is needed:
-    https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     """
+    # TODO: Currently False because update operation is needed:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     __test__ = False
     polarion_test_case = '4910'
 
@@ -575,10 +573,9 @@ class TestCase4912(BaseTestCase):
     Check that booting from RO disk should be impossible
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_RO_Disks
-
-    Currently __test__ = False because update operation is needed:
-    https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     """
+    # TODO: Currently False because update operation is needed:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     __test__ = False
     polarion_test_case = '4912'
 
@@ -1567,10 +1564,9 @@ class TestCase4927(BaseTestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_RO_Disks
-
-    Currently __test__ = False because update operation is needed:
-    https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     """
+    # TODO: Currently __test__ = False because update operation is needed:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     __test__ = False
     polarion_test_case = '4927'
 
@@ -1685,9 +1681,9 @@ class TestCase4931(BaseTestCase):
     Restart vdsm during RO disk activation
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_RO_Disks
-    Currently __test__ = False because update operation is needed:
-    https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     """
+    # TODO: Currently False because update operation is needed:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     __test__ = False
     polarion_test_case = '4931'
 
@@ -1710,9 +1706,9 @@ class TestCase4932(BaseTestCase):
     Restart ovirt-engine during RO disk activation
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_RO_Disks
-    Currently __test__ = False because update operation is needed:
-    https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     """
+    # TODO: Currently False because update operation is needed:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     __test__ = False
     polarion_test_case = '4932'
 
@@ -1735,9 +1731,9 @@ class TestCase4933(BaseTestCase):
     Restart libvirt during RO disk activation
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_RO_Disks
-    Currently __test__ = False because update operation is needed:
-    https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     """
+    # TODO: Currently False because update operation is needed:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     __test__ = False
     polarion_test_case = '4933'
 
@@ -1762,9 +1758,9 @@ class TestCase4934(BaseTestCase):
     Changing RW disk to RO while disk is plugged to a running VM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_RO_Disks
-    Currently __test__ = False because update operation is needed:
-    https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     """
+    # TODO: Currently False because update operation is needed:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1075140
     __test__ = False
     polarion_test_case = '4934'
 

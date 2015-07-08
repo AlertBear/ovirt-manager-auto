@@ -117,7 +117,6 @@ class TestCase4665(BaseExportImportTestCase):
         """
         * Remove existing VM/templates and from the export domain
         """
-        # TBD: Wipe export domain better?
         assert templates.removeTemplateFromExportDomain(
             True, self.template_name, config.CLUSTER_NAME, self.export_domain)
         assert vms.removeVmFromExportDomain(

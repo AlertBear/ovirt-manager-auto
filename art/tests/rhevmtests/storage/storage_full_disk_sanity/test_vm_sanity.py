@@ -17,17 +17,6 @@ LOGGER = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
 
-# TBD: Remove this when is implemented in the main story, storage sanity
-# http://rhevm-qe-storage.pad.engineering.redhat.com/11?
-# class TestCase4709(TestCase):
-#     """
-#     storage vm sanity test, creates and removes vm with a cow disk
-#     https://polarion.engineering.redhat.com/polarion/#/project/
-#     RHEVM3/wiki/Storage/3_3_Storage_VM_Sanity
-#     """
-#     __test__ = True
-#     polarion_test_case = '4709'
-
 
 def _prepare_data(sparse, vol_format, template_names, storage_type):
     """ prepares data for vm
@@ -161,22 +150,12 @@ class TestCase4710(TestCase):
             templates.removeTemplate(True, template=template_name)
 
 
-# TBD: Remove this when is implemented in the main story, storage sanity
-# http://rhevm-qe-storage.pad.engineering.redhat.com/11?
-# class TestCase4711(TestCase):
-#     """
-#     storage vm sanity test, creates 2 snapshots and removes them.
-#     Check that actual disk size became the same it was
-#     before snapshots were made.
-#     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-#     Storage/3_3_Storage_VM_Sanity
-#     """
-
 class TestReadLock(TestCase):
     """
     Create a template from a VM, then start to create 2 VMs from
     this template at once.
     """
+    # TODO: Create a polarion case for this/verify it, if not remove it
     __test__ = False
     polarion_test_case = None
     vm_type = None

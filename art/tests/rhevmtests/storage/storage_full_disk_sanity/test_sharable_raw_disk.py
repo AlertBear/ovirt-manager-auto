@@ -61,7 +61,7 @@ class TestCase11513(TestCase):
             vms.waitForVmDiskStatus(self.vm_1, True, diskAlias=self.disk_name,
                                     sleep=1)
         )
-        # TODO: TBD Extra validation ?
+        # TODO: Extra validation ?
 
         logger.info("Attaching disk to vm %s" % self.vm_2)
         self.assertTrue(disks.attachDisk(True, self.disk_name, self.vm_2))
@@ -74,7 +74,7 @@ class TestCase11513(TestCase):
             vms.waitForVmDiskStatus(self.vm_2, True, diskAlias=self.disk_name,
                                     sleep=1)
         )
-        # TODO: TBD Extra validation ?
+        # TODO: Extra validation ?
 
     def tearDown(self):
         """

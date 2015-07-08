@@ -56,7 +56,7 @@ class TestCase11518(TestCase):
             )
         )
         self.assertTrue(vms.startVm(True, self.vm_1))
-        # TBD Extra validation How tests disk is working
+        # TODO Extra validation How tests disk is working
         self.assertTrue(vms.stopVm(True, self.vm_1))
 
         logger.info("Dettaching disk from vm %s" % self.vm_1)
@@ -70,7 +70,7 @@ class TestCase11518(TestCase):
             )
         )
         self.assertTrue(vms.startVm(True, self.vm_2))
-        # TBD Extra validation How tests disk is working
+        # TODO Extra validation How tests disk is working
 
     def tearDown(self):
         """Make sure vms are down and the disk is removed"""

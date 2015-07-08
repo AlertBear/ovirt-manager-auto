@@ -112,9 +112,8 @@ def setup_module():
 
             logger.info('Creating vm %s and installing OS on it', vm_name)
 
-            # TODO: TestCase5063 will fail if the vm is created with
-            #       create_vm_or_clone, (which clones a VM from a template),
-            #       investigate and fix the failure
+            # TODO: Remove threads for creating vm when create_vm_or_clone is
+            # async
             exs.append(
                 executor.submit(storage_helpers.create_vm_or_clone, **args)
             )
@@ -530,6 +529,7 @@ class TestCase5064(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
+    # TODO: Verify it works in glusterfs and enable the test for this storage
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
     polarion_test_case = '5064'
@@ -556,6 +556,7 @@ class TestCase5065(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
+    # TODO: Verify it works in glusterfs and enable the test for this storage
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
     polarion_test_case = '5065'
@@ -636,6 +637,7 @@ class TestCase5069(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
+    # glusterfs doesn't support shareable disks
     __test__ = (
         config.STORAGE_TYPE_NFS in opts['storages']
         or config.STORAGE_TYPE_ISCSI in opts['storages']
@@ -859,7 +861,6 @@ class TestCase11862(BasicResize):
     Increase and decrease multiple disks
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
-    Currently __test__ = False - disk shrink doesn't support
     """
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])

@@ -530,7 +530,7 @@ class TestCase4556(BaseCaseDCMixed):
     Go to DC-->right click--->Reinitialize DC and choose NFS domain from
     the list.
     """
-    __test__ = False
+    __test__ = False  # reinitialize not implemented on rest
     polarion_test_case = '4556'
 
     storagedomains = [config.ISCSI_DOMAIN_0]
@@ -570,7 +570,7 @@ class TestCase4555(IscsiNfsSD):
     Move disk (offline movement) between domains (file to block and block
     to file).
     """
-    __test__ = False
+    __test__ = False  # Not running on FC
     polarion_test_case = '4555'
 
     def setUp(self):
@@ -777,7 +777,7 @@ class TestCase4559(BaseCaseDCMixed):
     Move disk of first VM from NFS domain to Gluster domain
     Move disk of second VM from ISCSI domain to FC domain.
     """
-    __test__ = False  # TODO: No FC, write test when FC is available
+    __test__ = False  # No FC, write test when FC is available
 
 
 # TODO: syncAction in doesn't return the response, only the status
@@ -1117,19 +1117,6 @@ class TestCase4551(IscsiNfsSD):
         self.assertTrue(
             disk.get_sparse(),
             "Disk %s should be Thin Proivisioning" % disk.get_alias())
-
-
-@attr(tier=1)
-class TestCase4552(TestCase):
-    """
-    have a RHEV 3.3 with DC 3.3 of type ISCSI
-    upgrade ovirt to 3.4
-    Open UI and see if DC type remained 3.3 or 3.4
-    Change the comp version of DC to 3.4 and check that it type becomes shared.
-    """
-    # TODO: This needs to be implemented, and tested using RHEV-H
-    __test__ = False
-    storages = 'N/A'
 
 
 @attr(tier=1)

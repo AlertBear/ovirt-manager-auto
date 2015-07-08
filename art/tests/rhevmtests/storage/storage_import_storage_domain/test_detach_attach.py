@@ -261,9 +261,10 @@ class BasicEnvironment(BaseTestCase):
     """
     This class implements setup and teardowns of common things
     """
-    __test__ = False
     # TODO: Run only on rest:
     # https://projects.engineering.redhat.com/browse/RHEVM-1654
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1223448
+    __test__ = False
     apis = BaseTestCase.apis - set(['cli', 'java', 'sdk'])
     polarion_test_case = None
 
@@ -595,8 +596,6 @@ class TestCase5299(BasicEnvironment):
             ll_vms.does_vm_exist(self.vm_no_disks),
             "VM doesn't exist after importing storage domain"
         )
-        # TODO: Remove this logger before merge
-        logger.info("Case finished")
 
     def tearDown(self):
         if self.vm_created:
@@ -1076,9 +1075,10 @@ class TestCase5201(BasicEnvironment):
     Initialize DC from an unattached imported domain
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_ImportDomain_DetachAttach
-    TODO: __test__ = False due to
-    which is needed for importing block storage domain
     """
+    # TODO: false due to
+    # https://projects.engineering.redhat.com/browse/RHEVM-2141
+    # which is needed for importing block storage domain
     __test__ = False
     polarion_test_case = '5201'
     dc_name = 'test_dc'
@@ -1168,11 +1168,10 @@ class TestCase12207(BasicEnvironment):
     Initialize DC from a destroyed domain
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_ImportDomain_DetachAttach
-
-    TODO: __test__ = False due to
-    https://projects.engineering.redhat.com/browse/RHEVM-2141
-    which is needed for importing block storage domain
     """
+    # TODO: false due to
+    # https://projects.engineering.redhat.com/browse/RHEVM-2141
+    # which is needed for importing block storage domain
     __test__ = False
     polarion_test_case = '12207'
     dc_name = 'test_dc'

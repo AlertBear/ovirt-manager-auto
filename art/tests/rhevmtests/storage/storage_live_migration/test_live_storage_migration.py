@@ -365,9 +365,9 @@ class TestCase5994(BaseTestCase):
         https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
 
-    __test__ = False : A race situation can occur here. Manual test only
     """
-    # TODO: Make sure this is really a problem
+    # TODO: Verify this case works properly. Previous comment state a
+    # race condition could occur, in that case remove
     __test__ = False
     polarion_test_case = '5994'
 
@@ -1642,7 +1642,8 @@ class TestCase5975(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = False  # Needs 4 iscsi storage domains (only on block device)
+    # TODO: Needs 4 iscsi storage domains (only on block device)
+    __test__ = False
     polarion_test_case = '5975'
 
     def generate_sd_dict(self, index):

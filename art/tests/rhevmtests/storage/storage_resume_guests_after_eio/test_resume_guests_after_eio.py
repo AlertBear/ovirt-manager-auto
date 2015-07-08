@@ -182,6 +182,7 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
 
 @attr(tier=3)
 class TestCase5012(TestCaseBlockedConnection):
+    # TODO: Why is this not running glusterfs?
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
     polarion_test_case = '5012'
@@ -197,6 +198,7 @@ class TestCase5012(TestCaseBlockedConnection):
 
 @attr(tier=1)
 class TestCase5013(TestNoSpaceLeftOnDevice):
+    # TODO: Why is this not running glusterfs?
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
     polarion_test_case = '5013'

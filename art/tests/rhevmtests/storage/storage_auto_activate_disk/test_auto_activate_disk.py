@@ -28,7 +28,6 @@ class VmWithOs(TestCase):
     """
     Prepare a VM with OS installed
     """
-
     __test__ = False
 
     vm_name = None

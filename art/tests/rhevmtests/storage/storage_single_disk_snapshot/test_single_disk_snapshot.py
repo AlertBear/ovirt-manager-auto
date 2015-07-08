@@ -686,9 +686,9 @@ class TestCase6013(BasicEnvironment):
     configuration file of the original VM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_Single_Snapshot
-    TODO: This case is False until RFE/bug:
-    https://bugzilla.redhat.com/show_bug.cgi?id=1115440 is solved
     """
+    # TODO: This case is False until RFE/bug:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1115440 is solved
     __test__ = False
     polarion_test_case = '6013'
     new_vm_name = 'new_vm_%s' % polarion_test_case
@@ -811,9 +811,8 @@ class TestCase6014(BasicEnvironment):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_Single_Snapshot
 
-    __test__ = False :
-       https://bugzilla.redhat.com/show_bug.cgi?id=1119203
     """
+    # TODO: fix after https://bugzilla.redhat.com/show_bug.cgi?id=1119203
     __test__ = False
     polarion_test_case = '6014'
 
@@ -854,10 +853,8 @@ class TestCase6006(BasicEnvironment):
     volumes should be deleted
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_Single_Snapshot
-
-    __test__ = False :
-       https://bugzilla.redhat.com/show_bug.cgi?id=1119203
     """
+    # TODO: fix after https://bugzilla.redhat.com/show_bug.cgi?id=1119203
     __test__ = False
     polarion_test_case = '6006'
 

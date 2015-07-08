@@ -570,13 +570,13 @@ class TestCase6168(TestCase):
     snapshot of attached disk
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Backup_API
-
-    This case is currently not part of the plan (__test__ = False) due to bug:
-    https://bugzilla.redhat.com/show_bug.cgi?id=1063336 which cause
-    the environment to be unusable after it runs.
-    Even though that i wrote a temporary solution (see below), it doesn't
-    solve the problem completely.
     """
+    # TODO: fix this case
+    # This case is currently not part of the plan but is disabled due to bug:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1063336 which cause
+    # the environment to be unusable after it runs.
+    # Even though that i wrote a temporary solution (see below), it doesn't
+    # solve the problem completely.
     __test__ = False
     polarion_test_case = '6168'
     storage_domain_ip = None
