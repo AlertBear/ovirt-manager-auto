@@ -9,7 +9,7 @@ __test__ = True
 from art.rhevm_api.tests_lib.low_level import hooks, vms, networks
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils import test_utils
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from utilities.enum import Enum
 from nose.tools import istest
 from art.unittest_lib import attr
@@ -165,7 +165,7 @@ class TestCaseAfterBeforeNicHotplug(TestCaseVnic):
         super(TestCaseAfterBeforeNicHotplug, self).tearDown()
 
     @istest
-    @tcms(PLAN, 295122)
+    @polarion("RHEVM3-12335")
     def after_before_nic_hotplug(self):
         """ test_after_before_nic_hotplug """
         self.check_for_files()
@@ -194,7 +194,7 @@ class TestCaseAfterBeforeNicHotunplug(TestCaseVnic):
         assert vms.hotPlugNic(True, config.HOOKS_VM_NAME, HOTUNPLUG_NIC)
 
     @istest
-    @tcms(PLAN, 295128)
+    @polarion("RHEVM3-12338")
     def after_before_nic_hotunplug(self):
         """ test_after_before_nic_hotunplug """
         self.check_for_files()
@@ -218,7 +218,7 @@ class TestCaseAfterBeforeUpdateDevice(TestCaseVnic):
                              vnic_profile=PROFILE_A)
 
     @istest
-    @tcms(PLAN, 295144)
+    @polarion("RHEVM3-12345")
     def after_before_update_device(self):
         """ test_after_before_update_device """
         self.check_for_files()
@@ -254,7 +254,7 @@ class TestCaseAfterUpdateDeviceFail(TestCaseVnic):
                               cmd=cmd)[0])
 
     @istest
-    @tcms(PLAN, 295174)
+    @polarion("RHEVM3-12346")
     def after_update_device_fail(self):
         """ test_after_update_device_fail """
         self.check_for_files()
