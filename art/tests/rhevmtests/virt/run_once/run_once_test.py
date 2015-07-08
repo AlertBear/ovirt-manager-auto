@@ -287,7 +287,6 @@ class TesNegativeHAStatlessVM(TestCase):
     """
 
     __test__ = True
-    bz = {'1231546': {'engine': ['sdk'], 'version': None}}
 
     def setUp(self):
         """
