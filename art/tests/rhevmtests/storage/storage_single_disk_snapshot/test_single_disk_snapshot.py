@@ -31,7 +31,7 @@ from art.rhevm_api.utils.storage_api import (
 from art.rhevm_api.utils.test_utils import restartVdsmd, restartOvirtEngine
 from rhevmtests.storage.helpers import (
     get_vm_ip, create_vm_or_clone, prepare_disks_for_vm,
-    get_lv_count_by_storage_type,
+    get_disks_volume_count,
 )
 from rhevmtests.storage.storage_single_disk_snapshot import config, helpers
 from art.unittest_lib import StorageTest as BaseTestCase
@@ -238,14 +238,12 @@ class BasicEnvironment(BaseTestCase):
         return True
 
     def _perform_snapshot_with_verification(self, disks_for_snap, live=False):
-        initial_vol_count = get_lv_count_by_storage_type(self.storage,
-                                                         disks_for_snap)
+        initial_vol_count = get_disks_volume_count(disks_for_snap)
         logger.info("Before snapshot: %s volumes", initial_vol_count)
 
         self._perform_snapshot_operation(disks_for_snap, live=live)
 
-        current_vol_count = get_lv_count_by_storage_type(self.storage,
-                                                         disks_for_snap)
+        current_vol_count = get_disks_volume_count(disks_for_snap)
         logger.info("After snapshot: %s volumes", current_vol_count)
 
         self.assertEqual(current_vol_count,
@@ -1012,8 +1010,7 @@ class TestCase6033(BasicEnvironment):
         wait_for_jobs()
         start_vms([self.vm_name], 1, wait_for_ip=True)
 
-        initial_vol_count = get_lv_count_by_storage_type(self.storage,
-                                                         self.disks_names)
+        initial_vol_count = get_disks_volume_count(self.disks_names)
         logger.info("The number of volumes is: %s", initial_vol_count)
 
         stop_vms_safely([self.vm_name])
@@ -1024,8 +1021,7 @@ class TestCase6033(BasicEnvironment):
 
         start_vms([self.vm_name], 1, wait_for_ip=True)
 
-        current_vol_count = get_lv_count_by_storage_type(self.storage,
-                                                         self.disks_names)
+        current_vol_count = get_disks_volume_count(self.disks_names)
         logger.info("The number of volumes after removing one snapshot is: "
                     "%s", current_vol_count)
 

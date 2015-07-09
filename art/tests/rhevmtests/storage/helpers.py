@@ -8,8 +8,12 @@ import art.rhevm_api.tests_lib.high_level.vms as high_vms
 import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.tests_lib.low_level.datacenters import get_data_center
-from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost, getHostIP
+from art.rhevm_api.tests_lib.low_level.hosts import (
+    getSPMHost, getHostIP, get_cluster_hosts,
+)
+from art.rhevm_api.utils.resource_utils import runMachineCommand
 from utilities.machine import Machine, LINUX
+from utilities import errors
 from art.rhevm_api.tests_lib.low_level.disks import (
     wait_for_disks_status, attachDisk, addDisk, get_all_disk_permutation,
     updateDisk, get_disk_obj,
@@ -38,6 +42,10 @@ FILESYSTEM = 'ext4'
 WAIT_DD_STARTS = 'ps -ef | grep "{0}" | grep -v grep'.format(
     DD_EXEC,
 )
+FILE_SD_VOLUME_PATH_IN_FS = '/rhev/data-center/%s/%s/images/%s'
+GET_FILE_SD_NUM_DISK_VOLUMES = 'ls %s | wc -l'
+LV_COUNT = 'lvs -o lv_name,lv_tags | grep %s | wc -l'
+PVSCAN_CMD = 'pvscan --cache'
 
 disk_args = {
     # Fixed arguments
@@ -436,37 +444,125 @@ def get_voluuid(disk_object):
     return disk_object.get_image_id()
 
 
-def get_lv_count_by_storage_type(storage_type, disk_names=None):
+def get_lv_count_for_block_disk(disk_alias, host_ip, user, password):
+    """
+    Get amount of volumes for disk name
+
+    __author__ = "ratamir"
+    :param disk_alias: Disk alias
+    :type disk_alias:  str
+    :param host_ip: Host IP or FQDN
+    :type host_ip: str
+    :param user: Username for host
+    :type user: str
+    :param password: Password for host
+    :type password: str
+    :return: Number of logical volumes found for input disk
+    :rtype: int
+    """
+    disk_id = get_disk_obj(disk_alias).get_id()
+    cmd = LV_COUNT % disk_id
+    rc, out = runMachineCommand(
+        True, ip=host_ip, user=user, password=password, cmd=cmd
+    )
+    if not rc:
+        raise exceptions.HostException(
+            "Failed to execute '%s' on %s - %s" %
+            (cmd, host_ip, out['out'])
+        )
+    return int(out['out'])
+
+
+def get_amount_of_file_type_volumes(
+        host_ip, user, password, sp_id, sd_id, image_id
+):
+        """
+        Get the number of volumes from a file based storage domain
+
+        __author__ = "glazarov"
+        :param sp_id: Storage pool id
+        :type sp_id: str
+        :param sd_id: Storage domain id
+        :type sd_id: str
+        :param img_id: Image id of the disk
+        :type img_id: str
+        :returns: Number of volumes found on a file based storage domain's disk
+        :rtype: int
+        """
+        # Build the path to the Disk's location on the file system
+        volume_path = FILE_SD_VOLUME_PATH_IN_FS % (sp_id, sd_id, image_id)
+        cmd = GET_FILE_SD_NUM_DISK_VOLUMES % volume_path
+        status, output = runMachineCommand(
+            True, ip=host_ip, user=user, password=password, cmd=cmd
+        )
+        if not status:
+            raise errors.CommandExecutionError("Output: %s" % output)
+        # There are a total of 3 files/volume, the volume metadata (.meta),
+        # the volume lease (.lease) and the volume content itself (no
+        # extension)
+        num_volumes = int(output['out'])/3
+        logger.debug("The number of file type volumes found is '%s'",
+                     num_volumes)
+        return num_volumes
+
+
+def get_disks_volume_count(
+        disk_names=None, cluster_name=config.CLUSTER_NAME
+):
     """
     Returns the logical volume count, with logic for block and file domain
     types
 
-    __author__ = "glazarov"
-    :param storage_type: The type of storage to run with
-    :type storage_type: str
+    __author__ = "glazarov", "ratamir"
     :param disk_names: List of disk aliases (only used with file domain type to
     retrieve the individual number of volumes per disk)
     :type disk_names: list
+    :param cluster_name: Cluster from which to fetch a host which will
+    run the disk query
+    :type cluster_name: str
     :returns: Number of volumes retrieved across the disk names (file domain
     type) or the total logical volumes (block domain type)
     :rtype: int
     """
-    host_machine = host_to_use()
-    if storage_type in config.BLOCK_TYPES:
-        return host_machine.get_amount_of_volumes()
-    else:
-        data_center_obj = get_data_center(config.DATA_CENTER_NAME)
-        sp_id = get_spuuid(data_center_obj)
-        logger.debug("The Storage Pool ID is: '%s'", sp_id)
-        # Initialize the volume count before iterating through the disk aliases
-        volume_count = 0
-        for disk in disk_names:
-            disk_obj = get_disk_obj(disk)
+    host = get_cluster_hosts(cluster_name=cluster_name)[0]
+    host_ip = getHostIP(host)
+    rc, out = runMachineCommand(
+        True, ip=host_ip, user=config.HOSTS_USER, password=config.HOSTS_PW,
+        cmd=PVSCAN_CMD
+    )
+    if not rc:
+        raise exceptions.HostException(
+            "Failed to execute '%s' on %s - %s" %
+            (PVSCAN_CMD, host_ip, out['out'])
+        )
+
+    data_center_obj = get_data_center(config.DATA_CENTER_NAME)
+    sp_id = get_spuuid(data_center_obj)
+    logger.debug("The Storage Pool ID is: '%s'", sp_id)
+    # Initialize the volume count before iterating through the disk aliases
+    volume_count = 0
+    for disk in disk_names:
+        disk_obj = get_disk_obj(disk)
+        storage_id = \
+            disk_obj.get_storage_domains().get_storage_domain()[0].get_id()
+        storage_domain_object = storagedomains.getStorageDomainObj(
+            storagedomain=storage_id, key='id'
+        )
+        storage_type = storage_domain_object.get_storage().get_type()
+
+        if storage_type in config.BLOCK_TYPES:
+            volume_count += get_lv_count_for_block_disk(
+                disk_alias=disk, host_ip=host_ip,
+                user=config.HOSTS_USER, password=config.HOSTS_PW
+            )
+        else:
             sd_id = get_sduuid(disk_obj)
             logger.debug("The Storage Domain ID is: '%s'", sd_id)
             image_id = get_imguuid(disk_obj)
             logger.debug("The Image ID is: '%s'", image_id)
-            volume_count += host_machine.get_amount_of_file_type_volumes(
-                sp_id, sd_id, image_id
+            volume_count += get_amount_of_file_type_volumes(
+                host_ip=host_ip, user=config.HOSTS_USER,
+                password=config.HOSTS_PW, sp_id=sp_id, sd_id=sd_id,
+                image_id=image_id
             )
-        return volume_count
+    return volume_count

@@ -1819,11 +1819,19 @@ def get_master_storage_domain_name(datacenter_name):
     return masterSD
 
 
-def getStorageDomainObj(storagedomain_name):
+def getStorageDomainObj(storagedomain, key='name'):
     """
     Returns storage domain object, fails with EntityNotFound
+
+    :param storagedomain: name or id of the desired storage domain
+    :type storagedomain: str
+    :param key: key to look for storage domain, it can be name or id
+    Important: If key='id', storagedomain should be the storage domain's id
+    :type key: str
+    :returns: Storage domain object
+    :rtype: obj
     """
-    return util.find(storagedomain_name)
+    return util.find(storagedomain, attribute=key)
 
 
 def wait_for_change_total_size(storagedomain_name, original_size=0,
