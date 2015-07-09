@@ -6,7 +6,6 @@ It will cover scenarios for VM/non-VM networks.
 """
 
 import logging
-from art.rhevm_api.tests_lib.high_level.vms import start_vm_on_specific_host
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 from art.core_api.apis_exceptions import EntityNotFound
@@ -31,7 +30,7 @@ from art.rhevm_api.tests_lib.low_level.hosts import(
 )
 from art.rhevm_api.tests_lib.low_level.vms import(
     addNic, removeNic, getVmNicLinked, getVmNicPlugged, updateNic,
-    stopVm, startVm
+    stopVm, startVm, getVmHost
 )
 from art.rhevm_api.tests_lib.low_level.networks import(
     updateClusterNetwork, isVMNetwork, isNetworkRequired, updateNetwork,
@@ -1363,23 +1362,20 @@ class TestSanityCase15(TestCase):
             raise NetworkException(
                 "Failed to set custom properties on %s" % config.MGMT_BRIDGE
             )
-        logger.info("Start %s on %s", config.VM_NAME[1], config.HOSTS[1])
-        if not start_vm_on_specific_host(
-            vm=config.VM_NAME[1], host=config.HOSTS[1], wait_for_ip=True
-        ):
-            raise NetworkException(
-                "Cannot start VM %s on host %s" %
-                (config.VM_NAME[1], config.HOSTS[1])
-            )
+        logger.info("Start %s", config.VM_NAME[1])
+        if not startVm(True, vm=config.VM_NAME[1]):
+            raise NetworkException("Cannot start VM %s" % config.VM_NAME[1])
 
     @polarion("RHEVM3-4336")
     def test_multiple_queue_nics(self):
         """
         Check that qemu has correct number of queues
         """
+        vm_host = getVmHost(config.VM_NAME[1])[1]["vmHoster"]
+        host_resource = config.VDS_HOSTS[config.HOSTS.index(vm_host)]
         logger.info("Check that qemu have %s queues", config.NUM_QUEUES[0])
         if not check_queues_from_qemu(
-            host_obj=config.VDS_HOSTS[1], num_queues=config.NUM_QUEUES[0]
+            host_obj=host_resource, num_queues=config.NUM_QUEUES[0]
         ):
             raise NetworkException(
                 "qemu did not return the expected number of queues"
