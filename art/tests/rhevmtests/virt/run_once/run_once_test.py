@@ -4,7 +4,7 @@ Virt test
 
 import logging
 from art.unittest_lib import VirtTest as TestCase
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.unittest_lib import attr
 from rhevmtests.virt import config
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
@@ -92,6 +92,7 @@ class TestRunVmOnce(TestCase):
             config.VM_PAUSED
         )
 
+    @polarion("RHEVM3-12353")
     def test_run_once_vm_with_pause_and_change_cd(self):
         """
         Run once VM with "Start in paused" enables, and when VM in pause mode,
@@ -165,6 +166,27 @@ class TestRunVmOnce(TestCase):
                 password=config.VDC_PASSWORD
             )
         )
+
+    @bz({'1117783': {'engine': None, 'version': None}})
+    @polarion("RHEVM3-12352")
+    def test_run_once_vm_with_specific_domain(self):
+        """
+        Run once vm with specific domain
+        """
+        logger.info(
+            "Run once vm %s with domain %s",
+            self.vm_name, config.VDC_ADMIN_DOMAIN
+        )
+        if not ll_vms.runVmOnce(
+                True, self.vm_name,
+                domainName=config.VDC_ADMIN_DOMAIN,
+                user_name=config.VDC_ADMIN_USER,
+                password=config.VDC_PASSWORD
+        ):
+            raise errors.VMException("Failed to run vm")
+        vm_obj = ll_vms.get_vm_obj(self.vm_name)
+        logger.info("Check if vm domain is correct")
+        self.assertTrue(vm_obj.get_domain() == config.VDC_ADMIN_DOMAIN)
 
     def tearDown(self):
         """
