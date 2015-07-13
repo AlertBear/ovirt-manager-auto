@@ -3,25 +3,21 @@ Adding Disk to a VM which is not down adds a Disk that is activated tests
 Author: Meital Bourvine
 """
 import config
-import logging
 import helpers
-
-from art.rhevm_api.utils import test_utils
+import logging
 
 from art.rhevm_api.tests_lib.low_level import vms, disks
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainNamesForType,
 )
-
+from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 import art.test_handler.exceptions as exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-
 from art.unittest_lib import StorageTest as TestCase, attr
 
 logger = logging.getLogger(__name__)
 
 DISK_PERMUTATIONS = helpers.get_all_disk_permutation()
-TIMEOUT_RESUME_VM = 500
 
 
 class VmWithOs(TestCase):
@@ -29,10 +25,8 @@ class VmWithOs(TestCase):
     Prepare a VM with OS installed
     """
     __test__ = False
-
-    vm_name = None
-
     polarion_test_case = ''
+    vm_name = None
 
     @classmethod
     def setup_class(cls):
@@ -43,9 +37,9 @@ class VmWithOs(TestCase):
 
         cls.vm_name = "vm_%s" % cls.polarion_test_case
 
-        storage_domain = getStorageDomainNamesForType(
+        cls.storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, cls.storage)[0]
-        helpers.create_and_start_vm(cls.vm_name, storage_domain)
+        helpers.create_and_start_vm(cls.vm_name, cls.storage_domain)
 
     @classmethod
     def teardown_class(cls):
@@ -55,6 +49,7 @@ class VmWithOs(TestCase):
         if not vms.removeVm(True, cls.vm_name, stopVM='true'):
             raise exceptions.VMException("Failed to remove vm %s!" %
                                          cls.vm_name)
+        wait_for_jobs([config.ENUMS['job_remove_vm']])
 
 
 @attr(tier=1)
@@ -62,9 +57,7 @@ class TestCase4936(VmWithOs):
     """
     Add disks while vm is running
     """
-
     __test__ = True
-
     polarion_test_case = '4936'
 
     @polarion("RHEVM3-4936")
@@ -77,7 +70,9 @@ class TestCase4936(VmWithOs):
                         permutation['interface'],
                         permutation['sparse'],
                         permutation['disk_format'])
-            helpers.attach_new_disk(self.vm_name, **permutation)
+            helpers.attach_new_disk(
+                self.vm_name, storage_domain=self.storage_domain, **permutation
+            )
 
 
 class VmWithAnotherDiskWhileStatus(VmWithOs):
@@ -98,7 +93,8 @@ class VmWithAnotherDiskWhileStatus(VmWithOs):
 
         assert helpers.attach_new_disk(
             self.vm_name, should_be_active=activate_expected_status,
-            **permutation)
+            storage_domain=self.storage_domain, **permutation
+        )
 
 
 @attr(tier=1)
@@ -106,9 +102,7 @@ class TestCase4937(VmWithAnotherDiskWhileStatus):
     """
     Add disks while VM is in a certain state
     """
-
     __test__ = True
-
     polarion_test_case = '4937'
 
     @polarion("RHEVM3-4937")
@@ -167,16 +161,17 @@ class TestCase4937(VmWithAnotherDiskWhileStatus):
                 activate_expected_status=False,
                 **permutation)
             logger.info("Starting vm %s", self.vm_name)
-            assert vms.startVm(True, self.vm_name,
-                               wait_for_status=config.VM_UP,
-                               timeout=TIMEOUT_RESUME_VM)
-            test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                                      config.DATA_CENTER_NAME)
+            # Wait for vm's ip to make sure the vm is in full restored state
+            # before adding a new disk
+            assert vms.startVm(
+                True, self.vm_name, wait_for_ip=True
+            )
 
     def tearDown(self):
         """
         Remove the disks from the VM
         """
+        vms.waitForDisksStat(self.vm_name)
         vms.stop_vms_safely([self.vm_name])
         disk_names = []
         for permutation in DISK_PERMUTATIONS:

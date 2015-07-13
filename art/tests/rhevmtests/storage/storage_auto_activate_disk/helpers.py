@@ -1,13 +1,11 @@
 """
 Collection of helper functions for auto activate disk tests
 """
-import logging
 import config
+import logging
 
 import art.test_handler.exceptions as exceptions
-
 from art.rhevm_api.tests_lib.low_level import disks, vms
-
 from rhevmtests.storage.helpers import create_vm_or_clone
 
 logger = logging.getLogger(__name__)
@@ -32,7 +30,7 @@ def create_and_start_vm(vm_name, storage_domain):
               'nic': config.NIC_NAME[0],
               'image': config.COBBLER_PROFILE,
               'useAgent': True,
-              'os_type': config.ENUMS['rhel6'],
+              'os_type': config.OS_TYPE,
               'user': config.VM_USER,
               'password': config.VM_PASSWORD,
               'network': config.MGMT_BRIDGE
@@ -43,7 +41,9 @@ def create_and_start_vm(vm_name, storage_domain):
                                      % vm_name)
 
 
-def attach_new_disk(vm_name, should_be_active=True, **permutation):
+def attach_new_disk(
+    vm_name, should_be_active=True, storage_domain=None, **permutation
+):
     """
     Try to add a new disk. It expects the disk to be at should_be_active.
     """
@@ -57,7 +57,8 @@ def attach_new_disk(vm_name, should_be_active=True, **permutation):
         'sparse': permutation['sparse'],
         'alias': disk_alias,
         'format': permutation['disk_format'],
-        'active': should_be_active
+        'active': should_be_active,
+        'storagedomain': storage_domain,
     }
 
     assert vms.addDisk(True, vm_name, config.DISK_SIZE, **disk_args)
