@@ -6,7 +6,6 @@ Storage/3_3_Storage_Backup_API
 import config
 import helpers
 import logging
-from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.unittest_lib import StorageTest as TestCase
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import storagedomains
@@ -123,11 +122,10 @@ class CreateTemplateFromVM(BaseTestCase):
         source VM to backup VM
         """
         if not vms.get_vm_state(self.vm_name_for_template) == config.VM_DOWN:
-            self.assertTrue(vms.stopVm(True,
-                                       self.vm_name_for_template,
-                                       async='true'),
-                            "Failed to shutdown vm %s"
-                            % self.vm_name_for_template)
+            self.assertTrue(
+                vms.stopVm(True, self.vm_name_for_template),
+                "Failed to shutdown vm %s" % self.vm_name_for_template
+            )
 
         logger.info("Creating template of backup vm %s",
                     self.vm_name_for_template)
@@ -660,15 +658,6 @@ class TestCase6168(TestCase):
                 )
             )
 
-        # TODO: temporary solution for bug -
-        # https://bugzilla.redhat.com/show_bug.cgi?id=1063336
-
-        host_name = vms.getVmHost(self.vm_names[0])[1]['vmHoster']
-        host_ip = hosts.getHostIP(host_name)
-        utils.restartVdsmd(host_ip, config.HOSTS_PW)
-
-        hosts.waitForHostsStates(True, host_name)
-
         vms.stop_vms_safely([self.vm_names[1]])
         logger.info("Succeeded to stop vm %s", self.vm_names[1])
 
@@ -703,8 +692,6 @@ class TestCase6169(TestCase):
         '1211670': {'engine': ['cli'], 'version': ['3.5', '3.6']},
         '1231849': {'engine': None, 'version': ['3.6']},
     }
-    # TODO: Ticket is open for CLI and Java support:
-    # https://projects.engineering.redhat.com/browse/RHEVM-1901
     polarion_test_case = '6169'
 
     def setUp(self):
@@ -747,7 +734,7 @@ class TestCase6169(TestCase):
         logger.info("Adding backup disk to vm %s", self.vm_names[1])
         self.assertTrue(vms.addDisk(
             True, self.vm_names[1], BACKUP_DISK_SIZE, True,
-            self.storage_domains[0], interface=config.DISK_INTERFACE_VIRTIO),
+            self.storage_domains[0], interface=config.INTERFACE_VIRTIO),
             "Failed to add backup disk to backup vm %s" % self.vm_names[1])
 
         for disk in vms.getVmDisks(self.vm_names[1]):
@@ -859,7 +846,7 @@ class TestCase6170(TestCase):
             self.vm_names[0])
         if not vms.addDisk(
                 True, self.vm_names[0], 6 * config.GB, True, storage_domain,
-                interface=config.DISK_INTERFACE_VIRTIO
+                interface=config.INTERFACE_VIRTIO
         ):
             raise exceptions.DiskException(
                 "Failed to add disk to vm %s" % self.vm_names[0]
@@ -938,7 +925,7 @@ class TestCase6171(TestCase):
 
         disks.wait_for_disks_status(
             disks=self.vm_disks[0].get_alias(),
-            status=config.ENUMS['disk_state_locked']
+            status=config.DISK_LOCKED
         )
 
         status = vms.attach_backup_disk_to_vm(
@@ -1009,18 +996,8 @@ class TestCase6173(TestCase):
     """
     __test__ = True
     polarion_test_case = '6173'
-    bz = {
-        '1196049': {
-            'engine': None,
-            'version': ['3.5.1'],
-            'storage': config.STORAGE_TYPE_ISCSI
-        },
-        '1176673': {
-            'engine': None,
-            'version': ['3.6'],
-            'storage': config.STORAGE_TYPE_ISCSI
-        },
-    }
+    bz = {'1251956': {'engine': None, 'version': ['3.6']}}
+    # Bugzilla history: 1176673 1196049
 
     def setUp(self):
         self.vm_names = VM_NAMES[self.storage]
@@ -1053,5 +1030,11 @@ class TestCase6173(TestCase):
 
         self.assertFalse(status, "Succeeded to attach backup snapshot disk "
                                  "to backup vm")
-        logger.info("Waiting for all jobs to finish")
-        wait_for_jobs()
+
+    def tearDown(self):
+        """
+        Wait for all disk to be in status OK
+        """
+        logger.info("Waiting for all disk to be in status OK")
+        vms.waitForDisksStat(self.vm_names[0], timeout=MOVING_DISK_TIMEOUT)
+        vms.waitForDisksStat(self.vm_names[1])

@@ -3,25 +3,20 @@ Storage backup restore API
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_3_Storage_Backup_API
 """
-
+import config
 import logging
+import shlex
 
 from art.rhevm_api.tests_lib.low_level import vms as vms
-
 from art.rhevm_api.utils.test_utils import get_api
 from rhevmtests.storage.helpers import create_vm_or_clone
 from utilities.machine import Machine
-
-from art.test_handler.settings import opts
-import config
-import shlex
 
 DISKS_API = get_api('disk', 'disks')
 COPY_DISK_TIMEOUT = 2000
 
 
 LOGGER = logging.getLogger(__name__)
-ENUMS = opts['elements_conf']['RHEVM Enums']
 
 VM_IP_ADDRESSES = dict()
 BASE_SNAP_DESC = "base_snap"  # Base snapshot description
@@ -38,25 +33,25 @@ vm_args = {
     'vmDescription': '',
     'cluster': config.CLUSTER_NAME,
     'nic': config.NIC_NAME[0],
-    'nicType': ENUMS['nic_type_virtio'],
+    'nicType': config.NIC_TYPE_VIRTIO,
     'size': VM_DISK_SIZE,
-    'diskInterface': ENUMS['interface_virtio'],
-    'volumeFormat': ENUMS['format_cow'],
-    'volumeType': config.SPARSE,
+    'diskInterface': config.INTERFACE_VIRTIO,
+    'volumeFormat': config.DISK_FORMAT_COW,
+    'volumeType': True,  # sparse
     'bootable': True,
-    'type': ENUMS['vm_type_desktop'],
-    'os_type': 'RHEL_6x64',
+    'type': config.VM_TYPE_DESKTOP,
+    'os_type': config.OS_TYPE,
     'memory': config.GB,
-    'cpu_socket': 1,
-    'cpu_cores': 1,
-    'display_type': ENUMS['display_type_spice'],
+    'cpu_socket': config.CPU_SOCKET,
+    'cpu_cores': config.CPU_CORES,
+    'display_type': config.DISPLAY_TYPE,
     'start': True,
     'installation': True,
-    'user': config.PARAMETERS['vm_linux_user'],
-    'password': config.PARAMETERS['vm_linux_password'],
-    'image': config.PARAMETERS['cobbler_profile'],
-    'network': config.PARAMETERS['mgmt_bridge'],
-    'useAgent': config.PARAMETERS.as_bool('useAgent'),
+    'user': config.COBBLER_USER,
+    'password': config.COBBLER_PASSWD,
+    'image': config.COBBLER_PROFILE,
+    'network': config.MGMT_BRIDGE,
+    'useAgent': config.USE_AGENT,
 }
 
 
