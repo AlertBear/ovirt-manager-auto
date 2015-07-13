@@ -20,6 +20,7 @@ def setup_package():
     """
     Prepare environment
     """
+    network_cleanup()
     logger.info(
         "Configuring engine to support ethtool opts for %s version",
         config.COMP_VERSION
@@ -76,13 +77,12 @@ def setup_package():
         [VDSMD_SERVICE], config.VDS_HOSTS[0]
     )
     if config.GOLDEN_ENV:
-        network_cleanup()
         logger.info(
             "Running on golden env, starting VM %s on host %s",
             config.VM_NAME[0], config.HOSTS[0]
         )
         if not hl_vm.start_vm_on_specific_host(
-            vm=config.VM_NAME[0], host=config.HOSTS[0]
+            vm=config.VM_NAME[0], host=config.HOSTS[0], wait_for_ip=True
         ):
             raise exceptions.NetworkException(
                 "Cannot start VM %s on host %s" %

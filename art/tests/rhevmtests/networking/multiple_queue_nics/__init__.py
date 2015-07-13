@@ -11,7 +11,7 @@ from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.high_level.networks import prepareSetup
 
 logger = logging.getLogger("Multiple_Queues_Nics_Init")
-
+VER = config.COMP_VERSION
 # ################################################
 
 
@@ -19,19 +19,18 @@ def setup_package():
     """
     Prepare environment
     """
-    logger.info("Configuring engine to support queues for 3.5 version")
+    network_cleanup()
+    logger.info(
+        "Configuring engine to support queues for %s version", VER
+    )
     param = [
         "CustomDeviceProperties='{type=interface;prop={queues=[1-9][0-9]*}}'",
-        "'--cver=3.5'"
+        "'--cver=%s'" % VER
     ]
     if not set_engine_properties(engine_obj=config.ENGINE, param=param):
         raise NetworkException("Failed to enable queue via engine-config")
 
-    if config.GOLDEN_ENV:
-        logger.info("Running on GE. No need for further setup")
-        network_cleanup()
-
-    else:
+    if not config.GOLDEN_ENV:
         if not prepareSetup(
             hosts=config.VDS_HOSTS, cpuName=config.CPU_NAME,
             username=config.HOSTS_USER, password=config.HOSTS_PW,
@@ -53,16 +52,14 @@ def teardown_package():
     """
     Cleans the environment
     """
-    logger.info("Removing queues support from engine for 3.5 version")
-    param = ["CustomDeviceProperties=''", "'--cver=3.5'"]
+    logger.info("Removing queues support from engine for %s version", VER)
+    param = ["CustomDeviceProperties=''", "'--cver=%s'" % VER]
     if not set_engine_properties(engine_obj=config.ENGINE, param=param):
         logger.error(
             "Failed to remove queues support via engine-config"
         )
-    if config.GOLDEN_ENV:
-        logger.info("Running on GE. No need for teardown")
 
-    else:
+    if not config.GOLDEN_ENV:
         if not clean_datacenter(
             positive=True, datacenter=config.DC_NAME[0],
             vdc=config.VDC_HOST, vdc_password=config.VDC_ROOT_PASSWORD

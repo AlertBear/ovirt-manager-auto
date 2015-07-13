@@ -108,7 +108,9 @@ class TestMultipleQueueNics01(TestMultipleQueueNicsTearDown):
         # find apropriate host object for the vm_host_ip in VDS_HOSTS
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
         if not check_queues_from_qemu(
-            host_obj=host_obj, num_queues=config.NUM_QUEUES[0]
+            vm=config.VM_NAME[0],
+            host_obj=host_obj,
+            num_queues=config.NUM_QUEUES[0]
         ):
             raise NetworkException(
                 "qemu did not return the expected number of queues"
@@ -150,7 +152,9 @@ class TestMultipleQueueNics02(TestMultipleQueueNicsTearDown):
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
         logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
         if not check_queues_from_qemu(
-            host_obj=host_obj, num_queues=config.NUM_QUEUES[0]
+            vm=config.VM_NAME[0],
+            host_obj=host_obj,
+            num_queues=config.NUM_QUEUES[0]
         ):
             raise NetworkException(
                 "qemu did not return the expected number of queues"
@@ -185,6 +189,7 @@ class TestMultipleQueueNics02(TestMultipleQueueNicsTearDown):
         logger.info("Check that qemu still has %s queues after properties "
                     "update", config.NUM_QUEUES[0])
         if not check_queues_from_qemu(
+            vm=config.VM_NAME[0],
             host_obj=host_obj, num_queues=config.NUM_QUEUES[0]
         ):
             raise NetworkException(
@@ -203,7 +208,9 @@ class TestMultipleQueueNics02(TestMultipleQueueNicsTearDown):
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
         logger.info("Check that qemu has %s queues", config.NUM_QUEUES[1])
         if not check_queues_from_qemu(
-            host_obj=host_obj, num_queues=config.NUM_QUEUES[1]
+            vm=config.VM_NAME[0],
+            host_obj=host_obj,
+            num_queues=config.NUM_QUEUES[1]
         ):
             raise NetworkException(
                 "qemu did not return the expected number of queues"
@@ -244,7 +251,9 @@ class TestMultipleQueueNics03(TestMultipleQueueNicsTearDown):
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
         logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
         if not check_queues_from_qemu(
-            host_obj=host_obj, num_queues=config.NUM_QUEUES[0]
+            vm=config.VM_NAME[0],
+            host_obj=host_obj,
+            num_queues=config.NUM_QUEUES[0]
         ):
             raise NetworkException(
                 "qemu did not return the expected number of queues"
@@ -269,7 +278,9 @@ class TestMultipleQueueNics03(TestMultipleQueueNicsTearDown):
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
         logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
         if not check_queues_from_qemu(
-            host_obj=host_obj, num_queues=config.NUM_QUEUES[0]
+            vm=config.VM_NAME[0],
+            host_obj=host_obj,
+            num_queues=config.NUM_QUEUES[0]
         ):
             raise NetworkException(
                 "qemu did not return the expected number of queues"
@@ -313,7 +324,9 @@ class TestMultipleQueueNics04(TestMultipleQueueNicsTearDown):
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
         logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
         if not check_queues_from_qemu(
-            host_obj=host_obj, num_queues=config.NUM_QUEUES[0]
+            vm=config.VM_NAME[0],
+            host_obj=host_obj,
+            num_queues=config.NUM_QUEUES[0]
         ):
             raise NetworkException(
                 "qemu did not return the expected number of queues"
@@ -370,7 +383,9 @@ class TestMultipleQueueNics04(TestMultipleQueueNicsTearDown):
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
         logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
         if not check_queues_from_qemu(
-            host_obj=host_obj, num_queues=config.NUM_QUEUES[0]
+            vm=config.VM_FROM_TEMPLATE,
+            host_obj=host_obj,
+            num_queues=config.NUM_QUEUES[0]
         ):
             raise NetworkException(
                 "qemu did not return the expected number of queues"
@@ -433,6 +448,7 @@ class TestMultipleQueueNics05(TestMultipleQueueNicsTearDown):
         logger.info(
             "Check that qemu has %s queues", config.NUM_QUEUES[0])
         if not check_queues_from_qemu(
+            vm=config.VM_NAME[0],
             host_obj=config.VDS_HOSTS[0],
             num_queues=config.NUM_QUEUES[0]
         ):
@@ -442,8 +458,10 @@ class TestMultipleQueueNics05(TestMultipleQueueNicsTearDown):
         if not migrateVm(
                 positive=True, vm=config.VM_NAME[0], host=HOST_NAME1
         ):
-            raise NetworkException("Failed to migrate %s from %s to %s" %
-                                   (config.VM_NAME[0], HOST_NAME0, HOST_NAME1))
+            raise NetworkException(
+                "Failed to migrate %s from %s to %s" %
+                (config.VM_NAME[0], HOST_NAME0, HOST_NAME1)
+            )
 
     @polarion("RHEVM3-4311")
     def test_multiple_queue_nics(self):
@@ -453,8 +471,9 @@ class TestMultipleQueueNics05(TestMultipleQueueNicsTearDown):
         logger.info(
             "Check that qemu has %s queues", config.NUM_QUEUES[0])
         if not check_queues_from_qemu(
-                host_obj=config.VDS_HOSTS[1],
-                num_queues=config.NUM_QUEUES[0]
+            vm=config.VM_NAME[0],
+            host_obj=config.VDS_HOSTS[1],
+            num_queues=config.NUM_QUEUES[0]
         ):
             raise NetworkException(
                 "qemu did not return the expected number of queues"
