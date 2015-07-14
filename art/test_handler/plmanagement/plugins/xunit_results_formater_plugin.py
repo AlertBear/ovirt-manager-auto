@@ -145,17 +145,6 @@ class XUnit(Component):
         self.testsuite.append(testcase)
         self.__update_testsuite_attrs()
 
-        if kwargs['status'] not in [test_case.TEST_STATUS_FAILED,
-        test_case.TEST_STATUS_SKIPPED, test_case.TEST_STATUS_ERROR]:
-            systemout = Element('system-out')
-            try:
-                systemout.text = out_msg
-            except ValueError as ex:
-                logger.error("failed to add test_element info: %s", ex)
-                out_msg = "[malformed data]"
-                systemout.text = out_msg
-            testcase.append(systemout)
-
         properties = E.properties()
         for k in set(kwargs.keys()) - set(written):
             self.__add_aditional_attrs(properties, k, kwargs[k])
