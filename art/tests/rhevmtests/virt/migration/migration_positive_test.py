@@ -145,7 +145,7 @@ class TestMigrationCase01(TestMigrationCaseBase):
         """
         logger.info("Stopping: %s", config.VM_NAME[1:5])
         try:
-            vms.stop_vms_safely(vms_list=cls.vms, max_workers=len(cls.vms))
+            vms.stop_vms_safely(vms_list=cls.vms)
         except Exception:
             logger.error("Failed to stop %s", cls.vms)
         super(TestMigrationCase01, cls).teardown_class()

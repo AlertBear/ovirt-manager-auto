@@ -1985,7 +1985,7 @@ class TestCase5997(BaseTestCase):
         Expected Results:
             - we should fail migration
         """
-        stop_vms_safely([self.vm_name], async=False)
+        stopVm(True, self.vm_name, async=False)
         wait_for_jobs()
         assert updateVm(True, self.vm_name, highly_available='true')
         self.perform_action()
@@ -2000,7 +2000,7 @@ class TestCase5997(BaseTestCase):
         Expected Results:
             - we should fail migration
         """
-        stop_vms_safely([self.vm_name], async=True)
+        stopVm(True, self.vm_name, async=False)
         assert updateVm(True, self.vm_name, highly_available='false')
         self.perform_action()
 

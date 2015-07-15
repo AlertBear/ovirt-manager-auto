@@ -3588,7 +3588,6 @@ def preview_snapshot(positive, vm, description, ensure_vm_down=False,
     """
     if ensure_vm_down:
         stop_vms_safely([vm])
-        waitForVMState(vm, state=ENUMS['vm_state_down'])
     return snapshot_action(positive, vm, PREVIEW, description,
                            restore_memory=restore_memory, disks_lst=disks_lst)
 
@@ -3604,7 +3603,6 @@ def undo_snapshot_preview(positive, vm, ensure_vm_down=False):
     """
     if ensure_vm_down:
         stop_vms_safely([vm])
-        waitForVMState(vm, state=ENUMS['vm_state_down'])
     return snapshot_action(positive, vm, UNDO)
 
 
@@ -3622,7 +3620,6 @@ def commit_snapshot(positive, vm, ensure_vm_down=False,
     """
     if ensure_vm_down:
         stop_vms_safely([vm])
-        waitForVMState(vm, state=ENUMS['vm_state_down'])
     return snapshot_action(positive, vm, COMMIT,
                            restore_memory=restore_memory)
 
@@ -3950,27 +3947,31 @@ def create_vm_from_ovf(new_vm_name, cluster_name, ovf, compare=False):
     return status
 
 
-def stop_vms_safely(vms_list, async=False, max_workers=2):
+def stop_vms_safely(vms_list):
     """
-    Description: Stops vm after checking that it is not already in down
-    state
-    Author: ratamir
-    Parameters:
-        * vms_list - list of vm names
-        * async - True if operation should be async or False otherwise
-        * max_workers - The maximum number of threads that can be used
-    """
-    results = list()
-    async = str(async).lower()
-    logger.info("Stops vms: %s", vms_list)
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        for vm in vms_list:
-            if not get_vm_state(vm) == ENUMS['vm_state_down']:
-                results.append(executor.submit(stopVm(True, vm, async=async)))
+    Stop all vms passed in. Raise an exception if any of the vms were not
+    stopped
 
-    for vm, res in zip(vms_list, results):
-        if not res:
-            raise exceptions.VMException("Failed to stop vm %s" % vm)
+    __authoer__ = ratamir, cmestreg
+    :param vms_list: list of vm names
+    :type vms_list: list
+    """
+    vms_stop_failed = set()
+    vms_action_stop = set()
+    logger.info("Stopping vms: %s", vms_list)
+    for vm in vms_list:
+        if not get_vm_state(vm) == ENUMS['vm_state_down']:
+            if not stopVm(True, vm, async=True):
+                vms_stop_failed.add(vm)
+            else:
+                vms_action_stop.add(vm)
+
+    for vm in vms_action_stop:
+        if not waitForVMState(vm, ENUMS['vm_state_down']):
+            vms_stop_failed.add(vm)
+
+    if vms_stop_failed:
+        raise exceptions.VMException("Failed to stop vms %s" % vms_stop_failed)
 
 
 def attach_snapshot_disk_to_vm(disk_obj, vm_name, async=False, activate=True):
@@ -4419,7 +4420,6 @@ def remove_all_vm_lsm_snapshots(vm_name):
     """
     logger.info("Removing all '%s'", LIVE_SNAPSHOT_DESCRIPTION)
     stop_vms_safely([vm_name])
-    waitForVMState(vm_name, state=ENUMS['vm_state_down'])
     waitForDisksStat(vm_name)
     snapshots = _getVmSnapshots(vm_name, False)
     results = []
@@ -4680,18 +4680,21 @@ def get_vm_host(vm_name):
 
 def safely_remove_vms(vms):
     """
-    Description: Make sure that all vms passed are removed
-    Parameters:
-        * vms: list of vms
-    Returns: False if there's an error removing a vm or no vm were removed
+    Ensure that all vms passed in are removed
+
+    __author__ = 'cmestreg'
+    :param vms: list of vms' names
+    :type vms: list
+    :returns: False if any of the vms still exist, True otherwise
+    :rtype: bool
     """
-    logger.info("Removing vms %s", vms)
-    vms_exists = filter(does_vm_exist, vms)
-    if vms_exists:
-        stop_vms_safely(vms_exists)
-        return removeVms(True, vms_exists)
-    logger.info("No vms to remove")
-    return True
+    logger.debug("Removing vms %s", vms)
+    existing_vms = filter(does_vm_exist, vms)
+    stop_vms_safely(existing_vms)
+    for vm in existing_vms:
+        removeVm(True, vm, wait=False)
+
+    return waitForVmsGone(True, existing_vms)
 
 
 def get_vm_disk_logical_name(
