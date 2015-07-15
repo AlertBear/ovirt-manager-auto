@@ -3,7 +3,7 @@ Clone Vm From Snapshot
 """
 import config
 import logging
-from art.unittest_lib.common import StorageTest as TestCase
+from art.unittest_lib.common import attr, StorageTest as TestCase
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainNamesForType,
@@ -12,31 +12,33 @@ from art.rhevm_api.tests_lib.low_level.disks import (
     addDisk, wait_for_disks_status, attachDisk,
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
-    waitForVmDiskStatus, removeVm, waitForVMState,
-    cloneVmFromSnapshot, startVm, searchForVm,
-    addNic, get_vm_nics_obj, addSnapshot, removeNic, getVmDisks, removeDisk,
-    stop_vms_safely, get_vm, removeVms, stopVm, removeSnapshot,
+    waitForVmDiskStatus, waitForVMState, cloneVmFromSnapshot, startVm,
+    searchForVm, addNic, get_vm_nics_obj, addSnapshot, removeNic, getVmDisks,
+    removeDisk, stop_vms_safely, get_vm, stopVm, removeSnapshot,
+    safely_remove_vms,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-from art.unittest_lib import attr
 from common import _create_vm
 
 
 logger = logging.getLogger(__name__)
 
+# This suite cointains tests that create multiple snapshots on multiple disks
+# Increase the size of the disks added to the vm
+DISK_SIZE = 2 * config.GB
 
-# TODO: Might fail on bug https://bugzilla.redhat.com/show_bug.cgi?id=1201268
-# if it does, uncomment:
+
+# If the test fails with error = low level Image copy failed, code = 261
+# re-open https://bugzilla.redhat.com/show_bug.cgi?id=1201268 and uncomment:
 # @attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
 class BaseTestCase(TestCase):
     """
     Base Test Case for clone snapshot
     """
     snapshot = "snapshot_%s"
-    # TODO: enable cli after bug
-    # http://bugzilla.redhat.com/show_bug.cgi?id=1236718 is fixed
-    apis = TestCase.apis - set(['cli'])
     __test__ = False
+    # Disable cli, check ticket RHEVM-2238
+    jira = {'RHEVM-2238': None}
 
     def setUp(self):
         """
@@ -52,7 +54,7 @@ class BaseTestCase(TestCase):
         """
         Add disk with alias 'disk_alias' to vm
         """
-        assert addDisk(True, alias=disk_alias, size=config.GB,
+        assert addDisk(True, alias=disk_alias, size=DISK_SIZE,
                        storagedomain=self.storage_domain_0,
                        sparse=False, interface=config.VIRTIO_SCSI,
                        format=config.RAW_DISK)
@@ -67,7 +69,7 @@ class BaseTestCase(TestCase):
         """
         Remove the cloned vm
         """
-        removeVm(True, self.cloned_vm)
+        safely_remove_vms([self.cloned_vm])
 
 
 @attr(tier=0)
@@ -173,9 +175,7 @@ class TestCase6120(BaseTestCase):
         """
         Remove created vms and make sure the original vm is unlocked
         """
-        removeVm(True, self.cloned_vm_down)
-        removeVm(True, self.cloned_vm_up)
-        wait_for_jobs()
+        safely_remove_vms([self.cloned_vm_down, self.cloned_vm_up])
 
 
 @attr(tier=1)
@@ -262,18 +262,17 @@ class TestCase6108(BaseTestCase):
             vm=self.vm, snapshot=self.snapshot_two_nics,
             storagedomain=self.storage_domain_1, compare=False)
 
+        assert waitForVMState(self.cloned_vm, state=config.VM_DOWN)
+
         self.assertEqual(len(get_vm_nics_obj(self.cloned_vm)), 2)
-        wait_for_jobs()
 
     def tearDown(self):
         """
         * Removing created nic and the cloned vm
         """
         stop_vms_safely([self.cloned_vm, self.vm])
-        wait_for_jobs()
         removeNic(True, self.vm, "nic2")
         removeSnapshot(True, self.vm, self.snapshot_two_nics)
-        wait_for_jobs()
         super(TestCase6108, self).tearDown()
 
 
@@ -311,20 +310,18 @@ class TestCase6109(BaseTestCase):
             True, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
             vm=self.vm, snapshot=self.snapshot_two_disks,
             storagedomain=self.storage_domain_1, compare=False)
-        waitForVMState(self.cloned_vm)
 
+        assert waitForVMState(self.cloned_vm, state=config.VM_DOWN)
         self.assertEqual(len(getVmDisks(self.cloned_vm)), 2)
-        wait_for_jobs()
 
     def tearDown(self):
         """
         Remove created disk and cloned vm
         """
         stop_vms_safely([self.vm])
-        wait_for_jobs()
         removeDisk(True, self.vm, self.disk_alias)
+        wait_for_jobs([config.ENUMS['job_remove_disk']])
         removeSnapshot(True, self.vm, self.snapshot_two_disks)
-        wait_for_jobs()
         super(TestCase6109, self).tearDown()
 
 
@@ -355,7 +352,6 @@ class TestCase6111(BaseTestCase):
                    vm_type=config.VM_TYPE_SERVER, installation=False)
         waitForVMState(self.vm, config.VM_DOWN)
         addSnapshot(True, self.vm_server, self.snapshot_server)
-        wait_for_jobs()
 
     @polarion("RHEVM3-6111")
     def test_clone_vm_type_desktop_server(self):
@@ -389,8 +385,9 @@ class TestCase6111(BaseTestCase):
         """
         Remove created vms
         """
-        removeVms(True, [self.cloned_vm_desktop, self.cloned_vm_server,
-                         self.vm_server])
+        safely_remove_vms(
+            [self.cloned_vm_desktop, self.cloned_vm_server, self.vm_server]
+        )
 
 
 @attr(tier=1)
@@ -426,13 +423,15 @@ class TestCase6112(BaseTestCase):
 
         logger.info("Removing disk %s", self.disk_alias)
         assert removeDisk(True, self.vm, self.disk_alias)
+        wait_for_jobs([config.ENUMS['job_remove_disk']])
 
         logger.info("Cloning vm %s", self.vm)
         assert cloneVmFromSnapshot(
             True, name=self.cloned_vm, cluster=config.CLUSTER_NAME,
             vm=self.vm, snapshot=self.snapshot_multiple_disks,
             storagedomain=self.storage_domain_1, compare=False)
-        wait_for_jobs()
+
+        assert waitForVMState(self.cloned_vm, state=config.VM_DOWN)
 
         cloned_disks = getVmDisks(self.cloned_vm)
         disks = [disk.name for disk in cloned_disks]
@@ -444,9 +443,7 @@ class TestCase6112(BaseTestCase):
         """
         Removed disk
         """
-        removeVm(True, self.cloned_vm)
-        wait_for_jobs()
+        safely_remove_vms([self.cloned_vm])
         removeDisk(True, self.vm, self.disk_alias2)
-        wait_for_jobs()
+        wait_for_jobs([config.ENUMS['job_remove_disk']])
         removeSnapshot(True, self.vm, self.snapshot_multiple_disks)
-        wait_for_jobs()
