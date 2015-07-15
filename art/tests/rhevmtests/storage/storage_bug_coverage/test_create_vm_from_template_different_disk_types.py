@@ -9,9 +9,8 @@ from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.tests_lib.low_level import (
-    templates, disks, storagedomains,
+    templates, disks, storagedomains, jobs
 )
-from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
 from art.test_handler.settings import opts
@@ -226,10 +225,11 @@ class TestCase11843(TestCase):
 
     def tearDown(self):
         """
-        Wait for any jobs still in progress, remove all created vms, templates
-        and disks
+        Wait for all vm's disk status to be OK, remove all created vms,
+        templates and disks
         """
-        wait_for_jobs()
+        for vm in self.vms:
+            ll_vms.waitForDisksStat(vm)
         if not ll_vms.safely_remove_vms(self.vms):
             logger.error("Failed to remove vms %s", self.vms)
             self.test_failed = True
@@ -244,6 +244,6 @@ class TestCase11843(TestCase):
                 "Failed to delete disk %s", self.direct_lun_disk_alias,
             )
             self.test_failed = True
-        wait_for_jobs()
+        jobs.wait_for_jobs([config.ENUMS['job_remove_disk']])
         if self.test_failed:
             raise errors.TestException("Test failed during tearDown")

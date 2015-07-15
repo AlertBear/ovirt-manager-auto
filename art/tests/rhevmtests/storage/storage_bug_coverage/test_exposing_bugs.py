@@ -20,7 +20,6 @@ from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import disks as ll_disks
 from art.rhevm_api.tests_lib.low_level import hosts
-from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
@@ -117,7 +116,9 @@ class EnvironmentWithTwoHosts(TestCase):
         """
         Make sure there are only two active hosts for the given cluster
         """
-        wait_for_jobs()
+        # TODO: wait for all tasks in host to finish.
+        # This should be done when we have an approach to handling
+        # spm async tasks
         cls.hosts = []
         for host in config.HOSTS:
             if hosts.getHostCluster(host) == config.CLUSTER_NAME:
@@ -223,82 +224,6 @@ class TestCase11909(TestCase):
             self.vm_name)]
         ll_disks.wait_for_disks_status(disks=disks_aliases)
         assert ll_vms.removeVm(True, self.vm_name)
-
-
-"""
-Test exposing BZ 1002249, checks that creating a template
-from a vm with non-ascii character in its name is working
-"""
-
-
-@attr(tier=1)
-class TestCase4833(TestCase):
-    """
-    test exposing https://bugzilla.redhat.com/show_bug.cgi?id=1002249
-    scenario:
-    * create a VM with a non-ascii char in the disk's name
-    * Create a template from the vm
-
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_1_Storage_Virtual_Disks
-    """
-    __test__ = True
-    polarion_test_case = '4833'
-
-    def setUp(self):
-        """Create the vm"""
-        self.storage_domain = storagedomains.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage,
-        )[0]
-        if not ll_vms.addVm(True, name=config.VM_BASE_NAME,
-                            storagedomain=self.storage_domain,
-                            cluster=config.CLUSTER_NAME):
-            raise errors.VMException("Cannot create vm %s" %
-                                     config.VM_BASE_NAME)
-
-        # Add a disk to the VM
-        if not ll_vms.addDisk(True, config.VM_BASE_NAME, config.DISK_SIZE,
-                              storagedomain=self.storage_domain):
-            raise errors.DiskException("Cannot create disk for vm %s" %
-                                       config.VM_BASE_NAME)
-
-    def tearDown(self):
-        """Remove template and vm"""
-        if self.template_created:
-            if not templates.removeTemplate(positive=True,
-                                            template=self.template_name):
-                logger.error("Failure to remove template %s",
-                             self.template_name)
-
-        if not ll_vms.removeVm(
-                True, config.VM_BASE_NAME, **{'stopVM': 'true'}):
-            logger.error("Cannot delete vm %s", config.VM_BASE_NAME)
-
-        wait_for_jobs()
-
-    @polarion("RHEVM3-4833")
-    def test_create_template_from_vm(self):
-        """ creates template from vm
-        """
-        self.template_created = False
-        logger.info("Adding a non-ascii character to the disk name")
-        disk_name = u"DiskNonAsciié"
-        disk_params = {"disk": "%s_Disk1" % config.VM_BASE_NAME,
-                       "alias": disk_name}
-        self.assertTrue(ll_vms.updateVmDisk(True, config.VM_BASE_NAME,
-                                            **disk_params))
-
-        self.template_name = '%s_%s_template_' % (
-            config.VM_BASE_NAME, self.storage)
-        template_kwargs = {"vm": config.VM_BASE_NAME,
-                           "name": self.template_name}
-        logger.info("Creating template %s", self.template_name)
-        self.template_created = templates.createTemplate(True,
-                                                         **template_kwargs)
-        self.assertTrue(
-            self.template_created,
-            "Couldn't create template %s" % self.template_name,
-        )
 
 
 """
@@ -671,6 +596,9 @@ class TestCase11625(TestCase):
     polarion_test_case = '11625'
     vm_name = "vm_%s" % polarion_test_case
     snap_name = "snap_%s" % polarion_test_case
+    bz = {
+        '1252396': {'engine': None, 'version': ["3.6"]}
+    }
 
     @polarion("RHEVM3-11625")
     def test_merge_snapshots_on_hsm(self):
@@ -754,7 +682,7 @@ class TestCase11624(TestCase):
         for host in config.HOSTS:
             if host != self.spm_host_name and hosts.isHostUp(True, host):
                 hosts.deactivateHost(True, host)
-        wait_for_jobs()
+        hosts.waitForHostsStates(True, [self.spm_host_name])
 
         # create a vm with 1 thin provision disk
         logger.info("Create a vm named %s ", self.vm_name)
