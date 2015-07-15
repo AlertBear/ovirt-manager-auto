@@ -730,7 +730,8 @@ class TestCase11624(TestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Bug_Coverage
     """
-    __test__ = True
+    # TODO Disabled due to problematic leftovers (/tmp/dd.error)
+    __test__ = False
     polarion_test_case = '11624'
     vm_name = "vm_%s" % polarion_test_case
     snap_name = "snap_%s" % polarion_test_case
