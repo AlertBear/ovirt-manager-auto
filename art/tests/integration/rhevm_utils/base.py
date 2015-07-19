@@ -103,8 +103,9 @@ class RHEVMUtilsTestCase(TestCase):
             try:
                 if llvms.checkVmState(True, cls.utility, 'up'):
                     llvms.stopVm(True, cls.utility)
-                llvms.restoreSnapshot(True, cls.utility, BASE_SNAPSHOT,
-                                      ensure_vm_down=True)
+                llvms.restore_snapshot(
+                    True, cls.utility, BASE_SNAPSHOT, ensure_vm_down=True
+                )
             finally:
                 llvms.waitForVMState(cls.utility, state='down')
 
@@ -128,8 +129,9 @@ class RHEVMUtilsTestCase(TestCase):
         """
         if self.installation == 'true':
             if self.utility in ['setup', 'cleanup']:
-                llvms.restoreSnapshot(True, self.utility, self.snap,
-                                      ensure_vm_down=True)
+                llvms.restore_snapshot(
+                    True, self.utility, self.snap, ensure_vm_down=True
+                )
         else:
             if self.utility == 'cleanup':
                 self.machine.install(config)

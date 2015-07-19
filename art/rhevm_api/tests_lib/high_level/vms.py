@@ -79,25 +79,6 @@ def shutdown_vm_if_up(vm_name):
     return vms.waitForVMState(vm_name, state=ENUMS['vm_state_down'])
 
 
-def restore_snapshot(vm_name, snap_description):
-    """
-    Description: Restores vm to given snapshot
-    Parameters:
-        * vm_name - name of the vm
-        * snap_description - snapshot's description
-    Throws:
-        APITimeout - in case snapshot won't reach 'ok' status
-        VMException - in case restoreSnapshot returns False or vm shutdown
-                      fails
-    """
-    shutdown_vm_if_up(vm_name)
-    vms.wait_for_vm_snapshots(vm_name, states=['ok'])
-    if not vms.restoreSnapshot(True, vm=vm_name, description=snap_description):
-        raise errors.VMException(
-            "restoreSnapshot returned False for vm %s and snapshot %s" %
-            (vm_name, snap_description))
-
-
 def prepare_vm_for_rhel_template(vm_name, vm_password, image):
     """
     Prepare vm to create rhel with agent template from it

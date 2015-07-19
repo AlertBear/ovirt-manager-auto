@@ -16,7 +16,6 @@ from art.test_handler import exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import StorageTest as TestCase, attr
 
-from art.rhevm_api.tests_lib.high_level.vms import restore_snapshot
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level import hosts, templates, vms
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
@@ -202,7 +201,10 @@ class BaseTestCase(TestCase):
         with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
             for vm_name in self.vm_list:
                 results.append(
-                    executor.submit(restore_snapshot, vm_name, BASE_SNAP))
+                    executor.submit(
+                        vms.restore_snapshot, True, vm_name, BASE_SNAP, True
+                    )
+                )
         raise_if_exception(results)
 
 

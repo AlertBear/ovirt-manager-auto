@@ -440,8 +440,9 @@ class TestCase4565(IscsiNfsSD):
                                             ensure_vm_down=True)
 
         logger.info("Restore a snapshot")
-        assert ll_vms.restoreSnapshot(True, self.vm_name,
-                                      snap_name, ensure_vm_down=True)
+        assert ll_vms.restore_snapshot(
+            True, self.vm_name, snap_name, ensure_vm_down=True
+        )
 
         logger.info("Delete a snapshot")
         assert ll_vms.removeSnapshot(True, self.vm_name, snap_name)

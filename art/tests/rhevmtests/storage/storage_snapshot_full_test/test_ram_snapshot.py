@@ -22,7 +22,7 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import (
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
     updateVm, startVm, addSnapshot, is_snapshot_with_memory_state,
-    stopVm, restoreSnapshot, undo_snapshot_preview, preview_snapshot,
+    stopVm, restore_snapshot, undo_snapshot_preview, preview_snapshot,
     removeVm, exportVm, importVm, removeVmFromExportDomain,
     removeSnapshot, kill_process_by_pid_on_vm, shutdownVm,
     wait_for_vm_snapshots, removeVms, stop_vms_safely,  startVms,
@@ -135,7 +135,7 @@ class DCWithStoragesActive(TestCase):
         assert shutdown_vm_if_up(self.vm)
         logger.info('Restoring base snapshot %s on vm %s',
                     self.base_snapshot, self.vm)
-        assert restoreSnapshot(True, self.vm, self.base_snapshot)
+        assert restore_snapshot(True, self.vm, self.base_snapshot)
         wait_for_vm_snapshots(self.vm, config.SNAPSHOT_OK)
 
 
@@ -146,7 +146,7 @@ class VMWithMemoryStateSnapshot(DCWithStoragesActive):
     """
 
     __test__ = False
-    memory_snapshot = config.RAM_SNAPSHOT % 0
+    memory_snapshot = config.RAM_SNAPSHOT % '0'
     persist_network = False
     pids = []
     cmdlines = ['/dev/zero']
@@ -354,7 +354,7 @@ class TestCase5138(ReturnToSnapshot):
     """
     __test__ = True
     polarion_test_case = '5138'
-    test_action = staticmethod(restoreSnapshot)
+    test_action = staticmethod(restore_snapshot)
 
     @polarion("RHEVM3-5138")
     def test_restore_snasphot(self):
@@ -383,8 +383,9 @@ class TestCase5137(VMWithMemoryStateSnapshot):
 
         logger.info('Restoring first ram snapshot (%s) on vm %s', self.vm,
                     self.memory_snapshot)
-        assert restoreSnapshot(True, self.vm, self.memory_snapshot,
-                               restore_memory=True)
+        assert restore_snapshot(
+            True, self.vm, self.memory_snapshot, restore_memory=True
+        )
 
         logger.info('Resuming vm %s', self.vm)
         assert startVm(True, self.vm, wait_for_ip=True,
@@ -585,11 +586,12 @@ class TestCase5134(VMWithMemoryStateSnapshot):
 
         logger.info('Restoring snapshot %s with memory state on vm %s',
                     self.memory_snapshot, self.vm)
-        self.assertTrue(restoreSnapshot(True, self.vm,
-                                        self.memory_snapshot,
-                                        restore_memory=True),
-                        'Unable to restore snapshot %s on vm %s' %
-                        (self.memory_snapshot, self.vm))
+        self.assertTrue(
+            restore_snapshot(
+                True, self.vm, self.memory_snapshot, restore_memory=True
+            ), 'Unable to restore snapshot %s on vm %s' %
+               (self.memory_snapshot, self.vm)
+        )
 
         logger.info('Starting vm %s', self.vm)
         self.assertTrue(startVm(True, self.vm,
@@ -666,10 +668,10 @@ class TestCase5131(VMWithMemoryStateSnapshot):
         """
         logger.info('Restoring memory snapshot %s on vm %s',
                     self.memory_snapshot, self.vm)
-        self.assertTrue(restoreSnapshot(True, self.vm, self.memory_snapshot,
-                                        restore_memory=True),
-                        'Unable to restore snapshot %s on vm %s' %
-                        (self.memory_snapshot, self.vm))
+        self.assertTrue(restore_snapshot(
+            True, self.vm, self.memory_snapshot, restore_memory=True
+        ), 'Unable to restore snapshot %s on vm %s' %
+           (self.memory_snapshot, self.vm))
 
         logger.info('Setting vm %s to stateless', self.vm)
         self.assertTrue(updateVm(True, self.vm, stateless=True),

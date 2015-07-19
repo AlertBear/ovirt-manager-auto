@@ -933,8 +933,9 @@ class VmSnapshots(BaseVmWithDisk):
             )
         logger.info("Restore vm %s from snapshot %s",
                     self.vm_name, self.snapshot_dsc[1])
-        self.assertTrue(vm_api.restoreSnapshot(True, self.vm_name,
-                                               self.snapshot_dsc[1]))
+        self.assertTrue(vm_api.restore_snapshot(
+            True, self.vm_name, self.snapshot_dsc[1]
+        ))
         logger.info("Export vm %s with discarded snapshots", self.vm_name)
         self.assertTrue(vm_api.exportVm(True, self.vm_name,
                                         export_domain,

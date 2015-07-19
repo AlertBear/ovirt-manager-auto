@@ -3542,22 +3542,41 @@ def collect_vm_logs(vm_name, root_passwd='qum5net'):
     return True
 
 
-@is_action()
-def restoreSnapshot(positive, vm, description, ensure_vm_down=False,
-                    restore_memory=False):
+def restore_snapshot(
+        positive, vm, description, ensure_vm_down=False, restore_memory=False
+):
     """
-    Description: restore vm snapshot
-    Author: edolinin
-    Parameters:
-       * vm - vm where snapshot should be restored
-       * description - snapshot name
-       * ensure_vm_down - True if vm should enforce to be down before restore
-       * restore_memory - True if should restore vm memory
-    Return: status (True if snapshot was restored properly, False otherwise)
+    Restore VM state to a particular snapshot
+
+    :param positive: Determines if the operation should be treated as
+    positive or negative
+    :type positive: bool
+    :param vm: VM to restore
+    :type vm: str
+    :param description: The snapshot description to use
+    :type description: str
+    :param ensure_vm_down: True if the VM should be powered off before being
+    restored, default is False
+    :type ensure_vm_down: bool
+    :param restore_memory: True if the VM memory should be restored,
+    default is False
+    :type restore_memory: bool
+    :returns: True if snapshot was restored properly, False otherwise
+    :rtype: bool
     """
-    return perform_snapshot_action(positive, vm, description, 'restore',
-                                   ensure_vm_down,
-                                   restore_memory=restore_memory)
+    if ensure_vm_down:
+        stop_vms_safely([vm])
+        waitForVMState(vm, state=ENUMS['vm_state_down'])
+    vmObj = VM_API.find(vm)
+    snapshot = _getVmSnapshot(vm, description)
+    status = SNAPSHOT_API.syncAction(
+        snapshot, 'restore', positive, restore_memory=restore_memory
+    )
+    if status and positive:
+        return VM_API.waitForElemStatus(vmObj, ENUMS['vm_state_down'],
+                                        VM_ACTION_TIMEOUT)
+
+    return status
 
 
 def preview_snapshot(positive, vm, description, ensure_vm_down=False,
@@ -3612,33 +3631,6 @@ def commit_snapshot(positive, vm, ensure_vm_down=False,
         waitForVMState(vm, state=ENUMS['vm_state_down'])
     return snapshot_action(positive, vm, COMMIT,
                            restore_memory=restore_memory)
-
-
-def perform_snapshot_action(positive, vm, description, action,
-                            ensure_vm_down=False, restore_memory=False):
-    """
-    Description: Perform action on a given snapshot
-    Author: gickowic
-    Parameters:
-       * vm - vm where snapshot should be previewed
-       * description - snapshot description
-       * action - action to perform, as a string. One of:
-         [restore, preview, undo, commit]
-    Return: status (True if action was performed successfully, False otherwise)
-    """
-    vmObj = VM_API.find(vm)
-    snapshot = _getVmSnapshot(vm, description)
-    if ensure_vm_down:
-        if not checkVmState(True, vm, ENUMS['vm_state_down'], host=None):
-            if not stopVm(positive, vm, async='true'):
-                return False
-    status = SNAPSHOT_API.syncAction(snapshot, action, positive,
-                                     restore_memory=restore_memory)
-    if status and positive:
-        return VM_API.waitForElemStatus(vmObj, ENUMS['vm_state_down'],
-                                        VM_ACTION_TIMEOUT)
-
-    return status
 
 
 def snapshot_action(positive, vm, action,
