@@ -215,26 +215,27 @@ def teardown_module():
     logger.info("Restarting ovirt-engine service")
     test_utils.restartOvirtEngine(engine, 10, 15, 300)
 
-    for storage_type in config.STORAGE_SELECTOR:
-        ll_vms.safely_remove_vms(VM_NAMES[storage_type])
+    for vm_names in VM_NAMES.values():
+        ll_vms.safely_remove_vms(vm_names)
 
+    for storage_domain_name in IMPORT_DOMAIN.values():
         test_utils.wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
         if not storagedomains.detach_and_deactivate_domain(
-            config.DATA_CENTER_NAME, IMPORT_DOMAIN[storage_type]
+            config.DATA_CENTER_NAME, storage_domain_name
         ):
             logger.error(
                 'Failed to deactivate storage domain %s',
-                IMPORT_DOMAIN[storage_type]
+                storage_domain_name
             )
             exception_flag = True
         if not ll_sd.removeStorageDomain(
-            True, IMPORT_DOMAIN[storage_type], host, format='true'
+            True, storage_domain_name, host, format='true'
         ):
             logger.error(
                 'Failed to remove storage domain %s',
-                IMPORT_DOMAIN[storage_type]
+                storage_domain_name
             )
             exception_flag = True
 
@@ -246,7 +247,7 @@ def teardown_module():
         )
 
     if exception_flag:
-        raise errors.VMException(
+        raise errors.TearDownException(
             "Test failed while executing teardown_module"
         )
 
