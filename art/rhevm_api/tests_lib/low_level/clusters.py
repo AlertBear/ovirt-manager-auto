@@ -822,7 +822,7 @@ def get_cpu_profile_id_by_name(cluster_name, cpu_profile_name):
     :param cpu_profile_name: cpu profile name
     :return: cpu profile id or None
     """
-    cpu_profile_obj = get_cpu_profile_obj(cluster_name, cpu_profile_name).id
+    cpu_profile_obj = get_cpu_profile_obj(cluster_name, cpu_profile_name)
     return cpu_profile_obj.id if cpu_profile_obj else None
 
 

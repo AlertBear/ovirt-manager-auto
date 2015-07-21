@@ -421,7 +421,7 @@ def _prepareVmObject(**kwargs):
     vm.timezone = kwargs.pop("timezone", None)
 
     # cpu_profile
-    cpu_profile_id = kwargs.pop("cpu_profile", None)
+    cpu_profile_id = kwargs.pop("cpu_profile_id", None)
     if cpu_profile_id:
         vm.set_cpu_profile(data_st.CpuProfile(id=cpu_profile_id))
 
