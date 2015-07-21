@@ -4,11 +4,17 @@ Configuration file for Quota test
 from rhevmtests.sla.config import *  # flake8: noqa
 
 DC_NAME_0 = DC_NAME[0]
+
+# Limit constants
 LIMIT_TYPE_STORAGE = "storage_domain"
 LIMIT_TYPE_CLUSTER = "cluster"
 VCPU_LIMIT = "vcpu_limit"
 MEMORY_LIMIT = "memory_limit"
 STORAGE_LIMIT = "limit"
+DEFAULT_CPU_LIMIT = 2
+MINIMAL_CPU_LIMIT = 1
+DEFAULT_MEMORY_LIMIT = 1
+
 VM_NAME = "quota__vm"
 VM_DESC = "quota"
 TMP_VM_NAME = "quota__tpm_vm"
@@ -44,9 +50,33 @@ QUOTA_EVENTS = {
         EXCEED_TYPE: EXCEED_ENFORCED
     }
 }
+NUM_OF_CPUS = {
+    GRACE_TYPE: 2,
+    EXCEED_TYPE: 3
+}
 EVENT_TIMEOUT = 10
 MEMORY_USAGE = "memory_usage"
 VCPU_USAGE = "vcpu_usage"
 STORAGE_USAGE = "usage"
-SIZE_2_GB = 2 * GB
+VM_MEMORY = "memory"
+VM_CPU_CORES = "cpu_cores"
+
+# Sizes constants
+SIZE_512_MB = 512 * MB
 SIZE_1228_MB = 1228 * MB
+SIZE_2_GB = 2 * GB
+SIZE_10_GB = 10 * GB
+SIZE_14_GB = 14 * GB
+SIZE_15_GB = 15 * GB
+
+# BZ constants
+VERSION_35 = "3.5"
+BZ_ENGINE = "engine"
+BZ_VERSION = "version"
+
+# Usage constants
+DEFAULT_MEMORY_USAGE = 0.5
+DEFAULT_CPU_USAGE = 1.0
+DEFAULT_DISK_USAGE = 10.0
+FULL_DISK_USAGE = 20.0
+ZERO_USAGE = 0.0
