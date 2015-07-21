@@ -10,6 +10,7 @@ import logging
 
 from nose.tools import istest
 from art.test_handler.settings import opts
+from art.test_handler.tools import bz  # pylint: disable=E0611
 from art.unittest_lib import attr
 
 from art.unittest_lib import BaseTestCase as TestCase
@@ -127,6 +128,7 @@ class TestCaseVM(TestCase):
         self.assertTrue(status, 'Create template')
 
     @istest
+    @bz({'1240206': {'engine': ['cli', 'sdk'], 'version': ['3.6']}})
     def t06_remove_disk_from_vm(self):
         """
         test verifies vm functionality
