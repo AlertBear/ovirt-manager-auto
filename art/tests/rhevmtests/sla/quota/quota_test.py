@@ -1,670 +1,628 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-# Copyright (c) 2013 Red Hat, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#           http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-
 """
 Quota Test
 Check different cases for quota limitations in None, Audit and Enforce mode
 Include CRUD tests, different limitations of storage, memory and vcpu tests
 """
 import logging
-from rhevmtests.sla import config
 
-from common import DB, ui_setup
-from nose.tools import istest
-
-# rhevm api
-from utilities.rhevm_tools.base import Setup
-from art.rhevm_api.tests_lib.low_level import vms
-from art.rhevm_api.tests_lib.low_level import disks
-from art.rhevm_api.tests_lib.low_level import events
-from art.rhevm_api.tests_lib.high_level.disks import delete_disks
-from art.rhevm_api.tests_lib.low_level import templates
 from art.unittest_lib import attr
+from rhevmtests.sla.quota import config as c
+import art.test_handler.exceptions as errors
 from art.unittest_lib import SlaTest as TestCase
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.disks as ll_disks
+import art.rhevm_api.tests_lib.low_level.events as ll_events
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 
-# raut quota
-from raut.tests.webadmin.quota import QuotaTest
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 
-# rhevm_utils general exception
-from utilities.errors import GeneralException
-
-# BZ, TCMS plugins
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
-
-LOGGER = logging.getLogger(__name__)
-
-# Names of created objects. Should be removed at the end of this test module
-# and not used by any other test module.
-EXPORT_NAME = 'export_domain'  # EXPORT domain
-VM_NAME = 'quota__vm'
-VM_DESC = 'quota'
-TMP_VM_NAME = 'quota__tpm_vm'
-DISK_NAME = 'quota_disk'
-TEMPLATE_NAME = 'quota__template'
-TMP_TEMPLATE_NAME = 'quota__template_tmp'
-VM_SNAPSHOT = 'quota_vm__snapshot'
-VM_POOL_NAME = 'quota__vm_pool'
-CLUSTER_NAME = 'quota__cluster'
-QUOTA_NONE = 0
-QUOTA_AUDIT = 1
-QUOTA_ENFORCED = 2
-AUDIT_MODE = 'AUDIT'
-ENFORCED_MODE = 'ENFORCED'
-GRACE_MODE = 'GRACE'
-EXCEED_MODE = 'EXCEED'
-QUOTA_NAME = 'quota_1'
-QUOTA_DESC = 'quota_1_desc'
-QUOTA2_NAME = 'quota_2'
-QUOTA2_DESC = 'quota_2_desc'
-QUOTA3_NAME = 'quota_3'
-QUOTA3_DESC = 'quota_3_desc'
-TCMS_PLAN_ID = 8029
-MB = 1024 * 1024
-GB = 1024 * MB
-DISK_FORMAT = config.ENUMS['format_cow']
-DISK_INTERFACE = config.ENUMS['interface_virtio']
-
-# Bugs:
-#
-# Bug 1167081 - Possible to run vm under quota with exceeded number of vcpu
-
-quota_ui = QuotaTest()  # raut object to CRUD quota
-db = DB(None)  # db instance to access db to check resources
-GRACE_MSG = "limit exceeded and entered the grace zone"
-EXCEED_AUDIT = "limit exceeded, proceeding since in Permissive (Audit) mode"
-EXCEED_ENFORCED = "limit exceeded and operation was blocked"
-QUOTA_EVENTS = {
-    AUDIT_MODE: {
-        GRACE_MODE: GRACE_MSG,
-        EXCEED_MODE: EXCEED_AUDIT
-    },
-    ENFORCED_MODE: {
-        GRACE_MODE: GRACE_MSG,
-        EXCEED_MODE: EXCEED_ENFORCED
-    }
-}
-EVENT_TIMEOUT = 10
+logger = logging.getLogger(__name__)
 
 
-def setup_module():
-    # Setup db
-    dbname = config.RHEVM_UTILS_ENUMS['RHEVM_DB_NAME']
-    db.setup = Setup(config.VDC_HOST, config.VDC_ROOT_USER,
-                     config.VDC_ROOT_PASSWORD, dbname=dbname)
-    # Clear all event before test
-    sql = "DELETE FROM audit_log"
-    db.setup.psql(sql)
+class BaseQuotaClass(TestCase):
+    """
+    Base Quota Class
+    """
+    __test__ = False
 
-    with ui_setup(quota_ui):
-        quota_ui.create_quota(config.DC_NAME[0], QUOTA_NAME)
+    @classmethod
+    def _create_quota_limits(
+        cls, dc_name, quota_name,
+        quota_cluster_limit=None,
+        quota_storage_limit=None
+    ):
+        """
+        Create quota limits on specific quota
 
+        :param dc_name: datacenter name
+        :type dc_name: str
+        :param quota_name: name of quota
+        :type quota_name: str
+        :param quota_cluster_limit: quota cluster limit dictionary
+        :type quota_cluster_limit: dict
+        :param quota_storage_limit: quota storage limit dictionary
+        :type quota_storage_limit: dict
+        :return: True, if create quota limits action succeeds, otherwise False
+        :rtype: bool
+        """
+        if quota_cluster_limit:
+            logger.info(
+                "Create cluster limitation %s under quota %s",
+                quota_cluster_limit, quota_name
+            )
+            if not ll_datacenters.create_quota_limits(
+                dc_name=dc_name,
+                quota_name=quota_name,
+                limit_type=c.LIMIT_TYPE_CLUSTER,
+                limits_d=quota_cluster_limit
+            ):
+                logger.error(
+                    "Failed to create cluster limitation under quota %s",
+                    quota_name
+                )
+                return False
 
-def teardown_module():
-    db.set_dc_quota_mode(config.DC_NAME[0], QUOTA_NONE)
-    with ui_setup(quota_ui):
-        quota_ui.remove_quota(config.DC_NAME[0], QUOTA_NAME)
+        if quota_storage_limit:
+            logger.info(
+                "Create storage limitation %s under quota %s",
+                quota_storage_limit, quota_name
+            )
+            if not ll_datacenters.create_quota_limits(
+                dc_name=dc_name,
+                quota_name=quota_name,
+                limit_type=c.LIMIT_TYPE_STORAGE,
+                limits_d=quota_storage_limit
+            ):
+                logger.error(
+                    "Failed to create storage limitation under quota %s",
+                    quota_name
+                )
+                return False
+
+        return True
+
+    @classmethod
+    def _create_quota_with_limits(
+        cls, dc_name, quota_name, quota_params,
+        quota_cluster_limit=None,
+        quota_storage_limit=None
+    ):
+        """
+        Create quota with some limits
+
+        :param dc_name: datacenter name
+        :type dc_name: str
+        :param quota_name: name of quota
+        :type quota_name: str
+        :param quota_params: additional quota parameters
+        :type quota_params: dict
+        :param quota_cluster_limit: quota cluster limit dictionary
+        :type quota_cluster_limit: dict
+        :param quota_storage_limit: quota storage limit dictionary
+        :type quota_storage_limit: dict
+        :return: True, if create quota action success, otherwise False
+        :rtype: bool
+        """
+        logger.info(
+            "Create quota %s under datacenter %s", quota_name, dc_name
+        )
+        if not ll_datacenters.create_dc_quota(
+                dc_name=dc_name, quota_name=quota_name, **quota_params
+        ):
+            logger.error(
+                "Failed to create quota %s under datacenter %s",
+                quota_name, dc_name
+            )
+            return False
+        if not cls._create_quota_limits(
+            dc_name=dc_name,
+            quota_name=quota_name,
+            quota_cluster_limit=quota_cluster_limit,
+            quota_storage_limit=quota_storage_limit
+        ):
+            return False
+        return True
 
 
 @attr(tier=0)
-class QuotaTestCRUD(TestCase):
+class QuotaTestCRUD(BaseQuotaClass):
     """
-    This unittest class tests CRUD operation via selenium.
+    Quota CRUD test
     """
     __test__ = True
 
-    def setUp(self):
-        """ Start browser & login. """
-        quota_ui.set_up()
-
-    def tearDown(self):
-        """ Close browser. """
-        quota_ui.tear_down()
-
-    @classmethod
-    def tearDownClass(cls):
-        """ Delete/release resources of test """
-        with ui_setup(quota_ui):
-            quota_ui.edit_quota(config.DC_NAME[0], QUOTA_NAME,
-                                mem_limit=0, vcpu_limit=0, storage_limit=0)
-
-    @istest
     @polarion("RHEVM3-9375")
-    def a_create_quota(self):
-        """ Create Quota with some limits """
-        quota_ui.create_quota(config.DC_NAME[0], QUOTA2_NAME,
-                              description=QUOTA_DESC,
-                              mem_limit=1024, vcpu_limit=1,
-                              storage_limit=10)
-        self.assertTrue(db.check_quota_exists(QUOTA2_NAME))
-
-    @istest
-    @polarion("RHEVM3-9390")
-    def b_edit_quota(self):
-        """ Edit Quota """
-        quota_ui.edit_quota(config.DC_NAME[0], QUOTA2_NAME,
-                            description=QUOTA_DESC,
-                            mem_limit=2048, vcpu_limit=2, storage_limit=20)
-        self.assertTrue(db.check_quota_limits(QUOTA2_NAME, mem_size_mb=2048,
-                                              virtual_cpu=2,
-                                              storage_size_gb=20))
+    def test_a_create_quota(self):
+        """
+        Create Quota with some limits
+        """
+        logger.info(
+            "Create quota %s with cluster and storage limits", c.QUOTA2_NAME
+        )
         self.assertTrue(
-            db.check_quota_properties(
-                QUOTA2_NAME, description=QUOTA_DESC,
-                threshold_vds_group_percentage=80,
-                threshold_storage_percentage=80,
-                grace_vds_group_percentage=20,
-                grace_storage_percentage=20
+            self._create_quota_with_limits(
+                dc_name=c.DC_NAME_0,
+                quota_name=c.QUOTA2_NAME,
+                quota_params={"description": c.QUOTA2_DESC},
+                quota_cluster_limit={
+                    None: {c.VCPU_LIMIT: 1, c.MEMORY_LIMIT: 1024}
+                },
+                quota_storage_limit={None: {c.STORAGE_LIMIT: 10}}
             )
         )
 
-    @istest
-    @polarion("RHEVM3-9392")
-    def c_copy_quota(self):
-        """ Copy Quota """
-        quota_ui.copy_quota(config.DC_NAME[0], QUOTA_NAME, name=QUOTA3_NAME,
-                            description=QUOTA3_DESC)
-        self.assertTrue(db.check_quota_exists(QUOTA3_NAME))
+    @polarion("RHEVM3-9390")
+    def test_b_update_quota(self):
+        """
+        Update quota
+        """
+        logger.info("Update quota %s description", c.QUOTA2_NAME)
+        self.assertTrue(
+            ll_datacenters.update_dc_quota(
+                dc_name=c.DC_NAME_0,
+                quota_name=c.QUOTA2_NAME,
+                description=c.QUOTA_DESC
+            ),
+            "Failed to update quota %s description" % c.QUOTA2_NAME
+        )
 
-    @istest
+        logger.info("Update quota %s limits", c.QUOTA2_NAME)
+        self.assertTrue(
+            self._create_quota_limits(
+                dc_name=c.DC_NAME_0,
+                quota_name=c.QUOTA2_NAME,
+                quota_cluster_limit={
+                    None: {c.VCPU_LIMIT: 2, c.MEMORY_LIMIT: 2048}
+                },
+                quota_storage_limit={None: {c.STORAGE_LIMIT: 20}}
+            )
+        )
+
     @polarion("RHEVM3-9391")
-    def d_delete_quota(self):
-        """ Delete Quota """
-        quota_ui.remove_quota(config.DC_NAME[0], QUOTA2_NAME)
-        self.assertFalse(db.check_quota_exists(QUOTA2_NAME))
-        quota_ui.remove_quota(config.DC_NAME[0], QUOTA3_NAME)
-        self.assertFalse(db.check_quota_exists(QUOTA3_NAME))
+    def test_c_delete_quota(self):
+        """
+        Delete Quota
+        """
+        logger.info(
+            "Remove quota %s from datacenter %s", c.QUOTA2_NAME, c.DC_NAME_0
+        )
+        self.assertTrue(
+            ll_datacenters.delete_dc_quota(
+                dc_name=c.DC_NAME_0,
+                quota_name=c.QUOTA2_NAME
+            ),
+            "Failed to delete quota %s from datacenter %s" %
+            (c.QUOTA2_NAME, c.DC_NAME_0)
+        )
 
 
 @attr(tier=1)
-class QuotaTestMode(TestCase):
+class QuotaTestMode(BaseQuotaClass):
     """
-    This unittest class tests quota enforced/audit mode.
+    This unittest class tests quota enforced/audit mode
     """
     __test__ = False
-    positive = True
+    quota_mode = None
+    quota_storage_limit = {None: {c.STORAGE_LIMIT: 20}}
+    quota_cluster_limit = {None: {c.MEMORY_LIMIT: 1, c.VCPU_LIMIT: 1}}
+    cluster_hard_limit_pct = None
+
+    def _check_hotplug(self, vm_state, audit_msg_type, vm_sockets):
+        """
+        Check VM CPU hotplug, under different quota modes
+
+        :param vm_state: vm state
+        :type vm_state: str
+        :param audit_msg_type: type of quota audit message
+        :type audit_msg_type: str
+        :param vm_sockets: number of vm sockets
+        :type vm_sockets: int
+        :raise: assertError
+        """
+        max_id = ll_events.get_max_event_id(None)
+        logger.info("Start vm %s", c.VM_NAME)
+        self.assertTrue(
+            ll_vms.startVm(
+                positive=True, vm=c.VM_NAME, wait_for_status=vm_state
+            ),
+            "Failed to start vm %s" % c.VM_NAME
+        )
+
+        compare = False if self.quota_mode == c.QUOTA_ENFORCED_MODE else True
+        logger.info(
+            "Update vm %s number of cpu sockets to %d", c.VM_NAME, vm_sockets
+        )
+        self.assertTrue(
+            ll_vms.updateVm(
+                positive=True,
+                vm=c.VM_NAME,
+                cpu_socket=vm_sockets,
+                compare=compare
+            ),
+            "Failed to update vm %s" % c.VM_NAME
+        )
+
+        logger.info("Check quota message under events")
+        self.assertTrue(self._check_quota_message(max_id, audit_msg_type))
+
+    def _check_quota_message(self, max_id, audit_msg_type):
+        """
+        Check quota event message
+
+        :param max_id: id of last event
+        :type max_id: str
+        :param audit_msg_type: type of quota event message
+        :type audit_msg_type: str
+        :return: True, if exist quota message, with id greater than max_id,
+        otherwise False
+        :rtype: bool
+        """
+        message = c.QUOTA_EVENTS[self.quota_mode][audit_msg_type]
+        logger.info(
+            "Waiting for event with message %s, after event with id %s",
+            message, max_id
+        )
+        return ll_events.wait_for_event(message, start_id=max_id)
+
+    def _check_cluster_limits(self, vm_params=None, audit_msg_type=None):
+        """
+        Check if vm can run under specific quota cluster limits and
+        if correct audit message appear under events
+
+        :param vm_params: update vm with given parameters
+        :type vm_params: dict
+        :param audit_msg_type: type of quota audit message
+        :type audit_msg_type: str
+        :raise: assertError
+        """
+        last_event_id = None
+        if audit_msg_type:
+            logger.info("Get id of last event")
+            last_event_id = ll_events.get_max_event_id(None)
+        if vm_params:
+            logger.info(
+                "Update vm %s with parameters: %s", c.VM_NAME, vm_params
+            )
+            self.assertTrue(
+                ll_vms.updateVm(
+                    positive=True, vm=c.VM_NAME, **vm_params
+                ),
+                "Failed to update vm %s" % c.VM_NAME
+            )
+        positive = True
+        if (
+            audit_msg_type and audit_msg_type == c.EXCEED_TYPE and
+            self.quota_mode == c.QUOTA_ENFORCED_MODE
+        ):
+            positive = False
+        logger.info("Start vm %s", c.VM_NAME)
+        self.assertTrue(
+            ll_vms.startVm(positive=positive, vm=c.VM_NAME),
+            "Failed to start vm %s" % c.VM_NAME
+        )
+        if last_event_id:
+            logger.info(
+                "Check if quota message of type %s, appear under events",
+                audit_msg_type
+            )
+            self.assertTrue(
+                self._check_quota_message(last_event_id, audit_msg_type),
+                "Quota message of type %s not appear under events" %
+                audit_msg_type
+            )
+
+    def _check_storage_limit(self, provisioned_size, audit_msg_type=None):
+        """
+        Check if vm can run under specific quota storage limits and
+        if correct audit message appear under events
+
+        :param provisioned_size: size of disk
+        :type provisioned_size: int
+        :param audit_msg_type: type of quota audit message
+        :type audit_msg_type: str
+        :raise: assertError
+        """
+        last_event_id = None
+        if audit_msg_type:
+            logger.info("Get id of last event")
+            last_event_id = ll_events.get_max_event_id(None)
+        positive = True
+        if (
+            audit_msg_type and audit_msg_type == c.EXCEED_TYPE and
+            self.quota_mode == c.QUOTA_ENFORCED_MODE
+        ):
+            positive = False
+        logger.info("Get quota %s id", c.QUOTA_NAME)
+        q_id = ll_datacenters.get_quota_id_by_name(
+            dc_name=c.DC_NAME_0, quota_name=c.QUOTA_NAME
+        )
+        logger.info(
+            "Add new disk %s with size of %d", c.DISK_NAME, provisioned_size
+        )
+        self.assertTrue(
+            ll_disks.addDisk(
+                positive=positive,
+                alias=c.DISK_NAME,
+                provisioned_size=provisioned_size,
+                interface=c.DISK_INTERFACE,
+                format=c.DISK_FORMAT_COW,
+                storagedomain=c.STORAGE_NAME[0],
+                quota=q_id
+            ),
+            "Failed to add new disk %s" % c.DISK_NAME
+        )
+        if last_event_id:
+            logger.info(
+                "Check if quota message of type %s, appear under events",
+                audit_msg_type
+            )
+            self.assertTrue(
+                self._check_quota_message(last_event_id, audit_msg_type),
+                "Quota message of type %s not appear under events" %
+                audit_msg_type
+            )
+
+    def check_limit_usage(self, limit_type, usage_type, usage):
+        """
+        Check if quota limit have correct value
+
+        :param limit_type: limit type(cluster or storage)
+        :type limit_type: str
+        :param usage_type: usage type
+        (storage: usage; cluster: vcpu_usage, memory_usage)
+        :type usage_type: str
+        :param usage: expected quota cluster limit usage
+        :type usage: float
+        """
+        quota_limit_usage = ll_datacenters.get_quota_limit_usage(
+            dc_name=c.DC_NAME_0,
+            quota_name=c.QUOTA_NAME,
+            limit_type=limit_type,
+            usage=usage_type
+        )
+        logger.info(
+            "Check if expected %s: %s equal to quota limit %s: %s",
+            usage_type, usage, usage_type, quota_limit_usage
+        )
+        self.assertEqual(usage, quota_limit_usage)
 
     @classmethod
-    def setUpClass(cls):
-        """ Create and setup resources for tests """
-        q_id = db.get_quota_id_by_name(QUOTA_NAME)
-        assert vms.createVm(True, VM_NAME, VM_DESC,
-                            cluster=config.CLUSTER_NAME[0],
-                            storageDomainName=config.STORAGE_NAME[0],
-                            size=10*GB, memory=512*MB, vm_quota=q_id,
-                            disk_quota=q_id, nic=config.NIC_NAME[0],
-                            network=config.MGMT_BRIDGE)
+    def setup_class(cls):
+        """
+        1) Update datacenter quota mode
+        2) Update cluster grace value
+        3) Create quota limit
+        4) Create new vm for test
+        """
+        logger.info(
+            "Update datacenter %s quota mode to %s",
+            c.DC_NAME_0, c.QUOTA_MODES[cls.quota_mode]
+        )
+        if not ll_datacenters.updateDataCenter(
+            positive=True,
+            datacenter=c.DC_NAME_0,
+            quota_mode=c.QUOTA_MODES[cls.quota_mode]
+        ):
+            raise errors.DataCenterException(
+                "Failed to update datacenter %s quota mode" % c.DC_NAME_0
+            )
+        if cls.cluster_hard_limit_pct:
+            logger.info("Update quota %s cluster grace value", c.QUOTA_NAME)
+            if not ll_datacenters.update_dc_quota(
+                dc_name=c.DC_NAME_0,
+                quota_name=c.QUOTA_NAME,
+                cluster_hard_limit_pct=cls.cluster_hard_limit_pct
+            ):
+                raise errors.DataCenterException(
+                    "Failed to update quota %s" % c.QUOTA_NAME
+                )
+        logger.info(
+            "Create limits on quota %s", c.QUOTA_NAME
+        )
+        if not cls._create_quota_limits(
+            dc_name=c.DC_NAME_0,
+            quota_name=c.QUOTA_NAME,
+            quota_cluster_limit=cls.quota_cluster_limit,
+            quota_storage_limit=cls.quota_storage_limit
+        ):
+            raise errors.DataCenterException(
+                "Failed to create cluster memory limit on quota %s" %
+                c.QUOTA_NAME
+            )
+        logger.info("Get quota %s id", c.QUOTA_NAME)
+        q_id = ll_datacenters.get_quota_id_by_name(
+            dc_name=c.DC_NAME_0, quota_name=c.QUOTA_NAME
+        )
+        cpu_profile_id = ll_clusters.get_cpu_profile_id_by_name(
+            c.CLUSTER_NAME[0], c.CLUSTER_NAME[0]
+        )
+        logger.info("Create new vm %s", c.VM_NAME)
+        if not ll_vms.createVm(
+            positive=True, vmName=c.VM_NAME,
+            vmDescription=c.VM_DESC,
+            cluster=c.CLUSTER_NAME[0],
+            storageDomainName=c.STORAGE_NAME[0],
+            size=10*c.GB, memory=512*c.MB,
+            vm_quota=q_id, disk_quota=q_id,
+            nic=c.NIC_NAME[0], network=c.MGMT_BRIDGE,
+            cpu_profile_id=cpu_profile_id
+        ):
+            raise errors.VMException("Failed to create vm %s", c.VM_NAME)
 
     @classmethod
-    def tearDownClass(cls):
-        """ Delete/release resources of test """
-        vms.stop_vms_safely([VM_NAME])
-        assert vms.removeVm(True, VM_NAME)
-
-    def _check_quota_message(self, max_id, limit):
-        mode = AUDIT_MODE if self.positive else ENFORCED_MODE
-        message = QUOTA_EVENTS[mode][limit]
-        LOGGER.info("Waiting for event with message %s, "
-                    "after event with id %s", message, max_id)
-        return events.wait_for_event(message, start_id=max_id)
-
-    @istest
-    @polarion("RHEVM3-9418")
-    def a_quota_memory_limit(self):
-        """ Quota RAM limit.
-        Create VM with RAM 1024, quota level to 1024MB, try to run VM.
+    def teardown_class(cls):
         """
-        with ui_setup(quota_ui):
-            quota_ui.edit_quota(config.DC_NAME[0], QUOTA_NAME,
-                                mem_limit=1024, vcpu_limit=0,
-                                storage_limit=0)
-        self.assertTrue(vms.startVm(True, VM_NAME))
-        self.assertTrue(vms.stopVm(True, VM_NAME))
-
-    @istest
-    @polarion("RHEVM3-9419")
-    def b_quota_memory_limit_in_grace(self):
-        """ Quota RAM Limit in grace.
-        Create quota with 1024MB limit (Grace 120%)
-        Create vm with 1228 MB RAM, try to run it.
+        1) Stop and remove vm
+        2) Delete quota limits
+        3) Update quota grace value
+        4) Update datacenter quota mode
         """
-        max_id = events.get_max_event_id(None)
-        self.assertTrue(vms.updateVm(True, VM_NAME, memory=1228*MB))
-        self.assertTrue(vms.startVm(True, VM_NAME))
-        self.assertTrue(vms.stopVm(True, VM_NAME))
-        self.assertTrue(self._check_quota_message(max_id, GRACE_MODE))
-
-    @istest
-    @polarion("RHEVM3-9409")
-    def c_quota_memory_limit_over_grace(self):
-        """ Quota RAM Limit over grace.
-        Create quota with 1024MB limit (Grace 120%)
-        Create vm with 2048 MB RAM, try to run it.
-        """
-        max_id = events.get_max_event_id(None)
-        self.assertTrue(vms.updateVm(True, VM_NAME, memory=2*GB))
-        self.assertTrue(vms.startVm(self.positive, VM_NAME))
-        if self.positive:
-            self.assertTrue(vms.stopVm(True, VM_NAME))
-        self.assertTrue(vms.updateVm(True, VM_NAME, memory=GB))
-        self.assertTrue(self._check_quota_message(max_id, EXCEED_MODE))
-
-    @istest
-    @polarion("RHEVM3-9408")
-    def d_quota_vcpu_limit(self):
-        """ Quota vCPU limit.
-        Set vCPU to 1 from unlimited
-        set RAM to unlimited - same for RAM
-        """
-        db.update_quota(QUOTA_NAME, grace_vds_group_percentage=100)
-        with ui_setup(quota_ui):
-            quota_ui.edit_quota(config.DC_NAME[0], QUOTA_NAME,
-                                mem_limit=0, vcpu_limit=1, storage_limit=0)
-        self.assertTrue(vms.startVm(True, VM_NAME))
-        self.assertTrue(vms.stopVm(True, VM_NAME))
-
-    @istest
-    @polarion("RHEVM3-9402")
-    def e_quota_vcpu_limit_in_grace(self):
-        """ Quota vCPU limit in grace """
-        max_id = events.get_max_event_id(None)
-        self.assertTrue(vms.updateVm(True, VM_NAME, cpu_cores=2))
-        self.assertTrue(vms.startVm(True, VM_NAME))
-        self.assertTrue(vms.stopVm(True, VM_NAME))
-        self.assertTrue(vms.updateVm(True, VM_NAME, cpu_cores=1))
-        self.assertTrue(self._check_quota_message(max_id, GRACE_MODE))
-
-    @istest
-    @polarion("RHEVM3-9403")
-    def f_quota_vcpu_limit_over_grace(self):
-        """ Quota vCPU limit over grace """
-        max_id = events.get_max_event_id(None)
-        self.assertTrue(vms.updateVm(True, VM_NAME, cpu_cores=3))
-        self.assertTrue(vms.startVm(self.positive, VM_NAME))
-        if self.positive:
-            self.assertTrue(vms.stopVm(True, VM_NAME))
-        self.assertTrue(vms.updateVm(True, VM_NAME, cpu_cores=1))
-        self.assertTrue(self._check_quota_message(max_id, EXCEED_MODE))
-
-    def _check_hotplug(self, vm_state, mode, sockets):
-        max_id = events.get_max_event_id(None)
-        self.assertTrue(
-            vms.startVm(
-                True, VM_NAME,  wait_for_status=vm_state
+        ll_vms.stop_vms_safely([c.VM_NAME])
+        logger.info("Remove vm %s", c.VM_NAME)
+        if not ll_vms.removeVm(positive=True, vm=c.VM_NAME):
+            logger.error("Failed to remove vm %s", c.VM_NAME)
+        quota_limits_d = {
+            c.LIMIT_TYPE_CLUSTER: cls.quota_cluster_limit,
+            c.LIMIT_TYPE_STORAGE: cls.quota_storage_limit
+        }
+        for limit_type, limits in quota_limits_d.iteritems():
+            if limits:
+                logger.info(
+                    "Delete %s limit on quota %s", limit_type, c.QUOTA_NAME
+                )
+                if not ll_datacenters.delete_quota_limits(
+                    dc_name=c.DC_NAME_0,
+                    quota_name=c.QUOTA_NAME,
+                    limit_type=limit_type,
+                    objects_names_l=[None]
+                ):
+                    logger.error(
+                        "Failed to delete %s limit from quota %s",
+                        limit_type, c.QUOTA_NAME
+                    )
+        logger.info("Update quota %s cluster grace value", c.QUOTA_NAME)
+        if not ll_datacenters.update_dc_quota(
+            dc_name=c.DC_NAME_0,
+            quota_name=c.QUOTA_NAME,
+            cluster_hard_limit_pct=20
+        ):
+            logger.error(
+                "Failed to update quota %s", c.QUOTA_NAME
             )
+        logger.info(
+            "Update datacenter %s quota mode to %s",
+            c.DC_NAME_0, c.QUOTA_MODES[c.QUOTA_NONE_MODE]
         )
-        compare = self.positive
-        self.assertTrue(
-            vms.updateVm(True, VM_NAME, cpu_socket=sockets, compare=compare)
-        )
-        self.assertTrue(self._check_quota_message(max_id, mode))
-        self.assertTrue(vms.stopVm(True, VM_NAME))
-        if self.positive and mode != GRACE_MODE:
-            self.assertTrue(vms.updateVm(True, VM_NAME, cpu_socket=1))
-        self.assertTrue(vms.updateVm(True, VM_NAME, cpu_socket=1))
-
-    @istest
-    def g_quota_vcpu_hotplug_in_grace_vm_up(self):
-        """
-        Hotplug additional vCPU, when vm up, to put quota vCPU limit in grace
-        """
-        self._check_hotplug(config.ENUMS['vm_state_up'], GRACE_MODE, 2)
-
-    @istest
-    def h_quota_vcpu_hotplug_in_exceed_vm_up(self):
-        """
-        Hotplug additional vCPU, when vm up, to put quota vCPU limit over grace
-        """
-        self._check_hotplug(config.ENUMS['vm_state_up'], EXCEED_MODE, 3)
-
-    @bz({'1167081': {'engine': None, 'version': ['3.5']}})
-    @istest
-    def i_quota_vcpu_hotplug_in_grace_vm_powering_up(self):
-        """
-        Hotplug additional vCPU, when vm powering up,
-        to put quota vCPU limit in grace
-        """
-        self._check_hotplug(
-            config.ENUMS['vm_state_powering_up'], GRACE_MODE, 2)
-
-    @bz({'1167081': {'engine': None, 'version': ['3.5']}})
-    @istest
-    def j_quota_vcpu_hotplug_in_exceed_vm_up(self):
-        """
-        Hotplug additional vCPU, when vm powering up,
-        to put quota vCPU limit over grace
-        """
-        self._check_hotplug(
-            config.ENUMS['vm_state_powering_up'], EXCEED_MODE, 3)
-
-    @istest
-    @polarion("RHEVM3-9405")
-    def k_quota_storage_limit(self):
-        """ Quota storage limit.
-        Disable cluster quota
-        """
-        db.update_quota(QUOTA_NAME, grace_vds_group_percentage=20)
-        with ui_setup(quota_ui):
-            quota_ui.edit_quota(
-                config.DC_NAME[0], QUOTA_NAME,
-                mem_limit=0, vcpu_limit=0, storage_limit=20
-            )
-        q_id = db.get_quota_id_by_name(QUOTA_NAME)
-        self.assertTrue(
-            disks.addDisk(
-                True, alias=DISK_NAME, provisioned_size=10*GB,
-                interface=DISK_INTERFACE, format=DISK_FORMAT,
-                storagedomain=config.STORAGE_NAME[0], quota=q_id
-            )
-        )
-
-    @istest
-    @polarion("RHEVM3-9407")
-    def l_quota_storage_limit_in_grace(self):
-        """ Quota storage limit in grace """
-        max_id = events.get_max_event_id(None)
-        q_id = db.get_quota_id_by_name(QUOTA_NAME)
-        self.assertTrue(
-            disks.addDisk(
-                True, alias=DISK_NAME, provisioned_size=14*GB,
-                interface=DISK_INTERFACE, format=DISK_FORMAT,
-                storagedomain=config.STORAGE_NAME[0], quota=q_id
-            )
-        )
-        self.assertTrue(self._check_quota_message(max_id, GRACE_MODE))
-
-    @istest
-    @polarion("RHEVM3-9404")
-    def m_quota_storage_limit_over_grace(self):
-        """ Quota storage limit over grace """
-        max_id = events.get_max_event_id(None)
-        q_id = db.get_quota_id_by_name(QUOTA_NAME)
-        self.assertTrue(
-            disks.addDisk(
-                self.positive, alias=DISK_NAME, provisioned_size=15*GB,
-                interface=DISK_INTERFACE, format=DISK_FORMAT,
-                storagedomain=config.STORAGE_NAME[0], quota=q_id
-            )
-        )
-        self.assertTrue(self._check_quota_message(max_id, EXCEED_MODE))
-        with ui_setup(quota_ui):
-            quota_ui.edit_quota(
-                config.DC_NAME[0], QUOTA_NAME,
-                mem_limit=0, vcpu_limit=0, storage_limit=0
+        if not ll_datacenters.updateDataCenter(
+            positive=True,
+            datacenter=c.DC_NAME_0,
+            quota_mode=c.QUOTA_MODES[c.QUOTA_NONE_MODE]
+        ):
+            logger.error(
+                "Failed to update datacenter %s quota mode", c.DC_NAME_0
             )
 
-    @istest
+
+class TestDeleteQuotaInUseAudit(QuotaTestMode):
+    """
+    Negative: Delete quota in use under audit quota
+    """
+    __test__ = True
+    quota_mode = c.QUOTA_AUDIT_MODE
+
     @polarion("RHEVM3-9406")
-    def n_delete_quota_in_use(self):
-        """ Delete quota in use """
-        with ui_setup(quota_ui):
-            self.assertRaises(GeneralException, quota_ui.remove_quota,
-                              config.DC_NAME[0], QUOTA_NAME)
+    def test_n_delete_quota_in_use(self):
+        """
+        Delete quota in use
+        """
+        self.assertFalse(
+            ll_datacenters.delete_dc_quota(
+                dc_name=c.DC_NAME_0, quota_name=c.QUOTA_NAME
+            )
+        )
+
+
+class TestDeleteQuotaInUseEnforced(QuotaTestMode):
+    """
+    Negative: Delete quota in use under enforced quota
+    """
+    __test__ = True
+    quota_mode = c.QUOTA_ENFORCED_MODE
+
+    @polarion("RHEVM3-9447")
+    def test_n_delete_quota_in_use(self):
+        """
+        Delete quota in use
+        """
+        self.assertFalse(
+            ll_datacenters.delete_dc_quota(
+                dc_name=c.DC_NAME_0, quota_name=c.QUOTA_NAME
+            )
+        )
+
+
+class TestQuotaCluster(QuotaTestMode):
+    """
+    Parent class for quota cluster limits tests
+    """
+    __test__ = False
 
     def tearDown(self):
         """
-        If quota disk exist remove it
+        Safely stop vm
         """
-        if disks.checkDiskExists(True, DISK_NAME):
-            if not delete_disks([DISK_NAME]):
-                logging.error("Failed to remove disk %s", DISK_NAME)
+        ll_vms.stop_vms_safely(vms_list=[c.VM_NAME])
+        logger.info("Update vm %s socket and cores number", c.VM_NAME)
+        if not ll_vms.updateVm(
+            positive=True, vm=c.VM_NAME, cpu_socket=1, cpu_cores=1
+        ):
+            logger.error("Failed to update vm %s", c.VM_NAME)
 
 
-class QuotaTestEnforced(QuotaTestMode):
+class TestQuotaAuditModeMemory(TestQuotaCluster):
     """
-    This unittest class tests quota Enforced mode.
-    """
-    __test__ = True
-
-    positive = False
-
-    # Create and setup resources for tests
-    @classmethod
-    def setUpClass(cls):
-        db.set_dc_quota_mode(config.DC_NAME[0], QUOTA_ENFORCED)
-        super(QuotaTestEnforced, cls).setUpClass()
-
-
-class QuotaTestAudit(QuotaTestMode):
-    """
-    This unittest class tests quota Audit mode.
+    Check cluster memory limit under audit quota
     """
     __test__ = True
+    quota_mode = c.QUOTA_AUDIT_MODE
+    quota_cluster_limit = {None: {c.MEMORY_LIMIT: 1, c.VCPU_LIMIT: -1}}
 
-    positive = True
+    @polarion("RHEVM3-9428")
+    def test_a_quota_memory_limit(self):
+        """
+        Check under grace memory limit
+        """
+        self._check_cluster_limits()
 
-    # Create and setup resources for tests
-    @classmethod
-    def setUpClass(cls):
-        db.set_dc_quota_mode(config.DC_NAME[0], QUOTA_AUDIT)
-        super(QuotaTestAudit, cls).setUpClass()
+    @polarion("RHEVM3-9430")
+    def test_b_quota_memory_limit_in_grace(self):
+        """
+        Check in grace memory limit
+        """
+        self._check_cluster_limits(
+            vm_params={"memory": c.SIZE_1228_MB}, audit_msg_type=c.GRACE_TYPE
+        )
+
+    @polarion("RHEVM3-9433")
+    def test_c_quota_memory_limit_over_grace(self):
+        """
+        Check over grace memory limit
+        """
+        self._check_cluster_limits(
+            vm_params={"memory": c.SIZE_2_GB}, audit_msg_type=c.EXCEED_TYPE
+        )
 
 
-@attr(tier=1)
-class QuotaTestObjectWithoutQuota(TestCase):
+class TestQuotaEnforcedModeMemory(TestQuotaCluster):
     """
-    This class tests if object created in disabled mode can/can't
-    be manipulated in audit/enforced mode(no quota assigned to objects)
-    """
-    __test__ = False
-
-    positive = None
-    mode = None
-
-    @classmethod
-    def setUpClass(cls):
-        """ Create and setup resources for tests """
-        db.set_dc_quota_mode(config.DC_NAME[0], QUOTA_NONE)
-        # Create vm with no quota
-        assert vms.createVm(True, VM_NAME, VM_DESC,
-                            cluster=config.CLUSTER_NAME[0],
-                            storageDomainName=config.STORAGE_NAME[0],
-                            size=10*GB, memory=2*GB, nic=config.NIC_NAME[0],
-                            network=config.MGMT_BRIDGE)
-        # Create disk with no quota
-        assert disks.addDisk(True, alias=DISK_NAME, provisioned_size=10*GB,
-                             interface=DISK_INTERFACE,
-                             format=DISK_FORMAT,
-                             storagedomain=config.STORAGE_NAME[0])
-        assert disks.wait_for_disks_status(DISK_NAME)
-
-        db.set_dc_quota_mode(config.DC_NAME[0], cls.mode)
-
-    @classmethod
-    def tearDownClass(cls):
-        """ Delete/release resources of test """
-        assert vms.removeVm(True, VM_NAME)
-        assert disks.deleteDisk(True, alias=DISK_NAME)
-        assert disks.waitForDisksGone(True, DISK_NAME)
-
-    @istest
-    @polarion("RHEVM3-9399")
-    def update_vm(self):
-        """ Update vm with quota enforce mode """
-        LOGGER.info("Updating vm '%s' memory" % VM_NAME)
-        self.assertTrue(vms.updateVm(self.positive, VM_NAME, memory=GB,
-                                     memory_guaranteed=GB))
-        if self.positive:
-            self.assertTrue(vms.updateVm(self.positive, VM_NAME,
-                                         memory=512*MB,
-                                         memory_guaranteed=512*MB))
-
-    @polarion("RHEVM3-9396")
-    @istest
-    def run_vm(self):
-        """ Run vm """
-        # Add also case which tests, quota assigned only to vm not to disk
-        LOGGER.info("Running vm '%s'" % VM_NAME)
-        self.assertTrue(vms.startVm(self.positive, VM_NAME))
-        if self.positive:
-            self.assertTrue(vms.stopVm(True, VM_NAME))
-            LOGGER.info("Stopping vm '%s'" % VM_NAME)
-
-    @polarion("RHEVM3-9397")
-    @istest
-    def create_snapshot(self):
-        """ Create snapshot """
-        # Add also case which tests, quota assigned only to disk not to vm
-        LOGGER.info("Creating snapshot '%s'" % VM_SNAPSHOT)
-        self.assertTrue(vms.addSnapshot(self.positive, VM_NAME, VM_SNAPSHOT))
-        if self.positive:
-            self.assertTrue(vms.removeSnapshot(True, VM_NAME, VM_SNAPSHOT))
-            LOGGER.info("Removing snapshot '%s'" % VM_SNAPSHOT)
-
-    @istest
-    def create_template(self):
-        """ Create template """
-        # Template should be created in Enforced and in Audit
-        # also when vm and vm disk has no quota assigned
-        LOGGER.info("Creating template '%s'", TEMPLATE_NAME)
-        self.assertTrue(
-            templates.createTemplate(self.positive, vm=VM_NAME,
-                                     name=TEMPLATE_NAME,
-                                     cluster=config.CLUSTER_NAME[0]))
-        if self.positive:
-            self.assertTrue(templates.removeTemplate(True, TEMPLATE_NAME))
-
-    # TODO: implement update_disk, move_disk and copy_disk, now no REST api
-    # available
-
-
-class QuotaTestEnforcedWithOutQuota(QuotaTestObjectWithoutQuota):
-    """
-    This unittest class tests quota Enforced mode.
+    Check cluster memory limit under enforced quota
     """
     __test__ = True
+    quota_mode = c.QUOTA_ENFORCED_MODE
+    quota_cluster_limit = {None: {c.MEMORY_LIMIT: 1, c.VCPU_LIMIT: -1}}
 
-    mode = QUOTA_ENFORCED  # Enforced
-    positive = False
+    @polarion("RHEVM3-9418")
+    def test_a_quota_memory_limit(self):
+        """
+        Check under grace memory limit
+        """
+        self._check_cluster_limits()
 
+    @polarion("RHEVM3-9419")
+    def test_b_quota_memory_limit_in_grace(self):
+        """
+        Check in grace memory limit
+        """
+        self._check_cluster_limits(
+            vm_params={"memory": c.SIZE_1228_MB}, audit_msg_type=c.GRACE_TYPE
+        )
 
-class QuotaTestAuditWithOutQuota(QuotaTestObjectWithoutQuota):
-    """
-    This unittest class tests quota Audit mode.
-    """
-    __test__ = True
-
-    mode = QUOTA_AUDIT
-    positive = True
-
-
-@attr(tier=0)
-class QuotaConsumptionCalc(TestCase):
-    """
-    This class tests if quota consumption is calculated right,
-    when user create/remove/run/stop/etc.. vms/disks/etc
-    """
-    __test__ = True
-
-    @classmethod
-    def setUpClass(cls):
-        """ Create and setup resources for tests """
-        db.set_dc_quota_mode(config.DC_NAME[0], QUOTA_ENFORCED)
-        q_id = db.get_quota_id_by_name(QUOTA_NAME)
-        vms.createVm(True, VM_NAME, VM_DESC, cluster=config.CLUSTER_NAME[0],
-                     storageDomainName=config.STORAGE_NAME[0], size=10*GB,
-                     memory=GB, vm_quota=q_id, disk_quota=q_id,
-                     nic=config.NIC_NAME[0], network=config.MGMT_BRIDGE)
-
-    @classmethod
-    def tearDownClass(cls):
-        """ Delete/release resources of test """
-        vms.removeVm(True, VM_NAME)
-
-    @istest
-    @bz({'1159642': {'engine': None, 'version': ['3.5']}})
-    @polarion("RHEVM3-9393")
-    def remove_vm(self):
-        """ Remove vm """
-        q_id = db.get_quota_id_by_name(QUOTA_NAME)
-        self.assertTrue(
-            vms.createVm(True, TMP_VM_NAME, VM_DESC,
-                         cluster=config.CLUSTER_NAME[0],
-                         storageDomainName=config.STORAGE_NAME[0],
-                         size=10*GB, memory=2*GB, vm_quota=q_id,
-                         disk_quota=q_id, nic=config.NIC_NAME[0],
-                         network=config.MGMT_BRIDGE))
-        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
-                                                    mem_size_mb_usage=0,
-                                                    virtual_cpu_usage=0,
-                                                    storage_size_gb_usage=20))
-        self.assertTrue(vms.removeDisk(True, TMP_VM_NAME,
-                                       TMP_VM_NAME + '_Disk1'))
-        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
-                                                    mem_size_mb_usage=0,
-                                                    virtual_cpu_usage=0,
-                                                    storage_size_gb_usage=10))
-        self.assertTrue(vms.removeVm(True, TMP_VM_NAME))
-
-    @istest
-    @polarion("RHEVM3-9394")
-    def remove_template(self):
-        """ Remove template """
-        self.assertTrue(templates.createTemplate(True, vm=VM_NAME,
-                        name=TMP_TEMPLATE_NAME))
-        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
-                                                    mem_size_mb_usage=0,
-                                                    virtual_cpu_usage=0,
-                                                    storage_size_gb_usage=20))
-        self.assertTrue(templates.removeTemplate(True,
-                                                 template=TMP_TEMPLATE_NAME))
-        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
-                                                    mem_size_mb_usage=0,
-                                                    virtual_cpu_usage=0,
-                                                    storage_size_gb_usage=10))
-
-    @istest
-    @polarion("RHEVM3-9395")
-    def vm_basic_operations(self):
-        """ Vm basic operations """
-        db.check_global_consumption(QUOTA_NAME, mem_size_mb_usage=0,
-                                    virtual_cpu_usage=0)
-        self.assertTrue(vms.startVm(True, VM_NAME))
-        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
-                                                    mem_size_mb_usage=1024,
-                                                    virtual_cpu_usage=1))
-        self.assertTrue(vms.waitForVmsStates(True, VM_NAME))
-        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
-                                                    mem_size_mb_usage=1024,
-                                                    virtual_cpu_usage=1))
-        self.assertTrue(vms.suspendVm(True, VM_NAME))
-        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
-                                                    mem_size_mb_usage=0,
-                                                    virtual_cpu_usage=0))
-        self.assertTrue(vms.startVm(True, VM_NAME, vms.ENUMS['vm_state_up']))
-        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
-                                                    mem_size_mb_usage=1024,
-                                                    virtual_cpu_usage=1))
-        self.assertTrue(vms.stopVm(True, VM_NAME))
-        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
-                                                    mem_size_mb_usage=0,
-                                                    virtual_cpu_usage=0))
-
-    @istest
-    @polarion("RHEVM3-9396")
-    def run_vm_once(self):
-        """ Run vm once """
-        self.assertTrue(vms.runVmOnce(True, VM_NAME))
-        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
-                                                    mem_size_mb_usage=1024,
-                                                    virtual_cpu_usage=1))
-        self.assertTrue(vms.stopVm(True, VM_NAME))
-
-    # TODO: Assign quota to disks, check if disk is counted
-
-# TODO: class ImportExport Negative positive
-# TODO: MLA+Quota
+    @polarion("RHEVM3-9409")
+    def test_c_quota_memory_limit_over_grace(self):
+        """
+        Check over grace memory limit
+        """
+        self._check_cluster_limits(
+            vm_params={"memory": c.SIZE_2_GB}, audit_msg_type=c.EXCEED_TYPE
+        )

@@ -14,7 +14,6 @@ DESCRIPTION = "TODO: put some description here"
 DEPS = [
     # REQUIRES
     'art = %s' % VERSION,
-    'RAUT = %s' % VERSION,
     'python >= 2.6',
     'python-lxml',
     'python-pip',

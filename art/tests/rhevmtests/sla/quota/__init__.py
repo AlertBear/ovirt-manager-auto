@@ -1,70 +1,67 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2013 Red Hat, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#           http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-
-""" Global teardown that removes master host, storage, cluster and datacenter
-
-Can be turned off using the SKIP_MAIN_TEARDOWN option in config. Run only once
-per whole test run, since it is very slow.
+"""
+Quota Test - test initialization
 """
 
 import os
 import logging
-from rhevmtests.sla import config
+from rhevmtests.sla.quota import config as c
 import art.test_handler.exceptions as errors
-from art.rhevm_api.tests_lib.high_level import datacenters
-from art.rhevm_api.tests_lib.low_level import vms
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
+import art.rhevm_api.tests_lib.high_level.datacenters as hl_datacenters
 
 LOGGER = logging.getLogger(__name__)
 
 
 def setup_package():
-    """ Create basic resources required by all tests.
-
+    """
+    Create basic resources required by all tests.
     Create the main datacenter and cluster, installs a host and starts it,
     creates and activates main storage.
     """
-    if os.environ.get("JENKINS_URL") and not config.GOLDEN_ENV:
+    if os.environ.get("JENKINS_URL") and not c.GOLDEN_ENV:
         LOGGER.info("Building setup...")
-        datacenters.build_setup(
-            config.PARAMETERS, config.PARAMETERS,
-            config.STORAGE_TYPE, config.TEST_NAME
+        hl_datacenters.build_setup(
+            c.PARAMETERS, c.PARAMETERS,
+            c.STORAGE_TYPE, c.TEST_NAME
+        )
+    logging.info("Remove all events from engine")
+    sql = "DELETE FROM audit_log"
+    c.ENGINE.db.psql(sql)
+    logging.info(
+        "Create quota %s under datacenter %s", c.QUOTA_NAME, c.DC_NAME_0
+    )
+    if not ll_datacenters.create_dc_quota(
+        dc_name=c.DC_NAME_0, quota_name=c.QUOTA_NAME
+    ):
+        raise errors.DataCenterException(
+            "Failed to create quota %s under datacenter %s" %
+            (c.QUOTA_NAME, c.DC_NAME_0)
         )
 
 
 def teardown_package():
-    """ Package-level teardown ran only once at end of all tests.
-
+    """
+    Package-level teardown run only once at end of all tests.
     Detaches main storage, removes it, deactivates host, removes host,
     removes main cluster and main dc.
-
-    Can be skipped by setting the config variable `SKIP_MAIN_TEARDOWN`.
     """
-    if os.environ.get("JENKINS_URL"):
-        LOGGER.info("Teardown...")
-        LOGGER.info("Remove all exceed vms")
-        if not vms.remove_all_vms_from_cluster(
-            config.CLUSTER_NAME[0], skip=config.VM_NAME
-        ):
-            raise errors.VMException("Failed to remove vms")
-        if not config.GOLDEN_ENV:
-            datacenters.clean_datacenter(
-                True, config.DC_NAME[0],
-                vdc=config.VDC_HOST,
-                vdc_password=config.VDC_ROOT_PASSWORD
+    logging.info(
+        "Delete quota %s from datacenter %s", c.QUOTA_NAME, c.DC_NAME_0
+    )
+    if not ll_datacenters.delete_dc_quota(
+        dc_name=c.DC_NAME_0, quota_name=c.QUOTA_NAME
+    ):
+        logging.error(
+            "Failed to delete quota %s from datacenter %s",
+            c.QUOTA_NAME, c.DC_NAME_0
+        )
+    if os.environ.get("JENKINS_URL") and not c.GOLDEN_ENV:
+        if not hl_datacenters.clean_datacenter(
+            True, c.DC_NAME[0],
+            vdc=c.VDC_HOST,
+            vdc_password=c.VDC_ROOT_PASSWORD
 
+        ):
+            raise errors.DataCenterException(
+                "Failed to clean datacenter %s" % c.DC_NAME[0]
             )
