@@ -30,6 +30,7 @@ export_storage = PARAMETERS.get('export_storage', EXPORT_STORAGE_NAME)
 ADDITIONAL_DC_NAME = 'virt_additional_dc'
 ADDITIONAL_CL_NAME = 'virt_additional_cl'
 # Vm names
+VM_RUN_ONCE ="run_once"
 VM_NAME_BASIC = 'golden_env_mixed_virtio'
 VM_DESCRIPTION = PARAMETERS.get('vm_description', '%s_test' % TEST_NAME)
 
