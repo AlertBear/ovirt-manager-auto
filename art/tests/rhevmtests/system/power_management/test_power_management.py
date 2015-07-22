@@ -3,7 +3,7 @@ Power Management test
 """
 
 from art.rhevm_api.tests_lib.low_level import vms
-from art.test_handler.tools import tcms, polarion
+from art.test_handler.tools import polarion
 from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.high_level import hosts
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
@@ -326,7 +326,7 @@ class T05FenceHostWithHighAvailableVm(TestWithHighAvailableVm):
 
     __test__ = True
 
-    @tcms('9988', '289119')
+    @polarion("RHEVM3-12447")
     def test_fence_host_with_high_available_vm(self):
         _fence_host(True, fence_type=config.FENCE_RESTART)
         if not vms.waitForVmsStates(True, names=self.vm_ha_name):
@@ -345,7 +345,7 @@ class T06HostInNonResponsiveStatWithHighAvailableVM(TestWithHighAvailableVm):
     service_network = 'network'
     stop_command = 'stop'
 
-    @tcms('9988', '289120')
+    @polarion("RHEVM3-12448")
     def test_host_in_non_responsive_state_with_high_available_vm(self):
         self.assertTrue(ll_hosts.runDelayedControlService(
             True, host=HOST_WITH_PM, host_user=config.HOSTS_USER,
