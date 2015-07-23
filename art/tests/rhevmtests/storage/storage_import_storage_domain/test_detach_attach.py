@@ -128,11 +128,17 @@ def setup_module():
                 raise errors.StorageDomainException(
                     "Creating Gluster domain '%s' failed" % sd_name
                 )
-        wait_for_jobs()
         # This domain will be the domain to import during the whole run.
         # Deactivate it before creating the vm for the job to make sure that
         # the vm is not created on it.
         IMPORT_DOMAIN[storage_type] = sd_name
+        wait_for_jobs(
+            [
+                ENUMS['job_add_nfs_storage_domain'],
+                ENUMS['job_add_glusterfs_storage_domain'],
+                ENUMS['job_add_san_storage_domain']
+            ]
+        )
         logger.info(
             "Non-master domain to import into during test "
             "run: %s for storage type %s",
