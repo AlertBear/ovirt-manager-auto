@@ -224,7 +224,7 @@ def create_setup(dc, cl):
     :param dc: DC name
     :type dc: str
     :param cl: Cluster name
-    :type cl: str
+    :type cl: str or None
     :raises: Network exception
     """
     logger.info("Create a new DC and cluster")
@@ -333,7 +333,7 @@ def remove_persistance_nets(host_resource):
             )
 
 
-def add_cluster(cl=c.EXTRA_CLUSTER_0, dc=c.ORIG_DC, **kwargs):
+def add_cluster(cl=c.EXTRA_CLUSTER_0, dc=c.ORIG_DC, positive=True, **kwargs):
     """
     Add Cluster to DC
 
@@ -341,13 +341,15 @@ def add_cluster(cl=c.EXTRA_CLUSTER_0, dc=c.ORIG_DC, **kwargs):
     :type cl: str
     :param dc: DC name
     :type dc: str
+    :param positive: Flag if test is positive or negative
+    :type positive: bool
     :param kwargs: dict of additional params (for example MGMT network)
     :type kwargs: dict
     :raises: Network exception
     """
     logger.info("Create a new cluster %s", cl)
     if not ll_clusters.addCluster(
-        positive=True, name=cl, cpu=c.CPU_NAME,
+        positive=positive, name=cl, cpu=c.CPU_NAME,
         data_center=dc, version=c.COMP_VERSION, **kwargs
     ):
         raise c.NET_EXCEPTION(
