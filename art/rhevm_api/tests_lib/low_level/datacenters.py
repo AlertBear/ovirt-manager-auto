@@ -38,7 +38,6 @@ STORAGE_API = get_api('storage_domain', 'storagedomains')
 QOS_API = get_api("qos", "datacenters")
 QOSS_API = get_api("qoss", "datacenters")
 CLUSTER_API = get_api("cluster", "clusters")
-QUOTA_API = get_api("quota", "quotas")
 DataCenter = getDS('DataCenter')
 Version = getDS('Version')
 
@@ -49,6 +48,9 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 DATA_CENTER_INIT_TIMEOUT = 180
 
 # Quota api constants
+QUOTA_COL = "quotas"
+QUOTA_ELM = "quota"
+QUOTA_API = get_api(QUOTA_ELM, QUOTA_COL)
 QUOTA_CLUSTER_LIMIT_ELM = "cluster_quota_limit"
 QUOTA_CLUSTER_LIMIT_API = get_api(
     QUOTA_CLUSTER_LIMIT_ELM, "cluster_quota_limits"
@@ -526,7 +528,7 @@ def get_quotas_obj_from_dc(dc_name):
     dc_obj = get_data_center(dc_name)
     try:
         quotas_obj = util.getElemFromLink(
-            elm=dc_obj, link_name="quotas", attr="quota"
+            elm=dc_obj, link_name=QUOTA_COL, attr=QUOTA_ELM
         )
     except EntityNotFound as e:
         util.logger.error(
@@ -547,7 +549,7 @@ def get_quotas_href(dc_name):
     """
     dc_obj = get_data_center(dc_name)
     return util.getElemFromLink(
-        elm=dc_obj, link_name="quotas", get_href=True
+        elm=dc_obj, link_name=QUOTA_COL, get_href=True
     )
 
 
@@ -557,7 +559,7 @@ def get_quota_obj_from_dc(dc_name, quota_name):
 
     :param dc_name: datacenter name
     :type dc_name: str
-    :param quota_name: get quota with name
+    :param quota_name: quota name
     :type quota_name: str
     :return: Quota object or None
     :rtype: Quota
@@ -576,7 +578,7 @@ def get_quota_id_by_name(dc_name, quota_name):
 
     :param dc_name: datacenter name
     :type dc_name: str
-    :param quota_name: get quota with name
+    :param quota_name: quota name
     :type quota_name: str
     :return: quota id
     :rtype: str
@@ -605,7 +607,7 @@ def create_dc_quota(dc_name, quota_name, **kwargs):
     """
     quotas_href = get_quotas_href(dc_name)
     quota_obj = __prepare_quota_obj(name=quota_name, **kwargs)
-    if not(quota_obj and quotas_href):
+    if not quota_obj:
         return False
     return QUOTA_API.create(
         entity=quota_obj, positive=True, collection=quotas_href
@@ -618,7 +620,7 @@ def update_dc_quota(dc_name, quota_name, **kwargs):
 
     :param dc_name: datacenter name
     :type dc_name: str
-    :param quota_name: update quota ith name
+    :param quota_name: quota name
     :type quota_name: str
     :param kwargs: name: type=str
                    description: type=str
