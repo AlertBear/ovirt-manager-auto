@@ -94,7 +94,6 @@ def setup_module():
                 raise errors.StorageDomainException(
                     "Creating iSCSI domain '%s' failed" % sd_name
                 )
-            wait_for_jobs()
         elif storage_type == NFS:
             sd_name = "{0}_{1}".format(config.TESTNAME, "NFS")
             nfs_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[0]
@@ -151,7 +150,7 @@ def setup_module():
         storagedomains.detach_and_deactivate_domain(
             config.DATA_CENTER_NAME, IMPORT_DOMAIN[storage_type]
         )
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_detach_storage_domain']])
 
         storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, storage_type
@@ -176,7 +175,7 @@ def setup_module():
         storagedomains.attach_and_activate_domain(
             config.DATA_CENTER_NAME, IMPORT_DOMAIN[storage_type]
         )
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_activate_storage_domain']])
     engine = Machine(
         config.VDC, config.VDC_ROOT_USER, config.VDC_PASSWORD
     ).util(LINUX)
@@ -303,7 +302,7 @@ class BasicEnvironment(BaseTestCase):
             ]:
                 ll_vms.move_vm_disk(self.vm_name, vm_disk, self.non_master)
 
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_move_or_copy_disk']])
 
     def _create_environment(self, dc_name, cluster_name,
                             comp_version=config.COMPATIBILITY_VERSION):
@@ -492,7 +491,7 @@ class TestCase5297(BasicEnvironment):
         storagedomains.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_activate_storage_domain']])
 
         unregistered_templates = ll_sd.get_unregistered_templates(
             self.non_master
@@ -526,7 +525,7 @@ class TestCase5297(BasicEnvironment):
                     "Failed to remove template %s", self.template_name
                 )
                 self.test_failed = True
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_remove_vm_template']])
 
         if self.vm_created:
             if not ll_vms.removeVm(
@@ -536,7 +535,7 @@ class TestCase5297(BasicEnvironment):
                     "Failed to remove vm %s", self.vm_from_template
                 )
                 self.test_failed = True
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_remove_vm']])
         self.teardown_exception()
 
 
@@ -580,7 +579,7 @@ class TestCase5299(BasicEnvironment):
         storagedomains.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_activate_storage_domain']])
 
         unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
         vm_to_import = [
@@ -628,7 +627,7 @@ class TestCase5300(BasicEnvironment):
             errors.SnapshotException(
                 "Failed to create snapshot %s" % self.snap_desc
             )
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_create_snapshot']])
 
         self._secure_detach_storage_domain(
             config.DATA_CENTER_NAME, self.non_master
@@ -649,7 +648,7 @@ class TestCase5300(BasicEnvironment):
         storagedomains.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_activate_storage_domain']])
 
         unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
         vm_names = [vm.get_name() for vm in unregistered_vms]
@@ -657,7 +656,7 @@ class TestCase5300(BasicEnvironment):
         assert ll_sd.register_object(
             unregistered_vms[0], cluster=config.CLUSTER_NAME
         )
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_register_disk']])
 
         assert self.snap_desc in [
             snap.get_description() for snap in ll_vms.get_vm_snapshots(
@@ -697,11 +696,11 @@ class TestCase5300(BasicEnvironment):
         if not ll_vms.removeVm(True, self.cloned_vm, stopVM=True):
             logger.error("Failed to remove cloned vm %s", self.cloned_vm)
             self.test_failed = True
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_remove_vm']])
         if not ll_vms.removeSnapshot(True, self.vm_name, self.snap_desc):
             logger.error("Failed to remove snapshot %s", self.snap_desc)
             self.test_failed = True
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_remove_snapshot']])
         target_domain = ll_disks.get_other_storage_domain(
             ll_vms.getVmDisks(self.vm_name)[0].get_alias(), self.vm_name
         )
@@ -709,7 +708,7 @@ class TestCase5300(BasicEnvironment):
                 disk.get_alias() for disk in ll_vms.getVmDisks(self.vm_name)
         ]:
                 ll_vms.move_vm_disk(self.vm_name, vm_disk, target_domain)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_move_or_copy_disk']])
         self.teardown_exception()
 
 
@@ -824,7 +823,7 @@ class TestCase5193(BasicEnvironment):
         self._secure_detach_storage_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_detach_storage_domain']])
 
     @polarion("RHEVM3-5193")
     def test_attach_file_domain(self):
@@ -837,7 +836,7 @@ class TestCase5193(BasicEnvironment):
         storagedomains.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_activate_storage_domain']])
 
         unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
         vm_names = [vm.get_name() for vm in unregistered_vms]
@@ -845,7 +844,7 @@ class TestCase5193(BasicEnvironment):
         assert ll_sd.register_object(
             unregistered_vms[0], cluster=config.CLUSTER_NAME
         )
-        wait_for_jobs([ENUMS['job_detach_storage_domain']])
+        wait_for_jobs([ENUMS['job_register_disk']])
 
 
 @attr(tier=1)
@@ -864,7 +863,7 @@ class TestCase5194(BasicEnvironment):
         self._secure_detach_storage_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_detach_storage_domain']])
 
     @polarion("RHEVM3-5194")
     def test_lv_exists_after_import_block_domain(self):
@@ -877,7 +876,7 @@ class TestCase5194(BasicEnvironment):
         storagedomains.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_activate_storage_domain']])
 
         unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
         vm_names = [vm.get_name() for vm in unregistered_vms]
@@ -888,7 +887,7 @@ class TestCase5194(BasicEnvironment):
             ),
             "Failed to register vm %s" % unregistered_vms[0]
         )
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_register_disk']])
 
         self.assertTrue(ll_vms.startVms(
             [self.vm_name], wait_for_status=config.VM_UP
@@ -904,7 +903,7 @@ class TestCase5194(BasicEnvironment):
             disk.get_alias() for disk in ll_vms.getVmDisks(self.vm_name)
         ]:
             ll_vms.move_vm_disk(self.vm_name, vm_disk, target_domain)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_move_or_copy_disk']])
 
 
 @attr(tier=3)
@@ -1067,7 +1066,7 @@ class TestCase5304(CommonSetUp):
             )
 
         self.register_vm(config.VM_NAME)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_register_disk']])
         self.teardown_exception()
 
 
@@ -1146,7 +1145,7 @@ class TestCase5201(BasicEnvironment):
         storagedomains.attach_and_activate_domain(
             self.dc_name, self.sd_name
         )
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_activate_storage_domain']])
 
         unregistered_vms = ll_sd.get_unregistered_vms(self.sd_name)
         vm_names = [vm.get_name() for vm in unregistered_vms]
@@ -1154,7 +1153,7 @@ class TestCase5201(BasicEnvironment):
         assert ll_sd.register_object(
             unregistered_vms[0], cluster=self.cluster_name
         )
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_register_disk']])
 
     def tearDown(self):
         self._clean_environment(
