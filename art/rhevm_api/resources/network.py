@@ -1,7 +1,10 @@
 import re
+import os
 import netaddr
 import functools
 from art.rhevm_api.resources.service import Service
+
+IFCFG_PATH = "/etc/sysconfig/network-scripts/"
 
 
 class _session(object):
@@ -431,3 +434,21 @@ class Network(Service):
                     net_info["interface"] = interface
 
         return net_info
+
+    def create_ifcfg_file(self, nic, params, ifcfg_path=IFCFG_PATH):
+        """
+        Create ifcfg file
+
+        :param nic: NIC name
+        :type nic: str
+        :param params: Ifcfg file content
+        :type params: dict
+        :param ifcfg_path: Ifcfg files path
+        :type ifcfg_path: str
+        """
+        dst = os.path.join(ifcfg_path, "ifcfg-%s" % nic)
+        self.logger.info("Creating %s on %s", dst, self.host.fqdn)
+        with self.host.executor().session() as resource_session:
+            with resource_session.open_file(dst, 'w') as resource_file:
+                for k, v in params.iteritems():
+                    resource_file.write("%s=%s" % (k, v))

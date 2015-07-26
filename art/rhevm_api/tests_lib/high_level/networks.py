@@ -19,7 +19,6 @@
 
 import logging
 import re
-import os
 from configobj import ConfigObj
 
 from utilities import machine
@@ -550,82 +549,81 @@ def prepareSetup(
     return True
 
 
-def create_dummy_interfaces(host, username, password, num_dummy=1):
+def create_dummy_interfaces(host, num_dummy=1, ifcfg_params=None):
     """
     create (X) dummy network interfaces on host
-    :param host: IP or FDQN of the host
-    :type host: str
-    :param username: host username
-    :type username: str
-    :param password: host password
-    :type password: str
+
+    :param host: VDS
+    :type host: resources.VDS
     :param num_dummy: number of dummy interfaces to create
     :type num_dummy: int
+    :param ifcfg_params: Ifcfg file content
+    :type ifcfg_params: dict
     :return: True/False
     :rtype: bool
     """
-    host_obj = machine.Machine(host, username, password).util(machine.LINUX)
+    dummy_int = "dummy_%s"
+    if ifcfg_params is None:
+        ifcfg_params = {}
 
-    dummy_list = [MODPROBE_CMD, 'dummy', 'numdummies=' + str(num_dummy)]
-    rc, out = host_obj.runCmd(dummy_list)
-
-    if not rc:
-        logger.error("Create dummy interfaces failed. ERR: %s", out)
-        return False
-
-    logger.info(host_obj.runCmd([IP_CMD, "a", "l", "|", "grep", "dummy"])[1])
-
-    for n in range(num_dummy):
-        ifcfg_file_name = "dummy%s" % n
-        if not host_obj.addNicConfFile(nic=ifcfg_file_name):
+    host_exec = host.executor()
+    for i in range(num_dummy):
+        cmd = ["ip", "link", "add", dummy_int % i, "type", "dummy"]
+        rc, out, error = host_exec.run_cmd(cmd)
+        if rc:
+            logger.error(
+                "Create %s interfaces failed. ERR: %s. %s", i, out, error
+            )
             return False
 
+        nic_name = dummy_int % i
+        ifcfg_params["DEVICE"] = nic_name
+        host.network.create_ifcfg_file(nic=nic_name, params=ifcfg_params)
+
+    logger.info(
+        host_exec.run_cmd([IP_CMD, "a", "l", "|", "grep", "dummy"])[1]
+    )
     return True
 
 
-def delete_dummy_interfaces(host, username, password):
+def delete_dummy_interfaces(host):
     """
     Delete dummy network interfaces on host
-    :param host: IP or FDQN of the host
-    :type host: str
-    :param username: host username
-    :type username: str
-    :param password: host password
-    :type password: str
+
+    :param host: VDS
+    :type host: resources.VDS
     :return: True/False
     :rtype: bool
     """
-    host_obj = machine.Machine(host, username, password).util(machine.LINUX)
+    host_obj = host.executor()
 
-    logger.info("Unloading dummy module")
-    unload_dummy = [MODPROBE_CMD, "-r", "dummy"]
-
-    # detect RHEV-H
-    os_type = host_obj.getOsInfo().lower()
-    if HYPERVISOR in os_type:
-        logger.info("RHEV-H detected")
-        # make sure dummy0 does not exist so module can be unloaded WA for
-        # BZ1107969
-        assert rhevh_remove_dummy(host, username, password)
-
-    else:
-        rc, out = host_obj.runCmd(unload_dummy)
-        if not rc:
-            logger.error("Unload dummy modulefailed ERR: %s", out)
-            return False
-    logger.info("Dummy support removed")
-
-    logger.info("Removing ifcg-dummy* files")
-    delete_dummy_ifcfg = ["/bin/rm", "-f"]
-    path = os.path.join(IFCFG_FILE_PATH, "ifcfg-dummy*")
-    delete_dummy_ifcfg.append(path)
-    host_obj.runCmd(delete_dummy_ifcfg)
-    rc, out = host_obj.runCmd(["ls", path])
+    rc, out, err = host_obj.run_cmd(["ip", "link", "|", "grep", "dummy"])
     if rc:
-        logger.error("Delete dummy ifcfg file failed. ERR: %s", out)
+        logger.error(
+            "Failed to run ip link command on %s. ERR: %s", host.fqdn, err
+        )
         return False
-    logger.info("ifcg-dummy* files removed")
 
+    dummy_list_ = out.splitlines()
+    dummy_list = [
+        re.search('([\s])([\w.]+)', i).groups()[1]
+        for i in dummy_list_ if 'vdsm' not in i
+        ]
+
+    for i in dummy_list:
+        cmd = ["ip", "link", "del", i]
+        rc, out, err = host_obj.run_cmd(cmd)
+        if rc:
+            logger.error("Failed to delete %s. ERR: %s. %s", i, out, err)
+            return False
+
+        ifcfg_file = "/etc/sysconfig/network-scripts/ifcfg-%s" % i
+        logger.info("Check if %s exists", ifcfg_file)
+        if host.fs.isfile(ifcfg_file):
+            logger.info("Deleting %s", ifcfg_file)
+            if not host.fs.remove(ifcfg_file):
+                logger.error("Failed to delete %s", ifcfg_file)
+                return False
     return True
 
 
