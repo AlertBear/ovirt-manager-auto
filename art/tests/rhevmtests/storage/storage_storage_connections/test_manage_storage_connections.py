@@ -101,6 +101,11 @@ class TestCaseLocalFS(TestCase):
             self.machine.removeFile(self.path)
 
 
+# TODO: Enable this when
+# https://projects.engineering.redhat.com/browse/RHEVM-2272 and
+# https://projects.engineering.redhat.com/browse/RHEVM-2261
+# will solved
+@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
 class TestCasePosix(TestCase):
     __test__ = False
     conn = None
@@ -193,6 +198,11 @@ class TestCasePosix(TestCase):
         )
 
 
+# TODO: Enable this when
+# https://projects.engineering.redhat.com/browse/RHEVM-2272 and
+# https://projects.engineering.redhat.com/browse/RHEVM-2261
+# will solved
+@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
 class TestCaseNFS(TestCasePosix):
     def setUp(self):
         super(TestCaseNFS, self).setUp(NFS, {})
@@ -210,6 +220,11 @@ class TestCaseNFS(TestCasePosix):
             nfs_version='V3', nfs_retrans=9, nfs_timeo=900, host=self.host)[1]
 
 
+# TODO: Enable this when
+# https://projects.engineering.redhat.com/browse/RHEVM-2272 and
+# https://projects.engineering.redhat.com/browse/RHEVM-2261
+# will solved
+@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
 class TestCasePosixFS(TestCasePosix):
     def setUp(self):
         super(TestCasePosixFS, self).setUp(

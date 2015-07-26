@@ -198,6 +198,7 @@ def _restore_empty_dc(datacenter=config.DATACENTER_ISCSI_CONNECTIONS):
         assert hosts.waitForHostsStates(True, config.HOST_FOR_MOUNT)
 
 
+@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
 class TestCase(StorageTest):
     storages = set([config.STORAGE_TYPE_ISCSI])
     # TODO: enable cli after http://bugzilla.redhat.com/show_bug.cgi?id=1236718
