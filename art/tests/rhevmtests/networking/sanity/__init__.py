@@ -10,7 +10,6 @@ import art.rhevm_api.utils.test_utils as test_utils
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.test_handler.exceptions as exceptions
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 
 logger = logging.getLogger("Sanity_Init")
 VDSMD_SERVICE = "vdsmd"
@@ -64,18 +63,6 @@ def setup_package():
         ):
             raise exceptions.NetworkException("Cannot create setup")
 
-    logger.info("Add dummy support in VDSM conf file")
-    if not hl_networks.add_dummy_vdsm_support(
-        host=config.HOSTS_IP[0], username=config.HOSTS_USER,
-        password=config.HOSTS_PW
-    ):
-        raise exceptions.NetworkException(
-            "Failed to add dummy support to VDSM conf file"
-        )
-    logger.info("Restarting %s service on %s", VDSMD_SERVICE, config.HOSTS[0])
-    hl_hosts.restart_services_under_maintenance_state(
-        [VDSMD_SERVICE], config.VDS_HOSTS[0]
-    )
     if config.GOLDEN_ENV:
         logger.info(
             "Running on golden env, starting VM %s on host %s",
@@ -105,21 +92,3 @@ def teardown_package():
         logger.info("Running on golden env, stopping VM %s", config.VM_NAME[0])
         if not ll_vms.stopVm(True, vm=config.VM_NAME[0]):
             logger.error("Failed to stop VM: %s", config.VM_NAME[0])
-
-    logger.info("Remove dummy support in VDSM conf file")
-    if not hl_networks.remove_dummy_vdsm_support(
-        host=config.HOSTS_IP[0], username=config.HOSTS_USER,
-        password=config.HOSTS_PW
-    ):
-        logger.error("Failed to remove dummy support to VDSM conf file")
-
-    logger.info("Restarting %s service on %s", VDSMD_SERVICE, config.HOSTS[0])
-    try:
-        hl_hosts.restart_services_under_maintenance_state(
-            [VDSMD_SERVICE], config.VDS_HOSTS[0]
-        )
-    except exceptions.HostException:
-        logger.error(
-            "Failed to restart %s service on %s",
-            VDSMD_SERVICE, config.HOSTS[0]
-        )

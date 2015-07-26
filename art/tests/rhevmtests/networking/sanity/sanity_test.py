@@ -1827,7 +1827,7 @@ class TestSanityCase21(TestCase):
     Negative: Create more than 5 BONDS using dummy interfaces
     """
     apis = set(["rest"])
-    bz = {"1237103": {"engine": None, "version": ["3.5"]}}
+
     vlan_1 = config.VLAN_NETWORKS[0]
     vlan_id_1 = config.VLAN_ID[0]
 
@@ -1839,10 +1839,7 @@ class TestSanityCase21(TestCase):
         Create dummy interface for BONDS
         """
         logger.info("Creating 20 dummy interfaces")
-        if not create_dummy_interfaces(
-            host=config.HOSTS_IP[0], username=config.HOSTS_USER,
-            password=config.HOSTS_PW, num_dummy=20
-        ):
+        if not create_dummy_interfaces(host=config.VDS_HOSTS[0], num_dummy=20):
             raise NetworkException("Failed to create dummy interfaces")
 
         logger.info("Refresh host capabilities")
@@ -1850,10 +1847,10 @@ class TestSanityCase21(TestCase):
         refresh_href = "{0};force".format(host_obj.get_href())
         HOST_API.get(href=refresh_href)
 
-        logger.info("Check if dummy0 exist on host via engine")
+        logger.info("Check if dummy_0 exist on host via engine")
         sample = TimeoutingSampler(
             timeout=config.SAMPLER_TIMEOUT, sleep=1,
-            func=check_dummy_on_host_interfaces, dummy_name="dummy0"
+            func=check_dummy_on_host_interfaces, dummy_name="dummy_0"
         )
         if not sample.waitForFuncStatus(result=True):
             raise NetworkException("Dummy interface not exists on engine")
@@ -1869,7 +1866,7 @@ class TestSanityCase21(TestCase):
         while idx < 20:
             rc, out = genSNNic(
                 nic="bond%s" % idx, slaves=[
-                    "dummy%s" % idx, "dummy%s" % (idx + 1)
+                    "dummy_%s" % idx, "dummy_%s" % (idx + 1)
                 ]
             )
             if not rc:
@@ -1893,10 +1890,7 @@ class TestSanityCase21(TestCase):
         Delete all bonds and dummy interfaces
         """
         logger.info("Delete all dummy interfaces")
-        if not delete_dummy_interfaces(
-            host=config.HOSTS_IP[0], username=config.HOSTS_USER,
-            password=config.HOSTS_PW
-        ):
+        if not delete_dummy_interfaces(host=config.VDS_HOSTS[0]):
             logger.error("Failed to delete dummy interfaces")
 
         logger.info("Refresh host capabilities")
@@ -1904,10 +1898,10 @@ class TestSanityCase21(TestCase):
         refresh_href = "{0};force".format(host_obj.get_href())
         HOST_API.get(href=refresh_href)
 
-        logger.info("CHeck if dummy0 not exist on host via engine")
+        logger.info("Check if dummy_0 not exist on host via engine")
         sample = TimeoutingSampler(
             timeout=config.SAMPLER_TIMEOUT, sleep=1,
-            func=check_dummy_on_host_interfaces, dummy_name="dummy0"
+            func=check_dummy_on_host_interfaces, dummy_name="dummy_0"
         )
         if not sample.waitForFuncStatus(result=False):
             logger.error("Dummy interface exists on engine")
