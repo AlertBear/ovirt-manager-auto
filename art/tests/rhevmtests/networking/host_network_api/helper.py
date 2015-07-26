@@ -32,11 +32,11 @@ def check_dummy_on_host(positive=True):
     refresh_href = "{0};force".format(host_obj.get_href())
     ll_hosts.HOST_API.get(href=refresh_href)
 
-    logger.info("Check if dummy0 %s on host via engine", for_log)
+    logger.info("Check if dummy_0 %s on host via engine", for_log)
     sample = api_utils.TimeoutingSampler(
         timeout=network.config.SAMPLER_TIMEOUT, sleep=1,
         func=c.network_lib.check_dummy_on_host_interfaces,
-        host_name=c.HOST_0, dummy_name="dummy0"
+        host_name=c.HOST_0, dummy_name="dummy_0"
     )
     if not sample.waitForFuncStatus(result=positive):
         if positive:
