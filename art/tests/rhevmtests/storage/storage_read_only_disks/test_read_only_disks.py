@@ -30,11 +30,10 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     removeVmFromExportDomain, does_vm_exist, DiskNotFound,
     get_vms_disks_storage_domain_name, waitForDisksStat,
     safely_remove_vms, get_vm_bootable_disk, remove_all_vm_lsm_snapshots,
-    wait_for_vm_snapshots,
+    wait_for_vm_snapshots, waitForVmsDisks,
 )
 from art.rhevm_api.tests_lib.high_level.datacenters import (
-    build_setup,
-    clean_datacenter,
+    build_setup, clean_datacenter,
 )
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from art.rhevm_api.utils.storage_api import (
@@ -224,7 +223,7 @@ class DefaultEnvironment(BaseTestCase):
         """
         Clean environment
         """
-        wait_for_jobs()
+        waitForVmsDisks(self.vm_name)
         stop_vms_safely([self.vm_name])
         logger.info("Removing all disks")
         for disk in helpers.DISKS_NAMES[self.storage]:
