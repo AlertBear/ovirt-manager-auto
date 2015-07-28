@@ -33,6 +33,7 @@ from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from rhevmtests.storage.helpers import create_vm_or_clone, get_vm_ip
 
 logger = logging.getLogger(__name__)
+ENUMS = config.ENUMS
 
 vmArgs = {
     'positive': True,
@@ -304,7 +305,9 @@ class ReturnToSnapshot(VMWithMemoryStateSnapshot):
                         'Could not restore RAM snapshot %s on vm %s' %
                         (self.memory_snapshot, self.vm))
         logger.info("Wait for running jobs")
-        wait_for_jobs()
+        wait_for_jobs(
+            [ENUMS['job_restore_vm_snapshot'], ENUMS['job_preview_snapshot']]
+        )
 
         logger.info('Starting vm %s')
         self.assertTrue(startVm(True, vm=self.vm, wait_for_ip=True,
