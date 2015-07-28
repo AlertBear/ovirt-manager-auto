@@ -4366,7 +4366,7 @@ def live_migrate_vm_disk(vm_name, disk_name, target_sd,
             if sample:
                 break
         wait_for_disks_status([disk_name], timeout=timeout)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_live_migrate_disk']])
 
 
 @is_action('liveMigrateVm')
@@ -4405,7 +4405,7 @@ def live_migrate_vm(vm_name, timeout=VM_IMAGE_OPT_TIMEOUT*2, wait=True,
         live_migrate_vm_disk(vm_name, disk, target_sd, timeout=timeout,
                              wait=wait)
     if wait:
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_live_migrate_disk']])
         waitForVMState(vm_name, timeout=timeout, sleep=5)
 
 
