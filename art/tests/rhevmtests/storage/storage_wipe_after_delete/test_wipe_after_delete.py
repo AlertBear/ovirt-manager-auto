@@ -198,7 +198,7 @@ class CommonUsage(BaseTestCase):
 
         finally:
             t.join(TASK_TIMEOUT)
-            wait_for_jobs()
+            wait_for_jobs([ENUMS['job_remove_disk']])
 
 
 @attr(tier=1)
@@ -307,4 +307,4 @@ class TestCase11864(CommonUsage):
         assert updateVmDisk(False, self.vm_name, self.disk_name,
                             wipe_after_delete=False)
 
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_live_migrate_disk']])
