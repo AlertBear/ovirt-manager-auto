@@ -100,8 +100,6 @@ class BaseCaseIsoDomains(TestCase):
         """
         Clean the whole environment
         """
-        # Wait for all jobs to finish in case of an error
-        wait_for_jobs()
         if config.GOLDEN_ENV:
             ll_vms.stop_vms_safely([cls.vm_name])
             assert ll_vms.removeVm(True, cls.vm_name)
@@ -118,7 +116,6 @@ class BaseCaseIsoDomains(TestCase):
         Make sure vm is stopped and doesn't have an iso attached
         Clean the iso domains
         """
-        wait_for_jobs()
         ll_vms.start_vms([self.vm_name], wait_for_status=config.VM_UP)
         if not ll_vms.eject_cdrom_vm(self.vm_name):
             logger.error("Failed to eject cdrom from vm %s", self.vm_name)
@@ -130,8 +127,7 @@ class BaseCaseIsoDomains(TestCase):
                 self.iso_domain_name, self.data_center_name, self.spm_host,
                 format_disk=True
             )
-
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_remove_storage_domain']])
 
     def attach_iso_and_maintenance(self, run_once=None, iso_domain=None):
         """
