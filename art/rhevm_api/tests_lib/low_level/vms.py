@@ -983,7 +983,6 @@ def stopVm(positive, vm, async='false'):
        * async - stop VM asynchronously if 'true' ('false' by default)
     Return: status (True if vm was stopped properly, False otherwise)
     '''
-    collect_vm_logs(vm)
     return changeVMStatus(positive, vm, 'stop', 'DOWN', async)
 
 
