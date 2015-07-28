@@ -22,7 +22,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     get_vm_bootable_disk, undo_snapshot_preview, cloneVmFromSnapshot, addNic,
     removeNic, get_snapshot_disks, shutdownVm, removeSnapshot,
     wait_for_vm_snapshots, get_vm_state, safely_remove_vms,
-    get_vms_disks_storage_domain_name,
+    get_vms_disks_storage_domain_name, waitForVmsDisks,
 )
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.utils.storage_api import (
@@ -148,7 +148,7 @@ class BasicEnvironment(BaseTestCase):
 
         prepare_disks_for_vm(self.vm_name, self.disks_names)
         self.boot_disk = get_vm_bootable_disk(self.vm_name)
-        wait_for_jobs()
+        waitForVmsDisks(self.vm_name)
         stop_vms_safely([self.vm_name])
         waitForVMState(self.vm_name, config.VM_DOWN)
 
