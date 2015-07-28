@@ -19,6 +19,7 @@ SPM_TIMEOUT = 600
 SPM_SLEEP = 5
 MIN_UNUSED_LUNS = 2
 ISCSI = config.STORAGE_TYPE_ISCSI
+ENUMS = config.ENUMS
 
 
 def setup_module():
@@ -81,7 +82,7 @@ class TestCase11591(TestCase):
         self.assertTrue(status_attach_and_activate,
                         "The domain was not added and activated "
                         "successfully")
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_activate_storage_domain']])
         assert ll_st_domains.wait_for_storage_domain_available_size(
             config.DATA_CENTER_NAME, self.sd_name,
         )
@@ -101,7 +102,7 @@ class TestCase11591(TestCase):
         self.assertTrue(ll_st_domains.removeStorageDomains(True, self.sd_name,
                                                            self.spm_host),
                         "Failed to remove domain '%s'" % self.sd_name)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_remove_storage_domain']])
 
     @polarion("RHEVM3-11591")
     def test_create_and_extend_storage_domain(self):
@@ -201,7 +202,7 @@ class TestCase11592(TestCase):
                 raise exceptions.StorageDomainException(
                     "Creating Gluster domain '%s' failed" % self.sd_name
                 )
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_activate_storage_domain']])
 
     def tearDown(self):
         """
