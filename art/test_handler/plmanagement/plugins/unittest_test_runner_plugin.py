@@ -567,14 +567,10 @@ class UnittestLoader(Component):
         else:
             st_msg = logger.error
         st_msg(tc.format_attr('status'))
+        res['engine-api'] = tc.attrs.get('api', opts['engine'])
 
         res['engine-api'] = tc.attrs.get('api', opts['engine'])
         res['storage'] = tc.attrs.get('storage', opts['storage_type'])
-
-        polarion_id = tc.attrs.get('polarion_id')
-
-        if polarion_id:
-            res['polarion-id'] = polarion_id
 
     def pre_group_result_reported(self, res, tg):
         pass
