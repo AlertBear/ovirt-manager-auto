@@ -169,6 +169,7 @@ def setup_networks(host_name, **kwargs):
             Remove bond20 (Can remove more then one BOND)
     update > update1: Update existing  bond30 to 3 slaves
     update > update2: Attach existing attached network net3 to host_nic dummy10
+    sync > sync net1 and net2
     kwargs = {
             "add": {
                 "add1": {
@@ -203,7 +204,10 @@ def setup_networks(host_name, **kwargs):
                 "update2": {
                     "nic": "dummy10",
                     "network": "net3"
-                }
+                },
+            "sync": {
+                "networks": ["net1", "net2"]
+                },
             }
         }
     """
@@ -211,12 +215,19 @@ def setup_networks(host_name, **kwargs):
     removed_bonds = data_st.HostNics()
     network_attachments = data_st.NetworkAttachments()
     removed_network_attachments = data_st.NetworkAttachments()
+    labels = data_st.Labels()
+    removed_labels = data_st.Labels()
+    synchronized_network_attachments = data_st.NetworkAttachments()
     host = ll_hosts.HOST_API.find(host_name)
 
     remove = kwargs.get("remove")
     add = kwargs.get("add")
     update = kwargs.get("update")
+    sync = kwargs.get("sync")
     check_connectivity = kwargs.get("check_connectivity", True)
+    check_connectivity_timeout = kwargs.get(
+        "check_connectivity_timeout", CONNECTIVITY_TIMEOUT
+    )
 
     if remove:
         removed_bonds, removed_network_attachments = (
@@ -236,12 +247,19 @@ def setup_networks(host_name, **kwargs):
                 network_attachments, host_name, update, True
             )
         )
+
+    if sync:
+        synchronized_network_attachments = (
+            ll_host_network.get_networks_attachments(host_name, sync)
+        )
     return ll_hosts.HOST_API.syncAction(
-        host, SETUPNETWORKS, True,
-        network_attachments=network_attachments,
+        entity=host, action=SETUPNETWORKS, positive=True,
+        modified_network_attachments=network_attachments,
         removed_network_attachments=removed_network_attachments,
-        bonds=bonds, removed_bonds=removed_bonds,
-        connectivity_timeout=CONNECTIVITY_TIMEOUT,
+        modified_bonds=bonds, removed_bonds=removed_bonds,
+        modified_labels=labels, removed_labels=removed_labels,
+        synchronized_network_attachments=synchronized_network_attachments,
+        connectivity_timeout=check_connectivity_timeout,
         check_connectivity=check_connectivity
     )
 

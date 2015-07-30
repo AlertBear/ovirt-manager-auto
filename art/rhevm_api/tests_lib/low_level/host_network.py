@@ -179,10 +179,6 @@ def prepare_network_attachment_obj(host_name, **kwargs):
     else:
         network_attachment_obj = data_st.NetworkAttachment()
 
-    if ip:
-        network_attachment_obj = prepare_ip_object(
-            network_attachment_obj, ip
-        )
     if override_configuration:
         network_attachment_obj.set_override_configuration(
             override_configuration
@@ -204,6 +200,11 @@ def prepare_network_attachment_obj(host_name, **kwargs):
 
         network_attachment_obj.set_host_nic(host_nic)
 
+    if ip:
+        network_attachment_obj = prepare_ip_object(
+            network_attachment_obj, ip
+        )
+
     if network and not update:
         add_network = ll_networks.NET_API.find(network)
         network_attachment_obj.set_network(add_network)
@@ -222,21 +223,31 @@ def prepare_bond_attachment_obj(host_name, **kwargs):
     :return: HostNIC
     :rtype: HostNIC object
     """
-    if kwargs.get(UPDATE):
+    slave_list = kwargs.get(SLAVES)
+    nic_name = kwargs.get(NIC)
+    update = kwargs.get(UPDATE)
+    if update:
         host_nic_bond_obj = ll_hosts.getHostNic(host_name, kwargs.get(NIC))
         bond_obj = host_nic_bond_obj.get_bonding()
+        slaves = bond_obj.get_slaves()
         options = bond_obj.get_options()
 
     else:
         host_nic_bond_obj = data_st.HostNIC()
         bond_obj = data_st.Bonding()
         options = data_st.Options()
-        host_nic_bond_obj.set_name(kwargs.get(NIC))
-
-    slave_list = kwargs.get(SLAVES)
-    if slave_list:
         slaves = data_st.Slaves()
+
+    if nic_name:
+        host_nic_bond_obj.set_name(nic_name)
+
+    if slave_list:
+        slaves_nics_ids = [i.get_id() for i in slaves.get_host_nic()]
         for nic in slave_list:
+            if update:
+                nic_id = ll_hosts.getHostNic(host_name, nic).get_id()
+                if nic_id in slaves_nics_ids:
+                    continue
             slaves.add_host_nic(data_st.HostNIC(name=nic.strip()))
         bond_obj.set_slaves(slaves)
 
@@ -306,6 +317,7 @@ def prepare_add_for_setupnetworks(
     for k in dict_to_add.keys():
         if update:
             dict_to_add.get(k)[UPDATE] = True
+
         if dict_to_add.get(k).get(SLAVES):
             bond_obj = prepare_bond_attachment_obj(
                 host_name, **dict_to_add.get(k)
@@ -332,18 +344,18 @@ def prepare_ip_object(network_attachment, ip_dict):
     :rtype: NetworkAttachment
     """
     for value in ip_dict.values():
-        ip_configuration = data_st.IpConfiguration()
-        ipv4s_obj = data_st.IPv4s()
-        ipv4_obj = data_st.IPv4()
+        ip_address_assignments = data_st.IpAddressAssignments()
+        ip_address_assignment = data_st.IpAddressAssignment()
+        ip = data_st.IP()
         for k, v in value.iteritems():
             if k == "boot_protocol":
-                ipv4s_obj.set_boot_protocol(v)
+                ip_address_assignment.set_assignment_method(v)
             else:
-                setattr(ipv4_obj, k, v)
+                setattr(ip, k, v)
 
-        ipv4s_obj.add_ipv4(ipv4_obj)
-        ip_configuration.set_ipv4s(ipv4s_obj)
-        network_attachment.set_ip_configuration(ip_configuration)
+        ip_address_assignment.set_ip(ip)
+        ip_address_assignments.add_ip_address_assignment(ip_address_assignment)
+        network_attachment.set_ip_address_assignments(ip_address_assignments)
     return network_attachment
 
 
