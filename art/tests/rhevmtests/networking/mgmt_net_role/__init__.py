@@ -4,3 +4,11 @@
 """
 Management network as a role feature init
 """
+from rhevmtests.networking import network_cleanup
+
+
+def setup_package():
+    """
+    Clean environment
+    """
+    network_cleanup()

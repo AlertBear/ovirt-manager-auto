@@ -20,7 +20,8 @@ logger = logging.getLogger("MGMT_Net_Role_Helper")
 
 def install_host_new_mgmt(
     host_resource=c.VDS_HOSTS[-1], network=c.MGMT_BRIDGE, dc=c.EXT_DC_0,
-    cl=c.EXTRA_CLUSTER_0, dest_cl=c.EXTRA_CLUSTER_0, new_setup=True
+    cl=c.EXTRA_CLUSTER_0, dest_cl=c.EXTRA_CLUSTER_0, new_setup=True,
+    remove_setup=False
 ):
     """
     Install host with MGMT network different from the previous one
@@ -36,6 +37,8 @@ def install_host_new_mgmt(
     :param dest_cl: Cluster where host should be installed
     :type dest_cl: str
     :param new_setup: Flag indicating if there is a need to install a new setup
+    :param remove_setup: Flag indicating if there is a need to remove setup
+    :type remove_setup: bool
     :type new_setup:bool
     :raises: Network exception
     """
@@ -47,7 +50,8 @@ def install_host_new_mgmt(
     )
     add_host_new_mgmt(
         host_resource=host_resource, network=network, dc=dc, cl=cl,
-        new_setup=new_setup, dest_cl=dest_cl, host_name=host_name
+        new_setup=new_setup, dest_cl=dest_cl, host_name=host_name,
+        remove_setup=remove_setup
     )
 
 
@@ -91,7 +95,7 @@ def prepare_host_for_installation(
 
 
 def add_host_new_mgmt(
-    host_resource, network, dc, cl, new_setup, dest_cl, host_name
+    host_resource, network, dc, cl, new_setup, dest_cl, host_name, remove_setup
 ):
     """
     Add Host with new MGMT bridge
@@ -119,7 +123,7 @@ def add_host_new_mgmt(
             positive=True, network=network, data_center=dc
         ):
             raise c.NET_EXCEPTION("Failed to remove %s", network)
-    else:
+    if remove_setup:
         remove_dc_cluster(dc=dc, cl=cl)
     remove_persistance_nets(host_resource=host_resource)
     add_host(host_resource=host_resource, host=host_name, cl=dest_cl)
@@ -238,13 +242,17 @@ def create_setup(dc, cl):
         )
 
 
-def move_host_new_cl(host, cl, positive=True):
+def move_host_new_cl(host, cl, positive=True, activate_host=False):
     """
     Move Host to new Cluster
 
     :param host: Host name to move
     :type host: str
     :param cl: Destination Cluster
+    :param positive: Flag if an action of moving host should succeed
+    :type positive: bool
+    :param activate_host: Flag if host should be activated
+    :type activate_host: bool
     :type cl: str
     :raises: Network exception
     """
@@ -253,6 +261,9 @@ def move_host_new_cl(host, cl, positive=True):
         raise c.NET_EXCEPTION(
             "%s move host %s to Cluster %s" % (log_err, host, cl)
         )
+    if activate_host:
+        if not ll_hosts.activateHost(True, host=host):
+            raise c.NET_EXCEPTION("Cannot activate host %s" % host)
 
 
 def create_net_dc_cluster(
@@ -308,7 +319,7 @@ def remove_dc_cluster(dc=c.EXT_DC_0, cl=c.EXTRA_CLUSTER_0):
     :param dc: DC name
     :type dc: str
     :param cl: Cluster name
-    :type cl: str
+    :type cl: str or None
     :raises: Network exception
     """
     logger.info("Removing DC %s and cluster %s", dc, cl)

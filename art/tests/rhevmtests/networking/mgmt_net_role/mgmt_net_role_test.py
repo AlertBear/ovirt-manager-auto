@@ -500,3 +500,227 @@ class TestMGMTNetRole07(TestCase):
             helper.remove_cl(cl=cl)
 
         helper.remove_dc_cluster()
+
+
+@attr(tier=1)
+class TestMGMTNetRole08(TestCase):
+    """
+    1. Create a new DC and cluster with non-default MGMT network
+    2. Add a new host to this DC/Cluster
+    3. Check that MGMT network of the Host is the network that resides on setup
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        1. Create a new DC and a new cluster with non-default MGMT network and
+        install a new Host on it
+        """
+        helper.install_host_new_mgmt()
+
+    @polarion("RHEVM3-6470")
+    def test_default_mgmt_net(self):
+        """
+        Check that the non-default MGMT network exists on host
+        """
+        if not c.VDS_HOSTS[-1].network.find_mgmt_interface() == c.net1:
+            raise c.NET_EXCEPTION(
+                "Host should have %s as its MGMT network" % c.net1
+            )
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove the Host from the DC/Cluster with c.net1 as MGMT
+        Add host back to its original DC/Cluster
+        """
+        helper.install_host_new_mgmt(
+            network=c.net1, dest_cl=c.CLUSTER_1, new_setup=False,
+            remove_setup=True
+        )
+
+
+@attr(tier=1)
+class TestMGMTNetRole09(TestCase):
+    """
+    Moving Host between Clusters on different DCs
+    1. Move the host between clusters with the same MGMT network (c.net1)
+    2. Move the host between clusters with the same MGMT network (c.net1),
+    when on one setup c.net1 is tagged and on another setup it's untagged
+    3. Negative: Try to move host between setups with different MGMT networks
+
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        1. Create a new DC and a new cluster with non-default MGMT network and
+        install a new Host on it
+        2. Create another DC and Cluster with c.net1 MGMT network
+        3. Create another DC and Cluster with c.net1 tagged MGMT network
+        """
+
+        local_dict = [
+            {c.net1: {"required": "true", "vlan_id": c.VLAN_ID[0]}},
+            {c.net1: {"required": "true"}}
+        ]
+        helper.install_host_new_mgmt()
+
+        logger.info(
+            "Create 2 setups with %s as tagged/untagged MGMT network", c.net1
+        )
+        for i in range(1, 3):
+            helper.create_setup(dc=c.EXTRA_DC[i], cl=None)
+            helper.create_net_dc_cluster(
+                dc=c.EXTRA_DC[i], cl=None, net_dict=local_dict[i-1]
+            )
+            helper.add_cluster(
+                cl=c.EXTRA_CL[i], dc=c.EXTRA_DC[i], management_network=c.net1
+            )
+
+    @polarion("RHEVM3-6467")
+    def test_moving_host(self):
+        """
+        1. Move the host to another cluster with the same MGMT network (c.net1)
+        2. Move the host to another cluster with the same MGMT network (c.net1)
+        but in one setup it's tagged and in another untagged
+        2. Negative: Try to move the host to the setup with default MGMT
+        network
+        """
+        for cl in (c.EXTRA_CLUSTER_1, c.EXTRA_CLUSTER_2):
+            helper.deactivate_host(host=c.HOSTS[-1])
+            helper.move_host_new_cl(
+                host=c.HOSTS[-1], cl=cl, activate_host=True
+            )
+
+        logger.info(
+            "Negative: Deactivate host %s, and try move it to cluster %s with "
+            "default MGMT", c.HOSTS[-1], c.CLUSTER_0
+        )
+        helper.deactivate_host(host=c.HOSTS[-1])
+        helper.move_host_new_cl(
+            host=c.HOSTS[-1], cl=c.CLUSTER_0, positive=False,
+            activate_host=True
+        )
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        1. Move Host to its original cluster
+        2. Remove the additional DCs and Clusters
+        """
+        helper.install_host_new_mgmt(
+            network=c.net1, dc=c.EXTRA_DC[2], cl=c.EXTRA_CLUSTER_2,
+            dest_cl=c.CLUSTER_1, new_setup=False, remove_setup=True
+        )
+        for i in range(2):
+            helper.remove_dc_cluster(dc=c.EXTRA_DC[i], cl=c.EXTRA_CL[i])
+
+
+@attr(tier=1)
+class TestMGMTNetRole10(TestCase):
+    """
+    1. Create a new DC and cluster with non-default MGMT network
+    2. Add a new host to this DC/Cluster
+    3. Try to change the MGMT on the setup with the host to be ovirtmgmt
+    4. Remove host from cluster
+    5. Change MGMT to ovirtmgmt and succeed
+    """
+    __test__ = True
+    bz = {"1250063": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
+
+    @classmethod
+    def setup_class(cls):
+        """
+        1. Create a new DC and a new cluster with non-default MGMT network and
+        install a new Host on it
+        2. Add ovirtmgmt to setup with the host
+        """
+        helper.install_host_new_mgmt()
+        helper.create_net_dc_cluster(
+            dc=c.EXT_DC_0, cl=c.EXTRA_CLUSTER_0,
+            net_dict={c.MGMT_BRIDGE: {"required": "true"}}
+        )
+
+    @polarion("RHEVM3-6472")
+    def test_change_mgmt_net(self):
+        """
+        1. Try to change the non-default MGMT to the default one, when the Host
+        is attached to the Cluster and fail
+        2. Return host to its original DC/Cluster
+        3. Change MGMT network on Extra Cluster to ovirtmgmt
+        4. Check that the change succeeded
+        """
+        logger.info(
+            "Try to change the MGMT %s on %s to be %s and fail as host is "
+            "attached to it", c.net1, c.EXTRA_CLUSTER_0, c.MGMT_BRIDGE
+        )
+
+        helper.update_mgmt_net(net=c.MGMT_BRIDGE, positive=False)
+        helper.check_mgmt_net()
+
+        helper.install_host_new_mgmt(
+            network=c.net1, dest_cl=c.CLUSTER_1, new_setup=False
+        )
+
+        helper.update_mgmt_net(net=c.MGMT_BRIDGE)
+        helper.check_mgmt_net(net=c.MGMT_BRIDGE)
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove extra DC/Cluster
+        """
+        helper.remove_dc_cluster(dc=c.EXT_DC_0, cl=c.EXTRA_CLUSTER_0)
+
+
+@attr(tier=1)
+class TestMGMTNetRole11(TestCase):
+    """
+    1. Create new cluster when one network exists on the DC and check that this
+    network becomes MGMT network
+    2. Remove Cluster and then the network from DC
+    3. Negative: Try to add a new cluster when there is no network on DC
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        1. Create a new DC
+        2. Create network on DC
+        3. Remove default MGMT network
+
+        """
+        helper.create_setup(dc=c.EXT_DC_0, cl=None)
+        helper.create_net_dc_cluster(dc=c.EXT_DC_0, cl=None)
+        helper.remove_net(net=c.MGMT_BRIDGE, teardown=False)
+
+    @polarion("RHEVM3-6479")
+    def test_different_mgmt_net(self):
+        """
+        1. Add new cluster without providing explicitly MGMT network
+        2. Check that the non-default MGMT network exists on that cluster
+        3. Remove cluster
+        4. Remove non-default MGMT network
+        5. Negative: Try to add a new cluster when there is no network on DC
+        """
+        logger.info("Create a new cluster without explicitly providing MGMT")
+        helper.add_cluster(dc=c.EXT_DC_0)
+        helper.check_mgmt_net()
+        helper.remove_cl()
+        helper.remove_net(teardown=False)
+
+        logger.info(
+            "Try to create a new cluster when there is no network on DC"
+        )
+        helper.add_cluster(dc=c.EXT_DC_0, positive=False)
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove the DC
+        """
+        helper.remove_dc_cluster(cl=None)

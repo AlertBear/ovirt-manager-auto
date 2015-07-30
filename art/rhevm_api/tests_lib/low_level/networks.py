@@ -281,7 +281,7 @@ def addNetworkToCluster(positive, network, cluster, **kwargs):
        * display - deprecated. boolean, a spice display network.
     Return: status (True if network was attached properly, False otherwise)
     """
-    kwargs.update(net=findNetwork(network))
+    kwargs.update(net=findNetwork(network, kwargs.get("data_center")))
     net = _prepareClusterNetworkObj(**kwargs)
     cluster_nets = getClusterNetworks(cluster)
     res, status = NET_API.create(net,

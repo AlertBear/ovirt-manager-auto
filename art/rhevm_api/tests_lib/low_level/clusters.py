@@ -23,7 +23,7 @@ from threading import Thread
 
 from art.core_api import is_action
 from art.core_api.apis_utils import getDS
-from art.rhevm_api.tests_lib.low_level.networks import NET_API
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.test_handler.exceptions as exceptions
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.utils.test_utils import get_api, split
@@ -62,6 +62,12 @@ xpathMatch = is_action('xpathClusters', id_name='xpathMatch')(XPathMatch(util))
 def _prepareClusterObject(**kwargs):
 
     cl = Cluster()
+    if 'management_network' in kwargs:
+        net_obj = ll_networks.findNetwork(
+            kwargs.get("management_network"),
+            data_center=kwargs.get("data_center")
+        )
+        cl.set_management_network(net_obj)
 
     if 'name' in kwargs:
         cl.set_name(kwargs.pop('name'))
@@ -151,10 +157,6 @@ def _prepareClusterObject(**kwargs):
 
     if 'ha_reservation' in kwargs:
         cl.set_ha_reservation(kwargs.pop('ha_reservation'))
-
-    if 'management_network' in kwargs:
-        net_obj = NET_API.find(kwargs.get('management_network'))
-        cl.set_management_network(net_obj)
 
     return cl
 

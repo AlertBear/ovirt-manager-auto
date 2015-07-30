@@ -569,9 +569,6 @@ class Bugzilla(Component):
     def should_be_test_group_skipped(self, g):
         bug_dict = g.attrs.get(BZ_ID)
 
-        # from nose.tools import set_trace
-        # set_trace()
-
         if not bug_dict or not isinstance(bug_dict, dict):
             return
 

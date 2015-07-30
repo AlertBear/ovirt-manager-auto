@@ -247,11 +247,12 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
 
         if cluster and net:
             logger.info("Adding network to Cluster")
-            if not addNetworkToCluster(True, network=net, cluster=cluster,
-                                       required=net_param.
-                                       get('required', "true"),
-                                       usages=net_param.
-                                       get('cluster_usages', None)):
+            if not addNetworkToCluster(
+                True, network=net, cluster=cluster,
+                required=net_param.get('required', "true"),
+                usages=net_param.get('cluster_usages', None),
+                data_center=data_center
+            ):
                 logger.info("Cannot add network to Cluster")
                 return False
 
