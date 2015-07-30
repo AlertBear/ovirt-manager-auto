@@ -28,6 +28,9 @@ from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.tests_listener import (
     ITestCaseHandler,
 )
+from art.test_handler.plmanagement.interfaces.report_formatter import (
+    IResultExtension,
+)
 from art.test_handler import tools
 
 
@@ -58,6 +61,7 @@ class Polarion(Component):
         ITestCaseHandler,
         IConfigValidation,
         IPackaging,
+        IResultExtension,
     )
     name = "Polarion Mapper"
 
@@ -97,6 +101,18 @@ class Polarion(Component):
         pass
 
     def test_case_skipped(self, g):
+        pass
+
+    def pre_test_result_reported(self, res, tc):
+        polarion_id = tc.attrs.get('polarion_id')
+
+        if polarion_id:
+            res['polarion-id'] = polarion_id
+
+    def pre_group_result_reported(self, result, test_group):
+        pass
+
+    def pre_suite_result_reported(self, result, test_suite):
         pass
 
     @classmethod
