@@ -380,7 +380,10 @@ class TestHostNetworkApiHost11(hna.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "nic": "bond11",
-                    "slaves": [hna.c.HOST_NICS[2], hna.c.HOST_NICS[3]]
+                    "slaves": [
+                        c.DUMMYS[0],
+                        c.DUMMYS[1]
+                    ]
                 }
             }
         }
@@ -400,7 +403,9 @@ class TestHostNetworkApiHost11(hna.TestHostNetworkApiTestCaseBase):
             "network": c.HOST_NETS[11][0],
             "nic": "bond11"
         }
-        helper.attach_network_attachment(network_host_api_dict, "bond11")
+        helper.attach_network_attachment(
+            network_host_api_dict, c.HOST_NETS[11][0]
+        )
 
 
 @attr(tier=1)
@@ -423,8 +428,8 @@ class TestHostNetworkApiHost12(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond12",
                     "slaves": [
-                        hna.c.HOST_NICS[2],
-                        hna.c.HOST_NICS[3]
+                        c.DUMMYS[0],
+                        c.DUMMYS[1]
                     ]
                 },
                 "2": {
@@ -600,6 +605,7 @@ class TestHostNetworkApiHost16(hna.TestHostNetworkApiTestCaseBase):
     """
     __test__ = True
     unmamanged_net = "unman_host16"
+    bz = {"1249394": {"engine": ["rest"], "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -626,8 +632,8 @@ class TestHostNetworkApiHost16(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond16",
                     "slaves": [
-                        hna.c.HOST_NICS[2],
-                        hna.c.HOST_NICS[3]
+                        c.DUMMYS[0],
+                        c.DUMMYS[1]
                     ]
                 },
                 "2": {
@@ -685,8 +691,8 @@ class TestHostNetworkApiHost17(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond17",
                     "slaves": [
-                        hna.c.HOST_NICS[2],
-                        hna.c.HOST_NICS[3]
+                        c.DUMMYS[0],
+                        c.DUMMYS[1]
                     ]
                 }
             }

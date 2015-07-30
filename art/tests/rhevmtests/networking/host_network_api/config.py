@@ -22,6 +22,7 @@ HOST_NETS = network_lib.generate_networks_names(cases=20, prefix="host")
 SN_NETS = network_lib.generate_networks_names(
     cases=35, num_of_networks=10, prefix="sn"
 )
+DUMMYS = ["dummy_%s" % i for i in xrange(15)]
 VDSMD_SERVICE = "vdsmd"
 VLAN_ID = 2
 

@@ -366,8 +366,8 @@ class TestHostNetworkApiHostNic11(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond11",
                     "slaves": [
-                        hna.c.HOST_NICS[2],
-                        hna.c.HOST_NICS[3]
+                        c.DUMMYS[0],
+                        c.DUMMYS[1]
                     ]
                 }
             }
@@ -398,6 +398,7 @@ class TestHostNetworkApiHostNic12(hna.TestHostNetworkApiTestCaseBase):
     2.Delete 2 networks from the BOND
     """
     __test__ = True
+    bz = {"1249394": {"engine": ["rest"], "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -409,7 +410,10 @@ class TestHostNetworkApiHostNic12(hna.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "nic": "bond12",
-                    "slaves": [hna.c.HOST_NICS[2], hna.c.HOST_NICS[3]]
+                    "slaves": [
+                        c.DUMMYS[0],
+                        c.DUMMYS[1]
+                    ]
                 },
                 "2": {
                     "nic": "bond12",
@@ -519,8 +523,8 @@ class TestHostNetworkApiHostNic15(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond15",
                     "slaves": [
-                        hna.c.HOST_NICS[2],
-                        hna.c.HOST_NICS[3]
+                        c.DUMMYS[0],
+                        c.DUMMYS[1]
                     ]
                 }
             }

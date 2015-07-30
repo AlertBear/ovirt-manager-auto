@@ -479,8 +479,8 @@ class TestHostNetworkApiSetupNetworks11(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond11",
                     "slaves": [
-                        hna.c.HOST_NICS[2],
-                        hna.c.HOST_NICS[3]
+                        c.DUMMYS[0],
+                        c.DUMMYS[1]
                     ]
                 }
             }
@@ -534,6 +534,7 @@ class TestHostNetworkApiSetupNetworks12(hna.TestHostNetworkApiTestCaseBase):
     5. Attach network with IP to BOND
     """
     __test__ = True
+    bz = {"1249394": {"engine": ["rest"], "version": ["3.6"]}}
 
     @polarion("RHEVM3-9621")
     def test_01create_bond(self):
@@ -545,8 +546,8 @@ class TestHostNetworkApiSetupNetworks12(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond12",
                     "slaves": [
-                        hna.c.HOST_NICS[2],
-                        hna.c.HOST_NICS[3]
+                        c.DUMMYS[0],
+                        c.DUMMYS[1]
                     ]
                 }
             }
@@ -567,9 +568,9 @@ class TestHostNetworkApiSetupNetworks12(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond12",
                     "slaves": [
-                        hna.c.HOST_NICS[1],
-                        hna.c.HOST_NICS[2],
-                        hna.c.HOST_NICS[3]
+                        c.DUMMYS[0],
+                        c.DUMMYS[1],
+                        c.DUMMYS[2]
                     ]
                 }
             }
@@ -591,8 +592,8 @@ class TestHostNetworkApiSetupNetworks12(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond12",
                     "slaves": [
-                        hna.c.HOST_NICS[2],
-                        hna.c.HOST_NICS[3]
+                        c.DUMMYS[0],
+                        c.DUMMYS[1]
                     ]
                 }
             }
@@ -614,8 +615,8 @@ class TestHostNetworkApiSetupNetworks12(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond12",
                     "slaves": [
-                        hna.c.HOST_NICS[2],
-                        hna.c.HOST_NICS[3]
+                        c.DUMMYS[0],
+                        c.DUMMYS[1]
                     ],
                     "mode": "1"
                 }
@@ -667,15 +668,24 @@ class TestHostNetworkApiSetupNetworks13(hna.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "nic": "bond131",
-                    "slaves": ["dummy0", "dummy1"]
+                    "slaves": [
+                        c.DUMMYS[0],
+                        c.DUMMYS[1]
+                    ]
                 },
                 "2": {
                     "nic": "bond132",
-                    "slaves": ["dummy2", "dummy3"]
+                    "slaves": [
+                        c.DUMMYS[2],
+                        c.DUMMYS[3]
+                    ]
                 },
                 "3": {
                     "nic": "bond133",
-                    "slaves": ["dummy4", "dummy5"]
+                    "slaves": [
+                        c.DUMMYS[4],
+                        c.DUMMYS[5]
+                    ]
                 }
             }
         }
@@ -695,6 +705,7 @@ class TestHostNetworkApiSetupNetworks14(hna.TestHostNetworkApiTestCaseBase):
     Create BOND with 5 slaves
     """
     __test__ = True
+    bz = {"1249394": {"engine": ["rest"], "version": ["3.6"]}}
 
     def test_create_bond_with_5_slaves(self):
         """
@@ -705,11 +716,11 @@ class TestHostNetworkApiSetupNetworks14(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond14",
                     "slaves": [
-                        "dummy0",
-                        "dummy1",
-                        "dummy2",
-                        "dummy3",
-                        "dummy4"
+                        c.DUMMYS[0],
+                        c.DUMMYS[1],
+                        c.DUMMYS[2],
+                        c.DUMMYS[3],
+                        c.DUMMYS[4]
                     ]
                 }
             }
@@ -740,8 +751,8 @@ class TestHostNetworkApiSetupNetworks15(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond15",
                     "slaves": [
-                        hna.c.HOST_NICS[2],
-                        hna.c.HOST_NICS[3]
+                        c.DUMMYS[0],
+                        c.DUMMYS[1]
                     ]
                 },
                 "2": {
@@ -797,6 +808,7 @@ class TestHostNetworkApiSetupNetworks16(hna.TestHostNetworkApiTestCaseBase):
     """
     __test__ = True
     unmamanged_net = "unman_sn_16"
+    bz = {"1249394": {"engine": ["rest"], "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -823,8 +835,8 @@ class TestHostNetworkApiSetupNetworks16(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond16",
                     "slaves": [
-                        hna.c.HOST_NICS[2],
-                        hna.c.HOST_NICS[3]
+                        c.DUMMYS[0],
+                        c.DUMMYS[1]
                     ]
                 },
                 "2": {
@@ -942,6 +954,7 @@ class TestHostNetworkApiSetupNetworks18(hna.TestHostNetworkApiTestCaseBase):
     Attach network with custom properties to BOND
     """
     __test__ = True
+    bz = {"1249394": {"engine": ["rest"], "version": ["3.6"]}}
 
     def test_network_custom_properties_on_bond_host(self):
         """
@@ -958,8 +971,8 @@ class TestHostNetworkApiSetupNetworks18(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond18",
                     "slaves": [
-                        hna.c.HOST_NICS[2],
-                        hna.c.HOST_NICS[3]
+                        c.DUMMYS[0],
+                        c.DUMMYS[1]
                     ]
                 },
                 "2": {
@@ -1067,6 +1080,7 @@ class TestHostNetworkApiSetupNetworks21(hna.TestHostNetworkApiTestCaseBase):
     Create BOND with network
     """
     __test__ = True
+    bz = {"1249394": {"engine": ["rest"], "version": ["3.6"]}}
 
     def test_attach_networks_to_bond(self):
         """
@@ -1077,8 +1091,8 @@ class TestHostNetworkApiSetupNetworks21(hna.TestHostNetworkApiTestCaseBase):
                 "1": {
                     "nic": "bond21",
                     "slaves": [
-                        hna.c.HOST_NICS[2],
-                        hna.c.HOST_NICS[3]
+                        c.DUMMYS[0],
+                        c.DUMMYS[1]
                     ]
                 },
                 "2": {
@@ -1171,8 +1185,8 @@ class TestHostNetworkApiSetupNetworks23(hna.TestHostNetworkApiTestCaseBase):
                 "4": {
                     "nic": "bond23",
                     "slaves": [
-                        hna.c.HOST_NICS[2],
-                        hna.c.HOST_NICS[3]
+                        c.DUMMYS[0],
+                        c.DUMMYS[1]
                     ]
                 }
             }
@@ -1243,8 +1257,8 @@ class TestHostNetworkApiSetupNetworks24(hna.TestHostNetworkApiTestCaseBase):
                 "4": {
                     "nic": "bond241",
                     "slaves": [
-                        hna.c.HOST_NICS[2],
-                        hna.c.HOST_NICS[3]
+                        c.DUMMYS[0],
+                        c.DUMMYS[1]
                     ]
                 },
                 "5": {
@@ -1259,23 +1273,23 @@ class TestHostNetworkApiSetupNetworks24(hna.TestHostNetworkApiTestCaseBase):
                 "7": {
                     "nic": "bond242",
                     "slaves": [
-                        "dummy1",
-                        "dummy2"
+                        c.DUMMYS[2],
+                        c.DUMMYS[3]
                     ]
                 },
                 "8": {
                     "nic": "bond243",
                     "slaves": [
-                        "dummy5",
-                        "dummy6",
-                        "dummy7"
+                        c.DUMMYS[6],
+                        c.DUMMYS[7],
+                        c.DUMMYS[8]
                     ]
                 },
                 "9": {
                     "nic": "bond244",
                     "slaves": [
-                        "dummy8",
-                        "dummy9"
+                        c.DUMMYS[9],
+                        c.DUMMYS[10]
                     ]
                 }
 
@@ -1307,7 +1321,7 @@ class TestHostNetworkApiSetupNetworks24(hna.TestHostNetworkApiTestCaseBase):
                     "network": c.SN_NETS[24][1],
                 },
                 "2": {
-                    "nic": "dummy3",
+                    "nic": c.DUMMYS[11],
                     "network": c.SN_NETS[24][2],
                     "ip": c.BASIC_IP_DICT_PREFIX
                 },
@@ -1318,16 +1332,16 @@ class TestHostNetworkApiSetupNetworks24(hna.TestHostNetworkApiTestCaseBase):
                 "4": {
                     "nic": "bond242",
                     "slaves": [
-                        "dummy1",
-                        "dummy2",
-                        "dummy4"
+                        c.DUMMYS[2],
+                        c.DUMMYS[3],
+                        c.DUMMYS[4]
                     ]
                 },
                 "5": {
                     "nic": "bond243",
                     "slaves": [
-                        "dummy5",
-                        "dummy6",
+                        c.DUMMYS[6],
+                        c.DUMMYS[7],
                     ]
                 },
             },

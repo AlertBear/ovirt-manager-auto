@@ -24,13 +24,9 @@ def setup_package():
     c.HOST_NICS = c.VDS_HOSTS_0.nics
     logger.info("Running network cleanup")
     network.network_cleanup()
-    logger.info(
-        "Create and attach networks on %s/%s", c.DC_NAME, c.CLUSTER_NAME[0]
-    )
-    helper.prepare_networks_on_dc()
-    logger.info("Creating 10 dummy interfaces")
+    logger.info("Creating 15 dummy interfaces")
     if not hl_networks.create_dummy_interfaces(
-        host=c.VDS_HOSTS_0, num_dummy=10
+        host=c.VDS_HOSTS_0, num_dummy=15
     ):
         raise c.NET_EXCEPTION("Failed to create dummy interfaces")
 
@@ -41,6 +37,10 @@ def setup_package():
     cmd = ["UserDefinedNetworkCustomProperties=ethtool_opts=.*", "--cver=3.6"]
     if not test_utils.set_engine_properties(network.config.ENGINE, cmd):
         raise c.NET_EXCEPTION("Failed to set ethtool via engine-config")
+    logger.info(
+        "Create and attach networks on %s/%s", c.DC_NAME, c.CLUSTER_NAME[0]
+    )
+    helper.prepare_networks_on_dc()
 
 
 def teardown_package():
