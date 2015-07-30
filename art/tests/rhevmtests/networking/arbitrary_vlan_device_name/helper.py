@@ -145,13 +145,15 @@ def virsh_add_bridge(host_obj, bridge):
     return True
 
 
-def virsh_delete_bridges(host_obj, bridges):
+def virsh_delete_bridges(host_obj, bridges, undefine=False):
     """
     Delete bridge to virsh via xml file
     :param host_obj: resources.VDS object
     :type host_obj: VDS
     :param bridges: Bridge name
     :type bridges: list
+    :param undefine: Flag if undefine bridge is needed
+    :type undefine: bool
     """
     bridges = filter(
         None, [get_bridge_from_virsh(host_obj, b) for b in bridges]
@@ -159,6 +161,8 @@ def virsh_delete_bridges(host_obj, bridges):
     for br in bridges:
         logger.info("Deleting %s from virsh", br.name())
         br.destroy()
+        if undefine:
+            br.undefine()
 
 
 def set_libvirtd_sasl(host_obj, sasl=True):
