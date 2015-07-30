@@ -32,7 +32,6 @@ class BaseTestCase(TestCase):
     """
     Base Test Case for clone snapshot
     """
-    vm = config.VM_NAME % TestCase.storage
     snapshot = "snapshot_%s"
     # TODO: enable cli after bug
     # http://bugzilla.redhat.com/show_bug.cgi?id=1236718 is fixed
@@ -47,6 +46,7 @@ class BaseTestCase(TestCase):
             config.DATA_CENTER_NAME, self.storage)
         self.storage_domain_0 = self.storage_domains[0]
         self.storage_domain_1 = self.storage_domains[1]
+        self.vm = config.VM_NAME % self.storage
 
     def add_disk(self, disk_alias):
         """
