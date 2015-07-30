@@ -609,6 +609,7 @@ class TestCase11956(EnvironmentWithTwoHosts):
     __test__ = True
     polarion_test_case = '11956'
     vm_name_base = "vm_%s" % polarion_test_case
+    bz = {'1248035': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """
