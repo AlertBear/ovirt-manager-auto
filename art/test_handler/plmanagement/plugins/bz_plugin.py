@@ -423,12 +423,12 @@ class Bugzilla(Component):
         pass
 
     def pre_group_result_reported(self, res, tg):
-        self.__udpate_result(res, tg)
+        self.__update_result(res, tg)
 
     def pre_test_result_reported(self, res, tc):
-        self.__udpate_result(res, tc)
+        self.__update_result(res, tc)
 
-    def __udpate_result(self, res, element):
+    def __update_result(self, res, element):
         bug_dict = element.attrs.get(BZ_ID)
         if not bug_dict or not isinstance(bug_dict, dict):
             return
