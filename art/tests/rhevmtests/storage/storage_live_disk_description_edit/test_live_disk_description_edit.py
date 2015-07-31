@@ -17,7 +17,7 @@ from art.unittest_lib import StorageTest as BaseTestCase
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, waitForVMState, startVm, removeVm,
-    remove_all_vm_lsm_snapshots, live_migrate_vm_disk,
+    remove_all_vm_lsm_snapshots, live_migrate_vm_disk, waitForVmsDisks,
 )
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler import exceptions
@@ -75,10 +75,8 @@ def teardown_module():
     """
     Cleanup VM created for test and the Data Center (when not running on GE)
     """
+    waitForVmsDisks(VM1_NAME)
     logger.info('Removing created VM')
-    # Wait for all jobs in case a failure happened in one of the cases and a
-    # task is still in progress
-    wait_for_jobs()
     stop_vms_safely([VM1_NAME])
     waitForVMState(VM1_NAME, config.VM_DOWN)
     assert removeVm(True, VM1_NAME)
