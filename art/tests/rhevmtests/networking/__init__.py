@@ -46,6 +46,7 @@ def network_cleanup():
         remove_unneeded_clusters()
         remove_unneeded_dcs()
         clean_hosts_interfaces()
+        delete_dummy_interfaces_from_hosts()
 
 
 def set_hosts_up():
@@ -239,3 +240,13 @@ def clean_hosts_interfaces():
         host=config.VDS_HOSTS, auto_nics=[0]
     ):
         logger.error("Failed to clean hosts interfaces")
+
+
+def delete_dummy_interfaces_from_hosts():
+    """
+    Delete all dummy interfaces from hosts
+    """
+    for host in config.VDS_HOSTS:
+        logger.info("Deleting dummy interfaces from %s", host.ip)
+        if not hl_networks.delete_dummy_interfaces(host=host):
+            logger.error("Failed to delete dummy interfaces from %s", host.ip)
