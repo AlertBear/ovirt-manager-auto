@@ -236,7 +236,7 @@ class BaseTestCase(StorageTest):
         """
         Clean environment
         """
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_live_migrate_disk']])
         safely_remove_vms([self.vm_name])
 
 
