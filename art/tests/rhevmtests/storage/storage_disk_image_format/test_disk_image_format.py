@@ -29,6 +29,7 @@ VM_ARGS = {
     'os_type': config.ENUMS['rhel6'],
     'user': config.VM_USER,
     'password': config.VM_PASSWORD,
+    'network': config.MGMT_BRIDGE,
 }
 
 
