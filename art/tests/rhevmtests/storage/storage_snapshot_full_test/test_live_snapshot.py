@@ -21,9 +21,7 @@ from art.rhevm_api.tests_lib.low_level import hosts, templates, vms
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainNamesForType)
 
-from art.rhevm_api.utils.test_utils import (
-    get_api, raise_if_exception, wait_for_tasks,
-)
+from art.rhevm_api.utils.test_utils import get_api, raise_if_exception
 from rhevmtests.storage.helpers import remove_all_vm_snapshots
 from utilities.machine import Machine, LINUX
 
@@ -31,7 +29,6 @@ from utilities.machine import Machine, LINUX
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
 VM_API = get_api('vm', 'vms')
-
 
 BASE_SNAP = "base_snap"  # Base snapshot description
 SNAP_1 = 'spm_snapshot1'
@@ -267,7 +264,7 @@ class TestCase11660(BasicEnvironmentSetUp):
             ensure_vm_down=True)
         self.assertTrue(self.previewed,
                         "Failed to preview snapshot %s" % self.snapshot_desc)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_preview_snapshot']])
 
         assert vms.startVm(
             True, vm=vm_name, wait_for_status=config.VM_UP)
@@ -390,7 +387,7 @@ class TestCase11679(BasicEnvironmentSetUp):
             vms.waitForVMState(vm_name)
         logger.info("Creating snapshot")
         self._perform_snapshot_operation(vm_name, live=True)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_create_snapshot']])
 
         vm_devices = self.vm.get_storage_devices()
         if not vm_devices:
@@ -418,7 +415,7 @@ class TestCase11679(BasicEnvironmentSetUp):
         self.assertTrue(self.previewed,
                         "Failed to preview snapshot %s" % self.snapshot_desc)
         logger.info("Wait for all jobs to complete")
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_preview_snapshot']])
 
         assert vms.startVm(
             True, vm=vm_name, wait_for_status=config.VM_UP)
@@ -431,7 +428,7 @@ class TestCase11679(BasicEnvironmentSetUp):
             True, vm=vm_name, ensure_vm_down=True),
             "Failed to commit snapshot %s" % self.snapshot_desc)
         logger.info("Wait for all jobs to complete")
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_restore_vm_snapshot']])
         self.previewed = False
         logger.info("Checking that files no longer exist after commit")
         self.check_file_existence_operation(False)
@@ -680,10 +677,9 @@ class TestCase11684(BaseTestCase):
         assert vms.removeVm(True, 'vm_thin', stopVM='true')
         assert vms.removeVm(True, 'vm_clone', stopVM='true')
         assert templates.removeTemplate(True, template='template_test')
-        wait_for_tasks(
-            vdc=config.PARAMETERS['host'],
-            vdc_password=config.PARAMETERS['vdc_root_password'],
-            datacenter=config.DATA_CENTER_NAME)
+        wait_for_jobs(
+            [ENUMS['job_remove_vm'], ENUMS['job_remove_vm_template']]
+        )
 
     @polarion("RHEVM3-11684")
     def test_snapshot_on_thin_vm(self):

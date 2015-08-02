@@ -31,7 +31,7 @@ from rhevmtests.storage import config
 logger = logging.getLogger(__name__)
 
 DISK_TIMEOUT = 250
-SNAPSHOT_TIMEOUT = 15 * 60
+REMOVE_SNAPSHOT_TIMEOUT = 25 * 60
 DD_TIMEOUT = 60 * 6
 DD_EXEC = '/bin/dd'
 DD_COMMAND = '{0} bs=1M count=%d if=%s of=%s'.format(DD_EXEC)
@@ -46,6 +46,7 @@ FILE_SD_VOLUME_PATH_IN_FS = '/rhev/data-center/%s/%s/images/%s'
 GET_FILE_SD_NUM_DISK_VOLUMES = 'ls %s | wc -l'
 LV_COUNT = 'lvs -o lv_name,lv_tags | grep %s | wc -l'
 PVSCAN_CMD = 'pvscan --cache'
+ENUMS = config.ENUMS
 
 disk_args = {
     # Fixed arguments
@@ -109,10 +110,14 @@ def remove_all_vm_snapshots(vm_name, description):
     logger.info("Removing all '%s'", description)
     stop_vms_safely([vm_name])
     snapshots = get_vm_snapshots(vm_name)
-    results = [removeSnapshot(True, vm_name, description, SNAPSHOT_TIMEOUT)
-               for snapshot in snapshots
-               if snapshot.get_description() == description]
-    wait_for_jobs(timeout=SNAPSHOT_TIMEOUT)
+    results = [
+        removeSnapshot(True, vm_name, description, REMOVE_SNAPSHOT_TIMEOUT)
+        for snapshot in snapshots
+        if snapshot.get_description() == description
+    ]
+    wait_for_jobs(
+        [ENUMS['job_remove_snapshot']], timeout=REMOVE_SNAPSHOT_TIMEOUT
+    )
     assert False not in results
 
 
