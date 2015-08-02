@@ -238,6 +238,17 @@ class DefaultEnvironment(BaseTestCase):
                     if not deleteDisk(True, disk):
                         logger.error("Error trying to remove disk %s", disk)
 
+    def safely_remove_snapshot(self, vm_name, snapshot_description):
+        """
+        Common usage of remove snapshot
+        """
+        if not removeSnapshot(
+                True, vm_name, snapshot_description,
+                timeout=REMOVE_SNAPSHOT_TIMEOUT
+        ):
+            logger.error(
+                "Failed to remove snapshot %s", snapshot_description)
+
 
 class DefaultSnapshotEnvironment(DefaultEnvironment):
     """
@@ -515,13 +526,7 @@ class TestCase4909(DefaultEnvironment):
         stop_vms_safely([self.vm_name])
         super(TestCase4909, self).tearDown()
 
-        if not removeSnapshot(
-                True, self.vm_name, self.snapshot_description,
-                timeout=REMOVE_SNAPSHOT_TIMEOUT
-        ):
-            logger.error(
-                "Failed to remove snapshot %s", self.snapshot_description)
-        wait_for_jobs()
+        self.safely_remove_snapshot(self.vm_name, self.snapshot_description)
 
 
 @attr(tier=1)
@@ -936,7 +941,9 @@ class TestCase4918(DefaultSnapshotEnvironment):
 
     def tearDown(self):
         # Wait in case the snapshot fails and there are jobs running
-        wait_for_jobs()
+        wait_for_jobs(
+            [ENUMS['job_create_snapshot'], ENUMS['job_preview_snapshot']]
+        )
         stop_vms_safely([self.vm_name])
         waitForVMState(self.vm_name, config.VM_DOWN)
         if self.create_snapshot:
@@ -948,15 +955,7 @@ class TestCase4918(DefaultSnapshotEnvironment):
         super(TestCase4918, self).tearDown()
         waitForDisksStat(self.vm_name)
 
-        if not removeSnapshot(
-                True, self.vm_name, self.snapshot_description,
-                timeout=REMOVE_SNAPSHOT_TIMEOUT
-        ):
-            logger.error(
-                "Failed to remove snapshot %s", self.snapshot_description
-            )
-
-        wait_for_jobs()
+        self.safely_remove_snapshot(self.vm_name, self.snapshot_description)
 
 
 @attr(tier=1)
@@ -1037,14 +1036,7 @@ class TestCase4919(DefaultSnapshotEnvironment):
                 logger.error("Error previewing snapshot for %s", self.vm_name)
 
         super(TestCase4919, self).tearDown()
-        if not removeSnapshot(
-                True, self.vm_name, self.snapshot_description,
-                timeout=REMOVE_SNAPSHOT_TIMEOUT
-        ):
-            logger.error(
-                "Failed to remove snapshot %s", self.snapshot_description
-            )
-        wait_for_jobs()
+        self.safely_remove_snapshot(self.vm_name, self.snapshot_description)
 
 
 @attr(tier=1)
@@ -1128,6 +1120,10 @@ class TestCase4920(DefaultSnapshotEnvironment):
                 removeVm(True, self.vm_name)
                 self.ensure_vm_exists()
                 remove_snapshot = False
+                wait_for_vm_snapshots(
+                    self.vm_name, [config.SNAPSHOT_OK],
+                    self.snapshot_description
+                )
 
         super(TestCase4920, self).tearDown()
         if remove_snapshot and not removeSnapshot(
@@ -1137,7 +1133,7 @@ class TestCase4920(DefaultSnapshotEnvironment):
             logger.error(
                 "Failed to remove snapshot %s", self.snapshot_description
             )
-        wait_for_jobs()
+            wait_for_jobs([ENUMS['job_remove_snapshot']])
 
 
 @attr(tier=1)
@@ -1209,15 +1205,10 @@ class TestCase4921(DefaultSnapshotEnvironment):
         stop_vms_safely([self.vm_name])
         waitForVMState(self.vm_name, config.VM_DOWN)
         if not self.snapshot_removed:
-            if not removeSnapshot(
-                    True, self.vm_name, self.snapshot_description,
-                    timeout=REMOVE_SNAPSHOT_TIMEOUT
-            ):
-                logger.error(
-                    "Failed to remove snapshot %s", self.snapshot_description
-                )
+            self.safely_remove_snapshot(
+                self.vm_name, self.snapshot_description
+            )
         super(TestCase4921, self).tearDown()
-        wait_for_jobs()
 
 
 @attr(tier=1)
@@ -1314,15 +1305,7 @@ class TestCase4922(DefaultEnvironment):
         stop_vms_safely([self.vm_name])
         super(TestCase4922, self).tearDown()
 
-        if not removeSnapshot(
-                True, self.vm_name, self.snapshot_description,
-                timeout=REMOVE_SNAPSHOT_TIMEOUT
-        ):
-            logger.error(
-                "Failed to remove snapshot %s", self.snapshot_description
-            )
-
-        wait_for_jobs()
+        self.safely_remove_snapshot(self.vm_name, self.snapshot_description)
 
 
 @attr(tier=1)

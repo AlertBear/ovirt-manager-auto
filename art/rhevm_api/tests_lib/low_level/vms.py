@@ -1666,72 +1666,69 @@ def validateSnapshot(positive, vm, snapshot):
         return False
 
 
+def wait_for_snapshot_gone(
+        positive, snapshot, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT
+):
+    """
+    Wait for snapshot to disappear from the setup. This function will block
+    up to `timeout` seconds, sampling the snapshots list until the specified
+    snapshot is gone
+
+    :param positive: Determines whether the case is positive or negative
+    :type positive: bool
+    :param snapshot: Snapshot description
+    :type snapshot: str
+    :param timeout: How long should wait until the snapshot is removed
+    :type timeout: int
+    :return: True if snapshot removed from setup in the given timeout,
+    False otherwise
+    :rtype: bool
+    """
+    return waitUntilGone(
+        positive, snapshot, VM_API, timeout, SNAPSHOT_SAMPLING_PERIOD
+    )
+
+
 @is_action()
-def removeSnapshot(positive, vm, description,
-                   timeout=VM_REMOVE_SNAPSHOT_TIMEOUT):
-    '''
-    Description: remove vm snapshot
-    Author: jhenner
-    Parameters:
-       * vm          - vm where snapshot should be removed.
-       * description - Snapshot description. Beware that snapshots aren't
-                       uniquely identified by description.
-       * timeout     - How long this would block until machine status switches
-                       back to the one before deletion.
-                       If timeout < 0, return immediately after getting the
-                       action response, don't check the action on snapshot
-                       really did something.
-    Return: If positive:
-                True iff snapshot was removed properly.
-            If negative:
-                True iff snapshot removal failed.
-    '''
+def removeSnapshot(
+        positive, vm, description, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT,
+        wait=True
+):
+    """
+    Remove vm snapshot
 
+    __author__ = 'ratamir'
+    :param positive: Determines whether the case is positive or negative
+    :type positive: bool
+    :param vm: Name of the vm that the snapshot created on
+    :type vm: str
+    :param description: Snapshot description to remove
+    :type description: str
+    :param timeout: How long to wait for the snapshot removeal
+    :type timeout: int
+    :param wait: True in case of async
+    :type wait: bool
+    :return: True if snapshot removed successfully, False otherwise
+    :rtype: bool
+    """
+    # TODO: Old implementation used 'timeout' parameter to determine if should
+    # wait or not - timeout < 0 means don't wait - need refactor all these
+    # places
+    if timeout < 0:
+        wait = False
     snapshot = _getVmSnapshot(vm, description)
-
     if not SNAPSHOT_API.delete(snapshot, positive):
         return False
 
-    if timeout < 0:
-        return True
-    args = (VM_API.find(vm), snapshot.id, 'snapshots', 'snapshot')
-    kwargs = {'prop': 'id'}
-    if positive:
-        # Wait until snapshot disappears.
+    if wait:
+        status = wait_for_snapshot_gone(positive, description, timeout)
+        # Make sure remove volumes async tasks are not running in background
         try:
-            for ret in TimeoutingSampler(
-                    timeout, 5, SNAPSHOT_API.getElemFromElemColl, *args,
-                    **kwargs):
-                if not ret:
-                    logger.info('Snapshot %s disappeared.',
-                                snapshot.description)
-                    return True
-            pass  # Unreachable
-        except EntityNotFound:
-            return True
+            wait_for_jobs([ENUMS['job_remove_snapshot']])
         except APITimeout:
-            logger.error('Timeouted when waiting snapshot %s disappear.',
-                         snapshot.description)
             return False
-    else:
-        # Check whether snapshot didn't disappear.
-        logger.info('Checking whether url %s exists.', snapshot.href)
-        try:
-            for ret in TimeoutingSampler(
-                    timeout, 5, SNAPSHOT_API.getElemFromElemColl, *args,
-                    **kwargs):
-                if not ret:
-                    logger.info('Snapshot %s disappeared.',
-                                snapshot.description)
-                    return False
-            pass  # Unreachable
-        except EntityNotFound:
-            return True
-        except APITimeout:
-            logger.info(
-                'Snapshot still exists (http status %d when checking url %s).'
-            )
-            return True
+        return status
+    return True
 
 
 @is_action()
