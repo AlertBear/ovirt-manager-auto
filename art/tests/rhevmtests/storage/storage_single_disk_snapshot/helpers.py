@@ -7,10 +7,12 @@ from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, get_vm_snapshots, removeSnapshot,
 )
+from rhevmtests.storage.storage_single_disk_snapshot import config
 
 logger = logging.getLogger(__name__)
 
 SNAPSHOT_TIMEOUT = 15 * 60
+ENUMS = config.ENUMS
 
 
 def remove_all_vm_snapshots(vm_name, description):
@@ -30,5 +32,5 @@ def remove_all_vm_snapshots(vm_name, description):
     results = [removeSnapshot(True, vm_name, description, SNAPSHOT_TIMEOUT)
                for snapshot in snapshots
                if snapshot.description == description]
-    wait_for_jobs(timeout=SNAPSHOT_TIMEOUT)
+    wait_for_jobs([ENUMS['job_remove_snapshot']], timeout=SNAPSHOT_TIMEOUT)
     assert False not in results
