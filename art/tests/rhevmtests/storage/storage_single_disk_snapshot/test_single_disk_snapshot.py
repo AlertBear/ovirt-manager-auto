@@ -353,7 +353,6 @@ class TestCase6023(BasicEnvironment):
         assert self.vm.isFileExists(self.file_name)
 
     def tearDown(self):
-        wait_for_jobs()
         stop_vms_safely([self.vm_name])
         waitForVMState(self.vm_name, config.VM_DOWN)
         if self.previewed:
@@ -362,7 +361,7 @@ class TestCase6023(BasicEnvironment):
                 self.vm_name, [config.SNAPSHOT_OK],
                 [self.snapshot_desc],
             )
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_preview_snapshot']])
         super(TestCase6023, self).tearDown()
 
 
@@ -404,7 +403,7 @@ class TestCase6034(BasicEnvironment):
         disks_for_snap = [self.boot_disk, self.disks_names[0]]
         logger.info("Snapshot with disks: %s", disks_for_snap)
         self._perform_snapshot_operation(disks=disks_for_snap, live=True)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_create_snapshot']])
 
         logger.info("Starting vm %s", self.vm_name)
         assert startVm(True, self.vm_name)
@@ -438,7 +437,7 @@ class TestCase6034(BasicEnvironment):
         logger.info("Committing the snapshot %s", self.snapshot_desc)
         assert commit_snapshot(True, self.vm_name)
 
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_restore_vm_snapshot']])
 
         start_vms([self.vm_name], 1, wait_for_ip=False)
         waitForVMState(self.vm_name)
@@ -561,7 +560,7 @@ class TestCase6026(BasicEnvironment):
         """
         logger.info("Creating snapshot")
         self._perform_snapshot_operation()
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_create_snapshot']])
 
         self.delete_operation()
 
@@ -644,7 +643,7 @@ class TestCase6027(BasicEnvironment):
         disks_for_snap = [self.boot_disk]
         logger.info("Creating snapshot")
         self._perform_snapshot_operation(disks_for_snap)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_create_snapshot']])
         start_vms([self.vm_name], 1, wait_for_ip=False)
         waitForVMState(self.vm_name)
         self.vm.runCmd(shlex.split(self.cm_del))
@@ -675,7 +674,9 @@ class TestCase6027(BasicEnvironment):
         if self.previewed:
             assert undo_snapshot_preview(True, self.vm_name)
 
-        wait_for_jobs()
+        wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_OK], self.snapshot_desc
+        )
         super(TestCase6027, self).tearDown()
 
 
@@ -708,7 +709,7 @@ class TestCase6013(BasicEnvironment):
         - Clone VM from the snapshot
         """
         self._perform_snapshot_operation(disks=[self.boot_disk])
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_create_snapshot']])
 
         for dev in self.devices:
             mount_path = self.mount_path % dev
@@ -718,7 +719,7 @@ class TestCase6013(BasicEnvironment):
 
         cloneVmFromSnapshot(True, self.new_vm_name, config.CLUSTER_NAME,
                             self.vm_name, self.snapshot_desc, )
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_add_vm_from_snapshot']])
 
         start_vms([self.vm_name], 1, wait_for_ip=False)
         waitForVMState(self.vm_name)
@@ -778,7 +779,7 @@ class TestCase6030(BasicEnvironment):
                                           disks_lst=disks_to_preview)
         assert self.previewed
 
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_preview_snapshot']])
 
         start_vms([self.vm_name], 1, wait_for_ip=True)
 
@@ -798,7 +799,9 @@ class TestCase6030(BasicEnvironment):
         waitForVMState(self.vm_name, config.VM_DOWN)
         if self.previewed:
             assert undo_snapshot_preview(True, self.vm_name)
-        wait_for_jobs()
+        wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_OK], self.snapshot_desc
+        )
         super(TestCase6030, self).tearDown()
 
 
@@ -836,12 +839,9 @@ class TestCase6014(BasicEnvironment):
         assert restartVdsmd(self.host_ip, config.HOSTS_PW)
         waitForHostsStates(True, self.host)
 
-        wait_for_jobs()
-
     def tearDown(self):
         stop_vms_safely([self.vm_name])
         waitForVMState(self.vm_name, config.VM_DOWN)
-        wait_for_jobs()
         super(TestCase6014, self).tearDown()
 
 
@@ -884,12 +884,9 @@ class TestCase6006(BasicEnvironment):
                         "Failed restarting ovirt-engine")
         waitForHostsStates(True, config.HOSTS[0])
 
-        wait_for_jobs()
-
     def tearDown(self):
         stop_vms_safely([self.vm_name])
         waitForVMState(self.vm_name, config.VM_DOWN)
-        wait_for_jobs()
         super(TestCase6006, self).tearDown()
 
 
@@ -939,14 +936,16 @@ class TestCase6032(BasicEnvironment):
                                 ensure_vm_down=True,
                                 disks_lst=disks_to_preview)
         wait_for_vm_snapshots(
-            self.vm_name, [config.SNAPSHOT_OK, config.SNAPSHOT_IN_PREVIEW],
+            self.vm_name, [config.SNAPSHOT_IN_PREVIEW], self.snapshot_desc
         )
 
         assert commit_snapshot(True, self.vm_name)
         self.commit = True
 
         assert removeNic(True, self.vm_name, self.nic)
-        wait_for_jobs()
+        wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_OK], self.snapshot_desc
+        )
 
     def tearDown(self):
         stop_vms_safely([self.vm_name])
@@ -954,7 +953,9 @@ class TestCase6032(BasicEnvironment):
 
         if not self.commit:
             assert undo_snapshot_preview(True, self.vm_name)
-            wait_for_jobs()
+            wait_for_vm_snapshots(
+                self.vm_name, [config.SNAPSHOT_OK], self.snapshot_desc
+            )
         super(TestCase6032, self).tearDown()
 
 
@@ -1004,7 +1005,7 @@ class TestCase6033(BasicEnvironment):
             addSnapshot(True, self.vm_name, snap_desc,
                         disks_lst=[self.disks_names[0]], wait=True)
 
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_create_snapshot']])
         start_vms([self.vm_name], 1, wait_for_ip=True)
 
         initial_vol_count = get_disks_volume_count(self.disks_names)
@@ -1014,7 +1015,7 @@ class TestCase6033(BasicEnvironment):
         waitForVMState(self.vm_name, config.VM_DOWN)
         removeSnapshot(True, self.vm_name, self.snap_1,
                        helpers.SNAPSHOT_TIMEOUT)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_remove_snapshot']])
 
         start_vms([self.vm_name], 1, wait_for_ip=True)
 
@@ -1060,7 +1061,7 @@ class TestCase6015(BasicEnvironment):
         self._perform_snapshot_operation(self.disks_names[0:2], wait=False)
         blockOutgoingConnection(self.host_ip, config.HOSTS_USER,
                                 config.HOSTS_PW, self.sd_ip)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_create_snapshot']])
         # TODO: cmestreg: doesn't this test needs to check the rollback and
         #                 that the volumes are gone?
 
