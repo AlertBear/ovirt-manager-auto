@@ -1337,7 +1337,7 @@ class TestSanityCase14(TestCase):
             logger.error("Cannot remove networks from setup")
 
 
-@attr(tier=0)
+@attr(tier=0, extra_reqs={'rhel': 7})
 class TestSanityCase15(TestCase):
     """
     Configure queue for existing network

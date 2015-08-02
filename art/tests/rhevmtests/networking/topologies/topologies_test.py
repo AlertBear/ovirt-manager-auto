@@ -142,7 +142,7 @@ class TestTopologiesCase01(TestCase):
 ##############################################################################
 
 
-@attr(tier=1)
+@attr(tier=1, extra_reqs={'network_hosts': True})
 class TestTopologiesCase02(TestCase):
     """
     Check connectivity to VM with VLAN over BOND mode 1 network
@@ -252,7 +252,7 @@ class TestTopologiesCase02(TestCase):
 ##############################################################################
 
 
-@attr(tier=1)
+@attr(tier=1, extra_reqs={'network_hosts': True})
 class TestTopologiesCase03(TestCase):
     """
     Check connectivity to VM with BOND mode 2 network
@@ -351,7 +351,7 @@ class TestTopologiesCase03(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=1, extra_reqs={'network_hosts': True})
 class TestTopologiesCase04(TestCase):
     """
     Check connectivity to VM with BOND mode 4 network
@@ -441,7 +441,7 @@ class TestTopologiesCase04(TestCase):
             logger.error("Cannot remove network from setup")
 
 
-@attr(tier=1)
+@attr(tier=1, extra_reqs={'network_hosts': True})
 class TestTopologiesCase05(TestCase):
     """
     Check connectivity to BOND mode 3 network
@@ -484,7 +484,7 @@ class TestTopologiesCase05(TestCase):
             logger.error("Cannot remove network from setup")
 
 
-@attr(tier=1)
+@attr(tier=1, extra_reqs={'network_hosts': True})
 class TestTopologiesCase06(TestCase):
     """
     Check connectivity to BOND mode 0 network
@@ -526,7 +526,7 @@ class TestTopologiesCase06(TestCase):
             logger.error("Cannot remove network from setup")
 
 
-@attr(tier=1)
+@attr(tier=1, extra_reqs={'network_hosts': True})
 class TestTopologiesCase07(TestCase):
     """
     Check connectivity to BOND mode 5 network
@@ -568,7 +568,7 @@ class TestTopologiesCase07(TestCase):
             logger.error("Cannot remove network from setup")
 
 
-@attr(tier=1)
+@attr(tier=1, extra_reqs={'network_hosts': True})
 class TestTopologiesCase08(TestCase):
     """
     Check connectivity to BOND mode 6 network
