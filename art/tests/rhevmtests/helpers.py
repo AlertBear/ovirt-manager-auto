@@ -2,12 +2,16 @@
 Rhevmtests helper functions
 """
 import logging
+
 import art.rhevm_api.resources
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
+
 from art.rhevm_api.resources import ssh
 import art.rhevm_api.resources.user as users
+
+import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.jobs as ll_jobs
-from rhevmtests.storage import config
+
+from rhevmtests import config
 
 logger = logging.getLogger(__name__)
 
