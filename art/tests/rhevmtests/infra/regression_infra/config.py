@@ -20,6 +20,8 @@ CLUSTER_4_NAME = "RestCluster4"
 
 HOST_NAME = HOSTS[0]
 
+NETWORK = "net1"
+
 STORAGE_DOMAIN_NAME = "DataDomainRest"
 DATA_DOMAIN_ADDRESS = PARAMETERS.as_list('data_domain_address')[0]
 DATA_DOMAIN_PATH = PARAMETERS.as_list('data_domain_path')[0]
