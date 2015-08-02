@@ -162,7 +162,7 @@ class BasicEnvironmentSetUp(TestCase):
                                 self.snapshot_desc)
         if wait:
             vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
-            wait_for_jobs()
+            wait_for_jobs([ENUMS['job_create_snapshot']])
 
     def check_file_existence_operation(self, vm_name, should_exist=True):
 
@@ -245,7 +245,7 @@ class TestCase11660(BasicEnvironmentSetUp):
             vms.waitForVMState(vm_name)
         logger.info("Creating snapshot")
         self._perform_snapshot_operation(vm_name, live=True)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_create_snapshot']])
 
         logger.info("writing file to disk")
         cmd = self.cmd_create
