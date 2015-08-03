@@ -58,6 +58,12 @@ def get_active_jobs(job_descriptions=None):
     :rtype: list
     """
     jobs = JOBS_API.get(absLink=False)
+    # This is a W/A for BZ1248055, due to some GET request to /api/jobs
+    # returning 400, just return a list of objects so wait_for_jobs() will
+    # continue to call this funcion until the time out
+    if jobs is None:
+        LOGGER.warning("GET /api/jobs returned 400")
+        return [True]
 
     jobs = filter(
         lambda job: (
