@@ -9,7 +9,7 @@ from art.rhevm_api.tests_lib.high_level import datacenters, storagedomains
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level.hosts import (
-    getSPMHost, waitForSPM, select_host_as_spm,
+    getSPMHost, waitForSPM, select_host_as_spm, getAnyNonSPMHost,
 )
 from art.test_handler.settings import opts
 
@@ -356,17 +356,18 @@ class TestCase5830(TestCase):
             raise exceptions.HostException("SPM is not set on the current "
                                            "Data center")
 
-        logger.info("Getting current SPM host and HSM hosts")
+        logger.info("Getting current SPM host and HSM host")
         self.original_spm_host = getSPMHost(config.HOSTS)
-        self.hsm_hosts = [host for host in config.HOSTS if host !=
-                          self.original_spm_host]
+        self.hsm_host = getAnyNonSPMHost(
+            config.HOSTS, config.HOST_UP
+        )[1]['hsmHost']
         if not self.original_spm_host:
             raise exceptions.HostException("Current SPM host could not be "
                                            "retrieved")
-        if not self.hsm_hosts:
-            raise exceptions.HostException("Did not find any HSM hosts")
-        logger.info("Found SPM host: '%s', HSM hosts: '%s",
-                    self.original_spm_host, self.hsm_hosts)
+        if not self.hsm_host:
+            raise exceptions.HostException("Did not find HSM host")
+        logger.info("Found SPM host: '%s', HSM host: '%s",
+                    self.original_spm_host, self.hsm_host)
 
     def tearDown(self):
         if self.original_spm_host:
@@ -390,7 +391,7 @@ class TestCase5830(TestCase):
         """
         Assign first HSM host to be the SPM
         """
-        self.new_spm_host = self.hsm_hosts[0]
+        self.new_spm_host = self.hsm_host
         logger.info("Selecting HSM host '%s' as SPM", self.new_spm_host)
         wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
