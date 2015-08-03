@@ -570,7 +570,10 @@ class TestCase6231(BasePlugDiskTest):
                                                    "%s" % vm_name)
 
                 cls.disks.append(disk_alias)
-            if not vms.startVm(positive, vm=vm_name, wait_for_ip=True):
+            if not vms.startVm(
+                    positive, vm=vm_name, wait_for_status=config.VM_UP,
+                    wait_for_ip=True
+            ):
                 raise exceptions.VMException("Unable to start VM %s" % vm_name)
 
     @polarion("RHEVM3-6231")
