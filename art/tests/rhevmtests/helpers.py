@@ -1,19 +1,14 @@
 """
 Rhevmtests helper functions
 """
-import logging
-
 import art.rhevm_api.resources
 
 from art.rhevm_api.resources import ssh
 import art.rhevm_api.resources.user as users
 
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
-import art.rhevm_api.tests_lib.low_level.jobs as ll_jobs
 
-from rhevmtests import config
-
-logger = logging.getLogger(__name__)
+from rhevmtests.storage import config
 
 
 def get_golden_template_name(cluster=config.CLUSTER_NAME):
@@ -101,43 +96,3 @@ def get_host_executor_with_root_user(ip, root_password):
     :rtype: RemoteExecutor
     """
     return get_host_resource_with_root_user(ip, root_password).executor()
-
-
-def get_unfinished_jobs_list():
-    """
-    Returns list of unfinished jobs and prints theirs description to a log
-    if there is some, it also prints message "There are unfinished jobs in DB"
-    which is caught by groovy post build script which set build to UNSTABLE.
-
-    __author__ = "pbalogh"
-    :return: Unfinished jobs
-    :rtype: list
-    """
-    logger.info('Check for unfinished jobs in DB')
-    active_jobs = ll_jobs.get_active_jobs()
-    if active_jobs:
-        logger.error("There are unfinished jobs in DB")
-        for job in active_jobs:
-            logger.warning(
-                'There is unfinished job with description: %s', job.description
-            )
-    else:
-        logger.info("There is no unfinished job")
-    return active_jobs
-
-
-def clean_unfinished_jobs_on_engine(unfinished_jobs):
-    """
-    Check if there is some unfinished (STARTED) jobs on engine, and if there is
-    some, it changes its status to FINISHED
-
-    __author__ = "pbalogh"
-    :param unfinised_jobs: unfinished jobs
-    :type unfinised_jobs: list
-    :return: None
-    """
-    if unfinished_jobs:
-        logger.warning("Set STATUS of unfinished jobs to FINISHED")
-        config.ENGINE.db.psql(
-            "UPDATE job SET status = 'FINISHED' WHERE status = 'STARTED'"
-        )
