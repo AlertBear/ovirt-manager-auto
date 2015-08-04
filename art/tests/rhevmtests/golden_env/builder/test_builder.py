@@ -110,6 +110,48 @@ class StorageConfiguration(object):
         return self.export_shares.pop(0)
 
 
+class GlanceConfiguration(object):
+    def __init__(self, configuration):
+        self._name = configuration.get('name')
+        self._url = configuration.get('url')
+        self._username = configuration.get('username')
+        self._password = configuration.get('password')
+        self._tenant = configuration.get('tenant')
+        self._authentication_url = configuration.get('authentication_url')
+
+    def get_name(self):
+        return self._name
+
+    def get_url(self):
+        return self._url
+
+    def get_username(self):
+        return self._username
+
+    def get_password(self):
+        return self._password
+
+    def get_tenant(self):
+        return self._tenant
+
+    def get_authentication_url(self):
+        return self._authentication_url
+
+
+class EPConfiguration(object):
+    def __init__(self, configuration):
+        self.eps_to_add = configuration.as_list('ep_to_add')
+        self._glance_providers = []
+
+        for ep in self.eps_to_add:
+            if configuration[ep]['type'] == GLANCE:
+                ep_conf = GlanceConfiguration(configuration[ep])
+                self._glance_providers.append(ep_conf)
+
+    def glance_providers(self):
+        return self._glance_providers[:]
+
+
 class CreateDC(TestCase):
     __test__ = True
 
@@ -548,35 +590,29 @@ class CreateDC(TestCase):
 
     def connect_glance(self, external_provider_def):
         LOGGER.info(
-            "Connecting %s to environment", external_provider_def['name']
+            "Connecting %s to environment", external_provider_def.get_name()
         )
         LOGGER.info(
-            "%s %s %s %s %s %s %s",
-            external_provider_def['type'],
-            external_provider_def['name'],
-            external_provider_def['url'],
-            external_provider_def['username'],
-            external_provider_def['password'],
-            external_provider_def['tenant'],
-            external_provider_def['authentication_url']
+            "OpenStackImageProvider %s %s %s %s %s %s",
+            external_provider_def.get_name(),
+            external_provider_def.get_url(),
+            external_provider_def.get_username(),
+            external_provider_def.get_password(),
+            external_provider_def.get_tenant(),
+            external_provider_def.get_authentication_url()
         )
 
         glance = external_providers.OpenStackImageProvider(
-            name=external_provider_def['name'],
-            url=external_provider_def['url'],
+            name=external_provider_def.get_name(),
+            url=external_provider_def.get_url(),
             requires_authentication=True,
-            username=external_provider_def['username'],
-            password=external_provider_def['password'],
-            authentication_url=external_provider_def['authentication_url'],
-            tenant_name=external_provider_def['tenant']
+            username=external_provider_def.get_username(),
+            password=external_provider_def.get_password(),
+            authentication_url=external_provider_def.get_authentication_url(),
+            tenant_name=external_provider_def.get_tenant()
         )
 
         assert glance.add()
-
-    def _add_external_providers(self, external_providers):
-        for external_provider in external_providers:
-            if external_provider['type'] == GLANCE:
-                self.connect_glance(external_provider)
 
     def test_build_env(self):
         hl_mac_pool.update_default_mac_pool()
@@ -584,7 +620,9 @@ class CreateDC(TestCase):
         GOLDEN_ENV = config.ART_CONFIG['prepared_env']
 
         if GOLDEN_ENV['external_providers']:
-            self._add_external_providers(GOLDEN_ENV['external_providers'])
+            eps = EPConfiguration(config.EPS)
+            for glance in eps.glance_providers():
+                self.connect_glance(glance)
 
         dcs = GOLDEN_ENV['dcs']
 
