@@ -108,7 +108,7 @@ class TestCase11627(TestCase):
         * Remove Vm
         """
         logger.info("Waiting for jobs")
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_import_vm']])
         logger.info("Removing vm %s from DC and from the export domain",
                     self.vm_name)
         vms.removeVm(True, self.vm_name)

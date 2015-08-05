@@ -130,5 +130,5 @@ class TestCase11628(TestCase):
         """
         * Removing template
         """
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_import_vm_template']])
         templates.removeTemplate(True, self.templ_name)
