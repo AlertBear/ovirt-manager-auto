@@ -5,42 +5,47 @@
 helper file for Host Network API
 """
 
-import config as c
 import logging
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import rhevmtests.networking as network
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import config as conf
+from art.unittest_lib import attr
+import art.unittest_lib as unit_lib
+import rhevmtests.networking as networking
 import art.core_api.apis_utils as api_utils
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 logger = logging.getLogger("Host_Network_API_Helper")
 
 
-def check_dummy_on_host(positive=True):
+def check_dummy_on_host(host, positive=True):
     """
-    Check if dummy interfaces are exist/not exist on the host
+    Check if dummy interfaces exist/not exist on the host
 
+    :param host: Host name
+    :type host: str
     :param positive: True to check if dummy exist and False to make sure
                      it's not
     :type positive: bool
     :raise: NET_EXCEPTION
     """
-    for_log = "exists" if positive else "not exists"
+    for_log = "exists" if positive else "not exist"
     log = "Dummy interface %s on engine" % for_log
-    logger.info("Refresh host capabilities")
-    host_obj = ll_hosts.HOST_API.find(network.config.HOSTS[0])
+    logger.info("Refresh %s capabilities", host)
+    host_obj = ll_hosts.HOST_API.find(host)
     refresh_href = "{0};force".format(host_obj.get_href())
     ll_hosts.HOST_API.get(href=refresh_href)
 
-    logger.info("Check if dummy_0 %s on host via engine", for_log)
+    logger.info("Check if dummy_0 %s on %s via engine", for_log, host)
     sample = api_utils.TimeoutingSampler(
-        timeout=network.config.SAMPLER_TIMEOUT, sleep=1,
-        func=c.network_lib.check_dummy_on_host_interfaces,
-        host_name=c.HOST_0, dummy_name="dummy_0"
+        timeout=networking.config.SAMPLER_TIMEOUT, sleep=1,
+        func=conf.network_lib.check_dummy_on_host_interfaces,
+        host_name=host, dummy_name="dummy_0"
     )
     if not sample.waitForFuncStatus(result=positive):
         if positive:
-            raise c.NET_EXCEPTION(log)
+            raise conf.NET_EXCEPTION(log)
         else:
             logger.error(log)
 
@@ -63,43 +68,157 @@ def attach_network_attachment(
     """
     nic_log = nic if nic else network_dict.get("nic")
     logger.info(
-        "Attaching %s to %s on %s", network, nic_log, c.HOST_0
+        "Attaching %s to %s on %s", network, nic_log, conf.HOST_1
     )
     network_to_attach = network_dict.pop("network")
     res = hl_host_network.add_network_to_host(
-        host_name=c.HOST_0, network=network_to_attach, nic_name=nic,
+        host_name=conf.HOST_1, network=network_to_attach, nic_name=nic,
         **network_dict
     )
     if res != positive:
-        raise c.NET_EXCEPTION(
-            "Failed to attach %s to %s on %s" % (network, nic_log, c.HOST_0)
+        raise conf.NET_EXCEPTION(
+            "Failed to attach %s to %s on %s" % (network, nic_log, conf.HOST_1)
         )
 
 
-def prepare_networks_on_dc():
+def prepare_networks_on_dc(
+    networks_dict, dc=conf.DC_NAME, cluster=conf.CLUSTER_1
+):
     """
     Create and attach all networks that are needed for all cases
 
+    :param networks_dict: Networks dict
+    :type networks_dict: dict
+    :param dc: Datacenter name
+    :type dc: str
+    :param cluster: Cluster name
+    :type cluster: str
     :raise: NetworkException
     """
-    nets_dict = dict(dict(c.SN_DICT, **c.NIC_DICT), **c.HOST_DICT)
-    logger.info(
-        "Create and attach networks on %s/%s", c.DC_NAME, c.CLUSTER
-    )
+    logger.info("Add networks to %s/%s", dc, cluster)
     if not hl_networks.createAndAttachNetworkSN(
-        data_center=c.DC_NAME, cluster=c.CLUSTER, network_dict=nets_dict
+        data_center=dc, cluster=cluster, network_dict=networks_dict
     ):
-        raise c.NET_EXCEPTION(
-            "Failed to add networks to %s/%s" % (c.DC_NAME, c.CLUSTER)
+        raise conf.NET_EXCEPTION(
+            "Failed to add networks to %s/%s" % (dc, cluster)
         )
 
 
-def generate_vlan_id():
+def networks_sync_status(networks):
     """
-    Generate unique VLAN id for cases
+    Get networks sync status
 
-    :return: VLAN id
-    :rtype: str
+    :param networks: List of networks
+    :type networks: list
+    :return: True if sync else False
+    :type: bool
     """
-    c.VLAN_ID += 1
-    return str(c.VLAN_ID)
+    for net in networks:
+        logger.info("Get %s attachment", net)
+        try:
+            attachment = ll_host_network.get_networks_attachments(
+                conf.HOST_4, [net]
+            )[0]
+        except IndexError:
+            raise conf.NET_EXCEPTION("%s not found" % net)
+
+        logger.info("Check if %s is unsync", net)
+        if not ll_host_network.get_attachment_sync_status(attachment):
+            logger.info("%s is not sync" % net)
+            return False
+    return True
+
+
+def networks_unsync_reasons(net_sync_reason):
+    """
+    Check the reason for unsync networks is correct
+
+    :param net_sync_reason: List of tuples of (network_name, unsync_reason)
+    :type net_sync_reason: dict
+    :return: True if unsync reason is correct
+    :rtype: bool
+    """
+    for net, val in net_sync_reason.iteritems():
+        reas = val.keys()[0]
+        dict_to_compare = net_sync_reason[net][reas]
+        logger.info("Check if %s unsync reason is %s", net, reas)
+        unsync_reason = hl_host_network.get_networks_unsync_reason(
+            conf.HOST_4, [net]
+        )
+        if not unsync_reason[net][reas] == dict_to_compare:
+            logger.error(
+                "Expected reasons are %s, got %s instead",
+                dict_to_compare, unsync_reason[net][reas]
+            )
+            return False
+    return True
+
+
+def get_networks_sync_status_and_unsync_reason(net_sync_reason):
+    """
+    Check if networks attachment is unsync and check the unsync reason
+
+    :param net_sync_reason: List of tuple of (network_name, unsync_reason)
+    :type net_sync_reason: dict
+    :raise: conf.NET_EXCEPTION
+    """
+    networks = [i for i in net_sync_reason]
+    if networks_sync_status(networks):
+        raise conf.NET_EXCEPTION("%s are synced but shouldn't" % networks)
+    if not networks_unsync_reasons(net_sync_reason):
+        raise conf.NET_EXCEPTION("%s unsync reason is incorrect" % networks)
+
+
+def sync_networks(networks):
+    """
+    Sync the networks
+
+    :param networks: List of networks to sync
+    :type networks: list
+    :raise: conf.NET_EXCEPTION
+    """
+    network_sync_dict = {
+        "sync": {
+            "networks": networks
+        }
+    }
+    logger.info("syncing %s", networks)
+    if not hl_host_network.setup_networks(
+        host_name=conf.HOST_4, **network_sync_dict
+    ):
+        raise conf.NET_EXCEPTION("Failed to sync %s" % networks)
+
+    if not networks_sync_status(networks):
+        raise conf.NET_EXCEPTION
+
+
+@attr(tier=1)
+class TestHostNetworkApiTestCaseBase(unit_lib.NetworkTest):
+    """
+    base class which provides teardown class method for each test case
+    """
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove all networks from the host NICs.
+        """
+        logger.info("Removing all networks from %s", conf.HOST_1)
+        if not hl_host_network.clean_host_interfaces(conf.HOST_1):
+            logger.error(
+                "Failed to remove all networks from %s", conf.HOST_1
+            )
+
+
+def remove_networks_from_setup():
+    """
+    Remove all networks from setup
+    """
+    logger.info("Remove networks from setup")
+    if not hl_networks.remove_net_from_setup(
+        host=conf.VDS_HOSTS_1, auto_nics=[0], data_center=conf.DC_NAME,
+        all_net=True, mgmt_network=conf.MGMT_BRIDGE
+    ):
+        logger.error(
+            "Failed to remove %s from %s and %s",
+            conf.NIC_DICT, conf.DC_NAME, conf.HOST_1
+        )
