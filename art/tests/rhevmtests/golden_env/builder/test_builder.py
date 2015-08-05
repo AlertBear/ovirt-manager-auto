@@ -161,7 +161,7 @@ class CreateDC(TestCase):
 
     def build_cluster(self, cl_def, dc_name, comp_version, host_conf):
         cluster_name = cl_def['name']
-        cpu_name = cl_def['cpu_name']
+        cpu_name = config.CPU_NAME
 
         if not clusters.addCluster(
                 True, name=cluster_name, cpu=cpu_name, data_center=dc_name,
