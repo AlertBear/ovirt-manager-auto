@@ -4,6 +4,7 @@ Test Direct Lun Sanity
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/Storage/
 3_1_Storage_Direct_Lun_General
 """
+import config
 import logging
 from art.rhevm_api.tests_lib.low_level.hosts import getHostIP
 from art.core_api.apis_exceptions import EntityNotFound
@@ -11,26 +12,21 @@ from art.unittest_lib.common import StorageTest as TestCase
 from art.unittest_lib import attr
 from utilities.machine import Machine, LINUX
 
-import config
 from art.rhevm_api.tests_lib.low_level.disks import (
     addDisk, attachDisk, detachDisk, deleteDisk, get_other_storage_domain,
 )
-
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainNamesForType,
 )
-
 from art.rhevm_api.tests_lib.low_level.templates import (
     createTemplate, removeTemplate,
 )
-
 from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, waitForVMState, getVmDisks, startVm, suspendVm,
     runVmOnce, addSnapshot, updateVm, removeSnapshot,
     get_snapshot_disks, moveVm, removeVm, getVmHost,
     get_vms_disks_storage_domain_name, wait_for_vm_snapshots,
 )
-
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 import common
 
@@ -49,6 +45,7 @@ BASE_KWARGS = {
     "type_": config.STORAGE_TYPE,
 }
 ISCSI = config.STORAGE_TYPE_ISCSI
+ENUMS = config.ENUMS
 
 
 def setup_module():
@@ -98,13 +95,12 @@ class DirectLunAttachTestCase(TestCase):
         """
         logger.info("Adding new disk (direct lun) %s", self.disk_alias)
         assert addDisk(True, **self.lun_kwargs)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_add_disk']])
 
         logger.info("Attaching disk %s to vm %s", self.disk_alias,
                     self.vm_name)
         status = attachDisk(True, self.disk_alias, self.vm_name,
                             active=True)
-        wait_for_jobs()
         self.assertTrue(status, "Failed to attach direct lun to vm")
         assert self.disk_alias in (
             [d.get_alias() for d in getVmDisks(self.vm_name)]
@@ -112,7 +108,6 @@ class DirectLunAttachTestCase(TestCase):
 
     def detach_and_delete_disk_from_vm(self, disk_alias):
         logger.info("Wait in case an disks are not ready")
-        wait_for_jobs()
 
         stop_vms_safely([self.vm_name])
         waitForVMState(self.vm_name, config.VM_DOWN)
@@ -124,11 +119,10 @@ class DirectLunAttachTestCase(TestCase):
         except EntityNotFound:
             logger.error("Disk %s was not found attached to %s", disk_alias,
                          self.vm_name)
-        wait_for_jobs()
 
         logger.info("Deleting disk %s", disk_alias)
         assert deleteDisk(True, disk_alias)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_remove_disk']])
 
     def tearDown(self):
         """
@@ -172,7 +166,6 @@ class TestCase5920(DirectLunAttachTestCase):
         attach direct lun and suspend vm
         """
         self.attach_disk_to_vm()
-        wait_for_jobs()
         startVm(True, self.vm_name, config.VM_UP)
         assert suspendVm(True, self.vm_name)
 
@@ -203,7 +196,6 @@ class TestCase5930(DirectLunAttachTestCase):
         Adds and attach two different direct luns to the same vm
         """
         self.attach_disk_to_vm()
-        wait_for_jobs()
 
         disk_alias = self.disk_alias
         self.disk_alias = self.disk_to_add
@@ -214,8 +206,6 @@ class TestCase5930(DirectLunAttachTestCase):
         self.lun_kwargs['lun_id'] = config.EXTEND_LUN[1]
 
         self.attach_disk_to_vm()
-        wait_for_jobs()
-
         self.disk_alias = disk_alias
 
     def tearDown(self):
@@ -223,7 +213,6 @@ class TestCase5930(DirectLunAttachTestCase):
         Remove disks
         """
         super(TestCase5930, self).tearDown()
-
         self.detach_and_delete_disk_from_vm(self.disk_to_add)
 
 
@@ -256,7 +245,7 @@ class TestCase5931(DirectLunAttachTestCase):
             waitForVMState(self.vm_name, config.VM_DOWN)
             logger.info("Removing template %s", self.template_name)
             assert removeTemplate(True, self.template_name)
-            wait_for_jobs()
+            wait_for_jobs([ENUMS['job_remove_vm_template']])
         super(TestCase5931, self).tearDown()
 
 
@@ -295,7 +284,6 @@ class TestCase5932(DirectLunAttachTestCase):
         if not self.snap_added:
             logger.info("Removing snapshot %s", self.snap_desc)
             assert removeSnapshot(True, self.vm_name, self.snap_desc)
-            wait_for_jobs()
 
         super(TestCase5932, self).tearDown()
 
@@ -316,7 +304,6 @@ class TestCase5933(DirectLunAttachTestCase):
         Create snapshot with direct lun
         """
         self.attach_disk_to_vm()
-        wait_for_jobs()
 
         logger.info("Create new snapshot %s", self.snap_desc)
         self.snap_added = addSnapshot(True, self.vm_name, self.snap_desc)
@@ -338,7 +325,6 @@ class TestCase5933(DirectLunAttachTestCase):
             waitForVMState(self.vm_name, config.VM_DOWN)
             logger.info("Removing snapshot %s", self.snap_desc)
             assert removeSnapshot(True, self.vm_name, self.snap_desc)
-            wait_for_jobs()
         super(TestCase5933, self).tearDown()
 
 
@@ -367,10 +353,9 @@ class TestCase5934(DirectLunAttachTestCase):
         assert host_machine.kill_qemu_process(self.vm_name)
 
         assert waitForVMState(self.vm_name)
-        wait_for_jobs()
 
     def tearDown(self):
-        wait_for_jobs()
+        waitForVMState(self.vm_name)
         assert updateVm(True, self.vm_name, highly_available='false')
         super(TestCase5934, self).tearDown()
 
@@ -392,7 +377,7 @@ class TestCase5937(DirectLunAttachTestCase):
         self.lun_kwargs['interface'] = config.INTERFACE_IDE
 
         assert addDisk(True, **self.lun_kwargs)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_add_disk']])
 
     @polarion("RHEVM3-5937")
     def test_direct_lun_interface_virtio(self):
@@ -402,7 +387,7 @@ class TestCase5937(DirectLunAttachTestCase):
         self.lun_kwargs['interface'] = config.INTERFACE_VIRTIO
 
         assert addDisk(True, **self.lun_kwargs)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_add_disk']])
 
     @polarion("RHEVM3-5937")
     def test_direct_lun_interface_virtio_scsi(self):
@@ -412,12 +397,12 @@ class TestCase5937(DirectLunAttachTestCase):
         self.lun_kwargs['interface'] = config.INTERFACE_VIRTIO_SCSI
 
         assert addDisk(True, **self.lun_kwargs)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_add_disk']])
 
     def tearDown(self):
         logger.info("Deleting disk %s", self.disk_alias)
         assert deleteDisk(True, self.disk_alias)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_remove_disk']])
 
 
 @attr(tier=1)
@@ -438,13 +423,13 @@ class TestCase5938(DirectLunAttachTestCase):
     def test_bootable_disk(self):
 
         assert addDisk(True, **self.lun_kwargs)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_add_disk']])
 
     def tearDown(self):
         self.lun_kwargs["bootable"] = False
         logger.info("Deleting disk %s", self.disk_alias)
         assert deleteDisk(True, self.disk_alias)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_remove_disk']])
 
 
 @attr(tier=1)
@@ -465,13 +450,13 @@ class TestCase5939(DirectLunAttachTestCase):
     def test_shared_direct_lun(self):
 
         assert addDisk(True, **self.lun_kwargs)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_add_disk']])
 
     def tearDown(self):
         self.lun_kwargs["shareable"] = False
         logger.info("Deleting disk %s", self.disk_alias)
         assert deleteDisk(True, self.disk_alias)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_remove_disk']])
 
 
 @attr(tier=1)
@@ -502,10 +487,10 @@ class TestCase5940(DirectLunAttachTestCase):
 
     def tearDown(self):
         """Move the vm back to the original storage domain"""
-        wait_for_jobs()
+        waitForVMState(self.vm_name)
         if self.target_sd and self.vm_moved:
             moveVm(True, self.vm_name, self.original_sd)
-        wait_for_jobs()
+        waitForVMState(self.vm_name)
         super(TestCase5940, self).tearDown()
 
 
@@ -528,10 +513,9 @@ class TestCase5924(DirectLunAttachTestCase):
 
         logger.info("Detaching direct lun %s", self.disk_alias)
         assert detachDisk(True, self.disk_alias, self.vm_name)
-        wait_for_jobs()
         logger.info("Removing direct lun %s", self.disk_alias)
         assert deleteDisk(True, self.disk_alias)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_remove_disk']])
 
     def tearDown(self):
         pass
@@ -564,7 +548,7 @@ class TestCase5911(DirectLunAttachTestCase):
             assert common.create_vm(
                 self.vm_name, config.VIRTIO_BLK,
                 storage_domain=self.vm_storage_domain)
-            wait_for_jobs()
+            wait_for_jobs([ENUMS['job_add_vm']])
         else:
             super(TestCase5911, self).tearDown()
 
@@ -587,10 +571,10 @@ class TestCase5913(DirectLunAttachTestCase):
     def test_wipe_after_delete_with_direct_lun(self):
 
         assert addDisk(True, **self.lun_kwargs)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_add_disk']])
 
     def tearDown(self):
         self.lun_kwargs["wipe_after_delete"] = False
         logger.info("Deleting disk %s", self.disk_alias)
         assert deleteDisk(True, self.disk_alias)
-        wait_for_jobs()
+        wait_for_jobs([ENUMS['job_remove_disk']])
