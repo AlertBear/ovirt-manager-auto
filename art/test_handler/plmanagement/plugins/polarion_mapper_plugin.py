@@ -3,7 +3,7 @@
 Polarion mapper plugin
 ----------------------
 
-Plugin generates properties file which is used by jenkins redhat-ci-plugin
+Plugin adds polarion-id to report which is used by jenkins redhat-ci-plugin
 to report results to Polarion site.
 
 CLI Options
@@ -13,7 +13,6 @@ CLI Options
 Configuration Options:
     | **[POLARION]**
     | **enabled** - to enable plugin (true/false)
-    | **properties_file** - path to file where properties are generated to.
 
 """
 
@@ -25,9 +24,6 @@ from art.test_handler.plmanagement.interfaces.config_validator import (
     IConfigValidation
 )
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
-from art.test_handler.plmanagement.interfaces.tests_listener import (
-    ITestCaseHandler,
-)
 from art.test_handler.plmanagement.interfaces.report_formatter import (
     IResultExtension,
 )
@@ -37,7 +33,6 @@ from art.test_handler import tools
 logger = get_logger('polarion')
 SECTION = "POLARION_MAPPER"
 ENABLED = "enabled"
-PROPERTIES_FILE = "properties_file"
 POLARION_ID = "polarion_id"
 
 
@@ -58,7 +53,6 @@ class Polarion(Component):
     """
     implements(
         IConfigurable,
-        ITestCaseHandler,
         IConfigValidation,
         IPackaging,
         IResultExtension,
@@ -83,28 +77,9 @@ class Polarion(Component):
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
             return
-        self.properties_file = conf[SECTION][PROPERTIES_FILE]
-
-        # touch PROPERTIES_FILE
-        with open(self.properties_file, "w"):
-            pass
-
-    def pre_test_case(self, t):
-        polarion_id = t.attrs.get(POLARION_ID)
-        if not polarion_id:
-            return
-
-        with open(self.properties_file, 'a') as fh:
-            fh.write("%s=%s\n" % (t.test_name, polarion_id))
-
-    def post_test_case(self, t):
-        pass
-
-    def test_case_skipped(self, g):
-        pass
 
     def pre_test_result_reported(self, res, tc):
-        polarion_id = tc.attrs.get('polarion_id')
+        polarion_id = tc.attrs.get(POLARION_ID)
 
         if polarion_id:
             res['polarion-id'] = polarion_id
@@ -123,7 +98,6 @@ class Polarion(Component):
     def config_spec(self, spec, val_funcs):
         section = spec.setdefault(SECTION, {})
         section[ENABLED] = "boolean(default=False)"
-        section[PROPERTIES_FILE] = "string(default='polarion.properties')"
 
     @classmethod
     def fill_setup_params(cls, params):
@@ -132,9 +106,7 @@ class Polarion(Component):
         params['author'] = 'Lukas Bednar'
         params['author_email'] = 'lbednar@redhat.com'
         params['description'] = 'Polarion mapper plugin'
-        params['long_description'] = (
-            'Generates property file which maps test-case name to polarion ID'
-        )
+        params['long_description'] = 'Adds polarion-id into report'
         params['py_modules'] = [
             'art.test_handler.plmanagement.plugins.polarion_mapper_plugin',
         ]
