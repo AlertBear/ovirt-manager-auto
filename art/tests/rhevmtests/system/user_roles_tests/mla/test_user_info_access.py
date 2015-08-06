@@ -413,7 +413,7 @@ class ViewviewChildrenInfoTests(TestCase):
             LOGGER.info("%s can see children", role_can)
 
 
-@attr(tier=1)
+@attr(tier=1, extra_reqs={'clusters_count': 2})
 class VmCreatorClusterAdminInfoTests(TestCase):
     """ Test for VMcreator and cluster admin role """
     __test__ = True
