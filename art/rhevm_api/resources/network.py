@@ -175,14 +175,12 @@ class Network(Service):
         :rtype: list of strings
         """
         out = self._cmd(
-            [
-                'ls', '-la', '/sys/class/net', '|',
-                'grep', "'pci'", '|',
-                'grep', '-o', "'[^/]*$'"
-            ]
+            "ls -la /sys/class/net | grep 'dummy_\|pci' | grep -o '["
+            "^/]*$'".split()
         )
-        out = out.strip()
-        return out.splitlines()
+        out = out.strip().splitlines()
+        out.sort(key=lambda x: 'dummy_' in x)
+        return out
 
     @keep_session
     def find_default_gw(self):
