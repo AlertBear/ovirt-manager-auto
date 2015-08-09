@@ -123,8 +123,8 @@ def restartServices(hostObj):
         if service == 'nfslock':
             res, osType = hostObj.getHostOsType()
             if res and osType:
-                if re.search('7[.]1', osType) is not None:
-                    logger.info("Host os is 7.1; service name is nfs-lock")
+                if re.search('7[.][1-9]', osType) is not None:
+                    logger.info("Host os is 7.x; service name is nfs-lock")
                     service = 'nfs-lock'
             else:
                 logger.info("Unknown osType ; skip restarting %s", service)
