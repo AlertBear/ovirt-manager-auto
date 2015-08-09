@@ -48,6 +48,7 @@ from rhevmtests.networking.network_qos.helper import(
     add_qos_profile_to_nic, build_dict, compare_qos
 )
 from rhevmtests.networking.sanity.helper import check_dummy_on_host_interfaces
+import rhevmtests.networking.helper as net_help
 
 
 HOST_API = get_api("host", "hosts")
@@ -983,8 +984,13 @@ class TestSanityCase11(TestCase):
             logger.error("Cannot remove networks from setup")
 
         logger.info("Start VM %s", config.VM_NAME[0])
-        if not startVm(positive=True, vm=config.VM_NAME[0], wait_for_ip=True):
-            logger.error("Failed to start %s", config.VM_NAME[0])
+        if not net_help.run_vm_once_specific_host(
+            vm=config.VM_NAME[0], host=config.HOSTS[0], wait_for_ip=True
+        ):
+            logger.error(
+                "Cannot start VM %s on host %s",
+                config.VM_NAME[0], config.HOSTS[0]
+            )
 
 ########################################################################
 

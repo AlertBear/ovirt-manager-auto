@@ -3,7 +3,6 @@ multiple_queue_nics
 """
 
 import logging
-from art.rhevm_api.tests_lib.high_level.vms import start_vm_on_specific_host
 from art.rhevm_api.tests_lib.low_level.hosts import(
     get_host_ip_from_engine, get_host_name_from_engine
 )
@@ -15,6 +14,7 @@ from art.rhevm_api.tests_lib.low_level.vms import(
     stopVm, suspendVm, createVm, removeVm, waitForIP, migrateVm, startVm,
     get_vm_host
 )
+import rhevmtests.networking.helper as net_help
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from art.test_handler.exceptions import NetworkException
 from art.unittest_lib import attr
@@ -442,7 +442,7 @@ class TestMultipleQueueNics05(TestMultipleQueueNicsTearDown):
                 "Failed to set custom properties on %s" % config.MGMT_BRIDGE
             )
         logger.info("Start %s", config.VM_NAME[0])
-        if not start_vm_on_specific_host(
+        if not net_help.run_vm_once_specific_host(
                 vm=config.VM_NAME[0], host=HOST_NAME0, wait_for_ip=True):
             raise NetworkException("Failed to start %s" % config.VM_NAME[0])
 

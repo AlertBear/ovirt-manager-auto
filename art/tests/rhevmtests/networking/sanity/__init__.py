@@ -4,12 +4,12 @@ Sanity Test
 
 import logging
 from rhevmtests.networking import config, network_cleanup
-import art.rhevm_api.tests_lib.high_level.vms as hl_vm
 import art.rhevm_api.tests_lib.high_level.datacenters as hl_datacenters
 import art.rhevm_api.utils.test_utils as test_utils
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.test_handler.exceptions as exceptions
+import rhevmtests.networking.helper as net_help
 
 logger = logging.getLogger("Sanity_Init")
 VDSMD_SERVICE = "vdsmd"
@@ -68,7 +68,8 @@ def setup_package():
             "Running on golden env, starting VM %s on host %s",
             config.VM_NAME[0], config.HOSTS[0]
         )
-        if not hl_vm.start_vm_on_specific_host(
+
+        if not net_help.run_vm_once_specific_host(
             vm=config.VM_NAME[0], host=config.HOSTS[0], wait_for_ip=True
         ):
             raise exceptions.NetworkException(

@@ -10,7 +10,6 @@ from rhevmtests.networking import config
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
-from art.rhevm_api.tests_lib.high_level.vms import start_vm_on_specific_host
 from art.rhevm_api.tests_lib.low_level.vms import (
     updateNic, startVm, stopVm
 )
@@ -21,7 +20,7 @@ from art.rhevm_api.tests_lib.high_level.networks import (
 from rhevmtests.networking.topologies.helper import(
     check_vm_connect_and_log, update_vnic_driver, create_and_attach_bond
 )
-
+import rhevmtests.networking.helper as net_help
 logger = logging.getLogger("Topologies_Cases")
 
 ########################################################################
@@ -72,7 +71,7 @@ class TestTopologiesCase01(TestCase):
                 config.VM_NAME[0]
             )
 
-        if not start_vm_on_specific_host(
+        if not net_help.run_vm_once_specific_host(
             vm=config.VM_NAME[0], host=config.HOSTS[0]
         ):
             raise NetworkException(
@@ -179,7 +178,7 @@ class TestTopologiesCase02(TestCase):
                 "Fail to update vNIC to VLAN over BOND mode 1 network on VM"
             )
 
-        if not start_vm_on_specific_host(
+        if not net_help.run_vm_once_specific_host(
             vm=config.VM_NAME[0], host=config.HOSTS[0]
         ):
             raise NetworkException(
@@ -280,7 +279,7 @@ class TestTopologiesCase03(TestCase):
                 "Fail to update vNIC to BOND mode 2 network on VM"
             )
 
-        if not start_vm_on_specific_host(
+        if not net_help.run_vm_once_specific_host(
             vm=config.VM_NAME[0], host=config.HOSTS[0]
         ):
             raise NetworkException(

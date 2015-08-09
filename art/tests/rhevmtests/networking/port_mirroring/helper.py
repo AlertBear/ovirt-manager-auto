@@ -8,11 +8,11 @@ import logging
 from art.rhevm_api.tests_lib.high_level.networks import TrafficMonitor
 from art.rhevm_api.utils.test_utils import sendICMP, setPersistentNetwork
 from art.test_handler.exceptions import NetworkException
-from art.rhevm_api.tests_lib.high_level import vms as hl_vm
 from rhevmtests.networking import config
 from art.rhevm_api.tests_lib.low_level.vms import (
     updateNic, migrateVm, getVmHost, waitForIP, stopVm
 )
+import rhevmtests.networking.helper as net_help
 logger = logging.getLogger("Port_Mirroring_Helper")
 
 
@@ -124,7 +124,7 @@ def ge_seal_vm(vm):
     :return: None
     """
     logger.info("Sealing VM: %s", vm)
-    if not hl_vm.start_vm_on_specific_host(vm=vm, host=config.HOSTS[0]):
+    if not net_help.run_vm_once_specific_host(vm=vm, host=config.HOSTS[0]):
         raise NetworkException("Failed to start %s." % config.VM_NAME[0])
 
     logger.info("Waiting for IP from %s", vm)
@@ -142,7 +142,7 @@ def ge_seal_vm(vm):
         raise NetworkException("Failed to stop %s" % vm)
 
     logger.info("Starting %s", vm)
-    if not hl_vm.start_vm_on_specific_host(vm=vm, host=config.HOSTS[0]):
+    if not net_help.run_vm_once_specific_host(vm=vm, host=config.HOSTS[0]):
         raise NetworkException("Failed to start %s." % config.VM_NAME[0])
 
     logger.info("Waiting for IP from %s", vm)

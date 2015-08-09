@@ -10,7 +10,7 @@ from rhevmtests.networking import config, network_cleanup
 from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+import rhevmtests.networking.helper as net_help
 from art.test_handler.exceptions import NetworkException
 
 logger = logging.getLogger("Jumbo_frame_Init")
@@ -35,7 +35,7 @@ def setup_package():
                 "Starting up VM %s on host %s", config.VM_NAME[i],
                 config.HOSTS[i]
             )
-            if not hl_vms.start_vm_on_specific_host(
+            if not net_help.run_vm_once_specific_host(
                 vm=config.VM_NAME[i], host=config.HOSTS[i]
             ):
                 raise NetworkException(

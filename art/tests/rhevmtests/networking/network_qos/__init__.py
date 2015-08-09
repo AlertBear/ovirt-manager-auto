@@ -12,7 +12,7 @@ from rhevmtests.networking import config, network_cleanup
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.high_level.networks import prepareSetup
 from art.rhevm_api.tests_lib.low_level import vms
-from art.rhevm_api.tests_lib.high_level import vms as hl_vm
+import rhevmtests.networking.helper as net_help
 
 logger = logging.getLogger("Network_VNIC_QoS_Init")
 
@@ -29,7 +29,7 @@ def setup_package():
             "Running on golden env, starting 1 VM %s on host %s",
             config.VM_NAME[0], config.HOSTS[0]
         )
-        if not hl_vm.start_vm_on_specific_host(
+        if not net_help.run_vm_once_specific_host(
             vm=config.VM_NAME[0], host=config.HOSTS[0]
         ):
             raise NetworkException(
