@@ -316,6 +316,9 @@ class TestCase11504(BasicEnvironment):
     """
     __test__ = True
     polarion_test_case = '11504'
+    bz = {
+        '1251956': {'engine': None, 'version': ['3.6']},
+    }
 
     def setUp(self):
         self.setup_with_disks()

@@ -110,6 +110,9 @@ LOCAL_LUN_ADDRESS = []
 LOCAL_LUN_TARGET = []
 ISCSI = config.STORAGE_TYPE_ISCSI
 
+# Live Migration is broken, skip
+bz = {'1251956': {'engine': None, 'version': ['3.6']}}
+
 # TOOD: Once the patch for test_failure is merged and tested change the
 # tearDown of the test to only log during the execution and raise the
 # exceptions at the end.
@@ -313,7 +316,6 @@ class TestCase6004(AllPermutationsDisks):
     """
     __test__ = True
     polarion_test_case = '6004'
-    bz = {'1230270': {'engine': ['cli'], 'version': ["3.5", "3.6"]}}
 
     @polarion("RHEVM3-6004")
     def test_vms_live_migration(self):
@@ -427,7 +429,6 @@ class TestCase5993(StorageTest):
     test_templates = ['template_single', 'template_both']
     base_vm = config.VM_NAME % BaseTestCase.storage
     vm_names = ['vm_from_both', 'vm_from_single']
-    bz = {'1110798': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
     def _prepare_templates(self):
         """
@@ -1713,7 +1714,9 @@ class TestCase6000(BaseTestCase):
     """
     # TODO: tier3 jobs have not been verified
     __test__ = False
-    bz = {'1106593': {'engine': None, 'version': ["3.5"]}}
+    bz = {
+        '1106593': {'engine': None, 'version': ["3.5"]},
+    }
     polarion_test_case = '6000'
 
     def _migrate_vm_disk_and_block_connection(self, disk, source, username,
@@ -1774,7 +1777,9 @@ class TestCase6002(BaseTestCase):
     """
     __test__ = True
     polarion_test_case = '6002'
-    bz = {'1210771': {'engine': None, 'version': ["3.5", "3.6"]}}
+    bz = {
+        '1210771': {'engine': None, 'version': ["3.5", "3.6"]},
+    }
 
     @polarion("RHEVM3-6002")
     def test_restart_spm_during_lsm(self):
@@ -1800,7 +1805,9 @@ class TestCase5999(BaseTestCase):
     """
     __test__ = True
     polarion_test_case = '5999'
-    bz = {'1210771': {'engine': None, 'version': ["3.5", "3.6"]}}
+    bz = {
+        '1210771': {'engine': None, 'version': ["3.5", "3.6"]},
+    }
 
     @polarion("RHEVM3-5999")
     def test_reboot_spm_during_lsm(self):
@@ -1876,7 +1883,9 @@ class TestCase5998(BaseTestCase):
     Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    bz = {'1210771': {'engine': None, 'version': ["3.5", "3.6"]}}
+    bz = {
+        '1210771': {'engine': None, 'version': ["3.5", "3.6"]},
+    }
     polarion_test_case = '5998'
 
     def _perform_action(self, host):
@@ -2330,6 +2339,9 @@ class TestCase5983(BaseTestCase):
     vm_count = 5
     vm_names = None
     vm_args = vmArgs.copy()
+    bz = {
+        '1251956': {'engine': None, 'version': ['3.6']}
+    }
 
     def setUp(self):
         super(TestCase5983, self).setUp()
@@ -2398,7 +2410,9 @@ class TestCase5984(BaseTestCase):
     """
     # TODO: tier3 jobs have not been verified
     __test__ = False
-    bz = {'1106593': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
+    bz = {
+        '1106593': {'engine': ['rest', 'sdk'], 'version': ["3.5"]},
+    }
     polarion_test_case = '5984'
 
     def _migrate_vm_disk_and_block_connection(self, disk, source, username,

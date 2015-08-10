@@ -236,6 +236,10 @@ class TestCasesVms(BaseTestDiskImageVms):
     Collection of tests which utilize BaseTestDiskImageVms
     """
 
+    bz = {
+        '1251956': {'engine': None, 'version': ['3.6']},
+    }
+
     @polarion("RHEVM3-11604")
     def test_format_and_snapshots(self):
         """

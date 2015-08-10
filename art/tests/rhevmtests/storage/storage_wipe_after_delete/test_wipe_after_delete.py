@@ -276,6 +276,10 @@ class TestCase11864(CommonUsage):
     disk_name = "disk_%s" % polarion_test_case
     regex = 'dd oflag=direct if=/dev/zero of=.*/%s'
 
+    bz = {
+        '1251956': {'engine': None, 'version': ['3.6']},
+    }
+
     def setUp(self):
         """
         Prepares disk with wipe_after_delete=True for VM
