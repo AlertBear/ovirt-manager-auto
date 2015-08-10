@@ -67,7 +67,8 @@ ACTION_EXCEPTIONS_PYTHON_JAVA_METHODS = {
     'VM': {'export': 'exportVm'},
     'Template': {'export': 'exportTemplate'},
     'StorageDomainVM': {'import': 'importVm'},
-    'StorageDomainTemplate': {'import': 'importTemplate'}
+    'StorageDomainTemplate': {'import': 'importTemplate'},
+    'StorageDomainImage': {'import': 'importImage'}
 }
 
 
