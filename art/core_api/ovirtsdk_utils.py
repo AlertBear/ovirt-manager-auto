@@ -455,6 +455,14 @@ class SdkUtil(APIUtil):
         Return: status (True if Action test succeeded, False otherwise)
         '''
 
+        # special case when doing import to an image in rest we send import as
+        # action while in sdk we need to use action import_image
+        if (
+                entity.__class__.__name__ == 'StorageDomainImage'
+                and action == 'import'
+        ):
+            action = 'import_image'
+
         entity = self._translate_params(entity)
 
         act = self._translate_params(self.makeAction(async, 10, **params))
