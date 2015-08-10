@@ -534,7 +534,6 @@ class TestHostNetworkApiSetupNetworks12(hna.TestHostNetworkApiTestCaseBase):
     5. Attach network with IP to BOND
     """
     __test__ = True
-    bz = {"1249394": {"engine": ["rest"], "version": ["3.6"]}}
 
     @polarion("RHEVM3-9621")
     def test_01create_bond(self):
@@ -705,7 +704,6 @@ class TestHostNetworkApiSetupNetworks14(hna.TestHostNetworkApiTestCaseBase):
     Create BOND with 5 slaves
     """
     __test__ = True
-    bz = {"1249394": {"engine": ["rest"], "version": ["3.6"]}}
 
     def test_create_bond_with_5_slaves(self):
         """
@@ -808,7 +806,6 @@ class TestHostNetworkApiSetupNetworks16(hna.TestHostNetworkApiTestCaseBase):
     """
     __test__ = True
     unmamanged_net = "unman_sn_16"
-    bz = {"1249394": {"engine": ["rest"], "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -954,7 +951,6 @@ class TestHostNetworkApiSetupNetworks18(hna.TestHostNetworkApiTestCaseBase):
     Attach network with custom properties to BOND
     """
     __test__ = True
-    bz = {"1249394": {"engine": ["rest"], "version": ["3.6"]}}
 
     def test_network_custom_properties_on_bond_host(self):
         """
@@ -1080,7 +1076,6 @@ class TestHostNetworkApiSetupNetworks21(hna.TestHostNetworkApiTestCaseBase):
     Create BOND with network
     """
     __test__ = True
-    bz = {"1249394": {"engine": ["rest"], "version": ["3.6"]}}
 
     def test_attach_networks_to_bond(self):
         """

@@ -398,7 +398,6 @@ class TestHostNetworkApiHostNic12(hna.TestHostNetworkApiTestCaseBase):
     2.Delete 2 networks from the BOND
     """
     __test__ = True
-    bz = {"1249394": {"engine": ["rest"], "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):

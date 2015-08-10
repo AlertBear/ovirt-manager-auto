@@ -605,7 +605,6 @@ class TestHostNetworkApiHost16(hna.TestHostNetworkApiTestCaseBase):
     """
     __test__ = True
     unmamanged_net = "unman_host16"
-    bz = {"1249394": {"engine": ["rest"], "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
