@@ -193,8 +193,11 @@ class AutoCpuNameResolution(Component):
             logger.debug(ex)
             logger.warning("Failed to resolve cpu name. "
                            "Falling back to vendor default...")
-            selected_cpu = self.get_vendor_fallback(self.vds_list[0],
-                                                    self.vds_passwd_list[0])
+        if selected_cpu is None:
+            selected_cpu = self.get_vendor_fallback(
+                self.vds_list[0],
+                self.vds_passwd_list[0],
+            )
         par = conf.get(PARAMETERS, {})
         par[CPU_NAME] = selected_cpu['name']
         conf[PARAMETERS] = par
