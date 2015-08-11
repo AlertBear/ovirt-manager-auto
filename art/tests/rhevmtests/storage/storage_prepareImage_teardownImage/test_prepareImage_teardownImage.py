@@ -68,7 +68,7 @@ vm2_args = {'positive': True,
 CMD_ERROR_INCORRECT_NUM_PARAMS_PART_1 = \
     "Error using command: Wrong number of parameters"
 CMD_ERROR_INCORRECT_NUM_PARAMS_PART_2 = \
-    "<spUUID> <sdUUID> <imgUUID> [<volUUID>]"
+    "<spUUID> <sdUUID> <imgUUID> <volUUID>"
 CMD_ERROR_INCORRECT_NUM_PARAMS_PART_3 = \
     "Prepare an image, making the needed volumes available."
 
@@ -166,6 +166,7 @@ class BasicEnvironment(BaseTestCase):
         self.sd_ids = []
         self.img_ids = []
         self.vol_ids = []
+        self.timeout_image_operation = None
 
     def register_required_storage_uuids(self, wipe_after_delete=False):
         # Add the 4 required parameters for prepareImage and teardownImage
@@ -257,7 +258,9 @@ class BasicEnvironment(BaseTestCase):
                 volume_id = self.vol_ids[i]
             status, prepare_output = \
                 self.host_machine.execute_prepareImage_command(
-                    self.sp_id, self.sd_ids[i], self.img_ids[i], volume_id)
+                    self.sp_id, self.sd_ids[i], self.img_ids[i], volume_id,
+                    timeout=self.timeout_image_operation
+                )
             # Ensure that a status of True is returned for the prepareImage
             # execution
             logger.info("The returned status from running prepareImage is: "
@@ -282,7 +285,8 @@ class BasicEnvironment(BaseTestCase):
             status, teardown_image_output = \
                 self.host_machine.execute_teardownImage_command(
                     self.sp_id, self.sd_ids[i], self.img_ids[i],
-                    self.vol_ids[i])
+                    self.vol_ids[i], timeout=self.timeout_image_operation
+                )
             # Ensure that a status of True is returned for the teardownImage
             # execution
             self.assertTrue(status, "Status returned for teardownImage "
@@ -374,18 +378,23 @@ class BasicEnvironment(BaseTestCase):
         self.host_machine = host_to_use()
         for i in xrange(self.disk_count):
             params = [self.sp_id, self.sd_ids[i], self.img_ids[i],
-                      self.vol[i], ""]
+                      self.vol_ids[i], ""]
             for index in indices:
                 params[index] = CMD_INCORRECT_PARAMETER
             if function == "prepareImage":
-                status, output = \
-                    self.host_machine.execute_prepareImage_command(
-                        params[0], params[1], params[2], params[3], params[4])
+                function_obj = self.host_machine.execute_prepareImage_command
             else:
-                status, output = \
-                    self.host_machine.execute_teardownImage_command(
-                        params[0], params[1], params[2], params[3], params[4])
+                function_obj = self.host_machine.execute_teardownImage_command
 
+            # preapreImage/teardownImage only accepts four parameters, simulate
+            # passing an extra one concatenating the extra parameter to the
+            # last parameter (volume uuid)
+            status, output = function_obj(
+                params[0], params[1], params[2],
+                "{vol_uuid} {extra_param}".format(
+                    vol_uuid=params[3], extra_param=params[4]
+                )
+            )
             # Ensure that status is False, expected when any parameters are
             # missing or incorrect
             self.assertFalse(status, "The status is not False as expected when"
@@ -488,7 +497,8 @@ class TestCase4596(BasicEnvironment):
     polarion_test_case = '4596'
     disk_count = 2
     snapshot_success = False
-    bz = {'1115556': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
+    # Bugzilla history: 1115556
+    bz = {'1254001': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         super(TestCase4596, self).setUp()
@@ -535,7 +545,7 @@ class TestCase4597(BasicEnvironment):
     storages = set([ISCSI])
     polarion_test_case = '4597'
     disk_count = 1
-    bz = {'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
+    bz = {'1130995': {'engine': None, 'version': ["3.6"]}}
 
     @polarion("RHEVM3-4597")
     def test_prepare_image_with_1_invalid_parameter(self):
@@ -581,7 +591,7 @@ class TestCase4598(BasicEnvironment):
     storages = set([ISCSI])
     polarion_test_case = '4598'
     disk_count = 2
-    bz = {'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
+    bz = {'1130995': {'engine': None, 'version': ["3.6"]}}
 
     @polarion("RHEVM3-4598")
     def test_prepare_image_with_several_invalid_parameters(self):
@@ -798,6 +808,9 @@ class TestCase4602(BasicEnvironment):
 
         logger.info("Register the %s standard disks", self.disk_count)
         super(TestCase4602, self).setUp()
+        # For wipe after delete disks the prepareImage/teardownImage operation
+        # takes longer to finish
+        self.timeout_image_operation = 2 * 60
 
         logger.info("Create and attach a 5 GB disk with wipe after delete "
                     "marked to existing VM")
@@ -1024,7 +1037,7 @@ class TestCase4585(BasicEnvironment):
     storages = set([ISCSI])
     polarion_test_case = '4585'
     disk_count = 1
-    bz = {'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
+    bz = {'1130995': {'engine': None, 'version': ["3.6"]}}
 
     @polarion("RHEVM3-4585")
     def test_teardown_image_with_1_invalid_parameter(self):
@@ -1069,7 +1082,7 @@ class TestCase4586(BasicEnvironment):
     storages = set([ISCSI])
     polarion_test_case = '4586'
     disk_count = 2
-    bz = {'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
+    bz = {'1130995': {'engine': None, 'version': ["3.6"]}}
 
     @polarion("RHEVM3-4586")
     def test_prepare_image_with_several_invalid_parameters(self):
