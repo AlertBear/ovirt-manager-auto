@@ -27,7 +27,7 @@ import logging
 
 from art.unittest_lib import NetworkTest as TestCase
 from art.test_handler.exceptions import NetworkException
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 
 from art.rhevm_api.tests_lib.high_level.networks import(
     createAndAttachNetworkSN, remove_net_from_setup
@@ -1662,6 +1662,7 @@ class NetLabels13(TestLabelTestCaseBase):
     2) The same will happen when the network is removed from the DC
     """
     __test__ = True
+    bz = ({"1252125": {"engine": None, "version": "3.6"}})
 
     @classmethod
     def setup_class(cls):
@@ -1919,7 +1920,6 @@ class NetLabels14(TestLabelTestCaseBase):
                 config.VERSION[0]
             )
 
-    @bz({"1184454": {"engine": ["rest", "sdk", "java"], "version": ["3.5"]}})
     @polarion("RHEVM3-4126")
     def test_move_host_supported_dc_cl(self):
         """
@@ -2000,7 +2000,6 @@ class NetLabels14(TestLabelTestCaseBase):
         logger.info("Activate Host")
         assert (activateHost(True, host=config.HOSTS[0]))
 
-    @bz({"1184454": {"engine": ["rest", "sdk", "java"], "version": ["3.5"]}})
     @polarion("RHEVM3-4115")
     def test_move_host_unsupported_dc_cl(self):
         """
@@ -2132,7 +2131,6 @@ class NetLabels15(TestLabelTestCaseBase):
                     (config.NETWORKS[index], cluster)
                 )
 
-    @bz({"1184454": {"engine": ["rest", "sdk", "java"], "version": ["3.5"]}})
     @polarion("RHEVM3-4124")
     def test_move_host_supported_cl(self):
         """
@@ -2338,7 +2336,6 @@ class NetLabels16(TestLabelTestCaseBase):
                 (config.NETWORKS[0], HOST0_NICS[1])
             )
 
-    @bz({"1184454": {"engine": ["rest", "sdk", "java"], "version": ["3.5"]}})
     @polarion("RHEVM3-4108")
     def test_move_host_cluster_same_label(self):
         """
@@ -2765,7 +2762,6 @@ class NetLabels19(TestLabelTestCaseBase):
                 (config.NETWORKS[0], HOST0_NICS[1])
             )
 
-    @bz({"1184454": {"engine": ["rest", "sdk", "java"], "version": ["3.5"]}})
     @polarion("RHEVM3-4125")
     def test_move_host(self):
         """
