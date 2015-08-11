@@ -422,6 +422,13 @@ class Network(Service):
             net_info["ip"] = ip
             if ip is not None:
                 interface = self.find_int_by_ip(ip)
+                # strip @NONE for PPC
+                try:
+                    interface = interface.strip(
+                        re.findall(r'@.*', interface)[0]
+                    )
+                except IndexError:
+                    pass
                 bridge = self.get_bridge(interface)
                 if bridge is not None:
                     net_info["bridge"] = bridge['name']
