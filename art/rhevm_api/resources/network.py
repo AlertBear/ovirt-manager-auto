@@ -455,5 +455,6 @@ class Network(Service):
         self.logger.info("Creating %s on %s", dst, self.host.fqdn)
         with self.host.executor().session() as resource_session:
             with resource_session.open_file(dst, 'w') as resource_file:
+                resource_file.write("DEVICE=%s\n" % nic)
                 for k, v in params.iteritems():
-                    resource_file.write("%s=%s" % (k, v))
+                    resource_file.write("%s=%s\n" % (k, v))
