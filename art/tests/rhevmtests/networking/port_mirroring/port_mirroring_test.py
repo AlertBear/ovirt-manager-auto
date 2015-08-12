@@ -5,42 +5,34 @@
 Test Port mirroring.
 using 2 hosts and 5 VMs
 """
+
+import logging
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
-import logging
-from art.test_handler.exceptions import NetworkException
+import art.test_handler.exceptions as exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from rhevmtests.networking import config
-from art.rhevm_api.tests_lib.high_level.networks import checkICMPConnectivity
-from art.rhevm_api.tests_lib.low_level.vms import (
-    migrateVm, getVmNicPortMirroring,
-)
-from helper import (
-    send_and_capture_traffic, set_port_mirroring, return_vms_to_original_host
-)
-from art.rhevm_api.tests_lib.low_level.hosts import (
-    waitForHostsStates, ifdownNic, ifupNic
-)
+import rhevmtests.networking.config as conf
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import helper as helper
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+
 logger = logging.getLogger("Port_Mirroring_Cases")
 
-MGMT_IPS = config.MGMT_IPS
-NET1_IPS = config.NET1_IPS
-NET2_IPS = config.NET2_IPS
-VM_NAME = config.VM_NAME
-
-# #######################################################################
-
-########################################################################
-#                             Test Cases                               #
-########################################################################
+MGMT_IPS = conf.MGMT_IPS
+NET1_IPS = conf.NET1_IPS
+NET2_IPS = conf.NET2_IPS
+VM_NAME = conf.VM_NAME
 
 
-@attr(tier=1)
+@attr(tier=1, extra_reqs={'network_hosts': True})
 class TestPortMirroringCase01(TestCase):
     """
     Check that mirroring still works after migration
     """
     __test__ = True
+    bz = {"1229632": {"engine": None, "version": ["3.6"]}}
 
     @polarion("RHEVM3-4020")
     def test_a1_migrate_mirroring_vm(self):
@@ -48,25 +40,23 @@ class TestPortMirroringCase01(TestCase):
         Check that mirroring still works after migrating listening VM to
         another host and back
         """
-        for dstVM in (2, 3):
-            send_and_capture_traffic(
-                srcVM=MGMT_IPS[1], srcIP=NET1_IPS[1], dstIP=NET1_IPS[dstVM]
+        for dst_vm in (2, 3):
+            helper.send_and_capture_traffic(
+                src_vm=MGMT_IPS[1], src_ip=NET1_IPS[1], dst_ip=NET1_IPS[dst_vm]
             )
-
         logger.info(
-            "Migrating %s to %s and back to %s", VM_NAME[0], config.HOSTS[1],
-            config.HOSTS[0]
+            "Migrating %s to %s and back to %s", VM_NAME[0], conf.HOSTS[1],
+            conf.HOSTS[0]
         )
-        for host in (config.HOSTS[1], config.HOSTS[0]):
-            if not migrateVm(True, VM_NAME[0], host):
-                raise NetworkException(
+        for host in (conf.HOSTS[1], conf.HOSTS[0]):
+            if not ll_vms.migrateVm(True, VM_NAME[0], host):
+                raise exceptions.NetworkException(
                     "Failed to migrate %s to %s" %
-                    (config.VM_NAME[0], host)
+                    (conf.VM_NAME[0], host)
                 )
-
-        for dstVM in (2, 3):
-            send_and_capture_traffic(
-                srcVM=MGMT_IPS[1], srcIP=NET1_IPS[1], dstIP=NET1_IPS[dstVM]
+        for dst_vm in (2, 3):
+            helper.send_and_capture_traffic(
+                src_vm=MGMT_IPS[1], src_ip=NET1_IPS[1], dst_ip=NET1_IPS[dst_vm]
             )
 
     @polarion("RHEVM3-4017")
@@ -75,35 +65,28 @@ class TestPortMirroringCase01(TestCase):
         Check that mirroring still works after migrating all VMs involved to
         another host
         """
-        for dstVM in (2, 3):
-            send_and_capture_traffic(
-                srcVM=MGMT_IPS[1], srcIP=NET1_IPS[1], dstIP=NET1_IPS[dstVM]
+        for dst_vm in (2, 3):
+            helper.send_and_capture_traffic(
+                src_vm=MGMT_IPS[1], src_ip=NET1_IPS[1], dst_ip=NET1_IPS[dst_vm]
             )
 
         logger.info(
             "Migrating all VMs to %s and check if PM still works ",
-            config.HOSTS[1]
+            conf.HOSTS[1]
         )
-
-        for vmName in VM_NAME[:4]:
-            logger.info("Migrating %s to %s", vmName, config.HOSTS[1])
-            if not migrateVm(True, vmName, config.HOSTS[1]):
-                raise NetworkException(
-                    "Failed to migrate %s to %s" % (vmName, config.HOSTS[1])
-                )
-
-        for dstVM in (2, 3):
-            send_and_capture_traffic(
-                srcVM=MGMT_IPS[1], srcIP=NET1_IPS[1], dstIP=NET1_IPS[dstVM]
+        logger.info("Migrating %s to %s", VM_NAME[:4], conf.HOSTS[1])
+        if not hl_vms.migrate_vms(
+            vms_list=VM_NAME[:4], src_host=conf.HOSTS[0],
+            vm_os_type="rhel", vm_user=conf.VMS_LINUX_USER,
+            vm_password=conf.VMS_LINUX_PW, dst_host=conf.HOSTS[1]
+        ):
+            raise exceptions.NetworkException(
+                "Failed to migrate %s to %s" % (VM_NAME[:4], conf.HOSTS[1])
             )
-
-        logger.info("Migrating VMs back to %s", config.HOSTS[0])
-        for vmName in VM_NAME[:4]:
-            logger.info("Migrating %s back to %s", vmName, config.HOSTS[0])
-            if not migrateVm(True, vmName, config.HOSTS[0]):
-                raise NetworkException(
-                    "Failed to migrate %s to %s" % (vmName, config.HOSTS[0])
-                )
+        for dst_vm in (2, 3):
+            helper.send_and_capture_traffic(
+                src_vm=MGMT_IPS[1], src_ip=NET1_IPS[1], dst_ip=NET1_IPS[dst_vm]
+            )
 
     @classmethod
     def teardown_class(cls):
@@ -111,11 +94,11 @@ class TestPortMirroringCase01(TestCase):
         Make sure that all the VM's are back on the original host in case
         not all the migrations succeed
         """
-        logger.info("Return (migrate) all vms to %s", config.HOSTS[0])
-        return_vms_to_original_host()
+        logger.info("Return (migrate) all vms to %s", conf.HOSTS[0])
+        helper.return_vms_to_original_host()
 
 
-@attr(tier=1)
+@attr(tier=1, extra_reqs={'network_hosts': True})
 class TestPortMirroringCase02(TestCase):
     """
     Replace network on the mirrored VM to a non-mirrored network
@@ -129,39 +112,29 @@ class TestPortMirroringCase02(TestCase):
         Replace the network on a mirrored VM with a non-mirrored network and
         check that its traffic is not mirrored anymore.
         """
-        send_and_capture_traffic(
-            srcVM=MGMT_IPS[3], srcIP=NET1_IPS[3], dstIP=NET1_IPS[2]
+        helper.send_and_capture_traffic(
+            src_vm=MGMT_IPS[3], src_ip=NET1_IPS[3], dst_ip=NET1_IPS[2]
         )
-
         for vm_name in VM_NAME[2:4]:
-            set_port_mirroring(
-                vm_name, config.NIC_NAME[1], config.VLAN_NETWORKS[1],
-                disableMirroring=True
+            helper.set_port_mirroring(
+                vm_name, conf.NIC_NAME[1], conf.VLAN_NETWORKS[1],
+                disable_mirroring=True
             )
-
-        send_and_capture_traffic(
-            srcVM=MGMT_IPS[3], srcIP=NET1_IPS[3], dstIP=NET1_IPS[2],
-            expectTraffic=False
+        helper.send_and_capture_traffic(
+            src_vm=MGMT_IPS[3], src_ip=NET1_IPS[3], dst_ip=NET1_IPS[2],
+            expect_traffic=False
         )
 
     @classmethod
     def teardown_class(cls):
         for vm_name in VM_NAME[2:4]:
-            set_port_mirroring(
-                vm_name, config.NIC_NAME[1], config.VLAN_NETWORKS[0],
-                disableMirroring=True
+            helper.set_port_mirroring(
+                vm_name, conf.NIC_NAME[1], conf.VLAN_NETWORKS[0],
+                disable_mirroring=True, teardown=True
             )
 
-########################################################################
 
-########################################################################
-
-
-########################################################################
-
-########################################################################
-
-@attr(tier=1)
+@attr(tier=1, extra_reqs={'network_hosts': True})
 class TestPortMirroringCase03(TestCase):
     """
     Check mirroring when listening on multiple networks on the same machine
@@ -173,19 +146,16 @@ class TestPortMirroringCase03(TestCase):
         """
         Check that VM1 gets all traffic on both MGMT network and sw1
         """
-        send_and_capture_traffic(
-            srcVM=MGMT_IPS[1], srcIP=NET1_IPS[1], dstIP=NET1_IPS[2]
+        helper.send_and_capture_traffic(
+            src_vm=MGMT_IPS[1], src_ip=NET1_IPS[1], dst_ip=NET1_IPS[2]
         )
-        send_and_capture_traffic(
-            srcVM=MGMT_IPS[3], srcIP=MGMT_IPS[3], dstIP=MGMT_IPS[4],
-            nic=config.VM_NICS[0]
+        helper.send_and_capture_traffic(
+            src_vm=MGMT_IPS[3], src_ip=MGMT_IPS[3], dst_ip=MGMT_IPS[4],
+            nic=conf.VM_NICS[0]
         )
 
 
-########################################################################
-
-########################################################################
-@attr(tier=1)
+@attr(tier=1, extra_reqs={'network_hosts': True})
 class TestPortMirroringCase04(TestCase):
     """
     Check port mirroring when it's enabled on multiple machines.
@@ -197,8 +167,8 @@ class TestPortMirroringCase04(TestCase):
         """
         Enable port mirroring on nic2 (connected to sw1) on VM2.
         """
-        set_port_mirroring(
-            config.VM_NAME[1], config.NIC_NAME[1], config.VLAN_NETWORKS[0]
+        helper.set_port_mirroring(
+            conf.VM_NAME[1], conf.NIC_NAME[1], conf.VLAN_NETWORKS[0]
         )
 
     @polarion("RHEVM3-4015")
@@ -211,28 +181,25 @@ class TestPortMirroringCase04(TestCase):
             "Sending traffic between VM2 and VM3 on MGMT network to make sure "
             "only VM1 gets this traffic."
         )
-        send_and_capture_traffic(
-            srcVM=MGMT_IPS[1], srcIP=MGMT_IPS[1], dstIP=MGMT_IPS[2],
-            nic=config.VM_NICS[0]
+        helper.send_and_capture_traffic(
+            src_vm=MGMT_IPS[1], src_ip=MGMT_IPS[1], dst_ip=MGMT_IPS[2],
+            nic=conf.VM_NICS[0]
         )
-
-        send_and_capture_traffic(
-            srcVM=MGMT_IPS[1], srcIP=MGMT_IPS[1], dstIP=MGMT_IPS[2],
-            listenVM=VM_NAME[1], expectTraffic=False
+        helper.send_and_capture_traffic(
+            src_vm=MGMT_IPS[1], src_ip=MGMT_IPS[1], dst_ip=MGMT_IPS[2],
+            expect_traffic=False, listen_vm=VM_NAME[1]
         )
-
         logger.info(
             "Sending traffic between VM1 and VM4 on sw1 to make sure only VM2 "
             "gets this traffic."
         )
-        send_and_capture_traffic(
-            srcVM=MGMT_IPS[0], srcIP=NET1_IPS[0], dstIP=NET1_IPS[3],
-            listenVM=VM_NAME[1]
+        helper.send_and_capture_traffic(
+            src_vm=MGMT_IPS[0], src_ip=NET1_IPS[0], dst_ip=NET1_IPS[3],
+            listen_vm=VM_NAME[1]
         )
-
-        send_and_capture_traffic(
-            srcVM=MGMT_IPS[0], srcIP=NET1_IPS[0], dstIP=NET1_IPS[3],
-            nic=config.VM_NICS[0], expectTraffic=False
+        helper.send_and_capture_traffic(
+            src_vm=MGMT_IPS[0], src_ip=NET1_IPS[0], dst_ip=NET1_IPS[3],
+            expect_traffic=False, nic=conf.VM_NICS[0]
         )
 
     @polarion("RHEVM3-4006")
@@ -245,25 +212,23 @@ class TestPortMirroringCase04(TestCase):
             "Sending traffic between VM3 and VM4 on sw1 to make sure both "
             "VM1 and VM2 get the traffic."
         )
-        for vm in config.VM_NAME[:2]:
-            send_and_capture_traffic(
-                srcVM=MGMT_IPS[2], srcIP=NET1_IPS[2], dstIP=NET1_IPS[3],
-                listenVM=vm
+        for vm in conf.VM_NAME[:2]:
+            helper.send_and_capture_traffic(
+                src_vm=MGMT_IPS[2], src_ip=NET1_IPS[2], dst_ip=NET1_IPS[3],
+                listen_vm=vm
             )
-
         logger.info(
             "Disabling mirroring on VM2 and checking that VM1 still gets the "
             "traffic while VM2 doesn't"
         )
-        set_port_mirroring(
-            config.VM_NAME[1], config.NIC_NAME[1], config.VLAN_NETWORKS[0],
-            disableMirroring=True
+        helper.set_port_mirroring(
+            conf.VM_NAME[1], conf.NIC_NAME[1], conf.VLAN_NETWORKS[0],
+            disable_mirroring=True
         )
-
-        for vm, expTraffic in zip(config.VM_NAME[:2], (True, False)):
-            send_and_capture_traffic(
-                srcVM=MGMT_IPS[2], srcIP=NET1_IPS[2], dstIP=NET1_IPS[3],
-                listenVM=vm, expectTraffic=expTraffic
+        for vm, expTraffic in zip(conf.VM_NAME[:2], (True, False)):
+            helper.send_and_capture_traffic(
+                src_vm=MGMT_IPS[2], src_ip=NET1_IPS[2], dst_ip=NET1_IPS[3],
+                listen_vm=vm, expect_traffic=expTraffic
             )
 
     @classmethod
@@ -271,19 +236,16 @@ class TestPortMirroringCase04(TestCase):
         """
         Make sure port mirroring on nic2 (connected to sw1) on VM2 is disabled
         """
-        if getVmNicPortMirroring(
-                True, config.VM_NAME[1], config.NIC_NAME[1]
+        if ll_vms.getVmNicPortMirroring(
+                True, conf.VM_NAME[1], conf.NIC_NAME[1]
         ):
-            set_port_mirroring(
-                config.VM_NAME[1], config.NIC_NAME[1],
-                config.VLAN_NETWORKS[0], disableMirroring=True
+            helper.set_port_mirroring(
+                conf.VM_NAME[1], conf.NIC_NAME[1],
+                conf.VLAN_NETWORKS[0], disable_mirroring=True, teardown=True
             )
 
 
-########################################################################
-
-########################################################################
-@attr(tier=1)
+@attr(tier=1, extra_reqs={'network_hosts': True})
 class TestPortMirroringCase05(TestCase):
     """
     Restart VDSM on host while mirroring is on
@@ -295,30 +257,30 @@ class TestPortMirroringCase05(TestCase):
         """
         Check that mirroring still occurs after restarting VDSM on the host
         """
-        send_and_capture_traffic(
-            srcVM=MGMT_IPS[1], srcIP=NET1_IPS[1], dstIP=NET1_IPS[2]
+        helper.send_and_capture_traffic(
+            src_vm=MGMT_IPS[1], src_ip=NET1_IPS[1], dst_ip=NET1_IPS[2]
         )
         logger.info(
             "Restarting VDSM to check if mirroring still works afterwards"
         )
         if not (
-            config.VDS_HOSTS[0].service("supervdsmd").stop() and
-            config.VDS_HOSTS[0].service("vdsmd").restart()
+            conf.VDS_HOSTS[0].service("supervdsmd").stop() and
+            conf.VDS_HOSTS[0].service("vdsmd").restart()
         ):
-            raise NetworkException(
-                "Failed to restart vdsmd service on %s" % config.HOSTS[0]
+            raise exceptions.NetworkException(
+                "Failed to restart vdsmd service on %s" % conf.HOSTS[0]
+            )
+        helper.send_and_capture_traffic(
+            src_vm=MGMT_IPS[1], src_ip=NET1_IPS[1], dst_ip=NET1_IPS[2]
+        )
+        logger.info("Check that %s is UP", conf.HOSTS[0])
+        if not ll_hosts.waitForHostsStates(positive=True, names=conf.HOSTS[0]):
+            raise exceptions.NetworkException(
+                "%s status isn't UP" % conf.HOSTS[0]
             )
 
-        send_and_capture_traffic(
-            srcVM=MGMT_IPS[1], srcIP=NET1_IPS[1], dstIP=NET1_IPS[2]
-        )
 
-        logger.info("Check that %s is UP", config.HOSTS[0])
-        if not waitForHostsStates(positive=True, names=config.HOSTS[0]):
-            raise NetworkException("%s status isn't UP" % config.HOSTS[0])
-
-
-@attr(tier=1)
+@attr(tier=1, extra_reqs={'network_hosts': True})
 class TestPortMirroringCase06(TestCase):
     """
     Check that mirroring still occurs after down/UP listening bridge on the
@@ -326,52 +288,48 @@ class TestPortMirroringCase06(TestCase):
     """
     __test__ = True
 
-    def test_restart_networking_on_host(self):
+    def test_if_up_down_bridge(self):
         """
         Check that mirroring still occurs after down/UP listening bridge on the
         host
         """
         logger.info("Check port mirroring traffic before down/up bridge")
-        send_and_capture_traffic(
-            srcVM=MGMT_IPS[1], srcIP=NET1_IPS[1], dstIP=NET1_IPS[2]
+        helper.send_and_capture_traffic(
+            src_vm=MGMT_IPS[1], src_ip=NET1_IPS[1], dst_ip=NET1_IPS[2]
         )
-
         logger.info(
-            "Setting down %s on %s", config.VLAN_NETWORKS[1],
-            config.HOSTS[0]
+            "Setting down %s on %s", conf.VLAN_NETWORKS[1],
+            conf.HOSTS[0]
         )
-        if not ifdownNic(
-                host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
-                nic=config.VLAN_NETWORKS[0]
+        if not ll_hosts.ifdownNic(
+                host=conf.HOSTS_IP[0], root_password=conf.HOSTS_PW,
+                nic=conf.VLAN_NETWORKS[0]
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Failed to set down %s on %s" %
-                (config.VLAN_NETWORKS[0], config.HOSTS[0])
+                (conf.VLAN_NETWORKS[0], conf.HOSTS[0])
             )
-
-        if not ifupNic(
-                host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
-                nic=config.VLAN_NETWORKS[0]
+        if not ll_hosts.ifupNic(
+                host=conf.HOSTS_IP[0], root_password=conf.HOSTS_PW,
+                nic=conf.VLAN_NETWORKS[0]
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Failed to set down %s on %s" %
-                (config.VLAN_NETWORKS[0], config.HOSTS[0])
+                (conf.VLAN_NETWORKS[0], conf.HOSTS[0])
             )
-
         logger.info(
             "Checking connectivity between %s to %s to make sure "
             "network is UP", NET1_IPS[1], NET1_IPS[2]
         )
-        if not checkICMPConnectivity(
-            host=config.MGMT_IPS[1], user=config.VMS_LINUX_USER,
-            password=config.VMS_LINUX_PW, ip=NET1_IPS[2]
+        if not hl_networks.checkICMPConnectivity(
+            host=conf.MGMT_IPS[1], user=conf.VMS_LINUX_USER,
+            password=conf.VMS_LINUX_PW, ip=NET1_IPS[2]
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "No connectivity from %s to %s" % (NET1_IPS[1], NET1_IPS[2])
             )
-
         logger.info("Check port mirroring traffic down/up bridge")
-        send_and_capture_traffic(
-            srcVM=MGMT_IPS[1], srcIP=NET1_IPS[1], dstIP=NET1_IPS[2],
-            dupCheck=False
+        helper.send_and_capture_traffic(
+            src_vm=MGMT_IPS[1], src_ip=NET1_IPS[1], dst_ip=NET1_IPS[2],
+            dup_check=False
         )

@@ -4,75 +4,79 @@
 """
 Utilities used by port_mirroring_test
 """
+
 import logging
-from art.rhevm_api.tests_lib.high_level.networks import TrafficMonitor
-from art.rhevm_api.utils.test_utils import sendICMP, setPersistentNetwork
-from art.test_handler.exceptions import NetworkException
-from rhevmtests.networking import config
-from art.rhevm_api.tests_lib.low_level.vms import (
-    updateNic, migrateVm, getVmHost, waitForIP, stopVm
-)
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.utils.test_utils as test_utils
+import art.test_handler.exceptions as exceptions
+import rhevmtests.networking.config as config
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.helper as net_help
+
 logger = logging.getLogger("Port_Mirroring_Helper")
 
 
 def send_and_capture_traffic(
-        srcVM, srcIP, dstIP, listenVM=config.VM_NAME[0], nic=config.VM_NICS[1],
-        expectTraffic=True, dupCheck=True
+    src_vm, src_ip, dst_ip, listen_vm=config.VM_NAME[0], nic=config.VM_NICS[1],
+    expect_traffic=True, dup_check=True
 ):
     """
-    A function that sends ICMP traffic from 'srcIP' to 'dstIP' while capturing
+    A function that sends ICMP traffic from 'src_ip' to 'dst_ip' while
+    capturing
     traffic on 'listeningVM' to check if mirroring is happening.
-    :param srcVM: mgmt network IP of the VM to send ping from
-    :type srcVM: str
-    :param srcIP: IP to send ping form
-    :type srcIP: str
-    :param dstIP: IP to send ping to
-    :type dstIP: str
-    :param listenVM: name of the VM that will listen to the traffic
-    :type listenVM: str
+    :param src_vm: mgmt network IP of the VM to send ping from
+    :type src_vm: str
+    :param src_ip: IP to send ping form
+    :type src_ip: str
+    :param dst_ip: IP to send ping to
+    :type dst_ip: str
+    :param listen_vm: name of the VM that will listen to the traffic
+    :type listen_vm: str
     :param nic: NIC to listen to traffic on
     :type nic: str
-    :param expectTraffic: boolean to indicate if we expect to see the ping
+    :param expect_traffic: boolean to indicate if we expect to see the ping
            traffic on the listening machine or not.
-    :type expectTraffic: bool
-    :param dupCheck: Check if packets are duplicated
-    :type dupCheck: bool
-    :return: If expectTraffic is True: True if the ping traffic was sent and
-                captured on the listening machine, False otherwise.
-                If expectTraffic is False: True if the ping traffic wasn't
-                captured, False otherwise.
-    :rtype: bool or Exception
+    :type expect_traffic: bool
+    :param dup_check: Check if packets are duplicated
+    :type dup_check: bool
+    :return: Raise exception.
+    :rtype: exceptions.NetworkException
     """
     logger_info = (
         "Send and capture traffic from {0} to {1}. Listen VM is {2}. "
-        "Expected traffic is {3}".format(srcIP, dstIP, listenVM, expectTraffic)
+        "Expected traffic is {3}".format(
+            src_ip, dst_ip, listen_vm, expect_traffic
+        )
     )
-
     expected_text = (
-        "Failed to send/capture traffic" if expectTraffic else "Found traffic"
+        "Failed to send/capture traffic" if expect_traffic else "Found traffic"
     )
 
-    NetworkException_text = (
+    network_exception_text = (
         "{0} from {1} to {2}. Listen VM is {3}.".format(
-            expected_text, srcIP, dstIP, listenVM)
+            expected_text, src_ip, dst_ip, listen_vm)
     )
-
     logger.info(logger_info)
-    listen_vm_index = config.VM_NAME.index(listenVM)
-    with TrafficMonitor(expectedRes=expectTraffic,
-                        machine=config.MGMT_IPS[listen_vm_index],
-                        user=config.VMS_LINUX_USER,
-                        password=config.VMS_LINUX_PW,
-                        nic=nic, src=srcIP, dst=dstIP, dupCheck=dupCheck,
-                        protocol="icmp", numPackets=3, ) as monitor:
-            monitor.addTask(sendICMP, host=srcVM, user=config.VMS_LINUX_USER,
-                            password=config.VMS_LINUX_PW, ip=dstIP)
+    listen_vm_index = config.VM_NAME.index(listen_vm)
+    with hl_networks.TrafficMonitor(
+        expectedRes=expect_traffic,
+        machine=config.MGMT_IPS[listen_vm_index],
+        user=config.VMS_LINUX_USER,
+        password=config.VMS_LINUX_PW,
+        nic=nic, src=src_ip, dst=dst_ip, dupCheck=dup_check,
+        protocol="icmp", numPackets=3
+    ) as monitor:
+            monitor.addTask(
+                test_utils.sendICMP, host=src_vm, user=config.VMS_LINUX_USER,
+                password=config.VMS_LINUX_PW, ip=dst_ip
+            )
     if not monitor.getResult():
-        raise NetworkException(NetworkException_text)
+        raise exceptions.NetworkException(network_exception_text)
 
 
-def set_port_mirroring(vm, nic, network, disableMirroring=False):
+def set_port_mirroring(
+    vm, nic, network, disable_mirroring=False, teardown=False
+):
     """
     Set port mirroring on a machine by shutting it down and bringing it back up
     to avoid unplugging NIC's and changing their order in the machine (eth1,
@@ -83,27 +87,44 @@ def set_port_mirroring(vm, nic, network, disableMirroring=False):
     :type nic: str
     :param network: the name of the network the nic is connected to
     :type network: str
-    :param disableMirroring: boolean to indicate if we want to enable or
+    :param disable_mirroring: boolean to indicate if we want to enable or
            disable port mirroring (leave False to enable)
-    :type disableMirroring: bool
+    :type disable_mirroring: bool
+    :param teardown: True if calling from teardown
+    :type teardown: bool
+    :return: Raise exception if teardown=False
+    :rtype: exceptions.NetworkException
     """
-    vnic_profile = network + ("" if disableMirroring else "_PM")
-    port_mirror_text = "Disabling" if disableMirroring else "Enabling"
+    unplug_error = "Failed to unplug %s on %s"
+    update_error = "Failed to update %s to %s profile."
+    plug_error = "Failed to plug %s on %s"
+    vnic_profile = network + ("" if disable_mirroring else "_PM")
+    port_mirror_text = "Disabling" if disable_mirroring else "Enabling"
     logger_info = (
         "%s port mirroring on: VM: %s, NIC: %s,  vNIC profile: %s",
         port_mirror_text, vm, nic, vnic_profile
     )
     logger.info(logger_info)
-    if not updateNic(True, vm, nic, plugged=False):
-        logger.error("Failed to unplug %s on %s", nic, vm)
+    if not ll_vms.updateNic(True, vm, nic, plugged=False):
+        if teardown:
+            logger.error(unplug_error, nic, vm)
+        else:
+            raise exceptions.NetworkException(unplug_error % (nic, vm))
 
-    if not updateNic(
+    if not ll_vms.updateNic(
             True, vm, nic, network=network, vnic_profile=vnic_profile
     ):
-        logger.error("Failed to update %s to %s profile.", nic, vnic_profile)
-
-    if not updateNic(True, vm, nic, plugged=True):
-        logger.error("Failed to plug %s on %s", nic, vm)
+        if teardown:
+            logger.error(update_error, nic, vnic_profile)
+        else:
+            raise exceptions.NetworkException(
+                update_error % (nic, vnic_profile)
+            )
+    if not ll_vms.updateNic(True, vm, nic, plugged=True):
+        if teardown:
+            logger.error(plug_error, nic, vm)
+        else:
+            raise exceptions.NetworkException(plug_error % (nic, vm))
 
 
 def return_vms_to_original_host():
@@ -111,8 +132,8 @@ def return_vms_to_original_host():
     Returns all the VMs to original host they were on
     """
     for vm in config.VM_NAME[:config.NUM_VMS]:
-        if getVmHost(vm)[1]["vmHoster"] == config.HOSTS[1]:
-            if not migrateVm(True, vm, config.HOSTS[0]):
+        if ll_vms.getVmHost(vm)[1]["vmHoster"] == config.HOSTS[1]:
+            if not ll_vms.migrateVm(True, vm, config.HOSTS[0]):
                 logger.error("Failed to migrate vm %s", vm)
 
 
@@ -125,27 +146,20 @@ def ge_seal_vm(vm):
     """
     logger.info("Sealing VM: %s", vm)
     if not net_help.run_vm_once_specific_host(vm=vm, host=config.HOSTS[0]):
-        raise NetworkException("Failed to start %s." % config.VM_NAME[0])
-
+        raise exceptions.NetworkException(
+            "Failed to start %s." % config.VM_NAME[0]
+        )
     logger.info("Waiting for IP from %s", vm)
-    rc, out = waitForIP(vm=vm, timeout=180, sleep=10)
+    rc, out = ll_vms.waitForIP(vm=vm, timeout=180, sleep=10)
     if not rc:
-        raise NetworkException("Failed to get VM IP on mgmt network")
-
+        raise exceptions.NetworkException(
+            "Failed to get VM IP on mgmt network"
+        )
     ip = out["ip"]
     logger.info("Running setPersistentNetwork on %s", vm)
-    if not setPersistentNetwork(ip, config.VMS_LINUX_PW):
-        raise NetworkException("Failed to seal %s" % vm)
+    if not test_utils.setPersistentNetwork(ip, config.VMS_LINUX_PW):
+        raise exceptions.NetworkException("Failed to seal %s" % vm)
 
     logger.info("Stopping %s", vm)
-    if not stopVm(positive=True, vm=vm):
-        raise NetworkException("Failed to stop %s" % vm)
-
-    logger.info("Starting %s", vm)
-    if not net_help.run_vm_once_specific_host(vm=vm, host=config.HOSTS[0]):
-        raise NetworkException("Failed to start %s." % config.VM_NAME[0])
-
-    logger.info("Waiting for IP from %s", vm)
-    rc, out = waitForIP(vm=vm, timeout=360, sleep=10)
-    if not rc:
-        raise NetworkException("Failed to get IP after %s is UP" % vm)
+    if not ll_vms.stopVm(positive=True, vm=vm):
+        raise exceptions.NetworkException("Failed to stop %s" % vm)
