@@ -41,7 +41,6 @@ def setup_module():
     HOST_NAME1 = get_host_name_from_engine(config.VDS_HOSTS[1].ip)
 
 
-@attr(extra_reqs={'rhel': 7})
 class TestMultipleQueueNicsTearDown(TestCase):
     """
     Teardown class for MultipleQueueNics
