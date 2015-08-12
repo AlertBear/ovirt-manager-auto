@@ -551,10 +551,10 @@ class TestMultiHostCase04(TestMultiHostTestCaseBase):
 class TestMultiHostCase05(TestMultiHostTestCaseBase):
     """
     Update network on running/non-running VM:
-    1) Negative: Try to change MTU on net when running VM is using it
-    2) Negative: Try to change VLAN on net when running VM is using it
-    3) Positive: Try to change MTU on net when non-running VM is using it
-    4) Positive: Try to change VLAN on net when non-running VM is using it
+    1) Positive: Change MTU on net when running VM is using it
+    2) Positive: Change VLAN on net when running VM is using it
+    3) Positive: Change MTU on net when non-running VM is using it
+    4) Positive: Change VLAN on net when non-running VM is using it
     5) Negative: Update non-VM network to be VM network used by non-running VM
     """
     __test__ = True
@@ -591,10 +591,10 @@ class TestMultiHostCase05(TestMultiHostTestCaseBase):
     @polarion("RHEVM3-4074")
     def test_update_net_on_vm(self):
         """
-        1) Negative: Try to change MTU on net when running VM is using it
-        2) Negative: Try to change VLAN on net when running VM is using it
-        3) Positive: Try to change MTU on net when non-running VM is using it
-        4) Positive: Try to change VLAN on net when non-running VM is using it
+        1) Positive: Change MTU on net when running VM is using it
+        2) Positive: Change VLAN on net when running VM is using it
+        3) Positive: Change MTU on net when non-running VM is using it
+        4) Positive: Change VLAN on net when non-running VM is using it
         5) Negative: Update non-VM network to be VM network used by
         non-running VM
         """
@@ -602,24 +602,24 @@ class TestMultiHostCase05(TestMultiHostTestCaseBase):
         mtu_dict1 = {"mtu": config.MTU[0]}
         vlan_dict1 = {"vlan_id": config.VLAN_ID[0]}
 
-        logger.info("Negative: Update MTU network with MTU %s", config.MTU[0])
+        logger.info("Update MTU network with MTU %s", config.MTU[0])
         if not updateNetwork(
-            False, network=config.NETWORKS[0], data_center=config.DC_NAME[0],
-            mtu=config.MTU[0]
+            positive=True, network=config.NETWORKS[0],
+            data_center=config.DC_NAME[0], mtu=config.MTU[0]
         ):
             raise NetworkException(
-                "Could update  network with MTU %s when running VM is using"
+                "Couldn't update  network with MTU %s when running VM is using"
                 " the network" % config.MTU[0]
             )
 
-        logger.info("Negative: Update network with VLAN %s", config.VLAN_ID[0])
+        logger.info("Update network with VLAN %s", config.VLAN_ID[0])
         if not updateNetwork(
-            False, network=config.NETWORKS[0], data_center=config.DC_NAME[0],
-            vlan_id=config.VLAN_ID[0]
+            positive=True, network=config.NETWORKS[0],
+            data_center=config.DC_NAME[0], vlan_id=config.VLAN_ID[0]
         ):
             raise NetworkException(
-                "Could update network to be tagged with VLAN %s when running "
-                "VM is using the network" % config.VLAN_ID[0]
+                "Couldn't update network to be tagged with VLAN %s when "
+                "running VM is using the network" % config.VLAN_ID[0]
             )
 
         logger.info(
