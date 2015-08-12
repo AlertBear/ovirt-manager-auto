@@ -7,7 +7,7 @@ data_struct_mod = string(default='art.rhevm_api.data_struct.data_structures')
 # general
 cdrom_image = string(default='en_windows_7_enterprise_x64_dvd_x15-70749.iso')
 floppy_image = string(default='win2k3.vfd')
-cpu_name = option('Intel Conroe Family', 'Intel Penryn Family', 'Intel Nehalem Family', 'Intel Westmere Family', 'Intel SandyBridge Family', 'Intel Haswell-noTSX Family', 'Intel Haswell Family', 'Intel Broadwell-noTSX Family', 'Intel Broadwell Family', 'AMD Opteron G1', 'AMD Opteron G2', 'AMD Opteron G3', 'AMD Opteron G4', 'AMD Opteron G5', 'IBM POWER 8', 'IBM POWER 8E')
+cpu_name = option('Intel Nehalem Family', 'Intel Xeon w/o XD/NX', 'Intel Xeon', 'Intel Conroe Family', 'Intel Penryn Family', 'AMD Opteron G1 w/o NX', 'AMD Opteron G1', 'AMD Opteron G2', 'AMD Opteron G3', default='Intel Nehalem Family')
 shared_iso_domain_path = string(default='/volumes/base/shared_iso_domain')
 shared_iso_domain_address = domain_format(default='wolf.qa.lab.tlv.redhat.com')
 vds_ovirt_port = integer(default='8443')
