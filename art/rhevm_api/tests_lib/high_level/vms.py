@@ -17,6 +17,7 @@ from art.rhevm_api.utils.test_utils import getStat
 
 LOGGER = logging.getLogger(__name__)
 ENUMS = opts['elements_conf']['RHEVM Enums']
+CLUSTER_API = get_api('cluster', 'clusters')
 
 VM_API = get_api('vm', 'vms')
 
@@ -688,3 +689,20 @@ def cancel_vm_migrate(vm, wait=True, timeout=MIGRATION_TIMEOUT):
         source_host_name, destination_host_name
     )
     return source_host_name == destination_host_name
+
+
+def get_vms_objects_from_cluster(cluster):
+    """
+    Gets all VMs objects in given cluster
+    :param cluster: cluster name
+    :type cluster: str
+    :return: List of VMs object
+    :rtype: list
+    """
+    logging.info("Getting all vms in cluster %s", cluster)
+    cluster_id = CLUSTER_API.find(cluster).get_id()
+    all_vms = VM_API.get(absLink=False)
+    vms_in_cluster = [
+        vm for vm in all_vms
+        if vm.get_cluster().get_id() == cluster_id]
+    return vms_in_cluster

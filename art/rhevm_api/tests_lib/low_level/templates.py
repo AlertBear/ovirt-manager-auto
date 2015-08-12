@@ -809,17 +809,19 @@ def copy_template_disks(positive, template, disks, storagedomain, async=True):
 
 def get_template_from_cluster(cluster):
     """
-    Description: Gets all templates added to the given cluster
-    Parameters:
-        * *cluster* - cluster name
-    **Returns**: List of templates for given cluster
+    Gets all templates in given cluster
+    :param cluster: cluster name
+    :type cluster: str
+    :return: return templates names in list
+    :rtype: list
     """
     logging.info("Getting all templates in cluster %s", cluster)
     cluster_id = CLUSTER_API.find(cluster).get_id()
     templates = TEMPLATE_API.get(absLink=False)
     templates_in_cluster = [
-        t.name for t in templates if t.cluster and t.cluster.id == cluster_id
-    ]
+        template.name for template in templates
+        if template.cluster and template.cluster.id == cluster_id
+        ]
     logging.info("Templates in cluster: %s", templates_in_cluster)
     return templates_in_cluster
 
