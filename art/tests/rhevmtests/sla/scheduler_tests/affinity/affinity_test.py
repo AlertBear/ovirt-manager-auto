@@ -822,10 +822,15 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(MigrateVm):
             raise errors.HostException("Failed to deactivate host")
         logger.info("Create HA vm")
         if not vm_api.createVm(
-            True, cls.ha_vm, 'Affinity VM', cluster=config.CLUSTER_NAME[0],
+            positive=True, vmName=cls.ha_vm,
+            vmDescription='Affinity VM',
+            cluster=config.CLUSTER_NAME[0],
             storageDomainName=config.STORAGE_NAME[0],
-            size=config.DISK_SIZE, nic='nic1',
-            network=config.MGMT_BRIDGE, highly_available=True
+            size=config.DISK_SIZE, nic=config.NIC_NAME[0],
+            display_type=config.VM_DISPLAY_TYPE,
+            type=config.VM_TYPE_SERVER,
+            network=config.MGMT_BRIDGE,
+            highly_available=True
         ):
             raise errors.VMException("Failed to create HA vm")
         logger.info("Start vm %s", cls.ha_vm)

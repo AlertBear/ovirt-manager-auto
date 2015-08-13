@@ -4,6 +4,7 @@ Check different cases for quota limitations in None, Audit and Enforce mode
 Include CRUD tests, different limitations of storage, memory and vcpu tests
 """
 import logging
+import unittest2
 
 from art.unittest_lib import attr
 from rhevmtests.sla.quota import config as c
@@ -440,15 +441,20 @@ class QuotaTestMode(BaseQuotaClass):
             c.CLUSTER_NAME[0], c.CLUSTER_NAME[0]
         )
         logger.info("Create new vm %s", c.VM_NAME)
+        # TODO: add type as W/A for bug
+        # https://bugzilla.redhat.com/show_bug.cgi?id=1253261
+        # add display_type as W/A for bug
+        # https://bugzilla.redhat.com/show_bug.cgi?id=1253263
+        # must remove both after bugs fixed
         if not ll_vms.createVm(
             positive=True, vmName=c.VM_NAME,
             vmDescription=c.VM_DESC,
             cluster=c.CLUSTER_NAME[0],
             storageDomainName=c.STORAGE_NAME[0],
             size=c.SIZE_10_GB, memory=c.SIZE_512_MB,
-            vm_quota=q_id, disk_quota=q_id,
+            vm_quota=q_id, disk_quota=q_id, type=c.VM_TYPE_SERVER,
             nic=c.NIC_NAME[0], network=c.MGMT_BRIDGE,
-            cpu_profile_id=cpu_profile_id
+            cpu_profile_id=cpu_profile_id, display_type=c.VM_DISPLAY_TYPE
         ):
             raise errors.VMException("Failed to create vm %s", c.VM_NAME)
 
@@ -569,6 +575,7 @@ class TestQuotaAuditModeMemory(TestQuotaCluster):
     __test__ = True
     quota_mode = c.QUOTA_AUDIT_MODE
     quota_cluster_limit = {None: {c.MEMORY_LIMIT: 1, c.VCPU_LIMIT: -1}}
+    cluster_hard_limit_pct = 50
 
     @polarion("RHEVM3-9428")
     def test_a_quota_memory_limit(self):
@@ -583,7 +590,7 @@ class TestQuotaAuditModeMemory(TestQuotaCluster):
         Check in grace memory limit
         """
         self._check_cluster_limits(
-            vm_params={c.VM_MEMORY: c.SIZE_1228_MB},
+            vm_params={c.VM_MEMORY: c.SIZE_1280_MB},
             audit_msg_type=c.GRACE_TYPE
         )
 
@@ -604,6 +611,7 @@ class TestQuotaEnforcedModeMemory(TestQuotaCluster):
     __test__ = True
     quota_mode = c.QUOTA_ENFORCED_MODE
     quota_cluster_limit = {None: {c.MEMORY_LIMIT: 1, c.VCPU_LIMIT: -1}}
+    cluster_hard_limit_pct = 50
 
     @polarion("RHEVM3-9418")
     def test_a_quota_memory_limit(self):
@@ -618,7 +626,7 @@ class TestQuotaEnforcedModeMemory(TestQuotaCluster):
         Check in grace memory limit
         """
         self._check_cluster_limits(
-            vm_params={c.VM_MEMORY: c.SIZE_1228_MB},
+            vm_params={c.VM_MEMORY: c.SIZE_1280_MB},
             audit_msg_type=c.GRACE_TYPE
         )
 
@@ -663,6 +671,7 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
             audit_msg_type=c.GRACE_TYPE
         )
 
+    @unittest2.skipIf(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-9438")
     def test_c_quota_vcpu_limit_over_grace(self):
         """
@@ -673,6 +682,7 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
             audit_msg_type=c.EXCEED_TYPE
         )
 
+    @unittest2.skipIf(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12366")
     def test_d_quota_vcpu_hotplug_in_grace_vm_up(self):
         """
@@ -681,6 +691,7 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
         """
         self._check_hotplug(c.VM_UP, c.GRACE_TYPE, c.NUM_OF_CPUS[c.GRACE_TYPE])
 
+    @unittest2.skipIf(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12367")
     def test_e_quota_vcpu_hotplug_in_exceed_vm_up(self):
         """
@@ -691,6 +702,7 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
             c.VM_UP, c.EXCEED_TYPE, c.NUM_OF_CPUS[c.EXCEED_TYPE]
         )
 
+    @unittest2.skipIf(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12364")
     @bz({"1167081": {c.BZ_ENGINE: None, c.BZ_VERSION: [c.VERSION_35]}})
     def test_f_quota_vcpu_hotplug_in_grace_vm_powering_up(self):
@@ -702,6 +714,7 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
             c.VM_POWER_UP, c.GRACE_TYPE, c.NUM_OF_CPUS[c.GRACE_TYPE]
         )
 
+    @unittest2.skipIf(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12365")
     @bz({"1167081": {c.BZ_ENGINE: None, c.BZ_VERSION: [c.VERSION_35]}})
     def test_g_quota_vcpu_hotplug_in_exceed_vm_up(self):
@@ -755,6 +768,7 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
             audit_msg_type=c.EXCEED_TYPE
         )
 
+    @unittest2.skipIf(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12370")
     def test_d_quota_vcpu_hotplug_in_grace_vm_up(self):
         """
@@ -765,6 +779,7 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
             c.VM_UP, c.GRACE_TYPE, c.NUM_OF_CPUS[c.GRACE_TYPE]
         )
 
+    @unittest2.skipIf(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12371")
     def test_e_quota_vcpu_hotplug_in_exceed_vm_up(self):
         """
@@ -775,6 +790,7 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
             c.VM_UP, c.EXCEED_TYPE, c.NUM_OF_CPUS[c.EXCEED_TYPE]
         )
 
+    @unittest2.skipIf(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12368")
     @bz({"1167081": {c.BZ_ENGINE: None, c.BZ_VERSION: [c.VERSION_35]}})
     def test_f_quota_vcpu_hotplug_in_grace_vm_powering_up(self):
@@ -786,6 +802,7 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
             c.VM_POWER_UP, c.GRACE_TYPE, c.NUM_OF_CPUS[c.GRACE_TYPE]
         )
 
+    @unittest2.skipIf(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12369")
     @bz({"1167081": {c.BZ_ENGINE: None, c.BZ_VERSION: [c.VERSION_35]}})
     def test_g_quota_vcpu_hotplug_in_exceed_vm_up(self):
@@ -1039,7 +1056,8 @@ class TestQuotaConsumptionVmWithDisk(QuotaTestMode):
                 size=c.SIZE_10_GB, memory=c.SIZE_512_MB,
                 vm_quota=q_id, disk_quota=q_id,
                 nic=c.NIC_NAME[0], network=c.MGMT_BRIDGE,
-                cpu_profile_id=cpu_profile_id
+                cpu_profile_id=cpu_profile_id,
+                display_type=c.VM_DISPLAY_TYPE
             ),
             "Failed to create new vm %s" % c.TMP_VM_NAME
         )

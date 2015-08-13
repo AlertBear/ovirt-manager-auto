@@ -8,8 +8,9 @@ WATCHDOG_MODEL = PARAMETERS.get('watchdog_model')
 GENERAL_VM_PARAMS = {
     'memory': 2 * GB,
     'memory_guaranteed': 2 * GB,
-    'os_type': OS_TYPE,
-    'placement_affinity': ENUMS['vm_affinity_user_migratable'],
+    'os_type': VM_OS_TYPE,
+    'placement_affinity': VM_USER_MIGRATABLE,
+    'display_type': VM_DISPLAY_TYPE,
     'placement_host': HOSTS[0],
     'cluster': CLUSTER_NAME[0]
 }

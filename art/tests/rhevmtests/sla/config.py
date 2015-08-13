@@ -87,13 +87,19 @@ HOSTS_WITH_DUMMY = list(HOSTS)
 while len(HOSTS_WITH_DUMMY) < 3:
     HOSTS_WITH_DUMMY.append(None)
 
+VM_OS_TYPE = ENUMS['rhel7ppc64'] if PPC_ARCH else ENUMS['rhel6x64']
+VM_DISPLAY_TYPE = ENUMS[
+    'display_type_vnc'
+] if PPC_ARCH else ENUMS['display_type_spice']
+
 DEFAULT_VM_PARAMETERS = {
     'memory': GB,
     'memory_guaranteed': GB,
     'cpu_socket': 1,
     'cpu_cores': 1,
-    'os_type': ENUMS['rhel6x64'],
+    'os_type': VM_OS_TYPE,
     'type': VM_TYPE_DESKTOP,
+    'display_type': VM_DISPLAY_TYPE,
     'placement_affinity': VM_MIGRATABLE,
     'placement_host': VM_ANY_HOST,
     'cluster': CLUSTER_NAME[0],

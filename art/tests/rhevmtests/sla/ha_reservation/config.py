@@ -9,7 +9,8 @@ GENERAL_VM_PARAMS = {
     'placement_host': HOSTS[0],
     'placement_affinity': VM_MIGRATABLE,
     'highly_available': True,
-    'os_type': OS_TYPE
+    'os_type': VM_OS_TYPE,
+    'display_type': VM_DISPLAY_TYPE
 }
 
 INSTALL_VM_PARAMS = {

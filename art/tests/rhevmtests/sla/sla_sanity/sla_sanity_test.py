@@ -7,26 +7,33 @@ count threads as cores and placement policy
 import re
 import random
 import logging
-from rhevmtests.sla import config
 
-from art.rhevm_api.tests_lib.low_level import vms
-from art.rhevm_api.tests_lib.low_level import hosts
-from art.rhevm_api.tests_lib.low_level import clusters
-import art.test_handler.exceptions as errors
+import art.unittest_lib as libs
+import rhevmtests.sla.config as c
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import SlaTest as TestCase
-from art.unittest_lib import attr
+import art.test_handler.exceptions as errors
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.sla as ll_sla
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 
 logger = logging.getLogger(__name__)
 
 MINUTE = 60
 CPUPIN_ITER = 4
 HOST_PASSTHROUGH = "host_passthrough"
+# TODO: add type as W/A for bug
+# https://bugzilla.redhat.com/show_bug.cgi?id=1253261
+# add display_type as W/A for bug
+# https://bugzilla.redhat.com/show_bug.cgi?id=1253263
+# must remove both after bugs fixed
 VM_BASIC_PARAMETERS = {
-    "cluster": config.CLUSTER_NAME[0],
-    "storageDomainName": config.STORAGE_NAME[0],
-    "size": config.GB, "nic": config.NIC_NAME[0],
-    "network": config.MGMT_BRIDGE
+    "cluster": c.CLUSTER_NAME[0],
+    "storageDomainName": c.STORAGE_NAME[0],
+    "size": c.GB, "nic": c.NIC_NAME[0],
+    "network": c.MGMT_BRIDGE,
+    "display_type": c.VM_DISPLAY_TYPE,
+    "type": c.VM_TYPE_SERVER
 }
 
 # Bugs
@@ -48,7 +55,7 @@ def adapt_vcpu_pinning_to_cli(vcpu_pinning):
     :returns: adapted to cli vcpu pinning list
     :rtype: list
     """
-    if config.opts["engine"] == "cli":
+    if c.opts["engine"] == "cli":
         cli_vcpu_pinning = []
         for pinning in vcpu_pinning:
             for key, value in pinning.iteritems():
@@ -130,8 +137,8 @@ def get_qemu_value(host_resource, vm, arg):
 ########################################################################
 
 
-@attr(tier=0)
-class BasicSlaClass(TestCase):
+@libs.attr(tier=0)
+class BasicSlaClass(libs.SlaTest):
     """
     Create and delete after test new vm with different parameters
     """
@@ -147,7 +154,7 @@ class BasicSlaClass(TestCase):
         Create new vm with given parameters
         """
         logger.info("Create new vm %s", cls.vm_name)
-        if not vms.createVm(
+        if not ll_vms.createVm(
                 True, cls.vm_name, cls.vm_desc, **cls.vm_basic_parameters
         ):
             raise errors.VMException("Cannot create vm")
@@ -158,17 +165,17 @@ class BasicSlaClass(TestCase):
         Remove protected flag if needed and remove vm
         """
         logger.info("Stop vm %s if need", cls.vm_name)
-        vms.stop_vms_safely([cls.vm_name])
+        ll_vms.stop_vms_safely([cls.vm_name])
         if cls.protected:
             logger.info("Remove protected flag from vm %s", cls.vm_name)
-            if not vms.updateVm(True, cls.vm_name, protected='false'):
+            if not ll_vms.updateVm(True, cls.vm_name, protected='false'):
                 raise errors.VMException("Cannot update vm")
         logger.info("Remove vm %s", cls.vm_name)
-        if not vms.removeVm(True, cls.vm_name):
+        if not ll_vms.removeVm(True, cls.vm_name):
             raise errors.VMException("Cannot remove vm")
 
 
-@attr(tier=1)
+@libs.attr(tier=1)
 class TestProtectedVmCase1(BasicSlaClass):
     """
     Negative: Remove protected VM
@@ -188,13 +195,13 @@ class TestProtectedVmCase1(BasicSlaClass):
         logger.info(
             "Attempting to remove the protected VM %s", self.vm_name
         )
-        self.assertFalse(vms.removeVm(True, self.vm_name))
+        self.assertFalse(ll_vms.removeVm(True, self.vm_name))
         logger.info("Failed to remove protected VM %s", self.vm_name)
 
 ########################################################################
 
 
-@attr(tier=1)
+@libs.attr(tier=1)
 class TestProtectedVmCase2(BasicSlaClass):
     """
     Negative: Force remove protected VM
@@ -214,13 +221,13 @@ class TestProtectedVmCase2(BasicSlaClass):
         logger.info(
             "Attempting to force remove the protected VM %s", self.vm_name
         )
-        self.assertFalse(vms.removeVm(True, self.vm_name, force=True))
+        self.assertFalse(ll_vms.removeVm(True, self.vm_name, force=True))
         logger.info("Failed to force remove protected VM %s", self.vm_name)
 
 ########################################################################
 
 
-@attr(tier=1)
+@libs.attr(tier=1)
 class TestCPUHostCase1(BasicSlaClass):
     """
     Negative: Change migratable VM to use CPU host
@@ -238,14 +245,14 @@ class TestCPUHostCase1(BasicSlaClass):
         """
         logger.info("Attempting to update VM to use CPU host")
         self.assertTrue(
-            vms.updateVm(False, self.vm_name, cpu_mode=HOST_PASSTHROUGH)
+            ll_vms.updateVm(False, self.vm_name, cpu_mode=HOST_PASSTHROUGH)
         )
         logger.info("Failed to change a migratable VM to use CPU host")
 
 ########################################################################
 
 
-@attr(tier=1)
+@libs.attr(tier=1)
 class TestCPUHostCase2(BasicSlaClass):
     """
     Set CPU host to a user migratable VM
@@ -263,9 +270,9 @@ class TestCPUHostCase2(BasicSlaClass):
         """
         logger.info("Attempting to change VM to migratable")
         self.assertFalse(
-            vms.updateVm(
+            ll_vms.updateVm(
                 True, self.vm_name,
-                placement_affinity=config.VM_USER_MIGRATABLE,
+                placement_affinity=c.VM_USER_MIGRATABLE,
                 cpu_mode=HOST_PASSTHROUGH
             ),
             "Successfully changed a CPU host vm placement affinity"
@@ -274,7 +281,7 @@ class TestCPUHostCase2(BasicSlaClass):
 ########################################################################
 
 
-@attr(tier=1)
+@libs.attr(tier=1)
 class TestCPUHostCase3(BasicSlaClass):
     """
     Negative: Change VM with CPU host mode (pinned) to migratable
@@ -285,8 +292,8 @@ class TestCPUHostCase3(BasicSlaClass):
     vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
     vm_basic_parameters.update(
         {
-            "placement_affinity": config.VM_PINNED,
-            "placement_host": config.HOSTS[0],
+            "placement_affinity": c.VM_PINNED,
+            "placement_host": c.HOSTS[0],
             "cpu_mode": HOST_PASSTHROUGH
         }
     )
@@ -300,9 +307,9 @@ class TestCPUHostCase3(BasicSlaClass):
         """
         logger.info("Attempting to change VM to migratable.")
         self.assertTrue(
-            vms.updateVm(
-                False, self.vm_name, placement_affinity=config.VM_MIGRATABLE,
-                placement_host=config.VM_ANY_HOST
+            ll_vms.updateVm(
+                False, self.vm_name, placement_affinity=c.VM_MIGRATABLE,
+                placement_host=c.VM_ANY_HOST
             )
         )
         logger.info(
@@ -323,8 +330,8 @@ class TestCPUHostCase4(BasicSlaClass):
     vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
     vm_basic_parameters.update(
         {
-            "placement_affinity": config.VM_PINNED,
-            "placement_host": config.HOSTS[0],
+            "placement_affinity": c.VM_PINNED,
+            "placement_host": c.HOSTS[0],
             "cpu_mode": HOST_PASSTHROUGH
         }
     )
@@ -339,8 +346,8 @@ class TestCPUHostCase4(BasicSlaClass):
             "Attempting to change VM to have no specific host to run on"
         )
         self.assertTrue(
-            vms.updateVm(
-                True, self.vm_name, placement_host=config.VM_ANY_HOST
+            ll_vms.updateVm(
+                True, self.vm_name, placement_host=c.VM_ANY_HOST
             )
         )
         logger.info(
@@ -362,8 +369,8 @@ class TestCPUHostCase5(BasicSlaClass):
     vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
     vm_basic_parameters.update(
         {
-            "placement_affinity": config.VM_PINNED,
-            "placement_host": config.HOSTS[0],
+            "placement_affinity": c.VM_PINNED,
+            "placement_host": c.HOSTS[0],
             "cpu_mode": HOST_PASSTHROUGH
         }
     )
@@ -376,10 +383,10 @@ class TestCPUHostCase5(BasicSlaClass):
         """
         logger.info("Attempting to change VM to user migratable")
         self.assertTrue(
-            vms.updateVm(
+            ll_vms.updateVm(
                 True, self.vm_name,
-                placement_affinity=config.VM_USER_MIGRATABLE,
-                placement_host=config.VM_ANY_HOST, cpu_mode=""
+                placement_affinity=c.VM_USER_MIGRATABLE,
+                placement_host=c.VM_ANY_HOST, cpu_mode=""
             )
         )
         logger.info(
@@ -400,8 +407,8 @@ class TestCPUHostCase6(BasicSlaClass):
     vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
     vm_basic_parameters.update(
         {
-            "placement_affinity": config.VM_PINNED,
-            "placement_host": config.HOSTS[0],
+            "placement_affinity": c.VM_PINNED,
+            "placement_host": c.HOSTS[0],
             "cpu_mode": HOST_PASSTHROUGH
         }
     )
@@ -413,15 +420,15 @@ class TestCPUHostCase6(BasicSlaClass):
         """
         logger.info("Starting VM")
         self.assertTrue(
-            vms.startVm(True, self.vm_name),
+            ll_vms.startVm(True, self.vm_name),
             "Cannot start vm %s" % self.vm_name
         )
         self.assertTrue(
-            vms.waitForVMState(self.vm_name, state=config.VM_UP),
+            ll_vms.waitForVMState(self.vm_name, state=c.VM_UP),
             "Cannot start vm %s" % self.vm_name
         )
         logger.info("Successfully started VM")
-        value = get_qemu_value(config.VDS_HOSTS[0], self.vm_name, "cpu")
+        value = get_qemu_value(c.VDS_HOSTS[0], self.vm_name, "cpu")
         self.assertEqual(value, "host", "-cpu value is not 'host'")
         logger.info("VM is running with '-cpu host'")
 
@@ -448,23 +455,23 @@ class BasicThreadSlaClass(BasicSlaClass):
         """
         super(BasicThreadSlaClass, cls).setup_class()
         if cls.cpu_cores:
-            cls.cpu_cores = hosts.get_host_topology(config.HOSTS[0]).cores
+            cls.cpu_cores = ll_hosts.get_host_topology(c.HOSTS[0]).cores
             logger.info("Number of cores on host: %s", cls.cpu_cores)
         if cls.cpu_sockets:
-            cls.cpu_sockets = hosts.get_host_topology(config.HOSTS[0]).sockets
+            cls.cpu_sockets = ll_hosts.get_host_topology(c.HOSTS[0]).sockets
             logger.info(
-                "Number of sockets per socket on host: %s", cls.cpu_sockets
+                "Number of cores per socket on host: %s", cls.cpu_sockets
             )
         if cls.cpu_threads:
-            cls.cpu_threads = hosts.get_host_topology(config.HOSTS[0]).threads
+            cls.cpu_threads = ll_hosts.get_host_topology(c.HOSTS[0]).threads
             logger.info(
                 "Number of threads per core on host: %s", cls.cpu_threads
             )
         logger.info(
             "Update cluster with threads_as_cores=%s", cls.thread_on
         )
-        if not clusters.updateCluster(
-                True, config.CLUSTER_NAME[0], threads_as_cores=cls.thread_on
+        if not ll_clusters.updateCluster(
+                True, c.CLUSTER_NAME[0], threads_as_cores=cls.thread_on
         ):
             raise errors.ClusterException("Failed to update cluster")
         total_cores_number = cls.cpu_cores
@@ -477,7 +484,7 @@ class BasicThreadSlaClass(BasicSlaClass):
             "Updating vm %s to have %s cores",
             cls.vm_name, total_cores_number * cls.cpu_sockets
         )
-        if not vms.updateVm(
+        if not ll_vms.updateVm(
                 True, cls.vm_name, cpu_socket=cls.cpu_sockets,
                 cpu_cores=total_cores_number
         ):
@@ -489,8 +496,8 @@ class BasicThreadSlaClass(BasicSlaClass):
         Update cluster with threads option off and remove vm
         """
         logger.info("Update cluster with threads_as_cores=%s", cls.thread_on)
-        if not clusters.updateCluster(
-                True, config.CLUSTER_NAME[0], threads_as_cores=False
+        if not ll_clusters.updateCluster(
+                True, c.CLUSTER_NAME[0], threads_as_cores=False
         ):
             raise errors.ClusterException("Failed to update cluster")
         super(BasicThreadSlaClass, cls).teardown_class()
@@ -514,10 +521,10 @@ class TestThreadsOff(BasicThreadSlaClass):
         the host"s physical cores, while cluster policy "count
         threads as cores" is off
         """
-        self.assertTrue(vms.startVm(True, self.vm_name))
+        self.assertTrue(ll_vms.startVm(True, self.vm_name))
 
 
-@attr(tier=1)
+@libs.attr(tier=1)
 class TestNegativeThreadsOff(BasicThreadSlaClass):
     """
     Negative: Verify number of cores on host when threads off
@@ -537,7 +544,7 @@ class TestNegativeThreadsOff(BasicThreadSlaClass):
         the host"s physical cores, while cluster policy "count
         threads as cores" is off
         """
-        self.assertFalse(vms.startVm(True, self.vm_name))
+        self.assertFalse(ll_vms.startVm(True, self.vm_name))
 
 
 class TestThreadsOn(BasicThreadSlaClass):
@@ -560,10 +567,10 @@ class TestThreadsOn(BasicThreadSlaClass):
         the host"s physical cores, while cluster policy "count
         threads as cores" is on
         """
-        self.assertTrue(vms.startVm(True, self.vm_name))
+        self.assertTrue(ll_vms.startVm(True, self.vm_name))
 
 
-@attr(tier=1)
+@libs.attr(tier=1)
 class TestThreadsOnNegative(BasicThreadSlaClass):
     """
     Negative: Verify number of cores on host when threads on
@@ -585,7 +592,7 @@ class TestThreadsOnNegative(BasicThreadSlaClass):
         the host"s physical cores, while cluster policy "count
         threads as cores" is on
         """
-        self.assertFalse(vms.startVm(True, self.vm_name))
+        self.assertFalse(ll_vms.startVm(True, self.vm_name))
 
 ########################################################################
 
@@ -600,8 +607,8 @@ class TestCPUPinCase1(BasicSlaClass):
     vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
     vm_basic_parameters.update(
         {
-            "placement_affinity": config.VM_PINNED,
-            "placement_host": config.HOSTS[0]
+            "placement_affinity": c.VM_PINNED,
+            "placement_host": c.HOSTS[0]
         }
     )
     cores = 1
@@ -613,9 +620,9 @@ class TestCPUPinCase1(BasicSlaClass):
         Create a non migratable VM and count number of cores on host
         """
         super(TestCPUPinCase1, cls).setup_class()
-        cls.sockets = hosts.get_host_topology(config.HOSTS[0]).sockets
+        cls.sockets = ll_hosts.get_host_topology(c.HOSTS[0]).sockets
         logger.info("Number of sockets on host: %s" % cls.sockets)
-        cls.cores = hosts.get_host_topology(config.HOSTS[0]).cores
+        cls.cores = ll_hosts.get_host_topology(c.HOSTS[0]).cores
         logger.info("Number of cores per socket on host: %s" % cls.cores)
 
     @polarion("RHEVM3-9541")
@@ -625,7 +632,7 @@ class TestCPUPinCase1(BasicSlaClass):
         """
         logger.info("Setting VCPU pinning to 0#0")
         self.assertTrue(
-            vms.updateVm(
+            ll_vms.updateVm(
                 True, self.vm_name, vcpu_pinning=[{"0": "0"}]
             ),
             "Failed to change VCPU pinning"
@@ -640,7 +647,7 @@ class TestCPUPinCase1(BasicSlaClass):
         upper = self.sockets * self.cores - 1
         logger.info("Setting VCPU pinning to 0#0-%s", upper)
         self.assertTrue(
-            vms.updateVm(
+            ll_vms.updateVm(
                 True, self.vm_name, vcpu_pinning=[{"0": "0-%s" % upper}]
             ),
             "Failed to change VCPU pinning"
@@ -649,7 +656,7 @@ class TestCPUPinCase1(BasicSlaClass):
             "Successfully changed VCPU pinning to 0#1-%s", upper
         )
 
-    @attr(tier=1)
+    @libs.attr(tier=1)
     @polarion("RHEVM3-12222")
     def test_cpupin_format3(self):
         """
@@ -657,14 +664,14 @@ class TestCPUPinCase1(BasicSlaClass):
         """
         logger.info("Setting VCPU pinning to 0#^1")
         self.assertFalse(
-            vms.updateVm(
+            ll_vms.updateVm(
                 True, self.vm_name, vcpu_pinning=[{"0": "^1"}]
             ),
             "Successfully changed VCPU pinning"
         )
         logger.info("Unable to change VCPU pinning to 0#^1")
 
-    @attr(tier=1)
+    @libs.attr(tier=1)
     @polarion("RHEVM3-12223")
     def test_cpupin_format4(self):
         """
@@ -673,7 +680,7 @@ class TestCPUPinCase1(BasicSlaClass):
         vcpu_pinning = adapt_vcpu_pinning_to_cli([{"0": "^1,^2"}])
         logger.info("Setting VCPU pinning to 0#^1,^2")
         self.assertFalse(
-            vms.updateVm(
+            ll_vms.updateVm(
                 True, self.vm_name, vcpu_pinning=vcpu_pinning
             ),
             "Successfully changed VCPU pinning"
@@ -689,9 +696,9 @@ class TestCPUPinCase1(BasicSlaClass):
             raise errors.SkipTest("Too few CPU cores")
         vcpu_pinning = adapt_vcpu_pinning_to_cli([{"0": "0-3,^1"}])
         logger.info("Setting VCPU pinning to 0#0-3,^1")
-        compare = config.opts["engine"] != "cli"
+        compare = c.opts["engine"] != "cli"
         self.assertTrue(
-            vms.updateVm(
+            ll_vms.updateVm(
                 True, self.vm_name, vcpu_pinning=vcpu_pinning, compare=compare
             ),
             "Failed to change VCPU pinning"
@@ -707,9 +714,9 @@ class TestCPUPinCase1(BasicSlaClass):
             raise errors.SkipTest("Too few CPU cores")
         vcpu_pinning = adapt_vcpu_pinning_to_cli([{"0": "0-3,^1,^2"}])
         logger.info("Setting VCPU pinning to 0#0-3,^1,^2")
-        compare = config.opts["engine"] != "cli"
+        compare = c.opts["engine"] != "cli"
         self.assertTrue(
-            vms.updateVm(
+            ll_vms.updateVm(
                 True, self.vm_name, vcpu_pinning=vcpu_pinning, compare=compare
             ),
             "Failed to change VCPU pinning"
@@ -725,16 +732,16 @@ class TestCPUPinCase1(BasicSlaClass):
             raise errors.SkipTest("Too few CPU cores")
         vcpu_pinning = adapt_vcpu_pinning_to_cli([{"0": "1,2,3"}])
         logger.info("Setting VCPU pinning to 0#1,2,3")
-        compare = config.opts["engine"] != "cli"
+        compare = c.opts["engine"] != "cli"
         self.assertTrue(
-            vms.updateVm(
+            ll_vms.updateVm(
                 True, self.vm_name, vcpu_pinning=vcpu_pinning, compare=compare
             ),
             "Failed to change VCPU pinning"
         )
         logger.info("Successfully changed VCPU pinning to 0#1,2,3")
 
-    @attr(tier=1)
+    @libs.attr(tier=1)
     @polarion("RHEVM3-12227")
     def test_cpupin_format8(self):
         """
@@ -745,11 +752,11 @@ class TestCPUPinCase1(BasicSlaClass):
         vcpu_pinning = adapt_vcpu_pinning_to_cli([{"0": "0"}, {"0": "1"}])
         logger.info("Setting VCPU pinning to 0#0_0#1")
         self.assertFalse(
-            vms.updateVm(True, self.vm_name, vcpu_pinning=vcpu_pinning)
+            ll_vms.updateVm(True, self.vm_name, vcpu_pinning=vcpu_pinning)
         )
         logger.info("Successfully changed VCPU pinning to 0#0_0#1.")
 
-    @attr(tier=1)
+    @libs.attr(tier=1)
     @polarion("RHEVM3-12228")
     def test_cpupin_format9(self):
         """
@@ -757,24 +764,24 @@ class TestCPUPinCase1(BasicSlaClass):
         """
         logger.info("Setting VCPU pinning to 0#A")
         self.assertFalse(
-            vms.updateVm(True, self.vm_name, vcpu_pinning=[{"0": "A"}]),
+            ll_vms.updateVm(True, self.vm_name, vcpu_pinning=[{"0": "A"}]),
             "Successfully changed VCPU pinning"
         )
         logger.info("Unable to change VCPU pinning to 0#A.")
 
-    @attr(tier=1)
+    @libs.attr(tier=1)
     @polarion("RHEVM3-12229")
     def test_cpupin_format10(self):
         """
         Negative: Letter instead of pCPU
         """
         try:
-            vms.updateVm(True, self.vm_name, vcpu_pinning=[{"A": "0"}])
+            ll_vms.updateVm(True, self.vm_name, vcpu_pinning=[{"A": "0"}])
             self.assertTrue(False, "Successfully changed VCPU pinning to A#0")
         except ValueError:
             logger.info("Unable to change VCPU pinning to A#0")
 
-    @attr(tier=1)
+    @libs.attr(tier=1)
     @polarion("RHEVM3-12230")
     def test_cpupin_format15(self):
         """
@@ -783,12 +790,12 @@ class TestCPUPinCase1(BasicSlaClass):
         vcpu_pinning = adapt_vcpu_pinning_to_cli([{"0": "0-1,^0,^1"}])
         logger.info("Setting VCPU pinning to 0#0-1,^0,^1")
         self.assertFalse(
-            vms.updateVm(True, self.vm_name, vcpu_pinning=vcpu_pinning),
+            ll_vms.updateVm(True, self.vm_name, vcpu_pinning=vcpu_pinning),
             "Successfully changed VCPU pinning"
         )
         logger.info("Unable to change VCPU pinning to 0#0-1,^0,^1")
 
-    @attr(tier=1)
+    @libs.attr(tier=1)
     @polarion("RHEVM3-12231")
     def test_cpupin_format16(self):
         """
@@ -796,17 +803,17 @@ class TestCPUPinCase1(BasicSlaClass):
         """
         logger.info("Setting VCPU pinning to 0#4096")
         self.assertTrue(
-            vms.updateVm(True, self.vm_name, vcpu_pinning=[{"0": "4096"}]),
+            ll_vms.updateVm(True, self.vm_name, vcpu_pinning=[{"0": "4096"}]),
             "Unable changed VCPU pinning"
         )
         logger.info("Successfully to change VCPU pinning to 0#4096")
         logger.info("Try to start vm %s", self.vm_name)
         self.assertFalse(
-            vms.startVm(True, self.vm_name, timeout=MINUTE),
+            ll_vms.startVm(True, self.vm_name, timeout=MINUTE),
             "Success to run vm"
         )
 
-    @attr(tier=1)
+    @libs.attr(tier=1)
     @polarion("RHEVM3-12232")
     def test_cpupin_format17(self):
         """
@@ -814,12 +821,12 @@ class TestCPUPinCase1(BasicSlaClass):
         """
         logger.info("Setting VCPU pinning to 0#")
         self.assertFalse(
-            vms.updateVm(True, self.vm_name, vcpu_pinning=[{"0": ""}]),
+            ll_vms.updateVm(True, self.vm_name, vcpu_pinning=[{"0": ""}]),
             "Successfully changed VCPU pinning"
         )
         logger.info("Unable to change VCPU pinning to 0#")
 
-    @attr(tier=1)
+    @libs.attr(tier=1)
     @polarion("RHEVM3-12233")
     def test_cpupin_format18(self):
         """
@@ -827,7 +834,7 @@ class TestCPUPinCase1(BasicSlaClass):
         """
         logger.info("Setting VCPU pinning to 4096#0")
         self.assertFalse(
-            vms.updateVm(True, self.vm_name, vcpu_pinning=[{"4096": "0"}]),
+            ll_vms.updateVm(True, self.vm_name, vcpu_pinning=[{"4096": "0"}]),
             "Successfully changed VCPU pinning"
         )
         logger.info("Unable to change VCPU pinning to 4096#0")
@@ -835,7 +842,7 @@ class TestCPUPinCase1(BasicSlaClass):
 ########################################################################
 
 
-@attr(tier=1)
+@libs.attr(tier=1)
 class TestCPUPinCase2(BasicSlaClass):
     """
     Negative: Set CPU pinning to a migratable VM
@@ -852,14 +859,14 @@ class TestCPUPinCase2(BasicSlaClass):
         """
         logger.info("Attempting to update VM to use CPU pinning")
         self.assertFalse(
-            vms.updateVm(True, self.vm_name, vcpu_pinning=[{"0": "0"}])
+            ll_vms.updateVm(True, self.vm_name, vcpu_pinning=[{"0": "0"}])
         )
         logger.info("Failed to change a migratable VM to use CPU pinning")
 
 ########################################################################
 
 
-@attr(tier=1)
+@libs.attr(tier=1)
 class TestCPUPinCase3(BasicSlaClass):
     """
     Negative: Change CPU pinned VM to migratable
@@ -870,8 +877,8 @@ class TestCPUPinCase3(BasicSlaClass):
     vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
     vm_basic_parameters.update(
         {
-            "placement_affinity": config.VM_PINNED,
-            "placement_host": config.HOSTS[0],
+            "placement_affinity": c.VM_PINNED,
+            "placement_host": c.HOSTS[0],
             "vcpu_pinning": [{"0": "0"}]
         }
     )
@@ -884,9 +891,9 @@ class TestCPUPinCase3(BasicSlaClass):
         """
         logger.info("Attempting to change VM to migratable")
         self.assertFalse(
-            vms.updateVm(
-                True, self.vm_name, placement_affinity=config.VM_MIGRATABLE,
-                placement_host=config.VM_ANY_HOST
+            ll_vms.updateVm(
+                True, self.vm_name, placement_affinity=c.VM_MIGRATABLE,
+                placement_host=c.VM_ANY_HOST
             )
         )
         logger.info(
@@ -897,7 +904,7 @@ class TestCPUPinCase3(BasicSlaClass):
 ########################################################################
 
 
-@attr(tier=1)
+@libs.attr(tier=1)
 class TestCPUPinCase4(BasicSlaClass):
     """
     Negative: Set CPU pinning to a user migratable VM
@@ -907,7 +914,7 @@ class TestCPUPinCase4(BasicSlaClass):
     vm_desc = "CPU Pin Vm"
     vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
     vm_basic_parameters.update(
-        {"placement_affinity": config.VM_USER_MIGRATABLE}
+        {"placement_affinity": c.VM_USER_MIGRATABLE}
     )
 
     @polarion("RHEVM3-9543")
@@ -917,7 +924,7 @@ class TestCPUPinCase4(BasicSlaClass):
         """
         logger.info("Attempting to update VM to use CPU pinning")
         self.assertFalse(
-            vms.updateVm(True, self.vm_name, vcpu_pinning=[{"0": "0"}])
+            ll_vms.updateVm(True, self.vm_name, vcpu_pinning=[{"0": "0"}])
         )
         logger.info(
             "Failed to change a user migratable VM to use CPU pinning"
@@ -926,7 +933,7 @@ class TestCPUPinCase4(BasicSlaClass):
 ########################################################################
 
 
-@attr(tier=1)
+@libs.attr(tier=1)
 class TestCPUPinCase5(BasicSlaClass):
     """
     Negative: Change CPU pinned VM to user migratable
@@ -937,8 +944,8 @@ class TestCPUPinCase5(BasicSlaClass):
     vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
     vm_basic_parameters.update(
         {
-            "placement_affinity": config.VM_PINNED,
-            "placement_host": config.HOSTS[0],
+            "placement_affinity": c.VM_PINNED,
+            "placement_host": c.HOSTS[0],
             "vcpu_pinning": [{"0": "0"}]
         }
     )
@@ -951,10 +958,10 @@ class TestCPUPinCase5(BasicSlaClass):
         """
         logger.info("Attempting to change VM to user migratable")
         self.assertFalse(
-            vms.updateVm(
+            ll_vms.updateVm(
                 True, self.vm_name,
-                placement_affinity=config.VM_USER_MIGRATABLE,
-                placement_host=config.VM_ANY_HOST
+                placement_affinity=c.VM_USER_MIGRATABLE,
+                placement_host=c.VM_ANY_HOST
             )
         )
         logger.info(
@@ -965,7 +972,7 @@ class TestCPUPinCase5(BasicSlaClass):
 ########################################################################
 
 
-@attr(tier=1)
+@libs.attr(tier=1)
 class TestCPUPinCase6(BasicSlaClass):
     """
     Check if pinning holds on random pCPU"s
@@ -976,8 +983,8 @@ class TestCPUPinCase6(BasicSlaClass):
     vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
     vm_basic_parameters.update(
         {
-            "placement_affinity": config.VM_PINNED,
-            "placement_host": config.HOSTS[0],
+            "placement_affinity": c.VM_PINNED,
+            "placement_host": c.HOSTS[0],
             "vcpu_pinning": [{"0": "0"}]
         }
     )
@@ -989,9 +996,9 @@ class TestCPUPinCase6(BasicSlaClass):
         Create a non migratable
         """
         super(TestCPUPinCase6, cls).setup_class()
-        sockets = hosts.get_host_topology(config.HOSTS[0]).sockets
+        sockets = ll_hosts.get_host_topology(c.HOSTS[0]).sockets
         logger.info("Number of sockets on host: %s" % sockets)
-        cores = hosts.get_host_topology(config.HOSTS[0]).cores
+        cores = ll_hosts.get_host_topology(c.HOSTS[0]).cores
         logger.info("Number of cores per socket on host: %s" % cores)
         cls.total_cores = sockets * cores
 
@@ -1003,41 +1010,45 @@ class TestCPUPinCase6(BasicSlaClass):
         iterations = CPUPIN_ITER if self.total_cores > 1 else 1
         for n in range(iterations):
             logger.info("Attempt %s:" % (n + 1))
-            expected_pin = str(random.randint(0, self.total_cores - 1))
+            online_cpus = ll_sla.get_list_of_online_cpus_on_resource(
+                c.VDS_HOSTS[0]
+            )
+            total_online_cpus = online_cpus[-1] + online_cpus[1]
+            expected_pin = str(random.choice(online_cpus))
             hyp_exp = "-" * int(expected_pin)
-            hyp_cores = "-" * (self.total_cores - int(expected_pin) - 1)
+            hyp_cores = "-" * (total_online_cpus - int(expected_pin) - 1)
             expected_affinity = "%sy%s" % (hyp_exp, hyp_cores)
 
             logger.info("Setting CPU pinning to 0#%s" % expected_pin)
             self.assertTrue(
-                vms.updateVm(
+                ll_vms.updateVm(
                     True, self.vm_name, vcpu_pinning=[{"0": expected_pin}]
                 ),
                 "Failed to update VM"
             )
             self.assertTrue(
-                vms.startVm(True, self.vm_name), "Failed to start VM"
+                ll_vms.startVm(True, self.vm_name), "Failed to start VM"
             )
-            res = get_pinned_cpu_info(config.VDS_HOSTS[0], self.vm_name, "0")
+            res = get_pinned_cpu_info(c.VDS_HOSTS[0], self.vm_name, "0")
             self.assertTrue(
-                vms.stopVm(True, self.vm_name), "Failed to stop VM"
+                ll_vms.stopVm(True, self.vm_name), "Failed to stop VM"
             )
             logger.info(
-                "vCPU #0 is expected to be pinned to vCPU #%s, "
-                "and is actually pinned to vCPU #%s",
+                "vCPU #0 is expected to be pinned to pCPU #%s, "
+                "and is actually pinned to pCPU #%s",
                 expected_pin, res[0]
             )
             logger.info(
                 "vCPU #0 is expected to have pinning affinity of %s, "
                 "and actually has %s",
-                expected_affinity, res[1][:self.total_cores]
+                expected_affinity, res[1][:total_online_cpus]
             )
             self.assertEqual(
                 expected_pin, res[0],
                 "Actual CPU pinning does not match expectation"
             )
             self.assertEqual(
-                expected_affinity, res[1][:self.total_cores],
+                expected_affinity, res[1][:total_online_cpus],
                 "Actual CPU affinity does not match expectation"
             )
 
@@ -1054,8 +1065,8 @@ class TestCPUPinCase7(BasicSlaClass):
     vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
     vm_basic_parameters.update(
         {
-            "placement_affinity": config.VM_PINNED,
-            "placement_host": config.HOSTS[0]
+            "placement_affinity": c.VM_PINNED,
+            "placement_host": c.HOSTS[0]
         }
     )
     total_cores = 1
@@ -1066,12 +1077,12 @@ class TestCPUPinCase7(BasicSlaClass):
         Create a non migratable VM
         """
         super(TestCPUPinCase7, cls).setup_class()
-        sockets = hosts.get_host_topology(config.HOSTS[0]).sockets
+        sockets = ll_hosts.get_host_topology(c.HOSTS[0]).sockets
         logger.info("Number of sockets on host: %s" % sockets)
-        cores = hosts.get_host_topology(config.HOSTS[0]).cores
+        cores = ll_hosts.get_host_topology(c.HOSTS[0]).cores
         logger.info("Number of cores per socket on host: %s" % cores)
         logger.info("Update vm")
-        if not vms.updateVm(
+        if not ll_vms.updateVm(
                 True, cls.vm_name, cpu_cores=cores, cpu_socket=sockets
         ):
             raise errors.VMException("Failed to update vm")
@@ -1087,15 +1098,15 @@ class TestCPUPinCase7(BasicSlaClass):
         pinning = [{str(i): "0"} for i in xrange(self.total_cores)]
         logger.info("Pinning all VCPU's to pCPU #0")
         self.assertTrue(
-            vms.updateVm(True, self.vm_name, vcpu_pinning=pinning),
+            ll_vms.updateVm(True, self.vm_name, vcpu_pinning=pinning),
             "Failed to update VM"
         )
         self.assertTrue(
-            vms.startVm(True, self.vm_name), "Failed to start VM"
+            ll_vms.startVm(True, self.vm_name), "Failed to start VM"
         )
         for i in range(self.total_cores):
             pin_info = get_pinned_cpu_info(
-                config.VDS_HOSTS[0], self.vm_name, i
+                c.VDS_HOSTS[0], self.vm_name, i
             )
             self.assertTrue(
                 pin_info[0], "Could not retrieve VM pinning information"
@@ -1108,7 +1119,7 @@ class TestCPUPinCase7(BasicSlaClass):
 ########################################################################
 
 
-@attr(tier=1)
+@libs.attr(tier=1)
 class TestCPUPinCase8(BasicSlaClass):
     """
     Negative: Set CPU pinning to a non migratable VM with no host
@@ -1127,13 +1138,13 @@ class TestCPUPinCase8(BasicSlaClass):
         """
         logger.info("Attempting to change VM to user migratable")
         self.assertFalse(
-            vms.updateVm(
-                True, self.vm_name, placement_affinity=config.VM_PINNED,
-                placement_host=config.VM_ANY_HOST, vcpu_pinning=[{"0": "0"}]
+            ll_vms.updateVm(
+                True, self.vm_name, placement_affinity=c.VM_PINNED,
+                placement_host=c.VM_ANY_HOST, vcpu_pinning=[{"0": "0"}]
             )
         )
         logger.info(
-            "Failed to change a VM to use CPU pinning, "
+            "As expected, failed to change a VM to use CPU pinning, "
             "be non migratable with no host specified to run on"
         )
 
@@ -1152,7 +1163,7 @@ class TestPlacementPolicyCase1(BasicSlaClass):
     vm_basic_parameters.update(
         {
             "start": "true",
-            "placement_host": config.HOSTS[0]
+            "placement_host": c.HOSTS[0]
         }
     )
 
@@ -1161,11 +1172,11 @@ class TestPlacementPolicyCase1(BasicSlaClass):
         """
         Migrate a migratable VM
         """
-        if (len(config.HOSTS)) < 2:
+        if (len(c.HOSTS)) < 2:
             raise errors.SkipTest("Too few hosts")
         logger.info("Attempting to migratable a migratable VM")
         self.assertTrue(
-            vms.migrateVm(True, self.vm_name, host=config.HOSTS[1]),
+            ll_vms.migrateVm(True, self.vm_name, host=c.HOSTS[1]),
             "Error migrating VM"
         )
         logger.info("Successfully migrated VM")
@@ -1184,8 +1195,8 @@ class TestPlacementPolicyCase2(BasicSlaClass):
     vm_basic_parameters.update(
         {
             "start": "true",
-            "placement_host": config.HOSTS[0],
-            "placement_affinity": config.VM_USER_MIGRATABLE
+            "placement_host": c.HOSTS[0],
+            "placement_affinity": c.VM_USER_MIGRATABLE
         }
     )
 
@@ -1194,12 +1205,12 @@ class TestPlacementPolicyCase2(BasicSlaClass):
         """
         Migrate a user-migratable VM
         """
-        if (len(config.HOSTS)) < 2:
+        if (len(c.HOSTS)) < 2:
             raise errors.SkipTest("Too few hosts")
         logger.info("Attempting to migratable a migratable VM")
         self.assertTrue(
-            vms.migrateVm(
-                True, self.vm_name, host=config.HOSTS[1], force=True
+            ll_vms.migrateVm(
+                True, self.vm_name, host=c.HOSTS[1], force=True
             ),
             "Error migrating VM"
         )
@@ -1219,8 +1230,8 @@ class TestPlacementPolicyCase3(BasicSlaClass):
     vm_basic_parameters.update(
         {
             "start": "true",
-            "placement_host": config.HOSTS[0],
-            "placement_affinity": config.VM_PINNED
+            "placement_host": c.HOSTS[0],
+            "placement_affinity": c.VM_PINNED
         }
     )
 
@@ -1229,11 +1240,11 @@ class TestPlacementPolicyCase3(BasicSlaClass):
         """
         Migrate a non-migratable VM
         """
-        if (len(config.HOSTS)) < 2:
+        if (len(c.HOSTS)) < 2:
             raise errors.SkipTest("Too few hosts")
         logger.info("Attempting to migratable a migratable VM")
         self.assertFalse(
-            vms.migrateVm(True, self.vm_name, host=config.HOSTS[1]),
+            ll_vms.migrateVm(True, self.vm_name, host=c.HOSTS[1]),
             "Successfully migrated VM"
         )
         logger.info("Failed to to migrate VM")
@@ -1249,7 +1260,7 @@ class TestPlacementPolicyCase4(BasicSlaClass):
     vm_name = "placement_vm4"
     vm_desc = "Placement policy VM"
     vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    vm_basic_parameters.update({"placement_affinity": config.VM_PINNED})
+    vm_basic_parameters.update({"placement_affinity": c.VM_PINNED})
 
     @polarion("RHEVM3-9530")
     def test_run_non_migratable_no_specific(self):
@@ -1257,8 +1268,8 @@ class TestPlacementPolicyCase4(BasicSlaClass):
         Start a non-migratable VM with no specific host to run on
         """
         self.assertTrue(
-            vms.startVm(
-                True, self.vm_name, wait_for_status=config.VM_UP
+            ll_vms.startVm(
+                True, self.vm_name, wait_for_status=c.VM_UP
             ),
             "Cannot start vm %s" % self.vm_name
         )

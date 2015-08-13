@@ -466,3 +466,7 @@ ENGINE = resources.Engine(
     port=VDC_PORT,
     entry_point=ENGINE_ENTRY_POINT,
 )
+
+IBM_POWER_8 = 'IBM POWER 8'
+PPC_ARCH = True if CPU_NAME == IBM_POWER_8 else False
+PPC_SKIP_MESSAGE = 'Test not supported under PPC64 architecture'

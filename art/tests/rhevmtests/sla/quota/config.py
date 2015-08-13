@@ -63,7 +63,7 @@ VM_CPU_CORES = "cpu_cores"
 
 # Sizes constants
 SIZE_512_MB = 512 * MB
-SIZE_1228_MB = 1228 * MB
+SIZE_1280_MB = 1280 * MB
 SIZE_2_GB = 2 * GB
 SIZE_10_GB = 10 * GB
 SIZE_14_GB = 14 * GB
