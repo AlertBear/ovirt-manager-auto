@@ -4,9 +4,11 @@
 """
 Helper functions for Sanity job
 """
+
 import logging
-from rhevmtests.networking import config
-from art.rhevm_api.tests_lib.low_level.hosts import getHostNicsList
+import config as conf
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 
 logger = logging.getLogger("Sanity_Helper")
 
@@ -19,8 +21,37 @@ def check_dummy_on_host_interfaces(dummy_name):
     :return: True/False
     :rtype: bool
     """
-    host_nics = getHostNicsList(config.HOSTS[0])
+    host_nics = ll_hosts.getHostNicsList(conf.HOST_0)
     for nic in host_nics:
         if dummy_name == nic.name:
             return True
     return False
+
+
+def prepare_networks_on_dc():
+    """
+    Create and attach all networks that are needed for all cases
+
+    :raise: NetworkException
+    """
+    nets_dict = conf.NETS_DICT
+    logger.info(
+        "Create and attach networks on %s/%s", conf.DC_NAME, conf.CLUSTER
+    )
+    if not hl_networks.createAndAttachNetworkSN(
+        data_center=conf.DC_NAME, cluster=conf.CLUSTER, network_dict=nets_dict
+    ):
+        raise conf.NET_EXCEPTION(
+            "Failed to add networks to %s/%s" % (conf.DC_NAME, conf.CLUSTER)
+        )
+
+
+def generate_vlan_id():
+    """
+    Generate unique VLAN id for cases
+
+    :return: VLAN id
+    :rtype: str
+    """
+    conf.VLAN_ID += 1
+    return str(conf.VLAN_ID)
