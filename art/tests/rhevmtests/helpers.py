@@ -1,17 +1,15 @@
 """
-Rhevmtests helper functions
+rhevmtests helper functions
 """
-import art.rhevm_api.resources
 
+import art.rhevm_api.resources
 from art.rhevm_api.resources import ssh
 import art.rhevm_api.resources.user as users
-
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
+from rhevmtests import config
 
-from rhevmtests.storage import config
 
-
-def get_golden_template_name(cluster=config.CLUSTER_NAME):
+def get_golden_template_name(cluster=config.CLUSTER_NAME[0]):
     """
     Return golden environment's template name for a certain cluster
 
