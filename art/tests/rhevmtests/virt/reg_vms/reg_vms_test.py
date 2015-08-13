@@ -1058,6 +1058,7 @@ class VmSnapshots(BaseVmWithDisk):
             )
         super(VmSnapshots, cls).teardown_class()
 
+    @bz({'1253338': {'engine': None, 'version': ['3.6']}})
     @polarion("RHEVM3-10089")
     @istest
     def basic_vm_snapshots(self):
