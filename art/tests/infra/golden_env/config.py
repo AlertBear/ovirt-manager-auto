@@ -6,9 +6,8 @@ __test__ = False
 
 import copy
 
-from art.test_handler.settings import opts
+from art.test_handler.settings import ART_CONFIG, opts
 from art.rhevm_api.utils import test_utils
-from art.test_handler.settings import ART_CONFIG
 
 # Name of the test
 TESTNAME = "golden_env"
@@ -16,6 +15,8 @@ TESTNAME = "golden_env"
 ENGINE = ART_CONFIG['RUN']['engine'].lower()
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
+
+REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
 
 STORAGE = copy.deepcopy(ART_CONFIG['PARAMETERS'])
 
@@ -39,9 +40,8 @@ CPU_NAME = PARAMETERS['cpu_name']
 
 CLUSTER_NAME = PARAMETERS['cluster_name']
 
-VDC = PARAMETERS.get('host', None)
-
-VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
+VDC = REST_CONNECTION.get('host')
+VDC_PASSWORD = PARAMETERS.get('vdc_root_password')
 
 VM_BASE_NAME = BASENAME
 

@@ -866,3 +866,13 @@ def get_quota_limit_usage(
     if not quota_limit_obj:
         return 0.0
     return float(getattr(quota_limit_obj, usage, 0))
+
+
+def get_datacenters_list():
+    """
+    Get list of all datacenters
+
+    :return: datacenters
+    :rtype: list
+    """
+    return util.get(absLink=False)

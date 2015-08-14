@@ -23,7 +23,7 @@ from art.rhevm_api.resources import VDS
 
 import art.test_handler.exceptions as errors
 
-import config
+import infra.golden_env.config as config
 LOGGER = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
