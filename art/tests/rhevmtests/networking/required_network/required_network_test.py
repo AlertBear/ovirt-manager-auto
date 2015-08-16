@@ -305,7 +305,7 @@ class TestRequiredNetwork04(TearDownRequiredNetwork):
         logger.info("Check that %s is non-operational", config.HOSTS[0])
         if not waitForHostsStates(
                 positive=True, names=config.HOSTS[0],
-                states="non_operational", timeout=100
+                states="non_operational", timeout=300
         ):
             raise NetworkException(
                 "%s status is not non-operational" % config.HOSTS[0]
