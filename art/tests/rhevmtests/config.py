@@ -187,10 +187,15 @@ if 'prepared_env' in ART_CONFIG:
     # External Provider types
     GLANCE = 'OpenStackImageProvider'
 
-    external_providers = GOLDEN_ENV['external_providers']
     EXTERNAL_PROVIDERS = {}
-    for provider in external_providers:
-        EXTERNAL_PROVIDERS[provider['type']] = provider['name']
+
+    EPS = ART_CONFIG['EPS']
+
+    eps_to_add = EPS.as_list('ep_to_add')
+    for ep_to_add in eps_to_add:
+        if EPS[ep_to_add]['type'] == GLANCE:
+            provider_type = GLANCE
+            EXTERNAL_PROVIDERS[provider_type] = EPS[ep_to_add]['name']
 
     GOLDEN_GLANCE_IMAGE = 'golden_env_mixed_virtio_0_Disk1'
 
