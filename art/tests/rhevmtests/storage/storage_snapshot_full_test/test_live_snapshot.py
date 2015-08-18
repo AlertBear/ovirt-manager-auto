@@ -180,6 +180,7 @@ class BaseTestCase(TestCase):
     This class implements setup and teardowns of common things
     """
     __test__ = False
+    bz = {'1253338': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """

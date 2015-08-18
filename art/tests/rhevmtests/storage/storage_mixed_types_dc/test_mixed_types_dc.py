@@ -397,6 +397,7 @@ class TestCase4565(IscsiNfsSD):
     __test__ = True
     polarion_test_case = '4565'
     vm_name = "vm_%s" % polarion_test_case
+    bz = {'1253338': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """
