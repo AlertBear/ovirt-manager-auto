@@ -10,19 +10,14 @@ Only static IP configuration is tested.
 """
 
 import logging
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
-from rhevmtests.networking import config
-from art.test_handler.exceptions import NetworkException
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.rhevm_api.tests_lib.low_level.networks import checkIPRule
-from art.rhevm_api.tests_lib.high_level.networks import (
-    createAndAttachNetworkSN, remove_net_from_setup, removeNetwork,
-    create_basic_setup, remove_basic_setup
-)
-from art.rhevm_api.tests_lib.low_level.hosts import (
-    genSNNic, sendSNRequest, deactivateHost, activateHost, updateHost
-)
+import rhevmtests.networking.config as config
+import art.test_handler.exceptions as exceptions
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 
 IP = config.MG_IP_ADDR
 NETMASK = config.NETMASK
@@ -68,11 +63,11 @@ class TestGatewaysCase1(TestCase):
             }
         }
 
-        if not createAndAttachNetworkSN(
+        if not hl_networks.createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
@@ -81,11 +76,11 @@ class TestGatewaysCase1(TestCase):
         """
         Check correct configuration with ip rule function
         """
-        if not checkIPRule(
+        if not ll_networks.checkIPRule(
             config.HOSTS_IP[0], user=config.HOSTS_USER,
             password=config.HOSTS_PW, subnet=SUBNET
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Incorrect gateway configuration for %s" % config.NETWORKS[0]
             )
 
@@ -94,12 +89,12 @@ class TestGatewaysCase1(TestCase):
         """
         Remove network with gw configuration from setup
         """
-        if not sendSNRequest(
+        if not ll_hosts.sendSNRequest(
             True, host=config.HOSTS[0],
             auto_nics=[config.VDS_HOSTS[0].nics[0]], check_connectivity="true",
             connectivity_timeout=TIMEOUT, force=False
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Couldn't remove %s with gateway from setup" %
                 config.NETWORKS[0]
             )
@@ -110,7 +105,7 @@ class TestGatewaysCase1(TestCase):
         Remove network from the setup.
         """
         logger.info("Remove network %s from DC/CLuster", config.NETWORKS[0])
-        if not removeNetwork(True, network=config.NETWORKS[0]):
+        if not hl_networks.removeNetwork(True, network=config.NETWORKS[0]):
             logger.error(
                 "Cannot remove network %s from DC/Cluster", config.NETWORKS[0]
             )
@@ -138,11 +133,11 @@ class TestGatewaysCase2(TestCase):
             }
         }
 
-        if not createAndAttachNetworkSN(
+        if not hl_networks.createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0, 1]
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
@@ -151,11 +146,11 @@ class TestGatewaysCase2(TestCase):
         """
         Check correct configuration with ip rule function
         """
-        if not checkIPRule(
+        if not ll_networks.checkIPRule(
             config.HOSTS_IP[0], user=config.HOSTS_USER,
             password=config.HOSTS_PW, subnet=SUBNET
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Incorrect gateway configuration for %s" % config.NETWORKS[0]
             )
 
@@ -166,7 +161,7 @@ class TestGatewaysCase2(TestCase):
         """
 
         logger.info("Remove network %s from setup", config.VLAN_NETWORKS[0])
-        if not remove_net_from_setup(
+        if not hl_networks.remove_net_from_setup(
             host=config.VDS_HOSTS[0], auto_nics=[0],
             network=[config.VLAN_NETWORKS[0]]
         ):
@@ -196,11 +191,11 @@ class TestGatewaysCase3(TestCase):
             }
         }
 
-        if not createAndAttachNetworkSN(
+        if not hl_networks.createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
@@ -209,11 +204,11 @@ class TestGatewaysCase3(TestCase):
         """
         Check correct configuration with ip rule function
         """
-        if not checkIPRule(
+        if not ll_networks.checkIPRule(
             config.HOSTS_IP[0], user=config.HOSTS_USER,
             password=config.HOSTS_PW, subnet=SUBNET
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Incorrect gateway configuration for %s" % config.NETWORKS[0]
             )
 
@@ -223,7 +218,7 @@ class TestGatewaysCase3(TestCase):
         Remove network from the setup.
         """
         logger.info("Remove network %s from setup", config.NETWORKS[0])
-        if not remove_net_from_setup(
+        if not hl_networks.remove_net_from_setup(
             host=config.VDS_HOSTS[0], auto_nics=[0],
             network=[config.NETWORKS[0]]
         ):
@@ -254,11 +249,11 @@ class TestGatewaysCase4(TestCase):
             }
         }
 
-        if not createAndAttachNetworkSN(
+        if not hl_networks.createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
@@ -267,11 +262,11 @@ class TestGatewaysCase4(TestCase):
         """
         Check correct configuration with ip rule function
         """
-        if not checkIPRule(
+        if not ll_networks.checkIPRule(
             config.HOSTS_IP[0], user=config.HOSTS_USER,
             password=config.HOSTS_PW, subnet=SUBNET
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Incorrect gateway configuration for %s" % config.NETWORKS[0]
             )
 
@@ -281,7 +276,7 @@ class TestGatewaysCase4(TestCase):
         Remove network from the setup.
         """
         logger.info("Remove network from setup %s", config.NETWORKS[0])
-        if not remove_net_from_setup(
+        if not hl_networks.remove_net_from_setup(
             host=config.VDS_HOSTS[0], auto_nics=[0],
             network=[config.NETWORKS[0]]
         ):
@@ -305,11 +300,11 @@ class TestGatewaysCase5(TestCase):
             }
         }
 
-        if not createAndAttachNetworkSN(
+        if not hl_networks.createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             network_dict=local_dict1
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
@@ -325,40 +320,44 @@ class TestGatewaysCase5(TestCase):
             "The test should fail to do it", config.NETWORKS[0], HOST_NICS[1]
         )
         net_obj = []
-        rc, out = genSNNic(
+        rc, out = ll_hosts.genSNNic(
             nic=HOST_NICS[1], network=config.NETWORKS[0],
             boot_protocol="static", address="1.1.1.298", netmask=NETMASK,
             gateway=GATEWAY
         )
         if not rc:
-            raise NetworkException("Cannot generate SNNIC object")
+            raise exceptions.NetworkException("Cannot generate SNNIC object")
         net_obj.append(out["host_nic"])
-        if not sendSNRequest(
+        if not ll_hosts.sendSNRequest(
             False, host=config.HOSTS[0], nics=net_obj,
             auto_nics=[config.VDS_HOSTS[0].nics[0]], check_connectivity="true",
             connectivity_timeout=TIMEOUT, force=False
         ):
-            raise NetworkException("Can setupNetworks when shouldn't")
+            raise exceptions.NetworkException(
+                "Can setupNetworks when shouldn't"
+            )
 
         logger.info(
             "Trying to attach network %s with incorrect gateway on NIC %s."
             " The test should fail to do it", config.NETWORKS[0], HOST_NICS[1]
         )
         net_obj = []
-        rc, out = genSNNic(
+        rc, out = ll_hosts.genSNNic(
             nic=HOST_NICS[1], network=config.NETWORKS[0],
             boot_protocol="static", address=IP, netmask=NETMASK,
             gateway="1.1.1.289"
         )
         if not rc:
-            raise NetworkException("Cannot generate SNNIC object")
+            raise exceptions.NetworkException("Cannot generate SNNIC object")
         net_obj.append(out["host_nic"])
-        if not sendSNRequest(
+        if not ll_hosts.sendSNRequest(
             False, host=config.HOSTS[0], nics=net_obj,
             auto_nics=[config.VDS_HOSTS[0].nics[0]], check_connectivity="true",
             connectivity_timeout=TIMEOUT, force=False
         ):
-            raise NetworkException("Can setupNetworks when shouldn't")
+            raise exceptions.NetworkException(
+                "Can setupNetworks when shouldn't"
+            )
 
     @classmethod
     def teardown_class(cls):
@@ -366,7 +365,7 @@ class TestGatewaysCase5(TestCase):
         Remove network from the setup.
         """
         logger.info("Remove network %s from setup", config.NETWORKS[0])
-        if not remove_net_from_setup(
+        if not hl_networks.remove_net_from_setup(
             host=config.VDS_HOSTS[0], auto_nics=[0],
             network=[config.NETWORKS[0]]
         ):
@@ -394,11 +393,11 @@ class TestGatewaysCase6(TestCase):
                 "address": [IP], "netmask": [NETMASK], "gateway": ["0.0.0.0"]
             }
         }
-        if not createAndAttachNetworkSN(
+        if not hl_networks.createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
@@ -408,7 +407,7 @@ class TestGatewaysCase6(TestCase):
         Remove network from the setup.
         """
         logger.info("Remove network %s from setup", config.NETWORKS[0])
-        if not remove_net_from_setup(
+        if not hl_networks.remove_net_from_setup(
             host=config.VDS_HOSTS[0], auto_nics=[0],
             network=[config.NETWORKS[0]]
         ):
@@ -438,11 +437,13 @@ class TestGatewaysCase7(TestCase):
             }
         }
 
-        if not createAndAttachNetworkSN(
+        if not hl_networks.createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
         ):
-            raise NetworkException("Cannot create and attach network %s")
+            raise exceptions.NetworkException(
+                "Cannot create and attach network %s"
+            )
 
     @polarion("RHEVM3-3963")
     def test_check_ip_rule(self):
@@ -450,38 +451,40 @@ class TestGatewaysCase7(TestCase):
         Add additional NIC to the bond and check IP rule
         """
         logger.info("Checking IP rule before adding 3rd NIC")
-        if not checkIPRule(
+        if not ll_networks.checkIPRule(
             config.HOSTS_IP[0], user=config.HOSTS_USER,
             password=config.HOSTS_PW, subnet=SUBNET
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Incorrect gateway configuration for %s" % config.NETWORKS[0]
             )
 
         logger.info("Generating network object for 3 NIC bond ")
         net_obj = []
-        rc, out = genSNNic(
+        rc, out = ll_hosts.genSNNic(
             nic="bond0", network=config.NETWORKS[0],
             slaves=[HOST_NICS[2], HOST_NICS[3], HOST_NICS[1]],
             boot_protocol="static", address=IP, netmask=NETMASK,
             gateway=GATEWAY
         )
         if not rc:
-            raise NetworkException("Cannot generate SNNIC object")
+            raise exceptions.NetworkException("Cannot generate SNNIC object")
         net_obj.append(out["host_nic"])
-        if not sendSNRequest(
+        if not ll_hosts.sendSNRequest(
             True, host=config.HOSTS[0], nics=net_obj,
             auto_nics=[config.VDS_HOSTS[0].nics[0]], check_connectivity="true",
             connectivity_timeout=TIMEOUT, force=False
         ):
-            raise NetworkException("Cannot update bond to have 2 NICs")
+            raise exceptions.NetworkException(
+                "Cannot update bond to have 2 NICs"
+            )
 
         logger.info("Checking IP rule after adding 3rd NIC")
-        if not checkIPRule(
+        if not ll_networks.checkIPRule(
             config.HOSTS_IP[0], user=config.HOSTS_USER,
             password=config.HOSTS_PW, subnet=SUBNET
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Incorrect gateway configuration after updating BOND"
             )
 
@@ -491,7 +494,7 @@ class TestGatewaysCase7(TestCase):
         Remove network from the setup.
         """
         logger.info("Remove network %s from setup", config.NETWORKS[0])
-        if not remove_net_from_setup(
+        if not hl_networks.remove_net_from_setup(
             host=config.VDS_HOSTS[0], auto_nics=[0],
             network=[config.NETWORKS[0]]
         ):
@@ -522,11 +525,11 @@ class TestGatewaysCase8(TestCase):
             }
         }
 
-        if not createAndAttachNetworkSN(
+        if not hl_networks.createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
@@ -537,37 +540,39 @@ class TestGatewaysCase8(TestCase):
         Remove a NIC from bond and check ip rule again
         """
         logger.info("Checking the IP rule before removing one NIC from bond")
-        if not checkIPRule(
+        if not ll_networks.checkIPRule(
             config.HOSTS_IP[0], user=config.HOSTS_USER,
             password=config.HOSTS_PW, subnet=SUBNET
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Incorrect gateway configuration for %s" % config.NETWORKS[0]
             )
 
         logger.info("Generating network object for 2 NIC bond ")
         net_obj = []
-        rc, out = genSNNic(
+        rc, out = ll_hosts.genSNNic(
             nic="bond0", network=config.NETWORKS[0],
             slaves=[HOST_NICS[2], HOST_NICS[3]], boot_protocol="static",
             address=IP, netmask=NETMASK, gateway=GATEWAY
         )
         if not rc:
-            raise NetworkException("Cannot generate SNNIC object")
+            raise exceptions.NetworkException("Cannot generate SNNIC object")
         net_obj.append(out["host_nic"])
-        if not sendSNRequest(
+        if not ll_hosts.sendSNRequest(
             True, host=config.HOSTS[0], nics=net_obj,
             auto_nics=[config.VDS_HOSTS[0].nics[0]], check_connectivity="true",
             connectivity_timeout=TIMEOUT, force=False
         ):
-            raise NetworkException("Cannot update bond to have 2 NICs")
+            raise exceptions.NetworkException(
+                "Cannot update bond to have 2 NICs"
+            )
 
         logger.info("Checking the IP rule after removing one NIC from bond")
-        if not checkIPRule(
+        if not ll_networks.checkIPRule(
             config.HOSTS_IP[0], user=config.HOSTS_USER,
             password=config.HOSTS_PW, subnet=SUBNET
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Incorrect gateway configuration after removing NIC from bond"
             )
 
@@ -577,7 +582,7 @@ class TestGatewaysCase8(TestCase):
         Remove network from the setup.
         """
         logger.info("Remove network %s from setup", config.NETWORKS[0])
-        if not remove_net_from_setup(
+        if not hl_networks.remove_net_from_setup(
             host=config.VDS_HOSTS[0], auto_nics=[0],
             network=[config.NETWORKS[0]]
         ):
@@ -588,105 +593,6 @@ class TestGatewaysCase8(TestCase):
 
 @attr(tier=1)
 class TestGatewaysCase9(TestCase):
-    """
-    Verify you can"t configure gateway on the network in 3.2 Cluster
-    """
-    __test__ = True
-    uncomp_dc = "new_DC_case09"
-    uncomp_cl = "new_CL_case09"
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create 3.2 Cluster and 3.2 DC
-        """
-        logger.info(
-            "Create Datacenter %s and Cluster %s , version %s",
-            cls.uncomp_dc, cls.uncomp_cl, config.VERSION[2]
-        )
-
-        if not create_basic_setup(
-            datacenter=cls.uncomp_dc, storage_type=config.STORAGE_TYPE,
-            version=config.VERSION[2], cluster=cls.uncomp_cl,
-            cpu=config.CPU_NAME
-        ):
-            raise NetworkException(
-                "Failed to create Datacenter %s or Cluster %s" %
-                (cls.uncomp_dc, cls.uncomp_cl)
-            )
-
-    @polarion("RHEVM3-3961")
-    def test_add_host_to_another_cluster(self):
-        """
-        Add host to the 3.2 Cluster
-        Try to configure static IP with dg - should fail as in 3.2
-        it is not supported
-        """
-        logger.info("Put the host %s on another Cluster %s",
-                    config.HOSTS[0], self.uncomp_cl)
-        if not deactivateHost(True, host=config.HOSTS[0]):
-            raise NetworkException("Couldn't deactivate Host")
-
-        if not updateHost(True, host=config.HOSTS[0],
-                          cluster=self.uncomp_cl):
-            raise NetworkException(
-                "Cannot move host %s to another Cluster %s" %
-                (config.HOSTS[0], self.uncomp_cl)
-            )
-
-        if not activateHost(True, host=config.HOSTS[0]):
-            raise NetworkException("Couldn't activate Host")
-
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": 1, "required": False, "bootproto": "static",
-                "address": [IP], "netmask": [NETMASK], "gateway": [GATEWAY]
-            }
-        }
-        if createAndAttachNetworkSN(
-            data_center=self.uncomp_dc, cluster=self.uncomp_cl,
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
-        ):
-            raise NetworkException(
-                "Could configure static IP with gateway when shouldn't"
-            )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from the setup.
-        """
-        logger.info(
-            "Put the host %s back to original Cluster %s",
-            config.HOSTS[0], config.CLUSTER_NAME[0]
-        )
-        if not deactivateHost(True, host=config.HOSTS[0]):
-            logger.error("Couldn't deactivate host %s", config.HOSTS[0])
-        if not updateHost(
-            True, host=config.HOSTS[0], cluster=config.CLUSTER_NAME[0]
-        ):
-            logger.error(
-                "Cannot move host %s to Cluster %s",
-                config.HOSTS[0], config.CLUSTER_NAME[0]
-            )
-        if not activateHost(True, host=config.HOSTS[0]):
-            logger.error("Couldn't activate host %s", config.HOSTS[0])
-
-        logger.info(
-            "Removing DC %s and Cluster %s from the setup",
-            cls.uncomp_dc, cls.uncomp_cl
-        )
-        if not remove_basic_setup(
-            datacenter=cls.uncomp_dc, cluster=cls.uncomp_cl
-        ):
-            logger.error(
-                "Failed to remove 3.2 %s and %s from setup",
-                cls.uncomp_dc, cls.uncomp_cl
-            )
-
-
-@attr(tier=1)
-class TestGatewaysCase10(TestCase):
     """
     Verify you can configure additional network without gateway
     """
@@ -705,11 +611,11 @@ class TestGatewaysCase10(TestCase):
             }
         }
 
-        if not createAndAttachNetworkSN(
+        if not hl_networks.createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
@@ -718,11 +624,11 @@ class TestGatewaysCase10(TestCase):
         """
         Check correct configuration with ip rule function
         """
-        if checkIPRule(
+        if ll_networks.checkIPRule(
             config.HOSTS_IP[0], user=config.HOSTS_USER,
             password=config.HOSTS_PW, subnet=SUBNET
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Gateway is configured when shouldn't"
             )
 
@@ -732,7 +638,7 @@ class TestGatewaysCase10(TestCase):
         Remove network from the setup.
         """
         logger.info("Remove network %s from setup", config.NETWORKS[0])
-        if not remove_net_from_setup(
+        if not hl_networks.remove_net_from_setup(
             host=config.VDS_HOSTS[0], auto_nics=[0],
             network=[config.NETWORKS[0]]
         ):
