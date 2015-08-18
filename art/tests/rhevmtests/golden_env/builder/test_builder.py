@@ -10,7 +10,7 @@ from art.core_api.apis_utils import TimeoutingSampler
 
 from art.rhevm_api.tests_lib.low_level import datacenters
 from art.rhevm_api.tests_lib.low_level import hosts
-from art.rhevm_api.tests_lib.low_level import vms
+from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import clusters
 from art.rhevm_api.tests_lib.low_level import disks
@@ -253,7 +253,7 @@ class CreateDC(TestCase):
         volume_format = vm['disk_format']
         vm_type = vm['type']
         disk_interface = vm['disk_interface']
-        assert vms.createVm(
+        assert ll_vms.createVm(
             True, vm_name, vm_description, cluster=cl_name,
             nic='nic1', storageDomainName=storage_domain_name,
             size=vm['disk_size'], diskType=vm['disk_type'],
@@ -265,16 +265,16 @@ class CreateDC(TestCase):
             password=vm['password'], type=vm_type, installation=True,
             network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT,
             image=config.COBBLER_PROFILE)
-        assert vms.waitForVMState(vm_name, state=ENUMS['vm_state_up'])
-        assert vms.stopVm(True, vm_name)
+        assert ll_vms.waitForVMState(vm_name, state=ENUMS['vm_state_up'])
+        assert ll_vms.stopVm(True, vm_name)
 
     def _seal_vm(self, vm_name, vm_password):
-        vm_state = vms.get_vm_state(vm_name)
+        vm_state = ll_vms.get_vm_state(vm_name)
         if vm_state == ENUMS['vm_state_down']:
-            vms.startVm(True, vm_name, wait_for_status=ENUMS['vm_state_up'])
+            ll_vms.startVm(True, vm_name, wait_for_status=ENUMS['vm_state_up'])
 
         LOGGER.info("Waiting for IP of %s", vm_name)
-        status, result = vms.waitForIP(vm_name)
+        status, result = ll_vms.waitForIP(vm_name)
         assert status
 
         LOGGER.info("Sealing: set persistent network for %s", vm_name)
@@ -282,7 +282,7 @@ class CreateDC(TestCase):
         assert test_utils.setPersistentNetwork(
             result['ip'], vm_password)
         LOGGER.info("Stopping %s to create template", vm_name)
-        assert vms.stopVm(True, vm_name)
+        assert ll_vms.stopVm(True, vm_name)
 
     def _create_and_seal_vm(self, vm, dc_name, cl_name):
         self._create_vm(vm, dc_name, cl_name)
@@ -291,7 +291,7 @@ class CreateDC(TestCase):
     def _is_vms_state_down(self, cloned_vms):
         for cloned_vm in cloned_vms:
             LOGGER.info("Waiting until %s state is down...", cloned_vm)
-            assert vms.waitForVMState(
+            assert ll_vms.waitForVMState(
                 cloned_vm,
                 state=ENUMS['vm_state_down']
             )
@@ -312,12 +312,16 @@ class CreateDC(TestCase):
                 vm_description['clone_from']
             )
 
-            vms.cloneVmFromTemplate(
+            ll_vms.cloneVmFromTemplate(
                 True,
                 vm_description['name'],
                 vm_description['clone_from'],
                 cl_name,
-                wait=False
+                wait=True
+            )
+            ll_vms.updateVmDisk(
+                positive=True, vm=vm_description['name'],
+                disk=vm_description['clone_from'], bootable=True
             )
             cloned_vms.append(vm_description['name'])
             suffix_num += 1
@@ -357,7 +361,7 @@ class CreateDC(TestCase):
                 vm_description['name'], tmp_template
             )
 
-            vms.cloneVmFromTemplate(
+            ll_vms.cloneVmFromTemplate(
                 True,
                 vm_description['name'], tmp_template,
                 cl_name,
@@ -446,7 +450,6 @@ class CreateDC(TestCase):
                 import_as_template=True,
                 async=False
             )
-
             self.add_nic_to_glance_template(glance_template['name'])
 
     def add_nic_to_glance_template(self, template_name):
