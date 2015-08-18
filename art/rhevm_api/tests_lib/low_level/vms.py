@@ -3961,7 +3961,7 @@ def stop_vms_safely(vms_list):
     logger.info("Stopping vms: %s", vms_list)
     for vm in vms_list:
         if not get_vm_state(vm) == ENUMS['vm_state_down']:
-            if not stopVm(True, vm, async=True):
+            if not stopVm(True, vm, async='true'):
                 vms_stop_failed.add(vm)
             else:
                 vms_action_stop.add(vm)
