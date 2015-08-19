@@ -297,3 +297,29 @@ class JDBCCLIGroupUser(TestCase):
             'delete',
             TEST_GROUP_DELETE
         ), "Failed to delete group '%s'" % TEST_GROUP_DELETE
+
+
+@attr(tier=0)
+class JDBCCLIQuery(TestCase):
+    """Test quering of users/groups via aaa-jdbc CLI"""
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        cls.query_cli = jdbccli.JDBCCLI(
+            session=config.ENGINE_HOST.executor().session(),
+            entity='query'
+        )
+
+    def test_010_query_users(self):
+        """ query users via aaa-jdbc cli """
+        assert self.query_cli.run(what='user'), "Failed to search for users"
+
+    def test_020_query_groups(self):
+        """ query groups via aaa-jdbc cli """
+        assert self.query_cli.run(what='group'), "Failed to search for groups"
+
+    @attr(tier=1)
+    def test_030_query_nothing(self):
+        """ query nothing via aaa-jdbc cli """
+        assert not self.query_cli.run(), "Invalid arguments of query passed"
