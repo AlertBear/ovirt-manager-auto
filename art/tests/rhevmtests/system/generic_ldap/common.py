@@ -29,10 +29,21 @@ def enableExtensions(service, host):
 
 
 def cleanExtDirectory(ext_dir, files=['*']):
-    """ remove files from extension directory """
-    ext_files = [os.path.join(ext_dir, f) for f in files]
+    """ remove files from extension directory except internal domain """
+    cmd = ['ls']
+    cmd.extend([os.path.join(ext_dir, f) for f in files])
+    cmd.extend([
+        '|',
+        'grep',
+        '-vE',
+        "'internal-authn.properties|internal-authz.properties'",
+        '|',
+        'xargs',
+        'rm',
+        '-f',
+    ])
     with config.ENGINE_HOST.executor().session() as ss:
-        ss.run_cmd(['rm', '-f', ' '.join(ext_files)])
+        ss.run_cmd(cmd)
 
 
 def prepareExtensions(module_name, ext_dir, extensions, clean=True,
