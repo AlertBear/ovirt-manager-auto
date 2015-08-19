@@ -1467,9 +1467,19 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                                          java_action_entity_name)()
             translator_to_java(act, java_action_entity)
             with measure_time('POST'):
-                act = getattr(java_entity, action)(
-                    java_action_entity,
-                    str(self.getCorrelationId(ApiOperation.syncAction)))
+                if (
+                        java_entity.__class__.__name__ == 'StorageDomainImage'
+                        and action == 'importImage'
+                ):
+                    act = getattr(java_entity, action)(
+                        java_action_entity,
+                        async,
+                        str(self.getCorrelationId(ApiOperation.syncAction))
+                    )
+                else:
+                    act = getattr(java_entity, action)(
+                        java_action_entity,
+                        str(self.getCorrelationId(ApiOperation.syncAction)))
         except java_sdk.JavaError as e:
             self.parse_java_error(e, ApiOperation.syncAction, positive)
             if positive:
