@@ -1370,6 +1370,14 @@ class CliUtil(RestUtil):
            * async - sync or async action
         Return: status (True if Action test succeeded, False otherwise)
         '''
+
+        # the action name is import in rest however it is import_image in CLI.
+        # More than that i add this entity to ACTION_WAIVER so I will skip the
+        # command validation which will break the command
+        if entity.__class__.__name__ == 'Image' and action == 'import':
+            action = 'import_image'
+            ACTION_WAIVER.append('Image')
+
         act = self.makeAction(async, 10, **params)
         cli_act = validator.cliEntety(act, 'action')
 
@@ -1437,6 +1445,8 @@ class CliUtil(RestUtil):
                     'Validation skipped for %s',
                     entity.__class__.__name__
                 )
+                if entity.__class__.__name__ == 'Image':
+                    ACTION_WAIVER.remove('Image')
             else:
                 actionCmd = self.cli.validateCommand(actionCmd)
                 self.logger.warning(
