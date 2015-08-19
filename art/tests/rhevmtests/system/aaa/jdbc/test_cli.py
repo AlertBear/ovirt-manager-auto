@@ -13,12 +13,14 @@ from rhevmtests.system.aaa.jdbc import config
 ss = config.ENGINE_HOST.executor().session()
 USER_CLI = jdbccli.JDBCCLI(session=ss, entity='user')
 GROUP_CLI = jdbccli.JDBCCLI(session=ss, entity='group')
+MANAGE_CLI = jdbccli.JDBCCLI(session=ss, entity='group-manage')
 TEST_USER1 = 'user1'
 TEST_USER2 = 'user2'
 TEST_USER_DISABLED = 'user_disabled'
 TEST_USER_DELETE = 'user_to_be_deleted'
 TEST_GROUP1 = 'group1'
 TEST_GROUP2 = 'group2'
+TEST_GROUP_DELETE = 'group_deleted'
 
 
 def setup_module():
@@ -28,6 +30,7 @@ def setup_module():
     assert USER_CLI.run('add', TEST_USER_DISABLED, flag='+disabled')
     assert GROUP_CLI.run('add', TEST_GROUP1)
     assert GROUP_CLI.run('add', TEST_GROUP2)
+    assert GROUP_CLI.run('add', TEST_GROUP_DELETE)
 
 
 def teardown_module():
@@ -37,6 +40,7 @@ def teardown_module():
     USER_CLI.run('delete', TEST_USER_DELETE)
     GROUP_CLI.run('delete', TEST_GROUP1)
     GROUP_CLI.run('delete', TEST_GROUP2)
+    GROUP_CLI.run('delete', TEST_GROUP_DELETE)
 
 
 def loginAsAdmin():
@@ -183,3 +187,113 @@ class JDBCCLIUser(TestCase):
     def test_080_user_delete(self):
         """ user delete from aaa-jdbc """
         assert USER_CLI.run('delete', TEST_USER_DELETE)
+
+
+@attr(tier=0)
+class JDBCCLIGroupUser(TestCase):
+    """Test managing of users via aaa-jdbc CLI"""
+    __test__ = True
+    user_password = '1234567'
+
+    @classmethod
+    def setup_class(cls):
+        loginAsAdmin()
+        users.removeUser(True, TEST_USER1, config.INTERNAL_AUTHZ)
+
+    @classmethod
+    def teardown_class(cls):
+        loginAsAdmin()
+        users.removeUser(True, TEST_USER1, config.INTERNAL_AUTHZ)
+        users.deleteGroup(True, TEST_GROUP1)
+
+    def test_010_change_user_password(self):
+        """ change user password via aaa-jdbc cli """
+        assert USER_CLI.run(
+            'password-reset',
+            TEST_USER1,
+            password='pass:%s' % self.user_password,
+            password_valid_to='2100-01-01 11:11:11Z',
+        ), "Failed to change user's '%s' password" % TEST_USER1
+
+    def test_020_add_user_to_group(self):
+        """ change add user to group via aaa-jdbc cli """
+        assert MANAGE_CLI.run(
+            'useradd',
+            TEST_GROUP1,
+            user=TEST_USER1
+        ), "Failed to add user to group '%s'" % TEST_GROUP1
+        assert not MANAGE_CLI.run(
+            'useradd',
+            TEST_GROUP1,
+            user='nonsense'
+        ), "Possible to add nonexisting user to group"
+        assert not MANAGE_CLI.run(
+            'useradd',
+            'nonsense',
+            user=TEST_USER2
+        ), "Possible to add user to nonexisting group"
+
+    def test_030_assign_group_permissions(self):
+        """ assign group permissions via aaa-jdbc cli """
+        assert users.addGroup(
+            True,
+            group_name=TEST_GROUP1,
+            domain=config.INTERNAL_AUTHZ,
+        ), "Can't add group '%s'" % TEST_GROUP1
+        assert mla.addClusterPermissionsToGroup(
+            True,
+            group=TEST_GROUP1,
+            cluster='Default',
+            role='UserRole',
+        ), "Failed to add permissions to group '%s'" % TEST_GROUP1
+
+    def test_040_login_as_user(self):
+        """ login as user from group from aaa-jdbc """
+        users.loginAsUser(
+            TEST_USER1,
+            config.INTERNAL_PROFILE,
+            self.user_password,
+            True,
+        )
+        assert connectionTest(), "User %s can't login" % TEST_USER1
+
+    def test_050_delete_user_from_group(self):
+        """ delete user from group via aaa-jdbc cli """
+        assert MANAGE_CLI.run(
+            'userdel',
+            TEST_GROUP1,
+            user=TEST_USER1
+        ), "Failed to remove user from group '%s'" % TEST_GROUP1
+        assert not MANAGE_CLI.run(
+            'userdel',
+            TEST_GROUP1,
+            user='nonsense'
+        ), "Possible to remove nonexisting user from group"
+        assert not MANAGE_CLI.run(
+            'userdel',
+            'nonsense',
+            user=TEST_USER1
+        ), "Possible to remove user from nonexisting group"
+
+    def test_060_add_group_to_group(self):
+        """ add group to group via aaa-jdbc cli """
+        assert MANAGE_CLI.run(
+            'groupadd',
+            TEST_GROUP1,
+            group=TEST_GROUP2,
+        ), "Failed to add group to group '%s'" % TEST_GROUP1
+
+    def test_070_delete_group_from_group(self):
+        """ delete group from group via aaa-jdbc cli """
+        assert MANAGE_CLI.run(
+            'groupdel',
+            TEST_GROUP1,
+            group=TEST_GROUP2,
+        ), "Failed to delete group from group '%s'" % TEST_GROUP1
+
+    def test_080_group_delete(self):
+        """ group delete from aaa-jdbc """
+        assert GROUP_CLI.run(
+            'delete',
+            TEST_GROUP_DELETE
+        ), "Failed to delete group '%s'" % TEST_GROUP_DELETE
