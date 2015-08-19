@@ -6,7 +6,7 @@ Storage/3_5_Storage_Allow_Online_Vdisk_Editing
 import logging
 from art.rhevm_api.tests_lib.low_level.disks import (
     deleteDisk, updateDisk, addDisk, attachDisk, wait_for_disks_status,
-    detachDisk, get_other_storage_domain,
+    detachDisk, get_other_storage_domain, get_disk_obj,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
@@ -43,7 +43,6 @@ VM_SUSPENDED_DESCRIPTION = "vm_suspended_on_disk_description"
 
 ALIAS = "alias"
 DESCRIPTION = "description"
-DESCRIPTION_ORIG = "description_orig"
 ISCSI = config.STORAGE_TYPE_ISCSI
 NFS = config.STORAGE_TYPE_NFS
 
@@ -106,17 +105,17 @@ class BasicEnvironment(BaseTestCase):
         """
         self.storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[0]
-        self.disk_aliases_and_descriptions = \
-            create_disks_from_requested_permutations(
-                self.storage_domain, disk_interfaces, config.DISK_SIZE)
+        self.disk_aliases = create_disks_from_requested_permutations(
+            self.storage_domain, disk_interfaces, config.DISK_SIZE
+        )
 
     def tearDown(self):
         """
         Remove the disks created as part of the initial setup, this is to
         ensure no conflict between runs including Rest API and SDK
         """
-        for disk_dict in self.disk_aliases_and_descriptions:
-            deleteDisk(True, disk_dict[ALIAS])
+        for disk in self.disk_aliases:
+            deleteDisk(True, disk)
 
 
 class BaseClassEditDescription(BasicEnvironment):
@@ -132,42 +131,58 @@ class BaseClassEditDescription(BasicEnvironment):
         """
         disk_interfaces = (config.IDE, config.VIRTIO, config.VIRTIO_SCSI)
         self.setup_with_disks(disk_interfaces)
+        self.original_descriptions = dict()
+        self.updated_descriptions = dict()
 
     def basic_positive_flow(self):
-        for disk_dict in self.disk_aliases_and_descriptions:
-            logger.info("Attaching disk '%s' to VM", disk_dict[ALIAS])
-            attachDisk(True, disk_dict[ALIAS], VM1_NAME)
-            assert verify_vm_disk_description(VM1_NAME, disk_dict[ALIAS],
-                                              disk_dict[DESCRIPTION])
+        for disk_alias in self.disk_aliases:
+            disk_object = get_disk_obj(disk_alias)
+            logger.info("Attaching disk '%s' to VM", disk_alias)
+            attachDisk(True, disk_alias, VM1_NAME)
+            assert verify_vm_disk_description(
+                VM1_NAME, disk_alias, disk_object.get_description()
+            )
 
-            disk_dict[DESCRIPTION] += "_update"
-            assert updateDisk(True, alias=disk_dict[ALIAS],
-                              description=disk_dict[DESCRIPTION],
-                              vmName=VM1_NAME)
-            assert verify_vm_disk_description(VM1_NAME, disk_dict[ALIAS],
-                                              disk_dict[DESCRIPTION])
+            self.original_descriptions.update(
+                {disk_alias: disk_object.get_description()}
+            )
+            self.updated_descriptions.update(
+                {disk_alias: disk_object.get_description() + "_update"}
+            )
+            assert updateDisk(
+                True, alias=disk_alias,
+                description=self.updated_descriptions[disk_alias],
+                vmName=VM1_NAME
+            )
+            assert verify_vm_disk_description(
+                VM1_NAME, disk_alias, self.updated_descriptions[disk_alias]
+            )
         logger.info("Starting VM")
         assert startVm(True, VM1_NAME, config.VM_UP)
-        for disk_dict in self.disk_aliases_and_descriptions:
-            assert verify_vm_disk_description(VM1_NAME, disk_dict[ALIAS],
-                                              disk_dict[DESCRIPTION])
-            disk_dict[DESCRIPTION] = VM_POWERED_ON_DESCRIPTION
-            assert updateDisk(True, alias=disk_dict[ALIAS],
-                              description=disk_dict[DESCRIPTION],
-                              vmName=VM1_NAME)
-            assert verify_vm_disk_description(VM1_NAME, disk_dict[ALIAS],
-                                              disk_dict[DESCRIPTION])
+        for disk_alias in self.disk_aliases:
+            assert verify_vm_disk_description(
+                VM1_NAME, disk_alias, self.updated_descriptions[disk_alias]
+            )
+            assert updateDisk(
+                True, alias=disk_alias, description=VM_POWERED_ON_DESCRIPTION,
+                vmName=VM1_NAME
+            )
+            assert verify_vm_disk_description(
+                VM1_NAME, disk_alias, VM_POWERED_ON_DESCRIPTION
+            )
         logger.info("Stopping VM safely")
         stop_vms_safely([VM1_NAME])
         waitForVMState(VM1_NAME, config.VM_DOWN)
-        for disk_dict in self.disk_aliases_and_descriptions:
-            assert verify_vm_disk_description(VM1_NAME, disk_dict[ALIAS],
-                                              disk_dict[DESCRIPTION])
-            disk_dict[DESCRIPTION] = disk_dict[DESCRIPTION_ORIG]
-            assert updateDisk(True, alias=disk_dict[ALIAS],
-                              description=disk_dict[DESCRIPTION],
-                              vmName=VM1_NAME)
-            detachDisk(True, disk_dict[ALIAS], VM1_NAME)
+        for disk_alias in self.disk_aliases:
+            assert verify_vm_disk_description(
+                VM1_NAME, disk_alias, VM_POWERED_ON_DESCRIPTION
+            )
+            assert updateDisk(
+                True, alias=disk_alias,
+                description=self.original_descriptions.get(disk_alias),
+                vmName=VM1_NAME
+            )
+            detachDisk(True, disk_alias, VM1_NAME)
 
 
 @attr(tier=0)
@@ -234,6 +249,7 @@ class TestCase11503(BasicEnvironment):
     polarion_test_case = '11503'
 
     def setUp(self):
+        self.original_descriptions = dict()
         self.setup_with_disks()
 
         vm_arguments = vm_main_arguments.copy()
@@ -267,43 +283,50 @@ class TestCase11503(BasicEnvironment):
         3. Hot plug the disk into a new VM, verify that the description is
         still valid
         """
-        for disk_dict in self.disk_aliases_and_descriptions:
-            attachDisk(True, disk_dict[ALIAS], VM1_NAME)
-            assert verify_vm_disk_description(VM1_NAME, disk_dict[ALIAS],
-                                              disk_dict[DESCRIPTION])
-
-            disk_dict[DESCRIPTION] = VM_INITIAL_DESCRIPTION
-            assert updateDisk(True, alias=disk_dict[ALIAS],
-                              description=disk_dict[DESCRIPTION],
-                              vmName=VM1_NAME)
+        for disk_alias in self.disk_aliases:
+            disk_object = get_disk_obj(disk_alias)
+            attachDisk(True, disk_alias, VM1_NAME)
+            assert verify_vm_disk_description(
+                VM1_NAME, disk_alias, disk_object.get_description()
+            )
+            self.original_descriptions.update(
+                {disk_alias: disk_object.get_description()}
+            )
+            assert updateDisk(
+                True, alias=disk_alias, description=VM_INITIAL_DESCRIPTION,
+                vmName=VM1_NAME
+            )
 
         assert startVm(True, VM1_NAME, config.VM_UP)
         assert startVm(True, VM2_NAME, config.VM_UP)
-        for disk_dict in self.disk_aliases_and_descriptions:
-            assert verify_vm_disk_description(VM1_NAME, disk_dict[ALIAS],
-                                              disk_dict[DESCRIPTION])
-
-            disk_dict[DESCRIPTION] = VM_POWERED_ON_DESCRIPTION
-            assert updateDisk(True, alias=disk_dict[ALIAS],
-                              description=disk_dict[DESCRIPTION],
-                              vmName=VM1_NAME)
-            assert verify_vm_disk_description(VM1_NAME, disk_dict[ALIAS],
-                                              disk_dict[DESCRIPTION])
-            detachDisk(True, disk_dict[ALIAS], VM1_NAME)
-            attachDisk(True, disk_dict[ALIAS], VM2_NAME)
-            assert verify_vm_disk_description(VM2_NAME, disk_dict[ALIAS],
-                                              disk_dict[DESCRIPTION])
+        for disk_alias in self.disk_aliases:
+            assert verify_vm_disk_description(
+                VM1_NAME, disk_alias, VM_INITIAL_DESCRIPTION
+            )
+            assert updateDisk(
+                True, alias=disk_alias, description=VM_POWERED_ON_DESCRIPTION,
+                vmName=VM1_NAME
+            )
+            assert verify_vm_disk_description(
+                VM1_NAME, disk_alias, VM_POWERED_ON_DESCRIPTION
+            )
+            detachDisk(True, disk_alias, VM1_NAME)
+            attachDisk(True, disk_alias, VM2_NAME)
+            assert verify_vm_disk_description(
+                VM2_NAME, disk_alias, VM_POWERED_ON_DESCRIPTION
+            )
 
         # Detach disk that was attached into the 2nd VM from the 1st
         stop_vms_safely([VM1_NAME, VM2_NAME])
         waitForVMState(VM1_NAME, config.VM_DOWN)
         waitForVMState(VM2_NAME, config.VM_DOWN)
-        for disk_dict in self.disk_aliases_and_descriptions:
-            disk_dict[DESCRIPTION] = disk_dict[DESCRIPTION_ORIG]
-            assert updateDisk(True, alias=disk_dict[ALIAS],
-                              description=disk_dict[DESCRIPTION],
-                              vmName=VM2_NAME)
-            detachDisk(True, disk_dict[ALIAS], VM2_NAME)
+        for disk_alias in self.disk_aliases:
+            assert updateDisk(
+                True, alias=disk_alias,
+                description=self.original_descriptions.get(disk_alias),
+                vmName=VM2_NAME
+            )
+            detachDisk(True, disk_alias, VM2_NAME)
 
 
 @attr(tier=1)
@@ -331,37 +354,41 @@ class TestCase11504(BasicEnvironment):
         2. Start a Live Storage migration, and ensure that the disk
         description cannot happen while this operation is running
         """
-        for disk_dict in self.disk_aliases_and_descriptions:
-            attachDisk(True, disk_dict[ALIAS], VM1_NAME)
+        for disk_alias in self.disk_aliases:
+            attachDisk(True, disk_alias, VM1_NAME)
         assert startVm(True, VM1_NAME, config.VM_UP)
 
-        for disk_dict in self.disk_aliases_and_descriptions:
-            disk_dict[DESCRIPTION] = VM_POWERED_ON_DESCRIPTION
-            assert updateDisk(True, alias=disk_dict[ALIAS],
-                              description=disk_dict[DESCRIPTION],
-                              vmName=VM1_NAME)
-            assert verify_vm_disk_description(VM1_NAME, disk_dict[ALIAS],
-                                              disk_dict[DESCRIPTION])
+        for disk_alias in self.disk_aliases:
+            assert updateDisk(
+                True, alias=disk_alias,
+                description=VM_POWERED_ON_DESCRIPTION, vmName=VM1_NAME
+            )
+            assert verify_vm_disk_description(
+                VM1_NAME, disk_alias, VM_POWERED_ON_DESCRIPTION
+            )
         # Find a storage domain of the same type to migrate the disk into
-        target_sd = get_other_storage_domain(disk_dict[ALIAS], VM1_NAME,
-                                             self.storage)
-        for disk_dict in self.disk_aliases_and_descriptions:
-            live_migrate_vm_disk(VM1_NAME, disk_dict[ALIAS], target_sd,
-                                 wait=False)
+        target_sd = get_other_storage_domain(
+            self.disk_aliases[0], VM1_NAME, self.storage
+        )
+        for disk_alias in self.disk_aliases:
+            live_migrate_vm_disk(
+                VM1_NAME, disk_alias, target_sd, wait=False
+            )
             disk_description_expected_to_fail = \
                 "LSM_disk_description_will_not_work_at_all"
             logger.info('Waiting until disk is locked, expected to be the'
                         'case when the Snapshot operation commences')
             assert wait_for_disks_status(
-                disk_dict[ALIAS],
-                status=config.DISK_LOCKED
+                disk_alias, status=config.DISK_LOCKED
             )
-            assert updateDisk(False, alias=disk_dict[ALIAS],
-                              description=disk_description_expected_to_fail,
-                              vmName=VM1_NAME)
-            assert verify_vm_disk_description(VM1_NAME, disk_dict[ALIAS],
-                                              disk_dict[DESCRIPTION])
-            assert wait_for_disks_status(disk_dict[ALIAS])
+            assert updateDisk(
+                False, alias=disk_alias,
+                description=disk_description_expected_to_fail, vmName=VM1_NAME
+            )
+            assert verify_vm_disk_description(
+                VM1_NAME, disk_alias, VM_POWERED_ON_DESCRIPTION
+            )
+            assert wait_for_disks_status(disk_alias)
 
     def tearDown(self):
         """
@@ -374,9 +401,8 @@ class TestCase11504(BasicEnvironment):
             ' case once Live storage migration has completed'
         )
         wait_for_jobs([config.ENUMS['job_live_migrate_disk']])
-        assert wait_for_disks_status([
-            disk[ALIAS] for disk in self.disk_aliases_and_descriptions
-            ], timeout=900, sleep=5
+        assert wait_for_disks_status(
+            self.disk_aliases, timeout=900, sleep=5
         )
 
         stop_vms_safely([VM1_NAME])

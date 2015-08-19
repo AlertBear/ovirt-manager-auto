@@ -13,9 +13,8 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import (
 from art.rhevm_api.tests_lib.low_level.vms import (
     addSnapshot, stopVm, safely_remove_vms,
 )
-
 from rhevmtests.storage.storage_clone_vm_from_snapshot import config
-from common import _create_vm
+import rhevmtests.storage.helpers as helpers
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +38,10 @@ def setup_module():
         logger.info("Creating VM %s" % vm_name)
         storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, storage_type)[0]
-        assert _create_vm(vm_name, config.VIRTIO_BLK,
-                          storage_domain_name=storage_domain)
+        assert helpers.create_vm(
+            vm_name=vm_name, disk_interface=config.INTERFACE_VIRTIO_SCSI,
+            storage_domain=storage_domain
+        )
         VM_NAMES.append(vm_name)
         assert stopVm(True, vm=vm_name)
         assert addSnapshot(True, vm_name, config.SNAPSHOT_NAME)

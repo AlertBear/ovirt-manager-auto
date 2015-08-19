@@ -11,8 +11,7 @@ from art.unittest_lib import StorageTest as TestCase, attr
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.utils.test_utils import get_api, setPersistentNetwork
 from art.rhevm_api.tests_lib.low_level import storagedomains, vms, templates
-
-from common import _create_vm
+import rhevmtests.storage.helpers as helpers
 
 logger = logging.getLogger(__name__)
 GB = config.GB
@@ -56,7 +55,9 @@ class TestCase11588(TestCase):
             config.DATA_CENTER_NAME, self.storage)[0]
 
         logger.info("Create vm and template")
-        assert _create_vm(self.vm_name, storage_domain=self.storage_domain)
+        assert helpers.create_vm(
+            self.vm_name, storage_domain=self.storage_domain
+        )
         vm_ip = vms.waitForIP(vm=self.vm_name)[1]['ip']
         assert setPersistentNetwork(vm_ip, config.VM_PASSWORD)
         assert vms.shutdownVm(True, self.vm_name, 'false')

@@ -26,4 +26,8 @@ def verify_vm_disk_description(vm_name, disk_alias, expected_disk_description):
     """
     logger.info("Retrieving the disk description from VM '%s'", vm_name)
     disk_object = getVmDisk(vm_name, disk_alias)
+    logger.info(
+        "Expected description: %s, actual description: %s",
+        expected_disk_description, disk_object.get_description()
+    )
     return disk_object.get_description() == expected_disk_description

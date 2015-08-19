@@ -17,8 +17,7 @@ from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-
-from common import _create_vm
+import rhevmtests.storage.helpers as helpers
 
 LOGGER = logging.getLogger(__name__)
 GB = config.GB
@@ -56,7 +55,9 @@ class TestCase11628(TestCase):
             config.DATA_CENTER_NAME)[0]
 
         LOGGER.info("Create a VM")
-        assert _create_vm(self.vm_name, storage_domain=self.storage_domain)
+        assert helpers.create_vm(
+            self.vm_name, storage_domain=self.storage_domain
+        )
         assert vms.shutdownVm(True, self.vm_name, 'false')
 
         LOGGER.info("Create second VM disk")

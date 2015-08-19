@@ -11,7 +11,7 @@ from art.test_handler import exceptions
 from art.rhevm_api.tests_lib.low_level import vms, templates, storagedomains
 from art.rhevm_api.utils import log_listener
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from common import create_vm
+import rhevmtests.storage.helpers as helpers
 
 LOGGER = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ def _prepare_data(sparse, vol_format, template_names, storage_type):
     vm_name = '%s_%s_%s_%s_prep' % (
         config.TESTNAME, sparse, vol_format, storage_type)
     LOGGER.info("Creating vm %s %s %s..." % (sparse, vol_format, storage_type))
-    if not create_vm(
+    if not helpers.create_vm(
             vm_name, config.INTERFACE_VIRTIO,
             sparse=sparse, volume_format=vol_format,
             storage_domain=storage_domain):
@@ -171,9 +171,10 @@ class TestReadLock(TestCase):
         cls.template_name = "template_%s" % (cls.vm_name)
         storage_domain = storagedomains.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, cls.storage)[0]
-        if not create_vm(cls.vm_name, config.INTERFACE_VIRTIO,
-                         vm_type=cls.vm_type,
-                         storage_domain=storage_domain):
+        if not helpers.create_vm(
+                cls.vm_name, config.INTERFACE_VIRTIO, vm_type=cls.vm_type,
+                storage_domain=storage_domain
+        ):
             raise exceptions.VMException(
                 "Creation of VM %s failed!" % cls.vm_name)
         LOGGER.info("Waiting for vm %s state 'up'" % cls.vm_name)

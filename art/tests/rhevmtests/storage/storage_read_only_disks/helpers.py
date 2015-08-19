@@ -4,10 +4,7 @@ Read Only Disk test helpers functions
 import config
 import logging
 from art.test_handler import exceptions
-from art.rhevm_api.tests_lib.low_level.disks import (
-    addDisk, get_all_disk_permutation,
-    check_disk_visibility, checkDiskExists, deleteDisk,
-)
+from art.rhevm_api.tests_lib.low_level.disks import check_disk_visibility
 from art.rhevm_api.tests_lib.low_level.storagedomains import addStorageDomain
 from art.rhevm_api.tests_lib.low_level.vms import getVmDisks
 from rhevmtests.storage import helpers
@@ -15,82 +12,12 @@ from rhevmtests.storage import helpers
 logger = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
+DISK_NAMES = dict()  # dictionary with storage type as key
 
-DISKS_NAMES = dict()  # dictionary with storage type as key
-DISK_TIMEOUT = 250
-DD_TIMEOUT = 1500
-DD_COMMAND = 'dd if=/dev/%s of=/dev/%s bs=1M oflag=direct'
-FILTER = '[sv]d'
 READ_ONLY = 'Read-only'
 NOT_PERMITTED = 'Operation not permitted'
 
 not_bootable = lambda disk: not disk.get_bootable() and disk.get_active()
-
-
-def add_new_disk(sd_name, storage_type, permutation, shared=False,
-                 force_create=True):
-    """
-    Add a new disk
-    Parameters:
-        * sd_name - disk wil added to this sd
-        * storage_type - storage domain type
-        * shared - True if the disk should e shared
-        * permutations:
-            * interface - VIRTIO or VIRTIO_SCSI
-            * sparse - True if thin, False preallocated
-            * disk_format - 'cow' or 'raw'
-        * force_create: Remove any existing disk in the system with the same
-                        alias
-    """
-    disk_alias = "%s_%s_%s_%s_disk" % (
-        permutation['interface'],
-        permutation['format'],
-        permutation['sparse'],
-        storage_type)
-    disk_args = {
-        # Fixed arguments
-        'provisioned_size': config.DISK_SIZE,
-        'wipe_after_delete': storage_type in config.BLOCK_TYPES,
-        'storagedomain': sd_name,
-        'bootable': False,
-        'shareable': shared,
-        'active': True,
-        'size': config.DISK_SIZE,
-        # Custom arguments - change for each disk
-        'format': permutation['format'],
-        'interface': permutation['interface'],
-        'sparse': permutation['sparse'],
-        'alias': disk_alias,
-    }
-
-    if force_create:
-        # Remove any existing disk in the system with the same alias
-        if checkDiskExists(True, disk_alias):
-            logger.info("Found disk with alias %s need for test. Removing...",
-                        disk_alias)
-            assert deleteDisk(True, disk_alias)
-
-    assert addDisk(True, **disk_args)
-    if storage_type not in DISKS_NAMES.keys():
-        DISKS_NAMES[storage_type] = list()
-
-    DISKS_NAMES[storage_type].append(disk_args['alias'])
-
-
-def start_creating_disks_for_test(sd_name, storage_type, shared=False):
-    """
-    Begins asynchronous creation of disks of all permutations of disk
-    interfaces, formats and allocation policies
-    """
-    global DISKS_NAMES
-    DISKS_NAMES[storage_type] = list()
-    logger.info("Disks: %s", DISKS_NAMES[storage_type])
-    logger.info("Creating all disks")
-    DISK_PERMUTATIONS = get_all_disk_permutation(
-        block=storage_type in config.BLOCK_TYPES, shared=shared)
-    for permutation in DISK_PERMUTATIONS:
-        add_new_disk(sd_name, storage_type,
-                     permutation=permutation, shared=shared)
 
 
 def write_on_vms_ro_disks(vm_name, storage_type, imported_vm=False):
@@ -104,12 +31,12 @@ def write_on_vms_ro_disks(vm_name, storage_type, imported_vm=False):
     """
     vm_disks = filter(not_bootable, getVmDisks(vm_name))
     if imported_vm:
-        global DISKS_NAMES
-        DISKS_NAMES[storage_type] = [disk.get_alias() for disk in vm_disks]
-        logger.info("Disks: %s", DISKS_NAMES[storage_type])
+        global DISK_NAMES
+        DISK_NAMES[storage_type] = [disk.get_alias() for disk in vm_disks]
+        logger.info("Disks: %s", DISK_NAMES[storage_type])
     logger.info("VM %s disks %s", vm_name, vm_disks)
 
-    for disk, is_ro_vm_disk in zip(DISKS_NAMES[storage_type], vm_disks):
+    for disk, is_ro_vm_disk in zip(DISK_NAMES[storage_type], vm_disks):
         logger.info("Checking if disk %s visible to %s", disk, vm_name)
         is_visible = check_disk_visibility(disk, vm_disks)
         if not is_visible:

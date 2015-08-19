@@ -5,12 +5,10 @@ This creates builds the environment in the systems plus 2 VMs for disks tests
 import logging
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import storagedomains, vms
-
 from rhevmtests.storage.storage_full_disk_sanity import config
-
+import rhevmtests.storage.helpers as helpers
 logger = logging.getLogger(__name__)
 
-from common import create_vm
 
 VM_NAMES = []
 
@@ -33,7 +31,7 @@ def setup_module():
 
         for vm_prefix in [config.VM1_NAME, config.VM2_NAME]:
             vm_name = vm_prefix % storage_type
-            assert create_vm(
+            assert helpers.create_vm(
                 vm_name=vm_name, disk_interface=config.VIRTIO_BLK,
                 storage_domain=storage_domain
             )

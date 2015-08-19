@@ -8,7 +8,7 @@ from art.unittest_lib import StorageTest as TestCase, attr
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import storagedomains, vms, templates
-from common import _create_vm
+import rhevmtests.storage.helpers as helpers
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
@@ -36,8 +36,10 @@ class BaseExportImportTestCase(TestCase):
             config.DATA_CENTER_NAME, self.storage)[0]
 
         logger.info("Creating vm %s with type %s", self.vm_name, self.vm_type)
-        if not _create_vm(self.vm_name, vm_type=self.vm_type,
-                          storage_domain=self.storage_domain):
+        if not helpers.create_vm(
+                self.vm_name, vm_type=self.vm_type,
+                storage_domain=self.storage_domain
+        ):
             raise exceptions.VMException('Unable to create vm %s for test' %
                                          self.vm_name)
         vms.stop_vms_safely([self.vm_name])

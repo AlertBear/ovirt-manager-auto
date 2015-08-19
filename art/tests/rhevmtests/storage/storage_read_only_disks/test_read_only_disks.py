@@ -50,7 +50,8 @@ logger = logging.getLogger(__name__)
 
 DISK_TIMEOUT = 600
 REMOVE_SNAPSHOT_TIMEOUT = 900
-TEMPLATE_TIMOUT = 360
+TEMPLATE_TIMEOUT = 360
+DISK_NAMES = helpers.DISK_NAMES
 
 ENUMS = config.ENUMS
 READ_ONLY = 'Read-only'
@@ -157,15 +158,16 @@ class BaseTestCase(TestCase):
     __test__ = False
 
     def setUp(self):
-        """Initialize DISKS_NAMES variable"""
+        global DISK_NAMES
+        """Initialize DISK_NAMES variable"""
         self.vm_name = config.VM_NAME % self.storage
-        helpers.DISKS_NAMES[self.storage] = list()
+        DISK_NAMES[self.storage] = list()
 
     def prepare_disks_for_vm(self, read_only, vm_name=None):
         """Attach read only disks to the vm"""
         vm_name = self.vm_name if not vm_name else vm_name
         return storage_helpers.prepare_disks_for_vm(
-            vm_name, helpers.DISKS_NAMES[self.storage], read_only=read_only
+            vm_name, DISK_NAMES[self.storage], read_only=read_only
         )
 
     def set_persistent_network(self, vm_name=None):
@@ -204,16 +206,19 @@ class DefaultEnvironment(BaseTestCase):
         """
         Creating all possible combinations of disks for test
         """
+        global DISK_NAMES
         super(DefaultEnvironment, self).setUp()
         self.storage_domains = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )
         self.ensure_vm_exists()
-        helpers.start_creating_disks_for_test(
-            self.storage_domains[0], self.storage, shared=self.shared
+        DISK_NAMES[self.storage] = \
+            storage_helpers.create_disks_from_requested_permutations(
+                domain_to_use=self.storage_domains[0],  size=config.DISK_SIZE,
+                shared=self.shared
         )
         assert wait_for_disks_status(
-            helpers.DISKS_NAMES[self.storage],
+            DISK_NAMES[self.storage],
             timeout=DISK_TIMEOUT,
         )
         stop_vms_safely([self.vm_name])
@@ -226,7 +231,7 @@ class DefaultEnvironment(BaseTestCase):
         waitForVmsDisks(self.vm_name)
         stop_vms_safely([self.vm_name])
         logger.info("Removing all disks")
-        for disk in helpers.DISKS_NAMES[self.storage]:
+        for disk in DISK_NAMES[self.storage]:
             try:
                 deactivateVmDisk(True, self.vm_name, disk)
                 if not removeDisk(True, self.vm_name, disk):
@@ -349,7 +354,7 @@ class TestCase4907(BaseTestCase):
 
             logger.info("Creating disk %s", disk_alias)
             assert addDisk(True, **direct_lun_args)
-            helpers.DISKS_NAMES[self.storage].append(disk_alias)
+            DISK_NAMES[self.storage].append(disk_alias)
 
             logger.info("Attaching disk %s as RO disk to vm %s",
                         disk_alias, self.vm_name)
@@ -368,7 +373,7 @@ class TestCase4907(BaseTestCase):
     def tearDown(self):
         stop_vms_safely([self.vm_name])
         disks_aliases = [disk.get_alias() for disk in getVmDisks(self.vm_name)]
-        for disk_alias in helpers.DISKS_NAMES[self.storage]:
+        for disk_alias in DISK_NAMES[self.storage]:
             if disk_alias in disks_aliases:
                 remove_func = lambda w: removeDisk(True, self.vm_name, w)
             else:
@@ -423,7 +428,7 @@ class TestCase4908(DefaultEnvironment):
         """
         self.prepare_disks_for_vm(read_only=True, vm_name=self.test_vm_name)
 
-        for disk in helpers.DISKS_NAMES[self.storage]:
+        for disk in DISK_NAMES[self.storage]:
             state, out = storage_helpers.perform_dd_to_disk(
                 self.test_vm_name, disk
             )
@@ -554,8 +559,10 @@ class TestCase4910(BaseTestCase):
         - Deactivate the disk and change the VM permissions on the disk to RO
         - Activate the disk
         """
-        helpers.start_creating_disks_for_test(self.storage_domains[0],
-                                              self.storage)
+        DISK_NAMES[self.storage] = \
+            storage_helpers.create_disks_from_requested_permutations(
+                domain_to_use=self.storage_domains[0]
+            )
         start_vms([self.vm_name], 1, wait_for_ip=False)
         assert waitForVMState(self.vm_name)
         self.prepare_disks_for_vm(read_only=False)
@@ -625,7 +632,7 @@ class TestCase4913(DefaultEnvironment):
         start_vms([self.vm_name], 1, wait_for_ip=False)
         assert waitForVMState(self.vm_name)
 
-        for disk in helpers.DISKS_NAMES[self.storage]:
+        for disk in DISK_NAMES[self.storage]:
             state, out = storage_helpers.perform_dd_to_disk(
                 self.vm_name, disk
             )
@@ -668,7 +675,7 @@ class TestCase4913(DefaultEnvironment):
 
         start_vms([self.vm_name], 1, wait_for_ip=False)
         assert waitForVMState(self.vm_name)
-        for disk in helpers.DISKS_NAMES[self.storage]:
+        for disk in DISK_NAMES[self.storage]:
             state, out = storage_helpers.perform_dd_to_disk(
                 self.vm_name, disk
             )
@@ -1397,7 +1404,7 @@ class TestCase4923(DefaultEnvironment):
         waitForTemplatesStates(self.template_name)
 
         if not removeTemplate(
-                True, self.template_name, timeout=TEMPLATE_TIMOUT
+                True, self.template_name, timeout=TEMPLATE_TIMEOUT
         ):
             logger.error("Failed to remove template %s",
                          self.template_name)

@@ -28,7 +28,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     get_vms_disks_storage_domain_name, wait_for_vm_snapshots,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-import common
+import rhevmtests.storage.helpers as helpers
 
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
@@ -545,9 +545,10 @@ class TestCase5911(DirectLunAttachTestCase):
     def tearDown(self):
         if self.vm_removed:
             # Adding back vm since the test removes it
-            assert common.create_vm(
+            assert helpers.create_vm(
                 self.vm_name, config.VIRTIO_BLK,
-                storage_domain=self.vm_storage_domain)
+                storage_domain=self.vm_storage_domain
+            )
             wait_for_jobs([ENUMS['job_add_vm']])
         else:
             super(TestCase5911, self).tearDown()

@@ -71,8 +71,6 @@ VM_API = get_api('vm', 'vms')
 
 ENUMS = config.ENUMS
 
-CREATE_VM_TIMEOUT = 15 * 60
-VM_SHUTDOWN_TIMEOUT = 2 * 60
 MIGRATION_TIMEOUT = 10 * 60
 TASK_TIMEOUT = 1500
 LIVE_MIGRATION_TIMEOUT = 30 * 60
@@ -85,8 +83,7 @@ EXTENT_METADATA_SIZE = 128 * config.MB
 
 FILE_TO_WATCH = "/var/log/vdsm/vdsm.log"
 
-SDK_ENGINE = 'sdk'
-VMS_PID_LIST = 'pgrep qemu'
+DISK_NAMES = dict()
 
 vmArgs = {'positive': True,
           'vmDescription': config.VM_NAME % "description",
@@ -273,20 +270,22 @@ class AllPermutationsDisks(BaseTestCase):
         """
         Creating all possible combinations of disks for test
         """
+        global DISK_NAMES
         super(AllPermutationsDisks, self).setUp()
-        helpers.start_creating_disks_for_test(
-            shared=self.shared, sd_name=self.disk_sd,
-            sd_type=self.storage
+        DISK_NAMES[self.storage] = \
+            storage_helpers.create_disks_from_requested_permutations(
+            domain_to_use=self.disk_sd, size=config.DISK_SIZE,
+            shared=self.shared
         )
         if not wait_for_disks_status(
-            helpers.DISK_NAMES[self.storage], timeout=TASK_TIMEOUT,
+            DISK_NAMES[self.storage], timeout=TASK_TIMEOUT,
         ):
             logger.error(
                 "Disks %s are not in status OK",
-                helpers.DISK_NAMES[self.storage],
+                DISK_NAMES[self.storage],
             )
         storage_helpers.prepare_disks_for_vm(
-            self.vm_name, helpers.DISK_NAMES[self.storage],
+            self.vm_name, DISK_NAMES[self.storage],
         )
 
     def verify_lsm(self, moved=True):
@@ -298,7 +297,7 @@ class AllPermutationsDisks(BaseTestCase):
         else:
             failure_str = "Succeeded"
 
-        for disk in helpers.DISK_NAMES[self.storage]:
+        for disk in DISK_NAMES[self.storage]:
             self.assertTrue(
                 moved == verify_vm_disk_moved(
                     self.vm_name, disk, self.disk_sd,
@@ -787,7 +786,7 @@ class TestCase5988(AllPermutationsDisks):
             - try to create a live snapshot + move
         * we should block move+create live snapshot in backend.
         """
-        for disk in helpers.DISK_NAMES[self.storage]:
+        for disk in DISK_NAMES[self.storage]:
             target_sd = get_other_storage_domain(
                 disk, self.vm_name, self.storage,
             )
@@ -888,7 +887,7 @@ class TestCase5955(AllPermutationsDisks):
         """
         move disk images to a domain that already has one of the images on it
         """
-        for disk in helpers.DISK_NAMES[self.storage]:
+        for disk in DISK_NAMES[self.storage]:
             self._perform_action(self.vm_name, disk)
 
 
@@ -1262,7 +1261,7 @@ class TestCase5969(AllPermutationsDisks):
         Expected Results:
             - we should fail the LSM nicely
         """
-        for disk_name in helpers.DISK_NAMES[self.storage]:
+        for disk_name in DISK_NAMES[self.storage]:
             self._perform_action_on_disk_and_wait_for_regex(
                 disk_name, 'createVolume',
             )
@@ -1276,7 +1275,7 @@ class TestCase5969(AllPermutationsDisks):
         Expected Results:
             - we should fail the LSM nicely
         """
-        for disk_name in helpers.DISK_NAMES[self.storage]:
+        for disk_name in DISK_NAMES[self.storage]:
             self._perform_action_on_disk_and_wait_for_regex(
                 disk_name, 'cloneImageStructure',
             )
@@ -1290,7 +1289,7 @@ class TestCase5969(AllPermutationsDisks):
         Expected Results:
             - we should fail the LSM nicely
         """
-        for disk_name in helpers.DISK_NAMES[self.storage]:
+        for disk_name in DISK_NAMES[self.storage]:
             self._perform_action_on_disk_and_wait_for_regex(
                 disk_name, 'syncImageData',
             )
@@ -1304,7 +1303,7 @@ class TestCase5969(AllPermutationsDisks):
         Expected Results:
             - we should fail the LSM nicely
         """
-        for disk_name in helpers.DISK_NAMES[self.storage]:
+        for disk_name in DISK_NAMES[self.storage]:
             self._perform_action_on_disk_and_wait_for_regex(
                 disk_name, 'deleteImage'
             )
@@ -1349,7 +1348,7 @@ class TestCase5968(AllPermutationsDisks):
             - the image actual size should not exceed the disks
               virtual size once we delete the snapshot
         """
-        for disk in helpers.DISK_NAMES[self.storage]:
+        for disk in DISK_NAMES[self.storage]:
             target_sd = get_other_storage_domain(
                 disk, self.vm_name, self.storage,
             )
@@ -1397,7 +1396,7 @@ class TestCase5967(AllPermutationsDisks):
               virtual size once we delete the snapshot
             - make sure that we can delete the snapshot and run the vm
         """
-        for disk in helpers.DISK_NAMES[self.storage]:
+        for disk in DISK_NAMES[self.storage]:
             target_sd = get_other_storage_domain(
                 disk, self.vm_name, self.storage,
             )
@@ -1445,7 +1444,7 @@ class TestCase5982(AllPermutationsDisks):
             - we should succeed to delete the snapshot
             - we should succeed to run the vm
         """
-        for index, disk in enumerate(helpers.DISK_NAMES[self.storage]):
+        for index, disk in enumerate(DISK_NAMES[self.storage]):
             target_sd = get_other_storage_domain(
                 disk, self.vm_name, self.storage,
             )
@@ -2291,7 +2290,7 @@ class TestCase5981(AllPermutationsDisks):
         hsm_host = [x for x in config.HOSTS if x not in spm_host][0]
         updateVm(True, self.vm_name, placement_host=hsm_host)
         startVm(True, self.vm_name, config.VM_UP, True)
-        for index, disk in enumerate(helpers.DISK_NAMES[self.storage]):
+        for index, disk in enumerate(DISK_NAMES[self.storage]):
             source_sd = get_disk_storage_domain_name(disk, self.vm_name)
             target_sd = get_other_storage_domain(
                 disk, self.vm_name, self.storage)

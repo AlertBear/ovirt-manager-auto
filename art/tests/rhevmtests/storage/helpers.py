@@ -42,6 +42,7 @@ FILESYSTEM = 'ext4'
 WAIT_DD_STARTS = 'ps -ef | grep "{0}" | grep -v grep'.format(
     DD_EXEC,
 )
+INTERFACES = (config.VIRTIO, config.VIRTIO_SCSI)
 FILE_SD_VOLUME_PATH_IN_FS = '/rhev/data-center/%s/%s/images/%s'
 GET_FILE_SD_NUM_DISK_VOLUMES = 'ls %s | wc -l'
 LV_COUNT = 'lvs -o lv_name,lv_tags | grep %s | wc -l'
@@ -63,6 +64,31 @@ disk_args = {
     'alias': '',
     'description': '',
 }
+
+
+def create_vm(
+        vm_name, disk_interface=config.VIRTIO, sparse=True,
+        volume_format=config.COW_DISK, vm_type=config.VM_TYPE_DESKTOP,
+        installation=True, storage_domain=None
+):
+    """
+    helper function for creating vm (passes common arguments, mostly taken
+    from the configuration file)
+    """
+    logger.info("Creating VM %s", vm_name)
+    return create_vm_or_clone(
+        True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
+        nic=config.NIC_NAME[0], storageDomainName=storage_domain,
+        size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
+        volumeType=sparse, volumeFormat=volume_format,
+        diskInterface=disk_interface, memory=config.GB,
+        cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
+        nicType=config.NIC_TYPE_VIRTIO, display_type=config.DISPLAY_TYPE,
+        os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
+        password=config.VMS_LINUX_PW, type=vm_type, installation=installation,
+        slim=True, image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
+        useAgent=config.USE_AGENT
+    )
 
 
 def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
@@ -121,13 +147,12 @@ def remove_all_vm_snapshots(vm_name, description):
     assert False not in results
 
 
-def create_disks_from_requested_permutations(domain_to_use,
-                                             interfaces=(config.VIRTIO,
-                                                         config.VIRTIO_SCSI),
-                                             size=config.DISK_SIZE):
+def create_disks_from_requested_permutations(
+        domain_to_use, interfaces=INTERFACES, size=config.DISK_SIZE,
+        shared=False, wait=True
+):
     """
-    Generates a list of permutations for disks using virtio, virtio-scsi and
-    ide using thin-provisioning and pre-allocated options
+    Creates disks using a list of permutations
 
     __author__ = "glazarov"
     :param domain_to_use: the storage domain on which to create the disks
@@ -138,7 +163,7 @@ def create_disks_from_requested_permutations(domain_to_use,
     :param size: the disk size (in bytes) to create, uses config.DISK_SIZE as a
     default
     :type size: str
-    :returns: list of the disk aliases and descriptions
+    :returns: list of the disk aliases
     :rtype: list
     """
     logger.info("Generating a list of disk permutations")
@@ -148,38 +173,36 @@ def create_disks_from_requested_permutations(domain_to_use,
     storage_type = storage_domain_object.get_storage().get_type()
     is_block = storage_type in config.BLOCK_TYPES
     disk_permutations = get_all_disk_permutation(block=is_block,
-                                                 shared=False,
+                                                 shared=shared,
                                                  interfaces=interfaces)
     # Provide a warning in the logs when the total number of disk
     # permutations is 0
     if len(disk_permutations) == 0:
         logger.warn("The number of disk permutations is 0")
-    # List of the disk aliases and descriptions that will be returned when
+    # List of the disk aliases that will be returned when
     # the function completes execution
-    lst_aliases_and_descriptions = []
+    disk_aliases = []
 
     logger.info("Create disks for all permutations generated previously")
-    for index, disk_permutation in enumerate(disk_permutations):
-        disk_alias = "%s_%s_sparse-%s_alias" % (disk_permutation['interface'],
-                                                disk_permutation['format'],
-                                                disk_permutation['sparse'])
+    for disk_permutation in disk_permutations:
+        disk_alias = "Disk_%s_%s_sparse-%s_alias" \
+                     % (
+                         disk_permutation['interface'],
+                         disk_permutation['format'],
+                         disk_permutation['sparse']
+                     )
         disk_description = disk_alias.replace("_alias", "_description")
-        lst_aliases_and_descriptions.append({
-            "alias": disk_alias,
-            "description": disk_description,
-            "description_orig": disk_description
-        })
+        disk_aliases.append(disk_alias)
         assert addDisk(
             True, alias=disk_alias, description=disk_description,
             size=size, interface=disk_permutation['interface'],
             sparse=disk_permutation['sparse'],
             format=disk_permutation['format'],
-            storagedomain=domain_to_use, bootable=False
+            storagedomain=domain_to_use, bootable=False, shareable=shared
         )
-    assert wait_for_disks_status(
-        [disk['alias'] for disk in lst_aliases_and_descriptions]
-    )
-    return lst_aliases_and_descriptions
+    if wait:
+        assert wait_for_disks_status(disk_aliases)
+    return disk_aliases
 
 
 def perform_dd_to_disk(

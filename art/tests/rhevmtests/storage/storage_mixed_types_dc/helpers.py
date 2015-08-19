@@ -10,8 +10,6 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.hosts as hosts
 import art.rhevm_api.tests_lib.high_level.storagedomains as hl_sd
 
-from rhevmtests.storage.helpers import create_vm_or_clone
-
 logger = logging.getLogger(__name__)
 
 
@@ -110,36 +108,3 @@ def add_disk_to_sd(disk_name, storagedomain, attach_to_vm=None):
         if start:
             assert ll_vms.startVm(
                 True, attach_to_vm, config.VM_UP)
-
-
-def create_and_start_vm(vm_name, sd_name, installation=True):
-    """
-    Creates a vm in a specific storage domain
-        * vm_name: name of the vm
-        * sd_name: name of the storage domain
-        * installation: if an OS should be installted
-    """
-    logger.info("Creating vm %s on storage domain %s", vm_name, sd_name)
-
-    vmArgs = {'positive': True,
-              'vmName': vm_name,
-              'vmDescription': vm_name,
-              'diskInterface': config.VIRTIO,
-              'volumeFormat': config.DISK_FORMAT_RAW,
-              'cluster': config.CLUSTER_NAME,
-              'storageDomainName': sd_name,
-              'installation': installation,
-              'size': config.DISK_SIZE,
-              'nic': config.NIC_NAME[0],
-              'image': config.COBBLER_PROFILE,
-              'useAgent': True,
-              'os_type': config.ENUMS['rhel6'],
-              'user': config.VM_USER,
-              'password': config.VM_PASSWORD,
-              'network': config.MGMT_BRIDGE,
-              'volumeType': False,  # pre-allocated
-              }
-
-    if not create_vm_or_clone(**vmArgs):
-        raise exceptions.VMException('Unable to create vm %s for test'
-                                     % vm_name)
