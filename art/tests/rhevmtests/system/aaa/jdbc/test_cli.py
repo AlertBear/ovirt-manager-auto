@@ -1,11 +1,14 @@
 """
 Test possible configuration option of properties file.
+
+This is automation of- RHEVM3/wiki/System/Local user authentication management
 """
 __test__ = True
 
 from art.core_api.apis_exceptions import APIException
 from art.rhevm_api.tests_lib.low_level import general, mla, users
 from art.rhevm_api.utils import jdbccli
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
 from rhevmtests.system.aaa.jdbc import config
@@ -90,6 +93,13 @@ class JDBCCLIUser(TestCase):
         loginAsAdmin()
         users.removeUser(True, TEST_USER1, config.INTERNAL_AUTHZ)
 
+    @polarion('RHEVM3-11328')
+    def test_000_add_user(self):
+        """add user via via aaa-jdbc cli"""
+        # This case is always passed because it's tested in setup_module,
+        # If setup module fails, this case will never run
+        pass
+
     @attr(tier=1)
     def test_011_add_same_user(self):
         """ add user via aaa-jdbc cli """
@@ -110,6 +120,7 @@ class JDBCCLIUser(TestCase):
             domain=config.INTERNAL_AUTHZ,
         )
 
+    @polarion('RHEVM3-11306')
     def test_030_login_as_user(self):
         """ login as user from aaa-jdbc """
         users.loginAsUser(
@@ -120,6 +131,7 @@ class JDBCCLIUser(TestCase):
         )
         assert connectionTest(), "User '%s' can't login" % TEST_USER1
 
+    @polarion('RHEVM3-11304')
     def test_031_login_as_exp_pwd_user(self):
         """ login as user with expired password from aaa-jdbc """
         users.loginAsUser(
@@ -130,6 +142,7 @@ class JDBCCLIUser(TestCase):
         )
         assert not connectionTest(), "User '%s' can login" % TEST_USER2
 
+    @polarion('RHEVM3-11305')
     def test_032_login_as_disabled_user(self):
         """ login as disabled user from aaa-jdbc """
         users.loginAsUser(
@@ -141,6 +154,7 @@ class JDBCCLIUser(TestCase):
         assert not connectionTest(), "User '%s' can login" % TEST_USER_DISABLED
 
     @attr(tier=1)
+    @polarion('RHEVM3-11329')
     def test_040_update_user(self):
         """ update user via aaa-jdbc cli """
         assert USER_CLI.run(
@@ -150,6 +164,7 @@ class JDBCCLIUser(TestCase):
         )
 
     @attr(tier=1)
+    @polarion('RHEVM3-11301')
     def test_050_lock_user(self):
         """ lock user from aaa-jdbc"""
         users.loginAsUser(
@@ -169,6 +184,7 @@ class JDBCCLIUser(TestCase):
         assert not connectionTest()  # It's locked now..
 
     @attr(tier=1)
+    @polarion('RHEVM3-11331')
     def test_060_unlock_user(self):
         """ unlock user via aaa-jdbc cli """
         assert USER_CLI.run('unlock', TEST_USER1)
@@ -184,6 +200,7 @@ class JDBCCLIUser(TestCase):
         )
         assert connectionTest(), "User %s can't login" % TEST_USER1
 
+    @polarion('RHEVM3-11338')
     def test_080_user_delete(self):
         """ user delete from aaa-jdbc """
         assert USER_CLI.run('delete', TEST_USER_DELETE)
@@ -206,6 +223,14 @@ class JDBCCLIGroupUser(TestCase):
         users.removeUser(True, TEST_USER1, config.INTERNAL_AUTHZ)
         users.deleteGroup(True, TEST_GROUP1)
 
+    @polarion('RHEVM3-11324')
+    def test_000_add_group(self):
+        """test group add via aaa-jdbc-cli"""
+        # This case is always passed because it's tested in setup_module,
+        # If setup module fails, this case will never run
+        pass
+
+    @polarion('RHEVM3-11332')
     def test_010_change_user_password(self):
         """ change user password via aaa-jdbc cli """
         assert USER_CLI.run(
@@ -215,6 +240,7 @@ class JDBCCLIGroupUser(TestCase):
             password_valid_to='2100-01-01 11:11:11Z',
         ), "Failed to change user's '%s' password" % TEST_USER1
 
+    @polarion('RHEVM3-11333')
     def test_020_add_user_to_group(self):
         """ change add user to group via aaa-jdbc cli """
         assert MANAGE_CLI.run(
@@ -257,6 +283,7 @@ class JDBCCLIGroupUser(TestCase):
         )
         assert connectionTest(), "User %s can't login" % TEST_USER1
 
+    @polarion('RHEVM3-11334')
     def test_050_delete_user_from_group(self):
         """ delete user from group via aaa-jdbc cli """
         assert MANAGE_CLI.run(
@@ -275,6 +302,7 @@ class JDBCCLIGroupUser(TestCase):
             user=TEST_USER1
         ), "Possible to remove user from nonexisting group"
 
+    @polarion('RHEVM3-11335')
     def test_060_add_group_to_group(self):
         """ add group to group via aaa-jdbc cli """
         assert MANAGE_CLI.run(
@@ -283,6 +311,7 @@ class JDBCCLIGroupUser(TestCase):
             group=TEST_GROUP2,
         ), "Failed to add group to group '%s'" % TEST_GROUP1
 
+    @polarion('RHEVM3-11336')
     def test_070_delete_group_from_group(self):
         """ delete group from group via aaa-jdbc cli """
         assert MANAGE_CLI.run(
@@ -291,6 +320,7 @@ class JDBCCLIGroupUser(TestCase):
             group=TEST_GROUP2,
         ), "Failed to delete group from group '%s'" % TEST_GROUP1
 
+    @polarion('RHEVM3-11327')
     def test_080_group_delete(self):
         """ group delete from aaa-jdbc """
         assert GROUP_CLI.run(
@@ -311,10 +341,12 @@ class JDBCCLIQuery(TestCase):
             entity='query'
         )
 
+    @polarion('RHEVM3-11323')
     def test_010_query_users(self):
         """ query users via aaa-jdbc cli """
         assert self.query_cli.run(what='user'), "Failed to search for users"
 
+    @polarion('RHEVM3-11322')
     def test_020_query_groups(self):
         """ query groups via aaa-jdbc cli """
         assert self.query_cli.run(what='group'), "Failed to search for groups"
