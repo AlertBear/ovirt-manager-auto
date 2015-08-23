@@ -6,6 +6,7 @@ scenarios.
 """
 
 import logging
+import time
 from art.unittest_lib import attr
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from rhevmtests.networking import config
@@ -32,6 +33,7 @@ from art.rhevm_api.tests_lib.low_level.clusters import (
 
 logger = logging.getLogger("MultiHost_Cases")
 HOST1_NICS, HOST2_NICS = None, None  # filled in setup module
+SLEEP = 10
 
 ########################################################################
 
@@ -612,7 +614,20 @@ class TestMultiHostCase05(TestMultiHostTestCaseBase):
                 " the network" % config.MTU[0]
             )
 
+        logger.info("Wait till the Host is updated with the change")
+        sample1 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=HOST1_NICS[1],
+            **mtu_dict1
+        )
+        if not sample1.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct MTU on host")
+
         logger.info("Update network with VLAN %s", config.VLAN_ID[0])
+        time.sleep(SLEEP)
         if not updateNetwork(
             positive=True, network=config.NETWORKS[0],
             data_center=config.DC_NAME[0], vlan_id=config.VLAN_ID[0]
@@ -622,16 +637,29 @@ class TestMultiHostCase05(TestMultiHostTestCaseBase):
                 "running VM is using the network" % config.VLAN_ID[0]
             )
 
+        logger.info("Wait till the Host is updated with the change")
+        sample1 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=HOST1_NICS[1],
+            **vlan_dict1
+        )
         logger.info(
             "Unplugging NIC with the network in order to be able to update"
             " the Network that reside on that NIC"
         )
+        if not sample1.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct MTU on host")
+
         if not updateNic(
             True, config.VM_NAME[0], "nic2", plugged="false"
         ):
             raise NetworkException("Couldn't unplug NIC")
 
         logger.info("Update MTU network with MTU %s", config.MTU[0])
+        time.sleep(SLEEP)
         if not updateNetwork(
             True, network=config.NETWORKS[0], data_center=config.DC_NAME[0],
             mtu=config.MTU[0]
@@ -680,6 +708,7 @@ class TestMultiHostCase05(TestMultiHostTestCaseBase):
             )
 
         logger.info("Update network with VLAN %s", config.VLAN_ID[0])
+        time.sleep(SLEEP)
         if not updateNetwork(
             True, network=config.NETWORKS[0], data_center=config.DC_NAME[0],
             vlan_id=config.VLAN_ID[0]
@@ -1687,6 +1716,7 @@ class TestMultiHostCase11(TestMultiHostTestCaseBase):
             )
 
         logger.info("Update network %s to be VM network", config.NETWORKS[0])
+        time.sleep(SLEEP)
         if not updateNetwork(
             True, network=config.NETWORKS[0], data_center=config.DC_NAME[0],
             usages="vm"
