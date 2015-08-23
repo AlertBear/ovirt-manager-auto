@@ -72,7 +72,7 @@ class TestTopologiesCase01(TestCase):
             )
 
         if not net_help.run_vm_once_specific_host(
-            vm=config.VM_NAME[0], host=config.HOSTS[0]
+            vm=config.VM_NAME[0], host=config.HOSTS[0], wait_for_ip=True
         ):
             raise NetworkException(
                 "Cannot start VM %s on host %s" %
@@ -179,7 +179,7 @@ class TestTopologiesCase02(TestCase):
             )
 
         if not net_help.run_vm_once_specific_host(
-            vm=config.VM_NAME[0], host=config.HOSTS[0]
+            vm=config.VM_NAME[0], host=config.HOSTS[0], wait_for_ip=True
         ):
             raise NetworkException(
                 "Cannot start VM %s on host %s" %
@@ -280,7 +280,7 @@ class TestTopologiesCase03(TestCase):
             )
 
         if not net_help.run_vm_once_specific_host(
-            vm=config.VM_NAME[0], host=config.HOSTS[0]
+            vm=config.VM_NAME[0], host=config.HOSTS[0], wait_for_ip=True
         ):
             raise NetworkException(
                 "Cannot start VM %s on host %s" %
