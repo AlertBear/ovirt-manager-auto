@@ -383,6 +383,7 @@ DISK_FORMAT_RAW = ENUMS['format_raw']
 
 # Disk types
 DISK_TYPE_SYSTEM = ENUMS['disk_type_system']
+DISK_TYPE_DATA = ENUMS['disk_type_data']
 DISK_LOCKED = ENUMS['disk_state_locked']
 
 # Disk sizes
