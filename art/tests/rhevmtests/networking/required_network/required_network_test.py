@@ -15,7 +15,7 @@ from art.rhevm_api.tests_lib.high_level.networks import (
     createAndAttachNetworkSN, validateNetwork, remove_all_networks
 )
 from art.rhevm_api.tests_lib.low_level.hosts import (
-    ifdownNic, waitForHostsStates, ifupNic, check_host_nic_status
+    ifdownNic, waitForHostsStates, ifupNic, check_host_nic_status,
 )
 from art.rhevm_api.tests_lib.low_level.networks import (
     isNetworkRequired, updateClusterNetwork
@@ -66,8 +66,8 @@ class TearDownRequiredNetwork(TestCase):
         if not (remove_all_networks(
             datacenter=config.DC_NAME[0], mgmt_network=config.MGMT_BRIDGE,
             cluster=config.CLUSTER_NAME[0]) and createAndAttachNetworkSN(
-                host=config.VDS_HOSTS[0], network_dict={}, auto_nics=[0])
-        ):
+            host=config.VDS_HOSTS[0], network_dict={}, auto_nics=[0])
+                ):
             logger.error("Cannot remove networks from setup")
 
 
@@ -98,8 +98,8 @@ class TestRequiredNetwork01(TearDownRequiredNetwork):
 
         logger.info("Editing %s to be non-required", config.MGMT_BRIDGE)
         if updateClusterNetwork(
-                positive=True, cluster=config.CLUSTER_NAME[0],
-                network=config.MGMT_BRIDGE, required="false"
+            positive=True, cluster=config.CLUSTER_NAME[0],
+            network=config.MGMT_BRIDGE, required="false"
         ):
             raise NetworkException(
                 "%s is set to non required" % config.MGMT_BRIDGE
@@ -133,9 +133,9 @@ class TestRequiredNetwork02(TearDownRequiredNetwork):
             HOST_NICS[1]
         )
         if not createAndAttachNetworkSN(
-                data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-                host=config.VDS_HOSTS[0], network_dict=local_dict,
-                auto_nics=[0]
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0]
         ):
             raise NetworkException(
                 "Cannot create and attach network %s" % config.NETWORKS[0]
@@ -148,8 +148,8 @@ class TestRequiredNetwork02(TearDownRequiredNetwork):
         """
         logger.info("Check that %s status is operational", config.NETWORKS[0])
         if not validateNetwork(
-                positive=True, cluster=config.CLUSTER_NAME[0],
-                network=config.NETWORKS[0], tag="status", val="operational"
+            positive=True, cluster=config.CLUSTER_NAME[0],
+            network=config.NETWORKS[0], tag="status", val="operational"
         ):
             raise NetworkException(
                 "%s status is not operational" % config.NETWORKS[0]
@@ -162,8 +162,8 @@ class TestRequiredNetwork02(TearDownRequiredNetwork):
         """
         logger.info("Turn %s down", HOST_NICS[1])
         if not ifdownNic(
-                host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
-                nic=HOST_NICS[1]
+            host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
+            nic=HOST_NICS[1]
         ):
             raise NetworkException(
                 "Failed to turn down %s" % HOST_NICS[1]
@@ -171,7 +171,7 @@ class TestRequiredNetwork02(TearDownRequiredNetwork):
 
         logger.info("Check that %s is UP", config.HOSTS[0])
         if not waitForHostsStates(
-                positive=True, names=config.HOSTS[0], timeout=70
+            positive=True, names=config.HOSTS[0], timeout=70
         ):
             raise NetworkException("%s status is not UP" % config.HOSTS[0])
 
@@ -202,9 +202,9 @@ class TestRequiredNetwork03(TearDownRequiredNetwork):
             HOST_NICS[1]
         )
         if not createAndAttachNetworkSN(
-                data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-                host=config.VDS_HOSTS[0], network_dict=local_dict,
-                auto_nics=[0]
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0]
         ):
             raise NetworkException(
                 "Cannot create and attach network %s" % config.NETWORKS[0]
@@ -212,8 +212,8 @@ class TestRequiredNetwork03(TearDownRequiredNetwork):
 
         logger.info("Turn %s down", HOST_NICS[1])
         if not ifdownNic(
-                host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
-                nic=HOST_NICS[1]
+            host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
+            nic=HOST_NICS[1]
         ):
             raise NetworkException("Failed to turn down %s" % HOST_NICS[1])
 
@@ -224,8 +224,8 @@ class TestRequiredNetwork03(TearDownRequiredNetwork):
         """
         logger.info("Check that %s is non-operational", config.HOSTS[0])
         if not waitForHostsStates(
-                positive=True, names=config.HOSTS[0],
-                states="non_operational", timeout=100
+            positive=True, names=config.HOSTS[0],
+            states="non_operational", timeout=100
         ):
             raise NetworkException(
                 "%s status is not non-operational" % config.HOSTS[0]
@@ -264,9 +264,9 @@ class TestRequiredNetwork04(TearDownRequiredNetwork):
         }
 
         if not createAndAttachNetworkSN(
-                data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-                host=config.VDS_HOSTS[0], network_dict=local_dict,
-                auto_nics=[0]
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0]
         ):
             raise NetworkException(
                 "Cannot create and attach %s over %s" %
@@ -274,41 +274,44 @@ class TestRequiredNetwork04(TearDownRequiredNetwork):
             )
 
     @polarion("RHEVM3-3752")
-    def test_1operational_nic_down(self):
+    def test_1nonoperational_bond_down(self):
         """
-        Check that host in operational after turn down eth2
+        Check that host in non-operational after turn down both BOND slaves
         """
-        logger.info("Turn down %s", HOST_NICS[2])
-        if not ifdownNic(
-                host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
-                nic=HOST_NICS[2]
-        ):
-            raise NetworkException("Failed to turn down %s" % HOST_NICS[2])
-
-        logger.info("Check that %s is up", config.HOSTS[0])
-        if not waitForHostsStates(
-                positive=True, names=config.HOSTS[0], timeout=70
-        ):
-            raise NetworkException("%s status is not UP" % config.HOSTS[0])
-
-    def test_2nonoperational_bond_down(self):
-        """
-        Check that host in non-operational after turn down eth3
-        """
-        logger.info("Turn %s down", HOST_NICS[3])
-        if not ifdownNic(
-                host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
-                nic=HOST_NICS[3]
-        ):
-            raise NetworkException("Failed to turn down %s" % HOST_NICS[3])
+        for nic in HOST_NICS[2:4]:
+            logger.info("Turn %s down", nic)
+            if not ifdownNic(
+                host=config.HOSTS_IP[0], root_password=config.HOSTS_PW, nic=nic
+            ):
+                raise NetworkException("Failed to turn down %s" % nic)
 
         logger.info("Check that %s is non-operational", config.HOSTS[0])
         if not waitForHostsStates(
-                positive=True, names=config.HOSTS[0],
-                states="non_operational", timeout=300
+            positive=True, names=config.HOSTS[0],
+            states="non_operational", timeout=300
         ):
             raise NetworkException(
                 "%s status is not non-operational" % config.HOSTS[0]
+            )
+
+    @polarion("RHEVM3-3745")
+    def test_2nonoperational_bond_down(self):
+        """
+        Check that host is operational after turn up one slave
+        """
+        logger.info("Turn %s ip", HOST_NICS[2])
+        if not ifupNic(
+            host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
+            nic=HOST_NICS[2]
+        ):
+            raise NetworkException("Failed to turn up %s" % HOST_NICS[2])
+
+        logger.info("Check that %s is operational", config.HOSTS[0])
+        if not waitForHostsStates(
+            positive=True, names=config.HOSTS[0], timeout=300
+        ):
+            raise NetworkException(
+                "%s status is not operational" % config.HOSTS[0]
             )
 
 
@@ -332,7 +335,9 @@ class TestRequiredNetwork05(TearDownRequiredNetwork):
         """
         local_dict = {
             config.VLAN_NETWORKS[0]: {
-                "vlan_id": config.VLAN_ID[0], "nic": 1, "required": "true"
+                "vlan_id": config.VLAN_ID[0],
+                "nic": 1,
+                "required": "true"
             }
         }
         logger.info(
@@ -340,9 +345,9 @@ class TestRequiredNetwork05(TearDownRequiredNetwork):
             config.VLAN_NETWORKS[0], HOST_NICS[1]
         )
         if not createAndAttachNetworkSN(
-                data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-                host=config.VDS_HOSTS[0], network_dict=local_dict,
-                auto_nics=[0, 1]
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0, 1]
         ):
             raise NetworkException(
                 "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
@@ -355,8 +360,8 @@ class TestRequiredNetwork05(TearDownRequiredNetwork):
         """
         logger.info("Turn %s down", HOST_NICS[1])
         if not ifdownNic(
-                host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
-                nic=HOST_NICS[1]
+            host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
+            nic=HOST_NICS[1]
         ):
             raise NetworkException(
                 "Failed to turn down %s" % HOST_NICS[1]
@@ -364,8 +369,8 @@ class TestRequiredNetwork05(TearDownRequiredNetwork):
 
         logger.info("Check that %s is non-operational", config.HOSTS[0])
         if not waitForHostsStates(
-                positive=True, names=config.HOSTS[0],
-                states="non_operational", timeout=100
+            positive=True, names=config.HOSTS[0],
+            states="non_operational", timeout=100
         ):
             raise NetworkException(
                 "%s status is not non-operational" % config.HOSTS[0]
@@ -399,9 +404,9 @@ class TestRequiredNetwork06(TearDownRequiredNetwork):
             HOST_NICS[1]
         )
         if not createAndAttachNetworkSN(
-                data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-                host=config.VDS_HOSTS[0], network_dict=local_dict,
-                auto_nics=[0]
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0]
         ):
             raise NetworkException("Cannot create and attach networks")
 
@@ -412,8 +417,8 @@ class TestRequiredNetwork06(TearDownRequiredNetwork):
         """
         logger.info("Turn %s down", HOST_NICS[1])
         if not ifdownNic(
-                host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
-                nic=HOST_NICS[1]
+            host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
+            nic=HOST_NICS[1]
         ):
             raise NetworkException(
                 "Failed to turn down %s" % HOST_NICS[1]
@@ -421,8 +426,8 @@ class TestRequiredNetwork06(TearDownRequiredNetwork):
 
         logger.info("Check that %s is non-operational", config.HOSTS[0])
         if not waitForHostsStates(
-                positive=True, names=config.HOSTS[0],
-                states="non_operational", timeout=100
+            positive=True, names=config.HOSTS[0],
+            states="non_operational", timeout=100
         ):
             raise NetworkException(
                 "%s status is not non-operational" % config.HOSTS[0]

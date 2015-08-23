@@ -299,7 +299,7 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
 
             rc, out = genSNNic(nic=nic, network=net,
                                slaves=slaves,
-                               mode=net_param.get('mode', None),
+                               mode=net_param.get('mode', 1),
                                boot_protocol=net_param.get('bootproto', None),
                                address=address_list.pop(0)
                                if address_list else None,
