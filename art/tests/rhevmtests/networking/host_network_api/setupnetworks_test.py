@@ -547,7 +547,8 @@ class TestHostNetworkApiSetupNetworks12(hna.TestHostNetworkApiTestCaseBase):
                     "slaves": [
                         c.DUMMYS[0],
                         c.DUMMYS[1]
-                    ]
+                    ],
+                    "mode": 1
                 }
             }
         }
