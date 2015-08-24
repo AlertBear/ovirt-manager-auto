@@ -1257,46 +1257,74 @@ class VmPool(BaseVmWithDiskTemplate):
     new_vm_pool = 'new_vm_pool'
     new_vm = 'new_vm_pool-1'
 
+    @bz({'1256411': {'engine': None, 'version': ['3.6']}})
     @polarion("RHEVM3-10090")
-    @istest
-    def crud_vm_pool(self):
+    def test_crud_vm_pool(self):
         """
         Create new pool, update and remove it
         """
         logger.info("Add new vm pool created from template %s",
                     self.template_name)
-        self.assertTrue(vm_pool_api.addVmPool(True, name=self.pool_name,
-                                              template=self.template_name,
-                                              cluster=config.CLUSTER_NAME[0],
-                                              size=2))
+        self.assertTrue(
+            vm_pool_api.addVmPool(
+                True, name=self.pool_name,
+                template=self.template_name,
+                cluster=config.CLUSTER_NAME[0],
+                size=2
+            )
+        )
         logger.info("Add user role to vm pool %s", self.pool_name)
         self.assertTrue(
-            addVmPoolPermissionToUser(True, user=config.USERNAME,
-                                      vmpool=self.pool_name,
-                                      role=ENUMS['role_name_user_role']))
-        logger.info("Update vm pool %s with new parameters", self.pool_name)
+            addVmPoolPermissionToUser(
+                True, user=config.USERNAME,
+                vmpool=self.pool_name,
+                role=ENUMS['role_name_user_role']
+            )
+        )
+        logger.info(
+            "Negative test: Update vm pool name from: %s to %s and increase "
+            "number of vms in pool", self.pool_name, self.new_vm_pool
+        )
         description = 'Pool Description'
-        self.assertTrue(vm_pool_api.updateVmPool(True, self.pool_name,
-                                                 name=self.new_vm_pool,
-                                                 description=description,
-                                                 size=3))
+        self.assertFalse(
+            vm_pool_api.updateVmPool(
+                True, self.pool_name,
+                name=self.new_vm_pool,
+                description=description,
+                size=3
+            )
+        )
         # Following VM state check is essential for following actions
         logger.info("Verify added vm to pool, %s is in down state",
                     self.new_vm)
-        self.assertTrue(vm_api.waitForVMState(vm=self.new_vm,
-                                              state=ENUMS['vm_state_down'],
-                                              timeout=VMPOOL_TIMEOUT))
+        self.assertTrue(
+            vm_api.waitForVMState(
+                vm=self.new_vm,
+                state=ENUMS['vm_state_down'],
+                timeout=VMPOOL_TIMEOUT
+            )
+        )
         logger.info("Search for vms in vm pool %s", self.new_vm_pool)
-        self.assertTrue(vm_api.searchForVm(True, query_key='name',
-                                           query_val="%s*" % self.new_vm_pool,
-                                           key_name='name'))
+        self.assertTrue(
+            vm_api.searchForVm(
+                True, query_key='name',
+                query_val="%s*" % self.new_vm_pool,
+                key_name='name'
+            )
+        )
         logger.info("Search for vm pool %s", self.new_vm_pool)
-        self.assertTrue(vm_pool_api.searchForVmPool(True,
-                                                    query_key='description',
-                                                    query_val='Pool*',
-                                                    key_name='description'))
-        logger.info("Negative: remove vm pool %s with attached vms",
-                    self.new_vm_pool)
+        self.assertTrue(
+            vm_pool_api.searchForVmPool(
+                True,
+                query_key='description',
+                query_val='Pool*',
+                key_name='description'
+            )
+        )
+        logger.info(
+            "Negative test: remove vm pool %s with attached vms",
+            self.new_vm_pool
+        )
         self.assertFalse(vm_pool_api.removeVmPool(True, self.new_vm_pool))
         logger.info("Detach all vms from vm pool %s", self.new_vm_pool)
         vm_pool_api.detachVms(True, self.new_vm_pool)
