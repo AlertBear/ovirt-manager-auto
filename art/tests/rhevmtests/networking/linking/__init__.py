@@ -51,7 +51,7 @@ def setup_package():
         )
 
         if not net_help.run_vm_once_specific_host(
-                vm=config.VM_NAME[0], host=config.HOSTS[0]
+                vm=config.VM_NAME[0], host=config.HOSTS[0], wait_for_ip=True
         ):
             raise NetworkException(
                 "Cannot start VM %s at host %s" %
