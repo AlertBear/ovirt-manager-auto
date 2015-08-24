@@ -63,6 +63,7 @@ class TestCase4665(BaseExportImportTestCase):
     """
     __test__ = True
     polarion_test_case = '4665'
+    bz = {'1254230': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """
@@ -251,3 +252,54 @@ class TestCase11987(BaseExportImportTestCase):
                            [self.vm_name, self.vm_from_template]]
                            + [self.vm_from_template])
         assert vms.removeVms(True, vmsList)
+
+
+@attr(tier=0)
+class TestCase11986(BaseExportImportTestCase):
+    """
+    Test case 11986 - Export a template sanity
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/2_3_Storage_VM_Import_Export_Sanity
+    """
+    __test__ = True
+    polarion_test_case = '11986'
+    bz = {'1254230': {'engine': None, 'version': ["3.6"]}}
+
+    def setUp(self):
+        """
+        Create a new template which will be used to clone a vm
+        """
+        super(TestCase11986, self).setUp()
+        self.template_name = "original_template_%s" % self.polarion_test_case
+
+        assert templates.createTemplate(
+            True, vm=self.vm_name, name=self.template_name)
+
+    @polarion("RHEVM3-11986")
+    def test_export_template(self):
+        """
+        Export template to an export domain
+        """
+        logger.info(
+            "Exporting template %s to export domain %s", self.template_name,
+            self.export_domain
+        )
+        assert templates.exportTemplate(
+            True, self.template_name, self.export_domain)
+
+    def tearDown(self):
+        """
+        * Remove exported template
+        """
+        if not templates.removeTemplateFromExportDomain(
+                True, self.template_name, config.DATA_CENTER_NAME,
+                self.export_domain
+        ):
+            self.test_failed = True
+            logger.error("Failed to remove template %s from export domain",
+                         self.template_name)
+
+        if not templates.removeTemplate(True, self.template_name):
+            self.test_failed = True
+            logger.error("Failed to remove template %s", self.template_name)
+        super(TestCase11986, self).tearDown()

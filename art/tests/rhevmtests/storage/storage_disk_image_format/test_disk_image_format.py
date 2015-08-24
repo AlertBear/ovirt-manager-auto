@@ -416,6 +416,7 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
     Collection for test cases with one vm imported
     """
     retrieve_disk_obj = lambda self, x: vms.getVmDisks(x)
+    bz = {'1254230': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """

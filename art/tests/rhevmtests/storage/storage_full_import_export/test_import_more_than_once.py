@@ -37,11 +37,10 @@ class TestCase11588(TestCase):
     polarion_test_case = '11588'
     vm_name = 'original_%s' % polarion_test_case
     template_name = "template_%s" % polarion_test_case
-
     from_vm1, from_vm2 = 'vm1_from_vm', 'vm2_from_vm'
     from_template1, from_template2 = 'vm1_from_template', 'vm2_from_template'
-
     vm_cloned1, vm_cloned2 = 'vm_cloned1', 'vm_cloned2'
+    bz = {'1254230': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """
