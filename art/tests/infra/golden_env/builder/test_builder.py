@@ -1,7 +1,5 @@
 import logging
 
-import os
-
 from art.unittest_lib import BaseTestCase as TestCase
 
 from art.rhevm_api.utils import test_utils, cpumodel
@@ -28,8 +26,6 @@ LOGGER = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
 GB = 1024 * 1024 * 1024
-HOME = os.environ.get('HOME', '.')
-INVENTORY_FILE = 'golden_env_hosts.txt'
 GLANCE = 'OpenStackImageProvider'
 
 
@@ -643,23 +639,3 @@ class CreateDC(TestCase):
             )
         else:
             self.import_shared_iso_domain(storage_conf, host)
-
-        GoldenEnvironmentInventory.write_host_list_to_file()
-
-
-class GoldenEnvironmentInventory(object):
-    """ This class collects information about entities on engine.
-    At the moment it collects the host list.
-    We need to keep the list on file to allow the log collection to work
-    on the end of the golden_env_runner job.
-    """
-    @staticmethod
-    def write_host_list_to_file():
-        LOGGER.info(
-            "Write list of hosts available in engine to %s/%s",
-            HOME, INVENTORY_FILE
-        )
-        host_objects = hosts.get_host_list()
-
-        with open(os.path.join(HOME, INVENTORY_FILE), 'w') as fd:
-            fd.write(','.join([x.get_address() for x in host_objects]))
