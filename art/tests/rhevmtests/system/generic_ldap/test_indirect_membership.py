@@ -14,7 +14,7 @@ from nose.tools import istest
 LOGGER = logging.getLogger(__name__)
 
 
-@attr(tier=1)
+@attr(tier=0)
 class IndirectMembership(TestCase):
     """
     Test indirect membership.
@@ -82,7 +82,7 @@ class IndirectMembershipNonRecursive(IndirectMembership):
         self.indirect_group_membership()
 
 
-@attr(tier=1)
+@attr(tier=0)
 class GroupRecursion(TestCase):
     """
     Test group recursion handle.
