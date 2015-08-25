@@ -87,6 +87,18 @@ class JDBCCLIUser(TestCase):
             password='pass:%s' % cls.user_password,
             password_valid_to='2100-01-01 11:11:11Z',
         )
+        assert users.addExternalUser(
+            True,
+            user_name=TEST_USER1,
+            domain=config.INTERNAL_AUTHZ,
+        ), "Can't add user '%s'" % TEST_USER1
+        assert mla.addClusterPermissionsToUser(
+            True,
+            user=TEST_USER1,
+            cluster='Default',
+            role='UserRole',
+            domain=config.INTERNAL_AUTHZ,
+        )
 
     @classmethod
     def teardown_class(cls):
@@ -104,21 +116,6 @@ class JDBCCLIUser(TestCase):
     def test_011_add_same_user(self):
         """ add user via aaa-jdbc cli """
         assert not USER_CLI.run('add', TEST_USER1)
-
-    def test_020_assign_user_permissions(self):
-        """ assign user permissions via aaa-jdbc cli """
-        assert users.addExternalUser(
-            True,
-            user_name=TEST_USER1,
-            domain=config.INTERNAL_AUTHZ,
-        ), "Can't add user '%s'" % TEST_USER1
-        assert mla.addClusterPermissionsToUser(
-            True,
-            user=TEST_USER1,
-            cluster='Default',
-            role='UserRole',
-            domain=config.INTERNAL_AUTHZ,
-        )
 
     @polarion('RHEVM3-11306')
     def test_030_login_as_user(self):
@@ -188,10 +185,6 @@ class JDBCCLIUser(TestCase):
     def test_060_unlock_user(self):
         """ unlock user via aaa-jdbc cli """
         assert USER_CLI.run('unlock', TEST_USER1)
-
-    @attr(tier=1)
-    def test_070_login_after_unlock(self):
-        """ login as user from aaa-jdbc """
         users.loginAsUser(
             TEST_USER1,
             config.INTERNAL_PROFILE,
