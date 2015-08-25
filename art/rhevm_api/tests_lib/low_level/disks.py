@@ -332,12 +332,12 @@ def deleteDisk(positive, alias, async=True, disk_id=None):
     Return: Status of the operation's result dependent on positive value
     """
     if disk_id:
-        diskObj = DISKS_API.find(disk_id, attributes='id')
+        disk_obj = DISKS_API.find(disk_id, attribute='id')
     else:
-        diskObj = DISKS_API.find(alias)
+        disk_obj = DISKS_API.find(alias)
 
     # TODO: add async parameter to delete method once it's supported
-    status = DISKS_API.delete(diskObj, positive)
+    status = DISKS_API.delete(disk_obj, positive)
     return status
 
 

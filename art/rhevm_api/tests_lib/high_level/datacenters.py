@@ -162,13 +162,15 @@ def get_clusters_connected_to_datacenter(dc_id):
 
 @is_action()
 def clean_datacenter(
-        positive, datacenter,
+        positive,
+        datacenter,
         db_name=ll_storagedomains.RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
         db_user=ll_storagedomains.RHEVM_UTILS_ENUMS['RHEVM_DB_USER'],
         formatIsoStorage='false',
         formatExpStorage='false',
         vdc=None,
-        vdc_password=None):
+        vdc_password=None
+):
     """
     Description: Remove data center: all clusters. vms, templates floating
                  disks, storage domains and hosts
@@ -186,6 +188,9 @@ def clean_datacenter(
     :type vdc; str
     :param vdc_password
     :type vdc_password: str
+    :returns: True if relevant operations within this function pass,
+    False otherwise
+    :rtype: bool
     """
     status = True
     dc_obj = datacenters.util.find(datacenter)

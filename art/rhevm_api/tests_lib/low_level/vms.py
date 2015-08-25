@@ -4778,7 +4778,10 @@ def get_vm_disk_logical_name(
         return getVmDisk(vm_name, disk_alias).get_logical_name()
 
     if not wait:
-        return get_logical_name(vm_name, disk_alias)
+        logical_name = get_logical_name(vm_name, disk_alias)
+        if parse_logical_name:
+            logical_name = logical_name.replace("/dev/", "")
+        return logical_name
 
     logger.debug("Waiting for logical volume name for disk %s", disk_alias)
     for logical_name in TimeoutingSampler(
@@ -5158,3 +5161,18 @@ def reorder_vm_mac_address(vm_name):
     """
     vm_obj = VM_API.find(vm_name)
     return VM_API.syncAction(vm_obj, "reordermacaddresses", True, "true")
+
+
+def is_disk_attached_to_vm(vm_name, disk_alias):
+    """
+    Check whether the disk specified is attached to the VM provided
+
+    :param vm_name: The name of the VM where the input disk may be attached
+    :type vm_name: str
+    :param disk_alias: The alias of the disk that will be checked with the
+    input VM
+    :type disk_alias: str
+    :returns: True if disk is attached to VM, False otherwise
+    :rtype: bool
+    """
+    return disk_alias in [disk.get_alias() for disk in getVmDisks(vm_name)]

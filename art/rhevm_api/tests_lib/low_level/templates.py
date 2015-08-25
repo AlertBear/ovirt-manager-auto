@@ -19,21 +19,23 @@
 
 import logging
 import time
-from art.rhevm_api.tests_lib.low_level.disks import getObjDisks
-import art.test_handler.exceptions as errors
 
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS, data_st, TimeoutingSampler
 from art.rhevm_api.utils.test_utils import get_api, split, waitUntilGone
 from art.rhevm_api.utils.xpath_utils import XPathMatch
-from art.rhevm_api.tests_lib.low_level.networks import getVnicProfileObj, \
-    VNIC_PROFILE_API
-from art.rhevm_api.tests_lib.low_level.vms import DiskNotFound, \
-    _prepareWatchdogObj, getWatchdogModels
+from art.rhevm_api.tests_lib.low_level.disks import getObjDisks
+from art.rhevm_api.tests_lib.low_level.networks import (
+    getVnicProfileObj, VNIC_PROFILE_API,
+)
+from art.rhevm_api.tests_lib.low_level.vms import (
+    DiskNotFound, _prepareWatchdogObj, getWatchdogModels,
+)
 from art.test_handler.settings import opts
 from utilities.jobs import Job, JobsSet
 from art.rhevm_api.utils.test_utils import searchForObj
 from art.core_api import is_action
+import art.test_handler.exceptions as errors
 from art.test_handler import exceptions
 
 CREATE_TEMPLATE_TIMEOUT = 900
@@ -858,3 +860,26 @@ def wait_for_export_domain_template_state(
         )
         return False
     return True
+
+
+def get_template_obj(template_name, all_content=False):
+    """
+    Get Template object by using the Template name
+
+    __author__ = "glazarov"
+    :param template_name: The Template name from which the Template object
+    should be retrieved
+    :type template_name: str
+    :param all_content: Specifies whether the entire content for the Template
+    should be retrieved, False is the default
+    :type all_content: bool
+    :returns: The Template object for the input template_name
+    :rtype: Template object
+    """
+    template_name_query = "name=%s" % template_name
+    # Retrieve the entire object content only in the case where this is
+    # requested
+    if all_content:
+        return TEMPLATE_API.query(template_name_query,
+                                  all_content=all_content)[0]
+    return TEMPLATE_API.query(template_name_query)[0]

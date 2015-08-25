@@ -74,6 +74,8 @@ connUtil = get_api('storage_connection', 'storageconnections')
 xpathMatch = is_action(
     'xpathStoragedomains', id_name='xpathMatch')(XPathMatch(util))
 
+OVF_STORE_DISK_NAME = "OVF_STORE"
+
 
 def _prepareStorageDomainObject(positive, **kwargs):
 
@@ -2052,3 +2054,13 @@ def import_glance_image(
         )
         return False
     return True
+
+
+def get_number_of_ovf_store_disks(storage_domain):
+    """
+    Return the total number of OVF stores in the requested storage domain
+    """
+    all_disks = getStorageDomainDisks(storage_domain, False)
+    return len(
+        [disk for disk in all_disks if disk.get_alias() == OVF_STORE_DISK_NAME]
+    )
