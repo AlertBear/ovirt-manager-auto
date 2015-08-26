@@ -13,6 +13,7 @@ from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.low_level import templates, hosts
 from art.rhevm_api.tests_lib.low_level.datacenters import get_data_center
+from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.unittest_lib import attr
 from rhevmtests.storage.helpers import get_vm_ip
 import art.rhevm_api.utils.storage_api as st_api
@@ -949,6 +950,7 @@ class TestCase6171(TestCase):
                          self.original_sd, wait=True)
         disks.wait_for_disks_status(vm_disks[0].get_alias(),
                                     timeout=MOVING_DISK_TIMEOUT)
+        wait_for_jobs([config.ENUMS['job_move_or_copy_disk']])
 
 
 @attr(tier=1)
