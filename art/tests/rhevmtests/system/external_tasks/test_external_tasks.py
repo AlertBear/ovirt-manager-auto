@@ -3,6 +3,7 @@ External Tasks test
 
 """
 from art.unittest_lib import CoreSystemTest as TestCase
+from art.test_handler.tools import bz  # pylint: disable=E0611
 from nose.tools import istest
 from art.unittest_lib import attr
 from art.test_handler.tools import polarion  # pylint: disable=E0611
@@ -200,6 +201,7 @@ class AddSubStepWithCorrectParameters(TestCase):
 
     @polarion("RHEVM3-7162")
     @istest
+    @bz({'1257075': {'engine': None, 'version': ['3.6']}})
     def add_sub_step_with_correct_parameters(self):
         '''
         Add sub step with correct description
