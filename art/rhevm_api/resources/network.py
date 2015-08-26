@@ -458,3 +458,26 @@ class Network(Service):
                 resource_file.write("DEVICE=%s\n" % nic)
                 for k, v in params.iteritems():
                     resource_file.write("%s=%s\n" % (k, v))
+
+    def send_icmp(self, dst, count="5", size="1500", extra_args=None):
+        """
+        Send ICMP to destination IP/FQDN
+
+        :param dst: IP/FQDN to send ICMP to
+        :type dst: str
+        :param count: Number of ICMP packets to send
+        :type count: str
+        :param size: Size of the ICMP packet
+        :type size: str
+        :param extra_args: Extra args for ping command
+        :type extra_args: str
+        :return: Command output or raise Exception
+        :rtype: str or Exception
+        """
+        cmd = ["ping", dst, "-c", count, "-s", size]
+        if size != "1500":
+            cmd.extend(["-M", "do"])
+        if extra_args is not None:
+            for ar in extra_args.split():
+                cmd.extend(ar.split())
+        return self._cmd(cmd)
