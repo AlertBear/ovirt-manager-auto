@@ -565,6 +565,7 @@ class TestCasesCreateTemplate(BaseTestDiskImageVms):
     """
     template_thin = "template_thin"
     template_preallocated = "template_preallocated"
+    bz = {'1257240': {'engine': None, 'version': ['3.6']}}
 
     def create_template_from_vm(self):
         """
