@@ -168,6 +168,8 @@ def prepare_network_attachment_obj(host_name, **kwargs):
     nic = kwargs.get(NIC)
     override_configuration = kwargs.get("override_configuration")
     properties = kwargs.get("properties")
+    datacenter = kwargs.get("datacenter")
+    cluster = kwargs.get("cluster")
 
     if update:
         network_attachment_obj = get_networks_attachments(
@@ -206,7 +208,9 @@ def prepare_network_attachment_obj(host_name, **kwargs):
         )
 
     if network and not update:
-        add_network = ll_networks.NET_API.find(network)
+        add_network = ll_networks.findNetwork(
+            network=network, data_center=datacenter, cluster=cluster
+        )
         network_attachment_obj.set_network(add_network)
 
     return network_attachment_obj

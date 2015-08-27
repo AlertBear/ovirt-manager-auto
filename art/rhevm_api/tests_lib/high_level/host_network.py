@@ -173,6 +173,7 @@ def setup_networks(host_name, **kwargs):
     kwargs = {
             "add": {
                 "add1": {
+                    "datacenter": "dc1" # in case of same network name in DCs
                     "network": "net1",
                     "nic": "dummy1",
                     "ip": {
@@ -411,7 +412,7 @@ def get_networks_unsync_reason(host_name, networks=None):
     :rtype: dict
     """
     res = dict()
-    check_list = ["mtu", "vlan"]
+    check_list = ["mtu", "vlan", "bridged"]
     attachments = get_unsync_network_attachments(host_name, networks)
     for att in attachments:
         reported = ll_host_network.get_attachment_reported_configurations(att)
@@ -425,7 +426,12 @@ def get_networks_unsync_reason(host_name, networks=None):
                 r_val = (report.get_value(),)
                 if r_name in check_list:
                     val_at = getattr(net, r_name)
-                    val_at = val_at if isinstance(val_at, int) else val_at.id
-                    r_val = (report.get_value(), val_at)
+                    if not val_at and r_name == "vlan":
+                        val_at = "None"
+                    else:
+                        val_at = val_at if isinstance(
+                            val_at, int
+                        ) else val_at.id
+                        r_val = (report.get_value(), val_at)
                 res[net_name] = (report.get_name(), r_val)
     return res
