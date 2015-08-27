@@ -5,6 +5,7 @@ import test_actions
 from rhevmtests.system.user_tests import config
 from art.rhevm_api.tests_lib.low_level import storagedomains, mla
 from art.rhevm_api.tests_lib.high_level import datacenters
+from art.rhevm_api.utils import aaa
 
 
 def get_action_groups(role_name):
@@ -42,12 +43,16 @@ for role in mla.util.get(absLink=False):
         {
             'role': role_name,
             'filter_': filter_,
-            'perms': role_actions
+            'perms': role_actions,
+            '__test__': True,
         }
     )
 
     module = test_user if filter_ else test_admin
     setattr(module, '%s_%s' % (role_name, case_name), role_case)
+    role_case = None  # Need set to None, else it will be case of this module
+
+LDAP = aaa.BRQOpenLDAP(config.ENGINE_HOST, config.ENGINE)
 
 
 def setup_module():
@@ -59,6 +64,7 @@ def setup_module():
     config.MASTER_STORAGE = storagedomains.get_master_storage_domain_name(
         config.DC_NAME[0]
     )
+    LDAP.add()
 
 
 def teardown_module():
@@ -68,3 +74,4 @@ def teardown_module():
             vdc=config.VDC_HOST,
             vdc_password=config.VDC_ROOT_PASSWORD
         )
+    LDAP.remove()

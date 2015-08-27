@@ -97,3 +97,7 @@ class Extension(object):
 
 class ADTLV(Extension):
     module_name = 'ad_tlv'
+
+
+class BRQOpenLDAP(Extension):
+    module_name = 'brq_openldap'

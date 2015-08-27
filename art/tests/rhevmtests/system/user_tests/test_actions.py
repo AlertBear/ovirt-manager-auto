@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-__test__ = True
 
 import uuid
 import logging
@@ -109,46 +108,46 @@ def setup_module():
 
 def teardown_module():
     """ Clean testing setup """
-    assert vms.removeVm(
+    vms.removeVm(
         True,
         config.CREATE_VM
     )
-    assert vms.removeVm(
+    vms.removeVm(
         True,
         config.RUNNING_VM,
         stopVM='true'
     )
-    assert vmpools.removeWholeVmPool(
+    vmpools.removeWholeVmPool(
         True,
         vmpool=config.CREATE_POOL,
         size=1
     )
-    assert disks.deleteDisk(
+    disks.deleteDisk(
         True,
         config.DELETE_DISK
     )
-    assert clusters.removeCluster(
+    clusters.removeCluster(
         True,
         config.DELETE_CLUSTER
     )
-    assert vms.removeVm(
+    vms.removeVm(
         True,
         config.DELETE_VM
     )
-    assert vmpools.removeWholeVmPool(
+    vmpools.removeWholeVmPool(
         True,
         vmpool=config.DELETE_POOL,
         size=1
     )
-    assert templates.removeTemplate(
+    templates.removeTemplate(
         True,
         config.CREATE_TEMPLATE
     )
-    assert templates.removeTemplate(
+    templates.removeTemplate(
         True,
         config.DELETE_TEMPLATE
     )
-    assert datacenters.removeDataCenter(
+    datacenters.removeDataCenter(
         True,
         config.DELETE_DC
     )
@@ -223,7 +222,7 @@ class CaseRoleActions(TestCase):
     and never log out during test. Clean up is done
     by admin@internal at the end of test.
     """
-    __test__ = True
+    __test__ = False
     last_logged_in = ''
     cleanup_functions = []  # List of dictionaries of cleanup functions
 
@@ -378,6 +377,7 @@ class CaseRoleActions(TestCase):
     # ======================= CREATE ACTIONS ================================
 
     @istest
+    @bz({'1214805': {'engine': None, 'version': ['3.6']}})
     @user_case(
         login_as=config.USER_SYSTEM,
         cleanup_func=datacenters.removeDataCenter,
@@ -452,7 +452,6 @@ class CaseRoleActions(TestCase):
         )
 
     @istest
-    @bz(1153043)
     @user_case(
         login_as=config.USER_STORAGE,
         cleanup_func=disks.deleteDisk,
@@ -559,7 +558,7 @@ class CaseRoleActions(TestCase):
         login_as=config.USER_DC,
         cleanup_func=vmpools.stopVmPool,
         positive=True,
-        vmpool=config.CREATE_POOL
+        vm_pool=config.CREATE_POOL
     )
     def vm_pool_basic_operations(self):
         """ vm_pool_basic_operations """
