@@ -2,6 +2,8 @@ __test__ = False
 
 import logging
 
+from art.rhevm_api import resources
+from art.rhevm_api.utils import test_utils
 from art.test_handler.settings import opts
 from art.test_handler.settings import ART_CONFIG
 
@@ -14,9 +16,13 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 VARS = opts['elements_conf']['RHEVM Utilities']
 STORAGE_TYPE = PARAMETERS['storage_type']
 
+OS_TYPE = test_utils.convertOsNameToOsTypeElement(
+    True, PARAMETERS['vm_os']
+)[1]['osTypeElement']
+
 basename = 'upgradeTest'
-DC_NAME = 'datacenter_upgradeTest'
-CLUSTER_NAME = 'cluster_name_upgradeTest'
+DC_NAME = PARAMETERS.get('dc_name', 'datacenter_upgradeTest')
+CLUSTER_NAME = PARAMETERS.get('cluster_name', 'cluster_name_upgradeTest')
 CPU_NAME = PARAMETERS['cpu_name']
 DATA_NAME = PARAMETERS.get('data_domain_name', '%s_storage' % basename)
 DATA_PATHS = PARAMETERS.as_list('data_domain_path')
@@ -41,11 +47,20 @@ REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
 RHEVM_NAME = REST_CONNECTION['host']
 MB = 1024 * 1024
 GB = 1024 * MB
-MGMT_BRIDGE = PARAMETERS['mgmt_bridge']
+MGMT_BRIDGE = PARAMETERS.get('mgmt_bridge', 'rhevm')
+DISK_SIZE = 6 * GB
 
 VM_LINUX_USER = PARAMETERS.get('vm_linux_user', 'root')
 VM_LINUX_PASSWORD = PARAMETERS.get('vm_linux_password', 'qum5net')
 
+HOSTS = PARAMETERS.as_list('vds')
+HOSTS_IP = list(HOSTS)
+HOSTS_PW = PARAMETERS.as_list('vds_password')[0]
+VDS_HOSTS = [
+    resources.VDS(
+        h, HOSTS_PW,
+    ) for h in HOSTS_IP
+]
 
 ANSWERS = {
     # KEYWORDS FOR OTOPI ANSWERFILE
