@@ -26,17 +26,21 @@ from art.rhevm_api.utils.storage_api import (
 )
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import rhevmtests.storage.helpers as storage_helpers
+from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
 
 TIMEOUT_DATA_CENTER_RECONSTRUCT = 900
 TIMEOUT_DATA_CENTER_NON_RESPONSIVE = 300
+CREATE_TEMPLATE_TIMEOUT = 1500
+CLONE_FROM_TEMPLATE_TIMEOUT = 1500
 
 SDK_ENGINE = 'sdk'
+NFS = config.STORAGE_TYPE_NFS
+GLUSTERFS = config.STORAGE_TYPE_GLUSTER
 
 ALL_TYPES = (
-    config.STORAGE_TYPE_NFS, config.STORAGE_TYPE_GLUSTER,
-    config.STORAGE_TYPE_POSIX, config.STORAGE_TYPE_ISCSI,
+    NFS, GLUSTERFS, config.STORAGE_TYPE_POSIX, config.STORAGE_TYPE_ISCSI,
 )
 
 
@@ -383,8 +387,9 @@ class TestCase4563(IscsiNfsSD):
         logger.info("Creating template %s from vm %s", self.template_name,
                     self.vm_name)
         assert ll_templates.createTemplate(
-            True, name=self.template_name, vm=self.vm_name,
-            cluster=self.cluster_name, storagedomain=self.nfs)
+            True, timeout=CREATE_TEMPLATE_TIMEOUT, name=self.template_name,
+            vm=self.vm_name, cluster=self.cluster_name, storagedomain=self.nfs
+        )
 
         self.templates_to_remove.append(self.template_name)
         disk = ll_templates.getTemplateDisks(self.template_name)[0]
@@ -398,8 +403,10 @@ class TestCase4563(IscsiNfsSD):
             vm_name = "vm_cloned_%s_%s" % (self.polarion_test_case,
                                            storagedomain)
             assert ll_vms.cloneVmFromTemplate(
-                True, vm_name, self.template_name,
-                self.cluster_name, storagedomain=storagedomain, clone='true')
+                True, vm_name, self.template_name, self.cluster_name,
+                timeout=CLONE_FROM_TEMPLATE_TIMEOUT,
+                storagedomain=storagedomain, clone='true'
+            )
             self.vms_to_remove.append(vm_name)
 
             disk_id = ll_vms.getVmDisks(vm_name)[0].get_id()
@@ -638,9 +645,9 @@ class TestCase4554(BaseCaseDCMixed):
     Move disk (offline movement) between domains (NFS to Gluster and
     Gluster to NFS).
     """
-    __test__ = True
+    __test__ = (NFS in opts['storages'] or GLUSTERFS in opts['storages'])
     polarion_test_case = '4554'
-
+    storages = set([NFS, GLUSTERFS])
     storagedomains = [config.NFS_DOMAIN, config.GLUSTER_DOMAIN]
 
     @polarion("RHEVM3-4554")

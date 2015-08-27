@@ -4691,13 +4691,16 @@ def safely_remove_vms(vms):
     :returns: False if any of the vms still exist, True otherwise
     :rtype: bool
     """
-    logger.debug("Removing vms %s", vms)
-    existing_vms = filter(does_vm_exist, vms)
-    stop_vms_safely(existing_vms)
-    for vm in existing_vms:
-        removeVm(True, vm, wait=False)
+    if vms:
+        logger.debug("Removing vms %s", vms)
+        existing_vms = filter(does_vm_exist, vms)
+        stop_vms_safely(existing_vms)
+        for vm in existing_vms:
+            removeVm(True, vm, wait=False)
 
-    return waitForVmsGone(True, existing_vms)
+        return waitForVmsGone(True, existing_vms)
+    logger.info("There are no vms to remove")
+    return True
 
 
 def get_vm_disk_logical_name(
