@@ -57,6 +57,7 @@ Issues DB syntax
 import re
 import copy
 import time
+import json
 from requests import ConnectionError
 from functools import wraps
 
@@ -100,6 +101,7 @@ DEFAULT_URL = 'https://bugzilla.redhat.com/xmlrpc.cgi'
 DEFAULT_USER = 'bugzilla-qe-tlv@redhat.com'
 DEFAULT_PASSWD = 'F3x5RiBnzn'
 DEFAULT_STATE = False
+DEFAULT_LOG_FILE = 'logs/skipped_bugs.log'
 
 RHEVM_RPM = 'rhevm'
 OVIRT_RPM = 'ovirt-engine'
@@ -194,19 +196,18 @@ def transform_ovirt_comp(comp):
 
 class BugzillaSkipTest(SkipTest):
     def __init__(
-        self, bz_id, site, version, engine
+        self, bug, version, engine
     ):
         super(BugzillaSkipTest, self).__init__()
-        self.bz = bz_id
-        self.site = site
+        self.bug = bug
         self.engine = engine
         self.version = version
 
     def __str__(self):
         msg = (
-            "Skipping test case due to: known issue %s/show_bug.cgi?id=%s\n"
+            "Skipping test case due to: known issue %s\n"
             "for version: %s, engine: %s"
-            % (self.site, self.bz, self.version, self.engine)
+            % (self.bug.weburl, self.version, self.engine)
         )
         return msg
 
@@ -324,6 +325,8 @@ class Bugzilla(Component):
 
         self.config_name = getattr(conf, 'filename', None)
 
+        self.log_file = bz_cfg.get('log_file')
+
         try:
             if bz_cfg[PATH_TO_ISSUEDB]:
                 path = find_config_file(bz_cfg[PATH_TO_ISSUEDB])
@@ -409,8 +412,20 @@ class Bugzilla(Component):
             return
         res['bugzilla'] = ",".join(bug_dict.iterkeys())
 
+    def write_into_bug_log(self, bug, test_name):
+        bug_info = {
+            'test_name': test_name,
+            'summary': bug.summary,
+            'status': bug.status,
+            'version': bug.version,
+            'weburl': bug.weburl,
+            'component': bug.component,
+        }
+        with open(self.log_file, 'a') as log_file:
+            log_file.write("%s\n" % json.dumps(bug_info))
+
     def should_be_skipped(
-            self, bz_id, engines=None, versions=None, storages=None
+        self, bz_id, test_name, engines=None, versions=None, storages=None
     ):
         """
         Raises BugzillaSkipTest if the bug is in non-resolved state
@@ -418,6 +433,8 @@ class Bugzilla(Component):
         and its in the specified version or was fixed in later version
         :param bz_id: the id of the bug
         :type bz_id: str
+        :param test_name: name of test
+        :type test_name: str
         :param engines: relevant engines for this bug
         :type engines: list
         :param versions: relevant versions for this bug
@@ -464,18 +481,16 @@ class Bugzilla(Component):
                     "skipping due to in_state=%s, engine_in=%s, storage_in=%s",
                     self.is_state_by_bug(bz), engine_in, storage_in
                 )
-                raise BugzillaSkipTest(
-                    bz_id, self.url, version, engine
-                )
+                self.write_into_bug_log(bz, test_name)
+                raise BugzillaSkipTest(bz, version, engine)
 
             # if the bug is closed or verified on current release resolution,
             # but was fixed in later version
             if bz.bug_status in ('CLOSED', 'VERIFIED'):
                 if self.__check_fixed_at(bz) and engine_in and storage_in:
                     logger.info("skipping due to closed or verified")
-                    raise BugzillaSkipTest(
-                        bz_id, self.url, version, engine
-                    )
+                    self.write_into_bug_log(bz, test_name)
+                    raise BugzillaSkipTest(bz, version, engine)
 
         for version in versions:
             self.version = Version(version)
@@ -491,9 +506,8 @@ class Bugzilla(Component):
                     "skipping due to in_state=%s, resolution=%s",
                     self.is_state(bz_id), bz.resolution
                 )
-                raise BugzillaSkipTest(
-                    bz_id, self.url, version, engine
-                )
+                self.write_into_bug_log(bz, test_name)
+                raise BugzillaSkipTest(bz, version, engine)
 
     def __check_version(self, bug):
         """
@@ -554,7 +568,9 @@ class Bugzilla(Component):
             version = options.get('version')
             storage = options.get('storage')
             try:
-                self.should_be_skipped(bz_id, engine, version, storage)
+                self.should_be_skipped(
+                    bz_id, g.test_name, engine, version, storage,
+                )
             except SkipTest as ex:
                 logger.warn(str(ex))
                 raise
@@ -573,7 +589,9 @@ class Bugzilla(Component):
                 version = options.get('version')
                 storage = options.get('storage')
                 try:
-                    self.should_be_skipped(bz_id, engine, version, storage)
+                    self.should_be_skipped(
+                        bz_id, t.test_name, engine, version, storage
+                    )
                 except SkipTest as ex:
                     logger.warn(str(ex))
                     raise
@@ -583,7 +601,7 @@ class Bugzilla(Component):
             bz_ids = self.issuedb.lookup(t.test_name, self.config_name)
             for bz_id in bz_ids:
                 try:
-                    self.should_be_skipped(bz_id)
+                    self.should_be_skipped(bz_id, t.test_name)
                 except SkipTest as ex:
                     logger.warn(str(ex))
                     raise
@@ -620,6 +638,7 @@ class Bugzilla(Component):
         section_spec['password'] = "string(default='%s')" % DEFAULT_PASSWD
         section_spec['enabled'] = 'boolean(default=%s)' % DEFAULT_STATE
         section_spec['url'] = "string(default='%s')" % DEFAULT_URL
+        section_spec['log_file'] = "string(default='%s')" % DEFAULT_LOG_FILE
         section_spec[PRODUCT] = "option('%s', '%s', default='%s')" % (
             RHEVM_PRODUCT, OVIRT_PRODUCT, RHEVM_PRODUCT)
         section_spec[PATH_TO_ISSUEDB] = "string(default=None)"
