@@ -34,7 +34,7 @@ def setup_package():
         h_sd.attach_and_activate_domain(
             config.DC_NAME[0], config.EXPORT_STORAGE_DOMAIN
         )
-    for image_id, image in enumerate(sorted(config.TEST_IMAGES)):
+    for image in sorted(config.TEST_IMAGES):
         config.TEST_IMAGES[image]['image'] = common.import_image(image)
         assert vms.createVm(
             positive=True,
@@ -46,13 +46,9 @@ def setup_package():
             nicType=config.NIC_TYPE_E1000,
         )
         config.TEST_IMAGES[image]['id'] = VM_API.find(image).id
-        if image_id == 0:
-            assert config.TEST_IMAGES[image]['image']._is_import_success()
 
 
 def teardown_package():
-    for image in config.TEST_IMAGES:
-        vms.removeVm(True, image, stopVM='true')
     if not config.GOLDEN_ENV:
         h_sd.detach_and_deactivate_domain(
             config.DC_NAME[0],

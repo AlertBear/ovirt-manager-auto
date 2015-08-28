@@ -3,17 +3,28 @@ Test installation and uninstallation of guest agent on RHEL 7
 """
 import logging
 
+from art.rhevm_api.tests_lib.low_level import vms
 from art.test_handler.tools import polarion  # pylint: disable=E0611
+
 from rhevmtests.system.guest_tools.linux_guest_agent import config, common
 
 LOGGER = logging.getLogger(__name__)
 NAME = config.GA_NAME
+DISK_NAME = 'rhel7.1_x64_Disk1'
+
+
+def setup_module():
+    common.prepare_vms([DISK_NAME])
+
+
+def teardown_module():
+    vms.removeVm(True, DISK_NAME, stopVM='true')
 
 
 class RHEL7_1x64Install(common.BaseInstallGA):
     ''' test installation of guest agent on rhel 6 64b '''
     __test__ = True
-    disk_name = 'rhel7.1_x64_Disk1'
+    disk_name = DISK_NAME
 
     @polarion('RHEVM3-7378')
     def test_install_guest_agent(self):
@@ -24,7 +35,7 @@ class RHEL7_1x64Install(common.BaseInstallGA):
 class RHEL7_1x64Uninstall(common.BaseUninstallGA):
     ''' '''
     __test__ = True
-    disk_name = 'rhel7.1_x64_Disk1'
+    disk_name = DISK_NAME
     package = '%s-*' % NAME
 
     @polarion('RHEVM3-7400')
@@ -41,7 +52,7 @@ class RHEL7_1x64Uninstall(common.BaseUninstallGA):
 class RHEL7_1x64PostInstall(common.BasePostInstall):
     ''' '''
     __test__ = True
-    disk_name = 'rhel7.1_x64_Disk1'
+    disk_name = DISK_NAME
     cmd_chkconf = [
         'systemctl', 'list-unit-files', '|',
         'grep', 'ovirt', '|',
@@ -67,7 +78,7 @@ class RHEL7_1x64PostInstall(common.BasePostInstall):
 class RHEL7_1x64ServiceTest(common.BaseServiceTest):
     ''' '''
     __test__ = True
-    disk_name = 'rhel7.1_x64_Disk1'
+    disk_name = DISK_NAME
 
     @polarion('RHEVM3-7382')
     def test_service_test(self):
@@ -78,7 +89,7 @@ class RHEL7_1x64ServiceTest(common.BaseServiceTest):
 class RHEL7_1x64AgentData(common.BaseAgentData):
     ''' '''
     __test__ = True
-    disk_name = 'rhel7.1_x64_Disk1'
+    disk_name = DISK_NAME
     list_app = ['rpm', '-qa']
     application_list = ['kernel', config.PACKAGE_NAME]
 
@@ -109,7 +120,7 @@ class RHEL7_1x64AgentData(common.BaseAgentData):
 class RHEL7_1x64FunctionContinuity(common.BaseFunctionContinuity):
     ''' RHEL7_1x64, rhevm-guest-agent function continuity '''
     __test__ = True
-    disk_name = 'rhel7.1_x64_Disk1'
+    disk_name = DISK_NAME
     list_app = ['rpm', '-qa']
     application_list = ['kernel', config.PACKAGE_NAME]
 

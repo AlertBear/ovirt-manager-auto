@@ -2,12 +2,61 @@
 Ubuntu guest agent test
 '''
 import logging
-from rhevmtests.system.guest_tools.linux_guest_agent import common
-from nose.tools import istest
+
+from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.test_handler.tools import polarion  # pylint: disable=E0611
+
+from rhevmtests.system.guest_tools.linux_guest_agent import common, config
+
+from nose.tools import istest
 
 LOGGER = logging.getLogger(__name__)
 NAME = 'ovirt-guest-agent'
+DISK_NAME = 'ubuntu-12.04_Disk1'
+package_manager = '/usr/bin/apt-get'
+
+
+def setup_module():
+    if config.TEST_IMAGES[DISK_NAME]['image']._is_import_success():
+        machine = common.createMachine(DISK_NAME)
+        config.TEST_IMAGES[DISK_NAME]['machine'] = machine
+        res, out = machine.runCmd(
+            cmd=[
+                'echo',
+                "deb %s ./" % config.UBUNTU_REPOSITORY, '>>',
+                '/etc/apt/sources.list',
+            ],
+            timeout=config.TIMEOUT
+        )
+        assert res, out
+        LOGGER.info('Guest agent repo enabled.')
+        gpg_cmd1 = [
+            'gpg', '-v', '-a', '--keyserver',
+            '%sRelease.key' % config.UBUNTU_REPOSITORY,
+            '--recv-keys', 'D5C7F7C373A1A299'
+        ]
+        gpg_cmd2 = [
+            'gpg', '--export', '--armor', '73A1A299',
+            '|', 'apt-key', 'add', '-'
+        ]
+        res, out = machine.runCmd(gpg_cmd1, timeout=config.TIMEOUT)
+        assert res, "Fail to run cmd %s: %s" % (gpg_cmd1, out)
+        LOGGER.info('Gpg keys exported.')
+        res, out = machine.runCmd(gpg_cmd2, timeout=config.TIMEOUT)
+        assert res, "Fail to run cmd %s: %s" % (gpg_cmd2, out)
+
+        LOGGER.info('Updating system...')
+        package_manager = config.TEST_IMAGES[DISK_NAME]['manager']
+        assert common.runPackagerCommand(machine, package_manager, 'update')
+        assert common.runPackagerCommand(
+            machine, package_manager, 'install', NAME
+        )
+        LOGGER.info('%s is installed', NAME)
+        LOGGER.info('Service started %s', machine.startService(NAME))
+
+
+def teardown_module():
+    ll_vms.removeVm(True, DISK_NAME, stopVM='true')
 
 
 class UbuntuPostInstall(common.BasePostInstall):

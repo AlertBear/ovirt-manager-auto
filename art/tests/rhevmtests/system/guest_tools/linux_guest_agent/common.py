@@ -93,58 +93,12 @@ class GABaseTestCase(TestCase):
     __test__ = False
 
     @classmethod
-    def getMachine(cls, diskName):
-        """
-        Will return machine instance which handle acccess to vm with rhel
-
-        :param diskName: name of the machine disk
-        :type diskName: str
-        :returns: vm machine object
-        :rtype: instance of MyLinuxMachine
-        """
-        if config.TEST_IMAGES[diskName]['machine'] is None:
-            assert disks.attachDisk(True, diskName, diskName)
-            assert vms.startVm(True, diskName, wait_for_status=config.VM_UP)
-            mac = vms.getVmMacAddress(
-                True, vm=diskName, nic=config.NIC_NAME
-            )[1].get('macAddress', None)
-            LOGGER.info("Mac address is %s", mac)
-
-            ip = test_utils.convertMacToIpAddress(
-                True, mac, subnetClassB=config.SUBNET_CLASS
-            )[1].get('ip', None)
-            myMachine = MyLinuxMachine(ip)
-            config.TEST_IMAGES[diskName]['machine'] = myMachine
-            assert myMachine.isConnective(attempt=6)
-
-            # FIXME: not flexible, get rid of this
-            if 'rhel' in cls.__name__.lower() and not config.UPSTREAM:
-                assert myMachine.runCmd(
-                    ['wget', config.RHEL_GA_RPM, '-O', '/tmp/ovirt.rpm']
-                )[0]
-                runPackagerCommand(
-                    myMachine,
-                    cls.package_manager,
-                    'install',
-                    '/tmp/ovirt.rpm',
-                )
-            runPackagerCommand(
-                myMachine, cls.package_manager, 'install', config.GA_NAME
-            )
-            LOGGER.info(
-                'guest agent started %s',
-                myMachine.startService(config.AGENT_SERVICE_NAME)
-            )
-
-        return config.TEST_IMAGES[diskName]['machine']
-
-    @classmethod
     def setup_class(cls):
         image = config.TEST_IMAGES[cls.disk_name]
-        assert image['image']._is_import_success(timeout=1800)
         cls.vm_id = image['id']
         cls.package_manager = image['manager']
-        cls.machine = cls.getMachine(cls.disk_name)
+        cls.machine = image['machine']
+        assert cls.machine.isConnective(attempt=2)
 
 
 @attr(tier=1)
@@ -346,3 +300,53 @@ class BaseInstallGA(GABaseTestCase):
     def install_guest_agent(self):
         """ install guest agent on rhel """
         # pass, once setup_module passes, then install passes too
+
+
+def createMachine(diskName):
+    """
+    Create machine for disk from glance
+
+    :param diskName: name of the disk for the machine
+    :type diskName: str
+
+    :return: Machine instance
+    :return type: utilities.Machine
+    """
+    assert disks.attachDisk(True, diskName, diskName)
+    assert vms.startVm(True, diskName, wait_for_status=config.VM_UP)
+    mac = vms.getVmMacAddress(
+        True, vm=diskName, nic=config.NIC_NAME
+    )[1].get('macAddress', None)
+    LOGGER.info("Mac address is %s", mac)
+
+    ip = test_utils.convertMacToIpAddress(
+        True, mac, subnetClassB=config.SUBNET_CLASS
+    )[1].get('ip', None)
+    myMachine = MyLinuxMachine(ip)
+    assert myMachine.isConnective(attempt=6)
+    return myMachine
+
+
+def prepare_vms(disks):
+    for image in disks:
+        if config.TEST_IMAGES[image]['image']._is_import_success(1800):
+            myMachine = createMachine(image)
+            config.TEST_IMAGES[image]['machine'] = myMachine
+            if not config.UPSTREAM:
+                vms.add_repo_to_vm(
+                    machine=myMachine,
+                    repo_name='rhevm',
+                    baseurl=config.RHEL_GA_RPM % (
+                        config.PRODUCT_BUILD, image[2:5]
+                    ),
+                )
+            runPackagerCommand(
+                myMachine,
+                config.TEST_IMAGES[image]['manager'],
+                'install',
+                config.GA_NAME,
+            )
+            LOGGER.info(
+                'guest agent started %s',
+                myMachine.startService(config.AGENT_SERVICE_NAME)
+            )

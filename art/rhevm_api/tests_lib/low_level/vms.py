@@ -5058,3 +5058,42 @@ def export_domain_vm_exist(vm, export_domain):
         )
         return False
     return True
+
+
+def add_repo_to_vm(
+    machine,
+    repo_name,
+    baseurl,
+    path='/etc/yum.repos.d/',
+    **kwargs
+):
+    """
+    create a repo in machine
+
+    :param machine: machine instance
+    :type machine: utilities.machine.LinuxMachine
+    :param repo_name: repository name
+    :type repo_name: str
+    :param baseurl: url of repo
+    :type baseurl: str
+    :param path: path where repo will be stored
+    :type path: str
+
+    :return: ecode, out
+    :rtype: tuple
+    """
+    return machine.runCmd(
+        cmd=['cat', '>', '%s%s.repo' % (path, repo_name)],
+        data=(
+            '[{repo_name}]\n'
+            'name={repo_name}\n'
+            'baseurl={baseurl}\n'
+            'enabled={enabled}\n'
+            'gpgcheck={gpgcheck}\n'
+        ).format(
+            repo_name=repo_name,
+            baseurl=baseurl,
+            enabled=kwargs.get('enabled', '1'),
+            gpgcheck=kwargs.get('gpgcheck', '0'),
+        ),
+    )

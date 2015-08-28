@@ -72,7 +72,7 @@ TCMS_PLAN_ID_SUSE = 12287
 # GA repositories
 UBUNTU_REPOSITORY = 'http://download.opensuse.org/repositories/home:/evilissimo:/ubuntu:/14.04/xUbuntu_14.04/'
 SUSE_REPOSITORY = 'http://download.opensuse.org/repositories/home:/evilissimo/openSUSE_13.1/home:evilissimo.repo'
-RHEL_GA_RPM = 'http://bob.eng.lab.tlv.redhat.com/builds/3.6/3.6.0/latest_3.6.0/ovirt-release-master-latest.master.noarch.rpm'
+RHEL_GA_RPM = 'http://bob.eng.lab.tlv.redhat.com/builds/3.6/%s/%s'
 
 GUEST_ROOT_USER = 'root'
 GUEST_ROOT_PASSWORD = '123456'
