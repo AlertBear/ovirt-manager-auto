@@ -29,6 +29,7 @@ HOST_CONNECTING = ENUMS['host_state_connecting']
 VM_DOWN = ENUMS['vm_state_down']
 JOB = 'SshSoftFencing'
 sql = '%s FROM job WHERE action_type=\'SshSoftFencing\''
+PM_TYPE = config.PM_TYPE_IPMILAN
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +73,7 @@ def _activate_both_hosts():
                 raise errors.HostException("cannot activate host: %s" % host)
 
 
+@attr(tier=2, extra_reqs={'pm': PM_TYPE})
 class SoftFencing(TestCase):
 
     __test__ = False
@@ -85,7 +87,6 @@ class SoftFencing(TestCase):
         _delete_job_from_db()
 
 
-@attr(tier=2)
 class SoftFencingPassedWithoutPM(SoftFencing):
     """
     Positive: Soft fencing success on host without PM
@@ -102,7 +103,6 @@ class SoftFencingPassedWithoutPM(SoftFencing):
                           config.job_finished)
 
 
-@attr(tier=2)
 class SoftFencingFailedWithPM(SoftFencing):
     """
     Positive: After soft fencing failed, fence with power management
@@ -121,7 +121,6 @@ class SoftFencingFailedWithPM(SoftFencing):
                           config.job_failed)
 
 
-@attr(tier=2)
 class SoftFencingPassedWithPM(SoftFencing):
     """
     Positive: Soft fencing success on host with PM
@@ -139,7 +138,6 @@ class SoftFencingPassedWithPM(SoftFencing):
                           config.job_finished)
 
 
-@attr(tier=2)
 class CheckVmAfterSoftFencing(SoftFencing):
     """
     Positive: Check vm after soft fencing
@@ -190,7 +188,6 @@ class CheckVmAfterSoftFencing(SoftFencing):
             raise errors.VMException("cannot remove vm: %s" % cls.vm_test)
 
 
-@attr(tier=2)
 class SoftFencingToHostNoProxies(SoftFencing):
     """
     Positive: Soft fencing to host with power management without proxies
