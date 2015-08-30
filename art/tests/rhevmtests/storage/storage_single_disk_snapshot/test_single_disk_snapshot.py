@@ -170,15 +170,20 @@ class BasicEnvironment(BaseTestCase):
                                                % operation)
 
     def delete_operation(self):
-        start_vms([self.vm_name], 1, wait_for_ip=False)
+        start_vms(
+            [self.vm_name], 1, wait_for_status=config.VM_UP, wait_for_ip=True
+        )
         waitForVMState(self.vm_name)
         for dev in self.devices:
             mount_path = self.mount_path % dev
             cmd = self.cm_del % mount_path
-            status, _ = self.vm.runCmd(shlex.split(cmd))
+            status, output = self.vm.runCmd(shlex.split(cmd))
             logger.info("File %s", 'deleted' if status else 'not deleted')
-
-        logger.info("Shutting down vm %s", self.vm_name)
+            if not status:
+                raise exceptions.VMException(
+                    "Failed to delete file(s) from vm %s, Output: %s"
+                    % (self.vm_name, output)
+                )
 
         shutdownVm(True, self.vm_name)
         waitForVMState(self.vm_name, config.VM_DOWN)
@@ -929,7 +934,6 @@ class TestCase6032(BasicEnvironment):
         self._perform_snapshot_operation(disks=[])
 
         self.delete_operation()
-
         disks_to_preview = []
 
         assert preview_snapshot(True, self.vm_name, self.snapshot_desc,
