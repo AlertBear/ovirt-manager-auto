@@ -129,6 +129,10 @@ class SchedulerException(RHEVMEntityException):
     pass
 
 
+class VmPoolException(RHEVMEntityException):
+    pass
+
+
 def formatExcInfo():
     ei = sys.exc_info()
     einfo = traceback.format_exception(*ei)
