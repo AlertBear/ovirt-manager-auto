@@ -83,9 +83,8 @@ def get_networks_attachments(host_name, networks, nic=None):
     attachments = eval(func)(*args)
 
     return [
-        att for att in attachments if ll_general.get_object_name_by_id(
-            ll_networks.NET_API, att.get_network().get_id()
-        ) in networks
+        att for att in attachments if get_network_name_from_attachment(att)
+        in networks
     ]
 
 
@@ -396,3 +395,17 @@ def remove_unmanaged_networks(host_name, networks=list()):
         if not UNMANAGED_NETWORKS_API.delete(unmanaged_network, True):
             return False
     return True
+
+
+def get_network_name_from_attachment(attachment):
+    """
+    Get network name from network attachment
+
+    :param attachment: Network attachment object
+    :type attachment: NetworkAttachment
+    :return: Network name
+    :rtype: str
+    """
+    return ll_general.get_object_name_by_id(
+        ll_networks.NET_API, attachment.get_network().get_id()
+    )

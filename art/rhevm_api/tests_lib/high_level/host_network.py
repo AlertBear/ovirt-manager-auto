@@ -250,9 +250,12 @@ def setup_networks(host_name, **kwargs):
         )
 
     if sync:
-        synchronized_network_attachments = (
-            ll_host_network.get_networks_attachments(host_name, sync)
+        networks = sync["networks"]
+        nets_to_sync = (
+            ll_host_network.get_networks_attachments(host_name, networks)
         )
+        synchronized_network_attachments.set_network_attachment(nets_to_sync)
+
     return ll_hosts.HOST_API.syncAction(
         entity=host, action=SETUPNETWORKS, positive=True,
         modified_network_attachments=network_attachments,
