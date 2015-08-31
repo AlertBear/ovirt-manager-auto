@@ -14,7 +14,7 @@ import time
 import logging
 
 from nose.plugins.attrib import attr
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 
 from rhevmtests.sla.watchdog import config
 from art.unittest_lib import SlaTest as TestCase
@@ -531,14 +531,17 @@ class WatchdogTestDump(WatchdogActionTest):
         """
         Test watchdog action dump
         """
-        host_executor = config.VDS_HOSTS[0].executor()
-        dump_path = self.get_host_dump_path(config.VDS_HOSTS[0])
-        cmd = ['ls', '-l', dump_path,  '|', 'wc', '-l']
+        host_index = config.HOSTS.index(
+            ll_vms.get_vm_host(config.VM_NAME[1])
+        )
+        host_executor = config.VDS_HOSTS[host_index].executor()
+        dump_path = self.get_host_dump_path(config.VDS_HOSTS[host_index])
+        cmd = ['ls', '-l', dump_path, '|', 'wc', '-l']
         rc, out, err = host_executor.run_cmd(cmd)
         self.assertTrue(
             not rc,
             "Failed to run command '%s' on resource %s; out: %s; err: %s" %
-            (" ".join(cmd), config.VDS_HOSTS[0], out, err)
+            (" ".join(cmd), config.VDS_HOSTS[host_index], out, err)
         )
         logger.info("Number of files in dumpath: %s", out)
         logs_count = int(out)
@@ -553,7 +556,7 @@ class WatchdogTestDump(WatchdogActionTest):
         self.assertTrue(
             not rc,
             "Failed to run command '%s' on resource %s; out: %s; err: %s" %
-            (" ".join(cmd), config.VDS_HOSTS[0], out, err)
+            (" ".join(cmd), config.VDS_HOSTS[host_index], out, err)
         )
         logger.info(
             "Number of files in dumpath after watchdog dump action: %s", out
@@ -562,7 +565,7 @@ class WatchdogTestDump(WatchdogActionTest):
             logs_count + 1,
             int(out),
             "Dump file was not created on resource %s under directory %s" %
-            (config.VDS_HOSTS[0], dump_path)
+            (config.VDS_HOSTS[host_index], dump_path)
         )
 
 #######################################################################
@@ -588,7 +591,6 @@ class WatchdogMigration(WatchdogActionTest):
             ll_vms.migrateVm(
                 positive=True,
                 vm=config.VM_NAME[1],
-                host=config.HOSTS[1],
                 force=True
             ),
             "Migration of vm %s Failed" % config.VM_NAME[1]
@@ -783,6 +785,7 @@ class WatchdogCRUDTemplate(WatchdogVM):
         )
         self.lspci_watchdog(True, self.vm_name1)
 
+    @bz({'1258224': {'engine': None, 'version': ['3.6']}})
     @polarion("RHEVM3-4958")
     def test_remove_watchdog_template(self):
         """
