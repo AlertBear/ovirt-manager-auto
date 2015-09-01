@@ -85,6 +85,7 @@ IFCFG_FILE_PATH = "/etc/sysconfig/network-scripts/"
 HOST_NICS = ["eth0", "eth1", "eth2", "eth3", "eth4", "eth5"]
 RHEL_IMAGE = "rhel6.5-agent3.5"
 HYPERVISOR = "hypervisor"
+RHEVH = "Red Hat Enterprise Virtualization Hypervisor"
 
 # command variables
 IP_CMD = "/sbin/ip"
@@ -597,6 +598,7 @@ def delete_dummy_interfaces(host):
     :rtype: bool
     """
     host_obj = host.executor()
+    rhevh = (host.get_os_info()["dist"] == RHEVH)
 
     rc, out, err = host_obj.run_cmd(["ip", "link", "|", "grep", "dummy"])
     if rc:
@@ -621,47 +623,20 @@ def delete_dummy_interfaces(host):
         ifcfg_file = "/etc/sysconfig/network-scripts/ifcfg-%s" % i
         logger.info("Check if %s exists", ifcfg_file)
         if host.fs.isfile(ifcfg_file):
+            if rhevh:
+                logger.info("unpersist %s", ifcfg_file)
+                rc, out, err = host_obj.run_cmd(["unpersist", ifcfg_file])
+                if rc:
+                    logger.error(
+                        "Failed to unpersist %s. ERR: %s. %s",
+                        ifcfg_file, out, err
+                    )
+                    return False
+
             logger.info("Deleting %s", ifcfg_file)
             if not host.fs.remove(ifcfg_file):
                 logger.error("Failed to delete %s", ifcfg_file)
                 return False
-    return True
-
-
-def rhevh_remove_dummy(host, username, password):
-    """
-    Description: this function servers as workaround for #BZ1107969
-    remove dummy0 interface
-    unload dummy module
-    **Author**: mpavlik
-    **Parameters**:
-        *  *host* - IP or FDQN of the host
-        *  *username* - host username
-        *  *password* - host password
-     **Returns**: True if unloading of the dummy module succeeded,
-                 otherwise False
-    """
-    host_obj = machine.Machine(host, username, password).util(machine.LINUX)
-    dummy_args = [IP_CMD, "a", "l", "dummy0"]
-
-    logger.info("Verifying there is no dummy0 interface left")
-    rc, out = host_obj.runCmd(dummy_args)
-    if rc:
-        logger.warn("modprobe -r dummy failed. ERR: %s", out)
-        logger.info("removing interface dummy0")
-        rc, out = host_obj.runCmd([IP_CMD, "link", "del", "dev", "dummy0"])
-        if not rc:
-            logger.error("Removing dummy0 failed. ERR: %s", out)
-            return False
-        rc, out = host_obj.runCmd(dummy_args)
-        if not rc:
-            logger.info("Interface dummy0 succesfully removed")
-            logger.info("retrying to unload dummy module")
-            rc, out = host_obj.runCmd([MODPROBE_CMD, "-r", "dummy"])
-            if not rc:
-                logger.error("failed to unload dummy module ERR:%s", out)
-                return False
-            logger.info("module dummy unloaded")
     return True
 
 
