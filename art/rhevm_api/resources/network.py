@@ -1,5 +1,6 @@
 import re
 import os
+import shlex
 import netaddr
 import functools
 from art.rhevm_api.resources.service import Service
@@ -481,3 +482,20 @@ class Network(Service):
             for ar in extra_args.split():
                 cmd.extend(ar.split())
         return self._cmd(cmd)
+
+    def set_mtu(self, nics, mtu="1500"):
+        """
+        Set MTU on NICs
+
+        :param nics: List on NICs
+        :type nics: list
+        :param mtu: MTU size
+        :type mtu: str
+        :return: True or raise Exception
+        :rtype: bool or Exception
+        """
+        base_cmd = "ip link set mtu %s %s"
+        for nic in nics:
+            str_cmd = base_cmd % (mtu, nic)
+            self._cmd(shlex.split(str_cmd))
+        return True
