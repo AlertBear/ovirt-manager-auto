@@ -81,7 +81,8 @@ class TestCase4831(helpers.TestCaseStandardOperations):
     vm_2 = 'vm_%s_2' % polarion_test_case
     template = 'templ_%s' % polarion_test_case
 
-    bz = {'1248035': {'engine': None, 'version': ["3.6"]}}
+    # Bug history: 1248035
+    bz = {'1254230': {'engine': None, 'version': ["3.6"]}}
 
     @classmethod
     def setup_class(cls):

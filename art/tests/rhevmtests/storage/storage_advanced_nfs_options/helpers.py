@@ -493,7 +493,6 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
 
         logger.info("Changing SPM host")
         old_spm_host = ll_hosts.getSPMHost(hosts)
-        wait_for_jobs()
         if not ll_hosts.deactivateHost(True, old_spm_host):
             logger.error("Cannot deactivate host %s", old_spm_host)
             self.fail("Cannot deactivate host %s" % old_spm_host)
@@ -526,7 +525,6 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
         Don't add asserts, in case of errors in the test some of the commands
         may fail and it is OK.
         """
-        wait_for_jobs()
         try:
             ll_vms.stop_vms_safely([cls.vm_1])
         except apis_exceptions.EntityNotFound:
@@ -547,6 +545,7 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
             pass
         ll_vms.waitForVmsGone(True, ",".join([cls.vm_1, cls.vm_2]))
 
+        wait_for_jobs([ENUMS['job_remove_vm']])
         if cls.master_domain:
             ll_st.activateStorageDomain(
                 True, config.DATA_CENTER_NAME, cls.master_domain,
@@ -555,7 +554,6 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
                 True, config.DATA_CENTER_NAME, cls.master_domain,
                 config.SD_ACTIVE, timeOut=DEFAULT_DC_TIMEOUT)
 
-        wait_for_jobs()
         for sd_remove in [cls.sd_1, cls.sd_2, cls.sd_exp]:
             if ll_st.checkIfStorageDomainExist(True, sd_remove):
                 cls.sds_for_cleanup.append(sd_remove)

@@ -4,7 +4,6 @@ import logging
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_st
-from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
 
@@ -174,7 +173,6 @@ class TestCase4826(helpers.TestCaseNFSOptions):
             expected_retrans=helpers.DEFAULT_NFS_RETRANS,
             expected_vers=version
         )
-        wait_for_jobs()
         self.create_nfs_domain_and_verify_options([storage])
         self.sds_for_cleanup.append(self.name)
 
