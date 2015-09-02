@@ -25,8 +25,8 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     stopVm, restore_snapshot, undo_snapshot_preview, preview_snapshot,
     removeVm, exportVm, importVm, removeVmFromExportDomain,
     removeSnapshot, kill_process_by_pid_on_vm, shutdownVm,
-    wait_for_vm_snapshots, removeVms, stop_vms_safely,  startVms,
-    cloneVmFromSnapshot, waitForIP, getVmHost,
+    wait_for_vm_snapshots, stop_vms_safely,  startVms,
+    cloneVmFromSnapshot, waitForIP, getVmHost, safely_remove_vms,
 )
 from art.rhevm_api.tests_lib.high_level.vms import shutdown_vm_if_up
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
@@ -86,8 +86,10 @@ def teardown_module():
     """
     Remove created vms
     """
-    stop_vms_safely(VM_NAMES)
-    removeVms(True, VM_NAMES)
+    safely_remove_vms(VM_NAMES)
+    # Ensure the test doesn't finish before the job is removed from the db
+    # because it will be mark as unstable in that case
+    wait_for_jobs([ENUMS['job_remove_vm']])
 
 
 class DCWithStoragesActive(TestCase):
