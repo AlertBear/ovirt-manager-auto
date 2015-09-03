@@ -107,6 +107,10 @@ class APIUtil(object):
         return
 
     @abc.abstractmethod
+    def extract_attribute(self, response, attr):
+        return
+
+    @abc.abstractmethod
     def waitForElemStatus(self, elm, status, **kwargs):
         return
 

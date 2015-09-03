@@ -1359,16 +1359,23 @@ class CliUtil(RestUtil):
 
         return rest_results
 
-    def syncAction(self, entity, action, positive, async=False, **params):
+    def syncAction(
+            self, entity, action, positive, async=False, **params
+    ):
         '''
-        Description: run synchronic action
-        Author: edolinin
-        Parameters:
-           * entity - target entity
-           * action - desired action
-           * positive - if positive or negative verification should be done
-           * async - sync or async action
-        Return: status (True if Action test succeeded, False otherwise)
+        run synchronic action
+        __author__: edolinin
+        :param entity: target entity
+        :type entity: object
+        :param action: desired action
+        :type action: str
+        :param positive: if positive or negative verification should be done
+        :type positive: bool
+        :param async: sync or async action
+        :type async: bool
+        :return: POST response (None if no response)
+                 in case of negative test return api_error object
+        :rtype: str
         '''
 
         # the action name is import in rest however it is import_image in CLI.
@@ -1401,7 +1408,7 @@ class CliUtil(RestUtil):
                     if params[p] is None:
                         self.logger.error("%s is None", p)
                         self.logger.error("syncAction failed to run")
-                        return False
+                        return None
                     if params[p].id is None:
                         param_to_add = (" --{0}-name '{1}'".format(
                             p,
@@ -1465,29 +1472,40 @@ class CliUtil(RestUtil):
             res = self.cli.cliCmdRunner(actionCmd, 'ACTION')
         except CLITracebackError as e:
             self.logger.error("%s", e)
-            return False
+            return None
         except CLICommandFailure as e:
             self.print_error_msg(ApiOperation.syncAction, e.status,
                                  e.reason, e.detail, positive=positive)
-            if positive:
-                return False
-            else:
-                return True
+            err = api_error(reason=e.reason, status=e.status, detail=e.detail)
+            return None if positive else err
         else:
             if not positive:
                 errorMsg = "Succeeded to run an action '{0}' for negative test"
                 self.logger.error(errorMsg.format(action))
-                return False
+                return None
 
         actionStateMatch = [i.split(':')[1].strip() for i in res.split('\n')
                             if 'status-state' in i]
         if not actionStateMatch and positive:
-            return False
+            return None
 
         actionState = actionStateMatch[0]
-
-        return validator.compareAsyncActionStatus(
-            async,
-            actionState,
-            self.logger
+        valid = validator.compareAsyncActionStatus(
+            async, actionState, self.logger
         )
+        return res if valid else None
+
+    def extract_attribute(self, response, attr):
+        '''
+        Extract the attribute from POST response
+        :param response: POST response string
+        :type response: str
+        :param attr: the name of the attribute to extract
+        :type attr: str
+        :return: list of attribute values
+        :rtype: list
+        '''
+        if attr and response:
+            pat = '%s\s+:\s*(.*)' % attr
+            return re.findall(pat, response)
+        return None

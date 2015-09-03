@@ -858,7 +858,7 @@ def changeVMStatus(positive, vm, action, expectedStatus, async='true'):
     vmObj = VM_API.find(vm)
 
     asyncMode = async.lower() == 'true'
-    status = VM_API.syncAction(vmObj, action, positive, async)
+    status = bool(VM_API.syncAction(vmObj, action, positive, async))
     if status and positive and not asyncMode:
         return VM_API.waitForElemStatus(vmObj, expectedStatus,
                                         VM_ACTION_TIMEOUT)
@@ -1049,7 +1049,7 @@ def detachVm(positive, vm):
     vmObj = VM_API.find(vm)
     expectedStatus = vmObj.get_status().get_state()
 
-    status = VM_API.syncAction(vmObj, "detach", positive)
+    status = bool(VM_API.syncAction(vmObj, "detach", positive))
     if status and positive:
         return VM_API.waitForElemStatus(vmObj, expectedStatus,
                                         VM_ACTION_TIMEOUT)
@@ -1485,7 +1485,7 @@ def hotPlugNic(positive, vm, nic):
         logger.error('Entity %s not found!' % nic)
         return not positive
 
-    return NIC_API.syncAction(nic_obj, "activate", positive)
+    return bool(NIC_API.syncAction(nic_obj, "activate", positive))
 
 
 @is_action()
@@ -1504,7 +1504,7 @@ def hotUnplugNic(positive, vm, nic):
         logger.error('Entity %s not found!' % nic)
         return not positive
 
-    return NIC_API.syncAction(nic_obj, "deactivate", positive)
+    return bool(NIC_API.syncAction(nic_obj, "deactivate", positive))
 
 
 @is_action()
@@ -1796,8 +1796,11 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
         vm_for_action.set_domain(domain)
 
     if pause:
-        status = VM_API.syncAction(vm_obj, 'start', positive, pause=pause,
-                                   vm=vm_for_action)
+        status = bool(
+            VM_API.syncAction(
+                vm_obj, 'start', positive, pause=pause, vm=vm_for_action
+            )
+        )
         if positive and status:
             # in case status is False we shouldn't wait for rest element status
             if pause.lower() == 'true':
@@ -1806,7 +1809,11 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
                 state = ENUMS['vm_state_powering_up']
             return VM_API.waitForElemStatus(vm_obj, state, VM_ACTION_TIMEOUT)
     else:
-        status = VM_API.syncAction(vm_obj, 'start', positive, vm=vm_for_action)
+        status = bool(
+            VM_API.syncAction(
+                vm_obj, 'start', positive, vm=vm_for_action
+            )
+        )
         if positive and status:
             # in case status is False we shouldn't wait for rest element status
             return VM_API.waitForElemStatus(
@@ -1954,7 +1961,7 @@ def ticketVm(positive, vm, expiry):
     ticket = data_st.Ticket()
     ticket.set_expiry(int(expiry))
 
-    return VM_API.syncAction(vmObj, "ticket", positive, ticket=ticket)
+    return bool(VM_API.syncAction(vmObj, "ticket", positive, ticket=ticket))
 
 
 @is_action()
@@ -2016,7 +2023,7 @@ def exportVm(positive, vm, storagedomain, exclusive='false',
 
     actionParams = dict(storage_domain=sd, exclusive=exclusive,
                         discard_snapshots=discard_snapshots)
-    status = VM_API.syncAction(vmObj, "export", positive, **actionParams)
+    status = bool(VM_API.syncAction(vmObj, "export", positive, **actionParams))
     if status and positive:
         return VM_API.waitForElemStatus(
             vmObj, expectedStatus, timeout)
@@ -2090,7 +2097,9 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
         new_vm.snapshots.collapse_snapshots = True
         action_params['vm'] = new_vm
 
-    status = VM_API.syncAction(vm_obj, action_name, positive, **action_params)
+    status = bool(
+        VM_API.syncAction(vm_obj, action_name, positive, **action_params)
+    )
 
     if async:
         return status
@@ -2118,8 +2127,11 @@ def moveVm(positive, vm, storagedomain, wait=True):
     async = 'false'
     if not wait:
         async = 'true'
-    status = VM_API.syncAction(
-        vmObj, "move", positive, storage_domain=sd, async=async)
+    status = bool(
+        VM_API.syncAction(
+            vmObj, "move", positive, storage_domain=sd, async=async
+        )
+    )
     if positive and status and wait:
         return VM_API.waitForElemStatus(
             vmObj, expectedStatus, VM_IMAGE_OPT_TIMEOUT)
@@ -2834,7 +2846,7 @@ def changeVmDiskState(positive, vm, action, diskAlias, diskId, wait):
     else:
         disk = _getVmFirstDiskByName(vm, diskAlias)
 
-    status = DISKS_API.syncAction(disk, action, positive)
+    status = bool(DISKS_API.syncAction(disk, action, positive))
     if status and wait:
         if positive:
             # wait until the disk is really (de)activated
@@ -3287,7 +3299,9 @@ def migrateVmsSimultaneously(positive, vm_name, range_low, range_high, hosts,
 
         # Migrate
         actions_states = [
-            VM_API.syncAction(vmObj, "migrate", positive, host=vmObj.host)
+            bool(
+                VM_API.syncAction(vmObj, "migrate", positive, host=vmObj.host)
+            )
             for vmObj in vmsObjs
         ]
 
@@ -3354,8 +3368,9 @@ def move_vm_disk(vm_name, disk_name, target_sd, wait=True,
                 vm_name, target_sd)
     sd = STORAGE_DOMAIN_API.find(target_sd)
     disk = getVmDisk(vm_name, disk_name)
-    if not DISKS_API.syncAction(disk, 'move', storage_domain=sd,
-                                positive=True):
+    if not DISKS_API.syncAction(
+            disk, 'move', storage_domain=sd, positive=True
+    ):
         raise exceptions.DiskException(
             "Failed to move disk %s of vm %s to storage domain %s" %
             (disk_name, vm_name, target_sd))
@@ -3565,8 +3580,10 @@ def restore_snapshot(
         waitForVMState(vm, state=ENUMS['vm_state_down'])
     vmObj = VM_API.find(vm)
     snapshot = _getVmSnapshot(vm, description)
-    status = SNAPSHOT_API.syncAction(
-        snapshot, 'restore', positive, restore_memory=restore_memory
+    status = bool(
+        SNAPSHOT_API.syncAction(
+            snapshot, 'restore', positive, restore_memory=restore_memory
+        )
     )
     if status and positive:
         return VM_API.waitForElemStatus(vmObj, ENUMS['vm_state_down'],
@@ -3680,7 +3697,7 @@ def snapshot_action(positive, vm, action,
                 disks_coll.add_disk(new_disk)
 
             action_args['disks'] = disks_coll
-    status = VM_API.syncAction(**action_args)
+    status = bool(VM_API.syncAction(**action_args))
     if status and positive:
         return VM_API.waitForElemStatus(vmObj, ENUMS['vm_state_down'],
                                         VM_SNAPSHOT_ACTION)

@@ -519,8 +519,9 @@ def exportTemplate(positive, template, storagedomain, exclusive='false',
 
     sd = StorageDomain(name=storagedomain)
     actionParams = dict(storage_domain=sd, exclusive=exclusive)
-    result = TEMPLATE_API.syncAction(templObj, "export", positive,
-                                     **actionParams)
+    result = bool(
+        TEMPLATE_API.syncAction(templObj, "export", positive, **actionParams)
+    )
     if wait and result:
         return wait_for_export_domain_template_state(storagedomain, template)
 
@@ -576,11 +577,10 @@ def import_template(positive, template, source_storage_domain,
         new_template = Template(name=name)
         action_params['template'] = new_template
 
-    status = TEMPLATE_API.syncAction(
-        template_obj,
-        action_name,
-        positive,
-        **action_params
+    status = bool(
+        TEMPLATE_API.syncAction(
+            template_obj, action_name, positive, **action_params
+        )
     )
 
     if not async:
@@ -630,8 +630,9 @@ def copyTemplateDisk(template, disk_name, target_sd):
     # for a /api/disks/{disk:id}/copy better go to disks.py
     disk = _getTemplateFirstDiskByName(template, disk_name)
     sd = SD_API.find(target_sd)
-    if not DISKS_API.syncAction(disk, 'copy', storage_domain=sd,
-                                positive=True):
+    if not DISKS_API.syncAction(
+            disk, 'copy', storage_domain=sd, positive=True
+    ):
         raise errors.DiskException("Failed to move disk %s of template %s to "
                                    " storage domain %s"
                                    % (disk_name, template, target_sd))
@@ -781,9 +782,10 @@ def copy_template_disks(positive, template, disks, storagedomain, async=True):
     relevant_disks = [disk for disk in all_disks if
                       (disk.get_name() in disks_names)]
     for disk in relevant_disks:
-        if not TEMPLATE_API.syncAction(disk, action='copy', positive=positive,
-                                       async=async,
-                                       storage_domain=storage_domain):
+        if not TEMPLATE_API.syncAction(
+                disk, action='copy', positive=positive, async=async,
+                storage_domain=storage_domain
+        ):
             raise exceptions.TemplateException(
                 "Copying of disk %s of template %s to storage domain %s "
                 "failed." % (disk.name, template, storagedomain))

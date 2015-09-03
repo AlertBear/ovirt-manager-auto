@@ -256,7 +256,7 @@ def setup_networks(host_name, **kwargs):
         )
         synchronized_network_attachments.set_network_attachment(nets_to_sync)
 
-    return ll_hosts.HOST_API.syncAction(
+    return bool(ll_hosts.HOST_API.syncAction(
         entity=host, action=SETUPNETWORKS, positive=True,
         modified_network_attachments=network_attachments,
         removed_network_attachments=removed_network_attachments,
@@ -265,7 +265,7 @@ def setup_networks(host_name, **kwargs):
         synchronized_network_attachments=synchronized_network_attachments,
         connectivity_timeout=check_connectivity_timeout,
         check_connectivity=check_connectivity
-    )
+    ))
 
 
 def clean_host_interfaces(host_name):

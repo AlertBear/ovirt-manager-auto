@@ -17,7 +17,7 @@ from art.rhevm_api.tests_lib.low_level import templates as ll_templates
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.high_level import datacenters
-from art.rhevm_api.tests_lib.high_level import storagedomains
+from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 from art.rhevm_api.utils import storage_api as utils
 from art.rhevm_api.utils import test_utils as test_utils
 from art.test_handler.settings import opts
@@ -81,7 +81,7 @@ def setup_module():
                     "There are no unused LUNs, aborting test"
                 )
             sd_name = "{0}_{1}".format(config.TESTNAME, "iSCSI")
-            status_attach_and_activate = storagedomains.addISCSIDataDomain(
+            status_attach_and_activate = hl_sd.addISCSIDataDomain(
                 spm,
                 sd_name,
                 config.DATA_CENTER_NAME,
@@ -98,7 +98,7 @@ def setup_module():
             sd_name = "{0}_{1}".format(config.TESTNAME, "NFS")
             nfs_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[0]
             nfs_path = config.UNUSED_DATA_DOMAIN_PATHS[0]
-            status = storagedomains.addNFSDomain(
+            status = hl_sd.addNFSDomain(
                 host=spm,
                 storage=sd_name,
                 data_center=config.DATA_CENTER_NAME,
@@ -115,7 +115,7 @@ def setup_module():
             gluster_address = \
                 config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0]
             gluster_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0]
-            status = storagedomains.addGlusterDomain(
+            status = hl_sd.addGlusterDomain(
                 host=spm,
                 name=sd_name,
                 data_center=config.DATA_CENTER_NAME,
@@ -147,7 +147,7 @@ def setup_module():
         test_utils.wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
-        storagedomains.detach_and_deactivate_domain(
+        hl_sd.detach_and_deactivate_domain(
             config.DATA_CENTER_NAME, IMPORT_DOMAIN[storage_type]
         )
         wait_for_jobs([ENUMS['job_detach_storage_domain']])
@@ -172,7 +172,7 @@ def setup_module():
         logger.info(
             "Attaching storage domain %s", IMPORT_DOMAIN[storage_type]
         )
-        storagedomains.attach_and_activate_domain(
+        hl_sd.attach_and_activate_domain(
             config.DATA_CENTER_NAME, IMPORT_DOMAIN[storage_type]
         )
         wait_for_jobs([ENUMS['job_activate_storage_domain']])
@@ -227,7 +227,7 @@ def teardown_module():
         test_utils.wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
-        if not storagedomains.detach_and_deactivate_domain(
+        if not hl_sd.detach_and_deactivate_domain(
             config.DATA_CENTER_NAME, storage_domain_name
         ):
             logger.error(
@@ -289,9 +289,7 @@ class BasicEnvironment(BaseTestCase):
         test_utils.wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, datacenter_name
         )
-        storagedomains.detach_and_deactivate_domain(
-            datacenter_name, domain_name
-        )
+        hl_sd.detach_and_deactivate_domain(datacenter_name, domain_name)
 
     def _prepare_environment(self):
         disk_sd_name = ll_disks.get_disk_storage_domain_name(
@@ -443,7 +441,7 @@ class TestCase11861(BasicEnvironment):
         )
 
         logger.info("Attaching storage domain %s", self.non_master)
-        storagedomains.attach_and_activate_domain(
+        hl_sd.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
 
@@ -489,7 +487,7 @@ class TestCase5297(BasicEnvironment):
         - create VM from template
         """
         logger.info("Attaching storage domain %s", self.non_master)
-        storagedomains.attach_and_activate_domain(
+        hl_sd.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
         wait_for_jobs([ENUMS['job_activate_storage_domain']])
@@ -577,7 +575,7 @@ class TestCase5299(BasicEnvironment):
         - Verify no vm was unregistered
         """
         logger.info("Attaching storage domain %s", self.non_master)
-        storagedomains.attach_and_activate_domain(
+        hl_sd.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
         wait_for_jobs([ENUMS['job_activate_storage_domain']])
@@ -644,7 +642,7 @@ class TestCase5300(BasicEnvironment):
         - create vm from snapshot
         """
         logger.info("Attaching storage domain %s", self.non_master)
-        storagedomains.attach_and_activate_domain(
+        hl_sd.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
         wait_for_jobs([ENUMS['job_activate_storage_domain']])
@@ -793,7 +791,7 @@ class TestCase5302(BasicEnvironment):
 
         else:
             logger.info("Attaching storage domain %s", self.non_master)
-            if not storagedomains.attach_and_activate_domain(
+            if not hl_sd.attach_and_activate_domain(
                 config.DATA_CENTER_NAME, self.non_master
             ):
                 logger.error(
@@ -832,7 +830,7 @@ class TestCase5193(BasicEnvironment):
         - register the vms
         """
         logger.info("Attaching storage domain %s", self.non_master)
-        storagedomains.attach_and_activate_domain(
+        hl_sd.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
         wait_for_jobs([ENUMS['job_activate_storage_domain']])
@@ -872,7 +870,7 @@ class TestCase5194(BasicEnvironment):
         - register vms and disks
         """
         logger.info("Attaching storage domain %s", self.non_master)
-        storagedomains.attach_and_activate_domain(
+        hl_sd.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
         wait_for_jobs([ENUMS['job_activate_storage_domain']])
@@ -986,7 +984,7 @@ class TestCase5205(CommonSetUp):
 
         else:
             logger.info("Attaching storage domain %s", self.non_master)
-            storagedomains.attach_and_activate_domain(
+            hl_sd.attach_and_activate_domain(
                 config.DATA_CENTER_NAME, self.non_master
             )
         self.teardown_exception()
@@ -1060,7 +1058,7 @@ class TestCase5304(CommonSetUp):
 
         else:
             logger.info("Attaching storage domain %s", self.non_master)
-            storagedomains.attach_and_activate_domain(
+            hl_sd.attach_and_activate_domain(
                 config.DATA_CENTER_NAME, self.non_master
             )
 
@@ -1123,7 +1121,7 @@ class TestCase5201(BasicEnvironment):
         """
         status = False
         if self.storage == config.STORAGE_TYPE_ISCSI:
-            status = ll_sd.importBlockStorageDomain(
+            status = hl_sd.importBlockStorageDomain(
                 self.spm, lun_address=config.UNUSED_LUNS["lun_addresses"][0],
                 lun_target=config.UNUSED_LUNS["lun_targets"][0]
             )
@@ -1142,9 +1140,7 @@ class TestCase5201(BasicEnvironment):
             )
         self.assertTrue(status, "Failed to import storage domain")
         logger.info("Attaching storage domain %s", self.sd_name)
-        storagedomains.attach_and_activate_domain(
-            self.dc_name, self.sd_name
-        )
+        hl_sd.attach_and_activate_domain(self.dc_name, self.sd_name)
         wait_for_jobs([ENUMS['job_activate_storage_domain']])
 
         unregistered_vms = ll_sd.get_unregistered_vms(self.sd_name)
@@ -1225,7 +1221,7 @@ class TestCase12207(BasicEnvironment):
         """
         status = False
         if self.storage == config.STORAGE_TYPE_ISCSI:
-            status = ll_sd.importBlockStorageDomain(
+            status = hl_sd.importBlockStorageDomain(
                 self.spm, lun_address=config.UNUSED_LUNS["lun_addresses"][0],
                 lun_target=config.UNUSED_LUNS["lun_targets"][0]
             )
@@ -1246,7 +1242,7 @@ class TestCase12207(BasicEnvironment):
         logger.info("Attaching storage domain %s", self.sd_name)
         self.assertRaises(
             errors.StorageDomainException,
-            storagedomains.attach_and_activate_domain(
+            hl_sd.attach_and_activate_domain(
                 self.dc_name, self.sd_name
             ), "Initialize data center with destroyed domain should fail"
         )

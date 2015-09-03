@@ -20,7 +20,7 @@
 import logging
 from pprint import pformat
 
-from art.rhevm_api.tests_lib.low_level import storagedomains
+from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.high_level import datastructures
 from art.core_api import is_action
@@ -32,27 +32,76 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 logger = logging.getLogger(__name__)
 
 
-def _ISCSIdiscoverAndLogin(host, lun_address, lun_target):
-    """
-        Description: performs iscsi discovery and login
-        Author: kjachim
-        Parameters:
-            * host - host on which iscsi commands should be performed
-            * lun_address - iscsi server address
-            * lun_target - iscsi target (name of lun on iscsi address)
-        returns True of both operations succeeded, False otherwise
-    """
-    if not storagedomains.iscsiDiscover('True', host, lun_address):
-        logger.error('Failed to discover lun address %s from %s' %
-                     (lun_address, host))
+def _ISCSIdiscoverAndLogin(host, lun_address, lun_target=None):
+    '''
+    performs iscsi discovery and login
+    __author__: kjachim, khakimi
+    :param host: name of host on which iscsi commands should be performed
+    :type host: str
+    :param lun_address: iscsi server address
+    :type lun_address:str
+    :param lun_target: iscsi target (name of lun on iscsi address)
+    :type lun_target: str
+    :return: True if both operations succeeded, False otherwise
+    :rtype: bool
+    '''
+    targets = ll_sd.iscsiDiscover('True', host, lun_address)
+    if not targets:
+        logger.error(
+            'Failed to discover lun address %s from %s' % (lun_address, host)
+        )
         return False
-
-    if not storagedomains.iscsiLogin(True, host, [lun_address], [lun_target]):
+    lun_target = [lun_target] if lun_target else targets
+    lun_address = [lun_address] * len(lun_target)
+    if not ll_sd.iscsiLogin(True, host, lun_address, lun_target):
         logger.error('Failed to login %s on target %s from %s' %
                      (lun_address, lun_target, host))
         return False
 
     return True
+
+
+@is_action()
+def importBlockStorageDomain(host, lun_address, lun_target):
+    """
+    Import an iscsi storage domain
+
+    __author__ = "ratamir"
+    :param host: host name to use for import
+    :type host: str
+    :param lun_address: lun address
+    :type lun_address: str
+    :param lun_target: lun target
+    :type lun_target: str
+    :return: True if the import succeeded or False otherwise
+    """
+    if not _ISCSIdiscoverAndLogin(host, lun_address, lun_target):
+        return False
+    host_obj = ll_sd.hostUtil.find(host)
+    host_obj_id = ll_sd.Host(id=host_obj.get_id())
+    iscsi = ll_sd.IscsiDetails(address=lun_address)
+    # TODO: This call for asyc is not working until
+    # JIRA ticket https://projects.engineering.redhat.com/browse/RHEVM-2141
+    # will be resolved
+    response = ll_sd.hostUtil.syncAction(
+        host_obj, "unregisteredstoragedomainsdiscover", True, iscsi=iscsi,
+        iscsi_target=[lun_target]
+    )
+    if not response:
+        ll_sd.util.logger.error('Failed to find storage domains to import')
+        return False
+    sd_object = response.get_storage_domains().get_storage_domain()[0]
+
+    storage_object = ll_sd.Storage()
+    storage_object.set_type(ENUMS['storage_type_iscsi'])
+
+    sd = ll_sd.StorageDomain(id=sd_object.get_id())
+    sd.set_type(ENUMS['storage_dom_type_data'])
+    sd.set_host(host_obj_id)
+    sd.set_storage(storage_object)
+    sd.set_import('true')
+
+    return ll_sd.util.create(sd, True, compare=False)[1]
 
 
 @is_action()
@@ -78,7 +127,7 @@ def addISCSIDataDomain(host, storage, data_center, lun, lun_address,
     if not _ISCSIdiscoverAndLogin(host, lun_address, lun_target):
         return False
 
-    if not storagedomains.addStorageDomain(
+    if not ll_sd.addStorageDomain(
             True, host=host, name=storage, type=ENUMS['storage_dom_type_data'],
             storage_type=ENUMS['storage_type_iscsi'], lun=lun,
             lun_address=lun_address, lun_target=lun_target, lun_port=lun_port,
@@ -87,11 +136,9 @@ def addISCSIDataDomain(host, storage, data_center, lun, lun_address,
             lun_address, lun_target, lun, host))
         return False
 
-    status = storagedomains.attachStorageDomain(
-        True, data_center, storage, True)
+    status = ll_sd.attachStorageDomain(True, data_center, storage, True)
 
-    return status and storagedomains.activateStorageDomain(
-        True, data_center, storage)
+    return status and ll_sd.activateStorageDomain(True, data_center, storage)
 
 
 @is_action()
@@ -125,7 +172,7 @@ def extendISCSIDomain(
     if not _ISCSIdiscoverAndLogin(host, extend_lun_address, extend_lun_target):
         return False
 
-    return storagedomains.extendStorageDomain(
+    return ll_sd.extendStorageDomain(
         True, storagedomain=storage_domain, host=host, lun=extend_lun,
         lun_address=extend_lun_address, lun_target=extend_lun_target,
         lun_port=extend_lun_port, storage_type=ENUMS['storage_type_iscsi'],
@@ -143,7 +190,7 @@ def extendFCPDomain(storage_domain, host, lun):
         * storage_domain - storage domain to extend
     returns True in case of success, False otherwise
     """
-    return storagedomains.extendStorageDomain(
+    return ll_sd.extendStorageDomain(
         True, storagedomain=storage_domain, lun=lun, host=host,
         storage_type=ENUMS['storage_type_fcp'])
 
@@ -165,18 +212,16 @@ def addGlusterDomain(host, name, data_center, address, path, vfs_type,
         * vfs_type - vfs_type parameter used by rhevm api like posix domain
     Return: True if domain was successfully added, attached to DC and activated
     """
-    if not storagedomains.addStorageDomain(
+    if not ll_sd.addStorageDomain(
             True, host=host, name=name, type=sd_type,
             storage_type=ENUMS['storage_type_gluster'], address=address,
             path=path, storage_format=storage_format, vfs_type=vfs_type):
         logger.error('Failed to add %s:%s using host %s', address, path, host)
         return False
 
-    status = storagedomains.attachStorageDomain(
-        True, data_center, name, True)
+    status = ll_sd.attachStorageDomain(True, data_center, name, True)
 
-    return status and storagedomains.activateStorageDomain(
-        True, data_center, name)
+    return status and ll_sd.activateStorageDomain(True, data_center, name)
 
 
 @is_action()
@@ -197,17 +242,15 @@ def addNFSDomain(host, storage, data_center, address, path,
         * format - when True it will remove the previous data
     return True if succeeded, False otherwise
     '''
-    if not storagedomains.addStorageDomain(
+    if not ll_sd.addStorageDomain(
             True, host=host, name=storage, type=sd_type,
             storage_type=ENUMS['storage_type_nfs'], address=address, path=path,
             storage_format=storage_format, format=format):
         logger.error('Failed to add %s:%s to %s' % (address, path, host))
         return False
 
-    status = storagedomains.attachStorageDomain(
-        True, data_center, storage, True)
-    return status and storagedomains.activateStorageDomain(
-        True, data_center, storage)
+    status = ll_sd.attachStorageDomain(True, data_center, storage, True)
+    return status and ll_sd.activateStorageDomain(True, data_center, storage)
 
 
 @is_action()
@@ -222,13 +265,13 @@ def addLocalDataDomain(host, storage, data_center, path):
         * path - path on the local machine
     return True if succeeded, False otherwise
     """
-    if not storagedomains.addStorageDomain(
+    if not ll_sd.addStorageDomain(
             True, host=host, name=storage, type=ENUMS['storage_dom_type_data'],
             storage_type=ENUMS['storage_type_local'], path=path):
         logger.error('Failed to add local storage %s to %s' % (path, host))
         return False
 
-    if not storagedomains.activateStorageDomain(True, data_center, storage):
+    if not ll_sd.activateStorageDomain(True, data_center, storage):
         logger.error("Cannot activate storage domain %s" % storage)
         return False
 
@@ -253,19 +296,18 @@ def addPosixfsDataDomain(host, storage, data_center, address, path, vfs_type,
         * mount_options - specific options
     return True if succeeded, False otherwise
     """
-    if not storagedomains.addStorageDomain(
+    if not ll_sd.addStorageDomain(
             True, host=host, name=storage, type=ENUMS['storage_dom_type_data'],
             address=address, storage_type=ENUMS['storage_type_posixfs'],
             path=path, vfs_type=vfs_type, mount_options=mount_options):
         logger.error('Failed to add posixfs storage %s to %s' % (path, host))
         return False
 
-    if not storagedomains.attachStorageDomain(
-            True, data_center, storage, True):
+    if not ll_sd.attachStorageDomain(True, data_center, storage, True):
         logger.error("Cannot attach posixfs domain %s" % storage)
         return False
 
-    if not storagedomains.activateStorageDomain(True, data_center, storage):
+    if not ll_sd.activateStorageDomain(True, data_center, storage):
         logger.error("Cannot activate posixfs domain %s" % storage)
         return False
 
@@ -284,13 +326,13 @@ def addFCPDataDomain(host, storage, data_center, lun):
         * lun - lun
     return True if succeeded, False otherwise
     """
-    if not storagedomains.addStorageDomain(
+    if not ll_sd.addStorageDomain(
             True, host=host, name=storage, type=ENUMS['storage_dom_type_data'],
             storage_type=ENUMS['storage_type_fcp'], lun=lun):
         logger.error('Failed to add fcp storage %s to %s' % (lun, storage))
         return False
 
-    if not storagedomains.activateStorageDomain(True, data_center, storage):
+    if not ll_sd.activateStorageDomain(True, data_center, storage):
         logger.error("Cannot activate storage domain %s" % storage)
         return False
 
@@ -601,27 +643,24 @@ def remove_storage_domain(name, datacenter, host, format_disk=False, vdc=None,
 
     dc_storages = []
     if datacenter is not None:
-        dc_storages = [
-            x.name for x in storagedomains.getDCStorages(datacenter, False)]
+        dc_storages = [x.name for x in ll_sd.getDCStorages(datacenter, False)]
 
     if name in dc_storages:
-        if storagedomains.is_storage_domain_active(datacenter, name):
+        if ll_sd.is_storage_domain_active(datacenter, name):
             logging.info("Deactivating storage domain")
-            if not storagedomains.deactivateStorageDomain(
-                    True, datacenter, name):
+            if not ll_sd.deactivateStorageDomain(True, datacenter, name):
                 raise errors.StorageDomainException(
                     "Cannot deactivate storage domain %s in datacenter %s!" % (
                         name, datacenter))
 
         logging.info("Detaching storage domain")
-        if not storagedomains.detachStorageDomain(True, datacenter, name):
+        if not ll_sd.detachStorageDomain(True, datacenter, name):
             raise errors.StorageDomainException(
                 "Cannot detach storage domain %s from datacenter %s!" % (
                     name, datacenter))
 
     logging.info("Removing storage domain")
-    if not storagedomains.removeStorageDomain(
-            True, name, host, str(format_disk)):
+    if not ll_sd.removeStorageDomain(True, name, host, str(format_disk)):
         raise errors.StorageDomainException(
             "Cannot remove storage domain %s!" % name)
     logging.info("Storage domain %s removed" % name)
@@ -653,22 +692,22 @@ def create_nfs_domain_with_options(
     **Returns**: nothing, raise an exception in case of an error
     """
     logging.info("Adding storage domain")
-    old_storage = storagedomains.Storage
+    old_storage = ll_sd.Storage
     if not positive:  # in positive tests we won't pass incorrect values
-        storagedomains.Storage = datastructures.Storage
-    if not storagedomains.addStorageDomain(
+        ll_sd.Storage = datastructures.Storage
+    if not ll_sd.addStorageDomain(
             positive, name=name, type=sd_type, host=host, address=address,
             storage_type=ENUMS['storage_type_nfs'], path=path,
             nfs_version=version, nfs_retrans=retrans, nfs_timeo=timeo,
             mount_options=mount_options):
-        storagedomains.Storage = old_storage  # just in case...
+        ll_sd.Storage = old_storage  # just in case...
         raise errors.StorageDomainException(
             "Cannot add storage domain %s" % name)
-    storagedomains.Storage = old_storage
+    ll_sd.Storage = old_storage
 
     if datacenter is not None and positive:
         logging.info("Attaching storage domain")
-        if not storagedomains.attachStorageDomain(True, datacenter, name):
+        if not ll_sd.attachStorageDomain(True, datacenter, name):
             raise errors.StorageDomainException(
                 "Cannot attach %s to %s" % (name, datacenter))
 
@@ -686,11 +725,11 @@ def attach_and_activate_domain(datacenter, domain):
     logger.info('Checking if domain %s is attached to dc %s'
                 % (domain, datacenter))
 
-    dc_storage_objects = storagedomains.getDCStorages(datacenter, False)
+    dc_storage_objects = ll_sd.getDCStorages(datacenter, False)
 
     if not [sd for sd in dc_storage_objects if sd.get_name() == domain]:
         logger.info('Attaching domain %s to dc %s' % (domain, datacenter))
-        if not storagedomains.attachStorageDomain(True, datacenter, domain):
+        if not ll_sd.attachStorageDomain(True, datacenter, domain):
             raise errors.StorageDomainException(
                 'Unable to attach domain %s to dc %s'
                 % (domain, datacenter))
@@ -698,7 +737,7 @@ def attach_and_activate_domain(datacenter, domain):
 
     logger.info('Activating domain %s on dc %s' % (domain, datacenter))
 
-    if not storagedomains.activateStorageDomain(True, datacenter, domain):
+    if not ll_sd.activateStorageDomain(True, datacenter, domain):
         raise errors.StorageDomainException(
             'Unable to activate domain %s on dc %s'
             % (domain, datacenter))
@@ -740,14 +779,13 @@ def create_nfs_domain_and_verify_options(domain_list, host=None,
 
     logger.info("Getting info about mounted resources")
     host_ip = hosts.getHostIP(host)
-    mounted_resources = storagedomains.get_mounted_nfs_resources(host_ip,
-                                                                 password)
+    mounted_resources = ll_sd.get_mounted_nfs_resources(host_ip, password)
 
     logger.info("verifying nfs options")
     for domain in domain_list:
         nfs_timeo, nfs_retrans, nfs_vers, nfs_sync = mounted_resources[
             (domain.address, domain.path)]
-        result = storagedomains.verify_nfs_options(
+        result = ll_sd.verify_nfs_options(
             domain.expected_timeout, domain.expected_retrans,
             domain.expected_vers, domain.expected_mount_options, nfs_timeo,
             nfs_retrans, nfs_vers, nfs_sync)
@@ -768,12 +806,11 @@ def detach_and_deactivate_domain(datacenter, domain):
     """
     logger.info('Checking if domain %s active in dc %s'
                 % (domain, datacenter))
-    if storagedomains.is_storage_domain_active(datacenter, domain):
+    if ll_sd.is_storage_domain_active(datacenter, domain):
         logger.info('Domain %s is active in dc %s' % (domain, datacenter))
 
         logger.info('Deactivating domain  %s in dc %s' % (domain, datacenter))
-        if not storagedomains.deactivateStorageDomain(True, datacenter,
-                                                      domain):
+        if not ll_sd.deactivateStorageDomain(True, datacenter, domain):
             raise errors.StorageDomainException(
                 'Unable to deactivate domain %s on dc %s'
                 % (domain, datacenter))
@@ -782,7 +819,7 @@ def detach_and_deactivate_domain(datacenter, domain):
                 % (domain, datacenter))
 
     logger.info('Detaching domain %s from dc %s' % (domain, datacenter))
-    if not storagedomains.detachStorageDomain(True, datacenter, domain):
+    if not ll_sd.detachStorageDomain(True, datacenter, domain):
         raise errors.StorageDomainException(
             'Unable to detach domain %s from dc %s'
             % (domain, datacenter))
@@ -792,11 +829,9 @@ def detach_and_deactivate_domain(datacenter, domain):
 
 
 def get_master_storage_domain_ip(datacenter):
-    found, master_domain = storagedomains.findMasterStorageDomain(
-        True, datacenter)
+    found, master_domain = ll_sd.findMasterStorageDomain(True, datacenter)
     assert found
     master_domain = master_domain['masterDomain']
-    found, master_domain_ip = storagedomains.getDomainAddress(
-        True, master_domain)
+    found, master_domain_ip = ll_sd.getDomainAddress(True, master_domain)
     assert found
     return master_domain_ip['address']

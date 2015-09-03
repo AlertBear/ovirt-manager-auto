@@ -1426,16 +1426,23 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                         for entity in entities]
 
     @jvm_thread_care
-    def syncAction(self, entity, action, positive, async=False, **params):
+    def syncAction(
+            self, entity, action, positive, async=False, **params
+    ):
         '''
-        Description: run synchronic action
-        Author: imeerovi
-        Parameters:
-           * entity - target entity
-           * action - desired action
-           * positive - if positive or negative verification should be done
-           * asynch - synch or asynch action
-        Return: status (True if Action test succeeded, False otherwise)
+        run synchronic action
+        __author__ : imeerovi
+        :param entity: target entity
+        :type entity: object
+        :param action: desired action
+        :type action: str
+        :param positive: if positive or negative verification should be done
+        :type positive: bool
+        :param asynch: synch or asynch action
+        :type async: bool
+        :return: POST response (None if no response)
+                 in case of negative test return api_error object
+        :rtype: Action object
         '''
         act = self.makeAction(async, 10, **params)
 
@@ -1481,18 +1488,34 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                         java_action_entity,
                         str(self.getCorrelationId(ApiOperation.syncAction)))
         except java_sdk.JavaError as e:
-            self.parse_java_error(e, ApiOperation.syncAction, positive)
-            if positive:
-                return False
-            return True
+            err = self.parse_java_error(e, ApiOperation.syncAction, positive)
+            return None if positive else err
         else:
             if not positive:
                 errorMsg = "Succeeded to run an action '{0}' for negative test"
                 self.logger.error(errorMsg.format(action))
-                return False
+                return None
 
-        return validator.compareAsyncActionStatus(
-            async, act.status.state, self.logger)
+        valid = validator.compareAsyncActionStatus(
+            async, act.status.state, self.logger
+        )
+
+        return JavaTranslator(act) if valid else None
+
+    def extract_attribute(self, response, attr):
+        '''
+        Extract the attribute from POST response
+        :param response: POST response object
+        :type response: Action object
+        :param attr: the name of the attribute to extract
+        :type attr: str
+        :return: list of attribute values
+        :rtype: list
+        '''
+        if attr and response:
+            response = getattr(response, 'get_' + attr)()
+            return response if isinstance(response, list) else [response]
+        return None
 
     @jvm_thread_care
     def waitForElemStatus(self, elm, status, timeout=DEF_TIMEOUT,

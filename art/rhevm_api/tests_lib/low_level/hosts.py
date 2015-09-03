@@ -536,7 +536,7 @@ def activateHost(positive, host, wait=True):
     Return: status (True if host was activated properly, False otherwise)
     """
     hostObj = HOST_API.find(host)
-    status = HOST_API.syncAction(hostObj, "activate", positive)
+    status = bool(HOST_API.syncAction(hostObj, "activate", positive))
 
     if status and wait and positive:
         testHostStatus = HOST_API.waitForElemStatus(hostObj, "up", 200)
@@ -664,14 +664,15 @@ def installHost(positive, host, root_password, iso_image=None,
     state_maintenance = ENUMS['host_state_maintenance']
     state_installing = ENUMS['host_state_installing']
     hostObj = HOST_API.find(host)
-    status = HOST_API.syncAction(hostObj, "install", positive,
-                                 root_password=root_password,
-                                 image=iso_image,
-                                 override_iptables=override_iptables.lower())
-    if status and not positive:
+    response = HOST_API.syncAction(
+        hostObj, "install", positive, root_password=root_password,
+        image=iso_image, override_iptables=override_iptables.lower()
+    )
+    if response and not positive:
         return True
-    if not (status and HOST_API.waitForElemStatus(hostObj, state_installing,
-                                                  800)):
+    if not (
+        response and HOST_API.waitForElemStatus(hostObj, state_installing, 800)
+    ):
         return False
     return HOST_API.waitForElemStatus(hostObj, state_maintenance, 800)
 
@@ -691,7 +692,9 @@ def approveHost(positive, host, cluster='Default'):
     clusterObj = CL_API.find(cluster)
 
     kwargs = {'cluster': clusterObj}
-    status = HOST_API.syncAction(hostObj, "approve", positive, **kwargs)
+    status = bool(
+        HOST_API.syncAction(hostObj, "approve", positive, **kwargs)
+    )
     testHostStatus = HOST_API.waitForElemStatus(hostObj, "up", 120)
 
     return status and testHostStatus
@@ -773,7 +776,9 @@ def commitNetConfig(positive, host):
     """
 
     hostObj = HOST_API.find(host)
-    return HOST_API.syncAction(hostObj, "commitnetconfig", positive)
+    return bool(
+        HOST_API.syncAction(hostObj, "commitnetconfig", positive)
+    )
 
 
 @is_action()
@@ -792,8 +797,10 @@ def fenceHost(positive, host, fence_type, timeout=500):
     # and fencing a host in down state. since 3.4 fencing a host in maintenance
     # will result with the host staying in maintenance and not up state.
     host_in_maintenance = getHostState(host) == ENUMS['host_state_maintenance']
-    status = HOST_API.syncAction(
-        host_obj, "fence", positive, fence_type=fence_type.upper()
+    status = bool(
+        HOST_API.syncAction(
+            host_obj, "fence", positive, fence_type=fence_type.upper()
+        )
     )
 
     # if test type is negative, we don't have to wait for element status,
@@ -932,7 +939,9 @@ def attachHostNic(positive, host, nic, network):
     host_nic = getHostNic(host, nic)
     cl_net = getClusterNetwork(cluster, network)
 
-    return HOST_API.syncAction(host_nic, "attach", positive, network=cl_net)
+    return bool(
+        HOST_API.syncAction(host_nic, "attach", positive, network=cl_net)
+    )
 
 
 @is_action()
@@ -976,8 +985,11 @@ def detachHostNic(positive, host, nic, network=None):
     """
     nicObj = getHostNic(host, nic)
 
-    return HOST_API.syncAction(nicObj, "detach", positive,
-                               network=nicObj.get_network())
+    return bool(
+        HOST_API.syncAction(
+            nicObj, "detach", positive, network=nicObj.get_network()
+        )
+    )
 
 
 @is_action()
@@ -1019,10 +1031,12 @@ def sendSNRequest(positive, host, nics=[], auto_nics=[], **kwargs):
     new_nics_obj = nics + [getHostNic(host, nic) for nic in auto_nics]
 
     host_nics = data_st.HostNics(host_nic=new_nics_obj)
-    return HOST_NICS_API.syncAction(current_nics_obj, "setupnetworks",
-                                    positive,
-                                    host_nics=host_nics,
-                                    **kwargs)
+    return bool(
+        HOST_NICS_API.syncAction(
+            current_nics_obj, "setupnetworks", positive,
+            host_nics=host_nics, **kwargs
+        )
+    )
 
 
 @is_action()
@@ -1931,9 +1945,9 @@ def select_host_as_spm(positive, host, datacenter,
     """
     hostObj = HOST_API.find(host)
     HOST_API.logger.info('Selecting host %s as spm', host)
-    status = HOST_API.syncAction(hostObj, "forceselectspm", positive)
+    response = HOST_API.syncAction(hostObj, "forceselectspm", positive)
 
-    if status:
+    if response:
         # only wait for spm election if action is expected to succeed
         if wait and positive:
             waitForSPM(datacenter, timeout=timeout, sleep=sleep)

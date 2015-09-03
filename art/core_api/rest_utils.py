@@ -24,8 +24,10 @@ from contextlib import contextmanager
 from art.core_api import http, template_parser, validator, measure_time
 from art.core_api.apis_exceptions import EntityNotFound, APIException,\
     APILoginError
-from art.core_api.apis_utils import APIUtil, parse, data_st,\
-    NEGATIVE_CODES_CREATE, NEGATIVE_CODES, DEF_TIMEOUT, DEF_SLEEP, ApiOperation
+from art.core_api.apis_utils import (
+    APIUtil, parse, data_st, NEGATIVE_CODES_CREATE, NEGATIVE_CODES,
+    DEF_TIMEOUT, DEF_SLEEP, ApiOperation, api_error
+)
 from art.test_handler import settings
 
 
@@ -550,22 +552,31 @@ class RestUtil(APIUtil):
         return getattr(parse(ret[RespKey.body], silence=True),
                        self.element_name)
 
-    def syncAction(self, entity, action, positive, async=False,
-                   positive_async_stat=[200, 202],
-                   positive_sync_stat=[200, 201], negative_stat=NEGATIVE_CODES,
-                   **params):
+    def syncAction(
+            self, entity, action, positive, async=False,
+            positive_async_stat=[200, 202], positive_sync_stat=[200, 201],
+            negative_stat=NEGATIVE_CODES, **params
+    ):
         '''
-        Description: run synchronic action
-        Author: edolinin
-        Parameters:
-           * entity - target entity
-           * action - desired action
-           * positive - if positive or negative verification should be done
-           * asynch - synch or asynch action
-           * positive_async_stat - asynch expected status
-           * positive_sync_stat - synch expected status
-           * negative_stat - negative test expected status
-        Return: status (True if Action test succeeded, False otherwise)
+        __author__ = edolinin
+        run synchronic action
+        :param entity: target entity
+        :type entity: object
+        :param action: desired action
+        :type action: str
+        :param positive: if positive or negative verification should be done
+        :type positive: bool
+        :param asynch: synch or asynch action
+        :type async: bool
+        :param positive_async_stat: asynch expected status
+        :type positive_async_stat: list
+        :param positive_sync_stat: synch expected status
+        :type positive_sync_stat: list
+        :param negative_stat: negative test expected status
+        :type negative_stat: list
+        :return: POST response (None if no response)
+                 in case of negative test return api_error object
+        :rtype: str
         '''
 
         def getActionHref(actions, action):
@@ -593,10 +604,10 @@ class RestUtil(APIUtil):
         positive_stat = positive_async_stat if async else positive_sync_stat
         if not self.responseCodesMatch(positive, ApiOperation.syncAction,
                                        positive_stat, negative_stat, ret):
-            return False
+            return None
 
         if not self.opts['validate']:
-            return True
+            return ret[RespKey.body]
 
         self.logger.debug("Response body for action request is: %s ",
                           ret[RespKey.body])
@@ -605,15 +616,41 @@ class RestUtil(APIUtil):
             resp_action = parse(ret[RespKey.body], silence=True)
         except etree.XMLSyntaxError:
             self.logger.error("Cant parse xml response")
-            return False
+            return None
 
         if positive:
             if resp_action and not validator.compareAsyncActionStatus(
                     async, resp_action.status.state, self.logger):
-                return False
+                return None
+
+        else:
+            return api_error(
+                reason=ret[RespKey.reason],
+                status=ret[RespKey.status],
+                detail=self.parseDetail(ret)
+            )
 
         self.validateResponseViaXSD(actionHref, ret)
-        return validator.compareActionLink(entity.actions, action, self.logger)
+        valid = validator.compareActionLink(
+            entity.actions, action, self.logger
+        )
+
+        return ret[RespKey.body] if valid else None
+
+    def extract_attribute(self, response, attr):
+        '''
+        Extract the attribute from POST response
+        :param response: POST response string
+        :type response: str
+        :param attr: the name of the attribute to extract
+        :type attr: str
+        :return: list of attribute values
+        :rtype: list
+        '''
+        if response and attr:
+            pat = '<{0}>(.*)</{0}>'.format(attr)
+            return [str(x) for x in re.findall(pat, response)]
+        return None
 
     def getElemFromLink(self, elm, link_name=None, attr=None, get_href=False,
                         all_content=False):

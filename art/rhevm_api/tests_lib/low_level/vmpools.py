@@ -271,7 +271,7 @@ def allocateVmFromPool(positive, vmpool):
     '''
     pool = util.find(vmpool)
 
-    return util.syncAction(pool, 'allocatevm', positive)
+    return bool(util.syncAction(pool, 'allocatevm', positive))
 
 
 def removeWholeVmPool(positive, vmpool, size,

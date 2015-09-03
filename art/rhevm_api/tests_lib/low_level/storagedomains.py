@@ -397,7 +397,9 @@ def activateStorageDomain(positive, datacenter, storagedomain, wait=True):
         return True
 
     async = 'false' if wait else 'true'
-    status = util.syncAction(storDomObj, "activate", positive, async=async)
+    status = bool(
+        util.syncAction(storDomObj, "activate", positive, async=async)
+    )
     if status and positive and wait:
         return waitForStorageDomainStatus(
             True, datacenter, storagedomain,
@@ -422,7 +424,9 @@ def deactivateStorageDomain(positive, datacenter, storagedomain, wait=True):
     storDomObj = getDCStorage(datacenter, storagedomain)
 
     async = 'false' if wait else 'true'
-    status = util.syncAction(storDomObj, "deactivate", positive, async=async)
+    status = bool(
+        util.syncAction(storDomObj, "deactivate", positive, async=async)
+    )
     if positive and status and wait:
         return waitForStorageDomainStatus(
             True, datacenter, storagedomain,
@@ -435,17 +439,24 @@ def deactivateStorageDomain(positive, datacenter, storagedomain, wait=True):
 @is_action()
 def iscsiDiscover(positive, host, address):
     '''
-    Description: run iscsi discovery
-    Author: edolinin
-    Parameters:
-       * host - name of host
-       * address - iscsi address
-    Return: status (True if iscsi discovery succeeded, False otherwise)
+    run iscsi discovery
+    __author__: edolinin, khakimi
+    :param positive: True if discover succeed False otherwise
+    :type positive: bool
+    :param host: name of host
+    :type host: str
+    :param address: iscsi address
+    :type address: str
+    :return: list of iscsi targets if discovery succeeded, None otherwise
+    :rtype: list
     '''
     hostObj = hostUtil.find(host)
 
     iscsi = IscsiDetails(address=address)
-    return hostUtil.syncAction(hostObj, "iscsidiscover", positive, iscsi=iscsi)
+    response = hostUtil.syncAction(
+        hostObj, "iscsidiscover", positive, iscsi=iscsi
+    )
+    return hostUtil.extract_attribute(response, 'iscsi_target')
 
 
 @is_action()
@@ -501,8 +512,9 @@ def teardownStorageDomain(positive, storagedomain, host):
     hostObj = hostUtil.find(host)
 
     sdHost = Host(id=hostObj.get_id())
-    return util.syncAction(storDomObj.actions, "teardown", positive,
-                           host=sdHost)
+    return bool(
+        util.syncAction(storDomObj.actions, "teardown", positive, host=sdHost)
+    )
 
 
 @is_action()
@@ -1459,61 +1471,6 @@ def get_free_space(storagedomain):
 
 
 @is_action()
-def importBlockStorageDomain(host, lun_address, lun_target):
-    """
-    Import an iscsi storage domain
-
-    __author__ = "ratamir"
-    :param host: host name to use for import
-    :type host: str
-    :param lun_address: lun address
-    :type lun_address: str
-    :param lun_target: lun target
-    :type lun_target: str
-    :return: True if the import succeeded or False otherwise
-    """
-    if not iscsiDiscover('True', host, lun_address):
-        util.logger.error(
-            'Failed to discover lun address %s from %s', lun_address, host
-        )
-        return False
-
-    if not iscsiLogin(True, host, [lun_address], [lun_target], login_all=True):
-        util.logger.error(
-            'Failed to login %s on target %s from %s',
-            lun_address, lun_target, host
-        )
-        return False
-    host_obj = hostUtil.find(host)
-    host_obj_id = Host(id=host_obj.get_id())
-    iscsi = IscsiDetails(address=lun_address)
-    # TODO: This call for asyc is not working until
-    # JIRA ticket https://projects.engineering.redhat.com/browse/RHEVM-2141
-    # will be resolved
-    response, status = hostUtil.syncAction(
-        host_obj, "unregisteredstoragedomainsdiscover", True, iscsi=iscsi,
-        iscsi_target=[lun_target]
-    )
-    if not status:
-        util.logger.error('Failed to find storage domains to import')
-        return False
-    sd_object = response.get_storage_domains().get_storage_domain()[0]
-
-    storage_object = Storage()
-    storage_object.set_type(ENUMS['storage_type_iscsi'])
-
-    sd = StorageDomain(id=sd_object.get_id())
-    sd.set_type(ENUMS['storage_dom_type_data'])
-    sd.set_host(host_obj_id)
-    sd.set_storage(storage_object)
-    sd.set_import('true')
-
-    res, status = util.create(sd, True, compare=False)
-
-    return status
-
-
-@is_action()
 def get_unregistered_vms(storage_domain):
     """
     Get unregistered vms on storage domain
@@ -1570,8 +1527,10 @@ def register_object(obj, cluster):
     :rtype: bool
     """
     cluster_obj = Cluster(name=cluster)
-    return util.syncAction(
-        entity=obj, action='register', positive=True, cluster=cluster_obj
+    return bool(
+        util.syncAction(
+            entity=obj, action='register', positive=True, cluster=cluster_obj
+        )
     )
 
 
@@ -2025,11 +1984,8 @@ class GlanceImage(object):
             disk=disk_obj,
             )
 
-        status = util.syncAction(
-            source_image_obj,
-            'import',
-            True,
-            **action_params
+        status = bool(
+            util.syncAction(source_image_obj, 'import', True, **action_params)
         )
 
         if not async and new_disk_alias:

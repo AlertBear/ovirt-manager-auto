@@ -21,7 +21,7 @@ import time
 import logging
 from art.core_api import validator, measure_time
 from art.core_api.apis_utils import data_st, NEGATIVE_CODES, DEF_TIMEOUT, \
-    DEF_SLEEP, ApiOperation
+    DEF_SLEEP, ApiOperation, api_error
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_exceptions import APIException, APILoginError
 from ovirtsdk import api as sdkApi
@@ -443,16 +443,23 @@ class SdkUtil(APIUtil):
                 return getattr(elm, link_name).list(all_content=all_content)
             return getattr(elm, link_name).list()
 
-    def syncAction(self, entity, action, positive, async=False, **params):
+    def syncAction(
+            self, entity, action, positive, async=False, **params
+    ):
         '''
-        Description: run synchronic action
-        Author: edolinin
-        Parameters:
-           * entity - target entity
-           * action - desired action
-           * positive - if positive or negative verification should be done
-           * asynch - synch or asynch action
-        Return: status (True if Action test succeeded, False otherwise)
+        run synchrony action
+        __author__: edolinin
+        :param entity: target entity
+        :type entity: object
+        :param action: desired action
+        :type action: str
+        :param positive: if positive or negative verification should be done
+        :type positive: bool
+        :param asynch: synch or asynch action
+        :type async: bool
+        :return: POST response (None if no response)
+                 in case of negative test return api_error object
+        :rtype: Action object
         '''
 
         # special case when doing import to an image in rest we send import as
@@ -483,17 +490,32 @@ class SdkUtil(APIUtil):
             self.print_error_msg(ApiOperation.syncAction, e.status, e.reason,
                                  e.detail, positive=positive)
             if positive:
-                return False
-            else:
-                return True
+                return None
+            return api_error(reason=e.reason, status=e.status, detail=e.detail)
         else:
             if not positive:
                 errorMsg = "Succeeded to run an action '%s' for negative test"
                 self.logger.error(errorMsg, action)
-                return False
+                return None
+        valid = validator.compareAsyncActionStatus(
+            async, act.status.state, self.logger
+        )
+        return act if valid else None
 
-        return validator.compareAsyncActionStatus(async, act.status.state,
-                                                  self.logger)
+    def extract_attribute(self, response, attr):
+        '''
+        Extract the attribute from POST response
+        :param response: POST response object
+        :type response: Action object
+        :param attr: the name of the attribute to extract
+        :type attr: str
+        :return: list of attribute values
+        :rtype: list
+        '''
+        if attr and response:
+            response = getattr(response, 'get_' + attr)()
+            return response if isinstance(response, list) else [response]
+        return None
 
     def waitForElemStatus(self, elm, status, timeout=DEF_TIMEOUT,
                           ignoreFinalStates=False, collection=None):

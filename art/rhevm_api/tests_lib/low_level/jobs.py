@@ -241,7 +241,9 @@ def end_step(job_description, job_status, step_description, end_status):
         LOGGER.warn("Job with given description not exist")
         return False
     step_obj = step_by_description(job_obj, step_description)
-    if not STEPS_API.syncAction(step_obj, "end", True,  succeeded=end_status):
+    if not STEPS_API.syncAction(
+            step_obj, "end", True,  succeeded=end_status
+    ):
         return False
     return True
 
