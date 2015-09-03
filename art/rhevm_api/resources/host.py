@@ -80,6 +80,7 @@ class Host(Resource):
             pass
         else:
             self.inventory.remove(host)
+        self.logger.debug("Adding host with ip '%s' to inventory", self.ip)
         self.inventory.append(self)
 
     @property
