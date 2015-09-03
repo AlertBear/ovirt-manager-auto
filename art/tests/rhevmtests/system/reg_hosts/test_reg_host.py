@@ -233,7 +233,7 @@ class TestUpdatePowerManagementInvalidType(TestPowerManagement):
                                 "although provided with an invalid type")
 
 
-@bz('1136061')
+@bz({'1136061': {}})
 @attr(tier=0)
 class SetSPMToLow(TestCase):
     """

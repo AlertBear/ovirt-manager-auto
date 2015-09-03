@@ -462,7 +462,7 @@ class RolesCase54412(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-7142")
-    @bz({949950: {}, 977304: {}})
+    @bz({'949950': {}, '977304': {}})
     @istest
     def rolesHiearchy(self):
         """ Check if permissions are correctly inherited from objects """

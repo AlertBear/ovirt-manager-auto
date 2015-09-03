@@ -57,7 +57,7 @@ class TestCaseBzPlugin(TestCase):
         logger.info('************** teardown test **************')
 
     @istest  # should skip
-    @bzd('1')
+    @bzd({'1': {}})
     def t01(self):
         logger.info('************** NEW BUG in xml & decorator **************')
 
@@ -70,7 +70,7 @@ class TestCaseBzPlugin(TestCase):
         logger.info('************** Verify backward compatible **************')
 
     @istest  # should skip
-    @bzd('1')
+    @bzd({'1': {}})
     def t04(self):
         logger.info(
             '************ '

@@ -83,7 +83,7 @@ from art.test_handler.plmanagement.interfaces.tests_listener import (
 from art.test_handler.plmanagement.interfaces.report_formatter import (
     IResultExtension,
 )
-from art.test_handler.settings import initPlmanager, opts
+from art.test_handler.settings import opts
 from art.test_handler import find_config_file
 
 from utilities.issuesdb import IssuesDB
@@ -161,49 +161,20 @@ def dec_polling(attempts, sleep_time):
 
 def bz(bug_dict):
     """
-    Decorator function to skip test case, when we have opened bug for it.
+    Decorator function to pass bug_dict to test.
 
-    * parameters:
-        ** bug_dict: {'bug_id': {
-                        'engine': ['cli', 'java'],
-                        'version': ['3.4', '3.5']
-                        }
-                    }
-    * raises: SkipTest
-    * returns: function object
+    :param bug_dict: bugs defined as bellow
+    {'bug_id': {
+        'engine': ['cli', 'java'],
+        'version': ['3.4', '3.5']
+        }
+    }
+    :return: function object
     """
-    def real_bz(func):
-        def check_should_skip(bz_id, engine=None, version=None, storage=None):
-            plmanager = initPlmanager()
-            BZ_PLUGIN = [pl for pl in plmanager.application_liteners
-                         if pl.name == "Bugzilla"][0]
-            try:
-                BZ_PLUGIN.should_be_skipped(bz_id, engine, version, storage)
-            except SkipTest as ex:
-                logger.warn(str(ex))
-                raise
-
-        @wraps(func)
-        def skip_if_bz(*args, **kwargs):
-            try:
-                # backward compatible for @bz(bug_id) structure
-                if not isinstance(bug_dict, dict):
-                    logger.info("This bz is in old structure "
-                                "- consider changing it")
-                    check_should_skip(bug_dict)
-                # @bz new structure
-                else:
-                    for bz_id, options in bug_dict.iteritems():
-                        engine = options.get('engine')
-                        version = options.get('version')
-                        storage = options.get('storage')
-                        check_should_skip(bz_id, engine, version, storage)
-                return func(*args, **kwargs)
-            except IndexError:
-                logger.warning("Failed to get Bugzilla plugin")
+    def bugzilla_wrap(func):
         setattr(func, BZ_ID, bug_dict)
-        return skip_if_bz
-    return real_bz
+        return func
+    return bugzilla_wrap
 
 
 def expect_list(bug, item_name, default=None):
@@ -372,8 +343,9 @@ class Bugzilla(Component):
         """
         Returns True is the bug is in state specified in self.const_list
         by default it will return true if verified or closed
-        Parameters:
-         * bz_id - bugzilla ID
+        :param  bz_id: bugzilla ID
+        :type bz_id: str
+        :rtype: bool
         """
         bug = self.bz(bz_id)
         return self.is_state_by_bug(bug)
@@ -382,14 +354,17 @@ class Bugzilla(Component):
         """
         Returns True is the bug is in state specified in self.const_list
         by default it will return true if verified or closed
-        Parameters:
-         * bug - bz object
+        :param bug: bz object
+        :rtype: bool
         """
         return bug.bug_status in self.const_list
 
     def bz(self, bz_id):
         """
         Returns BZ record
+        :param bz_id: bug id
+        :type bz_id: str
+        :return: bz record
         """
         bz_id = str(bz_id)
         if bz_id not in self.cache:
@@ -441,12 +416,14 @@ class Bugzilla(Component):
         Raises BugzillaSkipTest if the bug is in non-resolved state
         (not verified or closed) and it's open for the current running engine
         and its in the specified version or was fixed in later version
-        * parameters:
-            ** bz_id the id of the bug
-            ** engines list of relevant engines for this bug
-            ** versions list of relevant versions for this bug
-        * raises: BugzillaSkipTest exception if the test should get skipped
-        * return: None if the test should not skip
+        :param bz_id: the id of the bug
+        :type bz_id: str
+        :param engines: relevant engines for this bug
+        :type engines: list
+        :param versions: relevant versions for this bug
+        :type versions: list
+        :raises: BugzillaSkipTest exception if the test should get skipped
+        :return: None if the test should not skip
         """
         # get bz object
         try:
@@ -583,7 +560,23 @@ class Bugzilla(Component):
                 raise
 
     def should_be_test_case_skipped(self, t):
-        pass
+        """
+        Test if test case should be skipped
+        :param t: test case
+        :type t: object of test case
+        :raises: SkipTest
+        """
+        bug_dict = t.attrs.get(BZ_ID)
+        if bug_dict:
+            for bz_id, options in bug_dict.iteritems():
+                engine = options.get('engine')
+                version = options.get('version')
+                storage = options.get('storage')
+                try:
+                    self.should_be_skipped(bz_id, engine, version, storage)
+                except SkipTest as ex:
+                    logger.warn(str(ex))
+                    raise
 
     def pre_test_case(self, t):
         if self.issuedb:

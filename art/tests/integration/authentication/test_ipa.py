@@ -152,7 +152,7 @@ class IPACase93881(TestCase):
 
     @istest
     @polarion("RHEVM3-8954")
-    @bz(1123545)
+    @bz({'1123545': {}})
     def loginFormats(self):
         """ Login formats """
         msg_f = "Login format %s doesn't not work."
@@ -207,7 +207,7 @@ class IPACase109146(TestCase):
 
     @istest
     @polarion("RHEVM3-8958")
-    @bz(1125161)
+    @bz({'1125161': {}})
     def persistencyOfGroupRights(self):
         """ Persistency of group rights """
         loginAsUser(config.IPA_WITH_GROUP_NAME, False)
@@ -236,7 +236,7 @@ class IPACase93882(TestCase):
 
     @istest
     @polarion("RHEVM3-8955")
-    @bz(1125161)
+    @bz({'1125161': {}})
     def search(self):
         """ Search """
         domain_id = users.domUtil.find(config.IPA_DOMAIN.lower()).get_id()
@@ -287,7 +287,7 @@ class IPACase93883(TestCase):
 
     @istest
     @polarion("RHEVM3-8956")
-    @bz(1117240)
+    @bz({'1117240': {}})
     def update(self):
         """ Update """
         new_name = 'new_name'

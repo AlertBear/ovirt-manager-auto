@@ -409,7 +409,7 @@ class PermissionsCase54420(TestCase):
     __test__ = True
 
     @istest
-    @bz(881145)
+    @bz({'881145': {}})
     @polarion("RHEVM3-7190")
     def objAdminUser(self):
         """ Object creating from User and Admin portal """

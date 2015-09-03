@@ -148,7 +148,7 @@ class BaseGroupsPersistency(TestCase):
                                          config.MAIN_CLUSTER_NAME)
 
     @istest
-    @bz(1125161)
+    @bz({'1125161': {}})
     def basePersistencyOfGroupRights(self):
         """ After user removal, check that his group persist """
         loginAsUser(config.USER_FROM_GROUP(self.domain), self.domain, False)

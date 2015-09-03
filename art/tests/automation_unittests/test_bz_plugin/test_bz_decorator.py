@@ -73,7 +73,7 @@ class TestCaseBzPlugin(TestCase):
         logger.info('************* DUPLICATE BUG points to NEW *************')
 
     @istest  # should run
-    @bzd('7')
+    @bzd({'7': {}})
     def t08(self):
         logger.info('************** Verify backward compatible **************')
 

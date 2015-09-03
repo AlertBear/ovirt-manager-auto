@@ -113,7 +113,7 @@ class ManageDomainsTestCaseAdd(ManageDomainsTestCaseBase):
         self.ut.autoTest()
         self.ut(action='delete', domain=self.domainName, force=None)
 
-    @bz(1083033)
+    @bz({'1083033': {}})
     @polarion("RHEVM3-11365")
     def test_manage_domains_add_missing_options(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
@@ -151,8 +151,7 @@ class ManageDomainsTestCaseEdit(ManageDomainsTestCaseBase):
         self.ut(action='delete', domain=self.domainName, force=None)
         super(ManageDomainsTestCaseEdit, self).tearDown()
 
-    @bz(1083033)
-    @bz(1055417)
+    @bz({'1083033': {}, '1055417': {}})
     @polarion("RHEVM3-9165")
     def test_manage_domains_edit(self):
         """
@@ -220,7 +219,7 @@ class ManageDomainsTestCaseValidate(ManageDomainsTestCaseBase):
         self.ut(action='delete', domain=self.domainName, force=None)
         super(ManageDomainsTestCaseValidate, self).tearDown()
 
-    @bz(1083033)
+    @bz({'1083033': {}})
     @polarion("RHEVM3-9163")
     def test_manage_domains_validate(self):
         """
@@ -298,7 +297,7 @@ class ManageDomainsTimeSkew(ManageDomainsTestCaseBase):
         else:
             self._shiftTime(timedelta())
 
-    @bz(1083033)
+    @bz({'1083033': {}})
     @polarion("RHEVM3-9168")
     def test_time_skew(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
@@ -315,8 +314,7 @@ class ManageDomainsUnpriviledgedUser(ManageDomainsTestCaseBase):
     # get key error in SetUp
     directoryService = directoryServices.values()[0]
 
-    @bz(1102065)
-    @bz(1083411)
+    @bz({'1102065': {}, '1083411': {}})
     @polarion("RHEVM3-9167")
     def test_unprivileged_user(self):
         # user needs permissions on current working directorty, that's why /tmp
@@ -340,7 +338,7 @@ class ManageDomainsUppercaseLowercase(ManageDomainsTestCaseBase):
             labels[i] = labels[i].upper()
         return ".".join(labels)
 
-    @bz(1078147)
+    @bz({'1078147': {}})
     @polarion("RHEVM3-9174")
     def test_upercase_lowercase(self):
         self.ut(action='add', domain=self.domainName.upper(),
@@ -424,7 +422,7 @@ class ManageDomainsTestCaseNegativeScenarios(ManageDomainsTestCaseBase):
     https://tcms.engineering.redhat.com/case/107972/?from_plan=4580
     """
 
-    @bz(1083033)
+    @bz({'1083033': {}})
     @polarion("RHEVM3-9175")
     def test_manage_domains_nonexistent_user(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,

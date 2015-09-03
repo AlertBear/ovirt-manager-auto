@@ -192,7 +192,7 @@ class LDAPCase289071(TestCase):
 
     @istest
     @polarion("RHEVM3-8081")
-    @bz(1125161)
+    @bz({'1125161': {}})
     def updateInformation(self):
         """ Update information """
         self.assertTrue(
@@ -233,7 +233,7 @@ class LDAPCase289072(TestCase):
 
     @istest
     @polarion("RHEVM3-8082")
-    @bz(1125161)
+    @bz({'1125161': {}})
     def persistencyOfGroupRights(self):
         """ Persistency of group rights """
         loginAsUser(config.LDAP_USER_FROM_GROUP, True)
@@ -299,7 +299,7 @@ class LDAPCase289078(TestCase):
 
     @istest
     @polarion("RHEVM3-8084")
-    @bz(1099987)
+    @bz({'1099987': {}})
     def removeUserFromOpenLDAP(self):
         """ remove user from OpenLDAP """
         if BZ1099987_NOT_FIXED:
