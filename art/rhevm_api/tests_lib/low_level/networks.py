@@ -844,17 +844,22 @@ def create_networks_in_datacenter(datacenter, num_of_net, prefix):
     return True
 
 
-def delete_networks_in_datacenter(datacenter, mgmt_net):
+def delete_networks_in_datacenter(datacenter, mgmt_net, networks=list()):
     """
     Delete all networks under datacenter except mgmt_net.
     :param datacenter: datacenter name
     :type datacenter: str
     :param mgmt_net: management network
     :type mgmt_net: str
+    :param networks: List of networks to remove
+    :type networks: list
     :return: True/False
     :rtype: bool
     """
-    dc_networks = get_networks_in_datacenter(datacenter)
+    dc_networks = (
+        get_networks_in_datacenter(datacenter) if not networks else
+        [get_network_in_datacenter(i, datacenter) for i in networks]
+    )
     for net in dc_networks:
         net_name = net.get_name()
         if net_name == mgmt_net:
