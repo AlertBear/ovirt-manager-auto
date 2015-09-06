@@ -36,7 +36,10 @@ def setup_package():
             storageDomainName=config.STORAGE_NAME[0],
             size=2 * config.GB, nic=config.NIC_NAME[0],
             memory=config.GB,
-            network=config.MGMT_BRIDGE
+            network=config.MGMT_BRIDGE,
+            os_type=config.VM_OS_TYPE,
+            display_type=config.VM_DISPLAY_TYPE,
+            type=config.VM_TYPE
     ):
         raise errors.VMException("Failed to create vm")
 

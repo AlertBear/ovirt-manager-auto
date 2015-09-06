@@ -7,14 +7,12 @@ Then new VM from this template is checked, if it matches the template type.
 
 from art.unittest_lib import VirtTest as TestCase
 import logging
-
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import mla
 from art.rhevm_api.tests_lib.low_level import clusters
 from art.rhevm_api.tests_lib.low_level import templates
 import art.rhevm_api.tests_lib.low_level.storagedomains as sd_api
 import art.rhevm_api.tests_lib.low_level.datacenters as dcs
-
 from art.rhevm_api.utils.test_utils import get_api
 import art.test_handler.exceptions as errors
 from art.test_handler.settings import opts
@@ -45,7 +43,9 @@ USER_MIGRATABLE = ENUMS['vm_affinity_user_migratable']
 PINNED = ENUMS['vm_affinity_pinned']
 SPICE = ENUMS['display_type_spice']
 VNC = ENUMS['display_type_vnc']
-BASIC_PARAMETERS = {'name': TEMPLATE_VM, 'cluster': config.CLUSTER_NAME[0]}
+BASIC_PARAMETERS = {'name': TEMPLATE_VM, 'cluster': config.CLUSTER_NAME[0],
+                    'display_type': config.VM_DISPLAY_TYPE,
+                    'os_type': config.VM_OS_TYPE}
 
 ########################################################################
 
@@ -382,7 +382,7 @@ class VMOs(BaseTemplateVMClass):
     copy_vm = 'OS_copy'
     vm_parameters = BASIC_PARAMETERS.copy()
     default_os = UNASSIGNED
-    rhel_os = ENUMS['rhel6x64']
+    rhel_os = config.OS_TYPE
 
     @classmethod
     def setup_class(cls):
@@ -394,7 +394,6 @@ class VMOs(BaseTemplateVMClass):
         if blank_temp is not None:
             cls.default_os = blank_temp.get_os().get_type().lower()
         logger.info("Default OS type is %s", cls.default_os)
-        # Set VM os type to rhel_6X64
         cls.vm_parameters['os_type'] = cls.rhel_os
         logger.info(
             "creating vm with OS type: %s", cls.vm_parameters['os_type']
@@ -534,7 +533,7 @@ class VMDisplay(BaseTemplateVMClass):
     template_name = 'template_display'
     copy_vm = 'display_copy'
     vm_parameters = BASIC_PARAMETERS.copy()
-    display_default = SPICE
+    display_default = config.VM_DISPLAY_TYPE
 
     @classmethod
     def setup_class(cls):
@@ -1002,7 +1001,7 @@ class NegativeTemplateCases(BaseTemplateClass):
 ########################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class BasicTemplate(BaseTemplateClass):
     """
     Create, update, search, remove template and

@@ -5,7 +5,7 @@ check mount of different types of payloads, cdrom, floppy.
 """
 import os
 import logging
-from nose.tools import istest
+import unittest2
 from art.unittest_lib import attr
 from art.unittest_lib import VirtTest as TestCase
 from art.test_handler.tools import polarion   # pylint: disable=E0611
@@ -36,7 +36,7 @@ TIMEOUT = 60
 CONN_TIMEOUT = 30
 
 
-@attr(tier=1)
+@attr(tier=2)
 class Payloads(TestCase):
     """
     Base class for Payloads Test
@@ -85,6 +85,8 @@ class Payloads(TestCase):
         if not vms.addVm(True, name=cls.vm_name,
                          cluster=config.CLUSTER_NAME[0],
                          template=config.TEMPLATE_NAME[0],
+                         os_type=config.VM_OS_TYPE,
+                         display_type=config.VM_DISPLAY_TYPE,
                          payloads=[(cls.payload_type, cls.payload_filename,
                                     cls.payload_content)]):
             raise errors.VMException("Failed to add vm %s" %
@@ -98,7 +100,9 @@ class Payloads(TestCase):
         logging.info("Add new vm %s without payloads", cls.vm_name)
         if not vms.addVm(True, name=cls.vm_name,
                          cluster=config.CLUSTER_NAME[0],
-                         template=config.TEMPLATE_NAME[0]):
+                         template=config.TEMPLATE_NAME[0],
+                         os_type=config.VM_OS_TYPE,
+                         display_type=config.VM_DISPLAY_TYPE):
             raise errors.VMException("Failed to add vm %s" %
                                      cls.vm_name)
         logging.info("Update vm %s with payloads"
@@ -194,7 +198,7 @@ class PayloadViaUpdate(Payloads):
         cls._update_vm_with_payloads()
 
 
-class CreateVmWithCdromPayload(PayloadViaCreate):
+class TestCreateVmWithCdromPayload(PayloadViaCreate):
     """
     Create new vm with cdrom payload via create and check if payload exist,
     also check if payload object exist under vm
@@ -209,23 +213,21 @@ class CreateVmWithCdromPayload(PayloadViaCreate):
     payload_type = PAYLOADS_TYPE[0]
 
     @polarion("RHEVM3-10061")
-    @istest
-    def check_existence_of_payload(self):
+    def test_check_existence_of_payload(self):
         """
         Check if cdrom payload exist on vm
         """
         self.assertTrue(self._check_existence_of_payload(PAYLOADS_DEVICES[0]))
 
     @polarion("RHEVM3-10074")
-    @istest
-    def check_object_existence(self):
+    def test_check_object_existence(self):
         """
         Check if payload object exist under vm
         """
         self.assertTrue(vms.getVmPayloads(True, self.vm_name)[0])
 
 
-class UpdateVmWithCdromPayloadAndCheckPayloadObject(PayloadViaUpdate):
+class TestUpdateVmWithCdromPayloadAndCheckPayloadObject(PayloadViaUpdate):
     """
     Create new vm with cdrom payload via update and check if payload exist
     """
@@ -239,8 +241,7 @@ class UpdateVmWithCdromPayloadAndCheckPayloadObject(PayloadViaUpdate):
     payload_type = PAYLOADS_TYPE[0]
 
     @polarion("RHEVM3-10063")
-    @istest
-    def check_existence_of_payload(self):
+    def test_check_existence_of_payload(self):
         """
         Check if cdrom payload exist on vm
         """
@@ -248,7 +249,7 @@ class UpdateVmWithCdromPayloadAndCheckPayloadObject(PayloadViaUpdate):
 
 
 @attr(tier=2)
-class CdromPayloadComplexContent(PayloadViaUpdate):
+class TestCdromPayloadComplexContent(PayloadViaUpdate):
     """
     Create new vm with cdrom payload, that have complex content via update
     and check if payload exist
@@ -263,15 +264,14 @@ class CdromPayloadComplexContent(PayloadViaUpdate):
     payload_type = PAYLOADS_TYPE[0]
 
     @polarion("RHEVM3-12155")
-    @istest
-    def check_existence_of_payload(self):
+    def test_check_existence_of_payload(self):
         """
         Check if cdrom payload exist on vm
         """
         self.assertTrue(self._check_existence_of_payload(PAYLOADS_DEVICES[0]))
 
 
-class CreateVmWithFloppyPayload(PayloadViaCreate):
+class TestCreateVmWithFloppyPayload(PayloadViaCreate):
     """
     Create new vm with floppy payload via create and check if payload exist
     """
@@ -284,16 +284,16 @@ class CreateVmWithFloppyPayload(PayloadViaCreate):
     payload_content = PAYLOADS_CONTENT[2]
     payload_type = PAYLOADS_TYPE[1]
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-10070")
-    @istest
-    def check_existence_of_payload(self):
+    def test_check_existence_of_payload(self):
         """
         Check if floppy payload exist on vm
         """
         self.assertTrue(self._check_existence_of_payload(PAYLOADS_DEVICES[1]))
 
 
-class UpdateVmWithFloppyPayload(PayloadViaUpdate):
+class TestUpdateVmWithFloppyPayload(PayloadViaUpdate):
     """
     Create new vm with floppy payload via update and check if payload exist
     """
@@ -306,9 +306,9 @@ class UpdateVmWithFloppyPayload(PayloadViaUpdate):
     payload_content = PAYLOADS_CONTENT[3]
     payload_type = PAYLOADS_TYPE[1]
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-10072")
-    @istest
-    def check_existence_of_payload(self):
+    def test_check_existence_of_payload(self):
         """
         Check if floppy payload exist on vm
         """

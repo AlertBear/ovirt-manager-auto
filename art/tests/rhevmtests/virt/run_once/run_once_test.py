@@ -3,6 +3,8 @@ Virt test
 """
 
 import logging
+import unittest2
+import art.unittest_lib.common as common
 from art.unittest_lib import VirtTest as TestCase
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.unittest_lib import attr
@@ -46,7 +48,7 @@ def run_once_with_boot_dev(boot_device):
 ########################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestRunVmOnce(TestCase):
     """
     Run once
@@ -117,6 +119,7 @@ class TestRunVmOnce(TestCase):
             )
         )
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-9794")
     def test_run_once_vm_with_attached_floppy(self):
         """
@@ -201,7 +204,8 @@ class TestRunVmOnce(TestCase):
 ########################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class TestRunVmOnceStatelessNoDisk(TestCase):
     """
     Test run once VM without disk in stateless mode
@@ -261,7 +265,7 @@ class TestRunVmOnceStatelessNoDisk(TestCase):
 ########################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNegativeBootFromNetwork(TestCase):
     """
     Test run once, negative test that boot from network
@@ -309,7 +313,7 @@ class TestNegativeBootFromNetwork(TestCase):
 ########################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TesNegativeHAStatelessVM(TestCase):
     """
     Test run once, negative test that run once HA VM in stateless mode

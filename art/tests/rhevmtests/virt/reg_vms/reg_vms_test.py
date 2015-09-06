@@ -3,6 +3,8 @@ Regression Vms Test - Basic tests to check vms functionality
 """
 from rhevmtests.virt import config
 import logging
+import unittest2
+import art.unittest_lib.common as common
 from art.unittest_lib import VirtTest as TestCase
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
@@ -58,7 +60,11 @@ class BaseVm(TestCase):
         if not vm_api.addVm(
             True, name=cls.vm_name,
             cluster=config.CLUSTER_NAME[0],
-            memory=1536 * config.MB
+            memory=1536 * config.MB,
+            os_type=config.VM_OS_TYPE,
+            type=config.VM_TYPE,
+            display_type=config.VM_DISPLAY_TYPE
+
         ):
             raise errors.VMException("Failed to create vm %s" % cls.vm_name)
 
@@ -160,8 +166,10 @@ class AddVm(TestCase):
             True,
             name=vm_name,
             cluster=config.CLUSTER_NAME[0],
-            os_type=RHEL6_64,
-            boot=['network', 'hd']
+            boot=['network', 'hd'],
+            os_type=config.VM_OS_TYPE,
+            type=config.VM_TYPE,
+            display_type=config.VM_DISPLAY_TYPE
         ):
             raise errors.VMException("Failed to add vm")
         logger.info(
@@ -184,7 +192,10 @@ class AddVm(TestCase):
             vm_api.addVm(
                 True,
                 name=vm_name,
-                cluster=config.CLUSTER_NAME[0]
+                cluster=config.CLUSTER_NAME[0],
+                os_type=config.VM_OS_TYPE,
+                type=config.VM_TYPE,
+                display_type=config.VM_DISPLAY_TYPE
             )
         )
 
@@ -199,10 +210,13 @@ class AddVm(TestCase):
                 True, name=vm_name,
                 highly_available='true',
                 type=ENUMS['vm_type_server'],
-                cluster=config.CLUSTER_NAME[0]
+                cluster=config.CLUSTER_NAME[0],
+                os_type=config.VM_OS_TYPE,
+                display_type=config.VM_DISPLAY_TYPE
             )
         )
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12362")
     def test_add_stateless_vm(self):
         """
@@ -229,7 +243,10 @@ class AddVm(TestCase):
                 True,
                 name=vm_name,
                 cluster=config.CLUSTER_NAME[0],
-                custom_properties='sndbuf=111'
+                custom_properties='sndbuf=111',
+                os_type=config.VM_OS_TYPE,
+                type=config.VM_TYPE,
+                display_type=config.VM_DISPLAY_TYPE
             )
         )
 
@@ -245,7 +262,10 @@ class AddVm(TestCase):
                 name=vm_name,
                 cluster=config.CLUSTER_NAME[0],
                 memory=TWO_GB,
-                memory_guaranteed=TWO_GB
+                memory_guaranteed=TWO_GB,
+                os_type=config.VM_OS_TYPE,
+                type=config.VM_TYPE,
+                display_type=config.VM_DISPLAY_TYPE
             )
         )
 
@@ -263,7 +283,10 @@ class AddVm(TestCase):
                 disk_type=config.DISK_TYPE_DATA,
                 size=TWO_GB,
                 format=config.DISK_FORMAT_COW,
-                interface=config.INTERFACE_VIRTIO
+                interface=config.INTERFACE_VIRTIO,
+                os_type=config.VM_OS_TYPE,
+                type=config.VM_TYPE,
+                display_type=config.VM_DISPLAY_TYPE
             )
         )
 
@@ -278,13 +301,16 @@ class AddVm(TestCase):
                 True,
                 name=vm_name,
                 cluster=config.CLUSTER_NAME[0],
-                os_type=ENUMS['other_linux'],
                 kernel='/kernel-path',
                 initrd='/initrd-path',
-                cmdline='rd_NO_LUKS rd_NO_MD'
+                cmdline='rd_NO_LUKS rd_NO_MD',
+                os_type=config.VM_OS_TYPE,
+                type=config.VM_TYPE,
+                display_type=config.VM_DISPLAY_TYPE
             )
         )
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12518")
     def test_add_vm_with_rhel_os_type(self):
         """
@@ -301,6 +327,7 @@ class AddVm(TestCase):
             )
         )
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12520")
     def test_add_vm_with_windows_xp_os_type(self):
         """
@@ -334,10 +361,14 @@ class AddVm(TestCase):
                 disk_type=config.DISK_TYPE_DATA,
                 size=TWO_GB,
                 format=config.DISK_FORMAT_COW,
-                interface=config.INTERFACE_VIRTIO
+                interface=config.INTERFACE_VIRTIO,
+                os_type=config.VM_OS_TYPE,
+                type=config.VM_TYPE,
+                display_type=config.VM_DISPLAY_TYPE
             )
         )
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12519")
     def test_add_vm_with_specific_domain(self):
         """
@@ -350,7 +381,7 @@ class AddVm(TestCase):
                 name=vm_name,
                 os_type=WIN_XP,
                 domainName=config.VDC_ADMIN_DOMAIN,
-                cluster=config.CLUSTER_NAME[0]
+                cluster=config.CLUSTER_NAME[0],
             )
         )
 
@@ -364,7 +395,10 @@ class AddVm(TestCase):
         if not vm_api.addVm(
             True,
             name=vm_name,
-            cluster=config.CLUSTER_NAME[0]
+            cluster=config.CLUSTER_NAME[0],
+            os_type=config.VM_OS_TYPE,
+            type=config.VM_TYPE,
+            display_type=config.VM_DISPLAY_TYPE
         ):
             raise errors.VMException("Failed to add vm")
         logger.info("Create vm with name that already exist")
@@ -372,7 +406,10 @@ class AddVm(TestCase):
             vm_api.addVm(
                 True,
                 name=vm_name,
-                cluster=config.CLUSTER_NAME[0]
+                cluster=config.CLUSTER_NAME[0],
+                os_type=config.VM_OS_TYPE,
+                type=config.VM_TYPE,
+                display_type=config.VM_DISPLAY_TYPE
             )
         )
 
@@ -387,7 +424,10 @@ class AddVm(TestCase):
                 True,
                 name=vm_name,
                 display_monitors=36,
-                cluster=config.CLUSTER_NAME[0]
+                cluster=config.CLUSTER_NAME[0],
+                os_type=config.VM_OS_TYPE,
+                type=config.VM_TYPE,
+                display_type=config.VM_DISPLAY_TYPE
             )
         )
 
@@ -411,41 +451,50 @@ class UpdateVm(BaseVm):
         """
         Add vms for test
         """
-        logger.info("Add new vm %s with rhel os parameter", cls.rhel_to_xp_vm)
-        if not vm_api.addVm(
-            True,
-            name=cls.rhel_to_xp_vm,
-            cluster=config.CLUSTER_NAME[0],
-            os_type=RHEL6_64
-        ):
-            raise errors.VMException("Failed to add vm")
-        logger.info("Add new vm %s with rhel os parameter", cls.rhel_to_7_vm)
-        if not vm_api.addVm(
-            True,
-            name=cls.rhel_to_7_vm,
-            cluster=config.CLUSTER_NAME[0],
-            os_type=RHEL6_64
-        ):
-            raise errors.VMException("Failed to add vm")
-        logger.info("Add new vm %s with rhel os parameter", cls.xp_to_rhel_vm)
-        if not vm_api.addVm(
-            True,
-            name=cls.xp_to_rhel_vm,
-            cluster=config.CLUSTER_NAME[0],
-            os_type=WIN_XP
-        ):
-            raise errors.VMException("Failed to add vm")
-        logger.info("Add new vm %s with rhel os parameter, for neg tests",
-                    cls.rhel_to_7_vm_neg)
-        if not vm_api.addVm(
-            True,
-            name=cls.rhel_to_7_vm_neg,
-            cluster=config.CLUSTER_NAME[0],
-            os_type=RHEL6_64
-        ):
-            raise errors.VMException("Failed to add vm")
+        if not config.PPC_ARCH:
+            logger.info(
+                "Add new vm %s with rhel os parameter",
+                cls.rhel_to_xp_vm
+            )
+            if not vm_api.addVm(
+                    True,
+                    name=cls.rhel_to_xp_vm,
+                    cluster=config.CLUSTER_NAME[0]
+            ):
+                raise errors.VMException("Failed to add vm")
+            logger.info(
+                "Add new vm %s with rhel os parameter",
+                cls.rhel_to_7_vm
+            )
+            if not vm_api.addVm(
+                    True,
+                    name=cls.rhel_to_7_vm,
+                    cluster=config.CLUSTER_NAME[0]
+            ):
+                raise errors.VMException("Failed to add vm")
+            logger.info(
+                "Add new vm %s with rhel os parameter",
+                cls.xp_to_rhel_vm
+            )
+            if not vm_api.addVm(
+                    True,
+                    name=cls.xp_to_rhel_vm,
+                    cluster=config.CLUSTER_NAME[0],
+                    os_type=WIN_XP
+            ):
+                raise errors.VMException("Failed to add vm")
+            logger.info("Add new vm %s with rhel os parameter, for neg tests",
+                        cls.rhel_to_7_vm_neg)
+            if not vm_api.addVm(
+                    True,
+                    name=cls.rhel_to_7_vm_neg,
+                    cluster=config.CLUSTER_NAME[0],
+                    os_type=RHEL6_64
+            ):
+                raise errors.VMException("Failed to add vm")
         super(UpdateVm, cls).setup_class()
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12563")
     def test_update_vm_os_type_from_rhel_to_windows_xp(self):
         """
@@ -460,6 +509,7 @@ class UpdateVm(BaseVm):
             )
         )
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12561")
     def test_update_vm_os_type_from_rhel_to_windows_7(self):
         """
@@ -474,6 +524,7 @@ class UpdateVm(BaseVm):
             )
         )
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12564")
     def test_update_vm_os_type_from_xp_to_rhel(self):
         """
@@ -488,6 +539,7 @@ class UpdateVm(BaseVm):
             )
         )
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12562")
     def test_update_vm_os_type_from_rhel_to_windows_7_neg(self):
         """
@@ -673,6 +725,7 @@ class UpdateVm(BaseVm):
         """
         self.assertTrue(vm_api.updateVm(True, self.vm_name, cpu_cores=2))
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12534")
     def test_update_vm_display_type_to_vnc(self):
         """
@@ -686,6 +739,7 @@ class UpdateVm(BaseVm):
             )
         )
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12526")
     def test_update_spice_vm_number_of_monitors(self):
         """
@@ -713,6 +767,7 @@ class UpdateVm(BaseVm):
             )
         )
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12567")
     def test_update_vnc_vm_number_of_monitors(self):
         """
@@ -742,7 +797,10 @@ class UpdateVm(BaseVm):
         logger.info("Add new vm %s", vm_exist_name)
         if not vm_api.addVm(
             True, name=vm_exist_name,
-            cluster=config.CLUSTER_NAME[0]
+            cluster=config.CLUSTER_NAME[0],
+            os_type=config.VM_OS_TYPE,
+            type=config.VM_TYPE,
+            display_type=config.VM_DISPLAY_TYPE
         ):
             raise errors.VMException("Failed to add vm")
         logger.info("Update vm name to existing one")
@@ -860,7 +918,11 @@ class DifferentVmTestCases(TestCase):
         logger.info("Add new vm %s", vm_name)
         if not vm_api.addVm(
             True, name=vm_name,
-            cluster=config.CLUSTER_NAME[0]
+            cluster=config.CLUSTER_NAME[0],
+            os_type=config.VM_OS_TYPE,
+            type=config.VM_TYPE,
+            display_type=config.VM_DISPLAY_TYPE
+
         ):
             raise errors.VMException("Failed to create vm")
         logger.info("Check if vm %s have cdrom", vm_name)
@@ -1317,6 +1379,7 @@ class ImportExportVm(BaseVmWithDisk):
 
 
 @attr(tier=1)
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class VmDisplay(TestCase):
     """
     Create vms with different display types, run it and check

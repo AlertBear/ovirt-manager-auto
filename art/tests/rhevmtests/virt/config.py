@@ -9,14 +9,18 @@ from rhevmtests.config import *  # flake8: noqa
 # #######################################################################
 # Following parameters should move to consolidated config, once possible
 # #######################################################################
-
+#PPC OS arch
+RHEL7PPC64='rhel7ppc64'
 # ISO storage domain
 SHARED_ISO_DOMAIN_ADDRESS = ISO_DOMAIN_ADDRESS
 SHARED_ISO_DOMAIN_PATH = ISO_DOMAIN_PATH
 SHARED_ISO_DOMAIN_NAME = ISO_DOMAIN_NAME
 # Run once parameters
-CDROM_IMAGE_1 = 'en_windows_7_enterprise_x86_dvd_x15-70745.iso'
-CDROM_IMAGE_2 = 'en_windows_7_enterprise_x64.iso'
+X86_IMAGE_1 = 'en_windows_7_enterprise_x86_dvd_x15-70745.iso'
+X86_IMAGE_2 = 'en_windows_7_enterprise_x64.iso'
+PPC_IMAGE_1 = 'RHEL-6.6-20140926.0-Server-ppc64-dvd1.iso'
+CDROM_IMAGE_1 = PPC_IMAGE_1 if PPC_ARCH else X86_IMAGE_1
+CDROM_IMAGE_2 = PPC_IMAGE_1 if PPC_ARCH else X86_IMAGE_2
 FLOPPY_IMAGE = 'win2k3.vfd'
 
 # Storage names
@@ -39,3 +43,9 @@ USERNAME = VDC_ADMIN_USER
 MIGRATION_TEMPLATE_NAME = "vm_migration_template"
 MIGRATION_BASE_VM = "base_vm_migration_test"
 RHEL_IMAGE = "rhel6.5-agent3.5"
+
+VM_OS_TYPE = ENUMS[RHEL7PPC64] if PPC_ARCH else ENUMS['rhel6x64']
+VM_DISPLAY_TYPE = ENUMS[
+    'display_type_vnc'
+] if PPC_ARCH else ENUMS['display_type_spice']
+VM_TYPE = VM_TYPE_SERVER if PPC_ARCH else VM_TYPE_DESKTOP
