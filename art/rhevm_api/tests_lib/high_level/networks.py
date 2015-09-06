@@ -579,7 +579,6 @@ def create_dummy_interfaces(host, num_dummy=1, ifcfg_params=None):
             return False
 
         nic_name = dummy_int % i
-        ifcfg_params["DEVICE"] = nic_name
         host.network.create_ifcfg_file(nic=nic_name, params=ifcfg_params)
 
     logger.info(
