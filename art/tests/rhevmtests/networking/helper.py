@@ -7,6 +7,7 @@ Helper for networking jobs
 
 from random import randint
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import logging
 
 
@@ -56,6 +57,37 @@ def run_vm_once_specific_host(vm, host, wait_for_ip=False):
         logging.error(
             "VM should start on %s instead of %s", host, vm_host)
         return False
+    return True
+
+
+def move_host_to_another_cluster(host, cluster, activate=True):
+    """
+    Move host to cluster
+
+    :param host: Host name
+    :type host: str
+    :param cluster:Cluster name
+    :type cluster: str
+    :param activate: Activate the host after move
+    :type activate: bool
+    :return: True/False
+    :rtype: bool
+    """
+    logging.info("Set %s to maintenance", host)
+    if not ll_hosts.deactivateHost(True, host):
+        logging.error("Failed to set %s to maintenance", host)
+        return False
+
+    logging.info("Moving %s to %s", host, cluster)
+    if not ll_hosts.updateHost(positive=True, host=host, cluster=cluster):
+        logging.error("Failed to move %s to %s", host, cluster)
+        return False
+
+    if activate:
+        logging.info("Activate %s", host)
+        if not ll_hosts.activateHost(positive=True, host=host):
+            logging.error("Failed to activate %s", host)
+            return False
     return True
 
 if __name__ == "__main__":
