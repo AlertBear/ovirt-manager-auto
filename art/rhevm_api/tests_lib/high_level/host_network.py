@@ -415,26 +415,16 @@ def get_networks_unsync_reason(host_name, networks=None):
     :rtype: dict
     """
     res = dict()
-    check_list = ["mtu", "vlan", "bridged"]
+    report_name_dict = dict()
     attachments = get_unsync_network_attachments(host_name, networks)
     for att in attachments:
+        net_name = ll_host_network.get_network_name_from_attachment(att)
         reported = ll_host_network.get_attachment_reported_configurations(att)
         for report in reported:
-            if not report.get_in_sync():
-                r_name = report.get_name()
-                net = ll_networks.NET_API.find(
-                    att.get_network().get_id(), "id"
-                )
-                net_name = net.get_name()
-                r_val = (report.get_value(),)
-                if r_name in check_list:
-                    val_at = getattr(net, r_name)
-                    if not val_at and r_name == "vlan":
-                        val_at = "None"
-                    else:
-                        val_at = val_at if isinstance(
-                            val_at, int
-                        ) else val_at.id
-                        r_val = (report.get_value(), val_at)
-                res[net_name] = (report.get_name(), r_val)
+            reported_dict = dict()
+            report_name = report.get_name()
+            reported_dict["expected"] = report.get_expected_value()
+            reported_dict["actual"] = report.get_actual_value()
+            report_name_dict[report_name] = reported_dict
+        res[net_name] = report_name_dict
     return res
