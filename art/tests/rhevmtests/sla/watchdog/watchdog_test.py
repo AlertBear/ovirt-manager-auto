@@ -36,6 +36,8 @@ QEMU_CONF = '/etc/libvirt/qemu.conf'
 DUMP_PATH = '/var/lib/libvirt/qemu/dump'
 ENGINE_LOG = '/var/log/ovirt-engine/engine.log'
 WATCHDOG_PACKAGE = 'watchdog'
+LSHW_PACKAGE = 'lshw'
+KILLALL_PACKAGE = 'psmisc'
 WATCHDOG_CONFIG_FILE = '/etc/watchdog.conf'
 
 ########################################################################
@@ -101,7 +103,11 @@ class WatchdogVM(TestCase):
         :param sleep_time: sleep time
         :type sleep_time: int
         """
+
         vm_resource = cls.get_vm_resource_by_name(vm_name)
+        vm_yum_manager = YumPackageManager(vm_resource)
+        if not vm_yum_manager.install(KILLALL_PACKAGE):
+            return False
         cmd = ['killall', '-9', 'watchdog']
         logger.info("Kill watchdog service on vm %s", vm_name)
         if not cls.run_command_on_resource(vm_resource, cmd):
@@ -111,7 +117,7 @@ class WatchdogVM(TestCase):
         logger.info("Watchdog process killed, waiting %d seconds", sleep_time)
         time.sleep(sleep_time)
 
-    def lspci_watchdog(self, positive, vm_name):
+    def lshw_watchdog(self, positive, vm_name):
         """
         Detect watchdog device on given vm
 
@@ -120,12 +126,16 @@ class WatchdogVM(TestCase):
         :param vm_name: vm name
         :type vm_name: str
         """
+        vm_resource = self.get_vm_resource_by_name(vm_name)
+        vm_yum_manager = YumPackageManager(vm_resource)
+        if not vm_yum_manager.install(LSHW_PACKAGE):
+            return False
+
         logger.info(
             "Check if vm %s have watchdog device %s",
             vm_name, config.WATCHDOG_MODEL[1:]
         )
-        vm_resource = self.get_vm_resource_by_name(vm_name)
-        cmd = ['lspci', '|', 'grep', '-i', config.WATCHDOG_MODEL[1:]]
+        cmd = ['lshw', '|', 'grep', '-i', config.WATCHDOG_MODEL[1:]]
         status = self.run_command_on_resource(vm_resource, cmd)
         if positive:
             self.assertTrue(
@@ -299,7 +309,7 @@ class TestWatchdogCRUD(WatchdogVM):
             ),
             "VM %s is not running" % config.VM_NAME[0]
         )
-        self.lspci_watchdog(True, config.VM_NAME[0])
+        self.lshw_watchdog(True, config.VM_NAME[0])
 
     @polarion("RHEVM3-4965")
     def test_remove_watchdog(self):
@@ -327,7 +337,7 @@ class TestWatchdogCRUD(WatchdogVM):
             ),
             "Failed to start vm %s" % config.VM_NAME[0]
         )
-        self.lspci_watchdog(False, config.VM_NAME[0])
+        self.lshw_watchdog(False, config.VM_NAME[0])
 
     @classmethod
     def teardown_class(cls):
@@ -403,7 +413,7 @@ class WatchdogTestNone(WatchdogActionTest):
             ll_vms.waitForVMState(config.VM_NAME[1]),
             "Watchdog action none did not succeed"
         )
-        self.lspci_watchdog(True, config.VM_NAME[1])
+        self.lshw_watchdog(True, config.VM_NAME[1])
         logger.info("Watchdog action none succeeded")
 
 #######################################################################
@@ -548,7 +558,7 @@ class WatchdogTestDump(WatchdogActionTest):
 
         logger.info("Kill watchdog service on vm %s", config.VM_NAME[1])
         self.kill_watchdog(config.VM_NAME[1])
-        self.lspci_watchdog(True, config.VM_NAME[1])
+        self.lshw_watchdog(True, config.VM_NAME[1])
 
         logger.info("Watchdog action dump successful")
 
@@ -783,7 +793,7 @@ class WatchdogCRUDTemplate(WatchdogVM):
             ll_vms.startVm(positive=True, vm=self.vm_name1),
             "Failed to start vm %s" % self.vm_name1
         )
-        self.lspci_watchdog(True, self.vm_name1)
+        self.lshw_watchdog(True, self.vm_name1)
 
     @bz({'1258224': {'engine': None, 'version': ['3.6']}})
     @polarion("RHEVM3-4958")
@@ -828,7 +838,7 @@ class WatchdogCRUDTemplate(WatchdogVM):
             ll_vms.startVm(positive=True, vm=self.vm_name2),
             "Failed to start vm %s" % self.vm_name2
         )
-        self.lspci_watchdog(False, self.vm_name2)
+        self.lshw_watchdog(False, self.vm_name2)
 
     @classmethod
     def teardown_class(cls):
