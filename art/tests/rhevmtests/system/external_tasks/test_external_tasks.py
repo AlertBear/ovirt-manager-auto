@@ -100,7 +100,7 @@ class AddingStep(TestCase):
         '''
         logger.info("Attempting to add job")
         if not job_api.add_job(
-                job_description=config.EXTERNAL_JOB_DESCRIPTION
+            job_description=config.EXTERNAL_JOB_DESCRIPTION
         ):
             logger.error("Adding job failed")
 
@@ -149,6 +149,7 @@ class AddStepWithCorrectParameters(AddingStep):
 
     @polarion("RHEVM3-7159")
     @istest
+    @bz({'1257075': {'engine': None, 'version': ['3.6']}})
     def add_step_with_correct_parameters(self):
         '''
         Adding step with correct parameters under given job
