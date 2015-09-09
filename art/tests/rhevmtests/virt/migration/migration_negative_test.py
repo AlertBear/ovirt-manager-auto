@@ -305,7 +305,8 @@ class TestVMMigrateOptionsCase1(TestCase):
             placement_affinity=cls.affinity,
             nic=config.NIC_NAME[0],
             storageDomainName=cls.storage_domain,
-            size=config.DISK_SIZE
+            size=config.DISK_SIZE,
+            network=config.MGMT_BRIDGE
         ):
             raise errors.VMException(
                 "Failed to add vm %s " %
