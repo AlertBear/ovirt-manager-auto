@@ -178,7 +178,7 @@ def remove_unneeded_templates_nics():
 @ignore_exception
 def remove_unneeded_networks():
     """
-    Remove all networks besides MGMT_NETWORK
+    Remove all networks besides MGMT_BRIDGE
     """
     logger.info("Removing all networks besides %s", config.MGMT_BRIDGE)
     hl_networks.remove_net_from_setup(

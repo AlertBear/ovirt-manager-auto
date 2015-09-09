@@ -25,7 +25,7 @@ from utilities import machine
 from art.rhevm_api.tests_lib.low_level.networks import (
     addNetwork, getClusterNetwork, get_networks_in_datacenter, removeNetwork,
     addNetworkToCluster, NET_API, DC_API, updateNetwork, getClusterNetworks,
-    MGMT_NETWORK, get_management_network
+    get_management_network
 )
 from art.rhevm_api.tests_lib.low_level.hosts import (
     sendSNRequest, commitNetConfig, genSNNic, getHostNic, removeHost,
@@ -389,7 +389,7 @@ def prepareSetup(
     vmDescription='linux vm', nicType='virtio', display_type='spice',
     os_type='RHEL6x64', image=RHEL_IMAGE, nic='nic1', size=DISK_SIZE,
     useAgent=True, template_name=None, attempt=ATTEMPTS, interval=INTERVAL,
-    placement_host=None, mgmt_network=MGMT_NETWORK, vnic_profile=None
+    placement_host=None, mgmt_network=None, vnic_profile=None
 ):
     """
     Function that creates DC, Cluster, Storage, Hosts
@@ -640,7 +640,7 @@ def delete_dummy_interfaces(host):
 
 
 def updateAndSyncMgmtNetwork(datacenter, hosts=list(), nic=[0], auto_nics=[],
-                             network=MGMT_NETWORK, bridge=True):
+                             network=None, bridge=True):
     """
     Function that update existing network on DC and on the host, then sync it
     using SetupNetworks. This function created to enable run tests with
@@ -803,7 +803,7 @@ class TrafficMonitor(object):
 
 
 def remove_all_networks(datacenter=None, cluster=None,
-                        mgmt_network=MGMT_NETWORK):
+                        mgmt_network=None):
     """
     Description: Remove all networks from DC/CL or from entire setup
     If cluster is specified - remove all network from specified cluster
@@ -854,7 +854,7 @@ def remove_all_networks(datacenter=None, cluster=None,
 
 
 def networkTeardown(datacenter, storagedomain, hosts=list(), auto_nics=list(),
-                    mgmt_net=MGMT_NETWORK):
+                    mgmt_net=None):
     '''
     Description: Network jobs teardown for unittests, set mgmt network to
                  bridge network (default) and run cleanDataCenter function

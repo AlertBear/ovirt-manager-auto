@@ -26,11 +26,9 @@ import art.rhevm_api.tests_lib.low_level as ll
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api import is_action
 from utilities.machine import Machine, LINUX
-from art.test_handler.exceptions import NetworkException
 import logging
 import re
 import os
-import netaddr
 
 NET_API = get_api("network", "networks")
 CL_API = get_api("cluster", "clusters")
@@ -38,7 +36,6 @@ DC_API = get_api("data_center", "datacenters")
 VNIC_PROFILE_API = get_api('vnic_profile', 'vnicprofiles')
 LABEL_API = get_api('label', 'labels')
 HOST_NICS_API = get_api('host_nic', 'host_nics')
-MGMT_NETWORK = "rhevm"
 PROC_NET_DIR = "/proc/net"
 NETWORK_NAME = "NET"
 ETHTOOL_OFFLOAD = ("tcp-segmentation-offload", "udp-fragmentation-offload")
@@ -586,7 +583,7 @@ def getVnicProfileAttr(name, network, cluster=None, data_center=None,
 # noinspection PyUnusedLocal
 @is_action()
 def addVnicProfile(positive, name, cluster=None, data_center=None,
-                   network=MGMT_NETWORK, port_mirroring=False,
+                   network=None, port_mirroring=False,
                    custom_properties=None,
                    description=""):
     """
@@ -912,161 +909,6 @@ def check_network_on_nic(network, host, nic):
     if nic_obj is not None:
         return nic_obj.get_id() == net_obj_id
     return False
-
-
-class NetworkInfoDispatcher(object):
-    """
-    Description: get host network info.
-                 Object of this class is created with machine object:
-                 Machine(host, user, password).util(LINUX)
-                 It can get IP/interface/gateway/bridge and default gw from
-                 the machine.
-    Example usage:
-    machine_obj = Machine(<host_name>, <user>, <password>).util(LINUX)
-        host_info = NetworkInfoDispatcher(machine_obj).get_host_net_info()
-    **Author**: myakove
-    """
-    def __init__(self, machine):
-        self._m = machine
-
-    def _cmd(self, cmd):
-        rc, out = self._m.runCmd(cmd)
-
-        if not rc:
-            cmd_out = " ".join(cmd)
-            raise NetworkException("Fail to run command %s: %s" % (cmd_out,
-                                                                   out))
-        return out
-
-    def _all_interface(self):
-        rc, out = self._m.runCmd(
-            ['ls', '-la', '/sys/class/net', '|', 'grep', "'pci'", '|',
-             'grep', '-o', "'[^/]*$'"])
-        out = out.strip()
-        return out.splitlines()
-
-    def find_host_default_gw(self):
-        """
-        Description: Find host default gateway
-        """
-        out = self._cmd(["ip", "route"]).splitlines()
-        for i in out:
-            if re.search("default", i):
-                default_gw = re.findall(r'[0-9]+(?:\.[0-9]+){3}', i)
-                if netaddr.valid_ipv4(default_gw[0]):
-                    return default_gw[0]
-        return None
-
-    def find_host_ips(self):
-        """
-        Description: Find host IPs
-        """
-        ips = []
-        ip_and_netmask = []
-        out = self._cmd(["ip", "addr"]).splitlines()
-        for i in out:
-            cidr = re.findall(r'[0-9]+(?:\.[0-9]+){3}[/]+[0-9]{2}', i)
-            if cidr:
-                ip_and_netmask.append(cidr[0])
-                ip = cidr[0].split("/")
-                if netaddr.valid_ipv4(ip[0]):
-                    ips.append(ip[0])
-        return ips, ip_and_netmask
-
-    def find_ip_by_default_gw(self, default_gw, ips_and_mask):
-        """
-        Description: Find IP by default gateway
-            **Parameters**:
-            *  *default_gw* - default gw of the host
-            *  *ips_and_mask* - list of host ips with mask x.x.x.x/xx
-        """
-        dgw = netaddr.IPAddress(default_gw)
-        for ip_mask in ips_and_mask:
-            ipnet = netaddr.IPNetwork(ip_mask)
-            if dgw in ipnet:
-                ip = ip_mask.split("/")[0]
-                return ip
-        return None
-
-    def find_int_by_ip(self, ip):
-        """
-        Description: Find host interface or bridge by IP
-            ** Parameters **:
-            *  *ip* - ip of the interface to find
-        """
-        out = self._cmd(["ip", "addr", "show", "to", ip])
-        return out.split(":")[1].strip()
-
-    def find_ip_by_int(self, interface):
-        """
-        Description: Find host interface by interface or Bridge name
-            **Parameters**:
-            *  *interface* - interface to get ip from
-        """
-        out = self._cmd(["ip", "addr", "show", interface])
-        interface_ip = (re.search(r'[0-9]+(?:\.[0-9]+){3}', out)).group()
-        if netaddr.valid_ipv4(interface_ip):
-            return interface_ip
-        return None
-
-    def find_int_by_bridge(self, bridge):
-        """
-        Description: Find host interface by Bridge name
-            **Parameters**:
-            *  *bridge* - bridge to get ip from
-        """
-        out = self._cmd(["brctl", "show", "|", "grep", bridge])
-        return out.split()[3]
-
-    def find_mac_by_int(self, interfaces):
-        """
-        Description: Find interfaces MAC by interface name
-            **Parameters**:
-            *  *interfaces* - list of interfaces
-        """
-        mac_list = list()
-        for interface in interfaces:
-            if interface not in self._all_interface():
-                return False
-            out = self._cmd(["ethtool", "-P", interface])
-            mac = out.split(": ")[1]
-            mac_list.append(mac.strip())
-        return mac_list
-
-    def find_mgmt_interface(self):
-        """
-        Description: Find host mgmt interface (interface with IP that lead
-        to default gateway)
-        """
-        host_ip = self.find_host_ips()
-        host_dg = self.find_host_default_gw()
-        host_ip_by_dg = self.find_ip_by_default_gw(host_dg, host_ip[1])
-        mgmt_int = self.find_int_by_ip(host_ip_by_dg)
-        return mgmt_int
-
-    def get_host_net_info(self):
-        """
-        Get network info for host, return info for main IP.
-        """
-        net_info = {}
-        gateway = self.find_host_default_gw()
-        net_info["gateway"] = gateway
-        ips, ips_and_mask = self.find_host_ips()
-        if gateway is not None:
-            ip = self.find_ip_by_default_gw(gateway, ips_and_mask)
-            net_info["ip"] = ip
-            if ip is not None:
-                interface = self.find_int_by_ip(ip)
-
-                if interface == MGMT_NETWORK:
-                    net_info["bridge"] = MGMT_NETWORK
-                    interface = self.find_int_by_bridge(MGMT_NETWORK)
-                    net_info["interface"] = interface
-                else:
-                    net_info["bridge"] = "N/A"
-                    net_info["interface"] = interface
-
-        return net_info
 
 
 def create_label(label):

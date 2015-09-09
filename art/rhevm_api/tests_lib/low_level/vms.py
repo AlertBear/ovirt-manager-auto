@@ -37,9 +37,8 @@ from art.rhevm_api.tests_lib.low_level.disks import (
 )
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-from art.rhevm_api.tests_lib.low_level.networks import (
-    getVnicProfileObj, MGMT_NETWORK,
-)
+from art.rhevm_api.tests_lib.low_level.networks import getVnicProfileObj
+
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.test_utils import (
     searchForObj, getImageByOsType, convertMacToIpAddress,
@@ -2420,7 +2419,7 @@ def createVm(
         installation=False, slim=False, user=None, password=None,
         attempt=60, interval=60, cobblerAddress=None, cobblerUser=None,
         cobblerPasswd=None, image=None, async=False, hostname=None,
-        network=MGMT_NETWORK, vnic_profile=None, useAgent=False,
+        network=None, vnic_profile=None, useAgent=False,
         placement_affinity=None, placement_host=None, vcpu_pinning=None,
         highly_available=None, availablity_priority=None, vm_quota=None,
         disk_quota=None, plugged='true', linked='true', protected=None,

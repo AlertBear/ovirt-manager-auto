@@ -820,13 +820,13 @@ class PositiveNetworkPermissions317133(NetworkingPossitive):
         """ Check that networkadmin permissions are added automatically  """
         loginAsAdmin()
         vnic = networks.getVnicProfileObj(
-            networks.MGMT_NETWORK,
-            networks.MGMT_NETWORK,
+            config.MGMT_BRIDGE,
+            config.MGMT_BRIDGE,
             config.CLUSTER_NAME[0],
             self.dc_name
         )
         net = networks.findNetwork(
-            networks.MGMT_NETWORK,
+            config.MGMT_BRIDGE,
             data_center=self.dc_name,
             cluster=config.CLUSTER_NAME[0]
         )
