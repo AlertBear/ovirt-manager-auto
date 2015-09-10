@@ -19,7 +19,6 @@ handlers:
     2mode: a
     3maxBytes: 31457280
     4backupCount: 10
-    5encoding: utf-8
   duplicateFileHandler:
     class: utilities.logger_utils.DuplicateFileHandler
     level: DEBUG
@@ -30,7 +29,6 @@ handlers:
     2mode: a
     3maxBytes: 31457280
     4backupCount: 10
-    5encoding: utf-8
   duplicateConsoleHandler:
     class: utilities.logger_utils.DuplicateConsoleHandler
     level: INFO
