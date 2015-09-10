@@ -14,7 +14,7 @@ import time
 import logging
 
 from nose.plugins.attrib import attr
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 
 from rhevmtests.sla.watchdog import config
 from art.unittest_lib import SlaTest as TestCase
@@ -740,6 +740,7 @@ class WatchdogCRUDTemplate(WatchdogVM):
     vm_name1 = "watchdog_template_vm1"
     vm_name2 = "watchdog_template_vm2"
     template_name = "watchdog_template"
+    bz = {'1258224': {'engine': None, 'version': ['3.6']}}
 
     @polarion("RHEVM3-4957")
     def test_add_watchdog_template(self):
@@ -795,7 +796,6 @@ class WatchdogCRUDTemplate(WatchdogVM):
         )
         self.lshw_watchdog(True, self.vm_name1)
 
-    @bz({'1258224': {'engine': None, 'version': ['3.6']}})
     @polarion("RHEVM3-4958")
     def test_remove_watchdog_template(self):
         """
