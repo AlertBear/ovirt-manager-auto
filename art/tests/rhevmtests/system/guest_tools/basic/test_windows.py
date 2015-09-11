@@ -87,6 +87,8 @@ class Windows(TestCase):
             network=config.MGMT_BRIDGE,
             nic=config.NIC_NAME,
             nicType=config.NIC_TYPE_E1000,
+            cpu_cores=4,
+            memory=4*config.GB,
         )
         assert disks.attachDisk(True, cls.diskName, cls.diskName)
         assert vms.runVmOnce(
