@@ -113,6 +113,7 @@ class JDBCCLIUser(TestCase):
         pass
 
     @attr(tier=1)
+    @polarion('RHEVM3-12857')
     def test_011_add_same_user(self):
         """ add user via aaa-jdbc cli """
         assert not USER_CLI.run('add', TEST_USER1)
@@ -345,6 +346,7 @@ class JDBCCLIQuery(TestCase):
         assert self.query_cli.run(what='group'), "Failed to search for groups"
 
     @attr(tier=1)
+    @polarion('RHEVM3-12858')
     def test_030_query_nothing(self):
         """ query nothing via aaa-jdbc cli """
         assert not self.query_cli.run(), "Invalid arguments of query passed"
