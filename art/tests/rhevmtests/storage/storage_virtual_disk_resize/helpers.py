@@ -3,23 +3,23 @@
 """
 
 import logging
+import re
 from utilities.machine import Machine
 from art.core_api.apis_exceptions import EntityNotFound
-from art.rhevm_api.tests_lib.low_level.vms import (
-    start_vms, waitForVMState,
-)
+from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 
 from art.test_handler import exceptions
-from rhevmtests.storage.helpers import get_vm_ip
+from rhevmtests.storage import helpers as storage_helpers
 
 import config
 
 logger = logging.getLogger(__name__)
 
 DISK_TIMEOUT = 250
-FILTER = '[sv]d'
 
 
+# TODO: Move this function to the storage.helpers and remove
+# other instances where the code does the same
 def get_vm_storage_devices(vm_name):
     """
     Function that returns vm storage devices
@@ -28,15 +28,20 @@ def get_vm_storage_devices(vm_name):
     Return: list of devices (e.g [vdb,vdc,...]) and boot device,
             or raise EntityNotFound if error occurs
     """
-    start_vms([vm_name], max_workers=1, wait_for_ip=False)
-    assert waitForVMState(vm_name)
-    vm_ip = get_vm_ip(vm_name)
-    vm_machine = Machine(host=vm_ip, user=config.VMS_LINUX_USER,
-                         password=config.VMS_LINUX_PW).util('linux')
+    if ll_vms.get_vm_state(vm_name) != config.VM_UP:
+        ll_vms.start_vms([vm_name], max_workers=1, wait_for_ip=True)
+        assert ll_vms.waitForVMState(vm_name)
+    vm_ip = storage_helpers.get_vm_ip(vm_name)
+    vm_machine = Machine(
+        host=vm_ip, user=config.VMS_LINUX_USER,
+        password=config.VMS_LINUX_PW
+    ).util('linux')
     output = vm_machine.get_boot_storage_device()
-    boot_disk = 'vda' if 'vd' in output else 'sda'
+    boot_disk = re.search(storage_helpers.REGEX_DEVICE_NAME, output).group()
 
-    vm_devices = vm_machine.get_storage_devices(filter=FILTER)
+    vm_devices = vm_machine.get_storage_devices(
+        filter=storage_helpers.REGEX_DEVICE_NAME
+    )
     if not vm_devices:
         raise EntityNotFound("Error occurred retrieving vm devices")
 
@@ -85,7 +90,7 @@ def get_vm_device_size(vm_name, device_name):
         VM device size (integer) output, or raise exception otherwise
     """
     try:
-        vm_ip = get_vm_ip(vm_name)
+        vm_ip = storage_helpers.get_vm_ip(vm_name)
     except exceptions.CanNotFindIP:
         raise exceptions.VMException("No IP found for vm %s: ", vm_name)
 

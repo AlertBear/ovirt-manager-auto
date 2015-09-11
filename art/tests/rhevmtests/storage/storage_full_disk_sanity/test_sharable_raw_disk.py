@@ -118,7 +118,10 @@ class TestCase11624(TestCase):
             nic = "nic_%s" % i
             vms.createVm(
                 True, vm_name, vm_name, config.CLUSTER_NAME, nic=nic,
-                placement_host=config.HOSTS[0], network=config.MGMT_BRIDGE)
+                placement_host=config.HOSTS[0], network=config.MGMT_BRIDGE,
+                display_type=config.DISPLAY_TYPE, type=config.VM_TYPE,
+                os_type=config.OS_TYPE
+            )
             self.vm_names.append(vm_name)
         storage_domain = storagedomains.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[0]

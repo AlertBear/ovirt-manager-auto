@@ -52,7 +52,7 @@ vm_args = {
     'nic': config.NIC_NAME[0],
     'image': config.COBBLER_PROFILE,
     'useAgent': True,
-    'os_type': config.ENUMS['rhel6'],
+    'os_type': config.OS_TYPE,
     'user': config.VM_USER,
     'password': config.VM_PASSWORD,
     'network': config.MGMT_BRIDGE,

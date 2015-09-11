@@ -3,6 +3,7 @@ Storage helper functions
 """
 import logging
 import os
+import re
 import shlex
 from art.core_api.apis_utils import TimeoutingSampler
 import art.rhevm_api.resources.storage as storage_resources
@@ -43,6 +44,8 @@ TARGET_FILE = 'written_test_storage'
 FILESYSTEM = 'ext4'
 WAIT_DD_STARTS = 'ps -ef | grep "{0}" | grep -v grep'.format(DD_EXEC,)
 INTERFACES = (config.VIRTIO, config.VIRTIO_SCSI)
+if config.PPC_ARCH:
+    INTERFACES = INTERFACES + (config.INTERFACE_SPAPR_VSCSI,)
 FILE_SD_VOLUME_PATH_IN_FS = '/rhev/data-center/%s/%s/images/%s'
 GET_FILE_SD_NUM_DISK_VOLUMES = 'ls %s | wc -l'
 LV_COUNT = 'lvs -o lv_name,lv_tags | grep %s | wc -l'
@@ -58,6 +61,10 @@ PVSCAN_CACHE_CMD = 'pvscan --cache'
 PVSCAN_CMD = 'pvscan'
 FIND_CMD = 'find / -name %s'
 CREATE_FILE_CMD = 'touch %s/%s'
+REGEX_DEVICE_NAME = '[sv]d[a-z]'
+CREATE_DISK_LABEL_CMD = '/sbin/parted %s --script -- mklabel gpt'
+CREATE_DISK_PARTITION_CMD = \
+    '/sbin/parted %s --script -- mkpart primary 0 100%%'
 
 disk_args = {
     # Fixed arguments
@@ -224,8 +231,7 @@ def create_disks_from_requested_permutations(
 
 
 def perform_dd_to_disk(
-    vm_name, disk_alias, protect_boot_device=True, size=DEFAULT_DD_SIZE,
-    write_to_file=False,
+    vm_name, disk_alias, size=DEFAULT_DD_SIZE
 ):
     """
     Function that performs dd command from the bootable device to the requested
@@ -240,65 +246,20 @@ def perform_dd_to_disk(
     :param disk_alias: The alias of the disk on which the dd operations will
     occur
     :type disk_alias: str
-    :param protect_boot_device: True if boot device should be protected and
-    writing to this device ignored, False if boot device should be
-    overwritten (use with caution!)
-    : type protect_boot_device: bool
     :param size: number of bytes to dd (Default size 20MB)
     :type size: int
-    :param write_to_file: Determines whether a file should be written into the
-    file system (True) or directly to the device (False)
-    :param write_to_file: bool
     :returns: ecode and output
     :rtype: tuple
     """
+    boot_disk = get_vm_boot_disk(vm_name)
+    status, mount_point = create_fs_on_disk(vm_name, disk_alias)
+    if not status:
+        return status, mount_point
+    destination = os.path.join(mount_point, TARGET_FILE)
     vm_ip = get_vm_ip(vm_name)
     vm_machine = Machine(
         host=vm_ip, user=config.VM_USER, password=config.VM_PASSWORD
     ).util(LINUX)
-    # TODO: Workaround for bug:
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1144860
-    vm_machine.runCmd(shlex.split("udevadm trigger"))
-    output = vm_machine.get_boot_storage_device()
-    boot_disk = 'vda' if 'vd' in output else 'sda'
-
-    disk_logical_volume_name = ll_vms.get_vm_disk_logical_name(
-        vm_name, disk_alias
-    )
-    if not disk_logical_volume_name:
-        # This function is used to test whether logical volume was found,
-        # raises an exception if it wasn't found
-        raise exceptions.DiskException(
-            "Failed to get %s disk logical name" % disk_alias
-        )
-
-    logger.info("The logical volume name for the requested disk is: '%s'",
-                disk_logical_volume_name)
-    if protect_boot_device:
-        if disk_logical_volume_name == boot_disk:
-            logger.warn("perform_dd_to_disk function aborted since the "
-                        "requested disk alias translates into the boot "
-                        "device, this would overwrite the OS")
-
-            return False, ERROR_MSG
-
-    if write_to_file:
-        dev = disk_logical_volume_name.split('/')[-1]
-        dev_size = vm_machine.get_storage_device_size(dev)
-        # Create a partition of the size of the disk but take into account the
-        # usual offset for logical partitions, setting to 10 MB
-        partition = vm_machine.createPartition(
-            disk_logical_volume_name, dev_size * config.GB - config.MB * 10,
-        )
-        assert partition
-        mount_point = vm_machine.createFileSystem(
-            disk_logical_volume_name, partition, FILESYSTEM, '?',
-        )
-        assert mount_point
-        destination = os.path.join(mount_point, TARGET_FILE)
-    else:
-        destination = disk_logical_volume_name
-
     command = DD_COMMAND % (
         size / config.MB, "/dev/{0}".format(boot_disk), destination,
     )
@@ -306,6 +267,8 @@ def perform_dd_to_disk(
 
     ecode, out = vm_machine.runCmd(shlex.split(command), timeout=DD_TIMEOUT)
     logger.info("Output for dd: %s", out)
+    rc_umount, out_umount = vm_machine.runCmd(['umount', mount_point])
+    logger.info(out_umount)
     return ecode, out
 
 
@@ -348,11 +311,12 @@ def create_vm_or_clone(positive, vmName, vmDescription, cluster, **kwargs):
     # If the vm doesn't need installation don't waste time cloning the vm
     if config.GOLDEN_ENV and installation:
         storage_domains = ll_sd.get_storagedomain_names()
-        if config.GLANCE_DOMAIN in storage_domains and (
-            config.GOLDEN_GLANCE_IMAGE in (
-                ll_sd.get_storage_domain_images(config.GLANCE_DOMAIN)
-            )
-        ):
+        # Don't copy from glance for PPC_ARCH
+        if (not config.PPC_ARCH and
+                config.GLANCE_DOMAIN in storage_domains and
+                config.GOLDEN_GLANCE_IMAGE in (
+                    ll_sd.get_storage_domain_images(config.GLANCE_DOMAIN)
+                )):
             kwargs['cluster'] = cluster
             kwargs['vmName'] = vmName
             kwargs['vmDescription'] = vmDescription
@@ -386,10 +350,14 @@ def create_vm_or_clone(positive, vmName, vmDescription, cluster, **kwargs):
                 'vol_format': vol_format,
                 'storagedomain': storage_domain,
                 'virtio_scsi': True,
+                'display_type': config.DISPLAY_TYPE,
+                'os_type': config.OS_TYPE,
+                'type': config.VM_TYPE,
             }
             update_keys = [
                 'vmDescription', 'type', 'placement_host',
                 'placement_affinity', 'highly_available',
+                'display_type', 'os_type',
             ]
             update_args = dict((key, kwargs.get(key)) for key in update_keys)
             args_clone.update(update_args)
@@ -673,7 +641,8 @@ def add_new_disk(
 
 
 def start_creating_disks_for_test(
-        shared=False, sd_name=None, sd_type=None, disk_size=config.DISK_SIZE
+        shared=False, sd_name=None, sd_type=None, disk_size=config.DISK_SIZE,
+        interfaces=INTERFACES
 ):
     """
     Begins asynchronous creation of disks from all permutations of disk
@@ -687,13 +656,17 @@ def start_creating_disks_for_test(
     :type sd_type: str
     :param disk_size: Disk size to be used with the disk creation
     :type disk_size: int
-    :returns: list of disk names
+    :param interfaces: List of interfaces to include in generating the disks
+    permutations
+    :type interfaces: list
+    :returns: List of disk aliases created
     :rtype: list
     """
     disk_names = []
     logger.info("Creating all disks required for test")
     disk_permutations = ll_disks.get_all_disk_permutation(
-        block=sd_type in config.BLOCK_TYPES, shared=shared
+        block=sd_type in config.BLOCK_TYPES, shared=shared,
+        interfaces=interfaces
     )
     for permutation in disk_permutations:
         alias = add_new_disk(
@@ -725,10 +698,6 @@ def prepare_disks_with_fs_for_vm(storage_domain, storage_type, vm_name):
     """
     disk_ids = list()
     mount_points = list()
-    vm_ip = get_vm_ip(vm_name)
-    vm_machine = Machine(
-        host=vm_ip, user=config.VM_USER, password=config.VM_PASSWORD
-    ).util(LINUX)
     logger.info('Creating disks for test')
     disk_names = start_creating_disks_for_test(
         sd_name=storage_domain, sd_type=storage_type
@@ -742,42 +711,116 @@ def prepare_disks_with_fs_for_vm(storage_domain, storage_type, vm_name):
         raise exceptions.DiskException("Some disks are still locked")
     prepare_disks_for_vm(vm_name, disk_names)
 
+    if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
+        ll_vms.startVm(True, vm_name, wait_for_status=config.VM_UP)
+    vm_ip = get_vm_ip(vm_name)
+    vm_machine = Machine(
+        host=vm_ip, user=config.VM_USER, password=config.VM_PASSWORD
+    ).util(LINUX)
     # TODO: Workaround for bug:
     # https://bugzilla.redhat.com/show_bug.cgi?id=1239297
     vm_machine.runCmd(shlex.split("udevadm trigger"))
 
     for disk_alias in disk_names:
-        disk_logical_volume_name = ll_vms.get_vm_disk_logical_name(
-            vm_name, disk_alias
-        )
-        if not disk_logical_volume_name:
-            # This function is used to test whether logical volume was
-            # found, raises an exception if it wasn't found
-            raise exceptions.DiskException(
-                "Failed to get %s disk logical name" % disk_alias
-            )
-
-        logger.info(
-            "The logical volume name for the requested disk is: '%s'",
-            disk_logical_volume_name
-        )
-        device_name = disk_logical_volume_name.split('/')[-1]
-        dev_size = vm_machine.get_storage_device_size(device_name)
-        # Create a partition of the size of the disk, taking into account
-        # the usual offset for logical partitions, setting to 10 MB
-        partition = vm_machine.createPartition(
-            disk_logical_volume_name, dev_size * config.GB - config.MB * 10,
-        )
-        assert partition
-        mount_point = vm_machine.createFileSystem(
-            disk_logical_volume_name, partition, FILESYSTEM,
-            ('/' + device_name),
-        )
+        ecode, mount_point = create_fs_on_disk(vm_name, disk_alias)
+        if not ecode:
+            logger.error("Cannot create filesysem on disk %s:", mount_point)
+            mount_point = ''
         mount_points.append(mount_point)
     logger.info(
         "Mount points for new disks: %s", mount_points
     )
     return disk_ids, mount_points
+
+
+def get_vm_boot_disk(vm_name):
+    """
+    Returns the vm's boot device name (i.e.: /dev/vda)
+
+    __author__ = "cmestreg"
+    :param vm_name: Name of the vm from which the boot disk name should be
+    extracted
+    :type vm_name: str
+    :returns: Name of the boot device
+    :rtype: str
+    """
+    vm_ip = get_vm_ip(vm_name)
+    vm_machine = Machine(
+        host=vm_ip, user=config.VM_USER, password=config.VM_PASSWORD
+    ).util(LINUX)
+    # TODO: Workaround for bug:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1239297
+    vm_machine.runCmd(shlex.split("udevadm trigger"))
+    output = vm_machine.get_boot_storage_device()
+    return re.search(REGEX_DEVICE_NAME, output).group()
+
+
+def create_fs_on_disk(vm_name, disk_alias):
+    """
+    Creates a filesystem on a disk and mounts it in the vm
+
+    __author__ = "cmestreg"
+    :param vm_name: Name of the vm to which disk will be attached
+    :type vm_name: str
+    :param disk_alias: The alias of the disk on which the file system will be
+    created
+    :type disk_alias: str
+    :returns: Operation status and the path to where the new created filesystem
+    is mounted if success, error code and error message in case of failure
+    :rtype: tuple
+    """
+    vm_ip = get_vm_ip(vm_name)
+    vm_machine = Machine(
+        host=vm_ip, user=config.VM_USER, password=config.VM_PASSWORD
+    ).util(LINUX)
+    # TODO: Workaround for bug:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1144860
+    vm_machine.runCmd(shlex.split("udevadm trigger"))
+
+    logger.info(
+        "Find disk logical name for disk with alias %s on vm %s",
+        disk_alias, vm_name
+    )
+    disk_logical_volume_name = ll_vms.get_vm_disk_logical_name(
+        vm_name, disk_alias
+    )
+    if not disk_logical_volume_name:
+        # This function is used to test whether logical volume was found,
+        # raises an exception if it wasn't found
+        message = "Failed to get %s disk logical name" % disk_alias
+        logger.error(message)
+        return False, message
+
+    logger.info(
+        "The logical volume name for the requested disk is: '%s'",
+        disk_logical_volume_name
+    )
+
+    logger.info(
+        "Creating label: %s", CREATE_DISK_LABEL_CMD % disk_logical_volume_name
+    )
+    rc, out = vm_machine.runCmd(
+        (CREATE_DISK_LABEL_CMD % disk_logical_volume_name).split()
+    )
+    logger.info("Output after creating disk label: %s", out)
+    if not rc:
+        return rc, out
+    logger.info(
+        "Creating partition %s",
+        CREATE_DISK_PARTITION_CMD % disk_logical_volume_name
+    )
+    rc, out = vm_machine.runCmd(
+        (CREATE_DISK_PARTITION_CMD % disk_logical_volume_name).split()
+    )
+    logger.info("Output after creating partition: %s", out)
+    if not rc:
+        return rc, out
+    # '1': create the fs as the first partition
+    # '?': createFileSystem will return a random mount point
+    mount_point = vm_machine.createFileSystem(
+        disk_logical_volume_name, '1', FILESYSTEM, '?',
+    )
+    return True, mount_point
 
 
 def get_vm_executor(vm_name):

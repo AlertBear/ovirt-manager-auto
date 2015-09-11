@@ -109,6 +109,11 @@ STORAGE_NAME = ["_".join([STORAGE_TYPE.lower(), str(i)])
 
 CPU_NAME = PARAMETERS['cpu_name']
 
+IBM_POWER_8 = 'IBM POWER 8'
+IBM_POWER_8E = 'IBM POWER 8E'
+PPC_CPUS = [IBM_POWER_8, IBM_POWER_8E]
+PPC_ARCH = True if CPU_NAME in PPC_CPUS else False
+
 HOSTS = []
 HOSTS_IP = []
 HOSTS_PW = PARAMETERS.as_list('vds_password')[0]
@@ -312,6 +317,11 @@ logger.info(
     UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES, UNUSED_GLUSTER_DATA_DOMAIN_PATHS
 )
 
+if PPC_ARCH:
+    # Currently we don't have gluster domains in our PPC envs
+    # TODO: Add this to the PPC jenkins patch
+    UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES = [None, None, None]
+    UNUSED_GLUSTER_DATA_DOMAIN_PATHS = [None, None, None]
 UNUSED_LUNS = get_list(PARAMETERS, 'extra_lun')
 UNUSED_LUN_ADDRESSES = get_list(PARAMETERS, 'extra_lun_address')
 UNUSED_LUN_TARGETS = get_list(PARAMETERS, 'extra_lun_target')
@@ -343,6 +353,8 @@ NIC_NAME = [
 ]
 
 DISPLAY_TYPE = ENUMS['display_type_spice']
+if PPC_ARCH:
+    DISPLAY_TYPE = ENUMS['display_type_vnc']
 NIC_TYPE_VIRTIO = ENUMS['nic_type_virtio']
 NIC_TYPE_RTL8139 = ENUMS['nic_type_rtl8139']
 NIC_TYPE_E1000 = ENUMS['nic_type_e1000']
@@ -358,6 +370,7 @@ PGPASS = "123456"
 INTERFACE_VIRTIO = ENUMS['interface_virtio']
 INTERFACE_IDE = ENUMS['interface_ide']
 INTERFACE_VIRTIO_SCSI = ENUMS['interface_virtio_scsi']
+INTERFACE_SPAPR_VSCSI = ENUMS['interface_spapr_vscsi']
 DISK_INTERFACE = INTERFACE_VIRTIO
 
 # Disk formats
@@ -404,6 +417,12 @@ VM_POWERING_UP = ENUMS['vm_state_powering_up']
 # VM types
 VM_TYPE_DESKTOP = ENUMS['vm_type_desktop']
 VM_TYPE_SERVER = ENUMS['vm_type_server']
+if PPC_ARCH:
+    # TODO: Known issue, vms should be created as server with rest api
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1253261
+    VM_TYPE = VM_TYPE_SERVER
+else:
+    VM_TYPE = VM_TYPE_DESKTOP
 
 # Template states
 TEMPLATE_ILLEGAL = ENUMS['template_state_illegal']
@@ -437,6 +456,9 @@ MAX_WORKERS = PARAMETERS.get('max_workers', 10)
 OS_TYPE = test_utils.convertOsNameToOsTypeElement(
     True, PARAMETERS['vm_os'])[1]['osTypeElement']
 
+if PPC_ARCH:
+    OS_TYPE = ENUMS['rhel7ppc64']
+
 OVIRT_SERVICE = 'ovirt-engine'
 ENGINE_HOST = resources.Host(VDC_HOST)
 ENGINE_HOST.users.append(
@@ -453,10 +475,6 @@ ENGINE = resources.Engine(
     port=VDC_PORT,
     entry_point=ENGINE_ENTRY_POINT,
 )
-
-IBM_POWER_8 = 'IBM POWER 8'
-PPC_ARCH = True if CPU_NAME == IBM_POWER_8 else False
-PPC_SKIP_MESSAGE = 'Test not supported under PPC64 architecture'
 
 CPU_SHARE_DISABLED = 0
 CPU_SHARE_LOW = 512

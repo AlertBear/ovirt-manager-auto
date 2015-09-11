@@ -159,7 +159,9 @@ class DisksPermutationEnvironment(BaseTestCase):
         block = self.storage in config.BLOCK_TYPES
         helpers.DISKS_NAMES = create_all_legal_disk_permutations(
             self.storage_domain, shared=self.shared,
-            block=block, size=config.DISK_SIZE)
+            block=block, size=config.DISK_SIZE,
+            interfaces=storage_helpers.INTERFACES
+        )
         assert wait_for_disks_status(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
         stop_vms_safely([self.vm])
         waitForVMState(vm=self.vm, state=config.VM_DOWN)
@@ -251,9 +253,9 @@ class BasicResize(BaseTestCase):
             dd_size = self.new_size - 600 * config.MB
         else:
             # For file devices the true size will be the same as the dd size.
-            dd_size = self.new_size
+            dd_size = self.new_size - 90 * config.MB
         ecode, output = storage_helpers.perform_dd_to_disk(
-            self.vm, self.disk_name, size=dd_size,
+            self.vm, self.disk_name, size=dd_size
         )
         self.assertTrue(ecode, "dd command failed")
 
@@ -271,11 +273,8 @@ class BasicResize(BaseTestCase):
                                           datacenter_obj)
         self.assertEqual(lv_size, self.new_size / config.GB)
 
-        devices, boot_device = helpers.get_vm_storage_devices(
-            self.vm)
+        devices, boot_device = helpers.get_vm_storage_devices(self.vm)
 
-        start_vms([self.vm], max_workers=1, wait_for_ip=False)
-        waitForVMState(self.vm)
         for device in devices:
             size = helpers.get_vm_device_size(self.vm, device)
             self.assertEqual(int(size), (self.new_size / config.GB))
@@ -322,8 +321,7 @@ class BasicResize(BaseTestCase):
                                           datacenter_obj)
         self.assertEqual(lv_size, self.new_size / config.GB)
 
-        devices, boot_device = helpers.get_vm_storage_devices(
-            self.vm)
+        devices, boot_device = helpers.get_vm_storage_devices(self.vm)
 
         start_vms([self.vm], max_workers=1, wait_for_ip=False)
         waitForVMState(self.vm)
@@ -346,6 +344,7 @@ class BasicResize(BaseTestCase):
         Clean environment
         """
         flushIptables(self.host_ip, config.HOSTS_USER, config.HOSTS_PW)
+        waitForVMState(self.vm, config.VM_DOWN)
         self.assertTrue(deactivateVmDisk(True, self.vm, self.disk_name),
                         "Failed to deactivate disks %s" % self.disk_name)
         self.assertTrue(removeDisk(True, self.vm, self.disk_name),
@@ -387,8 +386,7 @@ class TestCase5061(DisksPermutationEnvironment):
                                     % (disk, self.new_size))
         assert wait_for_disks_status(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
 
-        devices, boot_device = helpers.get_vm_storage_devices(
-            self.vm)
+        devices, boot_device = helpers.get_vm_storage_devices(self.vm)
 
         start_vms([self.vm], max_workers=1, wait_for_ip=False)
         waitForVMState(self.vm)
@@ -694,7 +692,7 @@ class TestCase5069(BasicResize):
 
         for device in devices:
             size = helpers.get_vm_device_size(self.test_vm_name, device)
-            self.assertEqual(int(size), (self.new_size / config.GB))
+            self.assertEqual(int(size), int(self.new_size / config.GB))
 
     def tearDown(self):
         stop_vms_safely([self.test_vm_name, self.vm])

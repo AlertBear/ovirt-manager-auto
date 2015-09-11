@@ -43,11 +43,13 @@ vm_args = {
     'size': config.VM_DISK_SIZE,
     'nic': config.NIC_NAME[0],
     'useAgent': True,
-    'os_type': config.ENUMS['rhel6'],
+    'os_type': config.OS_TYPE,
     'user': config.VM_USER,
     'password': config.VM_PASSWORD,
     'network': config.MGMT_BRIDGE,
     'image': config.COBBLER_PROFILE,
+    'type': config.VM_TYPE,
+    'display_type': config.DISPLAY_TYPE,
 }
 
 disk_args = {
@@ -330,7 +332,6 @@ class CopyDiskWithContent(BasicEnvironment):
     @classmethod
     def setup_class(cls):
         super(CopyDiskWithContent, cls).setup_class()
-        ll_vms.startVm(True, cls.vm_name, config.VM_UP)
         cls.disks_for_test, cls.mount_points = (
             storage_helpers.prepare_disks_with_fs_for_vm(
                 cls.storage_domain, cls.storage, cls.vm_name

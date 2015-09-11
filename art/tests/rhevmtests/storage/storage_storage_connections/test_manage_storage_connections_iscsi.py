@@ -48,6 +48,10 @@ def setup_module():
     """
     Remove all the storage domains since we need an empty DC
     """
+    if config.PPC_ARCH:
+        # TODO: Enable for PPC when the targets are configured for the
+        # environment and properly tested
+        raise errors.SkipTest("Additional iscsi targets not configured")
     global ISCSI_SDS
     # All of the storage connections need to be removed, and the host
     # should be logged out from all targets for these tests. This is due

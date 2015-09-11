@@ -27,6 +27,7 @@ from art.test_handler.tools import polarion  # pylint: disable=E0611
 from utilities import machine
 from utilities.rhevm_tools.base import Utility, Setup
 from art.test_handler.settings import opts
+from art.test_handler.exceptions import SkipTest
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,7 @@ def create_vm(vm_name, master_domain):
         diskInterface=config.INTERFACE_VIRTIO_SCSI, memory=config.GB,
         cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
         os_type=config.OS_TYPE, type=config.VM_TYPE_DESKTOP,
+        display_type=config.DISPLAY_TYPE
     )
 
 
@@ -77,6 +79,12 @@ class BaseCaseIsoDomains(TestCase):
         Creates the environment with the storage domains
         Adds a vm
         """
+        if config.PPC_ARCH:
+            # TODO: Re-write this case to use the already added NFS domain.
+            # For POSIX, use a small ISO image so it can be uploaded
+            # quickly to the remote server
+            raise SkipTest("ISO not working on PPC")
+
         cls.data_center_name = config.DATA_CENTER_NAME
 
         found, master_domain = ll_sd.findMasterStorageDomain(

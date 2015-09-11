@@ -72,7 +72,8 @@ class TestResumeGuests(TestCase):
 
     def check_vm_paused(self, vm_name):
         assert vms.waitForVMState(
-            vm_name, config.ENUMS['vm_state_paused'], timeout=3600)
+            vm_name, config.ENUMS['vm_state_paused'], timeout=1200
+        )
 
     def check_vm_unpaused(self, vm_name):
         LOGGER.info("Waiting for VM being up")
@@ -137,7 +138,7 @@ class TestCaseBlockedConnection(TestResumeGuests):
 
 class TestNoSpaceLeftOnDevice(TestResumeGuests):
     big_disk_name = "big_disk_eio"
-    left_space = config.GB
+    left_space = int(1.5 * GB)
 
     def break_storage(self):
         """ create a very big disk on the storage domain

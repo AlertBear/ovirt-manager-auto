@@ -30,7 +30,7 @@ VM_DISK_SIZE = 2 * config.GB
 THIN_PROVISION = 'thin_provision'
 PREALLOCATED = 'preallocated'
 MIN_UNUSED_LUNS = 1
-DISK_CREATION_TIMEOUT = 300
+DISK_CREATION_TIMEOUT = 600
 # The delta between the expected storage domain size and the actual size (
 # given that engine returns the SD total size in GB as an integer)
 SD_SIZE_DELTA = 1 * config.GB + 10 * config.MB
@@ -447,7 +447,10 @@ class TestCase11541(BaseCase):
                 'storageDomainName': self.domains[0],
                 'size': VM_DISK_SIZE,
                 'volumeType': is_thin_provision,
-                'volumeFormat': disk_format
+                'volumeFormat': disk_format,
+                'display_type': config.DISPLAY_TYPE,
+                'os_type': config.OS_TYPE,
+                'type': config.VM_TYPE,
             }
             self.assertTrue(ll_vms.createVm(**vm_args),
                             'unable to create vm %s' % vm_name)

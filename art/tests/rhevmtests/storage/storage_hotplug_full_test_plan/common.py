@@ -44,7 +44,7 @@ def create_vm_and_template(cobbler_image, storage_domain, storage_type):
             image=cobbler_image,
             installation=True,
             useAgent=True,
-            os_type=config.ENUMS['rhel6'],
+            os_type=config.OS_TYPE,
             user=config.VMS_LINUX_USER,
             password=config.VMS_LINUX_PW,
             network=config.MGMT_BRIDGE):

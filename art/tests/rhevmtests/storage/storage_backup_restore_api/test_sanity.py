@@ -62,7 +62,6 @@ def teardown_module():
         vm_names = filter(ll_vms.does_vm_exist, vm_names)
         ll_vms.stop_vms_safely(vm_names)
         ll_vms.removeVms(True, vm_names)
-    ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
 
 
 class BaseTestCase(TestCase):
@@ -725,10 +724,6 @@ class TestCase6169(TestCase):
         self.vm_names = VM_NAMES[self.storage]
         self.source_vm = self.vm_names[0]
         self.backup_vm = self.vm_names[1]
-        ll_vms.start_vms(self.vm_names, 2, wait_for_ip=False)
-        assert ll_vms.waitForVmsStates(True, self.vm_names)
-        self.backup_vm_ip = storage_helpers.get_vm_ip(self.backup_vm)
-        assert self.backup_vm_ip is not None
         self.storage_domains = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )
@@ -776,12 +771,26 @@ class TestCase6169(TestCase):
                     self.backup_vm, disk.get_alias()
             ):
                 ll_vms.activateVmDisk(True, self.backup_vm, disk.get_alias())
-
+        ll_vms.start_vms(self.vm_names, 2, wait_for_ip=False)
+        if not ll_vms.waitForVmsStates(True, self.vm_names):
+            raise exceptions.VMException(
+                "Failed to power on vms %s" % self.vm_names
+            )
+        self.backup_vm_ip = storage_helpers.get_vm_ip(self.backup_vm)
+        if not self.backup_vm_ip:
+            raise exceptions.VMException(
+                "Failed to get IP for vm %s" % self.backup_vm
+            )
         linux_machine = Machine(
             host=self.backup_vm_ip, user=config.VMS_LINUX_USER,
-            password=config.VMS_LINUX_PW).util('linux')
+            password=config.VMS_LINUX_PW
+        ).util('linux')
 
         devices = linux_machine.get_storage_devices()
+        if not devices:
+            raise exceptions.VMException(
+                "Failed to find storage devices on vm %s" % self.backup_vm_ip
+            )
 
         logger.info("Copy disk from %s to %s", devices[1], devices[2])
         status = helpers.copy_backup_disk(

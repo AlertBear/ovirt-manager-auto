@@ -6,6 +6,7 @@ Storage/3_4_Storage_Single_Snapshot
 import logging
 import shlex
 import os
+import re
 from art.rhevm_api.tests_lib.low_level.disks import (
     deleteDisk, addDisk, wait_for_disks_status,
 )
@@ -22,17 +23,14 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     get_vm_bootable_disk, undo_snapshot_preview, cloneVmFromSnapshot, addNic,
     removeNic, shutdownVm, removeSnapshot,
     wait_for_vm_snapshots, get_vm_state, safely_remove_vms,
-    get_vms_disks_storage_domain_name, waitForVmsDisks,
+    get_vms_disks_storage_domain_name,
 )
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
 from art.rhevm_api.utils.test_utils import restartVdsmd, restart_engine
-from rhevmtests.storage.helpers import (
-    get_vm_ip, create_vm_or_clone, prepare_disks_for_vm,
-    get_disks_volume_count,
-)
+from rhevmtests.storage import helpers as storage_helpers
 from rhevmtests.storage.storage_single_disk_snapshot import config, helpers
 from art.unittest_lib import StorageTest as BaseTestCase
 from art.unittest_lib import attr
@@ -56,10 +54,10 @@ vmArgs = {
     'cluster': config.CLUSTER_NAME,
     'storageDomainName': None,
     'installation': True,
-    'size': config.VM_DISK_SIZE,
+    'size': config.DISK_SIZE,
     'nic': config.NIC_NAME[0],
     'useAgent': True,
-    'os_type': config.ENUMS['rhel6'],
+    'os_type': config.OS_TYPE,
     'user': config.VM_USER,
     'password': config.VM_PASSWORD,
     'network': config.MGMT_BRIDGE,
@@ -87,7 +85,7 @@ def setup_module():
 
         logger.info('Creating vm and installing OS on it')
 
-        if not create_vm_or_clone(**vmArgs):
+        if not storage_helpers.create_vm_or_clone(**vmArgs):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % vm_name)
 
@@ -132,11 +130,11 @@ class BasicEnvironment(BaseTestCase):
         self.vm_name = config.VM_NAME % self.storage
         self.storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[0]
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
-        vm_ip = get_vm_ip(self.vm_name)
+        start_vms([self.vm_name], 1, wait_for_ip=True)
+        vm_ip = storage_helpers.get_vm_ip(self.vm_name)
         self.vm = Machine(
             vm_ip, config.VM_USER, config.VM_PASSWORD).util(LINUX)
+        self.boot_disk = get_vm_bootable_disk(self.vm_name)
         self.mounted_paths = []
         spm = getSPMHost(config.HOSTS)
         host_ip = getHostIP(spm)
@@ -152,11 +150,8 @@ class BasicEnvironment(BaseTestCase):
                 storagedomain=self.storage_domain, format=config.COW_DISK,
                 interface=config.INTERFACE_VIRTIO, sparse=True,
             )
-            wait_for_disks_status([disk_name])
-
-        prepare_disks_for_vm(self.vm_name, self.disks_names)
-        self.boot_disk = get_vm_bootable_disk(self.vm_name)
-        waitForVmsDisks(self.vm_name)
+        wait_for_disks_status(self.disks_names)
+        storage_helpers.prepare_disks_for_vm(self.vm_name, self.disks_names)
         stop_vms_safely([self.vm_name])
         waitForVMState(self.vm_name, config.VM_DOWN)
 
@@ -166,6 +161,7 @@ class BasicEnvironment(BaseTestCase):
         start_vms([self.vm_name], 1, wait_for_ip=True)
         lst = []
         state = not should_exist
+        self._get_non_bootable_devices()
         for dev in self.devices:
             full_path = os.path.join((self.mount_path % dev), self.file_name)
             logger.info("Checking full path %s", full_path)
@@ -216,26 +212,43 @@ class BasicEnvironment(BaseTestCase):
                 self.vm_name, [config.SNAPSHOT_OK], [self.snapshot_desc],
             )
 
-    def _prepare_fs_on_devs(self):
-        start_vms([self.vm_name], 1, wait_for_ip=True)
-
+    def _get_non_bootable_devices(self):
         vm_devices = self.vm.get_storage_devices()
         if not vm_devices:
             logger.error("No devices found in vm %s", self.vm_name)
-            return False
-        logger.info("Devices found: %s", vm_devices)
-        self.devices = [d for d in vm_devices if d != 'vda']
-        self.devices.sort()
-        for dev in self.devices:
-            dev_size = self.vm.get_storage_device_size(dev)
-            dev_path = os.path.join('/dev', dev)
-            partition_size = int((dev_size/2.) * config.GB)
-            logger.info(
-                "Creating partition of size %s for dev: %s", partition_size,
-                dev_path,
+            raise exceptions.VMException(
+                "No devices found in vm %s" % self.vm_name
             )
-            dev_number = self.vm.createPartition(dev_path, partition_size)
-            logger.info("Creating file system for dev: %s", dev + dev_number)
+        logger.info("Devices found: %s", vm_devices)
+        boot_disk_output = self.vm.get_boot_storage_device()
+        boot_disk = re.search(
+            storage_helpers.REGEX_DEVICE_NAME, boot_disk_output
+        ).group()
+        boot_device = boot_disk.split('/')[-1]
+        logger.info("Boot disk device is: %s", boot_device)
+        self.devices = [d for d in vm_devices if d != boot_device]
+        self.devices.sort()
+        logger.info("Devices (excluding boot disk): %s", self.devices)
+
+    def _prepare_fs_on_devs(self):
+        start_vms([self.vm_name], 1, wait_for_ip=True)
+
+        self._get_non_bootable_devices()
+
+        for dev in self.devices:
+            dev_path = os.path.join('/dev', dev)
+            rc, out = self.vm.runCmd(
+                (storage_helpers.CREATE_DISK_LABEL % dev_path).split()
+            )
+            logger.info(out)
+            assert rc
+            rc, out = self.vm.runCmd(
+                (storage_helpers.CREATE_DISK_PARTITION % dev_path).split()
+            )
+            logger.info(out)
+            assert rc
+            # Create the partition as number 1
+            dev_number = '1'
             self.vm.createFileSystem(dev_path, dev_number, 'ext4',
                                      (self.mount_path % dev))
 
@@ -251,12 +264,16 @@ class BasicEnvironment(BaseTestCase):
         return True
 
     def _perform_snapshot_with_verification(self, disks_for_snap, live=False):
-        initial_vol_count = get_disks_volume_count(disks_for_snap)
+        initial_vol_count = storage_helpers.get_disks_volume_count(
+            disks_for_snap
+        )
         logger.info("Before snapshot: %s volumes", initial_vol_count)
 
         self._perform_snapshot_operation(disks_for_snap, live=live)
 
-        current_vol_count = get_disks_volume_count(disks_for_snap)
+        current_vol_count = storage_helpers.get_disks_volume_count(
+            disks_for_snap
+        )
         logger.info("After snapshot: %s volumes", current_vol_count)
 
         self.assertEqual(current_vol_count,
@@ -265,7 +282,7 @@ class BasicEnvironment(BaseTestCase):
     def _prepare_environment(self):
         start_vms([self.vm_name], 1, wait_for_ip=False)
         waitForVMState(self.vm_name)
-        vm_ip = get_vm_ip(self.vm_name)
+        vm_ip = storage_helpers.get_vm_ip(self.vm_name)
         self.vm = Machine(vm_ip, config.VM_USER,
                           config.VM_PASSWORD).util(LINUX)
 
@@ -322,7 +339,6 @@ class TestCase6023(BasicEnvironment):
     cm_del = 'rm -f %s' % file_name
     previewed = False
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """
@@ -392,7 +408,6 @@ class TestCase6024(BasicEnvironment):
     polarion_test_case = '6024'
     previewed = False
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
@@ -436,6 +451,7 @@ class TestCase6024(BasicEnvironment):
 
         assert startVm(True, self.vm_name, wait_for_ip=True)
         lst = []
+        self._get_non_bootable_devices()
         for dev in self.devices:
             full_path = os.path.join((self.mount_path % dev), self.file_name)
             logger.info("Checking full path %s", full_path)
@@ -469,7 +485,6 @@ class TestCase6026(BasicEnvironment):
     polarion_test_case = '6026'
     previewed = False
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
@@ -550,7 +565,6 @@ class TestCase6027(BasicEnvironment):
     cm_del = 'rm -f %s' % file_name
     previewed = False
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """
@@ -644,6 +658,7 @@ class TestCase6013(BasicEnvironment):
         self._perform_snapshot_operation(disks=[self.boot_disk])
         wait_for_jobs([ENUMS['job_create_snapshot']])
 
+        self._get_non_bootable_devices()
         for dev in self.devices:
             mount_path = self.mount_path % dev
             cmd = self.cm_del % mount_path
@@ -676,7 +691,6 @@ class TestCase6030(BasicEnvironment):
     disks_for_custom_preview = 2
     previewed = False
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """
@@ -719,6 +733,7 @@ class TestCase6030(BasicEnvironment):
         start_vms([self.vm_name], 1, wait_for_ip=True)
 
         lst = []
+        self._get_non_bootable_devices()
         for dev in self.devices:
             full_path = os.path.join((self.mount_path % dev), self.file_name)
             logger.info("Checking full path %s", full_path)
@@ -830,7 +845,6 @@ class TestCase6032(BasicEnvironment):
     nic = 'nic_%s' % polarion_test_case
     commit = False
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """
@@ -923,6 +937,7 @@ class TestCase6033(BasicEnvironment):
         """
         for index, snap_desc in enumerate(self.snaps):
             start_vms([self.vm_name], 1, wait_for_ip=True)
+            self._get_non_bootable_devices()
             for dev in self.devices:
                 logger.info("writing file to disk %s", dev)
                 self.vm.runCmd(shlex.split(self.cmd_create
@@ -937,7 +952,9 @@ class TestCase6033(BasicEnvironment):
         wait_for_jobs([ENUMS['job_create_snapshot']])
         start_vms([self.vm_name], 1, wait_for_ip=True)
 
-        initial_vol_count = get_disks_volume_count(self.disks_names)
+        initial_vol_count = storage_helpers.get_disks_volume_count(
+            self.disks_names
+        )
         logger.info("The number of volumes is: %s", initial_vol_count)
 
         stop_vms_safely([self.vm_name])
@@ -948,7 +965,9 @@ class TestCase6033(BasicEnvironment):
 
         start_vms([self.vm_name], 1, wait_for_ip=True)
 
-        current_vol_count = get_disks_volume_count(self.disks_names)
+        current_vol_count = storage_helpers.get_disks_volume_count(
+            self.disks_names
+        )
         logger.info("The number of volumes after removing one snapshot is: "
                     "%s", current_vol_count)
 

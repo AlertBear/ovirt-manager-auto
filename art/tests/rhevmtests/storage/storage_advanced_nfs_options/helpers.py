@@ -406,12 +406,20 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
             interface=config.INTERFACE_VIRTIO, bootable=True)
         )
 
-        self.assertTrue(ll_vms.addVm(
-            True, name=self.vm_1, storagedomain=self.sd_1,
-            cluster=config.CLUSTER_NAME))
-        self.assertTrue(ll_vms.addVm(
-            True, name=self.vm_2, storagedomain=self.sd_1,
-            cluster=config.CLUSTER_NAME))
+        self.assertTrue(
+            ll_vms.addVm(
+                True, name=self.vm_1, storagedomain=self.sd_1,
+                cluster=config.CLUSTER_NAME, display_type=config.DISPLAY_TYPE,
+                os_type=config.OS_TYPE
+            )
+        )
+        self.assertTrue(
+            ll_vms.addVm(
+                True, name=self.vm_2, storagedomain=self.sd_1,
+                cluster=config.CLUSTER_NAME, display_type=config.DISPLAY_TYPE,
+                os_type=config.OS_TYPE,
+            )
+        )
 
         self.assertTrue(ll_disks.wait_for_disks_status(
             [self.disk_1, self.disk_2], timeout=600)

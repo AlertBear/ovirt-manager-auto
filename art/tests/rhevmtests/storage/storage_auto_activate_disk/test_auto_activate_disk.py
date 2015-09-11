@@ -13,10 +13,13 @@ from art.rhevm_api.tests_lib.low_level import (
 import art.test_handler.exceptions as exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, StorageTest as TestCase
+import rhevmtests.storage.helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
 
-DISK_PERMUTATIONS = ll_disks.get_all_disk_permutation()
+DISK_PERMUTATIONS = ll_disks.get_all_disk_permutation(
+    interfaces=storage_helpers.INTERFACES
+)
 
 
 class VmWithOs(TestCase):
@@ -215,12 +218,21 @@ class TestCase4937(VmWithAnotherDiskWhileStatus):
         """
         for permutation in DISK_PERMUTATIONS:
             logger.info(
-                "Adding disk %s %s %s", permutation["interface"],
-                permutation["sparse"], permutation["format"]
-            )
+                "Adding disk %s %s %s", permutation['interface'],
+                permutation['sparse'], permutation['disk_format'])
             self.attach_new_disk_while_status(
-                config.VM_SUSPEND, config.VM_SUSPENDED, False, **permutation
+                config.VM_SUSPEND,
+                config.VM_SUSPENDED,
+                activate_expected_status=False,
+                **permutation
             )
+            logger.info("Powering on vm %s", self.vm_name)
+            # Wait for vm's ip to make sure the vm is in full restored state
+            # before adding a new disk
+            if not ll_vms.startVm(True, self.vm_name, wait_for_ip=True):
+                raise exceptions.VMException(
+                    "VM '%s' couldn't be powered on" % self.vm_name
+                )
 
         logger.info("Starting vm %s", self.vm_name)
         assert ll_vms.startVm(True, self.vm_name, config.VM_UP)

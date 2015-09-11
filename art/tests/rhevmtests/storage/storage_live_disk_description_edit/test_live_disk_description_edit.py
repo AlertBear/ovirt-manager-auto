@@ -98,6 +98,8 @@ class BasicEnvironment(BaseTestCase):
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )[0]
+        if config.PPC_ARCH:
+            disk_interfaces += (config.INTERFACE_SPAPR_VSCSI,)
         self.disk_aliases = (
             storage_helpers.create_disks_from_requested_permutations(
                 self.storage_domain, disk_interfaces, config.DISK_SIZE,
@@ -271,8 +273,14 @@ class TestCase11503(BasicEnvironment):
         3. Hot plug the disk into a new VM, verify that the description is
         still valid
         """
+        disks_to_hotplug = {}
         for disk_alias in self.disk_aliases:
             disk_object = ll_disks.get_disk_obj(disk_alias)
+            if disk_object.get_interface() != config.INTERFACE_SPAPR_VSCSI:
+                # SPAPR VSCSI does not support hotplug
+                disks_to_hotplug[disk_alias] = disk_object
+
+        for disk_alias, disk_object in disks_to_hotplug.iteritems():
             ll_disks.attachDisk(True, disk_alias, VM1_NAME)
             assert helpers.verify_vm_disk_description(
                 VM1_NAME, disk_alias, disk_object.get_description()
@@ -289,7 +297,7 @@ class TestCase11503(BasicEnvironment):
         ll_vms.startVm(True, VM2_NAME)
         assert ll_vms.waitForVmsStates(True, [VM1_NAME, VM2_NAME])
 
-        for disk_alias in self.disk_aliases:
+        for disk_alias in disks_to_hotplug:
             assert helpers.verify_vm_disk_description(
                 VM1_NAME, disk_alias, VM_INITIAL_DESCRIPTION
             )
@@ -310,7 +318,7 @@ class TestCase11503(BasicEnvironment):
         ll_vms.stop_vms_safely([VM1_NAME, VM2_NAME])
         ll_vms.waitForVMState(VM1_NAME, config.VM_DOWN)
         ll_vms.waitForVMState(VM2_NAME, config.VM_DOWN)
-        for disk_alias in self.disk_aliases:
+        for disk_alias in disks_to_hotplug:
             assert ll_disks.updateDisk(
                 True, alias=disk_alias,
                 description=self.original_descriptions.get(disk_alias),

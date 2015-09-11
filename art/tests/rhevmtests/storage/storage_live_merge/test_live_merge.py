@@ -46,11 +46,13 @@ vmArgs = {
     'installation': True,
     'size': config.VM_DISK_SIZE,
     'nic': config.NIC_NAME[0],
-    'useAgent': True, 'os_type': config.ENUMS['rhel6'],
+    'useAgent': True,
+    'os_type': config.OS_TYPE,
     'user': config.VM_USER,
     'password': config.VM_PASSWORD,
     'network': config.MGMT_BRIDGE,
     'image': config.COBBLER_PROFILE,
+    'display_type': config.DISPLAY_TYPE,
 }
 
 disk_args = {

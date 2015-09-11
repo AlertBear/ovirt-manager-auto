@@ -46,7 +46,7 @@ vmArgs = {
     'nic': config.NIC_NAME[0],
     'image': config.COBBLER_PROFILE,
     'useAgent': True,
-    'os_type': config.ENUMS['rhel6'],
+    'os_type': config.OS_TYPE,
     'user': config.VM_USER,
     'password': config.VM_PASSWORD,
     'network': config.MGMT_BRIDGE,
@@ -256,7 +256,7 @@ class TestCase5129(CreateSnapshotWithMemoryState):
     # Bugzilla history
     # 1253338: restore snapshot via API results in snapshot being stuck on
     # "In preview" status
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
 
     @polarion("RHEVM3-5129")
     def test_create_snapshot_spm(self):
@@ -277,7 +277,7 @@ class TestCase5140(CreateSnapshotWithMemoryState):
     # Bugzilla history
     # 1253338: restore snapshot via API results in snapshot being stuck on
     # "In preview" status
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
 
     @polarion("RHEVM3-5140")
     def test_create_snapshot_hsm(self):
@@ -344,7 +344,7 @@ class TestCase5139(ReturnToSnapshot):
     # 1253338: restore snapshot via API results in snapshot being stuck on
     # "In preview" status
     # 1260177: Restoring a RAM snapshots in RHEL7.2 shows error stating the vm
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
 
     @polarion("RHEVM3-5139")
     def test_preview_snapshot(self):
@@ -375,7 +375,7 @@ class TestCase5138(ReturnToSnapshot):
     # Bugzilla history
     # 1253338: restore snapshot via API results in snapshot being stuck on
     # "In preview" status
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
 
     @polarion("RHEVM3-5138")
     def test_restore_snasphot(self):
@@ -398,7 +398,7 @@ class TestCase5137(VMWithMemoryStateSnapshot):
     # Bugzilla history
     # 1253338: restore snapshot via API results in snapshot being stuck on
     # "In preview" status
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
 
     def setUp(self):
         """
@@ -523,7 +523,7 @@ class TestCase5136(VMWithMemoryStateSnapshot):
     # 1178508
     # 1253338: restore snapshot via API results in snapshot being stuck on
     # "In preview" status
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
 
     def setUp(self):
         """
@@ -592,7 +592,7 @@ class TestCase5134(VMWithMemoryStateSnapshot):
     # Bugzilla history
     # 1253338: restore snapshot via API results in snapshot being stuck on
     # "In preview" status
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
 
     @polarion("RHEVM3-5134")
     def test_import_vm_with_memory_state_snapshot(self):
@@ -664,7 +664,7 @@ class TestCase5133(VMWithMemoryStateSnapshot):
     # Bugzilla history
     # 1253338: restore snapshot via API results in snapshot being stuck on
     # "In preview" status
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
 
     @polarion("RHEVM3-5133")
     def test_remove_memory_state_snapshot(self):
@@ -698,7 +698,7 @@ class TestCase5131(VMWithMemoryStateSnapshot):
     # Bugzilla history
     # 1253338: restore snapshot via API results in snapshot being stuck on
     # "In preview" status
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
 
     @polarion("RHEVM3-5131")
     def test_stateless_vm_with_memory_snapshot(self):

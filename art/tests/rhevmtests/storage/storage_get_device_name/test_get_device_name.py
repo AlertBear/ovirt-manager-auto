@@ -187,11 +187,9 @@ class BasicEnvironment(BaseTestCase):
         """
         assert vms.startVm(True, self.vm_name, config.VM_UP, True)
 
-        self.initial_storage_devices = helpers.get_storage_devices(
+        self.current_storage_devices = helpers.get_storage_devices(
             self.vm_name, STORAGE_DEVICES_FILTER
         )
-        # Set the current storage devices to match the initial storage devices
-        self.current_storage_devices = self.initial_storage_devices
         if not hot_plug:
             vms.stop_vms_safely([self.vm_name])
 
@@ -214,10 +212,6 @@ class BasicEnvironment(BaseTestCase):
             disk_logical_volume_name = vms.get_vm_disk_logical_name(
                 self.vm_name, disk_alias, parse_logical_name=True
             )
-            self.assertTrue(disk_logical_volume_name not in
-                            self.initial_storage_devices,
-                            "The disk created '%s' was found before being "
-                            "attached to the VM" % disk_alias)
             self.current_storage_devices = (
                 helpers.get_storage_devices(
                     self.vm_name, STORAGE_DEVICES_FILTER
@@ -249,8 +243,6 @@ class BasicEnvironment(BaseTestCase):
             if not hot_plug:
                 vms.stop_vms_safely([self.vm_name])
 
-            self.initial_storage_devices = self.current_storage_devices
-
     def create_and_attach_disk_to_vms_performing_os_validation(
         self, is_disk_shared, vm_names
     ):
@@ -258,22 +250,7 @@ class BasicEnvironment(BaseTestCase):
         Function creates a shared or non-shared disk and attaches it to a list
         of VMs
         """
-        self.initial_storage_devices = dict()
         self.current_storage_devices = dict()
-
-        self.assertTrue(vms.startVms(vm_names, config.VM_UP),
-                        "At least one VM from list '%s' failed to start" %
-                        vm_names)
-        for vm_name in vm_names:
-            vms.waitForIP(vm_name)
-            self.initial_storage_devices[vm_name] = (
-                helpers.get_storage_devices(
-                    vm_name, STORAGE_DEVICES_FILTER
-                )
-            )
-
-        vms.stop_vms_safely(vm_names)
-
         self.create_and_attach_disk_to_vms(is_disk_shared, vm_names)
 
         self.assertTrue(vms.startVms(vm_names, config.VM_UP),
@@ -281,8 +258,6 @@ class BasicEnvironment(BaseTestCase):
                         vm_names)
 
         for vm_name in vm_names:
-            vms.waitForIP(vm_name)
-
             # TODO: This is a workaround for bug
             # https://bugzilla.redhat.com/show_bug.cgi?id=1144860
             vm_ip = helpers.get_vm_ip(vm_name)
@@ -296,10 +271,6 @@ class BasicEnvironment(BaseTestCase):
                 )
             )
 
-            # TODO: This is a workaround for bug
-            # https://bugzilla.redhat.com/show_bug.cgi?id=1144860
-            vm_machine.runCmd(shlex.split("udevadm trigger"))
-
             if is_disk_shared:
                 disk_logical_volume_name = vms.get_vm_disk_logical_name(
                     vm_name, SHARED_DISK % self.polarion_test_case,
@@ -312,11 +283,6 @@ class BasicEnvironment(BaseTestCase):
                 )
             self.verify_logical_device_naming(config.VIRTIO,
                                               disk_logical_volume_name)
-            self.assertTrue(disk_logical_volume_name not in
-                            self.initial_storage_devices[vm_name],
-                            "The disk volume name '%s' was found "
-                            "before being attached to the VM" %
-                            disk_logical_volume_name)
             self.assertTrue(disk_logical_volume_name in
                             self.current_storage_devices[vm_name],
                             "The disk volume name '%s' was not found "

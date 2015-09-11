@@ -43,14 +43,23 @@ SPM_SLEEP = 5
 MIN_UNUSED_LUNS = 1
 
 vmArgs = {
-    'positive': True, 'vmName': config.VM_NAME,
-    'vmDescription': config.VM_NAME, 'diskInterface': config.VIRTIO,
-    'volumeFormat': config.COW_DISK, 'cluster': config.CLUSTER_NAME,
-    'storageDomainName': None, 'installation': False,
-    'size': config.VM_DISK_SIZE, 'nic': 'nic1',
-    'image': config.COBBLER_PROFILE, 'useAgent': True,
-    'os_type': config.ENUMS['rhel6'], 'user': config.VM_USER,
-    'password': config.VM_PASSWORD, 'network': config.MGMT_BRIDGE,
+    'positive': True,
+    'vmName': config.VM_NAME,
+    'vmDescription': config.VM_NAME,
+    'diskInterface': config.VIRTIO,
+    'volumeFormat': config.COW_DISK,
+    'cluster': config.CLUSTER_NAME,
+    'storageDomainName': None,
+    'installation': True,
+    'size': config.VM_DISK_SIZE,
+    'nic': config.NIC_NAME[0],
+    'image': config.COBBLER_PROFILE,
+    'useAgent': True,
+    'os_type': config.OS_TYPE,
+    'user': config.VM_USER,
+    'password': config.VM_PASSWORD,
+    'network': config.MGMT_BRIDGE,
+    'display_type': config.DISPLAY_TYPE,
 }
 
 

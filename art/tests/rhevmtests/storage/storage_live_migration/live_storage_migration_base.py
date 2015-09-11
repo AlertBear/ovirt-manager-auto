@@ -613,8 +613,12 @@ class TestCase5991(BaseTestCase):
             Creates second vm and shared disk for both of vms
             """
             logger.info('Creating vm')
-            if not addVm(True, wait=True, name=self.test_vm_name,
-                         cluster=config.CLUSTER_NAME):
+            if not addVm(
+                True, wait=True, name=self.test_vm_name,
+                cluster=config.CLUSTER_NAME,
+                display_type=config.DISPLAY_TYPE,
+                os_type=config.OS_TYPE, type=config.VM_TYPE
+            ):
                 raise exceptions.VMException("Failed to create vm %s"
                                              % self.test_vm_name)
             disk_args = {
@@ -983,6 +987,14 @@ class TestCase5996(CommonUsage):
         Tests storage live migration with floating disk in active status
         """
         self._test_plugged_disk(self.vm_name)
+
+    def tearDown(self):
+        """Remove floating disk"""
+        if not deleteDisk(True, self.disk_name_pattern):
+            logger.error("Failure to remove disk %s", self.disk_name_pattern)
+            BaseTestCase.test_failed = True
+        super(TestCase5996, self).tearDown()
+        self.teardown_exception()
 
 
 @attr(tier=2)

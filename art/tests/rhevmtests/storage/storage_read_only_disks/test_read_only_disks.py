@@ -50,7 +50,7 @@ vmArgs = {
     'nic': config.NIC_NAME[0],
     'image': config.COBBLER_PROFILE,
     'useAgent': True,
-    'os_type': ENUMS['rhel6'],
+    'os_type': config.OS_TYPE,
     'user': config.VM_USER,
     'password': config.VM_PASSWORD,
     'network': config.MGMT_BRIDGE
@@ -785,7 +785,7 @@ class TestCase4917(DefaultEnvironment):
 
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
     # Same issue happens after the vm is imported
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
+    bz = {'1294507': {'engine': None, 'version': ["3.6"]}}
 
     @polarion("RHEVM3-4917")
     def test_import_more_than_once_VM_with_RO_disk(self):
@@ -875,7 +875,6 @@ class TestCase4918(DefaultSnapshotEnvironment):
     snapshot_description = 'test_snap'
     create_snapshot = False
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     @polarion("RHEVM3-4918")
     def test_preview_snapshot_with_RO_disk(self):
@@ -956,7 +955,6 @@ class TestCase4919(DefaultSnapshotEnvironment):
     snapshot_description = 'test_snap'
     create_snapshot = False
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     @polarion("RHEVM3-4919")
     def test_preview_and_undo_snapshot_with_RO_disk(self):
@@ -1039,7 +1037,6 @@ class TestCase4920(DefaultSnapshotEnvironment):
     snapshot_description = 'test_snap'
     create_snapshot = False
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
-    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     @polarion("RHEVM3-4920")
     def test_preview_and_commit_snapshot_with_RO_disk(self):

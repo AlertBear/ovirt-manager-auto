@@ -104,7 +104,7 @@ def create_vm_with_disks(storage_domain, storage_type):
         cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
         display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
         user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
-        type=config.VM_TYPE_DESKTOP, installation=True, slim=True,
+        type=config.VM_TYPE, installation=True, slim=True,
         image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
         useAgent=config.USE_AGENT
     )
@@ -245,7 +245,10 @@ class HotplugHookTest(TestCase):
         """
         self.use_disks = DISKS_TO_PLUG[self.storage]
         self.vm_name = config.VM_NAME % self.storage
-        assert vms.waitForVMState(self.vm_name)
+        if vms.get_vm_state(self.vm_name) != config.VM_UP:
+            # TODO: Because of BZ1273891 - vm can be down after the hotplug
+            vms.startVm(True, self.vm_name)
+            vms.waitForVMState(self.vm_name)
         self.host_name = vms.getVmHost(self.vm_name)[1]['vmHoster']
         self.host_address = getHostIP(self.host_name)
         LOGGER.info("Host: %s" % self.host_address)
