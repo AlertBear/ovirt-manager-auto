@@ -8,8 +8,8 @@ import logging
 
 from rhevmtests.system.generic_ldap import config, common
 from art.rhevm_api.tests_lib.low_level import users, mla
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, CoreSystemTest as TestCase
-from nose.tools import istest
 
 
 LOGGER = logging.getLogger(__name__)
@@ -83,9 +83,9 @@ class SSOLogin(TestCase):
             ss.run_cmd(['kdestroy'])
             ss.run_cmd(['rm', '-f', cls.cookie_file])
 
-    @istest
+    @polarion('RHEVM3-6757')
     @common.check(config.EXTENSIONS)
-    def sso_login(self):
+    def test_sso_login(self):
         """  Test sso login to REST API """
         krb_conf = os.path.join(config.ENGINE_EXTENSIONS_DIR, KRB5_CONF)
         # Note that I can't separate this to more commands as it's forgotten

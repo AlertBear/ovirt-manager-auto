@@ -7,8 +7,8 @@ import logging
 
 from rhevmtests.system.generic_ldap import config, common
 from art.rhevm_api.tests_lib.low_level import users
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, CoreSystemTest as TestCase
-from nose.tools import istest
 
 
 LOGGER = logging.getLogger(__name__)
@@ -37,9 +37,9 @@ class ADTLS(TestCase):
             principal = '%s@%s' % (config.ADW2k12_USER1, domain)
             assert users.removeUser(True, principal, cls.conf['authz_name'])
 
-    @istest
+    @polarion('RHEVM3-8099')
     @common.check(config.EXTENSIONS)
-    def adtls(self):
+    def test_adtls(self):
         """ active directory start tsl """
         for domain in config.ADW2K12_DOMAINS:
             principal = '%s@%s' % (config.ADW2k12_USER1, domain)

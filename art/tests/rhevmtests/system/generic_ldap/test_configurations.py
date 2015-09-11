@@ -7,8 +7,8 @@ import logging
 
 from rhevmtests.system.generic_ldap import common, config
 from art.rhevm_api.tests_lib.low_level import mla
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, CoreSystemTest as TestCase
-from nose.tools import istest
 
 
 LOGGER = logging.getLogger(__name__)
@@ -39,9 +39,9 @@ class WrongConfiguration(Configuration):
     __test__ = True
     conf = config.WRONG_EXTENSION
 
-    @istest
+    @polarion('RHEVM3-12860')
     @common.check(config.EXTENSIONS)
-    def wrongConfiguration(self):
+    def test_wrongConfiguration(self):
         ''' wrong configuration '''
         self.assertFalse(self._isExtensionAvailable(self.conf['authz_name']))
 
@@ -54,8 +54,8 @@ class DisabledConfiguration(Configuration):
     __test__ = True
     conf = config.DISABLED_EXTENSION
 
-    @istest
+    @polarion('RHEVM3-12859')
     @common.check(config.EXTENSIONS)
-    def disabledConfiguration(self):
+    def test_disabledConfiguration(self):
         ''' disabled configuration '''
         self.assertFalse(self._isExtensionAvailable(self.conf['authz_name']))

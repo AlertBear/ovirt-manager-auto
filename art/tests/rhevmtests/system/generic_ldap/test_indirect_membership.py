@@ -7,8 +7,8 @@ import logging
 
 from rhevmtests.system.generic_ldap import config, common
 from art.rhevm_api.tests_lib.low_level import users, mla
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, CoreSystemTest as TestCase
-from nose.tools import istest
 
 
 LOGGER = logging.getLogger(__name__)
@@ -58,9 +58,9 @@ class IndirectMembershipRecursive(IndirectMembership):
     PASSWORD = config.ADW2k12_USER_PASSWORD
     NAMESPACE = config.AD_GROUP32_NS
 
-    @istest
+    @polarion('RHEVM3-12862')
     @common.check(config.EXTENSIONS)
-    def ad_indirect_group_membership(self):
+    def test_ad_indirect_group_membership(self):
         """ test AD indirect group membership """
         self.indirect_group_membership()
 
@@ -75,9 +75,9 @@ class IndirectMembershipNonRecursive(IndirectMembership):
     USER = config.IPA_GROUP_USER
     PASSWORD = config.IPA_PASSWORD
 
-    @istest
+    @polarion('RHEVM3-12863')
     @common.check(config.EXTENSIONS)
-    def ipa_indirect_group_membership(self):
+    def test_ipa_indirect_group_membership(self):
         """ test IPA indirect group membership """
         self.indirect_group_membership()
 
@@ -114,6 +114,7 @@ class GroupRecursion(TestCase):
             assert users.deleteGroup(True, group)
         assert users.removeUser(True, cls.USER, cls.conf['authz_name'])
 
+    @polarion('RHEVM3-12861')
     def test_group_recursion(self):
         """  test if engine can handle group recursion """
         users.loginAsUser(

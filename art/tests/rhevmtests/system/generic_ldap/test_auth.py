@@ -8,8 +8,8 @@ import logging
 
 from rhevmtests.system.generic_ldap import config, common
 from art.rhevm_api.tests_lib.low_level import users, mla
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, CoreSystemTest as TestCase
-from nose.tools import istest
 
 LOGGER = logging.getLogger(__name__)
 CONF_NAME = '99-krb_ipa.conf'
@@ -77,9 +77,9 @@ class ADDigestMD5(DirectLogin):
     PASSWORD = config.ADDIGEST_PASSWORD
     DOMAIN = config.ADDIGEST_USER_DOMAIN
 
-    @istest
+    @polarion('RHEVM3-8229')
     @common.check(config.EXTENSIONS)
-    def ad_digest_md5(self):
+    def test_ad_digest_md5(self):
         """ active directory digest md5 authentication """
         self.login()
 
@@ -93,8 +93,8 @@ class IPAGSSAPI(DirectLogin):
     USER = config.IPAGSSAPI_USER
     PASSWORD = config.IPAGSSAPI_PASSWORD
 
-    @istest
+    @polarion('RHEVM3-8230')
     @common.check(config.EXTENSIONS)
-    def ipa_gssapi(self):
+    def test_ipa_gssapi(self):
         """ IPA gssapi authentication """
         self.login()
