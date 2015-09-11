@@ -689,10 +689,10 @@ class TestCase6169(TestCase):
     Storage/3_3_Storage_Backup_API
     """
     __test__ = True
-    bz = {
-        '1211670': {'engine': ['cli'], 'version': ['3.5', '3.6']},
-        '1231849': {'engine': None, 'version': ['3.6']},
-    }
+    # Bugzilla history:
+    # 1231849: Creating a vm with configuration fails (like ovf data)
+    # 1211670: The CLI doesn't provide a mechanism to escape characters
+    # in string literals
     polarion_test_case = '6169'
 
     def setUp(self):
@@ -998,8 +998,12 @@ class TestCase6173(TestCase):
     """
     __test__ = True
     polarion_test_case = '6173'
-    bz = {'1251956': {'engine': None, 'version': ['3.6']}}
-    # Bugzilla history: 1176673 1196049
+    # Bugzilla history:
+    # 1176673 1196049
+    bz = {
+        '1251956': {'engine': None, 'version': ['3.6']},
+        '1259785': {'engine': None, 'version': ['3.6']},
+    }
 
     def setUp(self):
         self.vm_names = VM_NAMES[self.storage]

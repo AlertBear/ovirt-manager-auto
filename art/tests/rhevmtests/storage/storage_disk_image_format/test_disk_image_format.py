@@ -235,9 +235,9 @@ class TestCasesVms(BaseTestDiskImageVms):
     """
     Collection of tests which utilize BaseTestDiskImageVms
     """
-
     bz = {
         '1251956': {'engine': None, 'version': ['3.6']},
+        '1259785': {'engine': None, 'version': ['3.6']},
     }
 
     @polarion("RHEVM3-11604")
@@ -416,7 +416,8 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
     Collection for test cases with one vm imported
     """
     retrieve_disk_obj = lambda self, x: vms.getVmDisks(x)
-    bz = {'1254230': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history:
+    # 1254230: Operation of exporting template to Export domain stucks
 
     def setUp(self):
         """

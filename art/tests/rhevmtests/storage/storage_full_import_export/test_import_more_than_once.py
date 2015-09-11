@@ -40,7 +40,8 @@ class TestCase11588(TestCase):
     from_vm1, from_vm2 = 'vm1_from_vm', 'vm2_from_vm'
     from_template1, from_template2 = 'vm1_from_template', 'vm2_from_template'
     vm_cloned1, vm_cloned2 = 'vm_cloned1', 'vm_cloned2'
-    bz = {'1254230': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history:
+    # 1254230: Operation of exporting template to Export domain stucks
 
     def setUp(self):
         """

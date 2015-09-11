@@ -253,7 +253,9 @@ class TestCase5129(CreateSnapshotWithMemoryState):
     __test__ = True
     run_test_on_spm = True
     polarion_test_case = '5129'
-    bz = {'1253338': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history
+    # 1253338: restore snapshot via API results in snapshot being stuck on
+    # "In preview" status
 
     @polarion("RHEVM3-5129")
     def test_create_snapshot_spm(self):
@@ -271,7 +273,9 @@ class TestCase5140(CreateSnapshotWithMemoryState):
     __test__ = True
     run_test_on_spm = False
     polarion_test_case = '5140'
-    bz = {'1253338': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history
+    # 1253338: restore snapshot via API results in snapshot being stuck on
+    # "In preview" status
 
     @polarion("RHEVM3-5140")
     def test_create_snapshot_hsm(self):
@@ -328,8 +332,10 @@ class TestCase5139(ReturnToSnapshot):
     __test__ = True
     polarion_test_case = '5139'
     test_action = staticmethod(preview_snapshot)
-    # Bugzilla history: 1211588
-    bz = {'1253338': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history
+    # 1211588
+    # 1253338: restore snapshot via API results in snapshot being stuck on
+    # "In preview" status
 
     @polarion("RHEVM3-5139")
     def test_preview_snapshot(self):
@@ -357,7 +363,9 @@ class TestCase5138(ReturnToSnapshot):
     __test__ = True
     polarion_test_case = '5138'
     test_action = staticmethod(restore_snapshot)
-    bz = {'1253338': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history
+    # 1253338: restore snapshot via API results in snapshot being stuck on
+    # "In preview" status
 
     @polarion("RHEVM3-5138")
     def test_restore_snasphot(self):
@@ -377,7 +385,9 @@ class TestCase5137(VMWithMemoryStateSnapshot):
     polarion_test_case = '5137'
     second_snapshot_name = config.RAM_SNAPSHOT % 1
     previewed_snapshot = None
-    bz = {'1253338': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history
+    # 1253338: restore snapshot via API results in snapshot being stuck on
+    # "In preview" status
 
     def setUp(self):
         """
@@ -498,8 +508,10 @@ class TestCase5136(VMWithMemoryStateSnapshot):
     __test__ = True
     persist_network = True
     polarion_test_case = '5136'
-    # Bugzilla history: 1178508
-    bz = {'1253338': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history
+    # 1178508
+    # 1253338: restore snapshot via API results in snapshot being stuck on
+    # "In preview" status
 
     def setUp(self):
         """
@@ -565,7 +577,9 @@ class TestCase5134(VMWithMemoryStateSnapshot):
     original_vm = '%s_%s_original' % (
         VM_PREFIX, VMWithMemoryStateSnapshot.storage
     )
-    bz = {'1253338': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history
+    # 1253338: restore snapshot via API results in snapshot being stuck on
+    # "In preview" status
 
     @polarion("RHEVM3-5134")
     def test_import_vm_with_memory_state_snapshot(self):
@@ -634,7 +648,9 @@ class TestCase5133(VMWithMemoryStateSnapshot):
     """
     __test__ = True
     polarion_test_case = '5133'
-    bz = {'1253338': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history
+    # 1253338: restore snapshot via API results in snapshot being stuck on
+    # "In preview" status
 
     @polarion("RHEVM3-5133")
     def test_remove_memory_state_snapshot(self):
@@ -665,7 +681,9 @@ class TestCase5131(VMWithMemoryStateSnapshot):
     """
     __test__ = True
     polarion_test_case = '5131'
-    bz = {'1253338': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history
+    # 1253338: restore snapshot via API results in snapshot being stuck on
+    # "In preview" status
 
     @polarion("RHEVM3-5131")
     def test_stateless_vm_with_memory_snapshot(self):

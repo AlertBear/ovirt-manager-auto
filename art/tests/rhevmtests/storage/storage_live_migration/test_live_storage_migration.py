@@ -107,8 +107,12 @@ LOCAL_LUN_ADDRESS = []
 LOCAL_LUN_TARGET = []
 ISCSI = config.STORAGE_TYPE_ISCSI
 
+# Bugzilla history:
+# 1251956: Live storage migration is broken
+# 1259785: Error 'Unable to find org.ovirt.engine.core.common.job.Step with id'
+# after live migrate a Virtio RAW disk, job stays in status STARTED
 # Live Migration is broken, skip
-bz = {'1251956': {'engine': None, 'version': ['3.6']}}
+
 
 # TOOD: Once the patch for test_failure is merged and tested change the
 # tearDown of the test to only log during the execution and raise the
@@ -2338,9 +2342,6 @@ class TestCase5983(BaseTestCase):
     vm_count = 5
     vm_names = None
     vm_args = vmArgs.copy()
-    bz = {
-        '1251956': {'engine': None, 'version': ['3.6']}
-    }
 
     def setUp(self):
         super(TestCase5983, self).setUp()

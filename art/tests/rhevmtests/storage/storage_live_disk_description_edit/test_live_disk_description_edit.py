@@ -195,7 +195,8 @@ class TestCase11500(BaseClassEditDescription):
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
     polarion_test_case = '11500'
-    bz = {'1211314': {'engine': ['cli'], 'version': ['3.5', '3.6']}}
+    # Bugzilla history
+    # 1211314: CLI auto complete option description is missing for add disk
 
     @polarion("RHEVM3-11500")
     def test_edit_description_on_block_or_file_domain(self):
@@ -221,7 +222,8 @@ class TestCase11501(BaseClassEditDescription):
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
     polarion_test_case = '11501'
-    bz = {'1211314': {'engine': ['cli'], 'version': ['3.5', '3.6']}}
+    # Bugzilla history
+    # 1211314: CLI auto complete option description is missing for add disk
 
     @polarion("RHEVM3-11501")
     def test_edit_description_on_block_or_file_domain(self):
@@ -341,6 +343,7 @@ class TestCase11504(BasicEnvironment):
     polarion_test_case = '11504'
     bz = {
         '1251956': {'engine': None, 'version': ['3.6']},
+        '1259785': {'engine': None, 'version': ['3.6']},
     }
 
     def setUp(self):

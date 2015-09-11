@@ -63,7 +63,8 @@ class TestCase4665(BaseExportImportTestCase):
     """
     __test__ = True
     polarion_test_case = '4665'
-    bz = {'1254230': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history:
+    # 1254230: Operation of exporting template to Export domain stucks
 
     def setUp(self):
         """
@@ -263,7 +264,8 @@ class TestCase11986(BaseExportImportTestCase):
     """
     __test__ = True
     polarion_test_case = '11986'
-    bz = {'1254230': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history:
+    # 1254230: Operation of exporting template to Export domain stucks
 
     def setUp(self):
         """

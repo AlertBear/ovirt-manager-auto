@@ -81,8 +81,9 @@ class TestCase4831(helpers.TestCaseStandardOperations):
     vm_2 = 'vm_%s_2' % polarion_test_case
     template = 'templ_%s' % polarion_test_case
 
-    # Bug history: 1248035
-    bz = {'1254230': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history:
+    # 1248035: VM migration: migration failed since vdsm failed to run VM...
+    # 1254230: Operation of exporting template to Export domain stucks
 
     @classmethod
     def setup_class(cls):

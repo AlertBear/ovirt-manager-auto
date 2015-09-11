@@ -434,7 +434,9 @@ class TestCase4565(IscsiNfsSD):
     __test__ = True
     polarion_test_case = '4565'
     vm_name = "vm_%s" % polarion_test_case
-    bz = {'1253338': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history
+    # 1253338: restore snapshot via API results in snapshot being stuck on
+    # "In preview" status
 
     def setUp(self):
         """

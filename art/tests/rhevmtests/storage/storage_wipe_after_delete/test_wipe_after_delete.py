@@ -275,9 +275,9 @@ class TestCase11864(CommonUsage):
     polarion_test_case = '11864'
     disk_name = "disk_%s" % polarion_test_case
     regex = 'dd oflag=direct if=/dev/zero of=.*/%s'
-
     bz = {
         '1251956': {'engine': None, 'version': ['3.6']},
+        '1259785': {'engine': None, 'version': ['3.6']},
     }
 
     def setUp(self):

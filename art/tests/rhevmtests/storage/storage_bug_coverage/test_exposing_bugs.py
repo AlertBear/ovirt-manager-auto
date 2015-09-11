@@ -534,8 +534,9 @@ class TestCase11956(EnvironmentWithTwoHosts):
     __test__ = True
     polarion_test_case = '11956'
     vm_name_base = "vm_%s" % polarion_test_case
-    # Bugzilla history: 1248035
-    bz = {'1254582': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history:
+    # 1248035
+    # 1254582: Failed to created vm pinned to specific host
 
     def setUp(self):
         """

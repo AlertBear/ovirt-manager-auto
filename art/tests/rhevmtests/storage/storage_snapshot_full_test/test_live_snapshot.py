@@ -180,7 +180,9 @@ class BaseTestCase(TestCase):
     This class implements setup and teardowns of common things
     """
     __test__ = False
-    bz = {'1253338': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history
+    # 1253338: restore snapshot via API results in snapshot being stuck on
+    # "In preview" status
 
     def setUp(self):
         """
@@ -225,7 +227,9 @@ class TestCase11660(BasicEnvironmentSetUp):
     """
     __test__ = True
     polarion_test_case = '11660'
-    bz = {'1211588': {'engine': ['cli'], 'version': ['3.5', '3.6']}}
+    # Bugzilla history
+    # 1211588: CLI auto complete options async and grace_period-expiry are
+    # missing for preview_snapshot
 
     def setUp(self):
         self.previewed = False
