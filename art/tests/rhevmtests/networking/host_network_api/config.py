@@ -19,8 +19,8 @@ HOST_4 = HOSTS[3]
 DC_NAME = DC_NAME[0]
 CLUSTER_1 = CLUSTER_NAME[0]
 CLUSTER_2 = CLUSTER_NAME[1]
-EXTRA_DC = EXTRA_DC[0]
-EXTRA_CL = EXTRA_CL[0]
+EXTRA_DC = "Sync_DC"
+EXTRA_CL = "Sync_cluster"
 NIC_NETS = network_lib.generate_networks_names(cases=20, prefix="nic")
 HOST_NETS = network_lib.generate_networks_names(cases=20, prefix="host")
 SYNC_NETS_DC_1 = network_lib.generate_networks_names(cases=20, prefix="sync1_")
@@ -33,7 +33,8 @@ VLAN_ID = 2
 NUM_DUMMYS = 15
 DUMMYS = ["dummy_%s" % i for i in xrange(NUM_DUMMYS)]
 NETWORKS_DICT = {}
-VLAN = "vlan"
+VLAN_STR = "vlan"
+MTU_STR = "mtu"
 VLAN_IDS = [str(i) for i in xrange(2, 50)]
 
 BASIC_IP_DICT_NETMASK = {
@@ -411,6 +412,28 @@ SYNC_DICT_1 = {
     SYNC_NETS_DC_1[2][2]: {
         "required": "false",
     },
+    SYNC_NETS_DC_1[3][0]: {
+        "required": "false",
+        "mtu": MTU[0]
+    },
+    SYNC_NETS_DC_1[3][1]: {
+        "required": "false",
+        "mtu": MTU[1]
+    },
+    SYNC_NETS_DC_1[3][2]: {
+        "required": "false",
+    },
+    SYNC_NETS_DC_1[4][0]: {
+        "required": "false",
+        "mtu": MTU[0]
+    },
+    SYNC_NETS_DC_1[4][1]: {
+        "required": "false",
+        "mtu": MTU[1]
+    },
+    SYNC_NETS_DC_1[4][2]: {
+        "required": "false",
+    },
 }
 
 SYNC_DICT_2 = {
@@ -435,5 +458,27 @@ SYNC_DICT_2 = {
     SYNC_NETS_DC_1[2][2]: {
         "required": "false",
         "vlan_id": VLAN_IDS[45]
+    },
+    SYNC_NETS_DC_1[3][0]: {
+        "required": "false",
+        "mtu": MTU[1]
+    },
+    SYNC_NETS_DC_1[3][1]: {
+        "required": "false",
+    },
+    SYNC_NETS_DC_1[3][2]: {
+        "required": "false",
+        "mtu": MTU[0]
+    },
+    SYNC_NETS_DC_1[4][0]: {
+        "required": "false",
+        "mtu": MTU[1]
+    },
+    SYNC_NETS_DC_1[4][1]: {
+        "required": "false",
+    },
+    SYNC_NETS_DC_1[4][2]: {
+        "required": "false",
+        "mtu": MTU[0]
     },
 }

@@ -113,7 +113,7 @@ class TestHostNetworkApiSyncBase(helper.TestHostNetworkApiTestCaseBase):
 
 class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
     """
-    Check sync/un-sync different VLAN network
+    Check sync/un-sync different VLAN networks
     Sync the network
     """
     __test__ = True
@@ -130,7 +130,7 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
     @classmethod
     def setup_class(cls):
         """
-        Attach network with VLAN to the host
+        Attach networks with VLAN/Non-VLAN to the host
         Move the host to another cluster
         """
         TestHostNetworkApiSync01.network_host_api_dict = {
@@ -161,7 +161,7 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
         """
         compare_dict = {
             self.net_case_1: {
-                conf.VLAN: {
+                conf.VLAN_STR: {
                     "expected": self.net_case_1_vlan_id_expected,
                     "actual": self.net_case_1_vlan_id_actual
                 }
@@ -177,7 +177,7 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
         """
         compare_dict = {
             self.net_case_2: {
-                conf.VLAN: {
+                conf.VLAN_STR: {
                     "expected": self.net_case_2_vlan_id_expected,
                     "actual": self.net_case_2_vlan_id_actual
                 }
@@ -193,7 +193,7 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
         """
         compare_dict = {
             self.net_case_3: {
-                conf.VLAN: {
+                conf.VLAN_STR: {
                     "expected": self.net_case_3_vlan_id_expected,
                     "actual": self.net_case_3_vlan_id_actual
                 }
@@ -205,7 +205,7 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
 
 class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
     """
-    Check sync/un-sync different VLAN over BOND network
+    Check sync/un-sync different VLAN networks over BOND
     Sync the network
     """
     __test__ = True
@@ -218,40 +218,43 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
     net_case_1_vlan_id_expected = conf.VLAN_IDS[44]
     net_case_2_vlan_id_expected = None
     net_case_3_vlan_id_expected = conf.VLAN_IDS[45]
+    bond_1 = "bond21"
+    bond_2 = "bond22"
+    bond_3 = "bond23"
 
     @classmethod
     def setup_class(cls):
         """
-        Attach network with VLAN to the host
+        Attach networks with VLAN/Non-VLAN to the host
         Move the host to another cluster
         """
         TestHostNetworkApiSync02.network_host_api_dict = {
             "add": {
                 "1": {
-                    "nic": "bond21",
+                    "nic": cls.bond_1,
                     "slaves": conf.DUMMYS[:2]
                 },
                 "2": {
-                    "nic": "bond22",
+                    "nic": cls.bond_2,
                     "slaves": conf.DUMMYS[2:4]
                 },
                 "3": {
-                    "nic": "bond23",
+                    "nic": cls.bond_3,
                     "slaves": conf.DUMMYS[4:6]
                 },
                 "4": {
                     "network": cls.net_case_1,
-                    "nic": "bond21",
+                    "nic": cls.bond_1,
                     "datacenter": conf.DC_NAME
                 },
                 "5": {
                     "network": cls.net_case_2,
-                    "nic": "bond22",
+                    "nic": cls.bond_2,
                     "datacenter": conf.DC_NAME
                 },
                 "6": {
                     "network": cls.net_case_3,
-                    "nic": "bond23",
+                    "nic": cls.bond_3,
                     "datacenter": conf.DC_NAME
                 }
             }
@@ -266,7 +269,7 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
         """
         compare_dict = {
             self.net_case_1: {
-                conf.VLAN: {
+                conf.VLAN_STR: {
                     "expected": self.net_case_1_vlan_id_expected,
                     "actual": self.net_case_1_vlan_id_actual
                 }
@@ -283,7 +286,7 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
         """
         compare_dict = {
             self.net_case_2: {
-                conf.VLAN: {
+                conf.VLAN_STR: {
                     "expected": self.net_case_2_vlan_id_expected,
                     "actual": self.net_case_2_vlan_id_actual
                 }
@@ -299,9 +302,211 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
         """
         compare_dict = {
             self.net_case_3: {
-                conf.VLAN: {
+                conf.VLAN_STR: {
                     "expected": self.net_case_3_vlan_id_expected,
                     "actual": self.net_case_3_vlan_id_actual
+                }
+            }
+        }
+        helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        helper.sync_networks([self.net_case_3])
+
+
+class TestHostNetworkApiSync03(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync different MTU networks over NIC
+    Sync the network
+    """
+    __test__ = True
+    net_case_1 = conf.SYNC_NETS_DC_1[3][0]
+    net_case_1_mtu_actual = str(conf.MTU[0])
+    net_case_2 = conf.SYNC_NETS_DC_1[3][1]
+    net_case_2_mtu_actual = str(conf.MTU[1])
+    net_case_3 = conf.SYNC_NETS_DC_1[3][2]
+    net_case_3_mtu_actual = str(conf.MTU[3])
+    net_case_1_mtu_expected = str(conf.MTU[1])
+    net_case_2_mtu_expected = str(conf.MTU[3])
+    net_case_3_mtu_expected = str(conf.MTU[0])
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach networks with MTU/Non-MTU to the host
+        Move the host to another cluster
+        """
+        TestHostNetworkApiSync03.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": cls.net_case_1,
+                    "nic": conf.HOST_1_NICS[1],
+                    "datacenter": conf.DC_NAME
+                },
+                "2": {
+                    "network": cls.net_case_2,
+                    "nic": conf.HOST_1_NICS[2],
+                    "datacenter": conf.DC_NAME
+                },
+                "3": {
+                    "network": cls.net_case_3,
+                    "nic": conf.HOST_1_NICS[3],
+                    "datacenter": conf.DC_NAME
+                }
+            }
+        }
+        super(TestHostNetworkApiSync03, cls).setup_class()
+
+    def test_unsync_network_change_mtu(self):
+        """
+        Check that the network is un-sync and the sync reason is different MTU
+        Sync the network
+        """
+        compare_dict = {
+            self.net_case_1: {
+                conf.MTU_STR: {
+                    "expected": self.net_case_1_mtu_expected,
+                    "actual": self.net_case_1_mtu_actual
+                }
+            }
+        }
+        helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        helper.sync_networks([self.net_case_1])
+
+    def test_unsync_network_mtu_to_no_mtu(self):
+        """
+        Check that the network is un-sync and the sync reason is different MTU
+        Sync the network
+        """
+        compare_dict = {
+            self.net_case_2: {
+                conf.MTU_STR: {
+                    "expected": self.net_case_2_mtu_expected,
+                    "actual": self.net_case_2_mtu_actual
+                }
+            }
+        }
+        helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        helper.sync_networks([self.net_case_2])
+
+    def test_unsync_network_no_mtu_to_mtu(self):
+        """
+        Check that the network is un-sync and the sync reason is different MTU
+        Sync the network
+        """
+        compare_dict = {
+            self.net_case_3: {
+                conf.MTU_STR: {
+                    "expected": self.net_case_3_mtu_expected,
+                    "actual": self.net_case_3_mtu_actual
+                }
+            }
+        }
+        helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        helper.sync_networks([self.net_case_3])
+
+
+class TestHostNetworkApiSync04(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync different MTU networks over BOND
+    Sync the network
+    """
+    __test__ = True
+    net_case_1 = conf.SYNC_NETS_DC_1[4][0]
+    net_case_1_mtu_actual = str(conf.MTU[0])
+    net_case_2 = conf.SYNC_NETS_DC_1[4][1]
+    net_case_2_mtu_actual = str(conf.MTU[1])
+    net_case_3 = conf.SYNC_NETS_DC_1[4][2]
+    net_case_3_mtu_actual = str(conf.MTU[3])
+    net_case_1_mtu_expected = str(conf.MTU[1])
+    net_case_2_mtu_expected = str(conf.MTU[3])
+    net_case_3_mtu_expected = str(conf.MTU[0])
+    bond_1 = "bond31"
+    bond_2 = "bond32"
+    bond_3 = "bond33"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach networks with MTU/Non-MTU to the host over BOND
+        Move the host to another cluster
+        """
+        TestHostNetworkApiSync04.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": cls.bond_1,
+                    "slaves": conf.DUMMYS[:2]
+                },
+                "2": {
+                    "nic": cls.bond_2,
+                    "slaves": conf.DUMMYS[2:4]
+                },
+                "3": {
+                    "nic": cls.bond_3,
+                    "slaves": conf.DUMMYS[4:6]
+                },
+                "4": {
+                    "network": cls.net_case_1,
+                    "nic": cls.bond_1,
+                    "datacenter": conf.DC_NAME
+                },
+                "5": {
+                    "network": cls.net_case_2,
+                    "nic": cls.bond_2,
+                    "datacenter": conf.DC_NAME
+                },
+                "6": {
+                    "network": cls.net_case_3,
+                    "nic": cls.bond_3,
+                    "datacenter": conf.DC_NAME
+                }
+            }
+        }
+        super(TestHostNetworkApiSync04, cls).setup_class()
+
+    def test_unsync_network_change_mtu_over_bond(self):
+        """
+        Check that the network is un-sync and the sync reason is different MTU
+        over BOND
+        Sync the network
+        """
+        compare_dict = {
+            self.net_case_1: {
+                conf.MTU_STR: {
+                    "expected": self.net_case_1_mtu_expected,
+                    "actual": self.net_case_1_mtu_actual
+                }
+            }
+        }
+        helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        helper.sync_networks([self.net_case_1])
+
+    def test_unsync_network_mtu_to_no_mtu_over_bond(self):
+        """
+        Check that the network is un-sync and the sync reason is different MTU
+        over BOND
+        Sync the network
+        """
+        compare_dict = {
+            self.net_case_2: {
+                conf.MTU_STR: {
+                    "expected": self.net_case_2_mtu_expected,
+                    "actual": self.net_case_2_mtu_actual
+                }
+            }
+        }
+        helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        helper.sync_networks([self.net_case_2])
+
+    def test_unsync_network_no_mtu_to_mtu_over_bond(self):
+        """
+        Check that the network is un-sync and the sync reason is different
+        MTU over BOND
+        Sync the network
+        """
+        compare_dict = {
+            self.net_case_3: {
+                conf.MTU_STR: {
+                    "expected": self.net_case_3_mtu_expected,
+                    "actual": self.net_case_3_mtu_actual
                 }
             }
         }
