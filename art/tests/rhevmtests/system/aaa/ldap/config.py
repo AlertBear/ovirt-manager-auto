@@ -101,6 +101,8 @@ ADW2K12_DOMAINS = ['ad-w2k12r2.rhev.lab.eng.brq.redhat.com',
                    'ad-w2k12r2lc.ad-w2k12r2.rhev.lab.eng.brq.redhat.com']
 ADW2k12_USER_PASSWORD = 'Heslo123'
 ADW2k12_USER1 = 'user1'
+ADW2k12_USER_SPACE = 'user with space'
+ADW2k12_GROUP_SPACE = 'Group with space'
 
 
 # Openldap
