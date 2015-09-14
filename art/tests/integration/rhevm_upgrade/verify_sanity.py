@@ -7,6 +7,7 @@ import logging
 from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 from art.rhevm_api.tests_lib.low_level.vms import removeVm, checkVMConnectivity
 from art.test_handler.exceptions import VMException
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import CoreSystemTest as TestCase
 from art.unittest_lib import attr
 from art.rhevm_api.utils.test_utils import get_api
@@ -40,6 +41,7 @@ class UpgradeSanityVerification(TestCase):
             raise VMException("Cannot remove vm %s" % config.VM_NAME)
         LOGGER.info("Successfully removed %s.", config.VM_NAME)
 
+    @polarion('RHEVM3-8127')
     def test_post_upgrade(self):
         """ Run tests after the upgrade """
         LOGGER.debug("post-upgrade tests")
@@ -48,6 +50,7 @@ class UpgradeSanityVerification(TestCase):
                                    user=config.VM_LINUX_USER,
                                    password=config.VMS_LINUX_PW)
 
+    @polarion('RHEVM3-12864')
     def test_legacy_providers(self):
         """ test if legacy providers are accessible after upgrade """
         domains = domUtil.get(absLink=False)

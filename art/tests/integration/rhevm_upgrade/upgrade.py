@@ -5,6 +5,7 @@ Sanity testing of upgrade.
 import logging
 from pprint import pformat
 
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import CoreSystemTest as TestCase
 from utilities.rhevm_tools.base import Setup
 from utilities.rhevm_tools.setup import SetupUtility
@@ -46,6 +47,7 @@ class UpgradeSanityUpgrade(TestCase):
         self.ut.setup.fillAnswerFile(self.answerfile, **params)
         LOGGER.info("%s: install setup with %s", config.VDC, pformat(params))
 
+    @polarion('RHEVM3-8125')
     def test_upgrade(self):
         """ Perform the upgrade of the setup """
         self.machine.yum(config.SETUP_PACKAGE, 'update')
