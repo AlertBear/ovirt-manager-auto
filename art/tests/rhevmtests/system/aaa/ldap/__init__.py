@@ -1,7 +1,7 @@
 import logging
 import os
 
-from rhevmtests.system.generic_ldap import config, common
+from rhevmtests.system.aaa.ldap import config, common
 
 
 LOGGER = logging.getLogger(__name__)

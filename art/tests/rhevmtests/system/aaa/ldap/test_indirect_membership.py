@@ -5,7 +5,7 @@ __test__ = True
 
 import logging
 
-from rhevmtests.system.generic_ldap import config, common
+from rhevmtests.system.aaa.ldap import config, common
 from art.rhevm_api.tests_lib.low_level import users, mla
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, CoreSystemTest as TestCase

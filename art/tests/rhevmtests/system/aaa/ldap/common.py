@@ -6,7 +6,7 @@ import logging
 from functools import wraps
 from art.test_handler.exceptions import SkipTest
 from art.core_api.apis_exceptions import APIException
-from rhevmtests.system.generic_ldap import config
+from rhevmtests.system.aaa.ldap import config
 from art.rhevm_api.tests_lib.low_level import users, mla, general
 from art.rhevm_api.utils.aaa import copy_extension_file
 from art.rhevm_api.utils.test_utils import restart_engine
