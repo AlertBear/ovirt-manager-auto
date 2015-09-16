@@ -1,31 +1,116 @@
+__test__ = False
+
+import logging
+
 from configobj import ConfigObj
+
+from art.test_handler.settings import ART_CONFIG, opts
+from art.rhevm_api import resources
+
+logger = logging.getLogger(__name__)
+
+
+def get_list(params, key):
+    """
+    Get element from configuration section as list
+
+    :param params: configuration section
+    :type params: ConfigObj section
+    :param key: element to get
+    :type key: str
+    :return: return element of configuration section as list
+    :rtype: list
+    """
+    return params.as_list(key) if key in params else []
 
 global config
 config = ConfigObj(raise_errors=True)
 
-from rhevmtests.system.config import *  # flake8: noqa
+# RHEVM related constants
+ENUMS = opts['elements_conf']['RHEVM Enums']
+PERMITS = opts['elements_conf']['RHEVM Permits']
+RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
 
+TEST_NAME = "Global"
 
-params = ART_CONFIG['PARAMETERS']
-ISO_UP_CONF = params.get('iso_up_conf_file',
-                         '/etc/ovirt-engine/isouploader.conf')
-LOG_COL_CONF = params.get('log_col_conf_file',
-                          '/etc/ovirt-engine/logcollector.conf')
-IMAGE_UP_CONF = params.get('image_up_conf_file',
-                           '/etc/ovirt-engine/imageuploader.conf')
+PARAMETERS = ART_CONFIG['PARAMETERS']
+REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
+ISO_UP_CONF = PARAMETERS.get('iso_up_conf_file',
+                             '/etc/ovirt-engine/isouploader.conf')
+LOG_COL_CONF = PARAMETERS.get('log_col_conf_file',
+                              '/etc/ovirt-engine/logcollector.conf')
+IMAGE_UP_CONF = PARAMETERS.get('image_up_conf_file',
+                               '/etc/ovirt-engine/imageuploader.conf')
 
-NEW_CLUSTER_NAME = params.get('new_cluster_name', 'golden_setup_new_cluster')
-NEW_DC_NAME = params.get('new_datacenter_name', 'golden_setup_new_dc')
+NEW_CLUSTER_NAME = PARAMETERS.get('new_cluster_name',
+                                  'golden_setup_new_cluster')
+NEW_DC_NAME = PARAMETERS.get('new_datacenter_name', 'golden_setup_new_dc')
+VM_NAME = ''.join([PARAMETERS.get('basename', TEST_NAME), 'Vm'])
 
-# image/iso uploader is using default names for iso/export domain, which are
-# specified in high_level.storagedomains.create_storages
-if GOLDEN_ENV:
-    ISO_DOMAIN_NAME = iso_sds[0]['name']
-    STORAGE_TYPE = STORAGE_TYPE_NFS
-else:
-    ISO_DOMAIN_NAME = 'iso_domain'
+ISO_DOMAIN_NAME = 'iso_domain'
 LOCAL_ISO_DOMAIN_NAME = 'ISO_DOMAIN'
 EXPORT_DOMAIN_NAME = 'export_domain'
+
+LOGDIR = 'logdir'
+OUTPUT_DIR = opts.get(LOGDIR, None)
+
+CONFIG_ELEMENTS = 'elements_conf'
+CONFIG_SECTION = 'RHEVM Utilities'
+VARS = opts[CONFIG_ELEMENTS][CONFIG_SECTION]
+
+HOSTS = PARAMETERS.as_list('vds')
+HOSTS_IP = list(HOSTS)
+HOSTS_PW = PARAMETERS.as_list('vds_password')[0]
+VDS_HOSTS = [
+    resources.VDS(
+        h, HOSTS_PW,
+    ) for h in HOSTS_IP
+]
+
+GOLDEN_ENV = False
+CPU_NAME = PARAMETERS['cpu_name']
+DC_NAME = PARAMETERS.get('dc_name', 'Global_DC_1')
+CLUSTER_NAME = PARAMETERS.get('cluster_name', 'Global_Cluster_1')
+COMP_VERSION = PARAMETERS.get('compatibility_version')
+
+# ENGINE SECTION
+VDC_HOST = REST_CONNECTION['host']
+VDC_ROOT_PASSWORD = PARAMETERS.get('vdc_root_password')
+VDC_ROOT_USER = "root"
+VDC_PASSWORD = REST_CONNECTION['password']
+VDC_PORT = REST_CONNECTION['port']
+VDC_ADMIN_USER = REST_CONNECTION['user']
+VDC_ADMIN_DOMAIN = REST_CONNECTION['user_domain']
+ENGINE_ENTRY_POINT = REST_CONNECTION['entry_point']
+ENGINE_URL = '%s://%s:%s/%s' % (
+    REST_CONNECTION.get('scheme'),
+    VDC_HOST,
+    VDC_PORT,
+    ENGINE_ENTRY_POINT
+)
+ENGINE_LOG = '/var/log/ovirt-engine/engine.log'
+ENGINE_EXTENSIONS_DIR = '/etc/ovirt-engine/extensions.d'
+VDSM_LOG = '/var/log/vdsm/vdsm.log'
+PGPASS = "123456"
+
+# STORAGE SECTION
+STORAGE_TYPE = PARAMETERS.get('storage_type', None)
+
+STORAGE_TYPE_NFS = ENUMS['storage_type_nfs']
+STORAGE_TYPE_ISCSI = ENUMS['storage_type_iscsi']
+STORAGE_TYPE_FCP = ENUMS['storage_type_fcp']
+STORAGE_TYPE_LOCAL = ENUMS['storage_type_local']
+STORAGE_TYPE_POSIX = ENUMS['storage_type_posixfs']
+STORAGE_TYPE_GLANCE = ENUMS['storage_type_glance']
+STORAGE_TYPE_GLUSTER = ENUMS['storage_type_gluster']
+
+if STORAGE_TYPE is None:
+    LOCAL = PARAMETERS.get('local', None)
+else:
+    LOCAL = (STORAGE_TYPE == STORAGE_TYPE_LOCAL)
+
+LUN_PORT = 3260
+
 DEFAULT = {
     'def_vm_name': VM_NAME[0],  # name
     'wait_timeout': 2400,  # wait for VM state change. Total install: ~40min
@@ -72,12 +157,15 @@ ANSWERS = {
     'OVESETUP_PKI/organization': 'str:tlv.redhat.com',
     'OVESETUP_CONFIG/isoDomainName': 'str:ISO_DOMAIN',
     'OVESETUP_CONFIG/isoDomainMountPoint': 'str:/var/lib/exports/iso',
+    'OVESETUP_CONFIG/sanWipeAfterDelete': 'bool:False',
     'OVESETUP_CONFIG/adminPassword': 'str:123456',
     'OVESETUP_CONFIG/applicationMode': 'str:both',
     'OVESETUP_CONFIG/firewallManager': 'str:iptables',
+    'OVESETUP_CONFIG/firewallChangesReview': 'bool:False',
     'OVESETUP_CONFIG/fqdn': 'str:' + VDC_HOST,
     'OVESETUP_CONFIG/storageType': 'str:nfs',
-    'OVESETUP_CONFIG/websocketProxyConfig': 'bool:True',
+    'OVESETUP_CONFIG/websocketProxyConfig': 'bool:False',
+    'OVESETUP_VMCONSOLE_PROXY_CONFIG/vmconsoleProxyConfig': 'bool:False',
     'OVESETUP_CONFIG/updateFirewall': 'bool:True',
     'OVESETUP_PROVISIONING/postgresProvisioningEnabled': 'bool:False',
     'OVESETUP_APACHE/configureRootRedirection': 'bool:True',
@@ -86,7 +174,6 @@ ANSWERS = {
     'OVESETUP_AIO/storageDomainDir': 'none:None',
     'OVESETUP_CONFIG/isoDomainACL': 'str:0.0.0.0/0.0.0.0(rw)'
 }
-
 
 ANSWERS['__default__'] = (
     'OSETUP_RPMDISTRO/enableUpgrade',
@@ -107,13 +194,16 @@ ANSWERS['__default__'] = (
     'OVESETUP_PKI/organization',
     'OVESETUP_CONFIG/isoDomainName',
     'OVESETUP_CONFIG/isoDomainMountPoint',
+    'OVESETUP_CONFIG/sanWipeAfterDelete',
     'OVESETUP_CONFIG/adminPassword',
     'OVESETUP_CONFIG/applicationMode',
     'OVESETUP_CONFIG/firewallManager',
+    'OVESETUP_CONFIG/firewallChangesReview',
     'OVESETUP_ENGINE_CONFIG/fqdn',
     'OVESETUP_CONFIG/fqdn',
     'OVESETUP_CONFIG/storageType',
     'OVESETUP_CONFIG/websocketProxyConfig',
+    'OVESETUP_VMCONSOLE_PROXY_CONFIG/vmconsoleProxyConfig',
     'OVESETUP_CONFIG/updateFirewall',
     'OVESETUP_PROVISIONING/postgresProvisioningEnabled',
     'OVESETUP_APACHE/configureRootRedirection',
@@ -122,7 +212,6 @@ ANSWERS['__default__'] = (
     'OVESETUP_AIO/storageDomainDir',
     'OVESETUP_CONFIG/isoDomainACL'
 )
-
 
 CLEANUP_ANSWERS = {
     # DEFAULT ANSWERS FOR ANSWERFILE - OTOPI

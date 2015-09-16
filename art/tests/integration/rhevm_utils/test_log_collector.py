@@ -5,14 +5,12 @@ import art.rhevm_api.tests_lib.low_level.storagedomains as llstoragedomains
 import art.rhevm_api.tests_lib.low_level.vms as llvms
 
 from art.test_handler.exceptions import VMException
+from art.test_handler.settings import opts
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.unittest_lib import attr
-import unittest_conf
+from rhevm_utils import base, unittest_conf
 from utilities.rhevm_tools.log_collector import LogCollectorUtility
 import logging
-
-from integration.rhevm_utils import base
-from art.test_handler.settings import opts
 
 LOG_COLLECTOR_TEST_PLAN = 3748
 NAME = 'log_collector'
@@ -53,8 +51,8 @@ class LogCollectorTestCaseBase(base.RHEVMUtilsTestCase):
             LOGGER.info("Output directory specified: %s.",
                         unittest_conf.OUTPUT_DIR)
         self.host = unittest_conf.HOSTS[0]
-        self.vm_name = unittest_conf.VM_NAME[0]
-        self.cluster = unittest_conf.CLUSTER_NAME[0]
+        self.vm_name = unittest_conf.VM_NAME
+        self.cluster = unittest_conf.CLUSTER_NAME
 
 
 @attr(tier=1)
@@ -223,13 +221,15 @@ class LogCollectorRegressionBz1058894(LogCollectorTestCaseBase):
         if unittest_conf.GOLDEN_ENV:
             return
         super(LogCollectorRegressionBz1058894, self).setUp()
-
-        storagedomains = llstoragedomains.get_storagedomain_names()
-        assert storagedomains
+        storage_domain = llstoragedomains.get_master_storage_domain_name(
+            unittest_conf.DC_NAME
+        )
+        assert storage_domain
+        LOGGER.info('Adding VM to SD: %s' % storage_domain)
         assert llvms.createVm(
             True, self.vm_name, 'description does not matter',
             cluster=self.cluster, size=DISK_SIZE, nic='nic0',
-            storageDomainName=storagedomains[0])
+            storageDomainName=storage_domain)
         assert llvms.startVm(True, self.vm_name)
 
     def tearDown(self):

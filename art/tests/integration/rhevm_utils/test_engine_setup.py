@@ -5,9 +5,8 @@ import os
 import logging
 from pprint import pformat
 
-from integration.rhevm_utils import base
+from rhevm_utils import base, unittest_conf
 from utilities.rhevm_tools.setup import SetupUtility
-import unittest_conf
 
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr

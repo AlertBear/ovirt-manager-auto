@@ -16,7 +16,7 @@ from art.rhevm_api.utils.test_utils import get_api
 VM_API = get_api('vm', 'vms')
 
 
-from integration.rhevm_utils import unittest_conf
+from rhevm_utils import unittest_conf
 config = unittest_conf.config
 
 from utilities.rhevm_tools.base import Setup
@@ -44,7 +44,7 @@ def setup_module():
     params = unittest_conf.ART_CONFIG['PARAMETERS']
     build_setup(config=params, storage=params,
                 storage_type=params.get('data_center_type'),
-                basename=params.get('basename'))
+                basename=unittest_conf.TEST_NAME)
 
 
 def teardown_module():

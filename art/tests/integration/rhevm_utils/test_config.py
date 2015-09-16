@@ -1,4 +1,4 @@
-from integration.rhevm_utils import base
+from rhevm_utils import base
 from utilities.rhevm_tools.config import ConfigUtility
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr

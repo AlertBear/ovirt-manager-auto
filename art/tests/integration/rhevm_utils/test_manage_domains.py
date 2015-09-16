@@ -11,9 +11,8 @@ from utilities.rhevm_tools.manage_domains import ManageDomainsUtility
 from utilities.rhevm_tools import errors
 from utilities import sshConnection
 
-from rhevmtests.system.rhevm_utils.base import RHEVMUtilsTestCase
-import unittest_conf
-
+from rhevm_utils.base import RHEVMUtilsTestCase
+from rhevm_utils import unittest_conf
 
 NAME = 'manage-domains'
 TABLE_NAME = 'vdc_options'
@@ -338,7 +337,7 @@ class ManageDomainsUppercaseLowercase(ManageDomainsTestCaseBase):
             labels[i] = labels[i].upper()
         return ".".join(labels)
 
-    @bz({'1078147': {}})
+    @bz({'1078147': {}, '1279798': {'engine': None, 'version': ['3.6']}})
     @polarion("RHEVM3-9174")
     def test_upercase_lowercase(self):
         self.ut(action='add', domain=self.domainName.upper(),
@@ -442,7 +441,8 @@ class ManageDomainsTestCaseNegativeScenarios(ManageDomainsTestCaseBase):
         self.ut(action='add', domain=self.domainName,
                 provider='~!@#$%^*_+=-[]', user=self.domainUser,
                 password_file=self.passwordFile)
-        assert 'Invalid provider, valid providers are' in self.ut.out
+        assert "Invalid argument value. Details: Invalid provider" \
+               in self.ut.out
 
 
 class ManageDomainsBug1037894(ManageDomainsTestCaseBase):
