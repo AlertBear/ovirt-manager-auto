@@ -407,3 +407,12 @@ class Windows2012R2_64b(WindowsServer):
     """
     __test__ = True
     diskName = config.WIN2012R2_DISK_64b
+
+
+class Windows10_64b(WindowsDesktop):
+    """
+    Test that all product and services exist on windows machine after
+    GuestTools installation for windows 10 64bit.
+    """
+    __test__ = True
+    diskName = config.WIN10_DISK_64b

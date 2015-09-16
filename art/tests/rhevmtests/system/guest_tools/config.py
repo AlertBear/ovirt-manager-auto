@@ -22,6 +22,7 @@ WIN2008_DISK_64b = 'Windows_2008_x64_Disk1'
 WIN2008R2_DISK_64b = 'Windows_2008R2_x64_Disk1'
 WIN2012_DISK_64b = 'Windows_2012_x64_Disk1'
 WIN2012R2_DISK_64b = 'Windows_20012R2_x64_Disk1'
+WIN10_DISK_64b = 'win10_Disk1'
 
 NIC_NAME = 'nic1'
 
