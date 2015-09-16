@@ -19,6 +19,7 @@ USERROLE = ENUMS['role_name_user_role']
 EXTENSIONS = {}
 TRUSTSTORE = '/tmp/adw2k12r2.ts'
 TRUSTSTORE_PASSWORD = '123456'
+AAA_DIR = '/etc/ovirt-engine/aaa'
 
 # Extensions properties
 WRONG_EXTENSION = {

@@ -1,7 +1,8 @@
 __test__ = False
 
-import os
 import logging
+import os
+import tempfile
 
 from functools import wraps
 from art.test_handler.exceptions import SkipTest
@@ -30,13 +31,18 @@ def enableExtensions(service, host):
 
 def cleanExtDirectory(ext_dir, files=['*']):
     """ remove files from extension directory except internal domain """
+    internal_files = [
+        'internal-authn.properties',
+        'internal-authz.properties',
+        'internal.properties',
+    ]
     cmd = ['ls']
     cmd.extend([os.path.join(ext_dir, f) for f in files])
     cmd.extend([
         '|',
         'grep',
         '-vE',
-        "'internal-authn.properties|internal-authz.properties'",
+        "'%s'" % '|'.join(internal_files),
         '|',
         'xargs',
         'rm',
@@ -251,3 +257,27 @@ def removeFile(filepath):
     """
     executor = config.ENGINE_HOST.executor()
     return executor.run_cmd(['rm', '-f', filepath])
+
+
+def setup_ldap(host, conf_file):
+    """
+    Run ovirt-engine-extension-aaa-ldap-setup with answer file
+
+    :param host: host where to run ldap setup
+    :type host: resources.Host
+    :param conf_file: path to answer file
+    :type conf_file: str
+    :returns: exit code of ovirt-engine-extension-aaa-ldap-setup
+    :rtype: int
+    """
+    tempconf = tempfile.mkstemp()[1]
+    copy_extension_file(host, conf_file, tempconf, None)
+    with host.executor().session() as ss:
+        LOGGER.info("Setting up ldap with conf file %s", conf_file)
+        rc, out, err = ss.run_cmd([
+            'ovirt-engine-extension-aaa-ldap-setup',
+            '--config-append=%s' % tempconf,
+        ])
+        ss.run_cmd(['rm', '-f', tempconf])
+        LOGGER.info(out)
+    return not rc
