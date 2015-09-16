@@ -119,12 +119,15 @@ class BasicEnvironmentSetUp(TestCase):
         if not vms.waitForVMState(self.vm_name):
             raise exceptions.VMException(
                 "Timeout when waiting for vm %s and state up" % self.vm_name)
-        vm_ip = storage_helpers.get_vm_ip(self.vm_name)
-        self.vm = Machine(vm_ip, config.VM_USER,
-                          config.VM_PASSWORD).util(LINUX)
         self.mounted_paths = []
         self.boot_disk = vms.get_vm_bootable_disk(self.vm_name)
         logger.info("The boot disk is: %s", self.boot_disk)
+
+    def set_vm_machine_object(self):
+        vm_ip = storage_helpers.get_vm_ip(self.vm_name)
+        logger.debug("IP for vm %s is %s", self.vm_name, vm_ip)
+        self.vm = Machine(vm_ip, config.VM_USER,
+                          config.VM_PASSWORD).util(LINUX)
 
     def tearDown(self):
         remove_all_vm_snapshots(self.vm_name, self.snapshot_desc)
@@ -134,6 +137,7 @@ class BasicEnvironmentSetUp(TestCase):
         if not vms.waitForVMState(self.vm_name):
             raise exceptions.VMException(
                 "Timeout when waiting for vm %s to start" % self.vm_name)
+        self.set_vm_machine_object()
         if self.check_file_existence_operation(self.vm_name, True):
             status, _ = self.vm.runCmd(shlex.split(self.cm_del))
             if not status:
@@ -165,6 +169,7 @@ class BasicEnvironmentSetUp(TestCase):
 
         vms.start_vms([vm_name], 1, wait_for_ip=False)
         vms.waitForVMState(vm_name)
+        self.set_vm_machine_object()
         full_path = os.path.join(self.mount_path, self.file_name)
         logger.info("Checking full path %s", full_path)
         result = self.vm.isFileExists(full_path)
@@ -248,6 +253,7 @@ class TestCase11660(BasicEnvironmentSetUp):
         logger.info("Creating snapshot")
         self._perform_snapshot_operation(vm_name, live=True)
         wait_for_jobs([ENUMS['job_create_snapshot']])
+        self.set_vm_machine_object()
 
         logger.info("writing file to disk")
         cmd = self.cmd_create
@@ -283,6 +289,7 @@ class TestCase11660(BasicEnvironmentSetUp):
         self.assertTrue(vms.commit_snapshot(
             True, vm=vm_name, ensure_vm_down=True),
             "Failed to commit snapshot %s" % self.snapshot_desc)
+        wait_for_jobs([ENUMS['job_restore_vm_snapshot']])
         self.previewed = False
         logger.info("Checking that files no longer exist after commit")
         if not self.check_file_existence_operation(vm_name, False):
@@ -341,6 +348,7 @@ class TestCase11679(BasicEnvironmentSetUp):
         self._prepare_fs_on_devs()
 
     def _prepare_fs_on_devs(self):
+        self.set_vm_machine_object()
         vm_devices = self.vm.get_storage_devices()
         if not vm_devices:
             logger.error("No devices found in vm %s", self.vm_name)
@@ -368,6 +376,7 @@ class TestCase11679(BasicEnvironmentSetUp):
 
         vms.start_vms([self.vm_name], 1, wait_for_ip=False)
         vms.waitForVMState(self.vm_name)
+        self.set_vm_machine_object()
         lst = []
         state = not should_exist
         for dev in self.devices:
@@ -390,6 +399,7 @@ class TestCase11679(BasicEnvironmentSetUp):
         if vms.get_vm_state(vm_name) == config.VM_DOWN:
             vms.startVms([vm_name])
             vms.waitForVMState(vm_name)
+        self.set_vm_machine_object()
         logger.info("Creating snapshot")
         self._perform_snapshot_operation(vm_name, live=True)
         wait_for_jobs([ENUMS['job_create_snapshot']])
