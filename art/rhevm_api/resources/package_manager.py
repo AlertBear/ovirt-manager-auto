@@ -61,7 +61,7 @@ class PackageManager(Service):
         :return: True, if package exist, otherwise False
         :rtype: bool
         """
-        cmd = self.exist_command_d[self.cls_name]
+        cmd = list(self.exist_command_d[self.cls_name])
         cmd.append(package)
         self.logger.info(
             "Check if host %s have %s package", self.host, package
@@ -77,7 +77,7 @@ class PackageManager(Service):
         :return: True, if package installation success, otherwise False
         :rtype: bool
         """
-        cmd = self.install_command_d[self.cls_name]
+        cmd = list(self.install_command_d[self.cls_name])
         cmd.append(package)
         if not self.exist(package):
             self.logger.info(
@@ -98,7 +98,7 @@ class PackageManager(Service):
         :return: True, if package removal success, otherwise False
         :rtype: bool
         """
-        cmd = self.erase_command_d[self.cls_name]
+        cmd = list(self.erase_command_d[self.cls_name])
         cmd.append(package)
         if self.exist(package):
             self.logger.info(
