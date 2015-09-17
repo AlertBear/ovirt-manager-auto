@@ -1152,6 +1152,7 @@ class TestSanityCase16(NetworkTest):
         1) Remove VNIC from VM.
         2) Remove VNIC profile
         3) Remove Network QoS
+        4) Stop VM
         """
         try:
             logger.info(
@@ -1190,6 +1191,7 @@ class TestSanityCase16(NetworkTest):
                 "Couldn't delete the QoS %s from DC %s",
                 cls.QOS_NAME, conf.DC_NAME
             )
+        helper.stop_vm()
 
 
 @attr(tier=0)
