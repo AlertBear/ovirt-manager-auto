@@ -8,19 +8,14 @@ Config for Host Network API job
 from rhevmtests.networking.config import *  # NOQA
 import art.unittest_lib.network as network_lib
 
-HOST_1_NICS = None  # Filled in setup_package
 HOST_4_NICS = None  # Filled in setup_package
-VDS_HOSTS_1 = VDS_HOSTS[0]
 VDS_HOSTS_4 = VDS_HOSTS[3]
-HOST_1_IP = HOSTS_IP[0]
 NET0 = NETWORKS[0]
-HOST_1 = HOSTS[0]
 HOST_4 = HOSTS[3]
 DC_NAME = DC_NAME[0]
-CLUSTER_1 = CLUSTER_NAME[0]
 CLUSTER_2 = CLUSTER_NAME[1]
-EXTRA_DC = "Sync_DC"
-EXTRA_CL = "Sync_cluster"
+SYNC_DC = "Sync_DC"
+SYNC_CL = "Sync_cluster"
 NIC_NETS = network_lib.generate_networks_names(cases=20, prefix="nic")
 HOST_NETS = network_lib.generate_networks_names(cases=20, prefix="host")
 SYNC_NETS_DC_1 = network_lib.generate_networks_names(cases=20, prefix="sync1_")
@@ -35,6 +30,7 @@ DUMMYS = ["dummy_%s" % i for i in xrange(NUM_DUMMYS)]
 NETWORKS_DICT = {}
 VLAN_STR = "vlan"
 MTU_STR = "mtu"
+BRIDGE_STR = "bridged"
 VLAN_IDS = [str(i) for i in xrange(2, 50)]
 
 BASIC_IP_DICT_NETMASK = {
@@ -434,6 +430,20 @@ SYNC_DICT_1 = {
     SYNC_NETS_DC_1[4][2]: {
         "required": "false",
     },
+    SYNC_NETS_DC_1[5][0]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[5][1]: {
+        "required": "false",
+        "usages": ""
+    },
+    SYNC_NETS_DC_1[6][0]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[6][1]: {
+        "required": "false",
+        "usages": ""
+    },
 }
 
 SYNC_DICT_2 = {
@@ -480,5 +490,19 @@ SYNC_DICT_2 = {
     SYNC_NETS_DC_1[4][2]: {
         "required": "false",
         "mtu": MTU[0]
+    },
+    SYNC_NETS_DC_1[5][0]: {
+        "required": "false",
+        "usages": ""
+    },
+    SYNC_NETS_DC_1[5][1]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[6][0]: {
+        "required": "false",
+        "usages": ""
+    },
+    SYNC_NETS_DC_1[6][1]: {
+        "required": "false"
     },
 }

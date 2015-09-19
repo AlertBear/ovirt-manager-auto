@@ -68,21 +68,21 @@ def attach_network_attachment(
     """
     nic_log = nic if nic else network_dict.get("nic")
     logger.info(
-        "Attaching %s to %s on %s", network, nic_log, conf.HOST_1
+        "Attaching %s to %s on %s", network, nic_log, conf.HOST_4
     )
     network_to_attach = network_dict.pop("network")
     res = hl_host_network.add_network_to_host(
-        host_name=conf.HOST_1, network=network_to_attach, nic_name=nic,
+        host_name=conf.HOST_4, network=network_to_attach, nic_name=nic,
         **network_dict
     )
     if res != positive:
         raise conf.NET_EXCEPTION(
-            "Failed to attach %s to %s on %s" % (network, nic_log, conf.HOST_1)
+            "Failed to attach %s to %s on %s" % (network, nic_log, conf.HOST_4)
         )
 
 
 def prepare_networks_on_dc(
-    networks_dict, dc=conf.DC_NAME, cluster=conf.CLUSTER_1
+    networks_dict, dc=conf.DC_NAME, cluster=conf.CLUSTER_2
 ):
     """
     Create and attach all networks that are needed for all cases
@@ -202,10 +202,10 @@ class TestHostNetworkApiTestCaseBase(unit_lib.NetworkTest):
         """
         Remove all networks from the host NICs.
         """
-        logger.info("Removing all networks from %s", conf.HOST_1)
-        if not hl_host_network.clean_host_interfaces(conf.HOST_1):
+        logger.info("Removing all networks from %s", conf.HOST_4)
+        if not hl_host_network.clean_host_interfaces(conf.HOST_4):
             logger.error(
-                "Failed to remove all networks from %s", conf.HOST_1
+                "Failed to remove all networks from %s", conf.HOST_4
             )
 
 
@@ -215,10 +215,10 @@ def remove_networks_from_setup():
     """
     logger.info("Remove networks from setup")
     if not hl_networks.remove_net_from_setup(
-        host=conf.VDS_HOSTS_1, auto_nics=[0], data_center=conf.DC_NAME,
+        host=conf.VDS_HOSTS_4, auto_nics=[0], data_center=conf.DC_NAME,
         all_net=True, mgmt_network=conf.MGMT_BRIDGE
     ):
         logger.error(
             "Failed to remove %s from %s and %s",
-            conf.NIC_DICT, conf.DC_NAME, conf.HOST_1
+            conf.NIC_DICT, conf.DC_NAME, conf.HOST_4
         )
