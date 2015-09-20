@@ -7,57 +7,29 @@ Testing Network labels feature.
 Network Labels feature will be tested for untagged, tagged,
 bond scenarios and for VM and non-VM networks
 """
-from art.rhevm_api.tests_lib.high_level.hosts import deactivate_host_if_up
-from art.unittest_lib import attr
-from art.core_api.apis_exceptions import EntityNotFound
-from art.core_api.apis_utils import TimeoutingSampler
-from art.rhevm_api.tests_lib.low_level.clusters import(
-    addCluster, removeCluster
-)
-from art.rhevm_api.tests_lib.low_level.datacenters import(
-    addDataCenter, removeDataCenter
-)
-from art.rhevm_api.tests_lib.low_level.hosts import(
-    sendSNRequest, activateHost, updateHost, deactivateHost, getHostNic
-)
-from art.unittest_lib.network import vlan_int_name
 
-from rhevmtests.networking import config
+import time
 import logging
-
-from art.unittest_lib import NetworkTest as TestCase
-from art.test_handler.exceptions import NetworkException
+import config as conf
+from art import unittest_lib
+from art.unittest_lib import attr
+from art.core_api import apis_utils
+from art.core_api import apis_exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-
-from art.rhevm_api.tests_lib.high_level.networks import(
-    createAndAttachNetworkSN, remove_net_from_setup
-)
-from art.rhevm_api.tests_lib.low_level.networks import(
-    add_label, check_network_on_nic, remove_label, get_label_objects,
-    getClusterNetwork, removeNetworkFromCluster, addNetworkToCluster,
-    removeNetwork, findNetwork
-)
+import art.unittest_lib.network as ul_network
+import rhevmtests.networking.helper as networking_helper
+import art.rhevm_api.tests_lib.high_level.hosts as hl_host
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 logger = logging.getLogger("Network_Labels_Cases")
 
-HOST0_NICS = None  # filled in setup module
-HOST1_NICS = None  # filled in setup module
-VLAN_NIC_0 = ""  # filled in setup module
-VLAN_BOND = ""  # filled in setup module
 
-
-def setup_module():
-    """
-    obtain host NICs for the first Network Host
-    """
-    global HOST0_NICS, HOST1_NICS, VLAN_NIC_0, VLAN_BOND
-    HOST0_NICS = config.VDS_HOSTS[0].nics
-    HOST1_NICS = config.VDS_HOSTS[1].nics
-    VLAN_NIC_0 = vlan_int_name(HOST0_NICS[1], config.VLAN_ID[0])
-    VLAN_BOND = vlan_int_name(config.BOND[0], config.VLAN_ID[0])
-
-
-class TestLabelTestCaseBase(TestCase):
+class TestLabelTestCaseBase(unittest_lib.NetworkTest):
 
     """
     base class which provides  teardown class method for each test case
@@ -68,18 +40,14 @@ class TestLabelTestCaseBase(TestCase):
         """
         Remove networks from the setup.
         """
-        logger.info("Starting teardown")
-        if not remove_label(
-            host_nic_dict={config.HOSTS[0]: HOST0_NICS,
-                           config.HOSTS[1]: HOST1_NICS}
-        ):
-            logger.error("Couldn't remove labels from Hosts ")
-
-        if not remove_net_from_setup(
-            host=config.HOSTS[:2], data_center=config.DC_NAME[0],
-            mgmt_network=config.MGMT_BRIDGE, all_net=True
-        ):
-            logger.error("Cannot remove networks from setup")
+        for i in range(2):
+            logger.info("Removing all networks from %s", conf.HOSTS[i])
+            if not hl_host_network.clean_host_interfaces(
+                host_name=conf.HOSTS[i]
+            ):
+                logger.error(
+                    "Failed to remove all networks from %s", conf.HOSTS[i]
+                )
 
 
 @attr(tier=2)
@@ -96,23 +64,6 @@ class NetLabels01(TestLabelTestCaseBase):
 
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create a network and attach it to DC and Cluster
-        """
-        local_dict = {config.NETWORKS[0]: {"required": "false"}}
-
-        logger.info(
-            "Create and attach network %s  to DC and Cluster ",
-            config.NETWORKS[0]
-        )
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            network_dict=local_dict
-        ):
-            raise NetworkException("Cannot create network on DC and Cluster")
 
     @polarion("RHEVM3-4105")
     def test_label_restrictioin(self):
@@ -132,47 +83,54 @@ class NetLabels01(TestLabelTestCaseBase):
         logger.info(
             "Negative case: Try to attach label %s and %s  with incorrect "
             "format to the network %s and fail",
-            special_char_labels[0], special_char_labels[1], config.NETWORKS[0]
+            special_char_labels[0], special_char_labels[1], conf.NETS[1][0]
         )
         for label in special_char_labels:
-            if add_label(label=label, networks=[config.NETWORKS[0]]):
-                raise NetworkException(
+            if ll_networks.add_label(
+                label=label, networks=[conf.NETS[1][0]]
+            ):
+                raise conf.NET_EXCEPTION(
                     "Could add label %s with incorrect format to the network "
-                    "%s but shouldn't" % (label, config.NETWORKS[0])
+                    "%s but shouldn't" % (label, conf.NETS[1][0])
                 )
 
         logger.info(
             "Attach label with 50 characters length to the network %s ",
-            config.NETWORKS[0]
+            conf.NETS[1][0]
         )
-        if not add_label(label=long_label, networks=[config.NETWORKS[0]]):
-            raise NetworkException(
+        if not ll_networks.add_label(
+            label=long_label, networks=[conf.NETS[1][0]]
+        ):
+            raise conf.NET_EXCEPTION(
                 "Couldn't add label with 50 characters length to the network "
-                "%s but should" % config.NETWORKS[0]
+                "%s but should" % conf.NETS[1][0]
             )
 
         logger.info(
             "Negative case: Try to attach additional label %s to the network "
             "%s with already attached label and fail",
-            config.LABEL_LIST[0], config.NETWORKS[0]
+            conf.LABEL_NAME[1][0], conf.NETS[1][0]
         )
 
-        if add_label(
-            label=config.LABEL_LIST[0], networks=[config.NETWORKS[0]]
+        if ll_networks.add_label(
+            label=conf.LABEL_NAME[1][0], networks=[conf.NETS[1][0]]
         ):
-            raise NetworkException(
-                "Could add additional labelto the network %s but shouldn't" %
-                config.NETWORKS[0]
+            raise conf.NET_EXCEPTION(
+                "Could add additional label to the network %s but shouldn't" %
+                conf.NETS[1][0]
             )
 
-        logger.info("Attach 10 labels to the Host NIC %s", HOST0_NICS[1])
-        for label in config.LABEL_LIST:
-            if not add_label(
-                label=label, host_nic_dict={config.HOSTS[0]: [HOST0_NICS[1]]}
+        logger.info(
+            "Attach 10 labels to the Host NIC %s", conf.HOST0_NICS[1]
+        )
+        for label in conf.LABEL_NAME[1]:
+            if not ll_networks.add_label(
+                label=label,
+                host_nic_dict={conf.HOSTS[0]: [conf.HOST0_NICS[1]]}
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Couldn't add label %s to the Host NIC %s but should" %
-                    (label, HOST0_NICS[1])
+                    (label, conf.HOST0_NICS[1])
                 )
 
 
@@ -184,71 +142,66 @@ class NetLabels02(TestLabelTestCaseBase):
     another Host NIC
     """
     __test__ = True
+    bond = "bond02"
 
     @classmethod
     def setup_class(cls):
         """
         1) Create bond from 2 phy interfaces
-        2) Create VLAN network on DC/Cluster
-        3) Create and attach label to the network
-        4) Attach label to Host Nic - eth1
-        5) Check that the network is attached to the interface (eth1)
+        2) Create and attach label to the network
+        3) Attach label to Host Nic - eth1
+        4) Check that the network is attached to the interface (eth1)
         """
-        logger.info(
-            "Create bond %s on host %s", config.BOND[0], config.HOSTS[0]
+        vlan_nic = ul_network.vlan_int_name(
+            conf.HOST0_NICS[1], conf.VLAN_IDS[1]
         )
-        local_dict1 = {None: {
-            "nic": config.BOND[0], "slaves": [2, 3], "required": "false"
-        }}
-        if not createAndAttachNetworkSN(
-            host=config.VDS_HOSTS[0], network_dict=local_dict1, auto_nics=[0]
+        logger.info(
+            "Create bond %s on host %s", cls.bond, conf.HOSTS[0]
+        )
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "slaves": conf.DUMMYS[:2],
+                    "nic": cls.bond,
+                    "required": "false"
+                }
+            }
+        }
+        if not hl_host_network.setup_networks(
+            conf.HOSTS[0], **network_host_api_dict
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Cannot create bond %s on the Host %s" %
-                (config.BOND[0], config.HOSTS[0])
-            )
-
-        logger.info(
-            "Create VLAN network %s on DC and Cluster", config.VLAN_NETWORKS[
-                0]
-        )
-        local_dict2 = {config.VLAN_NETWORKS[0]: {
-            "vlan_id": config.VLAN_ID[0], "required": "false"
-        }}
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            network_dict=local_dict2
-        ):
-            raise NetworkException(
-                "Cannot create VLAN network %s on DC and Cluster" %
-                config.VLAN_NETWORKS[0]
+                (cls.bond, conf.HOSTS[0])
             )
 
         logger.info(
             "Attach label %s to VLAN network %s and to the Host NIC %s",
-            config.LABEL_LIST[0], config.VLAN_NETWORKS[0], HOST0_NICS[1]
+            conf.LABEL_NAME[2][0], conf.NETS[2][0],
+            conf.HOST0_NICS[1]
         )
-        if not add_label(
-            label=config.LABEL_LIST[0],
-            host_nic_dict={config.HOSTS[0]: [HOST0_NICS[1]]},
-            networks=[config.VLAN_NETWORKS[0]]
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[2][0],
+            host_nic_dict={conf.HOSTS[0]: [conf.HOST0_NICS[1]]},
+            networks=[conf.NETS[2][0]]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't attach label %s to VLAN network %s or to Host NIC %s"
-                % (config.LABEL_LIST[0], config.VLAN_NETWORKS[0],
-                   HOST0_NICS[1])
+                % (
+                    conf.LABEL_NAME[2][0], conf.NETS[2][0],  conf.HOST0_NICS[1]
+                )
             )
 
         logger.info(
             "Check that the network %s is attached to Host NIC %s",
-            config.VLAN_NETWORKS[0], VLAN_NIC_0
+            conf.NETS[2][0], vlan_nic
         )
-        if not check_network_on_nic(
-            config.VLAN_NETWORKS[0], config.HOSTS[0], VLAN_NIC_0
+        if not ll_networks.check_network_on_nic(
+            network=conf.NETS[2][0], host=conf.HOSTS[0], nic=vlan_nic
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is not attached to Host NIC %s " %
-                (config.VLAN_NETWORKS[0], HOST0_NICS[1])
+                (conf.NETS[2][0], conf.HOST0_NICS[1])
             )
 
     @polarion("RHEVM3-4104")
@@ -258,15 +211,18 @@ class NetLabels02(TestLabelTestCaseBase):
         2) Remove label from interface (eth1)
         3) Attach label to the bond and succeed
         """
+        vlan_bond = ul_network.vlan_int_name(
+            self.bond, conf.VLAN_IDS[1]
+        )
         logger.info(
             "Negative case: Try to attach label to the bond when that label "
-            "is already attached to the interface %s ", HOST0_NICS[1]
+            "is already attached to the interface %s ", conf.HOST0_NICS[1]
         )
-        if add_label(
-            label=config.LABEL_LIST[0],
-            host_nic_dict={config.HOSTS[0]: [config.BOND[0]]}
+        if ll_networks.add_label(
+            label=conf.LABEL_NAME[2][0],
+            host_nic_dict={conf.HOSTS[0]: [self.bond]}
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Could attach label to Host NIC bond when shouldn't"
             )
 
@@ -274,33 +230,32 @@ class NetLabels02(TestLabelTestCaseBase):
             "Remove label from the host NIC %s and then try to attach label "
             "to the Bond interface"
         )
-        if not remove_label(
-            host_nic_dict={config.HOSTS[0]: [HOST0_NICS[1]]},
-            labels=[config.LABEL_LIST[0]]
+        if not ll_networks.remove_label(
+            host_nic_dict={conf.HOSTS[0]: [conf.HOST0_NICS[1]]},
+            labels=[conf.LABEL_NAME[2][0]]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't remove label %s from Host NIC %s" %
-                (config.LABEL_LIST[0], HOST0_NICS[1])
+                (conf.LABEL_NAME[2][0], conf.HOST0_NICS[1])
             )
-        if not add_label(
-            label=config.LABEL_LIST[0],
-            host_nic_dict={config.HOSTS[0]: [config.BOND[0]]}
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[2][0],
+            host_nic_dict={conf.HOSTS[0]: [self.bond]}
         ):
-            raise NetworkException(
-                "Couldn't attach label to Host bond %s when should" %
-                config.BOND[0]
+            raise conf.NET_EXCEPTION(
+                "Couldn't attach label to Host bond %s when should" % self.bond
             )
 
         logger.info(
             "Check that the network %s is attached to the bond on Host %s",
-            config.VLAN_NETWORKS[0], config.HOSTS[0]
+            conf.NETS[2][0], conf.HOSTS[0]
         )
-        if not check_network_on_nic(
-            config.VLAN_NETWORKS[0], config.HOSTS[0], VLAN_BOND
+        if not ll_networks.check_network_on_nic(
+            network=conf.NETS[2][0], host=conf.HOSTS[0], nic=vlan_bond
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is not attached to Bond %s " %
-                (config.VLAN_NETWORKS[0], config.BOND[0])
+                (conf.NETS[2][0], self.bond)
             )
 
     @classmethod
@@ -310,7 +265,9 @@ class NetLabels02(TestLabelTestCaseBase):
         Call the parent teardown
         """
         logger.info("Removing label from bond")
-        if not remove_label(host_nic_dict={config.HOSTS[0]: [config.BOND[0]]}):
+        if not ll_networks.remove_label(
+            host_nic_dict={conf.HOSTS[0]: [cls.bond]}
+        ):
             logger.error("Couldn't remove labels from Bond ")
         super(NetLabels02, cls).teardown_class()
 
@@ -325,42 +282,31 @@ class NetLabels03(TestLabelTestCaseBase):
     4) Check network is attached to both Hosts (appropriate interfaces)
     """
     __test__ = True
+    bond = "bond03"
 
     @classmethod
     def setup_class(cls):
         """
-        Create a network and attach it to DC and Cluster
         Create Bond on the second Host
         """
-
-        local_dict = {config.NETWORKS[0]: {"required": "false"}}
-
         logger.info(
-            "Create and attach network %s to DC and Cluster ",
-            config.NETWORKS[0]
+            "Create bond %s on second host %s", cls.bond, conf.HOSTS[1]
         )
-
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            network_dict=local_dict
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "slaves": conf.DUMMYS[:2],
+                    "nic": cls.bond,
+                    "required": "false"
+                }
+            }
+        }
+        if not hl_host_network.setup_networks(
+            conf.HOSTS[1], **network_host_api_dict
         ):
-            raise NetworkException(
-                "Cannot create network %s on DC and Cluster" %
-                config.NETWORKS[0]
-            )
-
-        local_dict1 = {None: {
-            "nic": config.BOND[0], "slaves": [2, 3], "required": "false"
-        }}
-
-        logger.info("Create Bond %s on the second Host", config.BOND[0])
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[1], network_dict=local_dict1, auto_nics=[0]
-        ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Cannot create bond %s on the Host %s" %
-                (config.BOND[0], config.HOSTS[1])
+                (cls.bond, conf.HOSTS[1])
             )
 
     @polarion("RHEVM3-4106")
@@ -374,37 +320,37 @@ class NetLabels03(TestLabelTestCaseBase):
         logger.info(
             "Attach label %s to Host NIC %s on the Host %s to the Bond %s on "
             "Host %s and to the network %s",
-            config.LABEL_LIST[0], HOST0_NICS[1], config.HOSTS[0],
-            config.BOND[0], config.HOSTS[1], config.NETWORKS[0]
+            conf.LABEL_NAME[3][0], conf.HOST0_NICS[1], conf.HOSTS[0],
+            self.bond, conf.HOSTS[1], conf.NETS[3][0]
         )
-        if not add_label(
-            label=config.LABEL_LIST[0],
-            host_nic_dict={config.HOSTS[1]: [config.BOND[0]],
-                           config.HOSTS[0]: [HOST0_NICS[1]]},
-            networks=[config.NETWORKS[0]]
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[3][0],
+            host_nic_dict={conf.HOSTS[1]: [self.bond],
+                           conf.HOSTS[0]: [conf.HOST0_NICS[1]]},
+            networks=[conf.NETS[3][0]]
         ):
-            raise NetworkException(
-                "Couldn't attach label %s " % config.LABEL_LIST[0]
+            raise conf.NET_EXCEPTION(
+                "Couldn't attach label %s " % conf.LABEL_NAME[3][0]
             )
 
         logger.info(
             "Check network %s is attached to interface %s on Host %s and to "
-            "Bond %s on Host %s", config.NETWORKS[0],
-            HOST0_NICS[1], config.HOSTS[0], config.BOND[0], config.HOSTS[1]
+            "Bond %s on Host %s", conf.NETS[3][0], conf.HOST0_NICS[1],
+            conf.HOSTS[0], self.bond, conf.HOSTS[1]
         )
-        if not check_network_on_nic(
-            config.NETWORKS[0], config.HOSTS[0], HOST0_NICS[1]
+        if not ll_networks.check_network_on_nic(
+            network=conf.NETS[3][0], host=conf.HOSTS[0], nic=conf.HOST0_NICS[1]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is not attached to NIC %s " %
-                (config.NETWORKS[0], HOST0_NICS[1])
+                (conf.NETS[3][0], conf.HOST0_NICS[1])
             )
-        if not check_network_on_nic(
-            config.NETWORKS[0], config.HOSTS[1], config.BOND[0]
+        if not ll_networks.check_network_on_nic(
+            network=conf.NETS[3][0], host=conf.HOSTS[1], nic=self.bond
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is not attached to Bond %s " %
-                (config.NETWORKS[0], config.BOND[0])
+                (conf.NETS[3][0], self.bond)
             )
 
     @classmethod
@@ -414,8 +360,8 @@ class NetLabels03(TestLabelTestCaseBase):
         Call the parent teardown
         """
         logger.info("Removing label from bond")
-        if not remove_label(
-            host_nic_dict={config.HOSTS[1]: [config.BOND[0]]}
+        if not ll_networks.remove_label(
+            host_nic_dict={conf.HOSTS[1]: [cls.bond]}
         ):
             logger.error("Couldn't remove labels from Bond ")
         super(NetLabels03, cls).teardown_class()
@@ -425,68 +371,55 @@ class NetLabels03(TestLabelTestCaseBase):
 class NetLabels04(TestLabelTestCaseBase):
 
     """
-    1) Create bridgeless network on DC/Cluster
-    2) Create VLAN network on DC/Cluster
-    3) Put the same label on both networks
-    4) Put network label on Host NIC of one Host
-    5) Put network label on bond of the second Host
-    6) Check that both networks are attached to both Hosts interface and
+    1) Put the same label on both networks
+    2) Put network label on Host NIC of one Host
+    3) Put network label on bond of the second Host
+    4) Check that both networks are attached to both Hosts interface and
     Bond appropriately
     """
     __test__ = True
+    bond = "bond04"
 
     @classmethod
     def setup_class(cls):
         """
-        1) Create bridgeless network on DC/Cluster
-        2) Create VLAN network on DC/Cluster
-        3) Create Bond on the second Host
-        4) Put the same label on both networks
+        1) Create Bond on the second Host
+        2) Put the same label on both networks
         """
-        local_dict = {config.NETWORKS[0]: {
-            "usages": "", "required": "false"},
-            config.VLAN_NETWORKS[0]: {
-                "vlan_id": config.VLAN_ID[0], "required": "false"
-        }
-        }
 
         logger.info(
-            "Create and attach networks %s and %s to DC and Cluster ",
-            config.NETWORKS[0], config.VLAN_NETWORKS[0]
+            "Create bond %s on second host %s", cls.bond, conf.HOSTS[1]
         )
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            network_dict=local_dict
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "slaves": conf.DUMMYS[:2],
+                    "nic": cls.bond
+                }
+            }
+        }
+        if not hl_host_network.setup_networks(
+            conf.HOSTS[1], **network_host_api_dict
         ):
-            raise NetworkException(
-                "Cannot create networks %s and %s on DC and Cluster" %
-                (config.NETWORKS[0], config.VLAN_NETWORKS[0])
-            )
-
-        local_dict1 = {None: {"nic": config.BOND[0], "slaves": [2, 3]}}
-
-        logger.info(
-            "Create Bond %s on the Host %s ", config.BOND[0], config.HOSTS[1]
-        )
-        if not createAndAttachNetworkSN(
-            host=config.VDS_HOSTS[1], network_dict=local_dict1, auto_nics=[0]
-        ):
-            raise NetworkException(
-                "Cannot create bond on the Host %s" % config.HOSTS[1]
+            raise conf.NET_EXCEPTION(
+                "Cannot create bond %s on the Host %s" %
+                (cls.bond, conf.HOSTS[1])
             )
 
         logger.info(
-            "Attach label %s to networks %s and %s", config.LABEL_LIST[0],
-            config.NETWORKS[0], config.VLAN_NETWORKS[0]
+            "Attach label %s to networks %s and %s", conf.LABEL_NAME[4][0],
+            conf.NETS[4][0], conf.NETS[4][1]
         )
-        if not add_label(
-            label=config.LABEL_LIST[0], networks=[config.NETWORKS[0],
-                                                  config.VLAN_NETWORKS[0]]
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[4][0],
+            networks=[conf.NETS[4][0], conf.NETS[4][1]]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't attach label %s to networks %s and %s" %
-                (config.LABEL_LIST[0], config.NETWORKS[0],
-                 config.VLAN_NETWORKS[0])
+                (
+                    conf.LABEL_NAME[4][0], conf.NETS[4][0], conf.NETS[4][1]
+
+                )
             )
 
     @polarion("RHEVM3-4107")
@@ -497,47 +430,57 @@ class NetLabels04(TestLabelTestCaseBase):
         4) Check that both networks are attached to both Host (appropriate
         interfaces)
         """
+        vlan_bond = ul_network.vlan_int_name(self.bond, conf.VLAN_IDS[2])
+        vlan_nic = ul_network.vlan_int_name(
+            conf.HOST0_NICS[1], conf.VLAN_IDS[2]
+        )
         logger.info(
             "Attach label %s to Host NIC %s and Bond %s on both Hosts "
-            "appropriately", config.LABEL_LIST[0], HOST0_NICS[1],
-            config.BOND[0]
+            "appropriately", conf.LABEL_NAME[4][0], conf.HOST0_NICS[1],
+            self.bond
         )
-        if not add_label(
-            label=config.LABEL_LIST[0],
-            host_nic_dict={config.HOSTS[1]: [config.BOND[0]],
-                           config.HOSTS[0]: [HOST0_NICS[1]]}
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[4][0],
+            host_nic_dict={
+                conf.HOSTS[1]: [self.bond],
+                conf.HOSTS[0]: [conf.HOST0_NICS[1]]
+            }
         ):
-                raise NetworkException(
-                    "Couldn't attach label %s to interfaces" %
-                    config.LABEL_LIST[0]
-                )
+            raise conf.NET_EXCEPTION(
+                "Couldn't attach label %s to interfaces" %
+                conf.LABEL_NAME[4][0]
+            )
 
         logger.info(
             "Check that network %s and %s are attached to interface %s on Host"
-            " %s and to Bond on Host %s", config.NETWORKS[0],
-            config.VLAN_NETWORKS[0], HOST0_NICS[1], config.HOSTS[0],
-            config.HOSTS[1]
+            " %s and to Bond on Host %s", conf.NETS[4][0],
+            conf.NETS[4][1], conf.HOST0_NICS[1], conf.HOSTS[0],
+            conf.HOSTS[1]
         )
         if not (
-                check_network_on_nic(config.VLAN_NETWORKS[0],
-                                     config.HOSTS[0], VLAN_NIC_0) and
-                check_network_on_nic(config.VLAN_NETWORKS[0],
-                                     config.HOSTS[1], VLAN_BOND)
+                ll_networks.check_network_on_nic(
+                    network=conf.NETS[4][1], host=conf.HOSTS[0], nic=vlan_nic
+                ) and
+                ll_networks.check_network_on_nic(
+                    network=conf.NETS[4][1], host=conf.HOSTS[1], nic=vlan_bond
+                )
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "VLAN Network %s is not attached to NIC %s or Bond %s " %
-                (config.VLAN_NETWORKS[0], HOST0_NICS[1], config.BOND[0])
+                (conf.NETS[4][1], conf.HOST0_NICS[1], self.bond)
             )
 
         if not (
-                check_network_on_nic(config.NETWORKS[0], config.HOSTS[0],
-                                     HOST0_NICS[1]) and
-                check_network_on_nic(config.NETWORKS[0], config.HOSTS[1],
-                                     config.BOND[0])
+                ll_networks.check_network_on_nic(
+                    network=conf.NETS[4][0], host=conf.HOSTS[0],
+                    nic=conf.HOST0_NICS[1]
+                ) and
+                ll_networks.check_network_on_nic(
+                    network=conf.NETS[4][0], host=conf.HOSTS[1], nic=self.bond)
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is not attached to NIC %s or Bond %s " %
-                (config.NETWORKS[0], HOST0_NICS[1], config.BOND[0])
+                (conf.NETS[4][0], conf.HOST0_NICS[1], self.bond)
             )
 
     @classmethod
@@ -547,7 +490,9 @@ class NetLabels04(TestLabelTestCaseBase):
         Call the parent teardown
         """
         logger.info("Removing label from bond")
-        if not remove_label(host_nic_dict={config.HOSTS[1]: [config.BOND[0]]}):
+        if not ll_networks.remove_label(
+            host_nic_dict={conf.HOSTS[1]: [cls.bond]}
+        ):
             logger.error("Couldn't remove labels from Bond ")
         super(NetLabels04, cls).teardown_class()
 
@@ -560,64 +505,50 @@ class NetLabels05(TestLabelTestCaseBase):
     that Network
     """
     __test__ = True
+    bond = "bond05"
 
     @classmethod
     def setup_class(cls):
         """
-        1) Create VLAN network on DC/Cluster
-        2) Attach label to the VLAN network
-        3) Attach label to Host Nic eth1 on both Hosts
-        4) Check that network is attached to Host
+        1) Attach label to the VLAN network
+        2) Attach label to Host Nic eth1 on both Hosts
+        3) Check that network is attached to Host
         """
-        local_dict1 = {config.VLAN_NETWORKS[0]: {
-            "vlan_id": config.VLAN_ID[0], "required": "false"
-        }}
-        logger.info(
-            "Create VLAN network %s on DC and Cluster", config.VLAN_NETWORKS[
-                0]
-        )
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            network_dict=local_dict1
-        ):
-            raise NetworkException(
-                "Cannot create VLAN network %s on DC and Cluster" %
-                config.VLAN_NETWORKS[0]
-            )
-
         logger.info(
             "Attach label %s to VLAN network %s on interfaces %s and %s of "
-            "both Hosts appropriately", config.LABEL_LIST[0],
-            config.VLAN_NETWORKS[0], HOST0_NICS[1], HOST1_NICS[1]
+            "both Hosts appropriately", conf.LABEL_NAME[5][0],
+            conf.NETS[5][0], conf.HOST0_NICS[1], conf.HOST1_NICS[1]
         )
-        if not add_label(
-            label=config.LABEL_LIST[0],
-            host_nic_dict={config.HOSTS[0]: [HOST0_NICS[1]],
-                           config.HOSTS[1]: [HOST1_NICS[1]]},
-            networks=[config.VLAN_NETWORKS[0]]
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[5][0],
+            host_nic_dict={
+                conf.HOSTS[0]: [conf.HOST0_NICS[1]],
+                conf.HOSTS[1]: [conf.HOST1_NICS[1]]
+            },
+            networks=[conf.NETS[5][0]]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't attach label %s to VLAN network %s or to Host NIC %s"
                 " and %s on both Hosts appropriately" % (
-                    config.LABEL_LIST[0], config.VLAN_NETWORKS[0],
-                    HOST0_NICS[1], HOST1_NICS[1]
+                    conf.LABEL_NAME[5][0], conf.NETS[5][0],
+                    conf.HOST0_NICS[1], conf.HOST1_NICS[1]
                 )
             )
 
-        for idx, host in enumerate(config.HOSTS[:2]):
-            vlan_nic = vlan_int_name(
-                config.VDS_HOSTS[idx].nics[1], config.VLAN_ID[0]
+        for idx, host in enumerate(conf.HOSTS[:2]):
+            vlan_nic = ul_network.vlan_int_name(
+                conf.VDS_HOSTS[idx].nics[1], conf.VLAN_IDS[3]
             )
             logger.info(
                 "Check that the network %s is attached to Host %s before "
-                "un-labeling ", config.VLAN_NETWORKS[0], host
+                "un-labeling ", conf.NETS[5][0], host
             )
-            if not check_network_on_nic(
-                config.VLAN_NETWORKS[0], host, vlan_nic
+            if not ll_networks.check_network_on_nic(
+                network=conf.NETS[5][0], host=host, nic=vlan_nic
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Network %s is not attached to the first NIC on host %s" %
-                    (config.VLAN_NETWORKS[0], host)
+                    (conf.NETS[5][0], host)
                 )
 
     @polarion("RHEVM3-4127")
@@ -626,34 +557,38 @@ class NetLabels05(TestLabelTestCaseBase):
         1) Remove label from the network
         2) Make sure the network was detached from eth1 on both Hosts
         """
+        vlan_nic = ul_network.vlan_int_name(
+            conf.HOST0_NICS[1], conf.VLAN_IDS[3]
+        )
         logger.info(
             "Remove label %s from the network %s attached to %s and %s on "
-            "both Hosts appropriately", config.LABEL_LIST[0],
-            config.VLAN_NETWORKS[0], HOST0_NICS[1], HOST1_NICS[1]
+            "both Hosts appropriately", conf.LABEL_NAME[5][0],
+            conf.NETS[5][0], conf.HOST0_NICS[1], conf.HOST1_NICS[1]
         )
-        if not remove_label(
-            networks=[config.VLAN_NETWORKS[0]], labels=[config.LABEL_LIST[0]]
+        if not ll_networks.remove_label(
+            networks=[conf.NETS[5][0]],
+            labels=[conf.LABEL_NAME[5][0]]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't remove label %s from network %s " %
-                (config.LABEL_LIST[0], config.VLAN_NETWORKS[0])
+                (conf.LABEL_NAME[5][0], conf.NETS[5][0])
             )
 
-        for host in config.HOSTS[:2]:
+        for host in conf.HOSTS[:2]:
             logger.info(
                 "Check that the network %s is not attached to Host %s",
-                config.VLAN_NETWORKS[0], host
+                conf.NETS[5][0], host
             )
-            sample = TimeoutingSampler(
-                timeout=config.SAMPLER_TIMEOUT, sleep=1,
-                func=check_network_on_nic, network=config.VLAN_NETWORKS[0],
-                host=host, nic=VLAN_NIC_0
+            sample = apis_utils.TimeoutingSampler(
+                timeout=conf.SAMPLER_TIMEOUT, sleep=1,
+                func=ll_networks.check_network_on_nic,
+                network=conf.NETS[5][0], host=host, nic=vlan_nic
             )
 
             if not sample.waitForFuncStatus(result=False):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Network %s is attached to first NIC on host %s but "
-                    "shouldn't " % (config.VLAN_NETWORKS[0], host)
+                    "shouldn't " % (conf.NETS[5][0], host)
                 )
 
 
@@ -665,72 +600,70 @@ class NetLabels06(TestLabelTestCaseBase):
     Un-Labeling
     """
     __test__ = True
+    bond = "bond06"
 
     @classmethod
     def setup_class(cls):
         """
-        1) Create vm network on DC/Cluster
-        2) Create bond from eth2 and eth3 on 2 Hosts
-        3) Create and attach label to the network
-        4) Attach label to Bond on both Hosts
-        5) Make sure the network was attached to Bond on both Hosts
+        1) Create bond from eth2 and eth3 on 2 Hosts
+        2) Create and attach label to the network
+        3) Attach label to Bond on both Hosts
+        4) Make sure the network was attached to Bond on both Hosts
         """
-
-        local_dict1 = {None: {"nic": config.BOND[0], "slaves": [2, 3]}}
-
-        logger.info("Create bond on both Hosts in the setup")
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[:2], network_dict=local_dict1, auto_nics=[0]
-        ):
-            raise NetworkException("Cannot create bond on both Hosts")
-
-        local_dict2 = {config.NETWORKS[0]: {"required": "false"}}
         logger.info(
-            "Create regular network %s on DC and Cluster", config.NETWORKS[0]
+            "Create bond %s on second host %s", cls.bond, conf.HOSTS[1]
         )
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            network_dict=local_dict2
-        ):
-            raise NetworkException(
-                "Cannot create network %s on DC and Cluster" %
-                config.NETWORKS[0]
-            )
-
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "slaves": conf.DUMMYS[:2],
+                    "nic": cls.bond
+                }
+            }
+        }
+        for i in range(2):
+            if not hl_host_network.setup_networks(
+                conf.HOSTS[i], **network_host_api_dict
+            ):
+                raise conf.NET_EXCEPTION(
+                    "Cannot create bond %s on the Host %s" %
+                    (cls.bond, conf.HOSTS[i])
+                )
         logger.info(
             "Attach label %s to network %s on Bonds %s of both Hosts",
-            config.LABEL_LIST[0], config.NETWORKS[0], config.BOND[0]
+            conf.LABEL_NAME[6][0], conf.NETS[6][0], cls.bond
         )
 
-        if not add_label(
-            label=config.LABEL_LIST[0],
-            host_nic_dict={config.HOSTS[0]: [config.BOND[0]],
-                           config.HOSTS[1]: [config.BOND[0]]},
-            networks=[config.NETWORKS[0]]
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[6][0],
+            host_nic_dict={
+                conf.HOSTS[0]: [cls.bond],
+                conf.HOSTS[1]: [cls.bond]
+            },
+            networks=[conf.NETS[6][0]]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't attach label %s to network %s or to Host Bond %s on"
                 " both Hosts" % (
-                    config.LABEL_LIST[0], config.NETWORKS[0], config.BOND[0]
+                    conf.LABEL_NAME[6][0], conf.NETS[6][0], cls.bond
                 )
             )
 
         logger.info(
             "Check network %s is attached to Bond on both Hosts",
-            config.NETWORKS[0]
+            conf.NETS[6][0]
         )
-        for host in config.HOSTS[:2]:
+        for host in conf.HOSTS[:2]:
             logger.info(
                 "Check that the network %s is attached to Hosts %s bond ",
-                config.NETWORKS[0], host
+                conf.NETS[6][0], host
             )
-            if not check_network_on_nic(
-                config.NETWORKS[0], host, config.BOND[0]
+            if not ll_networks.check_network_on_nic(
+                network=conf.NETS[6][0], host=host, nic=cls.bond
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Network %s was not attached to Bond %s on host %s " %
-                    (config.NETWORKS[0], config.BOND[0], host)
+                    (conf.NETS[6][0], cls.bond, host)
                 )
 
     @polarion("RHEVM3-4122")
@@ -739,39 +672,41 @@ class NetLabels06(TestLabelTestCaseBase):
         1) Break Bond on both Hosts
         2) Make sure the network was detached from Bond on both Hosts
         3) Make sure that the bond slave interfaces don't have label
-        configured
+        confured
         """
 
         logger.info("Break bond on both Hosts")
-        for i, host_i in enumerate(config.HOSTS[:2]):
-            if not sendSNRequest(
-                True, host=host_i, auto_nics=[config.VDS_HOSTS[i].nics[0]],
+        for i, host_i in enumerate(conf.HOSTS[:2]):
+            if not ll_hosts.sendSNRequest(
+                True, host=host_i, auto_nics=[conf.VDS_HOSTS[i].nics[0]],
                 check_connectivity="true", connectivity_timeout=60,
                 force="false"
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Couldn't break bond on Host %s" % host_i
                 )
 
-        for host in config.HOSTS[:2]:
+        for host in conf.HOSTS[:2]:
             logger.info(
                 "Check that the network %s is not attached to Hosts %s bond ",
-                config.NETWORKS[0], host
+                conf.NETS[6][0], host
             )
-            if check_network_on_nic(config.NETWORKS[0], host, config.BOND[0]):
-                raise NetworkException(
+            if ll_networks.check_network_on_nic(
+                network=conf.NETS[6][0], host=host, nic=self.bond
+            ):
+                raise conf.NET_EXCEPTION(
                     "Network %s is attached to Bond %s on host %s when "
-                    "shouldn't" % (config.NETWORKS[0], config.BOND[0], host)
+                    "shouldn't" % (conf.NETS[6][0], self.bond, host)
                 )
 
         logger.info(
             "Check that the label %s doesn't appear on slaves of both Hosts"
         )
-        if get_label_objects(host_nic_dict={
-            config.HOSTS[0]: [HOST0_NICS[2], HOST0_NICS[3]],
-            config.HOSTS[1]: [HOST1_NICS[2], HOST1_NICS[3]]
+        if ll_networks.get_label_objects(host_nic_dict={
+            conf.HOSTS[0]: [conf.HOST0_NICS[2], conf.HOST0_NICS[3]],
+            conf.HOSTS[1]: [conf.HOST1_NICS[2], conf.HOST1_NICS[3]]
         }):
-            raise NetworkException("Label exists on Bond slaves")
+            raise conf.NET_EXCEPTION("Label exists on Bond slaves")
 
 
 @attr(tier=2)
@@ -789,55 +724,44 @@ class NetLabels07(TestLabelTestCaseBase):
     @classmethod
     def setup_class(cls):
         """
-        1) Create bridgeless VLAN network on DC/Cluster
-        2) Create and attach label to the VLAN non-VM network
-        3) Attach the same label to Host Nic eth1 on one Host
-        4) Check that the network is attached to the Host NIC
+        1) Create and attach label to the VLAN non-VM network
+        2) Attach the same label to Host Nic eth1 on one Host
+        3) Check that the network is attached to the Host NIC
         """
-
-        local_dict1 = {config.VLAN_NETWORKS[0]: {
-            "vlan_id": config.VLAN_ID[0], "required": "false", "usages": ""
-        }}
-
-        logger.info(
-            "Create VLAN  non-VM network %s on DC and Cluster",
-            config.VLAN_NETWORKS[0]
+        vlan_nic = ul_network.vlan_int_name(
+            conf.HOST0_NICS[1], conf.VLAN_IDS[4]
         )
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            network_dict=local_dict1
-        ):
-            raise NetworkException(
-                "Cannot create VLAN network %s on DC and Cluster" %
-                config.VLAN_NETWORKS[0]
-            )
-
         logger.info(
             "Attach label %s to non-VM VLAN network %s and NIC %s ",
-            config.LABEL_LIST[0], config.VLAN_NETWORKS[0], HOST0_NICS[1]
+            conf.LABEL_NAME[7][0], conf.NETS[7][0],
+            conf.HOST0_NICS[1]
         )
-        if not add_label(
-            label=config.LABEL_LIST[0],
-            host_nic_dict={config.HOSTS[0]: [HOST0_NICS[1]]},
-            networks=[config.VLAN_NETWORKS[0]]
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[7][0],
+            host_nic_dict={conf.HOSTS[0]: [conf.HOST0_NICS[1]]},
+            networks=[conf.NETS[7][0]]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't attach label %s to non-VM VLAN network %s or to "
-                "Host NIC %s " % (config.LABEL_LIST[0],
-                                  config.VLAN_NETWORKS[0], config.BOND[0])
+                "Host NIC %s " % (
+                    conf.LABEL_NAME[7][0], conf.NETS[7][0], conf.HOST0_NICS[1]
+                )
             )
 
         logger.info(
             "Check that the network %s is attached to Host %s",
-            config.VLAN_NETWORKS[0], config.HOSTS[0]
+            conf.NETS[7][0], conf.HOSTS[0]
         )
 
-        if not check_network_on_nic(
-            config.VLAN_NETWORKS[0], config.HOSTS[0], VLAN_NIC_0
+        if not ll_networks.check_network_on_nic(
+            network=conf.NETS[7][0], host=conf.HOSTS[0], nic=vlan_nic
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s was not attached to interface %s on host %s " %
-                (config.VLAN_NETWORKS[0], HOST0_NICS[1], config.HOSTS[0])
+                (
+                    conf.NETS[7][0], conf.HOST0_NICS[1],
+                    conf.HOSTS[0]
+                )
             )
 
     @polarion("RHEVM3-4130")
@@ -852,74 +776,84 @@ class NetLabels07(TestLabelTestCaseBase):
 
         logger.info(
             "Try to remove labeled network %s from Host NIC %s with "
-            "setupNetwork command ", config.VLAN_NETWORKS[0], HOST0_NICS[1]
+            "setupNetwork command ",
+            conf.NETS[7][0], conf.HOST0_NICS[1]
         )
-        if not sendSNRequest(
-            False, host=config.HOSTS[0],
-            auto_nics=[config.VDS_HOSTS[0].nics[
-                0]], check_connectivity="true",
+        if not ll_hosts.sendSNRequest(
+            False, host=conf.HOSTS[0],
+            auto_nics=[conf.VDS_HOSTS[0].nics[0]], check_connectivity="true",
             connectivity_timeout=60, force="false"
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Could remove labeled network %s from Host NIC % s" %
-                (config.VLAN_NETWORKS[0], HOST0_NICS[1])
+                (conf.NETS[7][0], conf.HOST0_NICS[1])
             )
 
         logger.info(
-            "Remove label %s from Host NIC %s", config.LABEL_LIST[0],
-            HOST0_NICS[1]
+            "Remove label %s from Host NIC %s", conf.LABEL_NAME[7][0],
+            conf.HOST0_NICS[1]
         )
-        if not remove_label(
-            host_nic_dict={config.HOSTS[0]: [HOST0_NICS[1]]},
-            labels=[config.LABEL_LIST[0]]
+        if not ll_networks.remove_label(
+            host_nic_dict={conf.HOSTS[0]: [conf.HOST0_NICS[1]]},
+            labels=[conf.LABEL_NAME[7][0]]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't remove label %s from Host NIC %s" %
-                (config.LABEL_LIST[0], HOST0_NICS[1])
+                (conf.LABEL_NAME[7][0], conf.HOST0_NICS[1])
             )
-
+        vlan_nic = ul_network.vlan_int_name(
+            conf.HOST0_NICS[1], conf.VLAN_IDS[4]
+        )
         logger.info(
             "Check that the network %s is not attached to Host %s",
-            config.VLAN_NETWORKS[0], config.HOSTS[0]
+            conf.NETS[7][0], conf.HOSTS[0]
         )
-        if check_network_on_nic(
-            config.VLAN_NETWORKS[0], config.HOSTS[0], VLAN_NIC_0
+        if ll_networks.check_network_on_nic(
+            network=conf.NETS[7][0], host=conf.HOSTS[0], nic=vlan_nic
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is attached to Host NIC %s on Host %s when "
-                "shouldn't" % (config.VLAN_NETWORKS[0], HOST0_NICS[1],
-                               config.HOSTS[0])
+                "shouldn't" % (
+                    conf.NETS[7][0], conf.HOST0_NICS[1],
+                    conf.HOSTS[0]
+                )
             )
 
         logger.info(
             "Create a network %s and attach it to the Host with "
-            "setupNetwork action", config.NETWORKS[1]
+            "setupNetwork action", conf.NETS[7][1]
         )
-        vlan_nic = vlan_int_name(HOST0_NICS[1], config.VLAN_ID[1])
-        local_dict2 = {config.VLAN_NETWORKS[1]: {
-            "vlan_id": config.VLAN_ID[1], "nic": 1, "required": "false",
-            "usages": ""
-        }}
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict2,
+        vlan_nic1 = ul_network.vlan_int_name(
+            conf.HOST0_NICS[1], conf.VLAN_IDS[5]
+        )
+        local_dict2 = {
+            conf.NETS[7][1]: {
+                "vlan_id": conf.VLAN_IDS[5], "nic": 1, "required": "false",
+                "usages": ""
+            }
+        }
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=conf.DC_NAME[0], cluster=conf.CLUSTER_NAME[0],
+            host=conf.VDS_HOSTS[0], network_dict=local_dict2,
             auto_nics=[0, 1]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Cannot create non-VM VLAN network %s on DC, Cluster and Host"
-                % config.VLAN_NETWORKS[1]
+                % conf.NETS[7][1]
             )
-
         logger.info(
             "Check that the network %s is attached to Host %s",
-            config.VLAN_NETWORKS[0], config.HOSTS[0]
+            conf.NETS[7][1], conf.HOSTS[0]
         )
-        if not check_network_on_nic(
-            config.VLAN_NETWORKS[1], config.HOSTS[0], vlan_nic
+        if not ll_networks.check_network_on_nic(
+            network=conf.NETS[7][1], host=conf.HOSTS[0], nic=vlan_nic1
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s was not attached to interface %s on host %s " %
-                (config.VLAN_NETWORKS[1], HOST0_NICS[1], config.HOSTS[0])
+                (
+                    conf.NETS[7][1], conf.HOST0_NICS[1],
+                    conf.HOSTS[0]
+                )
             )
 
 
@@ -938,57 +872,64 @@ class NetLabels08(TestLabelTestCaseBase):
         Create network on DC level only
         """
 
-        local_dict1 = {config.NETWORKS[0]: {"required": "false"}}
-        logger.info("Create network %s on DC only ", config.NETWORKS[0])
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], network_dict=local_dict1
+        local_dict1 = {conf.NETS[8][0]: {"required": "false"}}
+        logger.info("Create network %s on DC only ", conf.NETS[8][0])
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=conf.DC_NAME[0], network_dict=local_dict1
         ):
-            raise NetworkException("Cannot create network on DC only")
+            raise conf.NET_EXCEPTION(
+                "Cannot create network on DC only"
+            )
 
     @polarion("RHEVM3-4113")
     def test_network_on_host(self):
         """
-        1) Attach label to that network
+        1) Attach label to the network
         2) Attach label to Host Nic eth1 on Host
         3) Check the network with the same label as Host NIC is not attached to
         Host when it is not attached to the Cluster
         """
         logger.info(
-            "Attach label %s to network %s ", config.LABEL_LIST[0],
-            config.NETWORKS[0]
+            "Attach label %s to network %s ", conf.LABEL_NAME[8][0],
+            conf.NETS[8][0]
         )
 
-        if not add_label(
-            label=config.LABEL_LIST[0], networks=[config.NETWORKS[0]]
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[8][0], networks=[conf.NETS[8][0]]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't attach label %s to network %s " %
-                (config.LABEL_LIST[0], config.NETWORKS[0])
+                (conf.LABEL_NAME[8][0], conf.NETS[8][0])
             )
 
         logger.info(
             "Attach the same label %s to Host NIC %s ",
-            config.LABEL_LIST[0], HOST0_NICS[1]
+            conf.LABEL_NAME[8][0], conf.HOST0_NICS[1]
         )
-        if not add_label(
-            label=config.LABEL_LIST[0],
-            host_nic_dict={config.HOSTS[0]: [HOST0_NICS[1]]}
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[8][0],
+            host_nic_dict={conf.HOSTS[0]: [conf.HOST0_NICS[1]]}
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't attach label %s to Host interface %s on Host %s " %
-                (config.LABEL_LIST[0], HOST0_NICS[1], config.HOSTS[0])
+                (
+                    conf.LABEL_NAME[8][0], conf.HOST0_NICS[1],
+                    conf.HOSTS[0]
+                )
             )
         logger.info(
             "Check that the network %s in not attached to Host NIC %s ",
-            config.NETWORKS[0], HOST0_NICS[1]
+            conf.NETS[8][0], conf.HOST0_NICS[1]
         )
-        if check_network_on_nic(
-            config.NETWORKS[0], config.HOSTS[0], HOST0_NICS[1]
+        if ll_networks.check_network_on_nic(
+            network=conf.NETS[8][0], host=conf.HOSTS[0], nic=conf.HOST0_NICS[1]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s was attached to interface %s on host %s but "
-                "shouldn't" % (config.NETWORKS[0], HOST0_NICS[1],
-                               config.HOSTS[0])
+                "shouldn't" % (
+                    conf.NETS[8][0], conf.HOST0_NICS[1],
+                    conf.HOSTS[0]
+                )
             )
 
 
@@ -1000,72 +941,64 @@ class NetLabels09(TestLabelTestCaseBase):
     the VLAN networks appropriately
     """
     __test__ = True
+    bond = "bond09"
 
     @classmethod
     def setup_class(cls):
         """
-        1) Create 2 VLAN networks on DC and Cluster
-        2) Attach 2 labels to that networks
-        3) Attach label_1 to Host Nic eth2
-        4) Attach label_2 to Host NIC eth3
-        5) Check network_1 is attached to first interface  and network_2 to
+        1) Attach 2 labels to that networks
+        2) Attach label_1 to Host Nic eth2
+        3) Attach label_2 to Host NIC eth3
+        4) Check network_1 is attached to first interface  and network_2 to
         the second interface
         """
 
-        local_dict1 = {config.VLAN_NETWORKS[0]: {"vlan_id": config.VLAN_ID[0],
-                                                 "required": "false"},
-                       config.VLAN_NETWORKS[1]: {"vlan_id": config.VLAN_ID[1],
-                                                 "required": "false"}}
-        logger.info("Attach networks to DC and Cluster")
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            network_dict=local_dict1
-        ):
-            raise NetworkException("Cannot create network on DC and Cluster")
-
         logger.info(
             "Attach label %s to network %s and label %s to network %s ",
-            config.LABEL_LIST[0], config.VLAN_NETWORKS[0],
-            config.LABEL_LIST[1], config.VLAN_NETWORKS[1]
+            conf.LABEL_NAME[9][0], conf.NETS[9][0],
+            conf.LABEL_NAME[9][1], conf.NETS[9][1]
         )
         for i in range(2):
-            if not add_label(
-                label=config.LABEL_LIST[i], networks=[config.VLAN_NETWORKS[i]]
+            if not ll_networks.add_label(
+                label=conf.LABEL_NAME[9][i],
+                networks=[conf.NETS[9][i]]
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Couldn't attach label %s to network %s " %
-                    (config.LABEL_LIST[i], config.VLAN_NETWORKS[i])
+                    (conf.LABEL_NAME[9][i], conf.NETS[9][i])
                 )
 
         logger.info(
             "Attach label %s to Host NIC %s and label %s to Host NIC %s ",
-            config.LABEL_LIST[0], HOST0_NICS[2], config.LABEL_LIST[1],
-            HOST0_NICS[3]
+            conf.LABEL_NAME[9][0], conf.HOST0_NICS[2],
+            conf.LABEL_NAME[9][1], conf.HOST0_NICS[3]
         )
         for i in range(2):
-            if not add_label(
-                label=config.LABEL_LIST[i],
-                host_nic_dict={config.HOSTS[0]: [HOST0_NICS[i + 2]]}
+            if not ll_networks.add_label(
+                label=conf.LABEL_NAME[9][i],
+                host_nic_dict={conf.HOSTS[0]: [conf.HOST0_NICS[i + 2]]}
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Couldn't attach label %s to Host interface %s " %
-                    (config.LABEL_LIST[i], HOST0_NICS[i + 2])
+                    (conf.LABEL_NAME[9][i], conf.HOST0_NICS[i + 2])
                 )
 
         logger.info(
             "Check that the networks %s and %s  are attached to Host "
             "interfaces %s and %s appropriately",
-            config.VLAN_NETWORKS[0], config.VLAN_NETWORKS[1],
-            HOST0_NICS[2], HOST0_NICS[3]
+            conf.NETS[9][0], conf.NETS[9][1],
+            conf.HOST0_NICS[2], conf.HOST0_NICS[3]
         )
         for i in range(2):
-            vlan_nic = vlan_int_name(HOST0_NICS[i + 2], config.VLAN_ID[i])
-            if not check_network_on_nic(
-                config.VLAN_NETWORKS[i], config.HOSTS[0], vlan_nic
+            vlan_nic = ul_network.vlan_int_name(
+                conf.HOST0_NICS[i + 2], conf.VLAN_IDS[i+6]
+            )
+            if not ll_networks.check_network_on_nic(
+                network=conf.NETS[9][i], host=conf.HOSTS[0], nic=vlan_nic
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Network %s is not attached toHost NIC %s " %
-                    (config.VLAN_NETWORKS[i], HOST0_NICS[i + 2])
+                    (conf.NETS[9][i], conf.HOST0_NICS[i + 2])
                 )
 
     @polarion("RHEVM3-4116")
@@ -1078,67 +1011,83 @@ class NetLabels09(TestLabelTestCaseBase):
         3) Check that label doesn't reside on slaves of the bond
         """
         logger.info(
-            "Unlabel interfaces %s and %s", HOST0_NICS[2], HOST0_NICS[3]
+            "Unlabel interfaces %s and %s",
+            conf.HOST0_NICS[2], conf.HOST0_NICS[3]
         )
-        if not remove_label(
-            host_nic_dict={config.HOSTS[0]: [HOST0_NICS[2], HOST0_NICS[3]]},
-            labels=config.LABEL_LIST[:2]
+        if not ll_networks.remove_label(
+            host_nic_dict={
+                conf.HOSTS[0]: [conf.HOST0_NICS[2], conf.HOST0_NICS[3]]
+            },
+            labels=conf.LABEL_NAME[9][:2]
         ):
 
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't remove label %s from Host NICs %s and %s" %
-                (config.LABEL_LIST[0], HOST0_NICS[2], HOST0_NICS[3])
+                (
+                    conf.LABEL_NAME[9][0], conf.HOST0_NICS[2],
+                    conf.HOST0_NICS[3]
+                )
             )
 
         logger.info(
-            "Create Bond from interfaces %s and %s ", HOST0_NICS[2],
-            HOST0_NICS[3]
+            "Create bond %s on host %s", self.bond, conf.HOSTS[0]
         )
-        local_dict = {None: {
-            "nic": config.BOND[0], "mode": 1, "slaves": [2, 3]
-        }}
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "slaves": conf.DUMMYS[:2],
+                    "nic": self.bond,
+                    "mode": 1
+                }
+            }
+        }
+        if not hl_host_network.setup_networks(
+            conf.HOSTS[0], **network_host_api_dict
         ):
-            raise NetworkException("Cannot create Bond %s " % config.BOND[0])
+            raise conf.NET_EXCEPTION(
+                "Cannot create Bond %s " % self.bond
+            )
 
         logger.info(
             "Attach labels %s and %s to Host Bond %s",
-            config.LABEL_LIST[0], config.LABEL_LIST[1], config.BOND[0]
+            conf.LABEL_NAME[9][0], conf.LABEL_NAME[9][1], self.bond
         )
         for i in range(2):
-            if not add_label(
-                label=config.LABEL_LIST[i],
-                host_nic_dict={config.HOSTS[0]: [config.BOND[0]]}
+            if not ll_networks.add_label(
+                label=conf.LABEL_NAME[9][i],
+                host_nic_dict={conf.HOSTS[0]: [self.bond]}
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Couldn't attach label %s to Host Bond %s " %
-                    (config.LABEL_LIST[i], config.BOND[0])
+                    (conf.LABEL_NAME[9][i], self.bond)
                 )
 
         logger.info(
             "Check that the networks %s and %s  are attached to Host Bond %s ",
-            config.VLAN_NETWORKS[0], config.VLAN_NETWORKS[1], config.BOND[0]
+            conf.NETS[9][0], conf.NETS[9][1], self.bond
         )
         for i in range(2):
-            vlan_bond = vlan_int_name(config.BOND[0], config.VLAN_ID[i])
-            if not check_network_on_nic(
-                config.VLAN_NETWORKS[i], config.HOSTS[0], vlan_bond
+            vlan_bond = ul_network.vlan_int_name(
+                self.bond, conf.VLAN_IDS[i+6]
+            )
+            if not ll_networks.check_network_on_nic(
+                network=conf.NETS[9][i], host=conf.HOSTS[0], nic=vlan_bond
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Network %s is not attached to Bond %s " %
-                    (config.VLAN_NETWORKS[i], config.BOND[0])
+                    (conf.NETS[9][i], self.bond)
                 )
 
         logger.info(
             "Check that label doesn't reside on Bond slaves %s and %s after "
-            "Bond creation", HOST0_NICS[2], HOST0_NICS[3]
+            "Bond creation", conf.HOST0_NICS[2], conf.HOST0_NICS[3]
         )
-        if get_label_objects(
-            host_nic_dict={config.HOSTS[0]: [HOST0_NICS[2], HOST0_NICS[3]]}
+        if ll_networks.get_label_objects(
+            host_nic_dict={
+                conf.HOSTS[0]: [conf.HOST0_NICS[2], conf.HOST0_NICS[3]]
+            }
         ):
-            raise NetworkException("Label exists on Bond slaves ")
+            raise conf.NET_EXCEPTION("Label exists on Bond slaves ")
 
     @classmethod
     def teardown_class(cls):
@@ -1147,7 +1096,9 @@ class NetLabels09(TestLabelTestCaseBase):
         Call the parent teardown
         """
         logger.info("Removing label from bond")
-        if not remove_label(host_nic_dict={config.HOSTS[0]: [config.BOND[0]]}):
+        if not ll_networks.remove_label(
+            host_nic_dict={conf.HOSTS[0]: [cls.bond]}
+        ):
             logger.error("Couldn't remove labels from Bond ")
         super(NetLabels09, cls).teardown_class()
 
@@ -1156,159 +1107,99 @@ class NetLabels09(TestLabelTestCaseBase):
 class NetLabels10(TestLabelTestCaseBase):
 
     """
-    Create bond from labeled interfaces when those labels are attached to
-    the VM non-VLAN  network and VLAN network appropriately and fail
+    Create bond from labeled interfaces when those labels are attached to two
+    VM non-VLAN network appropriately and fail
     """
     __test__ = True
+    bond = "bond10"
 
     @classmethod
     def setup_class(cls):
         """
-        1) Create 2 networks on DC and Cluster:
-           a) VM non-VLAN network
-           b) VLAN network
-        2) Attach 2 different labels to that networks
-        3) Attach one of those labels to Host Nic eth2
-        4) Attach another label to Host NIC eth3
-        5) Check network_1 is attached to eth2 and network_2 to eth3
+        1) Attach 2 different labels to the networks
         """
-
-        local_dict1 = {
-            config.NETWORKS[0]: {"required": "false"},
-            config.VLAN_NETWORKS[0]: {
-                "vlan_id": config.VLAN_ID[0], "required": "false"
-            }
-        }
-        logger.info("Attach networks to DC and Cluster")
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            network_dict=local_dict1
-        ):
-            raise NetworkException("Cannot create networks on DC and Cluster")
 
         logger.info(
             "Attach label %s to network %s and label %s to network %s ",
-            config.LABEL_LIST[0], config.NETWORKS[0],
-            config.LABEL_LIST[1], config.VLAN_NETWORKS[0]
+            conf.LABEL_NAME[10][0], conf.NETS[10][0],
+            conf.LABEL_NAME[10][1], conf.NETS[10][1]
         )
-        for i, net in enumerate([config.NETWORKS[0], config.VLAN_NETWORKS[0]]):
-            if not add_label(label=config.LABEL_LIST[i], networks=[net]):
-                raise NetworkException(
-                    "Couldn't attach label %s to network %s " %
-                    (config.LABEL_LIST[i], net)
-                )
-
-        logger.info(
-            "Attach label %s to Host NIC %s and label %s to Host NIC %s ",
-            config.LABEL_LIST[0], HOST0_NICS[2], config.LABEL_LIST[1],
-            HOST0_NICS[3]
-        )
-        for i in range(2):
-            if not add_label(
-                label=config.LABEL_LIST[i],
-                host_nic_dict={config.HOSTS[0]: [HOST0_NICS[i + 2]]}
+        for i, net in enumerate([conf.NETS[10][0], conf.NETS[10][1]]):
+            if not ll_networks.add_label(
+                label=conf.LABEL_NAME[10][i], networks=[net]
             ):
-                raise NetworkException(
-                    "Couldn't attach label %s to Host interface %s " %
-                    (config.LABEL_LIST[i], HOST0_NICS[i + 2])
-                )
-
-        logger.info(
-            "Check that the networks %s and %s  are attached to Host "
-            "interfaces %s and %s appropriately",
-            config.NETWORKS[0], config.VLAN_NETWORKS[0],
-            HOST0_NICS[2], HOST0_NICS[3]
-        )
-        vlan_nic = vlan_int_name(HOST0_NICS[3], config.VLAN_ID[0])
-        for nic, network in (
-            (HOST0_NICS[2], config.NETWORKS[0]),
-            (vlan_nic, config.VLAN_NETWORKS[0])
-        ):
-            if not check_network_on_nic(network, config.HOSTS[0], nic):
-                raise NetworkException(
-                    "Network %s is not attached to Host NIC %s " %
-                    (network, nic)
+                raise conf.NET_EXCEPTION(
+                    "Couldn't attach label %s to network %s " %
+                    (conf.LABEL_NAME[10][i], net)
                 )
 
     @polarion("RHEVM3-4101")
     def test_create_bond(self):
         """
-        1) Unlabel both interfaces
-        2) Negative: Try to create bond from labeled interfaces
-        3) Check that both networks reside on appropriate interfaces after
-        failure in second step
+        1) Create bond from labeled interfaces
+        2) Check that both networks reside on appropriate interfaces
         """
         logger.info(
-            "Unlabel interfaces %s and %s", HOST0_NICS[2], HOST0_NICS[3]
+            "Create bond %s on host %s", self.bond, conf.HOSTS[0]
         )
-
-        if not remove_label(
-            host_nic_dict={config.HOSTS[0]: [HOST0_NICS[2], HOST0_NICS[3]]},
-            labels=config.LABEL_LIST[:2]
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "slaves": conf.DUMMYS[:2],
+                    "nic": self.bond,
+                    "mode": 1
+                }
+            }
+        }
+        if not hl_host_network.setup_networks(
+            conf.HOSTS[0], **network_host_api_dict
         ):
-            raise NetworkException(
-                "Couldn't remove label %s from Host NICs %s and %s" %
-                (config.LABEL_LIST[0], HOST0_NICS[2], HOST0_NICS[3])
-            )
-        logger.info(
-            "Try to create Bond from interfaces %s and %s ",
-            HOST0_NICS[2], HOST0_NICS[3]
-        )
-
-        local_dict = {None: {
-            "nic": config.BOND[0], "mode": 1, "slaves": [2, 3]
-        }}
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
-        ):
-            raise NetworkException(
-                "Couldn't create Bond %s " %
-                config.BOND[0])
+            raise conf.NET_EXCEPTION(
+                "Couldn't create Bond %s " % self.bond)
 
         logger.info(
-            "Negative: Attach label %s and %s  to Host Bond %s ",
-            config.LABEL_LIST[0], config.LABEL_LIST[1], config.BOND[0]
+            "Negative: Attach label %s and %s to Host Bond %s ",
+            conf.LABEL_NAME[10][0], conf.LABEL_NAME[10][1], self.bond
         )
         if (
-                add_label(
-                    label=config.LABEL_LIST[0], host_nic_dict={
-                        config.HOSTS[0]: [config.BOND[0]]
+                ll_networks.add_label(
+                    label=conf.LABEL_NAME[10][0], host_nic_dict={
+                        conf.HOSTS[0]: [self.bond]
                     }
                 ) and
-                add_label(
-                    label=config.LABEL_LIST[1], host_nic_dict={
-                        config.HOSTS[0]: [config.BOND[0]]
+                ll_networks.add_label(
+                    label=conf.LABEL_NAME[10][1], host_nic_dict={
+                        conf.HOSTS[0]: [self.bond]
                     }
                 )
         ):
-            raise NetworkException(
-                "Could attach labels to Host Bond %s " % config.BOND[0]
+            raise conf.NET_EXCEPTION(
+                "Could attach labels to Host Bond %s " % self.bond
             )
 
         logger.info(
             "Check that the networks %s is attached to Host Bond %s ",
-            config.NETWORKS[0], config.BOND[0]
+            conf.NETS[10][0], self.bond
         )
-        if not check_network_on_nic(
-            config.NETWORKS[0], config.HOSTS[0], config.BOND[0]
+        if not ll_networks.check_network_on_nic(
+            network=conf.NETS[10][0], host=conf.HOSTS[0], nic=self.bond
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is not attached to Host NIC %s " %
-                (config.VLAN_NETWORKS[0], config.BOND[0])
+                (conf.NETS[10][0], self.bond)
             )
 
         logger.info(
             "Check that the networks %s is not attached to Host Bond %s ",
-            config.VLAN_NETWORKS[0], config.BOND[0]
+            conf.NETS[10][1], self.bond
         )
-        vlan_bond = vlan_int_name(config.BOND[0], config.VLAN_ID[0])
-        if check_network_on_nic(
-            config.VLAN_NETWORKS[0], config.HOSTS[0], vlan_bond
+
+        if ll_networks.check_network_on_nic(
+            network=conf.NETS[10][1], host=conf.HOSTS[0], nic=self.bond
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is attached to Host NIC %s " %
-                (config.VLAN_NETWORKS[0], config.BOND[0])
+                (conf.NETS[10][1], self.bond)
             )
 
     @classmethod
@@ -1318,7 +1209,9 @@ class NetLabels10(TestLabelTestCaseBase):
         Call the parent teardown
         """
         logger.info("Removing label from bond")
-        if not remove_label(host_nic_dict={config.HOSTS[0]: [config.BOND[0]]}):
+        if not ll_networks.remove_label(
+            host_nic_dict={conf.HOSTS[0]: [cls.bond]}
+        ):
             logger.error("Couldn't remove labels from Bond ")
         super(NetLabels10, cls).teardown_class()
 
@@ -1331,70 +1224,60 @@ class NetLabels11(TestLabelTestCaseBase):
     the VM non-VLAN  network and non-VM network appropriately and fail
     """
     __test__ = True
+    bond = "bond11"
 
     @classmethod
     def setup_class(cls):
         """
-        1) Create 2 networks on DC and Cluster:
-           a) VM non-VLAN network
-           b) non-VM network
-        2) Attach 2 different labels to that networks
-        3) Attach one of those labels to Host Nic eth2
-        4) Attach another label to Host NIC eth3
-        5) Check network_1 is attached to eth2 and network_2 to eth3
+        1) Attach 2 different labels to the networks
+        2) Attach one of those labels to Host Nic eth2
+        3) Attach another label to Host NIC eth3
+        4) Check network_1 is attached to eth2 and network_2 to eth3
         """
-
-        local_dict1 = {
-            config.NETWORKS[0]: {"required": "false"},
-            config.NETWORKS[1]: {"required": "false", "usages": ""}
-        }
-
-        logger.info("Attach networks to DC and Cluster")
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            network_dict=local_dict1
-        ):
-            raise NetworkException("Cannot create networks on DC and Cluster")
 
         logger.info(
             "Attach label %s to network %s and label %s to network %s ",
-            config.LABEL_LIST[0], config.NETWORKS[0],
-            config.LABEL_LIST[1], config.NETWORKS[1]
+            conf.LABEL_NAME[11][0], conf.NETS[11][0],
+            conf.LABEL_NAME[11][1], conf.NETS[11][1]
         )
-        for i, net in enumerate([config.NETWORKS[0], config.NETWORKS[1]]):
-            if not add_label(label=config.LABEL_LIST[i], networks=[net]):
-                raise NetworkException(
+        for i, net in enumerate([conf.NETS[11][0], conf.NETS[11][1]]):
+            if not ll_networks.add_label(
+                label=conf.LABEL_NAME[11][i], networks=[net]
+            ):
+                raise conf.NET_EXCEPTION(
                     "Couldn't attach label %s to network %s " %
-                    (config.LABEL_LIST[i], net)
+                    (conf.LABEL_NAME[11][i], net)
                 )
 
         logger.info(
             "Attach label %s to Host NIC %s and label %s to Host NIC %s ",
-            config.LABEL_LIST[0], HOST0_NICS[2], config.LABEL_LIST[1],
-            HOST0_NICS[3]
+            conf.LABEL_NAME[11][0], conf.HOST0_NICS[2],
+            conf.LABEL_NAME[11][1], conf.HOST0_NICS[3]
         )
         for i in range(2):
-            if not add_label(
-                label=config.LABEL_LIST[i],
-                host_nic_dict={config.HOSTS[0]: [HOST0_NICS[i + 2]]}
+            if not ll_networks.add_label(
+                label=conf.LABEL_NAME[11][i],
+                host_nic_dict={conf.HOSTS[0]: [conf.HOST0_NICS[i + 2]]}
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Couldn't attach label %s to Host interface %s " %
-                    (config.LABEL_LIST[i], HOST0_NICS[i + 2])
+                    (conf.LABEL_NAME[11][i], conf.HOST0_NICS[i + 2])
                 )
 
         logger.info(
             "Check that the networks %s and %s  are attached to Host "
             "interfaces %s and %s appropriately",
-            config.NETWORKS[0], config.NETWORKS[1],
-            HOST0_NICS[2], HOST0_NICS[3]
+            conf.NETS[11][0], conf.NETS[11][1],
+            conf.HOST0_NICS[2], conf.HOST0_NICS[3]
         )
         for nic, network in (
-            (HOST0_NICS[2], config.NETWORKS[0]),
-            (HOST0_NICS[3], config.NETWORKS[1])
+            (conf.HOST0_NICS[2], conf.NETS[11][0]),
+            (conf.HOST0_NICS[3], conf.NETS[11][1])
         ):
-            if not check_network_on_nic(network, config.HOSTS[0], nic):
-                raise NetworkException(
+            if not ll_networks.check_network_on_nic(
+                network=network, host=conf.HOSTS[0], nic=nic
+            ):
+                raise conf.NET_EXCEPTION(
                     "Network %s is not attached to Host NIC %s " %
                     (network, nic)
                 )
@@ -1408,75 +1291,83 @@ class NetLabels11(TestLabelTestCaseBase):
         failure in second step
         """
         logger.info(
-            "Unlabel interfaces %s and %s", HOST0_NICS[2], HOST0_NICS[3]
+            "Unlabel interfaces %s and %s",
+            conf.HOST0_NICS[2], conf.HOST0_NICS[3]
         )
 
-        if not remove_label(
-            host_nic_dict={config.HOSTS[0]: [HOST0_NICS[2], HOST0_NICS[3]]},
-            labels=config.LABEL_LIST[:2]
+        if not ll_networks.remove_label(
+            host_nic_dict={
+                conf.HOSTS[0]: [conf.HOST0_NICS[2], conf.HOST0_NICS[3]]
+            },
+            labels=conf.LABEL_NAME[11][:2]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't remove label %s from Host NICs %s and %s" %
-                (config.LABEL_LIST[0], HOST0_NICS[2], HOST0_NICS[3])
+                (
+                    conf.LABEL_NAME[11][0], conf.HOST0_NICS[2],
+                    conf.HOST0_NICS[3]
+                )
             )
         logger.info(
-            "Create Bond from interfaces %s and %s ",
-            HOST0_NICS[2], HOST0_NICS[3]
+            "Create bond %s on host %s", self.bond, conf.HOSTS[0]
         )
-
-        local_dict = {None: {
-            "nic": config.BOND[0], "mode": 1, "slaves": [2, 3]
-        }}
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "slaves": conf.DUMMYS[:2],
+                    "nic": self.bond,
+                    "mode": 1
+                }
+            }
+        }
+        if not hl_host_network.setup_networks(
+            conf.HOSTS[0], **network_host_api_dict
         ):
-            raise NetworkException(
-                "Couldn't create Bond %s " %
-                config.BOND[0])
+            raise conf.NET_EXCEPTION(
+                "Couldn't create Bond %s " % self.bond)
 
         logger.info(
             "Negative: Attach label %s and %s  to Host Bond %s ",
-            config.LABEL_LIST[0], config.LABEL_LIST[1], config.BOND[0]
+            conf.LABEL_NAME[11][0], conf.LABEL_NAME[11][1], self.bond
         )
         if (
-                add_label(
-                    label=config.LABEL_LIST[0], host_nic_dict={
-                        config.HOSTS[0]: [config.BOND[0]]
+                ll_networks.add_label(
+                    label=conf.LABEL_NAME[11][0], host_nic_dict={
+                        conf.HOSTS[0]: [self.bond]
                     }
                 ) and
-                add_label(
-                    label=config.LABEL_LIST[1], host_nic_dict={
-                        config.HOSTS[0]: [config.BOND[0]]
+                ll_networks.add_label(
+                    label=conf.LABEL_NAME[11][1], host_nic_dict={
+                        conf.HOSTS[0]: [self.bond]
                     }
                 )
         ):
-            raise NetworkException(
-                "Could attach labels to Host Bond %s " % config.BOND[0]
+            raise conf.NET_EXCEPTION(
+                "Could attach labels to Host Bond %s " % self.bond
             )
 
         logger.info(
             "Check that the networks %s is attached to Host Bond %s ",
-            config.NETWORKS[0], config.BOND[0]
+            conf.NETS[11][0], self.bond
         )
-        if not check_network_on_nic(
-            config.NETWORKS[0], config.HOSTS[0], config.BOND[0]
+        if not ll_networks.check_network_on_nic(
+            network=conf.NETS[11][0], host=conf.HOSTS[0], nic=self.bond
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is not attached to Host NIC %s " %
-                (config.VLAN_NETWORKS[0], config.BOND[0])
+                (conf.NETS[11][0], self.bond)
             )
 
         logger.info(
             "Check that the networks %s is not attached to Host Bond %s ",
-            config.NETWORKS[1], config.BOND[0]
+            conf.NETS[11][1], self.bond
         )
-        if check_network_on_nic(
-            config.NETWORKS[1], config.HOSTS[0], config.BOND[0]
+        if ll_networks.check_network_on_nic(
+            network=conf.NETS[11][1], host=conf.HOSTS[0], nic=self.bond
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is attached to Host NIC %s " %
-                (config.NETWORKS[1], config.BOND[0])
+                (conf.NETS[11][1], self.bond)
             )
 
     @classmethod
@@ -1486,7 +1377,9 @@ class NetLabels11(TestLabelTestCaseBase):
         Call the parent teardown
         """
         logger.info("Removing label from bond")
-        if not remove_label(host_nic_dict={config.HOSTS[0]: [config.BOND[0]]}):
+        if not ll_networks.remove_label(
+            host_nic_dict={conf.HOSTS[0]: [cls.bond]}
+        ):
             logger.error("Couldn't remove labels from Bond ")
         super(NetLabels11, cls).teardown_class()
 
@@ -1499,70 +1392,63 @@ class NetLabels12(TestLabelTestCaseBase):
     the non-VM and VLAN networks appropriately
     """
     __test__ = True
+    bond = "bond12"
 
     @classmethod
     def setup_class(cls):
         """
-        1) Create 1 VLAN and 1 non-VM non-VLAN networks on DC and Cluster
-        2) Attach 2 labels to that networks
-        3) Attach label_1 to Host Nic eth2
-        4) Attach label_2 to Host NIC eth3
-        5) Check network_1 is attached to eth2 and network_2 to eth3
+        1) Attach 2 labels to the networks
+        2) Attach label_1 to Host Nic eth2
+        3) Attach label_2 to Host NIC eth3
+        4) Check network_1 is attached to eth2 and network_2 to eth3
         """
-
-        local_dict1 = {
-            config.NETWORKS[0]: {"usages": "", "required": "false"},
-            config.VLAN_NETWORKS[1]: {
-                "vlan_id": config.VLAN_ID[1], "required": "false"
-            }
-        }
-        logger.info("Attach networks to DC and Cluster")
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            network_dict=local_dict1
-        ):
-            raise NetworkException("Cannot create network on DC and Cluster")
 
         logger.info(
             "Attach label %s to network %s and label %s to network %s ",
-            config.LABEL_LIST[0], config.NETWORKS[0],
-            config.LABEL_LIST[1], config.VLAN_NETWORKS[1]
+            conf.LABEL_NAME[12][0], conf.NETS[12][0],
+            conf.LABEL_NAME[12][1], conf.NETS[12][1]
         )
-        for i, net in enumerate([config.NETWORKS[0], config.VLAN_NETWORKS[1]]):
-            if not add_label(label=config.LABEL_LIST[i], networks=[net]):
-                raise NetworkException(
+        for i, net in enumerate([conf.NETS[12][0], conf.NETS[12][1]]):
+            if not ll_networks.add_label(
+                label=conf.LABEL_NAME[12][i], networks=[net]
+            ):
+                raise conf.NET_EXCEPTION(
                     "Couldn't attach label %s to network %s " %
-                    (config.LABEL_LIST[i], net)
+                    (conf.LABEL_NAME[12][i], net)
                 )
 
         logger.info(
             "Attach label %s to Host NIC %s and label %s to Host NIC %s ",
-            config.LABEL_LIST[0], HOST0_NICS[2],
-            config.LABEL_LIST[1], HOST0_NICS[3]
+            conf.LABEL_NAME[12][0], conf.HOST0_NICS[2],
+            conf.LABEL_NAME[12][1], conf.HOST0_NICS[3]
         )
         for i in range(2):
-            if not add_label(
-                label=config.LABEL_LIST[i],
-                host_nic_dict={config.HOSTS[0]: [HOST0_NICS[i + 2]]}
+            if not ll_networks.add_label(
+                label=conf.LABEL_NAME[12][i],
+                host_nic_dict={conf.HOSTS[0]: [conf.HOST0_NICS[i + 2]]}
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Couldn't attach label %s to Host interface %s " %
-                    (config.LABEL_LIST[i], HOST0_NICS[i + 2])
+                    (conf.LABEL_NAME[12][i], conf.HOST0_NICS[i + 2])
                 )
 
         logger.info(
             "Check that the networks %s and %s  are attached to Host "
             "interfaces %s and %s appropriately",
-            config.NETWORKS[0], config.VLAN_NETWORKS[1],
-            HOST0_NICS[2], HOST0_NICS[3]
+            conf.NETS[12][0], conf.NETS[12][1],
+            conf.HOST0_NICS[2], conf.HOST0_NICS[3]
         )
-        vlan_nic = vlan_int_name(HOST0_NICS[3], config.VLAN_ID[1])
+        vlan_nic = ul_network.vlan_int_name(
+            conf.HOST0_NICS[3], conf.VLAN_IDS[8]
+        )
         for nic, network in (
-            (HOST0_NICS[2], config.NETWORKS[0]),
-            (vlan_nic, config.VLAN_NETWORKS[1])
+            (conf.HOST0_NICS[2], conf.NETS[12][0]),
+            (vlan_nic, conf.NETS[12][1])
         ):
-            if not check_network_on_nic(network, config.HOSTS[0], nic):
-                raise NetworkException(
+            if not ll_networks.check_network_on_nic(
+                network=network, host=conf.HOSTS[0], nic=nic
+            ):
+                raise conf.NET_EXCEPTION(
                     "Network %s is not attached to Host NIC %s " %
                     (network, nic)
                 )
@@ -1577,68 +1463,80 @@ class NetLabels12(TestLabelTestCaseBase):
         3) Check that label doesn't reside on slaves of the bond
         """
         logger.info(
-            "Unlabel interfaces %s and %s", HOST0_NICS[2], HOST0_NICS[3]
+            "Unlabel interfaces %s and %s",
+            conf.HOST0_NICS[2], conf.HOST0_NICS[3]
         )
-        if not remove_label(
-            host_nic_dict={config.HOSTS[0]: [HOST0_NICS[2], HOST0_NICS[3]]},
-            labels=config.LABEL_LIST[:2]
+        if not ll_networks.remove_label(
+            host_nic_dict={
+                conf.HOSTS[0]: [conf.HOST0_NICS[2], conf.HOST0_NICS[3]]
+            },
+            labels=conf.LABEL_NAME[12][:2]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't remove labels from Host NICs %s and %s" %
-                (HOST0_NICS[2], HOST0_NICS[3])
+                (conf.HOST0_NICS[2], conf.HOST0_NICS[3])
             )
 
         logger.info(
-            "Create Bond from interfaces %s and %s ",
-            HOST0_NICS[2], HOST0_NICS[3]
+            "Create bond %s on host %s", self.bond, conf.HOSTS[0]
         )
-        local_dict = {None: {
-            "nic": config.BOND[0], "mode": 1, "slaves": [2, 3]
-        }}
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "slaves": conf.DUMMYS[:2],
+                    "nic": self.bond,
+                    "mode": 1
+                }
+            }
+        }
+        if not hl_host_network.setup_networks(
+            conf.HOSTS[0], **network_host_api_dict
         ):
-            raise NetworkException("Cannot create Bond %s " % config.BOND[0])
+            raise conf.NET_EXCEPTION(
+                "Couldn't create Bond %s " % self.bond)
 
         logger.info(
             "Attach labels %s and %s to Host Bond %s",
-            config.LABEL_LIST[0], config.LABEL_LIST[1], config.BOND[0]
+            conf.LABEL_NAME[12][0], conf.LABEL_NAME[12][1], self.bond
         )
         for i in range(2):
-            if not add_label(
-                label=config.LABEL_LIST[i],
-                host_nic_dict={config.HOSTS[0]: [config.BOND[0]]}
+            if not ll_networks.add_label(
+                label=conf.LABEL_NAME[12][i],
+                host_nic_dict={conf.HOSTS[0]: [self.bond]}
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Couldn't attach label %s to Host Bond %s " %
-                    (config.LABEL_LIST[i], config.BOND[0])
+                    (conf.LABEL_NAME[12][i], self.bond)
                 )
 
         logger.info(
-            "Check that the networks %s and %s  are attached to Host Bond %s ",
-            config.NETWORKS[0], config.VLAN_NETWORKS[1], config.BOND[0]
+            "Check that the networks %s and %s are attached to Host Bond %s ",
+            conf.NETS[12][0], conf.NETS[12][1], self.bond
         )
 
-        vlan_bond = vlan_int_name(config.BOND[0], config.VLAN_ID[1])
+        vlan_bond = ul_network.vlan_int_name(self.bond, conf.VLAN_IDS[8])
         for (net, nic) in (
-            (config.NETWORKS[0], config.BOND[0]),
-            (config.VLAN_NETWORKS[1], vlan_bond)
+            (conf.NETS[12][0], self.bond),
+            (conf.NETS[12][1], vlan_bond)
         ):
-            if not check_network_on_nic(net, config.HOSTS[0], nic):
-                raise NetworkException(
+            if not ll_networks.check_network_on_nic(
+                network=net, host=conf.HOSTS[0], nic=nic
+            ):
+                raise conf.NET_EXCEPTION(
                     "Network %s is not attached to Bond %s " %
-                    (net, config.BOND[0])
+                    (net, self.bond)
                 )
 
         logger.info(
             "Check that label doesn't reside on Bond slaves %s and %s after "
-            "Bond creation", HOST0_NICS[2], HOST0_NICS[3]
+            "Bond creation", conf.HOST0_NICS[2], conf.HOST0_NICS[3]
         )
-        if get_label_objects(
-            host_nic_dict={config.HOSTS[0]: [HOST0_NICS[2], HOST0_NICS[3]]}
+        if ll_networks.get_label_objects(
+            host_nic_dict={
+                conf.HOSTS[0]: [conf.HOST0_NICS[2], conf.HOST0_NICS[3]]
+            }
         ):
-            raise NetworkException("Label exists on Bond slaves ")
+            raise conf.NET_EXCEPTION("Label exists on Bond slaves ")
 
     @classmethod
     def teardown_class(cls):
@@ -1647,7 +1545,9 @@ class NetLabels12(TestLabelTestCaseBase):
         Call the parent teardown
         """
         logger.info("Removing label from bond")
-        if not remove_label(host_nic_dict={config.HOSTS[0]: [config.BOND[0]]}):
+        if not ll_networks.remove_label(
+            host_nic_dict={conf.HOSTS[0]: [cls.bond]}
+        ):
             logger.error("Couldn't remove labels from Bond ")
         super(NetLabels12, cls).teardown_class()
 
@@ -1661,64 +1561,52 @@ class NetLabels13(TestLabelTestCaseBase):
     2) The same will happen when the network is removed from the DC
     """
     __test__ = True
-    bz = ({'1252125': {'engine': None, 'version': ['3.6']}})
 
     @classmethod
     def setup_class(cls):
         """
-        1) Create a network on DC/Cluster
-        2) Create and attach label to the network
-        3) Attach label to Host Nic - eth1
-        4) Check that the network is attached to the interface (eth1)
+        1) Create and attach label to the network
+        2) Attach label to Host Nic - eth1
+        3) Check that the network is attached to the interface (eth1)
         """
 
-        logger.info("Create network %s on DC and Cluster", config.NETWORKS[0])
-        local_dict = {config.NETWORKS[0]: {"required": "false"}}
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            network_dict=local_dict
-        ):
-            raise NetworkException(
-                "Cannot create network %s on DC and CLuster" %
-                config.NETWORKS[0]
-            )
-
         logger.info(
-            "Attach label %s to network %s ", config.LABEL_LIST[0],
-            config.NETWORKS[0]
+            "Attach label %s to network %s ", conf.LABEL_NAME[12][0],
+            conf.NETS[13][0]
         )
-        if not add_label(
-            label=config.LABEL_LIST[0], networks=[config.NETWORKS[0]]
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[13][0], networks=[conf.NETS[13][0]]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't attach label %s to network %s" %
-                (config.LABEL_LIST[0], config.NETWORKS[0])
+                (conf.LABEL_NAME[13][0], conf.NETS[13][0])
             )
 
         logger.info(
             "Attach the label %s to Host NIC %s",
-            config.LABEL_LIST[0], HOST0_NICS[1]
+            conf.LABEL_NAME[13][0], conf.HOST0_NICS[1]
         )
-        if not add_label(
-            label=config.LABEL_LIST[0],
-            host_nic_dict={config.HOSTS[0]: [HOST0_NICS[1]]}
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[13][0],
+            host_nic_dict={conf.HOSTS[0]: [conf.HOST0_NICS[1]]}
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't attach label %s to Host NIC %s" %
-                (config.LABEL_LIST[0], HOST0_NICS[1])
+                (conf.LABEL_NAME[13][0], conf.HOST0_NICS[1])
             )
 
         logger.info(
             "Check that the network %s is attached to Host NIC %s",
-            config.NETWORKS[0], HOST0_NICS[1]
+            conf.NETS[13][0], conf.HOST0_NICS[1]
         )
 
-        if not check_network_on_nic(
-            config.NETWORKS[0], config.HOSTS[0], HOST0_NICS[1]
+        if not ll_networks.check_network_on_nic(
+            network=conf.NETS[13][0], host=conf.HOSTS[0],
+            nic=conf.HOST0_NICS[1]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is not attached to Host NIC %s " %
-                (config.NETWORKS[0], HOST0_NICS[1])
+                (conf.NETS[13][0], conf.HOST0_NICS[1])
             )
 
     @polarion("RHEVM3-4129")
@@ -1736,101 +1624,109 @@ class NetLabels13(TestLabelTestCaseBase):
         """
         logger.info(
             "Remove labeled network %s from Cluster %s",
-            config.NETWORKS[0], config.CLUSTER_NAME[0]
+            conf.NETS[13][0], conf.CLUSTER_NAME[0]
         )
-        if not removeNetworkFromCluster(
-            True, config.NETWORKS[0], config.CLUSTER_NAME[0]
+        if not ll_networks.removeNetworkFromCluster(
+            True, conf.NETS[13][0], conf.CLUSTER_NAME[0]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't remove network %s from Cluster %s " %
-                (config.NETWORKS[0], config.CLUSTER_NAME[0])
+                (conf.NETS[13][0], conf.CLUSTER_NAME[0])
             )
 
         logger.info(
             "Check that the network %s is not attached to Host NIC %s",
-            config.NETWORKS[0], HOST0_NICS[1]
+            conf.NETS[13][0], conf.HOST0_NICS[1]
         )
-        sample = TimeoutingSampler(
-            timeout=config.SAMPLER_TIMEOUT, sleep=1, func=net_exist_on_nic
+        sample = apis_utils.TimeoutingSampler(
+            timeout=conf.SAMPLER_TIMEOUT, sleep=1,
+            func=ll_networks.check_network_on_nic, network=conf.NETS[13][0],
+            host=conf.HOSTS[0], nic=conf.HOST0_NICS[1]
         )
 
         if not sample.waitForFuncStatus(result=False):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is attached to NIC %s "
-                % (config.NETWORKS[0], HOST0_NICS[1])
+                % (conf.NETS[13][0], conf.HOST0_NICS[1])
             )
         logger.info(
             "Check that the network %s is not attached to the Cluster%s",
-            config.NETWORKS[0], config.CLUSTER_NAME[0]
+            conf.NETS[13][0], conf.CLUSTER_NAME[0]
         )
         try:
-            getClusterNetwork(config.CLUSTER_NAME[0], config.NETWORKS[0])
-            raise NetworkException(
-                "Network %s is attached to Cluster %s but shouldn't " %
-                (config.NETWORKS[0], config.CLUSTER_NAME[0])
+            ll_networks.getClusterNetwork(
+                conf.CLUSTER_NAME[0], conf.NETS[13][0]
             )
-        except EntityNotFound:
+            raise conf.NET_EXCEPTION(
+                "Network %s is attached to Cluster %s but shouldn't " %
+                (conf.NETS[13][0], conf.CLUSTER_NAME[0])
+            )
+        except apis_exceptions.EntityNotFound:
             logger.info("Network not found on the Cluster as expected")
 
         logger.info(
             "Reattach labeled network %s to Cluster %s ",
-            config.NETWORKS[0], config.CLUSTER_NAME[0]
+            conf.NETS[13][0], conf.CLUSTER_NAME[0]
         )
-        if not addNetworkToCluster(
-            True, config.NETWORKS[0], config.CLUSTER_NAME[0], required=False
+        if not ll_networks.addNetworkToCluster(
+            True, conf.NETS[13][0], conf.CLUSTER_NAME[0], required=False
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't reattach network %s to Cluster %s " %
-                (config.NETWORKS[0], config.CLUSTER_NAME[0])
+                (conf.NETS[13][0], conf.CLUSTER_NAME[0])
             )
 
         logger.info(
             "Check that the network %s is reattached to Host NIC %s",
-            config.NETWORKS[0], HOST0_NICS[1]
+            conf.NETS[13][0], conf.HOST0_NICS[1]
         )
-        sample = TimeoutingSampler(
-            timeout=config.SAMPLER_TIMEOUT, sleep=1, func=check_network_on_nic,
-            network=config.NETWORKS[
-                0], host=config.HOSTS[0], nic=HOST0_NICS[1]
+        sample = apis_utils.TimeoutingSampler(
+            timeout=conf.SAMPLER_TIMEOUT, sleep=1,
+            func=ll_networks.check_network_on_nic, network=conf.NETS[13][0],
+            host=conf.HOSTS[0], nic=conf.HOST0_NICS[1]
         )
 
         if not sample.waitForFuncStatus(result=True):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is not attached to NIC %s "
-                % (config.NETWORKS[0], HOST0_NICS[1])
+                % (conf.NETS[13][0], conf.HOST0_NICS[1])
             )
 
         logger.info(
             "Remove labeled network %s from DataCenter %s",
-            config.NETWORKS[0], config.DC_NAME[0]
+            conf.NETS[13][0], conf.DC_NAME[0]
         )
-        if not removeNetwork(True, config.NETWORKS[0], config.DC_NAME[0]):
-            raise NetworkException(
+        if not ll_networks.removeNetwork(
+            True, conf.NETS[13][0], conf.DC_NAME[0]
+        ):
+            raise conf.NET_EXCEPTION(
                 "Couldn't remove network %s from DC %s " %
-                (config.NETWORKS[0], config.DC_NAME[0])
+                (conf.NETS[13][0], conf.DC_NAME[0])
             )
 
         logger.info(
             "Check that the network %s is not attached to Host NIC %s and not "
-            "attached to DC %s", config.NETWORKS[0], HOST0_NICS[1],
-            config.DC_NAME[0]
+            "attached to DC %s", conf.NETS[13][0], conf.HOST0_NICS[1],
+            conf.DC_NAME[0]
         )
         try:
-            findNetwork(config.NETWORKS[0], config.DC_NAME[0])
-            raise NetworkException(
-                "Network %s found on DC, but shouldn't" % config.NETWORKS[0]
+            ll_networks.findNetwork(conf.NETS[13][0], conf.DC_NAME[0])
+            raise conf.NET_EXCEPTION(
+                "Network %s found on DC, but shouldn't" % conf.NETS[13][0]
             )
-        except EntityNotFound:
+        except apis_exceptions.EntityNotFound:
             logger.info("Network not found on DC as expected")
 
-        sample = TimeoutingSampler(
-            timeout=config.SAMPLER_TIMEOUT, sleep=1, func=net_exist_on_nic
+        sample = apis_utils.TimeoutingSampler(
+            timeout=conf.SAMPLER_TIMEOUT, sleep=1,
+            func=ll_networks.check_network_on_nic, network=conf.NETS[13][0],
+            host=conf.HOSTS[0], nic=conf.HOST0_NICS[1]
         )
 
         if not sample.waitForFuncStatus(result=False):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is attached to NIC %s, but shouldn't "
-                % (config.NETWORKS[0], HOST0_NICS[1])
+                % (conf.NETS[13][0], conf.HOST0_NICS[1])
             )
 
 
@@ -1862,61 +1758,64 @@ class NetLabels14(TestLabelTestCaseBase):
         """
         logger.info(
             "Attach the label %s to Host NIC %s",
-            config.LABEL_LIST[0], HOST0_NICS[1]
+            conf.LABEL_NAME[14][0], conf.HOST0_NICS[1]
         )
-        if not add_label(
-            label=config.LABEL_LIST[0],
-            host_nic_dict={config.HOSTS[0]: [HOST0_NICS[1]]}
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[14][0],
+            host_nic_dict={conf.HOSTS[0]: [conf.HOST0_NICS[1]]}
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't attach label %s to Host NIC %s" %
-                (config.LABEL_LIST[0], HOST0_NICS[1])
+                (conf.LABEL_NAME[14][0], conf.HOST0_NICS[1])
             )
 
         logger.info(
             "Create new DC and Cluster in the setup of the current version"
         )
         if not (
-                addDataCenter(positive=True, name=cls.dc_name2,
-                              storage_type=config.STORAGE_TYPE,
-                              version=config.COMP_VERSION, local=False) and
-                addCluster(positive=True, name=cls.cl_name2,
-                           data_center=cls.dc_name2,
-                           version=config.COMP_VERSION,
-                           cpu=config.CPU_NAME)
+                ll_datacenters.addDataCenter(
+                    positive=True, name=cls.dc_name2,
+                    storage_type=conf.STORAGE_TYPE,
+                    version=conf.COMP_VERSION, local=False
+                ) and
+                ll_clusters.addCluster(
+                    positive=True, name=cls.cl_name2,
+                    data_center=cls.dc_name2,
+                    version=conf.COMP_VERSION,
+                    cpu=conf.CPU_NAME
+                )
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't add a new DC and Cluster to the setup"
             )
 
         logger.info(
-            "Create network %s on new DC and Cluster", config.NETWORKS[0]
+            "Create network %s on new DC and Cluster", conf.NETS[14][0]
         )
-        local_dict = {config.NETWORKS[0]: {"required": "false"}}
-        if not createAndAttachNetworkSN(
-            data_center=cls.dc_name2, cluster=cls.cl_name2,
-            network_dict=local_dict
-        ):
-            raise NetworkException(
-                "Cannot create network %s on DC and CLuster" %
-                config.NETWORKS[0]
-            )
+        local_dict = {conf.NETS[14][0]: {"required": "false"}}
+        networking_helper.prepare_networks_on_setup(
+            networks_dict=local_dict, dc=cls.dc_name2, cluster=cls.cl_name2
+        )
 
         logger.info(
             "Create new DC and Cluster in the setup of the 3.0 version"
         )
         if not (
-                addDataCenter(positive=True, name=cls.uncomp_dc,
-                              storage_type=config.STORAGE_TYPE,
-                              version=config.VERSION[0], local=False) and
-                addCluster(positive=True, name=cls.uncomp_cl,
-                           data_center=cls.uncomp_dc,
-                           version=config.VERSION[0],
-                           cpu=cls.uncomp_cpu)
+                ll_datacenters.addDataCenter(
+                    positive=True, name=cls.uncomp_dc,
+                    storage_type=conf.STORAGE_TYPE,
+                    version=conf.VERSION[0], local=False
+                ) and
+                ll_clusters.addCluster(
+                    positive=True, name=cls.uncomp_cl,
+                    data_center=cls.uncomp_dc,
+                    version=conf.VERSION[0],
+                    cpu=cls.uncomp_cpu
+                )
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't add a DC and Cluster of %s version to the setup" %
-                config.VERSION[0]
+                conf.VERSION[0]
             )
 
     @polarion("RHEVM3-4126")
@@ -1933,71 +1832,75 @@ class NetLabels14(TestLabelTestCaseBase):
             "Deactivate host, move it to the new DC %s and reactivate it",
             self.dc_name2
         )
-        logger.info("Deactivate Host %s", config.HOSTS[0])
-        assert (deactivateHost(True, host=config.HOSTS[0]))
+        logger.info("Deactivate Host %s", conf.HOSTS[0])
+        assert (ll_hosts.deactivateHost(True, host=conf.HOSTS[0]))
 
         logger.info("Attach the Host to the new DC/Cluster")
-        if not updateHost(True, host=config.HOSTS[0], cluster=self.cl_name2):
-            raise NetworkException("Cannot move host to another DC")
+        if not ll_hosts.updateHost(
+            True, host=conf.HOSTS[0], cluster=self.cl_name2
+        ):
+            raise conf.NET_EXCEPTION("Cannot move host to another DC")
 
         logger.info("Activate Host")
-        assert (activateHost(True, host=config.HOSTS[0]))
+        assert (ll_hosts.activateHost(True, host=conf.HOSTS[0]))
 
         logger.info(
-            "Attach label %s to network %s ", config.LABEL_LIST[0],
-            config.NETWORKS[0]
+            "Attach label %s to network %s ", conf.LABEL_NAME[14][0],
+            conf.NETS[14][0]
         )
 
-        if not add_label(
-            label=config.LABEL_LIST[0], networks=[config.NETWORKS[0]]
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[14][0], networks=[conf.NETS[14][0]]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't attach label %s to network %s" %
-                (config.LABEL_LIST[0], config.NETWORKS[0])
+                (conf.LABEL_NAME[14][0], conf.NETS[14][0])
             )
 
         logger.info(
             "Check that the network %s is attached to Host NIC %s",
-            config.NETWORKS[0], HOST0_NICS[1]
+            conf.NETS[14][0], conf.HOST0_NICS[1]
         )
-        sample = TimeoutingSampler(
-            timeout=config.SAMPLER_TIMEOUT, sleep=1, func=check_network_on_nic,
-            network=config.NETWORKS[
-                0], host=config.HOSTS[0], nic=HOST0_NICS[1]
+        sample = apis_utils.TimeoutingSampler(
+            timeout=conf.SAMPLER_TIMEOUT, sleep=1,
+            func=ll_networks.check_network_on_nic, network=conf.NETS[14][0],
+            host=conf.HOSTS[0], nic=conf.HOST0_NICS[1]
         )
         if not sample.waitForFuncStatus(result=True):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is not attached to NIC %s " %
-                (config.NETWORKS[0], HOST0_NICS[1])
+                (conf.NETS[14][0], conf.HOST0_NICS[1])
             )
 
         logger.info(
-            "Remove label %s from network %s ", config.LABEL_LIST[0],
-            config.NETWORKS[0]
+            "Remove label %s from network %s ", conf.LABEL_NAME[14][0],
+            conf.NETS[14][0]
         )
-        if not remove_label(
-            labels=config.LABEL_LIST[0], networks=[config.NETWORKS[0]]
+        if not ll_networks.remove_label(
+            labels=conf.LABEL_NAME[14][0], networks=[conf.NETS[14][0]]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't remove label %s from network %s " %
-                (config.LABEL_LIST[0], config.NETWORKS[0])
+                (conf.LABEL_NAME[14][0], conf.NETS[14][0])
             )
 
         logger.info(
             "Deactivate host, move it back to the original DC %s and "
-            "reactivate it", config.DC_NAME[0]
+            "reactivate it", conf.DC_NAME[0]
         )
-        logger.info("Deactivate Host %s", config.HOSTS[0])
-        assert (deactivateHost(True, host=config.HOSTS[0]))
+        logger.info("Deactivate Host %s", conf.HOSTS[0])
+        assert (ll_hosts.deactivateHost(True, host=conf.HOSTS[0]))
 
         logger.info("Attach Host to original DC/Cluster")
-        if not updateHost(
-            True, host=config.HOSTS[0], cluster=config.CLUSTER_NAME[0]
+        if not ll_hosts.updateHost(
+            True, host=conf.HOSTS[0], cluster=conf.CLUSTER_NAME[0]
         ):
-            raise NetworkException("Cannot move host to the original DC")
+            raise conf.NET_EXCEPTION(
+                "Cannot move host to the original DC"
+            )
 
         logger.info("Activate Host")
-        assert (activateHost(True, host=config.HOSTS[0]))
+        assert (ll_hosts.activateHost(True, host=conf.HOSTS[0]))
 
     @polarion("RHEVM3-4115")
     def test_move_host_unsupported_dc_cl(self):
@@ -2010,25 +1913,27 @@ class NetLabels14(TestLabelTestCaseBase):
             "with unsupported version (3.0) of Cluster %s ",
             self.uncomp_dc, self.uncomp_cl
         )
-        logger.info("Deactivate Host %s", config.HOSTS[0])
-        assert (deactivateHost(True, host=config.HOSTS[0]))
+        logger.info("Deactivate Host %s", conf.HOSTS[0])
+        assert (ll_hosts.deactivateHost(True, host=conf.HOSTS[0]))
 
         logger.info("Negative: Try to attach Host to another DC/Cluster")
-        if not updateHost(False, host=config.HOSTS[0], cluster=self.uncomp_cl):
-            raise NetworkException(
+        if not ll_hosts.updateHost(
+            False, host=conf.HOSTS[0], cluster=self.uncomp_cl
+        ):
+            raise conf.NET_EXCEPTION(
                 "Could move host to another DC/Cluster when shouldn't"
             )
 
         logger.info("Move host to the original DC and Cluster")
-        if not updateHost(
-            True, host=config.HOSTS[0], cluster=config.CLUSTER_NAME[0]
+        if not ll_hosts.updateHost(
+            True, host=conf.HOSTS[0], cluster=conf.CLUSTER_NAME[0]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Cannot move host to original DC and Cluster"
             )
 
         logger.info("Activate Host")
-        assert (activateHost(True, host=config.HOSTS[0]))
+        assert (ll_hosts.activateHost(True, host=conf.HOSTS[0]))
 
     @classmethod
     def teardown_class(cls):
@@ -2044,9 +1949,11 @@ class NetLabels14(TestLabelTestCaseBase):
         for dc, cl in (
             (cls.dc_name2, cls.cl_name2), (cls.uncomp_dc, cls.uncomp_cl)
         ):
-            if not removeDataCenter(positive=True, datacenter=dc):
+            if not ll_datacenters.removeDataCenter(
+                positive=True, datacenter=dc
+            ):
                 logger.error("Failed to remove datacenter %s", dc)
-            if not removeCluster(positive=True, cluster=cl):
+            if not ll_clusters.removeCluster(positive=True, cluster=cl):
                 logger.error("Failed to remove cluster %s ", cl)
         super(NetLabels14, cls).teardown_class()
 
@@ -2065,9 +1972,9 @@ class NetLabels15(TestLabelTestCaseBase):
     cl_name2 = "new_CL_case15"
     comp_cl_name = [
         "".join(["COMP_CL3_case15-", str(i)]) for i in range(
-            1, len(config.VERSION)
+            1, len(conf.VERSION)
         )
-    ]
+        ]
 
     @classmethod
     def setup_class(cls):
@@ -2082,25 +1989,25 @@ class NetLabels15(TestLabelTestCaseBase):
 
         logger.info(
             "Attach the label %s to Host NIC %s",
-            config.LABEL_LIST[0], HOST0_NICS[1]
+            conf.LABEL_NAME[15][0], conf.HOST0_NICS[1]
         )
-        if not add_label(
-            label=config.LABEL_LIST[0],
-            host_nic_dict={config.HOSTS[0]: [HOST0_NICS[1]]}
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[15][0],
+            host_nic_dict={conf.HOSTS[0]: [conf.HOST0_NICS[1]]}
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't attach label %s to Host NIC %s" %
-                (config.LABEL_LIST[0], HOST0_NICS[1])
+                (conf.LABEL_NAME[15][0], conf.HOST0_NICS[1])
             )
 
         logger.info(
             "Create new DC %s with 3.1 version in the setup ", cls.dc_name2
         )
-        if not addDataCenter(
-            positive=True, name=cls.dc_name2, storage_type=config.STORAGE_TYPE,
-            version=config.VERSION[1], local=False
+        if not ll_datacenters.addDataCenter(
+            positive=True, name=cls.dc_name2, storage_type=conf.STORAGE_TYPE,
+            version=conf.VERSION[1], local=False
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't add a new DC %s to the setup" % cls.dc_name2
             )
 
@@ -2108,27 +2015,23 @@ class NetLabels15(TestLabelTestCaseBase):
             "Create Clusters with all supported version for labeling for DC "
             "%s ", cls.dc_name2
         )
-        for ver, cluster in zip(config.VERSION[1:], cls.comp_cl_name):
-            if not addCluster(
+        for ver, cluster in zip(conf.VERSION[1:], cls.comp_cl_name):
+            if not ll_clusters.addCluster(
                 positive=True, name=cluster, data_center=cls.dc_name2,
-                version=ver, cpu=config.CPU_NAME
+                version=ver, cpu=conf.CPU_NAME
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Couldn't add a new Cluster %s with version %s to the "
                     "setup" % (cluster, ver)
                 )
 
         logger.info("Create networks for all the Clusters of the new DC")
         for index, cluster in enumerate(cls.comp_cl_name):
-            local_dict = {config.NETWORKS[index]: {"required": "false"}}
-            if not createAndAttachNetworkSN(
-                data_center=cls.dc_name2, cluster=cluster,
-                network_dict=local_dict
-            ):
-                raise NetworkException(
-                    "Cannot create network %s for CLuster %s" %
-                    (config.NETWORKS[index], cluster)
-                )
+            local_dict = {conf.NETS[15][index]: {"required": "false"}}
+            networking_helper.prepare_networks_on_setup(
+                networks_dict=local_dict, dc=cls.dc_name2,
+                cluster=cluster
+            )
 
     @polarion("RHEVM3-4124")
     def test_move_host_supported_cl(self):
@@ -2147,56 +2050,67 @@ class NetLabels15(TestLabelTestCaseBase):
         )
 
         logger.info("Deactivate host")
-        assert (deactivateHost(True, host=config.HOSTS[0]))
+        assert (ll_hosts.deactivateHost(True, host=conf.HOSTS[0]))
 
         for index, cluster in enumerate(self.comp_cl_name):
             logger.info("Move Host to the Cluster %s ", cluster)
-            if not updateHost(True, host=config.HOSTS[0], cluster=cluster):
-                raise NetworkException(
+            if not ll_hosts.updateHost(
+                True, host=conf.HOSTS[0], cluster=cluster
+            ):
+                raise conf.NET_EXCEPTION(
                     "Cannot move host to cluster %s" % cluster
                 )
-
+            sleep_timeout = conf.TIMEOUT / 2
+            logger.info(
+                "Sleep for %s. after moving host to new cluster "
+                "setupNetworks is called and we need to wait untill "
+                "it's done", sleep_timeout
+            )
+            time.sleep(sleep_timeout)
             if index is not 0:
                 logger.info(
                     "Check network %s doesn't reside on Host in Cluster %s",
-                    config.NETWORKS[index], cluster
+                    conf.NETS[15][index], cluster
                 )
-                sample = TimeoutingSampler(
-                    timeout=config.SAMPLER_TIMEOUT, sleep=1,
-                    func=net_exist_on_nic
+                sample = apis_utils.TimeoutingSampler(
+                    timeout=conf.SAMPLER_TIMEOUT, sleep=1,
+                    func=ll_networks.check_network_on_nic,
+                    network=conf.NETS[15][index],
+                    host=conf.HOSTS[0], nic=conf.HOST0_NICS[1]
                 )
 
                 if not sample.waitForFuncStatus(result=False):
-                    raise NetworkException(
+                    raise conf.NET_EXCEPTION(
                         "Network %s is not attached to NIC %s" %
-                        (config.NETWORKS[index - 1], HOST0_NICS[1])
+                        (conf.NETS[15][index - 1], conf.HOST0_NICS[1])
                     )
 
             logger.info(
                 "Add label to network %s in Cluster %s",
-                config.NETWORKS[index], cluster
+                conf.NETS[15][index], cluster
             )
-            if not add_label(
-                label=config.LABEL_LIST[0], networks=[config.NETWORKS[index]]
+            if not ll_networks.add_label(
+                label=conf.LABEL_NAME[15][0], networks=[conf.NETS[15][index]]
             ):
-                raise NetworkException(
-                    "Cannot add label to network %s" % config.NETWORKS[index]
+                raise conf.NET_EXCEPTION(
+                    "Cannot add label to network %s" % conf.NETS[15][index]
                 )
 
             logger.info(
                 "Check network %s resides on Host in Cluster %s",
-                config.NETWORKS[index], cluster
+                conf.NETS[15][index], cluster
             )
-            sample = TimeoutingSampler(
-                timeout=config.SAMPLER_TIMEOUT, sleep=1,
-                func=check_network_on_nic, network=config.NETWORKS[index],
-                host=config.HOSTS[0], nic=HOST0_NICS[1]
+            sample = apis_utils.TimeoutingSampler(
+                timeout=conf.SAMPLER_TIMEOUT, sleep=1,
+                func=ll_networks.check_network_on_nic,
+                network=conf.NETS[15][index],
+                host=conf.HOSTS[0], nic=conf.HOST0_NICS[1]
             )
 
             if not sample.waitForFuncStatus(result=True):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Network %s is not attached to NIC %s " %
-                    (config.NETWORKS[index], HOST0_NICS[1])
+                    (conf.NETS[15][index], conf.HOST0_NICS[1])
                 )
 
     @classmethod
@@ -2208,27 +2122,29 @@ class NetLabels15(TestLabelTestCaseBase):
         """
         logger.info(
             "Deactivate host, move it to the original Cluster %s and "
-            "reactivate it", config.CLUSTER_NAME[0]
+            "reactivate it", conf.CLUSTER_NAME[0]
         )
-        logger.info("Deactivate Host %s", config.HOSTS[0])
-        if not deactivate_host_if_up(config.HOSTS[0]):
-            logger.error("Couldn't deactivate Host %s", config.HOSTS[0])
+        logger.info("Deactivate Host %s", conf.HOSTS[0])
+        if not hl_host.deactivate_host_if_up(conf.HOSTS[0]):
+            logger.error("Couldn't deactivate Host %s", conf.HOSTS[0])
 
         logger.info("Attach host to original DC/Cluster")
-        if not updateHost(
-            True, host=config.HOSTS[0], cluster=config.CLUSTER_NAME[0]
+        if not ll_hosts.updateHost(
+            True, host=conf.HOSTS[0], cluster=conf.CLUSTER_NAME[0]
         ):
             logger.error("Cannot move host to original Cluster")
 
         logger.info("Activate Host")
-        if not activateHost(True, host=config.HOSTS[0]):
-            logger.error("Couldn't activate host %s", config.HOSTS[0])
+        if not ll_hosts.activateHost(True, host=conf.HOSTS[0]):
+            logger.error("Couldn't activate host %s", conf.HOSTS[0])
 
         logger.info("Removing the DC %s with all its Clusters", cls.dc_name2)
         for cl in cls.comp_cl_name:
-            if not removeCluster(positive=True, cluster=cl):
+            if not ll_clusters.removeCluster(positive=True, cluster=cl):
                 logger.error("Failed to remove cluster %s", cl)
-        if not removeDataCenter(positive=True, datacenter=cls.dc_name2):
+        if not ll_datacenters.removeDataCenter(
+            positive=True, datacenter=cls.dc_name2
+        ):
             logger.error("Failed to remove datacenter %s", cls.dc_name2)
         super(NetLabels15, cls).teardown_class()
 
@@ -2263,76 +2179,65 @@ class NetLabels16(TestLabelTestCaseBase):
         6) Add the same label to non-VM network as for VM network in 3)
         7) Check that the VM network1 is attached to the Host NIC
         """
-        logger.info(
-            "Create a VM network %s on original DC/Cluster",
-            config.NETWORKS[0]
-        )
-        local_dict = {config.NETWORKS[0]: {"required": "false"}}
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            network_dict=local_dict
-        ):
-            raise NetworkException(
-                "Cannot create VM network %s on DC and CLuster" %
-                config.NETWORKS[0]
-            )
 
         logger.info(
             "Attach label %s to network %s and Host NIC %s",
-            config.LABEL_LIST[0], config.NETWORKS[0], HOST0_NICS[1]
+            conf.LABEL_NAME[16][0], conf.NETS[16][0], conf.HOST0_NICS[1]
         )
-        if not add_label(
-            label=config.LABEL_LIST[0], networks=[config.NETWORKS[0]],
-            host_nic_dict={config.HOSTS[0]: [HOST0_NICS[1]]}
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[16][0], networks=[conf.NETS[16][0]],
+            host_nic_dict={conf.HOSTS[0]: [conf.HOST0_NICS[1]]}
         ):
-            raise NetworkException(
-                "Couldn't attach label %s to network %s and Host NIC %s "
-                % (config.LABEL_LIST[0], config.NETWORKS[0], HOST0_NICS[1])
+            raise conf.NET_EXCEPTION(
+                "Couldn't attach label %s to network %s and Host NIC %s " %
+                (
+                    conf.LABEL_NAME[16][0], conf.NETS[16][0],
+                    conf.HOST0_NICS[1]
+                )
             )
 
         logger.info(
             "Create a new Cluster in the setup for the current version"
         )
-        if not addCluster(
-            positive=True, name=cls.cl_name2, data_center=config.DC_NAME[0],
-            version=config.COMP_VERSION, cpu=config.CPU_NAME
+        if not ll_clusters.addCluster(
+            positive=True, name=cls.cl_name2, data_center=conf.DC_NAME[0],
+            version=conf.COMP_VERSION, cpu=conf.CPU_NAME
         ):
-            raise NetworkException("Couldn't add a new Cluster to the setup")
-
-        logger.info("Create network %s on new Cluster", config.NETWORKS[1])
-        local_dict = {config.NETWORKS[1]: {"usages": "", "required": "false"}}
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=cls.cl_name2,
-            network_dict=local_dict
-        ):
-            raise NetworkException(
-                "Cannot create network %s on DC and CLuster %s " %
-                (config.NETWORKS[1], cls.cl_name2)
+            raise conf.NET_EXCEPTION(
+                "Couldn't add a new Cluster to the setup"
             )
+
+        logger.info("Create network %s on new Cluster", conf.NETS[16][1])
+        local_dict = {conf.NETS[16][1]: {"usages": "", "required": "false"}}
+        networking_helper.prepare_networks_on_setup(
+            networks_dict=local_dict, dc=conf.DC_NAME[0],
+            cluster=cls.cl_name2
+        )
 
         logger.info(
             "Attach the same label %s to non-VM network %s as in original "
-            "Cluster ", config.LABEL_LIST[0], config.NETWORKS[1]
+            "Cluster ", conf.LABEL_NAME[16][0], conf.NETS[16][1]
         )
-        if not add_label(
-            label=config.LABEL_LIST[0], networks=[config.NETWORKS[1]]
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[16][0], networks=[conf.NETS[16][1]]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't attach label %s to network %s" %
-                (config.LABEL_LIST[0], config.NETWORKS[1])
+                (conf.LABEL_NAME[16][0], conf.NETS[16][1])
             )
 
         logger.info(
             "Check that the network %s is attached to Host NIC %s",
-            config.NETWORKS[0], HOST0_NICS[1]
+            conf.NETS[16][0], conf.HOST0_NICS[1]
         )
 
-        if not check_network_on_nic(
-            config.NETWORKS[0], config.HOSTS[0], HOST0_NICS[1]
+        if not ll_networks.check_network_on_nic(
+            network=conf.NETS[16][0], host=conf.HOSTS[0],
+            nic=conf.HOST0_NICS[1]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "VM Network %s is not attached to Host NIC %s " %
-                (config.NETWORKS[0], HOST0_NICS[1])
+                (conf.NETS[16][0], conf.HOST0_NICS[1])
             )
 
     @polarion("RHEVM3-4108")
@@ -2349,61 +2254,63 @@ class NetLabels16(TestLabelTestCaseBase):
             "Deactivate host, move it to the new Cluster %s and reactivate it",
             self.cl_name2
         )
-        logger.info("Deactivate Host %s", config.HOSTS[0])
-        assert (deactivateHost(True, host=config.HOSTS[0]))
+        logger.info("Deactivate Host %s", conf.HOSTS[0])
+        assert (ll_hosts.deactivateHost(True, host=conf.HOSTS[0]))
 
         logger.info("Attach host to another DC/Cluster")
-        if not updateHost(
-            True, host=config.HOSTS[0], cluster=self.cl_name2
+        if not ll_hosts.updateHost(
+            True, host=conf.HOSTS[0], cluster=self.cl_name2
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Cannot move host to another Cluster %s" % self.cl_name2
             )
 
         logger.info("Activate Host")
-        assert (activateHost(True, host=config.HOSTS[0]))
+        assert (ll_hosts.activateHost(True, host=conf.HOSTS[0]))
 
         logger.info(
             "Check that the non-VM network %s is attached to Host NIC %s",
-            config.NETWORKS[1], HOST0_NICS[1]
+            conf.NETS[16][1], conf.HOST0_NICS[1]
         )
-        if not check_network_on_nic(
-            config.NETWORKS[1], config.HOSTS[0], HOST0_NICS[1]
+        if not ll_networks.check_network_on_nic(
+            network=conf.NETS[16][1], host=conf.HOSTS[0],
+            nic=conf.HOST0_NICS[1]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "non-VM Network %s is not attached to Host NIC %s " %
-                (config.NETWORKS[1], HOST0_NICS[1])
+                (conf.NETS[16][1], conf.HOST0_NICS[1])
             )
 
         logger.info(
             "Deactivate host again, move it to the original Cluster %s and "
-            "reactivate it", config.CLUSTER_NAME[0]
+            "reactivate it", conf.CLUSTER_NAME[0]
         )
-        logger.info("Deactivate Host %s", config.HOSTS[0])
-        assert (deactivateHost(True, host=config.HOSTS[0]))
+        logger.info("Deactivate Host %s", conf.HOSTS[0])
+        assert (ll_hosts.deactivateHost(True, host=conf.HOSTS[0]))
 
         logger.info("Attach Host to original DC/Cluster")
-        if not updateHost(
-            True, host=config.HOSTS[0], cluster=config.CLUSTER_NAME[0]
+        if not ll_hosts.updateHost(
+            True, host=conf.HOSTS[0], cluster=conf.CLUSTER_NAME[0]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Cannot move host to the original Cluster %s" %
-                config.CLUSTER_NAME[0]
+                conf.CLUSTER_NAME[0]
             )
 
         logger.info("Activate Host")
-        assert (activateHost(True, host=config.HOSTS[0]))
+        assert (ll_hosts.activateHost(True, host=conf.HOSTS[0]))
 
         logger.info(
             "Check that the VM network %s is attached to Host NIC %s",
-            config.NETWORKS[0], HOST0_NICS[1]
+            conf.NETS[16][0], conf.HOST0_NICS[1]
         )
-        if not check_network_on_nic(
-            config.NETWORKS[0], config.HOSTS[0], HOST0_NICS[1]
+        if not ll_networks.check_network_on_nic(
+            network=conf.NETS[16][0], host=conf.HOSTS[0],
+            nic=conf.HOST0_NICS[1]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "VM Network %s is not attached to Host NIC %s " %
-                (config.NETWORKS[1], HOST0_NICS[1])
+                (conf.NETS[16][0], conf.HOST0_NICS[1])
             )
 
     @classmethod
@@ -2414,7 +2321,7 @@ class NetLabels16(TestLabelTestCaseBase):
         logger.info(
             "Removing newly created cluster %s from the setup", cls.cl_name2
         )
-        if not removeCluster(positive=True, cluster=cls.cl_name2):
+        if not ll_clusters.removeCluster(positive=True, cluster=cls.cl_name2):
             logger.error("Failed to remove cluster %s ", cls.cl_name2)
         super(NetLabels16, cls).teardown_class()
 
@@ -2430,57 +2337,30 @@ class NetLabels17(TestLabelTestCaseBase):
     host interface
     3) Check it is not possible to have bridged + bridgeless network on the
     same host interface
-    4) Check it is not possible to have bridged and VLAN network on the same
-    host interface
     """
     __test__ = True
 
     @classmethod
     def setup_class(cls):
         """
-        1) Create:
-            a) 4 bridged networks on DC/Cluster
-            b) 3 bridgeless networks on DC/Cluster
-            c) 1 VLAN network on DC/Cluster
-        2) Add label1 to the sw1 and sw2 VM networks
-        3) Add label2 to the sw3 and sw4 non-VM networks
-        4) Add label3 to sw5 and sw6 VM and non-VM networks
-        5) Add label4 to sw7 and sw8 VM and VLAN networks
+        1) Add label1 to the sw1 and sw2 VM networks
+        2) Add label2 to the sw3 and sw4 non-VM networks
+        3) Add label3 to sw5 and sw6 VM and non-VM networks
         """
-        local_dict = {
-            config.NETWORKS[0]: {"required": "false"},
-            config.NETWORKS[1]: {"required": "false"},
-            config.NETWORKS[2]: {"usages": "", "required": "false"},
-            config.NETWORKS[3]: {"usages": "", "required": "false"},
-            config.NETWORKS[4]: {"required": "false"},
-            config.NETWORKS[5]: {"usages": "", "required": "false"},
-            config.NETWORKS[6]: {"required": "false"},
-            config.NETWORKS[7]: {
-                "vlan_id": config.VLAN_ID[0], "required": "false"
-            }
-        }
 
-        logger.info("Create and attach all 8 networks to DC and Cluster")
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            network_dict=local_dict
-        ):
-            raise NetworkException(
-                "Cannot create 8 networks on DC and Cluster"
-            )
-
-        for i in range(0, 8, 2):
+        for i in range(0, 6, 2):
             logger.info(
                 "Attach label %s to networks %s and %s",
-                config.LABEL_LIST[i], config.NETWORKS[i],
-                config.NETWORKS[i + 1]
+                conf.LABEL_NAME[17][i], conf.NETS[17][i],
+                conf.NETS[i + 1]
             )
-            if not add_label(
-                label=config.LABEL_LIST[i], networks=config.NETWORKS[i:i + 2]
+            if not ll_networks.add_label(
+                label=conf.LABEL_NAME[17][i],
+                networks=conf.NETS[17][i:i + 2]
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Couldn't attach label %s to networks" %
-                    config.LABEL_LIST[i]
+                    conf.LABEL_NAME[17][i]
                 )
 
     @polarion("RHEVM3-4121")
@@ -2493,40 +2373,41 @@ class NetLabels17(TestLabelTestCaseBase):
         5) Replace label2 with label3 on Host NIC of the Host
         6) Check that the networks sw5 and sw6 are not attached to the Host
         7) Replace label3 with label4 on Host NIC of the Host
-        8) Check that the networks sw7 and sw8 are not attached to the Host
         """
-        for i in range(0, 8, 2):
+        for i in range(0, 6, 2):
             logger.info(
                 "Attach label %s to Host NIC %s ",
-                config.LABEL_LIST[i], HOST0_NICS[1]
+                conf.LABEL_NAME[17][i], conf.HOST0_NICS[1]
             )
-            if add_label(
-                label=config.LABEL_LIST[i],
-                host_nic_dict={config.HOSTS[0]: [HOST0_NICS[1]]}
+            if ll_networks.add_label(
+                label=conf.LABEL_NAME[17][i],
+                host_nic_dict={conf.HOSTS[0]: [conf.HOST0_NICS[1]]}
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Could attach label %s to interface %s" %
-                    (config.LABEL_LIST[i], HOST0_NICS[1])
+                    (conf.LABEL_NAME[17][i], conf.HOST0_NICS[1])
                 )
 
             logger.info(
                 "Check that network %s and %s are not attached to interface ",
-                config.NETWORKS[i], config.NETWORKS[i + 1]
+                conf.NETS[17][i], conf.NETS[17][i + 1]
             )
-            for net in (config.NETWORKS[i], config.NETWORKS[i + 1]):
-                if check_network_on_nic(net, config.HOSTS[0], HOST0_NICS[1]):
-                    raise NetworkException(
+            for net in (conf.NETS[17][i], conf.NETS[17][i + 1]):
+                if ll_networks.check_network_on_nic(
+                    network=net, host=conf.HOSTS[0], nic=conf.HOST0_NICS[1]
+                ):
+                    raise conf.NET_EXCEPTION(
                         "Network %s is attached to NIC %s " %
-                        (net, HOST0_NICS[1])
+                        (net, conf.HOST0_NICS[1])
                     )
 
-            logger.info("Remove label from Host NIC %s", HOST0_NICS[1])
-            if not remove_label(
-                host_nic_dict={config.HOSTS[0]: [HOST0_NICS[1]]}
+            logger.info("Remove label from Host NIC %s", conf.HOST0_NICS[1])
+            if not ll_networks.remove_label(
+                host_nic_dict={conf.HOSTS[0]: [conf.HOST0_NICS[1]]}
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Couldn't remove label from Host %s int %s" %
-                    (config.HOSTS[0], [HOST0_NICS[1]])
+                    (conf.HOSTS[0], [conf.HOST0_NICS[1]])
                 )
 
 
@@ -2546,53 +2427,40 @@ class NetLabels18(TestLabelTestCaseBase):
     @classmethod
     def setup_class(cls):
         """
-        1) Create 2 bridged and 2 bridgeless networks on DC/Cluster
-        2) Add label1 to the sw1 VM network
-        3) Add label2 to the sw2 non-VM network
-        4) Add label1 to the Host NIC on eth1
-        5) Add label2 to the Host NIC on eth2
-        6) Check that the VM network sw1 is attached to the Host
+        1) Add label1 to the sw1 VM network
+        2) Add label2 to the sw2 non-VM network
+        3) Add label1 to the Host NIC on eth1
+        4) Add label2 to the Host NIC on eth2
+        5) Check that the VM network sw1 is attached to the Host
         """
-        local_dict = {config.NETWORKS[0]: {"required": "false"},
-                      config.NETWORKS[1]: {"required": "false", "usages": ""},
-                      config.NETWORKS[2]: {"required": "false"},
-                      config.NETWORKS[3]: {"required": "false", "usages": ""}}
-
-        logger.info("Create and attach networks to DC and Cluster ")
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            network_dict=local_dict
-        ):
-            raise NetworkException(
-                "Cannot create network %s and %s on DC and Cluster" %
-                (config.NETWORKS[0], config.NETWORKS[1])
-            )
 
         for i in range(2):
             logger.info(
                 "Attach label %s to network %s and Host NIC %s",
-                config.LABEL_LIST[i], config.NETWORKS[i], HOST0_NICS[i + 1]
+                conf.LABEL_NAME[18][i], conf.NETS[18][i],
+                conf.HOST0_NICS[i + 1]
             )
-            if not add_label(
-                label=config.LABEL_LIST[i], networks=[config.NETWORKS[i]],
-                host_nic_dict={config.HOSTS[0]: [HOST0_NICS[i + 1]]}
+            if not ll_networks.add_label(
+                label=conf.LABEL_NAME[18][i], networks=[conf.NETS[18][i]],
+                host_nic_dict={conf.HOSTS[0]: [conf.HOST0_NICS[i + 1]]}
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Couldn't attach label %s to network %s or Host NIC %s "
-                    % (config.LABEL_LIST[i], config.NETWORKS[i],
-                       HOST0_NICS[i + 1])
+                    % (conf.LABEL_NAME[18][i], conf.NETS[18][i],
+                       conf.HOST0_NICS[i + 1])
                 )
 
             logger.info(
                 "Check that network %s is attached to interface %s ",
-                config.NETWORKS[i], HOST0_NICS[i + 1]
+                conf.NETS[18][i], conf.HOST0_NICS[i + 1]
             )
-            if not check_network_on_nic(
-                config.NETWORKS[i], config.HOSTS[0], HOST0_NICS[i + 1]
+            if not ll_networks.check_network_on_nic(
+                network=conf.NETS[18][i], host=conf.HOSTS[0],
+                nic=conf.HOST0_NICS[i + 1]
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Network %s is not attached to NIC %s " %
-                    (config.NETWORKS[0], HOST0_NICS[1])
+                    (conf.NETS[18][0], conf.HOST0_NICS[1])
                 )
 
     @polarion("RHEVM3-4117")
@@ -2605,38 +2473,41 @@ class NetLabels18(TestLabelTestCaseBase):
 
         logger.info(
             "Attach the same label %s to networks %s",
-            config.LABEL_LIST[0], config.NETWORKS[2]
+            conf.LABEL_NAME[18][0], conf.NETS[18][2]
         )
-        if not add_label(
-            label=config.LABEL_LIST[0], networks=[config.NETWORKS[2]]
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[18][0], networks=[conf.NETS[18][2]]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't attach label %s to network %s" %
-                (config.LABEL_LIST[0], config.NETWORKS[2])
+                (conf.LABEL_NAME[18][0], conf.NETS[18][2])
             )
 
         logger.info(
             "Check that network %s is not attached to interface %s ",
-            config.NETWORKS[2], HOST0_NICS[1]
+            conf.NETS[18][2], conf.HOST0_NICS[1]
         )
-        if check_network_on_nic(
-            config.NETWORKS[2], config.HOSTS[0], HOST0_NICS[1]
+        if ll_networks.check_network_on_nic(
+            network=conf.NETS[18][2], host=conf.HOSTS[0],
+            nic=conf.HOST0_NICS[1]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is attached to NIC%s " %
-                (config.NETWORKS[2], HOST0_NICS[1])
+                (conf.NETS[18][2], conf.HOST0_NICS[1])
             )
 
         logger.info(
             "Check that original network %s is still attached to "
-            "interface %s ", config.NETWORKS[0], HOST0_NICS[1]
+            "interface %s ", conf.NETS[18][0], conf.HOST0_NICS[1]
         )
-        if not check_network_on_nic(
-            config.NETWORKS[0], config.HOSTS[0], HOST0_NICS[1]
+        if not ll_networks.check_network_on_nic(
+            network=conf.NETS[18][0], host=conf.HOSTS[0],
+            nic=conf.HOST0_NICS[1]
         ):
-            raise NetworkException("Network %s is not attached to NIC %s " %
-                                   (config.NETWORKS[0], HOST0_NICS[1])
-                                   )
+            raise conf.NET_EXCEPTION(
+                "Network %s is not attached to NIC %s " %
+                (conf.NETS[18][0], conf.HOST0_NICS[1])
+            )
 
         @polarion("RHEVM3-4118")
         def test_label_restrictioin_non_vm(self):
@@ -2649,37 +2520,39 @@ class NetLabels18(TestLabelTestCaseBase):
 
         logger.info(
             "Attach the same label %s to networks %s",
-            config.LABEL_LIST[1], config.NETWORKS[3])
-        if not add_label(
-            label=config.LABEL_LIST[1], networks=[config.NETWORKS[3]]
+            conf.LABEL_NAME[18][1], conf.NETS[18][3])
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[18][1], networks=[conf.NETS[18][3]]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't attach label %s to network %s" %
-                (config.LABEL_LIST[1], config.NETWORKS[3])
+                (conf.LABEL_NAME[18][1], conf.NETS[18][3])
             )
 
         logger.info(
             "Check that network %s is not attached to interface %s ",
-            config.NETWORKS[3], HOST0_NICS[2]
+            conf.NETS[18][3], conf.HOST0_NICS[2]
         )
-        if check_network_on_nic(
-            config.NETWORKS[3], config.HOSTS[0], HOST0_NICS[2]
+        if ll_networks.check_network_on_nic(
+            network=conf.NETS[18][3], host=conf.HOSTS[0],
+            nic=conf.HOST0_NICS[2]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is attached to NIC %s " %
-                (config.NETWORKS[3], HOST0_NICS[2])
+                (conf.NETS[18][3], conf.HOST0_NICS[2])
             )
 
         logger.info(
             "Check that original network %s is still attached to "
-            "interface %s ", config.NETWORKS[1], HOST0_NICS[2]
+            "interface %s ", conf.NETS[18][1], conf.HOST0_NICS[2]
         )
-        if not check_network_on_nic(
-            config.NETWORKS[1], config.HOSTS[0], HOST0_NICS[2]
+        if not ll_networks.check_network_on_nic(
+            network=conf.NETS[18][1], host=conf.HOSTS[0],
+            nic=conf.HOST0_NICS[2]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is not attached to NIC %s " %
-                (config.NETWORKS[1], HOST0_NICS[2])
+                (conf.NETS[18][1], conf.HOST0_NICS[2])
             )
 
 
@@ -2707,58 +2580,48 @@ class NetLabels19(TestLabelTestCaseBase):
         7) Check that the network sw1 is attached to the Host NIC
         """
         logger.info("Create a new Cluster on original DC ")
-        if not addCluster(
-            positive=True, name=cls.cl_name2, data_center=config.DC_NAME[0],
-            version=config.COMP_VERSION, cpu=config.CPU_NAME
+        if not ll_clusters.addCluster(
+            positive=True, name=cls.cl_name2, data_center=conf.DC_NAME[0],
+            version=conf.COMP_VERSION, cpu=conf.CPU_NAME
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't add a new Cluster %s to the setup" % cls.cl_name2
             )
 
         logger.info(
-            "Create networks %s and %s on original and new Clusters "
-            "respectively", config.NETWORKS[0], config.NETWORKS[1])
-        local_dict1 = {config.NETWORKS[0]: {"required": "false"}}
-        local_dict2 = {config.NETWORKS[1]: {"required": "false"}}
-        if not (
-                createAndAttachNetworkSN(
-                    data_center=config.DC_NAME[0],
-                    cluster=config.CLUSTER_NAME[0],
-                    network_dict=local_dict1) and
-                createAndAttachNetworkSN(
-                    data_center=config.DC_NAME[0],
-                    cluster=cls.cl_name2,
-                    network_dict=local_dict2)
-        ):
-            raise NetworkException(
-                "Cannot create networks %s and %s for appropriate CLusters "
-                % (config.NETWORKS[0], config.NETWORKS[1])
-            )
+            "Create network %s on new Clusters ", conf.NETS[19][1]
+        )
+        local_dict2 = {conf.NETS[19][1]: {"required": "false"}}
+        networking_helper.prepare_networks_on_setup(
+            networks_dict=local_dict2, dc=conf.DC_NAME[0],
+            cluster=cls.cl_name2
+        )
 
         logger.info(
             "Attach the same label %s to the Host NIC %s and to "
-            "networks %s and %s", config.LABEL_LIST[0],
-            HOST0_NICS[1], config.NETWORKS[0], config.NETWORKS[1]
+            "networks %s and %s", conf.LABEL_NAME[19][0],
+            conf.HOST0_NICS[1], conf.NETS[19][0], conf.NETS[19][1]
         )
-        if not add_label(
-            label=config.LABEL_LIST[0], networks=config.NETWORKS[:2],
-            host_nic_dict={config.HOSTS[0]: [HOST0_NICS[1]]}
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[19][0], networks=conf.NETS[19][:2],
+            host_nic_dict={conf.HOSTS[0]: [conf.HOST0_NICS[1]]}
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Couldn't attach label %s to networks or Host NIC"
             )
 
         logger.info(
             "Check that network %s is attached to interface %s ",
-            config.NETWORKS[0], HOST0_NICS[1]
+            conf.NETS[19][0], conf.HOST0_NICS[1]
         )
 
-        if not check_network_on_nic(
-            config.NETWORKS[0], config.HOSTS[0], HOST0_NICS[1]
+        if not ll_networks.check_network_on_nic(
+            network=conf.NETS[19][0], host=conf.HOSTS[0],
+            nic=conf.HOST0_NICS[1]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is not attached to NIC%s " %
-                (config.NETWORKS[0], HOST0_NICS[1])
+                (conf.NETS[19][0], conf.HOST0_NICS[1])
             )
 
     @polarion("RHEVM3-4125")
@@ -2771,26 +2634,31 @@ class NetLabels19(TestLabelTestCaseBase):
             "Move the Host with labeled interface to the newly created Cluster"
             " %s ", self.cl_name2
         )
-        logger.info("Deactivate Host %s", config.HOSTS[0])
-        assert (deactivateHost(True, host=config.HOSTS[0]))
+        logger.info("Deactivate Host %s", conf.HOSTS[0])
+        assert (ll_hosts.deactivateHost(True, host=conf.HOSTS[0]))
 
         logger.info("Attach Host to the new DC/Cluster")
-        if not updateHost(True, host=config.HOSTS[0], cluster=self.cl_name2):
-            raise NetworkException("Cannot move host to the new Cluster")
+        if not ll_hosts.updateHost(
+            True, host=conf.HOSTS[0], cluster=self.cl_name2
+        ):
+            raise conf.NET_EXCEPTION(
+                "Cannot move host to the new Cluster"
+            )
 
         logger.info("Activate Host")
-        assert (activateHost(True, host=config.HOSTS[0]))
+        assert (ll_hosts.activateHost(True, host=conf.HOSTS[0]))
 
         logger.info(
             "Check that different network %s is attached to interface %s ",
-            config.NETWORKS[1], HOST0_NICS[1]
+            conf.NETS[19][1], conf.HOST0_NICS[1]
         )
-        if not check_network_on_nic(
-            config.NETWORKS[1], config.HOSTS[0], HOST0_NICS[1]
+        if not ll_networks.check_network_on_nic(
+            network=conf.NETS[19][1], host=conf.HOSTS[0],
+            nic=conf.HOST0_NICS[1]
         ):
-            raise NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Network %s is not attached to NIC%s " %
-                (config.NETWORKS[1], HOST0_NICS[1])
+                (conf.NETS[19][1], conf.HOST0_NICS[1])
             )
 
     @classmethod
@@ -2802,31 +2670,169 @@ class NetLabels19(TestLabelTestCaseBase):
         """
         logger.info(
             "Deactivate host, move it to the original Cluster %s and "
-            "reactivate it", config.CLUSTER_NAME[0]
+            "reactivate it", conf.CLUSTER_NAME[0]
         )
-        logger.info("Deactivate Host %s", config.HOSTS[0])
-        if not deactivateHost(True, host=config.HOSTS[0]):
-            logger.error("Couldn't deactivate Host %s", config.HOSTS[0])
+        logger.info("Deactivate Host %s", conf.HOSTS[0])
+        if not ll_hosts.deactivateHost(True, host=conf.HOSTS[0]):
+            logger.error("Couldn't deactivate Host %s", conf.HOSTS[0])
 
         logger.info("Attach Host to original DC/Cluster")
-        if not updateHost(
-            True, host=config.HOSTS[0], cluster=config.CLUSTER_NAME[0]
+        if not ll_hosts.updateHost(
+            True, host=conf.HOSTS[0], cluster=conf.CLUSTER_NAME[0]
         ):
             logger.error("Cannot move host to original Cluster")
 
         logger.info("Activate Host")
-        if not activateHost(True, host=config.HOSTS[0]):
-            logger.error("Couldn't activate host %s", config.HOSTS[0])
+        if not ll_hosts.activateHost(True, host=conf.HOSTS[0]):
+            logger.error("Couldn't activate host %s", conf.HOSTS[0])
 
         logger.info("Removing the Cluster %s from the setup", cls.cl_name2)
-        if not removeCluster(positive=True, cluster=cls.cl_name2):
+        if not ll_clusters.removeCluster(positive=True, cluster=cls.cl_name2):
             logger.error("Failed to remove cluster %s ", cls.cl_name2)
         super(NetLabels19, cls).teardown_class()
 
 
-def net_exist_on_nic():
+@attr(tier=2)
+class NetLabels20(TestLabelTestCaseBase):
     """
-    helper function that checks if network is located on eth1 of the host
+    1) Check that it is possible to have 1 VM untagged network and VLAN
+       network on the same host interface
+    2) Check that it is possible to have 1 VM untagged and VLAN network
+       on the same bond
     """
-    return (getHostNic(config.HOSTS[0], HOST0_NICS[1]).get_network() is
-            not None)
+    __test__ = True
+    bond = "bond20"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        1) Create:
+            a) Bond on host
+            b) 2 VM network on DC/Cluster
+            c) 2 VLAN network on DC/Cluster
+        2) Add label1 and label2 to VM and VLAN networks
+        """
+
+        logger.info("Create %s on %s", cls.bond, conf.HOSTS[0])
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "slaves": conf.DUMMYS[:2],
+                    "nic": cls.bond,
+                }
+            }
+        }
+        if not hl_host_network.setup_networks(
+            conf.HOSTS[0], **network_host_api_dict
+        ):
+            raise conf.NET_EXCEPTION(
+                "Failed to create %s on %s" % (cls.bond, conf.HOSTS[0])
+            )
+        for i in range(0, 3, 2):
+            logger.info(
+                "Attach label %s to networks %s and %s",
+                conf.LABEL_NAME[20][i], conf.NETS[20][i], conf.NETS[20][i+1]
+            )
+
+            if not ll_networks.add_label(
+                label=conf.LABEL_NAME[20][i],
+                networks=[conf.NETS[20][i], conf.NETS[20][i+1]]
+            ):
+                raise conf.NET_EXCEPTION(
+                    "Couldn't attach label %s to networks %s and %s" %
+                    (
+                        conf.LABEL_NAME[20][i], conf.NETS[20][i],
+                        conf.NETS[20][i+1]
+                    )
+                )
+
+    @polarion("RHEVM3-13511")
+    def test_label_vm_vlan(self):
+        """
+        Check that untagged VM and VLAN networks are attached to the Host
+        """
+        vlan_nic = ul_network.vlan_int_name(
+            conf.HOST0_NICS[1], conf.VLAN_IDS[9]
+        )
+        logger.info(
+            "Attach label %s to host NIC %s ",
+            conf.LABEL_NAME[20][0], conf.HOST0_NICS[1]
+        )
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[20][0],
+            host_nic_dict={conf.HOSTS[0]: [conf.HOST0_NICS[1]]}
+        ):
+                raise conf.NET_EXCEPTION(
+                    "Couldn't attach label %s to host NIC %s" %
+                    (conf.LABEL_NAME[20][0], conf.HOST0_NICS[1])
+                )
+
+        for net in (conf.NETS[20][0], conf.NETS[20][1]):
+            logger.info(
+                "Check that network %s attach to host NIC %s",
+                net, conf.HOST0_NICS[1]
+            )
+
+            host_nic = (
+                vlan_nic if net == conf.NETS[20][1]
+                else conf.HOST0_NICS[1]
+            )
+
+            if not ll_networks.check_network_on_nic(
+                network=net, host=conf.HOSTS[0], nic=host_nic
+            ):
+                raise conf.NET_EXCEPTION(
+                    "Network %s is not attached to host NIC %s " %
+                    (net, conf.HOST0_NICS[1])
+                )
+
+    @polarion("RHEVM3-13894")
+    def test_label_bond_vm_vlan(self):
+        """
+        Check that the untagged VM and VLAN networks are attached to the bond
+        """
+        vlan_bond = ul_network.vlan_int_name(self.bond, conf.VLAN_IDS[10])
+        logger.info(
+            "Attach label %s to bond %s ",
+            conf.LABEL_NAME[20][2], self.bond
+        )
+        if not ll_networks.add_label(
+            label=conf.LABEL_NAME[20][2],
+            host_nic_dict={conf.HOSTS[0]: [self.bond]}
+        ):
+            raise conf.NET_EXCEPTION(
+                "Couldn't attach label %s to bond %s" %
+                (conf.LABEL_NAME[20][2], self.bond)
+            )
+
+        for net in (conf.NETS[20][2], conf.NETS[20][3]):
+            logger.info(
+                "Check that network %s attach to bond %s",
+                net, self.bond
+            )
+
+            bond = (
+                vlan_bond if net == conf.NETS[20][3]
+                else self.bond
+            )
+
+            if not ll_networks.check_network_on_nic(
+                network=net, host=conf.HOSTS[0], nic=bond
+            ):
+                raise conf.NET_EXCEPTION(
+                    "Network %s is not attached to bond %s " %
+                    (net, self.bond)
+                )
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove label from the bond.
+        Call the parent teardown
+        """
+        logger.info("Removing label from bond")
+        if not ll_networks.remove_label(
+            host_nic_dict={conf.HOSTS[0]: [cls.bond]}
+        ):
+            logger.error("Couldn't remove labels from Bond ")
+        super(NetLabels20, cls).teardown_class()
