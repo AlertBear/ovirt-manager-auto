@@ -65,7 +65,7 @@ MODPROBE_CMD = "/sbin/modprobe"
 
 @core_api.is_action()
 def addMultipleVlanedNetworks(networks, data_center, **kwargs):
-    '''
+    """
     Adding multiple networks with vlan according to the given prefix and range
     Author: atal
     Parameters:
@@ -73,7 +73,7 @@ def addMultipleVlanedNetworks(networks, data_center, **kwargs):
         * date_center - the DataCenter name
         * kwargs - all arguments related to basic addNetwork
     return True with new nics name list or False with empty list
-    '''
+    """
 
     for network in networks:
         vlan = re.search(r'(\d+)', network)
@@ -88,7 +88,7 @@ def addMultipleVlanedNetworks(networks, data_center, **kwargs):
 # FIXME: need to check if this function is being used else just remove.
 @core_api.is_action()
 def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
-    '''
+    """
      Validate Datacenter/Cluster network configurations/existence.
      This function tests the network configured parameters. we look for
      networks link under cluster even though we check the DC network
@@ -102,7 +102,7 @@ def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
                        network exists in the DC.
         * tag - the tag we are looking to validate
      return: True and value of the given filed, otherwise False and None
-    '''
+    """
     try:
         netObj = ll_networks.getClusterNetwork(cluster, network)
     except apis_exceptions.EntityNotFound:
@@ -146,7 +146,7 @@ def validateNetwork(positive, cluster, network, tag, val):
 
 @core_api.is_action()
 def removeMultiNetworks(positive, networks, data_center=None):
-    '''
+    """
     Remove Multiple networks
     Author: atal
     Parameters:
@@ -155,7 +155,7 @@ def removeMultiNetworks(positive, networks, data_center=None):
         * data_center - In case more then one network with the same name
                         exists.
     return  True if remove networks succeeded, otherwise False
-    '''
+    """
     for net in networks:
         if not ll_networks.removeNetwork(positive, net, data_center):
             logger.error("Failed to remove %s", net)
@@ -267,10 +267,12 @@ def createAndAttachNetworkSN(
         idx = 0
         setup_network_dict = {"add": {}}
         for net, net_param in network_dict.items():
+            param_nic = net_param.get("nic")
+            if not param_nic:
+                continue
             vlan_interface = None
             slaves = None
             param_slaves = net_param.get("slaves")
-            param_nic = net_param.get("nic")
             param_vlan = net_param.get("vlan_id")
             idx += 1
 
@@ -345,50 +347,49 @@ def createAndAttachNetworkSN(
     return True
 
 
-def remove_net_from_setup(host, auto_nics=[0], network=[], data_center=None,
-                          all_net=False, mgmt_network=None):
+def remove_net_from_setup(
+    host, network=[], data_center=None, all_net=False, mgmt_network=None
+):
     """
     Function that removes networks from the host, Cluster and DC:
-    :param host: list of resources.VDS objects
-    :param auto_nics: a list of nics indexes
+    :param host: list or str of hosts names
+    :type host: str or list
     :param network: list of networks to remove
+    :type network: list
     :param data_center: DC where the network is
+    :type data_center: str
     :param all_net: True to remove all networks from setup (except MGMT net)
+    :rtype  all_net: bool
     :param mgmt_network: Management network
+    :type mgmt_network: str
     :return: True value if succeeded in deleting networks
             from Hosts, Cluster, DC
+    :rtype: bool
     """
-    hosts_obj = [host] if not isinstance(host, list) else host
-    hosts_list = [ll_hosts.get_host_name_from_engine(h.ip) for h in hosts_obj]
-    if not hosts_list[0]:
-        hosts_list = [
-            ll_hosts.get_host_name_from_engine(h.fqdn) for h in hosts_obj
-            ]
 
+    hosts_list = [host] if not isinstance(host, list) else host
+    dc_log = "from %s" % data_center if data_center else ""
     if all_net:
+        logger.info("Remove all networks %s", dc_log)
         if not remove_all_networks(
                 datacenter=data_center, mgmt_network=mgmt_network
         ):
+            logger.error("Couldn't remove networks %s", dc_log)
             return False
     else:
+        logger.info("Remove %s %s ", network, dc_log)
         if not removeMultiNetworks(True, network, data_center):
+            logger.error("Couldn't remove %s %s", network, dc_log)
             return False
-
     try:
-        for host_name, host_obj in zip(hosts_list, hosts_obj):
-            host_auto_nics = []
-            for index in auto_nics:
-                host_auto_nics.append(host_obj.nics[index])
-
-            ll_hosts.sendSNRequest(
-                True, host=host_name, auto_nics=host_auto_nics,
-                check_connectivity='true',
-                connectivity_timeout=CONNECTIVITY_TIMEOUT, force='false'
-            )
-            ll_hosts.commitNetConfig(True, host=host_name)
+        for host_name in hosts_list:
+            logger.info("Clean %s interfaces", host_name)
+            if not hl_host_network.clean_host_interfaces(host_name):
+                logger.error("Clean %s interfaces failed", host_name)
+                return False
 
     except Exception as ex:
-        logger.error("Remove Network from setup failed %s", ex, exc_info=True)
+        logger.error("Clean hosts interfaces failed %s", ex, exc_info=True)
         return False
     return True
 
