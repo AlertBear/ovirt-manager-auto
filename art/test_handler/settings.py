@@ -25,6 +25,9 @@ and preparing the environment for the tests.
 import argparse
 import os
 from shutil import copyfile
+import sys
+import threading
+import traceback
 from configobj import ConfigObj
 
 from art.test_handler.handler_lib.configs import ARTConfigValidator, \
@@ -265,3 +268,22 @@ def buildTestsFilesMatrix(config, testsList):
 
         if 'groups' in testSection:
             opts[test]['groups'] = testSection.as_list('groups')
+
+
+def dump_stacks(signal, frame):
+    """
+    In case of ART get stuck we can run kill sig command and get the
+    stack traceback of each thread.
+    like:
+        kill -SIGUSR1 <ART PID>
+
+    __author__ : khakimi
+    :param signal: the signal number
+    :type signal: int
+    :param frame: the interrupted stack frame
+    :type frame: frame object
+    """
+    id2name = dict((th.ident, th.name) for th in threading.enumerate())
+    for threadId, stack in sys._current_frames().items():
+        print("\nThread: {0}({1})".format(id2name[threadId], threadId))
+        traceback.print_stack(f=stack)

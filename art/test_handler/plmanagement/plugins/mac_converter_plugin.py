@@ -263,6 +263,7 @@ class SSHProducer(Producer):
         cmd = list2cmdline(cmd)
         self.m = SSHSession(hostname=self.hostname, username='root',
                             password=self.password)
+        logger.debug("Collecting starting... ")
         with self.m._getSession(self.timeout) as channel:
             # execute command
             channel.exec_command(cmd)
@@ -270,9 +271,9 @@ class SSHProducer(Producer):
             channel.shutdown_write()
 
             # read stdout and stderr
-            params = [[channel], [], []]
+            params = [[channel], [], [], self.timeout]
             while not channel.closed:
-                descs = select.select(*params)
+                select.select(*params)
                 while channel.recv_stderr_ready() or channel.recv_ready():
                     if channel.recv_ready():
                         self.out += channel.recv(self.IOBUFF)
@@ -288,6 +289,7 @@ class SSHProducer(Producer):
             while channel.recv_stderr_ready():
                 channel.recv_stderr(self.IOBUFF)
             channel.shutdown_read()
+        logger.debug("Collection completed!!")
 
     def stop(self):
         self.exit = True

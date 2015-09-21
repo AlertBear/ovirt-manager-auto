@@ -6,6 +6,7 @@ from sys import argv, exit, stderr
 from time import strftime
 import traceback
 from socket import error as SocketError
+import signal
 
 from art.core_api.apis_exceptions import APICommandError, APIException
 from art.test_handler.test_runner import TestRunner
@@ -14,7 +15,7 @@ from art.test_handler.settings import (
 )
 from art.test_handler.plmanagement import PluginError
 from utilities.logger_utils import initialize_logger
-from art.test_handler.settings import ReturnCode as RC
+from art.test_handler.settings import ReturnCode as RC, dump_stacks
 from art.test_handler.handler_lib.configs import ValidationError
 from art.test_handler import find_config_file
 
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def _main(plmanager):
+    signal.signal(signal.SIGUSR1, dump_stacks)
     args = populateOptsFromArgv(argv)
     init_logger()
     logger.info("Log file name: %s" % opts['log'])
