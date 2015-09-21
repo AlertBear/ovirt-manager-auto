@@ -138,6 +138,7 @@ class CumulativeNetworkUsageStatisticsCase1(TestCase):
             total_tx=self.total_tx
         )
 
+    @polarion("RHEVM3-13512")
     def test_02_hot_plug_vnic(self):
         """
         Hot plug the vNIC
@@ -148,6 +149,7 @@ class CumulativeNetworkUsageStatisticsCase1(TestCase):
             total_tx=self.total_tx
         )
 
+    @polarion("RHEVM3-13580")
     def test_03_change_vnic_profile(self):
         """
         Change the vNIC network to conf.NET_0
@@ -167,6 +169,7 @@ class CumulativeNetworkUsageStatisticsCase1(TestCase):
             total_tx=self.total_tx
         )
 
+    @polarion("RHEVM3-13581")
     def test_04_change_vnic_to_empty_network(self):
         """
         Attach the vNIC to <empty network>
