@@ -95,7 +95,7 @@ def teardown_package():
             config.VM_NAME[0], config.VM_NAME[1]
         )
     if not hl_networks.remove_net_from_setup(
-            host=config.VDS_HOSTS[:2], auto_nics=[0],
+            host=config.HOSTS[:2],
             data_center=config.DC_NAME[0], mgmt_network=config.MGMT_BRIDGE,
             all_net=True
     ):

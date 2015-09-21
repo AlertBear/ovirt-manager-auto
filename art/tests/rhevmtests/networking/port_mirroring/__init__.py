@@ -188,8 +188,7 @@ def teardown_package():
                     )
     logger.info("Removing all networks from DC/Cluster and hosts")
     if not hl_networks.remove_net_from_setup(
-        host=conf.VDS_HOSTS[0], auto_nics=[0],
-        data_center=conf.DC_NAME[0], all_net=True,
+        host=conf.HOSTS[0], data_center=conf.DC_NAME[0], all_net=True,
         mgmt_network=conf.MGMT_BRIDGE
     ):
         logger.error("Cannot remove network from setup")

@@ -62,8 +62,8 @@ class TestBridgelessCase1(TestCase):
         """
         logger.info("Remove network from setup")
         if not remove_net_from_setup(
-                host=config.VDS_HOSTS[0], data_center=config.DC_NAME[0],
-                auto_nics=[0], network=[config.NETWORKS[0]],
+                host=config.HOSTS[0], data_center=config.DC_NAME[0],
+                network=[config.NETWORKS[0]],
         ):
             logger.error(
                 "Cannot remove network %s from setup", config.NETWORKS[0]
@@ -110,8 +110,8 @@ class TestBridgelessCase2(TestCase):
         """
         logger.info("Remove network from setup")
         if not remove_net_from_setup(
-            host=config.VDS_HOSTS[0], data_center=config.DC_NAME[0],
-            auto_nics=[0], network=[config.VLAN_NETWORKS[0]],
+            host=config.HOSTS[0], data_center=config.DC_NAME[0],
+            network=[config.VLAN_NETWORKS[0]],
         ):
             logger.error(
                 "Cannot remove network %s from setup", config.VLAN_NETWORKS[0]
@@ -161,8 +161,8 @@ class TestBridgelessCase3(TestCase):
         """
         logger.info("Remove network from setup")
         if not remove_net_from_setup(
-            host=config.VDS_HOSTS[0], data_center=config.DC_NAME[0],
-            auto_nics=[0], network=[config.VLAN_NETWORKS[0]]
+            host=config.HOSTS[0], data_center=config.DC_NAME[0],
+            network=[config.VLAN_NETWORKS[0]]
         ):
             logger.error(
                 "Cannot remove network %s from setup", config.VLAN_NETWORKS[0]
@@ -208,8 +208,8 @@ class TestBridgelessCase4(TestCase):
         """
         logger.info("Remove network from setup")
         if not remove_net_from_setup(
-            host=config.VDS_HOSTS[0], data_center=config.DC_NAME[0],
-            auto_nics=[0], network=[config.NETWORKS[0]],
+            host=config.HOSTS[0], data_center=config.DC_NAME[0],
+            network=[config.NETWORKS[0]],
         ):
             logger.error(
                 "Cannot remove network %s from setup", config.NETWORKS[0]

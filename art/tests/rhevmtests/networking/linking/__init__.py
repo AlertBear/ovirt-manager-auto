@@ -71,8 +71,7 @@ def teardown_package():
         logger.error("Failed to stop VM: %s", config.VM_NAME[0])
 
     if not hl_networks.remove_net_from_setup(
-        host=config.VDS_HOSTS[0], auto_nics=[0],
-        data_center=config.DC_NAME[0], all_net=True,
+        host=config.HOSTS[0], data_center=config.DC_NAME[0], all_net=True,
         mgmt_network=config.MGMT_BRIDGE
     ):
         logger.error("Failed to remove all networks beside MGMT")

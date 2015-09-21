@@ -65,8 +65,7 @@ class TestMultiHostTestCaseBase(TestCase):
         sample1 = TimeoutingSampler(
             timeout=config.SAMPLER_TIMEOUT,
             sleep=1, func=remove_net_from_setup,
-            host=config.VDS_HOSTS[:2], auto_nics=[0],
-            data_center=config.DC_NAME[0], all_net=True,
+            host=config.HOSTS[:2], data_center=config.DC_NAME[0], all_net=True,
             mgmt_network=config.MGMT_BRIDGE
         )
         if not sample1.waitForFuncStatus(result=True):
@@ -1333,8 +1332,7 @@ class TestMultiHostCase08(TestMultiHostTestCaseBase):
 
         logger.info("Remove network %s from setup", config.VLAN_NETWORKS[0])
         if not remove_net_from_setup(
-            host=config.VDS_HOSTS[:2], auto_nics=[0],
-            network=[config.VLAN_NETWORKS[0]]
+            host=config.HOSTS[:2], network=[config.VLAN_NETWORKS[0]]
         ):
             logger.error(
                 "Cannot remove network %s from setup", config.VLAN_NETWORKS[0]

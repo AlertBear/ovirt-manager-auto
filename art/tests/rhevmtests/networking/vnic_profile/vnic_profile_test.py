@@ -20,12 +20,12 @@ from art.rhevm_api.tests_lib.low_level.datacenters import(
     addDataCenter, removeDataCenter
 )
 from art.rhevm_api.tests_lib.high_level.networks import(
-    createAndAttachNetworkSN, remove_net_from_setup, removeNetwork
+    createAndAttachNetworkSN, remove_net_from_setup
 )
 from art.rhevm_api.tests_lib.low_level.networks import(
     updateNetwork, updateVnicProfile, getNetworkVnicProfiles,
     getVnicProfileObj, addVnicProfile, removeVnicProfile, findVnicProfile,
-    getVnicProfileAttr
+    getVnicProfileAttr, removeNetwork
 )
 from art.rhevm_api.tests_lib.low_level.vms import(
     addNic, updateNic, removeNic, createVm, checkVmNicProfile, removeVm
@@ -675,8 +675,7 @@ class TestVNICProfileCase08(TestCase):
         for i in range(2):
             logger.info("Remove network %s from setup", config.NETWORKS[i])
             if not remove_net_from_setup(
-                host=config.VDS_HOSTS[0], auto_nics=[0],
-                network=[config.NETWORKS[i]]
+                host=config.HOSTS[0], network=[config.NETWORKS[i]]
             ):
                 logger.error(
                     "Cannot remove network %s from setup", config.NETWORKS[i]
@@ -927,8 +926,7 @@ class TestVNICProfileCase10(TestCase):
         for i in range(2):
             logger.info("Remove network %s from setup", config.NETWORKS[i])
             if not remove_net_from_setup(
-                host=config.VDS_HOSTS[0], auto_nics=[0],
-                network=[config.NETWORKS[i]]
+                host=config.HOSTS[0], network=[config.NETWORKS[i]]
             ):
                 logger.error(
                     "Cannot remove network %s from setup", config.NETWORKS[i]
@@ -1114,8 +1112,7 @@ class TestVNICProfileCase11(TestCase):
         for i in range(2):
             logger.info("Remove network %s from setup", config.NETWORKS[i])
             if not remove_net_from_setup(
-                host=config.VDS_HOSTS[0], auto_nics=[0],
-                network=[config.NETWORKS[i]]
+                host=config.HOSTS[0], network=[config.NETWORKS[i]]
             ):
                 logger.error(
                     "Cannot remove network %s from setup", config.NETWORKS[i]
@@ -1252,8 +1249,7 @@ class TestVNICProfileCase13(TestCase):
 
         logger.info("Remove network %s from setup", config.NETWORKS[0])
         if not remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.NETWORKS[0]]
         ):
             logger.error(
                 "Cannot remove network %s from setup", config.NETWORKS[0]
@@ -1326,8 +1322,7 @@ class TestVNICProfileCase14(TestCase):
 
         logger.info("Remove network %s from setup", config.NETWORKS[0])
         if not remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.NETWORKS[0]]
         ):
             logger.error(
                 "Cannot remove network %s from setup", config.NETWORKS[0]
@@ -1391,8 +1386,7 @@ class TestVNICProfileCase15(TestCase):
     def teardown_class(cls):
         logger.info("Remove network %s from setup", config.NETWORKS[0])
         if not remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.NETWORKS[0]]
         ):
             logger.error(
                 "Cannot remove network %s from setup", config.NETWORKS[0]

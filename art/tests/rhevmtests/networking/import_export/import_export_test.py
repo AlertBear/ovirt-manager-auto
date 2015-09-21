@@ -249,8 +249,8 @@ class TestIECase03(TestCase):
         """
         logger.info("Remove sw1 and sw2 from setup")
         if not remove_net_from_setup(
-                host=config.VDS_HOSTS[0], auto_nics=[0],
-                network=config.NETWORKS[:2], data_center=config.DC_NAME[0]
+                host=config.HOSTS[0], network=config.NETWORKS[:2],
+                data_center=config.DC_NAME[0]
         ):
             raise NetworkException(
                 "Cannot remove networks %s from setup" % config.NETWORKS[:2]

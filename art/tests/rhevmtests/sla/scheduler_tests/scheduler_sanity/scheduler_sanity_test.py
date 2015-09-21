@@ -618,7 +618,7 @@ class TestNetworkFilter(UpdateVms):
             "Remove and detach network %s", cls.network_name
         )
         if not high_network_api.remove_net_from_setup(
-            [config.VDS_HOSTS[0]], network=[cls.network_name],
+            [config.HOSTS[0]], network=[cls.network_name],
             data_center=config.DC_NAME[0]
         ):
             raise errors.HostException(

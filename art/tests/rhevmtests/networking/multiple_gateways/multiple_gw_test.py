@@ -105,7 +105,7 @@ class TestGatewaysCase1(TestCase):
         Remove network from the setup.
         """
         logger.info("Remove network %s from DC/CLuster", config.NETWORKS[0])
-        if not hl_networks.removeNetwork(True, network=config.NETWORKS[0]):
+        if not ll_networks.removeNetwork(True, network=config.NETWORKS[0]):
             logger.error(
                 "Cannot remove network %s from DC/Cluster", config.NETWORKS[0]
             )
@@ -162,8 +162,7 @@ class TestGatewaysCase2(TestCase):
 
         logger.info("Remove network %s from setup", config.VLAN_NETWORKS[0])
         if not hl_networks.remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.VLAN_NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.VLAN_NETWORKS[0]]
         ):
             logger.error(
                 "Cannot remove network %s from setup", config.VLAN_NETWORKS[0]
@@ -219,8 +218,7 @@ class TestGatewaysCase3(TestCase):
         """
         logger.info("Remove network %s from setup", config.NETWORKS[0])
         if not hl_networks.remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.NETWORKS[0]]
         ):
             logger.error(
                 "Cannot remove network %s from setup", config.NETWORKS[0]
@@ -277,8 +275,7 @@ class TestGatewaysCase4(TestCase):
         """
         logger.info("Remove network from setup %s", config.NETWORKS[0])
         if not hl_networks.remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.NETWORKS[0]]
         ):
             logger.error(
                 "Cannot remove network %s from setup", config.NETWORKS[0]
@@ -366,8 +363,7 @@ class TestGatewaysCase5(TestCase):
         """
         logger.info("Remove network %s from setup", config.NETWORKS[0])
         if not hl_networks.remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.NETWORKS[0]]
         ):
             logger.error(
                 "Cannot remove network %s from setup", config.NETWORKS[0]
@@ -408,8 +404,7 @@ class TestGatewaysCase6(TestCase):
         """
         logger.info("Remove network %s from setup", config.NETWORKS[0])
         if not hl_networks.remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.NETWORKS[0]]
         ):
             logger.error(
                 "Cannot remove network %s from setup", config.NETWORKS[0]
@@ -495,8 +490,7 @@ class TestGatewaysCase7(TestCase):
         """
         logger.info("Remove network %s from setup", config.NETWORKS[0])
         if not hl_networks.remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.NETWORKS[0]]
         ):
             logger.error(
                 "Cannot remove network %s from setup", config.NETWORKS[0]
@@ -583,8 +577,7 @@ class TestGatewaysCase8(TestCase):
         """
         logger.info("Remove network %s from setup", config.NETWORKS[0])
         if not hl_networks.remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.NETWORKS[0]]
         ):
             logger.error(
                 "Cannot remove network %s from setup", config.NETWORKS[0]
@@ -639,8 +632,7 @@ class TestGatewaysCase9(TestCase):
         """
         logger.info("Remove network %s from setup", config.NETWORKS[0])
         if not hl_networks.remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.NETWORKS[0]]
         ):
             logger.error(
                 "Cannot remove network %s from setup", config.NETWORKS[0]

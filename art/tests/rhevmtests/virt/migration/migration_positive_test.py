@@ -51,9 +51,8 @@ class TestMigrationCaseBase(TestCase):
         Remove networks from the setup.
         """
         if not remove_net_from_setup(
-            host=config.VDS_HOSTS, auto_nics=[0],
-            data_center=config.DC_NAME[0], mgmt_network=config.MGMT_BRIDGE,
-            all_net=True
+            host=config.HOSTS, data_center=config.DC_NAME[0],
+            mgmt_network=config.MGMT_BRIDGE, all_net=True
         ):
             logger.error("Cannot remove networks from setup")
 

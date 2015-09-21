@@ -130,8 +130,7 @@ class TestTopologiesCase01(TestCase):
 
         logger.info("Remove network %s from setup", config.VLAN_NETWORKS[0])
         if not remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.VLAN_NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.VLAN_NETWORKS[0]]
         ):
             logger.error(
                 "Cannot remove network %s from setup", config.VLAN_NETWORKS[0]
@@ -242,8 +241,7 @@ class TestTopologiesCase02(TestCase):
 
         logger.info("Remove network from setup")
         if not remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.VLAN_NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.VLAN_NETWORKS[0]]
         ):
             logger.error("Cannot remove network from setup")
 
@@ -342,8 +340,7 @@ class TestTopologiesCase03(TestCase):
 
         logger.info("Remove network %s from setup", config.NETWORKS[0])
         if not remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.NETWORKS[0]]
         ):
             logger.error(
                 "Cannot remove network %s from setup", config.NETWORKS[0]
@@ -434,8 +431,7 @@ class TestTopologiesCase04(TestCase):
 
         logger.info("Remove network from setup")
         if not remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.NETWORKS[0]]
         ):
             logger.error("Cannot remove network from setup")
 
@@ -477,8 +473,7 @@ class TestTopologiesCase05(TestCase):
         """
         logger.info("Remove network from setup")
         if not remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.NETWORKS[0]]
         ):
             logger.error("Cannot remove network from setup")
 
@@ -519,8 +514,7 @@ class TestTopologiesCase06(TestCase):
         """
         logger.info("Remove network from setup")
         if not remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.NETWORKS[0]]
         ):
             logger.error("Cannot remove network from setup")
 
@@ -561,8 +555,7 @@ class TestTopologiesCase07(TestCase):
         """
         logger.info("Remove network from setup")
         if not remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.NETWORKS[0]]
         ):
             logger.error("Cannot remove network from setup")
 
@@ -603,7 +596,6 @@ class TestTopologiesCase08(TestCase):
         """
         logger.info("Remove network from setup")
         if not remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0],
-            network=[config.NETWORKS[0]]
+            host=config.HOSTS[0], network=[config.NETWORKS[0]]
         ):
             logger.error("Cannot remove network from setup")

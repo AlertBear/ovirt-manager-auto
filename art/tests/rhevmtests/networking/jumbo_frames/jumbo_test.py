@@ -70,8 +70,7 @@ class TestJumboFramesTestCaseBase(TestCase):
                     )
         logger.info("Removing all networks from setup")
         if not hl_networks.remove_net_from_setup(
-            host=config.VDS_HOSTS[:2], auto_nics=[0],
-            data_center=config.DC_NAME[0], all_net=True,
+            host=config.HOSTS[:2], data_center=config.DC_NAME[0], all_net=True,
             mgmt_network=config.MGMT_BRIDGE
         ):
             logger.error("Cannot remove all networks from setup")

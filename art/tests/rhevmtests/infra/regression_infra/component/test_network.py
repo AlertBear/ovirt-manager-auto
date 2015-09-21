@@ -77,7 +77,8 @@ class TestCaseNetwork(TestCase):
         remove network from DC/CL
         """
         if not networks.remove_net_from_setup(
-            host=self.vds, all_net=True, mgmt_network=config.MGMT_BRIDGE,
+            host=config.HOST_NAME, all_net=True,
+            mgmt_network=config.MGMT_BRIDGE,
             data_center=config.DATA_CENTER_1_NAME
         ):
             logger.error("Cannot remove network from setup")

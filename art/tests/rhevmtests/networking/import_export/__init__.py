@@ -173,7 +173,7 @@ def teardown_package():
     logger.info(
         "Remove all networks besides MGMT from DC/Cluster and Host")
     if not hl_networks.remove_net_from_setup(
-            host=config.VDS_HOSTS[0], auto_nics=[0], all_net=True,
+            host=config.HOSTS[0], all_net=True,
             mgmt_network=config.MGMT_BRIDGE,
             data_center=config.DC_NAME[0]
     ):

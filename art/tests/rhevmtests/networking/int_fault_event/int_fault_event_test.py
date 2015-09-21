@@ -47,8 +47,7 @@ class TestNicFaultTestCaseBase(TestCase):
 
         logger.info("Removing all networks from setup")
         if not remove_net_from_setup(
-                host=c.VDS_HOSTS_0, auto_nics=[0],
-                data_center=c.DC_0, all_net=True,
+                host=c.HOST_0, data_center=c.DC_0, all_net=True,
                 mgmt_network=c.MGMT_BRIDGE
         ):
             logger.error("Cannot remove network from setup")
