@@ -31,7 +31,7 @@ NETWORKS_DICT = {}
 VLAN_STR = "vlan"
 MTU_STR = "mtu"
 BRIDGE_STR = "bridged"
-VLAN_IDS = [str(i) for i in xrange(2, 50)]
+VLAN_IDS = [str(i) for i in xrange(2, 60)]
 
 BASIC_IP_DICT_NETMASK = {
     "ip_netmask": {
@@ -291,6 +291,48 @@ SN_DICT = {
     SN_NETS[24][5]: {
         "required": "false",
         "usages": ""
+    },
+    SN_NETS[25][0]: {
+        "required": "false",
+    },
+    SN_NETS[25][1]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[48]
+    },
+    SN_NETS[25][2]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[49]
+    },
+    SN_NETS[25][3]: {
+        "required": "false",
+    },
+    SN_NETS[25][4]: {
+        "required": "false",
+    },
+    SN_NETS[25][5]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[50]
+    },
+    SN_NETS[26][0]: {
+        "required": "false",
+    },
+    SN_NETS[26][1]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[51]
+    },
+    SN_NETS[26][2]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[52]
+    },
+    SN_NETS[26][3]: {
+        "required": "false",
+    },
+    SN_NETS[26][4]: {
+        "required": "false",
+    },
+    SN_NETS[26][5]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[53]
     }
 }
 
@@ -382,7 +424,21 @@ HOST_DICT = {
     },
     HOST_NETS[17][0]: {
         "required": "false"
-    }
+    },
+    HOST_NETS[18][0]: {
+        "required": "false"
+    },
+    HOST_NETS[18][1]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[46]
+    },
+    HOST_NETS[18][2]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[47]
+    },
+    HOST_NETS[18][3]: {
+        "required": "false"
+    },
 }
 
 SYNC_DICT_1 = {

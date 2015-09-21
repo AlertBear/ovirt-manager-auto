@@ -1309,3 +1309,254 @@ class TestHostNetworkApiSetupNetworks24(helper.TestHostNetworkApiTestCaseBase):
             raise conf.NET_EXCEPTION(
                 "Update SetupNetwork action failed on %s" % conf.HOST_4
             )
+
+
+class TestHostNetworkApiSetupNetworks25(helper.TestHostNetworkApiTestCaseBase):
+    """
+    Attach VM network to host NIC that has VLAN network on it
+    Attach VLAN network to host NIC that has VM network on it
+    Attach VLAN network and VM network to same host NIC
+    """
+    __test__ = True
+    net_case_pre_vm = conf.SN_NETS[25][0]
+    net_case_pre_vlan = conf.SN_NETS[25][1]
+    net_case_vlan = conf.SN_NETS[25][2]
+    net_case_vm = conf.SN_NETS[25][3]
+    net_case_new_vm = conf.SN_NETS[25][4]
+    net_case_new_vlan = conf.SN_NETS[25][5]
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach VM and VLAN network to host NICs
+        """
+        sn_dict = {
+            "add": {
+                "1": {
+                    "nic": conf.HOST_4_NICS[1],
+                    "network": cls.net_case_pre_vm
+                },
+                "2": {
+                    "nic": conf.HOST_4_NICS[2],
+                    "network": cls.net_case_pre_vlan
+                }
+            }
+        }
+        if not hl_host_network.setup_networks(conf.HOST_4, **sn_dict):
+            raise conf.NET_EXCEPTION(
+                "Failed to attach %s and %s on %s" %
+                (cls.net_case_pre_vm, cls.net_case_pre_vlan, conf.HOST_4)
+            )
+
+    def test_attach_vlan_to_host_nic_with_vm(self):
+        """
+        Attach VLAN network to host NIC that has VM network on it
+        """
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": conf.HOST_4_NICS[1],
+                    "network": self.net_case_vlan
+                },
+            }
+        }
+        logger.info(
+            "Attaching %s to %s on %s", self.net_case_vlan,
+            conf.HOST_4_NICS[1], conf.HOST_4
+        )
+        if not hl_host_network.setup_networks(
+            conf.HOST_4, **network_host_api_dict
+        ):
+            raise conf.NET_EXCEPTION(
+                "Failed to attach %s to %s on %s" %
+                (self.net_case_vlan, conf.HOST_4_NICS[1], conf.HOST_4)
+            )
+
+    def test_attach_vm_to_host_nic_with_vlan(self):
+        """
+        Attach VM network to host NIC that has VLAN network on it
+        """
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": conf.HOST_4_NICS[2],
+                    "network": self.net_case_vm
+                },
+            }
+        }
+        logger.info(
+            "Attaching %s to %s on %s", self.net_case_vm,
+            conf.HOST_4_NICS[2], conf.HOST_4
+        )
+        if not hl_host_network.setup_networks(
+            conf.HOST_4, **network_host_api_dict
+        ):
+            raise conf.NET_EXCEPTION(
+                "Failed to attach %s to %s on %s" %
+                (self.net_case_vm, conf.HOST_4_NICS[2], conf.HOST_4)
+            )
+
+    def test_attach_vm_and_vlan_network_to_host_nic(self):
+        """
+        Attach VLAN network and VM network to same host NIC
+        """
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": conf.HOST_4_NICS[3],
+                    "network": self.net_case_new_vm
+                },
+                "2": {
+                    "nic": conf.HOST_4_NICS[3],
+                    "network": self.net_case_new_vlan
+                },
+            }
+        }
+        logger.info(
+            "Attaching %s and %s to %s on %s", self.net_case_new_vm,
+            self.net_case_new_vlan, conf.HOST_4_NICS[3], conf.HOST_4
+        )
+        if not hl_host_network.setup_networks(
+            conf.HOST_4, **network_host_api_dict
+        ):
+            raise conf.NET_EXCEPTION(
+                "Failed to attach %s and %s to %s on %s" %
+                (
+                    self.net_case_new_vm, self.net_case_new_vlan,
+                    conf.HOST_4_NICS[3], conf.HOST_4
+                )
+            )
+
+
+class TestHostNetworkApiSetupNetworks26(helper.TestHostNetworkApiTestCaseBase):
+    """
+    Attach VM network to BOND that has VLAN network on it
+    Attach VLAN network to BOND that has VM network on it
+    Attach VLAN network and VM network to same BOND
+    """
+    __test__ = True
+    net_case_pre_vm = conf.SN_NETS[26][0]
+    net_case_pre_vlan = conf.SN_NETS[26][1]
+    net_case_vlan = conf.SN_NETS[26][2]
+    net_case_vm = conf.SN_NETS[26][3]
+    net_case_new_vm = conf.SN_NETS[26][4]
+    net_case_new_vlan = conf.SN_NETS[26][5]
+    bond_1 = "bond261"
+    bond_2 = "bond262"
+    bond_3 = "bond263"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create 3 BONDs
+        Attach VM network to first BOND
+        Attach VLAN network to second BOND
+        """
+        sn_dict = {
+            "add": {
+                "1": {
+                    "nic": cls.bond_1,
+                    "slaves": conf.DUMMYS[:2]
+                },
+                "2": {
+                    "nic": cls.bond_2,
+                    "slaves": conf.DUMMYS[2:4]
+                },
+                "3": {
+                    "nic": cls.bond_3,
+                    "slaves": conf.DUMMYS[4:6]
+                },
+                "4": {
+                    "nic": cls.bond_1,
+                    "network": cls.net_case_pre_vm
+                },
+                "5": {
+                    "nic": cls.bond_2,
+                    "network": cls.net_case_pre_vlan
+                }
+            }
+        }
+        if not hl_host_network.setup_networks(conf.HOST_4, **sn_dict):
+            raise conf.NET_EXCEPTION(
+                "Failed to attach %s and %s on %s" %
+                (cls.net_case_pre_vm, cls.net_case_pre_vlan, conf.HOST_4)
+            )
+
+    def test_attach_vlan_to_host_nic_with_vm(self):
+        """
+        Attach VLAN network to host NIC that has VM network on it
+        """
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": self.bond_1,
+                    "network": self.net_case_vlan
+                },
+            }
+        }
+        logger.info(
+            "Attaching %s to %s on %s", self.net_case_vlan,
+            self.bond_1, conf.HOST_4
+        )
+        if not hl_host_network.setup_networks(
+            conf.HOST_4, **network_host_api_dict
+        ):
+            raise conf.NET_EXCEPTION(
+                "Failed to attach %s to %s on %s" %
+                (self.net_case_vlan, self.bond_1, conf.HOST_4)
+            )
+
+    def test_attach_vm_to_host_nic_with_vlan(self):
+        """
+        Attach VM network to host NIC that has VLAN network on it
+        """
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": self.bond_2,
+                    "network": self.net_case_vm
+                },
+            }
+        }
+        logger.info(
+            "Attaching %s to %s on %s", self.net_case_vm,
+            self.bond_2, conf.HOST_4
+        )
+        if not hl_host_network.setup_networks(
+            conf.HOST_4, **network_host_api_dict
+        ):
+            raise conf.NET_EXCEPTION(
+                "Failed to attach %s to %s on %s" %
+                (self.net_case_vm, self.bond_2, conf.HOST_4)
+            )
+
+    def test_attach_vm_and_vlan_network_to_host_nic(self):
+        """
+        Attach VLAN network and VM network to same host NIC
+        """
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": self.bond_3,
+                    "network": self.net_case_new_vm
+                },
+                "2": {
+                    "nic": self.bond_3,
+                    "network": self.net_case_new_vlan
+                },
+            }
+        }
+        logger.info(
+            "Attaching %s and %s to %s on %s", self.net_case_new_vm,
+            self.net_case_new_vlan, self.bond_3, conf.HOST_4
+        )
+        if not hl_host_network.setup_networks(
+            conf.HOST_4, **network_host_api_dict
+        ):
+            raise conf.NET_EXCEPTION(
+                "Failed to attach %s and %s to %s on %s" %
+                (
+                    self.net_case_new_vm, self.net_case_new_vlan,
+                    self.bond_3, conf.HOST_4
+                )
+            )
