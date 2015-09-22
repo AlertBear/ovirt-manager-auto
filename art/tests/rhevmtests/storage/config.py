@@ -81,7 +81,7 @@ DC_TYPE = PARAMETERS['storage_type']
 
 SETUP_ADDRESS = VDC
 
-FIRST_HOST = HOSTS[0]
+FIRST_HOST = None  # Filled in setup_package
 
 # TODO - move to test
 TYPE_DATA = ENUMS['storage_dom_type_data']
@@ -143,20 +143,20 @@ NFS_DOMAINS_KWARGS = [
     {
         'type': ENUMS['storage_dom_type_data'],
         'storage_type': STORAGE_TYPE_NFS,
-        'address': UNUSED_DATA_DOMAIN_ADDRESSES[0],
-        'path': UNUSED_DATA_DOMAIN_PATHS[0],
+        'address': None,  # Filled in setup_package
+        'path': None,  # Filled in setup_package
     },
     {
         'type': ENUMS['storage_dom_type_data'],
         'storage_type': STORAGE_TYPE_NFS,
-        'address': UNUSED_DATA_DOMAIN_ADDRESSES[1],
-        'path': UNUSED_DATA_DOMAIN_PATHS[1],
+        'address': None,  # Filled in setup_package
+        'path': None,  # Filled in setup_package
     },
     {
         'type': ENUMS['storage_dom_type_data'],
         'storage_type': STORAGE_TYPE_NFS,
-        'address': UNUSED_DATA_DOMAIN_ADDRESSES[2],
-        'path': UNUSED_DATA_DOMAIN_PATHS[2],
+        'address': None,  # Filled in setup_package
+        'path': None,  # Filled in setup_package
     },
 ]
 
@@ -165,25 +165,25 @@ ISCSI_DOMAINS_KWARGS = [
         'type': ENUMS['storage_dom_type_data'],
         'storage_type': ENUMS['storage_type_iscsi'],
         'lun_port': LUN_PORT,
-        'lun_address': UNUSED_LUN_ADDRESSES[0],
-        'lun_target': UNUSED_LUN_TARGETS[0],
-        'lun': UNUSED_LUNS[0],
+        'lun_address': None,  # Filled in setup_package
+        'lun_target': None,  # Filled in setup_package
+        'lun': None,  # Filled in setup_package
     },
     {
         'type': ENUMS['storage_dom_type_data'],
         'storage_type': ENUMS['storage_type_iscsi'],
         'lun_port': LUN_PORT,
-        'lun_address': UNUSED_LUN_ADDRESSES[1],
-        'lun_target': UNUSED_LUN_TARGETS[1],
-        'lun': UNUSED_LUNS[1],
+        'lun_address': None,  # Filled in setup_package
+        'lun_target': None,  # Filled in setup_package
+        'lun': None,  # Filled in setup_package
     },
     {
         'type': ENUMS['storage_dom_type_data'],
         'storage_type': ENUMS['storage_type_iscsi'],
         'lun_port': LUN_PORT,
-        'lun_address': UNUSED_LUN_ADDRESSES[2],
-        'lun_target': UNUSED_LUN_TARGETS[2],
-        'lun': UNUSED_LUNS[2],
+        'lun_address': None,  # Filled in setup_package
+        'lun_target': None,  # Filled in setup_package
+        'lun': None,  # Filled in setup_package
     },
 ]
 
@@ -192,22 +192,22 @@ GLUSTER_DOMAINS_KWARGS = [
         'type': ENUMS['storage_dom_type_data'],
         'storage_type': STORAGE_TYPE_GLUSTER,
         'vfs_type': ENUMS['vfs_type_glusterfs'],
-        'address': UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
-        'path': UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0],
+        'address': None,  # Filled in setup_package
+        'path': None,  # Filled in setup_package
     },
     {
         'type': ENUMS['storage_dom_type_data'],
         'vfs_type': ENUMS['vfs_type_glusterfs'],
         'storage_type': STORAGE_TYPE_GLUSTER,
-        'address': UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[1],
-        'path': UNUSED_GLUSTER_DATA_DOMAIN_PATHS[1],
+        'address': None,  # Filled in setup_package
+        'path': None,  # Filled in setup_package
     },
     {
         'type': ENUMS['storage_dom_type_data'],
         'vfs_type': ENUMS['vfs_type_glusterfs'],
         'storage_type': STORAGE_TYPE_GLUSTER,
-        'address': UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[2],
-        'path': UNUSED_GLUSTER_DATA_DOMAIN_PATHS[2],
+        'address': None,  # Filled in setup_package
+        'path': None,  # Filled in setup_package
     },
 ]
 

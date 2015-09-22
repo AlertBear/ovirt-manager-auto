@@ -294,20 +294,24 @@ class ReturnToSnapshot(VMWithMemoryStateSnapshot):
     """
     __test__ = False
     polarion_test_case = None
-    test_action = None
+    action_to_call = None
 
     def return_to_ram_snapshot(self):
         """
         Commit RAM snapshot
         """
-        logger.info('Checking RAM snapshot %s on vm %s using action %s',
-                    self.memory_snapshot, self.vm, self.test_action.__name__)
-        self.assertTrue(self.test_action(True,
-                                         self.vm,
-                                         self.memory_snapshot,
-                                         restore_memory=True),
-                        'Could not restore RAM snapshot %s on vm %s' %
-                        (self.memory_snapshot, self.vm))
+        logger.info(
+            'Checking RAM snapshot %s on vm %s using action %s',
+            self.memory_snapshot, self.vm, self.action_to_call.__name__,
+        )
+        self.assertTrue(
+            self.action_to_call(
+                True, self.vm, self.memory_snapshot, restore_memory=True,
+            ),
+            'Could not restore RAM snapshot %s on vm %s' % (
+                self.memory_snapshot, self.vm,
+            )
+        )
         logger.info("Wait for running jobs")
         wait_for_jobs(
             [ENUMS['job_restore_vm_snapshot'], ENUMS['job_preview_snapshot']]
@@ -333,7 +337,7 @@ class TestCase5139(ReturnToSnapshot):
     """
     __test__ = True
     polarion_test_case = '5139'
-    test_action = staticmethod(preview_snapshot)
+    action_to_call = staticmethod(preview_snapshot)
     # Bugzilla history
     # 1211588:  CLI auto complete options async and grace_period-expiry are
     # missing for preview_snapshot
@@ -367,7 +371,7 @@ class TestCase5138(ReturnToSnapshot):
     """
     __test__ = True
     polarion_test_case = '5138'
-    test_action = staticmethod(restore_snapshot)
+    action_to_call = staticmethod(restore_snapshot)
     # Bugzilla history
     # 1253338: restore snapshot via API results in snapshot being stuck on
     # "In preview" status

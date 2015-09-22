@@ -16,7 +16,7 @@ DC_VERSIONS = ["3.4"]
 DC_UPGRADE_VERSIONS = ["3.5", "3.6"]
 LIFECYCLE_VM = "%s_vm" % TESTNAME
 
-FIRST_HOST = HOSTS[0]
+FIRST_HOST = None  # Filled in setup_package
 TMP_CLUSTER_NAME = "%s_tmp_cluster" % TESTNAME
 
 EXTRA_SD_INDEX = 3
@@ -34,4 +34,3 @@ LIFECYCLE_LUN_TARGET = []
 if STORAGE_TYPE == STORAGE_TYPE_POSIX:
     # force the posix to be mount as nfs
     STORAGE_TYPE = STORAGE_TYPE_NFS
-

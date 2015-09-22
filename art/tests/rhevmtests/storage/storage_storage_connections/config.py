@@ -5,7 +5,6 @@ Config module for manage storage connections tests
 __test__ = False
 
 import copy
-from art.rhevm_api.tests_lib.low_level import hosts
 from rhevmtests.storage.config import * # flake8: noqa
 
 TESTNAME = "manage_storage_conn"
@@ -68,10 +67,9 @@ else:
 
 # A host will be use to copy data between domains and clean them
 # afterwards. This hosts needs to be removed from the data center
-HOST_FOR_MOUNT = HOSTS[1]
-HOST_FOR_MOUNT_IP = hosts.getHostIP(HOST_FOR_MOUNT)
-HOSTS_FOR_TEST = HOSTS[:]
-HOSTS_FOR_TEST.remove(HOST_FOR_MOUNT)
+HOST_FOR_MOUNT = None  # Filled in setup_package
+HOST_FOR_MOUNT_IP = None  # Filled in setup_package
+HOSTS_FOR_TEST = None  # Filled in setup_package
 
 DATACENTER_ISCSI_CONNECTIONS = "dc_iscsi_{0}".format(TESTNAME)
 CLUSTER_ISCSI_CONNECTIONS = "cl_iscsi_{0}".format(TESTNAME)

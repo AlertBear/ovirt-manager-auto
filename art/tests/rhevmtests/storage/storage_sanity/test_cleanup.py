@@ -24,7 +24,11 @@ class TestCase11594(TestCase):
     """
     __test__ = not config.GOLDEN_ENV
     polarion_test_case = '11594'
-    host = config.HOSTS[0]
+    host = None
+
+    @classmethod
+    def setup_class(cls):
+        cls.host = config.HOSTS[0]
 
     def setUp(self):
         """Build the environment"""
