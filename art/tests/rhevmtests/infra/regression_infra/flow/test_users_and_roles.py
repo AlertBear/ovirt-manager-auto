@@ -8,7 +8,6 @@ test_users_and_roles
 
 import logging
 
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.test_handler.settings import opts
 
@@ -53,8 +52,7 @@ class TestCaseUserAndRoles(TestCase):
         )
         assert status, 'Remove user %s' % config.USER_VDCADMIN_NAME
 
-    @istest
-    def t01_check_everyone_group_exists(self):
+    def test01_check_everyone_group_exists(self):
         """
         test verifies group functionality
         test checks whether 'Everyone' group exists
@@ -63,8 +61,7 @@ class TestCaseUserAndRoles(TestCase):
         status = users.groupExists(positive=True, group_name='Everyone')
         self.assertTrue(status, "Check 'Everyone' group exists")
 
-    @istest
-    def t02_delete_everyone_group(self):
+    def test02_delete_everyone_group(self):
         """
         test verifies group functionality
         test tries to delete 'Everyone' group & verifies failure
@@ -73,8 +70,7 @@ class TestCaseUserAndRoles(TestCase):
         status = users.deleteGroup(positive=False, group_name='Everyone')
         self.assertTrue(status, "Delete 'Everyone' group failed as expected")
 
-    @istest
-    def t03_create_user_with_no_role(self):
+    def test03_create_user_with_no_role(self):
         """
         test verifies users functionality
         test creates a user with no roles
@@ -88,8 +84,7 @@ class TestCaseUserAndRoles(TestCase):
         )
         self.assertTrue(status, 'Create user')
 
-    @istest
-    def t04_create_user(self):
+    def test04_create_user(self):
         """
         test verifies users functionality
         test creates a user
@@ -103,8 +98,7 @@ class TestCaseUserAndRoles(TestCase):
         )
         self.assertTrue(status, 'Create user')
 
-    @istest
-    def t05_create_user_with_wrong_domain(self):
+    def test05_create_user_with_wrong_domain(self):
         """
         test verifies users functionality
         test creates a user with no roles
@@ -118,8 +112,7 @@ class TestCaseUserAndRoles(TestCase):
         )
         self.assertTrue(status, 'Create user - wrong domain')
 
-    @istest
-    def t06_create_user_not_in_domain(self):
+    def test06_create_user_not_in_domain(self):
         """
         test verifies users functionality
         test creates a user which does not exists in domain
@@ -133,8 +126,7 @@ class TestCaseUserAndRoles(TestCase):
         )
         self.assertTrue(status, 'Create user which does not exists in domain')
 
-    @istest
-    def t07_add_tag_to_user(self):
+    def test07_add_tag_to_user(self):
         """
         test verifies users functionality
         test adds a tag to user
@@ -150,8 +142,7 @@ class TestCaseUserAndRoles(TestCase):
         )
         self.assertTrue(status, 'Add tag to user')
 
-    @istest
-    def t08_check_system_summary(self):
+    def test08_check_system_summary(self):
         """
         test verifies users functionality
         test checks system summary
@@ -160,8 +151,7 @@ class TestCaseUserAndRoles(TestCase):
         status = general.checkSummary(positive=True, domain=config.USER_DOMAIN)
         self.assertTrue(status, 'Check system summary')
 
-    @istest
-    def t09_check_existing_permissions(self):
+    def test09_check_existing_permissions(self):
         """
         test verifies users functionality
         test checks existing permissions
@@ -170,8 +160,7 @@ class TestCaseUserAndRoles(TestCase):
         status = mla.checkSystemPermits(positive=True)
         self.assertTrue(status, 'Check existing permissions')
 
-    @istest
-    def t10_add_admin_role(self):
+    def test10_add_admin_role(self):
         """
         test verifies roles functionality
         test checks add admin role
@@ -185,8 +174,7 @@ class TestCaseUserAndRoles(TestCase):
                              administrative='true', permits=permits_str)
         self.assertTrue(status, 'Add role')
 
-    @istest
-    def t11_add_non_admin_role(self):
+    def test11_add_non_admin_role(self):
         """
         test verifies roles functionality
         test checks add role
@@ -199,8 +187,7 @@ class TestCaseUserAndRoles(TestCase):
                              administrative='false', permits=permits_str)
         self.assertTrue(status, 'Add role')
 
-    @istest
-    def t12_remove_non_admin_role(self):
+    def test12_remove_non_admin_role(self):
         """
         test verifies roles functionality
         test checks remove non admin role
@@ -209,8 +196,7 @@ class TestCaseUserAndRoles(TestCase):
         status = mla.removeRole(positive=True, role='User_role')
         self.assertTrue(status, 'Remove non admin role')
 
-    @istest
-    def t13_add_role_with_admin_permits(self):
+    def test13_add_role_with_admin_permits(self):
         """
         test verifies roles functionality
         test checks add role with admin permits & verifies failure
@@ -224,8 +210,7 @@ class TestCaseUserAndRoles(TestCase):
                              administrative='false', permits=permits_str)
         self.assertTrue(status, 'Add role with admin permits')
 
-    @istest
-    def t14_add_permissions_to_role(self):
+    def test14_add_permissions_to_role(self):
         """
         test verifies roles functionality
         test checks add permissions to existing role
@@ -236,8 +221,7 @@ class TestCaseUserAndRoles(TestCase):
             permit=PERMITS['create_storage_domain_permit'])
         self.assertTrue(status, 'Add permissions to existing role')
 
-    @istest
-    def t15_remove_permissions_from_role(self):
+    def test15_remove_permissions_from_role(self):
         """
         test verifies roles functionality
         test checks remove permissions from existing role
@@ -248,8 +232,7 @@ class TestCaseUserAndRoles(TestCase):
             permit=PERMITS['create_storage_domain_permit'])
         self.assertTrue(status, 'Remove permissions from existing role')
 
-    @istest
-    def t16_remove_admin_role(self):
+    def test16_remove_admin_role(self):
         """
         test verifies roles functionality
         test checks remove role
@@ -258,8 +241,7 @@ class TestCaseUserAndRoles(TestCase):
         status = mla.removeRole(positive=True, role='Admin_role')
         self.assertTrue(status, 'Remove admin role')
 
-    @istest
-    def t17_remove_system_role(self):
+    def test17_remove_system_role(self):
         """
         test verifies roles functionality
         test checks remove system role
@@ -268,8 +250,7 @@ class TestCaseUserAndRoles(TestCase):
         status = mla.removeRole(positive=False, role='HostAdmin')
         self.assertTrue(status, 'Remove system role')
 
-    @istest
-    def t18_add_permissions_to_system_role(self):
+    def test18_add_permissions_to_system_role(self):
         """
         test verifies roles functionality
         test checks add permissions to system role & verifies failure
@@ -280,8 +261,7 @@ class TestCaseUserAndRoles(TestCase):
             permit=PERMITS['create_storage_domain_permit'])
         self.assertTrue(status, 'Add permissions to system role')
 
-    @istest
-    def t19_remove_permissions_from_system_role(self):
+    def test19_remove_permissions_from_system_role(self):
         """
         test verifies roles functionality
         test checks remove permissions from system role
@@ -292,8 +272,7 @@ class TestCaseUserAndRoles(TestCase):
             permit=PERMITS['create_storage_domain_permit'])
         self.assertTrue(status, 'Remove permissions from system role')
 
-    @istest
-    def t20_add_vm_permissions_to_user(self):
+    def test20_add_vm_permissions_to_user(self):
         """
         test verifies roles functionality
         test checks add vm permissions to user
@@ -303,8 +282,7 @@ class TestCaseUserAndRoles(TestCase):
             positive=True, user=config.USERNAME_NAME, vm=config.VM_NAME)
         self.assertTrue(status, 'Add vm permissions to user')
 
-    @istest
-    def t21_add_host_permissions_to_user(self):
+    def test21_add_host_permissions_to_user(self):
         """
         test verifies roles functionality
         test checks add host permissions to user
@@ -314,8 +292,7 @@ class TestCaseUserAndRoles(TestCase):
             positive=True, user=config.USERNAME_NAME, host=config.HOST_NAME)
         self.assertTrue(status, 'Add host permissions to user')
 
-    @istest
-    def t22_add_storage_permissions_to_user(self):
+    def test22_add_storage_permissions_to_user(self):
         """
         test verifies roles functionality
         test checks add storage permissions to user
@@ -326,8 +303,7 @@ class TestCaseUserAndRoles(TestCase):
             storage=config.STORAGE_DOMAIN_NAME)
         self.assertTrue(status, 'Add storage permissions to user')
 
-    @istest
-    def t23_add_cluster_permissions_to_user(self):
+    def test23_add_cluster_permissions_to_user(self):
         """
         test verifies roles functionality
         test checks add cluster permissions to user
@@ -338,8 +314,7 @@ class TestCaseUserAndRoles(TestCase):
             cluster=config.CLUSTER_1_NAME)
         self.assertTrue(status, 'Add cluster permissions to user')
 
-    @istest
-    def t24_add_cluster_permissions_to_group(self):
+    def test24_add_cluster_permissions_to_group(self):
         """
         test verifies roles functionality
         test checks add cluster permissions to group
@@ -350,8 +325,7 @@ class TestCaseUserAndRoles(TestCase):
             cluster=config.CLUSTER_1_NAME)
         self.assertTrue(status, 'Add cluster permissions to group')
 
-    @istest
-    def t25_add_template_permissions_to_user(self):
+    def test25_add_template_permissions_to_user(self):
         """
         test verifies roles functionality
         test checks add template permissions to user
@@ -362,8 +336,7 @@ class TestCaseUserAndRoles(TestCase):
             template=config.TEMPLATE_NAME)
         self.assertTrue(status, 'Add template permissions to user')
 
-    @istest
-    def t26_add_template_permissions_to_group(self):
+    def test26_add_template_permissions_to_group(self):
         """
         test verifies roles functionality
         test checks add template permissions to group
@@ -374,8 +347,7 @@ class TestCaseUserAndRoles(TestCase):
             template=config.TEMPLATE_NAME)
         self.assertTrue(status, 'Add template permissions to group')
 
-    @istest
-    def t27_check_system_version_tag(self):
+    def test27_check_system_version_tag(self):
         """
         test verifies system version tag
         """
@@ -383,8 +355,7 @@ class TestCaseUserAndRoles(TestCase):
         status = general.checkSystemVersionTag(positive=True)
         self.assertTrue(status, 'Check system version tag')
 
-    @istest
-    def t28_check_definition_of_blank_template(self):
+    def test28_check_definition_of_blank_template(self):
         """
         test verifies definition of blank template
         """
@@ -401,8 +372,7 @@ class TestCaseUserAndRoles(TestCase):
         except EngineTypeError:
             logger.info('xPath is only supported for rest')
 
-    @istest
-    def t29_check_definition_of_tag_root_object(self):
+    def test29_check_definition_of_tag_root_object(self):
         """
         test verifies definition of tag root object
         """
@@ -419,8 +389,7 @@ class TestCaseUserAndRoles(TestCase):
         except EngineTypeError:
             logger.info('xPath is only supported for rest')
 
-    @istest
-    def t30_remove_tag(self):
+    def test30_remove_tag(self):
         """
         test verifies tags functionality
         the test removes tag
@@ -429,8 +398,7 @@ class TestCaseUserAndRoles(TestCase):
         status = tags.removeTag(positive=True, tag=config.TAG_1_NAME)
         self.assertTrue(status, 'Remove tag')
 
-    @istest
-    def t31_remove_users(self):
+    def test31_remove_users(self):
         """
         test verifies users functionality
         the test removes users
@@ -441,8 +409,7 @@ class TestCaseUserAndRoles(TestCase):
             status = users.removeUser(positive=True, user=username)
             self.assertTrue(status, 'Remove user ' + username)
 
-    @istest
-    def t32_check_user_properties_in_active_directory(self):
+    def test32_check_user_properties_in_active_directory(self):
         """
         test verifies users functionality
         the test verifies user properties in active directory
@@ -459,8 +426,7 @@ class TestCaseUserAndRoles(TestCase):
         )
         self.assertTrue(status, 'Check user properties in active directory')
 
-    @istest
-    def t33_search_user_in_active_directory_by_name(self):
+    def test33_search_user_in_active_directory_by_name(self):
         """
         test verifies users functionality
         the test searches a user by name in AD
@@ -475,8 +441,7 @@ class TestCaseUserAndRoles(TestCase):
         )
         self.assertTrue(status, 'Search user by name in active directory')
 
-    @istest
-    def t34_search_user_in_active_directory_by_username(self):
+    def test34_search_user_in_active_directory_by_username(self):
         """
         test verifies users functionality
         the test searches a user by username in AD
@@ -491,8 +456,7 @@ class TestCaseUserAndRoles(TestCase):
         )
         self.assertTrue(status, 'Search user by username in active directory')
 
-    @istest
-    def t35_check_xsd_schema_validations(self):
+    def test35_check_xsd_schema_validations(self):
         """
         test verifies xsd functionality
         the test checks xsd schema validations

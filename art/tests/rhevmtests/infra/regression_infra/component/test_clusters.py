@@ -6,7 +6,6 @@ Created on June 3, 2014
 
 import logging
 
-from nose.tools import istest
 from art.test_handler.tools import bz  # pylint: disable=E0611
 from art.unittest_lib import attr
 
@@ -70,8 +69,7 @@ class TestCaseCluster(TestCase):
                     '2. add cluster tests failed', claster_name
                 )
 
-    @istest
-    def t01_add_cluster(self):
+    def test01_add_cluster(self):
         """
         test verifies add cluster functionality
         the test adds a cluster
@@ -84,8 +82,7 @@ class TestCaseCluster(TestCase):
                                      on_error='migrate')
         self.assertTrue(status, 'Add cluster')
 
-    @istest
-    def t02_add_existing_cluster(self):
+    def test02_add_existing_cluster(self):
         """
         test verifies add cluster functionality
         the test adds a cluster with the same name & verifies it fails
@@ -98,8 +95,7 @@ class TestCaseCluster(TestCase):
                                      on_error='migrate')
         self.assertTrue(status, 'Add existing cluster')
 
-    @istest
-    def t03_add_cluster_wrong_cpu(self):
+    def test03_add_cluster_wrong_cpu(self):
         """
         test verifies add cluster functionality
         the test adds a cluster with wrong cpu name & verifies it fails
@@ -112,8 +108,7 @@ class TestCaseCluster(TestCase):
                                      on_error='migrate')
         self.assertTrue(status, 'Add cluster - wrong cpu')
 
-    @istest
-    def t04_add_cluster_memory_overcommit(self):
+    def test04_add_cluster_memory_overcommit(self):
         """
         test verifies add cluster functionality
         the test adds a cluster with specific memory overcommit
@@ -126,9 +121,8 @@ class TestCaseCluster(TestCase):
                                      on_error='do_not_migrate')
         self.assertTrue(status, 'Add cluster - specific memory overcommit')
 
-    @istest
     @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
-    def t05_add_cluster_wrong_scheduling_policy(self):
+    def test05_add_cluster_wrong_scheduling_policy(self):
         """
         test verifies add cluster functionality
         the test adds a cluster with wrong scheduling policy
@@ -142,9 +136,8 @@ class TestCaseCluster(TestCase):
             thrhld_low='20', thrhld_high='60', duration='180')
         self.assertTrue(status, 'Add cluster - wrong scheduling policy')
 
-    @istest
     @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
-    def t06_add_cluster_scheduling_policy_power_saving(self):
+    def test06_add_cluster_scheduling_policy_power_saving(self):
         """
         test verifies add cluster functionality
         the test adds a cluster with scheduling policy power_saving
@@ -158,9 +151,8 @@ class TestCaseCluster(TestCase):
             thrhld_low='20', thrhld_high='60', duration='180')
         self.assertTrue(status, 'Add cluster - scheduling policy power_saving')
 
-    @istest
     @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
-    def t07_add_cluster_scheduling_policy_evenly_distributed(self):
+    def test07_add_cluster_scheduling_policy_evenly_distributed(self):
         """
         test verifies add cluster functionality
         the test adds a cluster with scheduling policy evenly_distributed
@@ -175,8 +167,7 @@ class TestCaseCluster(TestCase):
         self.assertTrue(status, 'Add cluster - scheduling policy '
                         'evenly_distributed')
 
-    @istest
-    def t08_check_cluster_memory_overcommit(self):
+    def test08_check_cluster_memory_overcommit(self):
         """
         test verifies check cluster parameters functionality
         the test checks cluster memory over-commit
@@ -187,9 +178,8 @@ class TestCaseCluster(TestCase):
                                              mem_ovrcmt_prc='75')
         self.assertTrue(status, 'Check cluster - memory over-commit')
 
-    @istest
     @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
-    def t09_check_cluster_scheduling_policy_power_saving(self):
+    def test09_check_cluster_scheduling_policy_power_saving(self):
         """
         test verifies check cluster parameters functionality
         the test checks cluster scheduling policy power_saving
@@ -202,9 +192,8 @@ class TestCaseCluster(TestCase):
         self.assertTrue(status, 'Check cluster - scheduling policy '
                         'power_saving')
 
-    @istest
     @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
-    def t10_check_cluster_scheduling_policy_evenly_distributed(self):
+    def test10_check_cluster_scheduling_policy_evenly_distributed(self):
         """
         test verifies check cluster parameters functionality
         the test checks cluster scheduling policy evenly_distributed
@@ -217,8 +206,7 @@ class TestCaseCluster(TestCase):
         self.assertTrue(status, 'Check cluster - scheduling policy '
                         'evenly_distributed')
 
-    @istest
-    def t11_search_cluster(self):
+    def test11_search_cluster(self):
         """
         test verifies search cluster functionality
         the test searches a cluster by name
@@ -229,8 +217,7 @@ class TestCaseCluster(TestCase):
                                            key_name='name')
         self.assertTrue(status, 'Search cluster by name')
 
-    @istest
-    def t12_search_cluster_case_insensitive(self):
+    def test12_search_cluster_case_insensitive(self):
         """
         test verifies search cluster functionality
         the test searches a cluster by name case insensitive
@@ -242,8 +229,7 @@ class TestCaseCluster(TestCase):
                                            case_sensitive=False)
         self.assertTrue(status, 'Search cluster by name - case insensitive')
 
-    @istest
-    def t13_search_cluster_max_matches(self):
+    def test13_search_cluster_max_matches(self):
         """
         test verifies search cluster functionality
         the test searches a cluster by name with max matches parameter
@@ -254,8 +240,7 @@ class TestCaseCluster(TestCase):
                                            key_name='name', max=2)
         self.assertTrue(status, 'Search cluster by name - max matches')
 
-    @istest
-    def t14_search_cluster_case_insensitive_and_max_matches(self):
+    def test14_search_cluster_case_insensitive_and_max_matches(self):
         """
         test verifies search cluster functionality
         the test searches a cluster by name with max matches parameter
@@ -268,8 +253,7 @@ class TestCaseCluster(TestCase):
         self.assertTrue(status, 'Search cluster by name - '
                         'case insensitive & max matches')
 
-    @istest
-    def t15_update_cluster_name(self):
+    def test15_update_cluster_name(self):
         """
         test verifies update cluster functionality
         the test updates the cluster name &
@@ -282,8 +266,7 @@ class TestCaseCluster(TestCase):
         self.assertTrue(status, 'Update cluster name')
         self.__class__.cluster_name = new_name
 
-    @istest
-    def t16_update_cluster_description(self):
+    def test16_update_cluster_description(self):
         """
         test verifies update cluster functionality
         the test updates the cluster description
@@ -294,8 +277,7 @@ class TestCaseCluster(TestCase):
                                         description='Cluster Description')
         self.assertTrue(status, 'Update cluster description')
 
-    @istest
-    def t17_update_cluster_on_error(self):
+    def test17_update_cluster_on_error(self):
         """
         test verifies update cluster functionality
         the test updates the cluster on error behavior
@@ -306,8 +288,7 @@ class TestCaseCluster(TestCase):
                                         on_error='migrate_highly_available')
         self.assertTrue(status, 'Update cluster on error behavior')
 
-    @istest
-    def t18_update_cluster_data_center(self):
+    def test18_update_cluster_data_center(self):
         """
         test verifies update cluster functionality
         the test updates the cluster data center & verifies failure
@@ -327,8 +308,7 @@ class TestCaseCluster(TestCase):
         self.assertTrue(status, 'Remove data center')
         self.assertTrue(test_status, 'Update cluster data center')
 
-    @istest
-    def t19_update_cluster_memory_overcommit(self):
+    def test19_update_cluster_memory_overcommit(self):
         """
         test verifies update cluster functionality
         the test updates the cluster specific memory overcommit
@@ -346,9 +326,8 @@ class TestCaseCluster(TestCase):
                                              mem_ovrcmt_prc='76')
         self.assertTrue(status, 'Check cluster - memory overcommit')
 
-    @istest
     @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
-    def t20_update_cluster_high_treshold_out_of_range(self):
+    def test20_update_cluster_high_treshold_out_of_range(self):
         """
         test verifies update cluster functionality
         the test updates the cluster with high threshold out of range
@@ -366,9 +345,8 @@ class TestCaseCluster(TestCase):
             thrhld_low='20', thrhld_high='60', duration='180')
         self.assertTrue(status, 'Check cluster - threshold')
 
-    @istest
     @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
-    def t21_update_cluster_low_treshold_out_of_range(self):
+    def test21_update_cluster_low_treshold_out_of_range(self):
         """
         test verifies update cluster functionality
         the test updates the cluster with low threshold out of range
@@ -386,9 +364,8 @@ class TestCaseCluster(TestCase):
             thrhld_low='20', thrhld_high='60', duration='180')
         self.assertTrue(status, 'Check cluster - threshold')
 
-    @istest
     @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
-    def t22_update_cluster_thersholds_power_saving(self):
+    def test22_update_cluster_thersholds_power_saving(self):
         """
         test verifies update cluster functionality
         the test updates the cluster with specific thresholds
@@ -409,9 +386,8 @@ class TestCaseCluster(TestCase):
             thrhld_low='21', thrhld_high='61', duration='240')
         self.assertTrue(status, 'Check cluster - power_saving thresholds')
 
-    @istest
     @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
-    def t23_update_cluster_thershold_evenly_ditributed(self):
+    def test23_update_cluster_thershold_evenly_ditributed(self):
         """
         test verifies update cluster functionality
         the test updates the cluster with specific thresholds
@@ -432,9 +408,8 @@ class TestCaseCluster(TestCase):
             thrhld_high='61', duration='240')
         self.assertTrue(status, 'Check cluster - evenly_distributed threshold')
 
-    @istest
     @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
-    def t24_update_cluster_scheduling_policy(self):
+    def test24_update_cluster_scheduling_policy(self):
         """
         test verifies update cluster functionality
         the test updates the cluster scheduling policy from evenly_ditributed
@@ -454,9 +429,8 @@ class TestCaseCluster(TestCase):
             thrhld_low='20', thrhld_high='61', duration='240')
         self.assertTrue(status, 'Check cluster - scheduling policy')
 
-    @istest
     @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
-    def t25_update_cluster_bad_treshold_range(self):
+    def test25_update_cluster_bad_treshold_range(self):
         """
         test verifies update cluster functionality
         the test updates the cluster with bad threshold range - low > high
@@ -473,8 +447,7 @@ class TestCaseCluster(TestCase):
             thrhld_low='20', thrhld_high='61', duration='240')
         self.assertTrue(status, 'Check cluster - threshold')
 
-    @istest
-    def t26_check_cluster_capabilities(self):
+    def test26_check_cluster_capabilities(self):
         """
         test checks cluster capabilities property functionality
         """
@@ -494,9 +467,8 @@ class TestCaseCluster(TestCase):
         except EngineTypeError:
             logger.info('xPath is only supported for rest')
 
-    @istest
     @bz({'1189095': {'engine': ['cli'], 'version': ['3.5']}})
-    def t27_remove_clusters(self):
+    def test27_remove_clusters(self):
         """
         test verifies remove cluster functionality
         the test removes all clusters

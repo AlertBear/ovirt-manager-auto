@@ -8,7 +8,6 @@ test_vms
 
 import logging
 
-from nose.tools import istest
 from art.test_handler.settings import opts
 from art.unittest_lib import attr
 
@@ -57,8 +56,7 @@ class TestCaseVM(TestCase):
 
     storages = set([NFS])
 
-    @istest
-    def t01_create_vm(self):
+    def test01_create_vm(self):
         """
         test verifies vm functionality
         the test adds a vm
@@ -68,8 +66,7 @@ class TestCaseVM(TestCase):
                            cluster=config.CLUSTER_1_NAME)
         self.assertTrue(status, 'Create vm')
 
-    @istest
-    def t02_add_disk_to_vm_wrong_format(self):
+    def test02_add_disk_to_vm_wrong_format(self):
         """
         test verifies vm functionality
         the test adds disk to vm with wrong format & verifies it fails
@@ -83,8 +80,7 @@ class TestCaseVM(TestCase):
                              interface=ENUMS['interface_ide'])
         self.assertTrue(status, 'Add disk to vm - wrong format')
 
-    @istest
-    def t03_add_disk_to_vm_wrong_interface(self):
+    def test03_add_disk_to_vm_wrong_interface(self):
         """
         test verifies vm functionality
         the test adds disk to vm with wrong interface & verifies it fails
@@ -98,8 +94,7 @@ class TestCaseVM(TestCase):
                              interface='bad_config')
         self.assertTrue(status, 'Add disk to vm - wrong interface')
 
-    @istest
-    def t04_add_disk_to_vm(self):
+    def test04_add_disk_to_vm(self):
         """
         test verifies vm functionality
         the test adds disk to vm
@@ -113,8 +108,7 @@ class TestCaseVM(TestCase):
                              interface=ENUMS['interface_ide'])
         self.assertTrue(status, 'Add disk to vm')
 
-    @istest
-    def t05_create_template(self):
+    def test05_create_template(self):
         """
         test verifies template functionality
         the test creates a template
@@ -126,8 +120,7 @@ class TestCaseVM(TestCase):
                                           cluster=config.CLUSTER_1_NAME)
         self.assertTrue(status, 'Create template')
 
-    @istest
-    def t06_remove_disk_from_vm(self):
+    def test06_remove_disk_from_vm(self):
         """
         test verifies vm functionality
         the test removes disk to vm
@@ -137,8 +130,7 @@ class TestCaseVM(TestCase):
                                 disk=config.VM_NAME + '_Disk1')
         self.assertTrue(status, 'Remove disk from vm')
 
-    @istest
-    def t07_remove_vm(self):
+    def test07_remove_vm(self):
         """
         test verifies vm functionality
         the test removes a vm
@@ -147,8 +139,7 @@ class TestCaseVM(TestCase):
         status = vms.removeVm(positive=True, vm=config.VM_NAME)
         self.assertTrue(status, 'Remove vm')
 
-    @istest
-    def t08_remove_template(self):
+    def test08_remove_template(self):
         """
         test verifies template functionality
         the test removes a template

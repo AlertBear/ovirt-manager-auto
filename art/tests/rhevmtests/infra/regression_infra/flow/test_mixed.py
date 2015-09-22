@@ -8,7 +8,6 @@ test_mixed
 
 import logging
 
-from nose.tools import istest
 from art.unittest_lib import attr
 
 from art.unittest_lib import BaseTestCase as TestCase
@@ -73,8 +72,7 @@ class TestCaseMixed(TestCase):
                     '2. add tag tests failed', tag_name
                 )
 
-    @istest
-    def t01_check_product_name(self):
+    def test01_check_product_name(self):
         """
         test verifies product name
         """
@@ -82,9 +80,8 @@ class TestCaseMixed(TestCase):
         status = general.checkProductName(config.PRODUCT_NAME)
         self.assertTrue(status, 'Check product name')
 
-    @istest
     @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
-    def t02_create_user(self):
+    def test02_create_user(self):
         """
         test verifies user functionality
         the test adds a user
@@ -98,9 +95,8 @@ class TestCaseMixed(TestCase):
         )
         self.assertTrue(status, 'Add user')
 
-    @istest
     @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
-    def t03_add_data_center_permissions_to_user(self):
+    def test03_add_data_center_permissions_to_user(self):
         """
         test verifies permissions functionality
         the test adds data center permissions to user
@@ -111,9 +107,8 @@ class TestCaseMixed(TestCase):
             data_center=config.DATA_CENTER_1_NAME)
         self.assertTrue(status, 'Add dc permissions to user')
 
-    @istest
     @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
-    def t04_remove_all_permissions_for_user(self):
+    def test04_remove_all_permissions_for_user(self):
         """
         test verifies permissions functionality
         the test removes all permissions for a given user
@@ -123,8 +118,7 @@ class TestCaseMixed(TestCase):
             positive=True, user=config.USERNAME_NAME)
         self.assertTrue(status, 'Remove permissions for user')
 
-    @istest
-    def t05_create_tag(self):
+    def test05_create_tag(self):
         """
         test verifies tags functionality
         the test creates a tag
@@ -138,8 +132,7 @@ class TestCaseMixed(TestCase):
                                  description='Test Tag Description')
             self.assertTrue(status, 'Create tag ' + tag)
 
-    @istest
-    def t06_create_sub_tag(self):
+    def test06_create_sub_tag(self):
         """
         test verifies tags functionality
         the test creates a sub tag
@@ -150,8 +143,7 @@ class TestCaseMixed(TestCase):
                              parent=config.TAG_2_NAME)
         self.assertTrue(status, 'Create sub tag')
 
-    @istest
-    def t07_add_existing_tag(self):
+    def test07_add_existing_tag(self):
         """
         test verifies tags functionality
         the test tries to add an existing tag & verifies failure
@@ -161,8 +153,7 @@ class TestCaseMixed(TestCase):
                              description='Test Tag Description')
         self.assertTrue(status, 'Create existing tag')
 
-    @istest
-    def t08_update_tag(self):
+    def test08_update_tag(self):
         """
         test verifies tags functionality
         the test updates tag name & description
@@ -175,8 +166,7 @@ class TestCaseMixed(TestCase):
         self.assertTrue(status, 'Update tag')
         self.__class__.tag_name = new_name
 
-    @istest
-    def t09_tag_itself_as_parent(self):
+    def test09_tag_itself_as_parent(self):
         """
         test verifies tags functionality
         the test tries to tag itself as his own parent
@@ -186,8 +176,7 @@ class TestCaseMixed(TestCase):
                                 parent=config.TAG_2_NAME)
         self.assertTrue(status, 'Tag as parent')
 
-    @istest
-    def t10_update_tag_parent(self):
+    def test10_update_tag_parent(self):
         """
         test verifies tags functionality
         the test updates a tags parent
@@ -197,8 +186,7 @@ class TestCaseMixed(TestCase):
                                 parent=config.TAG_SUB_NAME)
         self.assertTrue(status, 'Update tag parent')
 
-    @istest
-    def t11_create_tag_loop(self):
+    def test11_create_tag_loop(self):
         """
         test verifies tags functionality
         the test tries to update a tag's parent to be one of his descendants &
@@ -209,8 +197,7 @@ class TestCaseMixed(TestCase):
                                 parent=config.TAG_3_NAME)
         self.assertTrue(status, 'Update tag parent to descendants')
 
-    @istest
-    def t12_remove_tag_with_sub_tag(self):
+    def test12_remove_tag_with_sub_tag(self):
         """
         test verifies tags functionality
         the test removes tag
@@ -219,8 +206,7 @@ class TestCaseMixed(TestCase):
         status = tags.removeTag(positive=True, tag=config.TAG_2_NAME)
         self.assertTrue(status, 'Remove tag')
 
-    @istest
-    def t13_associate_tag_with_vm(self):
+    def test13_associate_tag_with_vm(self):
         """
         test verifies tags functionality
         the test associates a tag with vm
@@ -230,8 +216,7 @@ class TestCaseMixed(TestCase):
                                 vm=config.VM_NAME)
         self.assertTrue(status, 'Associate tag with vm')
 
-    @istest
-    def t14_associate_non_existing_tag_with_vm(self):
+    def test14_associate_non_existing_tag_with_vm(self):
         """
         test verifies tags functionality
         the test associates a non existing tag with vm & verifies failure
@@ -241,8 +226,7 @@ class TestCaseMixed(TestCase):
                                 vm=config.VM_NAME)
         self.assertTrue(status, 'Associate non existing tag with vm')
 
-    @istest
-    def t15_search_vm_by_tag(self):
+    def test15_search_vm_by_tag(self):
         """
         test verifies tags functionality
         the test searches a vm by tag
@@ -252,8 +236,7 @@ class TestCaseMixed(TestCase):
                                  query_val='TagRestTest*', expected_count=1)
         self.assertTrue(status, 'Search vm by tag')
 
-    @istest
-    def t16_associate_tag_with_host(self):
+    def test16_associate_tag_with_host(self):
         """
         test verifies tags functionality
         the test associates a tag with host
@@ -263,8 +246,7 @@ class TestCaseMixed(TestCase):
                                     host=config.HOST_NAME)
         self.assertTrue(status, 'Associate tag with host')
 
-    @istest
-    def t17_search_host_by_tag(self):
+    def test17_search_host_by_tag(self):
         """
         test verifies tags functionality
         the test searches a host by tag
@@ -275,8 +257,7 @@ class TestCaseMixed(TestCase):
                                      expected_count=1)
         self.assertTrue(status, 'Search host by tag')
 
-    @istest
-    def t18_remove_tag_from_vm(self):
+    def test18_remove_tag_from_vm(self):
         """
         test verifies tags functionality
         the test removes tag from vm
@@ -286,8 +267,7 @@ class TestCaseMixed(TestCase):
                                      tag=self.__class__.tag_name)
         self.assertTrue(status, 'Remove tag from vm')
 
-    @istest
-    def t19_remove_tag_from_host(self):
+    def test19_remove_tag_from_host(self):
         """
         test verifies tags functionality
         the test removes tag from host
@@ -297,8 +277,7 @@ class TestCaseMixed(TestCase):
                                          tag=self.__class__.tag_name)
         self.assertTrue(status, 'Remove tag from host')
 
-    @istest
-    def t20_update_tag_name_to_existing_tag(self):
+    def test20_update_tag_name_to_existing_tag(self):
         """
         test verifies tags functionality
         the test updates a tag's name to an existing one & verifies failure
@@ -308,8 +287,7 @@ class TestCaseMixed(TestCase):
                                 name=config.TAG_5_NAME)
         self.assertTrue(status, 'Update tag name to existing')
 
-    @istest
-    def t21_check_tag_is_unique(self):
+    def test21_check_tag_is_unique(self):
         """
         test verifies tags functionality
         the test checks via xpath whether the tag is unique
@@ -323,8 +301,7 @@ class TestCaseMixed(TestCase):
         except EngineTypeError:
             logger.info('xPath is only supported for rest')
 
-    @istest
-    def t22_remove_all_tags(self):
+    def test22_remove_all_tags(self):
         """
         test verifies tags functionality
         the test removes all tag
@@ -336,9 +313,8 @@ class TestCaseMixed(TestCase):
             status = tags.removeTag(positive=True, tag=curr_tag)
             self.assertTrue(status, 'Remove tag ' + curr_tag)
 
-    @istest
     @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
-    def t23_remove_user(self):
+    def test23_remove_user(self):
         """
         test verifies user functionality
         the test removes a user

@@ -11,7 +11,6 @@ command:
 """
 import logging
 
-from nose.tools import istest
 from art.unittest_lib import attr
 
 from art.unittest_lib import BaseTestCase as TestCase
@@ -71,8 +70,7 @@ class TestCaseDataCenter(TestCase):
 
     dc_name = config.DATA_CENTER_1_NAME
 
-    @istest
-    def t01_create_shared_data_center(self):
+    def test01_create_shared_data_center(self):
         """
         test checks if Create Shared data center works correctly
         """
@@ -80,8 +78,7 @@ class TestCaseDataCenter(TestCase):
         status = create_datacenter(True, config.DATA_CENTER_1_NAME, False)
         self.assertTrue(status, 'Create Shared data center')
 
-    @istest
-    def t02_create_temporary_local_data_center(self):
+    def test02_create_temporary_local_data_center(self):
         """
         test checks if Create temporary Local data center works correctly
         """
@@ -89,8 +86,7 @@ class TestCaseDataCenter(TestCase):
         status = create_datacenter(True, config.DATA_CENTER_2_NAME, True)
         self.assertTrue(status, 'Create temporary Local data center')
 
-    @istest
-    def t03_create_data_center_with_spaces_in_name(self):
+    def test03_create_data_center_with_spaces_in_name(self):
         """
         test checks if Create data center with spaces in name failed
         as expected - Negative test
@@ -99,8 +95,7 @@ class TestCaseDataCenter(TestCase):
         status = create_datacenter(False, 'No Data Center', True)
         self.assertTrue(status, 'Create data center with spaces in name')
 
-    @istest
-    def t04_create_data_center_with_existing_name(self):
+    def test04_create_data_center_with_existing_name(self):
         """
         test checks if Create data center with existing name don't works
         """
@@ -108,8 +103,7 @@ class TestCaseDataCenter(TestCase):
         status = create_datacenter(False, config.DATA_CENTER_2_NAME, True)
         self.assertTrue(status, 'Create data center with existing name')
 
-    @istest
-    def t05_update_data_center_name_and_description(self):
+    def test05_update_data_center_name_and_description(self):
         """
         test checks if Update data center name and description works properly
         """
@@ -122,8 +116,7 @@ class TestCaseDataCenter(TestCase):
         self.assertTrue(status, 'Update data center name and description')
         self.__class__.dc_name = config.DATA_CENTER_1_NAME_UPDATED
 
-    @istest
-    def t06_remove_temporary_data_center(self):
+    def test06_remove_temporary_data_center(self):
         """
         test checks if Remove temporary data center works properly
         """
@@ -132,8 +125,7 @@ class TestCaseDataCenter(TestCase):
         self.assertTrue(remove_datacenter(config.DATA_CENTER_2_NAME),
                         'Remove temporary data center')
 
-    @istest
-    def t07_search_for_data_center(self):
+    def test07_search_for_data_center(self):
         """
         test if Search for data center works properly
         """
@@ -145,8 +137,7 @@ class TestCaseDataCenter(TestCase):
                                                  key_name='name')
         self.assertTrue(status, log_msg)
 
-    @istest
-    def t08_remove_few_temporary_data_centers(self):
+    def test08_remove_few_temporary_data_centers(self):
         """
         test checks if Remove few temporary data centers works properly
         """

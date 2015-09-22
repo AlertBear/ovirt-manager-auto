@@ -6,7 +6,6 @@ Created on May 12, 2014
 
 import logging
 
-from nose.tools import istest
 from art.unittest_lib import attr
 
 from art.unittest_lib import BaseTestCase as TestCase
@@ -63,8 +62,7 @@ class TestCaseHost(TestCase):
                         '1. remove host test passed successfully '
                         '2. add host test failed')
 
-    @istest
-    def t01_add_host(self):
+    def test01_add_host(self):
         """
         test verifies add host functionality
         the test adds a host
@@ -76,8 +74,7 @@ class TestCaseHost(TestCase):
             vdcPort=config.VDC_PORT)
         self.assertTrue(status, 'Add host')
 
-    @istest
-    def t02_check_host_type_property(self):
+    def test02_check_host_type_property(self):
         """
         test checks host type property functionality
         """
@@ -90,8 +87,7 @@ class TestCaseHost(TestCase):
         except EngineTypeError:
             logger.info('xPath is only supported for rest')
 
-    @istest
-    def t03_update_host(self):
+    def test03_update_host(self):
         """
         test verifies update host functionality
         the test updates the host name &
@@ -104,8 +100,7 @@ class TestCaseHost(TestCase):
         self.assertTrue(status, 'Update host name')
         self.__class__.host_name = new_name
 
-    @istest
-    def t04_activate_active_host(self):
+    def test04_activate_active_host(self):
         """
         test verifies activate activate host functionality
         the test activates an active host & verifies it fails
@@ -115,8 +110,7 @@ class TestCaseHost(TestCase):
                                     host=self.host_name)
         self.assertTrue(status, 'Activate active host')
 
-    @istest
-    def t05_set_active_host_to_maintenance(self):
+    def test05_set_active_host_to_maintenance(self):
         """
         test verifies set host to maintenance state functionality
         the test sets the host to maintenance mode
@@ -126,8 +120,7 @@ class TestCaseHost(TestCase):
                                       host=self.host_name)
         self.assertTrue(status, 'Set active host to maintenance')
 
-    @istest
-    def t06_activate_host(self):
+    def test06_activate_host(self):
         """
         test verifies activate host functionality
         the test activates a host from maintenance mode
@@ -137,8 +130,7 @@ class TestCaseHost(TestCase):
                                     host=self.host_name)
         self.assertTrue(status, 'Activate host')
 
-    @istest
-    def t07_remove_host(self):
+    def test07_remove_host(self):
         """
         test verifies remove host functionality
         the test sets the host to maintenance mode & removes it
@@ -162,10 +154,8 @@ class TestCaseHost(TestCase):
         status = hosts.removeHost(positive=True, host=config.HOST_NAME)
         self.assertTrue(status, 'Remove host')
 
-    @istest
-    def t08_add_host_stomp_protocol(self):
+    def test08_add_host_stomp_protocol(self):
         self._add_host_enforce_protocol("stomp")
 
-    @istest
-    def t09_add_host_xml_protocol(self):
+    def test09_add_host_xml_protocol(self):
         self._add_host_enforce_protocol("xml")

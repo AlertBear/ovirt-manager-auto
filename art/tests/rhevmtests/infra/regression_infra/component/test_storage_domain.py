@@ -7,7 +7,6 @@ test_storage_domain
 """
 
 import logging
-from nose.tools import istest
 from art.test_handler.settings import opts
 from art.unittest_lib import attr
 
@@ -52,8 +51,7 @@ class TestCaseStorageDomain(TestCase):
         """
         help_functions.utils.clean_environment()
 
-    @istest
-    def t01_create_storage_domain_wrong_type(self):
+    def test01_create_storage_domain_wrong_type(self):
         """
         test verifies storage domain functionality
         the test adds a storage domain with wrong type & verifies it fails
@@ -67,8 +65,7 @@ class TestCaseStorageDomain(TestCase):
             host=config.HOST_NAME, path=config.DATA_DOMAIN_PATH)
         self.assertTrue(status, 'Add storage domain')
 
-    @istest
-    def t02_create_storage_domain(self):
+    def test02_create_storage_domain(self):
         """
         test verifies storage domain functionality
         the test adds a storage domain
@@ -82,8 +79,7 @@ class TestCaseStorageDomain(TestCase):
             host=config.HOST_NAME, path=config.DATA_DOMAIN_PATH)
         self.assertTrue(status, 'Create storage domain')
 
-    @istest
-    def t03_attach_nfs_storage_domain_to_data_center(self):
+    def test03_attach_nfs_storage_domain_to_data_center(self):
         """
         test verifies storage domain functionality
         the test attaches storage domain
@@ -94,8 +90,7 @@ class TestCaseStorageDomain(TestCase):
             storagedomain=config.STORAGE_DOMAIN_NAME)
         self.assertTrue(status, 'Attach storage domain')
 
-    @istest
-    def t04_update_storage_domain(self):
+    def test04_update_storage_domain(self):
         """
         test verifies storage domain functionality
         the test updates storage domain name
@@ -108,8 +103,7 @@ class TestCaseStorageDomain(TestCase):
         self.assertTrue(status, 'Update storage domain')
         self.__class__.sd_name = new_name
 
-    @istest
-    def t05_deactivate_storage_domain(self):
+    def test05_deactivate_storage_domain(self):
         """
         test verifies storage domain functionality
         the test deactivates a storage domain
@@ -120,8 +114,7 @@ class TestCaseStorageDomain(TestCase):
             storagedomain=self.sd_name)
         self.assertTrue(status, 'Deactivate storage domain')
 
-    @istest
-    def t06_remove_storage_domain(self):
+    def test06_remove_storage_domain(self):
         """
         test verifies storage domain functionality
         the test removes a storage domain
