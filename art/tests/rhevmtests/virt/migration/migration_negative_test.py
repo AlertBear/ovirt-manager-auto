@@ -287,9 +287,7 @@ class TestVMMigrateOptionsCase1(TestCase):
 
     affinity = config.VM_PINNED
     vm_name = 'DoNotAllowMigration'
-    storage_domain = storagedomains.getStorageDomainNamesForType(
-        config.DC_NAME[0], config.STORAGE_TYPE_NFS
-    )[0]
+    storage_domain = None
 
     @classmethod
     def setup_class(cls):
@@ -297,6 +295,9 @@ class TestVMMigrateOptionsCase1(TestCase):
             'Create VM %s with option "Do not allow migration"',
             cls.vm_name
         )
+        cls.storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DC_NAME[0], config.STORAGE_TYPE_NFS
+        )[0]
         if not ll_vms.createVm(
             True,
             vmName=cls.vm_name,

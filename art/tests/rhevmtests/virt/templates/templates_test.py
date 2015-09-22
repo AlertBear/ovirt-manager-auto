@@ -1098,7 +1098,14 @@ class ImportExportTemplate(BaseTemplateClass):
     __test__ = True
     template_name = 'export_template'
     vm_parameters = BASIC_PARAMETERS.copy()
-    export_domain = sd_api.findExportStorageDomains(config.DC_NAME[0])[0]
+    export_domain = None
+
+    @classmethod
+    def setup_class(cls):
+        super(ImportExportTemplate, cls).setup_class()
+        cls.export_domain = sd_api.findExportStorageDomains(
+            config.DC_NAME[0]
+        )[0]
 
     @polarion("RHEVM3-12283")
     def test_import_export_template(self):
