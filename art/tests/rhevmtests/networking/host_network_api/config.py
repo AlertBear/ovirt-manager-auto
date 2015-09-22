@@ -500,6 +500,14 @@ SYNC_DICT_1 = {
         "required": "false",
         "usages": ""
     },
+    SYNC_NETS_DC_1[7][0]: {
+        "required": "false",
+        "usages": ""
+    },
+    SYNC_NETS_DC_1[8][0]: {
+        "required": "false",
+        "usages": ""
+    },
 }
 
 SYNC_DICT_2 = {
@@ -560,5 +568,15 @@ SYNC_DICT_2 = {
     },
     SYNC_NETS_DC_1[6][1]: {
         "required": "false"
+    },
+    SYNC_NETS_DC_1[7][0]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[54],
+        "mtu": MTU[1]
+    },
+    SYNC_NETS_DC_1[8][0]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[55],
+        "mtu": MTU[1]
     },
 }

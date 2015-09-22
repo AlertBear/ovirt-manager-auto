@@ -662,3 +662,122 @@ class TestHostNetworkApiSync06(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         helper.sync_networks([self.net_case_2])
+
+
+class TestHostNetworkApiSync07(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync for VLAN/MTU/Bridge on the same network
+    Sync the network
+    """
+    __test__ = True
+    net_case_1 = conf.SYNC_NETS_DC_1[7][0]
+    net_case_1_vlan_id_actual = None
+    net_case_1_mtu_actual = str(conf.MTU[0])
+    net_case_1_bridge_actual = "false"
+    net_case_1_vlan_id_expected = conf.VLAN_IDS[54]
+    net_case_1_mtu_expected = str(conf.MTU[1])
+    net_case_1_bridge_expected = "true"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network with non-VLAN, non-VM with default MTU to the host
+        Move the host to another cluster
+        """
+        TestHostNetworkApiSync07.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": cls.net_case_1,
+                    "nic": conf.HOST_4_NICS[1],
+                    "datacenter": conf.DC_NAME
+                }
+            }
+        }
+        super(TestHostNetworkApiSync07, cls).setup_class()
+
+    def test_unsync_network_change_vlan_mtu_bridge(self):
+        """
+        Check that the network is un-sync and the sync reasons are different
+        VLAN, MTU and Bridge
+        Sync the network
+        """
+        compare_dict = {
+            self.net_case_1: {
+                conf.VLAN_STR: {
+                    "expected": self.net_case_1_vlan_id_expected,
+                    "actual": self.net_case_1_vlan_id_actual
+                },
+                conf.MTU_STR: {
+                    "expected": self.net_case_1_mtu_expected,
+                    "actual": self.net_case_1_mtu_actual
+                },
+                conf.BRIDGE_STR: {
+                    "expected": self.net_case_1_bridge_expected,
+                    "actual": self.net_case_1_bridge_actual
+                }
+            }
+        }
+        helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        helper.sync_networks([self.net_case_1])
+
+
+class TestHostNetworkApiSync08(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync for VLAN/MTU/Bridge on the same network over BOND
+    Sync the network
+    """
+    __test__ = True
+    net_case_1 = conf.SYNC_NETS_DC_1[8][0]
+    net_case_1_vlan_id_actual = None
+    net_case_1_mtu_actual = str(conf.MTU[0])
+    net_case_1_bridge_actual = "false"
+    net_case_1_vlan_id_expected = conf.VLAN_IDS[55]
+    net_case_1_mtu_expected = str(conf.MTU[1])
+    net_case_1_bridge_expected = "true"
+    bond_1 = "bond81"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach networks with  non-VLAN, non-VM with default MTU to the host
+        Move the host to another cluster
+        """
+        TestHostNetworkApiSync08.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": cls.bond_1,
+                    "slaves": conf.DUMMYS[:2]
+                },
+                "2": {
+                    "network": cls.net_case_1,
+                    "nic": cls.bond_1,
+                    "datacenter": conf.DC_NAME
+                }
+            }
+        }
+        super(TestHostNetworkApiSync08, cls).setup_class()
+
+    def test_unsync_network_change_vlan_mtu_bridge(self):
+        """
+        Check that the network is un-sync and the sync reasons are different
+        VLAN, MTU and Bridge
+        Sync the network
+        """
+        compare_dict = {
+            self.net_case_1: {
+                conf.VLAN_STR: {
+                    "expected": self.net_case_1_vlan_id_expected,
+                    "actual": self.net_case_1_vlan_id_actual
+                },
+                conf.MTU_STR: {
+                    "expected": self.net_case_1_mtu_expected,
+                    "actual": self.net_case_1_mtu_actual
+                },
+                conf.BRIDGE_STR: {
+                    "expected": self.net_case_1_bridge_expected,
+                    "actual": self.net_case_1_bridge_actual
+                }
+            }
+        }
+        helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        helper.sync_networks([self.net_case_1])
