@@ -65,3 +65,20 @@ class UpgradeSanityVerification(TestCase):
             LOGGER.debug(users)
             assert len(users) > 0, "Domain %s is not accesible." % domain.name
             LOGGER.info("Domain %s is accessible.", domain.name)
+
+    @polarion('RHEVM3-12080')
+    def test_aaa_jdbc(self):
+        """ test if after upgrade there aaa-jdbc installed and working """
+        with config.ENGINE_HOST.executor().session() as ss:
+            assert not ss.run_cmd([
+                'yum',
+                'list',
+                'installed',
+                'ovirt-engine-extension-aaa-jdbc',
+            ])
+            assert not ss.run_cmd([
+                'ovirt-aaa-jdbc-tool',
+                'user',
+                'show',
+                'admin',
+            ])

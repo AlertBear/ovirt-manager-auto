@@ -61,6 +61,10 @@ VDS_HOSTS = [
         h, HOSTS_PW,
     ) for h in HOSTS_IP
 ]
+ENGINE_HOST = resources.Host(RHEVM_NAME)
+ENGINE_HOST.users.append(
+    resources.RootUser(VDC_PASSWORD)
+)
 
 ANSWERS = {
     # KEYWORDS FOR OTOPI ANSWERFILE
