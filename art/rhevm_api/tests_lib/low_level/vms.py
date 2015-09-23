@@ -5113,3 +5113,16 @@ def add_repo_to_vm(
             gpgcheck=kwargs.get('gpgcheck', '0'),
         ),
     )
+
+
+def reorder_vm_mac_address(vm_name):
+    """
+    Reorder VM mac addresses
+
+    :param vm_name: VM name
+    :type vm_name: str
+    :return: True/False
+    :rtype: bool
+    """
+    vm_obj = VM_API.find(vm_name)
+    return VM_API.syncAction(vm_obj, "reordermacaddresses", True, "true")
