@@ -5,10 +5,11 @@
 Helper for networking jobs
 """
 
+import logging
 from random import randint
+import art.rhevm_api.utils.test_utils as test_utils
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import logging
 
 
 def create_random_ips(num_of_ips=2, mask=16):
@@ -88,6 +89,41 @@ def move_host_to_another_cluster(host, cluster, activate=True):
         if not ll_hosts.activateHost(positive=True, host=host):
             logging.error("Failed to activate %s", host)
             return False
+    return True
+
+
+def seal_vm(vm, root_password):
+    """
+    Start VM, seal VM and stop VM
+
+    :param vm: VM name
+    :type vm: str
+    :param root_password: VM root password
+    :type root_password: str
+    :return: True/False
+    :rtype: bool
+    """
+    logging.info("Start VM: %s", vm)
+    if not ll_vms.startVm(positive=True, vm=vm):
+        logging.error("Failed to start %s.", vm)
+        return False
+
+    logging.info("Waiting for IP from %s", vm)
+    rc, out = ll_vms.waitForIP(vm=vm, timeout=180, sleep=10)
+    if not rc:
+        logging.error("Failed to get %s IP", vm)
+        return False
+
+    ip = out["ip"]
+    logging.info("Running setPersistentNetwork on %s", vm)
+    if not test_utils.setPersistentNetwork(host=ip, password=root_password):
+        logging.error("Failed to seal %s", vm)
+        return False
+
+    logging.info("Stopping %s", vm)
+    if not ll_vms.stopVm(positive=True, vm=vm):
+        logging.error("Failed to stop %s", vm)
+        return False
     return True
 
 if __name__ == "__main__":
