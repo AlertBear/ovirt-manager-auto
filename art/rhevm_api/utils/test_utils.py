@@ -858,22 +858,22 @@ def setPersistentNetwork(host, password):
         for nic in nics:
             nic = 'ifcfg-%s' % nic
             ifcfg_path = os.path.join(net_scripts_dir, nic)
+            if os.path.isfile(ifcfg_path):
+                cmd = remove_ifcfg_attrs_cmd + [ifcfg_path]
 
-            cmd = remove_ifcfg_attrs_cmd + [ifcfg_path]
+                rc, out, err = ss.run_cmd(cmd)
+                if rc:
+                    logger.error(
+                        "Failed to remove relevant attrs from %s: %s, %s",
+                        ifcfg_path, out, err,
+                    )
+                    return False
 
-            rc, out, err = ss.run_cmd(cmd)
-            if rc:
-                logger.error(
-                    "Failed to remove relevant attrs from %s: %s, %s",
-                    ifcfg_path, out, err,
-                )
-                return False
-
-            with ss.open_file(ifcfg_path) as fd:
-                logger.debug(
-                    '%s Final configurations: \n%s',
-                    nic, fd.read()
-                )
+                with ss.open_file(ifcfg_path) as fd:
+                    logger.debug(
+                        '%s Final configurations: \n%s',
+                        nic, fd.read()
+                    )
 
     vm_obj.network.hostname = "localhost.localdomain"
 
