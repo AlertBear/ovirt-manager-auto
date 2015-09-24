@@ -199,6 +199,8 @@ def _prepareVmObject(**kwargs):
     :type cpu_profile_id: str
     :param numa_mode: numa mode for vm(strict, preferred, interleave)
     :type numa_mode: str
+    :param balloon: True of False - enable ballooning on vm
+    :type balloon: bool
     :returns: vm object
     :rtype: instance of VM
     """
@@ -338,10 +340,13 @@ def _prepareVmObject(**kwargs):
     if custom_prop:
         vm.set_custom_properties(createCustomPropertiesFromArg(custom_prop))
 
-    # memory policy memory_guaranteed
-    guaranteed = kwargs.pop("memory_guaranteed", None)
-    if guaranteed:
-        vm.set_memory_policy(data_st.MemoryPolicy(guaranteed))
+    # memory policy memory_guaranteed and ballooning
+    vm.set_memory_policy(
+        data_st.MemoryPolicy(
+            guaranteed=kwargs.pop("memory_guaranteed", None),
+            ballooning=kwargs.pop("balloon", None),
+        )
+    )
 
     # placement policy: placement_affinity & placement_host
     affinity = kwargs.pop("placement_affinity", None)
@@ -547,6 +552,8 @@ def addVm(positive, wait=True, **kwargs):
                            relevant parameters
                            (sysprep, ovf, username, root_password etc)
     :type initialization: Initialization
+    :param balloon: True of False - enable ballooning on vm
+    :type numa_mode: bool
     :returns: True, if add vm success, otherwise False
     :rtype: bool
     """
@@ -2437,7 +2444,7 @@ def createVm(
         disk_quota=None, plugged='true', linked='true', protected=None,
         copy_permissions=False, custom_properties=None,
         watchdog_model=None, watchdog_action=None, cpu_profile_id=None,
-        numa_mode=None
+        numa_mode=None, balloon=None,
 ):
     """
     Create new vm with nic, disk and OS
@@ -2530,6 +2537,8 @@ def createVm(
     :type cpu_profile_id: str
     :param numa_mode: numa mode for vm(strict, preferred, interleave)
     :type numa_mode: str
+    :param balloon: True of False - enable ballooning on vm
+    :type balloon: bool
     :returns: True, if create vm success, otherwise False
     :rtype: bool
     """
@@ -2547,7 +2556,7 @@ def createVm(
         protected=protected, cpu_mode=cpu_mode,
         copy_permissions=copy_permissions,
         custom_properties=custom_properties,
-        cpu_profile_id=cpu_profile_id, numa_mode=numa_mode
+        cpu_profile_id=cpu_profile_id, numa_mode=numa_mode, balloon=balloon,
     ):
         return False
 
