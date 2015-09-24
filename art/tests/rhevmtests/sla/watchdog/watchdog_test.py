@@ -740,7 +740,6 @@ class WatchdogCRUDTemplate(WatchdogVM):
     vm_name1 = "watchdog_template_vm1"
     vm_name2 = "watchdog_template_vm2"
     template_name = "watchdog_template"
-    bz = {'1258224': {'engine': None, 'version': ['3.6']}}
 
     @polarion("RHEVM3-4957")
     def test_add_watchdog_template(self):
