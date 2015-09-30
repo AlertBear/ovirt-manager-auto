@@ -827,9 +827,10 @@ class JavaSdkUtil(APIUtil):
                         self.opts['session_timeout'],
                         self.opts['persistent_auth'],
                         self.opts['ssl_key_store_file'],
-                        self.opts['password'], self.opts['filter'],
-                        self.opts['debug'])
+                        self.opts['ssl_key_store_password'],
+                        self.opts['filter'], self.opts['debug'])
             except java_sdk.JavaError as e:
+                logger.error("Login failed with error: %s", e)
                 raise APILoginError(e)
 
             self.__class__._sdk_init = self.api

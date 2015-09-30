@@ -193,6 +193,7 @@ def readTestRunOpts(path, redefs):
     opts['data_struct_mod'] = runSection['data_struct_mod']
     opts['media_type'] = runSection['media_type']
     opts['secure'] = runSection.as_bool('secure')
+    opts['ssl_key_store_password'] = runSection["ssl_key_store_password"]
     opts['validate'] = runSection.as_bool('validate')
 
     reportSection = config['REPORT']

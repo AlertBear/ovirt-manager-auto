@@ -28,6 +28,8 @@ CA_PATH = os.path.join(DIR, 'ca.crt')
 KEY_PATH = os.path.join(DIR, 'ART.key')
 CERT_PATH = os.path.join(DIR, 'ART.crt')
 KEY_STORE_PATH = os.path.join(DIR, 'server.truststore')
+DEFAULT_PASSWORD = "123456"
+PASSWORD = 'ssl_key_store_password'
 
 
 class SSL_Error(PluginError):
@@ -57,13 +59,16 @@ class RHEVM_SSL_Plugin(Component):
         opts['ssl_cert_file'] = CERT_PATH
         opts['ssl_key_file'] = KEY_PATH
         opts['ssl_key_store_file'] = KEY_STORE_PATH
+        opts[PASSWORD] = conf[RUN].get(
+            PASSWORD, DEFAULT_PASSWORD
+        )
 
     @classmethod
     def __download_ca_certificate(cls):
         proxy = HTTPProxy(opts)
         res = proxy.GET('/ca.crt')
-        #TODO: check for errors
-        #raise SSL_Error
+        # TODO: check for errors
+        # raise SSL_Error
         with open(CA_PATH, 'w') as ca_file:
             ca_file.write(res['body'])
 
@@ -74,8 +79,8 @@ class RHEVM_SSL_Plugin(Component):
         # command to generate the key store file for secured java api
         cmd = ['keytool', '-noprompt', '-import', '-alias',
                '"server.crt truststore"', '-file', CA_PATH, '-keystore',
-               KEY_STORE_PATH, '-storepass', opts['password'], '-keypass',
-               opts['password']]
+               KEY_STORE_PATH, '-storepass', opts[PASSWORD],
+               '-keypass', opts[PASSWORD]]
         p = Popen(cmd)
         p.communicate()
         if p.returncode:
@@ -116,4 +121,5 @@ class RHEVM_SSL_Plugin(Component):
         params['description'] = 'Sets up SSL connection to RHEVM'
         params['long_description'] = cls.__doc__
         params['requires'] = ['pyOpenSSL']
-        params['py_modules'] = ['art.test_handler.plmanagement.plugins.ssl_plugin']
+        params['py_modules'] = [
+            'art.test_handler.plmanagement.plugins.ssl_plugin']

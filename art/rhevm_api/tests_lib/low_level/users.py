@@ -277,10 +277,10 @@ def loginAsUser(user, domain, password, filter):
      * filter - true if user has non-admin role, false if user has admin role
     """
     get_api.logoff_api()
-    msg = "Logged in as %s@%s(filter=%s)"
+    msg = "Logged in as %s@%s(filter=%s), with password: %s"
     global opts
     opts['filter'] = filter
     opts['user'] = user
     opts['user_domain'] = domain
     opts['password'] = password
-    logger.info(msg, user, domain, filter)
+    logger.info(msg, user, domain, filter, password)
