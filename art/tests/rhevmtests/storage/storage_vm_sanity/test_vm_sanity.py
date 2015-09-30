@@ -411,8 +411,8 @@ class TestCase11830(TestCase):
             raise exceptions.VMException(
                 "Waiting for VM %s status 'up' failed" % self.vm_name)
         LOGGER.info("Shutting down %s" % self.vm_name)
-        if not vms.shutdownVm(True, self.vm_name, async='false'):
-            raise exceptions.VMException("Can't shut down vm %s" %
+        if not vms.stopVm(True, self.vm_name):
+            raise exceptions.VMException("Can't stop vm %s" %
                                          self.vm_name)
         vms.waitForVMState(self.vm_name, state=config.VM_DOWN)
 
