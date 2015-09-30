@@ -333,9 +333,11 @@ class TestCase5139(ReturnToSnapshot):
     polarion_test_case = '5139'
     test_action = staticmethod(preview_snapshot)
     # Bugzilla history
-    # 1211588
+    # 1211588:  CLI auto complete options async and grace_period-expiry are
+    # missing for preview_snapshot
     # 1253338: restore snapshot via API results in snapshot being stuck on
     # "In preview" status
+    bz = {'1260177': {'engine': None, 'version': ["3.6"]}}
 
     @polarion("RHEVM3-5139")
     def test_preview_snapshot(self):
