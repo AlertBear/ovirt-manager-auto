@@ -60,6 +60,7 @@ import time
 import json
 from requests import ConnectionError
 from functools import wraps
+import bugzilla
 
 from art.test_handler.exceptions import SkipTest
 from art.test_handler.plmanagement import (
@@ -99,7 +100,7 @@ PATH_TO_ISSUEDB = 'path_to_issuedb'
 
 DEFAULT_URL = 'https://bugzilla.redhat.com/xmlrpc.cgi'
 DEFAULT_USER = 'bugzilla-qe-tlv@redhat.com'
-DEFAULT_PASSWD = 'F3x5RiBnzn'
+DEFAULT_PASSWD = 'F3x5RiBnzn@'
 DEFAULT_STATE = False
 DEFAULT_LOG_FILE = 'logs/skipped_bugs.log'
 
@@ -298,7 +299,10 @@ class Bugzilla(Component):
 
     @dec_polling(attempts=ATTEMPTS, sleep_time=SLEEP_TIME)
     def _login(self):
-        self.bugzilla.login(self.user, self.passwd)
+        if not self.bugzilla.login(self.user, self.passwd):
+            raise bugzilla.BugzillaError(
+                "Login failed: %s/%s" % (self.user, self.passwd)
+            )
 
     @dec_polling(attempts=ATTEMPTS, sleep_time=query_sleep_time)
     def _query(self, q):
@@ -308,7 +312,6 @@ class Bugzilla(Component):
         if not self.is_enabled(params, conf):
             return
         bz_cfg = conf.get(BZ_OPTION)
-        import bugzilla
         self.url = params.bz_host or bz_cfg.get('url')
         self.user = params.bz_user or bz_cfg.get('user')
         self.passwd = params.bz_pass or bz_cfg.get('password')
@@ -452,10 +455,11 @@ class Bugzilla(Component):
         while bz.bug_status == 'CLOSED' and bz.resolution == 'DUPLICATE':
             try:
                 bz_id = bz.dupe_of
-                bz = self.bz(bz.dupe_of)
+                bz = self.bz(bz_id)
             except BugNotFound as ex:
-                logger.error("failed to get duplicate BZ<%s> info: %s",
-                             bz.bz_id, ex)
+                logger.error(
+                    "failed to get duplicate BZ<%s> info: %s", bz_id, ex,
+                )
                 return
 
         # check if the bz is open for the current engine
