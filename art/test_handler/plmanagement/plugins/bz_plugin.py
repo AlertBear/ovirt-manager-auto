@@ -515,9 +515,15 @@ class Bugzilla(Component):
         """
         if getattr(bug, 'version', None):
             version = expect_list(bug, 'version')
-            version = [x for x in version if x != 'unspecified']
+            version = [
+                x for x in version if x not in ('unspecified', '---')
+            ]
             for v in version:
-                v = Version(v)
+                try:
+                    v = Version(v)
+                except (ValueError, TypeError):
+                    logger.warn("The BZ %s has invalid version: %s", bug.id, v)
+                    continue
                 if v in self.version:
                     break
             else:
