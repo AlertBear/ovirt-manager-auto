@@ -1,0 +1,60 @@
+---
+formatters:
+  coloredFormatter:
+    format: "%(asctime)s - %(threadName)s - %(name)s - %(levelname)s - %(message)s"
+    class: utilities.logger_utils.ColoredFormatter
+  fileFormatter:
+    format: "%(asctime)s - %(threadName)s - %(name)s - %(levelname)s - %(message)s"
+handlers:
+  consoleHandler:
+    class: StreamHandler
+    level: INFO
+    formatter: coloredFormatter
+    stream: ext://sys.stdout
+  fileHandler:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    formatter: fileFormatter
+    1filename: "%(logfile)s"
+    2mode: a
+    3maxBytes: 31457280
+    4backupCount: 10
+    5encoding: utf-8
+  duplicateFileHandler:
+    class: utilities.logger_utils.DuplicateFileHandler
+    level: DEBUG
+    formatter: fileFormatter
+# NOTE: once we move to py2.7, we can get rid of number prefix
+# it is here just because ordering. with dictConfig it is not necessary.
+    1filename: "%(logfile)s"
+    2mode: a
+    3maxBytes: 31457280
+    4backupCount: 10
+    5encoding: utf-8
+  duplicateConsoleHandler:
+    class: utilities.logger_utils.DuplicateConsoleHandler
+    level: INFO
+    formatter: coloredFormatter
+    stream: ext://sys.stdout
+  devnull:
+    class: utilities.logger_utils.NullHandler
+    level: DEBUG
+loggers:
+  art:
+    level: DEBUG
+    handlers:
+      - duplicateFileHandler
+      - duplicateConsoleHandler
+    qualname: art
+    propagate: 0
+  root:
+    level: DEBUG
+    handlers:
+      - fileHandler
+      - consoleHandler
+  requests:
+    level: DEBUG
+    handlers:
+      - devnull
+    qualname: requests.packages.urllib3.connectionpool
+    propagate: 0

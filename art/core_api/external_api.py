@@ -26,7 +26,7 @@ from utilities.logger_utils import initialize_logger
 from art.test_handler import find_config_file
 
 ELEMENTS = "conf/elements.conf"
-LOGGER_ART_CONF = "conf/logger_art.conf"
+LOGGER_ART_CONF = "conf/logger_art.yaml"
 
 
 class TestRunnerWrapper():

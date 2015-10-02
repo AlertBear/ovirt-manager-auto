@@ -19,7 +19,7 @@ from art.test_handler.settings import ReturnCode as RC, dump_stacks
 from art.test_handler.handler_lib.configs import ValidationError
 from art.test_handler import find_config_file
 
-LOGGER_ART_CONF = 'conf/logger_art.conf'
+LOGGER_ART_CONF = 'conf/logger_art.yaml'
 
 logger = logging.getLogger(__name__)
 
