@@ -362,24 +362,6 @@ single value or a list of values (separated by commas). Different
 place-holders can access the parameters from the test scenario file.
 
 
-[REPORT] section
-----------------
-
-This section defines the parameters required for test result reporting.
-
--   **has_sub_tests** - 'yes' if each test is to be reported as a
-    sub-test of its group/testing module; 'no' if each test is to be
-    reported independently.
-
--   **add_report_nodes** - lists the nodes' names when additional
-    nodes beside the default ones (as defined in input xml nodes) need
-    to be added to report; otherwise 'no' is used. Example of an added
-    nodes format string: add_report_nodes=version, name.
-
-.. note::
-
-    If you need to add additional nodes to the report, ensure the function that you use in your test scenario returns that properties in its output dictionary.
-
 Defining spec files
 -------------------
 
@@ -839,82 +821,7 @@ can be done by decorating your function. ::
 
     return status
 
-Running with different input files
-==================================
 
-You can create your test scenario in three formats: XML file, ODS
-Spreadsheet or Python script. The examples below show how to define
-test cases for these formats.
-
-Running from ODS file
----------------------
-
-Open an .ods spreadsheet and define the following column headers:
-
-test_name, test_action, parameters , positive, run, report, and all
-other required tests attributes. After defining the column headers, each
-test case will represent a new line in your .ods file. To create a test
-case, add a new line and fill each cell according to the column it
-belongs to.
-
-Here is an example of a test scenario in an .ods file:
-
-.. image:: _images/ods.jpg
-   :height: 850px
-   :width: 1440px
-   :scale: 100 %
-   :alt: ART Structure
-   :align: left
-
-Running from XML file
----------------------
-
-Here is an example of an xml input file::
-
-    <input>
-    <test_case>
-       <test_name>START_GROUP: Test1</test_name>
-       <test_action/>
-       <parameters/>
-       <positive/>
-       <run>loop(5)</run>
-       <report/>
-    </test_case>
-    <test_case>
-       <test_name>Create NFS Data Center</test_name>
-       <test_action>addDataCenter</test_action>
-       <parameters>name='dc1',storage_type='NFS',version='2.2'</parameters>
-       <positive>TRUE</positive>
-       <run>yes</run>
-    </test_case>
-    <test_case>
-       <test_name>END_GROUP: Test</test_name>
-       <test_action/>
-       <parameters/>
-       <positive/>
-       <run/>
-       <report/>
-    </test_case>
-    </input>
-
-Running from Python script
---------------------------
-
-Here is an example of how to run a test case from a Python script::
-
-    from test_handler.python_runner import TestCase
-    def addCluster():
-            test = TestCase()
-            test.name = 'Add Cluster'
-            test.action = 'addCluster'
-            test.positive = True
-            name = test.config['PARAMETERS'].get('cluster_name')
-            version = test.config['PARAMETERS'].get('compatibility_version')
-            test.params = "name='{0}', version='{1}', cluster='Test',\
-                           wait=False".format(name, version)
-            test.run()
-            test.logger.info(test.status)
-            test.logger.info(test.output)
 Reports
 =======
 
