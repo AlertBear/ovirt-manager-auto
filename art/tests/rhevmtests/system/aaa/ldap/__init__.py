@@ -31,4 +31,5 @@ def setup_module():
 def teardown_module():
     common.removeTrustStore(config.TRUSTSTORE)
     common.cleanExtDirectory(config.ENGINE_EXTENSIONS_DIR)
+    common.cleanExtDirectory(config.AAA_DIR)
     common.enableExtensions(config.OVIRT_SERVICE, config.ENGINE_HOST)
