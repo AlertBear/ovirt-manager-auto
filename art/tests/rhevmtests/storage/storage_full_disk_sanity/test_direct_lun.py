@@ -131,7 +131,7 @@ class DirectLunAttachTestCase(TestCase):
         self.detach_and_delete_disk_from_vm(self.disk_alias)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5927(DirectLunAttachTestCase):
     """
     Attach a lun when vm is running
@@ -153,7 +153,7 @@ class TestCase5927(DirectLunAttachTestCase):
         self.attach_disk_to_vm()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5920(DirectLunAttachTestCase):
     """
     Suspend vm with direct lun attached
@@ -178,7 +178,7 @@ class TestCase5920(DirectLunAttachTestCase):
         super(TestCase5920, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5930(DirectLunAttachTestCase):
     """
     Add more then one direct lun to the same vm
@@ -216,7 +216,7 @@ class TestCase5930(DirectLunAttachTestCase):
         self.detach_and_delete_disk_from_vm(self.disk_to_add)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5931(DirectLunAttachTestCase):
     """
     Attach lun vm, create a template and verify the direct lun will not be
@@ -249,7 +249,7 @@ class TestCase5931(DirectLunAttachTestCase):
         super(TestCase5931, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5932(DirectLunAttachTestCase):
     """
     attach lun to vm, run vm as stateless and create snapshot.
@@ -288,7 +288,7 @@ class TestCase5932(DirectLunAttachTestCase):
         super(TestCase5932, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5933(DirectLunAttachTestCase):
     """
     Attach lun to vm and verify the direct lun will not be
@@ -328,7 +328,7 @@ class TestCase5933(DirectLunAttachTestCase):
         super(TestCase5933, self).tearDown()
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase5934(DirectLunAttachTestCase):
     """
     HA vm with direct lun
@@ -360,7 +360,7 @@ class TestCase5934(DirectLunAttachTestCase):
         super(TestCase5934, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5937(DirectLunAttachTestCase):
     """
     direct lun and disk interface
@@ -405,7 +405,7 @@ class TestCase5937(DirectLunAttachTestCase):
         wait_for_jobs([ENUMS['job_remove_disk']])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5938(DirectLunAttachTestCase):
     """
     direct lun as bootable disk
@@ -432,7 +432,7 @@ class TestCase5938(DirectLunAttachTestCase):
         wait_for_jobs([ENUMS['job_remove_disk']])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5939(DirectLunAttachTestCase):
     """
     shared disk from direct lun
@@ -459,7 +459,7 @@ class TestCase5939(DirectLunAttachTestCase):
         wait_for_jobs([ENUMS['job_remove_disk']])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5940(DirectLunAttachTestCase):
     """
     move vm with direct lun
@@ -494,7 +494,7 @@ class TestCase5940(DirectLunAttachTestCase):
         super(TestCase5940, self).tearDown()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase5924(DirectLunAttachTestCase):
     """
     Full flow direct lun
@@ -521,7 +521,7 @@ class TestCase5924(DirectLunAttachTestCase):
         pass
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5911(DirectLunAttachTestCase):
     """
     remove a vm with a direct lun
@@ -554,7 +554,7 @@ class TestCase5911(DirectLunAttachTestCase):
             super(TestCase5911, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5913(DirectLunAttachTestCase):
     """
     Direct lun - wipe after delete

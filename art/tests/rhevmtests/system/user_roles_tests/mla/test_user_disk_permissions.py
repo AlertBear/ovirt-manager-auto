@@ -65,7 +65,7 @@ def tearDownModule():
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class DPCase147121(TestCase):
     """
     Check if SD has assigned permissions, then all disks in SD has inherit
@@ -131,7 +131,7 @@ class DPCase147121(TestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class DPCase14722_2(TestCase):
     """
     User should not be able to create disk if he has not create disk AG
@@ -174,7 +174,7 @@ class DPCase14722_2(TestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class DPCase147122(TestCase):
     """
     If user want create disks, he needs to have permissions on SD.
@@ -221,7 +221,7 @@ class DPCase147122(TestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class DPCase147123(TestCase):
     """ General subcalss for TestCase 147123 """
     __test__ = False
@@ -308,7 +308,7 @@ class DPCase147123_3(DPCase147123):
     pos = True
 
 
-@attr(tier=1)
+@attr(tier=2)
 class DPCase147124(TestCase):
     """
     General case for detach disk
@@ -368,7 +368,7 @@ class DPCase147124_2(DPCase147124):
     pos = False
 
 
-@attr(tier=1)
+@attr(tier=2)
 class DPCase147125(TestCase):
     """
     To activate/deactivate user must have an manipulate permissions on VM.
@@ -412,7 +412,7 @@ class DPCase147125(TestCase):
         vms.removeVm(True, config.VM_NAME)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class DPCase147126(TestCase):
     """
     User has to have delete_disk action group in order to remove disk.
@@ -469,7 +469,7 @@ class DPCase147126(TestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class DPCase147127(TestCase):
     """
     User has to have edit_disk_properties action group in order to remove disk.
@@ -506,7 +506,7 @@ class DPCase147127(TestCase):
         vms.removeVm(True, config.VM_NAME)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class DPCase147128(TestCase):
     """
     Move or copy disk requires permissions on the disk and on the target sd.
@@ -598,7 +598,7 @@ class DPCase147128(TestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class DPCase147129(TestCase):
     """
     Add disk to VM requires both permissions on the VM and on the sd
@@ -679,7 +679,7 @@ class DPCase147129(TestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class DPCase147130(TestCase):
     """
     If disks are marked for deletion requires permissions on the removed
@@ -737,7 +737,7 @@ class DPCase147130(TestCase):
         LOGGER.info("User can remove vm as UserVmManager, DiskOperator on vm")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class DPCase147137(TestCase):
     """
     Create/attach/edit/delete shared disk.

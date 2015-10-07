@@ -49,7 +49,7 @@ def tearDownModule():
         assert common.removeUser(True, user)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetworkingPossitive(NetworkingNegative):
     __test__ = False
 

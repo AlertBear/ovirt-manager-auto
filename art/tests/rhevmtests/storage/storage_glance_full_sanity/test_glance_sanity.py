@@ -188,7 +188,7 @@ class BasicEnvironment(BaseTestCase):
             assert hi_vms.startVm(True, self.vm_name, wait_for_ip=True)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase5734(BasicEnvironment):
     """
     Import a glance image as a template, then create a VM from this template
@@ -212,7 +212,7 @@ class TestCase5734(BasicEnvironment):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5735(BasicEnvironment):
     """
     Import multiple disks as templates
@@ -248,7 +248,7 @@ class TestCase5735(BasicEnvironment):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5736(BasicEnvironment):
     """
     Import a glance template multiple times
@@ -269,7 +269,7 @@ class TestCase5736(BasicEnvironment):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5738(BasicEnvironment):
     """
     Import the same image both as a template and as disk
@@ -322,7 +322,7 @@ class TestCase5738(BasicEnvironment):
                     "repository succeeded")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5739(BasicEnvironment):
     """
     Import glance image multiple times as a template
@@ -346,7 +346,7 @@ class TestCase5739(BasicEnvironment):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5741(BasicEnvironment):
     """
     Create multiple VMs using import from a glance template
@@ -383,7 +383,7 @@ class TestCase5741(BasicEnvironment):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5743(BasicEnvironment):
     """
     Copy image of imported template image
@@ -412,7 +412,7 @@ class TestCase5743(BasicEnvironment):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5746(BasicEnvironment):
     """
     Change disk interface

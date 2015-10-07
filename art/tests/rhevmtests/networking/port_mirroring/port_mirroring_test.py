@@ -26,7 +26,7 @@ NET2_IPS = conf.NET2_IPS
 VM_NAME = conf.VM_NAME
 
 
-@attr(tier=1, extra_reqs={'network_hosts': True})
+@attr(tier=2, extra_reqs={'network_hosts': True})
 class TestPortMirroringCase01(TestCase):
     """
     Check that mirroring still works after migration
@@ -98,7 +98,7 @@ class TestPortMirroringCase01(TestCase):
         helper.return_vms_to_original_host()
 
 
-@attr(tier=1, extra_reqs={'network_hosts': True})
+@attr(tier=2, extra_reqs={'network_hosts': True})
 class TestPortMirroringCase02(TestCase):
     """
     Replace network on the mirrored VM to a non-mirrored network
@@ -134,7 +134,7 @@ class TestPortMirroringCase02(TestCase):
             )
 
 
-@attr(tier=1, extra_reqs={'network_hosts': True})
+@attr(tier=2, extra_reqs={'network_hosts': True})
 class TestPortMirroringCase03(TestCase):
     """
     Check mirroring when listening on multiple networks on the same machine
@@ -155,7 +155,7 @@ class TestPortMirroringCase03(TestCase):
         )
 
 
-@attr(tier=1, extra_reqs={'network_hosts': True})
+@attr(tier=2, extra_reqs={'network_hosts': True})
 class TestPortMirroringCase04(TestCase):
     """
     Check port mirroring when it's enabled on multiple machines.
@@ -245,7 +245,7 @@ class TestPortMirroringCase04(TestCase):
             )
 
 
-@attr(tier=1, extra_reqs={'network_hosts': True})
+@attr(tier=2, extra_reqs={'network_hosts': True})
 class TestPortMirroringCase05(TestCase):
     """
     Restart VDSM on host while mirroring is on
@@ -280,7 +280,7 @@ class TestPortMirroringCase05(TestCase):
             )
 
 
-@attr(tier=1, extra_reqs={'network_hosts': True})
+@attr(tier=2, extra_reqs={'network_hosts': True})
 class TestPortMirroringCase06(TestCase):
     """
     Check that mirroring still occurs after down/UP listening bridge on the

@@ -19,7 +19,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as host_api
 logger = logging.getLogger(__name__)
 
 
-@attr(tier=3)
+@attr(tier=4)
 class BaseNumaClass(TestCase):
     """
     Base class for Numa Test

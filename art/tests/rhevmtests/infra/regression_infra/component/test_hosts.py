@@ -37,7 +37,7 @@ def teardown_module():
     help_functions.utils.clean_environment()
 
 
-@attr(team='automationInfra', tier=0)
+@attr(team='automationInfra', tier=1)
 class TestCaseHost(TestCase):
     """
     Host sanity tests for basic functionality

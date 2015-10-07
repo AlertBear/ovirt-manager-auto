@@ -46,7 +46,7 @@ def run_once_with_boot_dev(boot_device):
 ########################################################################
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestRunVmOnce(TestCase):
     """
     Run once
@@ -201,7 +201,7 @@ class TestRunVmOnce(TestCase):
 ########################################################################
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestRunVmOnceStatelessNoDisk(TestCase):
     """
     Test run once VM without disk in stateless mode
@@ -261,7 +261,7 @@ class TestRunVmOnceStatelessNoDisk(TestCase):
 ########################################################################
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestNegativeBootFromNetwork(TestCase):
     """
     Test run once, negative test that boot from network
@@ -309,7 +309,7 @@ class TestNegativeBootFromNetwork(TestCase):
 ########################################################################
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TesNegativeHAStatelessVM(TestCase):
     """
     Test run once, negative test that run once HA VM in stateless mode

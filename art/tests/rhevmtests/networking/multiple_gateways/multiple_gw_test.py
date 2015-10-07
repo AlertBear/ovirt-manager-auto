@@ -42,7 +42,7 @@ def setup_module():
     HOST_NICS = config.VDS_HOSTS[0].nics
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestGatewaysCase1(TestCase):
     """
     Verify you can configure additional network beside MGMT with gateway
@@ -111,7 +111,7 @@ class TestGatewaysCase1(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestGatewaysCase2(TestCase):
     """
     Verify you can configure additional VLAN network with static IP and gateway
@@ -170,7 +170,7 @@ class TestGatewaysCase2(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestGatewaysCase3(TestCase):
     """
     Verify you can configure additional bridgeless network with static IP.
@@ -227,7 +227,7 @@ class TestGatewaysCase3(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestGatewaysCase4(TestCase):
     """
     Verify you can configure additional display network with static ip config.
@@ -285,7 +285,7 @@ class TestGatewaysCase4(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestGatewaysCase5(TestCase):
     """
     Try to assign to vm network incorrect static IP and gw addresses
@@ -374,7 +374,7 @@ class TestGatewaysCase5(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestGatewaysCase6(TestCase):
     """
     Verify you can configure additional network with gateway 0.0.0.0
@@ -416,7 +416,7 @@ class TestGatewaysCase6(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestGatewaysCase7(TestCase):
     """
     Verify you can add additional NIC to the already created bond
@@ -503,7 +503,7 @@ class TestGatewaysCase7(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestGatewaysCase8(TestCase):
     """
     Verify you can remove Nic from bond having network with gw configured on it
@@ -591,7 +591,7 @@ class TestGatewaysCase8(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestGatewaysCase9(TestCase):
     """
     Verify you can configure additional network without gateway

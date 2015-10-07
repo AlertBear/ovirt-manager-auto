@@ -55,7 +55,7 @@ MAX = 1
 ########################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class MOM(TestCase):
     """
     Base class for vm watchdog operations

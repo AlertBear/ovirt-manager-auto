@@ -12,7 +12,7 @@ ENUMS = helpers.ENUMS
 NFS = config.STORAGE_TYPE_NFS
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4816(helpers.TestCaseNFSOptions):
     """
     Imports existing storage domain with custom advanced NFS options.
@@ -72,7 +72,7 @@ class TestCase4816(helpers.TestCaseNFSOptions):
             self.fail("NFS option %s not as expected %s, real %s" % result)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4829(helpers.TestCaseNFSOptions):
     """
     Negative test - tests if passed values are correctly validated.
@@ -143,7 +143,7 @@ class TestCase4829(helpers.TestCaseNFSOptions):
                 config.VDC_PASSWORD)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase4826(helpers.TestCaseNFSOptions):
     """
     Creates NFS data storage domain without specifying advanced NFS options and
@@ -177,7 +177,7 @@ class TestCase4826(helpers.TestCaseNFSOptions):
         self.sds_for_cleanup.append(self.name)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4830(helpers.TestCaseNFSOptions):
     """
     Creates ISO and export storage domains with custom advanced NFS options
@@ -223,7 +223,7 @@ class TestCase4830(helpers.TestCaseNFSOptions):
         self._create_and_check(ENUMS['storage_dom_type_iso'], 'iso', 1)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4822(helpers.TestCaseNFSOptions):
     """
     Creates multiple storage domains with different custom advanced NFS options
@@ -266,7 +266,7 @@ class TestCase4822(helpers.TestCaseNFSOptions):
         self.create_nfs_domain_and_verify_options(nfs_resources)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4821(helpers.TestCaseNFSOptions):
     """
     Test steps:
@@ -334,7 +334,7 @@ class TestCase4821(helpers.TestCaseNFSOptions):
         logger.info("Test passed")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4818(helpers.TestCaseNFSOptions):
     """
     Test checks that removing and destroying NFS storage domain with custom

@@ -43,7 +43,7 @@ logger = logging.getLogger("VNIC_Profile_Cases")
 #                             Test Cases                               #
 ########################################################################
 
-@attr(tier=1)
+@attr(tier=2)
 class TestVNICProfileCase01(TestCase):
 
     """
@@ -96,7 +96,7 @@ class TestVNICProfileCase01(TestCase):
             logger.error("Cannot remove DC %s from setup", cls.dc_name2)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestVNICProfileCase02(TestCase):
 
     """
@@ -169,7 +169,7 @@ class TestVNICProfileCase02(TestCase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestVNICProfileCase03(TestCase):
 
     """
@@ -246,7 +246,7 @@ class TestVNICProfileCase03(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestVNICProfileCase04(TestCase):
 
     """
@@ -325,7 +325,7 @@ class TestVNICProfileCase04(TestCase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestVNICProfileCase05(TestCase):
 
     """
@@ -391,7 +391,7 @@ class TestVNICProfileCase05(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestVNICProfileCase06(TestCase):
 
     """
@@ -473,7 +473,7 @@ class TestVNICProfileCase06(TestCase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestVNICProfileCase07(TestCase):
 
     """
@@ -545,7 +545,7 @@ class TestVNICProfileCase07(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestVNICProfileCase08(TestCase):
 
     """
@@ -683,7 +683,7 @@ class TestVNICProfileCase08(TestCase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestVNICProfileCase09(TestCase):
 
     """
@@ -826,7 +826,7 @@ class TestVNICProfileCase09(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestVNICProfileCase10(TestCase):
 
     """
@@ -935,7 +935,7 @@ class TestVNICProfileCase10(TestCase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestVNICProfileCase11(TestCase):
 
     """
@@ -1122,7 +1122,7 @@ class TestVNICProfileCase11(TestCase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestVNICProfileCase12(TestCase):
 
     """
@@ -1180,7 +1180,7 @@ class TestVNICProfileCase12(TestCase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestVNICProfileCase13(TestCase):
 
     """
@@ -1260,7 +1260,7 @@ class TestVNICProfileCase13(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestVNICProfileCase14(TestCase):
 
     """
@@ -1334,7 +1334,7 @@ class TestVNICProfileCase14(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestVNICProfileCase15(TestCase):
 
     """

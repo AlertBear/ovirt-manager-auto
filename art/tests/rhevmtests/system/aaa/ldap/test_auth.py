@@ -28,7 +28,7 @@ def teardown_module():
     common.removeFile(conf)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class DirectLogin(TestCase):
     """
     TestCase to add user, assign him permissions and try to login.

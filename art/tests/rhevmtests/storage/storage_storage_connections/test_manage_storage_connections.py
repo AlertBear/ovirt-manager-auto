@@ -242,7 +242,7 @@ class TestCasePosixFS(TestCasePosix):
             type='posixfs')[1]
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase5251(TestCasePosixFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -262,7 +262,7 @@ class TestCase5251(TestCasePosixFS):
         self.positive_flow(NFS)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase5250(TestCaseNFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -282,7 +282,7 @@ class TestCase5250(TestCaseNFS):
         self.positive_flow(NFS)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5255(TestCasePosixFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -304,7 +304,7 @@ class TestCase5255(TestCasePosixFS):
         self.change_connection_in_active_sd()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5254(TestCaseNFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -326,7 +326,7 @@ class TestCase5254(TestCaseNFS):
         self.change_connection_in_active_sd()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5253(TestCaseNFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -410,7 +410,7 @@ class TestCase5253(TestCaseNFS):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5257(TestCaseNFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -476,7 +476,7 @@ class TestCase5257(TestCaseNFS):
         super(TestCase5257, self).tearDown()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase5252(TestCaseLocalFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -532,7 +532,7 @@ class TestCase5252(TestCaseLocalFS):
         super(TestCase5252, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5256(TestCaseLocalFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/

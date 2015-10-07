@@ -28,7 +28,7 @@ logger = logging.getLogger("Network_Filter_Cases")
 ########################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetworkFilterCase01(TestCase):
     """
     Check that Network Filter is enabled by default
@@ -81,7 +81,7 @@ class TestNetworkFilterCase01(TestCase):
 ##############################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetworkFilterCase02(TestCase):
     """
     Check that network filter is enabled for hot-plug  NIC to on VM
@@ -140,7 +140,7 @@ class TestNetworkFilterCase02(TestCase):
 ##############################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetworkFilterCase03(TestCase):
     """
     Check that Network Filter is enabled via ebtables on running VM and
@@ -200,7 +200,7 @@ class TestNetworkFilterCase03(TestCase):
 ##############################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetworkFilterCase04(TestCase):
     """
     Check that Network Filter is disabled via ebtables on after VNIC hot-plug
@@ -276,7 +276,7 @@ class TestNetworkFilterCase04(TestCase):
 ##############################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetworkFilterCase05(TestCase):
     """
     Disabling network filter then check that VM run without network filter.

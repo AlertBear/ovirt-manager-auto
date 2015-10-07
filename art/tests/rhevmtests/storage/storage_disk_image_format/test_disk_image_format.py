@@ -33,7 +33,7 @@ VM_ARGS = {
 }
 
 
-@attr(tier=1)
+@attr(tier=2)
 class BaseTestDiskImage(TestCase):
     """
     Base Test Class for test plan:

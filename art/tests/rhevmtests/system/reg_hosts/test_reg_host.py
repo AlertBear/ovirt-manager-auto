@@ -121,7 +121,7 @@ class TestHostInMaintenance(TestCase):
                 raise HostException("cannot activate host: %s" % HOST)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestActivateActiveHost(TestActiveHost):
     """
     Negative - Try to activate an active host - should fail
@@ -136,7 +136,7 @@ class TestActivateActiveHost(TestActiveHost):
             hosts.activateHost(True, host=HOST))
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestUpdateHostName(TestCase):
     """
     Positive  - Update host's name
@@ -162,7 +162,7 @@ class TestUpdateHostName(TestCase):
             raise HostException("Cannot change host %s's name" % HOST)
 
 
-@attr(tier=0, extra_reqs={'pm': PM1_TYPE})
+@attr(tier=1, extra_reqs={'pm': PM1_TYPE})
 class TestAddRemovePowerManagement(TestCase):
     """
     Positive - add power management to host then remove it
@@ -183,7 +183,7 @@ class TestAddRemovePowerManagement(TestCase):
         remove_power_management(host=HOST, pm_type=PM1_TYPE)
 
 
-@attr(tier=0, extra_reqs={'pm': PM1_TYPE})
+@attr(tier=1, extra_reqs={'pm': PM1_TYPE})
 class TestUpdatePowerManagementType(TestPowerManagement):
     """
     Positive - update power management type on host
@@ -207,7 +207,7 @@ class TestUpdatePowerManagementType(TestPowerManagement):
                                 " in host: %s" % HOST)
 
 
-@attr(tier=0, extra_reqs={'pm': PM1_TYPE})
+@attr(tier=1, extra_reqs={'pm': PM1_TYPE})
 class TestUpdatePowerManagementInvalidType(TestPowerManagement):
     """
     Negative - update power management type on host
@@ -234,7 +234,7 @@ class TestUpdatePowerManagementInvalidType(TestPowerManagement):
 
 
 @bz({'1136061': {}})
-@attr(tier=0)
+@attr(tier=1)
 class SetSPMToLow(TestCase):
     """
     Positive - Set SPM priority on host to low
@@ -270,7 +270,7 @@ class SetSPMToLow(TestCase):
                                 " %s to normal" % HOST)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class UpdateIPOfActiveHost(TestActiveHost):
     """
     Negative - update ip address on the active host expecting failure
@@ -292,7 +292,7 @@ class UpdateIPOfActiveHost(TestActiveHost):
             raise HostException("Cannot change address for host %s" % HOST)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class SetActiveHostToMaintenanceForReinstallation(TestActiveHost):
     """
     Positive = set host to maintenance
@@ -307,7 +307,7 @@ class SetActiveHostToMaintenanceForReinstallation(TestActiveHost):
             raise HostException("Could not set host: %s to maintenance" % HOST)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class ReinstallHost(TestHostInMaintenance):
     """
     Positive - Reinstall host using password authentication
@@ -330,7 +330,7 @@ class ReinstallHost(TestHostInMaintenance):
 # installation of rhevh - here or in rhevh test suite??
 
 
-@attr(tier=0)
+@attr(tier=1)
 class ManualFenceForHost(TestHostInMaintenance):
     """
     Positive - Manual fence host
@@ -345,7 +345,7 @@ class ManualFenceForHost(TestHostInMaintenance):
             raise HostException("Manual fence for host: %s failed" % HOST)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class ActivateInactiveHost(TestHostInMaintenance):
     """
     Positive - activate host
@@ -360,7 +360,7 @@ class ActivateInactiveHost(TestHostInMaintenance):
             raise HostException("host activation failed")
 
 
-@attr(tier=0)
+@attr(tier=1)
 class ReinstallActiveHost(TestActiveHost):
     """
     Negative - re install host when active should fail
@@ -377,7 +377,7 @@ class ReinstallActiveHost(TestActiveHost):
                                 "host is active" % HOST)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class CreateHostWithWrongIPAddress(TestCase):
     """
     Negative - add host with wrong ip
@@ -401,7 +401,7 @@ class CreateHostWithWrongIPAddress(TestCase):
                 raise HostException("unable to remove host: %s" % cls.name)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class CreateHostWithEmptyRootPassword(TestCase):
     """
     Negative - add host without filling out the root password field
@@ -425,7 +425,7 @@ class CreateHostWithEmptyRootPassword(TestCase):
                 raise HostException("unable to remove host: %s" % cls.name)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class RemoveActiveHost(TestActiveHost):
     """
     Negative - attempt to remove host while active
@@ -445,7 +445,7 @@ class RemoveActiveHost(TestActiveHost):
         _add_host_if_missing()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class SearchForHost(TestCase):
     """
     Positive - send a query to search for host
@@ -468,7 +468,7 @@ class SearchForHost(TestCase):
             raise HostException("couldn't find host %s" % HOST)
 
 
-@attr(tier=0, extra_reqs={'pm': PM1_TYPE})
+@attr(tier=1, extra_reqs={'pm': PM1_TYPE})
 class AddSecondaryPowerManagement(TestPowerManagement):
     """
     Positive - add secondary power management

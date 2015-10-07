@@ -31,7 +31,7 @@ class Configuration(TestCase):
         return extName in DOMAIN_NAMES
 
 
-@attr(tier=1)
+@attr(tier=2)
 class WrongConfiguration(Configuration):
     '''
     Test if wrong configuration is ignored.
@@ -46,7 +46,7 @@ class WrongConfiguration(Configuration):
         self.assertFalse(self._isExtensionAvailable(self.conf['authz_name']))
 
 
-@attr(tier=1)
+@attr(tier=2)
 class DisabledConfiguration(Configuration):
     '''
     Test if disabled configuration is ignored.

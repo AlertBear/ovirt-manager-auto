@@ -84,7 +84,7 @@ def teardown_module():
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11843(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=1000789

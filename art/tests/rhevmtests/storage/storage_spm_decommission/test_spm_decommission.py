@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 TIMEOUT_SD_OPERATION = 300
 
 
-@attr(tier=1)
+@attr(tier=2)
 class ActivateDeactivate(StorageTest):
     """
     Test for race condition while activating and deactivating storage domains
@@ -124,7 +124,7 @@ class ActivateDeactivateMixedStorageTypes(ActivateDeactivate):
         )[0]
 
 
-@attr(tier=1)
+@attr(tier=2)
 class UpgradeBaseClass(StorageTest):
     """
     Test behaviour of an upgraded data center

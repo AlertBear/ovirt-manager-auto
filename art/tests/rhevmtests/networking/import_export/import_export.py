@@ -32,7 +32,7 @@ logger = logging.getLogger("Import_Export_Cases")
 ########################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestIECase01(TestCase):
     """
     Check that VM could be imported with all the networks
@@ -119,7 +119,7 @@ class TestIECase01(TestCase):
                 logger.error("Couldn't remove imported VM %s", vm)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestIECase02(TestCase):
     """
     Check that Template created in the same DC version could be imported with
@@ -218,7 +218,7 @@ class TestIECase02(TestCase):
                 logger.error("Couldn't remove imported Template %s", template)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestIECase03(TestCase):
     """
     Check for the VM and template:

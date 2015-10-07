@@ -9,7 +9,7 @@ from rhevmtests.system.aaa.ldap import config, common
 logger = logging.getLogger(__name__)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class AuthBaseCase(TestCase):
     """ test login with user """
     __test__ = False

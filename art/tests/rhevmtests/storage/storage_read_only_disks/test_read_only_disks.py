@@ -287,7 +287,7 @@ class DefaultSnapshotEnvironment(DefaultEnvironment):
         super(DefaultSnapshotEnvironment, self).tearDown()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase4906(DefaultEnvironment):
     """
     Attach a RO disk to vm and try to write to the disk
@@ -313,7 +313,7 @@ class TestCase4906(DefaultEnvironment):
         helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4907(BaseTestCase):
     """
     Attach a RO direct LUN disk to vm and try to write to the disk
@@ -383,7 +383,7 @@ class TestCase4907(BaseTestCase):
                 logger.info("Failed to remove disk %s", self.disk_alias)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4908(DefaultEnvironment):
     """
     Attach a RO shared disk to vm and try to write to the disk
@@ -442,7 +442,7 @@ class TestCase4908(DefaultEnvironment):
         super(TestCase4908, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4909(DefaultEnvironment):
     """
     Verifies that RO shared disk is persistent after snapshot is taken to a
@@ -534,7 +534,7 @@ class TestCase4909(DefaultEnvironment):
         self.safely_remove_snapshot(self.vm_name, self.snapshot_description)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4910(BaseTestCase):
     """
     Checks that changing disk's write policy from RW to RO will fails
@@ -578,7 +578,7 @@ class TestCase4910(BaseTestCase):
             self.assertTrue(status, "Failed to change RW disk %s to RO" % disk)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4912(BaseTestCase):
     """
     Check that booting from RO disk should be impossible
@@ -600,7 +600,7 @@ class TestCase4912(BaseTestCase):
         """
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase4913(DefaultEnvironment):
     """
     Block connectivity from vdsm to the storage domain
@@ -709,7 +709,7 @@ class TestCase4913(DefaultEnvironment):
         super(TestCase4913, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4914(DefaultEnvironment):
     """
     Migrate a vm with RO disk, and check the disk is still visible as RO
@@ -770,7 +770,7 @@ class TestCase4914(DefaultEnvironment):
         super(TestCase4914, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4915(DefaultEnvironment):
     """
     Checks that suspending a vm with RO disk shouldn't
@@ -806,7 +806,7 @@ class TestCase4915(DefaultEnvironment):
         helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4917(DefaultEnvironment):
     """
     Import more than once VM with RO disk, and verify that it's impossible
@@ -888,7 +888,7 @@ class TestCase4917(DefaultEnvironment):
         super(TestCase4917, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4918(DefaultSnapshotEnvironment):
     """
     Check that the RO disk is part of vm snapshot, and also after preview
@@ -965,7 +965,7 @@ class TestCase4918(DefaultSnapshotEnvironment):
         self.safely_remove_snapshot(self.vm_name, self.snapshot_description)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4919(DefaultSnapshotEnvironment):
     """
     Check that the RO disk is part of vm snapshot, and the disk
@@ -1046,7 +1046,7 @@ class TestCase4919(DefaultSnapshotEnvironment):
         self.safely_remove_snapshot(self.vm_name, self.snapshot_description)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4920(DefaultSnapshotEnvironment):
     """
     Check that the RO disk is part of vm snapshot, and the disk
@@ -1143,7 +1143,7 @@ class TestCase4920(DefaultSnapshotEnvironment):
             wait_for_jobs([ENUMS['job_remove_snapshot']])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4921(DefaultSnapshotEnvironment):
     """
     Checks that deleting a snapshot with RO disk shouldn't effect
@@ -1218,7 +1218,7 @@ class TestCase4921(DefaultSnapshotEnvironment):
         super(TestCase4921, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4922(DefaultEnvironment):
     """
     Checks that a cloned vm from a snapshot with RO disk shouldn't
@@ -1315,7 +1315,7 @@ class TestCase4922(DefaultEnvironment):
         self.safely_remove_snapshot(self.vm_name, self.snapshot_description)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4923(DefaultEnvironment):
     """
     Create 2 VMs from a template with RO disk in 2 provisioning methods:
@@ -1411,7 +1411,7 @@ class TestCase4923(DefaultEnvironment):
         super(TestCase4923, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4924(DefaultEnvironment):
     """
     Checks that moving RO disk to a second storage domain will
@@ -1487,7 +1487,7 @@ class TestCase4924(DefaultEnvironment):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4925(DefaultEnvironment):
     """
     Checks that Live Storage Migration of RO disk should be possible
@@ -1548,7 +1548,7 @@ class TestCase4925(DefaultEnvironment):
         remove_all_vm_lsm_snapshots(self.vm_name)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4927(BaseTestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -1574,7 +1574,7 @@ class TestCase4927(BaseTestCase):
         pass
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4926(DefaultEnvironment):
     """
     Checks that Live Storage Migration of RW disk should be possible, even
@@ -1621,7 +1621,7 @@ class TestCase4926(DefaultEnvironment):
         move_vm_disk(self.vm_name, bootable, self.storage_domains[1])
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase4930(DefaultEnvironment):
     """
     Check that the VM sees its second disk as RO, after killing qemu process
@@ -1664,7 +1664,7 @@ class TestCase4930(DefaultEnvironment):
             logger.info("Failed to write to read only disk")
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase4931(BaseTestCase):
     """
     Restart vdsm during RO disk activation
@@ -1689,7 +1689,7 @@ class TestCase4931(BaseTestCase):
         """
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase4932(BaseTestCase):
     """
     Restart ovirt-engine during RO disk activation
@@ -1714,7 +1714,7 @@ class TestCase4932(BaseTestCase):
         """
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase4933(BaseTestCase):
     """
     Restart libvirt during RO disk activation
@@ -1741,7 +1741,7 @@ class TestCase4933(BaseTestCase):
         """
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4934(BaseTestCase):
     """
     Changing RW disk to RO while disk is plugged to a running VM

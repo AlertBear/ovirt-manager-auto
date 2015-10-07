@@ -26,7 +26,7 @@ import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 logger = logging.getLogger("Sanity_Cases")
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestSanityCase01(NetworkTest):
     """
     Validate that management network is required by default
@@ -51,7 +51,7 @@ class TestSanityCase01(NetworkTest):
             )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestSanityCase02(NetworkTest):
     """
     Attach network with static IP to host.
@@ -90,7 +90,7 @@ class TestSanityCase02(NetworkTest):
             logger.error("Failed to clean host interfaces")
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestSanityCase03(NetworkTest):
     """
     Check VM & non_VM networks
@@ -119,7 +119,7 @@ class TestSanityCase03(NetworkTest):
             )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestSanityCase04(NetworkTest):
     """
     Attach network to host
@@ -199,7 +199,7 @@ class TestSanityCase04(NetworkTest):
         helper.stop_vm()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestSanityCase05(NetworkTest):
     """
     1. Verify that the network is required
@@ -239,7 +239,7 @@ class TestSanityCase05(NetworkTest):
             )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestSanityCase06(NetworkTest):
     """
     Check Jumbo Frame - VLAN over Bond:
@@ -306,7 +306,7 @@ class TestSanityCase06(NetworkTest):
             )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestSanityCase07(NetworkTest):
     """
     Check that network filter is enabled for hot-plug NIC on VM
@@ -362,7 +362,7 @@ class TestSanityCase07(NetworkTest):
             logger.error("Failed to remove %s", conf.NIC_1)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestSanityCase08(NetworkTest):
     """
     Check Linking:
@@ -486,7 +486,7 @@ class TestSanityCase08(NetworkTest):
             )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestSanityCase09(NetworkTest):
     """
     Negative: Try to create Bond with exceeded name length (more than 15 chars)
@@ -602,7 +602,7 @@ class TestSanityCase09(NetworkTest):
             )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestSanityCase10(NetworkTest):
     """
     Configure ethtool and bridge opts with non-default value
@@ -724,7 +724,7 @@ class TestSanityCase10(NetworkTest):
             logger.error("Failed to clean host interfaces")
 
 
-@attr(tier=0, extra_reqs={'rhel': 7})
+@attr(tier=1, extra_reqs={'rhel': 7})
 class TestSanityCase11(NetworkTest):
     """
     Configure queue for existing network
@@ -784,7 +784,7 @@ class TestSanityCase11(NetworkTest):
         helper.stop_vm()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestSanityCase12(NetworkTest):
     """
     List all networks under datacenter.
@@ -865,7 +865,7 @@ class TestSanityCase12(NetworkTest):
             )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestSanityCase13(NetworkTest):
     """
     Update VM network to be non-VM network
@@ -971,7 +971,7 @@ class TestSanityCase13(NetworkTest):
             logger.error("Failed to clean host interfaces")
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestSanityCase14(NetworkTest):
     """
     Verify you can configure additional VLAN network with static IP and gateway
@@ -1024,7 +1024,7 @@ class TestSanityCase14(NetworkTest):
             logger.error("Failed to clean host interfaces")
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestSanityCase15(NetworkTest):
     """
     1) Put label on Host NIC of one Host
@@ -1078,7 +1078,7 @@ class TestSanityCase15(NetworkTest):
             logger.error("Couldn't remove labels from %s", conf.HOST_NICS[1])
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestSanityCase16(NetworkTest):
     """
     Add new network QOS
@@ -1194,7 +1194,7 @@ class TestSanityCase16(NetworkTest):
         helper.stop_vm()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestSanityCase17(NetworkTest):
     """
     Negative: Create more than 5 BONDS using dummy interfaces

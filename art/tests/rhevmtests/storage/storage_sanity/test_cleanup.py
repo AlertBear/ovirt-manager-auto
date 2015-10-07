@@ -13,7 +13,7 @@ from art.test_handler.tools import polarion  # pylint: disable=E0611
 logger = logging.getLogger(__name__)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11594(TestCase):
     """
     storage sanity test, clean up the environment

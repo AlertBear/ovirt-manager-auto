@@ -101,7 +101,7 @@ class GABaseTestCase(TestCase):
         assert cls.machine.isConnective(attempt=2)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class BasePostInstall(GABaseTestCase):
     """ rhevm-guest-agent post-install """
     cmd_chkconf = None
@@ -117,7 +117,7 @@ class BasePostInstall(GABaseTestCase):
         self.assertTrue(self.machine.runCmd(cmd_passwd)[0])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class BaseUninstallGA(GABaseTestCase):
     """ rhevm-guest-agent uninstall """
     package_manager = 'yum'
@@ -137,7 +137,7 @@ class BaseUninstallGA(GABaseTestCase):
                                            'install', self.package))
 
 
-@attr(tier=1)
+@attr(tier=2)
 class BaseServiceTest(GABaseTestCase):
     """ rhevm-guest-agent service test """
     os = None
@@ -161,7 +161,7 @@ class BaseServiceTest(GABaseTestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class BaseAgentDataUpdate(GABaseTestCase):
     """ rhevm-guest-agent agent function agent data update """
 
@@ -178,7 +178,7 @@ class BaseAgentDataUpdate(GABaseTestCase):
         pass
 
 
-@attr(tier=1)
+@attr(tier=2)
 class BaseAgentData(GABaseTestCase):
     """ rhevm-guest-agent agent data """
     success_msg = "%s of guest agent was successfull on %s"
@@ -277,7 +277,7 @@ class BaseAgentData(GABaseTestCase):
         self._check_guestIP()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class BaseFunctionContinuity(BaseAgentData):
     """ rhevm-guest-agent agent function continuity """
 
@@ -292,7 +292,7 @@ class BaseFunctionContinuity(BaseAgentData):
         self.agent_data()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class BaseInstallGA(GABaseTestCase):
     """ rhevm-guest-agent install """
     __test__ = False

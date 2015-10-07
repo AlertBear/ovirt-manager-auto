@@ -17,7 +17,7 @@ import time
 logger = logging.getLogger("Cumulative_RX_TX_Statistics_Cases")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class CumulativeHostStatisticsBase(TestCase):
     """
     Check Host statistics before the test

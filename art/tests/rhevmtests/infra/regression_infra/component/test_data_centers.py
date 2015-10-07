@@ -60,7 +60,7 @@ def remove_datacenter(dc_name):
     return datacenters.removeDataCenter(positive=True, datacenter=dc_name)
 
 
-@attr(team='automationInfra', tier=0)
+@attr(team='automationInfra', tier=1)
 class TestCaseDataCenter(TestCase):
     """
     Data Center sanity test the basic operations of data center

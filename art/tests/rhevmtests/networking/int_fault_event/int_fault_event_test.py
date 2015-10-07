@@ -59,7 +59,7 @@ class TestNicFaultTestCaseBase(TestCase):
                 logger.error("Couldn't set up nic %s", nic)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNicFault01(TestNicFaultTestCaseBase):
     """
     1. Attach label to host interface
@@ -92,7 +92,7 @@ class TestNicFault01(TestNicFaultTestCaseBase):
         helper.nic_fault()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNicFault02(TestNicFaultTestCaseBase):
     """
     1. Attach required network to host NIC
@@ -137,7 +137,7 @@ class TestNicFault02(TestNicFaultTestCaseBase):
         super(TestNicFault02, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNicFault03(TestNicFaultTestCaseBase):
     """
     Check empty NIC failure
@@ -152,7 +152,7 @@ class TestNicFault03(TestNicFaultTestCaseBase):
         helper.empty_nic_fault()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNicFault04(TestNicFaultTestCaseBase):
     """
     1. Attach label to BOND
@@ -204,7 +204,7 @@ class TestNicFault04(TestNicFaultTestCaseBase):
         helper.bond_fault()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNicFault05(TestNicFaultTestCaseBase):
     """
     1. Attach required network to BOND
@@ -259,7 +259,7 @@ class TestNicFault05(TestNicFaultTestCaseBase):
         super(TestNicFault05, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNicFault06(TestNicFaultTestCaseBase):
     """
     1. Create BOND without label or network attached.
@@ -297,7 +297,7 @@ class TestNicFault06(TestNicFaultTestCaseBase):
         helper.empty_bond_fault()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNicFault07(TestNicFaultTestCaseBase):
     """
     1. Attach non-required network to host NIC
@@ -334,7 +334,7 @@ class TestNicFault07(TestNicFaultTestCaseBase):
         helper.nic_fault()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNicFault08(TestNicFaultTestCaseBase):
     """
     1. Attach non-required network to BOND
@@ -376,7 +376,7 @@ class TestNicFault08(TestNicFaultTestCaseBase):
         helper.bond_fault()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNicFault09(TestNicFaultTestCaseBase):
     """
     1. Attach non-vm network to host NIC
@@ -413,7 +413,7 @@ class TestNicFault09(TestNicFaultTestCaseBase):
         helper.nic_fault()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNicFault10(TestNicFaultTestCaseBase):
     """
     1. Attach non-vm network to BOND

@@ -7,7 +7,7 @@ CONFIG_TEST_PLAN = 3727
 NAME = 'config'
 
 
-@attr(tier=0)
+@attr(tier=1)
 class ConfigTestCase(base.RHEVMUtilsTestCase):
 
     __test__ = True  # FIXME: change to True, when you implement this

@@ -213,7 +213,7 @@ def user_case(login_as=None, cleanup_func=None, **kwargs_glob):
     return decorator
 
 
-@attr(tier=2)
+@attr(tier=3)
 class CaseRoleActions(TestCase):
     """
     This class include all test actions, which role can have.

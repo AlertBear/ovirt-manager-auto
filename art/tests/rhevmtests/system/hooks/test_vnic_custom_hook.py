@@ -144,7 +144,7 @@ class TestCaseVnic(TestCase):
                                                            hook_name))
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCaseAfterBeforeNicHotplug(TestCaseVnic):
     """ after_before_nic_hotplug hook """
     __test__ = True
@@ -178,7 +178,7 @@ class TestCaseAfterBeforeNicHotplug(TestCaseVnic):
         sleep(SLEEP_TIME)  # Sleep to let nic receive network stats
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCaseAfterBeforeNicHotunplug(TestCaseVnic):
     """ before_after_nic_hotunplug hook """
     __test__ = True
@@ -206,7 +206,7 @@ class TestCaseAfterBeforeNicHotunplug(TestCaseVnic):
         self.check_for_files()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCaseAfterBeforeUpdateDevice(TestCaseVnic):
     """ before_after_update_device hook """
     __test__ = True
@@ -230,7 +230,7 @@ class TestCaseAfterBeforeUpdateDevice(TestCaseVnic):
         self.check_for_files()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCaseAfterUpdateDeviceFail(TestCaseVnic):
     """ after_update_device_fail hook """
     __test__ = True

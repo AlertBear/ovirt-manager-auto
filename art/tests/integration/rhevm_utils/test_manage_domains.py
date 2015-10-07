@@ -40,7 +40,7 @@ def _run_ssh_command(host, password, cmd):
     return out
 
 
-@attr(tier=2, extra_reqs={'utility': NAME})
+@attr(tier=3, extra_reqs={'utility': NAME})
 class ManageDomainsTestCaseBase(RHEVMUtilsTestCase):
     """
     rhevm-manage-domains testcase

@@ -56,7 +56,7 @@ def addUserWithClusterPermissions(user_name):
     )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class ActiveDirectory(TestCase):
     __test__ = False
 
@@ -107,7 +107,7 @@ class ActiveDirectory(TestCase):
 
     @istest
     @polarion("RHEVM3-7354")
-    @attr(tier=0)
+    @attr(tier=1)
     def disabledAccount(self):
         """ Disabled account """
         self._loginAsUser(config.DISABLED_ACC(self.domain))
@@ -116,7 +116,7 @@ class ActiveDirectory(TestCase):
 
     @istest
     @polarion("RHEVM3-7353")
-    @attr(tier=0)
+    @attr(tier=1)
     def expiredPassword(self):
         """ Expired password """
         self._loginAsUser(config.EXPIRED_PSW_NAME(self.domain))
@@ -125,7 +125,7 @@ class ActiveDirectory(TestCase):
 
     @istest
     @polarion("RHEVM3-7355")
-    @attr(tier=0)
+    @attr(tier=1)
     def expiredUser(self):
         """ Expired user """
         self._loginAsUser(config.EXPIRED_ACC_NAME(self.domain))
@@ -134,7 +134,7 @@ class ActiveDirectory(TestCase):
 
     @istest
     @polarion("RHEVM3-7349")
-    @attr(tier=0)
+    @attr(tier=1)
     def userFromGroup(self):
         """ Test if user from group can login """
         user_name = config.USER_FROM_GROUP(self.domain)

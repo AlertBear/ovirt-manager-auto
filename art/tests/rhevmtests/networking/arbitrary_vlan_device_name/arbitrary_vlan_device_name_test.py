@@ -45,7 +45,7 @@ class TestArbitraryVlanDeviceNameTearDown(TestCase):
         helper.job_tear_down()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestArbitraryVlanDeviceName01(TestArbitraryVlanDeviceNameTearDown):
     """
     1. Create VLAN entity with name on the host
@@ -86,7 +86,7 @@ class TestArbitraryVlanDeviceName01(TestArbitraryVlanDeviceNameTearDown):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestArbitraryVlanDeviceName02(TestArbitraryVlanDeviceNameTearDown):
     """
     1. Create empty BOND
@@ -138,7 +138,7 @@ class TestArbitraryVlanDeviceName02(TestArbitraryVlanDeviceNameTearDown):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestArbitraryVlanDeviceName03(TestArbitraryVlanDeviceNameTearDown):
     """
     1. Create 3 VLANs with name on the host
@@ -182,7 +182,7 @@ class TestArbitraryVlanDeviceName03(TestArbitraryVlanDeviceNameTearDown):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestArbitraryVlanDeviceName04(TestArbitraryVlanDeviceNameTearDown):
     """
     1. Create empty BOND
@@ -239,7 +239,7 @@ class TestArbitraryVlanDeviceName04(TestArbitraryVlanDeviceNameTearDown):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestArbitraryVlanDeviceName05(TestArbitraryVlanDeviceNameTearDown):
     """
     1. Create VLAN on NIC via SetupNetworks
@@ -314,7 +314,7 @@ class TestArbitraryVlanDeviceName05(TestArbitraryVlanDeviceNameTearDown):
         super(TestArbitraryVlanDeviceName05, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestArbitraryVlanDeviceName06(TestArbitraryVlanDeviceNameTearDown):
     """
     1. Create Non-VM network on NIC via SetupNetworks

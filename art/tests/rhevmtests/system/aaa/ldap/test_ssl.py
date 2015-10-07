@@ -14,7 +14,7 @@ from art.unittest_lib import attr, CoreSystemTest as TestCase
 LOGGER = logging.getLogger(__name__)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class ADTLS(TestCase):
     """
     Test if start tls connection to AD succeed.
@@ -49,7 +49,7 @@ class ADTLS(TestCase):
                             "User %s can't login." % principal)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class ADGroupWithSpacesInName(TestCase):
     """
     test login as user which is part of group with spaces in name

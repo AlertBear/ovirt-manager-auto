@@ -18,7 +18,7 @@ logger = logging.getLogger("Misc_Cases")
 DC_0 = config.DC_NAME[0]
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMisc01(TestCase):
     """
     1. Create new network called 'net-155'

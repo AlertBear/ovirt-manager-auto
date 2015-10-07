@@ -39,7 +39,7 @@ def teardown_module():
     help_functions.utils.clean_environment()
 
 
-@attr(team='automationInfra', tier=0)
+@attr(team='automationInfra', tier=1)
 class TestCaseCluster(TestCase):
     """
     Cluster sanity tests for basic functionality

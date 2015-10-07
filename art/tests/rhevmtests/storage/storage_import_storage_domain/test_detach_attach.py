@@ -421,7 +421,7 @@ class CommonSetUp(BasicEnvironment):
         )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase11861(BasicEnvironment):
     """
     Detach/Attach a new Domain
@@ -446,7 +446,7 @@ class TestCase11861(BasicEnvironment):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5297(BasicEnvironment):
     """
     create vm from imported domain's Template
@@ -538,7 +538,7 @@ class TestCase5297(BasicEnvironment):
         self.teardown_exception()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5299(BasicEnvironment):
     """
     Register vm without disks
@@ -603,7 +603,7 @@ class TestCase5299(BasicEnvironment):
         self.teardown_exception()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5300(BasicEnvironment):
     """
     import domain, preview snapshots and create vm from a snapshot
@@ -709,7 +709,7 @@ class TestCase5300(BasicEnvironment):
         self.teardown_exception()
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase5302(BasicEnvironment):
     """
     IP block during import domain
@@ -802,7 +802,7 @@ class TestCase5302(BasicEnvironment):
         self.teardown_exception()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5193(BasicEnvironment):
     """
     test mounted meta-data files when attaching a file domain
@@ -844,7 +844,7 @@ class TestCase5193(BasicEnvironment):
         wait_for_jobs([ENUMS['job_register_disk']])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5194(BasicEnvironment):
     """
     test lv's existence when importing a block domain
@@ -903,7 +903,7 @@ class TestCase5194(BasicEnvironment):
         wait_for_jobs([ENUMS['job_move_or_copy_disk']])
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase5205(CommonSetUp):
     """
     detach/attach domain during vdsm/engine restart
@@ -990,7 +990,7 @@ class TestCase5205(CommonSetUp):
         self.teardown_exception()
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase5304(CommonSetUp):
     """
     Import domain during host reboot
@@ -1067,7 +1067,7 @@ class TestCase5304(CommonSetUp):
         self.teardown_exception()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5201(BasicEnvironment):
     """
     Initialize DC from an unattached imported domain
@@ -1158,7 +1158,7 @@ class TestCase5201(BasicEnvironment):
         self.teardown_exception()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase12207(BasicEnvironment):
     """
     Initialize DC from a destroyed domain

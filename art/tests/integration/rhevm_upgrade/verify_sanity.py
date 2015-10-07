@@ -30,7 +30,7 @@ def teardown_module():
     LOGGER.debug("tearDownClass: cleaned the DC")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class UpgradeSanityVerification(TestCase):
     """ Basic test """
     __test__ = True

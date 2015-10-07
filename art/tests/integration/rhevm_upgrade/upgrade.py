@@ -17,7 +17,7 @@ from rhevm_upgrade import config
 LOGGER = logging.getLogger(__name__)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class UpgradeSanityUpgrade(TestCase):
     """ Perform the upgrade """
     __test__ = True

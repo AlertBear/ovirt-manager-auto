@@ -53,7 +53,7 @@ def teardown_module():
     config.HOSTS.append(host_name)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4831(helpers.TestCaseStandardOperations):
     """
     Tests if data center with NFS storage domains with custom NFS options works

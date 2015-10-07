@@ -133,7 +133,7 @@ class TestCaseVdsm(TestCase):
         check_vdsmd()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCaseAfterVdsmStop(TestCaseVdsm):
     """ after_vdsm_stop hook """
     __test__ = True
@@ -147,7 +147,7 @@ class TestCaseAfterVdsmStop(TestCaseVdsm):
         self.assertTrue(self.check_for_file(positive=True))
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCaseBeforeVdsmStart(TestCaseVdsm):
     """ before_vdsm_start hook """
     __test__ = True
@@ -164,7 +164,7 @@ class TestCaseBeforeVdsmStart(TestCaseVdsm):
         self.assertTrue(self.check_for_file(positive=True))
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCaseBeforeVmStart(TestCaseVm):
     """ before_vm_start hook """
     __test__ = True
@@ -188,7 +188,7 @@ class TestCaseBeforeVmStart(TestCaseVm):
         self.assertTrue(self.check_for_file(positive=True))
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCaseAfterVmPause(TestCaseVm):
     """ after_vm_pause hook """
     __test__ = True

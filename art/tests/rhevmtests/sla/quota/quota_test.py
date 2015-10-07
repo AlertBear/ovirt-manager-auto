@@ -128,7 +128,7 @@ class BaseQuotaClass(TestCase):
         return True
 
 
-@attr(tier=0)
+@attr(tier=1)
 class QuotaTestCRUD(BaseQuotaClass):
     """
     Quota CRUD test
@@ -200,7 +200,7 @@ class QuotaTestCRUD(BaseQuotaClass):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class QuotaTestMode(BaseQuotaClass):
     """
     This unittest class tests quota enforced/audit mode

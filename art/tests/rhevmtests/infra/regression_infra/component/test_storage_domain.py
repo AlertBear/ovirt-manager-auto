@@ -21,7 +21,7 @@ ENUMS = config.ENUMS
 NFS = opts['elements_conf']['RHEVM Enums']['storage_type_nfs']
 
 
-@attr(team='automationInfra', tier=0)
+@attr(team='automationInfra', tier=1)
 class TestCaseStorageDomain(TestCase):
     """
     Storage domain tests

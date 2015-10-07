@@ -58,7 +58,7 @@ class TestMigrationCaseBase(TestCase):
             logger.error("Cannot remove networks from setup")
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestMigrationCase01(TestMigrationCaseBase):
     """
     Verify dedicated regular network migration, migration 5 VMs
@@ -151,7 +151,7 @@ class TestMigrationCase01(TestMigrationCaseBase):
         super(TestMigrationCase01, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMigrationCase02(TestMigrationCaseBase):
     """
     Verify default migration when no migration network specified
@@ -192,7 +192,7 @@ class TestMigrationCase02(TestMigrationCaseBase):
         dedicated_migration(vms=[config.VM_NAME[0]], nic_index=0)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMigrationCase03(TestMigrationCaseBase):
     """
     Verify dedicated migration over tagged network over NIC
@@ -239,7 +239,7 @@ class TestMigrationCase03(TestMigrationCaseBase):
         dedicated_migration(vms=[config.VM_NAME[0]], vlan=config.VLAN_ID[0])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMigrationCase04(TestMigrationCaseBase):
     """
     Verify dedicated migration over non-VM network over NIC
@@ -286,7 +286,7 @@ class TestMigrationCase04(TestMigrationCaseBase):
         dedicated_migration(vms=[config.VM_NAME[0]])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMigrationCase05(TestMigrationCaseBase):
     """
     Verify dedicated regular network migration when its also display network
@@ -334,7 +334,7 @@ class TestMigrationCase05(TestMigrationCaseBase):
         dedicated_migration(vms=[config.VM_NAME[0]])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMigrationCase06(TestMigrationCaseBase):
     """
     Verify dedicated regular network migration when the net reside on the VM
@@ -404,7 +404,7 @@ class TestMigrationCase06(TestMigrationCaseBase):
         super(TestMigrationCase06, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMigrationCase07(TestMigrationCaseBase):
     """
     Verify migration over mgmt network when migration network is not attached
@@ -446,7 +446,7 @@ class TestMigrationCase07(TestMigrationCaseBase):
         dedicated_migration(vms=[config.VM_NAME[0]], nic_index=0)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMigrationCase08(TestMigrationCaseBase):
     """
     Verify dedicated regular network migration over Bond
@@ -491,7 +491,7 @@ class TestMigrationCase08(TestMigrationCaseBase):
         dedicated_migration(vms=[config.VM_NAME[0]], bond=config.BOND[0])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMigrationCase09(TestMigrationCaseBase):
     """
     Verify dedicated regular non-vm network migration over Bond
@@ -538,7 +538,7 @@ class TestMigrationCase09(TestMigrationCaseBase):
         dedicated_migration(vms=[config.VM_NAME[0]], bond=config.BOND[0])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMigrationCase10(TestMigrationCaseBase):
     """
     Verify dedicated regular tagged network migration over Bond
@@ -591,7 +591,7 @@ class TestMigrationCase10(TestMigrationCaseBase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMigrationCase11(TestMigrationCaseBase):
     """
     Verify  migration over mgmt network when dedicated migration network is
@@ -643,7 +643,7 @@ class TestMigrationCase11(TestMigrationCaseBase):
         dedicated_migration(vms=[config.VM_NAME[0]], nic_index=0)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMigrationCase12(TestMigrationCaseBase):
     """
     Verify when dedicated regular network migration is not configured on the

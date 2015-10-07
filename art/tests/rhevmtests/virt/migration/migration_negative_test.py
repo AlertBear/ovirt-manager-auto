@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 TCMS_PLAN_ID = '10421'
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMigrateNoAvailableHostOnCluster(TestCase):
     """
     Negative: No available host on cluster
@@ -67,7 +67,7 @@ class TestMigrateNoAvailableHostOnCluster(TestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMigrateVmOnOtherDataCenter(TestCase):
     """
     Negative: Migrate vm on another data center
@@ -109,7 +109,7 @@ class TestMigrateVmOnOtherDataCenter(TestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMigrateVmOnSameHost(TestCase):
     """
     Negative: Migrate vm on the same host
@@ -131,7 +131,7 @@ class TestMigrateVmOnSameHost(TestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMigrationOverloadHost(TestCase):
     """
     Negative test:
@@ -277,7 +277,7 @@ class TestMigrationOverloadHost(TestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestVMMigrateOptionsCase1(TestCase):
     """
     Negative case: VM Migration options case 1
@@ -354,7 +354,7 @@ class TestVMMigrateOptionsCase1(TestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestVMMigrateOptionsCase2(TestCase):
     """
      Negative cases: VM Migration options cases
@@ -432,7 +432,7 @@ class TestVMMigrateOptionsCase2(TestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMigrateVMWithLoadOnMemory(TestCase):
     """
     Negative test:

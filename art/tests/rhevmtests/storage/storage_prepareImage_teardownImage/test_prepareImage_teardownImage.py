@@ -407,7 +407,7 @@ class BasicEnvironment(BaseTestCase):
                                 "part of the output" % error)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase4581(BasicEnvironment):
     """
     Prepare image with all the correct parameters
@@ -437,7 +437,7 @@ class TestCase4581(BasicEnvironment):
                         "Failed to start VM '%s'" % VM1_NAME)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4595(BasicEnvironment):
     """
     Prepare image with no parameters
@@ -485,7 +485,7 @@ class TestCase4595(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4596(BasicEnvironment):
     """
     Prepare image with optional flag unset
@@ -534,7 +534,7 @@ class TestCase4596(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4597(BasicEnvironment):
     """
     Prepare image with 1 erroneous flag value
@@ -580,7 +580,7 @@ class TestCase4597(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4598(BasicEnvironment):
     """
     Prepare image with several erroneous parameters
@@ -620,7 +620,7 @@ class TestCase4598(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4599(BasicEnvironment):
     """
     Prepare image on VM with multiple disks
@@ -666,7 +666,7 @@ class TestCase4599(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4600(BasicEnvironment):
     """
     Prepare image on VM with disks from different Storage Domains
@@ -729,7 +729,7 @@ class TestCase4600(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4601(BasicEnvironment):
     """
     Prepare image for Disks on a VM created from template
@@ -788,7 +788,7 @@ class TestCase4601(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4602(BasicEnvironment):
     """
     Prepare image with 1 disk missing/corrupted from VM
@@ -884,7 +884,7 @@ class TestCase4602(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4605(BasicEnvironment):
     """
     Prepare image followed by Tear Down, then run Prepare image once more
@@ -914,7 +914,7 @@ class TestCase4605(BasicEnvironment):
         self.basic_positive_flow_prepare_image_only()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4594(BasicEnvironment):
     """
     Prepare image followed by Tear down
@@ -950,7 +950,7 @@ class TestCase4594(BasicEnvironment):
         self.basic_positive_flow_teardown_first(5)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4593(BasicEnvironment):
     """
     Tear down image with a powered off VM
@@ -974,7 +974,7 @@ class TestCase4593(BasicEnvironment):
         self.basic_positive_flow_teardown_image_only()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4582(BasicEnvironment):
     """
     Tear down image with all flags set
@@ -998,7 +998,7 @@ class TestCase4582(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4584(BasicEnvironment):
     """
     Tear down image with optional flags unset
@@ -1026,7 +1026,7 @@ class TestCase4584(BasicEnvironment):
         self.basic_positive_flow_only_teardown_image_no_volume_id()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4585(BasicEnvironment):
     """
     Tear down image with 1 erroneous flag value
@@ -1071,7 +1071,7 @@ class TestCase4585(BasicEnvironment):
                                    CMD_ERROR_INCORRECT_NUM_PARAMS_PART_3])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4586(BasicEnvironment):
     """
     Tear down image with several erroneous parameters

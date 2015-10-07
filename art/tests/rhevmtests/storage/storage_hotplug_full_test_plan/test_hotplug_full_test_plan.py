@@ -132,7 +132,7 @@ def teardown_module():
         )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase5033(helpers.HotplugHookTest):
     """
     Check if before_disk_hotplug is called
@@ -153,7 +153,7 @@ class TestCase5033(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase5034(helpers.HotplugHookTest):
     """
     Check if after_disk_hotplug is called
@@ -174,7 +174,7 @@ class TestCase5034(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase5035(helpers.HotplugHookTest):
     """
     Check if before_disk_hotunplug is called
@@ -195,7 +195,7 @@ class TestCase5035(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase5036(helpers.HotplugHookTest):
     """
     Check if after_disk_hotunplug is called
@@ -216,7 +216,7 @@ class TestCase5036(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5037(helpers.HotplugHookTest):
     """
     Check after_disk_hotplug for plugging 10 disks concurrently
@@ -247,7 +247,7 @@ class TestCase5037(helpers.HotplugHookTest):
         self.assertEqual(len(result), len(DISKS_TO_PLUG[self.storage]), result)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5038(helpers.HotplugHookTest):
     """
     Check after_disk_hotunplug for unplugging 10 disks concurrently
@@ -278,7 +278,7 @@ class TestCase5038(helpers.HotplugHookTest):
         self.assertEqual(len(result), len(DISKS_TO_PLUG[self.storage]), result)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5039(helpers.HotplugHookTest):
     """
     Check if before_disk_hotplug is called when attaching & activating
@@ -320,7 +320,7 @@ class TestCase5039(helpers.HotplugHookTest):
             disks.detachDisk(True, self.use_disks[0], self.vm_name)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5044(helpers.HotplugHookTest):
     """
     Check that activation will succeed and the hook will fail if
@@ -370,7 +370,7 @@ class TestCase5044(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5041(helpers.HotplugHookTest):
     """
     Check that non-executable hooks will not be called
@@ -405,7 +405,7 @@ class TestCase5041(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5040(helpers.HotplugHookTest):
     """
     Multiple hooks for one action, checks that all will be called
@@ -443,7 +443,7 @@ class TestCase5040(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase5042(helpers.HotplugHookTest):
     """
     Restart vdsm during before_disk_hotplug, action should fail
@@ -531,7 +531,7 @@ class BasePlugDiskTest(TestCase):
                      cls.disks))
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase6231(BasePlugDiskTest):
     """Activate/Deactivate an already attached disk
     on a running VM with supported OS"""
@@ -603,7 +603,7 @@ class TestCase6231(BasePlugDiskTest):
             self.assertTrue(status)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6243(BasePlugDiskTest):
     """Hotplug floating disk (shareable and non-shareable)"""
     # Gluster doesn't support shareable disks
@@ -637,7 +637,7 @@ class TestCase6243(BasePlugDiskTest):
                 self.assertTrue(status)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6230(TestCase):
     """
     2 vms, 1 shareable disk attached to both of them.

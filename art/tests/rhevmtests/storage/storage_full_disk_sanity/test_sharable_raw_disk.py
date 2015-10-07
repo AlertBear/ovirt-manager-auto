@@ -15,7 +15,7 @@ ENUMS = config.ENUMS
 logger = logging.getLogger(__name__)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase11513(TestCase):
     """
     Test sharing disk
@@ -84,7 +84,7 @@ class TestCase11513(TestCase):
         assert disks.deleteDisk(True, self.disk_name)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11624(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=834893

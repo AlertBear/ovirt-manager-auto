@@ -71,7 +71,7 @@ class TearDownRequiredNetwork(TestCase):
             logger.error("Cannot remove networks from setup")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestRequiredNetwork01(TearDownRequiredNetwork):
     """
     VM Network
@@ -108,7 +108,7 @@ class TestRequiredNetwork01(TearDownRequiredNetwork):
 ##############################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestRequiredNetwork02(TearDownRequiredNetwork):
     """
     VM Network
@@ -179,7 +179,7 @@ class TestRequiredNetwork02(TearDownRequiredNetwork):
 ##############################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestRequiredNetwork03(TearDownRequiredNetwork):
     """
     VM Network
@@ -235,7 +235,7 @@ class TestRequiredNetwork03(TearDownRequiredNetwork):
 ##############################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestRequiredNetwork04(TearDownRequiredNetwork):
     """
     VLAN over BOND
@@ -318,7 +318,7 @@ class TestRequiredNetwork04(TearDownRequiredNetwork):
 ##############################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestRequiredNetwork05(TearDownRequiredNetwork):
     """
     VLAN Network
@@ -380,7 +380,7 @@ class TestRequiredNetwork05(TearDownRequiredNetwork):
 ##############################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestRequiredNetwork06(TearDownRequiredNetwork):
     """
     Non-VM Network

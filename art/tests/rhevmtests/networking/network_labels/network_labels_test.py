@@ -83,7 +83,7 @@ class TestLabelTestCaseBase(TestCase):
             logger.error("Cannot remove networks from setup")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels01(TestLabelTestCaseBase):
 
     """
@@ -177,7 +177,7 @@ class NetLabels01(TestLabelTestCaseBase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels02(TestLabelTestCaseBase):
 
     """
@@ -316,7 +316,7 @@ class NetLabels02(TestLabelTestCaseBase):
         super(NetLabels02, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels03(TestLabelTestCaseBase):
 
     """
@@ -422,7 +422,7 @@ class NetLabels03(TestLabelTestCaseBase):
         super(NetLabels03, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels04(TestLabelTestCaseBase):
 
     """
@@ -553,7 +553,7 @@ class NetLabels04(TestLabelTestCaseBase):
         super(NetLabels04, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels05(TestLabelTestCaseBase):
 
     """
@@ -658,7 +658,7 @@ class NetLabels05(TestLabelTestCaseBase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels06(TestLabelTestCaseBase):
 
     """
@@ -775,7 +775,7 @@ class NetLabels06(TestLabelTestCaseBase):
             raise NetworkException("Label exists on Bond slaves")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels07(TestLabelTestCaseBase):
 
     """
@@ -924,7 +924,7 @@ class NetLabels07(TestLabelTestCaseBase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels08(TestLabelTestCaseBase):
 
     """
@@ -993,7 +993,7 @@ class NetLabels08(TestLabelTestCaseBase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels09(TestLabelTestCaseBase):
 
     """
@@ -1153,7 +1153,7 @@ class NetLabels09(TestLabelTestCaseBase):
         super(NetLabels09, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels10(TestLabelTestCaseBase):
 
     """
@@ -1324,7 +1324,7 @@ class NetLabels10(TestLabelTestCaseBase):
         super(NetLabels10, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels11(TestLabelTestCaseBase):
 
     """
@@ -1492,7 +1492,7 @@ class NetLabels11(TestLabelTestCaseBase):
         super(NetLabels11, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels12(TestLabelTestCaseBase):
 
     """
@@ -1653,7 +1653,7 @@ class NetLabels12(TestLabelTestCaseBase):
         super(NetLabels12, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels13(TestLabelTestCaseBase):
 
     """
@@ -1835,7 +1835,7 @@ class NetLabels13(TestLabelTestCaseBase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels14(TestLabelTestCaseBase):
 
     """
@@ -2052,7 +2052,7 @@ class NetLabels14(TestLabelTestCaseBase):
         super(NetLabels14, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels15(TestLabelTestCaseBase):
 
     """
@@ -2234,7 +2234,7 @@ class NetLabels15(TestLabelTestCaseBase):
         super(NetLabels15, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels16(TestLabelTestCaseBase):
 
     """
@@ -2420,7 +2420,7 @@ class NetLabels16(TestLabelTestCaseBase):
         super(NetLabels16, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels17(TestLabelTestCaseBase):
 
     """
@@ -2531,7 +2531,7 @@ class NetLabels17(TestLabelTestCaseBase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels18(TestLabelTestCaseBase):
 
     """
@@ -2684,7 +2684,7 @@ class NetLabels18(TestLabelTestCaseBase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetLabels19(TestLabelTestCaseBase):
 
     """

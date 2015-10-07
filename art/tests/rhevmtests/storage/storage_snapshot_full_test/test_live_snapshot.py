@@ -213,7 +213,7 @@ class BaseTestCase(TestCase):
         raise_if_exception(results)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase11660(BasicEnvironmentSetUp):
     """
     Full flow Live snapshot
@@ -313,7 +313,7 @@ class TestCase11660(BasicEnvironmentSetUp):
         remove_all_vm_snapshots(self.vm_name, self.snapshot_desc)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11679(BasicEnvironmentSetUp):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -465,7 +465,7 @@ class TestCase11679(BasicEnvironmentSetUp):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11676(BaseTestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -513,7 +513,7 @@ class TestCase11676(BaseTestCase):
                                description=config.SPECIAL_CHAR_DESC)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11665(BaseTestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -561,7 +561,7 @@ class TestCase11665(BaseTestCase):
             vms.addSnapshot(True, vm=self.vm_on_hsm, description=SNAP_1))
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11680(BaseTestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -595,7 +595,7 @@ class TestCase11680(BaseTestCase):
             vms.addSnapshot(False, vm=self.vm_on_hsm, description=SNAP_1))
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11674(BaseTestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -645,7 +645,7 @@ class TestCase11674(BaseTestCase):
         self.assertTrue(snap_descs == current_snap_descs)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11684(BaseTestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/

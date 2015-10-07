@@ -192,7 +192,7 @@ def sync_networks(networks):
         raise conf.NET_EXCEPTION
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestHostNetworkApiTestCaseBase(unit_lib.NetworkTest):
     """
     base class which provides teardown class method for each test case

@@ -88,7 +88,7 @@ def loginAsAdmin():
     )
 
 
-@attr(tier=1, extra_reqs={'datacenters_count': 2})
+@attr(tier=2, extra_reqs={'datacenters_count': 2})
 class VmUserInfoTests(TestCase):
     """ Test if user can see correct events """
     __test__ = True
@@ -166,7 +166,7 @@ class VmUserInfoTests(TestCase):
                 assert host.get_id() != ALT_HOST_ID
 
 
-@attr(tier=1, extra_reqs={'datacenters_count': 2})
+@attr(tier=2, extra_reqs={'datacenters_count': 2})
 class VmUserInfoTests2(TestCase):
     """ Test if user can see correct objects """
     __test__ = True
@@ -342,7 +342,7 @@ class VmUserInfoTests2(TestCase):
         vms.stopVm(True, config.VM_NAME1)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class ViewviewChildrenInfoTests(TestCase):
     """
     Tests if roles that are not able to view childrens,
@@ -413,7 +413,7 @@ class ViewviewChildrenInfoTests(TestCase):
             LOGGER.info("%s can see children", role_can)
 
 
-@attr(tier=1, extra_reqs={'clusters_count': 2})
+@attr(tier=2, extra_reqs={'clusters_count': 2})
 class VmCreatorClusterAdminInfoTests(TestCase):
     """ Test for VMcreator and cluster admin role """
     __test__ = True
@@ -469,7 +469,7 @@ class VmCreatorClusterAdminInfoTests(TestCase):
         assert config.VM_NAME4 not in myvms, err_msg_can % config.VM_NAME4
 
 
-@attr(tier=1)
+@attr(tier=2)
 class VmCreatorInfoTests(TestCase):
     """ Test for VMcreator role """
     __test__ = True
@@ -513,7 +513,7 @@ class VmCreatorInfoTests(TestCase):
         LOGGER.info("User can see only his vms %s" % myvms)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TemplateCreatorInfoTests(TestCase):
     """ Test combination of roles with TemplateCreator role """
     __test__ = True
@@ -596,7 +596,7 @@ class TemplateCreatorInfoTests(TestCase):
 # Create some templates in Datacenter2.
 # - Check /api/templates
 # Should see all templates in Datacenter1, but none in Datacenter2.
-@attr(tier=1, extra_reqs={'datacenters_count': 2})
+@attr(tier=2, extra_reqs={'datacenters_count': 2})
 class TemplateCreatorAndDCAdminInfoTest(TestCase):
     __test__ = True
 
@@ -647,7 +647,7 @@ class TemplateCreatorAndDCAdminInfoTest(TestCase):
         )
 
 
-@attr(tier=1, extra_reqs={'datacenters_count': 2})
+@attr(tier=2, extra_reqs={'datacenters_count': 2})
 class ComplexCombinationTest(TestCase):
     """ Test that user can see correct object regargin its permissions """
     __test__ = True

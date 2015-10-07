@@ -14,7 +14,7 @@ ENUMS = config.ENUMS
 logger = logging.getLogger(__name__)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase11518(TestCase):
     """
     Test Floating disk is functional

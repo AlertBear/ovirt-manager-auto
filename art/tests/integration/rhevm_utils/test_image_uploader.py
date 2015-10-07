@@ -35,7 +35,7 @@ def teardown_module():
         base.teardown_module()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class ImageUploaderTestCase(base.RHEVMUtilsTestCase):
     """
         rhevm image uploder test cases

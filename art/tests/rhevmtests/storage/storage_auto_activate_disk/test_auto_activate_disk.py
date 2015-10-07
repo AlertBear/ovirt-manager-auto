@@ -52,7 +52,7 @@ class VmWithOs(TestCase):
         wait_for_jobs([config.ENUMS['job_remove_vm']])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4936(VmWithOs):
     """
     Add disks while vm is running
@@ -97,7 +97,7 @@ class VmWithAnotherDiskWhileStatus(VmWithOs):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4937(VmWithAnotherDiskWhileStatus):
     """
     Add disks while VM is in a certain state

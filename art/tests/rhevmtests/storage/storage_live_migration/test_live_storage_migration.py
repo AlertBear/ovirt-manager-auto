@@ -310,7 +310,7 @@ class AllPermutationsDisks(BaseTestCase):
             )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase6004(AllPermutationsDisks):
     """
     live migrate
@@ -332,7 +332,7 @@ class TestCase6004(AllPermutationsDisks):
         self.verify_lsm()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5990(BaseTestCase):
     """
     vm in paused mode
@@ -363,7 +363,7 @@ class TestCase5990(BaseTestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5994(BaseTestCase):
     """
     different vm status
@@ -418,7 +418,7 @@ class TestCase5994(BaseTestCase):
                           self.vm_name)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5993(StorageTest):
     """
     live migration with thin provision copy
@@ -538,7 +538,7 @@ class TestCase5993(StorageTest):
                     "Failed to remove template %s" % template)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5992(BaseTestCase):
     """
     snapshots and move vm
@@ -582,7 +582,7 @@ class TestCase5992(BaseTestCase):
         live_migrate_vm(self.vm_name)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5991(BaseTestCase):
     """
     live migration with shared disk
@@ -667,7 +667,7 @@ class TestCase5991(BaseTestCase):
         super(TestCase5991, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5989(BaseTestCase):
     """
     suspended vm
@@ -726,7 +726,7 @@ class TestCase5989(BaseTestCase):
         super(TestCase5989, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5988(AllPermutationsDisks):
     """
     Create live snapshot during live storage migration
@@ -803,7 +803,7 @@ class TestCase5988(AllPermutationsDisks):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5986(CommonUsage):
     """
     Time out
@@ -853,7 +853,7 @@ class TestCase5986(CommonUsage):
         self._remove_disks([self.disk_name])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5955(AllPermutationsDisks):
     """
     Images located on different domain
@@ -895,7 +895,7 @@ class TestCase5955(AllPermutationsDisks):
             self._perform_action(self.vm_name, disk)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5996(CommonUsage):
     """
     hot plug disk
@@ -985,7 +985,7 @@ class TestCase5996(CommonUsage):
         super(TestCase5996, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6003(BaseTestCase):
     """
     Attach disk during migration
@@ -1025,7 +1025,7 @@ class TestCase6003(BaseTestCase):
         super(TestCase6003, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6001(BaseTestCase):
     """
     LSM to domain in maintenance
@@ -1074,7 +1074,7 @@ class TestCase6001(BaseTestCase):
         super(TestCase6001, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5972(CommonUsage):
     """
     live migrate vm with multiple disks on multiple domains
@@ -1136,7 +1136,7 @@ class TestCase5972(CommonUsage):
             live_migrate_vm_disk(self.vm_name, disk, self.storage_domains[2])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5970(CommonUsage):
     """
     Wipe after delete
@@ -1203,7 +1203,7 @@ class TestCase5970(CommonUsage):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5969(AllPermutationsDisks):
     """
     Power off/Shutdown of vm during LSM
@@ -1329,7 +1329,7 @@ class TestCase5969Shutdown(TestCase5969):
         shutdownVm(True, self.vm_name, 'false')
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5968(AllPermutationsDisks):
     """
     Auto-Shrink - Live Migration
@@ -1376,7 +1376,7 @@ class TestCase5968(AllPermutationsDisks):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5967(AllPermutationsDisks):
     """
     Auto-Shrink - Live Migration failure
@@ -1426,7 +1426,7 @@ class TestCase5967(AllPermutationsDisks):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5982(AllPermutationsDisks):
     """
     merge snapshot
@@ -1470,7 +1470,7 @@ class TestCase5982(AllPermutationsDisks):
             wait_for_jobs()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5979(BaseTestCase):
     """
     offline migration for disk attached to running vm
@@ -1525,7 +1525,7 @@ class TestCase5979(BaseTestCase):
         self.assertEqual(len(LSM_snapshots), self.expected_lsm_snap_count)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5976(BaseTestCase):
     """
     Deactivate vm disk during live migrate
@@ -1575,7 +1575,7 @@ class TestCase5976(BaseTestCase):
         super(TestCase5976, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5977(BaseTestCase):
     """
     migrate a vm between hosts + LSM
@@ -1639,7 +1639,7 @@ class TestCase5977(BaseTestCase):
         self.assertTrue(status, "Succeeded to migrate vm during LSM")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5975(BaseTestCase):
     """
     Extend storage domain while lsm
@@ -1708,7 +1708,7 @@ class TestCase5975(BaseTestCase):
                            config.DATA_CENTER_NAME)
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase6000(BaseTestCase):
     """
     live migrate - storage connectivity issues
@@ -1771,7 +1771,7 @@ class TestCase6000(BaseTestCase):
         super(TestCase6000, self).setUp()
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase6002(BaseTestCase):
     """
     VDSM restart during live migration
@@ -1799,7 +1799,7 @@ class TestCase6002(BaseTestCase):
         restartVdsmd(spm_host, config.HOSTS_PW)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5999(BaseTestCase):
     """
     live migrate during host restart
@@ -1878,7 +1878,7 @@ class TestCase5999(BaseTestCase):
                                  % vm_disk)
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase5998(BaseTestCase):
     """
     reboot host during live migration on HA vm
@@ -1944,7 +1944,7 @@ class TestCase5998(BaseTestCase):
         self._perform_action(hsm_host)
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase5997(BaseTestCase):
     """
     kill vm's pid during live migration
@@ -2008,7 +2008,7 @@ class TestCase5997(BaseTestCase):
         self.perform_action()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5985(BaseTestCase):
     """
     no space left
@@ -2056,7 +2056,7 @@ class TestCase5985(BaseTestCase):
         super(TestCase5985, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5971(CommonUsage):
     """
     multiple domains - only one domain unreachable
@@ -2165,7 +2165,7 @@ class TestCase5971(CommonUsage):
         super(TestCase5971, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5980(BaseTestCase):
     """
     offline migration + LSM
@@ -2209,7 +2209,7 @@ class TestCase5980(BaseTestCase):
         assert deleteDisk(True, self.disk_name)
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase5966(BaseTestCase):
     """
     kill vdsm during LSM
@@ -2264,7 +2264,7 @@ class TestCase5966(BaseTestCase):
         wait_for_jobs()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5981(AllPermutationsDisks):
     """
     merge after a failure in LSM
@@ -2329,7 +2329,7 @@ class TestCase5981(AllPermutationsDisks):
             logger.info("Disk %s done", disk)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5983(BaseTestCase):
     """
     migrate multiple vm's disks
@@ -2400,7 +2400,7 @@ class TestCase5983(BaseTestCase):
         super(TestCase5983, self).tearDown()
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase5984(BaseTestCase):
     """
     connectivity issues to pool
@@ -2464,7 +2464,7 @@ class TestCase5984(BaseTestCase):
         super(TestCase5984, self).tearDown()
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase5974(BaseTestCase):
     """
     LSM during pause due to EIO

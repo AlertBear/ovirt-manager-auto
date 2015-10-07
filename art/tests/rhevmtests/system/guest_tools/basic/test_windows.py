@@ -59,7 +59,7 @@ def setup_module():
     GLANCE_IMAGE = import_image(WIN_IMAGES.pop())
 
 
-@attr(tier=1)
+@attr(tier=2)
 class Windows(TestCase):
     """
     Class that implements testing of windows guest tools.

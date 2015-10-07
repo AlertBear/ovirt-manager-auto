@@ -50,7 +50,7 @@ BASIC_PARAMETERS = {'name': TEMPLATE_VM, 'cluster': config.CLUSTER_NAME[0]}
 ########################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class BaseTemplateClass(TestCase):
     """
     Base class that create vm and template from it
@@ -1002,7 +1002,7 @@ class NegativeTemplateCases(BaseTemplateClass):
 ########################################################################
 
 
-@attr(tier=0)
+@attr(tier=1)
 class BasicTemplate(BaseTemplateClass):
     """
     Create, update, search, remove template and
@@ -1016,7 +1016,7 @@ class BasicTemplate(BaseTemplateClass):
     update_template = 'upgrade_template'
     group = 'Everyone'
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion("RHEVM3-12279")
     def test_specify_template_storage_domain(self):
         """

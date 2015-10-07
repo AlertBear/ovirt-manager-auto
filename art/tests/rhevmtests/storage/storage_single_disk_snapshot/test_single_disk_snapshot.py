@@ -274,7 +274,7 @@ class BasicEnvironment(BaseTestCase):
                                         self.snapshot_desc)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase6022(BasicEnvironment):
     """
     Create snapshot of first disk out of 4 and verify that the
@@ -299,7 +299,7 @@ class TestCase6022(BasicEnvironment):
         self._perform_snapshot_with_verification(self.disks_names[0:2])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6023(BasicEnvironment):
     """
     Preview snapshot of first disk out of 4 and verify
@@ -370,7 +370,7 @@ class TestCase6023(BasicEnvironment):
         super(TestCase6023, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6034(BasicEnvironment):
     """
     Create a snapshot to the VM while it's suspended and pick only one disk
@@ -458,7 +458,7 @@ class TestCase6034(BasicEnvironment):
         super(TestCase6034, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6024(BasicEnvironment):
     """
     Preview snapshot of 2 disks out of 4 and verify that the
@@ -534,7 +534,7 @@ class TestCase6024(BasicEnvironment):
         super(TestCase6024, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6026(BasicEnvironment):
     """
     Create snapshot of all vm's disks, preview it and undo the snapshot
@@ -610,7 +610,7 @@ class TestCase6026(BasicEnvironment):
         super(TestCase6026, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6027(BasicEnvironment):
     """
     Create snapshot of first disk out of 4, preview it and undo the snapshot
@@ -685,7 +685,7 @@ class TestCase6027(BasicEnvironment):
         super(TestCase6027, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6013(BasicEnvironment):
     """
     Check that the new cloned VM was created only with 1 disk and the
@@ -736,7 +736,7 @@ class TestCase6013(BasicEnvironment):
         super(TestCase6013, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6030(BasicEnvironment):
     """
     Custom preview of vm configuration and 2 disks
@@ -810,7 +810,7 @@ class TestCase6030(BasicEnvironment):
         super(TestCase6030, self).tearDown()
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase6014(BasicEnvironment):
     """
     Restart vdsm during snapshot creation, check that snapshot creation
@@ -850,7 +850,7 @@ class TestCase6014(BasicEnvironment):
         super(TestCase6014, self).tearDown()
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase6006(BasicEnvironment):
     """
     Restart ovirt-engine service during snapshot creation, check that
@@ -895,7 +895,7 @@ class TestCase6006(BasicEnvironment):
         super(TestCase6006, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6032(BasicEnvironment):
     """
     Create snapshot only from VM configuration.
@@ -963,7 +963,7 @@ class TestCase6032(BasicEnvironment):
         super(TestCase6032, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6033(BasicEnvironment):
     """
     Create 3 snapshot and delete the second
@@ -1032,7 +1032,7 @@ class TestCase6033(BasicEnvironment):
         self.check_file_existence_operation(True, 'snapshot')
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase6015(BasicEnvironment):
     """
     Block connectivity to storage server during snapshot creation, Check that

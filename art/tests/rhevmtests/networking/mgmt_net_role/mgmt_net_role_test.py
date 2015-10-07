@@ -21,7 +21,7 @@ import config as c
 logger = logging.getLogger("MGMT_Net_Role_Cases")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMGMTNetRole01(TestCase):
     """
     1. Create a new DC and cluster
@@ -73,7 +73,7 @@ class TestMGMTNetRole01(TestCase):
         helper.remove_dc_cluster()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMGMTNetRole02(TestCase):
     """
     1. Negative: Try to update default MGMT to network that is non-required
@@ -132,7 +132,7 @@ class TestMGMTNetRole02(TestCase):
             logger.error("Cannot remove networks from setup")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMGMTNetRole03(TestCase):
     """
     Default MGMT removal
@@ -191,7 +191,7 @@ class TestMGMTNetRole03(TestCase):
         helper.remove_dc_cluster(cl=c.EXTRA_CLUSTER_1)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMGMTNetRole04(TestCase):
     """
     Display and/or migration network fallback
@@ -262,7 +262,7 @@ class TestMGMTNetRole04(TestCase):
         helper.remove_net(dc=c.ORIG_DC)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMGMTNetRole05(TestCase):
     """
     Moving host between clusters
@@ -334,7 +334,7 @@ class TestMGMTNetRole05(TestCase):
         helper.remove_net(dc=c.ORIG_DC)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMGMTNetRole06(TestCase):
     """
     Create a new CL when others CLs have different MGMT networks
@@ -421,7 +421,7 @@ class TestMGMTNetRole06(TestCase):
         helper.remove_dc_cluster()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMGMTNetRole07(TestCase):
     """
     1. Create a new DC and 3 clusters with defualt  MGMT on first
@@ -502,7 +502,7 @@ class TestMGMTNetRole07(TestCase):
         helper.remove_dc_cluster()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMGMTNetRole08(TestCase):
     """
     1. Create a new DC and cluster with non-default MGMT network
@@ -541,7 +541,7 @@ class TestMGMTNetRole08(TestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMGMTNetRole09(TestCase):
     """
     Moving Host between Clusters on different DCs
@@ -619,7 +619,7 @@ class TestMGMTNetRole09(TestCase):
             helper.remove_dc_cluster(dc=c.EXTRA_DC[i], cl=c.EXTRA_CL[i])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMGMTNetRole10(TestCase):
     """
     1. Create a new DC and cluster with non-default MGMT network
@@ -676,7 +676,7 @@ class TestMGMTNetRole10(TestCase):
         helper.remove_dc_cluster(dc=c.EXT_DC_0, cl=c.EXTRA_CLUSTER_0)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMGMTNetRole11(TestCase):
     """
     1. Create new cluster when one network exists on the DC and check that this

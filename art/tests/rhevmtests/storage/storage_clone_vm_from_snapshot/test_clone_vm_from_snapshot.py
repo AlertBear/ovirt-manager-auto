@@ -71,7 +71,7 @@ class BaseTestCase(TestCase):
         safely_remove_vms([self.cloned_vm])
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase6103(BaseTestCase):
     """
     Clone a vm from snapshot.
@@ -100,7 +100,7 @@ class TestCase6103(BaseTestCase):
         assert waitForVMState(self.cloned_vm, state=config.VM_DOWN)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6119(BaseTestCase):
     """
     Create a VM from snapshot for a DC with multiple storage domains
@@ -128,7 +128,7 @@ class TestCase6119(BaseTestCase):
         assert waitForVMState(self.cloned_vm, state=config.VM_DOWN)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6120(BaseTestCase):
     """
     Create VM from snapshot while original VM is Down    ->  Success
@@ -177,7 +177,7 @@ class TestCase6120(BaseTestCase):
         safely_remove_vms([self.cloned_vm_down, self.cloned_vm_up])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6122(BaseTestCase):
     """
     Clone vm from snapshot:
@@ -224,7 +224,7 @@ class TestCase6122(BaseTestCase):
             storagedomain=self.storage_domain_1, compare=False)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6108(BaseTestCase):
     """
     Clone a vm with multiple nics.
@@ -275,7 +275,7 @@ class TestCase6108(BaseTestCase):
         super(TestCase6108, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6109(BaseTestCase):
     """
     Clone a vm with multiple disks.
@@ -324,7 +324,7 @@ class TestCase6109(BaseTestCase):
         super(TestCase6109, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6111(BaseTestCase):
     """
     Clone a desktop and a server VM.
@@ -390,7 +390,7 @@ class TestCase6111(BaseTestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6112(BaseTestCase):
     """
     Make a snapshot of a vm with three disks.

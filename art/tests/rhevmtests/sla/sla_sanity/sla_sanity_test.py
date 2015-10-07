@@ -137,7 +137,7 @@ def get_qemu_value(host_resource, vm, arg):
 ########################################################################
 
 
-@libs.attr(tier=0)
+@libs.attr(tier=1)
 class BasicSlaClass(libs.SlaTest):
     """
     Create and delete after test new vm with different parameters
@@ -175,7 +175,7 @@ class BasicSlaClass(libs.SlaTest):
             raise errors.VMException("Cannot remove vm")
 
 
-@libs.attr(tier=1)
+@libs.attr(tier=2)
 class TestProtectedVmCase1(BasicSlaClass):
     """
     Negative: Remove protected VM
@@ -201,7 +201,7 @@ class TestProtectedVmCase1(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=1)
+@libs.attr(tier=2)
 class TestProtectedVmCase2(BasicSlaClass):
     """
     Negative: Force remove protected VM
@@ -227,7 +227,7 @@ class TestProtectedVmCase2(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=1)
+@libs.attr(tier=2)
 class TestCPUHostCase1(BasicSlaClass):
     """
     Negative: Change migratable VM to use CPU host
@@ -252,7 +252,7 @@ class TestCPUHostCase1(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=1)
+@libs.attr(tier=2)
 class TestCPUHostCase2(BasicSlaClass):
     """
     Set CPU host to a user migratable VM
@@ -281,7 +281,7 @@ class TestCPUHostCase2(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=1)
+@libs.attr(tier=2)
 class TestCPUHostCase3(BasicSlaClass):
     """
     Negative: Change VM with CPU host mode (pinned) to migratable
@@ -524,7 +524,7 @@ class TestThreadsOff(BasicThreadSlaClass):
         self.assertTrue(ll_vms.startVm(True, self.vm_name))
 
 
-@libs.attr(tier=1)
+@libs.attr(tier=2)
 class TestNegativeThreadsOff(BasicThreadSlaClass):
     """
     Negative: Verify number of cores on host when threads off
@@ -570,7 +570,7 @@ class TestThreadsOn(BasicThreadSlaClass):
         self.assertTrue(ll_vms.startVm(True, self.vm_name))
 
 
-@libs.attr(tier=1)
+@libs.attr(tier=2)
 class TestThreadsOnNegative(BasicThreadSlaClass):
     """
     Negative: Verify number of cores on host when threads on
@@ -656,7 +656,7 @@ class TestCPUPinCase1(BasicSlaClass):
             "Successfully changed VCPU pinning to 0#1-%s", upper
         )
 
-    @libs.attr(tier=1)
+    @libs.attr(tier=2)
     @polarion("RHEVM3-12222")
     def test_cpupin_format3(self):
         """
@@ -671,7 +671,7 @@ class TestCPUPinCase1(BasicSlaClass):
         )
         logger.info("Unable to change VCPU pinning to 0#^1")
 
-    @libs.attr(tier=1)
+    @libs.attr(tier=2)
     @polarion("RHEVM3-12223")
     def test_cpupin_format4(self):
         """
@@ -741,7 +741,7 @@ class TestCPUPinCase1(BasicSlaClass):
         )
         logger.info("Successfully changed VCPU pinning to 0#1,2,3")
 
-    @libs.attr(tier=1)
+    @libs.attr(tier=2)
     @polarion("RHEVM3-12227")
     def test_cpupin_format8(self):
         """
@@ -756,7 +756,7 @@ class TestCPUPinCase1(BasicSlaClass):
         )
         logger.info("Successfully changed VCPU pinning to 0#0_0#1.")
 
-    @libs.attr(tier=1)
+    @libs.attr(tier=2)
     @polarion("RHEVM3-12228")
     def test_cpupin_format9(self):
         """
@@ -769,7 +769,7 @@ class TestCPUPinCase1(BasicSlaClass):
         )
         logger.info("Unable to change VCPU pinning to 0#A.")
 
-    @libs.attr(tier=1)
+    @libs.attr(tier=2)
     @polarion("RHEVM3-12229")
     def test_cpupin_format10(self):
         """
@@ -781,7 +781,7 @@ class TestCPUPinCase1(BasicSlaClass):
         except ValueError:
             logger.info("Unable to change VCPU pinning to A#0")
 
-    @libs.attr(tier=1)
+    @libs.attr(tier=2)
     @polarion("RHEVM3-12230")
     def test_cpupin_format15(self):
         """
@@ -795,7 +795,7 @@ class TestCPUPinCase1(BasicSlaClass):
         )
         logger.info("Unable to change VCPU pinning to 0#0-1,^0,^1")
 
-    @libs.attr(tier=1)
+    @libs.attr(tier=2)
     @polarion("RHEVM3-12231")
     def test_cpupin_format16(self):
         """
@@ -813,7 +813,7 @@ class TestCPUPinCase1(BasicSlaClass):
             "Success to run vm"
         )
 
-    @libs.attr(tier=1)
+    @libs.attr(tier=2)
     @polarion("RHEVM3-12232")
     def test_cpupin_format17(self):
         """
@@ -826,7 +826,7 @@ class TestCPUPinCase1(BasicSlaClass):
         )
         logger.info("Unable to change VCPU pinning to 0#")
 
-    @libs.attr(tier=1)
+    @libs.attr(tier=2)
     @polarion("RHEVM3-12233")
     def test_cpupin_format18(self):
         """
@@ -842,7 +842,7 @@ class TestCPUPinCase1(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=1)
+@libs.attr(tier=2)
 class TestCPUPinCase2(BasicSlaClass):
     """
     Negative: Set CPU pinning to a migratable VM
@@ -866,7 +866,7 @@ class TestCPUPinCase2(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=1)
+@libs.attr(tier=2)
 class TestCPUPinCase3(BasicSlaClass):
     """
     Negative: Change CPU pinned VM to migratable
@@ -904,7 +904,7 @@ class TestCPUPinCase3(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=1)
+@libs.attr(tier=2)
 class TestCPUPinCase4(BasicSlaClass):
     """
     Negative: Set CPU pinning to a user migratable VM
@@ -933,7 +933,7 @@ class TestCPUPinCase4(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=1)
+@libs.attr(tier=2)
 class TestCPUPinCase5(BasicSlaClass):
     """
     Negative: Change CPU pinned VM to user migratable
@@ -972,7 +972,7 @@ class TestCPUPinCase5(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=1)
+@libs.attr(tier=2)
 class TestCPUPinCase6(BasicSlaClass):
     """
     Check if pinning holds on random pCPU"s
@@ -1119,7 +1119,7 @@ class TestCPUPinCase7(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=1)
+@libs.attr(tier=2)
 class TestCPUPinCase8(BasicSlaClass):
     """
     Negative: Set CPU pinning to a non migratable VM with no host

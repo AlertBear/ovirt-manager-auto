@@ -150,7 +150,7 @@ class CreateTemplateFromVM(BaseTestCase):
         super(CreateTemplateFromVM, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6178(BaseTestCase):
     """
     Shutdown backup VM with attached snapshot of source vm and verify
@@ -187,7 +187,7 @@ class TestCase6178(BaseTestCase):
         self.assertTrue(is_disk_attached, "Backup disk is not attached")
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase6182(BaseTestCase):
     """
     Restart vdsm / engine while snapshot disk attached to backup vm
@@ -270,7 +270,7 @@ class TestCase6182(BaseTestCase):
         logger.info("Disk is not corrupted")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6183(BaseTestCase):
     """
     Attach snapshot disk of source VM to backup VM
@@ -323,7 +323,7 @@ class TestCase6183(BaseTestCase):
         logger.info("%s contain backup volume", helpers.TRANSIENT_DIR_PATH)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6176(BaseTestCase):
     """
     Attach snapshot disk of source VM to running backup VM
@@ -375,7 +375,7 @@ class TestCase6176(BaseTestCase):
                     helpers.TRANSIENT_DIR_PATH)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6174(BaseTestCase):
     """
     Create source VM snapshot, attach snapshot to backup VM
@@ -414,7 +414,7 @@ class TestCase6174(BaseTestCase):
                                  % self.snap_desc)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6165(TestCase):
     """
     Try to perform snapshot operations on the source VM:
@@ -516,7 +516,7 @@ class TestCase6165(TestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6166(CreateTemplateFromVM):
     """
     Create a template of a backup VM
@@ -539,7 +539,7 @@ class TestCase6166(CreateTemplateFromVM):
         self._create_template()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6167(CreateTemplateFromVM):
     """
     Create a template of a source VM
@@ -562,7 +562,7 @@ class TestCase6167(CreateTemplateFromVM):
         self._create_template()
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase6168(TestCase):
     """
     Block connection from host to storage domain 2 that contains
@@ -681,7 +681,7 @@ class TestCase6168(TestCase):
         vms.start_vms(self.vm_names[1], 1, wait_for_ip=False)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase6169(TestCase):
     """
     Full flow of backup/restore API
@@ -823,7 +823,7 @@ class TestCase6169(TestCase):
                 storage_domain=self.storage_domains[0])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6170(TestCase):
     """
     Attach more than 1 backup disks (i.e. snapshot disks) to backup vm
@@ -892,7 +892,7 @@ class TestCase6170(TestCase):
                 logger.info("Disk %s - removed", disk.get_alias())
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6171(TestCase):
     """
     During a vm disk migration, try to attach the snapshot disk to backup vm
@@ -953,7 +953,7 @@ class TestCase6171(TestCase):
         wait_for_jobs([config.ENUMS['job_move_or_copy_disk']])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6172(BaseTestCase):
     """
     Attach snapshot disk to backup vm more than once
@@ -988,7 +988,7 @@ class TestCase6172(BaseTestCase):
                                  "to backup vm")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6173(TestCase):
     """
     During a vm disk live migration,

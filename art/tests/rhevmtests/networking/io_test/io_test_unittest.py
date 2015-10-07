@@ -47,7 +47,7 @@ class TestIOTestCaseBase(TestCase):
             logger.error("Cannot remove network from setup")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestIOTest01(TestIOTestCaseBase):
     """
     Positive: Creating & adding networks with valid names to the cluster
@@ -117,7 +117,7 @@ class TestIOTest01(TestIOTestCaseBase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestIOTest02(TestIOTestCaseBase):
     """
     Negative: Trying to create networks with invalid IPs
@@ -179,7 +179,7 @@ class TestIOTest02(TestIOTestCaseBase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestIOTest03(TestIOTestCaseBase):
     """
     Negative: Trying to create networks with invalid netmask
@@ -241,7 +241,7 @@ class TestIOTest03(TestIOTestCaseBase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestIOTest04(TestIOTestCaseBase):
     """
     Negative: Trying to create a network with netmask but without an ip address
@@ -274,7 +274,7 @@ class TestIOTest04(TestIOTestCaseBase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestIOTest05(TestIOTestCaseBase):
     """
     Negative: Trying to create a network with static ip but without netmask
@@ -305,7 +305,7 @@ class TestIOTest05(TestIOTestCaseBase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestIOTest06(TestIOTestCaseBase):
     """
     Positive: Creating networks with valid MTU and adding them to a cluster.
@@ -362,7 +362,7 @@ class TestIOTest06(TestIOTestCaseBase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestIOTest07(TestIOTestCaseBase):
     """
     Negative: Trying to create a network with invalid usages value
@@ -385,7 +385,7 @@ class TestIOTest07(TestIOTestCaseBase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestIOTest08(TestIOTestCaseBase):
     """
     Positive: Creating networks with valid VLAN IDs & adding them to a cluster.
@@ -451,7 +451,7 @@ class TestIOTest08(TestIOTestCaseBase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestIOTest09(TestIOTestCaseBase):
     """
     Positive: Create network and edit its name to valid name
@@ -524,7 +524,7 @@ class TestIOTest09(TestIOTestCaseBase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestIOTest10(TestIOTestCaseBase):
     """
     Positive: change network VLAN tag to valid VLAN tag
@@ -593,7 +593,7 @@ class TestIOTest10(TestIOTestCaseBase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestIOTest11(TestIOTestCaseBase):
     """
     Positive: Change VM network to be non-VM network

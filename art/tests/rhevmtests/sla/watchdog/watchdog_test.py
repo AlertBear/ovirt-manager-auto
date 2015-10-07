@@ -45,7 +45,7 @@ WATCHDOG_CONFIG_FILE = '/etc/watchdog.conf'
 ########################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class WatchdogVM(TestCase):
     """
     Base class for vm watchdog operations
@@ -265,7 +265,7 @@ class WatchdogVM(TestCase):
 ########################################################################
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestWatchdogCRUD(WatchdogVM):
     """
     Create Vm with watchdog
@@ -681,7 +681,7 @@ class WatchdogHighAvailability(WatchdogActionTest):
 #######################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class WatchdogEvents(WatchdogActionTest):
     """
     Event in logs

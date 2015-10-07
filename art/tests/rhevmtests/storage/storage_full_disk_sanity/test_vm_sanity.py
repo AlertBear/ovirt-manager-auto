@@ -56,7 +56,7 @@ def _prepare_data(sparse, vol_format, template_names, storage_type):
     template_names[(sparse, vol_format)] = template_name
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4710(TestCase):
     """
     storage vm sanity test, cloning vm from template with changing disk type

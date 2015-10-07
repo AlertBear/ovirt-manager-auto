@@ -33,7 +33,7 @@ RESERVATION_TIMEOUT = 300
 ########################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class HAReservation(TestCase):
     """
     Base class for operations
@@ -136,7 +136,7 @@ class HAReservation(TestCase):
 ########################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class Maintenance(HAReservation):
     """
     Moving host to maintenance should make cluster not HA safe

@@ -39,7 +39,7 @@ CLUSTER_POLICIES = [
 ]
 
 
-@attr(tier=1)
+@attr(tier=2)
 class RhevmClusterPolicies(TestCase):
     __test__ = False
     load_hosts = None
@@ -335,7 +335,7 @@ class TestPutHostToMaintenanceED(EvenlyDistributed):
         super(TestPutHostToMaintenanceED, cls).teardown_class()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCheckClusterPolicyParameters(TestCase):
     """
     Check different values for cluster policy parameters:

@@ -65,7 +65,7 @@ def connectionTest():
     return True
 
 
-@attr(tier=0)
+@attr(tier=1)
 class JDBCCLIUser(TestCase):
     """Test managing of users via aaa-jdbc CLI"""
     __test__ = True
@@ -112,7 +112,7 @@ class JDBCCLIUser(TestCase):
         # If setup module fails, this case will never run
         pass
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion('RHEVM3-12857')
     def test_011_add_same_user(self):
         """ add user via aaa-jdbc cli """
@@ -151,7 +151,7 @@ class JDBCCLIUser(TestCase):
         )
         assert not connectionTest(), "User '%s' can login" % TEST_USER_DISABLED
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion('RHEVM3-11329')
     def test_040_update_user(self):
         """ update user via aaa-jdbc cli """
@@ -161,7 +161,7 @@ class JDBCCLIUser(TestCase):
             attribute='firstName=user1',
         )
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion('RHEVM3-11301')
     @bz({'1258271': {'engine': None, 'version': ['3.6']}})
     def test_050_lock_user(self):
@@ -182,7 +182,7 @@ class JDBCCLIUser(TestCase):
         )
         assert not connectionTest()  # It's locked now..
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion('RHEVM3-11331')
     def test_060_unlock_user(self):
         """ unlock user via aaa-jdbc cli """
@@ -201,7 +201,7 @@ class JDBCCLIUser(TestCase):
         assert USER_CLI.run('delete', TEST_USER_DELETE)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class JDBCCLIGroupUser(TestCase):
     """Test managing of users via aaa-jdbc CLI"""
     __test__ = True
@@ -324,7 +324,7 @@ class JDBCCLIGroupUser(TestCase):
         ), "Failed to delete group '%s'" % TEST_GROUP_DELETE
 
 
-@attr(tier=0)
+@attr(tier=1)
 class JDBCCLIQuery(TestCase):
     """Test quering of users/groups via aaa-jdbc CLI"""
     __test__ = True
@@ -346,7 +346,7 @@ class JDBCCLIQuery(TestCase):
         """ query groups via aaa-jdbc cli """
         assert self.query_cli.run(what='group'), "Failed to search for groups"
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion('RHEVM3-12858')
     def test_030_query_nothing(self):
         """ query nothing via aaa-jdbc cli """

@@ -77,7 +77,7 @@ class TestJumboFramesTestCaseBase(TestCase):
             logger.error("Cannot remove all networks from setup")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestJumboFramesCase01(TestJumboFramesTestCaseBase):
     """
     Test the bridged VM network with MTU 5000
@@ -116,7 +116,7 @@ class TestJumboFramesCase01(TestJumboFramesTestCaseBase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestJumboFramesCase02(TestJumboFramesTestCaseBase):
     """
     Positive: 1) Creates 2 Non_VM networks with Jumbo Frames
@@ -194,7 +194,7 @@ class TestJumboFramesCase02(TestJumboFramesTestCaseBase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
     """
     Positive: Test BOND mode change
@@ -264,7 +264,7 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
     """
     Positive: Creates 2 bridged VLAN network and check the network files.
@@ -319,7 +319,7 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
     """
     Positive: Creates bridged VLAN network over bond on host
@@ -388,7 +388,7 @@ class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestJumboFramesCase06(TestJumboFramesTestCaseBase):
     """
     Negative: 1. creates bond0 and attach VLAN network with MTU 9000 to it.
@@ -435,7 +435,7 @@ class TestJumboFramesCase06(TestJumboFramesTestCaseBase):
             )
 
 
-@attr(tier=1, extra_reqs={'network_hosts': True})
+@attr(tier=2, extra_reqs={'network_hosts': True})
 class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
     """
     Positive: Creates 2 bridged VLAN networks and check traffic between VMs
@@ -555,7 +555,7 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
         super(TestJumboFramesCase07, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestJumboFramesCase08(TestJumboFramesTestCaseBase):
     """
     Positive: Creates bridged VLAN network over bond on Host with MTU
@@ -638,7 +638,7 @@ class TestJumboFramesCase08(TestJumboFramesTestCaseBase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestJumboFramesCase09(TestJumboFramesTestCaseBase):
     """
     In the host, changing eth1 MTU to 2000 (using linux command), then adding
@@ -706,7 +706,7 @@ class TestJumboFramesCase09(TestJumboFramesTestCaseBase):
             )
 
 
-@attr(tier=1, extra_reqs={'network_hosts': True})
+@attr(tier=2, extra_reqs={'network_hosts': True})
 class TestJumboFramesCase10(TestJumboFramesTestCaseBase):
     """
     Attach a network with MTU 9000 to bond on two hosts, checking that
@@ -769,7 +769,7 @@ class TestJumboFramesCase10(TestJumboFramesTestCaseBase):
         logger.info("Traffic between the hosts succeed")
 
 
-@attr(tier=1, extra_reqs={'network_hosts': True})
+@attr(tier=2, extra_reqs={'network_hosts': True})
 class TestJumboFramesCase11(TestJumboFramesTestCaseBase):
     """
     Positive: Checking connectivity between two VMs over bond with the
@@ -841,7 +841,7 @@ class TestJumboFramesCase11(TestJumboFramesTestCaseBase):
         super(TestJumboFramesCase11, cls).teardown_class()
 
 
-@attr(tier=1, extra_reqs={'network_hosts': True})
+@attr(tier=2, extra_reqs={'network_hosts': True})
 class TestJumboFramesCase12(TestJumboFramesTestCaseBase):
     """
     Adding multiple VLANs over bond, configuring different MTU
@@ -947,7 +947,7 @@ class TestJumboFramesCase12(TestJumboFramesTestCaseBase):
         logger.info("Traffic between the hosts succeed")
 
 
-@attr(tier=1, extra_reqs={'network_hosts': True})
+@attr(tier=2, extra_reqs={'network_hosts': True})
 class TestJumboFramesCase13(TestJumboFramesTestCaseBase):
     """
     Adding multiple VLANs over bond, configuring different MTU
@@ -1023,7 +1023,7 @@ class TestJumboFramesCase13(TestJumboFramesTestCaseBase):
         super(TestJumboFramesCase13, cls).teardown_class()
 
 
-@attr(tier=1, extra_reqs={'network_hosts': True})
+@attr(tier=2, extra_reqs={'network_hosts': True})
 class TestJumboFramesCase14(TestJumboFramesTestCaseBase):
     """
     Positive: Creates bridged VLAN network with 5000 MTU values

@@ -207,7 +207,7 @@ class BaseCaseIsoDomains(TestCase):
         )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase11576Shared(BaseCaseIsoDomains):
     """
     Test detaching iso domains when an iso image is inserted in a vm under a
@@ -257,7 +257,7 @@ class TestCase11576Shared(BaseCaseIsoDomains):
             run_once=True, iso_domain=config.ISO_NFS_DOMAIN)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class PlanIsoDomainLocal(BaseCaseIsoDomains):
     """
     Test detaching iso domains when an iso image is inserted in a vm under a

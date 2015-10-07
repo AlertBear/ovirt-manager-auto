@@ -20,7 +20,7 @@ import rhevmtests.networking.helper as net_help
 logger = logging.getLogger("Cumulative_RX_TX_Statistics_Cases")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class CumulativeNetworkUsageStatisticsCase1(TestCase):
     """
     Add vNIC to VM and start VM

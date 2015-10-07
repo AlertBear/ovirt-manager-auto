@@ -14,7 +14,7 @@ from art.unittest_lib import attr, CoreSystemTest as TestCase
 LOGGER = logging.getLogger(__name__)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class IndirectMembership(TestCase):
     """
     Test indirect membership.
@@ -82,7 +82,7 @@ class IndirectMembershipNonRecursive(IndirectMembership):
         self.indirect_group_membership()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class GroupRecursion(TestCase):
     """
     Test group recursion handle.

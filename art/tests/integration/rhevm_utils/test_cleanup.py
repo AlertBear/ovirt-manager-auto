@@ -38,7 +38,7 @@ class CleanUpTestCaseBase(RHEVMUtilsTestCase):
         logger.info("%s: clean engine with %s", host, params)
 
 
-@attr(tier=0, extra_reqs={'utility': NAME})
+@attr(tier=1, extra_reqs={'utility': NAME})
 class CleanUpTestCase(CleanUpTestCaseBase):
 
     __test__ = True

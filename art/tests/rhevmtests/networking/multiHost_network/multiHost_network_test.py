@@ -73,7 +73,7 @@ class TestMultiHostTestCaseBase(TestCase):
             logger.error("Cannot remove networks from setup")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMultiHostCase01(TestMultiHostTestCaseBase):
     """
     Update untagged network with VLAN
@@ -208,7 +208,7 @@ class TestMultiHostCase01(TestMultiHostTestCaseBase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMultiHostCase02(TestMultiHostTestCaseBase):
     """
     Update network with the default MTU to the MTU of 9000
@@ -339,7 +339,7 @@ class TestMultiHostCase02(TestMultiHostTestCaseBase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMultiHostCase03(TestMultiHostTestCaseBase):
     """
     Update VM network to be non-VM network
@@ -442,7 +442,7 @@ class TestMultiHostCase03(TestMultiHostTestCaseBase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMultiHostCase04(TestMultiHostTestCaseBase):
     """
     Update network name:
@@ -549,7 +549,7 @@ class TestMultiHostCase04(TestMultiHostTestCaseBase):
             raise NetworkException("Couldn't update network name when should")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMultiHostCase05(TestMultiHostTestCaseBase):
     """
     Update network on running/non-running VM:
@@ -806,7 +806,7 @@ class TestMultiHostCase05(TestMultiHostTestCaseBase):
         super(TestMultiHostCase05, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMultiHostCase06(TestMultiHostTestCaseBase):
     """
     Update network when template is using it:
@@ -988,7 +988,7 @@ class TestMultiHostCase06(TestMultiHostTestCaseBase):
         super(TestMultiHostCase06, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMultiHostCase07(TestMultiHostTestCaseBase):
     """
     Update untagged network with VLAN and MTU when several hosts reside under
@@ -1134,7 +1134,7 @@ class TestMultiHostCase07(TestMultiHostTestCaseBase):
         super(TestMultiHostCase07, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMultiHostCase08(TestMultiHostTestCaseBase):
     """
     Update untagged network with VLAN and MTU when several hosts reside under
@@ -1365,7 +1365,7 @@ class TestMultiHostCase08(TestMultiHostTestCaseBase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMultiHostCase09(TestMultiHostTestCaseBase):
     """
     Update untagged network with VLAN when that network is attached to
@@ -1505,7 +1505,7 @@ class TestMultiHostCase09(TestMultiHostTestCaseBase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMultiHostCase10(TestMultiHostTestCaseBase):
     """
     Update network with the default MTU to the new MTU when that network
@@ -1639,7 +1639,7 @@ class TestMultiHostCase10(TestMultiHostTestCaseBase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMultiHostCase11(TestMultiHostTestCaseBase):
     """
     Update VM network to be non-VM network when that network is attached to

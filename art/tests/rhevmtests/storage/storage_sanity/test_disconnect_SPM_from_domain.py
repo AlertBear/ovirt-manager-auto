@@ -34,7 +34,7 @@ def teardown_module():
     )
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase4742(TestCase):
     """
     storage sanity test, disconnect SPM from storage

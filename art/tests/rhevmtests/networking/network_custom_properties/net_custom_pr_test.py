@@ -55,7 +55,7 @@ class TestNCPCaseBase(TestCase):
             logger.error("Cannot remove networks from setup")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetCustPrCase01(TestNCPCaseBase):
     """
     Verify bridge_opts doesn't exist for the non-VM network
@@ -116,7 +116,7 @@ class TestNetCustPrCase01(TestNCPCaseBase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetCustPrCase02(TestNCPCaseBase):
     """
     Verify bridge_opts doesn't exist for the VLAN non-VM network over bond
@@ -179,7 +179,7 @@ class TestNetCustPrCase02(TestNCPCaseBase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetCustPrCase03(TestNCPCaseBase):
     """
     Configure bridge_opts with non-default value
@@ -258,7 +258,7 @@ class TestNetCustPrCase03(TestNCPCaseBase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetCustPrCase04(TestNCPCaseBase):
     """
     Configure bridge_opts with non-default value
@@ -358,7 +358,7 @@ class TestNetCustPrCase04(TestNCPCaseBase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetCustPrCase05(TestNCPCaseBase):
     """
     Configure bridge_opts with non-default value over bond
@@ -459,7 +459,7 @@ class TestNetCustPrCase05(TestNCPCaseBase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetCustPrCase06(TestNCPCaseBase):
     """
     Configure bridge_opts with non-default value for VLAN network over NIC
@@ -563,7 +563,7 @@ class TestNetCustPrCase06(TestNCPCaseBase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetCustPrCase07(TestNCPCaseBase):
     """
     Configure ethtool with non-default value
@@ -634,7 +634,7 @@ class NetCustPrCase07(TestNCPCaseBase):
                                    "updated correctly with default value")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetCustPrCase08(TestNCPCaseBase):
     """
     Configure ethtool_opts with non-default value
@@ -720,7 +720,7 @@ class TestNetCustPrCase08(TestNCPCaseBase):
                                        "correctly with default value")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetCustPrCase09(TestNCPCaseBase):
     """
     Configure ethtool with non-default value for the NIC with network
@@ -833,7 +833,7 @@ class TestNetCustPrCase09(TestNCPCaseBase):
         super(TestNetCustPrCase09, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetCustPrCase10(TestNCPCaseBase):
     """
     Configure ethtool and bridge opts with non-default value
@@ -926,7 +926,7 @@ class TestNetCustPrCase10(TestNCPCaseBase):
                                    "updated correctly with default value")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetCustPrCase11(TestNCPCaseBase):
     """
     Create a network without ethtool or bridge opts configured
@@ -1025,7 +1025,7 @@ class TestNetCustPrCase11(TestNCPCaseBase):
                                    "updated correctly with default value")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetCustPrCase12(TestNCPCaseBase):
     """
     Configure several ethtool_opts  with non-default value for the NIC with
@@ -1138,7 +1138,7 @@ class TestNetCustPrCase12(TestNCPCaseBase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetCustPrCase13(TestNCPCaseBase):
     """
     Create several ethtool and bridge opts while adding network to the Host
@@ -1299,7 +1299,7 @@ class TestNetCustPrCase13(TestNCPCaseBase):
         super(TestNetCustPrCase13, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetCustPrCase14(TestNCPCaseBase):
     """
     Configure ethtool with non-default value over bond
@@ -1399,7 +1399,7 @@ class TestNetCustPrCase14(TestNCPCaseBase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetCustPrCase15(TestNCPCaseBase):
     """
     Configure ethtool_opts with non-default value
@@ -1531,7 +1531,7 @@ class TestNetCustPrCase15(TestNCPCaseBase):
                     )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetCustPrCase16(TestNCPCaseBase):
     """
     Configure ethtool and bridge opts with non-default value over Bond

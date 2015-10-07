@@ -42,7 +42,7 @@ NON_RESPONSIVE = ENUMS['host_state_non_responsive']
 ########################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class EvenVmCountDistribution(TestCase):
     """Base test class"""
     __test__ = False
@@ -234,7 +234,7 @@ class StartVmUnderClusterPolicy(TwoHostsTests):
         self._check_migration(config.HOSTS[1], NUM_OF_VMS_ON_HOST)
 
 
-@attr(tier=3)
+@attr(tier=4)
 class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
     """
     Positive: Start vms under vm_evenly_distributed cluster policy,

@@ -73,7 +73,7 @@ def _activate_both_hosts():
                 raise errors.HostException("cannot activate host: %s" % host)
 
 
-@attr(tier=2, extra_reqs={'pm': PM_TYPE})
+@attr(tier=3, extra_reqs={'pm': PM_TYPE})
 class SoftFencing(TestCase):
 
     __test__ = False

@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
 
 
-@attr(team='automationInfra', tier=0)
+@attr(team='automationInfra', tier=1)
 class TestCaseMixed(TestCase):
     """
     Scenario tests

@@ -36,7 +36,7 @@ TIMEOUT = 60
 CONN_TIMEOUT = 30
 
 
-@attr(tier=0)
+@attr(tier=1)
 class Payloads(TestCase):
     """
     Base class for Payloads Test
@@ -247,7 +247,7 @@ class UpdateVmWithCdromPayloadAndCheckPayloadObject(PayloadViaUpdate):
         self.assertTrue(self._check_existence_of_payload(PAYLOADS_DEVICES[0]))
 
 
-@attr(tier=1)
+@attr(tier=2)
 class CdromPayloadComplexContent(PayloadViaUpdate):
     """
     Create new vm with cdrom payload, that have complex content via update

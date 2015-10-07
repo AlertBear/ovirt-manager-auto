@@ -47,7 +47,7 @@ def teardown_module():
         )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase11591(TestCase):
     """
     storage sanity test, create and extend a Data domain
@@ -127,7 +127,7 @@ class TestCase11591(TestCase):
                         "The extended storage domain size hasn't increased")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11592(TestCase):
     """
     Storage sanity test, changing domain status
@@ -298,7 +298,7 @@ class TestCase11592(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11593(TestCase):
     """
     storage sanity test, changing master domain
@@ -340,7 +340,7 @@ class TestCase11593(TestCase):
             "Cannot activate old master domain")
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase5830(TestCase):
     """
     Polarion Test Case 5830 - Manually Re-assign SPM

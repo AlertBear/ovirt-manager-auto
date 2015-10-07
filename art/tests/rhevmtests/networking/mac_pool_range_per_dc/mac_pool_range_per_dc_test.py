@@ -21,7 +21,7 @@ import logging
 logger = logging.getLogger("MAC_Pool_Range_Per_DC_Cases")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange01(TestCase):
     """
     Try to use old configuration with engine-config
@@ -54,7 +54,7 @@ class TestMacPoolRange01(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange02(TestCase):
     """
     Default MAC pool range
@@ -119,7 +119,7 @@ class TestMacPoolRange02(TestCase):
         helper.remove_dc()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange03(TestCase):
     """
     Creating VNICs with updated MAC pool takes the MACs from the new pool
@@ -178,7 +178,7 @@ class TestMacPoolRange03(TestCase):
             helper.remove_mac_pool(mac_pool_name=mac_pool)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange04(TestCase):
     """
     Define new DC with new MAC address pool
@@ -210,7 +210,7 @@ class TestMacPoolRange04(TestCase):
         helper.remove_mac_pool()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange05(TestCase):
     """
      Two pools with same name
@@ -261,7 +261,7 @@ class TestMacPoolRange05(TestCase):
             helper.remove_mac_pool(mac_pool_name=mac_pool)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange06(TestCase):
     """
     Extend MAC pool range
@@ -319,7 +319,7 @@ class TestMacPoolRange06(TestCase):
         helper.remove_mac_pool()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange07(TestCase):
     """
     Shrink MAC pool range
@@ -380,7 +380,7 @@ class TestMacPoolRange07(TestCase):
         helper.remove_mac_pool()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange08(TestCase):
     """
     Add/remove ranges from pool
@@ -446,7 +446,7 @@ class TestMacPoolRange08(TestCase):
         helper.remove_mac_pool()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange09(TestCase):
     """
     Non-Continues ranges in MAC pool
@@ -557,7 +557,7 @@ class TestMacPoolRange09(TestCase):
         helper.remove_mac_pool()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange10(TestCase):
     """
     Manually assign MAC from/not from MAC pool range
@@ -612,7 +612,7 @@ class TestMacPoolRange10(TestCase):
         helper.remove_mac_pool()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange11(TestCase):
     """
     Assign same pool to multiple DC's -Disallow Duplicates
@@ -690,7 +690,7 @@ class TestMacPoolRange11(TestCase):
         helper.remove_mac_pool()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange12(TestCase):
     """
     Assign same pool to multiple DCs -Allow Duplicates
@@ -772,7 +772,7 @@ class TestMacPoolRange12(TestCase):
         helper.remove_mac_pool()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange13(TestCase):
     """
     Combine MAC pool range of Unicast and multicast MAC's
@@ -828,7 +828,7 @@ class TestMacPoolRange13(TestCase):
         helper.remove_mac_pool()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange14(TestCase):
     """
     Create VM from Template
@@ -938,7 +938,7 @@ class TestMacPoolRange14(TestCase):
         helper.remove_mac_pool()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange15(TestCase):
     """
     Negative: Try to remove the default MAC pool
@@ -957,7 +957,7 @@ class TestMacPoolRange15(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange16(TestCase):
     """
     Removal of MAC pool assigned to DC
@@ -1002,7 +1002,7 @@ class TestMacPoolRange16(TestCase):
         helper.remove_mac_pool()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange17(TestCase):
     """
     Removal of MAC pool that is not assigned to DC
@@ -1051,7 +1051,7 @@ class TestMacPoolRange17(TestCase):
         helper.remove_mac_pool(mac_pool_name=c.MAC_POOL_NAME[2])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange18(TestCase):
     """
     Removal of DC with custom MAC pool
@@ -1091,7 +1091,7 @@ class TestMacPoolRange18(TestCase):
         helper.remove_mac_pool()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange19(TestCase):
     """
     Removal of DC with custom MAC pool when that MAC pool is assigned to 2 DCs
@@ -1147,7 +1147,7 @@ class TestMacPoolRange19(TestCase):
         helper.remove_mac_pool()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange20(TestCase):
     """
     Recreate DC with custom MAC pool and make sure it was
@@ -1206,7 +1206,7 @@ class TestMacPoolRange20(TestCase):
         helper.remove_mac_pool()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange21(TestCase):
     """
     MAC pool support for DCs with versions less than 3.6
@@ -1247,7 +1247,7 @@ class TestMacPoolRange21(TestCase):
         helper.remove_mac_pool()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMacPoolRange22(TestCase):
     """
      Assign MAC's for vNIC's from custom MAC pool range for DC with 3.5 version

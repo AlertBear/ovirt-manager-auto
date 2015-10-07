@@ -64,7 +64,7 @@ def teardown_module():
     users.removeUser(True, config.SSO_USER, config.OPENLDAP_SSO['authz_name'])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class SSOLogin(TestCase):
     """
     Test sso login.

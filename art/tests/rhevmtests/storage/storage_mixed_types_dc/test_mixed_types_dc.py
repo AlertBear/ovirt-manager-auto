@@ -175,7 +175,7 @@ class IscsiNfsSdVMs(IscsiNfsSD):
 
 
 # TODO: doesn't work - need verification when FC is available
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4558(BaseCaseDCMixed):
     """
     * Create FC and iSCSI Storage Domains.
@@ -216,7 +216,7 @@ class TestCase4558(BaseCaseDCMixed):
             disk_name=self.fc_disk, target_domain=self.iscsi)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4561(IscsiNfsSD):
     """
     * Create a shared DC.
@@ -284,7 +284,7 @@ class TestCase4561(IscsiNfsSD):
                                self.nfs, self.cluster_name)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4562(IscsiNfsSdVMs):
     """
     * Create a shared DC.
@@ -345,7 +345,7 @@ class TestCase4562(IscsiNfsSdVMs):
         add_snapshot_and_clone(self.iscsi_vm)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4563(IscsiNfsSD):
     """
     * Create a shared DC.
@@ -423,7 +423,7 @@ class TestCase4563(IscsiNfsSD):
         clone_and_verify(self.nfs)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4565(IscsiNfsSD):
     """
     Create a shared DC.
@@ -494,7 +494,7 @@ class TestCase4565(IscsiNfsSD):
         assert ll_vms.removeSnapshot(True, self.vm_name, snap_name)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4557(IscsiNfsSD):
     """
     Create a shared DC.
@@ -565,7 +565,7 @@ class TestCase4557(IscsiNfsSD):
 
 # TODO: doesn't work - wait until reinitialize is on rest
 # RFE https://bugzilla.redhat.com/show_bug.cgi?id=1092374
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4556(BaseCaseDCMixed):
     """
     Create a shared DC.
@@ -607,7 +607,7 @@ class TestCase4556(BaseCaseDCMixed):
 
 
 # TODO: doesn't work, need FC
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4555(IscsiNfsSD):
     """
     Create DataCenter of shared type.
@@ -638,7 +638,7 @@ class TestCase4555(IscsiNfsSD):
         # Make matrix...
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4554(BaseCaseDCMixed):
     """
     Create DataCenter of shared type.
@@ -686,7 +686,7 @@ class TestCase4554(BaseCaseDCMixed):
         super(TestCase4554, self).tearDown()
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase4566(IscsiNfsSD):
     """
     Create a shared DC.
@@ -814,7 +814,7 @@ class TestCase4566(IscsiNfsSD):
         super(TestCase4566, self).tearDown()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase4564(IscsiNfsSD):
     """
     Create a shared DC.
@@ -863,7 +863,7 @@ class TestCase4564(IscsiNfsSD):
         self.assertTrue(success, "Failed to create filesystem: %s" % output)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4551(IscsiNfsSD):
     """
     Create a shared DC with two Storage Domans - ISCSI and NFS.
@@ -922,7 +922,7 @@ class TestCase4551(IscsiNfsSD):
             "Disk %s should be Thin Proivisioning" % disk.get_alias())
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4553(IscsiNfsSD):
     """
     Create shared DC.

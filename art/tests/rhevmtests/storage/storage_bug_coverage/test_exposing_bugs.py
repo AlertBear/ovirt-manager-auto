@@ -159,7 +159,7 @@ Add a second bootable disks to a vm should fail
 """
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11909(TestCase):
     """
     Test case 11909 - Test that exposes BZ1066834
@@ -232,7 +232,7 @@ Test exposing BZ 969343
 """
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11630(EnvironmentWithTwoHosts):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=969343
@@ -396,7 +396,7 @@ Test image lock free after engine restart
 """
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase11907(TestCase):
     """
     bug coverage test, restart engine during template creation
@@ -520,7 +520,7 @@ Maintenance spm with a running vm
 """
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase11956(EnvironmentWithTwoHosts):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=986961
@@ -582,7 +582,7 @@ RHEVM3/wiki/Storage/3_3_Storage_Bug_Coverage
 """
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11625(TestCase):
     """ Test exposing https://bugzilla.redhat.com/show_bug.cgi?id=962549
 
@@ -656,7 +656,7 @@ class TestCase11625(TestCase):
             raise errors.VMException("Failed to remove vm %s" % self.vm_name)
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase11624(TestCase):
     """
     Test exposing https://bugzilla.redhat.com/show_bug.cgi?id=1119664

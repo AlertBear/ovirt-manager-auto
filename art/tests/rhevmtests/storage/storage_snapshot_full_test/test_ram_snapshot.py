@@ -245,7 +245,7 @@ class CreateSnapshotWithMemoryState(DCWithStoragesActive):
         super(CreateSnapshotWithMemoryState, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5129(CreateSnapshotWithMemoryState):
     """
     Polarion Test Case 5129 - Create Snapshot with Memory State on SPM
@@ -265,7 +265,7 @@ class TestCase5129(CreateSnapshotWithMemoryState):
         self.create_snapshot()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5140(CreateSnapshotWithMemoryState):
     """
     Polarion Test Case 5140 - Create Snapshot with Memory State on HSM
@@ -324,7 +324,7 @@ class ReturnToSnapshot(VMWithMemoryStateSnapshot):
                         (self.pids[0], self.vm))
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase5139(ReturnToSnapshot):
     """
     Polarion Test Case 5139 - Preview to RAM Snapshot
@@ -357,7 +357,7 @@ class TestCase5139(ReturnToSnapshot):
         super(TestCase5139, self).tearDown()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase5138(ReturnToSnapshot):
     """
     Polarion Test Case 5138 - Restore RAM Snapshot
@@ -377,7 +377,7 @@ class TestCase5138(ReturnToSnapshot):
         self.return_to_ram_snapshot()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5137(VMWithMemoryStateSnapshot):
     """
     Polarion Test Case 5137 - VM with multiple RAM Snapshots
@@ -501,7 +501,7 @@ class TestCase5137(VMWithMemoryStateSnapshot):
         super(TestCase5137, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5136(VMWithMemoryStateSnapshot):
     """
     Polarion test case 5136 - Create vm from snapshot with memory
@@ -567,7 +567,7 @@ class TestCase5136(VMWithMemoryStateSnapshot):
         super(TestCase5136, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5134(VMWithMemoryStateSnapshot):
     """
     Polarion test case 5134 - Import a vm with memory snapshot
@@ -643,7 +643,7 @@ class TestCase5134(VMWithMemoryStateSnapshot):
         super(TestCase5134, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5133(VMWithMemoryStateSnapshot):
     """
     Polarion test case 5133 - Remove a snapshot with memory state
@@ -676,7 +676,7 @@ class TestCase5133(VMWithMemoryStateSnapshot):
                                               self.cmdlines[0]))
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase5131(VMWithMemoryStateSnapshot):
     """
     Polarion test case 5131 - Stateless vm with memory snapshot

@@ -108,7 +108,7 @@ class SuperVDSMTestBase(TestCase):
         self.machine.enableServiceSupport()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase6269(SuperVDSMTestBase):
     """
     supervdsm test case, sanity
@@ -141,7 +141,7 @@ class TestCase6269(SuperVDSMTestBase):
             FILE_DOES_NOT_EXIST % VDSM_LOG)
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase6270(SuperVDSMTestBase):
     """
     supervdsm test case, command options
@@ -188,7 +188,7 @@ class TestCase6270(SuperVDSMTestBase):
                             ERROR_EXEC_SERVICE_ACTION % (command, "supervdsm"))
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase6271(SuperVDSMTestBase):
     """
     supervdsm test case, communication between supervdsm and vdsm
@@ -242,7 +242,7 @@ class TestCase6271(SuperVDSMTestBase):
         self.assertTrue(success, ERROR_HW_OUTPUT % output)
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase6272(SuperVDSMTestBase):
     """
     supervdsm test case, supervdsm stress test
@@ -275,7 +275,7 @@ class TestCase6272(SuperVDSMTestBase):
         )
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase6273(SuperVDSMTestBase):
     """
     deleting supervdsm log and changing log file permissions

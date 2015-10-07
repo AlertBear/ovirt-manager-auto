@@ -57,7 +57,7 @@ class LogCollectorTestCaseBase(base.RHEVMUtilsTestCase):
         self.cluster = unittest_conf.CLUSTER_NAME[0]
 
 
-@attr(tier=0)
+@attr(tier=1)
 class LogCollectorSingleDC(LogCollectorTestCaseBase):
     """ Tests with single DC and single cluster setup """
 
@@ -151,7 +151,7 @@ class LogCollectorSingleDC(LogCollectorTestCaseBase):
         self.ut.autoTest()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class LogCollectorMoreDCs(LogCollectorTestCaseBase):
     """ Tests with additional DC and cluster """
 
@@ -212,7 +212,7 @@ class LogCollectorMoreDCs(LogCollectorTestCaseBase):
         assert 'No hypervisors were found' in self.ut.out
 
 
-@attr(tier=1)
+@attr(tier=2)
 class LogCollectorRegressionBz1058894(LogCollectorTestCaseBase):
     """ Regression tests for the log-collector """
 

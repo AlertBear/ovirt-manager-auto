@@ -47,7 +47,7 @@ def loginAsAdmin():
                       config.USER_PASSWORD, False)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class IPACase93880(TestCase):
     """
     Login as:
@@ -90,7 +90,7 @@ class IPACase93880(TestCase):
                          domain=config.IPA_DOMAIN)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class IPACase93879(TestCase):
     """
     Login as:
@@ -136,7 +136,7 @@ class IPACase93879(TestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class IPACase93881(TestCase):
     """ Try to login with different login formats """
     __test__ = True
@@ -169,7 +169,7 @@ class IPACase93881(TestCase):
                          domain=config.IPA_DOMAIN)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class IPACase109871(TestCase):
     """ Test if user which has lot of groups assigned can be added & login """
     __test__ = True
@@ -194,7 +194,7 @@ class IPACase109871(TestCase):
                          domain=config.IPA_DOMAIN)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class IPACase109146(TestCase):
     """ If user which is part of group is removed, the group still persists """
     __test__ = True
@@ -226,7 +226,7 @@ class IPACase109146(TestCase):
         users.deleteGroup(True, group_name=config.IPA_GROUP)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class IPACase93882(TestCase):
     """ Try to search via REST with firstname, lastname """
     __test__ = True
@@ -261,7 +261,7 @@ class IPACase93882(TestCase):
         LOGGER.info("Searching for users and groups works correctly.")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class IPACase93883(TestCase):
     """ If the information is updated on IPA side it's propageted to rhevm """
     __test__ = True

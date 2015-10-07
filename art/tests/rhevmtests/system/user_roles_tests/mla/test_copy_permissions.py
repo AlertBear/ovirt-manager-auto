@@ -160,7 +160,7 @@ def checkForTemplatePermissions(exists):
     _compare(exists, config.USER_NAME2, template_perms, USER2_TEMPLATE_ROLES)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class CopyPermissions299326(TestCase):
     """ Check if permissions are copied to vm when enabled """
     __test__ = True
@@ -188,7 +188,7 @@ class CopyPermissions299326(TestCase):
         vms.removeVm(True, config.VM_NAME1)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class CopyPermissions299330(TestCase):
     """ Check if permissions are copied to vm when disabled """
     __test__ = True
@@ -212,7 +212,7 @@ class CopyPermissions299330(TestCase):
         vms.removeVm(True, config.VM_NAME1)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class CopyPermissions299328(TestCase):
     """ Check if permissions are copied to template when enabled """
     __test__ = True
@@ -235,7 +235,7 @@ class CopyPermissions299328(TestCase):
         templates.removeTemplate(True, config.TEMPLATE_NAME2)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class CopyPermissions299331(TestCase):
     """ Check if permissions are not copied to template when disabled """
     __test__ = True

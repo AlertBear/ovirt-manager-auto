@@ -233,7 +233,7 @@ def _create_vm(vm_name, vm_description, disk_interface,
         useAgent=config.USE_AGENT)
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase11598(BaseTestCase):
     """
     * Block connection from engine to host.
@@ -288,7 +288,7 @@ class TestCase11598(BaseTestCase):
         assert everything_ok()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4817(TestCase):
     """
     test check if creating storage domain with defined values
@@ -376,7 +376,7 @@ class TestCase4817(TestCase):
                     config.LIFECYCLE_DOMAIN_NAMES[index])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4815(TestCase):
     """
     test check if bad and conflict parameters for creating storage
@@ -492,7 +492,7 @@ class TestCase4815(TestCase):
             True, cls.sd_names, config.FIRST_HOST)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11581(TestCase):
     """
     test checks if creating vm disks on different storage
@@ -584,7 +584,7 @@ class TestCase11581(TestCase):
             True, cls.sd_names, config.FIRST_HOST)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11784(TestCase):
     """
     Starting version 3.3 attaching domains should activate them automatically.
@@ -630,7 +630,7 @@ class TestCase11784(TestCase):
             True, cls.sd_names, config.FIRST_HOST)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestUpgrade(TestCase):
     """
     Base class for upgrade testing

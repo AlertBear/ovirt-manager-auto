@@ -41,7 +41,7 @@ CLUSTER_POLICY_PS = config.ENUMS['scheduling_policy_power_saving']
 ########################################################################
 
 
-@attr(tier=3)
+@attr(tier=4)
 class PowerSavingWithPM(TestCase):
     """
     Base class for power saving with power management test

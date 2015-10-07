@@ -182,7 +182,7 @@ class BaseCase(TestCase):
             )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase11536(BaseCase):
     """
     Polarion Test Case 11536 - Create new disk and check storage details
@@ -214,7 +214,7 @@ class TestCase11536(BaseCase):
             self.assertTrue(deleteDisk(True, name))
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11537(BaseCase):
     """
     Polarion Test Case 11537 - Delete disk and check storage details
@@ -250,7 +250,7 @@ class TestCase11537(BaseCase):
                 disk.get_size()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11547(BaseCase):
     """
     Polarion Test Case 11547 - Move disks and check storage details of both
@@ -305,7 +305,7 @@ class TestCase11547(BaseCase):
             self.assertTrue(deleteDisk(True, name))
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11546(BaseCase):
     """
     Polarion Test Case 11546 - Extend domain and check storage details
@@ -416,7 +416,7 @@ class TestCase11546(BaseCase):
         self.run_scenario()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11541(BaseCase):
     """
     Polarion Test Case 11541 - Create template and check storage details
@@ -508,7 +508,7 @@ class TestCase11541(BaseCase):
         self.run_scenario()
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase11545(BaseCase):
     """
     Polarion Test Case 11545 - Check  storage domain details after rollback

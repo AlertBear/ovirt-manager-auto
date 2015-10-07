@@ -131,7 +131,7 @@ class BaseVmWithDiskTemplate(BaseVmWithDisk):
             logger.error("Failed to remove template %s", cls.template_name)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class AddVm(TestCase):
     """
     Add vms with different parameters test cases
@@ -392,7 +392,7 @@ class AddVm(TestCase):
         )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class UpdateVm(BaseVm):
     """
     Upgrade vms with different parameters test cases
@@ -524,7 +524,7 @@ class UpdateVm(BaseVm):
         self.assertTrue(vm_api.updateVm(True, self.vm_name, name=vm_update))
         self.assertTrue(vm_api.updateVm(True, vm_update, name=self.vm_name))
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion("RHEVM-12528")
     def test_update_vm_affinity_to_migratable_with_host(self):
         """
@@ -539,7 +539,7 @@ class UpdateVm(BaseVm):
             )
         )
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion("RHEVM-12531")
     def test_update_vm_affinity_to_user_migratable_with_host(self):
         """
@@ -554,7 +554,7 @@ class UpdateVm(BaseVm):
             )
         )
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion("RHEVM-12529")
     def test_update_vm_affinity_to_pinned_with_host(self):
         """
@@ -565,7 +565,7 @@ class UpdateVm(BaseVm):
                                         placement_affinity=affinity,
                                         placement_host=config.HOSTS[0]))
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion("RHEVM-12527")
     def test_update_vm_affinity_to_migratable_to_any_host(self):
         """
@@ -580,7 +580,7 @@ class UpdateVm(BaseVm):
             )
         )
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion("RHEVM-12530")
     def test_update_vm_affinity_to_user_migratable_to_any_host(self):
         """
@@ -774,7 +774,7 @@ class UpdateVm(BaseVm):
         )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class UpdateRunningVm(BaseVmWithDisk):
     """
     Update parameters of a running VM.
@@ -806,7 +806,7 @@ class UpdateRunningVm(BaseVmWithDisk):
         super(UpdateRunningVm, cls).teardown_class()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class DifferentVmTestCases(TestCase):
     """
     Create, update and delete vms with different parameters
@@ -824,7 +824,7 @@ class DifferentVmTestCases(TestCase):
         ):
             logger.error("Failed to remove all vms")
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion("RHEVM3-12587")
     def test_remove_locked_vm(self):
         """
@@ -866,7 +866,7 @@ class DifferentVmTestCases(TestCase):
         logger.info("Check if vm %s have cdrom", vm_name)
         self.assertTrue(vm_api.checkVmHasCdromAttached(True, vm_name))
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion("RHEVM3-12524")
     def test_retrieve_vm_statistics(self):
         """
@@ -883,7 +883,7 @@ class DifferentVmTestCases(TestCase):
         self.assertTrue(vm_api.checkVmStatistics(True, vm_name))
 
 
-@attr(tier=1)
+@attr(tier=2)
 class VmNetwork(BaseVm):
     """
     Add, update and remove network from vm
@@ -932,7 +932,7 @@ class VmNetwork(BaseVm):
         )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class VmDisk(BaseVm):
     """
     Add different types of disks to vm
@@ -940,7 +940,7 @@ class VmDisk(BaseVm):
     __test__ = True
     vm_name = 'disk_vm'
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion("RHEVM3-12572")
     def test_add_raw_virtio_disk_without_sparse(self):
         """
@@ -959,7 +959,7 @@ class VmDisk(BaseVm):
             )
         )
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion("RHEVM3-12568")
     def test_add_bootable_cow_ide_data_disk(self):
         """
@@ -995,7 +995,7 @@ class VmDisk(BaseVm):
             )
         )
 
-    @attr(tier=1)
+    @attr(tier=2)
     @polarion("RHEVM3-12571")
     def test_add_disks_with_different_interfaces_and_formats(self):
         """
@@ -1032,7 +1032,7 @@ class VmDisk(BaseVm):
         super(VmDisk, cls).teardown_class()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class BasicVmActions(BaseVmWithDisk):
     """
     Check basic vm operations, like start, suspend, stop and ticket
@@ -1084,7 +1084,7 @@ class BasicVmActions(BaseVmWithDisk):
         )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class VmSnapshots(BaseVmWithDisk):
     """
     Create, restore and remove vm snapshots
@@ -1223,7 +1223,7 @@ class VmSnapshots(BaseVmWithDisk):
             )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class ImportExportVm(BaseVmWithDisk):
     """
     Check different cases for import/export vm
@@ -1314,7 +1314,7 @@ class ImportExportVm(BaseVmWithDisk):
         )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class VmDisplay(TestCase):
     """
     Create vms with different display types, run it and check
@@ -1404,7 +1404,7 @@ class VmDisplay(TestCase):
         self.assertTrue(self._check_display_parameters(self.vm_names[1], VNC))
 
 
-@attr(tier=0)
+@attr(tier=1)
 class VmPool(BaseVmWithDiskTemplate):
     """
     Basic test to check vm pools functionality
@@ -1486,7 +1486,7 @@ class VmPool(BaseVmWithDiskTemplate):
         vm_pool_api.removeVmPool(True, self.new_vm_pool)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class VmTemplate(BaseVmWithDiskTemplate):
     """
     Create vm from template with different parameters

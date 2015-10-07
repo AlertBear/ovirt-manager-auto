@@ -56,7 +56,7 @@ class BaseExportImportTestCase(TestCase):
                                          self.vm_name)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4665(BaseExportImportTestCase):
     """
     Test Force Override option
@@ -130,7 +130,7 @@ class TestCase4665(BaseExportImportTestCase):
         super(TestCase4665, self).tearDown()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4684(BaseExportImportTestCase):
     """
     Test Case 4684 -  Collapse Snapshots
@@ -175,7 +175,7 @@ class TestCase4684(BaseExportImportTestCase):
             True, self.vm_name, config.CLUSTER_NAME, self.export_domain)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase11987(BaseExportImportTestCase):
     """
     Test case 11987 - Export a VM sanity
@@ -255,7 +255,7 @@ class TestCase11987(BaseExportImportTestCase):
         assert vms.removeVms(True, vmsList)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase11986(BaseExportImportTestCase):
     """
     Test case 11986 - Export a template sanity

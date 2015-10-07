@@ -38,7 +38,7 @@ def addUser(user_name, domain):
     users.addUser(True, user_name=user_name, domain=domain)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class BaseNormalUserAndGroupUser(TestCase):
     """ Login as normal user and user from group. """
     __test__ = False
@@ -79,7 +79,7 @@ class BaseNormalUserAndGroupUser(TestCase):
         users.deleteGroup(positive=True, group_name=config.GROUP(self.domain))
 
 
-@attr(tier=0)
+@attr(tier=1)
 class BaseExpiredAccount(TestCase):
     """ Login as user with expired account """
     __test__ = False
@@ -107,7 +107,7 @@ class BaseExpiredAccount(TestCase):
                          domain=self.domain)
 
 
-@attr(tier=0)
+@attr(tier=1)
 class BaseExpiredPassword(TestCase):
     """ Login as user with expired password """
     __test__ = False
@@ -135,7 +135,7 @@ class BaseExpiredPassword(TestCase):
                          domain=self.domain)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class BaseGroupsPersistency(TestCase):
     """ Persistency of group rights """
     __test__ = False
@@ -167,7 +167,7 @@ class BaseGroupsPersistency(TestCase):
         users.deleteGroup(True, group_name=config.GROUP(self.domain))
 
 
-@attr(tier=1)
+@attr(tier=2)
 class BaseUserWithManyGroups(TestCase):
     """ Login as user with many groups """
     __test__ = False
@@ -192,7 +192,7 @@ class BaseUserWithManyGroups(TestCase):
                          user=config.WITH_MANY_GROUPS_NAME(self.domain))
 
 
-@attr(tier=1)
+@attr(tier=2)
 class BaseSearchForUsersAndGroups(TestCase):
     """ Search within domain for users and groups """
     __test__ = False

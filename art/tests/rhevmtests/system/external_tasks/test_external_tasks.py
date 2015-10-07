@@ -38,7 +38,7 @@ class AddingJob(TestCase):
         return status
 
 
-@attr(tier=1)
+@attr(tier=2)
 class AddJobWithCorrectDescription(AddingJob):
     """
     Adding job with correct description
@@ -69,7 +69,7 @@ class AddJobWithCorrectDescription(AddingJob):
             raise errors.JobException("Ending job was failed")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class AddJobWithEmptyDescription(AddingJob):
     """
     Adding job with empty description
@@ -139,7 +139,7 @@ class AddingStep(TestCase):
             raise errors.JobException("Ending job was failed")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class AddStepWithCorrectParameters(AddingStep):
     """
     Adding step with correct parameters
@@ -156,7 +156,7 @@ class AddStepWithCorrectParameters(AddingStep):
         logger.info("Step exist")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class AddStepWithIncorrectType(AddingStep):
     """
     Adding step with incorrect type
@@ -173,7 +173,7 @@ class AddStepWithIncorrectType(AddingStep):
         logger.info("Step adding was failed")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class AddSubStepWithCorrectParameters(TestCase):
     """
     Add sub step with correct description
@@ -242,7 +242,7 @@ class AddSubStepWithCorrectParameters(TestCase):
             raise errors.JobException("Ending job was failed")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class EndJobWithCorrectDescription(TestCase):
     """
     Ending job with correct description
@@ -275,7 +275,7 @@ class EndJobWithCorrectDescription(TestCase):
         logger.info("Ending job %s success", config.EXTERNAL_JOB_DESCRIPTION)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class EndStepWithCorrectDescription(TestCase):
     """
     Ending step with correct description

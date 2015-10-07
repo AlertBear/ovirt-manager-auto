@@ -112,7 +112,7 @@ def _prepare_data(sparse, vol_format, template_names, storage_type):
     template_names[(sparse, vol_format)] = template_name
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11834(TestCase):
     """
     storage vm sanity test, creates and removes snapshots
@@ -276,7 +276,7 @@ class TestCase11834(TestCase):
         vms.removeVm(True, vm=cls.vm_name, stopVM='true')
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase11586(TestCase):
     """
     storage vm sanity test, creates 2 snapshots and removes them.
@@ -382,7 +382,7 @@ class TestCase11586(TestCase):
         vms.removeVm(True, vm=cls.vm_name, stopVM='true')
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase11830(TestCase):
     """
     Create a template from a VM, then start to create 2 VMs from

@@ -7,7 +7,7 @@ from reports import config
 from reports.service_base import ServiceTest
 
 
-@attr(tier=0)
+@attr(tier=1)
 class ReportsLocalDbScratchInstallSanityTest(ServiceTest):
     """ Basic run vm test """
     __test__ = True

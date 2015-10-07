@@ -180,7 +180,7 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
         super(TestNoSpaceLeftOnDevice, self).tearDown()
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase5012(TestCaseBlockedConnection):
     # TODO: Why is this not running glusterfs?
     __test__ = (NFS in opts['storages'])
@@ -196,7 +196,7 @@ class TestCase5012(TestCaseBlockedConnection):
         self.run_flow()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5013(TestNoSpaceLeftOnDevice):
     # TODO: Why is this not running glusterfs?
     __test__ = (NFS in opts['storages'])
@@ -213,7 +213,7 @@ class TestCase5013(TestNoSpaceLeftOnDevice):
         self.run_flow()
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase5014(TestCaseBlockedConnection):
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
@@ -228,7 +228,7 @@ class TestCase5014(TestCaseBlockedConnection):
         self.run_flow()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5015(TestNoSpaceLeftOnDevice):
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
@@ -282,7 +282,7 @@ class TestCase5015(TestNoSpaceLeftOnDevice):
         super(TestCase5015, self).tearDown()
 
 
-@attr(tier=3)
+@attr(tier=4)
 class TestCase5016(TestCaseBlockedConnection):
     __test__ = ('fcp' in opts['storages'])
     storages = set(['fcp'])
@@ -297,7 +297,7 @@ class TestCase5016(TestCaseBlockedConnection):
         self.run_flow()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5017(TestNoSpaceLeftOnDevice):
     __test__ = ('fcp' in opts['storages'])
     storages = set(['fcp'])

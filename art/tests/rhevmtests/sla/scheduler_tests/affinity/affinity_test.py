@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 TIMEOUT = 120
 
 
-@attr(tier=1)
+@attr(tier=2)
 class Affinity(TestCase):
     """
     Base class for affinity test
@@ -127,7 +127,7 @@ class StartVms(Affinity):
         super(StartVms, cls).teardown_class()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestStartVmsUnderHardPositiveAffinity(StartVms):
     """
     Start vms that placed into the same hard, positive affinity group,
@@ -174,7 +174,7 @@ class TestStartVmsUnderSoftPositiveAffinity(StartVms):
         )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestStartVmsUnderHardNegativeAffinity(StartVms):
     """
     Start vms that placed into the same hard, negative affinity group,
@@ -269,7 +269,7 @@ class MigrateVm(Affinity):
         super(MigrateVm, cls).teardown_class()
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestMigrateVmUnderHardPositiveAffinity(MigrateVm):
     """
     Migrate vm under hard positive affinity,
@@ -343,7 +343,7 @@ class TestMigrateVmUnderSoftPositiveAffinity(MigrateVm):
         )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestMigrateVmUnderHardNegativeAffinity(MigrateVm):
     """
     Migrate vm under hard negative affinity,

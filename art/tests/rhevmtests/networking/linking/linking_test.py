@@ -36,7 +36,7 @@ logger = logging.getLogger("Linking_Cases")
 # This func is supposed to solve async problem between vdsm and libvirt/qemu
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestLinkedCase1(TestCase):
     """
     Create permutation for the Plugged/Linked option on VNIC
@@ -129,7 +129,7 @@ class TestLinkedCase1(TestCase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestLinkedCase2(TestCase):
     """
     Add a new network to VM with default plugged and linked states
@@ -184,7 +184,7 @@ class TestLinkedCase2(TestCase):
             logger.error("Cannot remove nic %s from setup", config.VM_NAME[1])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestLinkedCase3(TestCase):
     """
     Create permutation for the Plugged/Linked VNIC
@@ -355,7 +355,7 @@ class TestLinkedCase3(TestCase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestLinkedCase4(TestCase):
     """
     Try to run VM with network attached to Cluster but not to the host
@@ -435,7 +435,7 @@ class TestLinkedCase4(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestLinkedCase5(TestCase):
     """
     Editing plugged VNIC with port mirroring enabled on running VM
@@ -514,7 +514,7 @@ class TestLinkedCase5(TestCase):
             logger.error("Failed to remove %s profile", config.VNIC_PROFILE[0])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestLinkedCase6(TestCase):
     """
     Create VNICs with linked/unlinked states on running VM.
@@ -692,7 +692,7 @@ class TestLinkedCase6(TestCase):
                 logger.error("Cannot remove nic from setup")
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestLinkedCase7(TestCase):
     """
     Changing several network parameters at once on non-running VM

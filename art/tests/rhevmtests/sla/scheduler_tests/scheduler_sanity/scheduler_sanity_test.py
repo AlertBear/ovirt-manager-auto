@@ -36,7 +36,7 @@ BUILD_IN_POLICIES = [
 FILTER_TYPE = config.ENUMS['policy_unit_type_filter']
 
 
-@attr(tier=1)
+@attr(tier=2)
 class BaseSchedulingClass(TestCase):
     """
     Base class to create new scheduler policy.
@@ -85,7 +85,7 @@ class BaseSchedulingClass(TestCase):
             )
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCRUD(TestCase):
     """
     Test class to create, update and remove cluster policy
@@ -217,7 +217,7 @@ class TestDeletePolicyInUse(AttachPolicyToCluster):
         self.assertFalse(sch_api.remove_scheduling_policy(self.policy_name))
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestRemoveBuildInPolicy(TestCase):
     """
     Negative: remove build-in scheduler policy.

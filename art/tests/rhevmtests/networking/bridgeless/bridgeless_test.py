@@ -24,7 +24,7 @@ logger = logging.getLogger("Bridgeless_Networks_Cases")
 ########################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestBridgelessCase1(TestCase):
     """
     Create and attach Non-VM network
@@ -70,7 +70,7 @@ class TestBridgelessCase1(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestBridgelessCase2(TestCase):
     """
     Create and attach Non-VM with VLAN network
@@ -118,7 +118,7 @@ class TestBridgelessCase2(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestBridgelessCase3(TestCase):
     """
     Create and attach Non-VM network with VLAN over BOND
@@ -169,7 +169,7 @@ class TestBridgelessCase3(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestBridgelessCase4(TestCase):
     """
     Create and attach Non-VM network over BOND

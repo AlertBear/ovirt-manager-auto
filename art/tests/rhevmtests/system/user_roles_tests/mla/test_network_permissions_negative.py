@@ -65,7 +65,7 @@ def ignoreAllExceptions(method, **kwargs):
         pass
 
 
-@attr(tier=1)
+@attr(tier=2)
 class NetworkingNegative(TestCase):
     __test__ = False
 

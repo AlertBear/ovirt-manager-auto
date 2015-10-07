@@ -38,7 +38,7 @@ UPDATED_BW_PARAMS = (5, 5, 50)
 ########################################################################
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetQOSCase01(TestCase):
     """
     Add new network QOS
@@ -135,7 +135,7 @@ class TestNetQOSCase01(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetQOSCase02(TestCase):
     """
     Update Network QoS
@@ -326,7 +326,7 @@ class TestNetQOSCase02(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetQOSCase03(TestCase):
     """
     Remove Network QoS
@@ -486,7 +486,7 @@ class TestNetQOSCase03(TestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetQOSCase04(TestCase):
     """
     Network QoSs, configured on several VNIC profiles
@@ -654,7 +654,7 @@ class TestNetQOSCase04(TestCase):
                 )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestNetQOSCase05(TestCase):
     """
     Migrate VM with network QOS on its NIC

@@ -68,7 +68,7 @@ class TestMultipleQueueNicsTearDown(TestCase):
             logger.error("Failed to stop %s", config.VM_NAME[0])
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMultipleQueueNics01(TestMultipleQueueNicsTearDown):
     """
     Config queue on existing network
@@ -117,7 +117,7 @@ class TestMultipleQueueNics01(TestMultipleQueueNicsTearDown):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMultipleQueueNics02(TestMultipleQueueNicsTearDown):
     """
     1) Verify that number of queues is not updated on running VM
@@ -217,7 +217,7 @@ class TestMultipleQueueNics02(TestMultipleQueueNicsTearDown):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMultipleQueueNics03(TestMultipleQueueNicsTearDown):
     """
     Check that queue survive VM hibernate
@@ -287,7 +287,7 @@ class TestMultipleQueueNics03(TestMultipleQueueNicsTearDown):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMultipleQueueNics04(TestMultipleQueueNicsTearDown):
     """
     Check queue exists for VM from template
@@ -411,7 +411,7 @@ class TestMultipleQueueNics04(TestMultipleQueueNicsTearDown):
         super(TestMultipleQueueNics04, cls).teardown_class()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestMultipleQueueNics05(TestMultipleQueueNicsTearDown):
     """
     Check that queues survive VM migration
