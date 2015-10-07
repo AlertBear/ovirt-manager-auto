@@ -1662,7 +1662,7 @@ class NetLabels13(TestLabelTestCaseBase):
     2) The same will happen when the network is removed from the DC
     """
     __test__ = True
-    bz = ({"1252125": {"engine": None, "version": "3.6"}})
+    bz = ({'1252125': {'engine': None, 'version': ['3.6']}})
 
     @classmethod
     def setup_class(cls):
