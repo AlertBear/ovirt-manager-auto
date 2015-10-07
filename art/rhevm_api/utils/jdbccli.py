@@ -54,8 +54,8 @@ class JDBCCLI(object):
 
         :param args: args of command
         :param kwargs: named args of command
-        :return: true if cmd ran successfully else false
-        :rtype: bool
+        :return: true if cmd ran successfully else false and stdout of command
+        :rtype: tuple
         """
         cmd = (
             self.cmd +
@@ -70,4 +70,4 @@ class JDBCCLI(object):
             rc, out, err = ss.run_cmd(cmd)
             logger.info("rc: '%s', out: '%s', err: '%s'", rc, out, err)
 
-            return not rc
+            return not rc, out

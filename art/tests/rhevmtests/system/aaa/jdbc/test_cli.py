@@ -27,13 +27,28 @@ TEST_GROUP_DELETE = 'group_deleted'
 
 
 def setup_module():
-    assert USER_CLI.run('add', TEST_USER1)
-    assert USER_CLI.run('add', TEST_USER2)
-    assert USER_CLI.run('add', TEST_USER_DELETE)
-    assert USER_CLI.run('add', TEST_USER_DISABLED, flag='+disabled')
-    assert GROUP_CLI.run('add', TEST_GROUP1)
-    assert GROUP_CLI.run('add', TEST_GROUP2)
-    assert GROUP_CLI.run('add', TEST_GROUP_DELETE)
+    assert USER_CLI.run(
+        'add',
+        TEST_USER1,
+        '--attribute=firstName=user1',
+        '--attribute=department=QA',
+        '--attribute=description=our sysadmin',
+        '--attribute=displayName=Uzivatel',
+        '--attribute=email=user1@internal',
+        '--attribute=lastName=Blabla',
+        '--attribute=title=user',
+    )[0]
+    assert USER_CLI.run('add', TEST_USER2)[0]
+    assert USER_CLI.run('add', TEST_USER_DELETE)[0]
+    assert USER_CLI.run('add', TEST_USER_DISABLED, flag='+disabled')[0]
+    assert GROUP_CLI.run(
+        'add',
+        TEST_GROUP1,
+        '--attribute=displayName=Group1',
+        '--attribute=description=Admin Group',
+    )[0]
+    assert GROUP_CLI.run('add', TEST_GROUP2)[0]
+    assert GROUP_CLI.run('add', TEST_GROUP_DELETE)[0]
 
 
 def teardown_module():
@@ -80,13 +95,13 @@ class JDBCCLIUser(TestCase):
             TEST_USER1,
             password='pass:%s' % cls.user_password,
             password_valid_to='2100-01-01 11:11:11Z',
-        )
+        )[0]
         assert USER_CLI.run(
             'password-reset',
             TEST_USER_DISABLED,
             password='pass:%s' % cls.user_password,
             password_valid_to='2100-01-01 11:11:11Z',
-        )
+        )[0]
         assert users.addExternalUser(
             True,
             user_name=TEST_USER1,
@@ -116,7 +131,7 @@ class JDBCCLIUser(TestCase):
     @polarion('RHEVM3-12857')
     def test_011_add_same_user(self):
         """ add user via aaa-jdbc cli """
-        assert not USER_CLI.run('add', TEST_USER1)
+        assert not USER_CLI.run('add', TEST_USER1)[0]
 
     @polarion('RHEVM3-11306')
     def test_030_login_as_user(self):
@@ -157,9 +172,9 @@ class JDBCCLIUser(TestCase):
         """ update user via aaa-jdbc cli """
         assert USER_CLI.run(
             'edit',
-            TEST_USER1,
+            TEST_USER2,
             attribute='firstName=user1',
-        )
+        )[0]
 
     @attr(tier=2)
     @polarion('RHEVM3-11301')
@@ -198,7 +213,7 @@ class JDBCCLIUser(TestCase):
     @polarion('RHEVM3-11338')
     def test_080_user_delete(self):
         """ user delete from aaa-jdbc """
-        assert USER_CLI.run('delete', TEST_USER_DELETE)
+        assert USER_CLI.run('delete', TEST_USER_DELETE)[0]
 
 
 @attr(tier=1)
@@ -233,7 +248,7 @@ class JDBCCLIGroupUser(TestCase):
             TEST_USER1,
             password='pass:%s' % self.user_password,
             password_valid_to='2100-01-01 11:11:11Z',
-        ), "Failed to change user's '%s' password" % TEST_USER1
+        )[0], "Failed to change user's '%s' password" % TEST_USER1
 
     @polarion('RHEVM3-11333')
     def test_020_add_user_to_group(self):
@@ -242,17 +257,17 @@ class JDBCCLIGroupUser(TestCase):
             'useradd',
             TEST_GROUP1,
             user=TEST_USER1
-        ), "Failed to add user to group '%s'" % TEST_GROUP1
+        )[0], "Failed to add user to group '%s'" % TEST_GROUP1
         assert not MANAGE_CLI.run(
             'useradd',
             TEST_GROUP1,
             user='nonsense'
-        ), "Possible to add nonexisting user to group"
+        )[0], "Possible to add nonexisting user to group"
         assert not MANAGE_CLI.run(
             'useradd',
             'nonsense',
             user=TEST_USER2
-        ), "Possible to add user to nonexisting group"
+        )[0], "Possible to add user to nonexisting group"
 
     def test_030_assign_group_permissions(self):
         """ assign group permissions via aaa-jdbc cli """
@@ -285,17 +300,17 @@ class JDBCCLIGroupUser(TestCase):
             'userdel',
             TEST_GROUP1,
             user=TEST_USER1
-        ), "Failed to remove user from group '%s'" % TEST_GROUP1
+        )[0], "Failed to remove user from group '%s'" % TEST_GROUP1
         assert not MANAGE_CLI.run(
             'userdel',
             TEST_GROUP1,
             user='nonsense'
-        ), "Possible to remove nonexisting user from group"
+        )[0], "Possible to remove nonexisting user from group"
         assert not MANAGE_CLI.run(
             'userdel',
             'nonsense',
             user=TEST_USER1
-        ), "Possible to remove user from nonexisting group"
+        )[0], "Possible to remove user from nonexisting group"
 
     @polarion('RHEVM3-11335')
     def test_060_add_group_to_group(self):
@@ -304,7 +319,7 @@ class JDBCCLIGroupUser(TestCase):
             'groupadd',
             TEST_GROUP1,
             group=TEST_GROUP2,
-        ), "Failed to add group to group '%s'" % TEST_GROUP1
+        )[0], "Failed to add group to group '%s'" % TEST_GROUP1
 
     @polarion('RHEVM3-11336')
     def test_070_delete_group_from_group(self):
@@ -313,7 +328,7 @@ class JDBCCLIGroupUser(TestCase):
             'groupdel',
             TEST_GROUP1,
             group=TEST_GROUP2,
-        ), "Failed to delete group from group '%s'" % TEST_GROUP1
+        )[0], "Failed to delete group from group '%s'" % TEST_GROUP1
 
     @polarion('RHEVM3-11327')
     def test_080_group_delete(self):
@@ -321,7 +336,7 @@ class JDBCCLIGroupUser(TestCase):
         assert GROUP_CLI.run(
             'delete',
             TEST_GROUP_DELETE
-        ), "Failed to delete group '%s'" % TEST_GROUP_DELETE
+        )[0], "Failed to delete group '%s'" % TEST_GROUP_DELETE
 
 
 @attr(tier=1)
@@ -339,15 +354,53 @@ class JDBCCLIQuery(TestCase):
     @polarion('RHEVM3-11323')
     def test_010_query_users(self):
         """ query users via aaa-jdbc cli """
-        assert self.query_cli.run(what='user'), "Failed to search for users"
+        assert self.query_cli.run(what='user')[0], "Failed to search for users"
 
     @polarion('RHEVM3-11322')
     def test_020_query_groups(self):
         """ query groups via aaa-jdbc cli """
-        assert self.query_cli.run(what='group'), "Failed to search for groups"
+        assert self.query_cli.run(
+            what='group'
+        )[0], "Failed to search for groups"
 
     @attr(tier=2)
     @polarion('RHEVM3-12858')
     def test_030_query_nothing(self):
         """ query nothing via aaa-jdbc cli """
-        assert not self.query_cli.run(), "Invalid arguments of query passed"
+        assert not self.query_cli.run()[0], "Invalid arguments of query passed"
+
+    @attr(tier=1)
+    @polarion('RHEVM3-13896')
+    @bz({'1258271': {'engine': None, 'version': ['3.6']}})
+    def test_040_query_pattern(self):
+        """ query users/group by pattern """
+        # Test query user
+        out_user = USER_CLI.run('show', TEST_USER1)[1]
+        for k, v in {
+            'firstName': 'user1',
+            'department': 'QA',
+            'description': 'our sysadmin',
+            'displayName': 'Uzivatel',
+            'email': 'user1@internal',
+            'lastName': 'Blabla',
+            'title': 'user',
+        }.iteritems():
+            rc, out = self.query_cli.run(
+                what='user',
+                pattern='%s=%s' % (k, v)
+            )
+            assert rc, 'Unable to find user by its %s' % k
+            assert out_user == out, "Correct user wasn't found by %s" % k
+
+        # Test query group
+        out_group = GROUP_CLI.run('show', TEST_GROUP1)[1]
+        for k, v in {
+            'description': 'Admin Group',
+            'displayName': 'Group1',
+        }.iteritems():
+            rc, out = self.query_cli.run(
+                what='group',
+                pattern='%s=%s' % (k, v)
+            )
+            assert rc, 'Unable to find group by its %s' % k
+            assert out_group == out, "Correct group wasn't found by %s" % k
