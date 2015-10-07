@@ -226,7 +226,8 @@ class CreateDC(TestCase):
                     lun,
                     address,
                     target,
-                    override_luns=True
+                    override_luns=True,
+                    login_all=True
                 )
             elif storage_type == ENUMS['storage_type_gluster']:
                 address, path, vfs = storage_conf.get_gluster_share()

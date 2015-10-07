@@ -19,6 +19,8 @@
 
 import logging
 from pprint import pformat
+import shlex
+from art.rhevm_api import resources
 
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 from art.rhevm_api.tests_lib.low_level import hosts
@@ -32,7 +34,7 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 logger = logging.getLogger(__name__)
 
 
-def _ISCSIdiscoverAndLogin(host, lun_address, lun_target=None):
+def _ISCSIdiscoverAndLogin(host, lun_address, lun_target, login_all=False):
     '''
     performs iscsi discovery and login
     __author__: kjachim, khakimi
@@ -42,23 +44,64 @@ def _ISCSIdiscoverAndLogin(host, lun_address, lun_target=None):
     :type lun_address:str
     :param lun_target: iscsi target (name of lun on iscsi address)
     :type lun_target: str
+    :param login_all: When True login to all lun addresses and targets
+    :type login_all: bool
     :return: True if both operations succeeded, False otherwise
     :rtype: bool
     '''
-    targets = ll_sd.iscsiDiscover('True', host, lun_address)
-    if not targets:
-        logger.error(
-            'Failed to discover lun address %s from %s' % (lun_address, host)
-        )
-        return False
-    lun_target = [lun_target] if lun_target else targets
-    lun_address = [lun_address] * len(lun_target)
+    # TODO fix the ll_sd.iscsiDiscover to return tuple of addresses and targets
+    # when the RFE https://bugzilla.redhat.com/show_bug.cgi?id=1264777
+    # will resolve then remove discover_addresses_and_targets method
+    addresses = []
+    targets = []
+    if login_all:
+        addresses, targets = discover_addresses_and_targets(host, lun_address)
+    else:
+        targets = ll_sd.iscsiDiscover('True', host, lun_address)
+        if not targets:
+            logger.error(
+                'Failed to discover lun address %s from %s', lun_address, host
+            )
+            return False
+
+    lun_address = addresses if login_all else [lun_address]
+    lun_target = targets if login_all else [lun_target]
+
     if not ll_sd.iscsiLogin(True, host, lun_address, lun_target):
-        logger.error('Failed to login %s on target %s from %s' %
-                     (lun_address, lun_target, host))
         return False
 
     return True
+
+
+def discover_addresses_and_targets(host, server_address):
+    """
+    discover the addresses and corresponding targets that host could login
+    :param host: name of host on which iscsiadm commands should be performed
+    :type host: str
+    :param server_address: iscsi server address
+    :type server_address: str
+    :return: tuple of corresponding lists ([addresses], [targets])
+    :rtype: tuple
+    """
+    cmd = "iscsiadm -m discovery -t st -p %s" % server_address
+
+    host_obj = ll_sd.hostUtil.find(host)
+
+    vds_host = resources.Host.get(host_obj.address)
+    rc, out, err = vds_host.executor().run_cmd(cmd=shlex.split(cmd))
+    if rc:
+        logger.error(
+            "Failed to run command %s on host %s; out: %s; err: %s",
+            cmd, vds_host.ip, out, err
+        )
+        return None, None
+    # each line in out looks like the following:
+    # "10.35.160.107:3260,4 iqn.1992-04.com.emc:cx.ckm00121000438.b7"
+    addresses, targets = zip(
+        *[(line.split()[0].split(":")[0], line.split()[1])
+          for line in out.splitlines() if line]
+    )
+    return list(addresses), list(targets)
 
 
 @is_action()
@@ -107,24 +150,35 @@ def importBlockStorageDomain(host, lun_address, lun_target):
 @is_action()
 def addISCSIDataDomain(host, storage, data_center, lun, lun_address,
                        lun_target, lun_port=3260, storage_format=None,
-                       override_luns=None):
+                       override_luns=None, login_all=False):
     '''
     positive flow for adding ISCSI Storage including all the necessary steps
-    Author: atal
-    Parameters:
-        * host - name of host
-        * storage - name of storage domain that will be created in rhevm
-        * data_center - name of DC which will contain this SD
-        * lun - lun number
-        * lun_address - iscsi server address
-        * lun_target - name of lun target in iscsi server
-        * lun_port - lun port
-        * storage_format - storage format version (v1/v2/v3)
-        * override_luns - when True it will format/wipe out the block device
-    return True if succeeded, False otherwise
+    __author__: atal
+    :param host: name of host
+    :type host: str
+    :param storage: name of storage domain that will be created in rhevm
+    :type storage: str
+    :param data_center: name of DC which will contain this SD
+    :type data_center: str
+    :param lun: lun number
+    :type lun: str
+    :param lun_address: iscsi server address
+    :type lun_address:str
+    :param lun_target: iscsi target (name of lun on iscsi address)
+    :type lun_target: str
+    :param lun_port: lun port
+    :type lun_port: int
+    :param storage_format: storage format version (v1/v2/v3)
+    :type storage_format: str
+    :param override_luns: when True it will format/wipe out the block device
+    :type override_luns: bool
+    :param login_all: when True login to all lun addresses and targets
+    :type login_all: bool
+    :return: True if succeeded, False otherwise
+    :rtype: bool
     '''
 
-    if not _ISCSIdiscoverAndLogin(host, lun_address, lun_target):
+    if not _ISCSIdiscoverAndLogin(host, lun_address, lun_target, login_all):
         return False
 
     if not ll_sd.addStorageDomain(

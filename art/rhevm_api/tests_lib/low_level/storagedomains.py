@@ -493,6 +493,11 @@ def iscsiLogin(
         if not hostUtil.syncAction(
             hostObj, "iscsilogin", positive, iscsi=iscsi
         ):
+            msg = 'Failed to login' if positive else 'Login not as expected'
+            util.logger.error(
+                '%s to address %s on target %s using host %s',
+                msg, address, target, host
+            )
             return False
     return True
 
