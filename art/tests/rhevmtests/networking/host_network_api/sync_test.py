@@ -74,6 +74,7 @@ class TestHostNetworkApiSyncBase(helper.TestHostNetworkApiTestCaseBase):
     """
     __test__ = False
     network_host_api_dict = None
+    move_host = True
 
     @classmethod
     def setup_class(cls):
@@ -89,12 +90,13 @@ class TestHostNetworkApiSyncBase(helper.TestHostNetworkApiTestCaseBase):
             raise conf.NET_EXCEPTION(
                 "Failed to attach networks to %s" % conf.HOST_4
             )
-        if not ll_hosts.updateHost(
-            positive=True, host=conf.HOST_4, cluster=conf.SYNC_CL
-        ):
-            raise conf.NET_EXCEPTION(
-                "Failed to move %s to %s", conf.HOST_4, conf.SYNC_CL
-            )
+        if cls.move_host:
+            if not ll_hosts.updateHost(
+                positive=True, host=conf.HOST_4, cluster=conf.SYNC_CL
+            ):
+                raise conf.NET_EXCEPTION(
+                    "Failed to move %s to %s", conf.HOST_4, conf.SYNC_CL
+                )
 
     @classmethod
     def teardown_class(cls):
@@ -776,6 +778,154 @@ class TestHostNetworkApiSync08(TestHostNetworkApiSyncBase):
                 conf.BRIDGE_STR: {
                     "expected": self.net_case_1_bridge_expected,
                     "actual": self.net_case_1_bridge_actual
+                }
+            }
+        }
+        helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        helper.sync_networks([self.net_case_1])
+
+
+class TestHostNetworkApiSync09(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync for changed IP
+    Sync the network
+    """
+    __test__ = True
+    move_host = False
+    net_case_1 = conf.SYNC_NETS_DC_1[9][0]
+    net_case_1_ip_expected = conf.IP_DICT_NETMASK["address"]
+    net_case_1_ip_actual = "10.10.10.10"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network with IP the host
+        Change the IP on attached network
+        """
+        TestHostNetworkApiSync09.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": cls.net_case_1,
+                    "nic": conf.HOST_4_NICS[1],
+                    "ip": conf.BASIC_IP_DICT_NETMASK,
+                }
+            }
+        }
+        super(TestHostNetworkApiSync09, cls).setup_class()
+        helper.set_temp_ip_and_refresh_capabilities(
+            ip=cls.net_case_1_ip_actual, interface=cls.net_case_1
+        )
+
+    def test_unsync_network_change_ip(self):
+        """
+        Check that the network is un-sync and the sync reasons is changed IP
+        Sync the network
+        """
+        compare_dict = {
+            self.net_case_1: {
+                conf.IPADDR_STR: {
+                    "expected": self.net_case_1_ip_expected,
+                    "actual": self.net_case_1_ip_actual
+                }
+            }
+        }
+        helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        helper.sync_networks([self.net_case_1])
+
+
+class TestHostNetworkApiSync10(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync for changed netmask
+    Sync the network
+    """
+    __test__ = True
+    move_host = False
+    net_case_1 = conf.SYNC_NETS_DC_1[10][0]
+    net_case_1_netmask_expected = conf.IP_DICT_NETMASK["netmask"]
+    net_case_1_netmask_actual = "255.255.255.255"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network with IP the host
+        Change the netmask on attached network
+        """
+        TestHostNetworkApiSync10.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": cls.net_case_1,
+                    "nic": conf.HOST_4_NICS[1],
+                    "ip": conf.BASIC_IP_DICT_NETMASK,
+                }
+            }
+        }
+        super(TestHostNetworkApiSync10, cls).setup_class()
+        helper.set_temp_ip_and_refresh_capabilities(
+            interface=cls.net_case_1, netmask=cls.net_case_1_netmask_actual
+        )
+
+    def test_unsync_network_change_netmask(self):
+        """
+        Check that the network is un-sync and the sync reason is changed
+        netmask
+        Sync the network
+        """
+        compare_dict = {
+            self.net_case_1: {
+                conf.NETMASK_STR: {
+                    "expected": self.net_case_1_netmask_expected,
+                    "actual": self.net_case_1_netmask_actual
+                }
+            }
+        }
+        helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        helper.sync_networks([self.net_case_1])
+
+
+class TestHostNetworkApiSync11(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync for changed netmask prefix
+    Sync the network
+    """
+    __test__ = True
+    bz = {"1269481": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
+    move_host = False
+    net_case_1 = conf.SYNC_NETS_DC_1[11][0]
+    net_case_1_netmask_prefix_expected = conf.IP_DICT_PREFIX["netmask"]
+    net_case_1_netmask_prefix_actual = "32"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network with IP the host
+        Change the netmask prefix on the attached network
+        """
+        TestHostNetworkApiSync11.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": cls.net_case_1,
+                    "nic": conf.HOST_4_NICS[1],
+                    "ip": conf.BASIC_IP_DICT_PREFIX,
+                }
+            }
+        }
+        super(TestHostNetworkApiSync11, cls).setup_class()
+        helper.set_temp_ip_and_refresh_capabilities(
+            interface=cls.net_case_1,
+            netmask=cls.net_case_1_netmask_prefix_actual
+        )
+
+    def test_unsync_network_change_netmask_prefix(self):
+        """
+        Check that the network is un-sync and the sync reasons is changed
+        netmask prefix
+        Sync the network
+        """
+        compare_dict = {
+            self.net_case_1: {
+                conf.NETMASK_STR: {
+                    "expected": self.net_case_1_netmask_prefix_expected,
+                    "actual": self.net_case_1_netmask_prefix_actual
                 }
             }
         }

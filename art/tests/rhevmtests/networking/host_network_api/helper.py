@@ -11,6 +11,7 @@ from art.unittest_lib import attr
 import art.unittest_lib as unit_lib
 import rhevmtests.networking as networking
 import art.core_api.apis_utils as api_utils
+import art.rhevm_api.utils.test_utils as test_utils
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
@@ -222,3 +223,44 @@ def remove_networks_from_setup():
             "Failed to remove %s from %s and %s",
             conf.NIC_DICT, conf.DC_NAME, conf.HOST_4
         )
+
+
+def set_temp_ip_and_refresh_capabilities(interface, ip=None, netmask="24"):
+    """
+    Set temporary IP on interface and refresh capabilities
+
+    :param interface: Interface name
+    :type interface: str
+    :param ip: IP to set
+    :type ip: str
+    :param netmask: Netmask for the IP
+    :type netmask: str
+    :raise: NET_EXCEPTION
+    """
+    int_ip = conf.VDS_HOSTS_4.network.find_ip_by_int(interface)
+    host_ips = conf.VDS_HOSTS_4.network.find_ips()
+    try:
+        old_ip = [i for i in host_ips[1] if int_ip in i][0]
+    except IndexError:
+        old_ip = None
+    if old_ip:
+        logger.info("Delete IP %s from %s", old_ip, interface)
+        cmd = ["ip", "addr", "del", "%s" % old_ip, "dev", interface]
+        rc, out, err = conf.VDS_HOSTS_4.executor().run_cmd(cmd)
+        if rc:
+            raise conf.NET_EXCEPTION(
+                "Failed to delete %s from %s. ERR: %s. %s" % (
+                    old_ip, interface, err, out
+                )
+            )
+    ip = int_ip if not ip else ip
+    logger.info("Setting %s/%s on %s", ip, netmask, interface)
+    if not test_utils.configure_temp_static_ip(
+        host=conf.VDS_HOSTS_4.executor(), ip=ip, nic=interface, netmask=netmask
+    ):
+        raise conf.NET_EXCEPTION(
+            "Failed to set %s/%s on %s" % (ip, netmask, interface)
+        )
+    host_obj = ll_hosts.HOST_API.find(conf.HOST_4)
+    refresh_href = "{0};force".format(host_obj.get_href())
+    ll_hosts.HOST_API.get(href=refresh_href)

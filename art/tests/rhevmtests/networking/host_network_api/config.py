@@ -31,6 +31,9 @@ NETWORKS_DICT = {}
 VLAN_STR = "vlan"
 MTU_STR = "mtu"
 BRIDGE_STR = "bridged"
+BOOTPROTO_STR = "boot_protocol"
+NETMASK_STR = "netmask"
+IPADDR_STR = "ip_address"
 VLAN_IDS = [str(i) for i in xrange(2, 60)]
 
 BASIC_IP_DICT_NETMASK = {
@@ -48,6 +51,8 @@ BASIC_IP_DICT_PREFIX = {
         "boot_protocol": "static"
     }
 }
+IP_DICT_NETMASK = BASIC_IP_DICT_NETMASK["ip_netmask"]
+IP_DICT_PREFIX = BASIC_IP_DICT_PREFIX["ip_prefix"]
 
 NIC_DICT = {
     NIC_NETS[1][0]: {
@@ -507,6 +512,15 @@ SYNC_DICT_1 = {
     SYNC_NETS_DC_1[8][0]: {
         "required": "false",
         "usages": ""
+    },
+    SYNC_NETS_DC_1[9][0]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[10][0]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[11][0]: {
+        "required": "false"
     },
 }
 
