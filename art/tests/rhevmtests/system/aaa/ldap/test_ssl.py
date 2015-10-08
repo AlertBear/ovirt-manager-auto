@@ -59,7 +59,7 @@ class ADGroupWithSpacesInName(TestCase):
     conf = config.ADTLS_EXTENSION
     group = config.ADW2k12_GROUP_SPACE
     princ = '%s@%s' % (config.ADW2k12_USER_SPACE, config.ADW2K12_DOMAINS[0])
-    bz = {'1148797': {'engine': None, 'version': ['3.5', '3.6']}}
+    bz = {'1267232': {'engine': None, 'version': ['3.5', '3.6', '4.0']}}
 
     @classmethod
     def setup_class(cls):
