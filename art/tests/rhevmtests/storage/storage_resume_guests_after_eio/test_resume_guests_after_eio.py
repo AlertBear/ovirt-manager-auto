@@ -5,9 +5,6 @@ from multiprocessing import Process
 from art.unittest_lib import attr
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import vms, storagedomains, disks, hosts
-from art.rhevm_api.tests_lib.low_level.vms import (
-    addDisk, get_vms_disks_storage_domain_name, get_vm_disk_logical_name,
-)
 from art.rhevm_api.utils import storage_api
 from rhevmtests.storage.helpers import perform_dd_to_disk
 from art.test_handler.settings import opts
@@ -140,7 +137,7 @@ class TestCaseBlockedConnection(TestResumeGuests):
 
 class TestNoSpaceLeftOnDevice(TestResumeGuests):
     big_disk_name = "big_disk_eio"
-    left_space = int(1.5 * GB)
+    left_space = config.GB
 
     def break_storage(self):
         """ create a very big disk on the storage domain
@@ -233,27 +230,26 @@ class TestCase5015(TestNoSpaceLeftOnDevice):
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
     polarion_test_case = '5015'
+    # The disk should be big enough so the operation to write data to the disk
+    # runs for enough time until the big disk is created and the vm is
+    # paused due to not enough space left on the storage domain
+    disk_size = 3 * config.GB
 
     def setUp(self):
-        storage = get_vms_disks_storage_domain_name(self.vm)
+        self.process = None
+        self.sd = vms.get_vms_disks_storage_domain_name(self.vm)
         self.disk_alias = "second_disk_%s" % self.polarion_test_case
         LOGGER.info("Adding disk %s to vm %s", self.disk_alias, self.vm)
-        if not addDisk(
-            True, self.vm, config.DISK_SIZE, storagedomain=storage,
+        if not vms.addDisk(
+            True, self.vm, self.disk_size, storagedomain=self.sd,
             interface=config.VIRTIO, alias=self.disk_alias,
         ):
             LOGGER.error("Error adding disk %s", self.disk_alias)
         disks.wait_for_disks_status(self.disk_alias)
 
-        LOGGER.info(
-            "Waiting for %s logical name to be available", self.disk_alias,
-        )
-        if not get_vm_disk_logical_name(self.vm, self.disk_alias):
-            LOGGER.error("Couldn't get %s logical name", self.disk_alias)
-
         self.process = Process(
             target=perform_dd_to_disk,
-            args=(self.vm, self.disk_alias, True, config.DISK_SIZE,),
+            args=(self.vm, self.disk_alias, True, self.disk_size,),
         )
         self.process.start()
         # Wait for the operation to start
@@ -269,7 +265,8 @@ class TestCase5015(TestNoSpaceLeftOnDevice):
 
     def tearDown(self):
         """Remove vm's disk"""
-        self.process.terminate()
+        if self.process:
+            self.process.terminate()
         if not vms.deactivateVmDisk(True, self.vm, self.disk_alias):
             LOGGER.error(
                 "Error deactivating disk %s from vm %s", self.disk_alias,
