@@ -1106,17 +1106,12 @@ def restart_engine(engine, interval, timeout):
 
 
 @is_action()
-def configure_temp_static_ip(
-    host, user, password, ip, nic="eth1", netmask="255.255.255.0"
-):
+def configure_temp_static_ip(host, ip, nic="eth1", netmask="255.255.255.0"):
     """
     Configure temporary static IP on specific interface
-    :param host: remote machine IP address or FQDN
-    :type host: string
-    :param user: user name for the machine
-    :type user: string
-    :param password: password for root user
-    :type password: string
+
+    :param host: Host RemoteExecutor
+    :type host: RemoteExecutor
     :param ip: temporary IP to configure on NIC
     :type ip: string
     :param nic: specific NIC to configure ip/netmask on
@@ -1126,18 +1121,13 @@ def configure_temp_static_ip(
     :return: True if command executed successfully, False otherwise
     :rtype: bool
     """
-    machine_obj = Machine(host, user, password).util(LINUX)
-    cmd = [
-        "ip", "address", "add", ip + "/" + netmask, "dev", nic
-    ]
-    rc, output = machine_obj.runCmd(cmd)
-    if not rc:
+    cmd = ["ip", "address", "add", "%s/%s" % (ip, netmask), "dev", nic]
+    rc, out, err = host.run_cmd(cmd)
+    if rc:
         logger.error(
-            "Failed to configure temporary IP %s on interface %s on Virtual "
-            "Machine %s\n"
-            "command: %s\n"
-            "ERR: %s ",
-            ip, nic, host, ' '.join(map(str, cmd)), output
+            "Failed to configure temporary IP %s on interface %s on %s\n"
+            "command: %s\nERR: %s. %s ",
+            ip, nic, host.address, ' '.join(map(str, cmd)), out, err
         )
         return False
     return True
