@@ -1420,7 +1420,6 @@ class VmPool(BaseVmWithDiskTemplate):
     initial_size = 2
     updated_size = 3
 
-    @bz({'1256411': {'engine': None, 'version': ['3.6']}})
     @polarion("RHEVM3-10090")
     def test_crud_vm_pool(self):
         """
@@ -1440,11 +1439,11 @@ class VmPool(BaseVmWithDiskTemplate):
             )
         )
         logger.info(
-            "Negative test: Update vm pool name from: %s to %s and increase "
+            "Update vm pool name from: %s to %s and increase "
             "number of vms in pool", self.pool_name, self.new_vm_pool
         )
         description = 'Pool Description'
-        self.assertFalse(
+        self.assertTrue(
             vm_pool_api.updateVmPool(
                 True,
                 self.pool_name,
