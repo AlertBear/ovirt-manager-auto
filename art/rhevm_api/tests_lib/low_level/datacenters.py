@@ -334,7 +334,7 @@ def get_sd_datacenter(storage_domain_name):
     return False
 
 
-def _prepare_qos_obj(**kwargs):
+def prepare_qos_obj(**kwargs):
     """
     Prepare Qos object to add to datacenter
     :param kwargs: qos_name: QoS name
@@ -358,6 +358,11 @@ def _prepare_qos_obj(**kwargs):
                     outbound_average: type=int
                     outbound_peak: type=int
                     outbound_burst: type=int
+
+                Type hostnetwork:
+                    outbound_average_linkshare: type=int
+                    outbound_average_realtime: type=int
+                    outbound_average_upperlimit: type=int
     :return: QoS object or raise exceptions
     """
     exclude_kwargs = ["new_name"]
@@ -398,11 +403,17 @@ def add_qos_to_datacenter(datacenter, qos_name, qos_type, **kwargs):
                     outbound_average: type=int
                     outbound_peak: type=int
                     outbound_burst: type=int
+
+                Type hostnetwork:
+                    outbound_average_linkshare: type=int
+                    outbound_average_realtime: type=int
+                    outbound_average_upperlimit: type=int
+
     :return: True/False
     """
     kwargs["name"] = qos_name
     kwargs["type_"] = qos_type
-    qos_obj = _prepare_qos_obj(**kwargs)
+    qos_obj = prepare_qos_obj(**kwargs)
     dc = get_data_center(datacenter)
     qoss_coll = data_st.QoSs()
     qoss_coll.set_qos(qos_obj)
@@ -478,6 +489,13 @@ def update_qos_in_datacenter(datacenter, qos_name, **kwargs):
                     outbound_average: type=int
                     outbound_peak: type=int
                     outbound_burst: type=int
+
+                For Host Network QoS type:
+                    Type hostnetwork:
+                    outbound_average_linkshare: type=int
+                    outbound_average_realtime: type=int
+                    outbound_average_upperlimit: type=int
+
     :return: True/False
     """
     qos_obj = get_qos_from_datacenter(datacenter, qos_name)
@@ -488,7 +506,7 @@ def update_qos_in_datacenter(datacenter, qos_name, **kwargs):
         kwargs["name"] = kwargs.get("new_name")
 
     try:
-        new_qos_obj = _prepare_qos_obj(**kwargs)
+        new_qos_obj = prepare_qos_obj(**kwargs)
     except exceptions.DataCenterException:
         return False
 

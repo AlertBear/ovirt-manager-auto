@@ -9,6 +9,7 @@ http://www.ovirt.org/Features/NetworkingApi
 
 from art.core_api.apis_utils import data_st
 import art.core_api.apis_exceptions as exceptions
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 from art.rhevm_api.utils.test_utils import get_api
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
@@ -169,6 +170,7 @@ def prepare_network_attachment_obj(host_name, **kwargs):
     properties = kwargs.get("properties")
     datacenter = kwargs.get("datacenter")
     cluster = kwargs.get("cluster")
+    qos = kwargs.get("qos")
 
     if update:
         network_attachment_obj = get_networks_attachments(
@@ -188,6 +190,10 @@ def prepare_network_attachment_obj(host_name, **kwargs):
     if properties:
         properties_obj = ll_networks.create_properties(**properties)
         network_attachment_obj.set_properties(properties_obj)
+
+    if qos:
+        qos_obj = ll_datacenters.prepare_qos_obj(**qos)
+        network_attachment_obj.set_qos(qos_obj)
 
     if nic:
         if BOND in nic:
