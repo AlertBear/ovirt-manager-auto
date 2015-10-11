@@ -187,13 +187,14 @@ class TestCase11987(BaseExportImportTestCase):
     polarion_test_case = '11987'
     vm_from_template = "vm_from_template_%s" % polarion_test_case
     prefix = "imported"
+    bz = {'1269948': {'engine': None, 'version': ['3.6']}}
 
     def setUp(self):
         """
         * Create a new template where to clone a vm from
         """
         super(TestCase11987, self).setUp()
-        self.template_name = "origial_template_%s" % self.polarion_test_case
+        self.template_name = "original_template_%s" % self.polarion_test_case
 
         assert templates.createTemplate(
             True, vm=self.vm_name, name=self.template_name)
@@ -211,7 +212,7 @@ class TestCase11987(BaseExportImportTestCase):
         * Sanity export from Blank
         * Sanity export from another template
         """
-        vmsList = [self.vm_name, self.vm_from_template]
+        vms_list = [self.vm_name, self.vm_from_template]
 
         def export_vm(vm):
             logger.info("Exporting vm %s", vm)
@@ -226,7 +227,7 @@ class TestCase11987(BaseExportImportTestCase):
         def exec_with_threads(fn):
             execution = []
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                for vm in vmsList:
+                for vm in vms_list:
                     execution.append((vm, executor.submit(fn, vm)))
 
             for vm, res in execution:
@@ -237,6 +238,8 @@ class TestCase11987(BaseExportImportTestCase):
                     raise Exception("Failed to execute %s for %s"
                                     % (fn.__name__, vm))
         exec_with_threads(export_vm)
+        logger.info("Removing existing vm %s", self.vm_name)
+        assert vms.removeVm(True, self.vm_name, wait=True)
         exec_with_threads(import_vm)
 
     def tearDown(self):
@@ -249,10 +252,12 @@ class TestCase11987(BaseExportImportTestCase):
         assert vms.removeVmFromExportDomain(
             True, self.vm_from_template, config.CLUSTER_NAME,
             self.export_domain)
-        vmsList = ",".join(["%s_%s" % (vm, self.prefix) for vm in
-                           [self.vm_name, self.vm_from_template]]
-                           + [self.vm_from_template])
-        assert vms.removeVms(True, vmsList)
+        vms_list = ",".join(
+            ["%s_%s" % (vm, self.prefix) for vm in [
+                self.vm_name, self.vm_from_template
+            ]] + [self.vm_from_template]
+        )
+        assert vms.removeVms(True, vms_list)
 
 
 @attr(tier=1)
