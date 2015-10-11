@@ -8,6 +8,7 @@ from art.test_handler.exceptions import NetworkException
 from rhevmtests.networking import config
 import art.rhevm_api.utils.test_utils as utils
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import rhevmtests.helpers as global_helper
 
 logger = logging.getLogger("Jumbo_Frame_Helper")
 
@@ -157,9 +158,11 @@ def add_vnics_to_vms(
                     )
                 )
             logger.info("Setting up temp IP %s on VM %s", ips[i], vm_name)
+            vm_exec = global_helper.get_host_executor_with_root_user(
+                ip=vm_ip, root_password=config.VMS_LINUX_PW
+            )
             if not utils.configure_temp_static_ip(
-                host=vm_ip, user=config.HOSTS_USER,
-                password=config.HOSTS_PW, ip=ips[i], nic=vm_nics[1]
+                host=vm_exec, ip=ips[i], nic=vm_nics[1]
             ):
                 raise NetworkException(
                     "Couldn't configure temp IP %s on VMs %s" % (ips[i], vm_ip)
