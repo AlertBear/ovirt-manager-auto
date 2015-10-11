@@ -23,8 +23,7 @@ VM_IPS = net_helper.create_random_ips()
 HOST_IPS = net_helper.create_random_ips()
 STAT_KEYS = ["data.total.rx", "data.total.tx"]
 ETH0 = VM_NICS[0]
-HOST_4_NIC_1 = VDS_HOSTS[-1].nics[1]
-
+HOST_4_NIC_1 = None  # Filled in setup_package
 BASIC_IP_DICT_PREFIX = {
     "ip_prefix": {
         "address": "",

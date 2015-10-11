@@ -22,6 +22,7 @@ def setup_package():
     """
     Create and attach sw1 to DC/CL/Host
     """
+    conf.HOST_4_NIC_1 = conf.VDS_HOSTS[-1].nics[1]
     network.network_cleanup()
     add_net_dict = {
         conf.NET_0: {
