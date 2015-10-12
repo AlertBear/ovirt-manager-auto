@@ -404,3 +404,42 @@ class JDBCCLIQuery(TestCase):
             )
             assert rc, 'Unable to find group by its %s' % k
             assert out_group == out, "Correct group wasn't found by %s" % k
+
+
+@attr(tier=1)
+class JDBCCLISettings(TestCase):
+    """Test customize of settings via aaa-jdbc CLI"""
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        cls.settings_cli = jdbccli.JDBCCLI(
+            session=config.ENGINE_HOST.executor().session(),
+            entity='settings'
+        )
+
+    @polarion('RHEVM3-11337')
+    def test_010_view_settings(self):
+        """ view settings via CLI """
+        assert self.settings_cli.run('show')[0], "Failed to view settings"
+
+    @attr(tier=2)
+    @polarion('RHEVM3-13908')
+    def test_020_change_settings(self):
+        """ change settings via CLI """
+        assert self.settings_cli.run(
+            'set',
+            name='MESSAGE_OF_THE_DAY',
+            value='Zdravicko',
+        )[0], "Failed to change MESSAGE_OF_THE_DAY setting"
+        show_out = self.settings_cli.run(
+            'show',
+            name='MESSAGE_OF_THE_DAY',
+        )
+        assert show_out[0], 'Failed to run show command'
+        assert 'Zdravicko' in show_out[1], 'Setting value was not changed'
+        assert self.settings_cli.run(  # Change value back to default
+            'set',
+            name='MESSAGE_OF_THE_DAY',
+            value='',
+        )[0], "Failed to change MESSAGE_OF_THE_DAY setting to defaul value"
