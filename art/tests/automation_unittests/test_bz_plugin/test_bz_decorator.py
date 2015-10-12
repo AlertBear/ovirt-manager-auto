@@ -57,7 +57,7 @@ class TestCaseBzPlugin(TestCase):
     def t04(self):
         logger.info('************* VERIFIED BUG current engine *************')
 
-    @istest  # should skip
+    @istest  # should run
     @bzd({'5': {'engine': None, 'version': ['3.5']}})
     def t05(self):
         logger.info('************* CLOSED BUG in newer version *************')
@@ -132,4 +132,4 @@ class VerifyResults(VerifyUnittestResults):
 
     @istest
     def verify(self):
-        self.assert_expected_results(39, 0, 21, 0)
+        self.assert_expected_results(43, 0, 17, 0)

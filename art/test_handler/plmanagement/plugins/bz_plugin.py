@@ -284,6 +284,7 @@ class Bugzilla(Component):
         self.issuedb = None
         self.config_name = None
         self.__register_functions()
+        self.system_version = None
 
     @classmethod
     def add_options(cls, parser):
@@ -311,6 +312,8 @@ class Bugzilla(Component):
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
             return
+        from art.rhevm_api.tests_lib.low_level import general
+        self.system_version = ["%d.%d.%d.%d" % general.getSystemVersion()]
         bz_cfg = conf.get(BZ_OPTION)
         self.url = params.bz_host or bz_cfg.get('url')
         self.user = params.bz_user or bz_cfg.get('user')
@@ -468,8 +471,7 @@ class Bugzilla(Component):
         storage_in = storages is None or opts['storage_type'] in storages
 
         if versions is None:
-            from art.rhevm_api.tests_lib.low_level import general
-            versions = ["%d.%d.%d.%d" % general.getSystemVersion()]
+            versions = self.system_version
 
         for version in versions:
             self.version = Version(version)
@@ -549,11 +551,12 @@ class Bugzilla(Component):
 
             try:
                 fixed_at = Version(fixed_at)
-                if fixed_at > self.version:
+                system_version = Version(self.system_version[0])
+                if fixed_at > system_version:
                     return True
+
             except (ValueError, TypeError):
                 logger.warn("Version '%s' is not applicable", fixed_at)
-
         return False
 
     def __is_related_product(self, bug):

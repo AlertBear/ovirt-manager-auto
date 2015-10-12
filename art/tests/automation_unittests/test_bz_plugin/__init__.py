@@ -31,6 +31,7 @@ class FakeBugs(object):
                 "resolution": '',
                 "bug_status": 'NEW',
                 "target_release": None,
+                "component": ['component_1'],
             }
         elif bz_id == '2':
             bug_dict = {
@@ -40,6 +41,7 @@ class FakeBugs(object):
                 "resolution": '',
                 "bug_status": 'ON_QA',
                 "target_release": None,
+                "component": ['component_2'],
             }
         elif bz_id == '3':
             bug_dict = {
@@ -49,6 +51,7 @@ class FakeBugs(object):
                 "resolution": '',
                 "bug_status": 'ON_QA',
                 "target_release": ['3.6'],
+                "component": ['component_3'],
             }
         elif bz_id == '4':
             bug_dict = {
@@ -58,6 +61,7 @@ class FakeBugs(object):
                 "resolution": 'CURRENTRELEASE',
                 "bug_status": 'VERIFIED',
                 "target_release": ['3.5'],
+                "component": ['component_4'],
             }
         elif bz_id == '5':
             bug_dict = {
@@ -67,6 +71,7 @@ class FakeBugs(object):
                 "resolution": '',
                 "bug_status": 'CLOSED',
                 "target_release": ['3.6'],
+                "component": ['component_5'],
             }
         elif bz_id == '6':
             bug_dict = {
@@ -77,6 +82,7 @@ class FakeBugs(object):
                 "bug_status": 'CLOSED',
                 "target_release": None,
                 "dupe_of": '1',
+                "component": ['component_6'],
             }
         elif bz_id == '7' or bz_id == '8':
             bug_dict = {
@@ -86,6 +92,7 @@ class FakeBugs(object):
                 "resolution": '',
                 "bug_status": 'CLOSED',
                 "target_release": ['1.0'],
+                "component": ['component_7'],
             }
         elif bz_id == '10':
             bug_dict = {
@@ -95,6 +102,7 @@ class FakeBugs(object):
                 "resolution": '',
                 "bug_status": 'NEW',
                 "target_release": ['1.0'],
+                "component": ['component_10'],
             }
         elif bz_id == '11':
             bug_dict = {
@@ -104,6 +112,7 @@ class FakeBugs(object):
                 "resolution": 'CURRENTRELEASE',
                 "bug_status": 'VERIFIED',
                 "target_release": ['3.5'],
+                "component": ['component_11'],
             }
         else:
             raise BugNotFound(bz_id)
