@@ -2,11 +2,22 @@
 
 import os
 import logging
+import winrm
 
 from contextlib import contextmanager
 from tempfile import mkstemp
-from utilities import machine  # TODO: get rid of utilities dependency
+from utilities import utils
 from utilities.timeout import TimeoutingSampler, TimeoutExpiredError
+
+from winremote import winremote
+from winremote.modules import (
+    devices,
+    files,
+    products,
+    services,
+    system,
+)
+
 
 # Those are default user/pass I use in windows images located at glance
 USER = 'Administrator'
@@ -70,7 +81,7 @@ def gt_install_answer_file(apps, platf):
     ).format(
         componentCount=len(apps),
         guest_tools_id=GT_ID,
-        platf=' (x86)' if platf == '64' else '',
+        platf=' (x86)' if platf == '64-bit' else '',
         components='\n'.join([
             'Component-%s=%s' % (i, app) for i, app in enumerate(apps)
         ]),
@@ -136,7 +147,7 @@ class WindowsGuest(object):
     def platf(self):
         """ Get windows platf 64/86 """
         if self._platf is None:
-            self._platf = self.vm.getSystemArchitecture()[1]
+            self._platf = system.arch(self.win)
         return self._platf
 
     def __init__(self, ip, user=USER, password=PASSWORD):
@@ -154,11 +165,11 @@ class WindowsGuest(object):
         self.user = user
         self.password = password
         self.ip = ip
-        self.vm = machine.Machine(
-            host=ip,
-            user=user,
-            password=password
-        ).util('windows')
+        _session = winrm.Session(
+            target=ip,
+            auth=(user, password),
+        )
+        self.win = winremote.Windows(_session, winremote.WMI(_session))
 
     def __wait_for_proccess(self, name):
         """
@@ -169,10 +180,14 @@ class WindowsGuest(object):
         :rtype: boolean
         :raises: TimeoutExpiredError
         """
-        for statusOk, _ in TimeoutingSampler(
-            DEFAULT_TIMEOUT, DEFAULT_INTERVAL, self.vm.getPidByName, name
+        for statusOk in TimeoutingSampler(
+            DEFAULT_TIMEOUT,
+            DEFAULT_INTERVAL,
+            system.get_process,
+            self.win,
+            name,
         ):
-            if not statusOk:
+            if not bool(statusOk):
                 return True
         return False
 
@@ -182,7 +197,9 @@ class WindowsGuest(object):
         :returns: list of installed products
         :rtype: list of str
         """
-        return [product['Name'] for product in self.vm.getAllProducts()]
+        return [
+            product['Name'] for product in products.list(self.win)
+        ]
 
     def get_all_services(self):
         """
@@ -191,7 +208,8 @@ class WindowsGuest(object):
         :rtype: dict of services info
         """
         return dict(
-            (service['Name'], service) for service in self.vm.getAllServices()
+            (service['Name'], service)
+            for service in services.list(self.win)
         )
 
     def is_product_installed(self, product):
@@ -202,7 +220,7 @@ class WindowsGuest(object):
         :returns: True if product is installed, False otherwise
         :rtype: boolean
         """
-        return self.vm.checkProductExist(product)
+        return bool(products.get(self.win, product))
 
     def is_service_running(self, service):
         """
@@ -212,8 +230,7 @@ class WindowsGuest(object):
         :returns: True if service is running False otherwise
         :rtype: boolean
         """
-        serviceStat = self.vm.checkServiceRunningAndEnabled(service)
-        return serviceStat['State'] == 'Running'
+        return services.get(self.win, service)['State'] == 'Running'
 
     def is_service_enabled(self, service):
         """
@@ -223,8 +240,7 @@ class WindowsGuest(object):
         :returns: True if service is enabled False otherwise
         :rtype: boolean
         """
-        serviceStat = self.vm.checkServiceRunningAndEnabled(service)
-        return serviceStat['StartMode'] == 'Auto'
+        return services.get(self.win, service)['StartMode'] == 'Auto'
 
     def contains_driver(self, driver):
         """
@@ -234,18 +250,10 @@ class WindowsGuest(object):
         :returns: tuple with cmd status and list with content of dir
         :rtype: tuple(boolean, list)
         """
-        ret = self.vm.getDirContent(
-            self.DRIVERS % (' (x86)' if self.platf == '64' else '', driver)
+        return files.ls_dir(
+            self.win,
+            self.DRIVERS % (' (x86)' if self.platf == '64-bit' else '', driver)
         )
-        if ret[0]:
-            self.logger.info(
-                "Content of driver directory '%s' is '%s'", driver, ret[1]
-            )
-        else:
-            self.logger.error(
-                "Directory for driver '%s' doesn't exists", driver
-            )
-        return (ret[0], [i for i in ret[1].split('\r\n') if i])
 
     def get_device_info(self, name):
         """
@@ -255,7 +263,7 @@ class WindowsGuest(object):
         :returns: dictionary with device driver information
         :rtype: dict
         """
-        return self.vm.getDeviceInfo(name)
+        return devices.get(self.win, name, attributes='*')
 
     def __run_setup_tool(self, answer_file):
         """
@@ -263,30 +271,27 @@ class WindowsGuest(object):
         :returns: True if tools ran successfull, False otherwise
         :rtype: boolean
         """
-
         try:
             # Create answer file and copy it to windows machine
             with temp_data_file(answer_file) as tmp_file:
-                ret = self.vm.copyFileTo(
+                ret = files.copy_remote(
+                    self.win,
                     tmp_file,
-                    self.WINDOWS_PATH,
-                    toFile='setup.iss'
+                    '%s%s' % (self.WINDOWS_PATH, 'setup.iss'),
                 )
                 self.logger.debug('Answer file content: %s', answer_file)
             # Copy installation program to disk C:
-            ret, out = self.vm.runCmd(
-                cmd='copy %s%s %s' % (
-                    self.TOOLS_CD_PATH, self.TOOLS_EXE, self.TOOLS_TMP_PATH,
-                ),
-                wait=True,
+            files.copy_local(
+                self.win,
+                '%s%s' % (self.TOOLS_CD_PATH, self.TOOLS_EXE),
+                self.TOOLS_TMP_PATH,
             )
             # Run setup tool silently with answer file and wait to finish
-            ret, out = self.vm.runCmd(
+            ret, out, _ = self.win.run_cmd(
                 cmd='%s%s /sms /s /f1%s /f2%s' % (
                     self.TOOLS_TMP_PATH,  self.TOOLS_EXE,
                     self.ANSWER_FILE, self.INSTALL_LOG
                 ),
-                wait=True,
             )
             self.__wait_for_proccess(self.TOOLS_EXE)
             self.logger.info("Setup tool successfully finished")
@@ -297,7 +302,7 @@ class WindowsGuest(object):
         finally:
             self.logger.debug(
                 "Install shiled log file content: %s",
-                self.vm.getFile(self.INSTALL_LOG)
+                files.cat_file(self.win, self.INSTALL_LOG),
             )
             # TODO: obtain log of win GT installetion
 
@@ -333,14 +338,14 @@ class WindowsGuest(object):
                   False if failed during rebooting proccess.
         :rtype: boolean
         """
-        self.logger.info('Guest %s is going down for reboot', self.ip)
-        self.vm.shutdown('-r -t 5')
+        self.logger.info("Guest '%s' is going down for reboot", self.ip)
+        system.reboot(self.win)
         if not wait:
             return True
 
         try:
             for statusOk in TimeoutingSampler(
-                DEFAULT_TIMEOUT, DEFAULT_INTERVAL, self.vm.isAlive, 1
+                DEFAULT_TIMEOUT, DEFAULT_INTERVAL, utils.isAlive, self.ip,
             ):
                 if not statusOk:
                     break
@@ -360,13 +365,13 @@ class WindowsGuest(object):
         """
         try:
             for statusOk in TimeoutingSampler(
-                DEFAULT_TIMEOUT, DEFAULT_INTERVAL, self.vm.isAlive
+                DEFAULT_TIMEOUT, DEFAULT_INTERVAL, utils.isAlive, self.ip,
             ):
                 if statusOk:
                     break
             self.logger.debug("Machine is alive")
             for statusOk in TimeoutingSampler(
-                DEFAULT_TIMEOUT, DEFAULT_INTERVAL, self.vm.isConnective
+                DEFAULT_TIMEOUT, DEFAULT_INTERVAL, self.win.is_connective,
             ):
                 if statusOk:
                     break
@@ -377,6 +382,7 @@ class WindowsGuest(object):
             )
             return False
         return True
+
 
 if __name__ == '__main__':
     import sys

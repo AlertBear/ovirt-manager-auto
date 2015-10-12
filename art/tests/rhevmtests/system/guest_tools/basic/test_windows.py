@@ -145,7 +145,7 @@ class Windows(TestCase):
         :returns: 64 or empty string based on machine platform
         :rtype: str
         """
-        return '64' if self.machine.platf == '64' else ''
+        return '64' if self.machine.platf == '64-bit' else ''
 
     @classmethod
     def teardown_class(cls):
@@ -301,7 +301,6 @@ class Windows(TestCase):
         """
         device = self.machine.get_device_info(deviceName)
         assert device, "Device driver '%s' was not found" % deviceName
-        device = device[0]
         self.assertTrue(device['Status'].upper() == 'OK', '%s' % device)
         self.assertTrue(device['ConfigManagerErrorCode'] == '0', '%s' % device)
 
