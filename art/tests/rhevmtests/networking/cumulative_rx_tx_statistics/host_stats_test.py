@@ -10,8 +10,8 @@ from art.test_handler.tools import polarion  # pylint: disable=E0611
 import helper
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import rhevmtests.networking.helper as net_helper
 import time
 
 logger = logging.getLogger("Cumulative_RX_TX_Statistics_Cases")
@@ -45,7 +45,7 @@ class CumulativeHostStatisticsBase(TestCase):
         cls.total_tx = cls.nic_stat["data.total.tx"]
 
         if cls.move_host:
-            net_helper.move_host_to_another_cluster(
+            hl_hosts.move_host_to_another_cluster(
                 host=conf.LAST_HOST, cluster=conf.CL_0
             )
 
@@ -101,7 +101,7 @@ class CumulativeNetworkUsageHostStatisticsCase2(CumulativeHostStatisticsBase):
         """
         Return Host back to its original cluster
         """
-        net_helper.move_host_to_another_cluster(
+        hl_hosts.move_host_to_another_cluster(
             host=conf.LAST_HOST, cluster=conf.CL_1
         )
 
@@ -146,7 +146,7 @@ class CumulativeNetworkUsageHostStatisticsCase3(CumulativeHostStatisticsBase):
         1. Move host to 3.5 ver cluster
         2. Check statistics in a new Cluster are N/A
         """
-        net_helper.move_host_to_another_cluster(
+        hl_hosts.move_host_to_another_cluster(
             host=conf.LAST_HOST, cluster=conf.CL_3_5
         )
         time.sleep(20)
@@ -172,7 +172,7 @@ class CumulativeNetworkUsageHostStatisticsCase3(CumulativeHostStatisticsBase):
         1. Move host back to its original cluster
         2. Check statistics in the original Cluster are zero
         """
-        net_helper.move_host_to_another_cluster(
+        hl_hosts.move_host_to_another_cluster(
             host=conf.LAST_HOST, cluster=conf.CL_1
         )
 

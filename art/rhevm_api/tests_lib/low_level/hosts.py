@@ -93,17 +93,6 @@ search_for = ["<filterref filter='no-mac-spoofing'/>",
               "<filterref filter='no-arp-mac-spoofing'/>"]
 
 
-class HostObject(object):
-    def __init__(self, name, password, ip=None, nics=None, user="root"):
-        self.name = name
-        self.user = user
-        self.password = password
-        self.ip = ip
-        self.nics = nics
-        if self.ip is None:
-            self.ip = getHostIP(self.name)
-
-
 def get_host_list():
     hostUtil = get_api('host', 'hosts')
     return hostUtil.get(absLink=False)
@@ -143,6 +132,19 @@ def getHostState(host):
     Return: Returns the host's states [str] or raises EntityNotFound
     """
     return HOST_API.find(host).get_status().get_state()
+
+
+def get_host_type(host_name):
+    """
+    Returns type of specific host name
+
+    :param host_name: host name in rhevm to check his type
+    :type host_name: str
+    :return: the host type 'rhev-h'/'rhel'
+    :rtype: str
+    :raises: EntityNotFound
+    """
+    return HOST_API.find(host_name).get_type()
 
 
 def getHostIP(host):

@@ -38,7 +38,7 @@ class TestMigrateNoAvailableHostOnCluster(TestCase):
         """
         Change second host cluster(to cluster [1])
         """
-        hl_hosts.switch_host_to_cluster(
+        hl_hosts.move_host_to_another_cluster(
             config.HOSTS[1],
             config.CLUSTER_NAME[1]
         )
@@ -48,7 +48,7 @@ class TestMigrateNoAvailableHostOnCluster(TestCase):
         """
         Back host cluster to init(cluster [0])
         """
-        hl_hosts.switch_host_to_cluster(
+        hl_hosts.move_host_to_another_cluster(
             config.HOSTS[1],
             config.CLUSTER_NAME[0]
         )
@@ -79,7 +79,7 @@ class TestMigrateVmOnOtherDataCenter(TestCase):
         """
         Change second host cluster (to ADDITIONAL CL)
         """
-        hl_hosts.switch_host_to_cluster(
+        hl_hosts.move_host_to_another_cluster(
             config.HOSTS[1],
             config.ADDITIONAL_CL_NAME
         )
@@ -89,7 +89,7 @@ class TestMigrateVmOnOtherDataCenter(TestCase):
         """
         Back host cluster to init (cluster [0])
         """
-        hl_hosts.switch_host_to_cluster(
+        hl_hosts.move_host_to_another_cluster(
             config.HOSTS[1],
             config.CLUSTER_NAME[0]
         )

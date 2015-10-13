@@ -153,8 +153,8 @@ class UpgradeBaseClass(StorageTest):
         self.host_1, self.host_2 = (
             host_list[0].get_name(), host_list[1].get_name()
         )
-        hl_hosts.switch_host_to_cluster(self.host_1, self.cluster_name)
-        hl_hosts.switch_host_to_cluster(self.host_2, self.cluster_name)
+        hl_hosts.move_host_to_another_cluster(self.host_1, self.cluster_name)
+        hl_hosts.move_host_to_another_cluster(self.host_2, self.cluster_name)
 
     def add_first_storage_domain(self):
         """
@@ -296,8 +296,8 @@ class UpgradeBaseClass(StorageTest):
             )
         ll_datacenters.removeDataCenter(True, self.data_center_name)
         ll_storagedomains.remove_storage_domains(sds, self.host_1)
-        hl_hosts.switch_host_to_cluster(self.host_1, config.CLUSTER_NAME)
-        hl_hosts.switch_host_to_cluster(self.host_2, config.CLUSTER_NAME)
+        hl_hosts.move_host_to_another_cluster(self.host_1, config.CLUSTER_NAME)
+        hl_hosts.move_host_to_another_cluster(self.host_2, config.CLUSTER_NAME)
         ll_clusters.removeCluster(True, self.cluster_name)
 
 

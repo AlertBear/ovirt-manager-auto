@@ -81,7 +81,7 @@ def setup_module():
             data_center=config.DATACENTER_ISCSI_CONNECTIONS,
             version=config.COMP_VERSION
         )
-        hl_hosts.switch_host_to_cluster(
+        hl_hosts.move_host_to_another_cluster(
             config.HOST_FOR_MOUNT, config.CLUSTER_ISCSI_CONNECTIONS
         )
         _logout_from_all_iscsi_targets()
@@ -94,7 +94,7 @@ def teardown_module():
     if not config.GOLDEN_ENV:
         datacenters.clean_datacenter(True, config.DATACENTER_ISCSI_CONNECTIONS)
     else:
-        hl_hosts.switch_host_to_cluster(
+        hl_hosts.move_host_to_another_cluster(
             config.HOST_FOR_MOUNT, config.CLUSTER_NAME
         )
         if not ll_dc.removeDataCenter(

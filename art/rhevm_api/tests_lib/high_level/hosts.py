@@ -5,7 +5,7 @@ High-level functions above data-center
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from art.core_api import is_action
-import art.rhevm_api.tests_lib.low_level.hosts as hosts
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.test_handler.exceptions as errors
 from art.test_handler.settings import opts
 
@@ -28,7 +28,7 @@ def add_hosts(hosts_list, passwords, cluster):
         for index, host in enumerate(hosts_list):
             password = passwords[index]
             LOGGER.info("Adding host %s", host)
-            results.append(executor.submit(hosts.addHost, True, name=host,
+            results.append(executor.submit(ll_hosts.addHost, True, name=host,
                                            root_password=password,
                                            cluster=cluster))
 
@@ -38,21 +38,40 @@ def add_hosts(hosts_list, passwords, cluster):
                                        hosts_list[index])
         LOGGER.debug("Host %s installed", hosts_list[index])
 
-    if not hosts.waitForHostsStates(True, ",".join(hosts_list)):
+    if not ll_hosts.waitForHostsStates(True, ",".join(hosts_list)):
         raise errors.HostException("Some of hosts didn't come to up status")
 
 
 @is_action()
-def switch_host_to_cluster(host, cluster):
+def move_host_to_another_cluster(host, cluster, activate=True):
     """
-    Description: Puts host host into cluster cluster
-    Parameters:
-        * host - host that will be switched to different cluster
-        * cluster - cluster to which host will be placed
+    Switch host to different cluster
+
+    :param host: Host name that will be switched to different cluster
+    :type host: str
+    :param cluster:Cluster name where the host should be moved to
+    :type cluster: str
+    :param activate: Activate the host after move
+    :type activate: bool
+    :return: True if succeed to move it False otherwise
+    :rtype: bool
     """
-    assert hosts.deactivateHost(True, host)
-    assert hosts.updateHost(True, host, cluster=cluster)
-    assert hosts.activateHost(True, host)
+    logging.info("Set %s to maintenance", host)
+    if not ll_hosts.deactivateHost(True, host):
+        logging.error("Failed to set %s to maintenance", host)
+        return False
+
+    logging.info("Moving %s to %s", host, cluster)
+    if not ll_hosts.updateHost(positive=True, host=host, cluster=cluster):
+        logging.error("Failed to move %s to %s", host, cluster)
+        return False
+
+    if activate:
+        logging.info("Activate %s", host)
+        if not ll_hosts.activateHost(positive=True, host=host):
+            logging.error("Failed to activate %s", host)
+            return False
+    return True
 
 
 @is_action()
@@ -65,8 +84,8 @@ def deactivate_host_if_up(host):
     Return: status (True if host was deactivated properly and positive,
                     False otherwise)
     """
-    if not hosts.isHostInMaintenance(True, host):
-        if not hosts.deactivateHost(True, host):
+    if not ll_hosts.isHostInMaintenance(True, host):
+        if not ll_hosts.deactivateHost(True, host):
             return False
     return True
 
@@ -84,9 +103,9 @@ def deactivate_hosts_if_up(hosts_list):
         _hosts_list = hosts_list.split(',')
     else:
         _hosts_list = hosts_list[:]
-    spm = hosts.getSPMHost(_hosts_list)
+    spm = ll_hosts.getSPMHost(_hosts_list)
     logging.info("spm host - %s", spm)
-    sorted_hosts = hosts._sort_hosts_by_priority(_hosts_list, False)
+    sorted_hosts = ll_hosts._sort_hosts_by_priority(_hosts_list, False)
     sorted_hosts.remove(spm)
     sorted_hosts.append(spm)
 
@@ -110,12 +129,13 @@ def add_power_management(host, pm_type, pm_address, pm_user, pm_password,
     * pm_password = Password for the power management agent
     """
     logging.info("Add power management type %s for host: %s", pm_type, host)
-    if not hosts.updateHost(True, host=host, pm='true', pm_type=pm_type,
-                            pm_address=pm_address, pm_username=pm_user,
-                            pm_password=pm_password, pm_secure=pm_secure,
-                            **kwargs):
-        raise errors.HostException("Cannot add power management to host: %s"
-                                   % host)
+    if not ll_hosts.updateHost(
+            True, host=host, pm='true', pm_type=pm_type,
+            pm_address=pm_address, pm_username=pm_user,
+            pm_password=pm_password, pm_secure=pm_secure, **kwargs
+    ):
+        raise errors.HostException(
+            "Cannot add power management to host: %s" % host)
 
 
 def remove_power_management(host, pm_type):
@@ -127,10 +147,13 @@ def remove_power_management(host, pm_type):
     * pm_type - Name of power management type (ipmilan, apc_snmp and so on)
     """
     logging.info("disable power management for host: %s", host)
-    if not hosts.updateHost(True, host=host, pm='false', pm_type=pm_type,
-                            pm_password='', pm_address='', pm_username=''):
-        raise errors.HostException("Cannot remove power management"
-                                   " from host: %s" % host)
+    if not ll_hosts.updateHost(
+            True, host=host, pm='false', pm_type=pm_type,
+            pm_password='', pm_address='', pm_username=''
+    ):
+        raise errors.HostException(
+            "Cannot remove power management from host: %s" % host
+        )
 
 
 def activate_host_if_not_up(host):
@@ -140,8 +163,8 @@ def activate_host_if_not_up(host):
     :param host: IP/FQDN of the host
     :return: True if host was activated properly False otherwise
     """
-    if not hosts.getHostState(host) == ENUMS["host_state_up"]:
-        return hosts.activateHost(True, host)
+    if not ll_hosts.getHostState(host) == ENUMS["host_state_up"]:
+        return ll_hosts.activateHost(True, host)
     return True
 
 
@@ -156,9 +179,9 @@ def restart_services_under_maintenance_state(services, host_resource):
     :type host_resource: instance of VDS
     :raises: HostException
     """
-    host_name = hosts.get_host_name_from_engine(host_resource.ip)
+    host_name = ll_hosts.get_host_name_from_engine(host_resource.ip)
     logging.info("Put host %s to maintenance", host_name)
-    if not hosts.deactivateHost(True, host_name):
+    if not ll_hosts.deactivateHost(True, host_name):
         raise errors.HostException(
             "Failed to put host %s to maintenance" % host_name
         )
@@ -168,12 +191,12 @@ def restart_services_under_maintenance_state(services, host_resource):
             logging.error(
                 "Failed to restart %s, activating host %s", srv, host_name
             )
-            hosts.activateHost(True, host_name)
+            ll_hosts.activateHost(True, host_name)
             raise errors.HostException(
                 "Failed to restart %s services on host %s" % (host_name, srv)
             )
     logging.info("Activate host %s", host_name)
-    if not hosts.activateHost(True, host_name):
+    if not ll_hosts.activateHost(True, host_name):
         raise errors.HostException(
             "Failed to activate host %s" % host_name
         )

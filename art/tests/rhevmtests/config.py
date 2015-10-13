@@ -9,7 +9,8 @@ import copy
 
 from art.test_handler.settings import ART_CONFIG, opts
 from art.rhevm_api.utils import test_utils
-from art.rhevm_api.tests_lib.low_level import hosts
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 from art.rhevm_api import resources
 
 logger = logging.getLogger(__name__)
@@ -106,6 +107,11 @@ STORAGE_NAME = ["_".join([STORAGE_TYPE.lower(), str(i)])
 
 CPU_NAME = PARAMETERS['cpu_name']
 
+HOSTS = []
+HOSTS_IP = []
+HOST_OBJS = []
+
+
 if 'prepared_env' in ART_CONFIG:
     GOLDEN_ENV = ART_CONFIG['prepared_env']
 
@@ -121,22 +127,51 @@ if 'prepared_env' in ART_CONFIG:
     CLUSTERS = DC['clusters']
     CLUSTER_NAME = [x['name'] for x in CLUSTERS]
 
-    HOSTS = []
-    HOSTS_IP = []
-    HOST_OBJS = []
-    HOSTS_RHEVH = []
+    # list of Host object one only for rhel and the second only for rhev-h
     HOSTS_RHEL = []
+    HOSTS_RHEVH = []
 
     for cluster in CLUSTERS:
         for host in cluster['hosts']:
-            host_obj = hosts.HostObject(host['name'], host['passwd'])
-            HOST_OBJS.append(host_obj)
+            HOST_OBJS.append(ll_hosts.get_host_object(host['name']))
+            HOSTS_PW = host['passwd']
 
+    # sort the HOST_OBJS by rhevh_first if reverse else rhel_first
+    reverse = (
+        'host_order' in PARAMETERS and
+        PARAMETERS['host_order'] == 'rhevh_first'
+    )
+    HOST_OBJS.sort(key=lambda host: host.get_type(), reverse=reverse)
+
+    # change the name of all hosts to be able to rename it to new order later
     for host_obj in HOST_OBJS:
-        HOSTS.append(host_obj.name)
-        HOSTS_PW = host_obj.password
-        HOSTS_IP.append(host_obj.ip)
-    logger.info("host ips: %s", HOSTS_IP)
+        host_name = host_obj.name
+        new_name = "temp_%s" % host_name
+        if ll_hosts.updateHost(True, host_name, name=new_name):
+            host_obj.name = new_name
+        HOSTS_IP.append(host_obj.address)
+
+    # run on GE yaml structure to rename the hosts and move it to
+    # different cluster if necessary
+    i = 0
+    for dc in dcs:
+        for cluster in dc['clusters']:
+            for host in cluster['hosts']:
+                host_obj = HOST_OBJS[i]
+                new_name = host['name']
+                if ll_hosts.updateHost(True, host_obj.name, name=new_name):
+                    host_obj.name = new_name
+
+                if cluster['name'] != ll_hosts.getHostCluster(new_name):
+                    hl_hosts.move_host_to_another_cluster(
+                        new_name, cluster['name']
+                    )
+                HOSTS.append(new_name)
+                i += 1
+    HOSTS_RHEL = [host for host in HOST_OBJS if host.get_type() == 'rhel']
+    HOSTS_RHEVH = [host for host in HOST_OBJS if host.get_type() == 'rhev-h']
+    hosts_type = [host.get_type() for host in HOST_OBJS]
+    logger.info("The host order is: %s", zip(HOSTS, HOSTS_IP, hosts_type))
 
     VMS = []
     for cluster in CLUSTERS:
@@ -277,14 +312,6 @@ else:
     HOSTS_IP = list(HOSTS)
     HOSTS_PW = PARAMETERS.as_list('vds_password')[0]
     HOST_NICS = PARAMETERS.as_list('host_nics')
-
-    HOST_OBJS = []
-    NETWORK_HOSTS = []
-
-    for host in HOSTS:
-        host_obj = hosts.HostObject(host, HOSTS_PW, host, HOST_NICS)
-        HOST_OBJS.append(host_obj)
-        NETWORK_HOSTS.append(host_obj)
 
     HOST_OS = PARAMETERS.get('host_os')
 
