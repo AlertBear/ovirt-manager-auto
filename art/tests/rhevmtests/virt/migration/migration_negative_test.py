@@ -211,10 +211,7 @@ class TestMigrationOverloadHost(TestCase):
         """
 
         logger.info("Stop all vms")
-        ll_vms.stop_vms_safely(
-            cls.test_vms,
-            max_workers=config.MAX_WORKERS
-        )
+        ll_vms.stop_vms_safely(cls.test_vms)
         logger.info(
             "restore vms %s os type %s",
             cls.test_vms, cls.vm_default_os_type
