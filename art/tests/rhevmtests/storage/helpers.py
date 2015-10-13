@@ -239,6 +239,9 @@ def perform_dd_to_disk(
     vm_machine = Machine(
         host=vm_ip, user=config.VM_USER, password=config.VM_PASSWORD
     ).util(LINUX)
+    # TODO: Workaround for bug:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1239297
+    vm_machine.runCmd(shlex.split("udevadm trigger"))
     output = vm_machine.get_boot_storage_device()
     boot_disk = 'vda' if 'vd' in output else 'sda'
 
