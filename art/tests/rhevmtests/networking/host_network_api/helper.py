@@ -121,7 +121,8 @@ def networks_sync_status(networks):
                 conf.HOST_4, [net]
             )[0]
         except IndexError:
-            raise conf.NET_EXCEPTION("%s not found" % net)
+            logger.error("%s not found" % net)
+            return False
 
         logger.info("Check if %s is unsync", net)
         if not ll_host_network.get_attachment_sync_status(attachment):
@@ -190,7 +191,10 @@ def sync_networks(networks):
         raise conf.NET_EXCEPTION("Failed to sync %s" % networks)
 
     if not networks_sync_status(networks):
-        raise conf.NET_EXCEPTION
+        raise conf.NET_EXCEPTION(
+            "At least one of the networks from %s is out of sync, should be "
+            "synced" % networks
+        )
 
 
 @attr(tier=2)
@@ -225,7 +229,9 @@ def remove_networks_from_setup():
         )
 
 
-def set_temp_ip_and_refresh_capabilities(interface, ip=None, netmask="24"):
+def manage_ip_and_refresh_capabilities(
+    interface, ip=None, netmask="24", set_ip=True
+):
     """
     Set temporary IP on interface and refresh capabilities
 
@@ -235,25 +241,60 @@ def set_temp_ip_and_refresh_capabilities(interface, ip=None, netmask="24"):
     :type ip: str
     :param netmask: Netmask for the IP
     :type netmask: str
+    :param set_ip: True to set IP on interface
+    :type set_ip: bool
     :raise: NET_EXCEPTION
     """
+    old_ip = None
     int_ip = conf.VDS_HOSTS_4.network.find_ip_by_int(interface)
     host_ips = conf.VDS_HOSTS_4.network.find_ips()
-    try:
+    if int_ip:
         old_ip = [i for i in host_ips[1] if int_ip in i][0]
-    except IndexError:
-        old_ip = None
+
     if old_ip:
-        logger.info("Delete IP %s from %s", old_ip, interface)
-        cmd = ["ip", "addr", "del", "%s" % old_ip, "dev", interface]
-        rc, out, err = conf.VDS_HOSTS_4.executor().run_cmd(cmd)
-        if rc:
-            raise conf.NET_EXCEPTION(
-                "Failed to delete %s from %s. ERR: %s. %s" % (
-                    old_ip, interface, err, out
-                )
+        remove_interface_ip(ip=old_ip, interface=interface)
+
+    if set_ip:
+        ip = int_ip if not ip else ip
+        set_interface_ip(ip=ip, netmask=netmask, interface=interface)
+    host_obj = ll_hosts.HOST_API.find(conf.HOST_4)
+    refresh_href = "{0};force".format(host_obj.get_href())
+    ll_hosts.HOST_API.get(href=refresh_href)
+
+
+def remove_interface_ip(ip, interface):
+    """
+    Remove IP from interface using ip addr
+
+    :param ip: IP to remove
+    :type ip: str
+    :param interface: Interface where the IP is
+    :type interface: str
+    :raise: NET_EXCEPTION
+    """
+    logger.info("Delete IP %s from %s", ip, interface)
+    cmd = ["ip", "addr", "del", "%s" % ip, "dev", interface]
+    rc, out, err = conf.VDS_HOSTS_4.executor().run_cmd(cmd)
+    if rc:
+        raise conf.NET_EXCEPTION(
+            "Failed to delete %s from %s. ERR: %s. %s" % (
+                ip, interface, err, out
             )
-    ip = int_ip if not ip else ip
+        )
+
+
+def set_interface_ip(ip, netmask, interface):
+    """
+    Set IP on interface using ip addr
+
+    :param ip: IP to set
+    :type ip: str
+    :param netmask: Netmask for the IP
+    :type netmask: str
+    :param interface: Interface to set the IP on
+    :type interface: str
+    :raise: NET_EXCEPTION
+    """
     logger.info("Setting %s/%s on %s", ip, netmask, interface)
     if not test_utils.configure_temp_static_ip(
         host=conf.VDS_HOSTS_4.executor(), ip=ip, nic=interface, netmask=netmask
@@ -261,6 +302,3 @@ def set_temp_ip_and_refresh_capabilities(interface, ip=None, netmask="24"):
         raise conf.NET_EXCEPTION(
             "Failed to set %s/%s on %s" % (ip, netmask, interface)
         )
-    host_obj = ll_hosts.HOST_API.find(conf.HOST_4)
-    refresh_href = "{0};force".format(host_obj.get_href())
-    ll_hosts.HOST_API.get(href=refresh_href)

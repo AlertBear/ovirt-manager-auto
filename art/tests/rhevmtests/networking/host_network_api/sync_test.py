@@ -82,8 +82,7 @@ class TestHostNetworkApiSyncBase(helper.TestHostNetworkApiTestCaseBase):
         Attach networks to the host
         Move the host the another cluster
         """
-        logger.info(
-            "Attaching networks to %s", conf.HOST_4)
+        logger.info("Attaching networks to %s", conf.HOST_4)
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_4, **cls.network_host_api_dict
         ):
@@ -812,7 +811,7 @@ class TestHostNetworkApiSync09(TestHostNetworkApiSyncBase):
             }
         }
         super(TestHostNetworkApiSync09, cls).setup_class()
-        helper.set_temp_ip_and_refresh_capabilities(
+        helper.manage_ip_and_refresh_capabilities(
             ip=cls.net_case_1_ip_actual, interface=cls.net_case_1
         )
 
@@ -860,7 +859,7 @@ class TestHostNetworkApiSync10(TestHostNetworkApiSyncBase):
             }
         }
         super(TestHostNetworkApiSync10, cls).setup_class()
-        helper.set_temp_ip_and_refresh_capabilities(
+        helper.manage_ip_and_refresh_capabilities(
             interface=cls.net_case_1, netmask=cls.net_case_1_netmask_actual
         )
 
@@ -910,7 +909,7 @@ class TestHostNetworkApiSync11(TestHostNetworkApiSyncBase):
             }
         }
         super(TestHostNetworkApiSync11, cls).setup_class()
-        helper.set_temp_ip_and_refresh_capabilities(
+        helper.manage_ip_and_refresh_capabilities(
             interface=cls.net_case_1,
             netmask=cls.net_case_1_netmask_prefix_actual
         )
@@ -926,6 +925,367 @@ class TestHostNetworkApiSync11(TestHostNetworkApiSyncBase):
                 conf.NETMASK_STR: {
                     "expected": self.net_case_1_netmask_prefix_expected,
                     "actual": self.net_case_1_netmask_prefix_actual
+                }
+            }
+        }
+        helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        helper.sync_networks([self.net_case_1])
+
+
+class TestHostNetworkApiSync12(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync for changed IP over BOND
+    Sync the network
+    """
+    __test__ = True
+    move_host = False
+    net_case_1 = conf.SYNC_NETS_DC_1[12][0]
+    net_case_1_ip_expected = conf.IP_DICT_NETMASK["address"]
+    net_case_1_ip_actual = "10.10.10.10"
+    bond_1 = "bond121"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network with IP to the host over BOND
+        Change the IP on attached network
+        """
+        TestHostNetworkApiSync12.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": cls.bond_1,
+                    "slaves": conf.DUMMYS[:2]
+                },
+                "2": {
+                    "network": cls.net_case_1,
+                    "nic": cls.bond_1,
+                    "ip": conf.BASIC_IP_DICT_NETMASK,
+                }
+            }
+        }
+        super(TestHostNetworkApiSync12, cls).setup_class()
+        helper.manage_ip_and_refresh_capabilities(
+            ip=cls.net_case_1_ip_actual, interface=cls.net_case_1
+        )
+
+    def test_unsync_network_change_ip_over_bond(self):
+        """
+        Check that the network is un-sync and the sync reasons is changed IP
+        Sync the network
+        """
+        compare_dict = {
+            self.net_case_1: {
+                conf.IPADDR_STR: {
+                    "expected": self.net_case_1_ip_expected,
+                    "actual": self.net_case_1_ip_actual
+                }
+            }
+        }
+        helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        helper.sync_networks([self.net_case_1])
+
+
+class TestHostNetworkApiSync13(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync for changed netmask over BOND
+    Sync the network
+    """
+    __test__ = True
+    move_host = False
+    net_case_1 = conf.SYNC_NETS_DC_1[13][0]
+    net_case_1_netmask_expected = conf.IP_DICT_NETMASK["netmask"]
+    net_case_1_netmask_actual = "255.255.255.255"
+    bond_1 = "bond131"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network with IP to the host over BOND
+        Change the netmask on attached network
+        """
+        TestHostNetworkApiSync13.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": cls.bond_1,
+                    "slaves": conf.DUMMYS[:2]
+                },
+                "2": {
+                    "network": cls.net_case_1,
+                    "nic": cls.bond_1,
+                    "ip": conf.BASIC_IP_DICT_NETMASK,
+                }
+            }
+        }
+        super(TestHostNetworkApiSync13, cls).setup_class()
+        helper.manage_ip_and_refresh_capabilities(
+            interface=cls.net_case_1, netmask=cls.net_case_1_netmask_actual
+        )
+
+    def test_unsync_network_change_netmask_over_bond(self):
+        """
+        Check that the network is un-sync and the sync reason is changed
+        netmask
+        Sync the network
+        """
+        compare_dict = {
+            self.net_case_1: {
+                conf.NETMASK_STR: {
+                    "expected": self.net_case_1_netmask_expected,
+                    "actual": self.net_case_1_netmask_actual
+                }
+            }
+        }
+        helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        helper.sync_networks([self.net_case_1])
+
+
+class TestHostNetworkApiSync14(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync for changed netmask prefix over BOND
+    Sync the network
+    """
+    __test__ = True
+    bz = {"1269481": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
+    move_host = False
+    net_case_1 = conf.SYNC_NETS_DC_1[14][0]
+    net_case_1_netmask_prefix_expected = conf.IP_DICT_PREFIX["netmask"]
+    net_case_1_netmask_prefix_actual = "32"
+    bond_1 = "bond141"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network with IP to the host over BOND
+        Change the netmask prefix on the attached network
+        """
+        TestHostNetworkApiSync14.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": cls.bond_1,
+                    "slaves": conf.DUMMYS[:2]
+                },
+                "2": {
+                    "network": cls.net_case_1,
+                    "nic": cls.bond_1,
+                    "ip": conf.BASIC_IP_DICT_PREFIX,
+                }
+            }
+        }
+        super(TestHostNetworkApiSync14, cls).setup_class()
+        helper.manage_ip_and_refresh_capabilities(
+            interface=cls.net_case_1,
+            netmask=cls.net_case_1_netmask_prefix_actual
+        )
+
+    def test_unsync_network_change_netmask_prefix_over_bond(self):
+        """
+        Check that the network is un-sync and the sync reasons is changed
+        netmask prefix
+        Sync the network
+        """
+        compare_dict = {
+            self.net_case_1: {
+                conf.NETMASK_STR: {
+                    "expected": self.net_case_1_netmask_prefix_expected,
+                    "actual": self.net_case_1_netmask_prefix_actual
+                }
+            }
+        }
+        helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        helper.sync_networks([self.net_case_1])
+
+
+class TestHostNetworkApiSync15(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync for no-IP to IP
+    Sync the network
+    """
+    __test__ = True
+    bz = {"1270807": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
+    move_host = False
+    net_case_1 = conf.SYNC_NETS_DC_1[15][0]
+    net_case_1_ip_expected = None
+    net_case_1_ip_actual = "10.10.10.10"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network without IP to the host
+        Add the IP to the attached network
+        """
+        TestHostNetworkApiSync15.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": cls.net_case_1,
+                    "nic": conf.HOST_4_NICS[1],
+                }
+            }
+        }
+        super(TestHostNetworkApiSync15, cls).setup_class()
+        helper.manage_ip_and_refresh_capabilities(
+            ip=cls.net_case_1_ip_actual, interface=cls.net_case_1
+        )
+
+    def test_unsync_network_no_ip_to_ip(self):
+        """
+        Check that the network is un-sync and the sync reasons is new IP
+        Sync the network
+        """
+        compare_dict = {
+            self.net_case_1: {
+                conf.IPADDR_STR: {
+                    "expected": self.net_case_1_ip_expected,
+                    "actual": self.net_case_1_ip_actual
+                }
+            }
+        }
+        helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        helper.sync_networks([self.net_case_1])
+
+
+class TestHostNetworkApiSync16(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync for no-IP to IP over BOND
+    Sync the network
+    """
+    __test__ = True
+    bz = {"1270807": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
+    move_host = False
+    net_case_1 = conf.SYNC_NETS_DC_1[16][0]
+    net_case_1_ip_expected = None
+    net_case_1_ip_actual = "10.10.10.10"
+    bond_1 = "bond161"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network without IP to the host over BOND
+        Add the IP on attached network
+        """
+        TestHostNetworkApiSync16.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": cls.bond_1,
+                    "slaves": conf.DUMMYS[:2]
+                },
+                "2": {
+                    "network": cls.net_case_1,
+                    "nic": cls.bond_1,
+
+                }
+            }
+        }
+        super(TestHostNetworkApiSync16, cls).setup_class()
+        helper.manage_ip_and_refresh_capabilities(
+            ip=cls.net_case_1_ip_actual, interface=cls.net_case_1
+        )
+
+    def test_unsync_network_no_ip_to_ip_over_bond(self):
+        """
+        Check that the network is un-sync and the sync reasons is new IP
+        Sync the network
+        """
+        compare_dict = {
+            self.net_case_1: {
+                conf.IPADDR_STR: {
+                    "expected": self.net_case_1_ip_expected,
+                    "actual": self.net_case_1_ip_actual
+                }
+            }
+        }
+        helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        helper.sync_networks([self.net_case_1])
+
+
+class TestHostNetworkApiSync17(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync for removed IP
+    Sync the network
+    """
+    __test__ = True
+    move_host = False
+    net_case_1 = conf.SYNC_NETS_DC_1[17][0]
+    net_case_1_boot_proto_expected = "STATIC_IP"
+    net_case_1_boot_proto_actual = "NONE"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network with IP to the host
+        Remove the IP from the host
+        """
+        TestHostNetworkApiSync17.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": cls.net_case_1,
+                    "nic": conf.HOST_4_NICS[1],
+                    "ip": conf.BASIC_IP_DICT_NETMASK,
+                }
+            }
+        }
+        super(TestHostNetworkApiSync17, cls).setup_class()
+        helper.manage_ip_and_refresh_capabilities(
+            interface=cls.net_case_1, set_ip=False
+        )
+
+    def test_unsync_network_remove_ip(self):
+        """
+        Check that the network is un-sync and the sync reasons is no IP
+        Sync the network
+        """
+        compare_dict = {
+            self.net_case_1: {
+                conf.BOOTPROTO_STR: {
+                    "expected": self.net_case_1_boot_proto_expected,
+                    "actual": self.net_case_1_boot_proto_actual
+                }
+            }
+        }
+        helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        helper.sync_networks([self.net_case_1])
+
+
+class TestHostNetworkApiSync18(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync for removed IP over BOND
+    Sync the network
+    """
+    __test__ = True
+    move_host = False
+    net_case_1 = conf.SYNC_NETS_DC_1[18][0]
+    net_case_1_boot_proto_expected = "STATIC_IP"
+    net_case_1_boot_proto_actual = "NONE"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network with IP the host over BOND
+        Remove the IP from the host
+        """
+        TestHostNetworkApiSync18.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": cls.net_case_1,
+                    "nic": conf.HOST_4_NICS[1],
+                    "ip": conf.BASIC_IP_DICT_NETMASK,
+                }
+            }
+        }
+        super(TestHostNetworkApiSync18, cls).setup_class()
+        helper.manage_ip_and_refresh_capabilities(
+            interface=cls.net_case_1, set_ip=False
+        )
+
+    def test_unsync_network_remove_ip_over_bond(self):
+        """
+        Check that the network is un-sync and the sync reasons is no IP
+        Sync the network
+        """
+        compare_dict = {
+            self.net_case_1: {
+                conf.BOOTPROTO_STR: {
+                    "expected": self.net_case_1_boot_proto_expected,
+                    "actual": self.net_case_1_boot_proto_actual
                 }
             }
         }

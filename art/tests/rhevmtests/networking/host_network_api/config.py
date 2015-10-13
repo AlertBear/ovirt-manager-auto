@@ -522,6 +522,27 @@ SYNC_DICT_1 = {
     SYNC_NETS_DC_1[11][0]: {
         "required": "false"
     },
+    SYNC_NETS_DC_1[12][0]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[13][0]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[14][0]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[15][0]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[16][0]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[17][0]: {
+        "required": "false"
+    },
+    SYNC_NETS_DC_1[18][0]: {
+        "required": "false"
+    },
 }
 
 SYNC_DICT_2 = {
