@@ -15,7 +15,6 @@ import logging
 from art.test_handler.exceptions import HostException
 from art.rhevm_api.tests_lib.high_level.hosts import \
     add_power_management, remove_power_management
-from art.unittest_lib.common import is_bz_state
 
 
 HOST_API = get_api('host', 'hosts')
@@ -37,7 +36,6 @@ PM1_PASS = config.PM1_PASS
 PM2_PASS = config.PM2_PASS
 HOST_FALSE_IP = config.HOST_FALSE_IP
 
-BZ_1136061_FIXED = is_bz_state('1136061')
 
 logger = logging.getLogger(__name__)
 
@@ -239,7 +237,7 @@ class SetSPMToLow(TestCase):
     """
     Positive - Set SPM priority on host to low
     """
-    __test__ = BZ_1136061_FIXED
+    __test__ = True
 
     @classmethod
     def setup_class(cls):
