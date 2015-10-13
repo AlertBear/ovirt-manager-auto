@@ -259,13 +259,15 @@ class Network(Service):
 
         :param interface: interface to get ip from
         :type interface: string
-        :return: ip
-        :rtype: string
+        :return: IP or None
+        :rtype: string or None
         """
         out = self._cmd(["ip", "addr", "show", interface])
-        interface_ip = (re.search(r'[0-9]+(?:\.[0-9]+){3}', out)).group()
-        if netaddr.valid_ipv4(interface_ip):
-            return interface_ip
+        match_ip = re.search(r'[0-9]+(?:\.[0-9]+){3}', out)
+        if match_ip:
+            interface_ip = match_ip.group()
+            if netaddr.valid_ipv4(interface_ip):
+                return interface_ip
         return None
 
     @keep_session
