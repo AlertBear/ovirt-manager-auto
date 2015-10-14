@@ -16,6 +16,7 @@ if __name__ == "__main__":
                 'artmatrix = _pytest_art.matrix',
                 'artmarks = _pytest_art.marks',
                 'artpackagesetup = _pytest_art.package_fixtures',
+                'artautodevices = _pytest_art.autodevices',
             ],
         },
     )
