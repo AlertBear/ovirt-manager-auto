@@ -17,9 +17,7 @@ from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from test_base import connectionTest
-from art.unittest_lib.common import is_bz_state
 
-BZ1099987_NOT_FIXED = not is_bz_state('1099987')
 LOGGER = logging.getLogger(__name__)
 TEST_FOLDER = '/root/do_not_remove'
 CN = 'cn=Manager,dc=brq-openldap,dc=rhev,dc=lab,dc=eng,dc=brq,dc=redhat,dc=com'
@@ -299,12 +297,8 @@ class LDAPCase289078(TestCase):
 
     @istest
     @polarion("RHEVM3-8084")
-    @bz({'1099987': {}})
     def removeUserFromOpenLDAP(self):
         """ remove user from OpenLDAP """
-        if BZ1099987_NOT_FIXED:
-            LOGGER.info("BZ 1099987 is not yet fixed, skipping")
-            return
         msg = "After group del, user can login."
         loginAsUser(config.LDAP_TESTING_USER_NAME, True)
         self.assertTrue(connectionTest(), "User from group can't log in.")
@@ -347,14 +341,18 @@ class LDAPCase289078(TestCase):
 
     def tearDown(self):
         loginAsAdmin()
-        if not BZ1099987_NOT_FIXED:
-            runMachineCommand(True, ip=config.LDAP_DOMAIN,
-                              cmd=self.ADD,
-                              user=config.HOSTS_USER,
-                              password=config.LDAP_PASSWORD)
-            runMachineCommand(True, ip=config.LDAP_DOMAIN,
-                              cmd=CMD % (CN, config.LDAP_PASSWORD,
-                                         self.ADD_GROUP),
-                              user=config.HOSTS_USER,
-                              password=config.LDAP_PASSWORD)
+        runMachineCommand(
+            True, ip=config.LDAP_DOMAIN,
+            cmd=self.ADD, user=config.HOSTS_USER,
+            password=config.LDAP_PASSWORD,
+        )
+        runMachineCommand(
+            True, ip=config.LDAP_DOMAIN,
+            cmd=CMD % (
+                CN, config.LDAP_PASSWORD,
+                self.ADD_GROUP
+            ),
+            user=config.HOSTS_USER,
+            password=config.LDAP_PASSWORD,
+        )
         users.deleteGroup(positive=True, group_name=config.LDAP_GROUP2)
