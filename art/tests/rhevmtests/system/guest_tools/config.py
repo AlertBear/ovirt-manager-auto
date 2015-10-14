@@ -26,8 +26,7 @@ WIN10_DISK_64b = 'win10_Disk1'
 
 NIC_NAME = 'nic1'
 
-# TODO: add genric name to this iso, currently need to be updated manually
-CD_WITH_TOOLS = 'RHEV-toolsSetup_3.5_9.iso'
+CD_WITH_TOOLS = 'RHEV-toolsSetup_3.6.iso'
 SUBNET_CLASS = '10'
 
 if GOLDEN_ENV:
