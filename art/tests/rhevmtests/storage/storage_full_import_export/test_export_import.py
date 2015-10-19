@@ -187,7 +187,8 @@ class TestCase11987(BaseExportImportTestCase):
     polarion_test_case = '11987'
     vm_from_template = "vm_from_template_%s" % polarion_test_case
     prefix = "imported"
-    bz = {'1269948': {'engine': None, 'version': ['3.6']}}
+    # Bugzilla history:
+    # 1269948: Failed to import VM / VM Template
 
     def setUp(self):
         """
@@ -246,18 +247,17 @@ class TestCase11987(BaseExportImportTestCase):
         """
         * Remove import and exported vms
         """
-        super(TestCase11987, self).tearDown()
         assert vms.removeVmFromExportDomain(
             True, self.vm_name, config.CLUSTER_NAME, self.export_domain)
         assert vms.removeVmFromExportDomain(
             True, self.vm_from_template, config.CLUSTER_NAME,
             self.export_domain)
-        vms_list = ",".join(
-            ["%s_%s" % (vm, self.prefix) for vm in [
+        vms_list = [
+            "%s_%s" % (vm, self.prefix) for vm in [
                 self.vm_name, self.vm_from_template
-            ]] + [self.vm_from_template]
-        )
-        assert vms.removeVms(True, vms_list)
+            ]
+        ] + [self.vm_from_template]
+        vms.safely_remove_vms(vms_list)
 
 
 @attr(tier=1)

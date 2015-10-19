@@ -827,7 +827,8 @@ class TestCase4564(IscsiNfsSD):
     polarion_test_case = '4564'
     vm_name = "vm_%s" % polarion_test_case
 
-    bz = {'1265672': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history:
+    # 1265672: [SCALE] Disk performance is really slow
 
     @polarion("RHEVM3-4564")
     def test_vm_disk_two_domain_types(self):
