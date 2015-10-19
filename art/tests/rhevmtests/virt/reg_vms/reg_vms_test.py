@@ -659,7 +659,7 @@ class UpdateVm(BaseVm):
             )
         )
 
-    @bz({'1158458': {'engine': ['java', 'sdk', 'cli'], 'version': None}})
+    @bz({'1218528': {'engine': ['java', 'sdk', 'cli'], 'version': None}})
     @polarion("RHEVM-12532")
     def test_update_vm_cluster(self):
         """
