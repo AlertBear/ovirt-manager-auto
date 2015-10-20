@@ -4,15 +4,15 @@
 """
 Helper for ArbitraryVlanDeviceName job
 """
-import logging
 import libvirt
+import logging
 from random import randint
 from rhevmtests.networking import config
 import art.test_handler.exceptions as exceptions
-from art.rhevm_api.tests_lib.low_level.events import get_max_event_id
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+from art.rhevm_api.tests_lib.low_level.events import get_max_event_id
 
 logger = logging.getLogger("ArbitraryVlanDeviceName_Helper")
 
@@ -54,9 +54,7 @@ def job_tear_down():
                 )
 
     logger.info("Cleaning host interfaces")
-    if not hl_networks.createAndAttachNetworkSN(
-        host=host_obj, network_dict={}, auto_nics=[0]
-    ):
+    if not hl_host_network.clean_host_interfaces(host_name=config.HOSTS[0]):
         logger.error("Clean host interfaces failed")
 
 
