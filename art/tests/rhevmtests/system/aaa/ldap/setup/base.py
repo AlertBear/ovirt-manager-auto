@@ -16,10 +16,16 @@ class AuthBaseCase(TestCase):
     password = '123456'
     domain = None
     user = None
+    namespace = None
 
     def setUp(self):
         authz = '%s-authz' % self.domain
-        assert users.addExternalUser(True, '%s@%s' % (self.user, authz), authz)
+        assert users.addExternalUser(
+            True,
+            '%s@%s' % (self.user, authz),
+            authz,
+            namespace=self.namespace,
+        )
         assert mla.addClusterPermissionsToUser(
             True,
             self.user,
