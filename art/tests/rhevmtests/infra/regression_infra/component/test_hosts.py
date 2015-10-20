@@ -148,6 +148,8 @@ class TestCaseHost(TestCase):
             root_password=config.HOSTS_PW, cluster=config.CLUSTER_1_NAME,
             vdcPort=config.VDC_PORT, protocol=protocol)
         self.assertTrue(status, 'Add host - %s protocol' % protocol)
+
+    def _remove_host(self):
         logger.info('Remove host')
         status = hosts.deactivateHost(positive=True, host=config.HOST_NAME)
         self.assertTrue(status, 'Set active host to maintenance')
@@ -156,6 +158,16 @@ class TestCaseHost(TestCase):
 
     def test08_add_host_stomp_protocol(self):
         self._add_host_enforce_protocol("stomp")
+        self._remove_host()
 
     def test09_add_host_xml_protocol(self):
-        self._add_host_enforce_protocol("xml")
+        try:
+            self._add_host_enforce_protocol("xml")
+        except AssertionError:
+            pass
+        else:
+            self._remove_host()
+            raise AssertionError(
+                "Adding host with XML trasport protocol passed. "
+                "This functionality was removed in 3.6."
+            )
