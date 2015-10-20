@@ -17,59 +17,30 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-import logging
 import re
-from configobj import ConfigObj
+import logging
+import configobj
+import utilities.jobs as jobs
+import art.core_api as core_api
+import utilities.machine as machine
+import art.rhevm_api.utils.cpumodel as cpumodel
+import art.test_handler.settings as test_settings
+import art.rhevm_api.utils.test_utils as test_utils
+import art.test_handler.exceptions as test_exceptions
+import art.core_api.apis_exceptions as apis_exceptions
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.templates as ll_templates
+import art.rhevm_api.tests_lib.high_level.datacenters as hl_datacenter
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.low_level.storagedomains as ll_storagedomains
+import art.rhevm_api.tests_lib.high_level.storagedomains as hl_storagedomains
 
-from utilities import machine
-from art.rhevm_api.tests_lib.low_level.networks import (
-    addNetwork, getClusterNetwork, get_networks_in_datacenter, removeNetwork,
-    addNetworkToCluster, NET_API, DC_API, updateNetwork, getClusterNetworks,
-    get_management_network
-)
-from art.rhevm_api.tests_lib.low_level.hosts import (
-    sendSNRequest, commitNetConfig, genSNNic, getHostNic, removeHost,
-    get_host_name_from_engine, get_host_nic_statistics
-)
-from art.rhevm_api.tests_lib.low_level.templates import createTemplate
-from art.rhevm_api.tests_lib.low_level.vms import (
-    getVmMacAddress, startVm, stopVm, createVm, waitForVmsStates,
-    waitForIP, get_vm_nic_statistics
-)
-from art.rhevm_api.utils.test_utils import (
-    convertMacToIpAddress, setPersistentNetwork, sendICMP,
-)
-from art.rhevm_api.utils.cpumodel import (
-    CpuModelDenominator, CpuModelError,
-)
-from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    waitForStorageDomainStatus,
-)
-from art.rhevm_api.tests_lib.low_level.clusters import (
-    addCluster, removeCluster, updateCluster,
-    get_cluster_management_network
-)
-from art.rhevm_api.tests_lib.high_level.storagedomains import (
-    create_storages,
-)
-from art.rhevm_api.tests_lib.high_level.hosts import (
-    add_hosts,
-)
-from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
-from art.rhevm_api.tests_lib.low_level.datacenters import (
-    waitForDataCenterState, addDataCenter, removeDataCenter,
-)
-from art.test_handler.exceptions import (
-    DataCenterException, HostException, ClusterException,
-    StorageDomainException,
-)
-from art.core_api.apis_exceptions import EntityNotFound
-from art.core_api import is_action
-from art.test_handler.settings import opts
-from art.rhevm_api.utils.test_utils import checkTraffic, split
-from utilities.jobs import Job, JobsSet
-
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = test_settings.opts['elements_conf']['RHEVM Enums']
 
 logger = logging.getLogger(__name__)
 CONNECTIVITY_TIMEOUT = 60
@@ -92,7 +63,7 @@ IP_CMD = "/sbin/ip"
 MODPROBE_CMD = "/sbin/modprobe"
 
 
-@is_action()
+@core_api.is_action()
 def addMultipleVlanedNetworks(networks, data_center, **kwargs):
     '''
     Adding multiple networks with vlan according to the given prefix and range
@@ -106,14 +77,16 @@ def addMultipleVlanedNetworks(networks, data_center, **kwargs):
 
     for network in networks:
         vlan = re.search(r'(\d+)', network)
-        if not addNetwork('True', name=network, data_center=data_center,
-                          vlan_id=vlan.group(0), **kwargs):
+        if not ll_networks.addNetwork(
+            'True', name=network, data_center=data_center,
+            vlan_id=vlan.group(0), **kwargs
+        ):
             return False
     return True
 
 
 # FIXME: need to check if this function is being used else just remove.
-@is_action()
+@core_api.is_action()
 def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
     '''
      Validate Datacenter/Cluster network configurations/existence.
@@ -131,15 +104,15 @@ def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
      return: True and value of the given filed, otherwise False and None
     '''
     try:
-        netObj = getClusterNetwork(cluster, network)
-    except EntityNotFound:
+        netObj = ll_networks.getClusterNetwork(cluster, network)
+    except apis_exceptions.EntityNotFound:
         return False, {'value': None}
 
     # validate cluster network related to the given datacenter
     if datacenter:
         try:
-            dcObj = DC_API.find(datacenter)
-        except EntityNotFound:
+            dcObj = ll_networks.DC_API.find(datacenter)
+        except apis_exceptions.EntityNotFound:
             return False, {'value': None}
 
         # return False means that given datacenter
@@ -165,13 +138,13 @@ def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
 
 # FIXME: method is using only for checking status. need to change to a more
 # simple method
-@is_action()
+@core_api.is_action()
 def validateNetwork(positive, cluster, network, tag, val):
     status, output = getNetworkConfig(positive, cluster, network, tag=tag)
     return bool(status and str(output['value']).lower() == str(val).lower())
 
 
-@is_action()
+@core_api.is_action()
 def removeMultiNetworks(positive, networks, data_center=None):
     '''
     Remove Multiple networks
@@ -184,28 +157,42 @@ def removeMultiNetworks(positive, networks, data_center=None):
     return  True if remove networks succeeded, otherwise False
     '''
     for net in networks:
-        if not removeNetwork(positive, net, data_center):
+        if not ll_networks.removeNetwork(positive, net, data_center):
             logger.error("Failed to remove %s", net)
             return False
     return True
 
 
-def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
-                             auto_nics=[], save_config=False,
-                             network_dict={}, vlan_auto_nics={}):
+def createAndAttachNetworkSN(
+    data_center=None, cluster=None, host=list(), auto_nics=list(),
+    save_config=False, network_dict=None, vlan_auto_nics=None,
+    use_new_api=False
+):
     """
     Function that creates and attach the network to the:
     a) DC, b) Cluster, c) Hosts with SetupNetworks
+
     **Author**: gcheresh
     :param data_center: DC name
+    :type data_center: str
     :param cluster: Cluster name
+    :type cluster: str
     :param host: list of resources.VDS objects
+    :type host: list
     :param auto_nics: a list of nics indexes to preserve
+    :type auto_nics: list
     :param save_config: flag for saving configuration
-    :param vlan_auto_nics: dictionary for auto_nics with vlan.
-    for example vlan_auto_nics = {162: 0} where 162 is the vlan ID and
+    :type save_config: bool
+    :param vlan_auto_nics: dictionary for auto_nics with vlan
+    :type vlan_auto_nics: dict
+    :param use_new_api: Run with new host network API
+    :type use_new_api: bool
+    :param network_dict: dictionary of dictionaries
+    :type network_dict: dict
+
+    vlan_auto_nics example: {162: 0} where 162 is the vlan ID and
     0 is the host_nic index. (all int)
-    :param network_dict: dictionary of dictionaries for the following
+
     network_dict parameters:
         logical network name as the key for the following:
             *  *nic* - interface to create the network on
@@ -230,6 +217,7 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
             *  * properties* - property of bridge_opts and/or ethtool_opts
     :return: True value if succeeded in creating and adding net list
              to DC/Cluster and Host with all the parameters
+    :rtype: bool
     """
     # Makes sure host_list is always a list
     host_list = [host] if not isinstance(host, list) else host
@@ -237,30 +225,31 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
     for net, net_param in network_dict.items():
         if data_center and net:
             logger.info("Adding network to DC")
-            if not addNetwork(True, name=net, data_center=data_center,
-                              usages=net_param.get('usages', 'vm'),
-                              vlan_id=net_param.get('vlan_id'),
-                              mtu=net_param.get('mtu'),
-                              profile_required=net_param.get(
-                                  'profile_required')):
+            if not ll_networks.addNetwork(
+                True, name=net, data_center=data_center,
+                usages=net_param.get("usages", "vm"),
+                vlan_id=net_param.get("vlan_id"),
+                mtu=net_param.get("mtu"),
+                profile_required=net_param.get("profile_required")
+            ):
                 logger.info("Cannot add network to DC")
                 return False
 
         if cluster and net:
             logger.info("Adding network to Cluster")
-            if not addNetworkToCluster(
+            if not ll_networks.addNetworkToCluster(
                 True, network=net, cluster=cluster,
-                required=net_param.get('required', "true"),
-                usages=net_param.get('cluster_usages', None),
+                required=net_param.get("required", "true"),
+                usages=net_param.get("cluster_usages", None),
                 data_center=data_center
             ):
                 logger.info("Cannot add network to Cluster")
                 return False
 
     for host in host_list:
-        host_name = get_host_name_from_engine(host.ip)
+        host_name = ll_hosts.get_host_name_from_engine(host.ip)
         if not host_name:
-            host_name = get_host_name_from_engine(host.fqdn)
+            host_name = ll_hosts.get_host_name_from_engine(host.fqdn)
 
         logger.info("Found host name: %s", host_name)
 
@@ -268,17 +257,22 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
         for index in auto_nics:
             host_auto_nics.append(host.nics[index])
 
-        for key, val in vlan_auto_nics.iteritems():
-            host_int = host.nics[val]
-            host_vlan_int = ".".join([host_int, str(key)])
-            host_auto_nics.append(host_vlan_int)
+        if vlan_auto_nics:
+            for key, val in vlan_auto_nics.iteritems():
+                host_int = host.nics[val]
+                host_vlan_int = ".".join([host_int, str(key)])
+                host_auto_nics.append(host_vlan_int)
 
         net_obj = []
+        idx = 0
+        setup_network_dict = {"add": {}}
         for net, net_param in network_dict.items():
+            vlan_interface = None
             slaves = None
-            param_slaves = net_param.get('slaves')
-            param_nic = net_param.get('nic')
-            param_vlan = net_param.get('vlan_id')
+            param_slaves = net_param.get("slaves")
+            param_nic = net_param.get("nic")
+            param_vlan = net_param.get("vlan_id")
+            idx += 1
 
             if param_slaves:
                 slaves = [host.nics[s] for s in param_slaves]
@@ -287,50 +281,67 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
                 param_nic if "bond" in str(param_nic) else host.nics[param_nic]
             )
 
-            if 'vlan_id' in net_param:
+            if "vlan_id" in net_param:
                 vlan_interface = "{0}.{1}".format(nic, param_vlan)
 
-            address_list = net_param.get('address', [])
-            netmask_list = net_param.get('netmask', [])
-            gateway_list = net_param.get('gateway', [])
+            address_list = net_param.get("address", [])
+            netmask_list = net_param.get("netmask", [])
+            gateway_list = net_param.get("gateway", [])
 
             nic = (
-                vlan_interface if 'vlan_id' in net_param else nic
+                vlan_interface if "vlan_id" in net_param else nic
             )
+            if use_new_api:
+                sn_dict = convert_old_sn_dict_to_new_api_dict(
+                    new_dict=setup_network_dict, old_dict=net_param, idx=idx,
+                    nic=nic, network=net, slaves=slaves
+                )
+            else:
+                rc, out = ll_hosts.genSNNic(
+                    nic=nic, network=net, slaves=slaves,
+                    mode=net_param.get("mode", 1),
+                    boot_protocol=net_param.get("bootproto", None),
+                    address=address_list.pop(0) if address_list else None,
+                    netmask=netmask_list.pop(0) if netmask_list else None,
+                    gateway=gateway_list.pop(0) if gateway_list else None,
+                    properties=net_param.get("properties", None)
+                )
+                if not rc:
+                    logger.error("Cannot generate network object")
+                    return False
+                net_obj.append(out["host_nic"])
 
-            rc, out = genSNNic(nic=nic, network=net,
-                               slaves=slaves,
-                               mode=net_param.get('mode', 1),
-                               boot_protocol=net_param.get('bootproto', None),
-                               address=address_list.pop(0)
-                               if address_list else None,
-                               netmask=netmask_list.pop(0)
-                               if netmask_list else None,
-                               gateway=gateway_list.pop(0)
-                               if gateway_list else None,
-                               properties=net_param.get('properties', None))
-
-            if not rc:
-                logger.error("Cannot generate network object")
+        if use_new_api:
+            if not network_dict:
+                if not hl_host_network.clean_host_interfaces(
+                    host_name=host_name
+                ):
+                    logger.error("Failed to clean %s interface", host_name)
+                    return False
+            else:
+                if not hl_host_network.setup_networks(
+                    host_name=host_name, **sn_dict
+                ):
+                        logger.info(
+                            "Failed to send SN request to host %s" % host_name
+                        )
+                        return False
+        else:
+            logger.info("Sending SN request to host %s" % host_name)
+            if not ll_hosts.sendSNRequest(
+                True, host=host_name, nics=net_obj, auto_nics=host_auto_nics,
+                check_connectivity="true", connectivity_timeout=60,
+                force="false"
+            ):
+                logger.info("Failed to send SN request to host %s" % host_name)
                 return False
-            net_obj.append(out['host_nic'])
 
-        logger.info("Sending SN request to host %s" % host_name)
-
-        if not sendSNRequest(True,
-                             host=host_name,
-                             nics=net_obj,
-                             auto_nics=host_auto_nics,
-                             check_connectivity='true',
-                             connectivity_timeout=60, force='false'):
-            logger.info("Failed to send SN request to host %s" % host_name)
-            return False
-
-        if save_config:
-            logger.info("Saving network configuration on host %s" % host_name)
-            if not commitNetConfig(True, host=host_name):
-                logger.error("Couldn't save network configuration")
-
+            if save_config:
+                logger.info(
+                    "Saving network configuration on host %s" % host_name
+                )
+                if not ll_hosts.commitNetConfig(True, host=host_name):
+                    logger.error("Could not save network configuration")
     return True
 
 
@@ -348,9 +359,11 @@ def remove_net_from_setup(host, auto_nics=[0], network=[], data_center=None,
             from Hosts, Cluster, DC
     """
     hosts_obj = [host] if not isinstance(host, list) else host
-    hosts_list = [get_host_name_from_engine(h.ip) for h in hosts_obj]
+    hosts_list = [ll_hosts.get_host_name_from_engine(h.ip) for h in hosts_obj]
     if not hosts_list[0]:
-        hosts_list = [get_host_name_from_engine(h.fqdn) for h in hosts_obj]
+        hosts_list = [
+            ll_hosts.get_host_name_from_engine(h.fqdn) for h in hosts_obj
+            ]
 
     if all_net:
         if not remove_all_networks(
@@ -367,12 +380,12 @@ def remove_net_from_setup(host, auto_nics=[0], network=[], data_center=None,
             for index in auto_nics:
                 host_auto_nics.append(host_obj.nics[index])
 
-            sendSNRequest(True, host=host_name,
-                          auto_nics=host_auto_nics,
-                          check_connectivity='true',
-                          connectivity_timeout=CONNECTIVITY_TIMEOUT,
-                          force='false')
-            commitNetConfig(True, host=host_name)
+            ll_hosts.sendSNRequest(
+                True, host=host_name, auto_nics=host_auto_nics,
+                check_connectivity='true',
+                connectivity_timeout=CONNECTIVITY_TIMEOUT, force='false'
+            )
+            ll_hosts.commitNetConfig(True, host=host_name)
 
     except Exception as ex:
         logger.error("Remove Network from setup failed %s", ex, exc_info=True)
@@ -380,7 +393,7 @@ def remove_net_from_setup(host, auto_nics=[0], network=[], data_center=None,
     return True
 
 
-@is_action()
+@core_api.is_action()
 def prepareSetup(
     hosts, cpuName, username, password, datacenter, cluster, version,
     storage_type, local=False, storageDomainName=None, lun_address='',
@@ -433,11 +446,11 @@ def prepareSetup(
     hosts_obj = [hosts] if not isinstance(hosts, list) else hosts
     hosts_ip = [h.ip for h in hosts_obj]
 
-    if not addDataCenter(
+    if not ll_datacenters.addDataCenter(
         True, name=datacenter, storage_type=storage_type,
         local=local, version=version,
     ):
-        raise DataCenterException(
+        raise test_exceptions.DataCenterException(
             "addDataCenter %s with storage type %s and version %s failed." % (
                 datacenter,
                 storage_type,
@@ -446,11 +459,11 @@ def prepareSetup(
         )
     logger.info("Datacenter %s was created successfully", datacenter)
 
-    if not addCluster(
+    if not ll_clusters.addCluster(
         True, name=cluster, cpu=cpuName, data_center=datacenter,
         version=version,
     ):
-        raise ClusterException(
+        raise test_exceptions.ClusterException(
             "addCluster %s with cpu_type %s and version %s "
             "to datacenter %s failed" % (
                 cluster, cpuName, version, datacenter
@@ -458,31 +471,33 @@ def prepareSetup(
         )
     logger.info("Cluster %s was created successfully", cluster)
 
-    add_hosts(hosts_ip, [password] * len(hosts_ip), cluster)
-    host_array = [get_host_name_from_engine(h.ip) for h in hosts_obj]
+    hl_hosts.add_hosts(hosts_ip, [password] * len(hosts_ip), cluster)
+    host_array = [ll_hosts.get_host_name_from_engine(h.ip) for h in hosts_obj]
 
     # setting up cpu_model
-    cpu_den = CpuModelDenominator()
+    cpu_den = cpumodel.CpuModelDenominator()
     try:
         cpu_info = cpu_den.get_common_cpu_model(hosts_obj, version=version)
-    except CpuModelError as ex:
+    except cpumodel.CpuModelError as ex:
         logger.error("Can not determine the best cpu_model: %s", ex)
     else:
         logger.info("Cpu info %s for cluster: %s", cpu_info, cluster)
-        if not updateCluster(True, cluster, cpu=cpu_info['cpu']):
+        if not ll_clusters.updateCluster(True, cluster, cpu=cpu_info['cpu']):
             logger.error(
                 "Can not update cluster cpu_model to: %s", cpu_info['cpu']
             )
 
-    storage = ConfigObj()
+    storage = configobj.ConfigObj()
     storage['lun_address'] = [lun_address]
     storage['lun_target'] = [lun_target]
-    storage['lun'] = split(luns)
+    storage['lun'] = test_utils.split(luns)
 
-    if not create_storages(
+    if not hl_storagedomains.create_storages(
         storage, storage_type, host_array[0], datacenter
     ):
-        raise StorageDomainException("Can not add storages: %s" % storage)
+        raise test_exceptions.StorageDomainException(
+            "Can not add storages: %s" % storage
+        )
 
     for host_name, host_obj in zip(host_array, hosts_obj):
         host_auto_nics = []
@@ -491,12 +506,12 @@ def prepareSetup(
 
         try:
             logger.info("Cleaning %s interfaces", host_name)
-            sendSNRequest(
+            ll_hosts.sendSNRequest(
                 True, host=host_name, auto_nics=host_auto_nics,
                 check_connectivity='true',
                 connectivity_timeout=CONNECTIVITY_TIMEOUT, force='false'
             )
-            commitNetConfig(True, host=host_name)
+            ll_hosts.commitNetConfig(True, host=host_name)
 
         except Exception as ex:
             logger.error(
@@ -505,7 +520,7 @@ def prepareSetup(
             return False
 
     if vmName:
-        if not createVm(
+        if not ll_vms.createVm(
             True, vmName=vmName, vmDescription='linux vm', cluster=cluster,
             nic=nic, storageDomainName=storageDomainName, size=size,
             diskInterface="virtio", nicType=nicType,
@@ -520,30 +535,32 @@ def prepareSetup(
 
     if template_name:
         if useAgent:
-            ip_addr = waitForIP(vmName)[1]['ip']
+            ip_addr = ll_vms.waitForIP(vmName)[1]['ip']
         else:
-            rc, out = getVmMacAddress(True, vm=vmName)
+            rc, out = ll_vms.getVmMacAddress(True, vm=vmName)
             mac_addr = out['macAddress'] if rc else None
-            rc, out = convertMacToIpAddress(True, mac_addr)
+            rc, out = test_utils.convertMacToIpAddress(True, mac_addr)
             ip_addr = out['ip'] if rc else None
-        if not setPersistentNetwork(host=ip_addr, password=vm_password):
+        if not test_utils.setPersistentNetwork(
+            host=ip_addr, password=vm_password
+        ):
             logger.error("Failed to setPersistentNetwork")
             return False
 
-        if not stopVm(True, vm=vmName):
+        if not ll_vms.stopVm(True, vm=vmName):
             logger.error("Failed to stop VM")
             return False
 
-        if not createTemplate(
+        if not ll_templates.createTemplate(
                 True, vm=vmName, cluster=cluster, name=template_name
         ):
             logger.error("Failed to create template")
             return False
 
-        if not startVm(True, vm=vmName):
+        if not ll_vms.startVm(True, vm=vmName):
             logger.error("Can't start VM")
             return False
-        if not waitForVmsStates(
+        if not ll_vms.waitForVmsStates(
             True, names=vmName, timeout=TIMEOUT, states='up'
         ):
             logger.error("VM status is not up in the predefined timeout")
@@ -654,13 +671,15 @@ def updateAndSyncMgmtNetwork(datacenter, hosts=list(), nic=[0], auto_nics=[],
     :param auto_nics: Host nics to preserve on setupNetworks command.
     """
     hosts_obj = [hosts] if not isinstance(hosts, list) else hosts
-    hosts_list = [get_host_name_from_engine(h.ip) for h in hosts_obj]
+    hosts_list = [ll_hosts.get_host_name_from_engine(h.ip) for h in hosts_obj]
     mgmt_net_type = "bridge" if bridge else "bridgeless"
     network_type = "vm" if bridge else ""
 
     logger.info("Updating %s to %s network", network, mgmt_net_type)
-    if not updateNetwork(positive=True, network=network,
-                         data_center=datacenter, usages=network_type):
+    if not ll_networks.updateNetwork(
+        positive=True, network=network, data_center=datacenter,
+        usages=network_type
+    ):
         logger.error("Failed to set %s as %s network",
                      network, mgmt_net_type)
         return False
@@ -670,21 +689,24 @@ def updateAndSyncMgmtNetwork(datacenter, hosts=list(), nic=[0], auto_nics=[],
         for index in auto_nics:
             host_auto_nics.append(host_obj.nics[index])
 
-        host_nic = getHostNic(host=host_name, nic=nic)
+        host_nic = ll_hosts.getHostNic(host=host_name, nic=nic)
         host_nic.set_override_configuration(True)
 
         logger.info(
-            "setupNetwork: syncing %s network on %s", network, host_name)
-        if not sendSNRequest(True, host=host_name, nics=[host_nic],
-                             auto_nics=host_auto_nics,
-                             check_connectivity='true',
-                             connectivity_timeout=CONNECTIVITY_TIMEOUT,
-                             force='false'):
-            logger.error("setupNetwork: Cannot sync %s network on %s",
-                         network, host_name)
+            "setupNetwork: syncing %s network on %s", network, host_name
+        )
+        if not ll_hosts.sendSNRequest(
+            True, host=host_name, nics=[host_nic], auto_nics=host_auto_nics,
+            check_connectivity='true',
+            connectivity_timeout=CONNECTIVITY_TIMEOUT, force='false'
+        ):
+            logger.error(
+                "setupNetwork: Cannot sync %s network on %s",
+                network, host_name
+            )
             return False
 
-        commitNetConfig(True, host=host_name)
+        ll_hosts.commitNetConfig(True, host=host_name)
 
     return True
 
@@ -742,7 +764,7 @@ class TrafficMonitor(object):
             *  *args* - The positional arguments to be passed to 'func'
             *  *kwargs* - The keyword arguments to be passed to 'func'
         '''
-        self.jobs.append(Job(func, args, kwargs))
+        self.jobs.append(jobs.Job(func, args, kwargs))
         self.expectedResults.append(expectedRes)
 
     def __enter__(self):
@@ -752,7 +774,7 @@ class TrafficMonitor(object):
         '''
         Run all the jobs and report the results.
         '''
-        jobSet = JobsSet()
+        jobSet = jobs.JobsSet()
         jobSet.addJobs(self.jobs)
         jobSet.start()
         jobSet.join(self.timeout)
@@ -789,7 +811,7 @@ class TrafficMonitor(object):
         Returns the Job object that will capture traffic when executed (can be
         modified for extensibility)
         '''
-        return Job(checkTraffic, args, kwargs)
+        return jobs.Job(test_utils.checkTraffic, args, kwargs)
 
     @staticmethod
     def __jobInfo(job):
@@ -823,16 +845,16 @@ def remove_all_networks(datacenter=None, cluster=None,
     networks_to_remove = []
 
     if cluster:
-        cl_networks = getClusterNetworks(cluster)
-        networks_list = NET_API.get(cl_networks)
+        cl_networks = ll_networks.getClusterNetworks(cluster)
+        networks_list = ll_networks.NET_API.get(cl_networks)
         removal_area = "cluster " + cluster
 
     elif datacenter:
-        networks_list = get_networks_in_datacenter(datacenter)
+        networks_list = ll_networks.get_networks_in_datacenter(datacenter)
         removal_area = "datacenter " + datacenter
 
     else:
-        networks_list = NET_API.get(absLink=False)
+        networks_list = ll_networks.NET_API.get(absLink=False)
         removal_area = "all clusters and all data centers"
 
     for net in networks_list:
@@ -876,20 +898,23 @@ def networkTeardown(datacenter, storagedomain, hosts=list(), auto_nics=list(),
         return False
 
     logger.info("Wait for storage domain %s to be active", storagedomain)
-    if not waitForStorageDomainStatus(positive=True, dataCenterName=datacenter,
-                                      storageDomainName=storagedomain,
-                                      expectedStatus="active"):
-            logger.error("StorageDomain %s state is not UP", storagedomain)
-            return False
+    if not ll_storagedomains.waitForStorageDomainStatus(
+        positive=True, dataCenterName=datacenter,
+        storageDomainName=storagedomain, expectedStatus="active"
+    ):
+        logger.error("StorageDomain %s state is not UP", storagedomain)
+        return False
 
     logger.info("Wait for %s to be UP", datacenter)
-    if not waitForDataCenterState(name=datacenter):
+    if not ll_datacenters.waitForDataCenterState(name=datacenter):
         logger.error("%s is not in UP state")
         return False
 
     logger.info("Running clean Datacenter")
-    if not clean_datacenter(positive=True, datacenter=datacenter,):
-        raise DataCenterException("Cannot remove setup")
+    if not hl_datacenter.clean_datacenter(
+        positive=True, datacenter=datacenter
+    ):
+        raise test_exceptions.DataCenterException("Cannot remove setup")
 
     return True
 
@@ -907,7 +932,7 @@ def getIpOnHostNic(host, nic):
                    bond(x).(xxx) - VLAN BOND NIC
     **Return**: IP or None
     '''
-    host_nic = getHostNic(host=host, nic=nic)
+    host_nic = ll_hosts.getHostNic(host=host, nic=nic)
     return host_nic.get_ip().get_address()
 
 
@@ -926,8 +951,10 @@ def checkICMPConnectivity(host, user, password, ip, max_counter=MAX_COUNTER,
     **Returns**: True if ICMP connectivity was established, otherwise False
     '''
     while (max_counter):
-        if not sendICMP(host=host, user=user, password=password,
-                        ip=ip, count=1, packet_size=packet_size):
+        if not test_utils.sendICMP(
+            host=host, user=user, password=password, ip=ip, count=1,
+            packet_size=packet_size
+        ):
             max_counter -= 1
         else:
             return True
@@ -949,7 +976,7 @@ def checkHostNicParameters(host, nic, **kwargs):
     **Return**: True if action succeeded, otherwise False
     """
     res = True
-    host_nic = getHostNic(host, nic)
+    host_nic = ll_hosts.getHostNic(host, nic)
 
     if kwargs.get("bridge") is not None:
         bridged = host_nic.get_bridged()
@@ -961,8 +988,8 @@ def checkHostNicParameters(host, nic, **kwargs):
     if kwargs.get("vlan_id"):
         vlan_nic = ".".join([nic, kwargs.get("vlan_id")])
         try:
-            getHostNic(host, vlan_nic)
-        except EntityNotFound:
+            ll_hosts.getHostNic(host, vlan_nic)
+        except apis_exceptions.EntityNotFound:
             logger.error("Fail to get %s interface from %s", vlan_nic, host)
             res = False
 
@@ -992,25 +1019,29 @@ def create_basic_setup(datacenter, storage_type, version, cluster=None,
        *  *host_password* - Password for the host
     **Return**: True if setup creation succeeded, otherwise False
     """
-    if not addDataCenter(positive=True, name=datacenter,
-                         storage_type=storage_type,
-                         version=version):
+    if not ll_datacenters.addDataCenter(
+        positive=True, name=datacenter, storage_type=storage_type,
+        version=version
+    ):
         logger.error("Failed to add DC")
         return False
 
     if cluster:
-        if not addCluster(positive=True, name=cluster,
-                          cpu=cpu, data_center=datacenter,
-                          version=version):
+        if not ll_clusters.addCluster(
+            positive=True, name=cluster, cpu=cpu, data_center=datacenter,
+            version=version
+        ):
             logger.error("Failed to add Cluster")
             return False
 
         if host:
             host_list = [host] if isinstance(host, basestring) else host
             try:
-                add_hosts(hosts_list=host_list, cluster=cluster,
-                          passwords=[host_password] * len(host_list))
-            except HostException:
+                hl_hosts.add_hosts(
+                    hosts_list=host_list, cluster=cluster,
+                    passwords=[host_password] * len(host_list)
+                )
+            except test_exceptions.HostException:
                 logger.error("Failed to add host")
                 return False
     return True
@@ -1027,16 +1058,19 @@ def remove_basic_setup(datacenter, cluster=None, hosts=[]):
     """
     if cluster:
         for host in hosts:
-            if not removeHost(positive=True, host=host,
-                              deactivate=True):
+            if not ll_hosts.removeHost(
+                positive=True, host=host, deactivate=True
+            ):
                 logger.error("Failed to remove host %s ", host)
                 return False
 
-        if not removeCluster(positive=True, cluster=cluster):
+        if not ll_clusters.removeCluster(positive=True, cluster=cluster):
             logger.error("Failed to remove Cluster")
             return False
 
-    if not removeDataCenter(positive=True, datacenter=datacenter):
+    if not ll_datacenters.removeDataCenter(
+        positive=True, datacenter=datacenter
+    ):
         logger.error("Failed to remove DC")
         return False
     return True
@@ -1059,26 +1093,24 @@ def update_network_host(host, nic, auto_nics, save_config=True, **kwargs):
                        "ethtool_opts": "--offload eth2 rx on"}}
     **Return**: True if update succeeded, otherwise False
     """
-    nic_obj = getHostNic(host=host, nic=nic)
+    nic_obj = ll_hosts.getHostNic(host=host, nic=nic)
     kwargs.update({'update': nic_obj})
-    rc, out = genSNNic(nic=nic_obj, **kwargs)
+    rc, out = ll_hosts.genSNNic(nic=nic_obj, **kwargs)
     if not rc:
         logger.error("Cannot generate network object for nic")
         return False
 
     logger.info("Sending SN request to host %s", host)
-    if not sendSNRequest(True,
-                         host=host,
-                         nics=[out['host_nic']],
-                         auto_nics=auto_nics,
-                         check_connectivity='true',
-                         connectivity_timeout=60, force='false'):
+    if not ll_hosts.sendSNRequest(
+        True, host=host, nics=[out['host_nic']], auto_nics=auto_nics,
+        check_connectivity='true', connectivity_timeout=60, force='false'
+    ):
         logger.error("Failed to send SN request to host %s", host)
         return False
 
     if save_config:
         logger.info("Saving network configuration on host %s" % host)
-        if not commitNetConfig(True, host=host):
+        if not ll_hosts.commitNetConfig(True, host=host):
             logger.error("Couldn't save network configuration")
             return False
     return True
@@ -1162,8 +1194,8 @@ def is_management_network(cluster_name, network):
     :return: network MGMT
     :rtype: object
     """
-    mgmt_net_obj = get_management_network(cluster_name)
-    cl_mgmt_net_obj = get_cluster_management_network(cluster_name)
+    mgmt_net_obj = ll_networks.get_management_network(cluster_name)
+    cl_mgmt_net_obj = ll_clusters.get_cluster_management_network(cluster_name)
     if (
             mgmt_net_obj.get_name() == network and
             mgmt_net_obj.get_id() == cl_mgmt_net_obj.get_id()
@@ -1195,9 +1227,9 @@ def get_nic_statistics(nic, host=None, vm=None, keys=None):
     :rtype: dict
     """
     res = dict()
-    stats = get_host_nic_statistics(
+    stats = ll_hosts.get_host_nic_statistics(
         host, nic
-    ) if host else get_vm_nic_statistics(
+    ) if host else ll_vms.get_vm_nic_statistics(
         vm, nic
     )
     for stat in stats:
@@ -1205,3 +1237,45 @@ def get_nic_statistics(nic, host=None, vm=None, keys=None):
         if stat_name in keys:
             res[stat_name] = stat.get_values().get_value()[0].get_datum()
     return res
+
+
+def convert_old_sn_dict_to_new_api_dict(
+    new_dict, old_dict, idx, nic, network, slaves=list()
+):
+    """
+    Convert old CreateAndAttachSN call dict to new network API dict to use
+    in setup_networks()
+
+    :param new_dict: New SN dict
+    :type new_dict: dict
+    :param old_dict: Network dict
+    :type old_dict: dict
+    :param idx: Index number for new API dict
+    :type idx: int
+    :param nic: NIC name
+    :type nic: str
+    :param network: Network name
+    :type network: str
+    :param slaves: BOND slaves list
+    :type slaves: list
+    :return: New dict for new API function (setup_networks())
+    :rtype: dict
+    """
+    address = old_dict.get("address")
+    netmask = old_dict.get("netmask")
+    gateway = old_dict.get("gateway")
+    new_dict["add"][str(idx)] = {
+        "nic": nic.rsplit(".")[0],
+        "slaves": slaves,
+        "network": network,
+        "properties": old_dict.get("properties", None),
+        "ip": {
+            "ip_1": {
+                "address": address.pop(0) if address else None,
+                "netmask": netmask.pop(0) if netmask else None,
+                "gateway": gateway.pop(0) if gateway else None,
+                "boot_protocol": old_dict.get("bootproto", None),
+            }
+        }
+    }
+    return new_dict
