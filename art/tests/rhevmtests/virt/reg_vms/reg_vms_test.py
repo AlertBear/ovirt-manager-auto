@@ -1293,8 +1293,6 @@ class ImportExportVm(BaseVmWithDisk):
     __test__ = True
     vm_name = 'export_vm'
 
-    bz = {'1269948': {'engine': None, 'version': ['3.6']}}
-
     @classmethod
     def teardown_class(cls):
         """ Remove the VM from export storage. """
