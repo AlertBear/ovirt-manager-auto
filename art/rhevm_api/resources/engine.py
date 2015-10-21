@@ -1,5 +1,7 @@
+
 import urllib2
 import contextlib
+import time
 from art.rhevm_api.resources.service import Service
 from art.rhevm_api.resources.db import Database
 from art.rhevm_api.resources.user import User
@@ -123,4 +125,8 @@ class Engine(Service):
         service = self.host.service(self.service_name)
         service.stop()
         service.start()
-        # TODO: wait for health page
+        startTime = time.time()
+        while time.time() - startTime < 120:
+            time.sleep(20)
+            if self.health_page_status:
+                return

@@ -56,6 +56,8 @@ def network_cleanup():
     Clean all hosts interfaces (SN)
     """
     if config.GOLDEN_ENV:
+        # WA for bug https://bugzilla.redhat.com/show_bug.cgi?id=1259000
+        check_hosts_in_connecting()
         stop_all_vms()
         remove_unneeded_vms()
         remove_unneeded_vms_nics()
@@ -68,6 +70,21 @@ def network_cleanup():
         remove_unneeded_dcs()
         clean_hosts_interfaces()
         delete_dummy_interfaces_from_hosts()
+
+
+def check_hosts_in_connecting():
+    """
+    If all hosts are in connecting
+    restart the engine
+    https://bugzilla.redhat.com/show_bug.cgi?id=1259000
+    """
+    logger.info("Checking hosts status")
+    if all(
+        [ll_hosts.getHostState(host) == config.ENUMS["host_state_connecting"]
+            for host in config.HOSTS]
+    ):
+        logger.info("All hosts are in connecting. restart engine...")
+        config.ENGINE.restart()
 
 
 @ignore_exception
