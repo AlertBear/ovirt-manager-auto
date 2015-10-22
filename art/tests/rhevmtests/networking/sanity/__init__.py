@@ -4,12 +4,12 @@ Sanity init
 
 import logging
 import config as conf
-import helper
 import rhevmtests.networking as network
-import art.rhevm_api.utils.test_utils as test_utils
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.test_handler.exceptions as exceptions
+from art.test_handler import exceptions
+from art.rhevm_api.utils import test_utils
+import rhevmtests.networking.helper as net_helper
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 logger = logging.getLogger("Sanity_Init")
 
@@ -47,7 +47,13 @@ def setup_package():
         raise exceptions.NetworkException(
             "Failed to enable queue via engine-config"
         )
-    helper.prepare_networks_on_dc_cluster()
+
+    logger.info(
+        "Create %s on %s/%s", conf.NETS_DICT, conf.DC_NAME, conf.CLUSTER
+    )
+    net_helper.prepare_networks_on_setup(
+        networks_dict=conf.NETS_DICT, dc=conf.DC_NAME, cluster=conf.CLUSTER
+    )
 
 
 def teardown_package():

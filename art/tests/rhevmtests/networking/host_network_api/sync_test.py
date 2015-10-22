@@ -11,6 +11,7 @@ import config as conf
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import rhevmtests.networking.helper as net_helper
 
 logger = logging.getLogger("Host_Network_API_Sync_Cases")
 
@@ -31,11 +32,13 @@ def setup_module():
     logger.info(
         "Add %s to %s/%s", conf.SYNC_DICT_1, conf.DC_NAME, conf.CLUSTER_2
     )
-    helper.prepare_networks_on_dc(networks_dict=conf.SYNC_DICT_1)
+    net_helper.prepare_networks_on_setup(
+        networks_dict=conf.SYNC_DICT_1, dc=conf.DC_NAME, cluster=conf.CLUSTER_2
+    )
     logger.info(
         "Add %s to %s/%s", conf.SYNC_DICT_2, conf.SYNC_DC, conf.SYNC_CL
     )
-    helper.prepare_networks_on_dc(
+    net_helper.prepare_networks_on_setup(
         networks_dict=conf.SYNC_DICT_2, dc=conf.SYNC_DC, cluster=conf.SYNC_CL
     )
     logger.info("Deactivate %s", conf.HOST_4)

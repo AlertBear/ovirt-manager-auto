@@ -8,10 +8,10 @@ Init for new host network API
 import helper
 import logging
 import config as conf
-import rhevmtests.networking as networking
-import art.rhevm_api.utils.test_utils as test_utils
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+from rhevmtests import networking
+from art.rhevm_api.utils import test_utils
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 logger = logging.getLogger("Host_Network_API_Init")
 

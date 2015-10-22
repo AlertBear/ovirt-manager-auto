@@ -10,7 +10,6 @@ import config as conf
 import rhevmtests.networking.helper as net_help
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 logger = logging.getLogger("Sanity_Helper")
 
@@ -29,25 +28,6 @@ def check_dummy_on_host_interfaces(dummy_name):
         if dummy_name == nic.name:
             return True
     return False
-
-
-def prepare_networks_on_dc_cluster():
-    """
-    Create all networks that are needed for all cases on DC and cluster
-
-    :raise: NetworkException
-    """
-    logger.info(
-        "Create %s on %s/%s", conf.NETS_DICT, conf.DC_NAME, conf.CLUSTER
-    )
-    if not hl_networks.createAndAttachNetworkSN(
-        data_center=conf.DC_NAME, cluster=conf.CLUSTER,
-        network_dict=conf.NETS_DICT
-    ):
-        raise conf.NET_EXCEPTION(
-            "Failed to add %s to %s/%s" %
-            (conf.NETS_DICT, conf.DC_NAME, conf.CLUSTER)
-        )
 
 
 def run_vm_on_host():

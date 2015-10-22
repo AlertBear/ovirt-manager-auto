@@ -82,29 +82,6 @@ def attach_network_attachment(
         )
 
 
-def prepare_networks_on_dc(
-    networks_dict, dc=conf.DC_NAME, cluster=conf.CLUSTER_2
-):
-    """
-    Create and attach all networks that are needed for all cases
-
-    :param networks_dict: Networks dict
-    :type networks_dict: dict
-    :param dc: Datacenter name
-    :type dc: str
-    :param cluster: Cluster name
-    :type cluster: str
-    :raise: NetworkException
-    """
-    logger.info("Add networks to %s/%s", dc, cluster)
-    if not hl_networks.createAndAttachNetworkSN(
-        data_center=dc, cluster=cluster, network_dict=networks_dict
-    ):
-        raise conf.NET_EXCEPTION(
-            "Failed to add networks to %s/%s" % (dc, cluster)
-        )
-
-
 def networks_sync_status(networks):
     """
     Get networks sync status

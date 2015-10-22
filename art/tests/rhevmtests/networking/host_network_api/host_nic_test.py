@@ -9,6 +9,7 @@ import helper
 import logging
 import config as conf
 from art.test_handler.tools import polarion  # pylint: disable=E0611
+import rhevmtests.networking.helper as net_helper
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 logger = logging.getLogger("Host_Network_API_Host_NIC_Cases")
@@ -21,7 +22,9 @@ def setup_module():
     logger.info(
         "Add %s to %s/%s", conf.NIC_DICT, conf.DC_NAME, conf.CLUSTER_2
     )
-    helper.prepare_networks_on_dc(networks_dict=conf.NIC_DICT)
+    net_helper.prepare_networks_on_setup(
+        networks_dict=conf.NIC_DICT, dc=conf.DC_NAME, cluster=conf.CLUSTER_2
+    )
 
 
 def teardown_module():

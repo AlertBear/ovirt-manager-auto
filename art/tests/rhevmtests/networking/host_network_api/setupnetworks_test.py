@@ -9,6 +9,8 @@ import helper
 import logging
 import config as conf
 from art.test_handler.tools import polarion  # pylint: disable=E0611
+import rhevmtests.networking.helper as net_helper
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
@@ -23,7 +25,9 @@ def setup_module():
     logger.info(
         "Add %s to %s/%s", conf.SN_DICT, conf.DC_NAME, conf.CLUSTER_2
     )
-    helper.prepare_networks_on_dc(networks_dict=conf.SN_DICT)
+    net_helper.prepare_networks_on_setup(
+        networks_dict=conf.SN_DICT, dc=conf.DC_NAME, cluster=conf.CLUSTER_2
+    )
 
 
 def teardown_module():
@@ -826,7 +830,7 @@ class TestHostNetworkApiSetupNetworks16(helper.TestHostNetworkApiTestCaseBase):
                 "Failed to create bond16 with %s on %s" %
                 (cls.unmamanged_net, conf.HOST_4)
             )
-        if not hl_networks.removeNetwork(
+        if not ll_networks.removeNetwork(
             True, cls.unmamanged_net, conf.DC_NAME
         ):
             raise conf.NET_EXCEPTION(
@@ -901,7 +905,7 @@ class TestHostNetworkApiSetupNetworks17(helper.TestHostNetworkApiTestCaseBase):
             raise conf.NET_EXCEPTION(
                 "Failed to attach %s on %s" % (cls.unmamanged_net, conf.HOST_4)
             )
-        if not hl_networks.removeNetwork(
+        if not ll_networks.removeNetwork(
             True, cls.unmamanged_net, conf.DC_NAME
         ):
             raise conf.NET_EXCEPTION(

@@ -7,8 +7,10 @@ Helper for networking jobs
 
 import logging
 from random import randint
-import art.rhevm_api.utils.test_utils as test_utils
+from art.test_handler import exceptions
+from art.rhevm_api.utils import test_utils
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 
 def create_random_ips(num_of_ips=2, mask=16):
@@ -93,6 +95,28 @@ def seal_vm(vm, root_password):
         logging.error("Failed to stop %s", vm)
         return False
     return True
+
+
+def prepare_networks_on_setup(networks_dict, dc, cluster=None):
+    """
+    Create and attach all networks that are needed for all cases
+
+    :param networks_dict: Networks dict
+    :type networks_dict: dict
+    :param dc: DC name
+    :type dc: str
+    :param cluster: Cluster name
+    :type cluster: str
+    :raise: NetworkException
+    """
+    log = "%s/%s" % (dc, cluster) if cluster else "%s" % dc
+    if not hl_networks.createAndAttachNetworkSN(
+        data_center=dc, cluster=cluster, network_dict=networks_dict
+    ):
+        raise exceptions.NetworkException(
+            "Couldn't create %s on %s" % (networks_dict, log)
+        )
+
 
 if __name__ == "__main__":
     pass
