@@ -425,7 +425,7 @@ def add_qos_to_datacenter(datacenter, qos_name, qos_type, **kwargs):
     return QOS_API.create(
         qos_obj, collection=qoss_dc_coll_href, coll_elm_name="qos",
         positive=True
-    )
+    )[1]
 
 
 def get_qoss_from_datacenter(datacenter):
@@ -510,7 +510,7 @@ def update_qos_in_datacenter(datacenter, qos_name, **kwargs):
     except exceptions.DataCenterException:
         return False
 
-    return QOS_API.update(qos_obj, new_qos_obj, True)
+    return QOS_API.update(qos_obj, new_qos_obj, True)[1]
 
 
 def __prepare_quota_obj(**kwargs):
