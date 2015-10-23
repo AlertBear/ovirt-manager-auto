@@ -75,10 +75,10 @@ class UpgradeSanityVerification(TestCase):
                 'list',
                 'installed',
                 'ovirt-engine-extension-aaa-jdbc',
-            ])
+            ])[0]
             assert not ss.run_cmd([
                 'ovirt-aaa-jdbc-tool',
                 'user',
                 'show',
                 'admin',
-            ])
+            ])[0]
