@@ -19,6 +19,7 @@ NETWORK = "network"
 BOND = "bond"
 UPDATE = "update"
 SLAVES = "slaves"
+LABELS = "labels"
 NIC = "nic"
 MODE = "mode"
 MIIMON = "miimon"
@@ -285,11 +286,12 @@ def prepare_remove_for_setupnetworks(host_name, dict_to_remove):
     :type host_name: str
     :param dict_to_remove: Dict with networks/BONDs to remove
     :type dict_to_remove: dict
-    :return: tuple of HostNics/NetworkAttachments objects
+    :return: HostNics/NetworkAttachments/labels objects
     :rtype: tuple
     """
     removed_bonds = data_st.HostNics()
     removed_network_attachments = data_st.NetworkAttachments()
+    removed_labels = data_st.Labels()
     for k in dict_to_remove.keys():
         if k == NETWORKS:
             attach = get_networks_attachments(
@@ -302,7 +304,17 @@ def prepare_remove_for_setupnetworks(host_name, dict_to_remove):
             for bond in dict_to_remove.get(BONDS):
                 bond_to_remove = ll_hosts.getHostNic(host_name, bond)
                 removed_bonds.add_host_nic(bond_to_remove)
-    return removed_bonds, removed_network_attachments
+
+        if k == LABELS:
+            labels_list = dict_to_remove.get(LABELS)
+            host_nics = ll_hosts.getHostNicsList(host=host_name)
+            label_objs = ll_networks.get_host_nic_label_objs_by_id(
+                host_nics=host_nics, labels_id=labels_list
+            )
+            for label_to_remove in label_objs:
+                removed_labels.add_label(label_to_remove)
+
+    return removed_bonds, removed_network_attachments, removed_labels
 
 
 def prepare_add_for_setupnetworks(

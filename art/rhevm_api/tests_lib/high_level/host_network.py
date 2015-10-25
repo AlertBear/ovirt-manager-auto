@@ -21,6 +21,7 @@ BONDS = "bonds"
 BOND = "bond"
 UPDATE = "update"
 SLAVES = "slaves"
+LABELS = "labels"
 NIC = "nic"
 MODE = "mode"
 MIIMON = "miimon"
@@ -231,7 +232,7 @@ def setup_networks(host_name, **kwargs):
     )
 
     if remove:
-        removed_bonds, removed_network_attachments = (
+        removed_bonds, removed_network_attachments, removed_labels = (
             ll_host_network.prepare_remove_for_setupnetworks(
                 host_name, remove
             )
@@ -279,6 +280,7 @@ def clean_host_interfaces(host_name):
     """
     networks = []
     bonds = []
+    labels = []
     host = ll_hosts.HOST_API.find(host_name)
     host_cl = ll_general.get_object_name_by_id(
         ll_clusters.CLUSTER_API, host.get_cluster().get_id()
@@ -305,10 +307,15 @@ def clean_host_interfaces(host_name):
             else:
                 bonds.append(nic_name)
 
+        labels.extend(
+            [i.get_id() for i in ll_networks.get_host_nic_labels(nic=nic)]
+        )
+
     kwargs = {
         "remove": {
             NETWORKS: networks,
-            BONDS: bonds
+            BONDS: bonds,
+            LABELS: labels
         }
     }
     if not ll_host_network.remove_unmanaged_networks(host_name):

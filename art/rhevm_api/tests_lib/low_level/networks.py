@@ -17,25 +17,23 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from art.core_api.apis_utils import data_st
-from art.rhevm_api.tests_lib.low_level.datacenters import (
-    get_qos_from_datacenter
-)
-from art.rhevm_api.utils.test_utils import get_api, SYS_CLASS_NET_DIR
-import art.rhevm_api.tests_lib.low_level as ll
-from art.core_api.apis_exceptions import EntityNotFound
-from art.core_api import is_action
-from utilities.machine import Machine, LINUX
-import logging
-import re
 import os
+import re
+import logging
+from utilities import machine
+from art.core_api import is_action
+from art.core_api import apis_utils
+from art.core_api import apis_exceptions
+from art.rhevm_api.utils import test_utils
+import art.rhevm_api.tests_lib.low_level as ll
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 
-NET_API = get_api("network", "networks")
-CL_API = get_api("cluster", "clusters")
-DC_API = get_api("data_center", "datacenters")
-VNIC_PROFILE_API = get_api('vnic_profile', 'vnicprofiles')
-LABEL_API = get_api('label', 'labels')
-HOST_NICS_API = get_api('host_nic', 'host_nics')
+NET_API = test_utils.get_api("network", "networks")
+CL_API = test_utils.get_api("cluster", "clusters")
+DC_API = test_utils.get_api("data_center", "datacenters")
+VNIC_PROFILE_API = test_utils.get_api('vnic_profile', 'vnicprofiles')
+LABEL_API = test_utils.get_api('label', 'labels')
+HOST_NICS_API = test_utils.get_api('host_nic', 'host_nics')
 PROC_NET_DIR = "/proc/net"
 NETWORK_NAME = "NET"
 ETHTOOL_OFFLOAD = ("tcp-segmentation-offload", "udp-fragmentation-offload")
@@ -50,7 +48,7 @@ def _prepareNetworkObject(**kwargs):
     Author: edolinin, atal
     return: logical network data structure object
     """
-    net = data_st.Network()
+    net = apis_utils.data_st.Network()
 
     if 'name' in kwargs:
         net.set_name(kwargs.get('name'))
@@ -69,17 +67,17 @@ def _prepareNetworkObject(**kwargs):
     for k in ['address', 'netmask', 'gateway']:
         if k in kwargs:
             ip[k] = kwargs.get(k)
-    ip and net.set_ip(data_st.IP(**ip))
+    ip and net.set_ip(apis_utils.data_st.IP(**ip))
 
     if 'vlan_id' in kwargs:
-        net.set_vlan(data_st.VLAN(id=kwargs.get('vlan_id')))
+        net.set_vlan(apis_utils.data_st.VLAN(id=kwargs.get('vlan_id')))
 
     if 'usages' in kwargs:
         usages = kwargs.get('usages')
         if usages:
-            net.set_usages(data_st.Usages(usage=usages.split(',')))
+            net.set_usages(apis_utils.data_st.Usages(usage=usages.split(',')))
         else:
-            net.set_usages(data_st.Usages())
+            net.set_usages(apis_utils.data_st.Usages())
 
     if 'mtu' in kwargs:
         net.set_mtu(kwargs.get('mtu'))
@@ -175,7 +173,7 @@ def findNetwork(network, data_center=None, cluster=None):
         *  *data_center* - Name of the data center in which the network is
                            located.
     **Return**: Returns the desired network object in case of success,
-                otherwise raises EntityNotFound
+                otherwise raises apis_exceptions.EntityNotFound
     """
     if data_center:
         dc_obj = DC_API.find(data_center)
@@ -184,7 +182,9 @@ def findNetwork(network, data_center=None, cluster=None):
             if net.get_data_center().get_id() == dc_obj.get_id() and \
                     net.get_name().lower() == network.lower():
                 return net
-        raise EntityNotFound('%s network does not exists!' % network)
+        raise apis_exceptions.EntityNotFound(
+            '%s network does not exists!' % network
+        )
     elif cluster:
         return get_dc_network_by_cluster(cluster, network)
     else:
@@ -199,7 +199,8 @@ def findNetworkByCluster(network, cluster):
     **Parameters**:
         *  *network* - network name
         *  *cluster* - cluster name
-    **return**: network object in case of success, raise EntityNotFound in case
+    **return**: network object in case of success,
+    raise apis_exceptions.EntityNotFound in case
                 of Failure
     """
     nets = NET_API.get(absLink=False)
@@ -209,7 +210,9 @@ def findNetworkByCluster(network, cluster):
         if cluster_dc_id == net.get_data_center().get_id() and \
                 network == net.get_name():
             return net
-    raise EntityNotFound('%s network does not exists!' % network)
+    raise apis_exceptions.EntityNotFound(
+        '%s network does not exists!' % network
+    )
 
 
 def _prepareClusterNetworkObj(**kwargs):
@@ -218,10 +221,12 @@ def _prepareClusterNetworkObj(**kwargs):
     Author: edolinin, atal
     return: logical network data structure object for cluster
     """
-    net = kwargs.get('net', data_st.Network())
+    net = kwargs.get('net', apis_utils.data_st.Network())
 
     if kwargs.get('usages', None) is not None:
-        net.set_usages(data_st.Usages(usage=kwargs.get('usages').split(',')))
+        net.set_usages(apis_utils.data_st.Usages(
+            usage=kwargs.get('usages').split(','))
+        )
 
     if 'required' in kwargs:
         net.set_required(str(kwargs.get('required')).lower())
@@ -240,7 +245,7 @@ def getClusterNetwork(cluster, network):
         *  *cluster* - Name of the cluster in which the network is located.
         *  *network* - Name of the network.
     **Return**: Returns the network object if it's found or raises
-                EntityNotFound exception if it's not.
+                apis_exceptions.EntityNotFound exception if it's not.
     """
     cluster_obj = CL_API.find(cluster)
     return CL_API.getElemFromElemColl(cluster_obj,
@@ -424,9 +429,9 @@ def checkIPRule(host, user, password, subnet):
         *  *subnet* - subnet to search for
     return True/False
     """
-    machine = Machine(host, user, password).util(LINUX)
+    machine_obj = machine.Machine(host, user, password).util(machine.LINUX)
     cmd = ["ip", "rule"]
-    rc, out = machine.runCmd(cmd)
+    rc, out = machine_obj.runCmd(cmd)
     logger.info("The output of ip rule command is:\n %s", out)
     if not rc:
         logger.error("Failed to run ip rule command")
@@ -524,7 +529,7 @@ def getVnicProfileObj(name, network, cluster=None, data_center=None):
         *  *data_center* - Name of the data center in which the network
                            is located.
     **Return**: Returns the VNIC profile object if it's found or raises
-                EntityNotFound exception if it's not.
+                apis_exceptions.EntityNotFound exception if it's not.
     """
     matching_profiles = filter(lambda profile: profile.get_name() == name,
                                getNetworkVnicProfiles(network, cluster,
@@ -532,8 +537,10 @@ def getVnicProfileObj(name, network, cluster=None, data_center=None):
     if matching_profiles:
         return matching_profiles[0]
     else:
-        raise EntityNotFound('VNIC profile %s was not found among the profiles'
-                             ' of network %s' % (name, network))
+        raise apis_exceptions.EntityNotFound(
+            'VNIC profile %s was not found among the profiles of network %s' %
+            (name, network)
+        )
 
 
 def getVnicProfileAttr(name, network, cluster=None, data_center=None,
@@ -601,7 +608,7 @@ def addVnicProfile(positive, name, cluster=None, data_center=None,
         *  *description* - Description of vnic profile
     **Return**: True, if adding vnic profile was success, otherwise False
     """
-    vnic_profile_obj = data_st.VnicProfile()
+    vnic_profile_obj = apis_utils.data_st.VnicProfile()
     network_obj = findNetwork(network, data_center, cluster)
     logger.info("\n"
                 "Creating vnic profile:\n"
@@ -789,9 +796,10 @@ def isVmHostNetwork(host, user, password, net_name, conn_timeout=40):
         *  *conn_timeout* - ssh connection timeout to the host
     **Return**: True if net_name is VM, False otherwise
     """
-    machine_obj = Machine(host, user, password,
-                          conn_timeout=conn_timeout).util(LINUX)
-    vm_file = os.path.join(SYS_CLASS_NET_DIR, net_name)
+    machine_obj = machine.Machine(
+        host, user, password, conn_timeout=conn_timeout
+    ).util(machine.LINUX)
+    vm_file = os.path.join(test_utils.SYS_CLASS_NET_DIR, net_name)
     return machine_obj.isFileExists(vm_file)
 
 
@@ -807,7 +815,7 @@ def checkVlanNet(host, user, password, interface, vlan):
         *  *vlan* - the value to check on the host (str)
     **Return**: True if VLAN on the host == provided VLAN, False otherwise
     """
-    machine_obj = Machine(host, user, password).util(LINUX)
+    machine_obj = machine.Machine(host, user, password).util(machine.LINUX)
     vlan_file = os.path.join(PROC_NET_DIR, "vlan", ".".join([interface,
                                                              str(vlan)]))
     rc, output = machine_obj.runCmd(["cat", vlan_file])
@@ -903,7 +911,7 @@ def check_network_on_nic(network, host, nic):
     try:
         nic_obj = ll.hosts.getHostNic(host, nic).get_network()
         net_obj_id = NET_API.find(network).get_id()
-    except (EntityNotFound, AttributeError) as e:
+    except (apis_exceptions.EntityNotFound, AttributeError) as e:
         logger.error(e)
         return False
     if nic_obj is not None:
@@ -919,7 +927,7 @@ def create_label(label):
         *  *label* - label id to create label object
     **Return**: label object with provided id
     """
-    label_obj = data_st.Label()
+    label_obj = apis_utils.data_st.Label()
     label_obj.set_id(label)
     return label_obj
 
@@ -981,7 +989,7 @@ def add_label(**kwargs):
                                      "%s", nic, host)
                         status = False
 
-    except EntityNotFound as e:
+    except apis_exceptions.EntityNotFound as e:
         logger.error(e)
         return False
 
@@ -1030,8 +1038,8 @@ def get_label_objects(**kwargs):
                 label_list.extend(label_obj)
 
         if not networks and not host_nic_dict:
-            raise EntityNotFound("No correct key was provided")
-    except EntityNotFound as e:
+            raise apis_exceptions.EntityNotFound("No correct key was provided")
+    except apis_exceptions.EntityNotFound as e:
         logger.error(e)
         raise
 
@@ -1111,8 +1119,10 @@ def check_bridge_opts(host, user, password, bridge_name, opts, value):
     **Return**: True if the value for bridge_opts is equal to the value
     provided, False otherwise
     """
-    machine_obj = Machine(host, user, password).util(LINUX)
-    bridge_file = os.path.join(SYS_CLASS_NET_DIR, bridge_name, 'bridge', opts)
+    machine_obj = machine.Machine(host, user, password).util(machine.LINUX)
+    bridge_file = os.path.join(
+        test_utils.SYS_CLASS_NET_DIR, bridge_name, 'bridge', opts
+    )
     rc, output = machine_obj.runCmd(["cat", bridge_file])
     if not rc:
         logger.error("Can't read {0}".format(bridge_file))
@@ -1132,8 +1142,10 @@ def check_bond_mode(host, user, password, interface, mode):
         *  *mode* - The BOND mode
     **Return**: True if correct BOND mode was found, False otherwise
     """
-    machine_obj = Machine(host, user, password).util(LINUX)
-    mode_file = os.path.join(SYS_CLASS_NET_DIR, interface, "bonding/mode")
+    machine_obj = machine.Machine(host, user, password).util(machine.LINUX)
+    mode_file = os.path.join(
+        test_utils.SYS_CLASS_NET_DIR, interface, "bonding/mode"
+    )
     rc, output = machine_obj.runCmd(["cat", mode_file])
     if not rc:
         logger.error("Can't read {0}".format(mode_file))
@@ -1164,7 +1176,7 @@ def check_ethtool_opts(host, user, password, nic, opts, value):
     else:
         logger.error("Not implemented for opts %s" % opts)
         return False
-    machine_obj = Machine(host, user, password).util(LINUX)
+    machine_obj = machine.Machine(host, user, password).util(machine.LINUX)
     rc, output = machine_obj.runCmd(cmd)
     if not rc:
         logger.error("Can't run %s command", " ".join(cmd))
@@ -1186,8 +1198,10 @@ def check_bridge_file_exist(host, user, password, bridge_name):
         *  *bridge_name* - name of the bridge file to check if exists
     **Return**: True if the bridge_name file exists, False otherwise
     """
-    machine_obj = Machine(host, user, password).util(LINUX)
-    bridge_file = os.path.join(SYS_CLASS_NET_DIR, bridge_name, 'bridge')
+    machine_obj = machine.Machine(host, user, password).util(machine.LINUX)
+    bridge_file = os.path.join(
+        test_utils.SYS_CLASS_NET_DIR, bridge_name, 'bridge'
+    )
     return machine_obj.isFileExists(bridge_file)
 
 
@@ -1200,10 +1214,10 @@ def create_properties(**kwargs):
         elements
     **Return**: Properties object
     """
-    properties_obj = data_st.Properties()
+    properties_obj = apis_utils.data_st.Properties()
     for key, val in kwargs.iteritems():
         if kwargs.get("bridge_opts") or kwargs.get("ethtool_opts"):
-            property_obj = data_st.Property(name=key, value=val)
+            property_obj = apis_utils.data_st.Property(name=key, value=val)
             properties_obj.add_property(property_obj)
     return properties_obj
 
@@ -1238,7 +1252,9 @@ def update_qos_on_vnic_profile(datacenter, qos_name, vnic_profile_name,
     :param cluster: Cluster name
     :return: True/False
     """
-    qos = get_qos_from_datacenter(datacenter=datacenter, qos_name=qos_name)
+    qos = ll_datacenters.get_qos_from_datacenter(
+        datacenter=datacenter, qos_name=qos_name
+    )
     return updateVnicProfile(
         name=vnic_profile_name, network=network_name, cluster=cluster,
         data_center=datacenter, qos=qos
@@ -1277,7 +1293,7 @@ def get_qos_from_vnic_profile(vnic_profile_name, network_name, qos_name,
         name=vnic_profile_name, network=network_name, cluster=cluster,
         data_center=datacenter
     )
-    dc_qos_obj = get_qos_from_datacenter(
+    dc_qos_obj = ll_datacenters.get_qos_from_datacenter(
         datacenter=datacenter, qos_name=qos_name
     )
     dc_qos_id = dc_qos_obj.get_id()
@@ -1333,3 +1349,35 @@ def check_network_usage(cluster_name, network, *attrs):
         if attr not in net_obj.get_usages().get_usage():
             return False
     return True
+
+
+def get_host_nic_labels(nic):
+    """
+    Get host NIC labels
+
+    :param nic: HostNIC object
+    :type nic: HostNic
+    :return: List of host NIC labels
+    :rtype: list
+    """
+    return ll.hosts.HOST_NICS_API.getElemFromLink(nic, "labels", "label")
+
+
+def get_host_nic_label_objs_by_id(host_nics, labels_id):
+    """
+    Get host NIC label objects by label ID
+
+    :param host_nics: Host NICS object list
+    :type host_nics: list
+    :param labels_id: Label ID
+    :type labels_id: list
+    :return: List of host NICs objects
+    :rtype: list
+    """
+    label_objs_list = list()
+    for nic in host_nics:
+        nic_labels = get_host_nic_labels(nic)
+        label_objs_list.extend(
+            [i for i in nic_labels if i.get_id() in labels_id]
+        )
+    return label_objs_list
