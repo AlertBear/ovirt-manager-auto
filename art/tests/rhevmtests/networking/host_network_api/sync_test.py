@@ -94,7 +94,7 @@ class TestHostNetworkApiSyncBase(helper.TestHostNetworkApiTestCaseBase):
                 positive=True, host=conf.HOST_4, cluster=conf.SYNC_CL
             ):
                 raise conf.NET_EXCEPTION(
-                    "Failed to move %s to %s", conf.HOST_4, conf.SYNC_CL
+                    "Failed to move %s to %s" % (conf.HOST_4, conf.SYNC_CL)
                 )
 
     @classmethod
