@@ -192,11 +192,15 @@ def setup_networks(host_name, **kwargs):
                     },
                 "add3": {
                     "network": "net4"
-                    }
+                    },
+                "add4": {
+                    "nic": dummy10,
+                    "labels": ["lb1"]
                 },
             "remove": {
                 "networks": ["net2"],
-                "bonds": ["bond20"]
+                "bonds": ["bond20"],
+                "labels": ["lb1", "lb2"]
                 },
             "update": {
                 "update1": {
@@ -238,15 +242,15 @@ def setup_networks(host_name, **kwargs):
             )
         )
     if add:
-        network_attachments, bonds = (
+        network_attachments, bonds, labels = (
             ll_host_network.prepare_add_for_setupnetworks(
-                network_attachments, host_name, add
+                network_attachments, labels, host_name, add
             )
         )
     if update:
-        network_attachments, bonds = (
+        network_attachments, bonds, labels = (
             ll_host_network.prepare_add_for_setupnetworks(
-                network_attachments, host_name, update, True
+                network_attachments, labels, host_name, update, True
             )
         )
 

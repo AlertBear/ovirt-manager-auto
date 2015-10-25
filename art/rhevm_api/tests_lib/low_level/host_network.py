@@ -318,20 +318,22 @@ def prepare_remove_for_setupnetworks(host_name, dict_to_remove):
 
 
 def prepare_add_for_setupnetworks(
-    network_attachments, host_name, dict_to_add, update=False
+    network_attachments, labels, host_name, dict_to_add, update=False
 ):
     """
     Prepare NetworkAttachment object for setup_networks function
 
     :param network_attachments: NetworkAttachment object
     :type network_attachments: NetworkAttachment
+    :param labels: labels object
+    :type labels: Labels
     :param host_name: Host name
     :type host_name: str
     :param dict_to_add: Dict with networks to dict_to_add
     :type dict_to_add: dict
-    :param update: True for update networks/BONDs
+    :param update: True for update networks/BONDs/Labels
     :type update: bool
-    :return: Network_attachments and bonds objects
+    :return: Network_attachments, bonds and labels objects
     :rtype: tuple
     """
     bonds = data_st.HostNics()
@@ -350,7 +352,17 @@ def prepare_add_for_setupnetworks(
                 host_name, **dict_to_add.get(k)
             )
             network_attachments.add_network_attachment(network_attachment)
-    return network_attachments, bonds
+
+        if dict_to_add.get(k).get(LABELS):
+            labels_list = dict_to_add.get(k).get(LABELS)
+            host_nic = dict_to_add.get(k).get("nic")
+            for label in labels_list:
+                label_obj = create_host_nic_label_object(
+                    host_name=host_name, nic=host_nic, label=label
+                )
+                labels.add_label(label_obj)
+
+    return network_attachments, bonds, labels
 
 
 def prepare_ip_object(network_attachment, ip_dict):
@@ -427,3 +439,22 @@ def get_network_name_from_attachment(attachment):
     return ll_general.get_object_name_by_id(
         ll_networks.NET_API, attachment.get_network().get_id()
     )
+
+
+def create_host_nic_label_object(host_name, nic, label):
+    """
+    Prepare label object with host NIC
+
+    :param host_name: Host name
+    :type host_name: str
+    :param nic: Host NIC name
+    :type nic: str
+    :param label: Label name
+    :type label: str
+    :return: label object
+    :rtype: Label
+    """
+    label_obj = ll_networks.create_label(label=label)
+    host_nic_obj = ll_hosts.getHostNic(host=host_name, nic=nic)
+    label_obj.set_host_nic(host_nic_obj)
+    return label_obj

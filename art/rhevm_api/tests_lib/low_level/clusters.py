@@ -830,11 +830,11 @@ def get_cpu_profile_id_by_name(cluster_name, cpu_profile_name):
 
 def get_cluster_management_network(cluster_name):
     """
-    Get MGMT network object for Cluster
+    Get management network object for Cluster
     :param cluster_name: Name of the Cluster
     :type cluster_name: str
-    :return: network MGMT
-    :rtype: object
+    :return: network management object
+    :rtype: Network
     """
     try:
         cl_obj = CLUSTER_API.query(
