@@ -10,20 +10,14 @@ It will cover scenarios for different states of VNIC on stopped/running VM.
 
 import logging
 from art.unittest_lib import attr
-from art.unittest_lib import NetworkTest as TestCase
+from art.core_api import apis_utils
+from art.test_handler import exceptions
 from rhevmtests.networking import config
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.core_api.apis_utils import TimeoutingSampler
-from art.test_handler.exceptions import NetworkException
-from art.rhevm_api.tests_lib.high_level.networks import removeNetwork
-from art.rhevm_api.tests_lib.low_level.networks import(
-    addNetwork, addNetworkToCluster, addVnicProfile, removeVnicProfile
-)
-from art.rhevm_api.tests_lib.low_level.vms import(
-    addNic, getVmNicLinked, getVmNicPlugged, removeNic,
-    updateNic, getVmNicNetwork, startVm, stopVm, waitForVMState
-)
 import rhevmtests.networking.helper as net_help
+from art.unittest_lib import NetworkTest as TestCase
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 
 logger = logging.getLogger("Linking_Cases")
 
@@ -54,20 +48,20 @@ class TestLinkedCase1(TestCase):
             ("false", "false")
         ]
         for i in range(len(plug_link_param_list)):
-            if not addNic(
+            if not ll_vms.addNic(
                     True, config.VM_NAME[0], name=config.NIC_NAME[i+1],
                     network=config.VLAN_NETWORKS[i],
                     plugged=plug_link_param_list[i][0],
                     linked=plug_link_param_list[i][1]
             ):
-                raise NetworkException(
+                raise exceptions.NetworkException(
                     "Cannot add VNIC %s to VM" % config.NIC_NAME[i+1]
                 )
-        if not addNic(
+        if not ll_vms.addNic(
                 True, config.VM_NAME[0], name=config.NIC_NAME[5], network=None,
                 plugged="true", linked="true"
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot add VNIC %s to VM" % config.NIC_NAME[5]
             )
 
@@ -80,28 +74,28 @@ class TestLinkedCase1(TestCase):
         for nic_name in (
             config.NIC_NAME[1], config.NIC_NAME[3], config.NIC_NAME[5]
         ):
-            if not getVmNicLinked(config.VM_NAME[0], nic=nic_name):
-                raise NetworkException(
+            if not ll_vms.getVmNicLinked(config.VM_NAME[0], nic=nic_name):
+                raise exceptions.NetworkException(
                     "NIC %s is not linked but should be" % nic_name
                 )
         logger.info("Checking Plugged on nic2, nic3, nic6 is True")
         for nic_name in (
             config.NIC_NAME[1], config.NIC_NAME[2], config.NIC_NAME[5]
         ):
-            if not getVmNicPlugged(config.VM_NAME[0], nic=nic_name):
-                raise NetworkException(
+            if not ll_vms.getVmNicPlugged(config.VM_NAME[0], nic=nic_name):
+                raise exceptions.NetworkException(
                     "NIC %s is not plugged but should be" % nic_name
                 )
         logger.info("Checking Linked on nic3, nic5 is False")
         for nic_name in (config.NIC_NAME[2], config.NIC_NAME[4]):
-            if getVmNicLinked(config.VM_NAME[0], nic=nic_name):
-                raise NetworkException(
+            if ll_vms.getVmNicLinked(config.VM_NAME[0], nic=nic_name):
+                raise exceptions.NetworkException(
                     "NIC %s is linked but shouldn't be" % nic_name
                 )
         logger.info("Checking Plugged on nic5, nic4 is False")
         for nic_name in (config.NIC_NAME[3], config.NIC_NAME[4]):
-            if getVmNicPlugged(config.VM_NAME[0], nic=nic_name):
-                raise NetworkException(
+            if ll_vms.getVmNicPlugged(config.VM_NAME[0], nic=nic_name):
+                raise exceptions.NetworkException(
                     "NIC %s is plugged but shouldn't be" % nic_name
                 )
 
@@ -117,13 +111,15 @@ class TestLinkedCase1(TestCase):
         for nic_name in (
             config.NIC_NAME[1], config.NIC_NAME[2], config.NIC_NAME[5]
         ):
-            if not updateNic(
+            if not ll_vms.updateNic(
                     True, config.VM_NAME[0], nic_name, plugged="false"
             ):
                 logger.error("Couldn't unplug %s", nic_name)
         logger.info("Removing all the VNICs besides mgmt network")
         for i in range(5):
-            if not removeNic(True, config.VM_NAME[0], config.NIC_NAME[i+1]):
+            if not ll_vms.removeNic(
+                True, config.VM_NAME[0], config.NIC_NAME[i+1]
+            ):
                 logger.error(
                     "Cannot remove nic %s from setup", config.NIC_NAME[i+1]
                 )
@@ -143,11 +139,11 @@ class TestLinkedCase2(TestCase):
         Create 1 VNIC on stopped VM with default plugged/linked states
         """
         logger.info("Creating VNICs with default plugged/linked states")
-        if not addNic(
+        if not ll_vms.addNic(
                 True, config.VM_NAME[1], name=config.NIC_NAME[1],
                 network=config.VLAN_NETWORKS[0]
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot add VNIC %s to VM" % config.NIC_NAME[1]
             )
 
@@ -157,13 +153,17 @@ class TestLinkedCase2(TestCase):
         Check the default values for the Plugged/Linked options on VNIC
         """
         logger.info(" Checking linked state of nic2 to be True")
-        if not getVmNicLinked(config.VM_NAME[1], nic=config.NIC_NAME[1]):
-            raise NetworkException(
+        if not ll_vms.getVmNicLinked(
+            config.VM_NAME[1], nic=config.NIC_NAME[1]
+        ):
+            raise exceptions.NetworkException(
                 "%s is not linked but should be" % config.VM_NAME[1]
             )
         logger.info("Checking Plugged state on nic2 to be True")
-        if not getVmNicPlugged(config.VM_NAME[1], nic=config.NIC_NAME[1]):
-            raise NetworkException(
+        if not ll_vms.getVmNicPlugged(
+            config.VM_NAME[1], nic=config.NIC_NAME[1]
+        ):
+            raise exceptions.NetworkException(
                 "%s is not plugged but should be" % config.VM_NAME[1]
             )
 
@@ -174,13 +174,13 @@ class TestLinkedCase2(TestCase):
         """
         logger.info("Starting the teardown_class")
         logger.info("Updating the network on nic2 to unplugged")
-        if not updateNic(
+        if not ll_vms.updateNic(
             True, config.VM_NAME[1], config.NIC_NAME[1], plugged="false"
         ):
             logger.error("Cannot unplug %s", config.VM_NAME[1])
 
         logger.info("Removing the nic2 from the VM ")
-        if not removeNic(True, config.VM_NAME[1], config.NIC_NAME[1]):
+        if not ll_vms.removeNic(True, config.VM_NAME[1], config.NIC_NAME[1]):
             logger.error("Cannot remove nic %s from setup", config.VM_NAME[1])
 
 
@@ -198,22 +198,22 @@ class TestLinkedCase3(TestCase):
         Create 2 VNICs on stopped VM with different nic type for plugged/linked
         """
         logger.info("Creating VNICs with different nic types for stopped VM")
-        if not addNic(
+        if not ll_vms.addNic(
                 True, config.VM_NAME[1], name=config.NIC_NAME[1],
                 network=config.VLAN_NETWORKS[0],
                 interface=config.NIC_TYPE_RTL8139, plugged="true",
                 linked="true"
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot add VNIC %s to VM" % config.NIC_NAME[1]
             )
 
-        if not addNic(
+        if not ll_vms.addNic(
                 True, config.VM_NAME[1], name=config.NIC_NAME[2],
                 interface=config.NIC_TYPE_E1000,
                 network=config.VLAN_NETWORKS[1], plugged="true", linked="false"
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot add VNIC %s to VM" % config.NIC_NAME[2]
             )
 
@@ -226,47 +226,57 @@ class TestLinkedCase3(TestCase):
             "Checking linked state of nic3 is False and Updating its state "
             "to True"
         )
-        if getVmNicLinked(config.VM_NAME[1], nic=config.NIC_NAME[2]):
-            raise NetworkException(
+        if ll_vms.getVmNicLinked(config.VM_NAME[1], nic=config.NIC_NAME[2]):
+            raise exceptions.NetworkException(
                 "%s is linked, but shouldn't be" % config.NIC_NAME[2]
             )
-        if not updateNic(
+        if not ll_vms.updateNic(
             True, config.VM_NAME[1], config.NIC_NAME[2], linked="true"
         ):
-            raise NetworkException("Couldn't update linked to True")
+            raise exceptions.NetworkException("Couldn't update linked to True")
 
         logger.info(
             "Checking linked state on nic2 is True and Updating its state to "
             "False"
         )
-        if not getVmNicLinked(config.VM_NAME[1], nic=config.NIC_NAME[1]):
-            raise NetworkException(
+        if not ll_vms.getVmNicLinked(
+            config.VM_NAME[1], nic=config.NIC_NAME[1]
+        ):
+            raise exceptions.NetworkException(
                 "%s is not linked, but should be" % config.NIC_NAME[1]
             )
-        if not updateNic(
+        if not ll_vms.updateNic(
             True, config.VM_NAME[1], config.NIC_NAME[1], linked="false"
         ):
-            raise NetworkException("Couldn't update linked to false")
+            raise exceptions.NetworkException(
+                "Couldn't update linked to false"
+            )
 
         logger.info("Checking that linked state on nics was correctly updated")
-        if getVmNicLinked(config.VM_NAME[1], nic=config.NIC_NAME[1]):
-            raise NetworkException(
+        if ll_vms.getVmNicLinked(config.VM_NAME[1], nic=config.NIC_NAME[1]):
+            raise exceptions.NetworkException(
                 "%s is linked, but it shouldn't be" % config.NIC_NAME[1]
             )
-        if not getVmNicLinked(config.VM_NAME[1], nic=config.NIC_NAME[2]):
-            raise NetworkException(
+        if not ll_vms.getVmNicLinked(
+            config.VM_NAME[1], nic=config.NIC_NAME[2]
+        ):
+            raise exceptions.NetworkException(
                 "%s is not linked, but it should be" % config.NIC_NAME[2]
             )
 
         logger.info("Updating both NICs with empty networks")
         for nic_name in (config.NIC_NAME[2], config.NIC_NAME[1]):
-            if not updateNic(True, config.VM_NAME[1], nic_name, network=None):
-                raise NetworkException("Couldn't update NICs with empty net")
+            if not ll_vms.updateNic(
+                True, config.VM_NAME[1], nic_name, network=None
+            ):
+                raise exceptions.NetworkException(
+                    "Couldn't update NICs with empty net"
+                )
 
         logger.info("Testing that update nics with empty networks succeeded")
         for nic_name in (config.NIC_NAME[2], config.NIC_NAME[1]):
-            if getVmNicNetwork(config.VM_NAME[1], nic=nic_name):
-                raise NetworkException(
+            if ll_vms.getVmNicNetwork(config.VM_NAME[1], nic=nic_name):
+                raise exceptions.NetworkException(
                     "Update NIC %s with empty Net failed" % nic_name
                 )
 
@@ -275,12 +285,12 @@ class TestLinkedCase3(TestCase):
             "them"
         )
         for i in range(2):
-            if not updateNic(
+            if not ll_vms.updateNic(
                     True, config.VM_NAME[1], config.NIC_NAME[i+1],
                     network=config.VLAN_NETWORKS[i],
                     vnic_profile=config.VLAN_NETWORKS[i], plugged="false"
             ):
-                raise NetworkException(
+                raise exceptions.NetworkException(
                     "Couldn't update nic with original network or couldn't "
                     "unplug nic"
                 )
@@ -289,27 +299,31 @@ class TestLinkedCase3(TestCase):
             "Testing that update nics with non-empty networks succeeded"
         )
         for nic_name in (config.NIC_NAME[2], config.NIC_NAME[1]):
-            if not getVmNicNetwork(config.VM_NAME[1], nic=nic_name):
-                raise NetworkException(
+            if not ll_vms.getVmNicNetwork(config.VM_NAME[1], nic=nic_name):
+                raise exceptions.NetworkException(
                     "Update %s with non-empty Net failed" % nic_name
                 )
 
         logger.info("Checking that plugged state on NICs was updated")
         for nic_name in (config.NIC_NAME[2], config.NIC_NAME[1]):
-            if getVmNicPlugged(config.VM_NAME[1], nic=nic_name):
-                raise NetworkException(
+            if ll_vms.getVmNicPlugged(config.VM_NAME[1], nic=nic_name):
+                raise exceptions.NetworkException(
                     "NIC %s is plugged but shouldn't" % nic_name
                 )
 
         logger.info("Updating both NICs with empty networks")
         for nic_name in (config.NIC_NAME[2], config.NIC_NAME[1]):
-            if not updateNic(True, config.VM_NAME[1], nic_name, network=None):
-                raise NetworkException("Couldn't update nic with empty net")
+            if not ll_vms.updateNic(
+                True, config.VM_NAME[1], nic_name, network=None
+            ):
+                raise exceptions.NetworkException(
+                    "Couldn't update nic with empty net"
+                )
 
         logger.info("Testing that update nics with empty networks succeeded")
         for nic_name in (config.NIC_NAME[2], config.NIC_NAME[1]):
-            if getVmNicNetwork(config.VM_NAME[1], nic=nic_name):
-                raise NetworkException(
+            if ll_vms.getVmNicNetwork(config.VM_NAME[1], nic=nic_name):
+                raise exceptions.NetworkException(
                     "Update %s with empty Net failed" % nic_name
                 )
 
@@ -317,18 +331,18 @@ class TestLinkedCase3(TestCase):
             "Updating both NICs with its original networks and plugging them"
         )
         for nic_name in (config.NIC_NAME[2], config.NIC_NAME[1]):
-            if not updateNic(
+            if not ll_vms.updateNic(
                     True, config.VM_NAME[1], nic_name, plugged="true"
             ):
-                raise NetworkException(
+                raise exceptions.NetworkException(
                     "Couldn't update nic with original network or couldn't "
                     "plug them"
                 )
 
         logger.info("Checking that plugged state on NICs was updated")
         for nic_name in (config.NIC_NAME[2], config.NIC_NAME[1]):
-            if not getVmNicPlugged(config.VM_NAME[1], nic=nic_name):
-                raise NetworkException(
+            if not ll_vms.getVmNicPlugged(config.VM_NAME[1], nic=nic_name):
+                raise exceptions.NetworkException(
                     "NIC %s isn't plugged but should be" % nic_name
                 )
 
@@ -340,7 +354,7 @@ class TestLinkedCase3(TestCase):
         logger.info("Starting the teardown_class")
         logger.info("Updating all the nics besides mgmt network to unplugged")
         for nic_name in (config.NIC_NAME[2], config.NIC_NAME[1]):
-            if not updateNic(
+            if not ll_vms.updateNic(
                     True, config.VM_NAME[1], nic_name, plugged="false"
             ):
                 logger.error(
@@ -349,7 +363,9 @@ class TestLinkedCase3(TestCase):
 
         logger.info("Removing all the VNICs besides mgmt network")
         for i in range(2):
-            if not removeNic(True, config.VM_NAME[1], config.NIC_NAME[i+1]):
+            if not ll_vms.removeNic(
+                True, config.VM_NAME[1], config.NIC_NAME[i+1]
+            ):
                 logger.error(
                     "Cannot remove nic %s from setup", config.NIC_NAME[i + 1]
                 )
@@ -372,23 +388,23 @@ class TestLinkedCase4(TestCase):
         logger.info(
             "Creating network %s on DC, Cluster", config.NETWORKS[0]
         )
-        if not addNetwork(
+        if not ll_networks.addNetwork(
                 True, name=config.NETWORKS[0], data_center=config.DC_NAME[0]
         ):
-            raise NetworkException("Cannot add network to DC")
+            raise exceptions.NetworkException("Cannot add network to DC")
 
-        if not addNetworkToCluster(
+        if not ll_networks.addNetworkToCluster(
                 True, network=config.NETWORKS[0],
                 cluster=config.CLUSTER_NAME[0], required="false"
         ):
-            raise NetworkException("Cannot add network to Cluster")
+            raise exceptions.NetworkException("Cannot add network to Cluster")
 
         logger.info("Adding network to VM")
-        if not addNic(
+        if not ll_vms.addNic(
                 True, config.VM_NAME[1], name=config.NIC_NAME[5],
                 network=config.NETWORKS[0]
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot add VNIC %s to VM" % config.NIC_NAME[5]
             )
 
@@ -401,9 +417,9 @@ class TestLinkedCase4(TestCase):
             "Try to start VM with network that is not present on the host in "
             "the Cluster. NIC: nic6, Network: %s", config.VLAN_NETWORKS[0]
         )
-        startVm(positive=None, vm=config.VM_NAME[1])
-        if not waitForVMState(vm=config.VM_NAME[1], state="down"):
-            raise NetworkException(
+        ll_vms.startVm(positive=None, vm=config.VM_NAME[1])
+        if not ll_vms.waitForVMState(vm=config.VM_NAME[1], state="down"):
+            raise exceptions.NetworkException(
                 "%s is up, should be down" % config.VM_NAME[1]
             )
 
@@ -414,19 +430,19 @@ class TestLinkedCase4(TestCase):
         """
         logger.info("Starting the teardown_class")
         logger.info("Updating all the NICs besides MGMT network to unplugged")
-        if not updateNic(
+        if not ll_vms.updateNic(
             True, config.VM_NAME[1], config.NIC_NAME[5], plugged="false"
         ):
             logger.error(
                 "Couldn't update nic %s to be unplugged", config.NIC_NAME[5]
             )
 
-        if not removeNic(True, config.VM_NAME[1], config.NIC_NAME[5]):
+        if not ll_vms.removeNic(True, config.VM_NAME[1], config.NIC_NAME[5]):
             logger.error(
                 "Cannot remove nic %s from setup", config.NIC_NAME[5]
             )
 
-        if not removeNetwork(
+        if not ll_networks.removeNetwork(
                 True, network=config.NETWORKS[0],
                 data_center=config.DC_NAME[0]
         ):
@@ -448,7 +464,7 @@ class TestLinkedCase5(TestCase):
         Create 1 plugged/linked VNIC with port mirroring enabled
         on running VM
         """
-        if not addVnicProfile(
+        if not ll_networks.addVnicProfile(
                 positive=True, name=config.VNIC_PROFILE[0],
                 cluster=config.CLUSTER_NAME[0],
                 network=config.VLAN_NETWORKS[0], port_mirroring=True
@@ -460,12 +476,12 @@ class TestLinkedCase5(TestCase):
             )
 
         logger.info("Creating plugged/linked VNIC with port mirroring on sw1")
-        if not addNic(
+        if not ll_vms.addNic(
                 True, vm=config.VM_NAME[0], name=config.NIC_NAME[1],
                 vnic_profile=config.VNIC_PROFILE[0],
                 network=config.VLAN_NETWORKS[0]
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot add VNIC %s to VM" % config.NIC_NAME[1]
             )
 
@@ -475,20 +491,20 @@ class TestLinkedCase5(TestCase):
         Check scenarios for port mirroring network
         """
         logger.info("Try to switch link down ")
-        if not updateNic(
+        if not ll_vms.updateNic(
             False, config.VM_NAME[0], config.NIC_NAME[1], linked="false"
         ):
-            raise NetworkException("Unlink NIC2 failed")
+            raise exceptions.NetworkException("Unlink NIC2 failed")
         logger.info("Unplug VNIC")
-        if not updateNic(
+        if not ll_vms.updateNic(
             True, config.VM_NAME[0], config.NIC_NAME[1], plugged="false"
         ):
-            raise NetworkException("Unplug NIC2 failed")
+            raise exceptions.NetworkException("Unplug NIC2 failed")
         logger.info("Plugging VNIC back")
-        if not updateNic(
+        if not ll_vms.updateNic(
                 True, config.VM_NAME[0], config.NIC_NAME[1], plugged="true"
         ):
-            raise NetworkException("Plug NIC2 failed")
+            raise exceptions.NetworkException("Plug NIC2 failed")
 
     @classmethod
     def teardown_class(cls):
@@ -497,17 +513,17 @@ class TestLinkedCase5(TestCase):
         """
         logger.info("Starting the teardown_class")
         logger.info("Updating the nics besides mgmt network to unplugged")
-        if not updateNic(
+        if not ll_vms.updateNic(
             True, config.VM_NAME[0], config.NIC_NAME[1], plugged="false"
         ):
             logger.error("Couldn't update nics to be unplugged")
 
         logger.info("Removing all the VNICs besides mgmt network")
-        if not removeNic(True, config.VM_NAME[0], config.NIC_NAME[1]):
+        if not ll_vms.removeNic(True, config.VM_NAME[0], config.NIC_NAME[1]):
             logger.error("Cannot remove nic from setup")
 
         logger.info("Removing vnic profile")
-        if not removeVnicProfile(
+        if not ll_networks.removeVnicProfile(
                 positive=True, vnic_profile_name=config.VNIC_PROFILE[0],
                 network=config.VLAN_NETWORKS[0]
         ):
@@ -532,12 +548,12 @@ class TestLinkedCase6(TestCase):
         logger.info("Creating VNICs with different link states on running VM")
         link_param_list = ["true", "false"]
         for i in range(len(link_param_list)):
-            if not addNic(
+            if not ll_vms.addNic(
                     True, config.VM_NAME[0], name=config.NIC_NAME[i+1],
                     network=config.VLAN_NETWORKS[0], plugged="true",
                     linked=link_param_list[i]
             ):
-                raise NetworkException(
+                raise exceptions.NetworkException(
                     "Cannot add VNIC %s to VM" % config.NIC_NAME[i + 1]
                 )
 
@@ -550,64 +566,70 @@ class TestLinkedCase6(TestCase):
         """
         link_param_list = ["false", "true"]
         logger.info("Checking linked state of nic2/nic3 to be True/False")
-        if not getVmNicLinked(config.VM_NAME[0], nic=config.NIC_NAME[1]):
-            raise NetworkException(
+        if not ll_vms.getVmNicLinked(
+            config.VM_NAME[0], nic=config.NIC_NAME[1]
+        ):
+            raise exceptions.NetworkException(
                 "NIC2  isn't linked but should be"
             )
-        if getVmNicLinked(config.VM_NAME[0], nic=config.NIC_NAME[2]):
-            raise NetworkException(
+        if ll_vms.getVmNicLinked(config.VM_NAME[0], nic=config.NIC_NAME[2]):
+            raise exceptions.NetworkException(
                 "NIC3 is linked but shouldn't be"
             )
         logger.info("Changing the NICs names and Updating opposite link state")
         for i in range(2):
-            if not updateNic(
+            if not ll_vms.updateNic(
                     True, config.VM_NAME[0], config.NIC_NAME[i+1],
                     name="vnic%s" % (i + 2)
             ):
                 logger.error("Couldn't update the NICs name")
 
         for i in range(2):
-            sample = TimeoutingSampler(
-                timeout=config.SAMPLER_TIMEOUT, sleep=1, func=updateNic,
+            sample = apis_utils.TimeoutingSampler(
+                timeout=config.SAMPLER_TIMEOUT, sleep=1, func=ll_vms.updateNic,
                 positive=True, vm=config.VM_NAME[0], nic="vnic%s" % (i + 2),
                 network=config.VLAN_NETWORKS[0],
                 vnic_profile=config.VLAN_NETWORKS[0],
                 linked=link_param_list[i]
             )
             if not sample.waitForFuncStatus(result=True):
-                raise NetworkException("Couldn't update correct linked state")
+                raise exceptions.NetworkException(
+                    "Couldn't update correct linked state"
+                )
 
         logger.info("Checking linked state on vnic2/vnic3 to be False/True")
-        if not getVmNicLinked(config.VM_NAME[0], nic="vnic3"):
-            raise NetworkException(
+        if not ll_vms.getVmNicLinked(config.VM_NAME[0], nic="vnic3"):
+            raise exceptions.NetworkException(
                 "VNIC3 isn't linked but should be"
             )
-        if getVmNicLinked(config.VM_NAME[0], nic="vnic2"):
-            raise NetworkException(
+        if ll_vms.getVmNicLinked(config.VM_NAME[0], nic="vnic2"):
+            raise exceptions.NetworkException(
                 "VNIC2 is linked but shouldn't be"
             )
 
         logger.info("Updating both NICs with empty networks")
         for nic_name in ("vnic3", "vnic2"):
-            if not updateNic(True, config.VM_NAME[0], nic_name, network=None):
+            if not ll_vms.updateNic(
+                True, config.VM_NAME[0], nic_name, network=None
+            ):
                 logger.error("Couldn't update NIC with empty network")
 
         logger.info("Testing that update nics with empty networks succeeded")
         for nic_name in ("vnic3", "vnic2"):
-            if getVmNicNetwork(config.VM_NAME[0], nic=nic_name):
-                raise NetworkException(
+            if ll_vms.getVmNicNetwork(config.VM_NAME[0], nic=nic_name):
+                raise exceptions.NetworkException(
                     "Update %s with empty network failed" % nic_name
                 )
         logger.info(
             "Update both NICs with their original networks and unplug them"
         )
         if not (
-                updateNic(
+                ll_vms.updateNic(
                 True, config.VM_NAME[0], "vnic3",
                 network=config.VLAN_NETWORKS[1],
                 vnic_profile=config.VLAN_NETWORKS[1], plugged="false"
                 )
-                and updateNic(
+                and ll_vms.updateNic(
                 True, config.VM_NAME[0], "vnic2",
                 network=config.VLAN_NETWORKS[0],
                 vnic_profile=config.VLAN_NETWORKS[0], plugged="false"
@@ -622,50 +644,58 @@ class TestLinkedCase6(TestCase):
             "Testing that update NICs with non-empty networks succeeds"
         )
         for nic_name in ("vnic3", "vnic2"):
-            if not getVmNicNetwork(config.VM_NAME[0], nic=nic_name):
-                raise NetworkException(
+            if not ll_vms.getVmNicNetwork(config.VM_NAME[0], nic=nic_name):
+                raise exceptions.NetworkException(
                     "Update %s with non-empty Net failed" % nic_name
                 )
 
         logger.info("Checking that plugged state on NICs was updated")
         for nic_name in ("vnic3", "vnic2"):
-            if getVmNicPlugged(config.VM_NAME[0], nic=nic_name):
-                raise NetworkException(
+            if ll_vms.getVmNicPlugged(config.VM_NAME[0], nic=nic_name):
+                raise exceptions.NetworkException(
                     "%s is plugged, but shouldn't be" % nic_name
                 )
 
         logger.info("Changing the NICs names to the original ones")
-        if not (updateNic(
+        if not (ll_vms.updateNic(
                 True, config.VM_NAME[0], "vnic3", name=config.NIC_NAME[2])
                 and
-                updateNic(
+                ll_vms.updateNic(
                 True, config.VM_NAME[0], "vnic2", name=config.NIC_NAME[1])
                 ):
-            raise NetworkException("Couldn't update NICs with original names")
+            raise exceptions.NetworkException(
+                "Couldn't update NICs with original names"
+            )
 
         logger.info("Updating both NICs with empty networks")
         for nic_name in (config.NIC_NAME[2], config.NIC_NAME[1]):
-            if not updateNic(True, config.VM_NAME[0], nic_name, network=None):
-                raise NetworkException("Couldn't update NICs to empty nets")
+            if not ll_vms.updateNic(
+                True, config.VM_NAME[0], nic_name, network=None
+            ):
+                raise exceptions.NetworkException(
+                    "Couldn't update NICs to empty nets"
+                )
 
         logger.info("Testing that update nics with empty networks succeeded")
         for nic_name in (config.NIC_NAME[2], config.NIC_NAME[1]):
-            if getVmNicNetwork(config.VM_NAME[0], nic=nic_name):
-                raise NetworkException(
+            if ll_vms.getVmNicNetwork(config.VM_NAME[0], nic=nic_name):
+                raise exceptions.NetworkException(
                     "Update %s with empty Net failed" % nic_name
                 )
 
         logger.info("Updating both NICs to be plugged")
         for nic_name in (config.NIC_NAME[2], config.NIC_NAME[1]):
-            if not updateNic(
+            if not ll_vms.updateNic(
                     True, config.VM_NAME[0], nic_name, plugged="true"
             ):
-                raise NetworkException("Couldn't update NIC to be plugged")
+                raise exceptions.NetworkException(
+                    "Couldn't update NIC to be plugged"
+                )
 
         logger.info("Checking that plugged state on NICs was updated")
         for nic_name in (config.NIC_NAME[2], config.NIC_NAME[1]):
-            if not getVmNicPlugged(config.VM_NAME[0], nic=nic_name):
-                raise NetworkException(
+            if not ll_vms.getVmNicPlugged(config.VM_NAME[0], nic=nic_name):
+                raise exceptions.NetworkException(
                     "%s is not plugged, but should be" % nic_name
                 )
 
@@ -679,14 +709,14 @@ class TestLinkedCase6(TestCase):
             "Updating all the networks besides mgmt network to unplugged"
         )
         for nic_name in (config.NIC_NAME[2], config.NIC_NAME[1]):
-            if not updateNic(
+            if not ll_vms.updateNic(
                     True, config.VM_NAME[0], nic_name, plugged="false"
             ):
                 logger.error("Couldn't unplugg nic2/nic3 networks ")
 
         logger.info("Removing all the VNICs besides mgmt network")
         for index in range(2):
-            if not removeNic(
+            if not ll_vms.removeNic(
                 True, config.VM_NAME[0], config.NIC_NAME[index+1]
             ):
                 logger.error("Cannot remove nic from setup")
@@ -705,19 +735,19 @@ class TestLinkedCase7(TestCase):
         Create 1 VNIC on non-running VM
         """
         logger.info("Creating VNICs on non-running VM")
-        if not addNic(
+        if not ll_vms.addNic(
                 True, config.VM_NAME[1], name=config.NIC_NAME[1],
                 network=config.VLAN_NETWORKS[0], plugged="true",
                 linked="true"
         ):
-            raise NetworkException("Cannot add VNIC to VM")
+            raise exceptions.NetworkException("Cannot add VNIC to VM")
 
-        if not addVnicProfile(
+        if not ll_networks.addVnicProfile(
                 positive=True, name=config.VNIC_PROFILE[0],
                 cluster=config.CLUSTER_NAME[0],
                 network=config.VLAN_NETWORKS[1], port_mirroring=True
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Failed to add %s profile with %s network to %s" % (
                     config.VNIC_PROFILE[0], config.VLAN_NETWORKS[1],
                     config.CLUSTER_NAME[0])
@@ -729,73 +759,75 @@ class TestLinkedCase7(TestCase):
         Change plugged, network and name at once on VNIC of VM
         """
         logger.info("Changing nic2 plugged, network and name params")
-        if not updateNic(
+        if not ll_vms.updateNic(
                 True, config.VM_NAME[1], config.NIC_NAME[1], name="vnic2",
                 network=config.VLAN_NETWORKS[1],
                 vnic_profile=config.VLAN_NETWORKS[1], plugged="false"
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Couldn't update nic with plugged, network and name params"
             )
         logger.info("Checking plugged state on nic2 to be False")
-        if getVmNicPlugged(config.VM_NAME[1], nic="vnic2"):
-            raise NetworkException(
+        if ll_vms.getVmNicPlugged(config.VM_NAME[1], nic="vnic2"):
+            raise exceptions.NetworkException(
                 "VNIC2 is plugged, but shouldn't be"
             )
 
         logger.info("Changing nic2 linked, network and name params")
-        if not updateNic(
+        if not ll_vms.updateNic(
                 True, config.VM_NAME[1], "vnic2", name=config.NIC_NAME[1],
                 network=config.VLAN_NETWORKS[0],
                 vnic_profile=config.VLAN_NETWORKS[0], linked="false"
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Couldn't update nic with linked, network and name params"
             )
-        if getVmNicLinked(config.VM_NAME[1], nic=config.NIC_NAME[1]):
-            raise NetworkException(
+        if ll_vms.getVmNicLinked(config.VM_NAME[1], nic=config.NIC_NAME[1]):
+            raise exceptions.NetworkException(
                 "NIC2 is linked, but shouldn't be"
             )
 
         if not net_help.run_vm_once_specific_host(
             vm=config.VM_NAME[1], host=config.HOSTS[0], wait_for_ip=True
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Cannot start VM %s at host %s" %
                 (config.VM_NAME[1], config.HOSTS[0])
             )
         logger.info("Changing linked and plugged to True ")
         logger.info("Changing network and turning on port mirroring")
-        if not updateNic(
+        if not ll_vms.updateNic(
                 True, config.VM_NAME[1], config.NIC_NAME[1], linked="true",
                 plugged="true", network=config.VLAN_NETWORKS[1],
                 vnic_profile=config.VNIC_PROFILE[0]
         ):
-            raise NetworkException("Cannot change net and turn pm on")
+            raise exceptions.NetworkException(
+                "Cannot change net and turn pm on"
+            )
 
         logger.info("Try updating nic with new mac and interface type:")
         logger.info("Test should fail updating")
-        if not updateNic(
+        if not ll_vms.updateNic(
             False, config.VM_NAME[1], config.NIC_NAME[1],
             interface=config.NIC_TYPE_RTL8139, mac_address="12:22:33:44:55:66"
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Updating NIC with new MAC and int type succeeded"
             )
-        if not updateNic(
+        if not ll_vms.updateNic(
                 True, config.VM_NAME[1], config.NIC_NAME[1],
                 network=config.VLAN_NETWORKS[1],
                 vnic_profile=config.VLAN_NETWORKS[1], linked="false",
                 plugged="false"
         ):
-            raise NetworkException("Cannot update linked state")
+            raise exceptions.NetworkException("Cannot update linked state")
 
         logger.info("Updating nic with new mac and interface type")
-        if not updateNic(
+        if not ll_vms.updateNic(
             True, config.VM_NAME[1], config.NIC_NAME[1],
             interface=config.NIC_TYPE_RTL8139, mac_address="00:22:33:44:55:66"
         ):
-            raise NetworkException(
+            raise exceptions.NetworkException(
                 "Updating NIC2 with new MAC and int type failed"
             )
 
@@ -808,23 +840,23 @@ class TestLinkedCase7(TestCase):
         logger.info("Updating all the NICs besides mgmt network to unplugged")
 
         logger.info("Updating nics to be unplugged")
-        if not updateNic(
+        if not ll_vms.updateNic(
             True, config.VM_NAME[1], config.NIC_NAME[1], plugged="false"
         ):
             logger.error("Cannot unplugged nic %s ", config.NIC_NAME[1])
 
         logger.info("Removing all the VNICs besides MGMT network")
-        if not removeNic(True, config.VM_NAME[1], config.NIC_NAME[1]):
+        if not ll_vms.removeNic(True, config.VM_NAME[1], config.NIC_NAME[1]):
             logger.error(
                 "Cannot remove nic %s from setup", config.NIC_NAME[1]
             )
 
-        if not removeVnicProfile(
+        if not ll_networks.removeVnicProfile(
                 positive=True, vnic_profile_name=config.VNIC_PROFILE[0],
                 network=config.VLAN_NETWORKS[1]
         ):
             logger.error(
                 "Cannot remove VNIC profile %s", config.VNIC_PROFILE[0])
 
-        if not stopVm(True, vm=config.VM_NAME[1]):
+        if not ll_vms.stopVm(True, vm=config.VM_NAME[1]):
             logger.error("Cannot stop VM %s", config.VM_NAME[1])
