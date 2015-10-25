@@ -5,12 +5,12 @@ network team init file
 
 import logging
 import config
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.templates as ll_templates
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 logger = logging.getLogger("GE_Network_cleanup")
 
@@ -48,7 +48,6 @@ def network_cleanup():
     Remove unneeded VMs NICs
     Remove unneeded templates
     Remove unneeded templates NICs
-    Clean hosts interfaces labels
     Remove unneeded networks
     Remove unneeded vNIC profiles
     Setting all hosts up
@@ -62,7 +61,6 @@ def network_cleanup():
         remove_unneeded_vms_nics()
         remove_unneeded_templates()
         remove_unneeded_templates_nics()
-        clean_hosts_interfaces_labels()
         remove_unneeded_networks()
         remove_unneeded_vnic_profiles()
         set_hosts_up()
@@ -97,19 +95,6 @@ def stop_all_vms():
             logger.info("%s state is %s, stopping VM", vm_name, vm_state)
             if not ll_vms.stopVm(True, vm_name):
                 logger.error("Failed to stop VM: %s", vm_name)
-
-
-@ignore_exception
-def clean_hosts_interfaces_labels():
-    """
-    Clean hosts interfaces labels
-    """
-    logger.info("Clean all labels for hosts interfaces")
-    for host in config.VDS_HOSTS:
-        host_name = ll_hosts.get_host_name_from_engine(host.ip)
-        logger.info("Removing labels from %s", host_name)
-        if not ll_networks.remove_label(host_nic_dict={host_name: host.nics}):
-            logger.error("Couldn't remove labels from %s", host_name)
 
 
 @ignore_exception
@@ -270,10 +255,9 @@ def clean_hosts_interfaces():
     """
     Clean all hosts interfaces
     """
-    if not hl_networks.createAndAttachNetworkSN(
-        host=config.VDS_HOSTS, auto_nics=[0]
-    ):
-        logger.error("Failed to clean hosts interfaces")
+    for host in config.HOSTS:
+        if not hl_host_network.clean_host_interfaces(host_name=host):
+            logger.error("Failed to clean %s interfaces", host)
 
 
 @ignore_exception
