@@ -73,9 +73,11 @@ ADDIGEST_EXTENSION = {
     'authn_name': 'ldap-authn-test_digest_ad',
 }
 
-ADDIGEST_USER = 'vdcadmin'
+ADDIGEST_USER = 'userportal1'
 ADDIGEST_USER_DOMAIN = 'qa.lab.tlv.redhat.com'
 ADDIGEST_PASSWORD = '123456'
+ADDIGEST_NAMESPACE = 'DC=qa,DC=lab,DC=tlv,DC=redhat,DC=com'
+
 
 IPAGSSAPI_EXTENSION = {
     'authz_file': 'ldap-authz-test_gssapi_ipa.properties',

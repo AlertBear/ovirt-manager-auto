@@ -39,13 +39,18 @@ class DirectLogin(TestCase):
     USER = None
     PASSWORD = None
     DOMAIN = None
+    NAMESPACE = None
 
     def setUp(self):
         user_upn = user = self.USER
         if self.DOMAIN:
             user_upn = '%s@%s' % (self.USER, self.DOMAIN)
-        users.addUser(True, user_name=user,
-                      domain=self.conf['authz_name'])
+        users.addUser(
+            True,
+            user_name=user,
+            domain=self.conf['authz_name'],
+            namespace=self.NAMESPACE,
+        )
         mla.addClusterPermissionsToUser(True, user_upn,
                                         config.DEFAULT_CLUSTER_NAME,
                                         config.USERROLE,
@@ -76,6 +81,7 @@ class ADDigestMD5(DirectLogin):
     USER = config.ADDIGEST_USER
     PASSWORD = config.ADDIGEST_PASSWORD
     DOMAIN = config.ADDIGEST_USER_DOMAIN
+    NAMESPACE = config.ADDIGEST_NAMESPACE
 
     @polarion('RHEVM3-8229')
     @common.check(config.EXTENSIONS)
