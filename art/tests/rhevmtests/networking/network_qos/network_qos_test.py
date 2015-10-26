@@ -6,31 +6,20 @@ Testing network VM QoS feature.
 1 DC, 1 Cluster, 2 Hosts and 1 VM will be created for testing.
 Create, update, remove and migration tests will be done for Network QoS feature
 """
-import logging
-from rhevmtests.networking import config
-from art.unittest_lib import attr
-from art.unittest_lib import NetworkTest as TestCase
 
-from art.test_handler.exceptions import NetworkException
+import helper
+import config
+import logging
+from art.unittest_lib import attr
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.rhevm_api.tests_lib.low_level.datacenters import(
-    add_qos_to_datacenter, update_qos_in_datacenter,
-    delete_qos_from_datacenter
-)
-from art.rhevm_api.tests_lib.low_level.networks import removeVnicProfile
-from art.rhevm_api.tests_lib.low_level.vms import(
-    addNic, updateNic, removeNic, stopVm, migrateVm, restartVm, startVm
-)
-from rhevmtests.networking.network_qos.helper import(
-    compare_qos, build_dict, add_qos_profile_to_nic
-)
+from art.unittest_lib import NetworkTest as TestCase
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 
 logger = logging.getLogger("Network_VNIC_QoS_Tests")
 
-QOS_NAME = ("QoSProfile1", "QoSProfile2")
-QOS_TYPE = "network"
-BW_PARAMS = (10, 10, 100)
-UPDATED_BW_PARAMS = (5, 5, 50)
+
 ########################################################################
 
 ########################################################################
@@ -44,6 +33,8 @@ class TestNetQOSCase01(TestCase):
     Add new network QOS
     """
     __test__ = True
+    qos_name = config.QOS_NAME[0]
+    vnic_profile = config.VNIC_PROFILE[0]
 
     @polarion("RHEVM3-3998")
     def test_add_network_qos(self):
@@ -57,42 +48,47 @@ class TestNetQOSCase01(TestCase):
 
         """
         logger.info("Create new Network QoS profile under DC")
-        if not add_qos_to_datacenter(
-                datacenter=config.DC_NAME[0],
-                qos_name=QOS_NAME[0], qos_type=QOS_TYPE,
-                inbound_average=BW_PARAMS[0], inbound_peak=BW_PARAMS[1],
-                inbound_burst=BW_PARAMS[2],
-                outbound_average=BW_PARAMS[0], outbound_peak=BW_PARAMS[1],
-                outbound_burst=BW_PARAMS[2]
+        if not ll_datacenters.add_qos_to_datacenter(
+            datacenter=config.DC_NAME,
+            qos_name=self.qos_name, qos_type=config.QOS_TYPE,
+            inbound_average=config.BW_PARAMS[0],
+            inbound_peak=config.BW_PARAMS[1],
+            inbound_burst=config.BW_PARAMS[2],
+            outbound_average=config.BW_PARAMS[0],
+            outbound_peak=config.BW_PARAMS[1],
+            outbound_burst=config.BW_PARAMS[2]
         ):
-            raise NetworkException("Couldn't create Network QOS under DC")
-        logger.info(
-            "Create VNIC profile with QoS and add it to the VNIC"
+            raise config.NET_EXCEPTION("Couldn't create Network QOS under DC")
+
+        logger.info("Create VNIC profile with QoS and add it to the VNIC")
+        helper.add_qos_profile_to_nic(
+            qos_name=self.qos_name, vnic_profile_name=self.vnic_profile
         )
-        add_qos_profile_to_nic()
         inbound_dict = {
-            "average": BW_PARAMS[0], "peak": BW_PARAMS[1],
-            "burst": BW_PARAMS[2]
+            "average": config.BW_PARAMS[0],
+            "peak": config.BW_PARAMS[1],
+            "burst": config.BW_PARAMS[2]
         }
         outbound_dict = {
-            "average": BW_PARAMS[0], "peak": BW_PARAMS[1],
-            "burst": BW_PARAMS[2]
+            "average": config.BW_PARAMS[0],
+            "peak": config.BW_PARAMS[1],
+            "burst": config.BW_PARAMS[2]
         }
 
-        dict_compare = build_dict(
+        dict_compare = helper.build_dict(
             inbound_dict=inbound_dict, outbound_dict=outbound_dict,
-            vm=config.VM_NAME[0], nic=config.NIC_NAME[1]
+            vm=config.VM_NAME_0, nic=config.NIC_NAME_1
         )
 
         logger.info(
             "Compare provided QoS %s and %s exists with libvirt values",
             inbound_dict, outbound_dict
         )
-        if not compare_qos(
-            host_obj=config.VDS_HOSTS[0], vm_name=config.VM_NAME[0],
+        if not helper.compare_qos(
+            host_obj=config.VDS_HOST, vm_name=config.VM_NAME_0,
             **dict_compare
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Provided QoS values %s and %s are not equal to what was "
                 "found on libvirt" % (inbound_dict, outbound_dict)
             )
@@ -105,33 +101,32 @@ class TestNetQOSCase01(TestCase):
         3) Remove Network QoS
         """
         logger.info(
-            "Remove VNIC %s from VM %s", config.NIC_NAME[1], config.VM_NAME[0]
+            "Remove VNIC %s from VM %s", config.NIC_NAME_1, config.VM_NAME_0
         )
-        if not updateNic(
-            True, config.VM_NAME[0], config.NIC_NAME[1], plugged="false"
+        if not ll_vms.updateNic(
+            True, config.VM_NAME_0, config.NIC_NAME_1, plugged="false"
         ):
-            logger.error("Couldn't unplug NIC %s", config.NIC_NAME[1])
+            logger.error("Couldn't unplug NIC %s", config.NIC_NAME_1)
 
-        if not removeNic(True, config.VM_NAME[0], config.NIC_NAME[1]):
+        if not ll_vms.removeNic(True, config.VM_NAME_0, config.NIC_NAME_1):
             logger.error(
                 "Couldn't remove VNIC %s from VM %s",
-                config.NIC_NAME[1], config.VM_NAME[0]
+                config.NIC_NAME_1, config.VM_NAME_0
             )
-
-        logger.info(
-            "Remove VNIC profile %s", config.VNIC_PROFILE[0]
-        )
-        if not removeVnicProfile(
-            positive=True, vnic_profile_name=config.VNIC_PROFILE[0],
-            network=config.MGMT_BRIDGE, data_center=config.DC_NAME[0]
+        logger.info("Remove VNIC profile %s", cls.vnic_profile)
+        if not ll_networks.removeVnicProfile(
+            positive=True, vnic_profile_name=cls.vnic_profile,
+            network=config.MGMT_BRIDGE, data_center=config.DC_NAME
         ):
             logger.error(
-                "Couldn't remove VNIC profile %s", config.VNIC_PROFILE[0]
+                "Couldn't remove VNIC profile %s", cls.vnic_profile
             )
-        if not delete_qos_from_datacenter(config.DC_NAME[0], QOS_NAME[0]):
+        if not ll_datacenters.delete_qos_from_datacenter(
+            config.DC_NAME, cls.qos_name
+        ):
             logger.error(
                 "Couldn't delete the QoS %s from DC %s",
-                QOS_NAME[0], config.DC_NAME[0]
+                cls.qos_name, config.DC_NAME
             )
 
 
@@ -141,6 +136,9 @@ class TestNetQOSCase02(TestCase):
     Update Network QoS
     """
     __test__ = True
+    bz = {"1274187": {"engine": None, "version": ["3.6"]}}
+    qos_name = config.QOS_NAME[1]
+    vnic_profile = config.VNIC_PROFILE[1]
 
     @classmethod
     def setup_class(cls):
@@ -150,36 +148,38 @@ class TestNetQOSCase02(TestCase):
         3) Create VNIC profile with configured QoS and add it to the NIC of
         the VM
         """
-        logger.info(
-            "Create new Network QoS profile under DC"
-        )
-        if not add_qos_to_datacenter(
-            datacenter=config.DC_NAME[0],
-            qos_name=QOS_NAME[0], qos_type=QOS_TYPE,
-            inbound_average=BW_PARAMS[0], inbound_peak=BW_PARAMS[1],
-            inbound_burst=BW_PARAMS[2],
-            outbound_average=BW_PARAMS[0], outbound_peak=BW_PARAMS[1],
-            outbound_burst=BW_PARAMS[2]
+        logger.info("Create new Network QoS profile under DC")
+        if not ll_datacenters.add_qos_to_datacenter(
+            datacenter=config.DC_NAME,
+            qos_name=cls.qos_name, qos_type=config.QOS_TYPE,
+            inbound_average=config.BW_PARAMS[0],
+            inbound_peak=config.BW_PARAMS[1],
+            inbound_burst=config.BW_PARAMS[2],
+            outbound_average=config.BW_PARAMS[0],
+            outbound_peak=config.BW_PARAMS[1],
+            outbound_burst=config.BW_PARAMS[2]
         ):
-            raise NetworkException(
-                "Couldn't create Network QOS %s under DC" % QOS_NAME[0]
+            raise config.NET_EXCEPTION(
+                "Couldn't create Network QOS %s under DC" % cls.qos_name
             )
         logger.info(
             "Create VNIC profile with QoS %s and add it to the VNIC on %s",
-            QOS_NAME[0], config.VM_NAME[0]
+            cls.qos_name, config.VM_NAME_0
         )
-        add_qos_profile_to_nic()
+        helper.add_qos_profile_to_nic(
+            qos_name=cls.qos_name, vnic_profile_name=cls.vnic_profile
+        )
 
         logger.info(
             "Add VNIC with VNIC profile %s with QOS %s to VM %s",
-            config.VNIC_PROFILE[0], QOS_NAME[0], config.VM_NAME[1]
+            cls.vnic_profile, cls.qos_name, config.VM_NAME_1
         )
-        if not addNic(
-            True, config.VM_NAME[1], name=config.NIC_NAME[1],
-            network=config.MGMT_BRIDGE, vnic_profile=config.VNIC_PROFILE[0]
+        if not ll_vms.addNic(
+            True, config.VM_NAME_1, name=config.NIC_NAME_1,
+            network=config.MGMT_BRIDGE, vnic_profile=cls.vnic_profile
         ):
-            raise NetworkException(
-                "Couldn't add VNIC with QoS to VM %s" % config.VM_NAME[1]
+            raise config.NET_EXCEPTION(
+                "Couldn't add VNIC with QoS to VM %s" % config.VM_NAME_1
             )
 
     @polarion("RHEVM3-3999")
@@ -196,81 +196,80 @@ class TestNetQOSCase02(TestCase):
         logger.info(
             "Update existing Network QoS profile under DC"
         )
-        if not update_qos_in_datacenter(
-            datacenter=config.DC_NAME[0],
-            qos_name=QOS_NAME[0], new_name="newQoS",
-            inbound_average=UPDATED_BW_PARAMS[0],
-            inbound_peak=UPDATED_BW_PARAMS[1],
-            inbound_burst=UPDATED_BW_PARAMS[2],
-            outbound_average=UPDATED_BW_PARAMS[0],
-            outbound_peak=UPDATED_BW_PARAMS[1],
-            outbound_burst=UPDATED_BW_PARAMS[2]
+        if not ll_datacenters.update_qos_in_datacenter(
+            datacenter=config.DC_NAME,
+            qos_name=self.qos_name, new_name="newQoS",
+            inbound_average=config.UPDATED_BW_PARAMS[0],
+            inbound_peak=config.UPDATED_BW_PARAMS[1],
+            inbound_burst=config.UPDATED_BW_PARAMS[2],
+            outbound_average=config.UPDATED_BW_PARAMS[0],
+            outbound_peak=config.UPDATED_BW_PARAMS[1],
+            outbound_burst=config.UPDATED_BW_PARAMS[2]
         ):
-            raise NetworkException("Couldn't update Network QOS under DC")
+            raise config.NET_EXCEPTION("Couldn't update Network QOS under DC")
 
         inbound_dict = {
-            "average": UPDATED_BW_PARAMS[0], "peak": UPDATED_BW_PARAMS[1],
-            "burst": UPDATED_BW_PARAMS[2]
+            "average": config.UPDATED_BW_PARAMS[0],
+            "peak": config.UPDATED_BW_PARAMS[1],
+            "burst": config.UPDATED_BW_PARAMS[2]
         }
         outbound_dict = {
-            "average": UPDATED_BW_PARAMS[0], "peak": UPDATED_BW_PARAMS[1],
-            "burst": UPDATED_BW_PARAMS[2]
+            "average": config.UPDATED_BW_PARAMS[0],
+            "peak": config.UPDATED_BW_PARAMS[1],
+            "burst": config.UPDATED_BW_PARAMS[2]
         }
-        dict_compare = build_dict(
+        dict_compare = helper.build_dict(
             inbound_dict=inbound_dict, outbound_dict=outbound_dict,
-            vm=config.VM_NAME[0], nic=config.NIC_NAME[1]
+            vm=config.VM_NAME_0, nic=config.NIC_NAME_1
         )
 
         logger.info(
             "Check provided QoS %s and %s doesn't match libvirt values",
             inbound_dict, outbound_dict
         )
-        if compare_qos(
-            host_obj=config.VDS_HOSTS[0], vm_name=config.VM_NAME[0],
+        if helper.compare_qos(
+            host_obj=config.VDS_HOST, vm_name=config.VM_NAME_0,
             **dict_compare
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Provided QoS values %s and %s are equal to what was found on"
                 " libvirt, but shouldn't" % (inbound_dict, outbound_dict)
             )
 
         logger.info(
-            "Start vm %s on host %s", config.VM_NAME[1], config.HOSTS[0]
+            "Start vm %s on host %s", config.VM_NAME_1, config.HOST
         )
-        if not startVm(
-            positive=True, vm=config.VM_NAME[1], placement_host=config.HOSTS[0]
+        if not ll_vms.startVm(
+            positive=True, vm=config.VM_NAME_1, placement_host=config.HOST
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Cannot start VM %s on host %s" %
-                (config.VM_NAME[1], config.HOSTS[0])
+                (config.VM_NAME_1, config.HOST)
             )
 
         logger.info(
-            "Unplug and plug %s on %s", config.NIC_NAME[1], config.VM_NAME[0]
+            "Unplug and plug %s on %s", config.NIC_NAME_1, config.VM_NAME_0
         )
-        if not updateNic(
-            True, config.VM_NAME[0], config.NIC_NAME[1], plugged="false"
+        if not ll_vms.updateNic(
+            True, config.VM_NAME_0, config.NIC_NAME_1, plugged="false"
         ):
-            logger.error(
-                "Couldn't unplug %s", config.NIC_NAME[1]
-            )
-        if not updateNic(
-            True, config.VM_NAME[0], config.NIC_NAME[1], plugged="true"
+            logger.error("Couldn't unplug %s", config.NIC_NAME_1)
+
+        if not ll_vms.updateNic(
+            True, config.VM_NAME_0, config.NIC_NAME_1, plugged="true"
         ):
-            logger.error(
-                "Couldn't plug %s", config.NIC_NAME[1]
-            )
+            logger.error("Couldn't plug %s", config.NIC_NAME_1)
 
         logger.info(
             "Check that provided QoS values %s and %s are equal to what was"
             " found on libvirt for both VMs", inbound_dict, outbound_dict
         )
         for i in range(2):
-            if not compare_qos(
-                host_obj=config.VDS_HOSTS[0], vm_name=config.VM_NAME[i],
+            if not helper.compare_qos(
+                host_obj=config.VDS_HOST, vm_name=config.VM_NAME[i],
                 **dict_compare
             ):
-                raise NetworkException(
+                raise config.NET_EXCEPTION(
                     "Provided QoS values %s and %s are not equal to what was "
                     "found on libvirt" % (inbound_dict, outbound_dict)
                 )
@@ -283,46 +282,36 @@ class TestNetQOSCase02(TestCase):
         3) Remove Network QoS
         4) Remove VNIC profile
         """
-        logger.info(
-            "Stop VM %s", config.VM_NAME[1]
-        )
-        if not stopVm(
-            True, vm=config.VM_NAME[1]
-        ):
-            logger.error(
-                "Couldn't stop VM %s", config.VM_NAME[1]
-            )
+        logger.info("Stop VM %s", config.VM_NAME_1)
+        if not ll_vms.stopVm(True, vm=config.VM_NAME_1):
+            logger.error("Couldn't stop VM %s", config.VM_NAME_1)
 
-        logger.info(
-            "Remove VNIC from VMs %s", config.VM_NAME[:2]
-        )
+        logger.info("Remove VNIC from VMs %s", config.VM_NAME[:2])
         for i in range(2):
-            if not updateNic(
-                True, config.VM_NAME[i], config.NIC_NAME[1], plugged="false"
+            if not ll_vms.updateNic(
+                True, config.VM_NAME[i], config.NIC_NAME_1, plugged="false"
             ):
-                logger.error(
-                    "Couldn't unplug NIC on %s", config.VM_NAME[i]
-                )
-            if not removeNic(
-                True, config.VM_NAME[i], config.NIC_NAME[1]
+                logger.error("Couldn't unplug NIC on %s", config.VM_NAME[i])
+            if not ll_vms.removeNic(
+                True, config.VM_NAME[i], config.NIC_NAME_1
             ):
                 logger.error(
                     "Couldn't remove VNIC from VM %s", config.VM_NAME[i]
                 )
         logger.info("Remove the QoS newQoS from DC")
-        if not delete_qos_from_datacenter(config.DC_NAME[0], "newQoS"):
-            logger.error(
-                "Couldn't delete the QoS newQoS from DC %s", config.DC_NAME[0]
-            )
-        logger.info(
-            "Remove VNIC profile %s", config.VNIC_PROFILE[0]
-        )
-        if not removeVnicProfile(
-            positive=True, vnic_profile_name=config.VNIC_PROFILE[0],
-            network=config.MGMT_BRIDGE, data_center=config.DC_NAME[0]
+        if not ll_datacenters.delete_qos_from_datacenter(
+            config.DC_NAME, "newQoS"
         ):
             logger.error(
-                "Couldn't remove VNIC profile %s", config.VNIC_PROFILE[0]
+                "Couldn't delete the QoS newQoS from DC %s", config.DC_NAME
+            )
+        logger.info("Remove VNIC profile %s", cls.vnic_profile)
+        if not ll_networks.removeVnicProfile(
+            positive=True, vnic_profile_name=cls.vnic_profile,
+            network=config.MGMT_BRIDGE, data_center=config.DC_NAME
+        ):
+            logger.error(
+                "Couldn't remove VNIC profile %s", cls.vnic_profile
             )
 
 
@@ -332,6 +321,8 @@ class TestNetQOSCase03(TestCase):
     Remove Network QoS
     """
     __test__ = True
+    qos_name = config.QOS_NAME[2]
+    vnic_profile = config.VNIC_PROFILE[2]
 
     @classmethod
     def setup_class(cls):
@@ -342,33 +333,37 @@ class TestNetQOSCase03(TestCase):
         the VM that is up and to the NIC of the VM that is down
         """
         logger.info("Create new Network QoS profile under DC")
-        if not add_qos_to_datacenter(
-            datacenter=config.DC_NAME[0],
-            qos_name=QOS_NAME[0], qos_type=QOS_TYPE,
-            inbound_average=BW_PARAMS[0], inbound_peak=BW_PARAMS[1],
-            inbound_burst=BW_PARAMS[2],
-            outbound_average=BW_PARAMS[0], outbound_peak=BW_PARAMS[1],
-            outbound_burst=BW_PARAMS[2]
+        if not ll_datacenters.add_qos_to_datacenter(
+            datacenter=config.DC_NAME,
+            qos_name=cls.qos_name, qos_type=config.QOS_TYPE,
+            inbound_average=config.BW_PARAMS[0],
+            inbound_peak=config.BW_PARAMS[1],
+            inbound_burst=config.BW_PARAMS[2],
+            outbound_average=config.BW_PARAMS[0],
+            outbound_peak=config.BW_PARAMS[1],
+            outbound_burst=config.BW_PARAMS[2]
         ):
-            raise NetworkException(
-                "Couldn't create Network QOS %s under DC" % QOS_NAME[0]
+            raise config.NET_EXCEPTION(
+                "Couldn't create Network QOS %s under DC" % cls.qos_name
             )
         logger.info(
             "Create VNIC profile with QoS %s and add it to the VNIC on %s",
-            QOS_NAME[0], config.VM_NAME[0]
+            cls.qos_name, config.VM_NAME_0
         )
-        add_qos_profile_to_nic()
+        helper.add_qos_profile_to_nic(
+            qos_name=cls.qos_name, vnic_profile_name=cls.vnic_profile
+        )
         logger.info(
             "Add VNIC with VNIC profile %s with QOS %s to non-running VM %s",
-            config.VNIC_PROFILE[0], QOS_NAME[0], config.VM_NAME[1]
+            cls.vnic_profile, cls.qos_name, config.VM_NAME_1
         )
-        if not addNic(
-            True, config.VM_NAME[1], name=config.NIC_NAME[1],
-            network=config.MGMT_BRIDGE, vnic_profile=config.VNIC_PROFILE[0]
+        if not ll_vms.addNic(
+            True, config.VM_NAME_1, name=config.NIC_NAME_1,
+            network=config.MGMT_BRIDGE, vnic_profile=cls.vnic_profile
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Couldn't add VNIC with QoS %s to VM %s" %
-                (QOS_NAME[0], config.VM_NAME[1])
+                (cls.qos_name, config.VM_NAME_1)
             )
 
     @polarion("RHEVM3-4000")
@@ -382,64 +377,66 @@ class TestNetQOSCase03(TestCase):
         """
 
         logger.info("Remove the QoS from DC")
-        if not delete_qos_from_datacenter(
-            config.DC_NAME[0], QOS_NAME[0]
+        if not ll_datacenters.delete_qos_from_datacenter(
+            config.DC_NAME, self.qos_name
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Couldn't delete the QoS %s from DC %s" %
-                (QOS_NAME[0], config.DC_NAME[0])
+                (self.qos_name, config.DC_NAME)
             )
 
-        dict_compare = build_dict(
+        dict_compare = helper.build_dict(
             inbound_dict={}, outbound_dict={},
-            vm=config.VM_NAME[0], nic=config.NIC_NAME[1]
+            vm=config.VM_NAME_0, nic=config.NIC_NAME_1
         )
 
         logger.info(
             "Check that after deletion of QoS libvirt is not updated with "
             "unlimited values till plug/unplug action"
         )
-        if compare_qos(
-            host_obj=config.VDS_HOSTS[0], vm_name=config.VM_NAME[0],
+        if helper.compare_qos(
+            host_obj=config.VDS_HOST, vm_name=config.VM_NAME_0,
             **dict_compare
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Libvirt has unlimited bandwidth configuration but shouldn't"
             )
 
         logger.info(
-            "Start vm %s on host %s", config.VM_NAME[1], config.HOSTS[0]
+            "Start vm %s on host %s", config.VM_NAME_1, config.HOST
         )
-        if not startVm(
-            positive=True, vm=config.VM_NAME[1], placement_host=config.HOSTS[0]
+        if not ll_vms.startVm(
+            positive=True, vm=config.VM_NAME_1, placement_host=config.HOST
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Cannot start VM %s on host %s" %
-                (config.VM_NAME[1], config.HOSTS[0])
+                (config.VM_NAME_1, config.HOST)
             )
 
-        logger.info("Unplug and plug NIC on %s", config.VM_NAME[0])
-        if not updateNic(
-            True, config.VM_NAME[0], config.NIC_NAME[1], plugged="false"
+        logger.info("Unplug and plug NIC on %s", config.VM_NAME_0)
+        if not ll_vms.updateNic(
+            True, config.VM_NAME_0, config.NIC_NAME_1, plugged="false"
         ):
-            raise NetworkException(
-                "Couldn't unplug NIC %s" % config.NIC_NAME[1]
+            raise config.NET_EXCEPTION(
+                "Couldn't unplug NIC %s" % config.NIC_NAME_1
             )
-        if not updateNic(
-            True, config.VM_NAME[0], config.NIC_NAME[1], plugged="true"
+        if not ll_vms.updateNic(
+            True, config.VM_NAME_0, config.NIC_NAME_1, plugged="true"
         ):
-            raise NetworkException("Couldn't plug NIC %s" % config.NIC_NAME[1])
+            raise config.NET_EXCEPTION(
+                "Couldn't plug NIC %s" % config.NIC_NAME_1
+            )
 
         logger.info(
             "Check that libvirt Network QoS values were updated to be "
             "unlimited"
         )
         for i in range(2):
-            if not compare_qos(
-                host_obj=config.VDS_HOSTS[0], vm_name=config.VM_NAME[i],
+            if not helper.compare_qos(
+                host_obj=config.VDS_HOST, vm_name=config.VM_NAME[i],
                 **dict_compare
             ):
-                raise NetworkException(
+                raise config.NET_EXCEPTION(
                     "Libvirt Network QoS values were not updated to be "
                     "unlimited"
                 )
@@ -451,38 +448,34 @@ class TestNetQOSCase03(TestCase):
        2) Remove VNIC from VMs.
        3) Remove VNIC profile
        """
-        logger.info("Stop VM %s", config.VM_NAME[1])
-        if not stopVm(True, vm=config.VM_NAME[1]):
-            logger.error(
-                "Couldn't stop VM %s", config.VM_NAME[1]
-            )
+        logger.info("Stop VM %s", config.VM_NAME_1)
+        if not ll_vms.stopVm(True, vm=config.VM_NAME_1):
+            logger.error("Couldn't stop VM %s", config.VM_NAME_1)
 
         logger.info("Remove VNIC from VMs %s", config.VM_NAME[:2])
         for i in range(2):
-            if not updateNic(
-                True, config.VM_NAME[i], config.NIC_NAME[1], plugged="false"
+            if not ll_vms.updateNic(
+                True, config.VM_NAME[i], config.NIC_NAME_1, plugged="false"
             ):
                 logger.error(
                     "Couldn't unplug NIC %s on VM %s",
-                    config.NIC_NAME[1], config.VM_NAME[i]
+                    config.NIC_NAME_1, config.VM_NAME[i]
                 )
-            if not removeNic(
-                True, config.VM_NAME[i], config.NIC_NAME[1]
+            if not ll_vms.removeNic(
+                True, config.VM_NAME[i], config.NIC_NAME_1
             ):
                 logger.error(
                     "Couldn't remove VNIC %s from VM %s",
-                    config.NIC_NAME[1], config.VM_NAME[i]
+                    config.NIC_NAME_1, config.VM_NAME[i]
                 )
 
-        logger.info(
-            "Remove VNIC profile %s", config.VNIC_PROFILE[0]
-        )
-        if not removeVnicProfile(
-            positive=True, vnic_profile_name=config.VNIC_PROFILE[0],
-            network=config.MGMT_BRIDGE, data_center=config.DC_NAME[0]
+        logger.info("Remove VNIC profile %s", cls.vnic_profile)
+        if not ll_networks.removeVnicProfile(
+            positive=True, vnic_profile_name=cls.vnic_profile,
+            network=config.MGMT_BRIDGE, data_center=config.DC_NAME
         ):
             logger.error(
-                "Couldn't remove VNIC profile %s", config.VNIC_PROFILE[0]
+                "Couldn't remove VNIC profile %s", cls.vnic_profile
             )
 
 
@@ -492,6 +485,8 @@ class TestNetQOSCase04(TestCase):
     Network QoSs, configured on several VNIC profiles
     """
     __test__ = True
+    qos_names = config.QOS_NAME[3:5]
+    vnic_profiles = config.VNIC_PROFILE[3:5]
 
     @classmethod
     def setup_class(cls):
@@ -504,35 +499,40 @@ class TestNetQOSCase04(TestCase):
         5) Update its Network QoS value
         """
         logger.info("Create new Network QoS profiles under DC")
-        for qos_name in QOS_NAME:
-            if not add_qos_to_datacenter(
-                datacenter=config.DC_NAME[0],
-                qos_name=qos_name, qos_type=QOS_TYPE,
-                inbound_average=BW_PARAMS[0], inbound_peak=BW_PARAMS[1],
-                inbound_burst=BW_PARAMS[2],
-                outbound_average=BW_PARAMS[0], outbound_peak=BW_PARAMS[1],
-                outbound_burst=BW_PARAMS[2]
+        for qos_name in cls.qos_names:
+            if not ll_datacenters.add_qos_to_datacenter(
+                datacenter=config.DC_NAME,
+                qos_name=qos_name, qos_type=config.QOS_TYPE,
+                inbound_average=config.BW_PARAMS[0],
+                inbound_peak=config.BW_PARAMS[1],
+                inbound_burst=config.BW_PARAMS[2],
+                outbound_average=config.BW_PARAMS[0],
+                outbound_peak=config.BW_PARAMS[1],
+                outbound_burst=config.BW_PARAMS[2]
             ):
-                raise NetworkException(
+                raise config.NET_EXCEPTION(
                     "Couldn't create Network QOS %s under DC" % qos_name
                 )
         logger.info(
             "Create VNIC profile with QoS and add it to the VNIC on running VM"
         )
 
-        add_qos_profile_to_nic()
+        helper.add_qos_profile_to_nic(
+            qos_name=cls.qos_names[0], vnic_profile_name=cls.vnic_profiles[0]
+        )
 
         logger.info(
             "Add VNIC with VNIC profile %s with QOS %s to VM %s",
-            config.VNIC_PROFILE[1], QOS_NAME[1], config.VM_NAME[0]
+            cls.vnic_profiles[0], cls.qos_names[0], config.VM_NAME_0
         )
         logger.info(
             "Update QoS %s on plugged NIC with VNIC profile %s",
-            QOS_NAME[1], config.VNIC_PROFILE[1]
+            cls.qos_names[1], cls.vnic_profiles[1]
         )
-        add_qos_profile_to_nic(
-            qos_name=QOS_NAME[1], vnic_profile_name=config.VNIC_PROFILE[1],
-            nic=config.NIC_NAME[2], update_libvirt=False
+        helper.add_qos_profile_to_nic(
+            qos_name=cls.qos_names[1],
+            vnic_profile_name=cls.vnic_profiles[1], nic=config.NIC_NAME_2,
+            update_libvirt=False
         )
 
     def test_several_network_qos(self):
@@ -546,70 +546,74 @@ class TestNetQOSCase04(TestCase):
         configured on libvirt for QoSProfile2 and QoSProfile1
         """
         inbound_dict = {
-            "average": BW_PARAMS[0], "peak": BW_PARAMS[1],
-            "burst": BW_PARAMS[2]
+            "average": config.BW_PARAMS[0],
+            "peak": config.BW_PARAMS[1],
+            "burst": config.BW_PARAMS[2]
         }
         outbound_dict = {
-            "average": BW_PARAMS[0], "peak": BW_PARAMS[1],
-            "burst": BW_PARAMS[2]
+            "average": config.BW_PARAMS[0],
+            "peak": config.BW_PARAMS[1],
+            "burst": config.BW_PARAMS[2]
         }
 
-        dict_compare = build_dict(
+        dict_compare = helper.build_dict(
             inbound_dict=inbound_dict, outbound_dict=outbound_dict,
-            vm=config.VM_NAME[0], nic=config.NIC_NAME[1]
+            vm=config.VM_NAME_0, nic=config.NIC_NAME_1
         )
 
         logger.info(
             "Check that provided QoS %s and %s are the same as libvirt values"
             "for the VNIC profile %s with Network QoS %s plugged on VM",
-            inbound_dict, outbound_dict, config.VNIC_PROFILE[0], QOS_NAME[0]
+            inbound_dict, outbound_dict, self.vnic_profiles[0],
+            self.qos_names[0]
         )
-        if not compare_qos(
-            host_obj=config.VDS_HOSTS[0], vm_name=config.VM_NAME[0],
+        if not helper.compare_qos(
+            host_obj=config.VDS_HOST, vm_name=config.VM_NAME_0,
             **dict_compare
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Provided QoS values %s and %s are not equal to what was "
                 "found on libvirt" % (inbound_dict, outbound_dict)
             )
 
-        dict_compare = build_dict(
+        dict_compare = helper.build_dict(
             inbound_dict=inbound_dict, outbound_dict=outbound_dict,
-            vm=config.VM_NAME[0], nic=config.NIC_NAME[2]
+            vm=config.VM_NAME_0, nic=config.NIC_NAME_2
         )
 
         logger.info(
             "Compare provided QoS %s and %s are not equal to libvirt values"
             "when Network QoS %s was updated after the VNIC profile "
             "%s already existed on VM",
-            inbound_dict, outbound_dict, QOS_NAME[1], config.VNIC_PROFILE[1]
+            inbound_dict, outbound_dict, self.qos_names[1],
+            self.vnic_profiles[1]
         )
-        if compare_qos(
-            host_obj=config.VDS_HOSTS[0], vm_name=config.VM_NAME[0],
+        if helper.compare_qos(
+            host_obj=config.VDS_HOST, vm_name=config.VM_NAME_0,
             **dict_compare
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Provided QoS values %s and %s are equal to what was "
                 "found on libvirt" % (inbound_dict, outbound_dict)
             )
 
-        logger.info("Restart VM %s", config.VM_NAME[0])
-        if not restartVm(
-            vm=config.VM_NAME[0], placement_host=config.HOSTS[0]
+        logger.info("Restart VM %s", config.VM_NAME_0)
+        if not ll_vms.restartVm(
+            vm=config.VM_NAME_0, placement_host=config.HOST
         ):
-            raise NetworkException(
-                "Couldn't restart VM %s" % config.VM_NAME[0]
+            raise config.NET_EXCEPTION(
+                "Couldn't restart VM %s" % config.VM_NAME_0
             )
 
         logger.info(
             "Check that after restart VM the QoS %s is equal to "
-            "libvirt values", QOS_NAME[1]
+            "libvirt values", self.qos_names[1]
         )
-        if not compare_qos(
-            host_obj=config.VDS_HOSTS[0], vm_name=config.VM_NAME[0],
+        if not helper.compare_qos(
+            host_obj=config.VDS_HOST, vm_name=config.VM_NAME_0,
             **dict_compare
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Provided QoS values %s and %s are not equal to what was "
                 "found on libvirt" % (inbound_dict, outbound_dict)
             )
@@ -621,33 +625,33 @@ class TestNetQOSCase04(TestCase):
         2) Remove VNIC profile
         3) Remove Network QoS
         """
-        logger.info("Remove VNIC from VM %s", config.VM_NAME[0])
-        for nic in (config.NIC_NAME[1], config.NIC_NAME[2]):
-            if not updateNic(
-                True, config.VM_NAME[0], nic, plugged="false"
+        logger.info("Remove VNIC from VM %s", config.VM_NAME_0)
+        for nic in (config.NIC_NAME_1, config.NIC_NAME_2):
+            if not ll_vms.updateNic(
+                True, config.VM_NAME_0, nic, plugged="false"
             ):
                 logger.error(
-                    "Couldn't unplug NIC %s from %s", nic, config.VM_NAME[0]
+                    "Couldn't unplug NIC %s from %s", nic, config.VM_NAME_0
                 )
-            if not removeNic(True, config.VM_NAME[0], nic):
+            if not ll_vms.removeNic(True, config.VM_NAME_0, nic):
                 logger.error(
-                    "Couldn't remove NIC %s from VM %s", nic, config.VM_NAME[0]
+                    "Couldn't remove NIC %s from VM %s", nic, config.VM_NAME_0
                 )
 
-        logger.info("Remove VNIC profiles %s", config.VNIC_PROFILE[:2])
-        for vnic_profile in (config.VNIC_PROFILE[:2]):
-            if not removeVnicProfile(
+        logger.info("Remove VNIC profiles %s", cls.vnic_profiles)
+        for vnic_profile in cls.vnic_profiles:
+            if not ll_networks.removeVnicProfile(
                 positive=True, vnic_profile_name=vnic_profile,
-                network=config.MGMT_BRIDGE, data_center=config.DC_NAME[0]
+                network=config.MGMT_BRIDGE, data_center=config.DC_NAME
             ):
                 logger.error(
                     "Couldn't remove VNIC profile %s", vnic_profile
                 )
 
         logger.info("Remove Network QoSs from setup")
-        for qos_profile in QOS_NAME:
-            if not delete_qos_from_datacenter(
-                config.DC_NAME[0], qos_profile
+        for qos_profile in cls.qos_names:
+            if not ll_datacenters.delete_qos_from_datacenter(
+                config.DC_NAME, qos_profile
             ):
                 logger.error(
                     "Couldn't delete the QoS %s from DC", qos_profile
@@ -660,6 +664,8 @@ class TestNetQOSCase05(TestCase):
     Migrate VM with network QOS on its NIC
     """
     __test__ = True
+    qos_name = config.QOS_NAME[5]
+    vnic_profile = config.VNIC_PROFILE[5]
 
     @classmethod
     def setup_class(cls):
@@ -670,22 +676,26 @@ class TestNetQOSCase05(TestCase):
         the VM that is up
         """
         logger.info("Create new Network QoS profile under DC")
-        if not add_qos_to_datacenter(
-            datacenter=config.DC_NAME[0],
-            qos_name=QOS_NAME[0], qos_type=QOS_TYPE,
-            inbound_average=BW_PARAMS[0], inbound_peak=BW_PARAMS[1],
-            inbound_burst=BW_PARAMS[2],
-            outbound_average=BW_PARAMS[0], outbound_peak=BW_PARAMS[1],
-            outbound_burst=BW_PARAMS[2]
+        if not ll_datacenters.add_qos_to_datacenter(
+            datacenter=config.DC_NAME,
+            qos_name=cls.qos_name, qos_type=config.QOS_TYPE,
+            inbound_average=config.BW_PARAMS[0],
+            inbound_peak=config.BW_PARAMS[1],
+            inbound_burst=config.BW_PARAMS[2],
+            outbound_average=config.BW_PARAMS[0],
+            outbound_peak=config.BW_PARAMS[1],
+            outbound_burst=config.BW_PARAMS[2]
         ):
-            raise NetworkException(
-                "Couldn't create Network QOS %s under DC" % QOS_NAME[0]
+            raise config.NET_EXCEPTION(
+                "Couldn't create Network QOS %s under DC" % cls.qos_name
             )
         logger.info(
             "Create VNIC profile %s with QoS %s and add it to the %s",
-            config.VNIC_PROFILE[0], QOS_NAME[0], config.NIC_NAME[1]
+            cls.vnic_profile, cls.qos_name, config.NIC_NAME_1
         )
-        add_qos_profile_to_nic()
+        helper.add_qos_profile_to_nic(
+            qos_name=cls.qos_name, vnic_profile_name=cls.vnic_profile
+        )
 
     def test_migrate_network_qos(self):
         """
@@ -696,46 +706,48 @@ class TestNetQOSCase05(TestCase):
         configured on libvirt after migration
         """
         inbound_dict = {
-            "average": BW_PARAMS[0], "peak": BW_PARAMS[1],
-            "burst": BW_PARAMS[2]
+            "average": config.BW_PARAMS[0],
+            "peak": config.BW_PARAMS[1],
+            "burst": config.BW_PARAMS[2]
         }
         outbound_dict = {
-            "average": BW_PARAMS[0], "peak": BW_PARAMS[1],
-            "burst": BW_PARAMS[2]
+            "average": config.BW_PARAMS[0],
+            "peak": config.BW_PARAMS[1],
+            "burst": config.BW_PARAMS[2]
         }
 
-        dict_compare = build_dict(
+        dict_compare = helper.build_dict(
             inbound_dict=inbound_dict, outbound_dict=outbound_dict,
-            vm=config.VM_NAME[0], nic=config.NIC_NAME[1]
+            vm=config.VM_NAME_0, nic=config.NIC_NAME_1
         )
 
         logger.info(
             "Compare provided QoS %s and %s exists with libvirt values",
             inbound_dict, outbound_dict
         )
-        if not compare_qos(
-            host_obj=config.VDS_HOSTS[0], vm_name=config.VM_NAME[0],
+        if not helper.compare_qos(
+            host_obj=config.VDS_HOST, vm_name=config.VM_NAME_0,
             **dict_compare
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Provided QoS values %s and %s are not equal to what was "
                 "found on libvirt" % (inbound_dict, outbound_dict)
             )
         logger.info(
             "Migrate VM to Host %s", config.VDS_HOSTS[1]
         )
-        if not migrateVm(
-            True, config.VM_NAME[0], config.HOSTS[1]
+        if not ll_vms.migrateVm(
+            True, config.VM_NAME_0, config.HOSTS[1]
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Couldn't migrate VM to %s" % config.HOSTS[1]
             )
 
-        if not compare_qos(
-            host_obj=config.VDS_HOSTS[1], vm_name=config.VM_NAME[0],
+        if not helper.compare_qos(
+            host_obj=config.VDS_HOSTS[1], vm_name=config.VM_NAME_0,
             **dict_compare
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Provided QoS values %s and %s are not equal to what was "
                 "found on libvirt" % (inbound_dict, outbound_dict)
             )
@@ -747,44 +759,44 @@ class TestNetQOSCase05(TestCase):
         2) Remove VNIC profile
         3) Remove Network QoS
         """
-        logger.info("Remove VNIC from VM %s", config.VM_NAME[0])
-        if not updateNic(
-            True, config.VM_NAME[0], config.NIC_NAME[1], plugged="false"
+        logger.info("Remove VNIC from VM %s", config.VM_NAME_0)
+        if not ll_vms.updateNic(
+            True, config.VM_NAME_0, config.NIC_NAME_1, plugged="false"
         ):
             logger.error(
-                "Couldn't unplug NIC %s from %s", config.NIC_NAME[1],
-                config.VM_NAME[0]
+                "Couldn't unplug NIC %s from %s", config.NIC_NAME_1,
+                config.VM_NAME_0
             )
-        if not removeNic(
-            True, config.VM_NAME[0], config.NIC_NAME[1]
+        if not ll_vms.removeNic(
+            True, config.VM_NAME_0, config.NIC_NAME_1
         ):
             logger.error(
-                "Couldn't remove VNIC %s from VM %s", config.NIC_NAME[1],
-                config.VM_NAME[0]
+                "Couldn't remove VNIC %s from VM %s", config.NIC_NAME_1,
+                config.VM_NAME_0
             )
 
-        logger.info(
-            "Remove VNIC profile %s", config.VNIC_PROFILE[0]
-        )
-        if not removeVnicProfile(
-            positive=True, vnic_profile_name=config.VNIC_PROFILE[0],
-            network=config.MGMT_BRIDGE, data_center=config.DC_NAME[0]
+        logger.info("Remove VNIC profile %s", cls.vnic_profile)
+        if not ll_networks.removeVnicProfile(
+            positive=True, vnic_profile_name=cls.vnic_profile,
+            network=config.MGMT_BRIDGE, data_center=config.DC_NAME
         ):
             logger.error(
-                "Couldn't remove VNIC profile %s", config.VNIC_PROFILE[0]
+                "Couldn't remove VNIC profile %s", cls.vnic_profile
             )
-        if not delete_qos_from_datacenter(
-            config.DC_NAME[0], QOS_NAME[0]
+        if not ll_datacenters.delete_qos_from_datacenter(
+            config.DC_NAME, cls.qos_name
         ):
             logger.error(
-                "Couldn't delete the QoS %s from DC", QOS_NAME[0]
+                "Couldn't delete the QoS %s from DC", cls.qos_name
             )
         logger.info(
             "Stop Vm %s and start it on original host %s",
-            config.VM_NAME[0], config.HOSTS[0]
+            config.VM_NAME_0, config.HOST
         )
-        if not restartVm(vm=config.VM_NAME[0], placement_host=config.HOSTS[0]):
+        if not ll_vms.restartVm(
+            vm=config.VM_NAME_0, placement_host=config.HOST
+        ):
             logger.error(
                 "Couldn't return VM back to it's original host %s",
-                config.HOSTS[0]
+                config.HOST
             )

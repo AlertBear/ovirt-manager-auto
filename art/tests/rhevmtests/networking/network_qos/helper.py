@@ -5,29 +5,24 @@
 Helper functions for network QoS job
 """
 
+import config
 import logging
-from art.test_handler.exceptions import NetworkException
-from rhevmtests.networking import config
 import xml.etree.ElementTree
-from art.rhevm_api.tests_lib.low_level.vms import getVmMacAddress, addNic
-from art.rhevm_api.tests_lib.low_level.networks import(
-    update_qos_on_vnic_profile, addVnicProfile
-)
-logger = logging.getLogger("Network_VNIC_QoS_Helper")
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 
-M_K_CONVERTER = 1024
-BITS_BYTES = 8
+logger = logging.getLogger("Network_VNIC_QoS_Helper")
 
 
 def get_vm_xml(host_obj, vm_name):
     """
     Get xml from the provided vm on specific host
     :param host_obj: resource.VDS host object
-    :type host_obj: object
+    :type host_obj: resource.VDS
     :param vm_name: vm name to check the id
     :type vm_name: str
     :return: etree xml
-    :rtype: object
+    :rtype: ElementTree
     """
     cmd = ["virsh", "-r", "dumpxml", vm_name]
     host_exec = host_obj.executor()
@@ -55,11 +50,13 @@ class QosCalculator(object):
         """
         if self.inbound_dict:
             self.inbound_dict["average"] = str(
-                self.inbound_dict["average"] * M_K_CONVERTER / BITS_BYTES
+                self.inbound_dict["average"]
+                * config.M_K_CONVERTER / config.BITS_BYTES
             )
         if self.outbound_dict:
             self.outbound_dict["average"] = str(
-                self.outbound_dict["average"] * M_K_CONVERTER / BITS_BYTES
+                self.outbound_dict["average"] *
+                config.M_K_CONVERTER / config.BITS_BYTES
             )
 
     def _calculate_peak(self):
@@ -68,11 +65,13 @@ class QosCalculator(object):
         """
         if self.inbound_dict:
             self.inbound_dict["peak"] = str(
-                self.inbound_dict["peak"] * M_K_CONVERTER / BITS_BYTES
+                self.inbound_dict["peak"] *
+                config.M_K_CONVERTER / config.BITS_BYTES
             )
         if self.outbound_dict:
             self.outbound_dict["peak"] = str(
-                self.outbound_dict["peak"] * M_K_CONVERTER / BITS_BYTES
+                self.outbound_dict["peak"] *
+                config.M_K_CONVERTER / config.BITS_BYTES
             )
 
     def _calculate_burst(self):
@@ -81,11 +80,11 @@ class QosCalculator(object):
         """
         if self.inbound_dict:
             self.inbound_dict["burst"] = str(
-                self.inbound_dict["burst"] * M_K_CONVERTER
+                self.inbound_dict["burst"] * config.M_K_CONVERTER
             )
         if self.outbound_dict:
             self.outbound_dict["burst"] = str(
-                self.outbound_dict["burst"] * M_K_CONVERTER
+                self.outbound_dict["burst"] * config.M_K_CONVERTER
             )
 
     def update_qos_for_libvirt(self):
@@ -139,9 +138,9 @@ def build_dict(inbound_dict, outbound_dict, vm, nic):
     :rtype: dict
     """
     qos_obj = QosCalculator(inbound_dict, outbound_dict)
-    rc, mac_dict = getVmMacAddress(True, vm=vm, nic=nic)
+    rc, mac_dict = ll_vms.getVmMacAddress(True, vm=vm, nic=nic)
     if not rc:
-        raise NetworkException("Failed to get MAC address")
+        raise config.NET_EXCEPTION("Failed to get MAC address")
     mac = mac_dict["macAddress"]
     return {mac: qos_obj}
 
@@ -150,7 +149,7 @@ def get_libvirt_bw(interface):
     """
     Gets bandwidth from libvirt xml output
     :param interface: etree element object
-    :type interface: object
+    :type interface: ElementTree
     :return: True/False
     :rtype: bool
     """
@@ -171,7 +170,7 @@ def compare_qos(host_obj, vm_name, **kwargs):
     """
     Compares QoS of provided bw and libvirt bw
     :param host_obj: resource.VDS host object
-    :type host_obj: object
+    :type host_obj: resource.VDS
     :param vm_name: vm name to check the id
     :type vm_name: str
     :param kwargs: dict of {MAC: qos_obj} pairs
@@ -194,8 +193,7 @@ def compare_qos(host_obj, vm_name, **kwargs):
 
 
 def add_qos_profile_to_nic(
-    qos_name="QoSProfile1", vnic_profile_name=config.VNIC_PROFILE[0],
-    nic=config.NIC_NAME[1], update_libvirt=True
+    qos_name, vnic_profile_name, nic=config.NIC_NAME_1, update_libvirt=True
 ):
     """
     Creates VNIC profile for mgmt network
@@ -215,11 +213,11 @@ def add_qos_profile_to_nic(
     logger.info(
         "Add VNIC Profile %s for mgmt network", config.MGMT_BRIDGE
     )
-    if not addVnicProfile(
-        positive=True, name=vnic_profile_name, data_center=config.DC_NAME[0],
+    if not ll_networks.addVnicProfile(
+        positive=True, name=vnic_profile_name, data_center=config.DC_NAME,
         network=config.MGMT_BRIDGE
     ):
-        raise NetworkException(
+        raise config.NET_EXCEPTION(
             "Couldn't create VNIC Profile %s for mgmt network"
             % config.MGMT_BRIDGE
         )
@@ -228,32 +226,32 @@ def add_qos_profile_to_nic(
         logger.info(
             "Update VNIC profile %s with QoS %s", vnic_profile_name, qos_name
         )
-        if not update_qos_on_vnic_profile(
-            datacenter=config.DC_NAME[0], qos_name=qos_name,
+        if not ll_networks.update_qos_on_vnic_profile(
+            datacenter=config.DC_NAME, qos_name=qos_name,
             vnic_profile_name=vnic_profile_name,
             network_name=config.MGMT_BRIDGE
         ):
-                raise NetworkException(
+                raise config.NET_EXCEPTION(
                     "Couldn't update Network QoS on VNIC profile "
                 )
 
     logger.info(
         "Add VNIC Profile %s to VM %s",
-        vnic_profile_name, config.VM_NAME[0]
+        vnic_profile_name, config.VM_NAME_0
     )
-    if not addNic(
-        True, config.VM_NAME[0], name=nic, network=config.MGMT_BRIDGE,
+    if not ll_vms.addNic(
+        True, config.VM_NAME_0, name=nic, network=config.MGMT_BRIDGE,
         vnic_profile=vnic_profile_name
     ):
-        raise NetworkException(
-            "Couldn't add VNIC with QoS to VM %s" % config.VM_NAME[0]
+        raise config.NET_EXCEPTION(
+            "Couldn't add VNIC with QoS to VM %s" % config.VM_NAME_0
         )
     if not update_libvirt:
-        if not update_qos_on_vnic_profile(
-            datacenter=config.DC_NAME[0], qos_name=qos_name,
+        if not ll_networks.update_qos_on_vnic_profile(
+            datacenter=config.DC_NAME, qos_name=qos_name,
             vnic_profile_name=vnic_profile_name,
             network_name=config.MGMT_BRIDGE
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Couldn't update Network QoS on VNIC profile "
             )
