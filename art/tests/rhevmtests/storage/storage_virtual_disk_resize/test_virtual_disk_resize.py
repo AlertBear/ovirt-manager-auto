@@ -415,6 +415,8 @@ class TestCase5060(DisksPermutationEnvironment):
     snap_description = 'snap_%s' % polarion_test_case
     is_preview = False
     new_size = config.DISK_SIZE + config.GB
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
+    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     @polarion("RHEVM3-5060")
     def test_Commit_snapshot_after_disk_resize(self):
