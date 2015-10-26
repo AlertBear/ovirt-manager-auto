@@ -1,13 +1,17 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 rhevmtests helper functions
 """
+
 import logging
+from rhevmtests import config
 import art.rhevm_api.resources
 from art.rhevm_api.resources import ssh
 import art.rhevm_api.resources.user as users
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
-from rhevmtests import config
 import art.rhevm_api.tests_lib.low_level.jobs as ll_jobs
+import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 
 logger = logging.getLogger(__name__)
 
@@ -135,3 +139,17 @@ def clean_unfinished_jobs_on_engine():
         config.ENGINE.db.psql(
             "UPDATE job SET status = 'FINISHED' WHERE status = 'STARTED'"
         )
+
+
+def generate_object_names(object_type, count):
+    """
+    Generate list on names by given object type
+
+    :param object_type: object_type (QoS for example)
+    :object_type type: str
+    :param count: Number of names to generate
+    :object_type count: int
+    :return: List of names
+    :rtype: list
+    """
+    return ["%s_%s" % (object_type, i) for i in range(count)]
