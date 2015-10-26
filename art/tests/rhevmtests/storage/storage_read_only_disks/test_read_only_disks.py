@@ -323,9 +323,11 @@ class TestCase4907(BaseTestCase):
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
     polarion_test_case = '4907'
+    # Bugzilla history:
+    # 1220824:[REST] Adding a disk to a vm fails with NullPointerException if
+    # not disk.storage_domains is provided
     bz = {
         '1194695': {'engine': ['rest', 'sdk'], 'version': ["3.5"]},
-        '1220824': {'engine': None, 'version': ['3.6']},
     }
 
     @polarion("RHEVM3-4907")
@@ -820,6 +822,10 @@ class TestCase4917(DefaultEnvironment):
     imported_vm_2 = 'imported_vm_2'
     export_domain = ''
 
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
+    # Same issue happens after the vm is imported
+    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
+
     @polarion("RHEVM3-4917")
     def test_import_more_than_once_VM_with_RO_disk(self):
         """
@@ -899,6 +905,8 @@ class TestCase4918(DefaultSnapshotEnvironment):
     polarion_test_case = '4918'
     snapshot_description = 'test_snap'
     create_snapshot = False
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
+    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     @polarion("RHEVM3-4918")
     def test_preview_snapshot_with_RO_disk(self):
@@ -977,6 +985,8 @@ class TestCase4919(DefaultSnapshotEnvironment):
     polarion_test_case = '4919'
     snapshot_description = 'test_snap'
     create_snapshot = False
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
+    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     @polarion("RHEVM3-4919")
     def test_preview_and_undo_snapshot_with_RO_disk(self):
@@ -1058,6 +1068,8 @@ class TestCase4920(DefaultSnapshotEnvironment):
     polarion_test_case = '4920'
     snapshot_description = 'test_snap'
     create_snapshot = False
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
+    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     @polarion("RHEVM3-4920")
     def test_preview_and_commit_snapshot_with_RO_disk(self):
@@ -1421,18 +1433,9 @@ class TestCase4924(DefaultEnvironment):
     """
     __test__ = True
     polarion_test_case = '4924'
-    bz = {
-        '1196049': {
-            'engine': None,
-            'version': ['3.5.1'],
-            'storage': config.STORAGE_TYPE_ISCSI
-        },
-        '1176673': {
-            'engine': None,
-            'version': ['3.6'],
-            'storage': config.STORAGE_TYPE_ISCSI
-        },
-    }
+    # Bugzilla history:
+    # 1196049, 1176673: After live storage migration on block storage vdsm
+    # extends migrated drive using all free space in the vg
 
     @polarion("RHEVM3-4924")
     def test_moving_RO_disk(self):
@@ -1496,17 +1499,9 @@ class TestCase4925(DefaultEnvironment):
     """
     __test__ = True
     polarion_test_case = '4925'
-    bz = {
-        '1196049': {
-            'engine': None,
-            'version': ['3.5.1'],
-            'storage': config.STORAGE_TYPE_ISCSI
-        },
-        '1176673': {
-            'engine': None,
-            'version': ['3.6'], 'storage': config.STORAGE_TYPE_ISCSI
-        },
-    }
+    # Bugzilla history:
+    # 1196049, 1176673: After live storage migration on block storage vdsm
+    # extends migrated drive using all free space in the vg
 
     @polarion("RHEVM3-4925")
     def test_live_migrate_RO_disk(self):
@@ -1584,18 +1579,9 @@ class TestCase4926(DefaultEnvironment):
     """
     __test__ = True
     polarion_test_case = '4926'
-    bz = {
-        '1196049': {
-            'engine': None,
-            'version': ['3.5.1'],
-            'storage': config.STORAGE_TYPE_ISCSI
-        },
-        '1176673': {
-            'engine': None,
-            'version': ['3.6'],
-            'storage': config.STORAGE_TYPE_ISCSI
-        },
-    }
+    # Bugzilla history:
+    # 1196049, 1176673: After live storage migration on block storage vdsm
+    # extends migrated drive using all free space in the vg
 
     @polarion("RHEVM3-4926")
     def test_live_migrate_RW_disk(self):
