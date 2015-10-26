@@ -6,6 +6,7 @@ import socket
 import logging
 
 import config as conf
+from art.test_handler import tools
 import art.unittest_lib as test_libs
 import art.core_api.apis_utils as utils
 import art.test_handler.exceptions as errors
@@ -109,7 +110,7 @@ class HostedEngineTest(test_libs.SlaTest):
         :param host_resource: host resource
         :type host_resource: instance of VDS
         :returns: host score
-        :rtype: str
+        :rtype: int
         """
         return int(
             cls.get_he_stats(executor).get(host_resource.fqdn).get(conf.SCORE)
@@ -523,7 +524,7 @@ class GeneralSetupTeardownClass(HostedEngineTest):
         Drop host HE score
         """
         for host_resource in (cls.engine_vm_host, cls.second_host):
-            logger.info("Check if host is %s up to date", host_resource)
+            logger.info("Check if host %s is up to date", host_resource)
             for host_executor in (
                 cls.second_host_executor, cls.engine_vm_host_executor
             ):
@@ -547,7 +548,7 @@ class GeneralSetupTeardownClass(HostedEngineTest):
     @classmethod
     def _is_engine_vm_restarted(cls):
         """
-        Check if vm restarted
+        Check if vm is restarted
 
         :return: True, if vm success to run on one of hosts, otherwise False
         :rtype: bool
@@ -567,9 +568,9 @@ class GeneralSetupTeardownClass(HostedEngineTest):
     @classmethod
     def _is_engine_down(cls):
         """
-        Check if engine down
+        Check if engine is down
 
-        :return: True, if engine down, otherwise False
+        :return: True, if engine is down, otherwise False
         :rtype: bool
         """
         he_stats = cls.get_he_stats(cls.second_host_executor)
@@ -620,9 +621,9 @@ class GeneralSetupTeardownClass(HostedEngineTest):
     @classmethod
     def _wait_until_engine_down(cls):
         """
-        Wait until engine down
+        Wait until engine is down
 
-        :return: True, if engine down, otherwise False
+        :return: True, if engine is down, otherwise False
         :rtype: bool
         """
         return cls._wait_for_vm_and_engine_state(cls._is_engine_down)
@@ -672,3 +673,234 @@ class GeneralSetupTeardownClass(HostedEngineTest):
         except core_errors.APITimeout:
             logger.info("HE vm still run on host %s", host)
             return True
+
+
+#############################################################################
+#                         Problems on host with HE vm                       #
+#############################################################################
+
+
+class TestHostWithVmLostConnection(GeneralSetupTeardownClass):
+    """
+    Stop network on host where engine-vm runs and
+    check if it started on second host
+    """
+    __test__ = True
+    skip = False
+
+    @tools.polarion("RHEVM3-5536")
+    def test_check_migration_of_he_vm(self):
+        """
+        Check that there is a PM on the host where the engine VM runs
+        If there is PM then stop the network service on host and check that
+        the engine VM starts on the second host, otherwise skip the test
+        """
+        logger.info(
+            "Check if host %s has power management", self.engine_vm_host.fqdn
+        )
+        if not self._check_host_power_management(
+            self.second_host, self.engine_vm_host
+        ):
+            self.__class__.skip = True
+            raise errors.SkipTest("Host doesn't have power management")
+        logger.info("Stop network on host %s", self.engine_vm_host)
+        try:
+            self.engine_vm_host.service("network").stop()
+        except socket.timeout as ex:
+            logger.warning("Host unreachable, %s", ex)
+        logger.info("Check if vm started on host %s", self.second_host)
+        self.assertTrue(
+            self._wait_for_host_vm_state(
+                executor=self.second_host_executor,
+                host_resource=self.second_host,
+                vm_state=conf.VM_STATE_UP
+            ),
+            conf.VM_NOT_STARTED_ON_SECOND_HOST
+        )
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Restart first host via power management and
+        wait until host is up with state ENGINE_DOWN
+        """
+        if not cls.skip:
+            logger.info(
+                "Restart host %s via power management", cls.engine_vm_host
+            )
+            status = cls._restart_host_via_power_management(
+                cls.second_host, cls.engine_vm_host
+            )
+            if not status:
+                logger.error(
+                    "Failed to restart host %s via power management",
+                    cls.engine_vm_host
+                )
+            logger.info(
+                "Wait until host %s has up to date data", cls.engine_vm_host
+            )
+            if not cls._wait_for_host_up_to_date_status(
+                cls.second_host_executor,
+                cls.engine_vm_host,
+                timeout=conf.POWER_MANAGEMENT_TIMEOUT
+            ):
+                logger.error(
+                    "Host %s still not have update status", cls.engine_vm_host
+                )
+            super(TestHostWithVmLostConnection, cls).teardown_class()
+        else:
+            cls.skip = False
+
+
+class TestBlockAccessToStorageDomainFromHost(GeneralSetupTeardownClass):
+    """
+    Block access to storage on host where HE runs and
+    check if VM migrated to the second host
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Block access to storage via iptables
+        """
+        super(TestBlockAccessToStorageDomainFromHost, cls).setup_class()
+        logger.info(
+            "Save iptables on host %s to file %s",
+            cls.engine_vm_host, conf.IPTABLES_BACKUP_FILE
+        )
+        cls._get_out_from_run_cmd(
+            cls.engine_vm_host_executor,
+            ['iptables-save', '>>', conf.IPTABLES_BACKUP_FILE]
+        )
+        logger.info(
+            "Block connection from host %s to storage", cls.engine_vm_host
+        )
+        cmd = ["grep", "storage=", conf.HOSTED_ENGINE_CONF_FILE]
+        out = cls._get_out_from_run_cmd(
+            cls.engine_vm_host_executor, cmd
+        )
+        ip_to_block = out.split("=")[1].split(":")[0].strip('\n')
+        cmd = ["iptables", "-I", "INPUT", "-s", ip_to_block, "-j", "DROP"]
+        cls._get_out_from_run_cmd(cls.engine_vm_host_executor, cmd)
+
+    @tools.polarion("RHEVM3-5514")
+    def test_check_migration_of_ha_vm(self):
+        """
+        Check if HE vm was migrated to another host
+        """
+        self._is_vm_and_engine_run_on_second_host()
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Accept access to storage from host
+        """
+        logger.info(
+            "Restore iptables on host %s from file %s",
+            cls.engine_vm_host, conf.IPTABLES_BACKUP_FILE
+        )
+        cls._get_out_from_run_cmd(
+            cls.engine_vm_host_executor,
+            ['iptables-restore', conf.IPTABLES_BACKUP_FILE]
+        )
+        logger.info("Check if %s service up", conf.AGENT_SERVICE)
+        service_executor = cls.engine_vm_host.service(conf.AGENT_SERVICE)
+        if not service_executor.status():
+            logger.info(
+                "Start service %s on host %s",
+                service_executor, cls.engine_vm_host
+            )
+            service_executor.start()
+        super(TestBlockAccessToStorageDomainFromHost, cls).teardown_class()
+
+
+#############################################################################
+#     HA agent must migrate engine VM, if it enter to problematic state     #
+#############################################################################
+
+
+class TestShutdownEngineMachine(GeneralSetupTeardownClass):
+    """
+    Shutdown HE vm and check if vm restarted on one of hosts
+    """
+    __test__ = True
+
+    @tools.polarion("RHEVM3-5528")
+    def test_check_hosted_engine_vm(self):
+        """
+        Shutdown HE vm and check if vm restarted on one of hosts
+        """
+        cmd = ["shutdown", "-h", "now"]
+        self._get_out_from_run_cmd(self.engine_vm_executor, cmd, negative=True)
+        self._is_vm_and_engine_run_on_second_host()
+
+
+class TestStopEngineService(GeneralSetupTeardownClass):
+    """
+    Stop ovirt-engine service on HE vm and
+    check if vm restarted on one of hosts
+    """
+    __test__ = True
+
+    @tools.polarion("RHEVM3-5533")
+    def test_check_hosted_engine_vm(self):
+        """
+        Stop ovirt-engine service on HE vm and
+        check if vm restarted on one of hosts
+        """
+        cmd = ["service", "ovirt-engine", "stop"]
+        self._get_out_from_run_cmd(self.engine_vm_executor, cmd)
+        self.assertTrue(
+            self._wait_until_engine_down(), conf.ENGINE_UP
+        )
+        self.assertTrue(
+            self._wait_until_engine_vm_restarted(), conf.HE_VM_NOT_STARTED
+        )
+
+
+class TestStopPostgresqlService(GeneralSetupTeardownClass):
+    """
+    Stop postgresql service on HE vm and check if vm restarted on one of hosts
+    """
+    __test__ = True
+
+    @tools.polarion("RHEVM3-5520")
+    def test_check_hosted_engine_vm(self):
+        """
+        Stop postrgresql service on HE vm and
+        check if vm restarted on one of hosts
+        """
+        cmd = ["service", "postgresql", "stop"]
+        self._get_out_from_run_cmd(self.engine_vm_executor, cmd)
+        self.assertTrue(
+            self._wait_until_engine_down(), conf.ENGINE_UP
+        )
+        self.assertTrue(
+            self._wait_until_engine_vm_restarted(), conf.HE_VM_NOT_STARTED
+        )
+
+
+class TestKernelPanicOnEngineVm(GeneralSetupTeardownClass):
+    """
+    Simulate kernel panic on engine vm and
+    check if it restarted on one of hosts
+    """
+    __test__ = True
+
+    @tools.polarion("RHEVM3-5527")
+    def test_check_hosted_engine_vm(self):
+        """
+        Simulate kernel panic on engine vm and
+        check if it restarted on one of hosts
+        """
+        cmd = ["echo", "c", ">", "/proc/sysrq-trigger"]
+        self._get_out_from_run_cmd(self.engine_vm_executor, cmd, negative=True)
+        self.assertTrue(
+            self._wait_until_engine_down(), conf.ENGINE_UP
+        )
+        self.assertTrue(
+            self._wait_until_engine_vm_restarted(), conf.HE_VM_NOT_STARTED
+        )
+
+#############################################################################
