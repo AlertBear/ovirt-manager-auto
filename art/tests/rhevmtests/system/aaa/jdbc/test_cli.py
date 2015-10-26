@@ -269,8 +269,9 @@ class JDBCCLIGroupUser(TestCase):
             user=TEST_USER2
         )[0], "Possible to add user to nonexisting group"
 
-    def test_030_assign_group_permissions(self):
-        """ assign group permissions via aaa-jdbc cli """
+    @polarion('RHEVM3-11307')
+    def test_040_login_as_user_from_group(self):
+        """ login as user from group from aaa-jdbc """
         assert users.addGroup(
             True,
             group_name=TEST_GROUP1,
@@ -282,9 +283,6 @@ class JDBCCLIGroupUser(TestCase):
             cluster='Default',
             role='UserRole',
         ), "Failed to add permissions to group '%s'" % TEST_GROUP1
-
-    def test_040_login_as_user(self):
-        """ login as user from group from aaa-jdbc """
         users.loginAsUser(
             TEST_USER1,
             config.INTERNAL_PROFILE,
