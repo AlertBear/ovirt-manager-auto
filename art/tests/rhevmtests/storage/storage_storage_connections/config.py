@@ -15,14 +15,14 @@ STORAGE = copy.deepcopy(ART_CONFIG['PARAMETERS'])
 CONNECTIONS = []
 if GOLDEN_ENV:
     CONNECTIONS.append({
-        'lun_address': MIRROR_LUN_ADDRESS[0],
-        'lun_target':  MIRROR_LUN_TARGET[0],
+        'lun_address': '',
+        'lun_target':  '',
         'lun_port': LUN_PORT,
         'luns': UNUSED_LUNS,
     })
     CONNECTIONS.append({
-        'lun_address': MIRROR_LUN_ADDRESS[1],
-        'lun_target':  MIRROR_LUN_TARGET[1],
+        'lun_address': '',
+        'lun_target':  '',
         'lun_port': LUN_PORT,
         'luns': UNUSED_LUNS,
     })

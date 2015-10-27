@@ -3,7 +3,9 @@ import logging
 from art.unittest_lib import StorageTest, attr
 from concurrent.futures import ThreadPoolExecutor
 from art.test_handler.tools import polarion  # pylint: disable=E0611
+import art.test_handler.exceptions as errors
 from art.rhevm_api.utils import test_utils
+import rhevmtests.storage.helpers as storage_helpers
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import storageconnections
 from art.rhevm_api.tests_lib.low_level import disks
@@ -67,7 +69,15 @@ def setup_module():
         iscsi_sds = storagedomains.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, config.STORAGE_TYPE_ISCSI
         )
-        storagedomains.removeStorageDomains(
+        addresses, targets = hl_sd.discover_addresses_and_targets(
+            config.HOSTS[0], config.UNUSED_LUN_ADDRESSES[0]
+        )
+        config.CONNECTIONS[0]['lun_address'] = addresses[0]
+        config.CONNECTIONS[0]['lun_target'] = targets[0]
+        config.CONNECTIONS[1]['lun_address'] = addresses[1]
+        config.CONNECTIONS[1]['lun_target'] = targets[1]
+
+        assert storagedomains.removeStorageDomains(
             True, iscsi_sds, config.HOST_FOR_MOUNT, 'true'
         )
         assert ll_dc.addDataCenter(
@@ -117,7 +127,7 @@ def teardown_module():
         ):
             hl_sd.addISCSIDataDomain(
                 config.HOST_FOR_MOUNT, name, config.DATA_CENTER_NAME,
-                lun, address, target, override_luns=True
+                lun, address, target, override_luns=True, login_all=True
             )
 
 
@@ -137,10 +147,12 @@ def _logout_from_all_iscsi_targets():
         host=config.HOST_FOR_MOUNT_IP, user=config.HOSTS_USER,
         password=config.HOSTS_PW
     ).util('linux')
-    for connection in config.CONNECTIONS:
+    addresses, targets = hl_sd.discover_addresses_and_targets(
+        config.HOSTS[0], config.UNUSED_LUN_ADDRESSES[0]
+    )
+    for address, target in zip(addresses, targets):
         machine.logoutTargets(
-            mode='node', targetName=connection['lun_target'],
-            portalIp=connection['lun_address']
+            mode='node', targetName=target, portalIp=address
         )
 
 
@@ -198,7 +210,6 @@ def _restore_empty_dc(datacenter=config.DATACENTER_ISCSI_CONNECTIONS):
         assert hosts.waitForHostsStates(True, config.HOST_FOR_MOUNT)
 
 
-@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
 class TestCase(StorageTest):
     storages = set([config.STORAGE_TYPE_ISCSI])
     # TODO: enable cli after http://bugzilla.redhat.com/show_bug.cgi?id=1236718
@@ -225,6 +236,7 @@ class TestCase5243(TestCase):
     polarion_test_case = '5243'
     conn = None
     sd_name = None
+    bz = {'1275845': {'engine': None, 'version': ['3.6']}}
 
     @polarion("RHEVM3-5243")
     def test_adding_storage_connections(self):
@@ -235,7 +247,7 @@ class TestCase5243(TestCase):
             "Add a connection to the empty dc %s",
             config.DATACENTER_ISCSI_CONNECTIONS
         )
-        conn = dict(config.CONNECTIONS[0])
+        conn = dict(config.CONNECTIONS[0]).copy()
         conn['type'] = config.STORAGE_TYPE_ISCSI
         self.conn, success = storageconnections.add_connection(**conn)
         assert success
@@ -296,7 +308,7 @@ class TestCase5247(TestCase):
     sd_name = None
 
     def add_connection_without_sth(self, param, value=None):
-        conn = dict(config.CONNECTIONS[0])
+        conn = dict(config.CONNECTIONS[0]).copy()
         conn['type'] = config.STORAGE_TYPE_ISCSI
         conn[param] = value
         self.conn, success = storageconnections.add_connection(**conn)
@@ -305,7 +317,7 @@ class TestCase5247(TestCase):
         assert (not success)
 
     def add_connection_with_empty_sth(self, param):
-        conn = dict(config.CONNECTIONS[0])
+        conn = dict(config.CONNECTIONS[0]).copy()
         conn['type'] = config.STORAGE_TYPE_ISCSI
         conn[param] = ''
         self.conn, success = storageconnections.add_connection(**conn)
@@ -355,7 +367,7 @@ class TestCase5247(TestCase):
         """ try to add an iscsi storage connection twice
             and add it after it was removed
         """
-        conn = dict(config.CONNECTIONS[0])
+        conn = dict(config.CONNECTIONS[0]).copy()
         conn['type'] = config.STORAGE_TYPE_ISCSI
         self.conn, success = storageconnections.add_connection(**conn)
         assert success
@@ -392,12 +404,12 @@ class TestCase5248(TestCase):
         """
         Add two storage connections
         """
-        conn = dict(config.CONNECTIONS[0])
+        conn = dict(config.CONNECTIONS[0]).copy()
         conn['type'] = config.STORAGE_TYPE_ISCSI
         cls.conn_1, success = storageconnections.add_connection(**conn)
         assert success
 
-        conn = dict(config.CONNECTIONS[1])
+        conn = dict(config.CONNECTIONS[1]).copy()
         conn['type'] = config.STORAGE_TYPE_ISCSI
         cls.conn_2_params = conn
         cls.conn_2, success = storageconnections.add_connection(**conn)
@@ -464,6 +476,7 @@ class TestCase5246(TestCase):
     sd_name_1 = "sd_%s_1" % polarion_test_case
     sd_name_2 = "sd_%s_2" % polarion_test_case
     master_sd = "master_%s" % polarion_test_case
+    bz = {'1272110': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """
@@ -554,7 +567,7 @@ class TestCase5246(TestCase):
         test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
                                   config.DATACENTER_ISCSI_CONNECTIONS)
         if self.sd_name_1 is not None and self.sd_name_2 is not None:
-            conn = dict(config.CONNECTIONS[0])
+            conn = dict(config.CONNECTIONS[0]).copy()
             conn['type'] = config.STORAGE_TYPE_ISCSI
             conn_1, success = storageconnections.add_connection(**conn)
             if success:
@@ -584,7 +597,7 @@ class TestCase5240(TestCase):
     def setup_class(cls):
         # put sth random to iqn, we are not going to use the connection anyhow
         for i in range(cls.no_of_conn):
-            conn = dict(config.CONNECTIONS[0])
+            conn = dict(config.CONNECTIONS[0]).copy()
             conn['lun_target'] = 'sth%d.%s' % (i, conn['lun_target'])
             conn['type'] = config.STORAGE_TYPE_ISCSI
             cls.con_params.append(conn)
@@ -649,6 +662,7 @@ class TestCase5242(TestCase):
     """
     __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
     polarion_test_case = '5242'
+    bz = {'1272110': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         self.disks = []
@@ -662,7 +676,7 @@ class TestCase5242(TestCase):
         Verifying GET for one orphaned connection
         """
         logger.info("Verifying get for one orphaned connection")
-        conn_1 = dict(config.CONNECTIONS[0])
+        conn_1 = dict(config.CONNECTIONS[0]).copy()
         conn_1['type'] = config.STORAGE_TYPE_ISCSI
         self.conn, success = storageconnections.add_connection(**conn_1)
         self.assertTrue(success, "Error adding storage connection %s" % conn_1)
@@ -822,6 +836,7 @@ class TestCase5245(TestCase):
     conn = None
     sd_name_1 = "sd_%s_1" % polarion_test_case
     sd_name_2 = "sd_%s_2" % polarion_test_case
+    bz = {'1272110': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """
@@ -931,6 +946,7 @@ class TestCase5244(TestCase):
     conn = None
     sd_name_1 = "sd_%s_1" % polarion_test_case
     sd_name_2 = "sd_%s_2" % polarion_test_case
+    bz = {'1272110': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """
@@ -956,7 +972,7 @@ class TestCase5244(TestCase):
         assert storagedomains.attachStorageDomain(
             True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name_2)
 
-        conn = dict(config.CONNECTIONS[1])
+        conn = dict(config.CONNECTIONS[1]).copy()
         conn['type'] = config.STORAGE_TYPE_ISCSI
         self.conn, success = storageconnections.add_connection(**conn)
         assert success
@@ -1018,6 +1034,7 @@ class TestCase5241(TestCase):
     disk_1 = "disk_%s_1" % polarion_test_case
     sd_name = "sd_%s" % polarion_test_case
     disk_2 = "disk_%s_2" % polarion_test_case
+    bz = {'1272110': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         assert storagedomains.addStorageDomain(
@@ -1035,16 +1052,18 @@ class TestCase5241(TestCase):
             True, config.DATACENTER_ISCSI_CONNECTIONS, self.sd_name,
             config.ENUMS['storage_domain_state_active'])
 
-        assert vms.createVm(
-            True, vmName=self.vm_name_1, storageDomainName=self.sd_name,
-            **vmArgs
-        )
-        assert vms.createVm(
-            True, vmName=self.vm_name_2, storageDomainName=self.sd_name,
-            **vmArgs
-        )
-        assert vms.stopVm(True, self.vm_name_1)
-        assert vms.stopVm(True, self.vm_name_2)
+        for vm_name in (self.vm_name_1, self.vm_name_2):
+            vm_args_copy = vmArgs.copy()
+            vm_args_copy['storageDomainName'] = self.sd_name
+            vm_args_copy['vmName'] = vm_name
+            vm_args_copy['vmDescription'] = vm_name
+
+            if not storage_helpers.create_vm_or_clone(**vm_args_copy):
+                raise errors.VMException(
+                    'Unable to create vm %s for test' % vm_name
+                )
+            logger.info('Shutting down VM %s', vm_name)
+            vms.stop_vms_safely([vm_name])
 
         assert disks.addDisk(
             True, alias=self.disk_1,
@@ -1146,7 +1165,7 @@ class TestCase5249(TestCase):
 
     def setUp(self):
         self.storage_domains = []
-        conn = dict(config.CONNECTIONS[0])
+        conn = dict(config.CONNECTIONS[0]).copy()
         conn['type'] = config.STORAGE_TYPE_ISCSI
         self.conn, success = storageconnections.add_connection(**conn)
         assert success
@@ -1202,4 +1221,5 @@ class TestCase5249(TestCase):
             storagedomains.removeStorageDomain(
                 True, storage_domain, config.HOST_FOR_MOUNT, 'true'
             )
+        storageconnections.remove_storage_connection(self.conn.id)
         _logout_from_all_iscsi_targets()
