@@ -1353,6 +1353,7 @@ class TestHostNetworkApiSetupNetworks25(helper.TestHostNetworkApiTestCaseBase):
                 (cls.net_case_pre_vm, cls.net_case_pre_vlan, conf.HOST_4)
             )
 
+    @polarion("RHEVM3-14016")
     def test_attach_vlan_to_host_nic_with_vm(self):
         """
         Attach VLAN network to host NIC that has VM network on it
@@ -1377,6 +1378,7 @@ class TestHostNetworkApiSetupNetworks25(helper.TestHostNetworkApiTestCaseBase):
                 (self.net_case_vlan, conf.HOST_4_NICS[1], conf.HOST_4)
             )
 
+    @polarion("RHEVM3-14015")
     def test_attach_vm_to_host_nic_with_vlan(self):
         """
         Attach VM network to host NIC that has VLAN network on it
@@ -1401,6 +1403,7 @@ class TestHostNetworkApiSetupNetworks25(helper.TestHostNetworkApiTestCaseBase):
                 (self.net_case_vm, conf.HOST_4_NICS[2], conf.HOST_4)
             )
 
+    @polarion("RHEVM3-14017")
     def test_attach_vm_and_vlan_network_to_host_nic(self):
         """
         Attach VLAN network and VM network to same host NIC
@@ -1487,9 +1490,10 @@ class TestHostNetworkApiSetupNetworks26(helper.TestHostNetworkApiTestCaseBase):
                 (cls.net_case_pre_vm, cls.net_case_pre_vlan, conf.HOST_4)
             )
 
-    def test_attach_vlan_to_host_nic_with_vm(self):
+    @polarion("RHEVM3-14019")
+    def test_attach_vlan_to_bond_with_vm_net(self):
         """
-        Attach VLAN network to host NIC that has VM network on it
+        Attach VLAN network to BOND that has VM network on it
         """
         network_host_api_dict = {
             "add": {
@@ -1511,9 +1515,10 @@ class TestHostNetworkApiSetupNetworks26(helper.TestHostNetworkApiTestCaseBase):
                 (self.net_case_vlan, self.bond_1, conf.HOST_4)
             )
 
-    def test_attach_vm_to_host_nic_with_vlan(self):
+    @polarion("RHEVM3-14018")
+    def test_attach_vm_net_to_bond_with_vlan(self):
         """
-        Attach VM network to host NIC that has VLAN network on it
+        Attach VM network to BOND that has VLAN network on it
         """
         network_host_api_dict = {
             "add": {
@@ -1535,9 +1540,10 @@ class TestHostNetworkApiSetupNetworks26(helper.TestHostNetworkApiTestCaseBase):
                 (self.net_case_vm, self.bond_2, conf.HOST_4)
             )
 
-    def test_attach_vm_and_vlan_network_to_host_nic(self):
+    @polarion("RHEVM3-14020")
+    def test_attach_vm_and_vlan_networks_to_bond(self):
         """
-        Attach VLAN network and VM network to same host NIC
+        Attach VLAN network and VM network to same BOND
         """
         network_host_api_dict = {
             "add": {
@@ -1563,5 +1569,93 @@ class TestHostNetworkApiSetupNetworks26(helper.TestHostNetworkApiTestCaseBase):
                 (
                     self.net_case_new_vm, self.net_case_new_vlan,
                     self.bond_3, conf.HOST_4
+                )
+            )
+
+
+class TestHostNetworkApiSetupNetworks27(helper.TestHostNetworkApiTestCaseBase):
+    """
+    Attach label to host NIC
+    """
+    __test__ = True
+
+    @polarion("RHEVM3-12411")
+    def test_label_on_host_nic(self):
+        """
+        Attach label to host NIC
+        """
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "labels": [conf.LABEL_LIST[0]],
+                    "nic": conf.HOST_4_NICS[1]
+                }
+            }
+        }
+        logger.info(
+            "Attaching %s to %s on %s",
+            conf.LABEL_LIST[0], conf.HOST_4_NICS[1], conf.HOST_4
+        )
+        if not hl_host_network.setup_networks(
+            host_name=conf.HOST_4, **network_host_api_dict
+        ):
+            raise conf.NET_EXCEPTION(
+                "Failed to attach %s to %s on %s" % (
+                    conf.LABEL_LIST[0], conf.HOST_4_NICS[1], conf.HOST_4
+                )
+            )
+
+
+class TestHostNetworkApiSetupNetworks28(helper.TestHostNetworkApiTestCaseBase):
+    """
+    Attach label to BOND
+    """
+    __test__ = True
+    bond_1 = "bond281"
+    bz = {"1275717": {"engine": None, "version": ["3.6"]}}
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create BOND
+        """
+        sn_dict = {
+            "add": {
+                "1": {
+                    "nic": cls.bond_1,
+                    "slaves": conf.DUMMYS[:2]
+                }
+            }
+        }
+        if not hl_host_network.setup_networks(
+            host_name=conf.HOST_4, **sn_dict
+        ):
+            raise conf.NET_EXCEPTION(
+                "Failed to create %s on %s" % (cls.bond_1, conf.HOST_4)
+            )
+
+    @polarion("RHEVM3-12412")
+    def test_label_on_bond(self):
+        """
+        Attach label to BOND
+        """
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "labels": [conf.LABEL_LIST[0]],
+                    "nic": self.bond_1
+                }
+            }
+        }
+        logger.info(
+            "Attaching %s to %s on %s",
+            conf.LABEL_LIST[0], self.bond_1, conf.HOST_4
+        )
+        if not hl_host_network.setup_networks(
+            host_name=conf.HOST_4, **network_host_api_dict
+        ):
+            raise conf.NET_EXCEPTION(
+                "Failed to attach %s to %s on %s" % (
+                    conf.LABEL_LIST[0], self.bond_1, conf.HOST_4
                 )
             )
