@@ -11,6 +11,7 @@ import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 logger = logging.getLogger("GE_Network_cleanup")
@@ -71,6 +72,7 @@ def network_cleanup():
         remove_unneeded_dcs()
         clean_hosts_interfaces()
         delete_dummy_interfaces_from_hosts()
+        remove_qos_from_setup()
 
 
 def check_hosts_in_connecting():
@@ -287,3 +289,19 @@ def delete_dummy_interfaces_from_hosts():
         logger.info("Deleting dummy interfaces from %s", host.ip)
         if not hl_networks.delete_dummy_interfaces(host=host):
             logger.error("Failed to delete dummy interfaces from %s", host.ip)
+
+
+@ignore_exception
+def remove_qos_from_setup():
+    """
+    Remove all QoS from datacenters
+    """
+    for dc in config.DC_NAME:
+        all_qos = ll_datacenters.get_qoss_from_datacenter(datacenter=dc)
+        for qos in all_qos:
+            qos_name = qos.get_name()
+            logger.info("Remove %s from %s", qos_name, dc)
+            if not ll_datacenters.delete_qos_from_datacenter(
+                datacenter=dc, qos_name=qos_name
+            ):
+                logger.error("Failed to remove %s from %s", qos_name, dc)
