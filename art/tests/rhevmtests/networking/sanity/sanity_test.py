@@ -254,13 +254,12 @@ class TestSanityCase06(NetworkTest):
         """
         Create and adding network (MTU 2000) to the host Bond
         """
-        logger.info(
-            "Create %s and attach it to the host Bond", conf.NET_6)
+        logger.info("Create %s and attach it to the host Bond", conf.NET_6)
         local_dict = {
             None: {
                 "nic": conf.BOND[0],
                 "mode": 1,
-                "slaves": [2, 3]
+                "slaves": [-1, -2]
             },
             conf.NET_6: {
                 "nic": conf.BOND[0],
@@ -271,7 +270,7 @@ class TestSanityCase06(NetworkTest):
             host=conf.VDS_HOST_0, network_dict=local_dict, auto_nics=[0]
         ):
             raise exceptions.NetworkException(
-                "Cannot create and attach network"
+                "Cannot create and attach %s" % conf.NET_6
             )
 
     @polarion("RHEVM3-12255")
@@ -502,9 +501,8 @@ class TestSanityCase09(NetworkTest):
         logger.info("Generate bond012345678901 object with 2 NIC")
         net_obj = []
         rc, out = ll_hosts.genSNNic(
-            nic="bond012345678901", slaves=[
-                conf.VDS_HOST_0.nics[2], conf.VDS_HOST_0.nics[3]
-            ]
+            nic="bond012345678901",
+            slaves=["dummy_0", "dummy_1"]
         )
         if not rc:
             raise exceptions.NetworkException("Cannot generate SNNIC object")
@@ -530,9 +528,8 @@ class TestSanityCase09(NetworkTest):
         logger.info("Generate NET1515 object with 2 NIC bond")
         net_obj = []
         rc, out = ll_hosts.genSNNic(
-            nic="NET1515", slaves=[
-                conf.VDS_HOST_0.nics[2], conf.VDS_HOST_0.nics[3]
-            ]
+            nic="NET1515",
+            slaves=["dummy_0", "dummy_1"]
         )
         if not rc:
             raise exceptions.NetworkException("Cannot generate NIC object")
@@ -558,7 +555,8 @@ class TestSanityCase09(NetworkTest):
         logger.info("Generate bond object with 2 NIC bond and empty name")
         net_obj = []
         rc, out = ll_hosts.genSNNic(
-            nic="", slaves=[conf.VDS_HOST_0.nics[2], conf.VDS_HOST_0.nics[3]]
+            nic="",
+            slaves=["dummy_0", "dummy_1"]
         )
         if not rc:
             raise exceptions.NetworkException("Cannot generate NIC object")
@@ -581,9 +579,8 @@ class TestSanityCase09(NetworkTest):
         logger.info("Generate bond1! object with 2 NIC bond")
         net_obj = []
         rc, out = ll_hosts.genSNNic(
-            nic="bond1!",  slaves=[
-                conf.VDS_HOST_0.nics[2], conf.VDS_HOST_0.nics[3]
-            ]
+            nic="bond1!",
+            slaves=["dummy_0", "dummy_1"]
         )
         if not rc:
             raise exceptions.NetworkException("Cannot generate NIC object")
@@ -1205,34 +1202,6 @@ class TestSanityCase17(NetworkTest):
 
     __test__ = True
 
-    @classmethod
-    def setup_class(cls):
-        """
-        Create dummy interface for BONDS
-        """
-        logger.info("Create 20 dummy interfaces")
-        if not hl_networks.create_dummy_interfaces(
-            host=conf.VDS_HOST_0, num_dummy=20
-        ):
-            raise exceptions.NetworkException(
-                "Failed to create dummy interfaces"
-            )
-
-        logger.info("Refresh host capabilities")
-        host_obj = ll_hosts.HOST_API.find(conf.HOSTS[0])
-        refresh_href = "{0};force".format(host_obj.get_href())
-        ll_hosts.HOST_API.get(href=refresh_href)
-
-        logger.info("Check if dummy_0 exist on host via engine")
-        sample = apis_utils.TimeoutingSampler(
-            timeout=conf.SAMPLER_TIMEOUT, sleep=1,
-            func=helper.check_dummy_on_host_interfaces, dummy_name="dummy_0"
-        )
-        if not sample.waitForFuncStatus(result=True):
-            raise exceptions.NetworkException(
-                "Dummy interface not exists on engine"
-            )
-
     @polarion("RHEVM3-4339")
     def test_dummy_bonds(self):
         """
@@ -1261,25 +1230,3 @@ class TestSanityCase17(NetworkTest):
             force="false"
         ):
             raise exceptions.NetworkException("Failed to SNRequest")
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Delete all bonds and dummy interfaces
-        """
-        logger.info("Delete all dummy interfaces")
-        if not hl_networks.delete_dummy_interfaces(host=conf.VDS_HOST_0):
-            logger.error("Failed to delete dummy interfaces")
-
-        logger.info("Refresh host capabilities")
-        host_obj = ll_hosts.HOST_API.find(conf.HOSTS[0])
-        refresh_href = "{0};force".format(host_obj.get_href())
-        ll_hosts.HOST_API.get(href=refresh_href)
-
-        logger.info("Check if dummy_0 not exist on host via engine")
-        sample = apis_utils.TimeoutingSampler(
-            timeout=conf.SAMPLER_TIMEOUT, sleep=1,
-            func=helper.check_dummy_on_host_interfaces, dummy_name="dummy_0"
-        )
-        if not sample.waitForFuncStatus(result=False):
-            logger.error("Dummy interface exists on engine")
