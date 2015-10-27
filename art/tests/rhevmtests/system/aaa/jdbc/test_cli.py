@@ -7,16 +7,16 @@ __test__ = True
 
 from art.core_api.apis_exceptions import APIException
 from art.rhevm_api.tests_lib.low_level import general, mla, users
-from art.rhevm_api.utils import jdbccli
+from art.rhevm_api.utils.enginecli import EngineCLI
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
 from rhevmtests.system.aaa.jdbc import config
 
-ss = config.ENGINE_HOST.executor().session()
-USER_CLI = jdbccli.JDBCCLI(session=ss, entity='user')
-GROUP_CLI = jdbccli.JDBCCLI(session=ss, entity='group')
-MANAGE_CLI = jdbccli.JDBCCLI(session=ss, entity='group-manage')
+TOOL = 'ovirt-aaa-jdbc-tool'
+USER_CLI = None
+GROUP_CLI = None
+MANAGE_CLI = None
 TEST_USER1 = 'user1'
 TEST_USER2 = 'user2'
 TEST_USER_DISABLED = 'user_disabled'
@@ -27,6 +27,12 @@ TEST_GROUP_DELETE = 'group_deleted'
 
 
 def setup_module():
+    global USER_CLI, GROUP_CLI, MANAGE_CLI
+    ss = config.ENGINE_HOST.executor().session()
+    USER_CLI = EngineCLI(tool=TOOL, session=ss, module='user')
+    GROUP_CLI = EngineCLI(tool=TOOL, session=ss, module='group')
+    MANAGE_CLI = EngineCLI(tool=TOOL, session=ss, module='group-manage')
+
     assert USER_CLI.run(
         'add',
         TEST_USER1,
@@ -344,9 +350,10 @@ class JDBCCLIQuery(TestCase):
 
     @classmethod
     def setup_class(cls):
-        cls.query_cli = jdbccli.JDBCCLI(
+        cls.query_cli = EngineCLI(
+            tool=TOOL,
             session=config.ENGINE_HOST.executor().session(),
-            entity='query'
+            module='query',
         )
 
     @polarion('RHEVM3-11323')
@@ -411,9 +418,10 @@ class JDBCCLISettings(TestCase):
 
     @classmethod
     def setup_class(cls):
-        cls.settings_cli = jdbccli.JDBCCLI(
+        cls.settings_cli = EngineCLI(
+            tool=TOOL,
             session=config.ENGINE_HOST.executor().session(),
-            entity='settings'
+            module='settings',
         )
 
     @polarion('RHEVM3-11337')

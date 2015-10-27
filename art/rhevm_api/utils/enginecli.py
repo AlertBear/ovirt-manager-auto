@@ -1,15 +1,15 @@
 """
-Helper class to use ovirt-aaa-jdbc-tool, which manages oVirt jdbc users
+Helper classes to use oVirt cli tools
 """
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-class JDBCCLI(object):
+class EngineCLI(object):
     """
-    JDBC CLI helper
-    This class will contruct ovirt-aaa-jdbc-tool commands
+    Engine CLI helper
+    This class will construct commands of cli tool
     Example of command:
      ovirt-aaa-jdbc-tool
        --log-level=log_level
@@ -19,41 +19,36 @@ class JDBCCLI(object):
        action_positional_argX=*args[X]
        action_named_argX=kwargs[X]
     """
-    program = 'ovirt-aaa-jdbc-tool'
-
-    def __init__(
-        self,
-        session,
-        entity,
-        profile='/etc/ovirt-engine/aaa/internal.properties',
-        log_level='WARNING'
-    ):
+    def __init__(self, tool, session, module, **kwargs):
         """
-        Initilize JDBCCLI
+        Initialize CLI
 
+        :param tool: cli tool to be used
+        :type tool: str
         :param session: session of config.ENGINE_HOST
         :type session: art.rhevm_api.resources.ssh.RemoteExecutor.Session
-        :param entity: entity to run command for (user, group, query,...)
-        :type entity: str
-        :param profile: path to profile which should be used to run cmd
-        :type profile: str
-        :param log_level: log-level to run cmd with
-        :type log_level: str
+        :param module: module of cli tool to be used
+        :type module: str
+        :param kwargs: parameters of tool
+        :type kwargs: dict
         """
+        self.tool = tool
         self.session = session
-        self.cmd = [
-            self.program,
-            '--log-level=%s' % log_level,
-            '--db-config=%s' % profile,
-            entity,
-        ]
+        self.cmd = [self.tool]
+        self.cmd += map(
+            lambda (k, v): '--%s=%s' % (k.replace('_', '-'), v),
+            kwargs.iteritems()
+        )
+        self.cmd.append(module)
 
     def run(self, *args, **kwargs):
         """
         run command
 
-        :param args: args of command
-        :param kwargs: named args of command
+        :param args: actions of module
+        :type args: list
+        :param kwargs: parameters of action of module
+        :type kwargs: dict
         :return: true if cmd ran successfully else false and stdout of command
         :rtype: tuple
         """
