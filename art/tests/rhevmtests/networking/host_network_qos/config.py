@@ -41,9 +41,6 @@ NETS_DICT = {
     NETS[4][0]: {
         "required": "false"
     },
-    NETS[4][1]: {
-        "required": "false"
-    },
     NETS[5][0]: {
         "vlan_id": VLAN_IDS[10],
         "required": "false"
