@@ -18,9 +18,9 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import (
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
     addSnapshot, stop_vms_safely, preview_snapshot, start_vms,
-    waitForVMState, suspendVm, startVm, commit_snapshot,
+    waitForVMState, startVm, commit_snapshot,
     get_vm_bootable_disk, undo_snapshot_preview, cloneVmFromSnapshot, addNic,
-    removeNic, get_snapshot_disks, shutdownVm, removeSnapshot,
+    removeNic, shutdownVm, removeSnapshot,
     wait_for_vm_snapshots, get_vm_state, safely_remove_vms,
     get_vms_disks_storage_domain_name, waitForVmsDisks,
 )
@@ -313,6 +313,8 @@ class TestCase6023(BasicEnvironment):
     cmd_create = 'echo "test_txt" > %s' % file_name
     cm_del = 'rm -f %s' % file_name
     previewed = False
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
+    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """
@@ -371,94 +373,6 @@ class TestCase6023(BasicEnvironment):
 
 
 @attr(tier=2)
-class TestCase6034(BasicEnvironment):
-    """
-    Create a snapshot to the VM while it's suspended and pick only one disk
-    and configuration file
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_4_Storage_Single_Snapshot
-    """
-    __test__ = True
-    polarion_test_case = '6034'
-    bz = {'1120232': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
-
-    def setUp(self):
-        self.disk_count = 2
-        self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
-        super(TestCase6034, self).setUp()
-        assert self._prepare_fs_on_devs()
-
-    @polarion("RHEVM3-6034")
-    def test_suspended_vm(self):
-        """
-        - Create a VM with 2 disks  (with file system on both disks)
-        - Write files to both disks
-        - Suspend the VM
-        - Create a snapshot to the VM while it's suspended and pick only one
-          disk and conf.
-        - Resume the VM
-        - Delete the files created in step 2
-        - Shutdown the VM
-        - Preview the snapshot created in step 4 and commit it
-        - Start the VM
-        """
-        logger.info("Suspending vm %s", self.vm_name)
-        assert suspendVm(True, self.vm_name)
-        waitForVMState(self.vm_name, config.VM_SUSPENDED)
-        disks_for_snap = [self.boot_disk, self.disks_names[0]]
-        logger.info("Snapshot with disks: %s", disks_for_snap)
-        self._perform_snapshot_operation(disks=disks_for_snap, live=True)
-        wait_for_jobs([ENUMS['job_create_snapshot']])
-
-        logger.info("Starting vm %s", self.vm_name)
-        assert startVm(True, self.vm_name)
-        waitForVMState(self.vm_name)
-
-        disk_count = len(get_snapshot_disks(self.vm_name,
-                                            self.snapshot_desc))
-        status = disk_count == self.disk_count
-        self.assertTrue(status, "Snapshot wasn't created properly")
-
-        self.delete_operation()
-        boot_disk = get_vm_bootable_disk(self.vm_name)
-        disks_to_preview = [(boot_disk, self.snapshot_desc),
-                            (self.disks_names[0], self.snapshot_desc),
-                            (self.disks_names[1], ACTIVE_VM)]
-
-        logger.info("Previewing the snapshot %s", self.snapshot_desc)
-        assert preview_snapshot(True, self.vm_name, self.snapshot_desc,
-                                ensure_vm_down=True,
-                                disks_lst=disks_to_preview)
-
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
-
-        full_path = os.path.join((self.mount_path % self.devices[0]),
-                                 self.file_name)
-        logger.info("Checking full path %s", full_path)
-
-        assert self.vm.isFileExists(full_path)
-
-        logger.info("Committing the snapshot %s", self.snapshot_desc)
-        assert commit_snapshot(True, self.vm_name)
-
-        wait_for_jobs([ENUMS['job_restore_vm_snapshot']])
-
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
-
-        assert self.vm.isFileExists(full_path)
-
-        self.disks_names = [disks_for_snap[1]]
-
-    def tearDown(self):
-        for path in self.mounted_paths:
-            self.vm.runCmd(shlex.split(self.umount_cmd % path))
-
-        super(TestCase6034, self).tearDown()
-
-
-@attr(tier=2)
 class TestCase6024(BasicEnvironment):
     """
     Preview snapshot of 2 disks out of 4 and verify that the
@@ -469,6 +383,8 @@ class TestCase6024(BasicEnvironment):
     __test__ = True
     polarion_test_case = '6024'
     previewed = False
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
+    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
@@ -544,6 +460,8 @@ class TestCase6026(BasicEnvironment):
     __test__ = True
     polarion_test_case = '6026'
     previewed = False
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
+    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
@@ -623,6 +541,8 @@ class TestCase6027(BasicEnvironment):
     cmd_create = 'echo "test_txt" > %s' % file_name
     cm_del = 'rm -f %s' % file_name
     previewed = False
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
+    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """
@@ -747,6 +667,8 @@ class TestCase6030(BasicEnvironment):
     polarion_test_case = '6030'
     disks_for_custom_preview = 2
     previewed = False
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
+    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """
@@ -906,6 +828,8 @@ class TestCase6032(BasicEnvironment):
     polarion_test_case = '6032'
     nic = 'nic_%s' % polarion_test_case
     commit = False
+    # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
+    bz = {'1270583': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """
