@@ -9,7 +9,6 @@ from art.unittest_lib import VirtTest as TestCase
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
-import art.rhevm_api.tests_lib.low_level.vmpools as vm_pool_api
 import art.rhevm_api.tests_lib.low_level.storagedomains as sd_api
 import art.rhevm_api.tests_lib.low_level.templates as template_api
 from art.rhevm_api.tests_lib.low_level import storagedomains
@@ -1478,80 +1477,6 @@ class VmDisplay(TestCase):
         Check address and port parameters under display with type spice
         """
         self.assertTrue(self._check_display_parameters(self.vm_names[1], VNC))
-
-
-@attr(tier=1)
-class VmPool(BaseVmWithDiskTemplate):
-    """
-    Basic test to check vm pools functionality
-    """
-    __test__ = True
-    pool_name = 'virt_vm_pool'
-    template_name = 'virt_template_for_vmpool'
-    vm_name = 'virt_vm_for_vmpool'
-    new_vm_pool = 'virt_new_vm_pool'
-    new_vm = 'virt_new_vm_pool-1'
-    initial_size = 2
-    updated_size = 3
-
-    @polarion("RHEVM3-10090")
-    def test_crud_vm_pool(self):
-        """
-        Create new pool, update and remove it
-        """
-        logger.info(
-            "Add new vm pool created from template %s",
-            self.template_name
-        )
-        self.assertTrue(
-            vm_pool_api.addVmPool(
-                True,
-                name=self.pool_name,
-                template=self.template_name,
-                cluster=config.CLUSTER_NAME[0],
-                size=self.initial_size
-            )
-        )
-        logger.info(
-            "Update vm pool name from: %s to %s and increase "
-            "number of vms in pool", self.pool_name, self.new_vm_pool
-        )
-        description = 'Pool Description'
-        self.assertTrue(
-            vm_pool_api.updateVmPool(
-                True,
-                self.pool_name,
-                name=self.new_vm_pool,
-                description=description,
-                size=self.updated_size
-            )
-        )
-        # Following VM state check is essential for following actions
-        logger.info(
-            "Verify added vm to pool, %s is in down state", self.new_vm
-        )
-        self.assertTrue(
-            vm_api.waitForVMState(
-                vm=self.new_vm,
-                state=ENUMS['vm_state_down'],
-                timeout=VMPOOL_TIMEOUT
-            )
-        )
-        logger.info("Search for vms in vm pool %s", self.new_vm_pool)
-        self.assertTrue(
-            vm_api.searchForVm(
-                True,
-                query_key='name',
-                query_val="%s*" % self.new_vm_pool,
-                key_name='name'
-            )
-        )
-        logger.info("Search for vm pool %s", self.new_vm_pool)
-        self.assertTrue(vm_pool_api.does_vm_pool_exist(self.new_vm_pool))
-        logger.info("Detach all vms from vm pool %s", self.new_vm_pool)
-        vm_pool_api.detachVms(True, self.new_vm_pool)
-        logger.info("Remove vm pool %s", self.new_vm_pool)
-        vm_pool_api.removeVmPool(True, self.new_vm_pool)
 
 
 @attr(tier=1)
