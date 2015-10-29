@@ -11,10 +11,10 @@ from art.unittest_lib import attr
 import art.unittest_lib as unit_lib
 import rhevmtests.networking as networking
 import art.core_api.apis_utils as api_utils
+import rhevmtests.networking.helper as net_helper
 import art.rhevm_api.utils.test_utils as test_utils
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 logger = logging.getLogger("Host_Network_API_Helper")
@@ -82,32 +82,6 @@ def attach_network_attachment(
         )
 
 
-def networks_sync_status(networks):
-    """
-    Get networks sync status
-
-    :param networks: List of networks
-    :type networks: list
-    :return: True if sync else False
-    :type: bool
-    """
-    for net in networks:
-        logger.info("Get %s attachment", net)
-        try:
-            attachment = ll_host_network.get_networks_attachments(
-                conf.HOST_4, [net]
-            )[0]
-        except IndexError:
-            logger.error("%s not found" % net)
-            return False
-
-        logger.info("Check if %s is unsync", net)
-        if not ll_host_network.get_attachment_sync_status(attachment):
-            logger.info("%s is not sync" % net)
-            return False
-    return True
-
-
 def networks_unsync_reasons(net_sync_reason):
     """
     Check the reason for unsync networks is correct
@@ -142,36 +116,10 @@ def get_networks_sync_status_and_unsync_reason(net_sync_reason):
     :raise: conf.NET_EXCEPTION
     """
     networks = [i for i in net_sync_reason]
-    if networks_sync_status(networks):
+    if net_helper.networks_sync_status(host=conf.HOST_4, networks=networks):
         raise conf.NET_EXCEPTION("%s are synced but shouldn't" % networks)
     if not networks_unsync_reasons(net_sync_reason):
         raise conf.NET_EXCEPTION("%s unsync reason is incorrect" % networks)
-
-
-def sync_networks(networks):
-    """
-    Sync the networks
-
-    :param networks: List of networks to sync
-    :type networks: list
-    :raise: conf.NET_EXCEPTION
-    """
-    network_sync_dict = {
-        "sync": {
-            "networks": networks
-        }
-    }
-    logger.info("syncing %s", networks)
-    if not hl_host_network.setup_networks(
-        host_name=conf.HOST_4, **network_sync_dict
-    ):
-        raise conf.NET_EXCEPTION("Failed to sync %s" % networks)
-
-    if not networks_sync_status(networks):
-        raise conf.NET_EXCEPTION(
-            "At least one of the networks from %s is out of sync, should be "
-            "synced" % networks
-        )
 
 
 @attr(tier=2)

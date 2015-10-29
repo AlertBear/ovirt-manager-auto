@@ -8,10 +8,10 @@ Sync tests from host network API
 import helper
 import logging
 import config as conf
+import rhevmtests.networking.helper as net_helper
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import rhevmtests.networking.helper as net_helper
 
 logger = logging.getLogger("Host_Network_API_Sync_Cases")
 
@@ -176,7 +176,7 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_1])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
 
     def test_unsync_network_vlan_to_no_vlan(self):
         """
@@ -192,7 +192,7 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_2])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_2])
 
     def test_unsync_network_no_vlan_to_vlan(self):
         """
@@ -208,7 +208,7 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_3])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_3])
 
 
 class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
@@ -284,7 +284,7 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_1])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
 
     def test_unsync_network_vlan_to_no_vlan_over_bond(self):
         """
@@ -301,7 +301,7 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_2])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_2])
 
     def test_unsync_network_no_vlan_to_vlan_over_bond(self):
         """
@@ -317,7 +317,7 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_3])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_3])
 
 
 class TestHostNetworkApiSync03(TestHostNetworkApiSyncBase):
@@ -377,7 +377,7 @@ class TestHostNetworkApiSync03(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_1])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
 
     def test_unsync_network_mtu_to_no_mtu(self):
         """
@@ -393,7 +393,7 @@ class TestHostNetworkApiSync03(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_2])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_2])
 
     def test_unsync_network_no_mtu_to_mtu(self):
         """
@@ -409,7 +409,7 @@ class TestHostNetworkApiSync03(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_3])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_3])
 
 
 class TestHostNetworkApiSync04(TestHostNetworkApiSyncBase):
@@ -485,7 +485,7 @@ class TestHostNetworkApiSync04(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_1])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
 
     def test_unsync_network_mtu_to_no_mtu_over_bond(self):
         """
@@ -502,7 +502,7 @@ class TestHostNetworkApiSync04(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_2])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_2])
 
     def test_unsync_network_no_mtu_to_mtu_over_bond(self):
         """
@@ -519,7 +519,7 @@ class TestHostNetworkApiSync04(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_3])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_3])
 
 
 class TestHostNetworkApiSync05(TestHostNetworkApiSyncBase):
@@ -571,7 +571,7 @@ class TestHostNetworkApiSync05(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_1])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
 
     def test_unsync_network_non_vm_vm(self):
         """
@@ -587,7 +587,7 @@ class TestHostNetworkApiSync05(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_2])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_2])
 
 
 class TestHostNetworkApiSync06(TestHostNetworkApiSyncBase):
@@ -649,7 +649,7 @@ class TestHostNetworkApiSync06(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_1])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
 
     def test_unsync_network_non_vm_vm_bond(self):
         """
@@ -665,7 +665,7 @@ class TestHostNetworkApiSync06(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_2])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_2])
 
 
 class TestHostNetworkApiSync07(TestHostNetworkApiSyncBase):
@@ -722,7 +722,7 @@ class TestHostNetworkApiSync07(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_1])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
 
 
 class TestHostNetworkApiSync08(TestHostNetworkApiSyncBase):
@@ -784,7 +784,7 @@ class TestHostNetworkApiSync08(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_1])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
 
 
 class TestHostNetworkApiSync09(TestHostNetworkApiSyncBase):
@@ -832,7 +832,7 @@ class TestHostNetworkApiSync09(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_1])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
 
 
 class TestHostNetworkApiSync10(TestHostNetworkApiSyncBase):
@@ -881,7 +881,7 @@ class TestHostNetworkApiSync10(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_1])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
 
 
 class TestHostNetworkApiSync11(TestHostNetworkApiSyncBase):
@@ -932,7 +932,7 @@ class TestHostNetworkApiSync11(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_1])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
 
 
 class TestHostNetworkApiSync12(TestHostNetworkApiSyncBase):
@@ -985,7 +985,7 @@ class TestHostNetworkApiSync12(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_1])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
 
 
 class TestHostNetworkApiSync13(TestHostNetworkApiSyncBase):
@@ -1039,7 +1039,7 @@ class TestHostNetworkApiSync13(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_1])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
 
 
 class TestHostNetworkApiSync14(TestHostNetworkApiSyncBase):
@@ -1095,7 +1095,7 @@ class TestHostNetworkApiSync14(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_1])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
 
 
 class TestHostNetworkApiSync15(TestHostNetworkApiSyncBase):
@@ -1143,7 +1143,7 @@ class TestHostNetworkApiSync15(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_1])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
 
 
 class TestHostNetworkApiSync16(TestHostNetworkApiSyncBase):
@@ -1197,7 +1197,7 @@ class TestHostNetworkApiSync16(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_1])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
 
 
 class TestHostNetworkApiSync17(TestHostNetworkApiSyncBase):
@@ -1245,7 +1245,7 @@ class TestHostNetworkApiSync17(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_1])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
 
 
 class TestHostNetworkApiSync18(TestHostNetworkApiSyncBase):
@@ -1293,4 +1293,4 @@ class TestHostNetworkApiSync18(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        helper.sync_networks([self.net_case_1])
+        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])

@@ -6,11 +6,16 @@ Helper for networking jobs
 """
 
 import logging
+import config as conf
 from random import randint
 from art.test_handler import exceptions
 from art.rhevm_api.utils import test_utils
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+
+logger = logging.getLogger("Global_Network_Helper")
 
 
 def create_random_ips(num_of_ips=2, mask=16):
@@ -41,6 +46,8 @@ def run_vm_once_specific_host(vm, host, wait_for_ip=False):
     :type vm: str
     :param host: Host name
     :type host: str
+    :param wait_for_ip: Wait for VM to get IP
+    :type wait_for_ip: bool
     :return: True if action succeeded, False otherwise
     :rtype: bool
     """
@@ -115,6 +122,62 @@ def prepare_networks_on_setup(networks_dict, dc, cluster=None):
     ):
         raise exceptions.NetworkException(
             "Couldn't create %s on %s" % (networks_dict, log)
+        )
+
+
+def networks_sync_status(host, networks):
+    """
+    Get networks sync status
+
+    :param host: Host name
+    :type host: str
+    :param networks: List of networks
+    :type networks: list
+    :return: True if sync else False
+    :type: bool
+    """
+    for net in networks:
+        logger.info("Get %s attachment", net)
+        try:
+            attachment = ll_host_network.get_networks_attachments(
+                host_name=host, networks=[net]
+            )[0]
+        except IndexError:
+            logger.error("%s not found" % net)
+            return False
+
+        logger.info("Check if %s is unsync", net)
+        if not ll_host_network.get_attachment_sync_status(
+            attachment=attachment
+        ):
+            logger.info("%s is not sync" % net)
+            return False
+    return True
+
+
+def sync_networks(host, networks):
+    """
+    Sync the networks
+
+    :param host: Host name
+    :type host: str
+    :param networks: List of networks to sync
+    :type networks: list
+    :raise: conf.NET_EXCEPTION
+    """
+    network_sync_dict = {
+        "sync": {
+            "networks": networks
+        }
+    }
+    logger.info("syncing %s", networks)
+    if not hl_host_network.setup_networks(host_name=host, **network_sync_dict):
+        raise conf.NET_EXCEPTION("Failed to sync %s" % networks)
+
+    if not networks_sync_status(host=host, networks=networks):
+        raise conf.NET_EXCEPTION(
+            "At least one of the networks from %s is out of sync, should be "
+            "synced" % networks
         )
 
 
