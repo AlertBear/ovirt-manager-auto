@@ -11,11 +11,13 @@ from random import randint
 from art.test_handler import exceptions
 from art.rhevm_api.utils import test_utils
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 logger = logging.getLogger("Global_Network_Helper")
+HOST_NET_QOS_TYPE = "hostnetwork"
 
 
 def create_random_ips(num_of_ips=2, mask=16):
@@ -178,6 +180,78 @@ def sync_networks(host, networks):
         raise conf.NET_EXCEPTION(
             "At least one of the networks from %s is out of sync, should be "
             "synced" % networks
+        )
+
+
+def remove_qos_from_dc(qos_name, datacenter=conf.DC_NAME[0]):
+    """
+    Removes host network QoS from DC
+
+    :param qos_name: Name of the host network QoS
+    :type qos_name: str
+    :param datacenter: Datacenter to create QoS on
+    :type datacenter: str
+    """
+    logger.info("Remove QoS %s from %s", qos_name, datacenter)
+    if not ll_dc.delete_qos_from_datacenter(
+        datacenter=datacenter, qos_name=qos_name
+    ):
+        logger.error(
+            "Couldn't delete the QoS %s from DC %s", qos_name, datacenter
+        )
+
+
+def create_host_net_qos(
+    qos_name, positive=True, datacenter=conf.DC_NAME[0], **qos_dict
+):
+    """
+    Create a host network qos with provided parameters
+
+    :param qos_name: Name of the host network QoS
+    :type qos_name: str
+    :param positive: Flag if the test is positive or not
+    :type positive: bool
+    :param datacenter: Datacenter to create QoS on
+    :type datacenter: str
+    :param qos_dict: Dict of host network qos values to create QoS with
+    :type qos_dict: dict
+    :raises: Network exception
+    """
+    logger.info(
+        "Create new network host QoS profile with parameters %s", qos_dict
+    )
+    result = ll_dc.add_qos_to_datacenter(
+        datacenter=datacenter, qos_name=qos_name,
+        qos_type=HOST_NET_QOS_TYPE, **qos_dict
+    )
+    if not result and positive:
+        raise conf.NET_EXCEPTION(
+            "Couldn't create Host Network QOS under DC when should"
+        )
+    if result and not positive:
+        raise conf.NET_EXCEPTION(
+            "Could create Host Network QOS under DC when shouldn't"
+        )
+
+
+def update_host_net_qos(qos_name, datacenter=conf.DC_NAME[0], **qos_dict):
+    """
+    Update host network qos parameters with given dict parameters
+
+    :param qos_name: Name of the host network QoS
+    :type qos_name: str
+    :param datacenter: Datacenter to create QoS on
+    :type datacenter: str
+    :param qos_dict: dict of host network qos values to update
+    :type qos_dict: dict
+    :raises: Network exception
+    """
+    logger.info("Update network host QoS values with %s ", qos_dict)
+    if not ll_dc.update_qos_in_datacenter(
+        datacenter=datacenter, qos_name=qos_name, **qos_dict
+    ):
+        raise conf.NET_EXCEPTION(
+            "Couldn't update Network QOS under DC with provided parameters"
         )
 
 

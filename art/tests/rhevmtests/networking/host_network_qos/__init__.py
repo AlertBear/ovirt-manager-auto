@@ -38,7 +38,7 @@ def teardown_package():
     """
     logger.info("Remove networks from setup")
     if not hl_networks.remove_net_from_setup(
-        host=conf.VDS_HOSTS_1, auto_nics=[0], data_center=conf.DC_NAME,
+        host=conf.HOST_1, data_center=conf.DC_NAME,
         all_net=True, mgmt_network=conf.MGMT_BRIDGE
     ):
         logger.error(
