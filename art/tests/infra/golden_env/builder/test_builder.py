@@ -215,6 +215,7 @@ class CreateDC(TestCase):
             storage_type = sd['storage_type']
             if storage_type == ENUMS['storage_type_nfs']:
                 address, path = storage_conf.get_nfs_share()
+                self.delete_all_data_from_nfs(address, path)
                 assert storagedomains.addNFSDomain(
                     host, sd_name, datacenter_name, address, path, format=True)
             elif storage_type == ENUMS['storage_type_iscsi']:
