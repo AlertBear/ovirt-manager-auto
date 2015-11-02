@@ -20,6 +20,8 @@ from art.test_handler.tools import polarion  # pylint: disable=E0611
 from random import choice
 from rhevmtests.virt import config
 from art.unittest_lib import attr
+import unittest2
+import art.unittest_lib.common as common
 
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
@@ -373,6 +375,7 @@ class VMCpuTopology(BaseTemplateVMClass):
 ########################################################################
 
 
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class VMOs(BaseTemplateVMClass):
     """
     OS inheritance
@@ -936,6 +939,7 @@ class NegativeTemplateCases(BaseTemplateClass):
             )
         )
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12278")
     def test_create_template_with_wrong_data_center(self):
         """

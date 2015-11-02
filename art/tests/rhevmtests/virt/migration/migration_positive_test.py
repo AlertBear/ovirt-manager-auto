@@ -12,17 +12,19 @@ import logging
 from rhevmtests.networking import config
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import vms
-from art.unittest_lib import VirtTest as TestCase
+from art.unittest_lib import VirtTest as VirtTestCase
+from art.unittest_lib import NetworkTest as NetworkTestCase
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level.networks import updateClusterNetwork
 from rhevmtests.networking.helper import create_random_ips
+import art.rhevm_api.tests_lib.high_level.vms as hl_vm
+from art.unittest_lib.network import get_host
 from art.rhevm_api.tests_lib.low_level.vms import (
-    addNic, removeNic, updateNic, run_vms_once
+    addNic, removeNic, updateNic
 )
 from rhevmtests.virt.migration.helper import (
-    dedicated_migration, migrate_unplug_required,
-    get_origin_host
+    dedicated_migration, migrate_unplug_required
 )
 from art.rhevm_api.tests_lib.high_level.networks import (
     createAndAttachNetworkSN, remove_net_from_setup
@@ -40,7 +42,7 @@ NETMASK = "255.255.0.0"
 ########################################################################
 
 
-class TestMigrationCaseBase(TestCase):
+class TestMigrationCaseBase(NetworkTestCase):
     """
     base class which provides  teardown class method for each test case
     """
@@ -58,19 +60,63 @@ class TestMigrationCaseBase(TestCase):
 
 
 @attr(tier=1)
-class TestMigrationCase01(TestMigrationCaseBase):
+class TestMigrationVirtSanityCase(VirtTestCase):
     """
-    Verify dedicated regular network migration, migration 5 VMs
+    Virt sanity cases:
+    1. Check migration of one VM
+    2. Check maintenance with one VM
+    """
+
+    __test__ = True
+
+    @polarion("RHEVM3-3847")
+    def test_migration(self):
+        """
+        Check migration of one VM
+        """
+        self.assertTrue(
+            vms.migrateVm(
+                positive=True,
+                vm=config.VM_NAME[0]
+            ),
+            "Failed to migrate VM: %s " % config.VM_NAME[0]
+        )
+
+    @polarion("RHEVM3-12332")
+    def test_migration_maintenance(self):
+        """
+        Check migration for one VM
+        by putting host into maintenance
+        """
+
+        logger.info(
+            "Check that migration for one VM "
+            "by putting the host into maintenance succeed"
+        )
+        self.assertTrue(
+            hl_vm.migrate_by_maintenance(
+                vms_list=[config.VM_NAME[0]],
+                src_host=get_host(config.VM_NAME[0]),
+                vm_os_type="rhel",
+                vm_user=config.VMS_LINUX_USER,
+                vm_password=config.VMS_LINUX_PW
+            ),
+            "Maintenance test with one VM failed"
+        )
+
+
+@attr(tier=1)
+class TestMigrationNetworkSanity(TestMigrationCaseBase):
+    """
+    Network sanity: check migration of one vm over nic
     """
     __test__ = True
-    vms = config.VM_NAME[1:5]
 
     @classmethod
     def setup_class(cls):
         """
         Create logical vm network on DC/Cluster/Hosts
         Configure it as migration network
-        Start 4 more VMs
         """
         ips = create_random_ips()
         local_dict = {
@@ -96,58 +142,18 @@ class TestMigrationCase01(TestMigrationCaseBase):
                 "Cannot create and attach network %s" % config.NETWORKS[0]
             )
 
-        host_for_vms = get_origin_host(config.VM_NAME[0])[1]
-        logger.info("Starting: %s on %s", cls.vms, host_for_vms)
-        vms_kwargs = {"host": host_for_vms}
-        run_vms_once(vms=cls.vms, **vms_kwargs)
-
-    @polarion("RHEVM3-3847")
-    def test_a1_dedicated_migration(self):
-        """
-        Check dedicated network migration for 5 VMs
-        """
-        logger.info(
-            "Check that network migration for 5 VMs"
-            "over NIC is working as expected"
-        )
-        dedicated_migration(vms=config.VM_NAME[:5])
-
     @polarion("RHEVM3-3878")
-    def test_a2_dedicated_migration_nic(self):
+    def test_migration_nic(self):
         """
-        Check dedicated network migration for 5 VMs
+        Check network migration for 1 VMs
         by putting req net down
         """
         logger.info(
-            "Check that network migration for 5 VMs"
+            "Check that network migration 1 VMs "
             "over NIC is working as expected by "
             "putting NIC with required network down"
         )
-        migrate_unplug_required(vms=config.VM_NAME[:5])
-
-    def test_a3_dedicated_migration_maintenance(self):
-        """
-        Check dedicated network migration for 5 VMs
-        by putting host into maintenance
-        """
-        logger.info(
-            "Check that network migration for 5 VMs "
-            "over NIC is working as "
-            "expected by putting the host into maintenance"
-        )
-        dedicated_migration(vms=config.VM_NAME[:5], maintenance=True)
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Stopping the extra 4 VMs
-        """
-        logger.info("Stopping: %s", config.VM_NAME[1:5])
-        try:
-            vms.stop_vms_safely(vms_list=cls.vms)
-        except Exception:
-            logger.error("Failed to stop %s", cls.vms)
-        super(TestMigrationCase01, cls).teardown_class()
+        migrate_unplug_required(vms=config.VM_NAME[0])
 
 
 @attr(tier=2)

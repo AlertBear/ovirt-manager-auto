@@ -20,6 +20,7 @@ from art.unittest_lib import attr
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import rhevmtests.virt.migration.helper as helper
 from art.rhevm_api.tests_lib.low_level import storagedomains
+import art.unittest_lib.common as common
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 logger = logging.getLogger(__name__)
@@ -132,6 +133,7 @@ class TestMigrateVmOnSameHost(TestCase):
 
 
 @attr(tier=2)
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class TestMigrationOverloadHost(TestCase):
     """
     Negative test:
@@ -304,7 +306,8 @@ class TestVMMigrateOptionsCase1(TestCase):
             nic=config.NIC_NAME[0],
             storageDomainName=cls.storage_domain,
             size=config.DISK_SIZE,
-            network=config.MGMT_BRIDGE
+            network=config.MGMT_BRIDGE,
+            display_type=config.VM_DISPLAY_TYPE
         ):
             raise errors.VMException(
                 "Failed to add vm %s " %

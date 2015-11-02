@@ -892,7 +892,10 @@ class DifferentVmTestCases(TestCase):
         logger.info("Add new vm %s", vm_name)
         if not vm_api.addVm(
             True, name=vm_name,
-            cluster=config.CLUSTER_NAME[0]
+            cluster=config.CLUSTER_NAME[0],
+            os_type=config.VM_OS_TYPE,
+            type=config.VM_TYPE,
+            display_type=config.VM_DISPLAY_TYPE
         ):
             raise errors.VMException("Failed to create vm")
         update_vm_status_in_database(
@@ -938,7 +941,10 @@ class DifferentVmTestCases(TestCase):
         logger.info("Add new vm %s", vm_name)
         if not vm_api.addVm(
             True, name=vm_name,
-            cluster=config.CLUSTER_NAME[0]
+            cluster=config.CLUSTER_NAME[0],
+            os_type=config.VM_OS_TYPE,
+            type=config.VM_TYPE,
+            display_type=config.VM_DISPLAY_TYPE
         ):
             raise errors.VMException("Failed to create vm")
         logger.info("Check vm %s statistics", vm_name)
@@ -1022,6 +1028,7 @@ class VmDisk(BaseVm):
         )
 
     @attr(tier=2)
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12568")
     def test_add_bootable_cow_ide_data_disk(self):
         """
@@ -1058,6 +1065,7 @@ class VmDisk(BaseVm):
         )
 
     @attr(tier=2)
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12571")
     def test_add_disks_with_different_interfaces_and_formats(self):
         """
