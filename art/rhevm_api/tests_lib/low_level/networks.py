@@ -85,6 +85,24 @@ def _prepareNetworkObject(**kwargs):
     if 'profile_required' in kwargs:
         net.set_profile_required(kwargs.get('profile_required'))
 
+    if 'qos_dict' in kwargs:
+
+        qos_dict = kwargs.get("qos_dict")
+        qos_name = qos_dict.pop("qos_name")
+        datacenter = qos_dict.pop("datacenter")
+        qos_obj = ll_datacenters.get_qos_from_datacenter(datacenter, qos_name)
+        if not qos_obj:
+            qos_type = qos_dict.pop("qos_type")
+            ll_datacenters.add_qos_to_datacenter(
+                datacenter=datacenter, qos_name=qos_name, qos_type=qos_type,
+                **qos_dict
+            )
+            qos_obj = ll_datacenters.get_qos_from_datacenter(
+                datacenter, qos_name
+            )
+
+        net.set_qos(qos_obj)
+
     return net
 
 
