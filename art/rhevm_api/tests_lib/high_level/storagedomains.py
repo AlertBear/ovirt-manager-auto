@@ -281,7 +281,7 @@ def addGlusterDomain(host, name, data_center, address, path, vfs_type,
 @is_action()
 def addNFSDomain(host, storage, data_center, address, path,
                  sd_type=ENUMS['storage_dom_type_data'], storage_format=None,
-                 format=None):
+                 format=None, activate=True):
     '''
     positive flow for adding NFS Storage including all the necessary steps
     Author: atal
@@ -294,6 +294,7 @@ def addNFSDomain(host, storage, data_center, address, path,
         * sd_type - type of storage domain: data, iso or export
         * storage_format - storage format version (v1/v2/v3)
         * format - when True it will remove the previous data
+        * activate - when True it will attach & activate domain
     return True if succeeded, False otherwise
     '''
     if not ll_sd.addStorageDomain(
@@ -303,8 +304,12 @@ def addNFSDomain(host, storage, data_center, address, path,
         logger.error('Failed to add %s:%s to %s' % (address, path, host))
         return False
 
-    status = ll_sd.attachStorageDomain(True, data_center, storage, True)
-    return status and ll_sd.activateStorageDomain(True, data_center, storage)
+    if activate:
+        status = ll_sd.attachStorageDomain(True, data_center, storage, True)
+        return status and ll_sd.activateStorageDomain(
+            True, data_center, storage,
+        )
+    return True
 
 
 @is_action()
@@ -519,10 +524,12 @@ class StorageAdder(object):
         self.add_iso_domains()
         return created_storages
 
-    def _add_nfs_domain(self, address, path, sd_type, name):
+    def _add_nfs_domain(self, address, path, sd_type, name, activate=True):
         if address is not None and path is not None:
             if not addNFSDomain(
-                    self.host, name, self.datacenter, address, path, sd_type):
+                self.host, name, self.datacenter, address, path, sd_type,
+                activate,
+            ):
                 raise errors.StorageDomainException(
                     "addNFSDomain %s (%s, %s, %s) to DC %s failed." %
                     (sd_type, address, path, self.host, self.datacenter))
@@ -535,12 +542,20 @@ class StorageAdder(object):
     def add_export_domains(self):
         """ Adds export domain
         """
-        export_address = self.storage.get('export_domain_address', None)
-        export_path = self.storage.get('export_domain_path', None)
+        try:
+            export_addresses = self.storage.as_list('export_domain_address')
+            export_paths = self.storage.as_list('export_domain_path')
+        except KeyError:
+            export_addresses = []
+            export_paths = []
 
-        self._add_nfs_domain(
-            export_address, export_path, ENUMS['storage_dom_type_export'],
-            self.export_name)
+        activate = True
+        for address, path in zip(export_addresses, export_paths):
+            self._add_nfs_domain(
+                address, path, ENUMS['storage_dom_type_export'],
+                self.export_name, activate,
+            )
+            activate = False
 
     def add_iso_domains(self):
         """ Adds iso domain
