@@ -29,9 +29,9 @@ TEST_GROUP_DELETE = 'group_deleted'
 def setup_module():
     global USER_CLI, GROUP_CLI, MANAGE_CLI
     ss = config.ENGINE_HOST.executor().session()
-    USER_CLI = EngineCLI(tool=TOOL, session=ss, module='user')
-    GROUP_CLI = EngineCLI(tool=TOOL, session=ss, module='group')
-    MANAGE_CLI = EngineCLI(tool=TOOL, session=ss, module='group-manage')
+    USER_CLI = EngineCLI(tool=TOOL, session=ss).setup_module('user')
+    GROUP_CLI = EngineCLI(tool=TOOL, session=ss).setup_module('group')
+    MANAGE_CLI = EngineCLI(tool=TOOL, session=ss).setup_module('group-manage')
 
     assert USER_CLI.run(
         'add',
@@ -353,6 +353,7 @@ class JDBCCLIQuery(TestCase):
         cls.query_cli = EngineCLI(
             tool=TOOL,
             session=config.ENGINE_HOST.executor().session(),
+        ).setup_module(
             module='query',
         )
 
@@ -421,6 +422,7 @@ class JDBCCLISettings(TestCase):
         cls.settings_cli = EngineCLI(
             tool=TOOL,
             session=config.ENGINE_HOST.executor().session(),
+        ).setup_module(
             module='settings',
         )
 
