@@ -19,7 +19,7 @@ class EngineCLI(object):
        action_positional_argX=*args[X]
        action_named_argX=kwargs[X]
     """
-    def __init__(self, tool, session, module, **kwargs):
+    def __init__(self, tool, session, **kwargs):
         """
         Initialize CLI
 
@@ -27,23 +27,28 @@ class EngineCLI(object):
         :type tool: str
         :param session: session of config.ENGINE_HOST
         :type session: art.rhevm_api.resources.ssh.RemoteExecutor.Session
-        :param module: module of cli tool to be used
-        :type module: str
         :param kwargs: parameters of tool
         :type kwargs: dict
         """
         self.tool = tool
         self.session = session
-        self.cmd = [self.tool]
-        self.cmd += map(
-            lambda (k, v): '--%s=%s' % (k.replace('_', '-'), v),
-            kwargs.iteritems()
-        )
-        self.cmd.append(module)
+        self.cmd = [self.tool] + self._map_kwargs(**kwargs)
+
+    def setup_module(self, module, **kwargs):
+        """
+        Setup module and it's parameters
+
+        :param module: module of cli tool to be used
+        :type module: str
+        :param kwargs: parameters of module
+        :type kwargs: dict
+        """
+        self.cmd += [module] + self._map_kwargs(**kwargs)
+        return self
 
     def run(self, *args, **kwargs):
         """
-        run command
+        run command with specific actions
 
         :param args: actions of module
         :type args: list
@@ -52,17 +57,16 @@ class EngineCLI(object):
         :return: true if cmd ran successfully else false and stdout of command
         :rtype: tuple
         """
-        cmd = (
-            self.cmd +
-            list(args) +
-            map(
-                lambda (k, v): '--%s=%s' % (k.replace('_', '-'), v),
-                kwargs.iteritems()
-            )
-        )
+        cmd = self.cmd + list(args) + self._map_kwargs(**kwargs)
         with self.session as ss:
             logger.info("Run command: '%s'", cmd)
             rc, out, err = ss.run_cmd(cmd)
             logger.info("rc: '%s', out: '%s', err: '%s'", rc, out, err)
 
             return not rc, out
+
+    def _map_kwargs(self, **kwargs):
+        return map(
+            lambda (k, v): '--%s=%s' % (k.replace('_', '-'), v),
+            kwargs.iteritems()
+        )
