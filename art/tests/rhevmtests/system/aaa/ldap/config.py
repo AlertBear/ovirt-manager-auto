@@ -20,6 +20,7 @@ EXTENSIONS = {}
 TRUSTSTORE = '/tmp/adw2k12r2.ts'
 TRUSTSTORE_PASSWORD = '123456'
 AAA_DIR = '/etc/ovirt-engine/aaa'
+TOOL = 'ovirt-engine-extensions-tool'
 
 # Extensions properties
 WRONG_EXTENSION = {
