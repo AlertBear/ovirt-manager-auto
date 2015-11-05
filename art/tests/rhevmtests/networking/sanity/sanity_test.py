@@ -1116,7 +1116,9 @@ class TestSanityCase16(NetworkTest):
         logger.info(
             "Create VNIC profile with QoS and add it to the VNIC"
         )
-        nq_helper.add_qos_profile_to_nic()
+        nq_helper.add_qos_profile_to_nic(
+            qos_name=self.QOS_NAME, vnic_profile_name=conf.VNIC_PROFILE[0]
+        )
         helper.run_vm_on_host()
         inbound_dict = {
             "average": self.BW_PARAMS[0],
