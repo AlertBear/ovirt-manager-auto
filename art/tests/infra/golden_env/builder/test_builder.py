@@ -567,10 +567,10 @@ class CreateDC(TestCase):
     def _get_executor(self):
         return self.vds_objs[0].executor()
 
-    def _execute_cmd(self, cmd):
-        if not hasattr(self, 'executor'):
-            self.executor = self._get_executor()
-        rc, out, err = self.executor.run_cmd(cmd)
+    def _execute_cmd(self, cmd, ss=None):
+        if ss is None:
+            ss = self._get_executor()
+        rc, out, err = ss.run_cmd(cmd)
         assert rc == 0, "Return code %s != 0" % rc
 
     def delete_data_from_storage_domain(self, address, path, fs_type='-tnfs'):
@@ -580,10 +580,11 @@ class CreateDC(TestCase):
         mount_cmd = ['mount', fs_type, nfs_path, mount_dir]
         rm_cmd = ['rm', '-rf', mount_dir + '/*']
         umount_cmd = ['umount', mount_dir]
-        self._execute_cmd(create_dir_cmd)
-        self._execute_cmd(mount_cmd)
-        self._execute_cmd(rm_cmd)
-        self._execute_cmd(umount_cmd)
+        with self._get_executor().session() as ss:
+            self._execute_cmd(create_dir_cmd, ss)
+            self._execute_cmd(mount_cmd, ss)
+            self._execute_cmd(rm_cmd, ss)
+            self._execute_cmd(umount_cmd, ss)
 
     def add_export_domain(self, export_domain, storage_conf, dc, host):
         if export_domain['name']:
