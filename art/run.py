@@ -15,7 +15,9 @@ from art.test_handler.settings import (
 )
 from art.test_handler.plmanagement import PluginError
 from utilities.logger_utils import initialize_logger
-from art.test_handler.settings import ReturnCode as RC, dump_stacks
+from art.test_handler.settings import (
+    ReturnCode as RC, dump_stacks, stuck_handler
+)
 from art.test_handler.handler_lib.configs import ValidationError
 from art.test_handler import find_config_file
 
@@ -25,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def _main(plmanager):
+    stuck_handler()
     signal.signal(signal.SIGUSR1, dump_stacks)
     args = populateOptsFromArgv(argv)
     init_logger()

@@ -28,12 +28,14 @@ from shutil import copyfile
 import sys
 import threading
 import traceback
+import time
 from configobj import ConfigObj
 
 from art.test_handler.handler_lib.configs import ARTConfigValidator, \
-        ConfigLoader
+    ConfigLoader
 from art.test_handler.plmanagement.manager import PluginManager
 from art.test_handler import find_config_file
+import logging
 
 ART_CONFIG = {}
 opts = {}
@@ -287,3 +289,32 @@ def dump_stacks(signal, frame):
     for threadId, stack in sys._current_frames().items():
         print("\nThread: {0}({1})".format(id2name[threadId], threadId))
         traceback.print_stack(f=stack)
+
+
+def stuck_handler():
+    """
+    Check MainThread every 4 minutes if stuck.
+    """
+    mt = threading.current_thread().ident
+    t = threading.Thread(target=stuck_check, args=(mt,))
+    t.daemon = True
+    t.start()
+
+
+def stuck_check(main_thread):
+    t1 = None
+    t2 = None
+    logger = logging.getLogger("stuck_handler")
+    while True:
+        time.sleep(240)
+        t2 = t1
+        try:
+            tmp = sys._current_frames()[main_thread]
+        except Exception as ex:
+            logger.warning(
+                "sys._current_frames failed with exception: %s\n", ex
+            )
+            break
+        t1 = traceback.format_stack(f=tmp)
+        if t1 == t2:
+            logger.error(''.join(t1))
