@@ -8,16 +8,20 @@ Helper for networking jobs
 import logging
 import config as conf
 from random import randint
+from art.test_handler import settings
 from art.test_handler import exceptions
 from art.rhevm_api.utils import test_utils
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 logger = logging.getLogger("Global_Network_Helper")
+
 HOST_NET_QOS_TYPE = "hostnetwork"
+ENUMS = settings.opts['elements_conf']['RHEVM Enums']
 
 
 def create_random_ips(num_of_ips=2, mask=16):
@@ -53,15 +57,23 @@ def run_vm_once_specific_host(vm, host, wait_for_ip=False):
     :return: True if action succeeded, False otherwise
     :rtype: bool
     """
+    logger.info("Check if %s is UP", host)
+    host_status = ll_hosts.getHostState(host)
+    if not host_status == ENUMS["host_state_up"]:
+        logger.error("%s status is %s, cannot run VM", host, host_status)
+        return False
+
     logging.info("Run VM once on host %s", host)
     if not ll_vms.runVmOnce(positive=True, vm=vm, host=host):
         logging.error("Couldn't run VM on host %s", host)
         return False
+
     if wait_for_ip:
         logging.info("Wait to get IP address")
         if not ll_vms.waitForIP(vm)[0]:
             logging.error("VM didn't get IP address")
             return False
+
     logging.info("Check that VM was started on host %s", host)
     vm_host = ll_vms.getVmHost(vm)[1]["vmHoster"]
     if not host == vm_host:
