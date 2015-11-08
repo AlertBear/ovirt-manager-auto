@@ -195,7 +195,7 @@ def sync_networks(host, networks):
         )
 
 
-def remove_qos_from_dc(qos_name, datacenter=conf.DC_NAME[0]):
+def remove_qos_from_dc(qos_name, datacenter=conf.DC_NAME[0], teardown=True):
     """
     Removes host network QoS from DC
 
@@ -203,14 +203,19 @@ def remove_qos_from_dc(qos_name, datacenter=conf.DC_NAME[0]):
     :type qos_name: str
     :param datacenter: Datacenter to create QoS on
     :type datacenter: str
+    :param teardown: If running on teardown
+    :type teardown: bool
     """
+    msg = "Couldn't delete the QoS %s from DC %s", qos_name, datacenter
     logger.info("Remove QoS %s from %s", qos_name, datacenter)
-    if not ll_dc.delete_qos_from_datacenter(
+    res = ll_dc.delete_qos_from_datacenter(
         datacenter=datacenter, qos_name=qos_name
-    ):
-        logger.error(
-            "Couldn't delete the QoS %s from DC %s", qos_name, datacenter
-        )
+    )
+    if not res:
+        if teardown:
+            logger.error(msg)
+        else:
+            raise conf.NET_EXCEPTION(msg)
 
 
 def create_host_net_qos(

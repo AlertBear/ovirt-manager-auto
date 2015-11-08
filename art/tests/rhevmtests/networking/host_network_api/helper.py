@@ -69,16 +69,17 @@ def attach_network_attachment(
     """
     nic_log = nic if nic else network_dict.get("nic")
     logger.info(
-        "Attaching %s to %s on %s", network, nic_log, conf.HOST_4
+        "Attaching %s to %s on %s", network, nic_log, conf.LAST_HOST
     )
     network_to_attach = network_dict.pop("network")
     res = hl_host_network.add_network_to_host(
-        host_name=conf.HOST_4, network=network_to_attach, nic_name=nic,
+        host_name=conf.LAST_HOST, network=network_to_attach, nic_name=nic,
         **network_dict
     )
     if res != positive:
         raise conf.NET_EXCEPTION(
-            "Failed to attach %s to %s on %s" % (network, nic_log, conf.HOST_4)
+            "Failed to attach %s to %s on %s" %
+            (network, nic_log, conf.LAST_HOST)
         )
 
 
@@ -96,7 +97,7 @@ def networks_unsync_reasons(net_sync_reason):
         dict_to_compare = net_sync_reason[net][reas]
         logger.info("Check if %s unsync reason is %s", net, reas)
         unsync_reason = hl_host_network.get_networks_unsync_reason(
-            conf.HOST_4, [net]
+            conf.LAST_HOST, [net]
         )
         if not unsync_reason[net][reas] == dict_to_compare:
             logger.error(
@@ -116,7 +117,7 @@ def get_networks_sync_status_and_unsync_reason(net_sync_reason):
     :raise: conf.NET_EXCEPTION
     """
     networks = [i for i in net_sync_reason]
-    if net_helper.networks_sync_status(host=conf.HOST_4, networks=networks):
+    if net_helper.networks_sync_status(host=conf.LAST_HOST, networks=networks):
         raise conf.NET_EXCEPTION("%s are synced but shouldn't" % networks)
     if not networks_unsync_reasons(net_sync_reason):
         raise conf.NET_EXCEPTION("%s unsync reason is incorrect" % networks)
@@ -132,10 +133,10 @@ class TestHostNetworkApiTestCaseBase(unit_lib.NetworkTest):
         """
         Remove all networks from the host NICs.
         """
-        logger.info("Removing all networks from %s", conf.HOST_4)
-        if not hl_host_network.clean_host_interfaces(conf.HOST_4):
+        logger.info("Removing all networks from %s", conf.LAST_HOST)
+        if not hl_host_network.clean_host_interfaces(conf.LAST_HOST):
             logger.error(
-                "Failed to remove all networks from %s", conf.HOST_4
+                "Failed to remove all networks from %s", conf.LAST_HOST
             )
 
 
@@ -145,12 +146,12 @@ def remove_networks_from_setup():
     """
     logger.info("Remove networks from setup")
     if not hl_networks.remove_net_from_setup(
-        host=conf.VDS_HOSTS_4, auto_nics=[0], data_center=conf.DC_NAME,
+        host=conf.LAST_HOST, data_center=conf.DC_NAME_1,
         all_net=True, mgmt_network=conf.MGMT_BRIDGE
     ):
         logger.error(
             "Failed to remove %s from %s and %s",
-            conf.NIC_DICT, conf.DC_NAME, conf.HOST_4
+            conf.NIC_DICT, conf.DC_NAME_1, conf.LAST_HOST
         )
 
 
@@ -182,7 +183,7 @@ def manage_ip_and_refresh_capabilities(
     if set_ip:
         ip = int_ip if not ip else ip
         set_interface_ip(ip=ip, netmask=netmask, interface=interface)
-    host_obj = ll_hosts.HOST_API.find(conf.HOST_4)
+    host_obj = ll_hosts.HOST_API.find(conf.LAST_HOST)
     refresh_href = "{0};force".format(host_obj.get_href())
     ll_hosts.HOST_API.get(href=refresh_href)
 

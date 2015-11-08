@@ -8,6 +8,7 @@ Sync tests from host network API
 import helper
 import logging
 import config as conf
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 import rhevmtests.networking.helper as net_helper
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
@@ -30,10 +31,11 @@ def setup_module():
             (conf.SYNC_DC, conf.SYNC_CL)
         )
     logger.info(
-        "Add %s to %s/%s", conf.SYNC_DICT_1, conf.DC_NAME, conf.CLUSTER_2
+        "Add %s to %s/%s", conf.SYNC_DICT_1, conf.DC_NAME_1, conf.CLUSTER_2
     )
     net_helper.prepare_networks_on_setup(
-        networks_dict=conf.SYNC_DICT_1, dc=conf.DC_NAME, cluster=conf.CLUSTER_2
+        networks_dict=conf.SYNC_DICT_1, dc=conf.DC_NAME_1,
+        cluster=conf.CLUSTER_2
     )
     logger.info(
         "Add %s to %s/%s", conf.SYNC_DICT_2, conf.SYNC_DC, conf.SYNC_CL
@@ -41,10 +43,10 @@ def setup_module():
     net_helper.prepare_networks_on_setup(
         networks_dict=conf.SYNC_DICT_2, dc=conf.SYNC_DC, cluster=conf.SYNC_CL
     )
-    logger.info("Deactivate %s", conf.HOST_4)
-    if not ll_hosts.deactivateHost(True, conf.HOST_4):
+    logger.info("Deactivate %s", conf.LAST_HOST)
+    if not ll_hosts.deactivateHost(True, conf.LAST_HOST):
         raise conf.NET_EXCEPTION(
-            "Failed to set %s to maintenance" % conf.HOST_4
+            "Failed to set %s to maintenance" % conf.LAST_HOST
         )
 
 
@@ -60,15 +62,14 @@ def teardown_module():
             "Failed to remove %s and %s", conf.SYNC_DC, conf.SYNC_CL
         )
     if not hl_networks.remove_net_from_setup(
-        host=conf.VDS_HOSTS_4, auto_nics=[0], all_net=True,
-        mgmt_network=conf.MGMT_BRIDGE
+        host=conf.LAST_HOST, all_net=True, mgmt_network=conf.MGMT_BRIDGE
     ):
         logger.error(
             "Failed to remove %s from setup", conf.SYNC_DICT_1.keys()
         )
-    logger.info("Activate %s", conf.HOST_4)
-    if not ll_hosts.activateHost(positive=True, host=conf.HOST_4):
-        logger.error("Failed to activate %s", conf.HOST_4)
+    logger.info("Activate %s", conf.LAST_HOST)
+    if not ll_hosts.activateHost(positive=True, host=conf.LAST_HOST):
+        logger.error("Failed to activate %s", conf.LAST_HOST)
 
 
 class TestHostNetworkApiSyncBase(helper.TestHostNetworkApiTestCaseBase):
@@ -85,19 +86,19 @@ class TestHostNetworkApiSyncBase(helper.TestHostNetworkApiTestCaseBase):
         Attach networks to the host
         Move the host the another cluster
         """
-        logger.info("Attaching networks to %s", conf.HOST_4)
+        logger.info("Attaching networks to %s", conf.LAST_HOST)
         if not hl_host_network.setup_networks(
-            host_name=conf.HOST_4, **cls.network_host_api_dict
+            host_name=conf.LAST_HOST, **cls.network_host_api_dict
         ):
             raise conf.NET_EXCEPTION(
-                "Failed to attach networks to %s" % conf.HOST_4
+                "Failed to attach networks to %s" % conf.LAST_HOST
             )
         if cls.move_host:
             if not ll_hosts.updateHost(
-                positive=True, host=conf.HOST_4, cluster=conf.SYNC_CL
+                positive=True, host=conf.LAST_HOST, cluster=conf.SYNC_CL
             ):
                 raise conf.NET_EXCEPTION(
-                    "Failed to move %s to %s" % (conf.HOST_4, conf.SYNC_CL)
+                    "Failed to move %s to %s" % (conf.LAST_HOST, conf.SYNC_CL)
                 )
 
     @classmethod
@@ -106,17 +107,18 @@ class TestHostNetworkApiSyncBase(helper.TestHostNetworkApiTestCaseBase):
         Clean the host interface
         Move the host back to the original cluster
         """
-        logger.info("Removing all networks from %s", conf.HOST_4)
-        if not hl_host_network.clean_host_interfaces(conf.HOST_4):
+        logger.info("Removing all networks from %s", conf.LAST_HOST)
+        if not hl_host_network.clean_host_interfaces(conf.LAST_HOST):
             logger.error(
-                "Failed to remove all networks from %s", conf.HOST_4
+                "Failed to remove all networks from %s", conf.LAST_HOST
             )
-        if not ll_hosts.updateHost(
-            positive=True, host=conf.HOST_4, cluster=conf.CLUSTER_2
-        ):
-            logger.error(
-                "Failed to move %s to %s", conf.HOST_4, conf.CLUSTER_2
-            )
+        if cls.move_host:
+            if not ll_hosts.updateHost(
+                positive=True, host=conf.LAST_HOST, cluster=conf.CLUSTER_2
+            ):
+                logger.error(
+                    "Failed to move %s to %s", conf.LAST_HOST, conf.CLUSTER_2
+                )
 
 
 class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
@@ -146,22 +148,23 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
                 "1": {
                     "network": cls.net_case_1,
                     "nic": conf.HOST_4_NICS[1],
-                    "datacenter": conf.DC_NAME
+                    "datacenter": conf.DC_NAME_1
                 },
                 "2": {
                     "network": cls.net_case_2,
                     "nic": conf.HOST_4_NICS[2],
-                    "datacenter": conf.DC_NAME
+                    "datacenter": conf.DC_NAME_1
                 },
                 "3": {
                     "network": cls.net_case_3,
                     "nic": conf.HOST_4_NICS[3],
-                    "datacenter": conf.DC_NAME
+                    "datacenter": conf.DC_NAME_1
                 }
             }
         }
         super(TestHostNetworkApiSync01, cls).setup_class()
 
+    @polarion("RHEVM3-13977")
     def test_unsync_network_change_vlan(self):
         """
         Check that the network is un-sync and the sync reason is different VLAN
@@ -176,8 +179,11 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
 
+    @polarion("RHEVM3-13979")
     def test_unsync_network_vlan_to_no_vlan(self):
         """
         Check that the network is un-sync and the sync reason is no VLAN
@@ -192,8 +198,11 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_2])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_2]
+        )
 
+    @polarion("RHEVM3-13980")
     def test_unsync_network_no_vlan_to_vlan(self):
         """
         Check that the network is un-sync and the sync reason is VLAN
@@ -208,7 +217,9 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_3])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_3]
+        )
 
 
 class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
@@ -253,22 +264,23 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
                 "4": {
                     "network": cls.net_case_1,
                     "nic": cls.bond_1,
-                    "datacenter": conf.DC_NAME
+                    "datacenter": conf.DC_NAME_1
                 },
                 "5": {
                     "network": cls.net_case_2,
                     "nic": cls.bond_2,
-                    "datacenter": conf.DC_NAME
+                    "datacenter": conf.DC_NAME_1
                 },
                 "6": {
                     "network": cls.net_case_3,
                     "nic": cls.bond_3,
-                    "datacenter": conf.DC_NAME
+                    "datacenter": conf.DC_NAME_1
                 }
             }
         }
         super(TestHostNetworkApiSync02, cls).setup_class()
 
+    @polarion("RHEVM3-13981")
     def test_unsync_network_change_vlan_over_bond(self):
         """
         Check that the network is un-sync and the sync reason is different VLAN
@@ -284,8 +296,11 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
 
+    @polarion("RHEVM3-13982")
     def test_unsync_network_vlan_to_no_vlan_over_bond(self):
         """
         Check that the network is un-sync and the sync reason is no VLAN
@@ -301,8 +316,11 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_2])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_2]
+        )
 
+    @polarion("RHEVM3-13985")
     def test_unsync_network_no_vlan_to_vlan_over_bond(self):
         """
         Check that the network is un-sync and the sync reason is VLAN over BOND
@@ -317,7 +335,9 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_3])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_3]
+        )
 
 
 class TestHostNetworkApiSync03(TestHostNetworkApiSyncBase):
@@ -347,22 +367,23 @@ class TestHostNetworkApiSync03(TestHostNetworkApiSyncBase):
                 "1": {
                     "network": cls.net_case_1,
                     "nic": conf.HOST_4_NICS[1],
-                    "datacenter": conf.DC_NAME
+                    "datacenter": conf.DC_NAME_1
                 },
                 "2": {
                     "network": cls.net_case_2,
                     "nic": conf.HOST_4_NICS[2],
-                    "datacenter": conf.DC_NAME
+                    "datacenter": conf.DC_NAME_1
                 },
                 "3": {
                     "network": cls.net_case_3,
                     "nic": conf.HOST_4_NICS[3],
-                    "datacenter": conf.DC_NAME
+                    "datacenter": conf.DC_NAME_1
                 }
             }
         }
         super(TestHostNetworkApiSync03, cls).setup_class()
 
+    @polarion("RHEVM3-13987")
     def test_unsync_network_change_mtu(self):
         """
         Check that the network is un-sync and the sync reason is different MTU
@@ -377,8 +398,11 @@ class TestHostNetworkApiSync03(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
 
+    @polarion("RHEVM3-13988")
     def test_unsync_network_mtu_to_no_mtu(self):
         """
         Check that the network is un-sync and the sync reason is different MTU
@@ -393,8 +417,11 @@ class TestHostNetworkApiSync03(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_2])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_2]
+        )
 
+    @polarion("RHEVM3-13989")
     def test_unsync_network_no_mtu_to_mtu(self):
         """
         Check that the network is un-sync and the sync reason is different MTU
@@ -409,7 +436,9 @@ class TestHostNetworkApiSync03(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_3])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_3]
+        )
 
 
 class TestHostNetworkApiSync04(TestHostNetworkApiSyncBase):
@@ -454,22 +483,23 @@ class TestHostNetworkApiSync04(TestHostNetworkApiSyncBase):
                 "4": {
                     "network": cls.net_case_1,
                     "nic": cls.bond_1,
-                    "datacenter": conf.DC_NAME
+                    "datacenter": conf.DC_NAME_1
                 },
                 "5": {
                     "network": cls.net_case_2,
                     "nic": cls.bond_2,
-                    "datacenter": conf.DC_NAME
+                    "datacenter": conf.DC_NAME_1
                 },
                 "6": {
                     "network": cls.net_case_3,
                     "nic": cls.bond_3,
-                    "datacenter": conf.DC_NAME
+                    "datacenter": conf.DC_NAME_1
                 }
             }
         }
         super(TestHostNetworkApiSync04, cls).setup_class()
 
+    @polarion("RHEVM3-13990")
     def test_unsync_network_change_mtu_over_bond(self):
         """
         Check that the network is un-sync and the sync reason is different MTU
@@ -485,8 +515,11 @@ class TestHostNetworkApiSync04(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
 
+    @polarion("RHEVM3-13991")
     def test_unsync_network_mtu_to_no_mtu_over_bond(self):
         """
         Check that the network is un-sync and the sync reason is different MTU
@@ -502,8 +535,11 @@ class TestHostNetworkApiSync04(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_2])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_2]
+        )
 
+    @polarion("RHEVM3-13992")
     def test_unsync_network_no_mtu_to_mtu_over_bond(self):
         """
         Check that the network is un-sync and the sync reason is different
@@ -519,7 +555,9 @@ class TestHostNetworkApiSync04(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_3])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_3]
+        )
 
 
 class TestHostNetworkApiSync05(TestHostNetworkApiSyncBase):
@@ -546,17 +584,18 @@ class TestHostNetworkApiSync05(TestHostNetworkApiSyncBase):
                 "1": {
                     "network": cls.net_case_1,
                     "nic": conf.HOST_4_NICS[1],
-                    "datacenter": conf.DC_NAME
+                    "datacenter": conf.DC_NAME_1
                 },
                 "2": {
                     "network": cls.net_case_2,
                     "nic": conf.HOST_4_NICS[2],
-                    "datacenter": conf.DC_NAME
+                    "datacenter": conf.DC_NAME_1
                 }
             }
         }
         super(TestHostNetworkApiSync05, cls).setup_class()
 
+    @polarion("RHEVM3-13993")
     def test_unsync_network_change_vm_non_vm(self):
         """
         Check that the network is un-sync and the sync reason is Vm/Non-VM
@@ -571,8 +610,11 @@ class TestHostNetworkApiSync05(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
 
+    @polarion("RHEVM3-13994")
     def test_unsync_network_non_vm_vm(self):
         """
         Check that the network is un-sync and the sync reason is is Vm/Non-VM
@@ -587,7 +629,9 @@ class TestHostNetworkApiSync05(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_2])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_2]
+        )
 
 
 class TestHostNetworkApiSync06(TestHostNetworkApiSyncBase):
@@ -624,17 +668,18 @@ class TestHostNetworkApiSync06(TestHostNetworkApiSyncBase):
                 "3": {
                     "network": cls.net_case_1,
                     "nic": cls.bond_1,
-                    "datacenter": conf.DC_NAME
+                    "datacenter": conf.DC_NAME_1
                 },
                 "4": {
                     "network": cls.net_case_2,
                     "nic": cls.bond_2,
-                    "datacenter": conf.DC_NAME
+                    "datacenter": conf.DC_NAME_1
                 }
             }
         }
         super(TestHostNetworkApiSync06, cls).setup_class()
 
+    @polarion("RHEVM3-13995")
     def test_unsync_network_change_vm_non_vm_bond(self):
         """
         Check that the network is un-sync and the sync reason is Vm/Non-VM
@@ -649,8 +694,11 @@ class TestHostNetworkApiSync06(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
 
+    @polarion("RHEVM3-13996")
     def test_unsync_network_non_vm_vm_bond(self):
         """
         Check that the network is un-sync and the sync reason is is Vm/Non-VM
@@ -665,7 +713,9 @@ class TestHostNetworkApiSync06(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_2])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_2]
+        )
 
 
 class TestHostNetworkApiSync07(TestHostNetworkApiSyncBase):
@@ -693,12 +743,13 @@ class TestHostNetworkApiSync07(TestHostNetworkApiSyncBase):
                 "1": {
                     "network": cls.net_case_1,
                     "nic": conf.HOST_4_NICS[1],
-                    "datacenter": conf.DC_NAME
+                    "datacenter": conf.DC_NAME_1
                 }
             }
         }
         super(TestHostNetworkApiSync07, cls).setup_class()
 
+    @polarion("RHEVM3-13997")
     def test_unsync_network_change_vlan_mtu_bridge(self):
         """
         Check that the network is un-sync and the sync reasons are different
@@ -722,7 +773,9 @@ class TestHostNetworkApiSync07(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
 
 
 class TestHostNetworkApiSync08(TestHostNetworkApiSyncBase):
@@ -755,12 +808,13 @@ class TestHostNetworkApiSync08(TestHostNetworkApiSyncBase):
                 "2": {
                     "network": cls.net_case_1,
                     "nic": cls.bond_1,
-                    "datacenter": conf.DC_NAME
+                    "datacenter": conf.DC_NAME_1
                 }
             }
         }
         super(TestHostNetworkApiSync08, cls).setup_class()
 
+    @polarion("RHEVM3-13998")
     def test_unsync_network_change_vlan_mtu_bridge(self):
         """
         Check that the network is un-sync and the sync reasons are different
@@ -784,7 +838,9 @@ class TestHostNetworkApiSync08(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
 
 
 class TestHostNetworkApiSync09(TestHostNetworkApiSyncBase):
@@ -818,6 +874,7 @@ class TestHostNetworkApiSync09(TestHostNetworkApiSyncBase):
             ip=cls.net_case_1_ip_actual, interface=cls.net_case_1
         )
 
+    @polarion("RHEVM3-13999")
     def test_unsync_network_change_ip(self):
         """
         Check that the network is un-sync and the sync reasons is changed IP
@@ -832,7 +889,9 @@ class TestHostNetworkApiSync09(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
 
 
 class TestHostNetworkApiSync10(TestHostNetworkApiSyncBase):
@@ -866,6 +925,7 @@ class TestHostNetworkApiSync10(TestHostNetworkApiSyncBase):
             interface=cls.net_case_1, netmask=cls.net_case_1_netmask_actual
         )
 
+    @polarion("RHEVM3-14000")
     def test_unsync_network_change_netmask(self):
         """
         Check that the network is un-sync and the sync reason is changed
@@ -881,7 +941,9 @@ class TestHostNetworkApiSync10(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
 
 
 class TestHostNetworkApiSync11(TestHostNetworkApiSyncBase):
@@ -917,6 +979,7 @@ class TestHostNetworkApiSync11(TestHostNetworkApiSyncBase):
             netmask=cls.net_case_1_netmask_prefix_actual
         )
 
+    @polarion("RHEVM3-14001")
     def test_unsync_network_change_netmask_prefix(self):
         """
         Check that the network is un-sync and the sync reasons is changed
@@ -932,7 +995,9 @@ class TestHostNetworkApiSync11(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
 
 
 class TestHostNetworkApiSync12(TestHostNetworkApiSyncBase):
@@ -971,6 +1036,7 @@ class TestHostNetworkApiSync12(TestHostNetworkApiSyncBase):
             ip=cls.net_case_1_ip_actual, interface=cls.net_case_1
         )
 
+    @polarion("RHEVM3-14002")
     def test_unsync_network_change_ip_over_bond(self):
         """
         Check that the network is un-sync and the sync reasons is changed IP
@@ -985,7 +1051,9 @@ class TestHostNetworkApiSync12(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
 
 
 class TestHostNetworkApiSync13(TestHostNetworkApiSyncBase):
@@ -1024,6 +1092,7 @@ class TestHostNetworkApiSync13(TestHostNetworkApiSyncBase):
             interface=cls.net_case_1, netmask=cls.net_case_1_netmask_actual
         )
 
+    @polarion("RHEVM3-14003")
     def test_unsync_network_change_netmask_over_bond(self):
         """
         Check that the network is un-sync and the sync reason is changed
@@ -1039,7 +1108,9 @@ class TestHostNetworkApiSync13(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
 
 
 class TestHostNetworkApiSync14(TestHostNetworkApiSyncBase):
@@ -1080,6 +1151,7 @@ class TestHostNetworkApiSync14(TestHostNetworkApiSyncBase):
             netmask=cls.net_case_1_netmask_prefix_actual
         )
 
+    @polarion("RHEVM3-14004")
     def test_unsync_network_change_netmask_prefix_over_bond(self):
         """
         Check that the network is un-sync and the sync reasons is changed
@@ -1095,7 +1167,9 @@ class TestHostNetworkApiSync14(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
 
 
 class TestHostNetworkApiSync15(TestHostNetworkApiSyncBase):
@@ -1129,6 +1203,7 @@ class TestHostNetworkApiSync15(TestHostNetworkApiSyncBase):
             ip=cls.net_case_1_ip_actual, interface=cls.net_case_1
         )
 
+    @polarion("RHEVM3-14009")
     def test_unsync_network_no_ip_to_ip(self):
         """
         Check that the network is un-sync and the sync reasons is new IP
@@ -1143,7 +1218,9 @@ class TestHostNetworkApiSync15(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
 
 
 class TestHostNetworkApiSync16(TestHostNetworkApiSyncBase):
@@ -1183,6 +1260,7 @@ class TestHostNetworkApiSync16(TestHostNetworkApiSyncBase):
             ip=cls.net_case_1_ip_actual, interface=cls.net_case_1
         )
 
+    @polarion("RHEVM3-14010")
     def test_unsync_network_no_ip_to_ip_over_bond(self):
         """
         Check that the network is un-sync and the sync reasons is new IP
@@ -1197,7 +1275,9 @@ class TestHostNetworkApiSync16(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
 
 
 class TestHostNetworkApiSync17(TestHostNetworkApiSyncBase):
@@ -1231,6 +1311,7 @@ class TestHostNetworkApiSync17(TestHostNetworkApiSyncBase):
             interface=cls.net_case_1, set_ip=False
         )
 
+    @polarion("RHEVM3-14011")
     def test_unsync_network_remove_ip(self):
         """
         Check that the network is un-sync and the sync reasons is no IP
@@ -1245,7 +1326,9 @@ class TestHostNetworkApiSync17(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
 
 
 class TestHostNetworkApiSync18(TestHostNetworkApiSyncBase):
@@ -1279,6 +1362,7 @@ class TestHostNetworkApiSync18(TestHostNetworkApiSyncBase):
             interface=cls.net_case_1, set_ip=False
         )
 
+    @polarion("RHEVM3-14012")
     def test_unsync_network_remove_ip_over_bond(self):
         """
         Check that the network is un-sync and the sync reasons is no IP
@@ -1293,4 +1377,333 @@ class TestHostNetworkApiSync18(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(host=conf.HOST_4, networks=[self.net_case_1])
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
+
+
+class TestHostNetworkApiSync19(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync for removed QoS
+    Sync the network
+    """
+    __test__ = True
+    move_host = False
+    net_case_1 = conf.SYNC_NETS_DC_1[19][0]
+    qos_name = conf.QOS_NAME[0]
+    net_case_1_qos_expected = None
+    net_case_1_qos_actual = "10"
+    expected_actual_dict = {
+        "expected": net_case_1_qos_expected,
+        "actual": net_case_1_qos_actual
+    }
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network with QoS to the host
+        Remove QoS from network
+        """
+        TestHostNetworkApiSync19.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": cls.net_case_1,
+                    "nic": conf.HOST_4_NICS[1],
+                }
+            }
+        }
+        super(TestHostNetworkApiSync19, cls).setup_class()
+        logger.info("Remove %s from %s", cls.qos_name, conf.DC_NAME_1)
+        net_helper.remove_qos_from_dc(qos_name=cls.qos_name, teardown=False)
+
+    @polarion("RHEVM3-14028")
+    def test_unsync_network_remove_qos(self):
+        """
+        Check that the network is un-sync and the sync reasons no QoS
+        Sync the network
+        """
+        for qos_value in conf.QOS_VALUES:
+            compare_dict_ = {
+                self.net_case_1: {
+                    qos_value: self.expected_actual_dict
+                }
+            }
+
+            helper.get_networks_sync_status_and_unsync_reason(compare_dict_)
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
+
+
+class TestHostNetworkApiSync20(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync for changed QoS
+    Sync the network
+    """
+    __test__ = True
+    move_host = True
+    net_case_1 = conf.SYNC_NETS_DC_1[20][0]
+    net_case_1_qos_expected = "20"
+    net_case_1_qos_actual = "10"
+    expected_actual_dict = {
+        "expected": net_case_1_qos_expected,
+        "actual": net_case_1_qos_actual
+    }
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network with QoS to the host
+        Move the host to another cluster
+        """
+        TestHostNetworkApiSync20.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": cls.net_case_1,
+                    "nic": conf.HOST_4_NICS[1],
+                    "datacenter": conf.DC_NAME_1
+                }
+            }
+        }
+        super(TestHostNetworkApiSync20, cls).setup_class()
+
+    @polarion("RHEVM3-14026")
+    def test_unsync_network_change_qos(self):
+        """
+        Check that the network is un-sync and the sync reasons changed QoS
+        Sync the network
+        """
+        for qos_value in conf.QOS_VALUES:
+            compare_dict_ = {
+                self.net_case_1: {
+                    qos_value: self.expected_actual_dict
+                }
+            }
+
+            helper.get_networks_sync_status_and_unsync_reason(compare_dict_)
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
+
+
+class TestHostNetworkApiSync21(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync for new QoS
+    Sync the network
+    """
+    __test__ = True
+    move_host = True
+    net_case_1 = conf.SYNC_NETS_DC_1[21][0]
+    net_case_1_qos_expected = "10"
+    net_case_1_qos_actual = None
+    qos_name = conf.QOS_NAME[2]
+    expected_actual_dict = {
+        "expected": net_case_1_qos_expected,
+        "actual": net_case_1_qos_actual
+    }
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network with QoS to the host
+        Move the host to another cluster
+        """
+        TestHostNetworkApiSync21.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": cls.net_case_1,
+                    "nic": conf.HOST_4_NICS[1],
+                    "datacenter": conf.DC_NAME_1
+                }
+            }
+        }
+        super(TestHostNetworkApiSync21, cls).setup_class()
+
+    @polarion("RHEVM3-14027")
+    def test_unsync_network_new_qos(self):
+        """
+        Check that the network is un-sync and the sync reasons new QoS
+        Sync the network
+        """
+        for qos_value in conf.QOS_VALUES:
+            compare_dict_ = {
+                self.net_case_1: {
+                    qos_value: self.expected_actual_dict
+                }
+            }
+
+            helper.get_networks_sync_status_and_unsync_reason(compare_dict_)
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
+
+
+class TestHostNetworkApiSync22(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync for removed QoS on BOND
+    Sync the network
+    """
+    __test__ = True
+    move_host = False
+    net_case_1 = conf.SYNC_NETS_DC_1[22][0]
+    qos_name = conf.QOS_NAME[5]
+    net_case_1_qos_expected = None
+    net_case_1_qos_actual = "10"
+    expected_actual_dict = {
+        "expected": net_case_1_qos_expected,
+        "actual": net_case_1_qos_actual
+    }
+    bond_1 = "bond221"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network with QoS to the host over BOND
+        Remove QoS from network
+        """
+        TestHostNetworkApiSync22.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": cls.bond_1,
+                    "slaves": conf.DUMMYS[:2]
+                },
+                "2": {
+                    "network": cls.net_case_1,
+                    "nic": cls.bond_1,
+                }
+            }
+        }
+        super(TestHostNetworkApiSync22, cls).setup_class()
+        logger.info("Remove %s from %s", cls.qos_name, conf.DC_NAME_1)
+        net_helper.remove_qos_from_dc(qos_name=cls.qos_name, teardown=False)
+
+    @polarion("RHEVM3-14031")
+    def test_unsync_network_remove_qos_bond(self):
+        """
+        Check that the network is un-sync and the sync reasons no QoS
+        Sync the network
+        """
+        for qos_value in conf.QOS_VALUES:
+            compare_dict = {
+                self.net_case_1: {
+                    qos_value: self.expected_actual_dict
+                }
+            }
+
+            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
+
+
+class TestHostNetworkApiSync23(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync for changed QoS on BOND
+    Sync the network
+    """
+    __test__ = True
+    move_host = True
+    net_case_1 = conf.SYNC_NETS_DC_1[23][0]
+    net_case_1_qos_expected = "20"
+    net_case_1_qos_actual = "10"
+    expected_actual_dict = {
+        "expected": net_case_1_qos_expected,
+        "actual": net_case_1_qos_actual
+    }
+    bond_1 = "bond231"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network with QoS to the host over BOND
+        Move the host to another cluster
+        """
+        TestHostNetworkApiSync23.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": cls.bond_1,
+                    "slaves": conf.DUMMYS[:2]
+                },
+                "2": {
+                    "network": cls.net_case_1,
+                    "nic": cls.bond_1,
+                    "datacenter": conf.DC_NAME_1
+                }
+            }
+        }
+        super(TestHostNetworkApiSync23, cls).setup_class()
+
+    @polarion("RHEVM3-14029")
+    def test_unsync_network_change_qos_bond(self):
+        """
+        Check that the network is un-sync and the sync reasons changed QoS
+        Sync the network
+        """
+        for qos_value in conf.QOS_VALUES:
+            compare_dict = {
+                self.net_case_1: {
+                    qos_value: self.expected_actual_dict
+                }
+            }
+
+            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )
+
+
+class TestHostNetworkApiSync24(TestHostNetworkApiSyncBase):
+    """
+    Check sync/un-sync for new QoS on BOND
+    Sync the network
+    """
+    __test__ = True
+    move_host = True
+    net_case_1 = conf.SYNC_NETS_DC_1[24][0]
+    net_case_1_qos_expected = "10"
+    net_case_1_qos_actual = None
+    qos_name = conf.QOS_NAME[2]
+    expected_actual_dict = {
+        "expected": net_case_1_qos_expected,
+        "actual": net_case_1_qos_actual
+    }
+    bond_1 = "bond241"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network with QoS to the host over BOND
+        Move the host to another cluster
+        """
+        TestHostNetworkApiSync24.network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": cls.bond_1,
+                    "slaves": conf.DUMMYS[:2]
+                },
+                "2": {
+                    "network": cls.net_case_1,
+                    "nic": cls.bond_1,
+                    "datacenter": conf.DC_NAME_1
+                }
+            }
+        }
+        super(TestHostNetworkApiSync24, cls).setup_class()
+
+    @polarion("RHEVM3-14030")
+    def test_unsync_network_new_qos_bond(self):
+        """
+        Check that the network is un-sync and the sync reasons new QoS
+        Sync the network
+        """
+        for qos_value in conf.QOS_VALUES:
+            compare_dict = {
+                self.net_case_1: {
+                    qos_value: self.expected_actual_dict
+                }
+            }
+
+            helper.get_networks_sync_status_and_unsync_reason(compare_dict)
+        net_helper.sync_networks(
+            host=conf.LAST_HOST, networks=[self.net_case_1]
+        )

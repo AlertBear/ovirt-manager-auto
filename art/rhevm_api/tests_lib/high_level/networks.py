@@ -230,7 +230,8 @@ def createAndAttachNetworkSN(
                 usages=net_param.get("usages", "vm"),
                 vlan_id=net_param.get("vlan_id"),
                 mtu=net_param.get("mtu"),
-                profile_required=net_param.get("profile_required")
+                profile_required=net_param.get("profile_required"),
+                qos_dict=net_param.get("qos")
             ):
                 logger.info("Cannot add network to DC")
                 return False

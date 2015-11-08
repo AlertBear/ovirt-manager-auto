@@ -32,7 +32,7 @@ def setup_package():
         raise conf.NET_EXCEPTION(
             "Failed to create dummy interfaces on %s" % conf.VDS_HOSTS_4
         )
-    helper.check_dummy_on_host(host=conf.HOST_4)
+    helper.check_dummy_on_host(host=conf.LAST_HOST)
 
     logger.info(
         "Configuring engine to support ethtool opts for %s version",
@@ -55,7 +55,7 @@ def teardown_package():
         logger.error(
             "Failed to delete dummy interfaces on %s", conf.VDS_HOSTS_4
         )
-    helper.check_dummy_on_host(host=conf.HOST_4, positive=False)
-    logger.info("Activating %s", conf.HOST_4)
-    if not hl_hosts.activate_host_if_not_up(conf.HOST_4):
-        logger.error("Failed to activate %s", conf.HOST_4)
+    helper.check_dummy_on_host(host=conf.LAST_HOST, positive=False)
+    logger.info("Activating %s", conf.LAST_HOST)
+    if not hl_hosts.activate_host_if_not_up(conf.LAST_HOST):
+        logger.error("Failed to activate %s", conf.LAST_HOST)

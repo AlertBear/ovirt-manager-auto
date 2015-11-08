@@ -23,10 +23,10 @@ def setup_module():
     Add networks
     """
     logger.info(
-        "Add %s to %s/%s", conf.HOST_DICT, conf.DC_NAME, conf.CLUSTER_2
+        "Add %s to %s/%s", conf.HOST_DICT, conf.DC_NAME_1, conf.CLUSTER_2
     )
     net_helper.prepare_networks_on_setup(
-        networks_dict=conf.HOST_DICT, dc=conf.DC_NAME, cluster=conf.CLUSTER_2
+        networks_dict=conf.HOST_DICT, dc=conf.DC_NAME_1, cluster=conf.CLUSTER_2
     )
 
 
@@ -292,14 +292,14 @@ class TestHostNetworkApiHost09(helper.TestHostNetworkApiTestCaseBase):
         """
         logger.info(
             "Removing net_case9 from %s NIC of %s",
-            conf.HOST_4_NICS[1], conf.HOST_4
+            conf.HOST_4_NICS[1], conf.LAST_HOST
         )
         if not hl_host_network.remove_networks_from_host(
-            conf.HOST_4, [conf.HOST_NETS[9][0]]
+            conf.LAST_HOST, [conf.HOST_NETS[9][0]]
         ):
             raise conf.NET_EXCEPTION(
                 "Failed to remove net_case9 from %s of %s" % (
-                    conf.HOST_4_NICS[1], conf.HOST_4
+                    conf.HOST_4_NICS[1], conf.LAST_HOST
                 )
             )
 
@@ -343,14 +343,14 @@ class TestHostNetworkApiHost10(helper.TestHostNetworkApiTestCaseBase):
         }
         logger.info(
             "Updating %s network to have IP on %s NIC of %s",
-            conf.HOST_NETS[10][0], conf.HOST_4_NICS[1], conf.HOST_4
+            conf.HOST_NETS[10][0], conf.HOST_4_NICS[1], conf.LAST_HOST
         )
         if not hl_host_network.update_network_on_host(
-            conf.HOST_4, conf.HOST_NETS[10][0], **network_host_api_dict
+            conf.LAST_HOST, conf.HOST_NETS[10][0], **network_host_api_dict
         ):
             raise conf.NET_EXCEPTION(
                 "Failed to update %s network with IP on %s of %s" %
-                (conf.HOST_NETS[10][0], conf.HOST_4_NICS[1], conf.HOST_4)
+                (conf.HOST_NETS[10][0], conf.HOST_4_NICS[1], conf.LAST_HOST)
             )
 
     @polarion("RHEVM3-10467")
@@ -364,14 +364,14 @@ class TestHostNetworkApiHost10(helper.TestHostNetworkApiTestCaseBase):
         }
         logger.info(
             "Updating %s network to have IP on %s NIC of %s",
-            conf.HOST_NETS[10][1], conf.HOST_4_NICS[2], conf.HOST_4
+            conf.HOST_NETS[10][1], conf.HOST_4_NICS[2], conf.LAST_HOST
         )
         if not hl_host_network.update_network_on_host(
-            conf.HOST_4, conf.HOST_NETS[10][1], **network_host_api_dict
+            conf.LAST_HOST, conf.HOST_NETS[10][1], **network_host_api_dict
         ):
             raise conf.NET_EXCEPTION(
                 "Failed to update %s network with IP on %s of %s" %
-                (conf.HOST_NETS[10][1], conf.HOST_4_NICS[2], conf.HOST_4)
+                (conf.HOST_NETS[10][1], conf.HOST_4_NICS[2], conf.LAST_HOST)
             )
 
 
@@ -395,12 +395,12 @@ class TestHostNetworkApiHost11(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        logger.info("Creating bond11 on %s", conf.HOST_4)
+        logger.info("Creating bond11 on %s", conf.LAST_HOST)
         if not hl_host_network.setup_networks(
-            conf.HOST_4, **network_host_api_dict
+            conf.LAST_HOST, **network_host_api_dict
         ):
             raise conf.NET_EXCEPTION(
-                "Failed to create bond11 on %s" % conf.HOST_4
+                "Failed to create bond11 on %s" % conf.LAST_HOST
             )
 
     @polarion("RHEVM3-10468")
@@ -450,12 +450,13 @@ class TestHostNetworkApiHost12(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        logger.info("Creating bond12 with 3 networks on %s", conf.HOST_4)
+        logger.info("Creating bond12 with 3 networks on %s", conf.LAST_HOST)
         if not hl_host_network.setup_networks(
-            conf.HOST_4, **network_host_api_dict
+            conf.LAST_HOST, **network_host_api_dict
         ):
             raise conf.NET_EXCEPTION(
-                "Failed to create bond12 with 3 networks on %s" % conf.HOST_4
+                "Failed to create bond12 with 3 networks on %s" %
+                conf.LAST_HOST
             )
 
     @polarion("RHEVM3-10469")
@@ -466,14 +467,14 @@ class TestHostNetworkApiHost12(helper.TestHostNetworkApiTestCaseBase):
         for i in range(1, 3):
             logger.info(
                 "Removing %s from bond12 of %s",
-                conf.HOST_NETS[12][i], conf.HOST_4
+                conf.HOST_NETS[12][i], conf.LAST_HOST
             )
             if not hl_host_network.remove_networks_from_host(
-                conf.HOST_4, [conf.HOST_NETS[12][i]]
+                conf.LAST_HOST, [conf.HOST_NETS[12][i]]
             ):
                 raise conf.NET_EXCEPTION(
                     "Failed to remove %s from bond12 of %s" % (
-                        (conf.HOST_NETS[12][i], conf.HOST_4)
+                        (conf.HOST_NETS[12][i], conf.LAST_HOST)
                     )
                 )
 
@@ -499,34 +500,34 @@ class TestHostNetworkApiHost13(helper.TestHostNetworkApiTestCaseBase):
         }
         logger.info(
             "Create and attach %s to %s/%s",
-            cls.unmamanged_net, conf.DC_NAME, conf.CLUSTER_2
+            cls.unmamanged_net, conf.DC_NAME_1, conf.CLUSTER_2
         )
         if not hl_networks.createAndAttachNetworkSN(
-            data_center=conf.DC_NAME, cluster=conf.CLUSTER_2,
+            data_center=conf.DC_NAME_1, cluster=conf.CLUSTER_2,
             network_dict=network_dict
         ):
             raise conf.NET_EXCEPTION(
                 "Failed to add networks to %s/%s" %
-                (conf.DC_NAME, conf.CLUSTER_2)
+                (conf.DC_NAME_1, conf.CLUSTER_2)
             )
         network_host_api_dict = {
             "network": cls.unmamanged_net,
             "nic": conf.HOST_4_NICS[1]
         }
-        logger.info("Attach %s to %s", cls.unmamanged_net, conf.HOST_4)
+        logger.info("Attach %s to %s", cls.unmamanged_net, conf.LAST_HOST)
         helper.attach_network_attachment(
             network_host_api_dict, cls.unmamanged_net
         )
         if not ll_networks.removeNetwork(
-            True, cls.unmamanged_net, conf.DC_NAME
+            True, cls.unmamanged_net, conf.DC_NAME_1
         ):
             raise conf.NET_EXCEPTION(
                 "Failed to delete %s from %s" %
-                (cls.unmamanged_net, conf.DC_NAME)
+                (cls.unmamanged_net, conf.DC_NAME_1)
             )
         logger.info("Checking if %s is unmanaged network", cls.unmamanged_net)
         if not ll_host_network.get_host_unmanaged_networks(
-            conf.HOST_4, [cls.unmamanged_net]
+            conf.LAST_HOST, [cls.unmamanged_net]
         ):
             raise conf.NET_EXCEPTION(
                 "%s should be unmanaged network but it is not" %
@@ -538,13 +539,13 @@ class TestHostNetworkApiHost13(helper.TestHostNetworkApiTestCaseBase):
         """
         Remove the unmanaged network from host
         """
-        logger.info("Removing %s from %s", self.unmamanged_net, conf.HOST_4)
+        logger.info("Removing %s from %s", self.unmamanged_net, conf.LAST_HOST)
         if not ll_host_network.remove_unmanaged_networks(
-            conf.HOST_4, networks=[self.unmamanged_net]
+            conf.LAST_HOST, networks=[self.unmamanged_net]
         ):
             raise conf.NET_EXCEPTION(
                 "Failed to remove %s from %s" %
-                (self.unmamanged_net, conf.HOST_4)
+                (self.unmamanged_net, conf.LAST_HOST)
             )
 
 
@@ -625,15 +626,15 @@ class TestHostNetworkApiHost16(helper.TestHostNetworkApiTestCaseBase):
         }
         logger.info(
             "Create and attach %s to %s/%s",
-            cls.unmamanged_net, conf.DC_NAME, conf.CLUSTER_2
+            cls.unmamanged_net, conf.DC_NAME_1, conf.CLUSTER_2
         )
         if not hl_networks.createAndAttachNetworkSN(
-            data_center=conf.DC_NAME, cluster=conf.CLUSTER_2,
+            data_center=conf.DC_NAME_1, cluster=conf.CLUSTER_2,
             network_dict=network_dict
         ):
             raise conf.NET_EXCEPTION(
                 "Failed to add network to %s/%s" %
-                (conf.DC_NAME, conf.CLUSTER_2)
+                (conf.DC_NAME_1, conf.CLUSTER_2)
             )
         sn_dict = {
             "add": {
@@ -648,23 +649,23 @@ class TestHostNetworkApiHost16(helper.TestHostNetworkApiTestCaseBase):
             }
         }
         logger.info(
-            "Create bond16 with %s on %s", conf.HOST_4, cls.unmamanged_net
+            "Create bond16 with %s on %s", conf.LAST_HOST, cls.unmamanged_net
         )
-        if not hl_host_network.setup_networks(conf.HOST_4, **sn_dict):
+        if not hl_host_network.setup_networks(conf.LAST_HOST, **sn_dict):
             raise conf.NET_EXCEPTION(
                 "Failed to create bond16 with %s on %s" %
-                (cls.unmamanged_net, conf.HOST_4)
+                (cls.unmamanged_net, conf.LAST_HOST)
             )
         if not ll_networks.removeNetwork(
-            True, cls.unmamanged_net, conf.DC_NAME
+            True, cls.unmamanged_net, conf.DC_NAME_1
         ):
             raise conf.NET_EXCEPTION(
                 "Failed to delete %s from %s" %
-                (cls.unmamanged_net, conf.DC_NAME)
+                (cls.unmamanged_net, conf.DC_NAME_1)
             )
         logger.info("Checking if %s is unmanaged network", cls.unmamanged_net)
         if not ll_host_network.get_host_unmanaged_networks(
-            conf.HOST_4, [cls.unmamanged_net]
+            conf.LAST_HOST, [cls.unmamanged_net]
         ):
             raise conf.NET_EXCEPTION(
                 "%s should be unmanaged network but it is not" %
@@ -676,13 +677,13 @@ class TestHostNetworkApiHost16(helper.TestHostNetworkApiTestCaseBase):
         """
         Remove the unmanaged network from host
         """
-        logger.info("Removing %s from %s", self.unmamanged_net, conf.HOST_4)
+        logger.info("Removing %s from %s", self.unmamanged_net, conf.LAST_HOST)
         if not ll_host_network.remove_unmanaged_networks(
-            conf.HOST_4, networks=[self.unmamanged_net]
+            conf.LAST_HOST, networks=[self.unmamanged_net]
         ):
             raise conf.NET_EXCEPTION(
                 "Failed to remove %s from %s" %
-                (self.unmamanged_net, conf.HOST_4)
+                (self.unmamanged_net, conf.LAST_HOST)
             )
 
 
@@ -705,9 +706,9 @@ class TestHostNetworkApiHost17(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        if not hl_host_network.setup_networks(conf.HOST_4, **sn_dict):
+        if not hl_host_network.setup_networks(conf.LAST_HOST, **sn_dict):
             raise conf.NET_EXCEPTION(
-                "Failed to create bond17 on %s" % conf.HOST_4
+                "Failed to create bond17 on %s" % conf.LAST_HOST
             )
 
     @polarion("RHEVM3-11879")
@@ -759,10 +760,10 @@ class TestHostNetworkApiHost18(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        if not hl_host_network.setup_networks(conf.HOST_4, **sn_dict):
+        if not hl_host_network.setup_networks(conf.LAST_HOST, **sn_dict):
             raise conf.NET_EXCEPTION(
                 "Failed to attach %s and %s on %s" %
-                (cls.net_case_pre_vm, cls.net_case_pre_vlan, conf.HOST_4)
+                (cls.net_case_pre_vm, cls.net_case_pre_vlan, conf.LAST_HOST)
             )
 
     def test_attach_vlan_to_host_nic_with_vm(self):
