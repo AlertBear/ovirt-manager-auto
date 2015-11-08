@@ -1,6 +1,8 @@
 from repoze.lru import CacheMaker
 from art.rhevm_api.resources.host import Host
 from art.rhevm_api.resources.user import RootUser
+import shlex
+import ast
 
 
 class VDS(Host):
@@ -65,25 +67,36 @@ class VDS(Host):
     def get_cpu_model(self):
         raise NotImplementedError()
 
-    def vds_client(self, cmd, args=None):
+    def vds_client(self, cmd, args=list()):
         """
-        Run given commend on host with vdsClient
+        Run given command on host with vdsClient
+        All commands can be found in /usr/share/vdsm/rpc/bindingxmlrpc.py
+
         :param cmd: command to execute
         :type: cmd: str
         :param args: command parameters optional
         :type: list
-        :return: rc, command output
-        :rtype: tuple
+        :return: command output
+        :rtype: dict
+        :example: stop VM
+                  out = config.VDS_HOSTS[0].vds_client("list")
+                  vm_id = out['vmList'][0]['vmId']
+                  config.VDS_HOSTS[0].vds_client("destroy", [vm_id])
+
+                  getVdsCaps
+                  out = config.VDS_HOSTS[0].vds_client("getVdsCapabilities")
+
         """
-        vds_command = ['vdsClient', '-s', '0', cmd]
-        if args:
-            vds_command.extend(args)
-        rc, out, err = self.executor().run_cmd(vds_command)
+        cmd_args = " ".join(args)
+        command = (
+            "python -c 'from vdsm import vdscli;"
+            "print vdscli.connect().{0}({1})'".format(cmd, cmd_args)
+        )
+        rc, out, err = self.executor().run_cmd(shlex.split(command))
         if rc:
             self.logger.error(
                 "Failed to run command '%s'; out: %s; err: %s",
-                " ".join(cmd),
-                out,
-                err
+                command, out, err
             )
-        return rc, out
+            return dict()
+        return ast.literal_eval(out)
