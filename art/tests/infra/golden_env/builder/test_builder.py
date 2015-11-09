@@ -215,7 +215,7 @@ class CreateDC(TestCase):
             storage_type = sd['storage_type']
             if storage_type == ENUMS['storage_type_nfs']:
                 address, path = storage_conf.get_nfs_share()
-                self.delete_all_data_from_nfs(address, path)
+                self.delete_data_from_storage_domain(address, path)
                 assert storagedomains.addNFSDomain(
                     host, sd_name, datacenter_name, address, path, format=True)
             elif storage_type == ENUMS['storage_type_iscsi']:
@@ -232,6 +232,9 @@ class CreateDC(TestCase):
                 )
             elif storage_type == ENUMS['storage_type_gluster']:
                 address, path, vfs = storage_conf.get_gluster_share()
+                self.delete_data_from_storage_domain(
+                    address, path, fs_type='-tglusterfs'
+                )
                 assert storagedomains.addGlusterDomain(
                     host, sd_name, datacenter_name, address, path,
                     vfs_type=vfs)
@@ -570,15 +573,15 @@ class CreateDC(TestCase):
         rc, out, err = self.executor.run_cmd(cmd)
         assert rc == 0, "Return code %s != 0" % rc
 
-    def delete_all_data_from_nfs(self, address, path):
-        mount_dir = "/tmp/nfsDir"
+    def delete_data_from_storage_domain(self, address, path, fs_type='-tnfs'):
+        mount_dir = "/tmp/mount_dir"
         nfs_path = "%s:%s" % (address, path)
         create_dir_cmd = ['mkdir', '-p', mount_dir]
-        mount_nfs_cmd = ['mount', nfs_path, mount_dir]
+        mount_cmd = ['mount', fs_type, nfs_path, mount_dir]
         rm_cmd = ['rm', '-rf', mount_dir + '/*']
         umount_cmd = ['umount', mount_dir]
         self._execute_cmd(create_dir_cmd)
-        self._execute_cmd(mount_nfs_cmd)
+        self._execute_cmd(mount_cmd)
         self._execute_cmd(rm_cmd)
         self._execute_cmd(umount_cmd)
 
@@ -588,7 +591,7 @@ class CreateDC(TestCase):
             address, path = storage_conf.get_export_share()
             # Delete existed export domain
             if config.CLEAN_EXPORT_DOMAIN:
-                self.delete_all_data_from_nfs(address, path)
+                self.delete_data_from_storage_domain(address, path)
             # Add export storage domain
             assert ll_sd.addStorageDomain(
                 True,
