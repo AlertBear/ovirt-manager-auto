@@ -50,17 +50,24 @@ def set_passwordless_ssh(src_host, dst_host):
 
     # Remove old keys from local KNOWN_HOSTS file
     if not src_host.remove_remote_host_ssh_key(dst_host):
+        logger.error("Failed to remove %s ssh keys", dst_host.ip)
         return False
 
     # Remove local key from remote host AUTHORIZED_KEYS file
     if not dst_host.remove_remote_key_from_authorized_keys():
+        logger.error("Failed to remove remote ssh keys from %s", dst_host.ip)
         return False
 
     # Get local SSH key and add it to remote host AUTHORIZED_KEYS file
     local_key = src_host.get_ssh_public_key().strip()
+
     remote_cmd = ["echo", local_key, ">>", ssh.AUTHORIZED_KEYS]
     rc = dst_host_exec.run_cmd(remote_cmd)[0]
     if rc:
+        logger.error(
+            "Failed to add %s to %s on %s",
+            local_key, ssh.AUTHORIZED_KEYS, dst_host.ip
+        )
         return False
 
     # Adding remote host SSH key to local KNOWN_HOSTS file

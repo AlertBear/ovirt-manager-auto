@@ -214,7 +214,7 @@ class Host(Resource):
         :rtype: bool
         """
         local_fqdn = self.fqdn
-        cmd = ["sed", "-i", "/%s/d" % local_fqdn, ssh.AUTHORIZED_KEYS]
+        cmd = ["sed", "-c", "-i", "/%s/d" % local_fqdn, ssh.AUTHORIZED_KEYS]
         rc = self.executor().run_cmd(cmd)[0]
         if rc:
             return False

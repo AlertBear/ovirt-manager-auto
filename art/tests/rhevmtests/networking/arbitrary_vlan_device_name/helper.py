@@ -212,7 +212,9 @@ def set_libvirtd_sasl(host_obj, sasl=True):
             [LIBVIRTD_SERVICE, VDSMD_SERVICE], host_obj
         )
     except exceptions.HostException:
-        logger.error("Failed to restart %s service", VDSMD_SERVICE)
+        logger.error(
+            "Failed to restart %s/%s services", VDSMD_SERVICE, LIBVIRTD_SERVICE
+        )
         return False
     return True
 
