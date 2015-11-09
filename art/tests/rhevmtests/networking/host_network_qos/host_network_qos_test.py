@@ -6,22 +6,18 @@ Testing network host QoS feature.
 Create, update and remove tests will be done for network host QoS feature
 """
 import logging
+import helper
 import config as conf
 from art.unittest_lib import attr
-from art.test_handler.tools import polarion  # pylint: disable=E0611
 import rhevmtests.networking.helper as net_helper
 from art.unittest_lib import NetworkTest as TestCase
+from art.test_handler.tools import polarion, bz as bzd  # pylint: disable=E0611
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 
 logger = logging.getLogger("Network_Host_QoS_Tests")
-
-########################################################################
-
-########################################################################
-#                             Test Cases                               #
-########################################################################
+MB_CONVERTER = 1000000
 
 
 class TestHostNetworkQoSTestCaseBase(TestCase):
@@ -47,7 +43,7 @@ class TestHostNetQOSCase01(TestCase):
     Add new network QOS (named)
     """
     __test__ = True
-    bz = {"1274187": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
+    bz = {"1274187": {"engine": None, "version": ["3.6"]}}
     qos_name = conf.QOS_NAME[0]
 
     @polarion("RHEVM3-6525")
@@ -110,7 +106,7 @@ class TestHostNetQOSCase02(TestHostNetworkQoSTestCaseBase):
                     "network": self.net,
                     "nic": conf.HOST_1_NICS[1],
                     "qos": {
-                        "type_": "hostnetwork",
+                        "type_": conf.HOST_NET_QOS_TYPE,
                         "outbound_average_linkshare": conf.TEST_VALUE,
                         "outbound_average_realtime": conf.TEST_VALUE,
                         "outbound_average_upperlimit": conf.TEST_VALUE
@@ -179,7 +175,7 @@ class TestHostNetQOSCase03(TestHostNetworkQoSTestCaseBase):
                     "network": self.net,
                     "nic": conf.HOST_1_NICS[1],
                     "qos": {
-                        "type_": "hostnetwork",
+                        "type_": conf.HOST_NET_QOS_TYPE,
                         "outbound_average_linkshare": conf.DEFAULT_SHARE + 5,
                         "outbound_average_upperlimit": conf.DEFAULT_RATE + 1,
                         "outbound_average_realtime": conf.DEFAULT_RATE + 1
@@ -298,7 +294,7 @@ class TestHostNetQOSCase04(TestHostNetworkQoSTestCaseBase):
                     "network": self.net1,
                     "nic": conf.HOST_1_NICS[1],
                     "qos": {
-                        "type_": "hostnetwork",
+                        "type_": conf.HOST_NET_QOS_TYPE,
                         "outbound_average_linkshare": conf.TEST_VALUE,
                         "outbound_average_upperlimit": conf.DEFAULT_RATE + 1
                     }
@@ -312,7 +308,7 @@ class TestHostNetQOSCase04(TestHostNetworkQoSTestCaseBase):
                     "network": self.net1,
                     "nic": conf.HOST_1_NICS[1],
                     "qos": {
-                        "type_": "hostnetwork",
+                        "type_": conf.HOST_NET_QOS_TYPE,
                         "outbound_average_linkshare": conf.TEST_VALUE,
                         "outbound_average_realtime": conf.DEFAULT_RATE + 1
                     }
@@ -326,7 +322,7 @@ class TestHostNetQOSCase04(TestHostNetworkQoSTestCaseBase):
                     "network": self.net1,
                     "nic": conf.HOST_1_NICS[1],
                     "qos": {
-                        "type_": "hostnetwork",
+                        "type_": conf.HOST_NET_QOS_TYPE,
                         "outbound_average_linkshare": conf.DEFAULT_SHARE + 1,
                     }
                 }
@@ -566,3 +562,197 @@ class TestHostNetQOSCase07(TestHostNetworkQoSTestCaseBase):
 
         logger.info("Sync the network")
         net_helper.sync_networks(host=conf.HOST_1, networks=[self.net1])
+
+
+@attr(tier=2)
+class TestHostNetQOSCase08(TestHostNetworkQoSTestCaseBase):
+    """
+    1) Create QoS while creating a new network
+    2) Update another network with the QoS from previous step
+    """
+    __test__ = True
+    net1 = conf.NETS[8][0]
+    net2 = conf.NETS[8][1]
+    qos_name = conf.QOS_NAME[4]
+
+    @polarion("RHEVM3-6535")
+    def test_01_create_qos_when_add_network(self):
+        """
+        Create QoS when creating a new network on the setup
+        """
+        if not ll_networks.addNetwork(
+            True, name=self.net1, data_center=conf.DC_NAME,
+            qos_dict={
+                "datacenter": conf.DC_NAME,
+                "qos_name": self.qos_name,
+                "qos_type": conf.HOST_NET_QOS_TYPE,
+                "outbound_average_linkshare": conf.TEST_VALUE
+            }
+        ):
+            raise conf.NET_EXCEPTION(
+                "Couldn't add %s when creating QoS %s to %s" %
+                (self.net1, self.qos_name, conf.DC_NAME)
+            )
+
+    @polarion("RHEVM3-14276")
+    def test_02_update_network_with_qos(self):
+        """
+        Update existing network on the setup with the QoS from test01
+        """
+        logger.info("Update another network with the %s", self.qos_name)
+        if not ll_networks.update_network_in_datacenter(
+            positive=True, network=self.net2, datacenter=conf.DC_NAME,
+            qos_dict={
+                "qos_name": self.qos_name,
+                "datacenter": conf.DC_NAME
+            }
+        ):
+            raise conf.NET_EXCEPTION(
+                "Couldn't update %s to have host Network QoS" % self.net2
+            )
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove network from the host
+        Remove Host Network QoS
+        """
+        net_helper.remove_qos_from_dc(qos_name=cls.qos_name)
+
+
+@attr(tier=2)
+class TestHostNetQOSCase09(TestHostNetworkQoSTestCaseBase):
+    """
+    1) Create QoS while updating existing network
+    2) Create another QoS when editing the same network
+    3) Update the network with unlimited QoS
+    """
+    __test__ = True
+    net1 = conf.NETS[9][0]
+    qos_name1 = conf.QOS_NAME[5]
+    qos_name2 = conf.QOS_NAME[6]
+
+    @polarion("RHEVM3-6536")
+    def test_01_create_qos_when_update_network(self):
+        """
+        1) Create QoS when editing a network on the setup
+        2) Create another QoS when editing the same network
+        3) Update the network with unlimited QoS
+        """
+        logger.info(
+            "Create QoS %s when updating %s", self.qos_name1, self.net1
+        )
+        if not ll_networks.update_network_in_datacenter(
+            positive=True, network=self.net1, datacenter=conf.DC_NAME,
+            qos_dict={
+                "datacenter": conf.DC_NAME,
+                "qos_name": self.qos_name1,
+                "qos_type": conf.HOST_NET_QOS_TYPE,
+                "outbound_average_linkshare": conf.TEST_VALUE
+            }
+        ):
+            raise conf.NET_EXCEPTION(
+                "Couldn't update %s when creating QoS %s on %s" %
+                (self.net1, self.qos_name1, conf.DC_NAME)
+            )
+
+    @polarion("RHEVM3-14272")
+    def test_02_create_qos_when_update_network_with_qos(self):
+        """
+        Create another QoS when editing the same network
+        """
+        logger.info(
+            "Create QoS %s when updating %s", self.qos_name2, self.net1
+        )
+        if not ll_networks.update_network_in_datacenter(
+            positive=True, network=self.net1, datacenter=conf.DC_NAME,
+            qos_dict={
+                "datacenter": conf.DC_NAME,
+                "qos_name": self.qos_name2,
+                "qos_type": conf.HOST_NET_QOS_TYPE,
+                "outbound_average_linkshare": conf.TEST_VALUE
+            }
+        ):
+            raise conf.NET_EXCEPTION(
+                "Couldn't update %s when creating QoS %s on %s" %
+                (self.net1, self.qos_name2, conf.DC_NAME)
+            )
+
+    @bzd({"1278297": {'engine': None, 'version': ["3.6"]}})
+    @polarion("RHEVM3-14273")
+    def test_03_unlimited_qos_when_update_network(self):
+        """
+        Update the network with unlimited QoS
+        """
+        logger.info("Update network not to have QoS (unlimited)")
+        if not ll_networks.update_network_in_datacenter(
+            positive=True, network=self.net1, datacenter=conf.DC_NAME,
+            qos_dict={}
+        ):
+            raise conf.NET_EXCEPTION(
+                "Couldn't update %s to have unlimited QoS" % self.net1
+            )
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove network from the host
+        Remove Host Network QoS
+        """
+        for qos in (cls.qos_name1, cls.qos_name2):
+            net_helper.remove_qos_from_dc(qos_name=qos)
+
+
+@attr(tier=2)
+class TestHostNetQOSCase10(TestHostNetworkQoSTestCaseBase):
+    """
+    Attach network with QoS to host NIC
+    """
+    __test__ = True
+    net = conf.NETS[10][0]
+    qos_dict = {
+        "rt": (conf.TEST_VALUE - 1) * MB_CONVERTER,
+        "ul": (conf.TEST_VALUE + 1) * MB_CONVERTER,
+        "ls": conf.TEST_VALUE
+    }
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Attach network to host NIC with QoS parameters (Anonymous' QoS)
+        """
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": cls.net,
+                    "nic": conf.HOST_1_NICS[1],
+                    "qos": {
+                        "type_": conf.HOST_NET_QOS_TYPE,
+                        "outbound_average_linkshare": conf.TEST_VALUE,
+                        "outbound_average_realtime": conf.TEST_VALUE - 1,
+                        "outbound_average_upperlimit": conf.TEST_VALUE + 1
+                    }
+                }
+            }
+        }
+        logger.info(
+            "Attaching %s to %s on %s",
+            cls.net, conf.HOST_1_NICS[1], conf.HOST_1
+        )
+        if not hl_host_network.setup_networks(
+            host_name=conf.HOST_1, **network_host_api_dict
+        ):
+            raise conf.NET_EXCEPTION(
+                "Failed to attach %s to %s on %s" % (
+                    cls.net, conf.HOST_1_NICS[1], conf.HOST_1
+                )
+            )
+
+    @polarion("RHEVM3-6534")
+    def test_qos_for_network_on_host_nic(self):
+        """
+        Attach network to host NIC with QoS parameters (Anonymous' QoS)
+        """
+        helper.cmp_qos_with_vdscaps(
+            net=conf.NETS[10][0], qos_dict=self.qos_dict
+        )
