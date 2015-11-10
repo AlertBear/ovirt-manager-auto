@@ -862,14 +862,13 @@ class StorageUtils:
         if initiators:
             self.logger.info('Unmap initiators %s from host group %s',
                              initiators, self.host_group)
-            if (
-                'solaris' in storageMngr_name or
-                    storageMngr_name == "newnetappstoragemanageriscsi"
-            ):
+            if 'solaris' in storageMngr_name:
                 # real host group name has suffix added to distinguish it
                 # from target group
                 hostGroups = storageMngr.getInitiatorHostGroups(initiators[0])
                 hostGroup = hostGroups[0]
+            elif 'netappstoragemanageriscsi' in storageMngr_name:
+                hostGroup += storageMngr.hgNameSuffix
 
         for initiator in initiators:
             try:

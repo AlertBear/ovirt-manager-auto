@@ -60,6 +60,7 @@ export STORAGE_CONF_FILE=/mypath/myfile.conf
 
 import re
 import os
+import storage
 from art.test_handler.plmanagement import Component, implements, get_logger
 from art.test_handler.plmanagement.interfaces.resources_listener import \
     IResourcesListener
@@ -112,7 +113,6 @@ class AutoDevices(Component):
 
     def on_storages_prep_request(self):
         logger.info("Preparing storages.")
-        from art.test_handler.plmanagement.plugins import storage
         self.su = storage.StorageUtils(self.conf, os.getenv(CONF_PATH_ENV))
         try:
             self.su.storageSetup()
