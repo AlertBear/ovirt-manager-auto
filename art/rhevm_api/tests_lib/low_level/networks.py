@@ -86,23 +86,8 @@ def _prepareNetworkObject(**kwargs):
         net.set_profile_required(kwargs.get('profile_required'))
 
     if 'qos_dict' in kwargs:
-
-        qos_dict = kwargs.get("qos_dict")
-        qos_name = qos_dict.pop("qos_name")
-        datacenter = qos_dict.pop("datacenter")
-        qos_obj = ll_datacenters.get_qos_from_datacenter(datacenter, qos_name)
-        if not qos_obj:
-            qos_type = qos_dict.pop("qos_type")
-            ll_datacenters.add_qos_to_datacenter(
-                datacenter=datacenter, qos_name=qos_name, qos_type=qos_type,
-                **qos_dict
-            )
-            qos_obj = ll_datacenters.get_qos_from_datacenter(
-                datacenter, qos_name
-            )
-
+        qos_obj = prepare_qos_on_net(kwargs.get("qos_dict"))
         net.set_qos(qos_obj)
-
     return net
 
 
@@ -1399,3 +1384,27 @@ def get_host_nic_label_objs_by_id(host_nics, labels_id):
             [i for i in nic_labels if i.get_id() in labels_id]
         )
     return label_objs_list
+
+
+def prepare_qos_on_net(qos_dict):
+    # if we want to update qos to be unlimited need to send empty qos_dict,
+    # otherwise update network with the QoS, given in the qos_dict
+    if not qos_dict:
+        qos_obj = apis_utils.data_st.QoS()
+    else:
+        qos_name = qos_dict.pop("qos_name")
+        datacenter = qos_dict.pop("datacenter")
+        qos_obj = ll_datacenters.get_qos_from_datacenter(
+            datacenter, qos_name
+        )
+        # if qos_obj is not found on DC, need to create a new QoS object
+        if not qos_obj:
+            qos_type = qos_dict.pop("qos_type")
+            ll_datacenters.add_qos_to_datacenter(
+                datacenter=datacenter, qos_name=qos_name,
+                qos_type=qos_type, **qos_dict
+            )
+            qos_obj = ll_datacenters.get_qos_from_datacenter(
+                datacenter, qos_name
+            )
+    return qos_obj
