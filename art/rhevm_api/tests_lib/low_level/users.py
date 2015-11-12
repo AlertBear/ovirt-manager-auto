@@ -264,7 +264,7 @@ def deleteGroup(positive, group_name):
     Return: status (True if group was deleted, False otherwise)
     '''
     groupObj = groupUtil.find(group_name)
-    return util.delete(groupObj, positive)
+    return groupUtil.delete(groupObj, positive)
 
 
 def loginAsUser(user, domain, password, filter):
