@@ -317,4 +317,8 @@ def stuck_check(main_thread):
             break
         t1 = traceback.format_stack(f=tmp)
         if t1 == t2:
-            logger.error(''.join(t1))
+            logger.warn(
+                "There is possiblity that MainThread is stucked. "
+                "Check debug log to see traceback where it is stucked on."
+            )
+            logger.debug(''.join(t1))
