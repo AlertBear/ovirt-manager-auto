@@ -113,3 +113,7 @@ while len(VDS_HOSTS_WITH_DUMMY) < 3:
 
 HOST = "host"
 RESOURCE = "resource"
+
+# Cluster overcommitment constants
+CLUSTER_OVERCOMMITMENT_NONE = 100
+CLUSTER_OVERCOMMITMENT_DESKTOP = 200

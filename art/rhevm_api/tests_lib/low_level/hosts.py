@@ -2522,7 +2522,7 @@ def wait_for_host_cpu_load(
     expected_max_load=100, timeout=120, sleep=10
 ):
     """
-    Wait for host cpu load
+    Wait until host reach cpu load between minimal and maximal values
 
     :param host_name: host name
     :type host_name: str
@@ -2536,8 +2536,8 @@ def wait_for_host_cpu_load(
     :type timeout: int
     :param sleep: sampler sleep
     :type sleep: int
-    :return: True, if host cpu load greater than expected value, before timeout
-    otherwise False
+    :return: True, if host reach cpu load between expected minimal and
+    maximal values before timeout, otherwise False
     :rtype: bool
     """
     sampler = TimeoutingSampler(

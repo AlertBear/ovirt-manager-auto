@@ -2451,7 +2451,7 @@ def createVm(
         disk_quota=None, plugged='true', linked='true', protected=None,
         copy_permissions=False, custom_properties=None,
         watchdog_model=None, watchdog_action=None, cpu_profile_id=None,
-        numa_mode=None, ballooning=None
+        numa_mode=None, ballooning=None, memory_guaranteed=None
 ):
     """
     Create new vm with nic, disk and OS
@@ -2546,6 +2546,8 @@ def createVm(
     :type numa_mode: str
     :param ballooning: memory ballooning device enable or disable
     :type ballooning: bool
+    :param memory_guaranteed: size of guaranteed memory in bytes
+    :type memory_guaranteed: int
     :returns: True, if create vm success, otherwise False
     :rtype: bool
     """
@@ -2564,7 +2566,7 @@ def createVm(
         copy_permissions=copy_permissions,
         custom_properties=custom_properties,
         cpu_profile_id=cpu_profile_id, numa_mode=numa_mode,
-        ballooning=ballooning
+        ballooning=ballooning, memory_guaranteed=memory_guaranteed
     ):
         return False
 
@@ -3833,17 +3835,19 @@ def get_vm_state(vm_name):
     return vm_obj.get_status().get_state()
 
 
-def wait_for_vm_migrate(vm, host, **kwargs):
+def is_vm_run_on_host(vm_name, host_name, **kwargs):
     """
-    Wait until vm migrate on given host
-    **Author**: alukiano
+    Check if vm run on given host
 
-    **Parameters**:
-        * *vm* - vm name
-        * *host* - host name
-    **Returns**: True if event passed, otherwise False
+    :param vm_name: vm name
+    :type vm_name: str
+    :param host_name: vm must run on given host
+    :type host_name: str
+    :param kwargs: timeout: type=int
+                   sleep: type=int
+    :return: True, if vm run on given host, otherwise False
     """
-    query = "name={0} and host={1}".format(vm, host.lower().strip())
+    query = "name={0} and host={1}".format(vm_name, host_name.lower().strip())
     return VM_API.waitForQuery(query, **kwargs)
 
 
@@ -3861,7 +3865,7 @@ def check_vm_migration(vm, host, time_to_wait):
     """
     start_time = time.time()
     logger.info("Wait until vm %s will migrate on host %s", vm, host)
-    result = wait_for_vm_migrate(vm, host, timeout=time_to_wait)
+    result = is_vm_run_on_host(vm, host, timeout=time_to_wait)
     migration_duration = time.time() - start_time
     if not result:
         logger.error("Process of migration failed")
@@ -4756,7 +4760,10 @@ def safely_remove_vms(vms):
     if vms:
         logger.debug("Removing vms %s", vms)
         existing_vms = filter(does_vm_exist, vms)
-        stop_vms_safely(existing_vms)
+        try:
+            stop_vms_safely(existing_vms)
+        except exceptions.VMException:
+            return False
         for vm in existing_vms:
             removeVm(True, vm, wait=False)
 
