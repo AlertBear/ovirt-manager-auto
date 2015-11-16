@@ -7,11 +7,11 @@ import config
 import logging
 import shlex
 
+from art.rhevm_api.resources import storage as storage_resources
 from art.rhevm_api.tests_lib.low_level import disks, jobs, storagedomains, vms
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import attr
-from art.unittest_lib import StorageTest as BaseTestCase
+from art.unittest_lib import attr, StorageTest as BaseTestCase
 from rhevmtests.storage import helpers
 from utilities.machine import LINUX, Machine
 
@@ -27,6 +27,8 @@ POLARION_PROJECT = "RHEVM3-"
 
 # Global list to hold VMs with VirtIO-SCSI Enabled set to False
 VMS_WITH_VIRTIO_SCSI_FALSE = list()
+
+STORAGE_DEVICES_FILTER = '[sv]d[a-z]'
 
 # Parameters for disk (alias and storage domain are filled in per test case)
 disk_kwargs = {
@@ -182,7 +184,9 @@ class BasicEnvironment(BaseTestCase):
         Used by Polarion cases 4572, 4575 and 4576
         """
         assert vms.startVm(True, self.vm_name, config.VM_UP, True)
-        self.initial_storage_devices = helpers.execute_lsblk_cmd(self.vm_name)
+        self.initial_storage_devices = storage_resources.get_storage_devices(
+            self.vm_name, STORAGE_DEVICES_FILTER
+        )
         # Set the current storage devices to match the initial storage devices
         self.current_storage_devices = self.initial_storage_devices
         if not hot_plug:
@@ -198,7 +202,7 @@ class BasicEnvironment(BaseTestCase):
                 assert vms.startVm(True, self.vm_name, config.VM_UP, True)
 
             # TODO: This is a workaround for bug
-            # https://bugzilla.redhat.com/show_bug.cgi?id=1239297
+            # https://bugzilla.redhat.com/show_bug.cgi?id=1144860
             vm_ip = helpers.get_vm_ip(self.vm_name)
             vm_machine = Machine(host=vm_ip, user=config.VM_USER,
                                  password=config.VM_PASSWORD).util(LINUX)
@@ -211,8 +215,11 @@ class BasicEnvironment(BaseTestCase):
                             self.initial_storage_devices,
                             "The disk created '%s' was found before being "
                             "attached to the VM" % disk_alias)
-            self.current_storage_devices = \
-                helpers.execute_lsblk_cmd(self.vm_name)
+            self.current_storage_devices = (
+                storage_resources.get_storage_devices(
+                    self.vm_name, STORAGE_DEVICES_FILTER
+                )
+            )
             self.assertTrue(disk_logical_volume_name in
                             self.current_storage_devices,
                             "The disk created '%s' was found after being "
@@ -226,8 +233,11 @@ class BasicEnvironment(BaseTestCase):
 
             if hot_unplug:
                 assert disks.detachDisk(True, disk_alias, self.vm_name)
-                self.current_storage_devices = \
-                    helpers.execute_lsblk_cmd(self.vm_name)
+                self.current_storage_devices = (
+                    storage_resources.get_storage_devices(
+                        self.vm_name, STORAGE_DEVICES_FILTER
+                    )
+                )
                 self.assertTrue(disk_logical_volume_name not in
                                 self.current_storage_devices,
                                 "The disk created '%s' was found after being "
@@ -253,8 +263,11 @@ class BasicEnvironment(BaseTestCase):
                         vm_names)
         for vm_name in vm_names:
             vms.waitForIP(vm_name)
-            self.initial_storage_devices[vm_name] = \
-                helpers.execute_lsblk_cmd(vm_name)
+            self.initial_storage_devices[vm_name] = (
+                storage_resources.get_storage_devices(
+                    vm_name, STORAGE_DEVICES_FILTER
+                )
+            )
 
         vms.stop_vms_safely(vm_names)
 
@@ -263,23 +276,25 @@ class BasicEnvironment(BaseTestCase):
         self.assertTrue(vms.startVms(vm_names, config.VM_UP),
                         "At least one VM from list '%s' failed to start" %
                         vm_names)
-        # TODO: This is a workaround for bug
-        # https://bugzilla.redhat.com/show_bug.cgi?id=1239297
-        vm_ip = helpers.get_vm_ip(self.vm_name)
-        vm_machine = Machine(host=vm_ip, user=config.VM_USER,
-                             password=config.VM_PASSWORD).util(LINUX)
-        vm_machine.runCmd(shlex.split("udevadm trigger"))
 
         for vm_name in vm_names:
             vms.waitForIP(vm_name)
-            self.current_storage_devices[vm_name] = \
-                helpers.execute_lsblk_cmd(vm_name)
 
             # TODO: This is a workaround for bug
-            # https://bugzilla.redhat.com/show_bug.cgi?id=1239297
+            # https://bugzilla.redhat.com/show_bug.cgi?id=1144860
             vm_ip = helpers.get_vm_ip(vm_name)
             vm_machine = Machine(host=vm_ip, user=config.VM_USER,
                                  password=config.VM_PASSWORD).util(LINUX)
+            vm_machine.runCmd(shlex.split("udevadm trigger"))
+
+            self.current_storage_devices[vm_name] = (
+                storage_resources.get_storage_devices(
+                    vm_name, STORAGE_DEVICES_FILTER
+                )
+            )
+
+            # TODO: This is a workaround for bug
+            # https://bugzilla.redhat.com/show_bug.cgi?id=1144860
             vm_machine.runCmd(shlex.split("udevadm trigger"))
 
             if is_disk_shared:

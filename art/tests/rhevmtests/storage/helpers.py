@@ -4,8 +4,9 @@ Storage helper functions
 import logging
 import os
 import shlex
+
 import art.rhevm_api.tests_lib.high_level.vms as high_vms
-import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
+from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.tests_lib.low_level.datacenters import get_data_center
 from art.rhevm_api.tests_lib.low_level.hosts import (
@@ -21,11 +22,11 @@ from art.rhevm_api.tests_lib.low_level.disks import (
 from art.rhevm_api.tests_lib.low_level.vms import (
     get_vm_disk_logical_name, stop_vms_safely, get_vm_snapshots,
     removeSnapshot, activateVmDisk, waitForIP, cloneVmFromTemplate,
-    createVm, startVm, getVmDisks, run_cmd_on_vm,
+    createVm, startVm, getVmDisks,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.test_handler import exceptions
-from rhevmtests.helpers import get_golden_template_name
+from rhevmtests import helpers
 from rhevmtests.storage import config
 
 logger = logging.getLogger(__name__)
@@ -304,8 +305,7 @@ def get_vm_ip(vm_name):
     return waitForIP(vm_name)[1]['ip']
 
 
-def create_vm_or_clone(positive, vmName, vmDescription,
-                       cluster, **kwargs):
+def create_vm_or_clone(positive, vmName, vmDescription, cluster, **kwargs):
     """
     Create a VM from scratch for non-GE environments, clones VM from
     cluster's templates for GE environments. This function greatly improves
@@ -344,7 +344,7 @@ def create_vm_or_clone(positive, vmName, vmDescription,
             )
         else:
             logger.info("Cloning vm %s", vmName)
-            template_name = get_golden_template_name(cluster)
+            template_name = helpers.get_golden_template_name(cluster)
             if not template_name:
                 logger.error(
                     "Cannot find any templates to use under cluster %s",
@@ -517,8 +517,8 @@ def get_amount_of_file_type_volumes(
         :type sp_id: str
         :param sd_id: Storage domain id
         :type sd_id: str
-        :param img_id: Image id of the disk
-        :type img_id: str
+        :param image_id: Image id of the disk
+        :type image_id: str
         :returns: Number of volumes found on a file based storage domain's disk
         :rtype: int
         """
@@ -601,26 +601,6 @@ def get_disks_volume_count(
     return volume_count
 
 
-def execute_lsblk_cmd(vm_name):
-    """
-    Retrieves a list of storage devices returned by running the lsblk command.
-    Sample return is ['vda', 'vda1', 'vda2', 'vda3', 'vdb', 'sda', 'sdb']
-
-    :param vm_name: Name of the VM on which to execute the lsblk command
-    :type vm_name: str
-    :return: List of the storage devices returned by the lsblk command
-    :rtype: list
-    """
-    rc, out = run_cmd_on_vm(vm_name, LSBLK_CMD, config.VMS_LINUX_USER,
-                            config.VMS_LINUX_PW)
-    if not rc:
-        raise exceptions.HostException("lsblk failed to execute on '%s'" %
-                                       vm_name)
-    # The values are retrieved as one long string
-    output_values = out.values()[0]
-    return shlex.split(output_values)
-
-
 def add_new_disk(
         sd_name, permutation, sd_type, shared=False, disk_size=DISK_SIZE
 ):
@@ -674,7 +654,8 @@ def add_new_disk(
 
 
 def start_creating_disks_for_test(
-        shared=False, sd_name=None, sd_type=None, disk_size=DISK_SIZE):
+        shared=False, sd_name=None, sd_type=None, disk_size=DISK_SIZE
+):
     """
     Begins asynchronous creation of disks from all permutations of disk
     interfaces, formats and allocation policies
