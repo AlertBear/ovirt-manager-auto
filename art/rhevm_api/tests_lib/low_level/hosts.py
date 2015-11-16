@@ -2434,17 +2434,26 @@ def get_numa_nodes_indexes(host_name):
     ]
 
 
-def upgrade_host(host_name):
+def upgrade_host(host_name, image=None):
     """
     Upgrade host
 
-    :param host_name: name of the host to be upgraded
+    :param host_name: Name of the host to be upgraded
     :type host_name: str
+    :param image: Image to use in upgrading host (RHEV-H only)
+    :type image: str
     :return: True if host was upgraded, otherwise False
     :rtype: bool
     """
     host = HOST_API.find(host_name)
-    if bool(HOST_API.syncAction(host, "upgrade", True)):
+    if bool(
+        HOST_API.syncAction(
+            host,
+            'upgrade',
+            True,
+            image=image,
+        )
+    ):
         return waitForHostsStates(True, [host_name], states='up')
 
     return False
@@ -2454,7 +2463,7 @@ def is_upgrade_available(host_name):
     """
     Check if upgrade is available for host
 
-    :param host_name: name of the host to be upgraded
+    :param host_name: Name of the host to be upgraded
     :type host_name: str
     :return: True if upgrade is available for host, otherwise False
     :rtype: bool

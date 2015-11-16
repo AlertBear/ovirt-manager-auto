@@ -95,6 +95,9 @@ UPGRADE_REPOS = [
     ('rhevh_72_repo', PARAMETERS.get('rhevh_72_repo')),
 ]
 TO_VERSION = '3.6'
+RHEVH_7_TAG = 'rhevm-3.6-rhel-7-candidate'
+RHEVH_7_PKG = 'rhev-hypervisor7'
+EL7_SUFFIX = 'el7ev'
 
 ANSWERS = {
     # KEYWORDS FOR OTOPI ANSWERFILE
