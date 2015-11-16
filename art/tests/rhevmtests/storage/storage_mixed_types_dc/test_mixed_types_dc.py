@@ -36,21 +36,23 @@ CREATE_TEMPLATE_TIMEOUT = 1500
 CLONE_FROM_TEMPLATE_TIMEOUT = 1500
 
 SDK_ENGINE = 'sdk'
-NFS = config.STORAGE_TYPE_NFS
 GLUSTERFS = config.STORAGE_TYPE_GLUSTER
+ISCSI = config.STORAGE_TYPE_ISCSI
+NFS = config.STORAGE_TYPE_NFS
+POSIX = config.STORAGE_TYPE_POSIX
 
 ALL_TYPES = (
-    NFS, GLUSTERFS, config.STORAGE_TYPE_POSIX, config.STORAGE_TYPE_ISCSI,
+    GLUSTERFS, ISCSI, NFS, POSIX
 )
 
 
 class BaseCaseDCMixed(TestCase):
     """
     Base Case for building an environment with specific storage domains and
-    version. Environment is cleaned up after.
+    versions. The environment is cleaned up after the run.
 
-    This makes the code more cleanear for the tests, adding a bit of time
-    for installing a host every time
+    This makes the code cleaner for the tests, adding a bit of time for
+    installing a host every time
     """
     __test__ = False
     storages = 'N/A'
@@ -69,7 +71,6 @@ class BaseCaseDCMixed(TestCase):
         if not config.GOLDEN_ENV or (
                 config.GOLDEN_ENV and self.new_datacenter_for_ge
         ):
-
             if config.GOLDEN_ENV:
                 status, host = ll_hosts.getAnyNonSPMHost(
                     config.HOSTS, cluster_name=config.CLUSTER_NAME,
@@ -78,7 +79,6 @@ class BaseCaseDCMixed(TestCase):
                 self.host_ip = ll_hosts.getHostIP(self.host)
                 ll_hosts.deactivateHost(True, self.host)
                 ll_hosts.removeHost(True, self.host)
-
             else:
                 self.host = config.HOSTS[0]
                 self.host_ip = self.host
@@ -132,7 +132,7 @@ class BaseCaseDCMixed(TestCase):
                     True, vm, self.data_center_name, self.export_domain,
                 )
             for template in self.templates_to_remove:
-                ll_templates.removeTemplate(True, self.template_name)
+                ll_templates.removeTemplate(True, template)
 
 
 class IscsiNfsSD(BaseCaseDCMixed):
@@ -178,10 +178,10 @@ class IscsiNfsSdVMs(IscsiNfsSD):
 @attr(tier=2)
 class TestCase4558(BaseCaseDCMixed):
     """
-    * Create FC and iSCSI Storage Domains.
-    * Create disks on each domain.
-    * Move disk (offline movement) between domains
-      (FC to iSCSI and iSCSI to FC).
+    * Create FC and iSCSI Storage Domains
+    * Create disks on each domain
+    * Move disk (offline movement) between domains (FC to iSCSI and iSCSI to
+    FC)
     """
     polarion_test_case = '4558'
     __test__ = False  # No host with HBA port in broker
@@ -219,12 +219,12 @@ class TestCase4558(BaseCaseDCMixed):
 @attr(tier=2)
 class TestCase4561(IscsiNfsSD):
     """
-    * Create a shared DC.
-    * Create ISCSI and NFS storage domains.
-    * Create VMs with disks on the same domain type.
-    * Export/Import VM.
-    * Create Vm with disks on different domain types.
-    * Export/Import VM.
+    * Create a shared DC
+    * Create ISCSI and NFS storage domains
+    * Create VMs with disks on the same domain type
+    * Export/Import VM
+    * Create Vm with disks on different domain types
+    * Export/Import VM
     """
     __test__ = True
     polarion_test_case = '4561'
@@ -276,7 +276,7 @@ class TestCase4561(IscsiNfsSD):
         helpers.add_disk_to_sd(second_disk, self.nfs,
                                attach_to_vm=self.vm_name)
 
-        logger.info("Trying export/import for vm with multiple disks %s", vm)
+        logger.info("Trying export/import for vm %s with multiple disks ", vm)
         assert ll_vms.exportVm(True, self.vm_name, self.export_domain)
         self.vms_to_remove_from_export_domain.append(self.vm_name)
         assert ll_vms.removeVm(True, self.vm_name)
@@ -287,12 +287,12 @@ class TestCase4561(IscsiNfsSD):
 @attr(tier=2)
 class TestCase4562(IscsiNfsSdVMs):
     """
-    * Create a shared DC.
-    * Create ISCSI and NFS storage domains.
+    * Create a shared DC
+    * Create ISCSI and NFS storage domains
     * Create 2 VMs
-    * Attach disks to VM from different storage domains.
-    * Create a snapshot.
-    * Clone VM from snapshot.
+    * Attach disks to VM from different storage domains
+    * Create a snapshot
+    * Clone VM from snapshot
     """
     __test__ = True
     polarion_test_case = '4562'
@@ -348,11 +348,11 @@ class TestCase4562(IscsiNfsSdVMs):
 @attr(tier=2)
 class TestCase4563(IscsiNfsSD):
     """
-    * Create a shared DC.
+    * Create a shared DC
     * Create 2 SDs - ISCSI and NFS
     * Create VM with disks on NFS
-    * Make template from this VM.
-    * Copy template disk's from NFS domain to ISCSI domain.
+    * Make template from this VM
+    * Copy template disk's from NFS domain to ISCSI domain
     * Clone a new VM from the template with its disk located on the iSCSI
     domain
     """
@@ -426,10 +426,10 @@ class TestCase4563(IscsiNfsSD):
 @attr(tier=2)
 class TestCase4565(IscsiNfsSD):
     """
-    Create a shared DC.
-    Create 2 SDs - ISCSI and NFS
-    Create VM with two disks - one on NFS and the second on ISCSI
-    Perform basic snapshot sanity (create,preview,commit,undo,delete)
+    * Create a shared DC
+    * Create 2 SDs - ISCSI and NFS
+    * Create VM with two disks - one on NFS and the second on ISCSI
+    * Perform basic snapshot sanity (create, preview, commit, undo, delete)
     """
     __test__ = True
     polarion_test_case = '4565'
@@ -497,11 +497,11 @@ class TestCase4565(IscsiNfsSD):
 @attr(tier=2)
 class TestCase4557(IscsiNfsSD):
     """
-    Create a shared DC.
-    Create 2 SDs - ISCSI and NFS
-    Choose Active Domain and switch it to maintenance.
-    After reconstruct is finished, perform operations in the
-    storage pool like disk creation, removal and move.
+    * Create a shared DC
+    * Create 2 SDs - ISCSI and NFS
+    * Choose Active Domain and switch it to maintenance
+    * After reconstruct is finished, perform operations in the storage pool
+    like disk creation, removal and move
     """
     __test__ = True
     polarion_test_case = '4557'
@@ -568,13 +568,13 @@ class TestCase4557(IscsiNfsSD):
 @attr(tier=2)
 class TestCase4556(BaseCaseDCMixed):
     """
-    Create a shared DC.
-    Create SD of ISCSI type.
-    Attach to DC.
-    Maintenance ISCSI domain.
-    Create unattached NFS SD (when creating Storage Domain choose 'None' DC)
-    Go to DC-->right click--->Reinitialize DC and choose NFS domain from
-    the list.
+    * Create a shared DC
+    * Create SD of ISCSI type
+    * Attach to DC
+    * Maintenance ISCSI domain
+    * Create unattached NFS SD (when creating Storage Domain choose 'None' DC)
+    * Go to DC-->right click--->Reinitialize DC and choose NFS domain from
+    the list
     """
     __test__ = False  # reinitialize not implemented on rest
     polarion_test_case = '4556'
@@ -610,11 +610,11 @@ class TestCase4556(BaseCaseDCMixed):
 @attr(tier=2)
 class TestCase4555(IscsiNfsSD):
     """
-    Create DataCenter of shared type.
-    Create FC/iSCSI and NFS/Gluster/POSIX Storage Domains.
-    Create disks on each domain.
-    Move disk (offline movement) between domains (file to block and block
-    to file).
+    * Create DataCenter of shared type
+    * Create FC/iSCSI and NFS/Gluster/POSIX Storage Domains
+    * Create disks on each domain
+    * Move disk (offline movement) between domains (file to block and block to
+    file)
     """
     __test__ = False  # Not running on FC
     polarion_test_case = '4555'
@@ -641,11 +641,11 @@ class TestCase4555(IscsiNfsSD):
 @attr(tier=2)
 class TestCase4554(BaseCaseDCMixed):
     """
-    Create DataCenter of shared type.
-    Create NFS and GlusterFS Storage Domains.
-    Create disks on each domain.
-    Move disk (offline movement) between domains (NFS to Gluster and
-    Gluster to NFS).
+    * Create DataCenter of shared type
+    * Create NFS and GlusterFS Storage Domains
+    * Create disks on each domain
+    * Move disk (offline movement) between domains (NFS to Gluster and
+    Gluster to NFS)
     """
     __test__ = (NFS in opts['storages'] or GLUSTERFS in opts['storages'])
     polarion_test_case = '4554'
@@ -689,12 +689,12 @@ class TestCase4554(BaseCaseDCMixed):
 @attr(tier=4)
 class TestCase4566(IscsiNfsSD):
     """
-    Create a shared DC.
-    Create two Storage Domains - NFS and ISCSI
-    Block connectivity from all hosts to storage server which master
-    domain is located on.
-    After reconstruct is finished, perform operations in the storage
-    pool like disk creation, removal and move
+    * Create a shared DC
+    * Create two Storage Domains - NFS and ISCSI
+    * Block connectivity from all hosts to storage server which master domain
+    is located on
+    * After reconstruct is finished, perform operations in the storage pool
+    like disk creation, removal and move
     """
     __test__ = True
     polarion_test_case = '4566'
@@ -817,10 +817,10 @@ class TestCase4566(IscsiNfsSD):
 @attr(tier=1)
 class TestCase4564(IscsiNfsSD):
     """
-    Create a shared DC.
-    Create 2 SDs - ISCSI and NFS.
-    Create VM with 2 disks - on ISCSI domain and the other in NFS domain
-    Install OS and make file system on both disks
+    * Create a shared DC
+    * Create 2 SDs - ISCSI and NFS
+    * Create VM with 2 disks - on ISCSI domain and the other in NFS domain
+    * Install OS and make file system on both disks
     """
     __test__ = True
 
@@ -867,12 +867,12 @@ class TestCase4564(IscsiNfsSD):
 @attr(tier=2)
 class TestCase4551(IscsiNfsSD):
     """
-    Create a shared DC with two Storage Domans - ISCSI and NFS.
-    Create VM with disks on NFS.
-    Create template from this VM.
-    Copy template's disk from NFS domain to ISCSI domain.
-    Create new VM from template that resied on NFS and
-    choose thin copy in Resource Allocation.
+    * Create a shared DC with two Storage Domains - ISCSI and NFS
+    * Create VM with disks on NFS
+    * Create template from this VM
+    * Copy template's disk from NFS domain to ISCSI domain
+    * Create new VM from template that resides on NFS and choose thin copy in
+    Resource Allocation
     """
     __test__ = True
     polarion_test_case = '4551'
@@ -926,11 +926,11 @@ class TestCase4551(IscsiNfsSD):
 @attr(tier=2)
 class TestCase4553(IscsiNfsSD):
     """
-    Create shared DC.
-    Create ISCSI and NFS domains
-    Create VM with disks on different domains (iscsi and nfs)
-    Export this VM.
-    Import VM and choose disk location on different SD.
+    * Create shared DC
+    * Create ISCSI and NFS domains
+    * Create VM with disks on different domains (iscsi and nfs)
+    * Export this VM
+    * Import VM and choose disk location on different SD
     """
     __test__ = True
     polarion_test_case = '4553'
