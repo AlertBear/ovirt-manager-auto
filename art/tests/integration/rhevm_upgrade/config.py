@@ -61,10 +61,39 @@ VDS_HOSTS = [
         h, HOSTS_PW,
     ) for h in HOSTS_IP
 ]
+VDC_ADMIN_USER = 'admin'
+VDC_ADMIN_DOMAIN = 'internal'
+VDC_PORT = REST_CONNECTION['port']
+ENGINE_ENTRY_POINT = REST_CONNECTION['entry_point']
+ENGINE_URL = '%s://%s:%s/%s' % (
+    REST_CONNECTION.get('scheme'),
+    RHEVM_NAME,
+    VDC_PORT,
+    ENGINE_ENTRY_POINT
+)
 ENGINE_HOST = resources.Host(RHEVM_NAME)
 ENGINE_HOST.users.append(
     resources.RootUser(VDC_PASSWORD)
 )
+ENGINE = resources.Engine(
+    ENGINE_HOST,
+    resources.ADUser(
+        VDC_ADMIN_USER,
+        VDC_PASSWORD,
+        resources.Domain(VDC_ADMIN_DOMAIN),
+    ),
+    schema=REST_CONNECTION.get('schema'),
+    port=VDC_PORT,
+    entry_point=ENGINE_ENTRY_POINT,
+)
+
+YUM_DIR = '/etc/yum.repos.d/'
+UPGRADE_REPOS = [
+    ('rhev_repo', PARAMETERS.get('rhev_repo')),
+    ('new_el_repo', PARAMETERS.get('new_el_repo')),
+    ('new_el_opt_repo', PARAMETERS.get('new_el_opt_repo')),
+    ('rhevh_72_repo', PARAMETERS.get('rhevh_72_repo')),
+]
 
 ANSWERS = {
     # KEYWORDS FOR OTOPI ANSWERFILE
