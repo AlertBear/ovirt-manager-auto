@@ -82,36 +82,6 @@ def set_passwordless_ssh(src_host, dst_host):
     return True
 
 
-def get_host_resource_with_root_user(ip, root_password):
-    """
-    Return remote resource with user root on give ip
-
-    :param ip: host ip
-    :type: ip: str
-    :param root_password: root password
-    :type: root_password: str
-    :return: Host with root user
-    :rtype: Host
-    """
-    host = art.rhevm_api.resources.Host(ip)
-    host.users.append(users.RootUser(root_password))
-    return host
-
-
-def get_host_executor_with_root_user(ip, root_password):
-    """
-    Return remote executor with user root on give ip
-
-    :param ip: host ip
-    :type: ip: str
-    :param root_password: root password
-    :type: root_password: str
-    :return: RemoteExecutor with root user
-    :rtype: RemoteExecutor
-    """
-    return get_host_resource_with_root_user(ip, root_password).executor()
-
-
 def get_unfinished_jobs_list():
     """
     Returns list of unfinished jobs and prints theirs description to a log
@@ -165,7 +135,7 @@ def generate_object_names(
     :return: {case_num:[case1_QoS1, ...]}
     :rtype: dict
     """
-    cases = range(1, num_of_cases+1)
+    cases = range(1, num_of_cases + 1)
     return dict(
         [
             (
@@ -191,6 +161,47 @@ def get_host_resource_of_running_vm(vm):
     host_ip = ll_hosts.get_host_ip_from_engine(
         host=ll_vms.get_vm_host(vm_name=vm)
     )
-    return get_host_resource_with_root_user(
-        ip=host_ip, root_password=config.HOSTS_PW
+    return get_host_resource(
+        ip=host_ip, password=config.HOSTS_PW
     )
+
+
+def get_host_resource(ip, password, username=None):
+    """
+    Return remote resource with given username/password on given ip
+
+    :param ip: host ip
+    :type: ip: str
+    :param username: host username, if None using root user
+    :type username: str
+    :param password: user's password
+    :type: password: str
+    :return: Host with root user
+    :rtype: Host
+    """
+    host = art.rhevm_api.resources.Host(ip)
+    _user = username if username else config.VDC_ROOT_USER
+    host.users.append(users.User(_user, password))
+    return host
+
+
+def get_host_executor(ip, password, username=None, use_pkey=False):
+    """
+
+    :param ip: Host ip
+    :type: ip: str
+    :param password: User's password
+    :type: password: str
+    :param username:  Host username, if None using root user
+    :type username: str
+    :param use_pkey: Use ssh private key to connect without password
+    :type use_pkey: bool
+    :return: RemoteExecutor with given username
+    :rtype: RemoteExecutor
+    """
+
+    _user = username if username else config.VDC_ROOT_USER
+    user = users.User(_user, password)
+    return get_host_resource(
+        ip, username, password
+    ).executor(user, pkey=use_pkey)

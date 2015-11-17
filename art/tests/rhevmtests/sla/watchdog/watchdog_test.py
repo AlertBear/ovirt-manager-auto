@@ -85,7 +85,7 @@ class WatchdogMixin(object):
         if not status:
             logger.info("Failed to receive ip address of vm %s", vm_name)
             return None
-        return helpers.get_host_resource_with_root_user(
+        return helpers.get_host_resource(
             ip_d['ip'], config.VMS_LINUX_PW
         )
 

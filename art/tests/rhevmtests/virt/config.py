@@ -9,8 +9,8 @@ from rhevmtests.config import *  # flake8: noqa
 # #######################################################################
 # Following parameters should move to consolidated config, once possible
 # #######################################################################
-#PPC OS arch
-RHEL7PPC64='rhel7ppc64'
+# PPC OS arch
+RHEL7PPC64 = 'rhel7ppc64'
 # ISO storage domain
 SHARED_ISO_DOMAIN_ADDRESS = ISO_DOMAIN_ADDRESS
 SHARED_ISO_DOMAIN_PATH = ISO_DOMAIN_PATH
@@ -34,8 +34,7 @@ export_storage = PARAMETERS.get('export_storage', EXPORT_STORAGE_NAME)
 ADDITIONAL_DC_NAME = 'virt_additional_dc'
 ADDITIONAL_CL_NAME = 'virt_additional_cl'
 # Vm names
-VM_RUN_ONCE ="run_once"
-VM_NAME_BASIC = 'golden_env_mixed_virtio'
+VM_RUN_ONCE = "vm_run_once"
 VM_DESCRIPTION = PARAMETERS.get('vm_description', '%s_test' % TEST_NAME)
 
 USERNAME = VDC_ADMIN_USER
@@ -50,3 +49,7 @@ VM_DISPLAY_TYPE = ENUMS[
 ] if PPC_ARCH else ENUMS['display_type_spice']
 VM_TYPE = VM_TYPE_SERVER if PPC_ARCH else VM_TYPE_DESKTOP
 RHEL_OS_TYPE_FOR_MIGRATION = "rhel"
+
+# glance
+RHEL_IMAGE_GLANCE_IMAGE = 'latest-rhel-guest-image-7.2'
+GLANCE_DOMAIN = 'rhevm-qe-infra-glance'

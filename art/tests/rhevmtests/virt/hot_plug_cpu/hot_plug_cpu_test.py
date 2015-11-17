@@ -118,7 +118,7 @@ class AddCPUHotPlug(BaseCPUHotPlugClass):
             "Failed To migrate VM %s after increasing the "
             "number of cpu sockets" % config.VM_NAME[0]
         )
-        vm_resource = helpers.get_host_resource_with_root_user(
+        vm_resource = helpers.get_host_resource(
             hl_vms.get_vm_ip(config.VM_NAME[0]), config.VMS_LINUX_PW
         )
         self.assertEqual(
@@ -143,7 +143,7 @@ class AddCPUHotPlug(BaseCPUHotPlugClass):
         """
         Test that the number of CPUs changed is also changed on the VM OS
         """
-        vm_resource = helpers.get_host_resource_with_root_user(
+        vm_resource = helpers.get_host_resource(
             hl_vms.get_vm_ip(config.VM_NAME[0]), config.VMS_LINUX_PW
         )
         working_cores = self.get_number_of_cores(vm_resource)

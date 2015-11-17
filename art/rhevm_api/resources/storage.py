@@ -46,8 +46,8 @@ def get_vm_executor(vm_name):
     logger.info("Get IP from VM %s", vm_name)
     vm_ip = get_vm_ip(vm_name)
     logger.info("Create VM instance with root user from vm with ip %s", vm_ip)
-    return rhevm_helpers.get_host_executor_with_root_user(
-        ip=vm_ip, root_password=config.VMS_LINUX_PW
+    return rhevm_helpers.get_host_executor(
+        ip=vm_ip, password=config.VMS_LINUX_PW
     )
 
 

@@ -664,6 +664,8 @@ def updateVm(positive, vm, **kwargs):
     :type cpu_profile_id: str
     :param numa_mode: numa mode for vm(strict, preferred, interleave)
     :type numa_mode: str
+    :param initialization: Initialization obj for cloud init
+    :type initialization: Initialization
     :returns: True, if update success, otherwise False
     :rtype: bool
     """
@@ -901,8 +903,11 @@ def restartVm(vm, wait_for_ip=False, timeout=VM_ACTION_TIMEOUT, async='false',
 
 
 @is_action()
-def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up'],
-            wait_for_ip=False, timeout=VM_ACTION_TIMEOUT, placement_host=None):
+def startVm(
+    positive, vm, wait_for_status=ENUMS['vm_state_powering_up'],
+    wait_for_ip=False, timeout=VM_ACTION_TIMEOUT, placement_host=None,
+    use_cloud_init=False
+):
     """
     Start VM
     :param vm: name of vm
@@ -921,6 +926,8 @@ def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up'],
     :type timeout: int
     :param placement_host: host where the VM should start
     :type placement_host: str
+    :param use_cloud_init: initialize vm with cloud-init if true
+    :type use_cloud_init: bool
     :return: status (True if vm was started properly, False otherwise)
     :rtype: bool
     """
@@ -928,13 +935,15 @@ def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up'],
         wait_for_status = None
 
     vmObj = VM_API.find(vm)
-
+    action_params = {}
     if placement_host:
         logging.info("Update vm %s to run on host %s", vm, placement_host)
         if not updateVm(True, vm, placement_host=placement_host):
             return False
+    if use_cloud_init:
+        action_params['use_cloud_init'] = 'true'
 
-    if not VM_API.syncAction(vmObj, 'start', positive):
+    if not VM_API.syncAction(vmObj, 'start', positive, **action_params):
         return False
 
     if wait_for_status is None:
@@ -1769,7 +1778,8 @@ def runVmOnce(
     positive, vm, pause=None, display_type=None, stateless=None,
     cdrom_image=None, floppy_image=None, boot_dev=None, host=None,
     domainName=None, user_name=None, password=None,
-    wait_for_state=ENUMS['vm_state_powering_up']
+    wait_for_state=ENUMS['vm_state_powering_up'],
+    use_cloud_init=False, initialization=None
 ):
     """
     Run once vm with specific parameters
@@ -1799,21 +1809,28 @@ def runVmOnce(
     :param password: domain password name
     :type password: str
     :param wait_for_state: wait for specific vm state after run
-    :type wait_for_state: str
+    :type wait_for_state:
+    :param use_cloud_init: If to use cloud init
+    :type use_cloud_init: bool
+    :param initialization: Initialization obj for cloud init
+    :type initialization: initialization
     :return: True, if positive and action succeed
     or negative and action failed, otherwise False
     :rtype: bool
     """
     # TODO Consider merging this method with the startVm.
     vm_obj = VM_API.find(vm)
-
+    action_params = {}
     vm_for_action = data_st.VM()
     if display_type:
         vm_for_action.set_display(data_st.Display(type_=display_type))
 
     if None is not stateless:
         vm_for_action.set_stateless(stateless)
-
+    if use_cloud_init:
+        action_params['use_cloud_init'] = 'true'
+        if initialization:
+            vm_for_action.set_initialization(initialization)
     if cdrom_image:
         cdrom = data_st.CdRom()
         vm_cdroms = data_st.CdRoms()
@@ -1849,13 +1866,13 @@ def runVmOnce(
             )
 
         vm_for_action.set_domain(domain)
-    action_d = {
-        "vm": vm_for_action
-    }
+    action_params["vm"] = vm_for_action
     if pause and pause.lower() == 'true':
         wait_for_state = ENUMS['vm_state_paused']
-        action_d["pause"] = pause
-    status = bool(VM_API.syncAction(vm_obj, 'start', positive, **action_d))
+        action_params["pause"] = pause
+    status = bool(
+        VM_API.syncAction(vm_obj, 'start', positive, **action_params)
+    )
     if status and positive:
         return VM_API.waitForElemStatus(
             vm_obj, wait_for_state, VM_ACTION_TIMEOUT
@@ -2478,7 +2495,8 @@ def createVm(
         disk_quota=None, plugged='true', linked='true', protected=None,
         copy_permissions=False, custom_properties=None,
         watchdog_model=None, watchdog_action=None, cpu_profile_id=None,
-        numa_mode=None, ballooning=None, memory_guaranteed=None
+        numa_mode=None, ballooning=None, memory_guaranteed=None,
+        initialization=None
 ):
     """
     Create new vm with nic, disk and OS
@@ -2575,6 +2593,8 @@ def createVm(
     :type ballooning: bool
     :param memory_guaranteed: size of guaranteed memory in bytes
     :type memory_guaranteed: int
+    :param initialization: Initialization obj for cloud init
+    :type initialization: Initialization
     :returns: True, if create vm success, otherwise False
     :rtype: bool
     """
@@ -2593,7 +2613,8 @@ def createVm(
         copy_permissions=copy_permissions,
         custom_properties=custom_properties,
         cpu_profile_id=cpu_profile_id, numa_mode=numa_mode,
-        ballooning=ballooning, memory_guaranteed=memory_guaranteed
+        ballooning=ballooning, memory_guaranteed=memory_guaranteed,
+        initialization=initialization
     ):
         return False
 

@@ -535,9 +535,7 @@ def get_vm_resource(vm):
     if not rc:
         raise conf.NET_EXCEPTION("Failed to get IP for: %s" % vm)
     ip = ip["ip"]
-    return global_helper.get_host_resource_with_root_user(
-        ip, conf.VMS_LINUX_PW
-    )
+    return global_helper.get_host_resource(ip, conf.VMS_LINUX_PW)
 
 
 def remove_networks_from_setup(hosts=None, dc=conf.DC_NAME[0]):
@@ -607,7 +605,7 @@ def get_all_ifcfg_files(host_ip):
     :return: List of all ifcfg files
     :rtype: list
     """
-    resource = helpers.get_host_resource_with_root_user(host_ip, conf.HOSTS_PW)
+    resource = helpers.get_host_resource(host_ip, conf.HOSTS_PW)
     rc, out, err = resource.run_command(["ls", "%s/ifcfg-*" % IFCFG_PATH])
     return [] if rc else out.splitlines()
 

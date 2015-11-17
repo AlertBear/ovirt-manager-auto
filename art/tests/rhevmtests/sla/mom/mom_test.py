@@ -647,7 +647,7 @@ class Balloon(MOM):
             "Failed to start vm %s" % vm
         )
 
-        vm_resource = helpers.get_host_resource_with_root_user(
+        vm_resource = helpers.get_host_resource(
             hl_vms.get_vm_ip(vm), config.VMS_LINUX_PW
         )
         if vm_resource.package_manager.exist(SERVICE_PUPPET):

@@ -102,8 +102,8 @@ def check_traffic_during_icmp(
     :rtype: bool
     """
     listen_vm_obj = net_help.get_vm_resource(vm=listen_vm)
-    src_vm_obj = helpers.get_host_resource_with_root_user(
-        ip=src_vm, root_password=conf.VMS_LINUX_PW
+    src_vm_obj = helpers.get_host_resource(
+        ip=src_vm, password=conf.VMS_LINUX_PW
     )
     tcpdump_kwargs = {
         "host_obj": listen_vm_obj,
@@ -192,8 +192,8 @@ def configure_ip_all_vms():
         local_mgmt_ip = hl_vms.get_vm_ip(vm_name=vm, start_vm=False)
         logger.info("%s: %s", vm, local_mgmt_ip)
         conf.MGMT_IPS.append(local_mgmt_ip)
-        vm_resource = helpers.get_host_resource_with_root_user(
-            ip=local_mgmt_ip, root_password=conf.VMS_LINUX_PW
+        vm_resource = helpers.get_host_resource(
+            ip=local_mgmt_ip, password=conf.VMS_LINUX_PW
         )
         interfaces = net_help.get_vm_interfaces_list(
             vm_resource, exclude_nics=[conf.VM_NICS[0]]

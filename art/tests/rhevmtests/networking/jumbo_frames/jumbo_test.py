@@ -484,7 +484,7 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
         """
         Send ping between 2 VMs
         """
-        vm_resource = global_helper.get_host_resource_with_root_user(
+        vm_resource = global_helper.get_host_resource(
             ip=config.VM_IP_LIST[0], root_password=config.VMS_LINUX_PW
         )
         network_helper.send_icmp_sampler(
@@ -510,8 +510,8 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
                 connectivity_timeout=config.CONNECT_TIMEOUT,
             )
             host_idx += 1
-        vm_resource = global_helper.get_host_resource_with_root_user(
-            ip=config.VM_IP_LIST[0], root_password=config.VMS_LINUX_PW
+        vm_resource = global_helper.get_host_resource(
+            ip=config.VM_IP_LIST[0], password=config.VMS_LINUX_PW
         )
         network_helper.send_icmp_sampler(
             host_resource=vm_resource, dst=self.ips[1],
@@ -792,8 +792,8 @@ class TestJumboFramesCase11(TestJumboFramesTestCaseBase):
         """
         Send ping with MTU 8500 between the two VMS
         """
-        vm_resource = global_helper.get_host_resource_with_root_user(
-            ip=config.VM_IP_LIST[0], root_password=config.VMS_LINUX_PW
+        vm_resource = global_helper.get_host_resource(
+            ip=config.VM_IP_LIST[0], password=config.VMS_LINUX_PW
         )
         network_helper.send_icmp_sampler(
             host_resource=vm_resource, dst=self.ips[1],
@@ -962,8 +962,8 @@ class TestJumboFramesCase13(TestJumboFramesTestCaseBase):
         """
         Send ping with MTU 8500 between the two VMs
         """
-        vm_resource = global_helper.get_host_resource_with_root_user(
-            ip=config.VM_IP_LIST[0], root_password=config.VMS_LINUX_PW
+        vm_resource = global_helper.get_host_resource(
+            ip=config.VM_IP_LIST[0], password=config.VMS_LINUX_PW
         )
         network_helper.send_icmp_sampler(
             host_resource=vm_resource, dst=self.ips[1],
@@ -1027,8 +1027,8 @@ class TestJumboFramesCase14(TestJumboFramesTestCaseBase):
         """
         Send ping between 2 VMS
         """
-        vm_resource = global_helper.get_host_resource_with_root_user(
-            ip=config.VM_IP_LIST[0], root_password=config.VMS_LINUX_PW
+        vm_resource = global_helper.get_host_resource(
+            ip=config.VM_IP_LIST[0], password=config.VMS_LINUX_PW
         )
         network_helper.send_icmp_sampler(
             host_resource=vm_resource, dst=self.ips[1],

@@ -30,9 +30,7 @@ def get_vm_resource(vm):
     if not rc:
         raise conf.NET_EXCEPTION("Failed to get IP for: %s" % vm)
     ip = ip["ip"]
-    return global_helper.get_host_resource_with_root_user(
-        ip, conf.VMS_LINUX_PW
-    )
+    return global_helper.get_host_resource(ip, conf.VMS_LINUX_PW)
 
 
 def config_ip(vms_and_ips):

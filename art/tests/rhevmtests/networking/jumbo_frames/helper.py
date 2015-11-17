@@ -130,8 +130,8 @@ def add_vnics_to_vms(
     for i in range(2):
         vm_name = config.VM_NAME[i]
         vm_ip = config.VM_IP_LIST[i]
-        vm_resource = global_helper.get_host_resource_with_root_user(
-            ip=vm_ip, root_password=config.VMS_LINUX_PW
+        vm_resource = global_helper.get_host_resource(
+            ip=vm_ip, password=config.VMS_LINUX_PW
         )
         logger.info(
             "Adding %s with MTU %s on %s of %s",

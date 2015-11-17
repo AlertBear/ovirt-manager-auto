@@ -1,6 +1,7 @@
 import os
 import socket
 import netaddr
+import copy
 from art.rhevm_api.resources.common import fqdn2ip
 from art.rhevm_api.resources.resource import Resource
 from art.rhevm_api.resources.service import Systemd, SysVinit, InitCtl
@@ -105,10 +106,10 @@ class Host(Resource):
     def package_manager(self):
         return self._package_manager
 
-    def executor(self, user=None):
+    def executor(self, user=None, pkey=False):
         if user is None:
-            user = self.root_user
-        return ssh.RemoteExecutor(user, self.ip)
+            user = copy.copy(self.root_user)
+        return ssh.RemoteExecutor(user, self.ip, use_pkey=pkey)
 
     def run_command(self, command):
         """

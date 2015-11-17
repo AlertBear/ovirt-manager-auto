@@ -337,8 +337,8 @@ class TestPortMirroringCase06(TestCase):
                 "Failed to set down %s on %s" %
                 (conf.VLAN_NETWORKS[0], conf.HOSTS[0])
             )
-        vm_resource = global_helper.get_host_resource_with_root_user(
-            ip=conf.MGMT_IPS[1], root_password=conf.VMS_LINUX_PW
+        vm_resource = global_helper.get_host_resource(
+            ip=conf.MGMT_IPS[1], password=conf.VMS_LINUX_PW
         )
         network_helper.send_icmp_sampler(
             host_resource=vm_resource, dst=NET1_IPS[2]

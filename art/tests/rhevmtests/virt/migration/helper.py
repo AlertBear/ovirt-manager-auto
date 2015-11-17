@@ -470,7 +470,7 @@ def run_command(vm_ip, cmd):
     """
     cmd_array = cmd.split()
 
-    vm_exec = helpers.get_host_executor_with_root_user(
+    vm_exec = helpers.get_host_executor(
         vm_ip, config.VMS_LINUX_PW
     )
     rc, out, error = vm_exec.run_cmd(cmd_array)
