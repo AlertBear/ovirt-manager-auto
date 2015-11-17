@@ -814,7 +814,6 @@ class TestCase5193(BasicEnvironment):
     __test__ = NFS in opts['storages']
     storages = set([NFS])
     polarion_test_case = '5193'
-    __test__ = config.STORAGE_TYPE is config.STORAGE_TYPE_NFS
 
     def setUp(self):
         super(TestCase5193, self).setUp()

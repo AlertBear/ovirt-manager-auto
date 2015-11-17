@@ -3381,16 +3381,21 @@ def move_vm_disk(vm_name, disk_name, target_sd, wait=True,
     Throws: DiskException if syncAction returns False (syncAction should raise
             exception itself instead of returning False)
     """
-    logger.info("Moving disk %s of vm %s to storage domain %s", disk_name,
-                vm_name, target_sd)
+    source_domain = get_disk_storage_domain_name(disk_name, vm_name)
+    logger.info(
+        "Moving disk %s attached to vm %s from storage domain %s to storage "
+        "domain %s",
+        disk_name, vm_name, source_domain, target_sd)
     sd = STORAGE_DOMAIN_API.find(target_sd)
     disk = getVmDisk(vm_name, disk_name)
     if not DISKS_API.syncAction(
         disk, 'move', storage_domain=sd, positive=True
     ):
         raise exceptions.DiskException(
-            "Failed to move disk %s of vm %s to storage domain %s" %
-            (disk_name, vm_name, target_sd))
+            "Failed to move disk %s attached to vm %s from storage domain"
+            "%s to storage domain %s" %
+            (disk_name, vm_name, source_domain, target_sd)
+        )
     if wait:
         for disk in TimeoutingSampler(timeout, sleep, getVmDisk, vm_name,
                                       disk_name):
@@ -4410,19 +4415,29 @@ def live_migrate_vm_disk(vm_name, disk_name, target_sd,
 
 @is_action('liveMigrateVm')
 def live_migrate_vm(vm_name, timeout=VM_IMAGE_OPT_TIMEOUT*2, wait=True,
-                    ensure_on=True):
+                    ensure_on=True, same_type=True):
     """
     Description: Live migrate all vm's disks
-    Author: ratamir
-    Parameters:
-        * vm_name - name of the vm
-        * timeout - after how many seconds should be raised exception
-        * wait - if should wait until done
-        * ensure_on - if vm is not up will start before lsm
-    Throws:
+
+    __author__ = 'ratamir'
+
+    :param vm_name: Name of the vm
+    :type vm_name: str
+    :param timeout: Specify how long before an exception should be
+    raised (in seconds)
+    :type timeout: int
+    :param wait: Specifies whether to wait until migration has completed
+    :type wait: bool
+    :param ensure_on: Specify whether VM should be up before live storage
+    migration begins
+    :type ensure_on: bool
+    :param same_type: If True, return only a storage domain of the same type,
+    False will result in a different domain type returned
+    :type same_type: bool
+    :raises
         * DiskException if something went wrong
         * VMException if vm is not up and ensure_on=False
-        * APITimeout if waiting for snapshot was longer than 20 seconds
+        * APITimeout if waiting for snapshot was longer than 1800 seconds
     """
     logger.info("Start Live Migrating vm %s disks", vm_name)
     vm_obj = VM_API.find(vm_name)
@@ -4440,7 +4455,9 @@ def live_migrate_vm(vm_name, timeout=VM_IMAGE_OPT_TIMEOUT*2, wait=True,
     logger.info("Live Storage Migrating vm %s, will migrate following "
                 "disks: %s", vm_name, vm_disks)
     for disk in vm_disks:
-        target_sd = get_other_storage_domain(disk, vm_name)
+        target_sd = get_other_storage_domain(
+            disk, vm_name, force_type=same_type
+        )
         live_migrate_vm_disk(vm_name, disk, target_sd, timeout=timeout,
                              wait=wait)
     if wait:
@@ -4525,6 +4542,10 @@ def verify_vm_disk_moved(vm_name, disk_name, source_sd,
             is equal to target_sd, False otherwise
     """
     actual_sd = get_disk_storage_domain_name(disk_name, vm_name)
+    logger.info(
+        "Verifying whether disk %s moved from storage domain %s to %s",
+        disk_name, source_sd, actual_sd
+    )
     if target_sd is not None:
         if source_sd != target_sd:
             if actual_sd == target_sd:

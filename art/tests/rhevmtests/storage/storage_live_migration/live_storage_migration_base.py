@@ -129,6 +129,10 @@ def setup_module():
     after the build_setup finish, we return to the original lists
     """
     global LOCAL_LUN, LOCAL_LUN_ADDRESS, LOCAL_LUN_TARGET
+    config.TESTNAME = "live_storage_migration"
+    logger.info("Running setup_module for %s", config.TESTNAME)
+    config.MIGRATE_SAME_TYPE = True
+    config.VM_NAME = config.TESTNAME + "_%s"
     if not config.GOLDEN_ENV:
         logger.info("Preparing datacenter %s with hosts %s",
                     config.DATA_CENTER_NAME, config.VDC)
@@ -313,7 +317,7 @@ class TestCase6004(AllPermutationsDisks):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '6004'
 
     @polarion("RHEVM3-6004")
@@ -324,7 +328,7 @@ class TestCase6004(AllPermutationsDisks):
         Expected Results:
             - move should succeed
         """
-        live_migrate_vm(self.vm_name)
+        live_migrate_vm(self.vm_name, same_type=config.MIGRATE_SAME_TYPE)
         self.verify_lsm()
 
 
@@ -335,7 +339,7 @@ class TestCase5990(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '5990'
 
     @polarion("RHEVM3-5990")
@@ -350,7 +354,7 @@ class TestCase5990(BaseTestCase):
         logger.info("Running vm in paused state")
         assert runVmOnce(True, self.vm_name, pause='true')
         waitForVMState(self.vm_name, config.VM_PAUSED)
-        live_migrate_vm(self.vm_name)
+        live_migrate_vm(self.vm_name, same_type=config.MIGRATE_SAME_TYPE)
         wait_for_jobs([ENUMS['job_live_migrate_disk']])
         vm_disk = getVmDisks(self.vm_name)[0].get_alias()
         self.assertTrue(
@@ -383,7 +387,8 @@ class TestCase5994(BaseTestCase):
         startVm(True, self.vm_name, wait_for_status=None)
         waitForVMState(self.vm_name, config.VM_WAIT_FOR_LAUNCH)
         self.assertRaises(exceptions.DiskException, live_migrate_vm,
-                          self.vm_name)
+                          self.vm_name, TASK_TIMEOUT, True, True,
+                          config.MIGRATE_SAME_TYPE)
 
     @polarion("RHEVM3-5994")
     def test_lsm_during_powering_up_state(self):
@@ -396,7 +401,8 @@ class TestCase5994(BaseTestCase):
         startVm(True, self.vm_name, wait_for_status=None)
         waitForVMState(self.vm_name, config.VM_POWERING_UP)
         self.assertRaises(exceptions.DiskException, live_migrate_vm,
-                          self.vm_name)
+                          self.vm_name, TASK_TIMEOUT, True, True,
+                          config.MIGRATE_SAME_TYPE)
 
     @polarion("RHEVM3-5994")
     def test_lsm_during_powering_off_state(self):
@@ -411,7 +417,8 @@ class TestCase5994(BaseTestCase):
         shutdownVm(True, self.vm_name)
         waitForVMState(self.vm_name, ENUMS['vm_state_powering_down'])
         self.assertRaises(exceptions.DiskException, live_migrate_vm,
-                          self.vm_name)
+                          self.vm_name, TASK_TIMEOUT, True, True,
+                          config.MIGRATE_SAME_TYPE)
 
 
 @attr(tier=2)
@@ -453,7 +460,8 @@ class TestCase5993(StorageTest):
             cluster=config.CLUSTER_NAME, storagedomain=target_domain)
 
         second_domain = get_other_storage_domain(
-            disks_objs[0].get_alias(), storage_type=self.storage)
+            disks_objs[0].get_alias(), storage_type=self.storage
+        )
 
         target_domain = filter(
             lambda w: w != second_domain, self.storage_domains)[0]
@@ -506,7 +514,8 @@ class TestCase5993(StorageTest):
         - create a vm from template and run the vm
         - move vm to target domain
         """
-        live_migrate_vm(self.vm_names[0], LIVE_MIGRATION_TIMEOUT)
+        live_migrate_vm(self.vm_names[0], LIVE_MIGRATION_TIMEOUT,
+                        same_type=config.MIGRATE_SAME_TYPE)
         wait_for_jobs([ENUMS['job_live_migrate_disk']])
 
     @polarion("RHEVM3-5993")
@@ -516,7 +525,8 @@ class TestCase5993(StorageTest):
         - create vm from template and run the vm
         - move the vm to second domain
         """
-        live_migrate_vm(self.vm_names[1], LIVE_MIGRATION_TIMEOUT)
+        live_migrate_vm(self.vm_names[1], LIVE_MIGRATION_TIMEOUT,
+                        same_type=config.MIGRATE_SAME_TYPE)
         wait_for_jobs([ENUMS['job_live_migrate_disk']])
 
     def tearDown(self):
@@ -541,7 +551,7 @@ class TestCase5992(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '5992'
     snapshot_desc = 'snap1'
 
@@ -575,7 +585,7 @@ class TestCase5992(BaseTestCase):
         - run the vm
         - migrate the vm to second domain
         """
-        live_migrate_vm(self.vm_name)
+        live_migrate_vm(self.vm_name, same_type=config.MIGRATE_SAME_TYPE)
 
 
 @attr(tier=2)
@@ -639,7 +649,7 @@ class TestCase5991(BaseTestCase):
         - try to move one of the vm's images
         """
         target_sd = get_other_storage_domain(
-            self.disk_name, self.vm_name, self.storage,
+            self.disk_name, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
         )
         live_migrate_vm_disk(self.vm_name, self.disk_name, target_sd)
         wait_for_jobs([ENUMS['job_live_migrate_disk']])
@@ -670,7 +680,7 @@ class TestCase5989(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '5989'
 
     def setUp(self):
@@ -685,6 +695,7 @@ class TestCase5989(BaseTestCase):
         assert waitForVMState(self.vm_name, state)
         live_migrate_vm(
             self.vm_name, LIVE_MIGRATION_TIMEOUT, ensure_on=False,
+            same_type=config.MIGRATE_SAME_TYPE
         )
         wait_for_jobs([ENUMS['job_live_migrate_disk']])
 
@@ -729,7 +740,7 @@ class TestCase5988(AllPermutationsDisks):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '5988'
     snapshot_desc = 'snap_%s' % polarion_test_case
     snap_created = None
@@ -761,7 +772,8 @@ class TestCase5988(AllPermutationsDisks):
             - try to create a live snapshot
         * we should succeed to create a live snapshot
         """
-        live_migrate_vm(self.vm_name, LIVE_MIGRATION_TIMEOUT)
+        live_migrate_vm(self.vm_name, LIVE_MIGRATION_TIMEOUT,
+                        same_type=config.MIGRATE_SAME_TYPE)
         self.verify_lsm()
         self._prepare_snapshots(self.vm_name)
 
@@ -775,7 +787,8 @@ class TestCase5988(AllPermutationsDisks):
         * we should succeed to move the vm
         """
         self._prepare_snapshots(self.vm_name)
-        live_migrate_vm(self.vm_name, LIVE_MIGRATION_TIMEOUT)
+        live_migrate_vm(self.vm_name, LIVE_MIGRATION_TIMEOUT,
+                        same_type=config.MIGRATE_SAME_TYPE)
         self.verify_lsm()
 
     @polarion("RHEVM3-5988")
@@ -788,7 +801,7 @@ class TestCase5988(AllPermutationsDisks):
         """
         for disk in DISK_NAMES[self.storage]:
             target_sd = get_other_storage_domain(
-                disk, self.vm_name, self.storage,
+                disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
             )
             live_migrate_vm_disk(
                 self.vm_name, disk, target_sd,
@@ -836,7 +849,7 @@ class TestCase5986(CommonUsage):
             - move should succeed
         """
         target_sd = get_other_storage_domain(
-            self.disk_name, self.vm_name, self.storage,
+            self.disk_name, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
         )
         live_migrate_vm_disk(self.vm_name, self.disk_name, target_sd,
                              timeout=LIVE_MIGRATE_LARGE_SIZE, wait=True)
@@ -857,7 +870,7 @@ class TestCase5955(AllPermutationsDisks):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '5955'
     snapshot_desc = 'snap_%s' % polarion_test_case
     disk_to_move = ''
@@ -868,14 +881,14 @@ class TestCase5955(AllPermutationsDisks):
         """
         self.disk_to_move = disk_name
         target_sd = get_other_storage_domain(
-            self.disk_to_move, vm_name, self.storage,
+            self.disk_to_move, vm_name, force_type=config.MIGRATE_SAME_TYPE
         )
         move_vm_disk(vm_name, self.disk_to_move, target_sd)
         wait_for_jobs([ENUMS['job_move_or_copy_disk']])
         start_vms([vm_name], 1, wait_for_ip=False)
         waitForVMState(vm_name)
         target_sd = get_other_storage_domain(
-            self.disk_to_move, vm_name, self.storage,
+            self.disk_to_move, vm_name, force_type=config.MIGRATE_SAME_TYPE
         )
         live_migrate_vm_disk(
             self.vm_name, self.disk_to_move, target_sd,
@@ -908,7 +921,7 @@ class TestCase5996(CommonUsage):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '5996'
     disk_name_pattern = "floating_%s_%s"
 
@@ -950,7 +963,8 @@ class TestCase5996(CommonUsage):
                     inactive_disk.get_active(),
                     type(inactive_disk.get_active()))
         waitForVmsDisks(vm_name)
-        live_migrate_vm(vm_name, LIVE_MIGRATION_TIMEOUT)
+        live_migrate_vm(vm_name, LIVE_MIGRATION_TIMEOUT,
+                        same_type=config.MIGRATE_SAME_TYPE)
         logger.info("Live migration completed")
 
     @polarion("RHEVM3-5996")
@@ -975,7 +989,7 @@ class TestCase6003(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '6003'
     disk_alias = 'disk_%s' % polarion_test_case
 
@@ -997,9 +1011,10 @@ class TestCase6003(BaseTestCase):
         * we should fail to attach disk
         """
         live_migrate_vm(self.vm_name, timeout=LIVE_MIGRATION_TIMEOUT,
-                        wait=False)
+                        wait=False, same_type=config.MIGRATE_SAME_TYPE)
         status = attachDisk(False, self.disk_alias, self.vm_name)
         self.assertTrue(status, "Succeeded to attach disk during LSM")
+        wait_for_jobs([ENUMS['job_live_migrate_disk']])
 
     def tearDown(self):
         """Remove floating disk"""
@@ -1015,7 +1030,7 @@ class TestCase6001(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '6001'
     disk_alias = 'disk_%s' % polarion_test_case
     succeeded = False
@@ -1028,7 +1043,8 @@ class TestCase6001(BaseTestCase):
         startVm(True, self.vm_name, config.VM_UP)
         self.vm_disk = getVmDisks(self.vm_name)[0]
         self.target_sd = get_other_storage_domain(
-            self.vm_disk.get_alias(), self.vm_name, self.storage,
+            self.vm_disk.get_alias(), self.vm_name,
+            force_type=config.MIGRATE_SAME_TYPE
         )
 
         logger.info("Waiting for tasks before deactivating the storage domain")
@@ -1064,7 +1080,7 @@ class TestCase5972(CommonUsage):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '5972'
     disk_name = "disk_%s_%s"
     disk_count = 3
@@ -1157,7 +1173,8 @@ class TestCase5970(CommonUsage):
         host = getSPMHost(config.HOSTS)
         self.host_ip = getHostIP(host)
         target_sd = get_other_storage_domain(
-            self.disk_name, self.vm_name, self.storage)
+            self.disk_name, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
+        )
         disk_obj = getVmDisk(self.vm_name, self.disk_name)
         self.regex = self.regex % disk_obj.get_image_id()
 
@@ -1209,7 +1226,8 @@ class TestCase5969(AllPermutationsDisks):
         host = getSPMHost(config.HOSTS)
         self.host_ip = getHostIP(host)
         target_sd = get_other_storage_domain(
-            disk_name, self.vm_name, self.storage)
+            disk_name, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
+        )
 
         def f(q):
             q.put(
@@ -1319,7 +1337,7 @@ class TestCase5968(AllPermutationsDisks):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '5968'
 
     @polarion("RHEVM3-5968")
@@ -1337,7 +1355,7 @@ class TestCase5968(AllPermutationsDisks):
         """
         for disk in DISK_NAMES[self.storage]:
             target_sd = get_other_storage_domain(
-                disk, self.vm_name, self.storage,
+                disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
             )
             startVm(True, self.vm_name, config.VM_UP)
             live_migrate_vm_disk(self.vm_name, disk, target_sd)
@@ -1366,7 +1384,7 @@ class TestCase5967(AllPermutationsDisks):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '5967'
 
     @polarion("RHEVM3-5967")
@@ -1375,7 +1393,8 @@ class TestCase5967(AllPermutationsDisks):
         Actions:
             - 2 data storage domains
             - create -> run the vm -> move the vm
-            - shut down the vm once the move is finished
+            - Stop the VM while the Live migration is in progress, causing
+              a failure
             - delete the Live migration snapshot
 
         Expected Results:
@@ -1385,13 +1404,15 @@ class TestCase5967(AllPermutationsDisks):
         """
         for disk in DISK_NAMES[self.storage]:
             target_sd = get_other_storage_domain(
-                disk, self.vm_name, self.storage,
+                disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
             )
             startVm(True, self.vm_name, config.VM_UP)
             live_migrate_vm_disk(
-                self.vm_name, disk, target_sd, wait=True,
+                self.vm_name, disk, target_sd, wait=False,
             )
-            assert stopVm(True, self.vm_name)
+            stopVm(True, self.vm_name)
+            waitForVmsDisks(self.vm_name)
+            wait_for_jobs([ENUMS['job_live_migrate_disk']])
             remove_all_vm_lsm_snapshots(self.vm_name)
             wait_for_jobs([ENUMS['job_remove_snapshot']])
             disk_obj = getVmDisk(self.vm_name, disk)
@@ -1416,7 +1437,7 @@ class TestCase5982(AllPermutationsDisks):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '5982'
 
     @polarion("RHEVM3-5982")
@@ -1433,7 +1454,7 @@ class TestCase5982(AllPermutationsDisks):
         """
         for index, disk in enumerate(DISK_NAMES[self.storage]):
             target_sd = get_other_storage_domain(
-                disk, self.vm_name, self.storage,
+                disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
             )
             startVm(True, self.vm_name, config.VM_UP)
             live_migrate_vm_disk(self.vm_name, disk, target_sd, wait=False)
@@ -1459,7 +1480,7 @@ class TestCase5979(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '5979'
     disk_name = "disk_%s" % polarion_test_case
     expected_lsm_snap_count = 0
@@ -1494,7 +1515,7 @@ class TestCase5979(BaseTestCase):
               (as in not with LSM command)
         """
         target_sd = get_other_storage_domain(
-            self.disk_name, self.vm_name, self.storage,
+            self.disk_name, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
         )
         live_migrate_vm_disk(self.vm_name, self.disk_name, target_sd)
         wait_for_jobs([ENUMS['job_live_migrate_disk']])
@@ -1540,7 +1561,8 @@ class TestCase5976(BaseTestCase):
             - we should block with canDoAction
         """
         target_sd = get_other_storage_domain(
-            self.disk_name, self.vm_name, self.storage)
+            self.disk_name, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
+        )
         live_migrate_vm_disk(self.vm_name, self.disk_name,
                              target_sd=target_sd, wait=False)
         sleep(5)
@@ -1563,12 +1585,14 @@ class TestCase5977(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '5977'
     bz = {'1258219': {'engine': None, 'version': ["3.6"]}}
 
     def _migrate_vm_during_lsm_ops(self, wait):
-        live_migrate_vm(self.vm_name, wait=wait)
+        live_migrate_vm(
+            self.vm_name, wait=wait, same_type=config.MIGRATE_SAME_TYPE
+        )
         status = migrateVm(True, self.vm_name, wait=False)
         wait_for_jobs([ENUMS['job_live_migrate_disk']])
         return status
@@ -1585,7 +1609,7 @@ class TestCase5977(BaseTestCase):
         """
         disk_name = getVmDisks(self.vm_name)[0].get_alias()
         target_sd = get_other_storage_domain(
-            disk_name, self.vm_name, self.storage,
+            disk_name, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
         )
         startVm(True, self.vm_name, config.VM_UP)
         migrateVm(True, self.vm_name, wait=False)
@@ -1729,7 +1753,8 @@ class TestCase6000(BaseTestCase):
         vm_disk = getVmDisks(self.vm_name)[0].get_alias()
         source_sd = get_disk_storage_domain_name(vm_disk, self.vm_name)
         self.target_sd = get_other_storage_domain(
-            vm_disk, self.vm_name, self.storage)
+            vm_disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
+        )
         status, target_sd_ip = getDomainAddress(True, self.target_sd)
         assert status
         self.target_sd_ip = target_sd_ip['address']
@@ -1765,7 +1790,7 @@ class TestCase6002(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '6002'
     bz = {
         '1210771': {'engine': None, 'version': ["3.5", "3.6"]},
@@ -1782,7 +1807,9 @@ class TestCase6002(BaseTestCase):
             - live migrate should fail
         """
         spm_host = getHostIP(getSPMHost(config.HOSTS))
-        live_migrate_vm(self.vm_name, wait=False)
+        live_migrate_vm(
+            self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE
+        )
         restartVdsmd(spm_host, config.HOSTS_PW)
 
 
@@ -1793,7 +1820,7 @@ class TestCase5999(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '5999'
     bz = {
         '1210771': {'engine': None, 'version': ["3.5", "3.6"]},
@@ -1817,7 +1844,9 @@ class TestCase5999(BaseTestCase):
         startVm(True, self.vm_name, config.VM_UP)
         vm_disk = getVmDisks(self.vm_name)[0].get_alias()
         source_sd = get_disk_storage_domain_name(vm_disk, self.vm_name)
-        live_migrate_vm(self.vm_name, wait=False)
+        live_migrate_vm(
+            self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE
+        )
         logger.info("Rebooting host (SPM) %s", spm_host)
         assert rebootHost(
             True, spm_host, config.HOSTS_USER, config.HOSTS_PW,
@@ -1851,7 +1880,9 @@ class TestCase5999(BaseTestCase):
         )
         vm_disk = getVmDisks(self.vm_name)[0].get_alias()
         source_sd = get_disk_storage_domain_name(vm_disk, self.vm_name)
-        live_migrate_vm(self.vm_name, wait=False)
+        live_migrate_vm(
+            self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE
+        )
         logger.info("Rebooting host (HSM) %s", hsm_host)
         assert rebootHost(
             True, hsm_host, config.HOSTS_USER, config.HOSTS_PW)
@@ -1872,7 +1903,7 @@ class TestCase5998(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     bz = {
         '1210771': {'engine': None, 'version': ["3.5", "3.6"]},
     }
@@ -1882,7 +1913,9 @@ class TestCase5998(BaseTestCase):
         vm_disk = getVmDisks(self.vm_name)[0].get_alias()
         source_sd = get_disk_storage_domain_name(vm_disk, self.vm_name)
 
-        live_migrate_vm(self.vm_name, wait=False)
+        live_migrate_vm(
+            self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE
+        )
         logger.info("Rebooting host %s", host)
         assert rebootHost(True, host, config.HOSTS_USER, config.HOSTS_PW)
         logger.info("Waiting for host %s to be UP", host)
@@ -1953,7 +1986,9 @@ class TestCase5997(BaseTestCase):
 
         vm_disk = getVmDisks(self.vm_name)[0].get_alias()
         source_sd = get_disk_storage_domain_name(vm_disk, self.vm_name)
-        live_migrate_vm(self.vm_name, wait=False)
+        live_migrate_vm(
+            self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE
+        )
         logger.info("Killing vms %s pid", self.vm_name)
         self._kill_vm_pid()
 
@@ -2021,7 +2056,8 @@ class TestCase5985(BaseTestCase):
         vm_disk = getVmDisks(self.vm_name)[0].get_alias()
         source_sd = get_disk_storage_domain_name(vm_disk, self.vm_name)
         target_sd = get_other_storage_domain(
-            vm_disk, self.vm_name, self.storage)
+            vm_disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
+        )
         sd_size = get_free_space(target_sd)
         live_migrate_vm_disk(self.vm_name, vm_disk, target_sd, wait=False)
         helpers.add_new_disk_for_test(
@@ -2049,7 +2085,7 @@ class TestCase5971(CommonUsage):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '5971'
     disk_count = 3
     bz = {'1282957': {'engine': None, 'version': ["3.6"]}}
@@ -2118,7 +2154,7 @@ class TestCase5971(CommonUsage):
         for index, disk in enumerate(self.disks_names):
             src_sd = get_disk_storage_domain_name(disk, self.vm_name)
             target_sd = get_other_storage_domain(
-                disk, self.vm_name, self.storage,
+                disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
             )
 
             if index == 2:
@@ -2157,7 +2193,7 @@ class TestCase5980(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '5980'
     disk_name = "disk_%s" % polarion_test_case
 
@@ -2183,9 +2219,12 @@ class TestCase5980(BaseTestCase):
             - we should either not be able to attach the disk to a vm
               which is in the middle of LSM
         """
-        live_migrate_vm(self.vm_name, wait=False)
-        status = attachDisk(True, self.disk_name, self.vm_name)
-        self.assertFalse(status, "Attache operation succeeded during LSM")
+        live_migrate_vm(
+            self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE
+        )
+        status = attachDisk(False, self.disk_name, self.vm_name)
+        self.assertTrue(status, "Attach operation succeeded during LSM")
+        waitForVmsDisks(self.vm_name)
 
     def tearDown(self):
         """Remove the floating disk"""
@@ -2220,7 +2259,9 @@ class TestCase5966(BaseTestCase):
         host_machine = Machine(host=host, user=config.HOSTS_USER,
                                password=config.HOSTS_PW).util('linux')
 
-        live_migrate_vm(self.vm_name, wait=False)
+        live_migrate_vm(
+            self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE
+        )
         sleep(5)
         host_machine.kill_vdsm_service()
         wait_for_jobs([ENUMS['job_live_migrate_disk']])
@@ -2241,8 +2282,12 @@ class TestCase5966(BaseTestCase):
         host_machine = Machine(host=host, user=config.HOSTS_USER,
                                password=config.HOSTS_PW).util('linux')
 
-        live_migrate_vm(self.vm_name, wait=True)
-        live_migrate_vm(self.vm_name, wait=False)
+        live_migrate_vm(
+            self.vm_name, wait=True, same_type=config.MIGRATE_SAME_TYPE
+        )
+        live_migrate_vm(
+            self.vm_name, wait=False, same_type=config.MIGRATE_SAME_TYPE
+        )
         sleep(5)
         host_machine.kill_vdsm_service()
 
@@ -2282,8 +2327,9 @@ class TestCase5981(AllPermutationsDisks):
         for index, disk in enumerate(DISK_NAMES[self.storage]):
             source_sd = get_disk_storage_domain_name(disk, self.vm_name)
             target_sd = get_other_storage_domain(
-                disk, self.vm_name, self.storage)
-            logger.info("Make sure disk is accesible")
+                disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
+            )
+            logger.info("Ensure sure disk is accessible")
             assert get_vm_disk_logical_name(self.vm_name, disk)
             live_migrate_vm_disk(self.vm_name, disk, target_sd, wait=False)
 
@@ -2321,7 +2367,7 @@ class TestCase5983(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = True
+    __test__ = False
     polarion_test_case = '5983'
     vm_name_format = 'vm_%s_%s'
     vm_count = 5
@@ -2352,7 +2398,7 @@ class TestCase5983(BaseTestCase):
             waitForVMState(vm)
 
         for vm in self.vm_names:
-            live_migrate_vm(vm)
+            live_migrate_vm(vm, same_type=config.MIGRATE_SAME_TYPE)
 
     @polarion("RHEVM3-5983")
     def test_migrate_multiple_vms_on_spm(self):
@@ -2425,7 +2471,8 @@ class TestCase5984(BaseTestCase):
         vm_disk = getVmDisks(self.vm_name)[0].get_alias()
         source_sd = get_disk_storage_domain_name(vm_disk, self.vm_name)
         self.target_sd = get_other_storage_domain(
-            vm_disk, self.vm_name, self.storage)
+            vm_disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
+        )
         status, target_sd_ip = getDomainAddress(True, self.target_sd)
         assert status
         self.target_sd_ip = target_sd_ip['address']
@@ -2484,7 +2531,8 @@ class TestCase5974(BaseTestCase):
         vm_disk = getVmDisks(self.vm_name)[0].get_alias()
         source_sd = get_disk_storage_domain_name(vm_disk, self.vm_name)
         self.target_sd = get_other_storage_domain(
-            vm_disk, self.vm_name, self.storage)
+            vm_disk, self.vm_name, force_type=config.MIGRATE_SAME_TYPE
+        )
         status, target_sd_ip = getDomainAddress(True, self.target_sd)
         assert status
         self.target_sd_ip = target_sd_ip['address']
@@ -2496,7 +2544,7 @@ class TestCase5974(BaseTestCase):
                                          target_sd_ip)
         self.assertTrue(status, "Failed to block connection")
         waitForVMState(self.vm_name, ENUMS['vm_state_paused'])
-        live_migrate_vm(self.vm_name)
+        live_migrate_vm(self.vm_name, same_type=config.MIGRATE_SAME_TYPE)
         wait_for_jobs([ENUMS['job_live_migrate_disk']])
 
         status = verify_vm_disk_moved(self.vm_name, vm_disk, source_sd,
