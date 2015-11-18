@@ -17,7 +17,7 @@ DC_NAME = DC_NAME[0]
 CLUSTER_1 = CLUSTER_NAME[0]
 CLUSTER_2 = CLUSTER_NAME[1]
 QOS_NAME = global_helper.generate_object_names(object_type="QoS", count=10)
-NETS = network_lib.generate_networks_names(cases=10, num_of_networks=2)
+NETS = network_lib.generate_networks_names(cases=15, num_of_networks=2)
 VLAN_IDS = [str(i) for i in xrange(2, 50)]
 
 
@@ -60,6 +60,26 @@ NETS_DICT = {
         "required": "false"
     },
     NETS[10][0]: {
+        "required": "false"
+    },
+    NETS[11][0]: {
+        "vlan_id": VLAN_IDS[13],
+        "required": "false"
+    },
+    NETS[11][1]: {
+        "vlan_id": VLAN_IDS[14],
+        "required": "false"
+    },
+    NETS[12][0]: {
+        "vlan_id": VLAN_IDS[15],
+        "required": "false"
+    },
+    NETS[12][1]: {
+        "vlan_id": VLAN_IDS[16],
+        "required": "false"
+    },
+    NETS[13][0]: {
+        "usages": "",
         "required": "false"
     },
 }

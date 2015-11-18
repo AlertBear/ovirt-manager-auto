@@ -6,6 +6,7 @@ Helper functions for host network QoS job
 """
 import logging
 import config as conf
+from art.core_api import apis_utils
 
 logger = logging.getLogger("Network_Host_QoS_Helper")
 
@@ -22,8 +23,16 @@ def cmp_qos_with_vdscaps(net, qos_dict, host=conf.VDS_HOSTS[0]):
     :type host: Resource.VDS
     :raise: Network exception
     """
-
+    logger.info("Compare vdsClient QoS values with %s", qos_dict)
     vds_caps_qos_dict = {}
+    sample = apis_utils.TimeoutingSampler(
+        timeout=conf.SAMPLER_TIMEOUT, sleep=1, func=check_net_on_vdscaps,
+        net=net
+    )
+    if not sample.waitForFuncStatus(result=True):
+        raise conf.NET_EXCEPTION(
+            "Network %s doesn't exist in vdsCaps" % net
+        )
     vds_caps_out = host.vds_client("getVdsCapabilities")
     qos = vds_caps_out["info"]["networks"][net]["hostQos"]["out"]
     for key in ("rt", "ul", "ls"):
@@ -35,3 +44,26 @@ def cmp_qos_with_vdscaps(net, qos_dict, host=conf.VDS_HOSTS[0]):
             "Values in VdsCaps are %s, should be %s" %
             (qos_dict, vds_caps_qos_dict)
         )
+
+
+def check_net_on_vdscaps(net, host=conf.VDS_HOSTS[0]):
+    """
+    Check if network exists on VdsCaps
+
+    :param net: Network name
+    :type net: str
+    :param host: Host resource network resides on
+    :type host: Resource.VDS
+    :return: True if network exists on vdsCaps otherwise False
+    :rtype: bool
+    """
+    vds_caps_out = host.vds_client("getVdsCapabilities")
+    logger.info("%s", vds_caps_out["info"]["networks"])
+    net_dict = vds_caps_out["info"]["networks"].get(net)
+    if not net_dict:
+        logger.error("%s is missing in vdsCaps", net)
+        return False
+    if not net_dict.get("hostQos"):
+        logger.error("Host network QoS is missing for %s", net)
+        return False
+    return True
