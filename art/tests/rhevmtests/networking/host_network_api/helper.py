@@ -172,8 +172,8 @@ def manage_ip_and_refresh_capabilities(
     :raise: NET_EXCEPTION
     """
     old_ip = None
-    int_ip = conf.VDS_HOSTS_4.network.find_ip_by_int(interface)
-    host_ips = conf.VDS_HOSTS_4.network.find_ips()
+    int_ip = conf.VDS_LAST_HOST.network.find_ip_by_int(interface)
+    host_ips = conf.VDS_LAST_HOST.network.find_ips()
     if int_ip:
         old_ip = [i for i in host_ips[1] if int_ip in i][0]
 
@@ -200,7 +200,7 @@ def remove_interface_ip(ip, interface):
     """
     logger.info("Delete IP %s from %s", ip, interface)
     cmd = ["ip", "addr", "del", "%s" % ip, "dev", interface]
-    rc, out, err = conf.VDS_HOSTS_4.executor().run_cmd(cmd)
+    rc, out, err = conf.VDS_LAST_HOST.executor().run_cmd(cmd)
     if rc:
         raise conf.NET_EXCEPTION(
             "Failed to delete %s from %s. ERR: %s. %s" % (
@@ -223,7 +223,8 @@ def set_interface_ip(ip, netmask, interface):
     """
     logger.info("Setting %s/%s on %s", ip, netmask, interface)
     if not test_utils.configure_temp_static_ip(
-        host=conf.VDS_HOSTS_4.executor(), ip=ip, nic=interface, netmask=netmask
+        host=conf.VDS_LAST_HOST.executor(), ip=ip, nic=interface,
+        netmask=netmask
     ):
         raise conf.NET_EXCEPTION(
             "Failed to set %s/%s on %s" % (ip, netmask, interface)

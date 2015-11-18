@@ -50,7 +50,7 @@ class TestHostNetworkApiHost01(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "network": conf.HOST_NETS[1][0],
-            "nic": conf.HOST_4_NICS[1]
+            "nic": conf.LAST_HOST_NICS[1]
         }
         helper.attach_network_attachment(
             network_host_api_dict, conf.HOST_NETS[1][0]
@@ -70,7 +70,7 @@ class TestHostNetworkApiHost02(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "network": conf.HOST_NETS[2][0],
-            "nic": conf.HOST_4_NICS[1]
+            "nic": conf.LAST_HOST_NICS[1]
         }
         helper.attach_network_attachment(
             network_host_api_dict, conf.HOST_NETS[2][0]
@@ -90,7 +90,7 @@ class TestHostNetworkApiHost03(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "network": conf.HOST_NETS[3][0],
-            "nic": conf.HOST_4_NICS[1]
+            "nic": conf.LAST_HOST_NICS[1]
         }
         helper.attach_network_attachment(
             network_host_api_dict, conf.HOST_NETS[3][0]
@@ -111,7 +111,7 @@ class TestHostNetworkApiHost04(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "network": conf.HOST_NETS[4][0],
-            "nic": conf.HOST_4_NICS[1],
+            "nic": conf.LAST_HOST_NICS[1],
             "ip": conf.BASIC_IP_DICT_NETMASK
         }
         helper.attach_network_attachment(
@@ -125,7 +125,7 @@ class TestHostNetworkApiHost04(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "network": conf.HOST_NETS[4][1],
-            "nic": conf.HOST_4_NICS[2],
+            "nic": conf.LAST_HOST_NICS[2],
             "ip": conf.BASIC_IP_DICT_PREFIX
         }
         helper.attach_network_attachment(
@@ -147,7 +147,7 @@ class TestHostNetworkApiHost05(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "network": conf.HOST_NETS[5][0],
-            "nic": conf.HOST_4_NICS[1],
+            "nic": conf.LAST_HOST_NICS[1],
             "ip": conf.BASIC_IP_DICT_NETMASK
         }
         helper.attach_network_attachment(
@@ -161,7 +161,7 @@ class TestHostNetworkApiHost05(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "network": conf.HOST_NETS[5][1],
-            "nic": conf.HOST_4_NICS[2],
+            "nic": conf.LAST_HOST_NICS[2],
             "ip": conf.BASIC_IP_DICT_PREFIX
         }
         helper.attach_network_attachment(
@@ -183,7 +183,7 @@ class TestHostNetworkApiHost06(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "network": conf.HOST_NETS[6][0],
-            "nic": conf.HOST_4_NICS[1],
+            "nic": conf.LAST_HOST_NICS[1],
             "ip": conf.BASIC_IP_DICT_NETMASK
         }
         helper.attach_network_attachment(
@@ -197,7 +197,7 @@ class TestHostNetworkApiHost06(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "network": conf.HOST_NETS[6][1],
-            "nic": conf.HOST_4_NICS[2],
+            "nic": conf.LAST_HOST_NICS[2],
             "ip": conf.BASIC_IP_DICT_PREFIX
         }
         helper.attach_network_attachment(
@@ -219,12 +219,12 @@ class TestHostNetworkApiHost07(helper.TestHostNetworkApiTestCaseBase):
         properties_dict = {
             "bridge_opts": conf.PRIORITY,
             "ethtool_opts": conf.TX_CHECKSUM.format(
-                nic=conf.HOST_4_NICS[1], state="off"
+                nic=conf.LAST_HOST_NICS[1], state="off"
             )
         }
         network_host_api_dict = {
             "network": conf.HOST_NETS[7][0],
-            "nic": conf.HOST_4_NICS[1],
+            "nic": conf.LAST_HOST_NICS[1],
             "properties": properties_dict
         }
         helper.attach_network_attachment(
@@ -246,7 +246,7 @@ class TestHostNetworkApiHost08(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "network": conf.HOST_NETS[8][0],
-            "nic": conf.HOST_4_NICS[1]
+            "nic": conf.LAST_HOST_NICS[1]
         }
         helper.attach_network_attachment(
             network_host_api_dict, conf.HOST_NETS[8][0]
@@ -259,7 +259,7 @@ class TestHostNetworkApiHost08(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "network": conf.HOST_NETS[8][1],
-            "nic": conf.HOST_4_NICS[1]
+            "nic": conf.LAST_HOST_NICS[1]
         }
         helper.attach_network_attachment(
             network_host_api_dict, conf.HOST_NETS[8][1], positive=False
@@ -279,7 +279,7 @@ class TestHostNetworkApiHost09(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "network": conf.HOST_NETS[9][0],
-            "nic": conf.HOST_4_NICS[1]
+            "nic": conf.LAST_HOST_NICS[1]
         }
         helper.attach_network_attachment(
             network_host_api_dict, conf.HOST_NETS[9][0]
@@ -292,14 +292,14 @@ class TestHostNetworkApiHost09(helper.TestHostNetworkApiTestCaseBase):
         """
         logger.info(
             "Removing net_case9 from %s NIC of %s",
-            conf.HOST_4_NICS[1], conf.LAST_HOST
+            conf.LAST_HOST_NICS[1], conf.LAST_HOST
         )
         if not hl_host_network.remove_networks_from_host(
             conf.LAST_HOST, [conf.HOST_NETS[9][0]]
         ):
             raise conf.NET_EXCEPTION(
                 "Failed to remove net_case9 from %s of %s" % (
-                    conf.HOST_4_NICS[1], conf.LAST_HOST
+                    conf.LAST_HOST_NICS[1], conf.LAST_HOST
                 )
             )
 
@@ -319,14 +319,14 @@ class TestHostNetworkApiHost10(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "network": conf.HOST_NETS[10][0],
-            "nic": conf.HOST_4_NICS[1]
+            "nic": conf.LAST_HOST_NICS[1]
         }
         helper.attach_network_attachment(
             network_host_api_dict, conf.HOST_NETS[10][0]
         )
         network_host_api_dict = {
             "network": conf.HOST_NETS[10][1],
-            "nic": conf.HOST_4_NICS[2]
+            "nic": conf.LAST_HOST_NICS[2]
         }
         helper.attach_network_attachment(
             network_host_api_dict, conf.HOST_NETS[10][1]
@@ -343,14 +343,14 @@ class TestHostNetworkApiHost10(helper.TestHostNetworkApiTestCaseBase):
         }
         logger.info(
             "Updating %s network to have IP on %s NIC of %s",
-            conf.HOST_NETS[10][0], conf.HOST_4_NICS[1], conf.LAST_HOST
+            conf.HOST_NETS[10][0], conf.LAST_HOST_NICS[1], conf.LAST_HOST
         )
         if not hl_host_network.update_network_on_host(
             conf.LAST_HOST, conf.HOST_NETS[10][0], **network_host_api_dict
         ):
             raise conf.NET_EXCEPTION(
                 "Failed to update %s network with IP on %s of %s" %
-                (conf.HOST_NETS[10][0], conf.HOST_4_NICS[1], conf.LAST_HOST)
+                (conf.HOST_NETS[10][0], conf.LAST_HOST_NICS[1], conf.LAST_HOST)
             )
 
     @polarion("RHEVM3-10467")
@@ -364,14 +364,14 @@ class TestHostNetworkApiHost10(helper.TestHostNetworkApiTestCaseBase):
         }
         logger.info(
             "Updating %s network to have IP on %s NIC of %s",
-            conf.HOST_NETS[10][1], conf.HOST_4_NICS[2], conf.LAST_HOST
+            conf.HOST_NETS[10][1], conf.LAST_HOST_NICS[2], conf.LAST_HOST
         )
         if not hl_host_network.update_network_on_host(
             conf.LAST_HOST, conf.HOST_NETS[10][1], **network_host_api_dict
         ):
             raise conf.NET_EXCEPTION(
                 "Failed to update %s network with IP on %s of %s" %
-                (conf.HOST_NETS[10][1], conf.HOST_4_NICS[2], conf.LAST_HOST)
+                (conf.HOST_NETS[10][1], conf.LAST_HOST_NICS[2], conf.LAST_HOST)
             )
 
 
@@ -512,7 +512,7 @@ class TestHostNetworkApiHost13(helper.TestHostNetworkApiTestCaseBase):
             )
         network_host_api_dict = {
             "network": cls.unmamanged_net,
-            "nic": conf.HOST_4_NICS[1]
+            "nic": conf.LAST_HOST_NICS[1]
         }
         logger.info("Attach %s to %s", cls.unmamanged_net, conf.LAST_HOST)
         helper.attach_network_attachment(
@@ -562,7 +562,7 @@ class TestHostNetworkApiHost14(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "network": conf.HOST_NETS[14][0],
-            "nic": conf.HOST_4_NICS[1]
+            "nic": conf.LAST_HOST_NICS[1]
         }
         helper.attach_network_attachment(
             network_host_api_dict, conf.HOST_NETS[14][0]
@@ -583,7 +583,7 @@ class TestHostNetworkApiHost15(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "network": conf.HOST_NETS[15][0],
-            "nic": conf.HOST_4_NICS[1],
+            "nic": conf.LAST_HOST_NICS[1],
             "ip": conf.BASIC_IP_DICT_NETMASK
         }
         helper.attach_network_attachment(
@@ -597,7 +597,7 @@ class TestHostNetworkApiHost15(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "network": conf.HOST_NETS[15][1],
-            "nic": conf.HOST_4_NICS[2],
+            "nic": conf.LAST_HOST_NICS[2],
             "ip": conf.BASIC_IP_DICT_PREFIX
         }
         helper.attach_network_attachment(
@@ -719,7 +719,7 @@ class TestHostNetworkApiHost17(helper.TestHostNetworkApiTestCaseBase):
         properties_dict = {
             "bridge_opts": conf.PRIORITY,
             "ethtool_opts": conf.TX_CHECKSUM.format(
-                nic=conf.HOST_4_NICS[1], state="off"
+                nic=conf.LAST_HOST_NICS[1], state="off"
             )
         }
         network_host_api_dict = {
@@ -751,11 +751,11 @@ class TestHostNetworkApiHost18(helper.TestHostNetworkApiTestCaseBase):
         sn_dict = {
             "add": {
                 "1": {
-                    "nic": conf.HOST_4_NICS[1],
+                    "nic": conf.LAST_HOST_NICS[1],
                     "network": cls.net_case_pre_vm
                 },
                 "2": {
-                    "nic": conf.HOST_4_NICS[2],
+                    "nic": conf.LAST_HOST_NICS[2],
                     "network": cls.net_case_pre_vlan
                 }
             }
@@ -772,7 +772,7 @@ class TestHostNetworkApiHost18(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "network": self.net_case_vlan,
-            "nic": conf.HOST_4_NICS[1],
+            "nic": conf.LAST_HOST_NICS[1],
         }
         helper.attach_network_attachment(
             network_host_api_dict, self.net_case_vlan
@@ -784,7 +784,7 @@ class TestHostNetworkApiHost18(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "network": self.net_case_vm,
-            "nic": conf.HOST_4_NICS[2],
+            "nic": conf.LAST_HOST_NICS[2],
         }
         helper.attach_network_attachment(
             network_host_api_dict, self.net_case_vm

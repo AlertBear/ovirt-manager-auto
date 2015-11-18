@@ -20,17 +20,18 @@ def setup_package():
     """
     Prepare environment
     """
-    conf.HOST_4_NICS = conf.VDS_HOSTS_4.nics
+    conf.LAST_HOST_NICS = conf.VDS_LAST_HOST.nics
     logger.info("Running network cleanup")
     networking.network_cleanup()
     logger.info(
-        "Creating %s dummy interfaces on %s", conf.NUM_DUMMYS, conf.VDS_HOSTS_4
+        "Creating %s dummy interfaces on %s",
+        conf.NUM_DUMMYS, conf.VDS_LAST_HOST
     )
     if not hl_networks.create_dummy_interfaces(
-        host=conf.VDS_HOSTS_4, num_dummy=conf.NUM_DUMMYS
+        host=conf.VDS_LAST_HOST, num_dummy=conf.NUM_DUMMYS
     ):
         raise conf.NET_EXCEPTION(
-            "Failed to create dummy interfaces on %s" % conf.VDS_HOSTS_4
+            "Failed to create dummy interfaces on %s" % conf.VDS_LAST_HOST
         )
     helper.check_dummy_on_host(host=conf.LAST_HOST)
 
@@ -50,10 +51,10 @@ def teardown_package():
     """
     Cleans environment
     """
-    logger.info("Delete all dummy interfaces on %s", conf.VDS_HOSTS_4)
-    if not hl_networks.delete_dummy_interfaces(host=conf.VDS_HOSTS_4):
+    logger.info("Delete all dummy interfaces on %s", conf.VDS_LAST_HOST)
+    if not hl_networks.delete_dummy_interfaces(host=conf.VDS_LAST_HOST):
         logger.error(
-            "Failed to delete dummy interfaces on %s", conf.VDS_HOSTS_4
+            "Failed to delete dummy interfaces on %s", conf.VDS_LAST_HOST
         )
     helper.check_dummy_on_host(host=conf.LAST_HOST, positive=False)
     logger.info("Activating %s", conf.LAST_HOST)

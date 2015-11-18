@@ -9,15 +9,15 @@ from rhevmtests.networking.config import *  # NOQA
 import rhevmtests.helpers as global_helper
 import art.unittest_lib.network as network_lib
 
-HOST_4_NICS = None  # Filled in setup_package
-VDS_HOSTS_4 = VDS_HOSTS[-1]
+LAST_HOST_NICS = None  # Filled in setup_package
+VDS_LAST_HOST = VDS_HOSTS[-1]
 NET0 = NETWORKS[0]
 LAST_HOST = HOSTS[-1]
 DC_NAME_1 = DC_NAME[0]
 CLUSTER_2 = CLUSTER_NAME[1]
 SYNC_DC = "Sync_DC"
 SYNC_CL = "Sync_cluster"
-QOS_NAME = global_helper.generate_object_names(object_type="QoS", count=6)
+QOS_NAME = global_helper.generate_object_names(object_type="QoS", count=8)
 NIC_NETS = network_lib.generate_networks_names(cases=20, prefix="nic")
 HOST_NETS = network_lib.generate_networks_names(cases=20, prefix="host")
 SYNC_NETS_DC_1 = network_lib.generate_networks_names(cases=25, prefix="sync1_")
@@ -568,7 +568,10 @@ SYNC_DICT_1 = {
             "outbound_average_realtime": 10
         }
     },
-    SYNC_NETS_DC_1[20][0]: {
+    SYNC_NETS_DC_1[19][1]: {
+        "required": "false",
+    },
+    SYNC_NETS_DC_1[19][2]: {
         "required": "false",
         "qos": {
             "datacenter": DC_NAME_1,
@@ -578,23 +581,23 @@ SYNC_DICT_1 = {
             "outbound_average_upperlimit": 10,
             "outbound_average_realtime": 10
         }
-    },
-    SYNC_NETS_DC_1[21][0]: {
-        "required": "false",
 
     },
-    SYNC_NETS_DC_1[22][0]: {
+    SYNC_NETS_DC_1[20][0]: {
         "required": "false",
         "qos": {
             "datacenter": DC_NAME_1,
-            "qos_name": QOS_NAME[5],
+            "qos_name": QOS_NAME[2],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,
             "outbound_average_upperlimit": 10,
             "outbound_average_realtime": 10
         }
     },
-    SYNC_NETS_DC_1[23][0]: {
+    SYNC_NETS_DC_1[20][1]: {
+        "required": "false",
+    },
+    SYNC_NETS_DC_1[20][2]: {
         "required": "false",
         "qos": {
             "datacenter": DC_NAME_1,
@@ -604,9 +607,6 @@ SYNC_DICT_1 = {
             "outbound_average_upperlimit": 10,
             "outbound_average_realtime": 10
         }
-    },
-    SYNC_NETS_DC_1[24][0]: {
-        "required": "false",
 
     },
 }
@@ -680,50 +680,54 @@ SYNC_DICT_2 = {
         "vlan_id": VLAN_IDS[55],
         "mtu": MTU[1]
     },
-    SYNC_NETS_DC_1[20][0]: {
-        "required": "false",
-        "qos": {
-            "datacenter": SYNC_DC,
-            "qos_name": QOS_NAME[1],
-            "qos_type": "hostnetwork",
-            "outbound_average_linkshare": 20,
-            "outbound_average_upperlimit": 20,
-            "outbound_average_realtime": 20
-        }
-    },
-    SYNC_NETS_DC_1[21][0]: {
-        "required": "false",
-        "qos": {
-            "datacenter": SYNC_DC,
-            "qos_name": QOS_NAME[2],
-            "qos_type": "hostnetwork",
-            "outbound_average_linkshare": 10,
-            "outbound_average_upperlimit": 10,
-            "outbound_average_realtime": 10
-        }
-    },
-    SYNC_NETS_DC_1[23][0]: {
-        "required": "false",
-        "qos": {
-            "datacenter": SYNC_DC,
-            "qos_name": QOS_NAME[3],
-            "qos_type": "hostnetwork",
-            "outbound_average_linkshare": 20,
-            "outbound_average_upperlimit": 20,
-            "outbound_average_realtime": 20
-        }
-    },
-    SYNC_NETS_DC_1[24][0]: {
+    SYNC_NETS_DC_1[19][0]: {
         "required": "false",
         "qos": {
             "datacenter": SYNC_DC,
             "qos_name": QOS_NAME[4],
             "qos_type": "hostnetwork",
+            "outbound_average_linkshare": 20,
+            "outbound_average_upperlimit": 20,
+            "outbound_average_realtime": 20
+        }
+    },
+    SYNC_NETS_DC_1[19][1]: {
+        "required": "false",
+        "qos": {
+            "datacenter": SYNC_DC,
+            "qos_name": QOS_NAME[5],
+            "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,
             "outbound_average_upperlimit": 10,
             "outbound_average_realtime": 10
         }
-
     },
-
+    SYNC_NETS_DC_1[19][2]: {
+        "required": "false",
+    },
+    SYNC_NETS_DC_1[20][0]: {
+        "required": "false",
+        "qos": {
+            "datacenter": SYNC_DC,
+            "qos_name": QOS_NAME[6],
+            "qos_type": "hostnetwork",
+            "outbound_average_linkshare": 20,
+            "outbound_average_upperlimit": 20,
+            "outbound_average_realtime": 20
+        }
+    },
+    SYNC_NETS_DC_1[20][1]: {
+        "required": "false",
+        "qos": {
+            "datacenter": SYNC_DC,
+            "qos_name": QOS_NAME[7],
+            "qos_type": "hostnetwork",
+            "outbound_average_linkshare": 10,
+            "outbound_average_upperlimit": 10,
+            "outbound_average_realtime": 10
+        }
+    },
+    SYNC_NETS_DC_1[20][2]: {
+        "required": "false",
+    }
 }
