@@ -1,9 +1,15 @@
 #! /usr/bin/env python
+import ast
 import os
-import sys
 
 PATH_TO_ART = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-PATH_TO_PLUGINS = os.path.join(PATH_TO_ART, 'art', 'test_handler', 'plmanagement', 'plugins')
+PATH_TO_PLUGINS = os.path.join(
+    PATH_TO_ART,
+    'art',
+    'test_handler',
+    'plmanagement',
+    'plugins',
+)
 
 
 PLUGINS_HEAD = """
@@ -20,9 +26,6 @@ if __name__ == '__main__':
     if not os.path.exists('source/plugins'):
         os.makedirs('source/plugins')
 
-    sys.path.insert(0, PATH_TO_ART)
-    sys.path.insert(0, PATH_TO_PLUGINS)
-
     plugins_path = 'source/plugins.rst'
     plugins = [x for x in sorted(os.listdir(PATH_TO_PLUGINS))
                if x.endswith('_plugin.py')]
@@ -32,12 +35,23 @@ if __name__ == '__main__':
         for plugin in plugins:
             try:
                 name = plugin[:-3]
-                plugin_mod = __import__(name)
-                if not plugin_mod.__doc__:
+                path = os.path.join(PATH_TO_PLUGINS, plugin)
+                with open(path) as fh:
+                    plugin_mod = ast.parse(fh.read(), path)
+                if not plugin_mod.body:
+                    print "Skipping %s, empty module." % name
                     continue
+                expr = plugin_mod.body[0]
+                if not isinstance(expr, ast.Expr):
+                    print "Skipping %s, doc is not first statement." % name
+                    continue
+                if not isinstance(expr.value, ast.Str):
+                    print "Skipping %s, fist statement is not string." % name
+                    continue
+                doc_str = expr.value.s
                 plugin_path = 'source/plugins/%s.rst' % name
                 with open(plugin_path, 'w') as plugin_doc:
-                    plugin_doc.write(plugin_mod.__doc__)
+                    plugin_doc.write(doc_str)
                 plugins_doc.write('    plugins/%s\n' % name)
             except Exception as ex:
                 print "Doc generation for %s failed: %s" % (name, ex)
