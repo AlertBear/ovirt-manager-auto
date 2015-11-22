@@ -385,7 +385,7 @@ class VMOs(BaseTemplateVMClass):
     copy_vm = 'OS_copy'
     vm_parameters = BASIC_PARAMETERS.copy()
     default_os = UNASSIGNED
-    rhel_os = config.OS_TYPE
+    rhel_os = ENUMS['rhel6x64']
 
     @classmethod
     def setup_class(cls):
