@@ -156,7 +156,7 @@ class TestFullCreateRemovePoolCycle(BaseVmPool):
 
     pool_name = 'Virt_vmpool_full_cycle'
 
-    @polarion("RHEVM-13976")
+    @polarion("RHEVM3-13976")
     def test_full_create_remove_pool_cycle(self):
         _create_vm_pool(True, self.pool_name, self.pool_params)
         if not vm_pool_api.start_vm_pool(True, self.pool_name):

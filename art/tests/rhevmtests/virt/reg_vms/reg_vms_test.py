@@ -552,7 +552,7 @@ class UpdateVm(BaseVm):
             )
         )
 
-    @polarion("RHEVM-12560")
+    @polarion("RHEVM3-12560")
     def test_update_vm_linux_boot_options(self):
         """
         Positive: Update vm OS parameters
@@ -576,7 +576,7 @@ class UpdateVm(BaseVm):
         self.assertTrue(vm_api.updateVm(True, vm_update, name=self.vm_name))
 
     @attr(tier=2)
-    @polarion("RHEVM-12528")
+    @polarion("RHEVM3-12528")
     @bz({'1260732': {'engine': None, 'version': ['3.6']}})
     def test_update_vm_affinity_to_migratable_with_host(self):
         """
@@ -592,7 +592,7 @@ class UpdateVm(BaseVm):
         )
 
     @attr(tier=2)
-    @polarion("RHEVM-12531")
+    @polarion("RHEVM3-12531")
     @bz({'1260732': {'engine': None, 'version': ['3.6']}})
     def test_update_vm_affinity_to_user_migratable_with_host(self):
         """
@@ -608,7 +608,7 @@ class UpdateVm(BaseVm):
         )
 
     @attr(tier=2)
-    @polarion("RHEVM-12529")
+    @polarion("RHEVM3-12529")
     @bz({'1260732': {'engine': None, 'version': ['3.6']}})
     def test_update_vm_affinity_to_pinned_with_host(self):
         """
@@ -620,7 +620,7 @@ class UpdateVm(BaseVm):
                                         placement_host=config.HOSTS[0]))
 
     @attr(tier=2)
-    @polarion("RHEVM-12527")
+    @polarion("RHEVM3-12527")
     @bz({'1260732': {'engine': None, 'version': ['3.6']}})
     def test_update_vm_affinity_to_migratable_to_any_host(self):
         """
@@ -636,7 +636,7 @@ class UpdateVm(BaseVm):
         )
 
     @attr(tier=2)
-    @polarion("RHEVM-12530")
+    @polarion("RHEVM3-12530")
     @bz({'1260732': {'engine': None, 'version': ['3.6']}})
     def test_update_vm_affinity_to_user_migratable_to_any_host(self):
         """
@@ -664,7 +664,7 @@ class UpdateVm(BaseVm):
         )
 
     @bz({'1218528': {'engine': ['java', 'sdk', 'cli'], 'version': None}})
-    @polarion("RHEVM-12532")
+    @polarion("RHEVM3-12532")
     def test_update_vm_cluster(self):
         """
         Update vm cluster
