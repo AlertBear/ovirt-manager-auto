@@ -8,11 +8,13 @@ Helper for networking jobs
 import logging
 import config as conf
 from random import randint
+from rhevmtests import helpers
 from art.test_handler import settings
 from art.test_handler import exceptions
 from art.rhevm_api.utils import test_utils
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
@@ -20,7 +22,6 @@ import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 logger = logging.getLogger("Global_Network_Helper")
 
-HOST_NET_QOS_TYPE = "hostnetwork"
 ENUMS = settings.opts['elements_conf']['RHEVM Enums']
 
 
@@ -239,7 +240,7 @@ def create_host_net_qos(
     )
     result = ll_dc.add_qos_to_datacenter(
         datacenter=datacenter, qos_name=qos_name,
-        qos_type=HOST_NET_QOS_TYPE, **qos_dict
+        qos_type=conf.HOST_NET_QOS_TYPE, **qos_dict
     )
     if not result and positive:
         raise conf.NET_EXCEPTION(
@@ -270,6 +271,103 @@ def update_host_net_qos(qos_name, datacenter=conf.DC_NAME[0], **qos_dict):
         raise conf.NET_EXCEPTION(
             "Couldn't update Network QOS under DC with provided parameters"
         )
+
+
+def set_libvirt_sasl_status(engine_resource, host_resource, sasl=False):
+    """
+    Set passwordless ssh from emgine to host
+    Set sasl on/off for libvirtd on host
+
+    :param engine_resource: Engine resource
+    :type engine_resource: resources.Engine
+    :param host_resource: Host resource
+    :type host_resource: resources.VDS
+    :param sasl: Set sasl on/off (True/False)
+    :type sasl: bool
+    :raise: exceptions.NetworkException
+    """
+    if not sasl:
+        logger.info(
+            "Setting passwordless ssh from engine (%s) to host (%s)",
+            engine_resource.ip, host_resource.ip
+        )
+        if not helpers.set_passwordless_ssh(
+            engine_resource, host_resource
+        ):
+            raise exceptions.NetworkException(
+                "Failed to set passwordless SSH to %s" % host_resource.ip
+            )
+
+        logger.info("Disabling sasl in libvirt")
+        if not set_libvirtd_sasl(
+            host_obj=host_resource, sasl=sasl
+        ):
+            raise exceptions.NetworkException(
+                "Failed to disable sasl on %s" % host_resource.ip
+            )
+    else:
+        logger.info("Enabling sasl in libvirt")
+        if not set_libvirtd_sasl(host_obj=host_resource, sasl=sasl):
+            logger.error("Failed to enable sasl on %s", host_resource.ip)
+
+
+def set_libvirtd_sasl(host_obj, sasl=True):
+    """
+    Set auth_unix_rw="none" in libvirtd.conf to enable passwordless
+    connection to libvirt command line (virsh)
+
+    :param host_obj: resources.VDS object
+    :type host_obj: VDS
+    :param sasl: True to enable sasl, False to disable
+    :type sasl: bool
+    :return: True/False
+    :rtype: bool
+    """
+    sasl_off = 'auth_unix_rw="{0}"'.format(conf.SASL_OFF)
+    sasl_on = 'auth_unix_rw="{0}"'.format(conf.SASL_ON)
+    sed_arg = "'s/{0}/{1}/g'".format(
+        sasl_on if not sasl else sasl_off, sasl_off if not sasl else sasl_on
+    )
+
+    # following sed procedure is needed by RHEV-H and its read only file system
+    # TODO: add persist after config.VDS_HOST.os is available see
+    # https://projects.engineering.redhat.com/browse/RHEVM-2049
+    sed_cmd = ["sed", sed_arg, conf.LIBVIRTD_CONF]
+    host_exec = host_obj.executor()
+    logger_str = "Enable" if sasl else "Disable"
+    logger.info("%s sasl in %s", logger_str, conf.LIBVIRTD_CONF)
+    rc, sed_out, err = host_exec.run_cmd(sed_cmd)
+    if rc:
+        logger.error(
+            "Failed to run sed %s %s err: %s. out: %s",
+            sed_arg, conf.LIBVIRTD_CONF, logger_str, err, sed_out
+        )
+        return False
+
+    cat_cmd = ["echo", "%s" % sed_out, ">", conf.LIBVIRTD_CONF]
+    rc, cat_out, err = host_exec.run_cmd(cat_cmd)
+    if rc:
+        logger.error(
+            "Failed to %s sasl in libvirt. err: %s. out: %s",
+            logger_str, err, cat_out
+        )
+        return False
+
+    logger.info(
+        "Restarting %s and %s services",
+        conf.LIBVIRTD_SERVICE, conf.VDSMD_SERVICE
+    )
+    try:
+        hl_hosts.restart_services_under_maintenance_state(
+            [conf.LIBVIRTD_SERVICE, conf.VDSMD_SERVICE], host_obj
+        )
+    except exceptions.HostException:
+        logger.error(
+            "Failed to restart %s/%s services", conf.VDSMD_SERVICE,
+            conf.LIBVIRTD_SERVICE
+        )
+        return False
+    return True
 
 
 if __name__ == "__main__":

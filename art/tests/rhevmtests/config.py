@@ -61,6 +61,8 @@ ENGINE_URL = '%s://%s:%s/%s' % (
 ENGINE_LOG = '/var/log/ovirt-engine/engine.log'
 ENGINE_EXTENSIONS_DIR = '/etc/ovirt-engine/extensions.d'
 VDSM_LOG = '/var/log/vdsm/vdsm.log'
+VDSMD_SERVICE = "vdsmd"
+LIBVIRTD_SERVICE = "libvirtd"
 
 # DATABASE SECTION - TODO: make it configurable
 DB_ENGINE_HOST = VDC_HOST

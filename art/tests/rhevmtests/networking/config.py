@@ -102,3 +102,12 @@ MAC_POOL_RANGE_CMD = "MacPoolRanges"
 VM_DISPLAY_TYPE = ENUMS[
     "display_type_vnc"
 ] if PPC_ARCH else ENUMS["display_type_spice"]
+
+# QoS parameters
+QOS_TEST_VALUE = 10
+HOST_NET_QOS_TYPE = "hostnetwork"
+
+# libvirt
+LIBVIRTD_CONF = "/etc/libvirt/libvirtd.conf"
+SASL_OFF = "none"
+SASL_ON = "sasl"

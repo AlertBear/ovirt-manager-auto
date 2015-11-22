@@ -6,12 +6,12 @@ Utilities used by MGMT network role feature
 """
 import logging
 
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.core_api.apis_utils as utils
-import rhevmtests.helpers as helpers
+import rhevmtests.networking.helper as net_helper
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import rhevmtests.networking.arbitrary_vlan_device_name.helper as virsh_helper
 
 import config as c
@@ -75,12 +75,9 @@ def prepare_host_for_installation(
     :type host_name: str
     :raises: Network exception
     """
-    if not helpers.set_passwordless_ssh(
-        src_host=c.ENGINE_HOST, dst_host=host_resource
-    ):
-        raise c.NET_EXCEPTION("Couldn't set passwordless ssh")
-    if not virsh_helper.set_libvirtd_sasl(host_obj=host_resource, sasl=False):
-        raise c.NET_EXCEPTION("Couldn't disable sasl")
+    net_helper.set_libvirt_sasl_status(
+        engine_resource=c.ENGINE_HOST, host_resource=host_resource
+    )
     deactivate_host(host=host_name)
     if new_setup:
         create_setup(dc=dc, cl=cl)
@@ -127,7 +124,7 @@ def add_host_new_mgmt(
         remove_dc_cluster(dc=dc, cl=cl)
     remove_persistance_nets(host_resource=host_resource)
     add_host(host_resource=host_resource, host=host_name, cl=dest_cl)
-    if not virsh_helper.set_libvirtd_sasl(host_obj=host_resource):
+    if not net_helper.set_libvirtd_sasl(host_obj=host_resource):
         raise c.NET_EXCEPTION("Couldn't enable sasl")
 
 

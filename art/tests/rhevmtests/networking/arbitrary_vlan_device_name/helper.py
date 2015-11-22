@@ -10,17 +10,12 @@ from random import randint
 from rhevmtests.networking import config
 import art.test_handler.exceptions as exceptions
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 from art.rhevm_api.tests_lib.low_level.events import get_max_event_id
 
 logger = logging.getLogger("ArbitraryVlanDeviceName_Helper")
 
-LIBVIRTD_CONF = "/etc/libvirt/libvirtd.conf"
-SASL_OFF = "none"
-SASL_ON = "sasl"
-LIBVIRTD_SERVICE = "libvirtd"
-VDSMD_SERVICE = "vdsmd"
+
 VLAN_NAMES = ["vlan10", "vlan20", "vlan30"]
 VLAN_IDS = ["10", "20", "30"]
 BRIDGE_NAMES = ["br_vlan10", "br_vlan20", "br_vlan30"]
@@ -161,62 +156,6 @@ def virsh_delete_bridges(host_obj, bridges, undefine=False):
         br.destroy()
         if undefine:
             br.undefine()
-
-
-def set_libvirtd_sasl(host_obj, sasl=True):
-    """
-    Set auth_unix_rw="none" in libvirtd.conf to enable passwordless
-    connection to libvirt command line (virsh)
-    :param host_obj: resources.VDS object
-    :type host_obj: VDS
-    :param sasl: True to enable sasl, False to disable
-    :type sasl: bool
-    :return: True/False
-    :rtype: bool
-    """
-    sasl_off = 'auth_unix_rw="{0}"'.format(SASL_OFF)
-    sasl_on = 'auth_unix_rw="{0}"'.format(SASL_ON)
-    sed_arg = "'s/{0}/{1}/g'".format(
-        sasl_on if not sasl else sasl_off, sasl_off if not sasl else sasl_on
-    )
-
-    # following sed procedure is needed by RHEV-H and its read only file system
-    # TODO: add persist after config.VDS_HOST.os is available see
-    # https://projects.engineering.redhat.com/browse/RHEVM-2049
-    sed_cmd = ["sed", sed_arg, LIBVIRTD_CONF]
-    host_exec = host_obj.executor()
-    logger_str = "Enable" if sasl else "Disable"
-    logger.info("%s sasl in %s", logger_str, LIBVIRTD_CONF)
-    rc, sed_out, err = host_exec.run_cmd(sed_cmd)
-    if rc:
-        logger.error(
-            "Failed to run sed %s %s err: %s. out: %s",
-            sed_arg, LIBVIRTD_CONF, logger_str, err, sed_out
-        )
-        return False
-
-    cat_cmd = ["echo", "%s" % sed_out, ">", LIBVIRTD_CONF]
-    rc, cat_out, err = host_exec.run_cmd(cat_cmd)
-    if rc:
-        logger.error(
-            "Failed to %s sasl in libvirt. err: %s. out: %s",
-            logger_str, err, cat_out
-        )
-        return False
-
-    logger.info(
-        "Restarting %s and %s services", LIBVIRTD_SERVICE, VDSMD_SERVICE
-    )
-    try:
-        hl_hosts.restart_services_under_maintenance_state(
-            [LIBVIRTD_SERVICE, VDSMD_SERVICE], host_obj
-        )
-    except exceptions.HostException:
-        logger.error(
-            "Failed to restart %s/%s services", VDSMD_SERVICE, LIBVIRTD_SERVICE
-        )
-        return False
-    return True
 
 
 def get_libvirt_connection(host):
