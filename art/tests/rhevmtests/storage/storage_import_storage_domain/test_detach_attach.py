@@ -31,6 +31,8 @@ logger = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
 NFS = config.STORAGE_TYPE_NFS
+GULSTERFS = config.STORAGE_TYPE_GLUSTER
+POSIX = config.STORAGE_TYPE_POSIX
 UPDATE_OVF_INTERVAL_CMD = 'engine-config -s OvfUpdateIntervalInMinutes=%s'
 
 VM_NAMES = dict()
@@ -1252,3 +1254,101 @@ class TestCase12207(BasicEnvironment):
             self.dc_name, self.cluster_name, self.storage_domain
         )
         self.teardown_exception()
+
+
+@attr(tier=2)
+class TestCase10951(BasicEnvironment):
+    """
+    Import an export domain to the system
+
+    https://polarion.engineering.redhat.com/polarion/#/project/
+    RHEVM3/workitem?id=RHEVM3-10951
+    """
+    __test__ = (POSIX in opts['storages'] or GULSTERFS in opts['storages'])
+    polarion_test_case = "10951"
+    datacenter = config.DATA_CENTER_NAME
+    nfs_version = None
+    vfs_type = None
+
+    def setUp(self):
+        """
+        Creates storage domains which will be later imported
+        """
+        self.export_domain = 'test_%s_export_%s' % (
+            self.polarion_test_case, self.storage
+        )
+        self.sd_type = ENUMS['storage_dom_type_export']
+        self._secure_detach_storage_domain(
+            self.datacenter, config.EXPORT_DOMAIN_NAME
+        )
+        self.host = ll_hosts.getSPMHost(config.HOSTS)
+        self.host_ip = ll_hosts.getHostIP(self.host)
+        self.password = config.HOSTS_PW
+        if self.storage == POSIX:
+            self.export_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[1]
+            self.export_path = config.UNUSED_DATA_DOMAIN_PATHS[1]
+            self.vfs_type = NFS
+            self.nfs_version = 'v4.1'
+            self.storage_type = POSIX
+
+            status = hl_sd.addPosixfsDataDomain(
+                self.host, self.export_domain, self.datacenter,
+                self.export_address, self.export_path, vfs_type=self.vfs_type,
+                sd_type=self.sd_type, nfs_version=self.nfs_version
+            )
+            if not status:
+                raise errors.StorageDomainException(
+                    "Creating POSIX domain '%s' failed" % self.export_domain
+                )
+
+        elif self.storage == GULSTERFS:
+            self.export_address = \
+                config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[1]
+            self.export_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[1]
+            self.vfs_type = ENUMS['vfs_type_glusterfs']
+            self.storage_type = GULSTERFS
+
+            status = hl_sd.addGlusterDomain(
+                self.host, self.export_domain, self.datacenter,
+                self.export_address, self.export_path,
+                vfs_type=self.vfs_type, sd_type=self.sd_type
+            )
+            if not status:
+                raise errors.StorageDomainException(
+                    "Creating GlusterFS domain '%s' failed"
+                    % self.export_domain
+                )
+        test_utils.wait_for_tasks(config.VDC, config.VDC_ROOT_PASSWORD,
+                                  self.datacenter)
+        hl_sd.remove_storage_domain(
+            self.export_domain, self.datacenter, self.host, False, config.VDC,
+            config.VDC_PASSWORD
+        )
+
+    @polarion("RHEVM3-10951")
+    def test_import_existing_export_domain(self):
+        """
+        Imports existing export storage domain
+        """
+        assert ll_sd.importStorageDomain(
+            True, self.sd_type, self.storage_type, self.export_address,
+            self.export_path, self.host, nfs_version=self.nfs_version,
+            vfs_type=self.vfs_type
+        )
+        logger.info("Attaching storage domain %s", self.export_domain)
+        assert hl_sd.attach_and_activate_domain(
+            config.DATA_CENTER_NAME, self.export_domain
+        )
+
+    def tearDown(self):
+        self._secure_detach_storage_domain(
+            self.datacenter, self.export_domain
+        )
+        hl_sd.attach_and_activate_domain(
+            self.datacenter, config.EXPORT_DOMAIN_NAME
+        )
+        wait_for_jobs([ENUMS['job_activate_storage_domain']])
+        hl_sd.remove_storage_domain(
+            self.export_domain, self.datacenter, self.host, False, config.VDC,
+            config.VDC_PASSWORD
+        )

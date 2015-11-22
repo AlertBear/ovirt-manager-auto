@@ -338,27 +338,36 @@ def addLocalDataDomain(host, storage, data_center, path):
 
 
 @is_action()
-def addPosixfsDataDomain(host, storage, data_center, address, path, vfs_type,
-                         mount_options=None):
+def addPosixfsDataDomain(
+        host, storage, data_center, address, path,
+        sd_type=ENUMS['storage_dom_type_data'],
+        vfs_type=ENUMS['storage_type_nfs'], nfs_version=None):
     """
     positive flow for adding posixfs storage including all the necessary steps
-    Author: kjachim
-    Parameters:
-        * host - name of host
-        * storage - name of storage domain that will be created in rhevm
-        * data_center - name of DC which will contain this SD
-        * storage_format - storage format version (v1/v2/v3)
-        * address - nfs server address
-        * path - path for nfs mount
-        * sd_type - type of storage domain: data, iso or export
-        * vfs_type - ...
-        * mount_options - specific options
-    return True if succeeded, False otherwise
+
+    :param host: Name of the host to be used for adding the posix domain
+    :type host: str
+    :param storage: Name of storage domain that will be created in rhevm
+    :type storage: str
+    :param data_center: Name of DC which will contain this SD
+    :type data_center: str
+    :param address: NFS server address
+    :type address: str
+    :param path: Path for nfs mount
+    :type path: str
+    :param sd_type: Type of storage domain: data, iso or export
+    :type sd_type: str
+    :param vfs_type: VFS type to use for the new POSIX domains
+    :type vfs_type: str
+    :param nfs_version: NFS version to use for mounting posix domain
+    :type nfs_version: str
+    :returns: True if succeeded, False otherwise
+    :rtype: bool
     """
     if not ll_sd.addStorageDomain(
-            True, host=host, name=storage, type=ENUMS['storage_dom_type_data'],
+            True, host=host, name=storage, type=sd_type,
             address=address, storage_type=ENUMS['storage_type_posixfs'],
-            path=path, vfs_type=vfs_type, mount_options=mount_options):
+            path=path, vfs_type=vfs_type, nfs_version=nfs_version):
         logger.error('Failed to add posixfs storage %s to %s' % (path, host))
         return False
 

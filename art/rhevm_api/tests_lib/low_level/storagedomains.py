@@ -608,6 +608,7 @@ def importStorageDomain(positive, type, storage_type, address, path, host,
                         "may cause issues.")
             util.logger.warn(warn_msg, address, path)
 
+    util.logger.info("Importing domain from %s:%s", address, path)
     sdStorage = Storage(type_=storage_type, address=address, path=path,
                         nfs_version=nfs_version, nfs_retrans=nfs_retrans,
                         nfs_timeo=nfs_timeo, vfs_type=vfs_type,
