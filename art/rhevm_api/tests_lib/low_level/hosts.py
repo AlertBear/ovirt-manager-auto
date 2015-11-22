@@ -1839,38 +1839,34 @@ def checkNetworkFilteringDumpxml(positive, host, user, passwd, vm, nics):
 
 
 @is_action()
-def checkNetworkFilteringEbtables(positive, host, user, passwd, nics, vm_macs):
+def check_network_filtering_ebtables(host_obj, vm_macs):
     """
     Description: Check that network filtering is enabled via ebtables
-                 This function is also described in tcms_plan 6955
-                 test_case 198920
-    Author: awinter
-    Parameters:
-      *  *host - ip or fqdn
-      *  *user - user name for the host
-      *  *passwd - password for the user
-      *  *nics - number of nics
-      *  *vm_macs - list of vms' macs
-    **return**: True if network filtering is enabled, False otherwise
-    """
-    count = 0
-    macTemplate = re.compile('([0-9a-f]+[:]){5}[0-9a-f]+', re.I)
-    host_obj = machine.Machine(host, user, passwd).util(machine.LINUX)
-    cmd = ['ebtables', '-t', 'nat', '-L']
-    output = (host_obj.runCmd(cmd)[1].strip()).splitlines()
-    for line in output:
-        line_list = line.split()
-        mac_addr = [word for word in line_list if re.match(macTemplate,
-                                                           "0" + word)]
-        if mac_addr:
-            mac = "0" + mac_addr[0]
-            if mac in vm_macs:
-                count += 1
 
-    if count != 2 * int(nics):
-        HOST_API.logger.error("Mac not found in ebtables")
-        return not positive
-    return positive
+    :param host_obj: Host object
+    :type host_obj: resources.VDS object
+    :param vm_macs: list of vm_macs
+    :type vm_macs: list
+    :return: True if network filtering is enabled, False otherwise
+    :rtype: bool
+    """
+    host_exec = host_obj.executor()
+    cmd = "ebtables -t nat -L"
+    rc, output, err = host_exec.run_cmd(shlex.split(cmd))
+    if rc:
+        HOST_API.logger.error("Failed to run command %s", cmd)
+        return False
+    for mac in vm_macs:
+        vm_mac = ":".join(
+            [i[1] if i.startswith('0') else i for i in mac.split(':')]
+        )
+        num_macs_ebtable = output.count(vm_mac)
+        if num_macs_ebtable != 2:
+            HOST_API.logger.info(
+                "%s MACs found instead of 2", num_macs_ebtable
+            )
+            return False
+    return True
 
 
 def cleanHostStorageSession(hostObj, **kwargs):

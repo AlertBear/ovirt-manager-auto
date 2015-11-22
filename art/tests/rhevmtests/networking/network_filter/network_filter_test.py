@@ -3,21 +3,15 @@ Testing NetworkFilter feature.
 1 DC, 1 Cluster, 1 Hosts and 1 VM will be created for testing.
 """
 
-from rhevmtests.networking import config
 import logging
-from art.unittest_lib import NetworkTest as TestCase, attr
-from art.rhevm_api.tests_lib.low_level.vms import (
-    addNic, getVmMacAddress, stopVm, startVm, removeNic, updateNic,
-    hotUnplugNic,
-)
+from art.unittest_lib import common
+from rhevmtests.networking import config
+from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.rhevm_api.utils.test_utils import setNetworkFilterStatus
-from art.test_handler.exceptions import NetworkException
-from art.rhevm_api.tests_lib.low_level.hosts import(
-    checkNetworkFilteringDumpxml, checkNetworkFiltering,
-    checkNetworkFilteringEbtables
-)
-from art.rhevm_api.utils.test_utils import checkSpoofingFilterRuleByVer
+import rhevmtests.networking.helper as net_help
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+from art.unittest_lib import NetworkTest as TestCase, attr
 
 logger = logging.getLogger("Network_Filter_Cases")
 
@@ -48,11 +42,11 @@ class TestNetworkFilterCase01(TestCase):
         Check that Network Filter is enabled by default on engine
         """
         logger.info("Check that Network Filter is enabled on engine")
-        if not checkSpoofingFilterRuleByVer(
+        if not test_utils.checkSpoofingFilterRuleByVer(
                 host=config.VDC_HOST, user=config.VDC_ROOT_USER,
                 passwd=config.VDC_ROOT_PASSWORD
         ):
-            raise NetworkException("Network Filter is disabled on engine")
+            raise config.NET_EXCEPTION("Network Filter is disabled on engine")
 
     @polarion("RHEVM3-3777")
     def test_check_filter_status_vdsm(self):
@@ -60,11 +54,11 @@ class TestNetworkFilterCase01(TestCase):
         Check that Network Filter is enabled by default on VDSM
         """
         logger.info("Check that Network Filter is enabled on VDSM")
-        if not checkNetworkFiltering(
+        if not ll_hosts.checkNetworkFiltering(
                 positive=True, host=config.HOSTS_IP[0],
                 user=config.HOSTS_USER, passwd=config.HOSTS_PW
         ):
-            raise NetworkException("Network Filter is disabled on VDSM")
+            raise config.NET_EXCEPTION("Network Filter is disabled on VDSM")
 
     @polarion("RHEVM3-3779")
     def test_check_filter_status_dump_xml(self):
@@ -72,16 +66,19 @@ class TestNetworkFilterCase01(TestCase):
         Check that Network Filter is enabled by default via dumpxml
         """
         logger.info("Check that Network Filter is enabled via dumpxml")
-        if not checkNetworkFilteringDumpxml(
+        if not ll_hosts.checkNetworkFilteringDumpxml(
                 positive=True, host=config.HOSTS_IP[0], user=config.HOSTS_USER,
                 passwd=config.HOSTS_PW, vm=config.VM_NAME[0], nics="1"
         ):
-            raise NetworkException("Network Filter is disabled via dumpxml")
+            raise config.NET_EXCEPTION(
+                "Network Filter is disabled via dumpxml"
+            )
 
 ##############################################################################
 
 
 @attr(tier=2)
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class TestNetworkFilterCase02(TestCase):
     """
     Check that network filter is enabled for hot-plug  NIC to on VM
@@ -94,11 +91,11 @@ class TestNetworkFilterCase02(TestCase):
         Adding nic2 to VM
         """
         logger.info("Adding %s to VM", config.NIC_NAME[1])
-        if not addNic(
+        if not ll_vms.addNic(
                 positive=True, vm=config.VM_NAME[0], name=config.NIC_NAME[1],
                 interface=config.NIC_TYPE_RTL8139, network=config.MGMT_BRIDGE
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Failed to add NIC %s to VM" % config.NIC_NAME[1]
             )
 
@@ -111,11 +108,11 @@ class TestNetworkFilterCase02(TestCase):
             "Check that Network Filter is enabled for %s via dumpxml",
             config.NIC_NAME[1]
         )
-        if not checkNetworkFilteringDumpxml(
+        if not ll_hosts.checkNetworkFilteringDumpxml(
                 positive=True, host=config.HOSTS_IP[0], user=config.HOSTS_USER,
                 passwd=config.HOSTS_PW, vm=config.VM_NAME[0], nics="2"
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Network Filter is disabled for %s via dumpxml" %
                 config.NIC_NAME[1]
             )
@@ -126,13 +123,13 @@ class TestNetworkFilterCase02(TestCase):
         Un-plug and remove nic2 from VM
         """
         logger.info("un-plug %s", config.NIC_NAME[1])
-        if not hotUnplugNic(
+        if not ll_vms.hotUnplugNic(
             positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[1]
         ):
             logger.error("Failed to unplug %s from VM", config.NIC_NAME[1])
 
         logger.info("Removing %s from VM", config.NIC_NAME[1])
-        if not removeNic(
+        if not ll_vms.removeNic(
             positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[1]
         ):
             logger.error("Failed to remove %s", config.NIC_NAME[1])
@@ -160,29 +157,24 @@ class TestNetworkFilterCase03(TestCase):
         """
         Check that VM NIC has network filter via ebtables
         """
-        vm_macs = get_vm_macs(vm=config.VM_NAME[0],
-                              nics=[config.NIC_NAME[0]])
+        vm_macs = get_vm_macs(vm=config.VM_NAME[0], nics=[config.NIC_NAME[0]])
         logger.info("Check ebtables rules for running VM")
-        if not checkNetworkFilteringEbtables(
-                positive=True, host=config.HOSTS_IP[0],
-                user=config.VMS_LINUX_USER, passwd=config.VMS_LINUX_PW,
-                nics="1", vm_macs=vm_macs
+        if not ll_hosts.check_network_filtering_ebtables(
+            host_obj=config.VDS_HOSTS[0], vm_macs=vm_macs
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Network filter is not enabled via ebtables on the VM NICs"
             )
 
         logger.info("Stopping the VM")
-        if not stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("fail to stop the VM")
+        if not ll_vms.stopVm(positive=True, vm=config.VM_NAME[0]):
+            raise config.NET_EXCEPTION("fail to stop the VM")
 
         logger.info("Check ebtables rules for stopped VM")
-        if not checkNetworkFilteringEbtables(
-                positive=False, host=config.HOSTS_IP[0],
-                user=config.VMS_LINUX_USER, passwd=config.VMS_LINUX_PW,
-                nics="1", vm_macs=vm_macs
+        if ll_hosts.check_network_filtering_ebtables(
+            host_obj=config.VDS_HOSTS[0], vm_macs=vm_macs
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Network filter is enabled via ebtables on the VM NICs "
             )
 
@@ -191,16 +183,20 @@ class TestNetworkFilterCase03(TestCase):
         """
         Start the VM
         """
-        logger.info("Starting the VM and wait for status up")
-        if not startVm(
-                positive=True, vm=config.VM_NAME[0], wait_for_status="up"
+        logger.info("Starting the VM and wait till it's up")
+        if not net_help.run_vm_once_specific_host(
+            vm=config.VM_NAME[0], host=config.HOSTS[0], wait_for_ip=True
         ):
-            logger.error("failed to start the VM %s", config.VM_NAME[0])
+            logger.error(
+                "Cannot start VM %s on host %s",
+                config.VM_NAME[0], config.HOSTS[0]
+            )
 
 ##############################################################################
 
 
 @attr(tier=2)
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class TestNetworkFilterCase04(TestCase):
     """
     Check that Network Filter is disabled via ebtables on after VNIC hot-plug
@@ -213,62 +209,64 @@ class TestNetworkFilterCase04(TestCase):
         """
         Check that VM NICs has network filter via ebtables
         """
-        vm_nic1_mac = get_vm_macs(vm=config.VM_NAME[0],
-                                  nics=[config.NIC_NAME[0]])
+        vm_nic1_mac = get_vm_macs(
+            vm=config.VM_NAME[0], nics=[config.NIC_NAME[0]]
+        )
+
         logger.info("Check ebtables rules for %s", config.NIC_NAME[0])
-        if not checkNetworkFilteringEbtables(
-                positive=True, host=config.HOSTS_IP[0],
-                user=config.VMS_LINUX_USER, passwd=config.VMS_LINUX_PW,
-                nics="1", vm_macs=vm_nic1_mac
+        if not ll_hosts.check_network_filtering_ebtables(
+            host_obj=config.VDS_HOSTS[0], vm_macs=vm_nic1_mac
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Network filter is not enabled via ebtables for %s" %
                 config.NIC_NAME[0]
             )
 
         logger.info("Adding new NIC to VM")
-        if not addNic(
+        if not ll_vms.addNic(
                 positive=True, vm=config.VM_NAME[0], name=config.NIC_NAME[1],
                 interface=config.NIC_TYPE_RTL8139, network=config.MGMT_BRIDGE
         ):
-            raise NetworkException(
-                "Failed to add NIC %s to VM" % config.NIC_NAME[1])
+            raise config.NET_EXCEPTION(
+                "Failed to add NIC %s to VM" % config.NIC_NAME[1]
+            )
 
-        vm_nic2_mac = get_vm_macs(vm=config.VM_NAME[0],
-                                  nics=[config.NIC_NAME[1]])
+        vm_nic2_mac = get_vm_macs(
+            vm=config.VM_NAME[0],  nics=[config.NIC_NAME[1]]
+        )
         logger.info("Check ebtables rules for %s", config.NIC_NAME[1])
-        if not checkNetworkFilteringEbtables(
-                positive=True, host=config.HOSTS_IP[0],
-                user=config.VMS_LINUX_USER, passwd=config.VMS_LINUX_PW,
-                nics="1", vm_macs=vm_nic2_mac
+        if not ll_hosts.check_network_filtering_ebtables(
+            host_obj=config.VDS_HOSTS[0], vm_macs=vm_nic2_mac
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Network filter is not enabled via ebtables for %s" %
                 config.NIC_NAME[1]
             )
 
         logger.info("hot-unplug %s from the VM", config.NIC_NAME[1])
-        if not updateNic(
+        if not ll_vms.updateNic(
                 positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[1],
                 plugged="false"
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Failed to update %s to un-plugged" % config.NIC_NAME[1]
             )
 
-        if not removeNic(positive=True, vm=config.VM_NAME[0],
-                         nic=config.NIC_NAME[1]):
-            raise NetworkException("Failed to remove %s" % config.NIC_NAME[1])
-
-        vm_nic1_1_mac = get_vm_macs(vm=config.VM_NAME[0],
-                                    nics=[config.NIC_NAME[0]])
-        logger.info("Check ebtables rules for %s", config.NIC_NAME[0])
-        if not checkNetworkFilteringEbtables(
-                positive=True, host=config.HOSTS_IP[0],
-                user=config.VMS_LINUX_USER, passwd=config.VMS_LINUX_PW,
-                nics="1", vm_macs=vm_nic1_1_mac
+        if not ll_vms.removeNic(
+            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[1]
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
+                "Failed to remove %s" % config.NIC_NAME[1]
+            )
+
+        vm_nic1_1_mac = get_vm_macs(
+            vm=config.VM_NAME[0], nics=[config.NIC_NAME[0]]
+        )
+        logger.info("Check ebtables rules for %s", config.NIC_NAME[0])
+        if not ll_hosts.check_network_filtering_ebtables(
+            host_obj=config.VDS_HOSTS[0], vm_macs=vm_nic1_1_mac
+        ):
+            raise config.NET_EXCEPTION(
                 "Network filter is not enabled via ebtables for %s",
                 config.NIC_NAME[0]
             )
@@ -289,21 +287,21 @@ class TestNetworkFilterCase05(TestCase):
         Disabling network filter on engine and start the VM
         """
         logger.info("Stopping the VM")
-        if not stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("fail to stop the VM")
+        if not ll_vms.stopVm(positive=True, vm=config.VM_NAME[0]):
+            raise config.NET_EXCEPTION("fail to stop the VM")
 
         logger.info("Disabling network filter on engine")
-        if not setNetworkFilterStatus(
+        if not test_utils.setNetworkFilterStatus(
                 enable=False, host=config.VDC_HOST, user=config.VDC_ROOT_USER,
                 passwd=config.VDC_ROOT_PASSWORD
         ):
-            raise NetworkException("Failed to disable network filter")
+            raise config.NET_EXCEPTION("Failed to disable network filter")
 
         logger.info("Starting the VM")
-        if not startVm(
+        if not ll_vms.startVm(
                 positive=True, vm=config.VM_NAME[0], wait_for_status="up"
         ):
-            raise NetworkException("failed to start the VM")
+            raise config.NET_EXCEPTION("failed to start the VM")
 
     @polarion("RHEVM3-3785")
     def test_check_network_filter_on_nic(self):
@@ -311,22 +309,21 @@ class TestNetworkFilterCase05(TestCase):
         Check that VM run without network filter.
         """
         logger.info("Check that Network Filter is enabled via dumpxml")
-        if not checkNetworkFilteringDumpxml(
+        if not ll_hosts.checkNetworkFilteringDumpxml(
                 positive=False, host=config.HOSTS_IP[0],
                 user=config.HOSTS_USER, passwd=config.HOSTS_PW,
                 vm=config.VM_NAME[0], nics="1"
         ):
-            raise NetworkException("Network Filter is enabled via dumpxml")
+            raise config.NET_EXCEPTION("Network Filter is enabled via dumpxml")
 
-        vm_nic1_mac = get_vm_macs(vm=config.VM_NAME[0],
-                                  nics=[config.NIC_NAME[0]])
+        vm_nic1_mac = get_vm_macs(
+            vm=config.VM_NAME[0], nics=[config.NIC_NAME[0]]
+        )
         logger.info("Check ebtables rules for %s", config.NIC_NAME[0])
-        if not checkNetworkFilteringEbtables(
-                positive=False, host=config.HOSTS_IP[0],
-                user=config.VMS_LINUX_USER, passwd=config.VMS_LINUX_PW,
-                nics="1", vm_macs=vm_nic1_mac
+        if ll_hosts.check_network_filtering_ebtables(
+            host_obj=config.VDS_HOSTS[0], vm_macs=vm_nic1_mac
         ):
-            raise NetworkException(
+            raise config.NET_EXCEPTION(
                 "Network filter is enabled via ebtables for %s" %
                 config.NIC_NAME[0]
             )
@@ -337,7 +334,7 @@ class TestNetworkFilterCase05(TestCase):
         Enabling network filter on engine
         """
         logger.info("Enabling network filter on engine")
-        if not setNetworkFilterStatus(
+        if not test_utils.setNetworkFilterStatus(
                 enable=True, host=config.VDC_HOST, user=config.VDC_ROOT_USER,
                 passwd=config.VDC_ROOT_PASSWORD
         ):
@@ -356,7 +353,7 @@ def get_vm_macs(vm, nics):
     vm_macs = []
     logger.info("Get MAC address for VM NICs")
     for nic in nics:
-        vm_mac = getVmMacAddress(positive=True, vm=vm, nic=nic)
+        vm_mac = ll_vms.getVmMacAddress(positive=True, vm=vm, nic=nic)
         vm_macs.append(vm_mac[1]["macAddress"])
 
     if len(vm_macs) != len(nics):

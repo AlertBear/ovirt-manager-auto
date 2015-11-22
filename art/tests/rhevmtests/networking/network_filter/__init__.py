@@ -1,13 +1,12 @@
 """
-NetworkFilter Test
+NetworkFilter Init
 """
 
 import logging
 import rhevmtests.networking as networking
 import rhevmtests.networking.config as config
-import art.test_handler.exceptions as exceptions
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.helper as net_help
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 
 logger = logging.getLogger("Network_Filter_Init")
 
@@ -28,7 +27,7 @@ def setup_package():
     if not net_help.run_vm_once_specific_host(
             vm=config.VM_NAME[0], host=config.HOSTS[0], wait_for_ip=True
     ):
-        raise exceptions.NetworkException(
+        raise config.NET_EXCEPTION(
             "Cannot start VM %s on host %s" %
             (config.VM_NAME[0], config.HOSTS[0])
         )
