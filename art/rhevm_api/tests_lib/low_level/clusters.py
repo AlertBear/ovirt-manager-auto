@@ -19,7 +19,6 @@
 
 import time
 from Queue import Queue
-from threading import Thread
 
 from art.core_api import is_action
 from art.core_api.apis_utils import getDS
@@ -329,33 +328,18 @@ def removeClusters(positive, clusters):
         * clusters - Comma (no space) separated list of cluster names.
     '''
 
-    tasksQ = Queue()
     resultsQ = Queue()
-    threads = set()
     clsList = split(clusters)
-    num_worker_threads = len(clsList)
-    for i in range(num_worker_threads):
-        t = Thread(target=removeClusterAsynch, name='Cluster removing',
-                   args=(positive, tasksQ, resultsQ))
-        threads.add(t)
-        t.daemon = False
-        t.start()
-
     for cl in clsList:
-        tasksQ.put(cl)
-    tasksQ.join()  # block until all tasks are done
-    util.logger.info(threads)
-    for t in threads:
-        t.join()
+        resultsQ.put((cl, removeCluster(positive, cl)))
 
     status = True
     while not resultsQ.empty():
         cl, removalOK = resultsQ.get()
         if removalOK:
-            util.logger.info("Cluster '%s' deleted asynchronously.", cl)
+            util.logger.info("Cluster '%s' deleted.", cl)
         else:
-            util.logger.error("Failed to asynchronously remove cluster '%s'.",
-                              cl)
+            util.logger.error("Failed to remove cluster '%s'.", cl)
             status = False
 
     return status and waitForClustersGone(positive, clusters)

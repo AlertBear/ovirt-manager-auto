@@ -19,7 +19,6 @@
 
 import os
 import Queue
-import threading
 import time
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS, data_st
@@ -216,23 +215,16 @@ def removeDataCenters(positive, datacenters):
           True if all data centers were removed properly
           False otherwise
      '''
-
+    resultsQ = Queue.Queue()
     datacentersList = split(datacenters)
-
+    for dc in datacentersList:
+        resultsQ.put(removeDataCenter(positive, dc))
     status = True
 
-    threadQueue = Queue.Queue()
-    for dc in datacentersList:
-        thread = threading.Thread(
-            target=removeDataCenterAsynch, name="Remove DC " + dc,
-            args=(positive, dc, threadQueue))
-        thread.start()
-        thread.join()
-
-    while not threadQueue.empty():
-        dcStatus = threadQueue.get()
+    while not resultsQ.empty():
+        dcStatus = resultsQ.get()
         if not dcStatus:
-            status = status and False
+            status = False
 
     return status
 
