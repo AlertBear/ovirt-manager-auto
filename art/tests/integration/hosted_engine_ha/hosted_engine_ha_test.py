@@ -2,6 +2,7 @@
 Hosted Engine - HA Test
 Check behaviour of ovirt-ha-agent under different conditions
 """
+import re
 import socket
 import logging
 
@@ -11,6 +12,7 @@ import art.unittest_lib as test_libs
 import art.core_api.apis_utils as utils
 import art.test_handler.exceptions as errors
 import art.core_api.apis_exceptions as core_errors
+import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 
 logger = logging.getLogger(__name__)
 
@@ -45,9 +47,9 @@ class HostedEngineTest(test_libs.SlaTest):
         return None
 
     @classmethod
-    def _get_out_from_run_cmd(cls, executor, cmd, negative=False):
+    def _get_output_from_run_cmd(cls, executor, cmd, negative=False):
         """
-        Run command on host
+        Run command on host and get output from it
 
         :param executor: host executor
         :type executor: instance of RemoteExecutor
@@ -88,7 +90,7 @@ class HostedEngineTest(test_libs.SlaTest):
         :raises: HostException
         """
         cmd = ["python", conf.SCRIPT_DEST_PATH]
-        status_dict = eval(cls._get_out_from_run_cmd(executor, cmd))
+        status_dict = eval(cls._get_output_from_run_cmd(executor, cmd))
         stat_d = {}
         for host_d in status_dict.itervalues():
             if conf.HOSTNAME in host_d:
@@ -182,7 +184,7 @@ class HostedEngineTest(test_libs.SlaTest):
         logger.info(
             "Set maintenance mode of host %s to %s", host_resource, mode
         )
-        cls._get_out_from_run_cmd(executor, cmd)
+        cls._get_output_from_run_cmd(executor, cmd)
 
     @classmethod
     def _run_power_management_command(
@@ -212,7 +214,7 @@ class HostedEngineTest(test_libs.SlaTest):
             host_pm.get(conf.PM_PASSWORD),
             command
         ]
-        out = cls._get_out_from_run_cmd(
+        out = cls._get_output_from_run_cmd(
             host_resource.executor(), cmd
         )
         return out.strip() != "unknown"
@@ -404,7 +406,7 @@ class HostedEngineTest(test_libs.SlaTest):
     def _drop_host_score_to_max(cls, executor, host_resource):
         """
         Put host to local maintenance and put it back to normal state
-        to drop host score to maximal value(2400)
+        to drop host score to maximal value(3400)
 
         :param executor: host executor
         :type executor: instance of RemoteExecutor
@@ -444,7 +446,7 @@ class HostedEngineTest(test_libs.SlaTest):
         :rtype: bool
         """
         cmd = ["sanlock", "client", "status"]
-        out = cls._get_out_from_run_cmd(executor, cmd)
+        out = cls._get_output_from_run_cmd(executor, cmd)
         for line in out.splitlines():
             line_arr = line.strip().split()
             if line_arr[0].strip() == "r":
@@ -639,7 +641,7 @@ class GeneralSetupTeardownClass(HostedEngineTest):
         :rtype: bool
         """
         cmd = ["vdsClient", "-s", "0", "list", "table"]
-        out = cls._get_out_from_run_cmd(host.executor(), cmd)
+        out = cls._get_output_from_run_cmd(host.executor(), cmd)
         try:
             if out == "" or (status and out.split()[3].lower() != status):
                 return False
@@ -769,7 +771,7 @@ class TestBlockAccessToStorageDomainFromHost(GeneralSetupTeardownClass):
             "Save iptables on host %s to file %s",
             cls.engine_vm_host, conf.IPTABLES_BACKUP_FILE
         )
-        cls._get_out_from_run_cmd(
+        cls._get_output_from_run_cmd(
             cls.engine_vm_host_executor,
             ['iptables-save', '>>', conf.IPTABLES_BACKUP_FILE]
         )
@@ -777,12 +779,12 @@ class TestBlockAccessToStorageDomainFromHost(GeneralSetupTeardownClass):
             "Block connection from host %s to storage", cls.engine_vm_host
         )
         cmd = ["grep", "storage=", conf.HOSTED_ENGINE_CONF_FILE]
-        out = cls._get_out_from_run_cmd(
+        out = cls._get_output_from_run_cmd(
             cls.engine_vm_host_executor, cmd
         )
         ip_to_block = out.split("=")[1].split(":")[0].strip('\n')
         cmd = ["iptables", "-I", "INPUT", "-s", ip_to_block, "-j", "DROP"]
-        cls._get_out_from_run_cmd(cls.engine_vm_host_executor, cmd)
+        cls._get_output_from_run_cmd(cls.engine_vm_host_executor, cmd)
 
     @tools.polarion("RHEVM3-5514")
     def test_check_migration_of_ha_vm(self):
@@ -800,7 +802,7 @@ class TestBlockAccessToStorageDomainFromHost(GeneralSetupTeardownClass):
             "Restore iptables on host %s from file %s",
             cls.engine_vm_host, conf.IPTABLES_BACKUP_FILE
         )
-        cls._get_out_from_run_cmd(
+        cls._get_output_from_run_cmd(
             cls.engine_vm_host_executor,
             ['iptables-restore', conf.IPTABLES_BACKUP_FILE]
         )
@@ -832,7 +834,9 @@ class TestShutdownEngineMachine(GeneralSetupTeardownClass):
         Shutdown HE vm and check if vm restarted on one of hosts
         """
         cmd = ["shutdown", "-h", "now"]
-        self._get_out_from_run_cmd(self.engine_vm_executor, cmd, negative=True)
+        self._get_output_from_run_cmd(
+            executor=self.engine_vm_executor, cmd=cmd, negative=True
+        )
         self._is_vm_and_engine_run_on_second_host()
 
 
@@ -850,7 +854,7 @@ class TestStopEngineService(GeneralSetupTeardownClass):
         check if vm restarted on one of hosts
         """
         cmd = ["service", "ovirt-engine", "stop"]
-        self._get_out_from_run_cmd(self.engine_vm_executor, cmd)
+        self._get_output_from_run_cmd(self.engine_vm_executor, cmd)
         self.assertTrue(
             self._wait_until_engine_down(), conf.ENGINE_UP
         )
@@ -872,7 +876,7 @@ class TestStopPostgresqlService(GeneralSetupTeardownClass):
         check if vm restarted on one of hosts
         """
         cmd = ["service", "postgresql", "stop"]
-        self._get_out_from_run_cmd(self.engine_vm_executor, cmd)
+        self._get_output_from_run_cmd(self.engine_vm_executor, cmd)
         self.assertTrue(
             self._wait_until_engine_down(), conf.ENGINE_UP
         )
@@ -895,7 +899,9 @@ class TestKernelPanicOnEngineVm(GeneralSetupTeardownClass):
         check if it restarted on one of hosts
         """
         cmd = ["echo", "c", ">", "/proc/sysrq-trigger"]
-        self._get_out_from_run_cmd(self.engine_vm_executor, cmd, negative=True)
+        self._get_output_from_run_cmd(
+            executor=self.engine_vm_executor, cmd=cmd, negative=True
+        )
         self.assertTrue(
             self._wait_until_engine_down(), conf.ENGINE_UP
         )
@@ -904,3 +910,520 @@ class TestKernelPanicOnEngineVm(GeneralSetupTeardownClass):
         )
 
 #############################################################################
+
+
+class TestSanlockStatusOnHosts(GeneralSetupTeardownClass):
+    """
+    Check status of sanlock on host with HE vm and without
+    """
+    __test__ = True
+
+    @tools.polarion("RHEVM3-5531")
+    def test_check_sanlock_status_on_host_with_he_vm(self):
+        """
+        Check if sanlock status equal to shared on host with HE vm
+        """
+        logger.info("Check status equal to shared on host with HE vm")
+        self.assertTrue(
+            self._is_sanlock_share(self.engine_vm_host_executor),
+            "Host with HE vm has sanlock free, but should be shared"
+        )
+
+    @tools.polarion("RHEVM3-5532")
+    def test_check_sanlock_status_on_host_without_he_vm(self):
+        """
+        Check if sanlock status equal to free on host without HE vm
+        """
+        logger.info("Check status equal to free on host with HE vm")
+        self.assertFalse(
+            self._is_sanlock_share(self.second_host_executor),
+            "Host without HE vm has shared sanlock, but should have it free"
+        )
+
+
+class TestStartTwoEngineVmsOnHost(GeneralSetupTeardownClass):
+    """
+    Start HE vm on the same or on different host, when it already run
+    """
+    __test__ = True
+    command = [conf.HOSTED_ENGINE_CMD, "--vm-start"]
+
+    @tools.polarion("RHEVM3-5524")
+    def test_start_two_he_vms_on_the_same_host(self):
+        """
+        Negative: Try to start two HE vms on the same host
+        and check return message
+        """
+        correct_message = "VM exists and its status is Up"
+        out = self._get_output_from_run_cmd(
+            self.engine_vm_host_executor, self.command, negative=True
+        )
+        logger.info("Command hosted-engine --vm-start output: %s", out)
+        self.assertEqual(out.strip('\n'), correct_message)
+
+    @tools.polarion("RHEVM3-5513")
+    def test_start_he_vm_on_second_host_when_it_already_run_on_first(self):
+        """
+        Negative: Try to start HE vm on the second host, when it already
+        runs on first host and check return message
+        """
+        self._get_output_from_run_cmd(self.second_host_executor, self.command)
+        self.assertTrue(
+            self._check_he_vm_via_vdsClient(
+                self.second_host,
+                status=conf.VM_UP
+            )
+        )
+
+
+class TestSynchronizeStateBetweenHosts(GeneralSetupTeardownClass):
+    """
+    Check if both hosts in HE environment return
+    the same output for "hosted-engine --vm-status"
+    """
+    __test__ = True
+
+    @tools.polarion("RHEVM3-5534")
+    def test_check_he_status_on_hosts(self):
+        """
+        Check if HE status equals on both hosts
+        """
+        statuses = []
+        cmd = [conf.HOSTED_ENGINE_CMD, "--vm-status"]
+        for executor in (
+            self.engine_vm_host_executor, self.second_host_executor
+        ):
+            out = re.sub(
+                r'\n.*timestamp.*|\n.*crc32.*', '',
+                self._get_output_from_run_cmd(executor, cmd)
+            )
+            statuses.append(out)
+        logger.info("Check if status on both hosts the same")
+        self.assertEqual(
+            statuses[0], statuses[1],
+            "Hosts have different HE status: %s and %s" %
+            (statuses[0], statuses[1])
+        )
+
+#############################################################################
+#                    Check score penalties on hosts                         #
+#############################################################################
+
+
+class TestHostGatewayProblem(GeneralSetupTeardownClass):
+    """
+    Change gateway address on host where run HE vm and check if vm migrate to
+    another host because difference in scores
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Save old gateway address and change to new one
+        """
+        super(TestHostGatewayProblem, cls).setup_class()
+        # Workaround for RHEV-H
+        # Can not sed hosted-engine configuration file under original directory
+        cmd = [
+            conf.COPY_CMD,
+            conf.HOSTED_ENGINE_CONF_FILE,
+            conf.HOSTED_ENGINE_CONF_FILE_BACKUP
+        ]
+        cls._get_output_from_run_cmd(cls.engine_vm_host_executor, cmd)
+        cmd = [
+            conf.COPY_CMD,
+            conf.HOSTED_ENGINE_CONF_FILE,
+            conf.HOSTED_ENGINE_CONF_FILE_TMP
+        ]
+        cls._get_output_from_run_cmd(cls.engine_vm_host_executor, cmd)
+        cmd = [
+            "sed", "-i", "s/^gateway=.*/gateway=1.1.1.1/",
+            conf.HOSTED_ENGINE_CONF_FILE_TMP
+        ]
+        cls._get_output_from_run_cmd(cls.engine_vm_host_executor, cmd)
+        cmd = [
+            conf.COPY_CMD,
+            conf.HOSTED_ENGINE_CONF_FILE_TMP,
+            conf.HOSTED_ENGINE_CONF_FILE
+        ]
+        cls._get_output_from_run_cmd(cls.engine_vm_host_executor, cmd)
+        cls.engine_vm_host.service(conf.AGENT_SERVICE).restart()
+
+    @tools.polarion("RHEVM3-5535")
+    def test_check_he_vm_and_host_score(self):
+        """
+        Check that score of host with HE vm dropped to 800 and
+        check that vm migrated to second host
+        """
+        logger.info(
+            "Wait util host %s score will dropped to %s",
+            self.engine_vm_host, conf.GATEWAY_SCORE
+        )
+        self.assertTrue(
+            self._wait_for_host_score(
+                self.second_host_executor,
+                self.engine_vm_host,
+                conf.GATEWAY_SCORE
+            )
+        )
+        logger.info(
+            "Wait until HE vm will migrate to host %s", self.second_host
+        )
+        self._is_vm_and_engine_run_on_second_host()
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Update gateway ip to correct one
+        """
+        cmd = [
+            conf.COPY_CMD,
+            conf.HOSTED_ENGINE_CONF_FILE_BACKUP,
+            conf.HOSTED_ENGINE_CONF_FILE
+        ]
+        cls._get_output_from_run_cmd(cls.engine_vm_host_executor, cmd)
+        cmd = [
+            "rm", "-f", conf.HOSTED_ENGINE_CONF_FILE_BACKUP,
+            conf.HOSTED_ENGINE_CONF_FILE_TMP
+        ]
+        cls._get_output_from_run_cmd(cls.engine_vm_host_executor, cmd)
+        cls.engine_vm_host.service(conf.AGENT_SERVICE).restart()
+        super(TestHostGatewayProblem, cls).teardown_class()
+
+
+class TestHostCpuLoadProblem(GeneralSetupTeardownClass):
+    """
+    Load host cpu, where HE vm is running and
+    check if vm migrated to the second host
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Load cpu on host, where HE vm runs
+        """
+        super(TestHostCpuLoadProblem, cls).setup_class()
+        logger.info("Load host %s cpu up to 100 percent", cls.engine_vm_host)
+        ll_sla.start_cpu_loading_on_resources([cls.engine_vm_host], 100)
+
+    @tools.polarion("RHEVM3-5525")
+    def test_check_host_score_and_he_vm_migration(self):
+        """
+        Check that host score dropped to 2400 and
+        that vm migrated to second host as a result of difference in scores
+        """
+        logger.info(
+            "Wait util host %s score will drop to %d",
+            self.engine_vm_host, conf.CPU_LOAD_SCORE
+        )
+        self.assertTrue(
+            self._wait_for_host_score(
+                self.second_host_executor, self.engine_vm_host,
+                conf.CPU_LOAD_SCORE, timeout=conf.CPU_SCORE_TIMEOUT
+            )
+        )
+        logger.info(
+            "Wait until HE vm will migrate to host %s", self.second_host
+        )
+        self._is_vm_and_engine_run_on_second_host(
+            timeout=conf.CPU_SCORE_TIMEOUT
+        )
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Release host cpu
+        """
+        logger.info("Release host %s cpu from loading", cls.engine_vm_host)
+        ll_sla.stop_cpu_loading_on_resources([cls.engine_vm_host])
+        if not cls._wait_for_host_score(
+            cls.second_host_executor, cls.engine_vm_host,
+            conf.MAX_SCORE, timeout=conf.CPU_SCORE_TIMEOUT
+        ):
+            logger.error(
+                "Host %s still not have maximal score", cls.engine_vm_host
+            )
+
+#############################################################################
+#                    Maintenance modes for HE environment                   #
+#############################################################################
+
+
+class TestGlobalMaintenance(GeneralSetupTeardownClass):
+    """
+    Enable global maintenance and kill HE vm
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Enable global maintenance
+        """
+        super(TestGlobalMaintenance, cls).setup_class()
+        logger.info("Enable global maintenance")
+        cls._set_maintenance_mode(
+            cls.engine_vm_host_executor,
+            cls.engine_vm_host,
+            conf.MAINTENANCE_GLOBAL
+        )
+
+    @tools.polarion("RHEVM3-5516")
+    def test_kill_vm_and_check_that_nothing_happen(self):
+        """
+        Kill HE vm and check that engine doesn't try to start vm on second host
+        """
+        logger.info("Kill HE vm on host %s", self.engine_vm_host)
+        cmd = [conf.HOSTED_ENGINE_CMD, "--vm-poweroff"]
+        self._get_output_from_run_cmd(self.engine_vm_host_executor, cmd)
+        logger.info("Check if HE vm not start on host %s", self.second_host)
+        self.assertFalse(
+            self._wait_for_host_vm_state(
+                executor=self.second_host_executor,
+                host_resource=self.second_host,
+                vm_state=conf.VM_STATE_UP
+            )
+        )
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Disable global maintenance and wait until HE VM runs on second host
+        """
+        logger.info("Disable global maintenance")
+        cls._set_maintenance_mode(
+            cls.engine_vm_host_executor,
+            cls.engine_vm_host,
+            conf.MAINTENANCE_NONE
+        )
+        logger.info(
+            "Wait until one of hosts will have engine vm %s", conf.VM_STATE_UP
+        )
+        if not cls._wait_until_engine_vm_restarted():
+            logger.error("HE vm still down")
+        super(TestGlobalMaintenance, cls).teardown_class()
+
+
+class TestLocalMaintenance(GeneralSetupTeardownClass):
+    """
+    Put host with HE vm to local maintenance,
+    check if HE vm migrated to second host and
+    host score dropped to zero.
+    """
+    __test__ = True
+    bz = {
+        "1280380": {"engine": None, "version": ["3.6"]}
+    }
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Enable local maintenance
+        """
+        super(TestLocalMaintenance, cls).setup_class()
+        logger.info("Enable local maintenance")
+        cls._set_maintenance_mode(
+            cls.engine_vm_host_executor,
+            cls.engine_vm_host,
+            conf.MAINTENANCE_LOCAL
+        )
+
+    @tools.polarion("RHEVM3-5517")
+    def test_check_host_score_and_migration_of_vm(self):
+        """
+        Check if host under local maintenance have score 0 and
+        that HE vm migrated to second host
+        """
+        logger.info("Check that host %s, have score 0", self.engine_vm_host)
+        self.assertTrue(
+            self._wait_for_host_score(
+                self.second_host_executor, self.engine_vm_host, conf.ZERO_SCORE
+            )
+        )
+        logger.info("Check if HE vm migrated on host %s", self.second_host)
+        self._is_vm_and_engine_run_on_second_host()
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Disable local maintenance
+        """
+        logger.info("Disable local maintenance")
+        cls._set_maintenance_mode(
+            cls.engine_vm_host_executor,
+            cls.engine_vm_host,
+            conf.MAINTENANCE_NONE
+        )
+        super(TestLocalMaintenance, cls).teardown_class()
+
+
+#############################################################################
+#                       Stop agent, broker or vdsm services                 #
+#############################################################################
+
+
+class StopServices(GeneralSetupTeardownClass):
+    """
+    Stop HE services and check vm behaviour
+    """
+    __test__ = False
+    stop_services = None
+    start_services = None
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Stop services on host with HE vm
+        """
+        super(StopServices, cls).setup_class()
+        for service in cls.stop_services:
+            service_executor = cls.engine_vm_host.service(service)
+            if service == conf.VDSM_SERVICE:
+                cls._mask_specific_service(service_executor)
+            cls._stop_specific_service(service_executor)
+
+    @classmethod
+    def _stop_specific_service(cls, service_executor):
+        """
+        Stop specific service on host
+
+        :param service_executor: service provider executor
+        :type service_executor: Service
+        """
+        logger.info(
+            "Stop service %s on host %s", service_executor, cls.engine_vm_host
+        )
+        service_executor.stop()
+
+    @classmethod
+    def _start_specific_service(cls, service_executor):
+        """
+        Start specific service on host
+
+        :param service_executor: service provider executor
+        :type service_executor: Service
+        """
+        logger.info(
+            "Start service %s on host %s",
+            service_executor, cls.engine_vm_host
+        )
+        service_executor.start()
+
+    @classmethod
+    def _mask_specific_service(cls, service_executor):
+        """
+        Stop specific service on host
+
+        :param service_executor: service provider executor
+        :type service_executor: Service
+        """
+        if service_executor.__class__.__name__ != conf.SYSTEMD:
+            raise errors.SkipTest(
+                "Can not mask service %s, because host %s do not have %s" %
+                (service_executor, cls.engine_vm_host, conf.SYSTEMD)
+            )
+        logger.info(
+            "Mask service %s on host %s", service_executor, cls.engine_vm_host
+        )
+        service_executor.mask()
+
+    @classmethod
+    def _unmask_specific_service(cls, service_executor):
+        """
+        Stop specific service on host
+
+        :param service_executor: service provider executor
+        :type service_executor: Service
+        """
+        if service_executor.__class__.__name__ != conf.SYSTEMD:
+            logger.error(
+                "Can not unmask service %s, because host %s do not have %s",
+                service_executor, cls.engine_vm_host, conf.SYSTEMD
+            )
+        else:
+            logger.info(
+                "Unmask service %s on host %s",
+                service_executor, cls.engine_vm_host
+            )
+            service_executor.unmask()
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Drop score to second host
+        """
+        for service in cls.start_services:
+            service_executor = cls.engine_vm_host.service(service)
+            if service == conf.VDSM_SERVICE:
+                cls._unmask_specific_service(service_executor)
+            if not service_executor.status():
+                cls._start_specific_service(service_executor)
+        super(StopServices, cls).teardown_class()
+
+
+class TestStopBrokerService(StopServices):
+    """
+    Stop ovirt-ha-broker service on host with HE vm,
+    and check that vm not migrate to second host
+    """
+    __test__ = True
+    stop_services = [conf.BROKER_SERVICE]
+    start_services = [conf.BROKER_SERVICE, conf.AGENT_SERVICE]
+
+    @tools.polarion("RHEVM3-5521")
+    def test_check_he_vm(self):
+        """
+        Check that HE vm not started on second host
+        """
+        self.assertTrue(
+            self._check_he_vm_via_vdsClient(
+                self.second_host,
+                status=conf.VM_UP
+            )
+        )
+
+
+class TestStopAgentService(StopServices):
+    """
+    Stop ovirt-ha-agent service on host with HE vm,
+    and check that vm not migrate to second host
+    """
+    __test__ = True
+    stop_services = [conf.AGENT_SERVICE]
+    start_services = [conf.AGENT_SERVICE]
+
+    @tools.polarion("RHEVM3-5523")
+    def test_check_he_vm(self):
+        """
+        Check that HE vm not started on second host
+        """
+        self.assertTrue(
+            self._check_he_vm_via_vdsClient(
+                self.second_host,
+                status=conf.VM_UP
+            )
+        )
+
+
+class TestStopAgentAndBrokerServices(StopServices):
+    """
+    Stop ovirt-ha-broker and ovirt-ha-agent service on host with HE vm,
+    and check that vm not migrate to second host
+    """
+    __test__ = True
+    stop_services = [conf.BROKER_SERVICE, conf.AGENT_SERVICE]
+    start_services = [conf.BROKER_SERVICE, conf.AGENT_SERVICE]
+
+    @tools.polarion("RHEVM3-5522")
+    def test_check_he_vm(self):
+        """
+        Check that HE vm not started on second host
+        """
+        self.assertTrue(
+            self._check_he_vm_via_vdsClient(
+                self.second_host,
+                status=conf.VM_UP
+            )
+        )
