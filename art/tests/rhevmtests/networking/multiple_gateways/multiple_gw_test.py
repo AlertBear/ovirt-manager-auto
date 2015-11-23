@@ -426,7 +426,7 @@ class TestGatewaysCase7(TestCase):
         """
         local_dict = {
             config.NETWORKS[0]: {
-                "nic": "bond0", "slaves": [2, 3], "required": False,
+                "nic": "bond0", "slaves": [-2, -1], "required": False,
                 "bootproto": "static", "address": [IP], "netmask": [NETMASK],
                 "gateway": [GATEWAY]
             }
@@ -458,7 +458,7 @@ class TestGatewaysCase7(TestCase):
         net_obj = []
         rc, out = ll_hosts.genSNNic(
             nic="bond0", network=config.NETWORKS[0],
-            slaves=[HOST_NICS[2], HOST_NICS[3], HOST_NICS[1]],
+            slaves=[HOST_NICS[-2], HOST_NICS[-3], HOST_NICS[-1]],
             boot_protocol="static", address=IP, netmask=NETMASK,
             gateway=GATEWAY
         )
@@ -513,7 +513,7 @@ class TestGatewaysCase8(TestCase):
         """
         local_dict = {
             config.NETWORKS[0]: {
-                "nic": "bond0", "slaves": [2, 3, 1], "required": False,
+                "nic": "bond0", "slaves": [-2, -3, -1], "required": False,
                 "bootproto": "static", "address": [IP], "netmask": [NETMASK],
                 "gateway": [GATEWAY]
             }
@@ -546,7 +546,7 @@ class TestGatewaysCase8(TestCase):
         net_obj = []
         rc, out = ll_hosts.genSNNic(
             nic="bond0", network=config.NETWORKS[0],
-            slaves=[HOST_NICS[2], HOST_NICS[3]], boot_protocol="static",
+            slaves=[HOST_NICS[-2], HOST_NICS[-1]], boot_protocol="static",
             address=IP, netmask=NETMASK, gateway=GATEWAY
         )
         if not rc:

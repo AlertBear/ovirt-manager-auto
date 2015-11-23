@@ -32,6 +32,7 @@ VM_NICS = ['eth0', 'eth1', 'eth2', 'eth3']
 FIREWALL_SRV = "iptables"
 BOND_MODES = PARAMETERS.as_list("bond_modes")
 LABEL_LIST = ["_".join(["label", str(elm)]) for elm in range(10)]
+DUMMY_0 = "dummy_0"
 
 # Network Custom Priority parameters
 BRIDGE_OPTS = OrderedDict({"priority": ["32768", "1"],

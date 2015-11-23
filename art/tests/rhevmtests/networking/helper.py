@@ -12,6 +12,7 @@ from rhevmtests import helpers
 from art.test_handler import settings
 from art.test_handler import exceptions
 from art.rhevm_api.utils import test_utils
+import art.core_api.apis_utils as apis_utils
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
@@ -135,7 +136,7 @@ def prepare_networks_on_setup(networks_dict, dc, cluster=None):
     if not hl_networks.createAndAttachNetworkSN(
         data_center=dc, cluster=cluster, network_dict=networks_dict
     ):
-        raise exceptions.NetworkException(
+        raise conf.NET_EXCEPTION(
             "Couldn't create %s on %s" % (networks_dict, log)
         )
 
@@ -284,7 +285,7 @@ def set_libvirt_sasl_status(engine_resource, host_resource, sasl=False):
     :type host_resource: resources.VDS
     :param sasl: Set sasl on/off (True/False)
     :type sasl: bool
-    :raise: exceptions.NetworkException
+    :raise: conf.NET_EXCEPTION
     """
     if not sasl:
         logger.info(
@@ -294,7 +295,7 @@ def set_libvirt_sasl_status(engine_resource, host_resource, sasl=False):
         if not helpers.set_passwordless_ssh(
             engine_resource, host_resource
         ):
-            raise exceptions.NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Failed to set passwordless SSH to %s" % host_resource.ip
             )
 
@@ -302,7 +303,7 @@ def set_libvirt_sasl_status(engine_resource, host_resource, sasl=False):
         if not set_libvirtd_sasl(
             host_obj=host_resource, sasl=sasl
         ):
-            raise exceptions.NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Failed to disable sasl on %s" % host_resource.ip
             )
     else:
@@ -369,6 +370,88 @@ def set_libvirtd_sasl(host_obj, sasl=True):
         return False
     return True
 
+
+def prepare_dummies(host_resource, num_dummy=2):
+    """
+    Prepare dummies interfaces on host
+
+    :param host_resource: Host resource object
+    :type host_resource: resources.VDS
+    :param num_dummy: Number of dummies to create
+    :type num_dummy: int
+    :raise: conf.NET_EXCEPTION
+    """
+    host_name = ll_hosts.get_host_name_from_engine(host_resource.ip)
+    logger.info(
+        "Creating %s dummy interfaces on %s", num_dummy, host_name
+    )
+    if not hl_networks.create_dummy_interfaces(
+        host=host_resource, num_dummy=num_dummy
+    ):
+        raise conf.NET_EXCEPTION(
+            "Failed to create dummy interfaces on %s" % host_name
+        )
+    logger.info("Refresh host capabilities")
+    host_obj = ll_hosts.HOST_API.find(host_name)
+    refresh_href = "{0};force".format(host_obj.get_href())
+    ll_hosts.HOST_API.get(href=refresh_href)
+
+    logger.info("Check if %s exist on host via engine", conf.DUMMY_0)
+    sample = apis_utils.TimeoutingSampler(
+        timeout=conf.SAMPLER_TIMEOUT, sleep=1,
+        func=check_dummy_on_host_interfaces, dummy_name=conf.DUMMY_0,
+        host_name=host_name
+    )
+    if not sample.waitForFuncStatus(result=True):
+        raise conf.NET_EXCEPTION(
+            "Dummy interface does not exist on engine"
+        )
+
+
+def check_dummy_on_host_interfaces(dummy_name, host_name):
+    """
+    Check if dummy interface if on host via engine
+
+    :param dummy_name: Dummy name
+    :type dummy_name: str
+    :param host_name: Host name
+    :type host_name: str
+    :return: True/False
+    :rtype: bool
+    """
+    host_nics = ll_hosts.getHostNicsList(host_name)
+    for nic in host_nics:
+        if dummy_name == nic.name:
+            return True
+    return False
+
+
+def delete_dummies(host_resource):
+    """
+    Delete all dummies interfaces from host
+
+    :param host_resource: Host resource object
+    :type host_resource: resources.VDS
+    """
+    host_name = ll_hosts.get_host_name_from_engine(host_resource.ip)
+    logger.info("Delete all dummy interfaces")
+    if not hl_networks.delete_dummy_interfaces(host=host_resource):
+        logger.error("Failed to delete dummy interfaces")
+
+    logger.info("Refresh host capabilities")
+    host_obj = ll_hosts.HOST_API.find(host_name)
+    refresh_href = "{0};force".format(host_obj.get_href())
+    ll_hosts.HOST_API.get(href=refresh_href)
+
+    logger.info(
+        "Check that %s does not exist on host via engine", conf.DUMMY_0
+    )
+    sample = apis_utils.TimeoutingSampler(
+        timeout=conf.SAMPLER_TIMEOUT, sleep=1,
+        func=check_dummy_on_host_interfaces, dummy_name=conf.DUMMY_0
+    )
+    if not sample.waitForFuncStatus(result=False):
+        logger.error("Dummy interface exists on engine")
 
 if __name__ == "__main__":
     pass
