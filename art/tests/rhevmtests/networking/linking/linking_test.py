@@ -13,6 +13,7 @@ from art.unittest_lib import attr
 from art.core_api import apis_utils
 from art.test_handler import exceptions
 from rhevmtests.networking import config
+import art.unittest_lib.common as common
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import rhevmtests.networking.helper as net_help
 from art.unittest_lib import NetworkTest as TestCase
@@ -185,6 +186,7 @@ class TestLinkedCase2(TestCase):
 
 
 @attr(tier=2)
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class TestLinkedCase3(TestCase):
     """
     Create permutation for the Plugged/Linked VNIC
@@ -723,6 +725,7 @@ class TestLinkedCase6(TestCase):
 
 
 @attr(tier=2)
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class TestLinkedCase7(TestCase):
     """
     Changing several network parameters at once on non-running VM
