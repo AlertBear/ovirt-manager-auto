@@ -36,6 +36,7 @@ PACKAGE_DATA = {
 
 DATA_FILES = [
     'art/conf/*.conf',
+    'art/conf/*.yaml',
     'art/conf/specs/*.spec',
 ]
 DATA_FILES = common.expand_paths(TEST_DATA_PATH, *DATA_FILES)
@@ -105,7 +106,7 @@ UN_SCRIPT = (
 )
 
 MANIFEST = [
-    'recursive-include art/conf *.conf *.spec',
+    'recursive-include art/conf *.conf *.spec *.yaml',
     'prune art/rhevm_api',
     'prune art/gluster_api',
     'prune art/jasper_api',
