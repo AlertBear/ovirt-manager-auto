@@ -226,10 +226,10 @@ class TestCase11576Shared(BaseCaseIsoDomains):
     local = False
     vm_name = "TestCase11576Shared"
     storagedomains = [config.ISCSI_DOMAIN]
-    bz = {'1254936': {'engine': None, 'version': ['3.6']}}
     # Bugzilla history
     # 1225356: CLI: update cdrom is not ejecting the ISO image when the file-id
     # option is not provided
+    # 1254936: Deactivate storage domain sometimes fails without any warning
 
     @polarion("RHEVM3-11576")
     def test_detaching_iso_vm_and_vm_runonce(self):
