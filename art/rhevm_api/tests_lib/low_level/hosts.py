@@ -2485,3 +2485,16 @@ def is_upgrade_available(host_name):
     :rtype: bool
     """
     return bool(HOST_API.find(host_name).get_update_available())
+
+
+def get_host_vm_run_on(vm_name):
+    """
+    Return host address where vm run
+
+    :param vm_name: name of vm
+    :type vm_name: str
+    :return: address of the host where vm run
+    :rtype: str
+    """
+    vm_obj = VM_API.find(vm_name)
+    return HOST_API.find(vm_obj.host.id, 'id').get_address()

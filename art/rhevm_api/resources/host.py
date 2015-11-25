@@ -292,3 +292,18 @@ class Host(Resource):
                 )
                 return ''
         return dst
+
+    def is_connective(self, tcp_timeout=20.0):
+        """
+        """
+        ret = False
+        try:
+            self.executor().run_cmd(['true'], tcp_timeout=tcp_timeout)
+            ret = True
+        except socket.timeout:
+            ret = False
+        except Exception:
+            self.logger.warning("Unexpected exception", exc_info=True)
+            ret = False
+
+        return ret
