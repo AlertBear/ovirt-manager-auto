@@ -82,8 +82,6 @@ TIMEOUT = 120
 TIMEOUT_NON_RESPONSIVE_HOST = 360
 FIND_QEMU = 'ps aux |grep qemu | grep -e "-name %s"'
 
-SAMPLER_TIMEOUT = 30
-
 virsh_cmd = ['nwfilter-dumpxml', 'vdsm-no-mac-spoofing']
 search_for = ["<filterref filter='no-mac-spoofing'/>",
               "<filterref filter='no-arp-mac-spoofing'/>"]
@@ -1005,15 +1003,12 @@ def sendSNRequest(positive, host, nics=[], auto_nics=[], **kwargs):
 
     host_nics = data_st.HostNics(host_nic=new_nics_obj)
 
-    # running with sampler BZ 1262051
-    res = lambda: bool(
+    return bool(
         HOST_NICS_API.syncAction(
             current_nics_obj, "setupnetworks", positive,
             host_nics=host_nics, **kwargs
         )
     )
-    sample = TimeoutingSampler(timeout=SAMPLER_TIMEOUT, sleep=1, func=res)
-    return sample.waitForFuncStatus(result=True)
 
 
 @is_action()

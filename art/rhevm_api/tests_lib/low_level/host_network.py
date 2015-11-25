@@ -9,11 +9,11 @@ http://www.ovirt.org/Features/NetworkingApi
 
 from art.core_api.apis_utils import data_st
 import art.core_api.apis_exceptions as exceptions
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 from art.rhevm_api.utils.test_utils import get_api
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.general as ll_general
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 
 NETWORK = "network"
 BOND = "bond"

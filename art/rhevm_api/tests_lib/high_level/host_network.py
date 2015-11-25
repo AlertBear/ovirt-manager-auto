@@ -7,7 +7,6 @@ http://www.ovirt.org/Features/HostNetworkingApi
 http://www.ovirt.org/Features/NetworkingApi
 """
 
-from art.core_api import apis_utils
 from art.core_api.apis_utils import data_st
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.general as ll_general
@@ -16,7 +15,6 @@ import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
 
 CONNECTIVITY_TIMEOUT = 60
-SAMPLER_TIMEOUT = 30
 NETWORKS = "networks"
 NETWORK = "network"
 BONDS = "bonds"
@@ -113,17 +111,12 @@ def add_network_to_host(host_name, network, nic_name=None, **kwargs):
     )
     attachments_href = ll_host_network.get_attachment_href(host_name, nic_name)
 
-    # running with sampler BZ 1262051
-    res = lambda: ll_host_network.NETWORK_ATTACHMENT_API.create(
+    return ll_host_network.NETWORK_ATTACHMENT_API.create(
         entity=network_attachment_obj,
         positive=True,
         collection=attachments_href,
         coll_elm_name=ll_host_network.NETWORK_ATTACHMENT
     )[1]
-    sample = apis_utils.TimeoutingSampler(
-        timeout=SAMPLER_TIMEOUT, sleep=1, func=res
-    )
-    return sample.waitForFuncStatus(result=True)
 
 
 def update_network_on_host(
@@ -270,7 +263,7 @@ def setup_networks(host_name, **kwargs):
         synchronized_network_attachments.set_network_attachment(nets_to_sync)
 
     # running with sampler BZ 1262051
-    res = lambda: bool(
+    return bool(
         ll_hosts.HOST_API.syncAction(
             entity=host, action=SETUPNETWORKS, positive=True,
             modified_network_attachments=network_attachments,
@@ -282,10 +275,6 @@ def setup_networks(host_name, **kwargs):
             check_connectivity=check_connectivity
         )
     )
-    sample = apis_utils.TimeoutingSampler(
-        timeout=SAMPLER_TIMEOUT, sleep=1, func=res
-    )
-    return sample.waitForFuncStatus(result=True)
 
 
 def clean_host_interfaces(host_name):
