@@ -122,6 +122,7 @@ class TestNetCustPrCase02(TestNCPCaseBase):
     Verify bridge_opts exists for VLAN VM network over bond
     """
     __test__ = True
+    bz = {"1271524": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -368,6 +369,7 @@ class TestNetCustPrCase05(TestNCPCaseBase):
     Verify bridge_opts were updated accordingly
     """
     __test__ = True
+    bz = {"1271518": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -470,6 +472,7 @@ class TestNetCustPrCase06(TestNCPCaseBase):
     values)
     """
     __test__ = True
+    bz = {"1271518": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -563,7 +566,7 @@ class TestNetCustPrCase06(TestNCPCaseBase):
 
 
 @attr(tier=2)
-class NetCustPrCase07(TestNCPCaseBase):
+class TestNetCustPrCase07(TestNCPCaseBase):
     """
     Configure ethtool with non-default value
     Verify ethtool_opts were updated
@@ -1308,6 +1311,7 @@ class TestNetCustPrCase14(TestNCPCaseBase):
     of the bond
     """
     __test__ = True
+    bz = {"1271518": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -1409,6 +1413,7 @@ class TestNetCustPrCase15(TestNCPCaseBase):
     Verify ethtool_opts were updated accordingly
     """
     __test__ = True
+    bz = {"1271518": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -1539,6 +1544,7 @@ class TestNetCustPrCase16(TestNCPCaseBase):
     Verify ethtool and bridge_opts were updated with the default value
     """
     __test__ = True
+    bz = {"1271518": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):

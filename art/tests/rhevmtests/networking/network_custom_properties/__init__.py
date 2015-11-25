@@ -1,13 +1,13 @@
 
 """
-Network custom properties feature test
+Network custom properties feature init
 """
 
 import logging
-import art.rhevm_api.utils.test_utils as test_utils
 import rhevmtests.networking as networking
 import rhevmtests.networking.config as config
 import art.test_handler.exceptions as exceptions
+import art.rhevm_api.utils.test_utils as test_utils
 
 logger = logging.getLogger("Network_Custom_Properties_Init")
 
