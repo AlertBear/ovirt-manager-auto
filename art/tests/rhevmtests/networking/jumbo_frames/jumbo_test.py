@@ -199,6 +199,7 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
     Positive: Test BOND mode change
     """
     __test__ = True
+    bz = {"1271524": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -326,6 +327,7 @@ class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
               the parameters in ifcfg- and sys files
     """
     __test__ = True
+    bz = {"1271524": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -394,6 +396,7 @@ class TestJumboFramesCase06(TestJumboFramesTestCaseBase):
               2. attaches non_vm network with MTU 5000 to bond0.
     """
     __test__ = True
+    bz = {"1271524": {"engine": None, "version": ["3.6"]}}
 
     @polarion("RHEVM3-3719")
     def test_neg_add_networks_with_different_mtu(self):
@@ -565,6 +568,7 @@ class TestJumboFramesCase08(TestJumboFramesTestCaseBase):
     # https://bugzilla.redhat.com/show_bug.cgi?id=1193544
 
     __test__ = True
+    bz = {"1271524": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
