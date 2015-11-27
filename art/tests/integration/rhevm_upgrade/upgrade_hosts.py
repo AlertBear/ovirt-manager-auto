@@ -6,7 +6,7 @@ import os.path
 
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api import resources
-from art.rhevm_api.tests_lib.low_level import hosts
+from art.rhevm_api.tests_lib.low_level import hosts, clusters, datacenters
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
@@ -90,3 +90,23 @@ class UpgradeHosts(TestCase):
             self._upgrade_rhel_host(
                 resources.VDS(host.get_name(), config.HOSTS_PW)
             )
+
+    # This case have to be last, after hosts are upgraded
+    def test_zz_upgrade_cluster_dc_version(self):
+        """ Change cluster/dc compatibility version to current """
+        self.assertTrue(
+            clusters.updateCluster(
+                True,
+                config.CLUSTER_NAME,
+                version=config.TO_VERSION,
+            ),
+            "Failed to upgrade compatibility version of cluster"
+        )
+        self.assertTrue(
+            datacenters.updateDataCenter(
+                True,
+                config.DC_NAME,
+                version=config.TO_VERSION
+            ),
+            "Failed to upgrade compatibility version of datacenter"
+        )

@@ -94,6 +94,7 @@ UPGRADE_REPOS = [
     ('new_el_opt_repo', PARAMETERS.get('new_el_opt_repo')),
     ('rhevh_72_repo', PARAMETERS.get('rhevh_72_repo')),
 ]
+TO_VERSION = '3.6'
 
 ANSWERS = {
     # KEYWORDS FOR OTOPI ANSWERFILE
