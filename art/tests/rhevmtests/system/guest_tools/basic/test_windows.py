@@ -113,7 +113,7 @@ class Windows(TestCase):
             nicType=config.NIC_TYPE_E1000,
             cpu_cores=4,
             memory=4*config.GB,
-            balloon=True,  # Need for test driver balloon
+            ballooning=True,  # Need for test driver balloon
         )
         assert vms.addNic(  # Need for test_driver_network
             positive=True,
