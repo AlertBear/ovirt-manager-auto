@@ -5184,3 +5184,22 @@ def is_disk_attached_to_vm(vm_name, disk_alias):
     :rtype: bool
     """
     return disk_alias in [disk.get_alias() for disk in getVmDisks(vm_name)]
+
+
+def get_vm_applications(vm_name):
+    """
+    Return list of applications names of vm
+
+    :param vm_name: name of vm to be checked
+    :type vm_name: str
+    :return: list of vms applications
+    :rtype: list of str
+    """
+    return [
+        app.get_name() for app in VM_API.getElemFromLink(
+            VM_API.find(vm_name),
+            link_name='applications',
+            attr='application',
+            get_href=False,
+        )
+    ]

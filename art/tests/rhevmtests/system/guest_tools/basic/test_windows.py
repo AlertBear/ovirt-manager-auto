@@ -22,6 +22,7 @@ LOGGER = logging.getLogger(__name__)
 VM_API = utils.get_api('vm', 'vms')
 WIN_IMAGES = []
 GLANCE_IMAGE = None
+GUEST_FAMILY = 'Windows'
 
 
 def import_image(diskName):
@@ -75,19 +76,25 @@ class Windows(TestCase):
     glance_image = None
     products = []
     services = []
+    bz_map = {}  # Store bz's of specific windows
+    polarion_map = {}  # Store polarion id of specific windows cases
 
     def __init__(self, *args, **kwargs):
         """ create a copy of method with relevant polarion_id """
         super(Windows, self).__init__(*args, **kwargs)
-        pid = self.polarion_map.get(self._testMethodName)
-        if pid:
+        pid = self.polarion_map.get(self._testMethodName, None)
+        bz = self.bz_map.get(self._testMethodName, None)
+        if pid or bz:
             m = getattr(self, self._testMethodName)
 
             @wraps(m)
             def wrapper(*args, **kwargs):
                 return m(*args, **kwargs)
             wrapper.__dict__ = copy.copy(m.__dict__)
-            wrapper.__dict__['polarion_id'] = pid
+            if pid:
+                wrapper.__dict__['polarion_id'] = pid
+            if bz:
+                wrapper.__dict__['bz'] = bz
             setattr(self, self._testMethodName, wrapper)
 
     @classmethod
@@ -146,6 +153,10 @@ class Windows(TestCase):
         :rtype: str
         """
         return '64' if self.machine.platf == '64-bit' else ''
+
+    @property
+    def architecture(self):
+        return 'x86_64' if self.machine.platf == '64-bit' else 'x86'
 
     @classmethod
     def teardown_class(cls):
@@ -278,11 +289,10 @@ class Windows(TestCase):
         """ Check service spice agent """
         self._checkService('vdservice')
 
-    @istest
-    @checkIfSupported
-    def checkGuestInfo(self):
-        """ Check agent data are reported """
-        guest_info = VM_API.find(self.diskName).get_guest_info()
+    def test_guest_info(self):
+        """ Check guest info (ip/fqdn) are reported """
+        vm = VM_API.find(self.diskName)
+        guest_info = vm.get_guest_info()
         self.assertTrue(
             self.machine.ip in [
                 ip.get_address() for ip in guest_info.get_ips().get_ip() if ip
@@ -291,6 +301,60 @@ class Windows(TestCase):
         )
         self.assertTrue(
             guest_info.get_fqdn() and len(guest_info.get_fqdn()) > 0
+        )
+
+    @bz({'1285834': {'engine': None, 'version': ['3.5', '3.6']}})
+    def test_guest_applications(self):
+        """ Check guest applications are reported """
+        vm = VM_API.find(self.diskName)
+        apps = vms.get_vm_applications(vm.get_name())
+        LOGGER.info("Windows '%s' apps are: %s", self.diskName, apps)
+        self.assertTrue(len(apps) > 0, "Applications are empty")
+
+    def test_guest_os(self):
+        """ Check guest OS info is reported """
+        # TODO: distribution, kernel
+        vm = VM_API.find(self.diskName)
+        guest_os = vm.get_guest_operating_system()
+        LOGGER.info("Guest '%s' os info:", self.diskName)
+        LOGGER.info("Architecture: '%s'", guest_os.get_architecture())
+        LOGGER.info("Codename: '%s'", guest_os.get_codename())
+        LOGGER.info("Family: '%s'", guest_os.get_family())
+        self.assertTrue(
+            self.architecture == guest_os.get_architecture(),
+            "Windows has wrong arch '%s', should be '%s'" % (
+                guest_os.get_architecture(),
+                self.architecture
+            )
+        )
+        self.assertTrue(
+            GUEST_FAMILY == guest_os.get_family(),
+            "Guest os family is windows: '%s'" % guest_os.get_family()
+        )
+        self.assertTrue(
+            self.codename == guest_os.get_codename(),
+            "Guest codename '%s' should be '%s'" % (
+                guest_os.get_codename(),
+                self.codename
+            )
+        )
+
+    def test_guest_timezone(self):
+        """ Check guest timezone reported """
+        vm = VM_API.find(self.diskName)
+        guest_timezone = vm.get_guest_time_zone()
+        LOGGER.info(
+            "Guest timezone name is '%s', offset: '%s'",
+            guest_timezone.get_name(),
+            guest_timezone.get_utc_offset()
+        )
+        # TODO: obtain this info for windows machine via pywin and check
+        # for correct versions
+        self.assertTrue(
+            len(guest_timezone.get_name()) > 0, 'Timezone name is empty'
+        )
+        self.assertTrue(
+            len(guest_timezone.get_utc_offset()) > 0, "UTC offset is empty"
         )
 
     def _checkDeviceManager(self, deviceName):
@@ -388,6 +452,7 @@ class Windows7_64bit(WindowsDesktop):
     __test__ = True
     # TODO: name disk in glance as these clasess and get rid of diskName var
     diskName = config.WIN7_DISK_64b
+    codename = 'Win 7'
     polarion_map = {
         'checkProductNetwork': 'RHEVM3-13354',
         'checkProductSpice': 'RHEVM3-13355',
@@ -414,7 +479,10 @@ class Windows7_64bit(WindowsDesktop):
         'checkServiceUSBRedirector': 'RHEVM3-13376',
         'checkServiceSpiceAgent': 'RHEVM3-13377',
         'checkServiceQemuGAVssProvider': 'RHEVM3-13378',
-
+        'test_guest_applications': 'RHEVM3-14437',
+        'test_guest_info': 'RHEVM3-14438',
+        'test_guest_timezone': 'RHEVM3-14439',
+        'test_guest_os': 'RHEVM3-14440',
     }
     SUPPORTED = ['test_driver_qxl_gpu']
 
@@ -426,6 +494,7 @@ class Windows7_32b(WindowsDesktop):
     """
     __test__ = True
     diskName = config.WIN7_DISK_32b
+    codename = 'Win 7'
     polarion_map = {
         'checkProductNetwork': 'RHEVM3-13278',
         'checkProductSpice': 'RHEVM3-13279',
@@ -452,6 +521,10 @@ class Windows7_32b(WindowsDesktop):
         'checkServiceUSBRedirector': 'RHEVM3-13300',
         'checkServiceSpiceAgent': 'RHEVM3-13301',
         'checkServiceQemuGAVssProvider': 'RHEVM3-13302',
+        'test_guest_applications': 'RHEVM3-14425',
+        'test_guest_info': 'RHEVM3-14426',
+        'test_guest_timezone': 'RHEVM3-14427',
+        'test_guest_os': 'RHEVM3-14428',
     }
     SUPPORTED = ['test_driver_qxl_gpu']
 
@@ -463,6 +536,7 @@ class Windows8_64bit(WindowsDesktop):
     """
     __test__ = False
     diskName = config.WIN8_DISK_64b
+    codename = 'Win 8'
     UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
         'checkProductSpice',
         'checkProductUSB',
@@ -477,6 +551,7 @@ class Windows8_32b(WindowsDesktop):
     """
     __test__ = False
     diskName = config.WIN8_DISK_32b
+    codename = 'Win 8'
     UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
         'checkProductSpice',
         'checkProductUSB',
@@ -491,6 +566,7 @@ class Windows8_1_64bit(WindowsDesktop):
     """
     __test__ = True
     diskName = config.WIN8_1_DISK_64b
+    codename = 'Win 8.1'
     UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
         'checkProductSpice',
         'checkProductUSB',
@@ -522,6 +598,15 @@ class Windows8_1_64bit(WindowsDesktop):
         'checkServiceUSBRedirector': 'RHEVM3-13250',
         'checkServiceSpiceAgent': 'RHEVM3-13251',
         'checkServiceQemuGAVssProvider': 'RHEVM3-13252',
+        'test_guest_applications': 'RHEVM3-14417',
+        'test_guest_info': 'RHEVM3-14418',
+        'test_guest_timezone': 'RHEVM3-14419',
+        'test_guest_os': 'RHEVM3-14420',
+    }
+    bz_map = {
+        'test_guest_os': {
+            '1279980': {'engine': None, 'version': ['3.5', '3.6']}
+        },
     }
 
 
@@ -532,6 +617,7 @@ class Windows8_1_32b(WindowsDesktop):
     """
     __test__ = True
     diskName = config.WIN8_1_DISK_32b
+    codename = 'Win 8.1'
     UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
         'checkProductSpice',
         'checkProductUSB',
@@ -563,6 +649,15 @@ class Windows8_1_32b(WindowsDesktop):
         'checkServiceUSBRedirector': 'RHEVM3-13200',
         'checkServiceSpiceAgent': 'RHEVM3-13201',
         'checkServiceQemuGAVssProvider': 'RHEVM3-13202',
+        'test_guest_applications': 'RHEVM3-14409',
+        'test_guest_info': 'RHEVM3-14410',
+        'test_guest_timezone': 'RHEVM3-14411',
+        'test_guest_os': 'RHEVM3-14412',
+    }
+    bz_map = {
+        'test_guest_os': {
+            '1279980': {'engine': None, 'version': ['3.5', '3.6']}
+        },
     }
 
 
@@ -583,6 +678,7 @@ class Windows2008_64b(WindowsServer):
     """
     __test__ = False
     diskName = config.WIN2008_DISK_64b
+    codename = 'Win 2008'
     polarion_map = {
         'checkProductNetwork': 'RHEVM3-13253',
         'checkProductSpice': 'RHEVM3-13254',
@@ -609,6 +705,10 @@ class Windows2008_64b(WindowsServer):
         'checkServiceUSBRedirector': 'RHEVM3-13275',
         'checkServiceSpiceAgent': 'RHEVM3-13276',
         'checkServiceQemuGAVssProvider': 'RHEVM3-13277',
+        'test_guest_applications': 'RHEVM3-14421',
+        'test_guest_info': 'RHEVM3-14422',
+        'test_guest_timezone': 'RHEVM3-14423',
+        'test_guest_os': 'RHEVM3-14424',
     }
     UNSUPPORTED = WindowsServer.UNSUPPORTED + ['test_driver_qxl_gpu']
 
@@ -620,6 +720,7 @@ class Windows2008R2_64b(WindowsServer):
     """
     __test__ = True
     diskName = config.WIN2008R2_DISK_64b
+    codename = 'Win 2008 R2'
     polarion_map = {
         'checkProductNetwork': 'RHEVM3-13303',
         'checkProductSpice': 'RHEVM3-13304',
@@ -646,6 +747,10 @@ class Windows2008R2_64b(WindowsServer):
         'checkServiceUSBRedirector': 'RHEVM3-13325',
         'checkServiceSpiceAgent': 'RHEVM3-13326',
         'checkServiceQemuGAVssProvider': 'RHEVM3-13327',
+        'test_guest_applications': 'RHEVM3-14429',
+        'test_guest_info': 'RHEVM3-14430',
+        'test_guest_timezone': 'RHEVM3-14431',
+        'test_guest_os': 'RHEVM3-14432',
     }
     UNSUPPORTED = WindowsServer.UNSUPPORTED
 
@@ -657,6 +762,7 @@ class Windows2012_64b(WindowsServer):
     """
     __test__ = True
     diskName = config.WIN2012_DISK_64b
+    codename = 'Win 2012'
     polarion_map = {
         'checkProductNetwork': 'RHEVM3-13328',
         'checkProductSpice': 'RHEVM3-13329',
@@ -683,6 +789,10 @@ class Windows2012_64b(WindowsServer):
         'checkServiceUSBRedirector': 'RHEVM3-13351',
         'checkServiceSpiceAgent': 'RHEVM3-13352',
         'checkServiceQemuGAVssProvider': 'RHEVM3-13353',
+        'test_guest_applications': 'RHEVM3-14433',
+        'test_guest_info': 'RHEVM3-14434',
+        'test_guest_timezone': 'RHEVM3-14435',
+        'test_guest_os': 'RHEVM3-14436',
     }
     UNSUPPORTED = WindowsServer.UNSUPPORTED + ['test_driver_qxl_gpu']
 
@@ -694,6 +804,7 @@ class Windows2012R2_64b(WindowsServer):
     """
     __test__ = True
     diskName = config.WIN2012R2_DISK_64b
+    codename = 'Win 2012 R2'
     polarion_map = {
         'checkProductNetwork': 'RHEVM3-13153',
         'checkProductSpice': 'RHEVM3-13154',
@@ -720,6 +831,15 @@ class Windows2012R2_64b(WindowsServer):
         'checkServiceUSBRedirector': 'RHEVM3-13175',
         'checkServiceSpiceAgent': 'RHEVM3-13176',
         'checkServiceQemuGAVssProvider': 'RHEVM3-13177',
+        'test_guest_applications': 'RHEVM3-14405',
+        'test_guest_info': 'RHEVM3-14406',
+        'test_guest_timezone': 'RHEVM3-14407',
+        'test_guest_os': 'RHEVM3-14408',
+    }
+    bz_map = {
+        'test_guest_os': {
+            '1279980': {'engine': None, 'version': ['3.5', '3.6']}
+        },
     }
     UNSUPPORTED = WindowsServer.UNSUPPORTED + ['test_driver_qxl_gpu']
 
@@ -731,6 +851,7 @@ class Windows10_64b(WindowsDesktop):
     """
     __test__ = True
     diskName = config.WIN10_DISK_64b
+    codename = 'Win 10'
     polarion_map = {
         'checkProductNetwork': 'RHEVM3-13203',
         'checkProductSpice': 'RHEVM3-13204',
@@ -757,6 +878,15 @@ class Windows10_64b(WindowsDesktop):
         'checkServiceUSBRedirector': 'RHEVM3-13225',
         'checkServiceSpiceAgent': 'RHEVM3-13226',
         'checkServiceQemuGAVssProvider': 'RHEVM3-13227',
+        'test_guest_applications': 'RHEVM3-14413',
+        'test_guest_info': 'RHEVM3-14414',
+        'test_guest_timezone': 'RHEVM3-14415',
+        'test_guest_os': 'RHEVM3-14416',
+    }
+    bz_map = {
+        'test_guest_os': {
+            '1279980': {'engine': None, 'version': ['3.5', '3.6']}
+        },
     }
     UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
         'test_driver_qxl_gpu',
