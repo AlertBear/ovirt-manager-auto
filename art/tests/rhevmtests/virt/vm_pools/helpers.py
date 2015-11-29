@@ -3,20 +3,18 @@ __Author__ = slitmano
 This is a helpers module with helper functions dedicated for vm_pool_test.py
 """
 import logging
+import config
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.vmpools as ll_vmpools
+from art.test_handler import exceptions as errors
 import utilities.timeout as timeout_api
-from rhevmtests.virt import config
+
 
 logger = logging.getLogger(__name__)
 
-PRESTARTED_VMS_TIMEOUT = 300
-VM_POOL_ACTION_TIMEOUT = 300
-VM_POOL_ACTION_SLEEP = 5
-
 
 def wait_for_prestarted_vms(
-    vmpool, timeout=PRESTARTED_VMS_TIMEOUT, interval=5
+    vmpool, timeout=config.PRESTARTED_VMS_TIMEOUT, interval=5
 ):
     """
     __Author__ = slitmano
@@ -97,7 +95,8 @@ def validate_pool_size(vmpool, size):
 
 
 def wait_for_empty_vm_pool(
-    vmpool, timeout=VM_POOL_ACTION_TIMEOUT, interval=VM_POOL_ACTION_SLEEP
+    vmpool, timeout=config.VM_POOL_ACTION_TIMEOUT,
+    interval=config.VM_POOL_ACTION_SLEEP
 ):
     """
     __Author__ = slitmano
@@ -161,3 +160,79 @@ def remove_whole_vm_pool(vmpool, size, remove_vms=True, stop_vms=False):
             return False
     ret = ll_vmpools.removeVmPool(positive=True, vmpool=vmpool)
     return ret
+
+
+def create_vm_pool(positive, pool_name, pool_params):
+    """
+    Create a vm pool with given parameters
+    :param positive: True if vm pool creation is expected to succeed,
+    False otherwise
+    :type positive: bool
+    :param pool_name: name of vm pool
+    :type pool_name: str
+    :param pool_params: a dictionary with vm pool parameters and their values
+    :type pool_params: dict
+    :raises: VmPoolException
+    """
+    message = (
+        config.POSITIVE_CREATION_MESSAGE if positive else
+        config.NEGATIVE_CREATION_MESSAGE
+    )
+    logger.info(
+        "Creating vm pool: %s with following parameters: %s",
+        pool_name, pool_params
+    )
+    if not ll_vmpools.addVmPool(positive, **pool_params):
+        raise errors.VmPoolException(message, pool_name)
+
+
+def wait_for_vm_pool_removed(vmpool, timeout=60, interval=5):
+    """
+    This function serves as WA for two existing bugs in remove vmPool flow.
+    It is necessary for test cases' teardown.
+    First bz: 1246886 - Remove vm-pool fails if vms are running.
+    Second bz: 1245630 -  [RFE] VM.delete() should wait for snapshot deletion
+    :param vmpool: name of the vm pool to be removed
+    :type vmpool: str
+    :param timeout: Total waiting time for removeVmPool to succeed
+    :type timeout: int
+    :param interval: intervals between each sample of removeVmPool call
+    :type interval: int
+    """
+    logger.info("Stopping all vms in pool: %s", vmpool)
+    vm_pool_size = ll_vmpools.get_vm_pool_size(vmpool)
+    # TODO: if bz 1246886 is fixed change code to handle one removeVmPool call
+    if not ll_vmpools.stopVmPool(True, vmpool):
+        logger.error(
+            "Failed to stop vms in pool: %s", vmpool
+        )
+    sampler = timeout_api.TimeoutingSampler(
+        timeout, interval, ll_vmpools.removeVmPool, True, vmpool
+    )
+    timeout_message = (
+        "Timeout waiting for vms in Pool: '{0}' to restore snapshots "
+        "before deleting the pool'".format(vmpool)
+    )
+    sampler.timeout_exc_args = timeout_message
+    try:
+        for sampleOk in sampler:
+            if sampleOk and not ll_vmpools.does_vm_pool_exist(vmpool):
+                break
+    except timeout_api.TimeoutExpiredError:
+        logger.error(timeout_message)
+    pool_vms_names = generate_vms_name_list_from_pool(vmpool, vm_pool_size)
+    # TODO: remove this iteration after bz 1245630 is resolved
+    for vm in pool_vms_names:
+        if ll_vms.does_vm_exist(vm):
+            logger.error(
+                "Remove vm pool did not remove vm: %s after detaching it due "
+                "to bz: 1245630. applying WA", vm
+            )
+            if not ll_vms.wait_for_snapshot_gone(
+                vm, config.STATELESS_SNAPSHOT_DESCRIPTION
+            ):
+                logger.error(
+                    "snapshot: %s is not removed from vm: %s",
+                    config.STATELESS_SNAPSHOT_DESCRIPTION, vm)
+            if not ll_vms.removeVm(True, vm):
+                logger.error("Failed to remove vm: %s" % vm)

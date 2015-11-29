@@ -301,7 +301,7 @@ def get_vms_in_pool_by_name(vm_pool):
     :param vm_pool: name of vm pool
     :type vm_pool: str
     :return: list of VM names
-    :rtype: str
+    :rtype: list
     """
     vm_pool_object = UTIL.find(vm_pool)
     vms_object_list = get_vms_in_pool(vm_pool_object)

@@ -7,69 +7,16 @@ polarion test plan:
 project/RHEVM3/wiki/Compute/3_5_VIRT_VMPools
 """
 import logging
+import config
 from art.rhevm_api.tests_lib.low_level import (
     vms as vm_api, vmpools as vm_pool_api
 )
 from art.test_handler import exceptions as errors
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import VirtTest as TestCase, attr
-from rhevmtests.virt import config
 from rhevmtests.virt.vm_pools import helpers
-from utilities import timeout as timeout_api
 
 logger = logging.getLogger(__name__)
-
-POSITIVE_CREATION_MESSAGE = "Cannot create vm pool: %s"
-NEGATIVE_CREATION_MESSAGE = (
-    "Vm pool: %s was created with wrong values - check pool's parameters"
-)
-NEW_IMPLEMENTATION_VERSION = '4.0'
-
-
-def _create_vm_pool(positive, pool_name, pool_params):
-    message = (
-        POSITIVE_CREATION_MESSAGE if positive else NEGATIVE_CREATION_MESSAGE
-    )
-    logger.info(
-        "Creating vm pool: %s with following parameters: %s",
-        pool_name, pool_params
-    )
-    if not vm_pool_api.addVmPool(positive, **pool_params):
-        raise errors.VmPoolException(message, pool_name)
-
-
-def _wait_for_vm_pool_removed(vmpool, timeout=60, interval=5):
-    logger.info("Stoping all vms in pool: %s", vmpool)
-    vm_pool_size = vm_pool_api.get_vm_pool_size(vmpool)
-    if not vm_pool_api.stopVmPool(True, vmpool):
-        logger.error(
-            "Failed to stop vms in pool: %s", vmpool
-        )
-    sampler = timeout_api.TimeoutingSampler(
-        timeout, interval, vm_pool_api.removeVmPool, True, vmpool
-    )
-    timeout_message = (
-        "Timeout waiting for vms in Pool: '{0}' to restore snapshots "
-        "before deleting the pool'".format(vmpool)
-    )
-    sampler.timeout_exc_args = timeout_message
-    try:
-        for sampleOk in sampler:
-            if sampleOk:
-                break
-    except timeout_api.TimeoutExpiredError:
-        logger.error(timeout_message)
-    pool_vms_names = helpers.generate_vms_name_list_from_pool(
-        vmpool, vm_pool_size
-    )
-    # TODO: remove this iteration after bz 1245630 is resolved
-    for vm in pool_vms_names:
-        if vm_api.does_vm_exist(vm):
-            logger.error(
-                "Remove vm pool did not remove vm: %s after detaching it due "
-                "to bz: 1245630. applying WA", vm
-            )
-            vm_api.removeVm(True, vm)
 
 
 @attr(tier=1)
@@ -116,8 +63,8 @@ class BaseVmPool(TestCase):
                 "Removing vm_pool :%s",
                 cls.pool_name
             )
-            if cls.version < NEW_IMPLEMENTATION_VERSION:
-                _wait_for_vm_pool_removed(cls.pool_name)
+            if cls.version < config.NEW_IMPLEMENTATION_VERSION:
+                helpers.wait_for_vm_pool_removed(cls.pool_name)
             else:
                 if not vm_pool_api.removeVmPool(True, cls.pool_name):
                     logger.error(
@@ -131,7 +78,7 @@ class VmPool(BaseVmPool):
     @classmethod
     def setup_class(cls):
         super(VmPool, cls).setup_class()
-        _create_vm_pool(True, cls.pool_name, cls.pool_params)
+        helpers.create_vm_pool(True, cls.pool_name, cls.pool_params)
 
 
 class TestCreatePoolSanity(BaseVmPool):
@@ -142,7 +89,7 @@ class TestCreatePoolSanity(BaseVmPool):
 
     @polarion("RHEVM3-9879")
     def test_create_vm_pool_sanity(self):
-        _create_vm_pool(True, self.pool_name, self.pool_params)
+        helpers.create_vm_pool(True, self.pool_name, self.pool_params)
 
 
 class TestFullCreateRemovePoolCycle(BaseVmPool):
@@ -158,7 +105,7 @@ class TestFullCreateRemovePoolCycle(BaseVmPool):
 
     @polarion("RHEVM3-13976")
     def test_full_create_remove_pool_cycle(self):
-        _create_vm_pool(True, self.pool_name, self.pool_params)
+        helpers.create_vm_pool(True, self.pool_name, self.pool_params)
         if not vm_pool_api.start_vm_pool(True, self.pool_name):
             raise errors.VmPoolException(
                 "Failed to start vms in pool: %s", self.pool_name
@@ -229,7 +176,7 @@ class TestCreatePoolSetNumberOfVmsPerUser(BaseVmPool):
 
     @polarion("RHEVM3-9865")
     def test_create_pool_set_number_of_vms_per_user(self):
-        _create_vm_pool(True, self.pool_name, self.pool_params)
+        helpers.create_vm_pool(True, self.pool_name, self.pool_params)
         if not (
             self.max_vms_per_user == vm_pool_api.get_vm_pool_max_user_vms(
                 self.pool_name
@@ -252,7 +199,7 @@ class TestCreatePoolSetInvalidNumberOfVmsPerUser(BaseVmPool):
 
     @polarion("RHEVM3-9864")
     def test_create_pool_set_invalid_number_of_vms_per_user(self):
-        _create_vm_pool(False, self.pool_name, self.pool_params)
+        helpers.create_vm_pool(False, self.pool_name, self.pool_params)
 
 
 class TestUpdatePoolNumberOfVmsPerUser(VmPool):
