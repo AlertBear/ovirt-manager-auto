@@ -12,16 +12,14 @@ import helper
 import logging
 from art.unittest_lib import common
 from art.test_handler import exceptions
-from rhevmtests.networking import config
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-import art.unittest_lib.network as network_lib
-import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.high_level.vms as hl_vm
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+from rhevmtests.networking import config
+import rhevmtests.networking.helper as network_helper
 
-logger = logging.getLogger("Virt_Network_Migration_Cases")
+logger = logging.getLogger("Network_Migration_Cases")
 
 
 class TestMigrationCaseBase(common.NetworkTest):
@@ -39,52 +37,6 @@ class TestMigrationCaseBase(common.NetworkTest):
             mgmt_network=config.MGMT_BRIDGE, all_net=True
         ):
             logger.error("Cannot remove networks from setup")
-
-
-@common.attr(tier=1)
-class TestMigrationVirtSanityCase(common.VirtTest):
-    """
-    Virt sanity cases:
-    1. Check migration of one VM
-    2. Check maintenance with one VM
-    """
-
-    __test__ = True
-
-    @polarion("RHEVM3-3847")
-    def test_migration(self):
-        """
-        Check migration of one VM
-        """
-        self.assertTrue(
-            ll_vms.migrateVm(
-                positive=True,
-                vm=config.VM_NAME[0]
-            ),
-            "Failed to migrate VM: %s " % config.VM_NAME[0]
-        )
-
-    @polarion("RHEVM3-12332")
-    def test_migration_maintenance(self):
-        """
-        Check migration for one VM
-        by putting host into maintenance
-        """
-
-        logger.info(
-            "Check that migration for one VM "
-            "by putting the host into maintenance succeed"
-        )
-        self.assertTrue(
-            hl_vm.migrate_by_maintenance(
-                vms_list=[config.VM_NAME[0]],
-                src_host=network_lib.get_host(config.VM_NAME[0]),
-                vm_os_type="rhel",
-                vm_user=config.VMS_LINUX_USER,
-                vm_password=config.VMS_LINUX_PW
-            ),
-            "Maintenance test with one VM failed"
-        )
 
 
 @common.attr(tier=2)

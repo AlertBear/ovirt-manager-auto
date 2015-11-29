@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Helper functions for network migration job
+Helper functions for virt and network migration job
 """
 
 import logging
@@ -31,12 +31,12 @@ VDSM_LOG = "/var/log/vdsm/vdsm.log"
 SERVICE_STATUS = "id"
 LOAD_MEMORY_FILE = "tests/rhevmtests/virt/migration/memoryLoad.py"
 DESTINATION_PATH = "/tmp/memoryLoad.py"
-DELAY_FOR_SCRIPT = 70
-MEMORY_USAGE = 70
-RUN_SCRIPT_COMMAND = 'python /tmp/memoryLoad.py -s %s &> /tmp/OUT1 & echo $!'
+DELAY_FOR_SCRIPT = 120
+MEMORY_USAGE = 60
+RUN_SCRIPT_COMMAND = (
+    'python /tmp/memoryLoad.py -s %s -r %s &> /tmp/OUT1 & echo $!'
+)
 NETMASK = "255.255.0.0"
-NUM_OF_VMS = 5
-
 
 test_handler.find_test_file.__test__ = False
 
@@ -399,20 +399,30 @@ def copy_file_to_vm(vm_ip, source_file_path, destination_path):
     return True
 
 
-def load_vm_memory(vm_name, memory_size):
+def load_vm_memory(
+    vm_name,
+    memory_size,
+    reuse_memory='True',
+    memory_usage=MEMORY_USAGE
+):
     """
      1. Copy load memory python script to VM
      2. Run it, wait for 60 sec to memory be capture by script.
 
-    :param vm_name: vm that run the script
+    :param vm_name: VM that run the script
     :type vm_name: str
-    :param memory_size:  memory size for script
+    :param memory_size:  Memory size for script
     :type memory_size: str
+    :param reuse_memory: re-use allocated memory
+    :type reuse_memory: str
+    :param memory_usage: Memory usage in percent
+    :type: memory_usage: int
     """
-    command = RUN_SCRIPT_COMMAND % memory_size
+    command = RUN_SCRIPT_COMMAND % (memory_size, reuse_memory)
     logger.info(
-        "Run load on VM memory, till usage is:%s percent, script command: %s ",
-        MEMORY_USAGE,
+        "Run VM memory load script,"
+        " till usage is:%s percent, script command: %s ",
+        memory_usage,
         command
     )
     vm_ip = ll_vms.waitForIP(vm_name)[1]['ip']
@@ -425,13 +435,13 @@ def load_vm_memory(vm_name, memory_size):
     )
     if not copy_file_to_vm(vm_ip, LOAD_MEMORY_FILE, DESTINATION_PATH):
         raise exceptions.VMException(
-            'Failed to copy script to VM:%s' %
-            vm_name
+            'Failed to copy script %s to VM:%s dst path %s' %
+            vm_name, DESTINATION_PATH
         )
     logger.info('Running script')
     run_command(vm_ip, command)
     logger.info('Wait till memory is catch by script')
-    return monitor_vm_load_status(vm_ip, MEMORY_USAGE)
+    return monitor_vm_load_status(vm_ip, memory_usage)
 
 
 def run_command(vm_ip, cmd):
@@ -484,7 +494,7 @@ def check_vm_memory_load(vm_ip, memory_usage):
     total = run_command(vm_ip, total_mem_cmd)
     use = run_command(vm_ip, use_mem_cmd)
     if total and use:
-        current_usage = int((use/float(total))*100)
+        current_usage = (100 * use) / total
         logger.info("current usage is: %d", current_usage)
         if int(current_usage) >= memory_usage:
             return True
@@ -515,3 +525,75 @@ def monitor_vm_load_status(vm_ip, memory_usage):
         memory_usage=memory_usage
     )
     return sample.waitForFuncStatus(result=True)
+
+
+def migration_vms_to_diff_hosts(vms):
+    """
+    Migrate vms that are on different hosts
+    using Jobs, wait for all migration till timeout is finished.
+    and check that all vm migrated to different host.
+
+    :param vms: Vms list
+    :type vms: list
+    :return: True if all finish on time, and migrated to different host
+    else return False
+    :rtype: bool
+    """
+    vm_to_host_before = map_vms_to_hosts(vms)
+    my_jobs = []
+    for vm in vms:
+        migration_kwargs = {"positive": True, "vm": vm}
+        job = jobs.Job(ll_vms.migrateVm, (), migration_kwargs)
+        my_jobs.append(job)
+    logger.info("Start migration for all vms %s", vms)
+    job_set = jobs.JobsSet()
+    job_set.addJobs(my_jobs)
+    job_set.start()
+    job_set.join(config.TIMEOUT * len(vms))
+    logger.info("Finish migration for all vms %s", vms)
+    vm_to_host_after = map_vms_to_hosts(vms)
+    logger.info("VM status before: %s", vm_to_host_before)
+    logger.info("VM status after: %s", vm_to_host_after)
+    if vm_to_host_before != vm_to_host_after:
+        logger.info("Migration pass, all vms migrate")
+        return True
+    return False
+
+
+def map_vms_to_hosts(vms):
+    """"
+    Maps between Vms and their hosts
+    :param vms: VMs list
+    :type vms: list
+    :return: maps between Vms and their hosts
+    :rtype: dict
+    """
+
+    vm_to_host_list = {}
+    for vm in vms:
+        host = ll_vms.get_vm_host(vm)
+        vm_to_host_list[vm] = host
+    return vm_to_host_list
+
+
+def compare_resources_lists(before_list, after_list):
+    """
+    Compare between list pending resources on hosts
+    :param before_list: list of hosts with their resources
+    :type before_list: list
+    :param after_list: list of hosts with their resources
+    :type after_list: list
+    :return: True if list are equals else False
+    :rtype: bool
+    """
+
+    logging.info("Compare pending resources on hosts")
+    for host_status_before in before_list:
+        for host_status_after in after_list:
+            if host_status_before[0] is host_status_after[0]:
+                if cmp(host_status_before, host_status_after) != 0:
+                    logging.error("Host: %s resources did not clear",
+                                  host_status_before[0])
+                    return False
+    logging.info("Resources cleaned from hosts")
+    return True

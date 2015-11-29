@@ -49,3 +49,4 @@ VM_DISPLAY_TYPE = ENUMS[
     'display_type_vnc'
 ] if PPC_ARCH else ENUMS['display_type_spice']
 VM_TYPE = VM_TYPE_SERVER if PPC_ARCH else VM_TYPE_DESKTOP
+RHEL_OS_TYPE_FOR_MIGRATION = "rhel"

@@ -458,6 +458,8 @@ class TestMigrateVMWithLoadOnMemory(TestCase):
     @classmethod
     def tearDown(cls):
         try:
+            logging.info("Update memory usage to 60%")
+            helper.MEMORY_USAGE = 60
             logger.info('Stop vm: %s', config.VM_NAME[1])
             if not ll_vms.stopVm(
                 True,
@@ -478,9 +480,11 @@ class TestMigrateVMWithLoadOnMemory(TestCase):
         """
          Negative test: Migrate VM with load on memory
         """
+        logging.info("Update memory usage to 75%")
+        helper.MEMORY_USAGE = 75
         if not helper.load_vm_memory(
             config.VM_NAME[1],
-            memory_size='0.5'
+            memory_size='0.75'
         ):
             raise VMException("Failed to load VM memory")
         logger.info(

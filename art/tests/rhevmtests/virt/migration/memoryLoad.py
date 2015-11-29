@@ -26,27 +26,33 @@ def parse_parameters(argv, size):
     :type: args: list
     :param size: target size (user input)
     :type size: str
-    :return: target size
-    :rtype: str
+    :return: target size, reuse
+    :rtype: (str,bool)
     """
+    reuse = False
+    to_kilobytes = 1000 * 1000
+    help_output = "usage: test.py --size <size in GB> --reuse <True/False>"
     try:
-        opts, args = getopt.getopt(argv, "hs:", ["--size="])
+        opts, args = getopt.getopt(argv, 's:r:h', ['size=', 'reuse=', 'help'])
     except getopt.GetoptError:
-        print 'test.py -size <size in GB>'
+        print (help_output)
         sys.exit(2)
     for opt, arg in opts:
-        if opt == '-h':
-            print 'test.py -size <size in GB>'
-            sys.exit()
-        elif opt == "-s":
+        if opt in ('-h', '--help'):
+            print (help_output)
+        elif opt in ('-s', '--size'):
             size = arg
-        elif opt == "--size":
-            size = arg
-    target_mem_size = 1000 * 1000 * float(size)
-    return target_mem_size
+        elif opt in ('-r', '--reuse'):
+            reuse = arg
+        else:
+            print (help_output)
+    print ("size: %s , reuse: %s" % (size, reuse))
+    target_mem_size = to_kilobytes * float(size)
+    return target_mem_size, reuse
 
 
 def main(argv):
+    loop_size = 1000
     logging.basicConfig(
         filename="memoryLoad.log",
         filemode='w',
@@ -54,7 +60,7 @@ def main(argv):
     )
     logger = logging.getLogger("memoryLoad")
     size = ""
-    target_mem_size = parse_parameters(argv, size)
+    target_mem_size, reuse = parse_parameters(argv, size)
     logger.info(
         'Allocating memory -- target memory size is %dKB'
         % target_mem_size
@@ -63,16 +69,16 @@ def main(argv):
     list_values = []
     try:
         while current_mem_size < target_mem_size:
-            lnew = [i + j for i in range(1000) for j in range(1000)]
+            lnew = [i + j for i in range(loop_size) for j in range(loop_size)]
             list_values.extend(lnew)
             r = resource.getrusage(resource.RUSAGE_SELF)
             current_mem_size = r.ru_maxrss
 
         logger.info('... allocated %dKB' % current_mem_size)
-
         logger.info('Touching memory -- infinite loop -- press CTRL-C to exit')
-
         try:
+            if reuse:
+                logging.info("reuse %s", "on" if reuse else "off")
             n = len(list_values)
             while True:
                 i = 0
@@ -81,10 +87,11 @@ def main(argv):
                     list_values[i] += 1
                     list_values[j] -= 1
                     i += 400
+                    if not reuse:
+                        break
         except KeyboardInterrupt, e:
             logger.info('got keyboard interrupt -- exiting')
 
-        print('Done')
         logger.info('memoryLoad: Done')
     except Exception, e:
         logger.error('Failed to run ...')

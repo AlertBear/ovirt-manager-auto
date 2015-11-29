@@ -16,10 +16,9 @@ from art.rhevm_api.tests_lib.low_level import vms
 from rhevmtests.networking import config as netconf
 import art.rhevm_api.tests_lib.low_level.clusters as cluster_api
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.high_level.datacenters as hl_datacenters
-
 
 logger = logging.getLogger("Virt_Network_Migration_Init")
+
 
 # ################################################
 
@@ -38,36 +37,30 @@ def setup_package():
       1. Create additional data center and cluster
       3. Update clusters to memory over commitment of 0%
     """
-    if config.GOLDEN_ENV:
-        networking.network_cleanup()
-        logger.info(
-            "Running on golden env, starting VM %s on host %s",
-            config.VM_NAME[0], config.HOSTS[0]
-        )
-        if not net_helper.run_vm_once_specific_host(
-            vm=config.VM_NAME[0], host=config.HOSTS[0]
-        ):
-            raise exceptions.NetworkException(
-                "Cannot start VM %s on host %s" %
-                (config.VM_NAME[0], config.HOSTS[0])
-            )
-        if not vms.waitForVMState(vm=config.VM_NAME[0]):
-            raise exceptions.NetworkException(
-                "VM %s did not come up" % config.VM_NAME[0]
-            )
-        logger.info(
-            "Set all but 2 hosts in the Cluster %s to the maintenance "
-            "state", config.CLUSTER_NAME[0]
-        )
-        helper.set_host_status()
 
-    if not config.GOLDEN_ENV:
-        logger.info("Non GE, building environment")
-        if not helper.prepare_environment():
-            raise exceptions.TestException("Failed to create environment")
+    networking.network_cleanup()
+    logger.info(
+        "Running on golden env, starting VM %s on host %s",
+        config.VM_NAME[0], config.HOSTS[0]
+    )
+    if not net_helper.run_vm_once_specific_host(
+        vm=config.VM_NAME[0], host=config.HOSTS[0]
+    ):
+        raise exceptions.NetworkException(
+            "Cannot start VM %s on host %s" %
+            (config.VM_NAME[0], config.HOSTS[0])
+        )
+    if not vms.waitForVMState(vm=config.VM_NAME[0]):
+        raise exceptions.NetworkException(
+            "VM %s did not come up" % config.VM_NAME[0]
+        )
+    logger.info(
+        "Set all but 2 hosts in the Cluster %s to the maintenance "
+        "state", config.CLUSTER_NAME[0]
+    )
+    helper.set_host_status()
 
-    logger.info("For all environments:")
-    logger.info("add additional data center and cluster")
+    logger.info("Add additional data center and cluster")
     if not hl_networks.create_basic_setup(
         config.ADDITIONAL_DC_NAME,
         storage_type=netconf.STORAGE_TYPE,
@@ -131,34 +124,14 @@ def teardown_package():
             "Failed to remove additional data center %s and cluster %s",
             config.ADDITIONAL_DC_NAME, config.ADDITIONAL_CL_NAME
         )
-    if not config.GOLDEN_ENV:
-        try:
-            logger.info("Non GE environment:")
-            logging.info(
-                "Remove all elements in data center: dataCenter storage "
-                "domains, hosts & cluster. in data center %s ",
-                config.DC_NAME[0]
-            )
-            if not hl_datacenters.clean_datacenter(
-                True, config.DC_NAME[0], vdc=config.VDC_HOST,
-                vdc_password=config.VDC_ROOT_PASSWORD
-            ):
-                logger.error("Clean up environment failed")
+    try:
+        logger.info(
+            "Stopping VM %s", config.VM_NAME[0]
+        )
+        if not vms.stopVm(True, vm=config.VM_NAME[0]):
+            logger.error("Failed to stop VM: %s", config.VM_NAME[0])
 
-        except Exception, e:
-            logger.error(
-                "Non GE environment:tearDown failed, %s", e.message
-            )
-    if config.GOLDEN_ENV:
-        try:
-            logger.info("GE environment:")
-            logger.info(
-                "Running on golden env, stopping VM %s", config.VM_NAME[0]
-            )
-            if not vms.stopVm(True, vm=config.VM_NAME[0]):
-                logger.error("Failed to stop VM: %s", config.VM_NAME[0])
-
-            logger.info("Set inactive hosts to the active state")
-            helper.set_host_status(activate=True)
-        except Exception, e:
-            logger.error("tearDown failed, %s", e.message)
+        logger.info("Set inactive hosts to the active state")
+        helper.set_host_status(activate=True)
+    except Exception, e:
+        logger.error("tearDown failed, %s", e.message)

@@ -5202,4 +5202,4 @@ def get_vm_applications(vm_name):
             attr='application',
             get_href=False,
         )
-    ]
+        ]
