@@ -21,7 +21,7 @@ from utilities.machine import Machine
 import random
 from art.core_api.apis_exceptions import EntityNotFound, APITimeout
 from art.core_api.apis_utils import data_st, TimeoutingSampler
-from art.rhevm_api.data_struct.data_structures import Fault
+from art.rhevm_api.data_struct.data_structures import Disk, Fault
 from art.rhevm_api.tests_lib.low_level.datacenters import get_sd_datacenter
 from art.rhevm_api.utils.test_utils import get_api, waitUntilGone, split
 from art.rhevm_api.utils.xpath_utils import XPathMatch
@@ -350,49 +350,59 @@ def updateDisk(positive, **kwargs):
 
 
 @is_action()
-def deleteDisk(positive, alias, async=True, disk_id=None):
+def deleteDisk(positive, alias=None, async=True, disk_id=None):
     """
-    Description: Removes disk from system
-    Parameters:
-        * alias - name of disk
-        * async - True if operation should be asynchronous - DOESN'T WORK
-        * wait - wait for the operation to end
-        * disk_id - In case disk's id is provided for the deletion
-    Author: cmestreg
-    Return: Status of the operation's result dependent on positive value
-    """
-    if disk_id:
-        disk_obj = DISKS_API.find(disk_id, attribute='id')
-    else:
-        disk_obj = DISKS_API.find(alias)
+    Removes disk from system
 
+    :param positive: Specifies whether the delete disk call should succeed
+    :type positive: bool
+    :param alias: Name of disk
+    :type alias: str
+    :param async: True if operation should be asynchronous - NOT SUPPORTED
+    :type async: bool
+    :param disk_id: The Disk ID to be used for deletion
+    :type disk_id: str
+    :return: Status of the operation's result dependent on positive value
+    :rtype: bool
+    """
+    disk_obj = DISKS_API.find(disk_id, attribute='id') if disk_id else (
+        DISKS_API.find(alias)
+    )
     # TODO: add async parameter to delete method once it's supported
     status = DISKS_API.delete(disk_obj, positive)
     return status
 
 
 @is_action('attachDiskToVm')
-def attachDisk(positive, alias, vm_name, active=True, read_only=False):
+def attachDisk(
+        positive, alias, vm_name, active=True, read_only=False, disk_id=None
+):
     """
     Attach disk to VM
 
-    __author__ = jlibosva
-    :param alias: Alias of the disk to be attached to specified VM
+    :param positive: Specifies whether the attach disk call should succeed
+    (positive=True) or fail (positive=False)
+    :type positive: bool
+    :param alias: The name of the disk to attach
     :type alias: str
-    :param vm_name: VM that the specified disk will be attached to
-    :type vm_name: str
-    :param active: True if disk should be activated after attaching, False
-                   otherwise
+    :param vmName: VM name to attach the disk to
+    :type vmName: str
+    :param active: Specifies whether disk should be activated after being
+    attached to VM
     :type active: bool
-    :param read_only: True if disk should be read only, False otherwise
+    :param read_only: Specifies whether disk should be marked as read-only
     :type read_only: bool
-    :return: Status of the operation dependent on positive value
+    :return: Status of the operation based on the input positive value
+    on positive value
     :rtype: bool
     """
-    disk_obj = DISKS_API.find(alias)
-    updated_disk = _prepareDiskObject(
-        update=disk_obj, active=active, read_only=read_only
+    disk_object = DISKS_API.find(disk_id, attribute='id') if disk_id else (
+        DISKS_API.find(alias)
     )
+    updated_disk = _prepareDiskObject(
+        update=disk_object, active=active, read_only=read_only
+    )
+
     vm_disks = getObjDisks(vm_name)
     return DISKS_API.create(updated_disk, positive, collection=vm_disks)[1]
 
@@ -439,19 +449,16 @@ def wait_for_disks_status(disks, key='name', status=ENUMS['disk_state_ok'],
         disks_list = disks
 
     logger.info("Waiting for status %s on disks %s", status, disks_list)
-    [DISKS_API.find(disk, attribute=key) for disk in disks_list]
-
     sampler = TimeoutingSampler(timeout, sleep, DISKS_API.get, absLink=False)
-
     is_incorrect_state = lambda d, s: (d.get_status().get_state() != s)
     try:
         for sample in sampler:
             disks_in_wrong_status = []
-            for x in sample:
+            for disk_obj in sample:
                 if key == 'name':
-                    disk_to_poll = x.get_name()
+                    disk_to_poll = disk_obj.get_name()
                 elif key == 'id':
-                    disk_to_poll = x.get_id()
+                    disk_to_poll = disk_obj.get_id()
                 else:
                     logger.error("Can't poll with key: {0}".format(key))
                     break
@@ -464,8 +471,8 @@ def wait_for_disks_status(disks, key='name', status=ENUMS['disk_state_ok'],
                         disk_to_poll, status
                     )
                 )
-                if is_incorrect_state(x, status):
-                    disks_in_wrong_status.append(x)
+                if is_incorrect_state(disk_obj, status):
+                    disks_in_wrong_status.append(disk_obj)
 
             if not disks_in_wrong_status:
                 return True
@@ -546,20 +553,29 @@ def move_disk(**kwargs):
 
 
 @is_action()
-def do_disk_action(action, disk_name=None, target_domain=None, disk_id=None,
-                   wait=True, timeout=DEFAULT_DISK_TIMEOUT, sleep=10,
-                   positive=True):
+def do_disk_action(
+        action, disk_name=None, target_domain=None, disk_id=None, wait=True,
+        timeout=DEFAULT_DISK_TIMEOUT, sleep=10, positive=True,
+        new_disk_alias=None
+):
     """
-    Description: Exectues and action (copy/move) on the disk
-    Author: cmestreg
-    Parameters:
-        * disk_name - name of disk
-        * disk_id - id of the disk
-        * target_domain - name of the domain
-        * wait - wait for disk to be status 'ok' before returning
-        * timeout - how long to wait for disk status (if wait=True)
-        * sleep - how long to wait between checks when waiting for disk status
-    Returns: True on success/False on failure.
+    Executes an action (copy/move) on the disk
+    __author__ = 'cmestreg'
+
+    :param disk_name: name of disk
+    :type disk_name: str
+    :param disk_id: id of the disk
+    :type disk_id: str
+    :param target_domain: name of the domain
+    :type target_domain: str
+    :param wait: wait for disk to be status 'ok' before returning
+    :type wait: bool
+    :param timeout: how long to wait for disk status (if wait=True)
+    :type timeout: int
+    :param sleep: how long to wait between checks when waiting for disk status
+    :type sleep: int
+    :return: True on success/False on failure
+    :rtype: bool
     """
     sd = STORAGE_DOMAIN_API.find(target_domain)
     if disk_id:
@@ -571,9 +587,17 @@ def do_disk_action(action, disk_name=None, target_domain=None, disk_id=None,
 
     DISKS_API.logger.info('Disk found. name: %s id: %s', disk.get_alias(),
                           disk.get_id())
+    updated_disk_alias = None
+    if new_disk_alias and action == 'copy':
+        logger.info(
+            "Disk with current alias %s will be copied into a disk with "
+            "alias %s",
+            disk.get_alias(), new_disk_alias
+        )
+        updated_disk_alias = Disk(alias=new_disk_alias)
 
     if not DISKS_API.syncAction(disk, action, storage_domain=sd,
-                                positive=positive):
+                                positive=positive, disk=updated_disk_alias):
         return not positive
 
     if wait and positive:
@@ -584,7 +608,7 @@ def do_disk_action(action, disk_name=None, target_domain=None, disk_id=None,
                 if disk.get_id() == target_disk.get_id() and (
                         disk.status.state == ENUMS['disk_state_ok']):
                     return True
-    return not positive
+    return positive
 
 
 def checksum_disk(hostname, user, password, disk_object, dc_obj):

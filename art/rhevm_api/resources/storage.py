@@ -13,6 +13,8 @@ logger = logging.getLogger(__name__)
 LV_CHANGE_CMD = 'lvchange -a {active} {vg_name}/{lv_name}'
 PVSCAN_CACHE_CMD = 'pvscan --cache'
 PVSCAN_CMD = 'pvscan'
+FIND_CMD = 'find / -name %s'
+CREATE_FILE_CMD = 'touch %s/%s'
 
 
 def get_host_resource(host_name):
@@ -47,6 +49,27 @@ def get_vm_executor(vm_name):
     return rhevm_helpers.get_host_executor_with_root_user(
         ip=vm_ip, root_password=config.VMS_LINUX_PW
     )
+
+
+def _run_cmd_on_remote_machine(machine_name, command):
+    """
+    Executes Linux command on remote machine
+
+    :param machine_name: The machine to use for executing the command
+    :type machine_name: str
+    :param command: The command to execute
+    :type command: str
+    :return: True if the command executed successfully, False otherwise
+    """
+    vm_executor = get_vm_executor(machine_name)
+    rc, _, error = vm_executor.run_cmd(cmd=shlex.split(command))
+    if rc:
+        logger.error(
+            "Failed to run command %s on %s, error: %s",
+            command, machine_name, error
+        )
+        return False
+    return True
 
 
 def lv_change(host_name, vg_name, lv_name, activate=True):
@@ -144,3 +167,37 @@ def get_storage_devices(vm_name, filter='vd[a-z]'):
         )
         return False
     return output.split()
+
+
+def does_file_exist(vm_name, file_name):
+    """
+    Check if file_name refers to an existing path
+
+    __author__ = "ratamir"
+    :param vm_name: The VM to use in checking whether file exists
+    :type vm_name: str
+    :param file_name: File name to look for
+    :type file_name: str
+    :returns: True if file exists, False otherwise
+    :rtype: bool
+    """
+    command = FIND_CMD % file_name
+    return _run_cmd_on_remote_machine(vm_name, command)
+
+
+def create_file_on_vm(vm_name, file_name, path):
+    """
+    Creates a file on vm
+
+    __author__ = "ratamir"
+    :param vm_name: The VM to use in creating the file_name requested
+    :type vm_name: str
+    :param file_name: The file to create
+    :type file_name: str
+    :param path: The path that the file will create under
+    :type path: str
+    :returns: True if succeeded in creating file requested, False otherwise
+    :rtype: bool
+    """
+    command = CREATE_FILE_CMD % (path, file_name)
+    return _run_cmd_on_remote_machine(vm_name, command)

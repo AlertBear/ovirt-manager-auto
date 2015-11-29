@@ -121,6 +121,7 @@ iso_address = ISO_DOMAIN_ADDRESS
 iso_path = ISO_DOMAIN_PATH
 
 LIVE_SNAPSHOT_DESCRIPTION = ENUMS['live_snapshot_description']
+OVF_DISK_ALIAS = ENUMS['ovf_disk_alias']
 
 # disk interfaces
 VIRTIO = INTERFACE_VIRTIO
