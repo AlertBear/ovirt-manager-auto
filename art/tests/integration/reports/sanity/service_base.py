@@ -1,6 +1,6 @@
 from art.unittest_lib import CoreSystemTest as TestCase
-from rhevm_api.resources.filesystem import FileSystem
-from reports.config import LOGGER
+from art.rhevm_api.resources.filesystem import FileSystem
+from config import LOGGER
 
 
 class ServiceTest(TestCase):
@@ -13,7 +13,6 @@ class ServiceTest(TestCase):
         :param machine: (Host object) host where service should run
         :param service: (string) service that should run
         :param logs: (list of strings) list containing paths to logs
-        :param logger: logger
         """
         self.assert_service_is_running(machine, service)
         self.assert_files_exist(machine, logs)
@@ -23,7 +22,6 @@ class ServiceTest(TestCase):
         Check if service is running on machine
         :param machine: (Host object) host where service should run
         :param service: (string) service that should run
-        :param logger: logger
         """
         LOGGER.info("Test if %s service is running", service)
         self.assertTrue(
@@ -36,7 +34,6 @@ class ServiceTest(TestCase):
         Check if all files in list exist
         :param machine: (Host object) host where service should run
         :param files: (list of strings) list containing paths to logs
-        :param logger: logger
         """
         filesystem = FileSystem(machine)
         for filename in files:
@@ -51,10 +48,22 @@ class ServiceTest(TestCase):
         Check if service is enabled
         :param machine: (Host object) host where service should be enabled
         :param service: (string) service name
-        :param logger: logger
         """
         LOGGER.info("Test if %s service is enabled", service)
         self.assertTrue(
             machine.service(service).is_enabled(),
             "%s is not enabled" % service
         )
+
+    def assert_service_restart(self, machine, service):
+        """
+        Restart service check if service is running
+        :param machine: (Host object) host where service should restarted
+        :param service: (string) service name
+        """
+        LOGGER.info("Restart service %s and check if it is running", service)
+        self.assertTrue(
+            machine.service(service).restart(),
+            "Unable to restart service %s" % service
+        )
+        self.assert_service_is_running(machine, service)
