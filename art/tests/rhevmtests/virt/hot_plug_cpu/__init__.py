@@ -1,0 +1,3 @@
+"""
+Hot Plug test
+"""
