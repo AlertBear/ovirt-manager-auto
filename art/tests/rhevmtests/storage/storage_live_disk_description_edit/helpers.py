@@ -1,7 +1,7 @@
 """
 3.5 Feature: Helper module for Live disk description edit
 """
-from art.rhevm_api.tests_lib.low_level.disks import getVmDisk
+from art.rhevm_api.tests_lib.low_level import disks as ll_disks
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ def verify_vm_disk_description(vm_name, disk_alias, expected_disk_description):
     :rtype: bool
     """
     logger.info("Retrieving the disk description from VM '%s'", vm_name)
-    disk_object = getVmDisk(vm_name, disk_alias)
+    disk_object = ll_disks.getVmDisk(vm_name, disk_alias)
     logger.info(
         "Expected description: %s, actual description: %s",
         expected_disk_description, disk_object.get_description()

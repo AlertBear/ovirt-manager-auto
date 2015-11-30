@@ -5,29 +5,23 @@ import logging
 import os
 import shlex
 
-import art.rhevm_api.tests_lib.high_level.vms as high_vms
-from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.core_api.apis_utils import TimeoutingSampler
-from art.rhevm_api.tests_lib.low_level.datacenters import get_data_center
-from art.rhevm_api.tests_lib.low_level.hosts import (
-    getSPMHost, getHostIP, get_cluster_hosts,
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+from art.rhevm_api.tests_lib.low_level import (
+    datacenters as ll_dc,
+    disks as ll_disks,
+    hosts as ll_hosts,
+    jobs as ll_jobs,
+    storagedomains as ll_sd,
+    vms as ll_vms,
 )
 from art.rhevm_api.utils.resource_utils import runMachineCommand
-from utilities.machine import Machine, LINUX
-from utilities import errors
-from art.rhevm_api.tests_lib.low_level.disks import (
-    wait_for_disks_status, attachDisk, addDisk, get_all_disk_permutation,
-    updateDisk, get_disk_obj,
-)
-from art.rhevm_api.tests_lib.low_level.vms import (
-    get_vm_disk_logical_name, stop_vms_safely, get_vm_snapshots,
-    removeSnapshot, activateVmDisk, waitForIP, cloneVmFromTemplate,
-    createVm, startVm, getVmDisks,
-)
-from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.test_handler import exceptions
 from rhevmtests import helpers
 from rhevmtests.storage import config
+from utilities import errors
+from utilities.machine import Machine, LINUX
+
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +36,7 @@ DEFAULT_DD_SIZE = 20 * config.MB
 ERROR_MSG = "Error: Boot device is protected"
 TARGET_FILE = 'written_test_storage'
 FILESYSTEM = 'ext4'
-WAIT_DD_STARTS = 'ps -ef | grep "{0}" | grep -v grep'.format(
-    DD_EXEC,
-)
+WAIT_DD_STARTS = 'ps -ef | grep "{0}" | grep -v grep'.format(DD_EXEC,)
 INTERFACES = (config.VIRTIO, config.VIRTIO_SCSI)
 FILE_SD_VOLUME_PATH_IN_FS = '/rhev/data-center/%s/%s/images/%s'
 GET_FILE_SD_NUM_DISK_VOLUMES = 'ls %s | wc -l'
@@ -112,15 +104,16 @@ def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
     for disk in disks_to_prepare:
         logger.info("Attaching disk %s as %s disk to vm %s",
                     disk, is_ro, vm_name)
-        status = attachDisk(True, disk, vm_name, active=False,
-                            read_only=read_only)
+        status = ll_disks.attachDisk(
+            True, disk, vm_name, active=False, read_only=read_only
+        )
         if not status:
             raise exceptions.DiskException("Failed to attach disk %s to"
                                            " vm %s"
                                            % (disk, vm_name))
 
         logger.info("Plugging disk %s", disk)
-        status = activateVmDisk(True, vm_name, disk)
+        status = ll_vms.activateVmDisk(True, vm_name, disk)
         if not status:
             raise exceptions.DiskException("Failed to plug disk %s "
                                            "to vm %s"
@@ -138,14 +131,15 @@ def remove_all_vm_snapshots(vm_name, description):
     Raise: AssertionError if something went wrong
     """
     logger.info("Removing all '%s'", description)
-    stop_vms_safely([vm_name])
-    snapshots = get_vm_snapshots(vm_name)
+    ll_vms.stop_vms_safely([vm_name])
+    snapshots = ll_vms.get_vm_snapshots(vm_name)
     results = [
-        removeSnapshot(True, vm_name, description, REMOVE_SNAPSHOT_TIMEOUT)
-        for snapshot in snapshots
-        if snapshot.get_description() == description
+        ll_vms.removeSnapshot(
+            True, vm_name, description, REMOVE_SNAPSHOT_TIMEOUT
+        ) for snapshot in snapshots if
+        snapshot.get_description() == description
     ]
-    wait_for_jobs(
+    ll_jobs.wait_for_jobs(
         [ENUMS['job_remove_snapshot']], timeout=REMOVE_SNAPSHOT_TIMEOUT
     )
     assert False not in results
@@ -153,32 +147,38 @@ def remove_all_vm_snapshots(vm_name, description):
 
 def create_disks_from_requested_permutations(
         domain_to_use, interfaces=INTERFACES, size=config.DISK_SIZE,
-        shared=False, wait=True
+        shared=False, wait=True, test_name="Test"
 ):
     """
     Creates disks using a list of permutations
 
     __author__ = "glazarov"
-    :param domain_to_use: the storage domain on which to create the disks
+    :param domain_to_use: The storage domain on which to create the disks
     :type domain_to_use: str
-    :param interfaces: list of interfaces to use in generating the disks.
+    :param interfaces: List of interfaces to use in generating the ll_disks.
     Default is (VIRTIO, VIRTIO_SCSI)
     :type interfaces: list
-    :param size: the disk size (in bytes) to create, uses config.DISK_SIZE as a
+    :param size: The disk size (in bytes) to create, uses config.DISK_SIZE as a
     default
     :type size: str
-    :returns: list of the disk aliases
+    :param shared: Specifies whether the disks to be created are shareable
+    :type shared: bool
+    :param wait: Specifies whether to wait for each disk to be created
+    :type wait: bool
+    :param test_name: The test name to use as part of the disk naming
+    :type test_name: str
+    :returns: List of the disk aliases created
     :rtype: list
     """
     logger.info("Generating a list of disk permutations")
     # Get the storage domain object and its type, use this to ascertain
     # whether the storage is of a block or file type
-    storage_domain_object = storagedomains.getStorageDomainObj(domain_to_use)
+    storage_domain_object = ll_sd.getStorageDomainObj(domain_to_use)
     storage_type = storage_domain_object.get_storage().get_type()
     is_block = storage_type in config.BLOCK_TYPES
-    disk_permutations = get_all_disk_permutation(block=is_block,
-                                                 shared=shared,
-                                                 interfaces=interfaces)
+    disk_permutations = ll_disks.get_all_disk_permutation(
+        block=is_block, shared=shared, interfaces=interfaces
+    )
     # Provide a warning in the logs when the total number of disk
     # permutations is 0
     if len(disk_permutations) == 0:
@@ -189,15 +189,15 @@ def create_disks_from_requested_permutations(
 
     logger.info("Create disks for all permutations generated previously")
     for disk_permutation in disk_permutations:
-        disk_alias = "Disk_%s_%s_sparse-%s_alias" \
-                     % (
-                         disk_permutation['interface'],
-                         disk_permutation['format'],
-                         disk_permutation['sparse']
-                     )
+        disk_alias = "%s_Disk_%s_%s_sparse-%s_alias" % (
+            test_name,
+            disk_permutation['interface'],
+            disk_permutation['format'],
+            disk_permutation['sparse']
+        )
         disk_description = disk_alias.replace("_alias", "_description")
         disk_aliases.append(disk_alias)
-        assert addDisk(
+        assert ll_disks.addDisk(
             True, alias=disk_alias, description=disk_description,
             size=size, interface=disk_permutation['interface'],
             sparse=disk_permutation['sparse'],
@@ -205,7 +205,7 @@ def create_disks_from_requested_permutations(
             storagedomain=domain_to_use, bootable=False, shareable=shared
         )
     if wait:
-        assert wait_for_disks_status(disk_aliases)
+        assert ll_disks.wait_for_disks_status(disk_aliases)
     return disk_aliases
 
 
@@ -243,12 +243,14 @@ def perform_dd_to_disk(
         host=vm_ip, user=config.VM_USER, password=config.VM_PASSWORD
     ).util(LINUX)
     # TODO: Workaround for bug:
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1239297
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1144860
     vm_machine.runCmd(shlex.split("udevadm trigger"))
     output = vm_machine.get_boot_storage_device()
     boot_disk = 'vda' if 'vd' in output else 'sda'
 
-    disk_logical_volume_name = get_vm_disk_logical_name(vm_name, disk_alias)
+    disk_logical_volume_name = ll_vms.get_vm_disk_logical_name(
+        vm_name, disk_alias
+    )
     if not disk_logical_volume_name:
         # This function is used to test whether logical volume was found,
         # raises an exception if it wasn't found
@@ -303,7 +305,7 @@ def get_vm_ip(vm_name):
     :return: ip address of a vm, or raise EntityNotFound exception
     :rtype: str or EntityNotFound exception
     """
-    return waitForIP(vm_name)[1]['ip']
+    return ll_vms.waitForIP(vm_name)[1]['ip']
 
 
 def create_vm_or_clone(positive, vmName, vmDescription, cluster, **kwargs):
@@ -331,10 +333,10 @@ def create_vm_or_clone(positive, vmName, vmDescription, cluster, **kwargs):
     installation = kwargs.get('installation', False)
     # If the vm doesn't need installation don't waste time cloning the vm
     if config.GOLDEN_ENV and installation:
-        storage_domains = storagedomains.get_storagedomain_names()
+        storage_domains = ll_sd.get_storagedomain_names()
         if config.GLANCE_DOMAIN in storage_domains and (
             config.GLANCE_IMAGE_COW in (
-                storagedomains.get_storage_domain_images(config.GLANCE_DOMAIN)
+                ll_sd.get_storage_domain_images(config.GLANCE_DOMAIN)
             )
         ):
             kwargs['cluster'] = cluster
@@ -344,7 +346,7 @@ def create_vm_or_clone(positive, vmName, vmDescription, cluster, **kwargs):
             if vol_allocation_policy == 'false':
                 glance_image = config.GLANCE_IMAGE_RAW
 
-            assert high_vms.create_vm_using_glance_image(
+            assert hl_vms.create_vm_using_glance_image(
                 config.GLANCE_DOMAIN, glance_image, **kwargs
             )
         else:
@@ -377,21 +379,23 @@ def create_vm_or_clone(positive, vmName, vmDescription, cluster, **kwargs):
             ]
             update_args = dict((key, kwargs.get(key)) for key in update_keys)
             args_clone.update(update_args)
-            assert cloneVmFromTemplate(**args_clone)
+            assert ll_vms.cloneVmFromTemplate(**args_clone)
             # Because alias is not a unique property and a lot of test use it
             # as identifier, rename the vm's disk alias to be safe
             # Since cloning doesn't allow to specify disk interface, change it
-            disks_obj = getVmDisks(vmName)
+            disks_obj = ll_vms.getVmDisks(vmName)
             for i in range(len(disks_obj)):
-                updateDisk(
+                ll_disks.updateDisk(
                     True, vmName=vmName, id=disks_obj[i].get_id(),
                     alias="{0}_Disk_{1}".format(vmName, i),
                     interface=disk_interface
                 )
             # createVm always leaves the vm up when installation is True
-        return startVm(positive, vmName, wait_for_status=config.VM_UP)
+        return ll_vms.startVm(positive, vmName, wait_for_status=config.VM_UP)
     else:
-        return createVm(positive, vmName, vmDescription, cluster, **kwargs)
+        return ll_vms.createVm(
+            positive, vmName, vmDescription, cluster, **kwargs
+        )
 
 
 def host_to_use():
@@ -403,8 +407,8 @@ def host_to_use():
     :returns: Machine object on which commands can be executed
     :rtype: Machine
     """
-    host = getSPMHost(config.HOSTS)
-    host = getHostIP(host)
+    host = ll_hosts.getSPMHost(config.HOSTS)
+    host = ll_hosts.getHostIP(host)
     return Machine(host=host, user=config.HOSTS_USER,
                    password=config.HOSTS_PW).util(LINUX)
 
@@ -498,7 +502,7 @@ def get_lv_count_for_block_disk(disk_alias, host_ip, user, password):
     :return: Number of logical volumes found for input disk
     :rtype: int
     """
-    disk_id = get_disk_obj(disk_alias).get_id()
+    disk_id = ll_disks.get_disk_obj(disk_alias).get_id()
     cmd = LV_COUNT % disk_id
     rc, out = runMachineCommand(
         True, ip=host_ip, user=user, password=password, cmd=cmd
@@ -562,8 +566,8 @@ def get_disks_volume_count(
     type) or the total logical volumes (block domain type)
     :rtype: int
     """
-    host = get_cluster_hosts(cluster_name=cluster_name)[0]
-    host_ip = getHostIP(host)
+    host = ll_hosts.get_cluster_hosts(cluster_name=cluster_name)[0]
+    host_ip = ll_hosts.getHostIP(host)
     rc, out = runMachineCommand(
         True, ip=host_ip, user=config.HOSTS_USER, password=config.HOSTS_PW,
         cmd=PVSCAN_CMD
@@ -574,16 +578,17 @@ def get_disks_volume_count(
             (PVSCAN_CMD, host_ip, out['out'])
         )
 
-    data_center_obj = get_data_center(config.DATA_CENTER_NAME)
+    data_center_obj = ll_dc.get_data_center(config.DATA_CENTER_NAME)
     sp_id = get_spuuid(data_center_obj)
     logger.debug("The Storage Pool ID is: '%s'", sp_id)
     # Initialize the volume count before iterating through the disk aliases
     volume_count = 0
     for disk in disk_names:
-        disk_obj = get_disk_obj(disk)
-        storage_id = \
+        disk_obj = ll_disks.get_disk_obj(disk)
+        storage_id = (
             disk_obj.get_storage_domains().get_storage_domain()[0].get_id()
-        storage_domain_object = storagedomains.getStorageDomainObj(
+        )
+        storage_domain_object = ll_sd.getStorageDomainObj(
             storagedomain=storage_id, key='id'
         )
         storage_type = storage_domain_object.get_storage().get_type()
@@ -637,7 +642,7 @@ def add_new_disk(
             permutation['sparse'], sd_type
         )
 
-    disk_args = {
+    new_disk_args = {
         # Fixed arguments
         'provisioned_size': disk_size,
         'wipe_after_delete': sd_type in config.BLOCK_TYPES,
@@ -654,7 +659,7 @@ def add_new_disk(
     }
     logger.info("Adding new disk: %s", alias)
 
-    assert addDisk(True, **disk_args)
+    assert ll_disks.addDisk(True, **new_disk_args)
     return alias
 
 
@@ -678,8 +683,9 @@ def start_creating_disks_for_test(
     """
     disk_names = []
     logger.info("Creating all disks required for test")
-    disk_permutations = get_all_disk_permutation(
-        block=sd_type in config.BLOCK_TYPES, shared=shared)
+    disk_permutations = ll_disks.get_all_disk_permutation(
+        block=sd_type in config.BLOCK_TYPES, shared=shared
+    )
     for permutation in disk_permutations:
         alias = add_new_disk(
             sd_name=sd_name, permutation=permutation, shared=shared,
@@ -719,9 +725,9 @@ def prepare_disks_with_fs_for_vm(storage_domain, storage_type, vm_name):
         sd_name=storage_domain, sd_type=storage_type
     )
     for disk_alias in disk_names:
-        disk_ids.append(get_disk_obj(disk_alias).get_id())
+        disk_ids.append(ll_disks.get_disk_obj(disk_alias).get_id())
 
-    if not wait_for_disks_status(
+    if not ll_disks.wait_for_disks_status(
         disk_names, timeout=CREATION_DISKS_TIMEOUT
     ):
         raise exceptions.DiskException("Some disks are still locked")
@@ -732,7 +738,7 @@ def prepare_disks_with_fs_for_vm(storage_domain, storage_type, vm_name):
     vm_machine.runCmd(shlex.split("udevadm trigger"))
 
     for disk_alias in disk_names:
-        disk_logical_volume_name = get_vm_disk_logical_name(
+        disk_logical_volume_name = ll_vms.get_vm_disk_logical_name(
             vm_name, disk_alias
         )
         if not disk_logical_volume_name:

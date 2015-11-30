@@ -1,17 +1,19 @@
 """
 Read Only Disk test helpers functions
 """
-import config
 import logging
+
+import config
+from art.rhevm_api.tests_lib.low_level import (
+    disks as ll_disks,
+    storagedomains as ll_sd,
+    vms as ll_vms,
+)
 from art.test_handler import exceptions
-from art.rhevm_api.tests_lib.low_level.disks import check_disk_visibility
-from art.rhevm_api.tests_lib.low_level.storagedomains import addStorageDomain
-from art.rhevm_api.tests_lib.low_level.vms import getVmDisks
 from rhevmtests.storage import helpers
 
 logger = logging.getLogger(__name__)
 
-ENUMS = config.ENUMS
 DISK_NAMES = dict()  # dictionary with storage type as key
 
 READ_ONLY = 'Read-only'
@@ -29,7 +31,7 @@ def write_on_vms_ro_disks(vm_name, storage_type, imported_vm=False):
         * storage_type - storage domain type
         * imported_vm - True if the vm is imported
     """
-    vm_disks = filter(not_bootable, getVmDisks(vm_name))
+    vm_disks = filter(not_bootable, ll_vms.getVmDisks(vm_name))
     if imported_vm:
         global DISK_NAMES
         DISK_NAMES[storage_type] = [disk.get_alias() for disk in vm_disks]
@@ -38,7 +40,7 @@ def write_on_vms_ro_disks(vm_name, storage_type, imported_vm=False):
 
     for disk, is_ro_vm_disk in zip(DISK_NAMES[storage_type], vm_disks):
         logger.info("Checking if disk %s visible to %s", disk, vm_name)
-        is_visible = check_disk_visibility(disk, vm_disks)
+        is_visible = ll_disks.check_disk_visibility(disk, vm_disks)
         if not is_visible:
             raise exceptions.DiskException(
                 "Disk '%s' is not visible to vm '%s'", disk, vm_name
@@ -55,8 +57,9 @@ def write_on_vms_ro_disks(vm_name, storage_type, imported_vm=False):
         status, out = helpers.perform_dd_to_disk(vm_name, disk)
         status = (not status) and (READ_ONLY in out or NOT_PERMITTED in out)
         if not status:
-            raise exceptions.DiskException("Write operation to RO disk "
-                                           "succeeded")
+            raise exceptions.DiskException(
+                "Write operation to RO disk succeeded"
+            )
         logger.info("Failed to write to read only disk")
 
 
@@ -71,10 +74,10 @@ def create_third_sd(sd_name, host_name, storage_type):
             True otherwise
     """
     sd_args = {
-        'type': ENUMS['storage_dom_type_data'],
-        # storage_type should be always passed in
+        'type': config.TYPE_DATA,
         'storage_type': storage_type,
-        'host': host_name}
+        'host': host_name
+    }
 
     sd_args['name'] = sd_name
     if config.GOLDEN_ENV:
@@ -103,6 +106,6 @@ def create_third_sd(sd_name, host_name, storage_type):
             sd_args['path'] = config.GLUSTER_PATH[2]
 
     logger.info('Creating storage domain with parameters: %s', sd_args)
-    status = addStorageDomain(True, **sd_args)
+    status = ll_sd.addStorageDomain(True, **sd_args)
 
     return status

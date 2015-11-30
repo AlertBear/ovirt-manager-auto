@@ -1,8 +1,6 @@
 """
 Config module for storage live merge
 """
-__test__ = False
-
 from rhevmtests.storage.config import *  # flake8: noqa
 
 # Name of the test

@@ -1,9 +1,6 @@
 """
 Config module for live storage migration
 """
-
-__test__ = False
-
 from rhevmtests.storage.config import *  # flake8: noqa
 
 # Name of the test

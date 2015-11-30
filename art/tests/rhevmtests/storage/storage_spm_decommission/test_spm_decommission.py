@@ -3,27 +3,27 @@ Storage SPM decommission
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_5_Storage_Pool_Metadata_Removal
 """
-import config
 import logging
 import time
 
+import config
+from art.rhevm_api.tests_lib.high_level import (
+    clusters as hl_clusters,
+    hosts as hl_hosts,
+    storagedomains as hl_sd,
+)
+from art.rhevm_api.tests_lib.low_level import (
+    clusters as ll_clusters,
+    datacenters as ll_dc,
+    hosts as ll_hosts,
+    storagedomains as ll_sd,
+)
+from art.rhevm_api.utils.log_listener import watch_logs
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, StorageTest
 
-from art.rhevm_api.tests_lib.low_level import clusters as ll_clusters
-from art.rhevm_api.tests_lib.low_level import datacenters as ll_datacenters
-from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
-from art.rhevm_api.tests_lib.low_level import (
-    storagedomains as ll_storagedomains
-)
-from art.rhevm_api.tests_lib.high_level import clusters as hl_clusters
-from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
-from art.rhevm_api.tests_lib.high_level import (
-    storagedomains as hl_storagedomains
-)
-from art.rhevm_api.utils.log_listener import watch_logs
-
 from multiprocessing import Process, Queue
+
 logger = logging.getLogger(__name__)
 
 TIMEOUT_SD_OPERATION = 300
@@ -53,21 +53,21 @@ class ActivateDeactivate(StorageTest):
         """
         # TODO: Check if there are any tasks running involving this domain
         # before deactivating it, waiting a response from devel
-        assert ll_storagedomains.deactivateStorageDomain(
+        assert ll_sd.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.domain1
         )
-        ll_storagedomains.activateStorageDomain(
+        ll_sd.activateStorageDomain(
             True, config.DATA_CENTER_NAME, self.domain1, wait=False
         )
-        ll_storagedomains.deactivateStorageDomain(
+        ll_sd.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.domain2, wait=False
         )
         # Make sure both domains are in the expected state
-        assert ll_storagedomains.waitForStorageDomainStatus(
+        assert ll_sd.waitForStorageDomainStatus(
             True, config.DATA_CENTER_NAME, self.domain1,
             config.SD_ACTIVE, TIMEOUT_SD_OPERATION
         )
-        assert ll_storagedomains.waitForStorageDomainStatus(
+        assert ll_sd.waitForStorageDomainStatus(
             True, config.DATA_CENTER_NAME, self.domain2,
             config.SD_MAINTENANCE, TIMEOUT_SD_OPERATION
         )
@@ -78,10 +78,10 @@ class ActivateDeactivate(StorageTest):
         """
         # activateStorageDomain will return True if the domain is already
         # activated
-        ll_storagedomains.activateStorageDomain(
+        ll_sd.activateStorageDomain(
             False, config.DATA_CENTER_NAME, self.domain1
         )
-        assert ll_storagedomains.activateStorageDomain(
+        assert ll_sd.activateStorageDomain(
             True, config.DATA_CENTER_NAME, self.domain2
         )
 
@@ -96,7 +96,7 @@ class ActivateDeactivateSameStorageType(ActivateDeactivate):
         """
         Select storage domains for test
         """
-        self.domains = ll_storagedomains.getStorageDomainNamesForType(
+        self.domains = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )
         self.domain1, self.domain2 = self.domains[0:2]
@@ -112,14 +112,14 @@ class ActivateDeactivateMixedStorageTypes(ActivateDeactivate):
         """
         Select storage domains for test
         """
-        self.domain1 = ll_storagedomains.getStorageDomainNamesForType(
+        self.domain1 = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )[0]
         if self.storage in config.BLOCK_TYPES:
             domain2_storage_type = config.STORAGE_TYPE_NFS
         else:
             domain2_storage_type = config.STORAGE_TYPE_ISCSI
-        self.domain2 = ll_storagedomains.getStorageDomainNamesForType(
+        self.domain2 = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, domain2_storage_type
         )[0]
 
@@ -139,7 +139,7 @@ class UpgradeBaseClass(StorageTest):
         """
         Create a data center and attach hosts
         """
-        ll_datacenters.addDataCenter(
+        ll_dc.addDataCenter(
             True, name=self.data_center_name, storage_type=self.storage,
             version=config.DC_ORIGIN_VERSION
         )
@@ -161,11 +161,11 @@ class UpgradeBaseClass(StorageTest):
         Add and activate the first storage domain
         """
         logger.info("Adding storage domain %s", self.domain_1)
-        assert ll_storagedomains.addStorageDomain(
+        assert ll_sd.addStorageDomain(
             True, name=self.domain_1, host=self.host_1,
             **self.domain1_parameters
         )
-        assert hl_storagedomains.attach_and_activate_domain(
+        assert hl_sd.attach_and_activate_domain(
             self.data_center_name, self.domain_1
         )
 
@@ -208,7 +208,7 @@ class UpgradeBaseClass(StorageTest):
         process_host_1.start()
         process_host_2.start()
         time.sleep(2)
-        assert hl_storagedomains.attach_and_activate_domain(
+        assert hl_sd.attach_and_activate_domain(
             self.data_center_name, self.domain_2
         )
         assert_found(q)
@@ -225,7 +225,7 @@ class UpgradeBaseClass(StorageTest):
         second domain and when activating it
         """
         self.add_first_storage_domain()
-        assert ll_storagedomains.addStorageDomain(
+        assert ll_sd.addStorageDomain(
             True, name=self.domain_2, host=self.host_1,
             **self.domain2_parameters
         )
@@ -253,17 +253,15 @@ class UpgradeBaseClass(StorageTest):
             "Uprading data center %s to version %s", self.data_center_name,
             config.DC_UPGRADE_VERSION
         )
-        assert ll_datacenters.updateDataCenter(
+        assert ll_dc.updateDataCenter(
             True, self.data_center_name, version=config.DC_UPGRADE_VERSION
         )
-        assert ll_storagedomains.addStorageDomain(
+        assert ll_sd.addStorageDomain(
             True, name=self.domain_2, host=self.host_1,
             **self.domain2_parameters
         )
-        domain_1_id = ll_storagedomains.getStorageDomainObj(
-            self.domain_1
-        ).get_id()
-        domain_2_id = ll_storagedomains.getStorageDomainObj(
+        domain_1_id = ll_sd.getStorageDomainObj(self.domain_1).get_id()
+        domain_2_id = ll_sd.getStorageDomainObj(
             self.domain_2
         ).get_id()
 
@@ -281,21 +279,21 @@ class UpgradeBaseClass(StorageTest):
         """
         Remove the created data center
         """
-        sds = ll_storagedomains.getDCStorages(self.data_center_name, False)
+        sds = ll_sd.getDCStorages(self.data_center_name, False)
         for sd in sds:
             if not sd.get_master():
-                hl_storagedomains.detach_and_deactivate_domain(
+                hl_sd.detach_and_deactivate_domain(
                     self.data_center_name, sd.get_name()
                 )
-        status, master = ll_storagedomains.findMasterStorageDomain(
+        status, master = ll_sd.findMasterStorageDomain(
             True, self.data_center_name
         )
         if status:
-            ll_storagedomains.deactivate_master_storage_domain(
+            ll_sd.deactivate_master_storage_domain(
                 True, self.data_center_name
             )
-        ll_datacenters.removeDataCenter(True, self.data_center_name)
-        ll_storagedomains.remove_storage_domains(sds, self.host_1)
+        ll_dc.removeDataCenter(True, self.data_center_name)
+        ll_sd.remove_storage_domains(sds, self.host_1)
         hl_hosts.move_host_to_another_cluster(self.host_1, config.CLUSTER_NAME)
         hl_hosts.move_host_to_another_cluster(self.host_2, config.CLUSTER_NAME)
         ll_clusters.removeCluster(True, self.cluster_name)

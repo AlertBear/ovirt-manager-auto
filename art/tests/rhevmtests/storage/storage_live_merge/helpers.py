@@ -50,7 +50,7 @@ def prepare_disks_with_fs_for_vm(storage_domain, storage_type, vm_name):
     helpers.prepare_disks_for_vm(vm_name, DISK_NAMES[storage_type])
 
     # TODO: Workaround for bug:
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1239297
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1144860
     vm_machine.runCmd(shlex.split("udevadm trigger"))
 
     for disk_alias in DISK_NAMES[storage_type]:

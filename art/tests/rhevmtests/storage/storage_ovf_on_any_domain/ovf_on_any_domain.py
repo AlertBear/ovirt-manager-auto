@@ -9,11 +9,20 @@ import os
 import config
 import helpers
 from art.core_api.apis_utils import TimeoutingSampler
-from art.rhevm_api.tests_lib.high_level import datacenters as hl_datacenters
-from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
+from art.rhevm_api.tests_lib.high_level import (
+    datacenters as hl_dc,
+    hosts as hl_hosts,
+)
 from art.rhevm_api.tests_lib.low_level import (
-    clusters, datacenters, disks, hosts, jobs, storagedomains, templates,
-    vmpools, vms,
+    clusters as ll_clusters,
+    datacenters as ll_dc,
+    disks as ll_disks,
+    hosts as ll_hosts,
+    jobs as ll_jobs,
+    storagedomains as ll_sd,
+    templates as ll_templates,
+    vmpools as ll_vmpools,
+    vms as ll_vms,
 )
 from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
@@ -61,9 +70,13 @@ GLUSTERFS = config.STORAGE_TYPE_GLUSTER
 SD_ID_DISK_ON_DOMAIN = None
 DEFAULT_NUM_OVF_STORES_PER_SD = 2
 UPDATED_NUM_OVF_STORES_PER_SD = 4
-FIND_OVF_DISKS_TIMEOUT = 75
+# TODO: Restore this to 75 when OVF store update bug
+# https://bugzilla.redhat.com/show_bug.cgi?id=1294447 is resolved
+FIND_OVF_DISKS_TIMEOUT = 300
 FIND_OVF_DISKS_SLEEP = 5
-FIND_OVF_INFO_TIMEOUT = 90
+# TODO: Restore this to 75 when OVF store update bug
+# https://bugzilla.redhat.com/show_bug.cgi?id=1294447 is resolved
+FIND_OVF_INFO_TIMEOUT = 300
 FIND_OVF_INFO_SLEEP = 5
 
 
@@ -116,10 +129,10 @@ def teardown_module():
     OvfUpdateIntervalInMinutes to default of 60 minutes
     """
     test_failed = False
-    if not vms.safely_remove_vms([VM1_NAME, VM2_NAME]):
+    if not ll_vms.safely_remove_vms([VM1_NAME, VM2_NAME]):
         logger.error("Failed to remove vms %s", [VM1_NAME, VM2_NAME])
         test_failed = True
-    jobs.wait_for_jobs([ENUMS['job_remove_vm']])
+    ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
     logger.info("Changing the ovirt-engine service with "
                 "OvfUpdateIntervalInMinutes to 60 minutes, restarting engine")
     if not test_utils.set_engine_properties(
@@ -158,7 +171,7 @@ class BasicEnvironment(BaseTestCase):
         # incorrect, will use the actual type observed
         self.is_block_storage = self.storage in config.BLOCK_TYPES
         self.sds_in_current_storage_type = (
-            storagedomains.getStorageDomainNamesForType(
+            ll_sd.getStorageDomainNamesForType(
                 config.DATA_CENTER_NAME, self.storage
             ))
 
@@ -170,7 +183,7 @@ class BasicEnvironment(BaseTestCase):
         self.host_machine = host_to_use()
 
         # The name of the SPM host in the default Data center and cluster
-        self.host = hosts.getSPMHost(config.HOSTS)
+        self.host = ll_hosts.getSPMHost(config.HOSTS)
 
         # Initialize variables to be used across all tests
         self.initialize_variables()
@@ -196,7 +209,7 @@ class BasicEnvironment(BaseTestCase):
         if self.domain_to_use == ANY_DOMAIN:
             self.storage_domain_0 = self.sds_in_current_storage_type[0]
         elif self.domain_to_use == MASTER_DOMAIN:
-            found, master_domain = storagedomains.findMasterStorageDomain(
+            found, master_domain = ll_sd.findMasterStorageDomain(
                 True, config.DATA_CENTER_NAME,
             )
             if not found:
@@ -204,11 +217,11 @@ class BasicEnvironment(BaseTestCase):
             self.storage_domain_0 = master_domain['masterDomain']
             # Use the storage domain to determine whether the storage type
             # to use is block (True) or File (False)
-            sd_obj = storagedomains.getStorageDomainObj(self.storage_domain_0)
+            sd_obj = ll_sd.getStorageDomainObj(self.storage_domain_0)
             storage_type = sd_obj.get_storage().get_type()
             self.is_block_storage = storage_type in config.BLOCK_TYPES
         elif self.domain_to_use == ANY_NON_MASTER_DOMAIN:
-            found, master_domain = storagedomains.findMasterStorageDomain(
+            found, master_domain = ll_sd.findMasterStorageDomain(
                 True, config.DATA_CENTER_NAME,
             )
             if not found:
@@ -243,13 +256,11 @@ class BasicEnvironment(BaseTestCase):
         """
         vm = self.vm_with_no_disks_dict
         if not self.sp_id:
-            data_center_obj = datacenters.get_data_center(
-                config.DATA_CENTER_NAME
-            )
+            data_center_obj = ll_dc.get_data_center(config.DATA_CENTER_NAME)
             self.sp_id = get_spuuid(data_center_obj)
         logger.info("The Storage Pool ID is: '%s'", self.sp_id)
         vm['name'] = vm_name
-        vm['vm_id'] = vms.get_vm_obj(vm_name).get_id()
+        vm['vm_id'] = ll_vms.get_vm_obj(vm_name).get_id()
         logger.info("The VM ID of the VM being used is: '%s'", vm['vm_id'])
 
     def initialize_template_ovf_store_params(self):
@@ -275,14 +286,12 @@ class BasicEnvironment(BaseTestCase):
         """
         template = self.template_dict
         if not self.sp_id:
-            data_center_obj = datacenters.get_data_center(
-                config.DATA_CENTER_NAME
-            )
+            data_center_obj = ll_dc.get_data_center(config.DATA_CENTER_NAME)
             self.sp_id = get_spuuid(data_center_obj)
         logger.info("The Storage Pool ID is: '%s'", self.sp_id)
         template['name'] = template_name
         template['template_id'] = (
-            templates.get_template_obj(template_name).get_id()
+            ll_templates.get_template_obj(template_name).get_id()
         )
         logger.info("The Template ID of the Template being used is: '%s'",
                     template['template_id'])
@@ -301,10 +310,10 @@ class BasicEnvironment(BaseTestCase):
         # The Storage Pool ID is unique across the entire data center,
         # only retrieve it once
         if self.sp_id is None:
-            data_center_obj = datacenters.get_data_center(data_center)
+            data_center_obj = ll_dc.get_data_center(data_center)
             self.sp_id = get_spuuid(data_center_obj)
         logger.info("The Storage Pool ID is: '%s'", self.sp_id)
-        disk_obj = disks.get_disk_obj(disk_alias)
+        disk_obj = ll_disks.get_disk_obj(disk_alias)
         if not raw_lun:
             disk['sd_id'] = get_sduuid(disk_obj)
             SD_ID_DISK_ON_DOMAIN = disk['sd_id']
@@ -349,7 +358,7 @@ class BasicEnvironment(BaseTestCase):
         lun_target = config.EXTEND_LUN_TARGET[0] if raw_lun else None
         lun_id = config.EXTEND_LUN[0] if raw_lun else None
         self.assertTrue(
-            disks.addDisk(
+            ll_disks.addDisk(
                 True, alias=disk_alias, size=config.DISK_SIZE, sparse=sparse,
                 storagedomain=storage_domain, format=disk_format,
                 interface=config.VIRTIO, wipe_after_delete=False,
@@ -359,12 +368,12 @@ class BasicEnvironment(BaseTestCase):
             ), "Failed to add disk %s" % disk_alias
         )
         if not raw_lun:
-            disks.wait_for_disks_status([disk_alias])
+            ll_disks.wait_for_disks_status([disk_alias])
         self.total_disks_created += 1
 
         # Use the storage domain of the disk to determine whether the storage
         # type to use is block (True) or File (False)
-        sd_obj = storagedomains.getStorageDomainObj(storage_domain)
+        sd_obj = ll_sd.getStorageDomainObj(storage_domain)
         storage_type = sd_obj.get_storage().get_type()
         is_block_storage = storage_type in config.BLOCK_TYPES
 
@@ -383,7 +392,7 @@ class BasicEnvironment(BaseTestCase):
         disk = self.vms_and_disks_dict[vm_name][disk_alias]
         vm = self.vms_and_disks_dict[vm_name]
 
-        vm['vm_id'] = vms.get_vm_obj(vm_name).get_id()
+        vm['vm_id'] = ll_vms.get_vm_obj(vm_name).get_id()
         logger.info("The VM ID for the VM which the disk will be attached to "
                     "is: '%s'", vm['vm_id'])
 
@@ -399,21 +408,23 @@ class BasicEnvironment(BaseTestCase):
             logger.info("Attach disk '%s' to VM '%s' and watch the engine log "
                         "for OVF processing", disk_alias, vm_name)
             attach_disk_function_and_args = {
-                'function_name': disks.attachDisk,
+                'function_name': ll_disks.attachDisk,
                 'positive': True,
                 'alias': disk_alias,
-                'vmName': vm_name
+                'vm_name': vm_name
             }
             attach_disk_success = helpers.watch_engine_log_for_ovf_store(
                 ENGINE_REGEX_VM_NAME % disk['ovf_store_id'], self.host_machine,
                 **attach_disk_function_and_args
             )
         else:
-            attach_disk_success = disks.attachDisk(True, disk_alias, vm_name)
+            attach_disk_success = ll_disks.attachDisk(
+                True, disk_alias, vm_name
+            )
 
         self.assertTrue(attach_disk_success, "Failed to attach disk '%s' to "
                                              "VM '%s'" % (disk_alias, vm_name))
-        self.assertTrue(vms.waitForVmDiskStatus(vm_name, True, disk_alias),
+        self.assertTrue(ll_vms.waitForVmDiskStatus(vm_name, True, disk_alias),
                         "Disk '%s' did not reach the active status while "
                         "being attached to VM '%s'" % (disk_alias, vm_name))
 
@@ -479,12 +490,16 @@ class BasicEnvironment(BaseTestCase):
                 func=helpers.get_ovf_file_path_and_num_ovf_files,
                 **ovf_store_args
         ):
-            if ovf_remote_full_path_num_ovf_files or not ovf_should_exist:
+            if ovf_remote_full_path_num_ovf_files is not None or (
+                    not ovf_should_exist
+            ):
                 break
 
-        if not ovf_remote_full_path_num_ovf_files and ovf_should_exist:
-            assert False, ("The OVF file for the VM still doesn't exist, "
-                           "aborting run")
+        if ovf_remote_full_path_num_ovf_files is None and ovf_should_exist:
+            assert False, (
+                "The OVF file for the VM or Template still doesn't exist, "
+                "aborting run"
+            )
 
         ovf_remote_full_path = (
             ovf_remote_full_path_num_ovf_files['ovf_file_path']
@@ -560,7 +575,7 @@ class BasicEnvironment(BaseTestCase):
                         )
                         break
 
-                    if not ovf_file_content:
+                    if ovf_file_content is None:
                         logger.info("No OVF content retrieved, try again")
                         continue
 
@@ -568,10 +583,20 @@ class BasicEnvironment(BaseTestCase):
                         if disk_alias in ovf_file_content:
                             return_value = True
                             break
+                        else:
+                            logger.info(
+                                "Positive path, disk '%s' isn't found in VM "
+                                "'%s' OVF file", disk_alias, vm_name
+                            )
                     else:
                         if disk_alias not in ovf_file_content:
                             return_value = True
                             break
+                        else:
+                            logger.info(
+                                "Negative path, disk '%s' isn found in VM "
+                                "'%s' OVF file", disk_alias, vm_name
+                            )
 
                 if should_ovf_exist:
                     if positive:
@@ -605,8 +630,9 @@ class BasicEnvironment(BaseTestCase):
                     self.assertTrue(
                         template['disk_name'] in ovf_file_content,
                         "Disk alias '%s' was not found in the OVF file "
-                        "contents '%s'" % (template['disk_name'],
-                                           ovf_file_content)
+                        "contents '%s'" % (
+                            template['disk_name'], ovf_file_content
+                        )
                     )
                 else:
                     self.assertTrue(
@@ -650,11 +676,12 @@ class BasicEnvironment(BaseTestCase):
                 # Assign the dictionaries to disk and vm to improve readability
                 disk = self.vms_and_disks_dict[vm_name][disk_alias]
                 vm = self.vms_and_disks_dict[vm_name]
-                number_of_ovf_files = \
+                number_of_ovf_files = (
                     self.get_ovf_contents_or_num_ovf_files(
-                        disk=disk, vm=vm, template=None,
-                        ovf_should_exist=True, get_content=False
+                        disk=disk, vm=vm, template=None, ovf_should_exist=True,
+                        get_content=False
                     )
+                )
                 logger.info("Removing the extracted OVF store for disk '%s'",
                             disk_alias)
                 helpers.remove_ovf_store_extracted(self.host, disk_alias)
@@ -718,7 +745,7 @@ class BasicEnvironment(BaseTestCase):
         logger.info("Creating template '%s' from vm '%s'", VM3_NAME,
                     TEMPLATE_NAME)
         template_function_and_args = {
-            'function_name': templates.createTemplate,
+            'function_name': ll_templates.createTemplate,
             'positive': True,
             'name': TEMPLATE_NAME,
             'vm': VM3_NAME,
@@ -755,14 +782,13 @@ class BasicEnvironment(BaseTestCase):
         this is to ensure no conflict exists between runs including Rest API
         and SDK
         """
-        vms.stop_vms_safely([VM1_NAME, VM2_NAME])
+        ll_vms.stop_vms_safely([VM1_NAME, VM2_NAME])
         for vm_name in [VM1_NAME, VM2_NAME]:
-            for disk_obj in vms.getVmDisks(vm_name):
-                if not disks.deleteDisk(True, disk_obj.alias):
+            for disk_obj in ll_vms.getVmDisks(vm_name):
+                if not ll_disks.deleteDisk(True, disk_obj.alias):
                     self.test_failed = True
                     logger.error("Cannot delete disk %s", disk_obj.alias)
 
-        jobs.wait_for_jobs([config.ENUMS['job_remove_disk']])
         if self.test_failed:
             raise exceptions.TestException("Test failed during tearDown")
 
@@ -783,10 +809,10 @@ class EnvironmentWithNewVm(BasicEnvironment):
         self.create_and_initialize_standalone_vm_params()
 
     def tearDown(self):
-        vms.safely_remove_vms([VM3_NAME])
-        jobs.wait_for_jobs([ENUMS['job_remove_vm']])
+        ll_vms.safely_remove_vms([VM3_NAME])
+        ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
         if self.template_created:
-            templates.removeTemplate(True, TEMPLATE_NAME)
+            ll_templates.removeTemplate(True, TEMPLATE_NAME)
 
 
 @attr(tier=1)
@@ -801,10 +827,6 @@ class TestCase6247(BasicEnvironment):
     workitem?id=RHEVM3-6247
     """
     __test__ = True
-    # TODO: Disable Java while attachDisk function isn't activating the disk as
-    # expected, see ticket:
-    # https://projects.engineering.redhat.com/browse/RHEVM-2374
-    apis = BasicEnvironment.apis - set(['java'])
     polarion_test_case = '6247'
     domain_to_use = MASTER_DOMAIN
 
@@ -863,7 +885,79 @@ class TestCase6249(EnvironmentWithNewVm):
     cluster_name = "test_6249_cluster"
     new_domain_1 = "test_6249_sd_1"
     new_domain_2 = "test_6249_sd_2"
-    bz = {'1279788': {'engine': None, 'version': ['3.6']}}
+    # Bugzilla history: 1279788 (Failed to remove Data Center)
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create a Data center, Cluster and move one host into the new setup
+        """
+        logger.info(
+            "Retrieve the first host from the 2nd cluster (in original Data "
+            "center"
+        )
+        cls.original_cluster = config.CLUSTERS[1]['name']
+        cls.host_being_moved = config.CLUSTERS[1]['hosts'][0]['name']
+        cls.host_being_moved_ip = ll_hosts.getHostIP(cls.host_being_moved)
+
+        logger.info(
+            "Creating a %s Data center", config.DC_6249_INITIAL_VERSION
+        )
+        if not ll_dc.addDataCenter(
+            True, name=cls.data_center_name, storage_type=cls.storage,
+            version=config.DC_6249_INITIAL_VERSION
+        ):
+            raise exceptions.DataCenterException(
+                "Failed to create Data center '%s'" % cls.data_center_name
+            )
+
+        logger.info(
+            "Creating a Cluster with a %s compatibility version for the %s "
+            "Data center",
+            config.DC_TEST_VERSION, config.DC_6249_INITIAL_VERSION
+        )
+        ll_clusters.addCluster(
+            True, name=cls.cluster_name, cpu=config.CPU_NAME,
+            data_center=cls.data_center_name, version=config.COMP_VERSION
+        )
+        logger.info("Move the host into the newly created cluster")
+        if not hl_hosts.move_host_to_another_cluster(
+            cls.host_being_moved, cls.cluster_name
+        ):
+            raise exceptions.ClusterException(
+                "Could not move host '%s' into cluster '%s'" % (
+                    cls.host_being_moved, cls.cluster_name
+                )
+            )
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove the created Data center and Cluster, any storage domains
+        created and move host into its original cluster
+        """
+        status = hl_dc.clean_datacenter(
+            True, cls.data_center_name, formatExpStorage='true',
+            vdc=config.VDC, vdc_password=config.VDC_PASSWORD
+        )
+        if not status:
+            raise exceptions.DataCenterException(
+                "Failed to clean Data center '%s'" % cls.data_center_name
+            )
+
+        logger.info(
+            "Re-add the moved host back into its original cluster/data center"
+        )
+        if not ll_hosts.addHost(
+                True, cls.host_being_moved, address=cls.host_being_moved_ip,
+                wait=True, reboot=False, cluster=cls.original_cluster,
+                root_password=config.VDC_ROOT_PASSWORD
+        ):
+            raise exceptions.ClusterException(
+                "Could not add host '%s' back into cluster '%s'" % (
+                    cls.host_being_moved, cls.original_cluster
+                )
+            )
 
     def setUp(self):
         # Determine whether storage type is block
@@ -876,39 +970,21 @@ class TestCase6249(EnvironmentWithNewVm):
         # Initialize the variables for this test
         self.initialize_variables()
 
-        logger.info("Retrieve the first host from the 2nd cluster (in "
-                    "original Data center")
-        self.original_cluster = config.CLUSTERS[1]['name']
-        self.host_being_moved = config.CLUSTERS[1]['hosts'][0]['name']
-        self.host = self.host_being_moved
-
-        logger.info("Creating a 3.4 Data center")
-        datacenters.addDataCenter(
-            True, name=self.data_center_name, storage_type=self.storage,
-            version=config.DC_6249_INITIAL_VERSION
-        )
-
-        logger.info("Creating a Cluster with a 3.6 compatibility version for "
-                    "the 3.4 Data center")
-        clusters.addCluster(
-            True, name=self.cluster_name, cpu=config.CPU_NAME,
-            data_center=self.data_center_name, version=config.COMP_VERSION
-        )
-        logger.info("Move the host into the newly created cluster")
-        hl_hosts.move_host_to_another_cluster(self.host_being_moved,
-                                              self.cluster_name)
-
         # Use the moved VDSM host for both the Block and File level OVF
         # verifications
-        self.host_being_moved_ip = hosts.getHostIP(self.host_being_moved)
+        self.host = self.host_being_moved
         self.host_machine = helpers.machine_to_use(self.host_being_moved_ip)
 
-        logger.info("Creating 2 storage domains and attaching them to the "
-                    "host sitting on the new cluster and Data center")
-        sd_1_args = {'type': ENUMS['storage_dom_type_data'],
-                     'storage_type': self.storage,
-                     'host': self.host_being_moved,
-                     'name': self.storage_domain_0}
+        logger.info(
+            "Creating 2 storage domains and attaching them to the host "
+            "sitting on the new cluster and Data center"
+        )
+        sd_1_args = {
+            'type': config.TYPE_DATA,
+            'storage_type': self.storage,
+            'host': self.host_being_moved,
+            'name': self.storage_domain_0
+        }
         sd_2_args = sd_1_args.copy()
         sd_2_args['name'] = self.storage_domain_1
 
@@ -921,6 +997,8 @@ class TestCase6249(EnvironmentWithNewVm):
             sd_2_args['lun_target'] = config.UNUSED_LUN_TARGETS[1]
             sd_1_args['lun_port'] = config.LUN_PORT
             sd_2_args['lun_port'] = config.LUN_PORT
+            sd_1_args['override_luns'] = True
+            sd_2_args['override_luns'] = True
         elif self.storage == config.STORAGE_TYPE_NFS:
             sd_1_args['address'] = config.UNUSED_DATA_DOMAIN_ADDRESSES[0]
             sd_2_args['address'] = config.UNUSED_DATA_DOMAIN_ADDRESSES[1]
@@ -938,40 +1016,21 @@ class TestCase6249(EnvironmentWithNewVm):
 
         for sd_args in [sd_1_args, sd_2_args]:
             logger.info('Creating storage domain with parameters: %s', sd_args)
-            storagedomains.addStorageDomain(True, wait=True, **sd_args)
-            storagedomains.attachStorageDomain(True, self.data_center_name,
-                                               sd_args['name'])
+            ll_sd.addStorageDomain(True, wait=True, **sd_args)
+            ll_sd.attachStorageDomain(
+                True, self.data_center_name, sd_args['name']
+            )
 
-        logger.info("Creating a standalone disk on new cluster")
+        logger.info("Creating a standalone VM on new cluster")
         self.create_and_initialize_standalone_vm_params(
             ovf_store_supported=False, cluster_name=self.cluster_name
         )
 
     def tearDown(self):
-        if not vms.safely_remove_vms([VM3_NAME]):
+        if not ll_vms.safely_remove_vms([VM3_NAME]):
             self.test_failed = True
             logger.error("Could not remove VM'%s'", VM3_NAME)
-
-        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                                  self.data_center_name)
-        status = hl_datacenters.clean_datacenter(
-            True, self.data_center_name, formatExpStorage='true',
-            vdc=config.VDC, vdc_password=config.VDC_PASSWORD
-        )
-        if not status:
-            self.test_failed = True
-            logger.info("Failed to clean Data center '%s'",
-                        self.data_center_name)
-
-        logger.info("Re-add the moved host back into its original "
-                    "cluster/data center")
-        if not hosts.addHost(True, self.host_being_moved,
-                             address=self.host_being_moved_ip, wait=True,
-                             reboot=False, cluster=self.original_cluster,
-                             root_password=config.VDC_ROOT_PASSWORD):
-            self.test_failed = True
-            logger.error("Could not add host '%s' back into cluster '%s'",
-                         self.host_being_moved, self.original_cluster)
+        ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
 
         if self.test_failed:
             raise exceptions.TestException("Test failed during tearDown")
@@ -981,9 +1040,9 @@ class TestCase6249(EnvironmentWithNewVm):
         """ Polarion case 6249 """
         logger.info("Ensure that storage domains created on a 3.4 Data "
                     "center have no OVF stores")
-        ovf_stores_domain_0 = storagedomains.get_number_of_ovf_store_disks(
+        ovf_stores_domain_0 = ll_sd.get_number_of_ovf_store_disks(
             self.storage_domain_0)
-        ovf_stores_domain_1 = storagedomains.get_number_of_ovf_store_disks(
+        ovf_stores_domain_1 = ll_sd.get_number_of_ovf_store_disks(
             self.storage_domain_1)
         self.assertTrue(ovf_stores_domain_0 == 0, "The number of OVF stores "
                                                   "was expected to be zero")
@@ -1002,7 +1061,7 @@ class TestCase6249(EnvironmentWithNewVm):
         for disk_alias in disk_aliases:
             if disk_alias == 'vm_id':
                 continue
-            self.assertTrue(disks.attachDisk(True, disk_alias, VM3_NAME),
+            self.assertTrue(ll_disks.attachDisk(True, disk_alias, VM3_NAME),
                             "Failed to attach disk '%s' to VM '%s'" % (
                                 disk_alias, VM3_NAME))
 
@@ -1012,15 +1071,15 @@ class TestCase6249(EnvironmentWithNewVm):
             self.data_center_name, config.DC_TEST_VERSION
         )
         self.assertTrue(
-            datacenters.updateDataCenter(True, self.data_center_name,
-                                         version=config.DC_TEST_VERSION),
-            "Data center '%s' was not updated" % self.data_center_name
+            ll_dc.updateDataCenter(
+                True, self.data_center_name, version=config.DC_TEST_VERSION
+            ), "Data center '%s' was not updated" % self.data_center_name
         )
         logger.info("Ensure that OVF store count is 2 after the Data center "
                     "upgrade, allowing about a minute")
         for num_ovf_store_disks_sd_0 in TimeoutingSampler(
             timeout=FIND_OVF_DISKS_TIMEOUT, sleep=FIND_OVF_DISKS_SLEEP,
-            func=storagedomains.get_number_of_ovf_store_disks,
+            func=ll_sd.get_number_of_ovf_store_disks,
             storage_domain=self.storage_domain_0
         ):
             if num_ovf_store_disks_sd_0 == DEFAULT_NUM_OVF_STORES_PER_SD:
@@ -1033,7 +1092,7 @@ class TestCase6249(EnvironmentWithNewVm):
 
         for num_ovf_store_disks_sd_1 in TimeoutingSampler(
             timeout=FIND_OVF_DISKS_TIMEOUT, sleep=FIND_OVF_DISKS_SLEEP,
-            func=storagedomains.get_number_of_ovf_store_disks,
+            func=ll_sd.get_number_of_ovf_store_disks,
             storage_domain=self.storage_domain_1
         ):
             if num_ovf_store_disks_sd_1 == DEFAULT_NUM_OVF_STORES_PER_SD:
@@ -1132,26 +1191,28 @@ class TestCase6252(BasicEnvironment):
         """
         Attempt to move one OVF stores for each disk, failure is expected
         """
-        disk_aliases = [disk.get_name() for disk in vms.getVmDisks(vm_name)]
+        disk_aliases = [disk.get_name() for disk in ll_vms.getVmDisks(vm_name)]
         for disk_alias in disk_aliases:
             # Assign the dictionary to disk in order to improve readability
             disk = self.vms_and_disks_dict[vm_name][disk_alias]
-            new_sd = disks.get_other_storage_domain(disk_alias, vm_name)
-            self.assertTrue(disks.move_disk(
-                target_domain=new_sd, disk_id=disk['ovf_store_id'],
-                positive=False), "Move disk succeeded for an OVF store"
+            new_sd = ll_disks.get_other_storage_domain(disk_alias, vm_name)
+            self.assertTrue(
+                ll_disks.move_disk(
+                    target_domain=new_sd, disk_id=disk['ovf_store_id'],
+                    positive=False
+                ), "Move disk succeeded for an OVF store"
             )
 
     def delete_ovf_stores(self, vm_name):
         """
         Attempt to delete one OVF stores for each disk, failure is expected
         """
-        disk_aliases = [disk.get_name() for disk in vms.getVmDisks(vm_name)]
+        disk_aliases = [disk.get_name() for disk in ll_vms.getVmDisks(vm_name)]
         for disk_alias in disk_aliases:
             # Assign the dictionary to disk in order to improve readability
             disk = self.vms_and_disks_dict[vm_name][disk_alias]
             self.assertTrue(
-                disks.deleteDisk(
+                ll_disks.deleteDisk(
                     positive=False, alias=OVF_STORE_DISK_NAME,
                     disk_id=disk['ovf_store_id']
                 ), "Delete disk succeeded for an OVF store"
@@ -1192,9 +1253,6 @@ class TestCase6253File(BasicEnvironment):
     __test__ = NFS in opts['storages'] or GLUSTERFS in opts['storages']
     storages = set([NFS, GLUSTERFS])
     polarion_test_case = '6253'
-    # Bug 1273376: OVF file is removed for any given VM when only a direct
-    # LUN disk is attached to it
-    bz = {'1273376': {'engine': None, 'version': ['3.6']}}
 
     @polarion(POLARION_PROJECT + polarion_test_case)
     def test_one_vm_with_shared_disk(self):
@@ -1222,7 +1280,9 @@ class TestCase6253Block(BasicEnvironment):
     __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '6253'
-    bz = {'1273376': {'engine': None, 'version': ['3.6']}}
+    # Bugzilla history
+    # Bug 1273376: OVF file is removed for any given VM when only a direct
+    # LUN disk is attached to it
 
     @polarion(POLARION_PROJECT + polarion_test_case)
     def test_one_vm_with_shared_disk_and_direct_LUN(self):
@@ -1262,7 +1322,7 @@ class TestCase6254(BasicEnvironment):
         disk_aliases = self.vms_and_disks_dict[VM1_NAME].keys()
 
         delete_disk_function_and_args = {
-            'function_name': disks.deleteDisk,
+            'function_name': ll_disks.deleteDisk,
             'positive': True,
             'alias': ''
         }
@@ -1297,10 +1357,6 @@ class TestCase6255(EnvironmentWithNewVm):
     workitem?id=RHEVM3-6255
     """
     __test__ = True
-    # TODO: Disable Java while attachDisk function isn't activating the disk as
-    # expected, see ticket:
-    # https://projects.engineering.redhat.com/browse/RHEVM-2374
-    apis = BasicEnvironment.apis - set(['java'])
     polarion_test_case = '6255'
 
     def tearDown(self):
@@ -1327,7 +1383,7 @@ class TestCase6255(EnvironmentWithNewVm):
 
         logger.info("Remove VM and watch the engine log for OVF processing")
         remove_vm_function_and_args = {
-            'function_name': vms.safely_remove_vms,
+            'function_name': ll_vms.safely_remove_vms,
             'vms': [VM3_NAME]
         }
         remove_vm_success = helpers.watch_engine_log_for_ovf_store(
@@ -1367,7 +1423,7 @@ class TestCase6256(EnvironmentWithNewVm):
                 func=self.get_ovf_contents_or_num_ovf_files, disk=None, vm=vm,
                 template=None, ovf_should_exist=True, get_content=True
         ):
-            if ovf_file_content:
+            if ovf_file_content is not None:
                 break
 
         logger.info("Ensure that the VM's OVF file contains the VM name")
@@ -1393,8 +1449,8 @@ class TestCase6257(EnvironmentWithNewVm):
 
     def tearDown(self):
         if self.vm_name_updated:
-            vms.safely_remove_vms([self.updated_vm_name])
-            jobs.wait_for_jobs([ENUMS['job_remove_vm']])
+            ll_vms.safely_remove_vms([self.updated_vm_name])
+            ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
         else:
             super(TestCase6257, self).tearDown()
 
@@ -1402,23 +1458,30 @@ class TestCase6257(EnvironmentWithNewVm):
     def test_tar_file_on_vdsm_for_vm_name_change(self):
         """ Polarion case 6257 """
         vm = self.vm_with_no_disks_dict
-        logger.info("Extract and return the contents of the OVF store "
-                    "containing the VM")
+        logger.info(
+            "Extract and return the contents of the OVF store containing the "
+            "VM"
+        )
         for ovf_file_content in TimeoutingSampler(
                 timeout=FIND_OVF_INFO_TIMEOUT, sleep=FIND_OVF_INFO_SLEEP,
                 func=self.get_ovf_contents_or_num_ovf_files, disk=None,
                 vm=vm, template=None, ovf_should_exist=True, get_content=True
         ):
-            if ovf_file_content:
+            if ovf_file_content is not None and (
+                OBJECT_NAME_IN_OVF % VM3_NAME in ovf_file_content
+            ):
                 break
 
         logger.info("Ensure that the VM's OVF file contains the VM name")
-        self.assertTrue(OBJECT_NAME_IN_OVF % VM3_NAME in ovf_file_content)
+        self.assertTrue(
+            OBJECT_NAME_IN_OVF % VM3_NAME in ovf_file_content,
+            "VM name '%s' doesn't exist in the OVF file" % VM3_NAME
+        )
         new_vm_name = "storage_ovf_renamed_vm"
 
         logger.info("Create a VM and watch the engine log for OVF processing")
         update_vm_function_and_args = {
-            'function_name': vms.updateVm,
+            'function_name': ll_vms.updateVm,
             'positive': True,
             'vm': VM3_NAME,
             'name': new_vm_name
@@ -1427,20 +1490,38 @@ class TestCase6257(EnvironmentWithNewVm):
             ENGINE_REGEX_VM_NAME % vm['ovf_store_id'], self.host_machine,
             **update_vm_function_and_args
         )
-        self.assertTrue(update_vm_success,
-                        "Failed to update the VM '%s'" % VM3_NAME)
+        self.assertTrue(
+            update_vm_success, "Failed to update the VM '%s'" % VM3_NAME
+        )
         # VM name updated successfully, update the specified boolean so that
         # the tearDown will remove the VM with this new name
         self.vm_name_updated = True
-        logger.info("Extract and return the contents of the OVF store "
-                    "containing the disk")
-        ovf_file_content = self.get_ovf_contents_or_num_ovf_files(
-            disk=None, vm=vm, template=None, ovf_should_exist=True,
-            get_content=True
+
+        logger.info(
+            "Extract and return the contents of the OVF store containing the "
+            "VM"
         )
+        for ovf_file_content in TimeoutingSampler(
+                timeout=FIND_OVF_INFO_TIMEOUT, sleep=FIND_OVF_INFO_SLEEP,
+                func=self.get_ovf_contents_or_num_ovf_files, disk=None,
+                vm=vm, template=None, ovf_should_exist=True, get_content=True
+        ):
+            if ovf_file_content is not None and (
+                OBJECT_NAME_IN_OVF % VM3_NAME not in ovf_file_content
+            ):
+                break
+
         logger.info("Ensure that the VM's OVF file contains the VM name")
-        self.assertTrue(OBJECT_NAME_IN_OVF % VM3_NAME not in ovf_file_content)
-        self.assertTrue(OBJECT_NAME_IN_OVF % new_vm_name in ovf_file_content)
+        self.assertTrue(
+            OBJECT_NAME_IN_OVF % VM3_NAME not in ovf_file_content,
+            "Original VM name '%s' still exists in the updated OVF file" %
+            VM3_NAME
+        )
+        self.assertTrue(
+            OBJECT_NAME_IN_OVF % new_vm_name in ovf_file_content,
+            "Updated VM name '%s' does not exist in the updated OVF file" %
+            new_vm_name
+        )
 
 
 @attr(tier=2)
@@ -1483,10 +1564,6 @@ class TestCase6260(EnvironmentWithNewVm):
     workitem?id=RHEVM3-6260
     """
     __test__ = True
-    # TODO: Disable Java while attachDisk function isn't activating the disk as
-    # expected, see ticket:
-    # https://projects.engineering.redhat.com/browse/RHEVM-2374
-    apis = BasicEnvironment.apis - set(['java'])
     polarion_test_case = '6260'
     template_created = False
 
@@ -1541,9 +1618,11 @@ class TestCase6261(BasicEnvironment):
 
     def tearDown(self):
         super(TestCase6261, self).tearDown()
-        logger.info("Restoring the ovirt-engine service with "
-                    "StorageDomainOvfStoreCount set to %s, restarting "
-                    "engine", DEFAULT_NUM_OVF_STORES_PER_SD)
+        logger.info(
+            "Restoring the ovirt-engine service with "
+            "StorageDomainOvfStoreCount set to %s, restarting engine",
+            DEFAULT_NUM_OVF_STORES_PER_SD
+        )
         if not test_utils.set_engine_properties(
                 config.ENGINE,
                 [UPDATE_OVF_NUM_OVF_STORES_CMD % {
@@ -1562,38 +1641,46 @@ class TestCase6261(BasicEnvironment):
     @polarion(POLARION_PROJECT + polarion_test_case)
     def test_change_ovf_store_count(self):
         """ Polarion case 6261 """
-        logger.info("Ensure that OVF store count is %s after the engine "
-                    "configuration change", UPDATED_NUM_OVF_STORES_PER_SD)
+        logger.info(
+            "Ensure that OVF store count is %s after the engine "
+            "configuration change", UPDATED_NUM_OVF_STORES_PER_SD
+        )
         for num_ovf_store_disks_sd_0 in TimeoutingSampler(
             timeout=FIND_OVF_DISKS_TIMEOUT, sleep=FIND_OVF_DISKS_SLEEP,
-            func=storagedomains.get_number_of_ovf_store_disks,
+            func=ll_sd.get_number_of_ovf_store_disks,
             storage_domain=self.storage_domain_0
         ):
             if num_ovf_store_disks_sd_0 == UPDATED_NUM_OVF_STORES_PER_SD:
                 break
-        self.assertTrue(num_ovf_store_disks_sd_0 ==
-                        UPDATED_NUM_OVF_STORES_PER_SD,
-                        "The number of OVF stores in domain '%s' isn't %s "
-                        "after the engine configuration change" %
-                        (self.storage_domain_0, UPDATED_NUM_OVF_STORES_PER_SD))
+        self.assertTrue(
+            num_ovf_store_disks_sd_0 == UPDATED_NUM_OVF_STORES_PER_SD,
+            "The number of OVF stores in domain '%s' isn't %s after the "
+            "engine configuration change" % (
+                self.storage_domain_0, UPDATED_NUM_OVF_STORES_PER_SD
+            )
+        )
 
         for num_ovf_store_disks_sd_1 in TimeoutingSampler(
             timeout=FIND_OVF_DISKS_TIMEOUT, sleep=FIND_OVF_DISKS_SLEEP,
-            func=storagedomains.get_number_of_ovf_store_disks,
+            func=ll_sd.get_number_of_ovf_store_disks,
             storage_domain=self.storage_domain_1
         ):
             if num_ovf_store_disks_sd_1 == UPDATED_NUM_OVF_STORES_PER_SD:
                 break
-        self.assertTrue(num_ovf_store_disks_sd_1 ==
-                        UPDATED_NUM_OVF_STORES_PER_SD,
-                        "The number of OVF stores in domain '%s' isn't %s "
-                        "after the engine configuration change" %
-                        (self.storage_domain_1, UPDATED_NUM_OVF_STORES_PER_SD))
+        self.assertTrue(
+            num_ovf_store_disks_sd_1 == UPDATED_NUM_OVF_STORES_PER_SD,
+            "The number of OVF stores in domain '%s' isn't %s after the "
+            "engine configuration change" % (
+                self.storage_domain_1, UPDATED_NUM_OVF_STORES_PER_SD
+            )
+        )
 
-        self.create_and_attach_disk(VM1_NAME, self.storage_domain_0,
-                                    bootable=True)
-        self.create_and_attach_disk(VM1_NAME, self.storage_domain_1,
-                                    bootable=False)
+        self.create_and_attach_disk(
+            VM1_NAME, self.storage_domain_0, bootable=True
+        )
+        self.create_and_attach_disk(
+            VM1_NAME, self.storage_domain_1, bootable=False
+        )
         self.validate_ovf_contents(vm_name=VM1_NAME)
 
 
@@ -1617,7 +1704,7 @@ class TestCase6262(EnvironmentWithNewVm):
     template_created = False
 
     def tearDown(self):
-        vmpools.removeVmPool(True, config.POOL_NAME)
+        ll_vmpools.removeVmPool(True, config.POOL_NAME)
         super(TestCase6262, self).tearDown()
 
     @polarion(POLARION_PROJECT + polarion_test_case)
@@ -1638,7 +1725,7 @@ class TestCase6262(EnvironmentWithNewVm):
         )
 
         logger.info("Create a VM pool with 5 VMs from the created template")
-        self. assertTrue(vmpools.addVmPool(
+        self. assertTrue(ll_vmpools.addVmPool(
             True, name=config.POOL_NAME, size=config.POOL_SIZE,
             cluster=config.CLUSTER_NAME, template=TEMPLATE_NAME,
             description=config.POOL_DESCRIPTION

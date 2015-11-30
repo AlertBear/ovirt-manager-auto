@@ -10,6 +10,7 @@ import shlex
 from art.rhevm_api.resources import storage as storage_resources
 from art.rhevm_api.tests_lib.low_level import disks, jobs, storagedomains, vms
 from art.test_handler import exceptions
+from art.test_handler.settings import opts
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, StorageTest as BaseTestCase
 from rhevmtests.storage import helpers
@@ -90,6 +91,7 @@ class BasicEnvironment(BaseTestCase):
     vm_name = None
     storage_domain = None
     create_disk_permutations = False
+    polarion_test_case = None
 
     def setUp(self):
         """
@@ -116,11 +118,12 @@ class BasicEnvironment(BaseTestCase):
         Creates a set of disks to be used with all the Get Device name
         tests, and saves a list with the aliases of the created disks
         """
-        self.disk_aliases = \
+        self.disk_aliases = (
             helpers.create_disks_from_requested_permutations(
                 self.storage_domain, (config.VIRTIO, config.VIRTIO_SCSI),
-                config.DISK_SIZE
+                config.DISK_SIZE, test_name=self.polarion_test_case
             )
+        )
 
     def verify_logical_device_naming(self, disk_interface,
                                      disk_logical_volume_name):
@@ -348,10 +351,6 @@ class TestCase4572(BasicEnvironment):
     workitem?id=RHEVM3-4572
     """
     __test__ = True
-    # TODO: Disable Java while attachDisk function isn't activating the disk as
-    # expected, see ticket:
-    # https://projects.engineering.redhat.com/browse/RHEVM-2374
-    apis = BasicEnvironment.apis - set(['java'])
     polarion_test_case = '4572'
     create_disk_permutations = True
 
@@ -372,8 +371,13 @@ class TestCase4573(BasicEnvironment):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM3-4573
     """
-    __test__ = True
+    # Gluster doesn't support shareable disks
+    __test__ = (
+        config.STORAGE_TYPE_NFS in opts['storages'] or
+        config.STORAGE_TYPE_ISCSI in opts['storages']
+    )
     polarion_test_case = '4573'
+    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
 
     @polarion(POLARION_PROJECT + polarion_test_case)
     def test_one_shared_disk_on_2_vms(self):
@@ -394,8 +398,13 @@ class TestCase4574(BasicEnvironment):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
     workitem?id=RHEVM3-4574
     """
-    __test__ = True
+    # Gluster doesn't support shareable disks
+    __test__ = (
+        config.STORAGE_TYPE_NFS in opts['storages'] or
+        config.STORAGE_TYPE_ISCSI in opts['storages']
+    )
     polarion_test_case = '4574'
+    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
 
     @polarion(POLARION_PROJECT + polarion_test_case)
     def test_one_non_shared_one_shared_disk_on_2_vms(self):
@@ -451,5 +460,6 @@ class TestCase4576(BasicEnvironment):
     @polarion(POLARION_PROJECT + polarion_test_case)
     def test_basic_flow_get_device_name(self):
         """ Polarion case 4576"""
-        self.attach_disk_permutations_and_verify_in_os(hot_plug=True,
-                                                       hot_unplug=True)
+        self.attach_disk_permutations_and_verify_in_os(
+            hot_plug=True, hot_unplug=True
+        )

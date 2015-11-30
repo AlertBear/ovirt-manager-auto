@@ -30,8 +30,15 @@ class BaseExportImportTestCase(TestCase):
         * Creates a vm and shuts it down
         """
         self.vm_name = "original_vm_%s" % self.polarion_test_case
-        self.export_domain = storagedomains.findExportStorageDomains(
-            config.DATA_CENTER_NAME)[0]
+        export_domains = storagedomains.findExportStorageDomains(
+            config.DATA_CENTER_NAME
+        )
+        if not export_domains:
+            raise exceptions.StorageDomainException(
+                "No Export storage domains were found in Data center '%s'" %
+                config.DATA_CENTER_NAME
+            )
+        self.export_domain = export_domains[0]
         self.storage_domain = storagedomains.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[0]
 

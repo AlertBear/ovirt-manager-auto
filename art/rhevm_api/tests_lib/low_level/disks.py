@@ -28,7 +28,6 @@ from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.core_api import is_action
 from art.test_handler.settings import opts
 
-GBYTE = 1024 ** 3
 ENUMS = opts['elements_conf']['RHEVM Enums']
 DEFAULT_CLUSTER = 'Default'
 NAME_ATTR = 'name'
@@ -585,30 +584,35 @@ def do_disk_action(
     else:
         raise ValueError("Either specify disk_id or disk_name")
 
-    DISKS_API.logger.info('Disk found. name: %s id: %s', disk.get_alias(),
-                          disk.get_id())
+    DISKS_API.logger.info(
+        "Disk found. name: %s id: %s", disk.get_alias(), disk.get_id()
+    )
     updated_disk_alias = None
     if new_disk_alias and action == 'copy':
         logger.info(
             "Disk with current alias %s will be copied into a disk with "
-            "alias %s",
-            disk.get_alias(), new_disk_alias
+            "alias %s", disk.get_alias(), new_disk_alias
         )
         updated_disk_alias = Disk(alias=new_disk_alias)
 
-    if not DISKS_API.syncAction(disk, action, storage_domain=sd,
-                                positive=positive, disk=updated_disk_alias):
-        return not positive
+    if not DISKS_API.syncAction(
+            disk, action, storage_domain=sd, positive=positive,
+            disk=updated_disk_alias
+
+    ):
+        return False
 
     if wait and positive:
-        # TBD: shouln't be possible to use a query here?
-        for sample in TimeoutingSampler(timeout, sleep, getStorageDomainDisks,
-                                        target_domain, False):
+        # TODO: shouldn't it be possible to use a query here?
+        for sample in TimeoutingSampler(
+                timeout, sleep, getStorageDomainDisks, target_domain, False
+        ):
             for target_disk in sample:
                 if disk.get_id() == target_disk.get_id() and (
-                        disk.status.state == ENUMS['disk_state_ok']):
+                        disk.status.state == ENUMS['disk_state_ok']
+                ):
                     return True
-    return positive
+    return True
 
 
 def checksum_disk(hostname, user, password, disk_object, dc_obj):

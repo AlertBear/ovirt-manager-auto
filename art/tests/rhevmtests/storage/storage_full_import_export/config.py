@@ -1,9 +1,6 @@
 """
 Config module for full import/export sanity
 """
-
-__test__ = False
-
 from rhevmtests.storage.config import * # flake8: noqa
 
 TESTNAME = "full_disk_tests"

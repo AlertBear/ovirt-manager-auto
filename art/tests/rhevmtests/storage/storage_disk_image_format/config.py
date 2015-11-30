@@ -1,10 +1,7 @@
 """
 Config module for storage disk image format
 """
-
 from rhevmtests.storage.config import *  # flake8: noqa
-
-__test__ = False
 
 # Name of the test
 TESTNAME = "disk_image_format"

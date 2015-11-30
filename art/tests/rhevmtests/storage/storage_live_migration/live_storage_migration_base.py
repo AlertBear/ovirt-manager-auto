@@ -269,6 +269,7 @@ class AllPermutationsDisks(BaseTestCase):
     spm = None
     master_sd = None
     shared = False
+    polarion_test_case = None
 
     def setUp(self):
         """
@@ -276,10 +277,11 @@ class AllPermutationsDisks(BaseTestCase):
         """
         global DISK_NAMES
         super(AllPermutationsDisks, self).setUp()
-        DISK_NAMES[self.storage] = \
+        DISK_NAMES[self.storage] = (
             storage_helpers.create_disks_from_requested_permutations(
-            domain_to_use=self.disk_sd, size=config.DISK_SIZE,
-            shared=self.shared
+                domain_to_use=self.disk_sd, size=config.DISK_SIZE,
+                shared=self.shared, test_name=self.polarion_test_case
+            )
         )
         if not wait_for_disks_status(
             DISK_NAMES[self.storage], timeout=TASK_TIMEOUT,
@@ -930,8 +932,9 @@ class TestCase5996(CommonUsage):
         Prepares a floating disk
         """
         super(TestCase5996, self).setUp()
-        self.disk_name_pattern = self.disk_name_pattern \
-            % (self.polarion_test_case, self.__class__.__name__)
+        self.disk_name_pattern = self.disk_name_pattern % (
+            (self.polarion_test_case, self.__class__.__name__)
+        )
         startVm(True, self.vm_name, config.VM_UP)
         helpers.add_new_disk_for_test(
             self.vm_name, self.disk_name_pattern, sparse=True,
@@ -1110,8 +1113,9 @@ class TestCase5972(CommonUsage):
             }
 
             for index in range(self.disk_count):
-                disk_params['alias'] = \
+                disk_params['alias'] = (
                     self.disk_name % (index, self.polarion_test_case)
+                )
                 disk_params['storagedomain'] = self.storage_domains[index]
                 if not addDisk(True, **disk_params):
                     raise exceptions.DiskException(
@@ -2106,8 +2110,9 @@ class TestCase5971(CommonUsage):
 
             for index in range(self.disk_count):
 
-                disk_params['alias'] = "disk_%s_%s" % \
-                                       (index, self.polarion_test_case)
+                disk_params['alias'] = "disk_%s_%s" % (
+                    (index, self.polarion_test_case)
+                )
                 disk_params['storagedomain'] = self.storage_domains[index]
                 if index == 2:
                     disk_params['active'] = False

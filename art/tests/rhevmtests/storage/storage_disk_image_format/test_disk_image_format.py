@@ -6,14 +6,17 @@ Storage/3_2_Storage_Disk_Image_Format
 import config
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from art.unittest_lib import StorageTest as TestCase
-from art.unittest_lib import attr
+from art.unittest_lib import attr, StorageTest as TestCase
 from art.rhevm_api.tests_lib.low_level import (
-    disks, storagedomains, vms, templates,
+    disks as ll_disks,
+    storagedomains as ll_sd,
+    vms as ll_vms,
+    templates as ll_templates,
 )
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from rhevmtests.storage import helpers
 
+ENUMS = config.ENUMS
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +29,7 @@ VM_ARGS = {
     'nic': config.NIC_NAME[0],
     'image': config.COBBLER_PROFILE,
     'useAgent': True,
-    'os_type': config.ENUMS['rhel6'],
+    'os_type': ENUMS['rhel6'],
     'user': config.VM_USER,
     'password': config.VM_PASSWORD,
     'network': config.MGMT_BRIDGE,
@@ -54,7 +57,7 @@ class BaseTestDiskImage(TestCase):
         """
         Retrieve environment's data
         """
-        cls.storage_domains = storagedomains.getStorageDomainNamesForType(
+        cls.storage_domains = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, cls.storage,
         )
         cls.domain_0 = cls.storage_domains[0]
@@ -73,7 +76,7 @@ class BaseTestDiskImage(TestCase):
         disks_dict is passed in,  the default dictionary is updated. Also make
         sure there's at least one disk in the vm
 
-        :param disk_dict: dictionary str/bool with disk identifier and sparse
+        :param disks_dict: dictionary str/bool with disk identifier and sparse
         value
         :type disks_dict: dict
         """
@@ -106,6 +109,7 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
 
     disk_thin = None
     disk_prealloc = None
+    polarion_test_id = None
 
     def setUp(self):
         """
@@ -116,7 +120,7 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
         self.vm_prealloc = "vm_prealloc_disk_image"
         self.vms = [self.vm_thin, self.vm_prealloc]
         # Define the disk objects' retriever function
-        self.retrieve_disk_obj = lambda x: vms.getVmDisks(x)
+        self.retrieve_disk_obj = lambda x: ll_vms.getVmDisks(x)
 
         vm_thin_args = VM_ARGS.copy()
         vm_prealloc_args = VM_ARGS.copy()
@@ -144,10 +148,10 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
         assert helpers.create_vm_or_clone(**vm_prealloc_args)
 
         if self.installation:
-            assert vms.stop_vms_safely([self.vm_thin, self.vm_prealloc])
+            assert ll_vms.stop_vms_safely([self.vm_thin, self.vm_prealloc])
 
-        self.disk_thin = vms.getVmDisks(self.vm_thin)[0].get_alias()
-        self.disk_prealloc = vms.getVmDisks(self.vm_prealloc)[0].get_alias()
+        self.disk_thin = ll_vms.getVmDisks(self.vm_thin)[0].get_alias()
+        self.disk_prealloc = ll_vms.getVmDisks(self.vm_prealloc)[0].get_alias()
         self.snapshot_desc = "snapshot_disk_image_format"
 
     def execute_concurrent_vms(self, fn):
@@ -177,7 +181,7 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
         logger.info("Adding snapshots for %s", ", ".join(self.vms))
 
         def addsnapshot(vm):
-            return vms.addSnapshot(True, vm, self.snapshot_desc)
+            return ll_vms.addSnapshot(True, vm, self.snapshot_desc)
 
         self.execute_concurrent_vms(addsnapshot)
 
@@ -186,7 +190,7 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
         Export vms in parallel
         """
         def exportVm(vm):
-            return vms.exportVm(
+            return ll_vms.exportVm(
                 True, vm, self.export_domain,
                 discard_snapshots=discard_snapshots
             )
@@ -201,7 +205,7 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
         logger.info("Import vms %s", ", ".join(self.vms))
 
         def importVm(vm):
-            return vms.importVm(
+            return ll_vms.importVm(
                 True, vm, self.export_domain, self.domain_0,
                 config.CLUSTER_NAME, collapse=collapse
             )
@@ -214,11 +218,11 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
         """
         vm_thin_snapshots = [
             snapshot.get_description() for snapshot in
-            vms.get_vm_snapshots(self.vm_thin)
+            ll_vms.get_vm_snapshots(self.vm_thin)
         ]
         vm_prealloc_snapshots = [
             snapshot.get_description() for snapshot in
-            vms.get_vm_snapshots(self.vm_prealloc)
+            ll_vms.get_vm_snapshots(self.vm_prealloc)
         ]
         self.assertTrue(self.snapshot_desc not in vm_thin_snapshots)
         self.assertTrue(self.snapshot_desc not in vm_prealloc_snapshots)
@@ -227,8 +231,8 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
         """
         Remove created vms
         """
-        vms.stop_vms_safely(self.vms)
-        assert vms.removeVms(True, self.vms)
+        ll_vms.stop_vms_safely(self.vms)
+        assert ll_vms.removeVms(True, self.vms)
 
 
 class TestCasesVms(BaseTestDiskImageVms):
@@ -260,10 +264,12 @@ class TestCasesVms(BaseTestDiskImageVms):
         * Thin provisioned disk should remain the same
         * Preallocated disk should remain the same
         """
-        assert disks.move_disk(
-            disk_name=self.disk_thin, target_domain=self.domain_1)
-        assert disks.move_disk(
-            disk_name=self.disk_prealloc, target_domain=self.domain_1)
+        assert ll_disks.move_disk(
+            disk_name=self.disk_thin, target_domain=self.domain_1
+        )
+        assert ll_disks.move_disk(
+            disk_name=self.disk_prealloc, target_domain=self.domain_1
+        )
 
         self.check_disks()
 
@@ -278,10 +284,12 @@ class TestCasesVms(BaseTestDiskImageVms):
         self.add_snapshots()
         self.check_disks({self.vm_prealloc: True})
 
-        assert disks.move_disk(
-            disk_name=self.disk_thin, target_domain=self.domain_1)
-        assert disks.move_disk(
-            disk_name=self.disk_prealloc, target_domain=self.domain_1)
+        assert ll_disks.move_disk(
+            disk_name=self.disk_thin, target_domain=self.domain_1
+        )
+        assert ll_disks.move_disk(
+            disk_name=self.disk_prealloc, target_domain=self.domain_1
+        )
 
         self.check_disks({self.vm_prealloc: True})
 
@@ -293,13 +301,17 @@ class TestCasesVms(BaseTestDiskImageVms):
         * Thin provisioned disk should remain the same
         * Preallocated disk should change to thin provisioned
         """
-        vms.start_vms([self.vm_prealloc, self.vm_thin], max_workers=2,
-                      wait_for_status=config.VM_UP, wait_for_ip=False)
+        ll_vms.start_vms(
+            [self.vm_prealloc, self.vm_thin], max_workers=2,
+            wait_for_status=config.VM_UP, wait_for_ip=False
+        )
 
-        assert disks.move_disk(
-            disk_name=self.disk_thin, target_domain=self.domain_1)
-        assert disks.move_disk(
-            disk_name=self.disk_prealloc, target_domain=self.domain_1)
+        assert ll_disks.move_disk(
+            disk_name=self.disk_thin, target_domain=self.domain_1
+        )
+        assert ll_disks.move_disk(
+            disk_name=self.disk_prealloc, target_domain=self.domain_1
+        )
 
         self.check_disks({self.vm_prealloc: True})
 
@@ -319,7 +331,7 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
         """
         self.export_vms()
 
-        self.retrieve_disk_obj = lambda w: vms.getVmDisks(
+        self.retrieve_disk_obj = lambda w: ll_vms.getVmDisks(
             w, storage_domain=self.export_domain)
         self.check_disks()
 
@@ -335,7 +347,7 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
         self.add_snapshots()
         self.export_vms()
 
-        self.retrieve_disk_obj = lambda w: vms.getVmDisks(
+        self.retrieve_disk_obj = lambda w: ll_vms.getVmDisks(
             w, storage_domain=self.export_domain)
         self.check_disks({self.vm_prealloc: True})
 
@@ -351,8 +363,9 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
         self.add_snapshots()
         self.export_vms(discard_snapshots=True)
 
-        self.retrieve_disk_obj = lambda w: vms.getVmDisks(
-            w, storage_domain=self.export_domain)
+        self.retrieve_disk_obj = lambda w: ll_vms.getVmDisks(
+            w, storage_domain=self.export_domain
+        )
         self.check_disks()
 
     @polarion("RHEVM3-11615")
@@ -364,7 +377,7 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
         * Preallocated disk should remain the same
         """
         self.export_vms()
-        assert vms.removeVms(True, [self.vm_thin, self.vm_prealloc])
+        assert ll_vms.removeVms(True, [self.vm_thin, self.vm_prealloc])
         self.import_vms()
 
         self.check_disks()
@@ -379,7 +392,7 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
         """
         self.add_snapshots()
         self.export_vms()
-        assert vms.removeVms(True, [self.vm_thin, self.vm_prealloc])
+        assert ll_vms.removeVms(True, [self.vm_thin, self.vm_prealloc])
         self.import_vms()
 
         self.check_disks({self.vm_prealloc: True})
@@ -395,7 +408,7 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
         """
         self.add_snapshots()
         self.export_vms()
-        assert vms.removeVms(True, [self.vm_thin, self.vm_prealloc])
+        assert ll_vms.removeVms(True, [self.vm_thin, self.vm_prealloc])
         self.import_vms(collapse=True)
         self.check_snapshots_collapsed()
         self.check_disks({self.vm_prealloc: True})
@@ -405,17 +418,18 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
         Remove the vms from the export domain
         """
         for vm in self.vms:
-            vms.removeVm(True, vm, stopVM='true')
+            ll_vms.removeVm(True, vm, stopVM='true')
         for vm in [self.vm_thin, self.vm_prealloc]:
-            assert vms.removeVmFromExportDomain(
-                True, vm, config.DATA_CENTER_NAME, self.export_domain)
+            assert ll_vms.removeVmFromExportDomain(
+                True, vm, config.DATA_CENTER_NAME, self.export_domain
+            )
 
 
 class TestCasesImportVmLinked(BaseTestDiskImage):
     """
     Collection for test cases with one vm imported
     """
-    retrieve_disk_obj = lambda self, x: vms.getVmDisks(x)
+    retrieve_disk_obj = lambda self, x: ll_vms.getVmDisks(x)
     # Bugzilla history:
     # 1254230: Operation of exporting template to Export domain stucks
 
@@ -437,9 +451,10 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
             'volumeFormat': config.COW_DISK,
         })
         assert helpers.create_vm_or_clone(**vm_args)
-        assert templates.createTemplate(
-            True, vm=self.vm_name, name=self.template_name)
-        assert vms.removeVm(True, self.vm_name)
+        assert ll_templates.createTemplate(
+            True, vm=self.vm_name, name=self.template_name
+        )
+        assert ll_vms.removeVm(True, self.vm_name)
 
     @polarion("RHEVM3-11612")
     def test_import_link_to_template(self):
@@ -449,14 +464,16 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
         re-import it back
         * Thin provisioned disk should remain the same
         """
-        assert vms.cloneVmFromTemplate(
+        assert ll_vms.cloneVmFromTemplate(
             True, self.vm_name, self.template_name, config.CLUSTER_NAME,
             clone=False, vol_sparse=True, vol_format=config.COW_DISK
         )
-        assert vms.exportVm(True, self.vm_name, self.export_domain)
-        assert vms.removeVm(True, self.vm_name)
-        assert vms.importVm(True, self.vm_name, self.export_domain,
-                            self.domain_0, config.CLUSTER_NAME)
+        assert ll_vms.exportVm(True, self.vm_name, self.export_domain)
+        assert ll_vms.removeVm(True, self.vm_name)
+        assert ll_vms.importVm(
+            True, self.vm_name, self.export_domain, self.domain_0,
+            config.CLUSTER_NAME
+        )
 
         self.check_disks()
 
@@ -468,21 +485,23 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
         template, remove both of them and import the vm back
         * Thin provisioned disk should remain the same
         """
-        assert vms.cloneVmFromTemplate(
+        assert ll_vms.cloneVmFromTemplate(
             True, self.vm_name, self.template_name, config.CLUSTER_NAME,
             clone=False, vol_sparse=True, vol_format=config.COW_DISK
         )
-        assert templates.exportTemplate(True, self.template_name,
-                                        self.export_domain, wait=True)
+        assert ll_templates.exportTemplate(
+            True, self.template_name, self.export_domain, wait=True
+        )
         self.remove_exported_template = True
-        assert vms.exportVm(True, self.vm_name, self.export_domain)
+        assert ll_vms.exportVm(True, self.vm_name, self.export_domain)
 
-        assert vms.removeVm(True, self.vm_name)
-        assert templates.removeTemplate(True, self.template_name)
+        assert ll_vms.removeVm(True, self.vm_name)
+        assert ll_templates.removeTemplate(True, self.template_name)
 
-        assert vms.importVm(True, self.vm_name, self.export_domain,
-                            self.domain_0, config.CLUSTER_NAME,
-                            collapse=True)
+        assert ll_vms.importVm(
+            True, self.vm_name, self.export_domain, self.domain_0,
+            config.CLUSTER_NAME, collapse=True
+        )
 
         self.check_disks()
 
@@ -490,14 +509,14 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
         """
         Remove all templates and vms created
         """
-        assert vms.removeVm(True, self.vm_name)
-        if templates.validateTemplate(True, self.template_name):
-            assert templates.removeTemplate(True, self.template_name)
-        assert vms.removeVmFromExportDomain(
+        assert ll_vms.removeVm(True, self.vm_name)
+        if ll_templates.validateTemplate(True, self.template_name):
+            assert ll_templates.removeTemplate(True, self.template_name)
+        assert ll_vms.removeVmFromExportDomain(
             True, self.vm_name, config.DATA_CENTER_NAME, self.export_domain,
         )
         if self.remove_exported_template:
-            assert templates.removeTemplateFromExportDomain(
+            assert ll_templates.removeTemplateFromExportDomain(
                 True, self.template_name, config.DATA_CENTER_NAME,
                 self.export_domain,
             )
@@ -518,12 +537,14 @@ class TestCasesImportVmWithNewName(BaseTestDiskImageVms):
         self.new_vm_prealloc = "new_%s" % self.vm_prealloc
 
         self.export_vms()
-        assert vms.importVm(True, self.vm_thin, self.export_domain,
-                            self.domain_0, config.CLUSTER_NAME,
-                            name=self.new_vm_thin)
-        assert vms.importVm(True, self.vm_prealloc, self.export_domain,
-                            self.domain_0, config.CLUSTER_NAME,
-                            name=self.new_vm_prealloc)
+        assert ll_vms.importVm(
+            True, self.vm_thin, self.export_domain, self.domain_0,
+            config.CLUSTER_NAME, name=self.new_vm_thin
+        )
+        assert ll_vms.importVm(
+            True, self.vm_prealloc, self.export_domain, self.domain_0,
+            config.CLUSTER_NAME, name=self.new_vm_prealloc
+        )
 
     @polarion("RHEVM3-11610")
     def test_import_vm_without_removing_old_vm(self):
@@ -554,10 +575,11 @@ class TestCasesImportVmWithNewName(BaseTestDiskImageVms):
         Remove new created vms
         """
         super(TestCasesImportVmWithNewName, self).tearDown()
-        assert vms.removeVms(True, [self.new_vm_thin, self.new_vm_prealloc])
+        assert ll_vms.removeVms(True, [self.new_vm_thin, self.new_vm_prealloc])
         for vm in [self.vm_thin, self.vm_prealloc]:
-            assert vms.removeVmFromExportDomain(
-                True, vm, config.DATA_CENTER_NAME, self.export_domain)
+            assert ll_vms.removeVmFromExportDomain(
+                True, vm, config.DATA_CENTER_NAME, self.export_domain
+            )
 
 
 class TestCasesCreateTemplate(BaseTestDiskImageVms):
@@ -573,17 +595,17 @@ class TestCasesCreateTemplate(BaseTestDiskImageVms):
         Create one template from a vm with a thin provisioned disk and one from
         a vm with a preallocated disk. Check templates' disks image format
         """
-        assert templates.createTemplate(
+        assert ll_templates.createTemplate(
             True, vm=self.vm_thin, name=self.template_thin,
             cluster=config.CLUSTER_NAME
         )
 
-        assert templates.createTemplate(
+        assert ll_templates.createTemplate(
             True, vm=self.vm_prealloc, name=self.template_preallocated,
             cluster=config.CLUSTER_NAME
         )
 
-        self.retrieve_disk_obj = templates.getTemplateDisks
+        self.retrieve_disk_obj = ll_templates.getTemplateDisks
         self.default_disks = {
             self.template_thin: True,
             self.template_preallocated: False,
@@ -617,7 +639,7 @@ class TestCasesCreateTemplate(BaseTestDiskImageVms):
         """
         super(TestCasesCreateTemplate, self).tearDown()
         for template in [self.template_thin, self.template_preallocated]:
-            assert templates.removeTemplate(True, template)
+            assert ll_templates.removeTemplate(True, template)
 
 
 class TestCase11606(BaseTestDiskImage):
@@ -642,11 +664,11 @@ class TestCase11606(BaseTestDiskImage):
             'volumeFormat': config.COW_DISK,
         })
         assert helpers.create_vm_or_clone(**vm_args)
-        self.thin_disk_alias = vms.getVmDisks(self.vm_name)[0].get_alias()
+        self.thin_disk_alias = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
 
         self.preallocated_disk_alias = "{0}_prealloc".format(self.vm_name)
         # Adding a prealloacted disk
-        assert vms.addDisk(
+        assert ll_vms.addDisk(
             True, self.vm_name, config.DISK_SIZE, bootable=False,
             storagedomain=self.domain_0, interface=self.disk_interface,
             format=config.RAW_DISK, sparse=False,
@@ -658,8 +680,8 @@ class TestCase11606(BaseTestDiskImage):
         Verify the vm and template disks' format
         """
         for function, object_name in [
-                (disks.getTemplateDisk, self.template_name),
-                (disks.getVmDisk, self.vm_name)]:
+                (ll_disks.getTemplateDisk, self.template_name),
+                (ll_disks.getVmDisk, self.vm_name)]:
 
             thin_disk = function(object_name, self.thin_disk_alias)
             preallocated_disk = function(
@@ -680,15 +702,17 @@ class TestCase11606(BaseTestDiskImage):
         """
         Export the vm, import it and create a template
         """
-        assert vms.exportVm(True, self.vm_name, self.export_domain)
-        assert vms.removeVm(True, self.vm_name)
+        assert ll_vms.exportVm(True, self.vm_name, self.export_domain)
+        assert ll_vms.removeVm(True, self.vm_name)
 
-        assert vms.importVm(True, self.vm_name, self.export_domain,
-                            self.domain_0, config.CLUSTER_NAME,
-                            collapse=collapse)
+        assert ll_vms.importVm(
+            True, self.vm_name, self.export_domain, self.domain_0,
+            config.CLUSTER_NAME, collapse=collapse
+        )
 
-        assert templates.createTemplate(
-            True, vm=self.vm_name, name=self.template_name)
+        assert ll_templates.createTemplate(
+            True, vm=self.vm_name, name=self.template_name
+        )
 
     @polarion("RHEVM3-11606")
     def test_different_format_same_vm(self):
@@ -707,17 +731,18 @@ class TestCase11606(BaseTestDiskImage):
         * Thin provisioned disk should remain the same
         * Preallocated disk should remain the same
         """
-        assert vms.addSnapshot(True, self.vm_name, "another snapshot")
+        assert ll_vms.addSnapshot(True, self.vm_name, "another snapshot")
         self.action_test(collapse=True)
 
     def tearDown(self):
         """
         Remove created vm, exported vm and template
         """
-        assert vms.removeVm(True, self.vm_name)
-        assert vms.removeVmFromExportDomain(
-            True, self.vm_name, config.DATA_CENTER_NAME, self.export_domain)
-        assert templates.removeTemplate(True, self.template_name)
+        assert ll_vms.removeVm(True, self.vm_name)
+        assert ll_vms.removeVmFromExportDomain(
+            True, self.vm_name, config.DATA_CENTER_NAME, self.export_domain
+        )
+        assert ll_templates.removeTemplate(True, self.template_name)
 
 
 class TestCasesVmsVIRTIO(TestCasesVms):
