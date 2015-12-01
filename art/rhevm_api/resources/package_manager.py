@@ -1,45 +1,14 @@
 from art.rhevm_api.resources.service import Service
 
-YUM_MANAGER_CLASS = 'YumPackageManager'
-RPM_MANAGER_CLASS = 'RPMPackageManager'
-APT_MANAGER_CLASS = 'APTPackageManager'
-
 
 class PackageManager(Service):
     """
-    Class to provide flex interface
+    Base class which defines interface for package management.
     """
-    exist_command_d = {
-        YUM_MANAGER_CLASS: ['yum', 'list', 'installed'],
-        RPM_MANAGER_CLASS: ['rpm', '-q'],
-        # FIXME: Once apt will return correct return codes fix this
-        APT_MANAGER_CLASS: ['apt', 'list', '--installed', '|', 'grep'],
-    }
-    install_command_d = {
-        YUM_MANAGER_CLASS: ['yum', 'install', '-y'],
-        RPM_MANAGER_CLASS: ['rpm', '-i'],
-        APT_MANAGER_CLASS: ['apt', 'install', '-y'],
-    }
-    erase_command_d = {
-        YUM_MANAGER_CLASS: ['yum', 'erase', '-y'],
-        RPM_MANAGER_CLASS: ['rpm', '-e'],
-        APT_MANAGER_CLASS: ['apt', 'remove', '-y'],
-    }
-    update_command_d = {
-        YUM_MANAGER_CLASS: ['yum', 'update', '-y'],
-        RPM_MANAGER_CLASS: ['rpm', '-U'],
-        APT_MANAGER_CLASS: ['apt', 'update', '-y'],
-    }
-
-    def __init__(self, host):
-        """
-        Initialization method for PackageManager class
-
-        :param host: host resource
-        :type host: Host
-        """
-        super(PackageManager, self).__init__(host)
-        self.cls_name = self.__class__.__name__
+    exist_command_d = None
+    install_command_d = None
+    remove_command_d = None
+    update_command_d = None
 
     def _run_command_on_host(self, cmd):
         """
@@ -70,8 +39,11 @@ class PackageManager(Service):
         :type package: str
         :return: True, if package exist, otherwise False
         :rtype: bool
+        :raise: NotImplementedError
         """
-        cmd = list(self.exist_command_d[self.cls_name])
+        if not self.exist_command_d:
+            raise NotImplementedError("There is no 'exist' command defined.")
+        cmd = list(self.exist_command_d)
         cmd.append(package)
         self.logger.info(
             "Check if host %s have %s package", self.host, package
@@ -86,8 +58,11 @@ class PackageManager(Service):
         :type package: str
         :return: True, if package installation success, otherwise False
         :rtype: bool
+        :raise: NotImplementedError
         """
-        cmd = list(self.install_command_d[self.cls_name])
+        if not self.install_command_d:
+            raise NotImplementedError("There is no 'install' command defined.")
+        cmd = list(self.install_command_d)
         cmd.append(package)
         if not self.exist(package):
             self.logger.info(
@@ -107,8 +82,11 @@ class PackageManager(Service):
         :type package: str
         :return: True, if package removal success, otherwise False
         :rtype: bool
+        :raise: NotImplementedError
         """
-        cmd = list(self.erase_command_d[self.cls_name])
+        if not self.remove_command_d:
+            raise NotImplementedError("There is no 'remove' command defined.")
+        cmd = list(self.remove_command_d)
         cmd.append(package)
         if self.exist(package):
             self.logger.info(
@@ -130,8 +108,11 @@ class PackageManager(Service):
         :type packages: list
         :return: True when updates succeed, False otherwise
         :rtype: bool
+        :raise: NotImplementedError
         """
-        cmd = list(self.update_command_d[self.cls_name])
+        if not self.update_command_d:
+            raise NotImplementedError("There is no 'update' command defined.")
+        cmd = list(self.update_command_d)
         if packages:
             cmd.extend(packages)
             self.logger.info(
@@ -146,18 +127,28 @@ class YumPackageManager(PackageManager):
     """
     YUM package manager class
     """
-    pass
+    exist_command_d = ('yum', 'list', 'installed')
+    install_command_d = ('yum', 'install', '-y')
+    remove_command_d = ('yum', 'remove', '-y')
+    update_command_d = ('yum', 'update', '-y')
 
 
 class RPMPackageManager(PackageManager):
     """
     RPM package manager class
     """
-    pass
+    exist_command_d = ('rpm', '-q')
+    install_command_d = ('rpm', '-i')
+    remove_command_d = ('rpm', '-e')
+    update_command_d = ('rpm', '-U')
 
 
 class APTPackageManager(PackageManager):
     """
     APT package manager class
     """
-    pass
+    # FIXME: Once apt will return correct return codes fix this
+    exist_command_d = ('apt', 'list', '--installed', '|', 'grep')
+    install_command_d = ('apt', 'install', '-y')
+    remove_command_d = ('apt', 'remove', '-y')
+    update_command_d = ('apt', 'update', '-y')
