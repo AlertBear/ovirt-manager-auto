@@ -56,7 +56,10 @@ def setup_package():
         raise c.NET_EXCEPTION("Couldn't add NFS storage Domain")
 
     logger.info("Create a new VM %s", c.MP_VM)
-    if not ll_vms.addVm(positive=True, name=c.MP_VM, cluster=c.MAC_POOL_CL):
+    if not ll_vms.addVm(
+        positive=True, name=c.MP_VM, cluster=c.MAC_POOL_CL,
+        display_type=c.VM_DISPLAY_TYPE
+    ):
         raise c.NET_EXCEPTION("Failed to create VM: %s" % c.MP_VM)
 
 

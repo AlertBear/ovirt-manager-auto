@@ -707,7 +707,7 @@ class TestMacPoolRange12(TestCase):
         Create a new MAC pool
         Update 2 DCs with a new MAC pool
         """
-        helper.create_mac_pool()
+        helper.create_mac_pool(allow_duplicates=True)
 
         for dc in (c.DC_NAME[0], c.EXT_DC_0):
             helper.update_dc_with_mac_pool(dc=dc)

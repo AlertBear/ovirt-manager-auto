@@ -18,7 +18,8 @@ logger = logging.getLogger("MAC_Pool_Range_Per_DC_Helper")
 
 
 def create_mac_pool(
-    mac_pool_name=c.MAC_POOL_NAME_0, mac_pool_ranges=list(), positive=True
+    mac_pool_name=c.MAC_POOL_NAME_0, mac_pool_ranges=list(), positive=True,
+    allow_duplicates=False
 ):
     """
     Create MAC pool with MAC pool range
@@ -38,7 +39,7 @@ def create_mac_pool(
     logger.info("Create MAC pool %s", mac_pool_name)
     status = ll_mac_pool.create_mac_pool(
         name=mac_pool_name,
-        ranges=mac_pool_ranges
+        ranges=mac_pool_ranges, allow_duplicates=allow_duplicates
     )
     if status != positive:
         raise c.NET_EXCEPTION(

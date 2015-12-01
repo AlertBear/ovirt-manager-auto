@@ -97,3 +97,8 @@ VM_FROM_TEMPLATE = "vm_from_queues_template"
 # Big MAC pool range
 BMPR_VM_NAME = "BigRangeMacPool_VM1"
 MAC_POOL_RANGE_CMD = "MacPoolRanges"
+
+# PPC
+VM_DISPLAY_TYPE = ENUMS[
+    "display_type_vnc"
+] if PPC_ARCH else ENUMS["display_type_spice"]
