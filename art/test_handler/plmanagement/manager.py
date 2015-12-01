@@ -61,6 +61,7 @@ class PluginManager(core.ComponentManager, core.Component):
         self.args = args
         self.config = config
         for config_able in self.configurables:
+            logger.debug("Start configuration of plugin : %s", config_able)
             try:
                 config_able.configure(args, config)
             except Exception as ex:
