@@ -6,9 +6,11 @@ Testing Topologies feature.
 1 DC, 1 Cluster, 1 Hosts and 1 VM will be created for testing.
 """
 import logging
+import unittest2
 from rhevmtests.networking import config
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
+import art.unittest_lib.common as common
 from art.unittest_lib import NetworkTest as TestCase
 from art.rhevm_api.tests_lib.low_level.vms import (
     updateNic, startVm, stopVm
@@ -23,6 +25,7 @@ from rhevmtests.networking.topologies.helper import(
 import rhevmtests.networking.helper as net_help
 logger = logging.getLogger("Topologies_Cases")
 
+TEST_VLAN = "1000" if config.PPC_ARCH else config.VLAN_ID[0]
 ########################################################################
 
 ########################################################################
@@ -48,7 +51,8 @@ class TestTopologiesCase01(TestCase):
         )
         local_dict = {
             config.VLAN_NETWORKS[0]: {
-                "vlan_id": config.VLAN_ID[0], "nic": 1, "required": False
+                "vlan_id": TEST_VLAN,
+                "nic": 1, "required": False
             }
         }
 
@@ -86,6 +90,7 @@ class TestTopologiesCase01(TestCase):
         """
         check_vm_connect_and_log(driver=config.NIC_TYPE_VIRTIO, vlan=True)
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12287")
     def test_vlan_network_02_e1000(self):
         """
@@ -97,6 +102,7 @@ class TestTopologiesCase01(TestCase):
 
         check_vm_connect_and_log(driver=config.NIC_TYPE_E1000, vlan=True)
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12288")
     def test_vlan_network_03_rtl8139(self):
         """
@@ -154,12 +160,15 @@ class TestTopologiesCase02(TestCase):
         Create and attach VLAN over BOND mode 1 network to host and VM
         """
         logger.info("Create and attach VLAN over BOND mode 1 network")
-        local_dict = {None: {"nic": config.BOND[0],
-                             "mode": config.BOND_MODES[1],
-                             "slaves": [2, 3]},
-                      config.VLAN_NETWORKS[0]: {"nic": config.BOND[0],
-                                                "vlan_id": config.VLAN_ID[0],
-                                                "required": False}}
+        local_dict = {
+            None: {
+                "nic": config.BOND[0], "mode": config.BOND_MODES[1],
+                "slaves": [2, 3]
+            },
+            config.VLAN_NETWORKS[0]: {
+                "nic": config.BOND[0], "vlan_id": TEST_VLAN, "required": False
+            }
+        }
 
         if not createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
@@ -176,7 +185,6 @@ class TestTopologiesCase02(TestCase):
             raise NetworkException(
                 "Fail to update vNIC to VLAN over BOND mode 1 network on VM"
             )
-
         if not net_help.run_vm_once_specific_host(
             vm=config.VM_NAME[0], host=config.HOSTS[0], wait_for_ip=True
         ):
@@ -195,6 +203,7 @@ class TestTopologiesCase02(TestCase):
             mode=config.BOND_MODES[1]
         )
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12291")
     def test_vlan_over_bond_network_02_e1000(self):
         """
@@ -208,6 +217,7 @@ class TestTopologiesCase02(TestCase):
             mode=config.BOND_MODES[1]
         )
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12292")
     def test_vlan_over_bond_network_03_rtl8139(self):
         """
@@ -294,6 +304,7 @@ class TestTopologiesCase03(TestCase):
             driver=config.NIC_TYPE_VIRTIO, mode=config.BOND_MODES[2]
         )
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12294")
     def test_bond_network_02_e1000(self):
         """
@@ -306,6 +317,7 @@ class TestTopologiesCase03(TestCase):
             driver=config.NIC_TYPE_E1000, mode=config.BOND_MODES[2]
         )
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12295")
     def test_bond_network_03_rtl8139(self):
         """
@@ -374,7 +386,6 @@ class TestTopologiesCase04(TestCase):
             raise NetworkException(
                 "Fail to update vNIC to BOND network on VM"
             )
-
         logger.info("Start VM %s", config.VM_NAME[0])
         if not startVm(positive=True, vm=config.VM_NAME[0]):
             raise NetworkException("Fail to start VM %s" % config.VM_NAME[0])
@@ -388,6 +399,7 @@ class TestTopologiesCase04(TestCase):
             driver=config.NIC_TYPE_VIRTIO, mode=config.BOND_MODES[4]
         )
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12300")
     def test_bond_network_02_e1000(self):
         """
@@ -400,6 +412,7 @@ class TestTopologiesCase04(TestCase):
             driver=config.NIC_TYPE_E1000, mode=config.BOND_MODES[4]
         )
 
+    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12301")
     def test_bond_network_03_rtl8139(self):
         """
@@ -437,6 +450,7 @@ class TestTopologiesCase04(TestCase):
 
 
 @attr(tier=2, extra_reqs={'network_hosts': True})
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class TestTopologiesCase05(TestCase):
     """
     Check connectivity to BOND mode 3 network
@@ -479,6 +493,7 @@ class TestTopologiesCase05(TestCase):
 
 
 @attr(tier=2, extra_reqs={'network_hosts': True})
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class TestTopologiesCase06(TestCase):
     """
     Check connectivity to BOND mode 0 network
@@ -520,6 +535,7 @@ class TestTopologiesCase06(TestCase):
 
 
 @attr(tier=2, extra_reqs={'network_hosts': True})
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class TestTopologiesCase07(TestCase):
     """
     Check connectivity to BOND mode 5 network
@@ -561,6 +577,7 @@ class TestTopologiesCase07(TestCase):
 
 
 @attr(tier=2, extra_reqs={'network_hosts': True})
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class TestTopologiesCase08(TestCase):
     """
     Check connectivity to BOND mode 6 network
