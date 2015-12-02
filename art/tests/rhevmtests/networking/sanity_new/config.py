@@ -85,4 +85,22 @@ SN_DICT = {
         "required": "false",
         "mtu": MTU[1]
     },
+    NETS[5][0]: {
+        "required": "false",
+        "usages": ""
+    },
+    NETS[5][1]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[5],
+        "usages": "",
+    },
+    NETS[5][2]: {
+        "required": "false",
+        "usages": ""
+    },
+    NETS[5][3]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[6],
+        "usages": ""
+    },
 }

@@ -295,7 +295,7 @@ class TestSanity04(TestSanityCaseBase):
 
     __test__ = True
     net = conf.NETS[4]
-    bond = "bond21"
+    bond = "bond41"
 
     def test_mtu_over_vm(self):
         """
@@ -377,6 +377,105 @@ class TestSanity04(TestSanityCaseBase):
         logger.info("Perform SetupNetwork action on %s",  conf.HOST_NAME_0)
         if not hl_host_network.setup_networks(
             conf.HOST_NAME_0, **mtu_over_bond_dict
+        ):
+            raise conf.NET_EXCEPTION(
+                "SetupNetwork action failed on %s" % conf.HOST_NAME_0
+            )
+
+
+class TestSanity05(TestSanityCaseBase):
+    """
+    Test bridgeless network with VLAN/No-VLAN over NIC/BOND
+    """
+
+    __test__ = True
+    net = conf.NETS[5]
+    bond_1 = "bond51"
+    bond_2 = "bond52"
+
+    def test_bridgless_on_nic(self):
+        """
+        Attach bridgeless network on NIC
+        """
+        bridgeless_on_nic_dict = {
+            "add": {
+                "1": {
+                    "nic": conf.HOST_0_NICS[1],
+                    "network": self.net[0]
+                }
+            }
+        }
+        logger.info("Perform SetupNetwork action on %s",  conf.HOST_NAME_0)
+        if not hl_host_network.setup_networks(
+            conf.HOST_NAME_0, **bridgeless_on_nic_dict
+        ):
+            raise conf.NET_EXCEPTION(
+                "SetupNetwork action failed on %s" % conf.HOST_NAME_0
+            )
+
+    def test_bridgeless_vlan_on_nic(self):
+        """
+        Attach bridgeless network with VLAN on NIC
+        """
+        bridgeless_vlan_on_nic_dict = {
+            "add": {
+                "1": {
+                    "nic": conf.HOST_0_NICS[2],
+                    "network": self.net[1]
+                }
+            }
+        }
+        logger.info("Perform SetupNetwork action on %s",  conf.HOST_NAME_0)
+        if not hl_host_network.setup_networks(
+            conf.HOST_NAME_0, **bridgeless_vlan_on_nic_dict
+        ):
+            raise conf.NET_EXCEPTION(
+                "SetupNetwork action failed on %s" % conf.HOST_NAME_0
+            )
+
+    def test_bridgeless_on_bond(self):
+        """
+        Attach bridgeless network on BOND
+        """
+        bridgeless_on_bond_dict = {
+            "add": {
+                "1": {
+                    "nic": self.bond_1,
+                    "slaves": conf.DUMMYS[:2]
+                },
+                "2": {
+                    "nic": self.bond_1,
+                    "network": self.net[2]
+                }
+            }
+        }
+        logger.info("Perform SetupNetwork action on %s",  conf.HOST_NAME_0)
+        if not hl_host_network.setup_networks(
+            conf.HOST_NAME_0, **bridgeless_on_bond_dict
+        ):
+            raise conf.NET_EXCEPTION(
+                "SetupNetwork action failed on %s" % conf.HOST_NAME_0
+            )
+
+    def test_bridgeless_vlan_over_bond(self):
+        """
+        Attach bridgeless VLAN network on BOND
+        """
+        bridgeless_vlan_on_bond_dict = {
+            "add": {
+                "1": {
+                    "nic": self.bond_2,
+                    "slaves": conf.DUMMYS[2:4]
+                },
+                "2": {
+                    "nic": self.bond_2,
+                    "network": self.net[3]
+                }
+            }
+        }
+        logger.info("Perform SetupNetwork action on %s",  conf.HOST_NAME_0)
+        if not hl_host_network.setup_networks(
+            conf.HOST_NAME_0, **bridgeless_vlan_on_bond_dict
         ):
             raise conf.NET_EXCEPTION(
                 "SetupNetwork action failed on %s" % conf.HOST_NAME_0
