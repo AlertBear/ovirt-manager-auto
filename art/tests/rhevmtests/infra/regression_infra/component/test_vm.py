@@ -56,6 +56,8 @@ class TestCaseVM(TestCase):
 
     storages = set([NFS])
 
+    bz = {"1241279": {"engine": ['sdk'], "version": ['3.6.1']}}
+
     def test01_create_vm(self):
         """
         test verifies vm functionality
