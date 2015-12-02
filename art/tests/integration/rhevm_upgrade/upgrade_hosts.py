@@ -92,6 +92,7 @@ class UpgradeHosts(TestCase):
             )
 
     # This case have to be last, after hosts are upgraded
+    @polarion('RHEVM3-14441')
     def test_zz_upgrade_cluster_dc_version(self):
         """ Change cluster/dc compatibility version to current """
         self.assertTrue(
