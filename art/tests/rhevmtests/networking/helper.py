@@ -453,5 +453,22 @@ def delete_dummies(host_resource):
     if not sample.waitForFuncStatus(result=False):
         logger.error("Dummy interface exists on engine")
 
+
+def is_network_in_vds_caps(host_resource, network):
+    """
+    Check if network exists in vdsCaps output
+
+    :param host_resource: Host resource object
+    :type host_resource: resources.VDS
+    :param network: Network name
+    :type network: str
+    :raise: conf.NET_EXCEPTION
+    """
+    logger.info("Get vdsCaps output")
+    out = host_resource.vds_client("getVdsCapabilities")
+    logger.info("Check if %s in vdsCaps output", network)
+    if network not in out["info"]["networks"].keys():
+        raise conf.NET_EXCEPTION("%s not in vdsCaps output" % network)
+
 if __name__ == "__main__":
     pass
