@@ -8,10 +8,9 @@ import libvirt
 import logging
 from random import randint
 from rhevmtests.networking import config
-import art.test_handler.exceptions as exceptions
+from art.rhevm_api.tests_lib.low_level import events
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-from art.rhevm_api.tests_lib.low_level.events import get_max_event_id
 
 logger = logging.getLogger("ArbitraryVlanDeviceName_Helper")
 
@@ -206,7 +205,7 @@ def check_if_nic_in_host_nics(nic, host):
     logger.info("Check that %s exists on %s via engine", nic, host)
     host_nics = ll_hosts.getHostNicsList(host=host)
     if nic not in [i.name for i in host_nics]:
-        raise exceptions.NetworkException(
+        raise config.NET_EXCEPTION(
             "%s not found in %s nics" % (nic, host)
         )
 
@@ -226,13 +225,13 @@ def add_bridge_on_host_and_virsh(host_obj, bridge, network):
     for br, net in zip(bridge, network):
         logger.info("Attaching %s to %s on %s", net, br, host_name)
         if not host_obj.network.add_bridge(bridge=br, network=net):
-            raise exceptions.NetworkException(
+            raise config.NET_EXCEPTION(
                 "Failed to add %s with %s" % (br, net)
             )
 
         logger.info("Adding %s to %s via virsh", br, host_name)
         if not virsh_add_bridge(host_obj=host_obj, bridge=br):
-            raise exceptions.NetworkException("Failed to add %s to virsh" % br)
+            raise config.NET_EXCEPTION("Failed to add %s to virsh" % br)
 
     refresh_capabilities(host=host_name)
 
@@ -251,7 +250,7 @@ def delete_bridge_on_host_and_virsh(host_obj, bridge):
     virsh_delete_bridges(host_obj=host_obj, bridges=[bridge])
     logger.info("Delete %s on %s", bridge, host_name)
     if not host_obj.network.delete_bridge(bridge=bridge):
-        raise exceptions.NetworkException(
+        raise config.NET_EXCEPTION(
             "Failed to delete %s on %s" % (bridge, host_name)
         )
 
@@ -277,7 +276,7 @@ def add_vlans_to_host(host_obj, vlan_id, vlan_name, nic):
         if not host_add_vlan(
             host_obj=host_obj, vlan_id=vid, nic=nic, vlan_name=vname
         ):
-            raise exceptions.NetworkException(
+            raise config.NET_EXCEPTION(
                 "Failed to create %s on %s" % (vlan_name, host_name)
             )
 
@@ -311,7 +310,7 @@ def refresh_capabilities(host):
     :rtype: bool
     """
     logger.info("Getting MAX event ID")
-    last_event = get_max_event_id(query="")
+    last_event = events.get_max_event_id(query="")
     logger.info("Refresh capabilities for %s", host)
     if not ll_hosts.refresh_host_capabilities(
         host=host, start_event_id=last_event
@@ -319,28 +318,6 @@ def refresh_capabilities(host):
         logger.error("Failed to refresh capabilities for: %s" % host)
         return False
     return True
-
-
-def check_if_nic_in_vdscaps(host_obj, nic):
-    """
-    Check if NIC in vdsClient getVdsCaps
-    :param host_obj: resources.VDS object
-    :type host_obj: VDS
-    :param nic: NIC name
-    :type nic: str
-    :return: raise NetworkException on error
-    """
-    logger.info("Check if %s in vdsCaps", nic)
-    host_exec = host_obj.executor()
-    cmd = [
-        "vdsClient", "-s", "0", "getVdsCaps", "|", "grep", nic, "|", "wc",
-        "-l"
-    ]
-    rc, out, err = host_exec.run_cmd(cmd)
-    if rc or not out:
-        raise exceptions.NetworkException(
-            "%s not found in getVdsCaps. err: %s" % (nic, err)
-        )
 
 
 def is_interface_on_host(host_obj, interface):

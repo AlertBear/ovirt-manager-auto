@@ -14,7 +14,7 @@ import logging
 from art.unittest_lib import attr
 from rhevmtests.networking import config
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-import art.test_handler.exceptions as exceptions
+import rhevmtests.networking.helper as net_helper
 from art.unittest_lib import NetworkTest as TestCase
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
@@ -85,8 +85,8 @@ class TestArbitraryVlanDeviceName01(TestArbitraryVlanDeviceNameTearDown):
         helper.check_if_nic_in_host_nics(
             nic=helper.VLAN_NAMES[0], host=HOST_NAME
         )
-        helper.check_if_nic_in_vdscaps(
-            host_obj=config.VDS_HOSTS[0], nic=helper.BRIDGE_NAMES[0]
+        net_helper.is_network_in_vds_caps(
+            host_resource=config.VDS_HOSTS[0], network=helper.BRIDGE_NAMES[0]
         )
 
 
@@ -119,9 +119,8 @@ class TestArbitraryVlanDeviceName02(TestArbitraryVlanDeviceNameTearDown):
         if not hl_host_network.setup_networks(
             host_name=config.HOSTS[0], **network_host_api_dict
         ):
-            raise exceptions.NetworkException(
-                "Cannot create and attach BOND"
-            )
+            raise config.NET_EXCEPTION("Cannot create and attach BOND")
+
         helper.add_vlans_to_host(
             host_obj=config.VDS_HOSTS[0], nic=config.BOND[0],
             vlan_id=[helper.VLAN_IDS[0]], vlan_name=[helper.VLAN_NAMES[0]]
@@ -142,8 +141,8 @@ class TestArbitraryVlanDeviceName02(TestArbitraryVlanDeviceNameTearDown):
         helper.check_if_nic_in_host_nics(
             nic=helper.VLAN_NAMES[0], host=HOST_NAME
         )
-        helper.check_if_nic_in_vdscaps(
-            host_obj=config.VDS_HOSTS[0], nic=helper.BRIDGE_NAMES[0]
+        net_helper.is_network_in_vds_caps(
+            host_resource=config.VDS_HOSTS[0], network=helper.BRIDGE_NAMES[0]
         )
 
 
@@ -186,8 +185,9 @@ class TestArbitraryVlanDeviceName03(TestArbitraryVlanDeviceNameTearDown):
             helper.check_if_nic_in_host_nics(
                 nic=helper.VLAN_NAMES[i], host=HOST_NAME
             )
-            helper.check_if_nic_in_vdscaps(
-                host_obj=config.VDS_HOSTS[0], nic=helper.BRIDGE_NAMES[i]
+            net_helper.is_network_in_vds_caps(
+                host_resource=config.VDS_HOSTS[0],
+                network=helper.BRIDGE_NAMES[i]
             )
 
 
@@ -221,9 +221,8 @@ class TestArbitraryVlanDeviceName04(TestArbitraryVlanDeviceNameTearDown):
         if not hl_host_network.setup_networks(
             host_name=config.HOSTS[0], **local_dict
         ):
-            raise exceptions.NetworkException(
-                "Cannot create and attach BOND"
-            )
+            raise config.NET_EXCEPTION("Cannot create and attach BOND")
+
         helper.add_vlans_to_host(
             host_obj=config.VDS_HOSTS[0], nic=1,
             vlan_id=helper.VLAN_IDS,
@@ -247,8 +246,9 @@ class TestArbitraryVlanDeviceName04(TestArbitraryVlanDeviceNameTearDown):
             helper.check_if_nic_in_host_nics(
                 nic=helper.VLAN_NAMES[i], host=HOST_NAME
             )
-            helper.check_if_nic_in_vdscaps(
-                host_obj=config.VDS_HOSTS[0], nic=helper.BRIDGE_NAMES[i]
+            net_helper.is_network_in_vds_caps(
+                host_resource=config.VDS_HOSTS[0],
+                network=helper.BRIDGE_NAMES[i]
             )
 
 
@@ -284,9 +284,8 @@ class TestArbitraryVlanDeviceName05(TestArbitraryVlanDeviceNameTearDown):
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
             network_dict=local_dict
         ):
-            raise exceptions.NetworkException(
-                "Cannot create and attach network"
-            )
+            raise config.NET_EXCEPTION("Cannot create and attach network")
+
         sn_dict = {
             "add": {
                 "1": {
@@ -300,7 +299,7 @@ class TestArbitraryVlanDeviceName05(TestArbitraryVlanDeviceNameTearDown):
             config.VLAN_NETWORKS[0], HOST_NAME
         )
         if not hl_host_network.setup_networks(host_name=HOST_NAME, **sn_dict):
-            raise exceptions.NetworkException(
+            raise config.NET_EXCEPTION(
                 "Failed to attach  %s to %s via setupnetworks" %
                 (config.VLAN_NETWORKS[0], HOST_NAME)
             )
@@ -324,8 +323,8 @@ class TestArbitraryVlanDeviceName05(TestArbitraryVlanDeviceNameTearDown):
         helper.check_if_nic_in_host_nics(
             nic=helper.VLAN_NAMES[0], host=HOST_NAME
         )
-        helper.check_if_nic_in_vdscaps(
-            host_obj=config.VDS_HOSTS[0], nic=helper.BRIDGE_NAMES[0]
+        net_helper.is_network_in_vds_caps(
+            host_resource=config.VDS_HOSTS[0], network=helper.BRIDGE_NAMES[0]
         )
 
     @classmethod
@@ -377,9 +376,8 @@ class TestArbitraryVlanDeviceName06(TestArbitraryVlanDeviceNameTearDown):
             host=config.VDS_HOSTS[0], network_dict=local_dict,
             auto_nics=[0, 1],
         ):
-            raise exceptions.NetworkException(
-                "Cannot create and attach network"
-            )
+            raise config.NET_EXCEPTION("Cannot create and attach network")
+
         helper.add_vlans_to_host(
             host_obj=config.VDS_HOSTS[0], nic=1, vlan_id=[helper.VLAN_IDS[0]],
             vlan_name=[helper.VLAN_NAMES[0]]
@@ -400,8 +398,8 @@ class TestArbitraryVlanDeviceName06(TestArbitraryVlanDeviceNameTearDown):
         helper.check_if_nic_in_host_nics(
             nic=helper.VLAN_NAMES[0], host=HOST_NAME
         )
-        helper.check_if_nic_in_vdscaps(
-            host_obj=config.VDS_HOSTS[0], nic=helper.BRIDGE_NAMES[0]
+        net_helper.is_network_in_vds_caps(
+            host_resource=config.VDS_HOSTS[0], network=helper.BRIDGE_NAMES[0]
         )
 
     @classmethod
@@ -415,5 +413,6 @@ class TestArbitraryVlanDeviceName06(TestArbitraryVlanDeviceNameTearDown):
             cluster=config.CLUSTER_NAME[0]
         ):
             logger.error(
-                "Failed to remove all networks from %s", config.DC_NAME[0])
+                "Failed to remove all networks from %s", config.DC_NAME[0]
+            )
         super(TestArbitraryVlanDeviceName06, cls).teardown_class()
