@@ -104,31 +104,6 @@ def vlan_int_name(interface, vlan):
     return ".".join([interface, vlan])
 
 
-def generate_networks_names(
-    cases, num_of_networks=NUM_OF_NETWORKS, prefix=PREFIX
-):
-    """
-    Generate networks names per case
-
-    :param cases: Number of cases
-    :type cases: int
-    :param num_of_networks: Number of networks for each case
-    :type num_of_networks: int
-    :param prefix: Network name prefix
-    :type prefix: str
-    :return: {case_num:[net_name, ...]}
-    :rtype: dict
-    """
-    cases = [(i + 1) for i in range(cases)]
-    return dict(
-        [(c, [
-            "case%s_%s%d" % (
-                c, prefix, (i + 1)
-            ) for i in range(num_of_networks)
-        ]) for c in cases]
-    )
-
-
 def check_dummy_on_host_interfaces(host_name, dummy_name):
     """
     Check if dummy interface is on host via engine

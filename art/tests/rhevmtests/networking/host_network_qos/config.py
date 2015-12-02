@@ -6,7 +6,6 @@ Config for Host Network QoS job
 """
 
 from rhevmtests.networking.config import *  # NOQA
-import art.unittest_lib.network as network_lib
 import rhevmtests.helpers as global_helper
 
 HOST_1_NICS = None  # Filled in setup_package
@@ -16,8 +15,10 @@ HOST_1 = HOSTS[0]
 DC_NAME = DC_NAME[0]
 CLUSTER_1 = CLUSTER_NAME[0]
 CLUSTER_2 = CLUSTER_NAME[1]
-QOS_NAME = global_helper.generate_object_names(object_type="QoS", count=10)
-NETS = network_lib.generate_networks_names(cases=15, num_of_networks=2)
+QOS_NAME = global_helper.generate_object_names(
+    num_of_cases=20, num_of_objects=4, prefix="QoS"
+)
+NETS = global_helper.generate_object_names(num_of_cases=15, num_of_objects=2)
 VLAN_IDS = [str(i) for i in xrange(2, 50)]
 
 

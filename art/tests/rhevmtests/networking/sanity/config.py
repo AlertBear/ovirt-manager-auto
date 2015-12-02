@@ -6,7 +6,7 @@ config file for sanity test
 """
 
 from rhevmtests.networking.config import *  # NOQA
-import art.unittest_lib.network as network_lib
+import rhevmtests.helpers as global_helper
 
 HOST_NICS = None  # Filled in setup_package
 HOST_NAME_0 = None  # Filled in setup_package
@@ -21,7 +21,7 @@ NIC_1 = NIC_NAME[1]
 VPROFILE_0 = VNIC_PROFILE[0]
 VM_0 = VM_NAME[0]
 VM_1 = VM_NAME[1]
-NETS = network_lib.generate_networks_names(cases=20)
+NETS = global_helper.generate_object_names(num_of_cases=20)
 VLAN_IDS = [str(i) for i in xrange(2, 20)]
 NET_2 = NETS[2][0]
 NET_3 = NETS[3][0]

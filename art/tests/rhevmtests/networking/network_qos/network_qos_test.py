@@ -33,7 +33,7 @@ class TestNetQOSCase01(TestCase):
     Add new network QOS
     """
     __test__ = True
-    qos_name = config.QOS_NAME[0]
+    qos_name = config.QOS_NAME[1][0]
     vnic_profile = config.VNIC_PROFILE[0]
 
     @polarion("RHEVM3-3998")
@@ -137,7 +137,7 @@ class TestNetQOSCase02(TestCase):
     """
     __test__ = True
     bz = {"1274187": {"engine": None, "version": ["3.6"]}}
-    qos_name = config.QOS_NAME[1]
+    qos_name = config.QOS_NAME[2][0]
     vnic_profile = config.VNIC_PROFILE[1]
 
     @classmethod
@@ -321,7 +321,7 @@ class TestNetQOSCase03(TestCase):
     Remove Network QoS
     """
     __test__ = True
-    qos_name = config.QOS_NAME[2]
+    qos_name = config.QOS_NAME[3][0]
     vnic_profile = config.VNIC_PROFILE[2]
 
     @classmethod
@@ -485,7 +485,7 @@ class TestNetQOSCase04(TestCase):
     Network QoSs, configured on several VNIC profiles
     """
     __test__ = True
-    qos_names = config.QOS_NAME[3:5]
+    qos_names = config.QOS_NAME[4][:2]
     vnic_profiles = config.VNIC_PROFILE[3:5]
 
     @classmethod
@@ -664,7 +664,7 @@ class TestNetQOSCase05(TestCase):
     Migrate VM with network QOS on its NIC
     """
     __test__ = True
-    qos_name = config.QOS_NAME[5]
+    qos_name = config.QOS_NAME[5][0]
     vnic_profile = config.VNIC_PROFILE[5]
 
     @classmethod

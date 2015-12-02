@@ -11,6 +11,7 @@ from art.unittest_lib import attr
 import art.unittest_lib as unit_lib
 import rhevmtests.networking as networking
 import art.core_api.apis_utils as api_utils
+import art.unittest_lib.network as network_lib
 import rhevmtests.networking.helper as net_helper
 import art.rhevm_api.utils.test_utils as test_utils
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
@@ -41,7 +42,7 @@ def check_dummy_on_host(host, positive=True):
     logger.info("Check if dummy_0 %s on %s via engine", for_log, host)
     sample = api_utils.TimeoutingSampler(
         timeout=networking.config.SAMPLER_TIMEOUT, sleep=1,
-        func=conf.network_lib.check_dummy_on_host_interfaces,
+        func=network_lib.check_dummy_on_host_interfaces,
         host_name=host, dummy_name="dummy_0"
     )
     if not sample.waitForFuncStatus(result=positive):

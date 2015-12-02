@@ -7,7 +7,6 @@ Config for Host Network API job
 
 from rhevmtests.networking.config import *  # NOQA
 import rhevmtests.helpers as global_helper
-import art.unittest_lib.network as network_lib
 
 LAST_HOST_NICS = None  # Filled in setup_package
 VDS_LAST_HOST = VDS_HOSTS[-1]
@@ -17,13 +16,19 @@ DC_NAME_1 = DC_NAME[0]
 CLUSTER_2 = CLUSTER_NAME[1]
 SYNC_DC = "Sync_DC"
 SYNC_CL = "Sync_cluster"
-QOS_NAME = global_helper.generate_object_names(object_type="QoS", count=8)
-NIC_NETS = network_lib.generate_networks_names(cases=20, prefix="nic")
-HOST_NETS = network_lib.generate_networks_names(cases=20, prefix="host")
-SYNC_NETS_DC_1 = network_lib.generate_networks_names(cases=25, prefix="sync1_")
-SYNC_NETS_DC_2 = network_lib.generate_networks_names(cases=25, prefix="sync2_")
-SN_NETS = network_lib.generate_networks_names(
-    cases=35, num_of_networks=10, prefix="sn"
+QOS_NAME = global_helper.generate_object_names(
+    num_of_cases=20, num_of_objects=4, prefix="QoS"
+)
+NIC_NETS = global_helper.generate_object_names(num_of_cases=20, prefix="nic")
+HOST_NETS = global_helper.generate_object_names(num_of_cases=20, prefix="host")
+SYNC_NETS_DC_1 = global_helper.generate_object_names(
+    num_of_cases=25, prefix="sync1_"
+)
+SYNC_NETS_DC_2 = global_helper.generate_object_names(
+    num_of_cases=25, prefix="sync2_"
+)
+SN_NETS = global_helper.generate_object_names(
+    num_of_cases=35, num_of_objects=10, prefix="sn"
 )
 VDSMD_SERVICE = "vdsmd"
 VLAN_ID = 2
@@ -61,7 +66,7 @@ IP_DICT_NETMASK = BASIC_IP_DICT_NETMASK["ip_netmask"]
 IP_DICT_PREFIX = BASIC_IP_DICT_PREFIX["ip_prefix"]
 QOS_DICT = {
     "datacenter": DC_NAME_1,
-    "qos_name": QOS_NAME[0],
+    "qos_name": "QoS_0",
     "qos_type": "hostnetwork",
     "outbound_average_linkshare": 10,
     "outbound_average_upperlimit": 10,
@@ -561,7 +566,7 @@ SYNC_DICT_1 = {
         "required": "false",
         "qos": {
             "datacenter": DC_NAME_1,
-            "qos_name": QOS_NAME[0],
+            "qos_name": QOS_NAME[19][0],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,
             "outbound_average_upperlimit": 10,
@@ -575,7 +580,7 @@ SYNC_DICT_1 = {
         "required": "false",
         "qos": {
             "datacenter": DC_NAME_1,
-            "qos_name": QOS_NAME[1],
+            "qos_name": QOS_NAME[19][2],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,
             "outbound_average_upperlimit": 10,
@@ -587,7 +592,7 @@ SYNC_DICT_1 = {
         "required": "false",
         "qos": {
             "datacenter": DC_NAME_1,
-            "qos_name": QOS_NAME[2],
+            "qos_name": QOS_NAME[20][0],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,
             "outbound_average_upperlimit": 10,
@@ -601,7 +606,7 @@ SYNC_DICT_1 = {
         "required": "false",
         "qos": {
             "datacenter": DC_NAME_1,
-            "qos_name": QOS_NAME[3],
+            "qos_name": QOS_NAME[20][2],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,
             "outbound_average_upperlimit": 10,
@@ -684,7 +689,7 @@ SYNC_DICT_2 = {
         "required": "false",
         "qos": {
             "datacenter": SYNC_DC,
-            "qos_name": QOS_NAME[4],
+            "qos_name": QOS_NAME[19][0],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 20,
             "outbound_average_upperlimit": 20,
@@ -695,7 +700,7 @@ SYNC_DICT_2 = {
         "required": "false",
         "qos": {
             "datacenter": SYNC_DC,
-            "qos_name": QOS_NAME[5],
+            "qos_name": QOS_NAME[19][1],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,
             "outbound_average_upperlimit": 10,
@@ -709,7 +714,7 @@ SYNC_DICT_2 = {
         "required": "false",
         "qos": {
             "datacenter": SYNC_DC,
-            "qos_name": QOS_NAME[6],
+            "qos_name": QOS_NAME[20][0],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 20,
             "outbound_average_upperlimit": 20,
@@ -720,7 +725,7 @@ SYNC_DICT_2 = {
         "required": "false",
         "qos": {
             "datacenter": SYNC_DC,
-            "qos_name": QOS_NAME[7],
+            "qos_name": QOS_NAME[20][1],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,
             "outbound_average_upperlimit": 10,

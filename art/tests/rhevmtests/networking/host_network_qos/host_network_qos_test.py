@@ -43,8 +43,7 @@ class TestHostNetQOSCase01(TestCase):
     Add new network QOS (named)
     """
     __test__ = True
-    bz = {"1274187": {"engine": None, "version": ["3.6"]}}
-    qos_name = conf.QOS_NAME[0]
+    qos_name = conf.QOS_NAME[1][0]
 
     @polarion("RHEVM3-6525")
     def test_add_network_qos(self):
@@ -352,7 +351,7 @@ class TestHostNetQOSCase05(TestCase):
     2) committed rate value lower than rate limit and succeed
     """
     __test__ = True
-    qos_name = conf.QOS_NAME[1]
+    qos_name = conf.QOS_NAME[5][0]
 
     @polarion("RHEVM3-6532")
     def test_add_network_qos(self):
@@ -403,7 +402,7 @@ class TestHostNetQOSCase06(TestHostNetworkQoSTestCaseBase):
     __test__ = True
     net1 = conf.NETS[6][0]
     net2 = conf.NETS[6][1]
-    qos_name = conf.QOS_NAME[2]
+    qos_name = conf.QOS_NAME[6][0]
 
     @classmethod
     def setup_class(cls):
@@ -496,7 +495,7 @@ class TestHostNetQOSCase07(TestHostNetworkQoSTestCaseBase):
     """
     __test__ = True
     net1 = conf.NETS[7][0]
-    qos_name = conf.QOS_NAME[3]
+    qos_name = conf.QOS_NAME[7][0]
 
     @classmethod
     def setup_class(cls):
@@ -573,7 +572,7 @@ class TestHostNetQOSCase08(TestHostNetworkQoSTestCaseBase):
     __test__ = True
     net1 = conf.NETS[8][0]
     net2 = conf.NETS[8][1]
-    qos_name = conf.QOS_NAME[4]
+    qos_name = conf.QOS_NAME[8][0]
 
     @polarion("RHEVM3-6535")
     def test_01_create_qos_when_add_network(self):
@@ -629,8 +628,8 @@ class TestHostNetQOSCase09(TestHostNetworkQoSTestCaseBase):
     """
     __test__ = True
     net1 = conf.NETS[9][0]
-    qos_name1 = conf.QOS_NAME[5]
-    qos_name2 = conf.QOS_NAME[6]
+    qos_name1 = conf.QOS_NAME[9][0]
+    qos_name2 = conf.QOS_NAME[9][1]
 
     @polarion("RHEVM3-6536")
     def test_01_create_qos_when_update_network(self):
@@ -766,7 +765,7 @@ class TestHostNetQOSCase11(TestHostNetworkQoSTestCaseBase):
     """
     __test__ = True
     nets = conf.NETS[11][:2]
-    qos_names = conf.QOS_NAME[7:9]
+    qos_names = conf.QOS_NAME[11][:2]
 
     @classmethod
     def setup_class(cls):
@@ -958,7 +957,7 @@ class TestHostNetQOSCase13(TestHostNetworkQoSTestCaseBase):
     """
     __test__ = True
     net1 = conf.NETS[13][0]
-    qos_name = conf.QOS_NAME[9]
+    qos_name = conf.QOS_NAME[13][0]
     qos_dict = {
         "rt": conf.TEST_VALUE * MB_CONVERTER,
         "ul": conf.TEST_VALUE * MB_CONVERTER,
