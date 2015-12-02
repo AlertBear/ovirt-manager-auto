@@ -148,15 +148,29 @@ def clean_unfinished_jobs_on_engine():
         )
 
 
-def generate_object_names(object_type, count):
+def generate_object_names(
+    num_of_cases, num_of_objects=config.NUM_OF_OBJECT, prefix=config.PREFIX
+):
     """
-    Generate list on names by given object type
+    Generate object names per case
 
-    :param object_type: object_type (QoS for example)
-    :object_type type: str
-    :param count: Number of names to generate
-    :object_type count: int
-    :return: List of names
-    :rtype: list
+    :param num_of_cases: Number of cases
+    :type num_of_cases: int
+    :param num_of_objects: Number of object_type for each case
+    :type num_of_objects: int
+    :param prefix: object_type (QoS for example)
+    :type prefix: str
+    :return: {case_num:[case1_QoS1, ...]}
+    :rtype: dict
     """
-    return ["%s_%s" % (object_type, i) for i in range(count)]
+    cases = range(1, num_of_cases+1)
+    return dict(
+        [
+            (
+                c, [
+                    "case%s_%s%d" % (
+                        c, prefix, (i + 1)) for i in range(num_of_objects)
+                    ]
+            ) for c in cases
+        ]
+    )

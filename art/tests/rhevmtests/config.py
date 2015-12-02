@@ -35,6 +35,8 @@ PERMITS = opts['elements_conf']['RHEVM Permits']
 RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
 
 TEST_NAME = "Global"
+PREFIX = "net"
+NUM_OF_OBJECT = 5
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
 STORAGE_CONF = ART_CONFIG['STORAGE']
