@@ -7,6 +7,7 @@ Several DCs, several clusters with/without the host will be created
 """
 
 import logging
+import art.unittest_lib.common as common
 import art.core_api.apis_exceptions as apis_exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
@@ -503,6 +504,7 @@ class TestMGMTNetRole07(TestCase):
 
 
 @attr(tier=2)
+@common.skip_class_if(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
 class TestMGMTNetRole08(TestCase):
     """
     1. Create a new DC and cluster with non-default MGMT network
@@ -542,6 +544,7 @@ class TestMGMTNetRole08(TestCase):
 
 
 @attr(tier=2)
+@common.skip_class_if(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
 class TestMGMTNetRole09(TestCase):
     """
     Moving Host between Clusters on different DCs
@@ -620,6 +623,7 @@ class TestMGMTNetRole09(TestCase):
 
 
 @attr(tier=2)
+@common.skip_class_if(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
 class TestMGMTNetRole10(TestCase):
     """
     1. Create a new DC and cluster with non-default MGMT network
