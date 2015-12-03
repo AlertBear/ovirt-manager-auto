@@ -9,8 +9,6 @@ import copy
 
 from art.test_handler.settings import ART_CONFIG, opts
 from art.rhevm_api.utils import test_utils
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 from art.rhevm_api import resources
 
 logger = logging.getLogger(__name__)
@@ -113,13 +111,22 @@ CPU_NAME = PARAMETERS['cpu_name']
 
 HOSTS = []
 HOSTS_IP = []
-HOST_OBJS = []
-HOST_ORDER = None
 HOSTS_PW = PARAMETERS.as_list('vds_password')[0]
+VDS_HOSTS = []
 
 # list of Host object. one only for rhel and the second only for rhev-h
 HOSTS_RHEL = []
 HOSTS_RHEVH = []
+
+ADDRESS = get_list(PARAMETERS, 'data_domain_address')
+PATH = get_list(PARAMETERS, 'data_domain_path')
+LUNS = get_list(PARAMETERS, 'lun')
+LUN = LUNS
+LUN_ADDRESS = get_list(PARAMETERS, 'lun_address')
+LUN_TARGET = get_list(PARAMETERS, 'lun_target')
+GLUSTER_ADDRESS = get_list(PARAMETERS, 'gluster_data_domain_address')
+GLUSTER_PATH = get_list(PARAMETERS, 'gluster_data_domain_path')
+VFS_TYPE = ENUMS['vfs_type_glusterfs']
 
 ADDRESS = get_list(PARAMETERS, 'data_domain_address')
 PATH = get_list(PARAMETERS, 'data_domain_path')
@@ -145,53 +152,6 @@ if 'prepared_env' in ART_CONFIG:
 
     CLUSTERS = DC['clusters']
     CLUSTER_NAME = [x['name'] for x in CLUSTERS]
-
-    # list of Host object. one only for rhel and the second only for rhev-h
-    HOSTS_RHEL = []
-    HOSTS_RHEVH = []
-
-    HOST_OBJS = ll_hosts.HOST_API.get(absLink=False)
-
-    if 'host_order' in PARAMETERS:
-        HOST_ORDER = PARAMETERS['host_order']
-    if HOST_ORDER in ('rhevh_first', 'rhel_first'):
-        # sort the HOST_OBJS by rhevh_first if rhevh_first else rhel_first
-        rhevh_first = HOST_ORDER == 'rhevh_first'
-        HOST_OBJS.sort(key=lambda host: host.get_type(), reverse=rhevh_first)
-
-        # change the names of hosts to be able to rename it to new order
-        for host_obj in HOST_OBJS:
-            host_name = host_obj.name
-            new_name = "temp_%s" % host_name
-            if ll_hosts.updateHost(True, host_name, name=new_name):
-                host_obj.name = new_name
-
-        # run on GE yaml structure to rename the hosts and move it to
-        # different cluster if necessary
-        i = 0
-        for dc in dcs:
-            for cluster in dc['clusters']:
-                for host in cluster['hosts']:
-                    host_obj = HOST_OBJS[i]
-                    new_name = host['name']
-                    if ll_hosts.updateHost(True, host_obj.name, name=new_name):
-                        host_obj.name = new_name
-
-                    if cluster['name'] != ll_hosts.getHostCluster(new_name):
-                        hl_hosts.move_host_to_another_cluster(
-                            new_name, cluster['name']
-                        )
-                    i += 1
-    for host in HOST_OBJS:
-        HOSTS.append(host.name)
-        HOSTS_IP.append(host.address)
-        if host.get_type() == 'rhel':
-            HOSTS_RHEL.append(host)
-        elif host.get_type() == 'rhev-h':
-            HOSTS_RHEVH.append(host)
-
-    hosts_type = [host.get_type() for host in HOST_OBJS]
-    logger.info("The hosts order is: %s", zip(HOSTS, HOSTS_IP, hosts_type))
 
     VMS = []
     for cluster in CLUSTERS:
@@ -253,9 +213,9 @@ if 'prepared_env' in ART_CONFIG:
 
     EXTERNAL_PROVIDERS = {}
 
-    EPS = ART_CONFIG['EPS']
+    EPS = ART_CONFIG.get('EPS')
 
-    eps_to_add = EPS.as_list('ep_to_add')
+    eps_to_add = EPS.as_list('ep_to_add') if EPS else []
     for ep_to_add in eps_to_add:
         if EPS[ep_to_add]['type'] == GLANCE:
             provider_type = GLANCE
@@ -301,6 +261,8 @@ else:
     COMP_VERSION = PARAMETERS['compatibility_version']
     HOSTS = PARAMETERS.as_list('vds')
     HOSTS_IP = list(HOSTS)
+    VDS_HOSTS = [resources.VDS(host_ip, HOSTS_PW) for host_ip in HOSTS_IP]
+
     HOST_NICS = PARAMETERS.as_list('host_nics')
 
     HOST_OS = PARAMETERS.get('host_os')
@@ -475,12 +437,6 @@ MAX_WORKERS = PARAMETERS.get('max_workers', 10)
 OS_TYPE = test_utils.convertOsNameToOsTypeElement(
     True, PARAMETERS['vm_os'])[1]['osTypeElement']
 
-# ### New object oriented approach
-VDS_HOSTS = [
-    resources.VDS(
-        h, HOSTS_PW,
-    ) for h in HOSTS_IP
-]
 OVIRT_SERVICE = 'ovirt-engine'
 ENGINE_HOST = resources.Host(VDC_HOST)
 ENGINE_HOST.users.append(
