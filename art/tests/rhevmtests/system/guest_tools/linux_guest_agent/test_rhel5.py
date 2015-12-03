@@ -6,12 +6,19 @@ from art.test_handler.tools import polarion  # pylint: disable=E0611
 from rhevmtests.system.guest_tools.linux_guest_agent import config
 from rhevmtests.system.guest_tools.linux_guest_agent import common
 
+from art.rhevm_api.tests_lib.low_level import vms
+
 DISKx64_NAME = 'rhel5_x64_Disk1'
 DISKx86_NAME = 'rhel5_x86_Disk1'
 
 
 def setup_module():
     common.prepare_vms([DISKx64_NAME, DISKx86_NAME])
+
+
+def teardown_module():
+    for vm in [DISKx64_NAME, DISKx86_NAME]:
+        vms.removeVm(True, vm, stopVM='true')
 
 
 class RHEL5GATest(common.GABaseTestCase):
@@ -28,13 +35,37 @@ class RHEL5GATest(common.GABaseTestCase):
         '|', 'egrep', '3:on',
     ]
 
+    @classmethod
+    def setup_class(cls):
+        super(RHEL5GATest, cls).setup_class()
+        assert vms.preview_snapshot(True, cls.disk_name, cls.disk_name)
+        assert vms.startVm(True, cls.disk_name, wait_for_status=config.VM_UP)
+        common.wait_for_connective(cls.machine)
+
+    @classmethod
+    def teardown_class(cls):
+        vms.stop_vms_safely([cls.disk_name])
+        vms.undo_snapshot_preview(True, cls.disk_name)
+
 
 class RHEL532bGATest(RHEL5GATest):
     """
     Cover basic testing of GA of rhel 5 32b
     """
     __test__ = True
-    disk_name = DISKx64_NAME
+    disk_name = DISKx86_NAME
+
+    @classmethod
+    def setup_class(cls):
+        super(RHEL532bGATest, cls).setup_class()
+        if not config.UPSTREAM:
+            vms.add_repo_to_vm(
+                vm_host=cls.machine,
+                repo_name=config.GA_REPO_NAME,
+                baseurl=config.GA_REPO_URL % (
+                    config.PRODUCT_BUILD, cls.disk_name[2:5]
+                ),
+            )
 
     @polarion("RHEVM3-7377")
     def test_aa_install_guest_agent(self):
@@ -72,7 +103,19 @@ class RHEL564bGATest(RHEL5GATest):
     Cover basic testing of GA of rhel 5 64b
     """
     __test__ = True
-    disk_name = DISKx86_NAME
+    disk_name = DISKx64_NAME
+
+    @classmethod
+    def setup_class(cls):
+        super(RHEL564bGATest, cls).setup_class()
+        if not config.UPSTREAM:
+            vms.add_repo_to_vm(
+                vm_host=cls.machine,
+                repo_name=config.GA_REPO_NAME,
+                baseurl=config.GA_REPO_URL % (
+                    config.PRODUCT_BUILD, cls.disk_name[2:5]
+                ),
+            )
 
     @polarion("RHEVM3-7407")
     def test_aa_install_guest_agent(self):
@@ -103,3 +146,53 @@ class RHEL564bGATest(RHEL5GATest):
     def test_function_continuity(self):
         """ RHEL6_64b, rhevm-guest-agent function continuity """
         self.function_continuity(self.application_list, self.list_app_cmd)
+
+
+class UpgradeRHEL564bGATest(RHEL5GATest):
+    """
+    Cover basic testing of upgrade GA of rhel 5 64b
+    """
+    __test__ = True
+    disk_name = DISKx64_NAME
+
+    @classmethod
+    def setup_class(cls):
+        super(UpgradeRHEL564bGATest, cls).setup_class()
+        if not config.UPSTREAM:
+            vms.add_repo_to_vm(
+                vm_host=cls.machine,
+                repo_name=config.GA_REPO_OLDER_NAME,
+                baseurl=config.GA_REPO_OLDER_URL % cls.disk_name[2:5],
+            )
+
+    @polarion('RHEVM3-7430')
+    def test_upgrade_guest_agent(self):
+        """ upgrade_guest_agent """
+        self.upgrade_guest_agent(config.GA_NAME)
+        self.services(config.AGENT_SERVICE_NAME)
+        self.agent_data(self.application_list, self.list_app_cmd)
+
+
+class UpgradeRHEL532bGATest(RHEL5GATest):
+    """
+    Cover basic testing of upgrade GA of rhel 5 32b
+    """
+    __test__ = True
+    disk_name = DISKx86_NAME
+
+    @classmethod
+    def setup_class(cls):
+        super(UpgradeRHEL532bGATest, cls).setup_class()
+        if not config.UPSTREAM:
+            vms.add_repo_to_vm(
+                vm_host=cls.machine,
+                repo_name=config.GA_REPO_OLDER_NAME,
+                baseurl=config.GA_REPO_OLDER_URL % cls.disk_name[2:5],
+            )
+
+    @polarion('RHEVM3-7424')
+    def test_upgrade_guest_agent(self):
+        """ upgrade_guest_agent """
+        self.upgrade_guest_agent(config.GA_NAME)
+        self.services(config.AGENT_SERVICE_NAME)
+        self.agent_data(self.application_list, self.list_app_cmd)

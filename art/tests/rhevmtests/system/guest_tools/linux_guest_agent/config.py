@@ -6,8 +6,6 @@ __test__ = False
 
 
 from rhevmtests.system.guest_tools.config import *  # flake8: noqa
-from art.rhevm_api.resources.package_manager import YumPackageManager
-from art.rhevm_api.resources.package_manager import APTPackageManager
 
 # images names have to be same as test classes, because we need to have them
 # sorted so we can import glance images in corect order
@@ -16,43 +14,37 @@ TEST_IMAGES = {
         'image': None,
         'machine': None,
         'id': None,
-        'manager': YumPackageManager,
-        'ip': '10.34.61.85',
+        'ip': None,
     },
     'rhel6_x86_Disk1': {
         'image': None,
         'machine': None,
         'id': None,
-        'manager': YumPackageManager,
-        'ip': '10.34.61.12',
+        'ip': None,
     },
     'rhel5_x64_Disk1': {
         'image': None,
         'machine': None,
         'id': None,
-        'manager': YumPackageManager,
-        'ip': '10.34.61.149',
+        'ip': None,
     },
     'rhel6_x64_Disk1': {
         'image': None,
         'machine': None,
         'id': None,
-        'manager': YumPackageManager,
-        'ip': '10.34.60.82',
+        'ip': None,
     },
     'rhel7.1_x64_Disk1': {
         'image': None,
         'machine': None,
         'id': None,
-        'manager': YumPackageManager,
-        'ip': '10.34.60.120',
+        'ip': None,
     },
     'ubuntu-12.04_Disk1': {
         'image': None,
         'machine': None,
         'id': None,
-        'manager': APTPackageManager,
-        'ip': '10.34.60.104',
+        'ip': None,
     },
 
 }
@@ -73,6 +65,8 @@ PACKAGE_NAME = '%s-common' % GA_NAME
 UBUNTU_REPOSITORY = 'http://download.opensuse.org/repositories/home:/evilissimo:/ubuntu:/14.04/xUbuntu_14.04/'
 GA_REPO_NAME = 'rhevm_latest'
 GA_REPO_URL = 'http://bob.eng.lab.tlv.redhat.com/builds/3.6/%s/%s'
+GA_REPO_OLDER_NAME = 'rhevm_older'
+GA_REPO_OLDER_URL = 'http://bob.eng.lab.tlv.redhat.com/builds/latest_vt/%s'
 
 GUEST_ROOT_USER = 'root'
 GUEST_ROOT_PASSWORD = '123456'

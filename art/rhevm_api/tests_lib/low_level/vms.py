@@ -5177,6 +5177,20 @@ def add_repo_to_vm(
     path='/etc/yum.repos.d/',
     **kwargs
 ):
+    """
+    Add repo to vm
+
+    :param vm_host: vm where repo will be added
+    :type vm_host: resources.Host
+    :param repo_name: name of the repo
+    :type repo_name: str
+    :param baseurl: baseurl of the repo
+    :type baseurl: str
+    :param path: path where repo will be stored
+    :type path: str
+    :param kwargs: other values of repo configuration
+    :type kwargs: dict
+    """
     with vm_host.executor().session() as ss:
         with ss.open_file(
             '%s.repo' % os.path.join(path, repo_name),

@@ -8,14 +8,16 @@ from art.test_handler.tools import polarion  # pylint: disable=E0611
 from rhevmtests.system.guest_tools.linux_guest_agent import common
 from rhevmtests.system.guest_tools.linux_guest_agent import config
 
+from art.rhevm_api.tests_lib.low_level import vms
+
 LOGGER = logging.getLogger(__name__)
 NAME = 'ovirt-guest-agent'
 DISK_NAME = 'ubuntu-12.04_Disk1'
-package_manager = '/usr/bin/apt-get'
 
 
 def setup_module():
-    common.prepare_vms([DISK_NAME], add_repo=False)
+    common.prepare_vms([DISK_NAME])
+    assert vms.startVm(True, DISK_NAME, wait_for_status=config.VM_UP)
     machine = config.TEST_IMAGES[DISK_NAME]['machine']
 
     executor = machine.executor()
@@ -39,11 +41,15 @@ def setup_module():
     assert not rc, "Failed to import apt key to vm '%s': %s" % (machine, err)
     LOGGER.info('Gpg keys exported.')
 
-    package_manager = config.TEST_IMAGES[DISK_NAME]['manager']
-    assert package_manager(machine).update(), 'Failed to update system'
+    assert machine.package_manager.update(), 'Failed to update system'
 
 
-class Ubuntu1404TestCase(common.GABaseTestCase):
+def teardown_module():
+    for vm in [DISK_NAME]:
+        vms.removeVm(True, vm, stopVM='true')
+
+
+class Ubuntu1204TestCase(common.GABaseTestCase):
     """ Sanity testing of ubuntu guest agent """
     __test__ = True
     disk_name = DISK_NAME

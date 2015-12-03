@@ -41,7 +41,7 @@ def wait_for_connective(machine, timeout=200, sleep=10):
             break
 
 
-def prepare_vms(vm_disks, add_repo=True):
+def prepare_vms(vm_disks):
     for image in vm_disks:
         config.TEST_IMAGES[image]['image'] = import_image(image)
         assert vms.createVm(
@@ -75,14 +75,8 @@ def prepare_vms(vm_disks, add_repo=True):
             )
             config.TEST_IMAGES[image]['machine'] = machine
             wait_for_connective(machine)
-            if not config.UPSTREAM and add_repo:
-                vms.add_repo_to_vm(
-                    vm_host=machine,
-                    repo_name=config.GA_REPO_NAME,
-                    baseurl=config.GA_REPO_URL % (
-                        config.PRODUCT_BUILD, image[2:5]
-                    ),
-                )
+            vms.stop_vms_safely([image])
+            assert vms.addSnapshot(True, image, image)
 
 
 @attr(tier=2)
@@ -96,12 +90,24 @@ class GABaseTestCase(TestCase):
         image = config.TEST_IMAGES[cls.disk_name]
         cls.vm_id = image['id']
         cls.machine = image['machine']
-        cls.package_manager = image['manager'](cls.machine)
-        wait_for_connective(cls.machine)
+
+    def upgrade_guest_agent(self, package):
+        self.install_guest_agent(package)
+        vms.add_repo_to_vm(
+            vm_host=self.machine,
+            repo_name=config.GA_REPO_NAME,
+            baseurl=config.GA_REPO_URL % (
+                config.PRODUCT_BUILD, self.disk_name[2:5]
+            ),
+        )
+        self.assertTrue(
+            self.machine.package_manager.update([package]),
+            "Failed to update package '%s'",
+        )
 
     def install_guest_agent(self, package):
         self.assertTrue(
-            self.package_manager.install(package),
+            self.machine.package_manager.install(package),
             "Failed to install '%s' on machine '%s'" % (package, self.machine)
         )
         self.machine.service(config.AGENT_SERVICE_NAME).start()
@@ -154,7 +160,7 @@ class GABaseTestCase(TestCase):
     def uninstall(self, package):
         """ uninstall guest agent """
         self.assertTrue(
-            self.package_manager.remove(package),
+            self.machine.package_manager.remove(package),
             "Failed to remove '%s' on machine '%s'" % (package, self.machine)
         )
 
