@@ -544,8 +544,8 @@ class Bugzilla(Component):
         Returns True if the bug was fixed at a later version,
         hence should be skipped.
         """
-        if getattr(bug, "target_release", None):
-            fixed_at = bug.target_release[0]
+        if getattr(bug, "target_milestone", None):
+            fixed_at = bug.target_milestone[0]
             if fixed_at == NONE_VER:
                 return False
 

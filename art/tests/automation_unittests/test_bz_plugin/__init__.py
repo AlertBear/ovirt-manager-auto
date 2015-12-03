@@ -30,7 +30,7 @@ class FakeBugs(object):
                 "version": ['3.5'],
                 "resolution": '',
                 "bug_status": 'NEW',
-                "target_release": None,
+                "target_milestone": None,
                 "component": ['component_1'],
             }
         elif bz_id == '2':
@@ -40,7 +40,7 @@ class FakeBugs(object):
                 "version": ['3.4', '3.5'],
                 "resolution": '',
                 "bug_status": 'ON_QA',
-                "target_release": None,
+                "target_milestone": None,
                 "component": ['component_2'],
             }
         elif bz_id == '3':
@@ -50,7 +50,7 @@ class FakeBugs(object):
                 "version": ['3.4', '3.5'],
                 "resolution": '',
                 "bug_status": 'ON_QA',
-                "target_release": ['3.6'],
+                "target_milestone": ['3.6'],
                 "component": ['component_3'],
             }
         elif bz_id == '4':
@@ -60,7 +60,7 @@ class FakeBugs(object):
                 "version": ['3.5'],
                 "resolution": 'CURRENTRELEASE',
                 "bug_status": 'VERIFIED',
-                "target_release": ['3.5'],
+                "target_milestone": ['3.5'],
                 "component": ['component_4'],
             }
         elif bz_id == '5':
@@ -70,7 +70,7 @@ class FakeBugs(object):
                 "version": ['3.5'],
                 "resolution": '',
                 "bug_status": 'CLOSED',
-                "target_release": ['3.6'],
+                "target_milestone": ['3.6'],
                 "component": ['component_5'],
             }
         elif bz_id == '6':
@@ -80,7 +80,7 @@ class FakeBugs(object):
                 "version": ['3.5.1'],
                 "resolution": 'DUPLICATE',
                 "bug_status": 'CLOSED',
-                "target_release": None,
+                "target_milestone": None,
                 "dupe_of": '1',
                 "component": ['component_6'],
             }
@@ -91,7 +91,7 @@ class FakeBugs(object):
                 "version": ['1.0'],
                 "resolution": '',
                 "bug_status": 'CLOSED',
-                "target_release": ['1.0'],
+                "target_milestone": ['1.0'],
                 "component": ['component_7'],
             }
         elif bz_id == '10':
@@ -101,7 +101,7 @@ class FakeBugs(object):
                 "version": ['1.0'],
                 "resolution": '',
                 "bug_status": 'NEW',
-                "target_release": ['1.0'],
+                "target_milestone": ['1.0'],
                 "component": ['component_10'],
             }
         elif bz_id == '11':
@@ -111,7 +111,7 @@ class FakeBugs(object):
                 "version": ['3.5'],
                 "resolution": 'CURRENTRELEASE',
                 "bug_status": 'VERIFIED',
-                "target_release": ['3.5'],
+                "target_milestone": ['3.5'],
                 "component": ['component_11'],
             }
         else:
