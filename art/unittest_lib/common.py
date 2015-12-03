@@ -139,7 +139,7 @@ class SlaTest(BaseTestCase):
     __test__ = False
 
 
-@attr(team="CoreSystem")
+@attr(team="coresystem")
 class CoreSystemTest(BaseTestCase):
     """
     Basic class for core system tests
