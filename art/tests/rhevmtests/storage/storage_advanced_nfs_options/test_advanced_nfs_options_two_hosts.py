@@ -1,12 +1,11 @@
-import config
-import helpers
 import logging
 
-from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
-
+import config
+import helpers
 from art.core_api.apis_exceptions import EntityNotFound
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 from art.test_handler.settings import opts
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
 
 logger = logging.getLogger(__name__)
@@ -70,7 +69,7 @@ class TestCase4831(helpers.TestCaseStandardOperations):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (NFS in opts['storages'])
+    __test__ = NFS in opts['storages']
     polarion_test_case = '4831'
     sd_1 = 'test_%s_1' % polarion_test_case
     sd_2 = 'test_%s_2' % polarion_test_case
@@ -83,7 +82,7 @@ class TestCase4831(helpers.TestCaseStandardOperations):
 
     # Bugzilla history:
     # 1248035: VM migration: migration failed since vdsm failed to run VM...
-    # 1254230: Operation of exporting template to Export domain stucks
+    # 1254230: Operation of exporting template to Export domain gets stuck
 
     @classmethod
     def setup_class(cls):

@@ -1,15 +1,18 @@
+import logging
+
 import config
 import helpers
-import logging
-from art.unittest_lib import attr
-from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
-from art.rhevm_api.tests_lib.high_level import storagedomains as hl_st
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
+from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 from art.test_handler.settings import opts
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.unittest_lib import attr
 
 logger = logging.getLogger(__name__)
-ENUMS = helpers.ENUMS
+ENUMS = config.ENUMS
+EXPORT = config.EXPORT_TYPE
 NFS = config.STORAGE_TYPE_NFS
+DC_NAME = config.DATA_CENTER_NAME
 
 
 @attr(tier=2)
@@ -22,11 +25,10 @@ class TestCase4816(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (NFS in opts['storages'])
+    __test__ = NFS in opts['storages']
     polarion_test_case = "4816"
     export_domain = 'test_%s_export' % polarion_test_case
     iso_domain = 'test_%s_iso' % polarion_test_case
-    datacenter = config.DATA_CENTER_NAME
     nfs_version = 'v3'
     nfs_timeout = 60
     nfs_retrans = 1
@@ -39,35 +41,36 @@ class TestCase4816(helpers.TestCaseNFSOptions):
         Don't change to setup_class, as in case setup_class fails,
         teardown_class wouldn't be called (and all later tests will fail)!
         """
-        sd_type = ENUMS['storage_dom_type_export']
+        hl_sd.create_nfs_domain_with_options(
+            self.export_domain, EXPORT, self.host, self.export_address,
+            self.export_path, datacenter=DC_NAME
+        )
 
-        hl_st.create_nfs_domain_with_options(
-            self.export_domain, sd_type, self.host, self.export_address,
-            self.export_path, datacenter=self.datacenter)
-
-        hl_st.remove_storage_domain(
-            self.export_domain, self.datacenter, self.host, False, config.VDC,
-            config.VDC_PASSWORD)
+        hl_sd.remove_storage_domain(
+            self.export_domain, DC_NAME, self.host, False, config.VDC,
+            config.VDC_PASSWORD
+        )
         self.sds_for_cleanup.append(self.export_domain)
 
     @polarion("RHEVM3-4816")
     def test_import_existing_export_domain(self):
         """ Imports existing export storage domain with custom NFS options
         """
-        sd_type = ENUMS['storage_dom_type_export']
-        ll_st.importStorageDomain(
-            True, sd_type, NFS, self.export_address,
+        ll_sd.importStorageDomain(
+            True, EXPORT, NFS, self.export_address,
             self.export_path, self.host, self.nfs_version, self.nfs_retrans,
-            self.nfs_timeout)
-        result = ll_st.get_options_of_resource(
+            self.nfs_timeout
+        )
+        result = ll_sd.get_options_of_resource(
             self.host_ip, self.password, self.export_address, self.export_path)
         if result is None:
-            self.fail("Resource %s:%s is not mounted on %s!" % (
-                self.export_address, self.export_path, self.host))
+            self.fail("Resource %s:%s is not mounted on %s!" %
+                      (self.export_address, self.export_path, self.host))
         timeo, retrans, nfsvers, sync = result
         result = helpers.verify_nfs_options(
             self.nfs_timeout, self.nfs_retrans, self.nfs_version,
-            timeo, retrans, nfsvers)
+            timeo, retrans, nfsvers
+        )
         if result is not None:
             self.fail("NFS option %s not as expected %s, real %s" % result)
 
@@ -82,7 +85,7 @@ class TestCase4829(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (NFS in opts['storages'])
+    __test__ = NFS in opts['storages']
     polarion_test_case = "4829"
     nfs_address = config.NFS_ADDRESSES[0]
     nfs_path = config.NFS_PATHS[0]
@@ -100,10 +103,11 @@ class TestCase4829(helpers.TestCaseNFSOptions):
         nfs_timeout = 730
         nfs_version = 'v3'
         logger.info("Creating nfs domain %s" % self.name)
-        hl_st.create_nfs_domain_with_options(
+        hl_sd.create_nfs_domain_with_options(
             self.name, ENUMS['storage_dom_type_data'], self.host,
             self.nfs_address, self.nfs_path, retrans=nfs_retrans,
-            version=nfs_version, timeo=nfs_timeout, positive=False)
+            version=nfs_version, timeo=nfs_timeout, positive=False
+        )
 
     @polarion("RHEVM3-4829")
     def test_create_nfs_storage_with_out_of_range_timeout(self):
@@ -115,10 +119,11 @@ class TestCase4829(helpers.TestCaseNFSOptions):
         nfs_timeout = 65536 * 2 + 5
         nfs_version = 'v3'
         logger.info("Creating nfs domain %s" % self.name)
-        hl_st.create_nfs_domain_with_options(
+        hl_sd.create_nfs_domain_with_options(
             self.name, ENUMS['storage_dom_type_data'], self.host,
             self.nfs_address, self.nfs_path, retrans=nfs_retrans,
-            version=nfs_version, timeo=nfs_timeout, positive=False)
+            version=nfs_version, timeo=nfs_timeout, positive=False
+        )
 
     @polarion("RHEVM3-4829")
     def test_create_nfs_storage_with_incorrect_nfs_version(self):
@@ -130,17 +135,19 @@ class TestCase4829(helpers.TestCaseNFSOptions):
         nfs_timeout = 1000
         nfs_version = 'v7'
         logger.info("Creating nfs domain %s" % self.name)
-        hl_st.create_nfs_domain_with_options(
+        hl_sd.create_nfs_domain_with_options(
             self.name, ENUMS['storage_dom_type_data'], self.host,
             self.nfs_address, self.nfs_path, retrans=nfs_retrans,
-            version=nfs_version, timeo=nfs_timeout, positive=False)
+            version=nfs_version, timeo=nfs_timeout, positive=False
+        )
 
     def tearDown(self):
         storage_domains = helpers.STORAGE_DOMAIN_API.get(absLink=False)
         if self.name in [x.name for x in storage_domains]:
-            hl_st.remove_storage_domain(
+            hl_sd.remove_storage_domain(
                 self.name, None, self.host, True, config.VDC,
-                config.VDC_PASSWORD)
+                config.VDC_PASSWORD
+            )
 
 
 @attr(tier=1)
@@ -155,7 +162,7 @@ class TestCase4826(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (NFS in opts['storages'])
+    __test__ = NFS in opts['storages']
     polarion_test_case = '4826'
 
     @polarion("RHEVM3-4826")
@@ -163,7 +170,7 @@ class TestCase4826(helpers.TestCaseNFSOptions):
         """ Creates storage domains with default options and checks if they are
         correct.
         """
-        version = 'v3'  # TODO: fix it! it should depend on the host os version
+        version = 'v3'  # TODO: fix this, should depend on the host OS version
         self.name = 'test_%s' % self.polarion_test_case
         storage = helpers.NFSStorage(
             name=self.name, address=config.NFS_ADDRESSES[0],
@@ -188,7 +195,7 @@ class TestCase4830(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (NFS in opts['storages'])
+    __test__ = NFS in opts['storages']
     polarion_test_case = '4830'
     nfs_retrans = 7
     nfs_timeout = 740
@@ -204,7 +211,8 @@ class TestCase4830(helpers.TestCaseNFSOptions):
             path=config.NFS_PATHS[idx], timeout_to_set=self.nfs_timeout,
             retrans_to_set=self.nfs_retrans, vers_to_set=self.nfs_version,
             expected_timeout=self.nfs_timeout,
-            expected_retrans=self.nfs_retrans, expected_vers=self.nfs_version)
+            expected_retrans=self.nfs_retrans, expected_vers=self.nfs_version
+        )
         self.sds_for_cleanup.append(self.name)
         self.create_nfs_domain_and_verify_options([storage])
 
@@ -213,7 +221,7 @@ class TestCase4830(helpers.TestCaseNFSOptions):
         """ Creates export storage domain with advanced NFS options and checks
         that they were really used.
         """
-        self._create_and_check(ENUMS['storage_dom_type_export'], 'export', 0)
+        self._create_and_check(EXPORT, 'export', 0)
 
     @polarion("RHEVM3-4830")
     def test_create_change_nfs_options_iso(self):
@@ -234,7 +242,7 @@ class TestCase4822(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (NFS in opts['storages'])
+    __test__ = NFS in opts['storages']
     polarion_test_case = '4822'
 
     @polarion("RHEVM3-4822")
@@ -282,7 +290,7 @@ class TestCase4821(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (NFS in opts['storages'])
+    __test__ = NFS in opts['storages']
     polarion_test_case = '4821'
     nfs_retrans = 7
     nfs_timeout = 760
@@ -297,30 +305,31 @@ class TestCase4821(helpers.TestCaseNFSOptions):
         self.name = 'test_%s_create' % self.polarion_test_case
         address = config.NFS_ADDRESSES[0]
         path = config.NFS_PATHS[0]
-        datacenter = config.DATA_CENTER_NAME
-        sd_type = ENUMS['storage_dom_type_export']
 
         storage = helpers.NFSStorage(
             name=self.name, address=address, path=path,
             timeout_to_set=self.nfs_timeout, retrans_to_set=self.nfs_retrans,
             vers_to_set=self.nfs_version, expected_timeout=self.nfs_timeout,
             expected_retrans=self.nfs_retrans, expected_vers=self.nfs_version,
-            sd_type=ENUMS['storage_dom_type_export'])
+            sd_type=EXPORT
+        )
         self.create_nfs_domain_and_verify_options([storage])
         self.sds_for_cleanup.append(self.name)
 
-        hl_st.remove_storage_domain(
-            self.name, datacenter, self.host, False, config.VDC,
-            config.VDC_PASSWORD)
+        hl_sd.remove_storage_domain(
+            self.name, DC_NAME, self.host, False, config.VDC,
+            config.VDC_PASSWORD
+        )
 
         logger.info("Importing storage domain")
-        ll_st.importStorageDomain(
-            True, sd_type, NFS, address, path, self.host)
+        ll_sd.importStorageDomain(
+            True, EXPORT, NFS, address, path, self.host
+        )
         logger.info("Attaching storage domain")
-        ll_st.attachStorageDomain(True, datacenter, self.name)
+        ll_sd.attachStorageDomain(True, DC_NAME, self.name)
 
         logger.info("Getting mount options")
-        options = ll_st.get_options_of_resource(
+        options = ll_sd.get_options_of_resource(
             self.host_ip, self.password, address, path)
         if options is None:
             self.fail("Storage domain is not mounted!")
@@ -328,7 +337,8 @@ class TestCase4821(helpers.TestCaseNFSOptions):
         logger.info("Verifying mount options")
         result = helpers.verify_nfs_options(
             helpers.DEFAULT_NFS_TIMEOUT, helpers.DEFAULT_NFS_RETRANS, 'v3',
-            timeo, retrans, vers)
+            timeo, retrans, vers
+        )
         if result is not None:
             self.fail("Wrong NFS option %s, expected: %s, real: %s" % result)
         logger.info("Test passed")
@@ -346,7 +356,7 @@ class TestCase4818(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (NFS in opts['storages'])
+    __test__ = NFS in opts['storages']
     polarion_test_case = '4818'
     nfs_retrans = 7
     nfs_timeout = 770
@@ -363,7 +373,6 @@ class TestCase4818(helpers.TestCaseNFSOptions):
         """
         address = config.NFS_ADDRESSES[0]
         path = config.NFS_PATHS[0]
-        datacenter = config.DATA_CENTER_NAME
         self.name = 'test_%s_custom' % self.polarion_test_case
         self.sds_for_cleanup.append(self.name)
 
@@ -373,13 +382,15 @@ class TestCase4818(helpers.TestCaseNFSOptions):
             timeout_to_set=self.nfs_timeout, retrans_to_set=self.nfs_retrans,
             vers_to_set=self.nfs_version, expected_timeout=self.nfs_timeout,
             expected_retrans=self.nfs_retrans, expected_vers=self.nfs_version,
-            sd_type=ENUMS['storage_dom_type_export'])
+            sd_type=EXPORT
+        )
         self.create_nfs_domain_and_verify_options([storage])
 
         logger.info("Removing created storage domain")
-        hl_st.remove_storage_domain(
-            self.name, datacenter, self.host, False, config.VDC,
-            config.VDC_PASSWORD)
+        hl_sd.remove_storage_domain(
+            self.name, DC_NAME, self.host, False, config.VDC,
+            config.VDC_PASSWORD
+        )
 
         logger.info("Creating second time with custom options")
         storage = helpers.NFSStorage(
@@ -387,13 +398,15 @@ class TestCase4818(helpers.TestCaseNFSOptions):
             timeout_to_set=self.nfs_timeout, retrans_to_set=self.nfs_retrans,
             vers_to_set=self.nfs_version, expected_timeout=self.nfs_timeout,
             expected_retrans=self.nfs_retrans, expected_vers=self.nfs_version,
-            sd_type=ENUMS['storage_dom_type_export'])
+            sd_type=EXPORT
+        )
         self.create_nfs_domain_and_verify_options([storage])
 
         logger.info("Destroying storage domain")
-        hl_st.remove_storage_domain(
-            self.name, datacenter, self.host, True, config.VDC,
-            config.VDC_PASSWORD)
+        hl_sd.remove_storage_domain(
+            self.name, DC_NAME, self.host, True, config.VDC,
+            config.VDC_PASSWORD
+        )
 
         logger.info("Creating third time with default options")
         self.name = 'test_%s_default' % self.polarion_test_case
@@ -402,6 +415,7 @@ class TestCase4818(helpers.TestCaseNFSOptions):
             retrans_to_set=None, vers_to_set=None,
             expected_timeout=helpers.DEFAULT_NFS_TIMEOUT,
             expected_retrans=helpers.DEFAULT_NFS_RETRANS, expected_vers='v3',
-            sd_type=ENUMS['storage_dom_type_export'])
+            sd_type=EXPORT
+        )
         self.sds_for_cleanup.append(self.name)
         self.create_nfs_domain_and_verify_options([storage])
