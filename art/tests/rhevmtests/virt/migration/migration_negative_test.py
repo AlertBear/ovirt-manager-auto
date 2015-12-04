@@ -153,7 +153,7 @@ class TestMigrationOverloadHost(TestCase):
     __test__ = True
     vm_default_mem = config.GB
     test_vms = [config.VM_NAME[1], config.VM_NAME[2]]
-    hosts = [config.HOSTS[0], config.HOSTS[1]]
+    hosts = None
     host_index_max_mem = -1
     vm_default_os_type = None
     # RHEL7 64bit supports large memory
@@ -167,7 +167,7 @@ class TestMigrationOverloadHost(TestCase):
         1. update VM os type to RHEL7 64bit to support large memory
         2. updates 2 VMs to 85% of host memory
         """
-
+        cls.hosts = [config.HOSTS[0], config.HOSTS[1]]
         logger.info("store os type of vms")
         cls.vm_default_os_type = hl_vms.get_vms_os_type(
             test_vms=cls.test_vms
