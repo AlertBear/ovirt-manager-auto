@@ -12,8 +12,8 @@ PM_ADDRESS = PARAMETERS['pm_address']
 PM_TYPE_IPMILAN = PARAMETERS['pm_type_ipmilan']
 PM_PASSWORD = PARAMETERS['pm_password']
 PM_USER = PARAMETERS['pm_user']
-host_with_pm = HOSTS[0]
-host_without_pm = HOSTS[1]
+host_with_pm = None  # Filled in setup_package
+host_without_pm = None  # Filled in setup_package
 job_description = 'Executing SSH Soft Fencing on host'
 
 job_finished = ENUMS['job_finished']

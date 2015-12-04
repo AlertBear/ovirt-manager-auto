@@ -16,6 +16,8 @@ def setup_package():
     """
     Prepare environment for Soft Fencing test
     """
+    config.host_with_pm = config.HOSTS[0]
+    config.host_without_pm = config.HOSTS[1]
     logger.info("Building setup...")
     datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
                             config.STORAGE_TYPE, config.TEST_NAME)

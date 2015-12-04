@@ -21,9 +21,9 @@ from art.core_api.apis_utils import getDS
 Options = getDS('Options')
 Option = getDS('Option')
 
-HOST_WITH_PM = config.HOSTS[0]
-HOST_1 = config.HOSTS[1]
-HOST_2 = config.HOSTS[2]
+HOST_WITH_PM = None  # Filled in setup_module
+HOST_1 = None  # Filled in setup_module
+HOST_2 = None  # Filled in setup_module
 SIZE = 2147483648
 NIC = 'nic1'
 VM_DESCRIPTION = 'test_vm'
@@ -32,13 +32,21 @@ cluster_proxy_event = '\"Host {0} from cluster {1} was chosen as a proxy to' \
                       ' execute Start command on Host {2}\"'
 data_center_proxy_event = '\"Host {0} from data center {1} was chosen as' \
                           ' a proxy to execute Start command on Host {2}\"'
-host_restart_event = '\"Host ' + HOST_WITH_PM + ' was restarted by admin\"'
+host_restart_event = None  # Filled in setup_module
 logger = logging.getLogger(__name__)
 
 
 ########################################################################
 #                             Test Cases                               #
 ########################################################################
+
+
+def setup_module():
+    global HOST_WITH_PM, HOST_1, HOST_2, host_restart_event
+    HOST_WITH_PM = config.HOSTS[0]
+    HOST_1 = config.HOSTS[1]
+    HOST_2 = config.HOSTS[2]
+    host_restart_event = '\"Host %s was restarted by admin\"' % HOST_WITH_PM
 
 
 def _create_vm(vm_name, highly_available):
@@ -250,11 +258,15 @@ class TestFenceProxySelection(TestCase):
 
     __test__ = False
 
-    hosts_state = {HOST_1: config.HOST_STATE_UP, HOST_2: config.HOST_STATE_UP}
+    hosts_state = None
     pm_proxies = ['cluster', 'dc']
 
     @classmethod
     def setup_class(cls):
+        cls.hosts_state = {
+            HOST_1: config.HOST_STATE_UP,
+            HOST_2: config.HOST_STATE_UP,
+        }
         _move_host_to_up(HOST_WITH_PM)
         _add_power_management(HOST_WITH_PM, pm_proxies=cls.pm_proxies)
         for host in cls.hosts_state:
@@ -446,8 +458,14 @@ class T13ProxyChosenFromCluster(TestFenceProxySelection):
     """
     __test__ = False
 
-    event = cluster_proxy_event.format(HOST_1, config.CLUSTER_NAME[0],
-                                       HOST_WITH_PM)
+    event = None
+
+    @classmethod
+    def setup_class(cls):
+        cls.event = cluster_proxy_event.format(
+            HOST_1, config.CLUSTER_NAME[0], HOST_WITH_PM,
+        )
+        super(T13ProxyChosenFromCluster, cls).setup_class()
 
     @polarion("RHEVM3-9159")
     def test_proxy_chosen_from_cluster(self):
@@ -464,10 +482,15 @@ class T14ProxyChosenFromDataCenter(TestFenceProxySelection):
     """
 
     __test__ = False  # TODO: adjust case setup for test
-
-    event = data_center_proxy_event.format(HOST_2, config.DC_NAME[0],
-                                           HOST_WITH_PM)
+    event = None
     pm_proxies = ['dc', 'cluster']
+
+    @classmethod
+    def setup_class(cls):
+        cls.event = data_center_proxy_event.format(
+            HOST_2, config.DC_NAME[0], HOST_WITH_PM,
+        )
+        super(T14ProxyChosenFromDataCenter, cls).setup_class()
 
     def test_proxy_chosen_from_data_center(self):
         _fence_host(True, config.FENCE_RESTART)
@@ -485,10 +508,19 @@ class T15ProxyChosenNonOperationalButConnective(TestFenceProxySelection):
 
     __test__ = False
 
-    hosts_state = {HOST_1: config.HOST_STATE_NONOP,
-                   HOST_2: config.HOST_STATE_UP}
-    event = cluster_proxy_event.format(HOST_1, config.CLUSTER_NAME[0],
-                                       HOST_WITH_PM)
+    hosts_state = None
+    event = None
+
+    @classmethod
+    def setup_class(cls):
+        cls.hosts_state = {
+            HOST_1: config.HOST_STATE_NONOP,
+            HOST_2: config.HOST_STATE_UP,
+        }
+        cls.event = cluster_proxy_event.format(
+            HOST_1, config.CLUSTER_NAME[0], HOST_WITH_PM,
+        )
+        super(T15ProxyChosenNonOperationalButConnective, cls).setup_class()
 
     def test_proxy_chosen_non_operational_but_connective(self):
         _fence_host(True, config.FENCE_RESTART)
@@ -513,11 +545,19 @@ class T16ProxyChosenFromSecondClusterAsFallback(TestFenceProxySelection):
 
     __test__ = False
 
-    hosts_state = {HOST_1: config.HOST_STATE_NONOP,
-                   HOST_2: config.HOST_STATE_UP}
+    hosts_state = None
+    event = None
 
-    event = data_center_proxy_event.format(HOST_2, config.DC_NAME[0],
-                                           HOST_WITH_PM)
+    @classmethod
+    def setup_class(cls):
+        cls.hosts_state = {
+            HOST_1: config.HOST_STATE_NONOP,
+            HOST_2: config.HOST_STATE_UP,
+        }
+        cls.event = data_center_proxy_event.format(
+            HOST_2, config.DC_NAME[0], HOST_WITH_PM,
+        )
+        super(T16ProxyChosenFromSecondClusterAsFallback, cls).setup_class()
 
     def test_proxy_chosen_from_second_cluster_as_fallback(self):
         _fence_host(True, config.FENCE_RESTART)

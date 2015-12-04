@@ -22,9 +22,9 @@ DISK_SIZE = 3 * 1024 * 1024 * 1024
 PINNED = config.ENUMS['vm_affinity_pinned']
 HOST_CONNECTING = config.ENUMS['host_state_connecting']
 VM_DOWN = config.ENUMS['vm_state_down']
-HOST = config.HOSTS[0]
-HOST2 = config.HOSTS[1]
-HOST_PW = config.HOSTS_PW
+HOST = None  # Filled in setup_module
+HOST2 = None  # Filled in setup_module
+HOST_PW = None  # Filled in setup_module
 PM1_TYPE = config.PM1_TYPE
 PM2_TYPE = config.PM2_TYPE
 PM1_ADDRESS = config.PM1_ADDRESS
@@ -43,16 +43,23 @@ logger = logging.getLogger(__name__)
 ########################################################################
 
 
+def setup_module():
+    global HOST, HOST2, HOST_PW
+    HOST = config.HOSTS[0]
+    HOST2 = config.HOSTS[1]
+    HOST_PW = config.HOSTS_PW
+
+
 def _add_host_if_missing():
-        try:
-            HOST_API.find(HOST)
-        except EntityNotFound:
-            logger.info("adding host %s", HOST)
-            if not hosts.addHost(True, name=HOST, address=HOST,
-                                 root_password=HOST_PW,
-                                 port=54321, cluster=config.CLUSTER_NAME[0],
-                                 wait=False):
-                raise HostException("Add host %s failed" % HOST)
+    try:
+        HOST_API.find(HOST)
+    except EntityNotFound:
+        logger.info("adding host %s", HOST)
+        if not hosts.addHost(
+            True, name=HOST, address=HOST, root_password=HOST_PW, port=54321,
+            cluster=config.CLUSTER_NAME[0], wait=False,
+        ):
+            raise HostException("Add host %s failed" % HOST)
 
 
 class TestPowerManagement(TestCase):
