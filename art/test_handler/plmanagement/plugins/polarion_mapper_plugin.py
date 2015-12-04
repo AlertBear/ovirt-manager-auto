@@ -61,7 +61,7 @@ class Polarion(Component):
 
     def __init__(self):
         super(Polarion, self).__init__()
-        self.__register_functions()
+#        self.__register_functions()
 
     def __register_functions(self):
         setattr(tools, "polarion", polarion_decorator)

@@ -128,7 +128,7 @@ class Jira(Component):
         self.user = None
         self.password = None
         self.version = None
-        self.__register_functions()
+#        self.__register_functions()
 
     def __register_functions(self):
         from art.test_handler import tools

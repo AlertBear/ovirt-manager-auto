@@ -283,7 +283,7 @@ class Bugzilla(Component):
         self.cache = {}
         self.issuedb = None
         self.config_name = None
-        self.__register_functions()
+#        self.__register_functions()
         self.system_version = None
 
     @classmethod
