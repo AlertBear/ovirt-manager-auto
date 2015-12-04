@@ -11,7 +11,7 @@ GENERAL_VM_PARAMS = {
     'os_type': VM_OS_TYPE,
     'placement_affinity': VM_USER_MIGRATABLE,
     'display_type': VM_DISPLAY_TYPE,
-    'placement_host': HOSTS[0],
+    'placement_host': None,  # Filled in setup_package
     'cluster': CLUSTER_NAME[0]
 }
 INSTALL_VM_PARAMS = {

@@ -30,7 +30,7 @@ MIGRATABLE = config.ENUMS['vm_affinity_migratable']
 BUILD_IN_POLICIES = [
     config.ENUMS['scheduling_policy_power_saving'],
     config.ENUMS['scheduling_policy_evenly_distributed'],
-    config.ENUMS['scheduling_policy_vm_evenly_distributed']
+    config.ENUMS['scheduling_policy_vm_evenly_distributed'],
 ]
 
 FILTER_TYPE = config.ENUMS['policy_unit_type_filter']
@@ -247,7 +247,7 @@ class TestPinToHostFilter(UpdateVms):
     policy_units = {config.ENUMS['filter_pin_to_host']: FILTER_TYPE}
     vms_new_parameters = {
         config.VM_NAME[0]: {
-            'placement_host': config.HOSTS[0], 'placement_affinity': PINNED
+            'placement_host': None, 'placement_affinity': PINNED
         }
     }
     old_parameters = {
@@ -258,6 +258,13 @@ class TestPinToHostFilter(UpdateVms):
             'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
         }
     }
+
+    @classmethod
+    def setup_class(cls):
+        cls.vms_new_parameters[config.VM_NAME[0]][
+            'placement_host'
+        ] = config.HOSTS[0]
+        super(TestPinToHostFilter, cls).setup_class()
 
     @polarion("RHEVM3-9479")
     def test_check_filter(self):
@@ -293,7 +300,7 @@ class TestNegativePinToHostFilter(UpdateVms):
     policy_units = {config.ENUMS['filter_pin_to_host']: FILTER_TYPE}
     vms_new_parameters = {
         config.VM_NAME[0]: {
-            'placement_host': config.HOSTS[0], 'placement_affinity': PINNED
+            'placement_host': None, 'placement_affinity': PINNED
         }
     }
     old_parameters = {
@@ -310,6 +317,9 @@ class TestNegativePinToHostFilter(UpdateVms):
         """
         Deactivate one of hosts.
         """
+        cls.vms_new_parameters[config.VM_NAME[0]][
+            'placement_host'
+        ] = config.HOSTS[0]
         super(TestNegativePinToHostFilter, cls).setup_class()
         logger.info("Deactivate host %s.", config.HOSTS[0])
         if not host_api.deactivateHost(True, config.HOSTS[0]):
@@ -530,9 +540,7 @@ class TestNetworkFilter(UpdateVms):
     }
     vms_new_parameters = {
         config.VM_NAME[1]: {
-            'placement_host': config.HOSTS[1] if len(
-                config.HOSTS
-            ) >= 2 else None,
+            'placement_host': None,
             'placement_affinity': PINNED
         }
     }
@@ -549,6 +557,10 @@ class TestNetworkFilter(UpdateVms):
         Create new network, attach it to one of hosts and
         update vm nic to use new network
         """
+        if len(config.HOSTS) >= 2:
+            cls.vms_new_parameters[config.VM_NAME[1]][
+                'placement_host'
+            ] = config.HOSTS[1]
         super(TestNetworkFilter, cls).setup_class()
         logger.info(
             "Create new network %s and attach it to host %s",

@@ -19,6 +19,7 @@ def setup_package():
     """
     Prepare environment for Watchdog test
     """
+    config.GENERAL_VM_PARAMS['placement_host'] = config.HOSTS[0]
     if os.environ.get("JENKINS_URL"):
         params = dict(config.GENERAL_VM_PARAMS)
         if not config.GOLDEN_ENV:

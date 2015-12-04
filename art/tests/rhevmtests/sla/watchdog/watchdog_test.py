@@ -44,12 +44,10 @@ WATCHDOG_CONFIG_FILE = '/etc/watchdog.conf'
 ########################################################################
 
 
-@attr(tier=2)
-class WatchdogVM(TestCase):
+class WatchdogMixin(object):
     """
     Base class for vm watchdog operations
     """
-    __test__ = False
 
     @classmethod
     def run_command_on_resource(cls, resource, cmd):
@@ -261,13 +259,19 @@ class WatchdogVM(TestCase):
                     "Failed to run watchdog service on vm %s" % vm_resource
                 )
 
+
+@attr(tier=2)
+class WatchdogVM(TestCase, WatchdogMixin):
+    __test__ = False
+
+
 ########################################################################
 #                             Test Cases                               #
 ########################################################################
 
 
 @attr(tier=1)
-class TestWatchdogCRUD(WatchdogVM):
+class TestWatchdogCRUD(TestCase, WatchdogMixin):
     """
     Create Vm with watchdog
     """
@@ -682,7 +686,6 @@ class WatchdogHighAvailability(WatchdogActionTest):
 #######################################################################
 
 
-@attr(tier=2)
 class WatchdogEvents(WatchdogActionTest):
     """
     Event in logs

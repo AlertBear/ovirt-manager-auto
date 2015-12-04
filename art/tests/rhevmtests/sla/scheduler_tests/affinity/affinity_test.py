@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 TIMEOUT = 120
 
 
-@attr(tier=2)
 class Affinity(TestCase):
     """
     Base class for affinity test
@@ -150,6 +149,7 @@ class TestStartVmsUnderHardPositiveAffinity(StartVms):
         )
 
 
+@attr(tier=2)
 class TestStartVmsUnderSoftPositiveAffinity(StartVms):
     """
     Start vms that placed into the same soft, positive affinity group,
@@ -197,6 +197,7 @@ class TestStartVmsUnderHardNegativeAffinity(StartVms):
         )
 
 
+@attr(tier=2)
 class TestStartVmsUnderSoftNegativeAffinity(StartVms):
     """
     Start vms that placed into the same soft, negative affinity group,
@@ -316,6 +317,7 @@ class TestMigrateVmUnderHardPositiveAffinity(MigrateVm):
         )
 
 
+@attr(tier=2)
 class TestMigrateVmUnderSoftPositiveAffinity(MigrateVm):
     """
     Migrate vm under soft positive affinity,
@@ -390,6 +392,7 @@ class TestMigrateVmUnderHardNegativeAffinity(MigrateVm):
         )
 
 
+@attr(tier=2)
 class TestMigrateVmUnderSoftNegativeAffinity(MigrateVm):
     """
     Migrate vm under soft negative affinity,
@@ -416,6 +419,7 @@ class TestMigrateVmUnderSoftNegativeAffinity(MigrateVm):
         )
 
 
+@attr(tier=2)
 class TestNegativeMigrateVmUnderHardPositiveAffinity(MigrateVm):
     """
     Negative: Migrate vm under hard positive affinity to opposite host
@@ -437,6 +441,7 @@ class TestNegativeMigrateVmUnderHardPositiveAffinity(MigrateVm):
         )
 
 
+@attr(tier=2)
 class TestMigrateVmOppositeUnderSoftPositiveAffinity(MigrateVm):
     """
     Migrate vm under soft positive affinity to opposite host
@@ -458,6 +463,7 @@ class TestMigrateVmOppositeUnderSoftPositiveAffinity(MigrateVm):
         )
 
 
+@attr(tier=2)
 class TestNegativeMigrateVmUnderHardNegativeAffinity(MigrateVm):
     """
     Negative: Migrate vm under hard negative affinity
@@ -480,6 +486,7 @@ class TestNegativeMigrateVmUnderHardNegativeAffinity(MigrateVm):
         )
 
 
+@attr(tier=2)
 class TestMigrateVmSameUnderSoftNegativeAffinity(MigrateVm):
     """
     Migrate vm under soft negative affinity to same host where second vm
@@ -501,6 +508,7 @@ class TestMigrateVmSameUnderSoftNegativeAffinity(MigrateVm):
         )
 
 
+@attr(tier=2)
 class TestRemoveVmFromAffinityGroupOnClusterChange(Affinity):
     """
     Change vm cluster, also must remove vm from affinity group of other cluster
@@ -584,6 +592,7 @@ class TestRemoveVmFromAffinityGroupOnClusterChange(Affinity):
         ).teardown_class()
 
 
+@attr(tier=2)
 class PutHostToMaintenance(StartVms):
     """
     Put host to maintenance and check vms migration destination
@@ -614,6 +623,7 @@ class PutHostToMaintenance(StartVms):
         super(PutHostToMaintenance, cls).teardown_class()
 
 
+@attr(tier=2)
 class TestPutHostToMaintenanceUnderHardPositiveAffinity(StartVms):
     """
     Put host to maintenance under hard positive affinity
@@ -644,6 +654,7 @@ class TestPutHostToMaintenanceUnderHardPositiveAffinity(StartVms):
         )
 
 
+@attr(tier=2)
 class TestPutHostToMaintenanceUnderHardNegativeAffinity(PutHostToMaintenance):
     """
     Put host to maintenance under hard negative affinity
@@ -709,6 +720,7 @@ class AdditionalAffinityGroup(Affinity):
         super(AdditionalAffinityGroup, cls).teardown_class()
 
 
+@attr(tier=2)
 class TestTwoDifferentAffinitiesScenario1(AdditionalAffinityGroup):
     """
     Negative: create two affinity groups with the same vms
@@ -739,6 +751,7 @@ class TestTwoDifferentAffinitiesScenario1(AdditionalAffinityGroup):
         )
 
 
+@attr(tier=2)
 class TestTwoDifferentAffinitiesScenario2(AdditionalAffinityGroup):
     """
     Negative: create two affinity groups with the same vms
@@ -769,6 +782,7 @@ class TestTwoDifferentAffinitiesScenario2(AdditionalAffinityGroup):
         )
 
 
+@attr(tier=2)
 class TestTwoDifferentAffinitiesScenario3(AdditionalAffinityGroup):
     """
     Negative: create two affinity groups with the same vms
@@ -799,6 +813,7 @@ class TestTwoDifferentAffinitiesScenario3(AdditionalAffinityGroup):
         )
 
 
+@attr(tier=2)
 class TestFailedToStartHAVmUnderHardNegativeAffinity(MigrateVm):
     """
     Kill HA vm and check that vm failed to start,
@@ -885,6 +900,7 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(MigrateVm):
             logger.error("Failed to activate host %s", config.HOSTS[2])
 
 
+@attr(tier=2)
 class TestStartHAVmsUnderHardPositiveAffinity(StartVms):
     """
     Start two HA vms under hard positive affinity, kill them and
@@ -945,6 +961,7 @@ class TestStartHAVmsUnderHardPositiveAffinity(StartVms):
                 logger.error("Failed to update vm %s", vm)
 
 
+@attr(tier=2)
 class TestSoftPositiveAffinityVsMemoryFilter(StartVms):
     """
     Change memory of vms to prevent possibility to start two vms on the same

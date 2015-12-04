@@ -8,7 +8,7 @@ import re
 import random
 import logging
 
-import art.unittest_lib as libs
+from art.unittest_lib import attr, SlaTest
 import rhevmtests.sla.config as c
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
@@ -137,8 +137,8 @@ def get_qemu_value(host_resource, vm, arg):
 ########################################################################
 
 
-@libs.attr(tier=1)
-class BasicSlaClass(libs.SlaTest):
+@attr(tier=1)
+class BasicSlaClass(SlaTest):
     """
     Create and delete after test new vm with different parameters
     """
@@ -175,7 +175,7 @@ class BasicSlaClass(libs.SlaTest):
             raise errors.VMException("Cannot remove vm")
 
 
-@libs.attr(tier=2)
+@attr(tier=2)
 class TestProtectedVmCase1(BasicSlaClass):
     """
     Negative: Remove protected VM
@@ -201,7 +201,7 @@ class TestProtectedVmCase1(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=2)
+@attr(tier=2)
 class TestProtectedVmCase2(BasicSlaClass):
     """
     Negative: Force remove protected VM
@@ -227,7 +227,7 @@ class TestProtectedVmCase2(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=2)
+@attr(tier=2)
 class TestCPUHostCase1(BasicSlaClass):
     """
     Negative: Change migratable VM to use CPU host
@@ -252,7 +252,7 @@ class TestCPUHostCase1(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=2)
+@attr(tier=2)
 class TestCPUHostCase2(BasicSlaClass):
     """
     Set CPU host to a user migratable VM
@@ -281,7 +281,7 @@ class TestCPUHostCase2(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=2)
+@attr(tier=2)
 class TestCPUHostCase3(BasicSlaClass):
     """
     Negative: Change VM with CPU host mode (pinned) to migratable
@@ -293,11 +293,16 @@ class TestCPUHostCase3(BasicSlaClass):
     vm_basic_parameters.update(
         {
             "placement_affinity": c.VM_PINNED,
-            "placement_host": c.HOSTS[0],
+            "placement_host": None,
             "cpu_mode": HOST_PASSTHROUGH
         }
     )
     protected = False
+
+    @classmethod
+    def setup_class(cls):
+        cls.vm_basic_parameters['placement_host'] = c.HOSTS[0]
+        super(TestCPUHostCase3, cls).setup_class()
 
     @polarion("RHEVM3-9523")
     def test_set_pinned_cpuhost_vm_migratable(self):
@@ -331,10 +336,15 @@ class TestCPUHostCase4(BasicSlaClass):
     vm_basic_parameters.update(
         {
             "placement_affinity": c.VM_PINNED,
-            "placement_host": c.HOSTS[0],
+            "placement_host": None,
             "cpu_mode": HOST_PASSTHROUGH
         }
     )
+
+    @classmethod
+    def setup_class(cls):
+        cls.vm_basic_parameters['placement_host'] = c.HOSTS[0]
+        super(TestCPUHostCase4, cls).setup_class()
 
     @polarion("RHEVM3-9533")
     def test_set_non_migratable_cpuhost_no_host(self):
@@ -370,10 +380,15 @@ class TestCPUHostCase5(BasicSlaClass):
     vm_basic_parameters.update(
         {
             "placement_affinity": c.VM_PINNED,
-            "placement_host": c.HOSTS[0],
+            "placement_host": None,
             "cpu_mode": HOST_PASSTHROUGH
         }
     )
+
+    @classmethod
+    def setup_class(cls):
+        cls.vm_basic_parameters['placement_host'] = c.HOSTS[0]
+        super(TestCPUHostCase5, cls).setup_class()
 
     @polarion("RHEVM3-9535")
     def test_set_pinned_cpuhost_vm_user_migratable(self):
@@ -408,10 +423,15 @@ class TestCPUHostCase6(BasicSlaClass):
     vm_basic_parameters.update(
         {
             "placement_affinity": c.VM_PINNED,
-            "placement_host": c.HOSTS[0],
+            "placement_host": None,
             "cpu_mode": HOST_PASSTHROUGH
         }
     )
+
+    @classmethod
+    def setup_class(cls):
+        cls.vm_basic_parameters['placement_host'] = c.HOSTS[0]
+        super(TestCPUHostCase6, cls).setup_class()
 
     @polarion("RHEVM3-9536")
     def test_check_qemu_params(self):
@@ -524,7 +544,7 @@ class TestThreadsOff(BasicThreadSlaClass):
         self.assertTrue(ll_vms.startVm(True, self.vm_name))
 
 
-@libs.attr(tier=2)
+@attr(tier=2)
 class TestNegativeThreadsOff(BasicThreadSlaClass):
     """
     Negative: Verify number of cores on host when threads off
@@ -570,7 +590,7 @@ class TestThreadsOn(BasicThreadSlaClass):
         self.assertTrue(ll_vms.startVm(True, self.vm_name))
 
 
-@libs.attr(tier=2)
+@attr(tier=2)
 class TestThreadsOnNegative(BasicThreadSlaClass):
     """
     Negative: Verify number of cores on host when threads on
@@ -608,7 +628,7 @@ class TestCPUPinCase1(BasicSlaClass):
     vm_basic_parameters.update(
         {
             "placement_affinity": c.VM_PINNED,
-            "placement_host": c.HOSTS[0]
+            "placement_host": None,
         }
     )
     cores = 1
@@ -619,6 +639,7 @@ class TestCPUPinCase1(BasicSlaClass):
         """
         Create a non migratable VM and count number of cores on host
         """
+        cls.vm_basic_parameters['placement_host'] = c.HOSTS[0]
         super(TestCPUPinCase1, cls).setup_class()
         cls.sockets = ll_hosts.get_host_topology(c.HOSTS[0]).sockets
         logger.info("Number of sockets on host: %s" % cls.sockets)
@@ -656,7 +677,7 @@ class TestCPUPinCase1(BasicSlaClass):
             "Successfully changed VCPU pinning to 0#1-%s", upper
         )
 
-    @libs.attr(tier=2)
+    @attr(tier=2)
     @polarion("RHEVM3-12222")
     def test_cpupin_format3(self):
         """
@@ -671,7 +692,7 @@ class TestCPUPinCase1(BasicSlaClass):
         )
         logger.info("Unable to change VCPU pinning to 0#^1")
 
-    @libs.attr(tier=2)
+    @attr(tier=2)
     @polarion("RHEVM3-12223")
     def test_cpupin_format4(self):
         """
@@ -741,7 +762,7 @@ class TestCPUPinCase1(BasicSlaClass):
         )
         logger.info("Successfully changed VCPU pinning to 0#1,2,3")
 
-    @libs.attr(tier=2)
+    @attr(tier=2)
     @polarion("RHEVM3-12227")
     def test_cpupin_format8(self):
         """
@@ -756,7 +777,7 @@ class TestCPUPinCase1(BasicSlaClass):
         )
         logger.info("Successfully changed VCPU pinning to 0#0_0#1.")
 
-    @libs.attr(tier=2)
+    @attr(tier=2)
     @polarion("RHEVM3-12228")
     def test_cpupin_format9(self):
         """
@@ -769,7 +790,7 @@ class TestCPUPinCase1(BasicSlaClass):
         )
         logger.info("Unable to change VCPU pinning to 0#A.")
 
-    @libs.attr(tier=2)
+    @attr(tier=2)
     @polarion("RHEVM3-12229")
     def test_cpupin_format10(self):
         """
@@ -781,7 +802,7 @@ class TestCPUPinCase1(BasicSlaClass):
         except ValueError:
             logger.info("Unable to change VCPU pinning to A#0")
 
-    @libs.attr(tier=2)
+    @attr(tier=2)
     @polarion("RHEVM3-12230")
     def test_cpupin_format15(self):
         """
@@ -795,7 +816,7 @@ class TestCPUPinCase1(BasicSlaClass):
         )
         logger.info("Unable to change VCPU pinning to 0#0-1,^0,^1")
 
-    @libs.attr(tier=2)
+    @attr(tier=2)
     @polarion("RHEVM3-12231")
     def test_cpupin_format16(self):
         """
@@ -813,7 +834,7 @@ class TestCPUPinCase1(BasicSlaClass):
             "Success to run vm"
         )
 
-    @libs.attr(tier=2)
+    @attr(tier=2)
     @polarion("RHEVM3-12232")
     def test_cpupin_format17(self):
         """
@@ -826,7 +847,7 @@ class TestCPUPinCase1(BasicSlaClass):
         )
         logger.info("Unable to change VCPU pinning to 0#")
 
-    @libs.attr(tier=2)
+    @attr(tier=2)
     @polarion("RHEVM3-12233")
     def test_cpupin_format18(self):
         """
@@ -842,7 +863,7 @@ class TestCPUPinCase1(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=2)
+@attr(tier=2)
 class TestCPUPinCase2(BasicSlaClass):
     """
     Negative: Set CPU pinning to a migratable VM
@@ -866,7 +887,7 @@ class TestCPUPinCase2(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=2)
+@attr(tier=2)
 class TestCPUPinCase3(BasicSlaClass):
     """
     Negative: Change CPU pinned VM to migratable
@@ -878,10 +899,15 @@ class TestCPUPinCase3(BasicSlaClass):
     vm_basic_parameters.update(
         {
             "placement_affinity": c.VM_PINNED,
-            "placement_host": c.HOSTS[0],
+            "placement_host": None,
             "vcpu_pinning": [{"0": "0"}]
         }
     )
+
+    @classmethod
+    def setup_class(cls):
+        cls.vm_basic_parameters['placement_host'] = c.HOSTS[0]
+        super(TestCPUPinCase3, cls).setup_class()
 
     @polarion("RHEVM3-9534")
     def test_set_pinned_cpupin_vm_migratable(self):
@@ -904,7 +930,7 @@ class TestCPUPinCase3(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=2)
+@attr(tier=2)
 class TestCPUPinCase4(BasicSlaClass):
     """
     Negative: Set CPU pinning to a user migratable VM
@@ -933,7 +959,7 @@ class TestCPUPinCase4(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=2)
+@attr(tier=2)
 class TestCPUPinCase5(BasicSlaClass):
     """
     Negative: Change CPU pinned VM to user migratable
@@ -945,10 +971,15 @@ class TestCPUPinCase5(BasicSlaClass):
     vm_basic_parameters.update(
         {
             "placement_affinity": c.VM_PINNED,
-            "placement_host": c.HOSTS[0],
+            "placement_host": None,
             "vcpu_pinning": [{"0": "0"}]
         }
     )
+
+    @classmethod
+    def setup_class(cls):
+        cls.vm_basic_parameters['placement_host'] = c.HOSTS[0]
+        super(TestCPUPinCase5, cls).setup_class()
 
     @polarion("RHEVM3-9542")
     def set_pinned_cpupin_vm_user_migratable(self):
@@ -972,7 +1003,7 @@ class TestCPUPinCase5(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=2)
+@attr(tier=2)
 class TestCPUPinCase6(BasicSlaClass):
     """
     Check if pinning holds on random pCPU"s
@@ -984,7 +1015,7 @@ class TestCPUPinCase6(BasicSlaClass):
     vm_basic_parameters.update(
         {
             "placement_affinity": c.VM_PINNED,
-            "placement_host": c.HOSTS[0],
+            "placement_host": None,
             "vcpu_pinning": [{"0": "0"}]
         }
     )
@@ -995,6 +1026,7 @@ class TestCPUPinCase6(BasicSlaClass):
         """
         Create a non migratable
         """
+        cls.vm_basic_parameters['placement_host'] = c.HOSTS[0]
         super(TestCPUPinCase6, cls).setup_class()
         sockets = ll_hosts.get_host_topology(c.HOSTS[0]).sockets
         logger.info("Number of sockets on host: %s" % sockets)
@@ -1066,7 +1098,7 @@ class TestCPUPinCase7(BasicSlaClass):
     vm_basic_parameters.update(
         {
             "placement_affinity": c.VM_PINNED,
-            "placement_host": c.HOSTS[0]
+            "placement_host": None,
         }
     )
     total_cores = 1
@@ -1076,6 +1108,7 @@ class TestCPUPinCase7(BasicSlaClass):
         """
         Create a non migratable VM
         """
+        cls.vm_basic_parameters['placement_host'] = c.HOSTS[0]
         super(TestCPUPinCase7, cls).setup_class()
         sockets = ll_hosts.get_host_topology(c.HOSTS[0]).sockets
         logger.info("Number of sockets on host: %s" % sockets)
@@ -1119,7 +1152,7 @@ class TestCPUPinCase7(BasicSlaClass):
 ########################################################################
 
 
-@libs.attr(tier=2)
+@attr(tier=2)
 class TestCPUPinCase8(BasicSlaClass):
     """
     Negative: Set CPU pinning to a non migratable VM with no host
@@ -1163,9 +1196,14 @@ class TestPlacementPolicyCase1(BasicSlaClass):
     vm_basic_parameters.update(
         {
             "start": "true",
-            "placement_host": c.HOSTS[0]
+            "placement_host": None,
         }
     )
+
+    @classmethod
+    def setup_class(cls):
+        cls.vm_basic_parameters['placement_host'] = c.HOSTS[0]
+        super(TestPlacementPolicyCase1, cls).setup_class()
 
     @polarion("RHEVM3-9522")
     def test_migrate_migratable(self):
@@ -1195,10 +1233,15 @@ class TestPlacementPolicyCase2(BasicSlaClass):
     vm_basic_parameters.update(
         {
             "start": "true",
-            "placement_host": c.HOSTS[0],
+            "placement_host": None,
             "placement_affinity": c.VM_USER_MIGRATABLE
         }
     )
+
+    @classmethod
+    def setup_class(cls):
+        cls.vm_basic_parameters['placement_host'] = c.HOSTS[0]
+        super(TestPlacementPolicyCase2, cls).setup_class()
 
     @polarion("RHEVM3-9525")
     def test_migrate_user_migratable(self):
@@ -1230,10 +1273,15 @@ class TestPlacementPolicyCase3(BasicSlaClass):
     vm_basic_parameters.update(
         {
             "start": "true",
-            "placement_host": c.HOSTS[0],
+            "placement_host": None,
             "placement_affinity": c.VM_PINNED
         }
     )
+
+    @classmethod
+    def setup_class(cls):
+        cls.vm_basic_parameters['placement_host'] = c.HOSTS[0]
+        super(TestPlacementPolicyCase3, cls).setup_class()
 
     @polarion("RHEVM3-9526")
     def test_migrate_non_migratable(self):

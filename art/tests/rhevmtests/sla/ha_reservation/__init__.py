@@ -22,7 +22,13 @@ def setup_package():
     """
     Prepare environment for HA reservation test
     """
-
+    config.GENERAL_VM_PARAMS['placement_host'] = config.HOSTS[0]
+    config.SPECIFIC_VMS_PARAMS[
+        config.VM_NAME[0]
+    ]['placement_host'] = config.HOSTS[0]
+    config.SPECIFIC_VMS_PARAMS[
+        config.VM_NAME[1]
+    ]['placement_host'] = config.HOSTS[0] if len(config.HOSTS) >= 2 else None
     if os.environ.get("JENKINS_URL"):
         logger.info("Building setup...")
         if not config.GOLDEN_ENV:

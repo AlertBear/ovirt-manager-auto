@@ -426,10 +426,16 @@ class TestNegativeUpdateVmWithNumaAndAutomaticMigration(UpdateVm):
     Try to add numa node to vm with AutomaticMigration option
     """
     __test__ = True
-    new_vm_params = {"placement_host": c.HOSTS[0]}
     bz = {
         "1211176": {"engine": None, "version": ["3.5.1"]}
     }
+
+    @classmethod
+    def setup_class(cls):
+        cls.new_vm_params = {"placement_host": c.HOSTS[0]}
+        super(
+            TestNegativeUpdateVmWithNumaAndAutomaticMigration, cls,
+        ).setup_class()
 
     @polarion("RHEVM3-9565")
     def test_add_numa_node(self):
@@ -450,12 +456,18 @@ class TestNegativeUpdateVmWithNumaAndManualMigration(UpdateVm):
     """
     __test__ = True
     new_vm_params = {
-        "placement_host": c.HOSTS[0],
         "placement_affinity": c.VM_USER_MIGRATABLE
     }
     bz = {
         '1211176': {'engine': None, 'version': ['3.5.1']}
     }
+
+    @classmethod
+    def setup_class(cls):
+        cls.new_vm_params["placement_host"] = c.HOSTS[0]
+        super(
+            TestNegativeUpdateVmWithNumaAndManualMigration, cls,
+        ).setup_class()
 
     @polarion("RHEVM3-9564")
     def test_add_numa_node(self):
@@ -497,7 +509,6 @@ class AddNumaNodes(UpdateVm):
     __test__ = False
     new_vm_params = {
         "placement_affinity": c.VM_PINNED,
-        "placement_host": c.HOSTS[0],
     }
     numa_mode = c.INTERLEAVE_MODE
     add_nodes = True
@@ -508,6 +519,7 @@ class AddNumaNodes(UpdateVm):
         """
         Add numa nodes to vm
         """
+        cls.new_vm_params['placement_host'] = c.HOSTS[0]
         super(AddNumaNodes, cls).setup_class()
         cls.numa_params = cls._create_number_of_equals_numa_nodes(
             c.VM_NAME[0], cls.host_executor_1,
