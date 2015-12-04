@@ -10,25 +10,9 @@ import config as conf
 from art.rhevm_api.utils import test_utils
 import rhevmtests.networking.helper as net_help
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 logger = logging.getLogger("Sanity_Helper")
-
-
-def check_dummy_on_host_interfaces(dummy_name):
-    """
-    Check if dummy interface if on host via engine
-
-    :param dummy_name: Dummy name
-    :type dummy_name: str
-    :return: True/False
-    :rtype: bool
-    """
-    host_nics = ll_hosts.getHostNicsList(conf.HOST_NAME_0)
-    for nic in host_nics:
-        if dummy_name == nic.name:
-            return True
-    return False
 
 
 def run_vm_on_host():
@@ -57,6 +41,7 @@ def stop_vm():
 def engine_config_set_ethtool_and_queues():
     """
     Set queues and ethtool support on engine via engine-config
+
     :raise: exceptions.NetworkException
     """
     logger.info(
@@ -84,4 +69,24 @@ def engine_config_set_ethtool_and_queues():
     ):
         raise conf.NET_EXCEPTION(
             "Failed to enable queue via engine-config"
+        )
+
+
+def send_setup_networks(sn_dict):
+    """
+    Send setupNetworks to host
+
+    :param sn_dict: setupNetworks networks dict
+    :type sn_dict: dict
+    :raise: conf.NET_EXCEPTION
+    """
+    logger.info(
+        "Perform SetupNetwork update action on %s", conf.HOST_NAME_0
+    )
+    if not hl_host_network.setup_networks(
+        conf.HOST_NAME_0, **sn_dict
+    ):
+        raise conf.NET_EXCEPTION(
+            "Update SetupNetwork action with %s failed on %s" %
+            (sn_dict, conf.HOST_NAME_0)
         )

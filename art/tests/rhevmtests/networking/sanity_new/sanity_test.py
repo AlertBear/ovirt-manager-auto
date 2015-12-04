@@ -5,12 +5,13 @@
 Testing Sanity for the network features.
 """
 
+import helper
 import logging
 import config as conf
-from art.unittest_lib import attr
-from art.unittest_lib import NetworkTest
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art import unittest_lib
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import rhevmtests.networking.helper as network_helper
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import rhevmtests.networking.arbitrary_vlan_device_name.helper as vlan_helper
 
@@ -18,8 +19,8 @@ import rhevmtests.networking.arbitrary_vlan_device_name.helper as vlan_helper
 logger = logging.getLogger("Sanity_Cases")
 
 
-@attr(tier=1)
-class TestSanityCaseBase(NetworkTest):
+@unittest_lib.attr(tier=1)
+class TestSanityCaseBase(unittest_lib.NetworkTest):
     """
     Base class which provides teardown class method for each test case
     that inherits this class
@@ -170,13 +171,7 @@ class TestSanity02(TestSanityCaseBase):
 
             }
         }
-        logger.info("Perform SetupNetwork action on %s",  conf.HOST_NAME_0)
-        if not hl_host_network.setup_networks(
-            conf.HOST_NAME_0, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "SetupNetwork action failed on %s" % conf.HOST_NAME_0
-            )
+        helper.send_setup_networks(sn_dict=network_host_api_dict)
 
     @polarion("RHEVM3-9851")
     def test_02_multiple_actions(self):
@@ -227,58 +222,49 @@ class TestSanity02(TestSanityCaseBase):
                 }
             }
         }
-        logger.info(
-            "Perform SetupNetwork update action on %s", conf.HOST_NAME_0
-        )
-        if not hl_host_network.setup_networks(
-            conf.HOST_NAME_0, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "Update SetupNetwork action failed on %s" % conf.HOST_NAME_0
-            )
+        helper.send_setup_networks(sn_dict=network_host_api_dict)
 
 
 class TestSanity03(TestSanityCaseBase):
     """
     Add new network QOS (named)
+    Attach network with QoS to host NIC
     """
-
     __test__ = True
-    qos_name = conf.QOS_NAME[0]
-    qos_value = conf.QOS_TEST_VALUE
-    bz = {"1274187": {"engine": None, "version": ["3.6"]}}
+    qos_name = conf.QOS_NAME[3]
+    net = conf.NETS[3][0]
 
     @polarion("RHEVM3-6525")
+    @bz({"1274187": {"engine": None, "version": ["3.6"]}})
     def test_add_network_qos(self):
         """
-        1) Create new Host Network QoS profile under DC
-        2) Fill in weighted share only for this QoS
-        3) Fill in all 3 values for this QoS:
-        a) weighted share, b) rate limit, c) committed rate
-        4) Update the provided values
+        Create new Host Network QoS profile under DC
         """
         network_helper.create_host_net_qos(
-            qos_name=self.qos_name, outbound_average_linkshare=self.qos_value
+            qos_name=self.qos_name,
+            outbound_average_linkshare=conf.TEST_VALUE
         )
 
-        logger.info(
-            "Update existing Host Network QoS profile under DC by adding rate "
-            "limit and committed rate"
-        )
-        network_helper.update_host_net_qos(
-            qos_name=self.qos_name,
-            outbound_average_upperlimit=self.qos_value,
-            outbound_average_realtime=self.qos_value
-        )
-        logger.info(
-            "Update weighted share, limit and committed rate for existing QoS"
-        )
-        network_helper.update_host_net_qos(
-            qos_name=self.qos_name,
-            outbound_average_linkshare=self.qos_value + 1,
-            outbound_average_upperlimit=self.qos_value + 1,
-            outbound_average_realtime=self.qos_value + 1
-        )
+    @polarion("RHEVM3-6526")
+    def test_qos_for_network_on_host_nic(self):
+        """
+        Attach network to host NIC with QoS parameters (Anonymous' QoS)
+        """
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": self.net,
+                    "nic": conf.HOST_0_NICS[1],
+                    "qos": {
+                        "type_": conf.HOST_NET_QOS_TYPE,
+                        "outbound_average_linkshare": conf.TEST_VALUE,
+                        "outbound_average_realtime": conf.TEST_VALUE,
+                        "outbound_average_upperlimit": conf.TEST_VALUE
+                    }
+                }
+            }
+        }
+        helper.send_setup_networks(sn_dict=network_host_api_dict)
 
     @classmethod
     def teardown_class(cls):
@@ -286,6 +272,7 @@ class TestSanity03(TestSanityCaseBase):
         Remove Host Network QoS
         """
         network_helper.remove_qos_from_dc(qos_name=cls.qos_name)
+        super(TestSanity03, cls).teardown_class()
 
 
 class TestSanity04(TestSanityCaseBase):
@@ -309,13 +296,7 @@ class TestSanity04(TestSanityCaseBase):
                 }
             }
         }
-        logger.info("Perform SetupNetwork action on %s",  conf.HOST_NAME_0)
-        if not hl_host_network.setup_networks(
-            conf.HOST_NAME_0, **mtu_over_vm_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "SetupNetwork action failed on %s" % conf.HOST_NAME_0
-            )
+        helper.send_setup_networks(sn_dict=mtu_over_vm_dict)
 
     def test_mtu_over_non_vm(self):
         """
@@ -324,18 +305,12 @@ class TestSanity04(TestSanityCaseBase):
         mtu_over_non_vm_dict = {
             "add": {
                 "1": {
-                    "nic": conf.HOST_0_NICS[2],
+                    "nic": conf.HOST_0_NICS[1],
                     "network": self.net[1]
                 }
             }
         }
-        logger.info("Perform SetupNetwork action on %s",  conf.HOST_NAME_0)
-        if not hl_host_network.setup_networks(
-            conf.HOST_NAME_0, **mtu_over_non_vm_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "SetupNetwork action failed on %s" % conf.HOST_NAME_0
-            )
+        helper.send_setup_networks(sn_dict=mtu_over_non_vm_dict)
 
     def test_mtu_over_vlan(self):
         """
@@ -344,18 +319,12 @@ class TestSanity04(TestSanityCaseBase):
         mtu_over_vlan_dict = {
             "add": {
                 "1": {
-                    "nic": conf.HOST_0_NICS[2],
+                    "nic": conf.HOST_0_NICS[1],
                     "network": self.net[2]
                 }
             }
         }
-        logger.info("Perform SetupNetwork action on %s",  conf.HOST_NAME_0)
-        if not hl_host_network.setup_networks(
-            conf.HOST_NAME_0, **mtu_over_vlan_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "SetupNetwork action failed on %s" % conf.HOST_NAME_0
-            )
+        helper.send_setup_networks(sn_dict=mtu_over_vlan_dict)
 
     @polarion("RHEVM3-XXX")
     def test_mtu_over_bond(self):
@@ -374,13 +343,14 @@ class TestSanity04(TestSanityCaseBase):
                 }
             }
         }
-        logger.info("Perform SetupNetwork action on %s",  conf.HOST_NAME_0)
-        if not hl_host_network.setup_networks(
-            conf.HOST_NAME_0, **mtu_over_bond_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "SetupNetwork action failed on %s" % conf.HOST_NAME_0
-            )
+        helper.send_setup_networks(sn_dict=mtu_over_bond_dict)
+
+    @classmethod
+    def tearDown(cls):
+        """
+        Clean host interfaces
+        """
+        super(TestSanity04, cls).teardown_class()
 
 
 class TestSanity05(TestSanityCaseBase):
@@ -405,13 +375,7 @@ class TestSanity05(TestSanityCaseBase):
                 }
             }
         }
-        logger.info("Perform SetupNetwork action on %s",  conf.HOST_NAME_0)
-        if not hl_host_network.setup_networks(
-            conf.HOST_NAME_0, **bridgeless_on_nic_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "SetupNetwork action failed on %s" % conf.HOST_NAME_0
-            )
+        helper.send_setup_networks(sn_dict=bridgeless_on_nic_dict)
 
     def test_bridgeless_vlan_on_nic(self):
         """
@@ -420,18 +384,12 @@ class TestSanity05(TestSanityCaseBase):
         bridgeless_vlan_on_nic_dict = {
             "add": {
                 "1": {
-                    "nic": conf.HOST_0_NICS[2],
+                    "nic": conf.HOST_0_NICS[1],
                     "network": self.net[1]
                 }
             }
         }
-        logger.info("Perform SetupNetwork action on %s",  conf.HOST_NAME_0)
-        if not hl_host_network.setup_networks(
-            conf.HOST_NAME_0, **bridgeless_vlan_on_nic_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "SetupNetwork action failed on %s" % conf.HOST_NAME_0
-            )
+        helper.send_setup_networks(sn_dict=bridgeless_vlan_on_nic_dict)
 
     def test_bridgeless_on_bond(self):
         """
@@ -449,13 +407,7 @@ class TestSanity05(TestSanityCaseBase):
                 }
             }
         }
-        logger.info("Perform SetupNetwork action on %s",  conf.HOST_NAME_0)
-        if not hl_host_network.setup_networks(
-            conf.HOST_NAME_0, **bridgeless_on_bond_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "SetupNetwork action failed on %s" % conf.HOST_NAME_0
-            )
+        helper.send_setup_networks(sn_dict=bridgeless_on_bond_dict)
 
     def test_bridgeless_vlan_over_bond(self):
         """
@@ -473,10 +425,120 @@ class TestSanity05(TestSanityCaseBase):
                 }
             }
         }
-        logger.info("Perform SetupNetwork action on %s",  conf.HOST_NAME_0)
-        if not hl_host_network.setup_networks(
-            conf.HOST_NAME_0, **bridgeless_vlan_on_bond_dict
+        helper.send_setup_networks(sn_dict=bridgeless_vlan_on_bond_dict)
+
+    @classmethod
+    def tearDown(cls):
+        """
+        Clean host interfaces
+        """
+        super(TestSanity05, cls).teardown_class()
+
+
+class TestSanity06(TestSanityCaseBase):
+    """
+    Create permutation for the Plugged/Linked option on VNIC
+    """
+    __test__ = True
+    nets = conf.NETS[6]
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create 5 VNICs on VM with different params for plugged/linked
+        """
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "nic": conf.HOST_0_NICS[1],
+                    "network": cls.nets[0]
+                },
+                "2": {
+                    "nic": conf.HOST_0_NICS[1],
+                    "network": cls.nets[1]
+                },
+                "3": {
+                    "nic": conf.HOST_0_NICS[1],
+                    "network": cls.nets[2]
+                },
+                "4": {
+                    "nic": conf.HOST_0_NICS[1],
+                    "network": cls.nets[3]
+                }
+            }
+        }
+        helper.send_setup_networks(sn_dict=network_host_api_dict)
+        helper.run_vm_on_host()
+        logger.info("Create VNICs with different plugged/linked permutations")
+        plug_link_param_list = [
+            ("true", "true"),
+            ("true", "false"),
+            ("false", "true"),
+            ("false", "false")
+        ]
+        for i in range(len(plug_link_param_list)):
+            nic_name = conf.NIC_NAME[i+1]
+            if not ll_vms.addNic(
+                positive=True, vm=conf.VM_0, name=nic_name,
+                network=cls.nets[i], plugged=plug_link_param_list[i][0],
+                linked=plug_link_param_list[i][1]
+            ):
+                raise conf.NET_EXCEPTION(
+                    "Cannot add VNIC %s to %s" % (nic_name, conf.VM_0)
+                )
+        if not ll_vms.addNic(
+            positive=True, vm=conf.VM_0, name=conf.NIC_NAME[5], network=None,
+            plugged="true", linked="true"
         ):
             raise conf.NET_EXCEPTION(
-                "SetupNetwork action failed on %s" % conf.HOST_NAME_0
+                "Cannot add VNIC %s to %s" % (conf.NIC_NAME[5], conf.VM_0)
             )
+
+    @polarion("RHEVM3-3829")
+    def test_check_combination_plugged_linked_values(self):
+        """
+        Check all permutation for the Plugged/Linked options on VNIC
+        """
+        for nic_name in (
+            conf.NIC_NAME[1], conf.NIC_NAME[3], conf.NIC_NAME[5]
+        ):
+            logger.info("Check that linked status on %s in True", nic_name)
+            if not ll_vms.getVmNicLinked(vm=conf.VM_0, nic=nic_name):
+                raise conf.NET_EXCEPTION(
+                    "NIC %s is not linked but should be" % nic_name
+                )
+        for nic_name in (
+            conf.NIC_NAME[1], conf.NIC_NAME[2], conf.NIC_NAME[5]
+        ):
+            logger.info("Check that plugged status on %s in True", nic_name)
+            if not ll_vms.getVmNicPlugged(vm=conf.VM_0, nic=nic_name):
+                raise conf.NET_EXCEPTION(
+                    "NIC %s is not plugged but should be" % nic_name
+                )
+        for nic_name in (conf.NIC_NAME[2], conf.NIC_NAME[4]):
+            logger.info("Check that linked status on %s in False", nic_name)
+            if ll_vms.getVmNicLinked(vm=conf.VM_0, nic=nic_name):
+                raise conf.NET_EXCEPTION(
+                    "NIC %s is linked but shouldn't be" % nic_name
+                )
+        for nic_name in (conf.NIC_NAME[3], conf.NIC_NAME[4]):
+            logger.info("Check that plugged status on %s in False", nic_name)
+            if ll_vms.getVmNicPlugged(vm=conf.VM_0, nic=nic_name):
+                raise conf.NET_EXCEPTION(
+                    "NIC %s is plugged but shouldn't be" % nic_name
+                )
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove networks from the setup.
+        """
+        helper.stop_vm()
+        logger.info("Removing all the VNICs besides management network")
+        for i in range(5):
+            nic_name = conf.NIC_NAME[i+1]
+            if not ll_vms.removeNic(
+                positive=True, vm=conf.VM_0, nic=nic_name
+            ):
+                logger.error("Cannot remove nic %s from setup", nic_name)
+        super(TestSanity06, cls).teardown_class()
