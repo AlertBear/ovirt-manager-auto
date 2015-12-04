@@ -18,7 +18,8 @@ CLUSTER_2_NAME = "RestCluster2"
 CLUSTER_3_NAME = "RestCluster3"
 CLUSTER_4_NAME = "RestCluster4"
 
-HOST_NAME = HOSTS[0]
+# Filled in setup_package
+HOST_NAME = None
 
 NETWORK = "net1"
 

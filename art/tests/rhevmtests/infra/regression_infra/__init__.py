@@ -11,6 +11,7 @@ INSTALLED_FIXTURES = []
 
 
 def setup_package():
+    config.HOST_NAME = config.HOSTS[0]
     # Install AAA extension properties
     fixtures_dir = os.path.join(os.path.dirname(__file__), 'fixtures')
     for file_ in os.listdir(fixtures_dir):

@@ -48,11 +48,15 @@ class TestCaseNetwork(TestCase):
 
     apis = TestCase.apis - set(['cli'])
 
-    vds = resources.VDS(
-        config.HOST_NAME, config.HOSTS_PW,
-    )
+    vds = None
 
     __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        cls.vds = resources.VDS(
+            config.HOST_NAME, config.HOSTS_PW,
+        )
 
     def test01_create_network(self):
         """
