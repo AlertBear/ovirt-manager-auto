@@ -22,5 +22,5 @@ VM_NAME_0 = VM_NAME[0]
 VM_NAME_1 = VM_NAME[1]
 NIC_NAME_1 = NIC_NAME[1]
 NIC_NAME_2 = NIC_NAME[2]
-VDS_HOST = VDS_HOSTS[0]
-HOST = HOSTS[0]
+VDS_HOST = None  # Filled in setup_package
+HOST = None  # Filled in setup_package

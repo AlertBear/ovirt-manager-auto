@@ -24,6 +24,7 @@ def setup_package():
     """
     network_cleanup()
 
+    c.LAST_HOST = c.HOSTS[-1]
     logger.info("Create new setup with DC, cluster and host")
     if not hl_networks.create_basic_setup(
         datacenter=c.EXT_DC_0, storage_type=c.STORAGE_TYPE,

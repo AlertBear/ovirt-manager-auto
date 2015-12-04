@@ -11,7 +11,7 @@ from art.core_api import apis_utils
 logger = logging.getLogger("Network_Host_QoS_Helper")
 
 
-def cmp_qos_with_vdscaps(net, qos_dict, host=conf.VDS_HOSTS[0]):
+def cmp_qos_with_vdscaps(net, qos_dict, host=None):
     """
     Compares provided host network QoS values with the values in VDSCaps
 
@@ -23,6 +23,8 @@ def cmp_qos_with_vdscaps(net, qos_dict, host=conf.VDS_HOSTS[0]):
     :type host: Resource.VDS
     :raise: Network exception
     """
+    if host is None:
+        host = conf.VDS_HOSTS[0]
     logger.info("Compare vdsClient QoS values with %s", qos_dict)
     vds_caps_qos_dict = {}
     sample = apis_utils.TimeoutingSampler(
@@ -46,7 +48,7 @@ def cmp_qos_with_vdscaps(net, qos_dict, host=conf.VDS_HOSTS[0]):
         )
 
 
-def check_net_on_vdscaps(net, host=conf.VDS_HOSTS[0]):
+def check_net_on_vdscaps(net, host=None):
     """
     Check if network exists on VdsCaps
 
@@ -57,6 +59,8 @@ def check_net_on_vdscaps(net, host=conf.VDS_HOSTS[0]):
     :return: True if network exists on vdsCaps otherwise False
     :rtype: bool
     """
+    if host is None:
+        host = conf.VDS_HOSTS[0]
     vds_caps_out = host.vds_client("getVdsCapabilities")
     logger.info("%s", vds_caps_out["info"]["networks"])
     net_dict = vds_caps_out["info"]["networks"].get(net)

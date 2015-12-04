@@ -9,7 +9,8 @@ from rhevmtests.networking.config import *  # NOQA
 MAC_POOL_NAME = ["_".join(["MAC_POOL", str(i)]) for i in range(6)]
 MAC_POOL_CL = "MAC_POOL_CL"
 MP_VM_NAMES = ["_".join(["MAC_POOL_VM", str(i)]) for i in range(6)]
-LAST_HOST = HOSTS[-1]
+
+LAST_HOST = None  # Filled in setup_package
 EXT_DC_0 = EXTRA_DC[0]
 MP_VM = MP_VM_NAMES[0]
 ORIG_DC = DC_NAME[0]

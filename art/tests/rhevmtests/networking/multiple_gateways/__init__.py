@@ -21,6 +21,7 @@ def setup_package():
     Running cleanup
     Create dummies on host
     """
+    conf.VDS_HOST_0 = conf.VDS_HOSTS[0]
     networking.network_cleanup()
     net_helper.prepare_dummies(host_resource=conf.VDS_HOST_0, num_dummy=3)
     conf.HOST_NICS = conf.VDS_HOST_0.nics

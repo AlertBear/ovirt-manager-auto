@@ -20,6 +20,8 @@ def setup_package():
     """
     Running cleanup and starting vm
     """
+    config.VDS_HOST = config.VDS_HOSTS[0]
+    config.HOST = config.HOSTS[0]
     networking.network_cleanup()
     logger.info(
         "Starting VM %s on host %s", config.VM_NAME[0], config.HOSTS[0]

@@ -20,6 +20,9 @@ def setup_package():
 
     networking.network_cleanup()
     conf.HOST_1_NICS = conf.VDS_HOSTS_1.nics
+    conf.VDS_HOSTS_1 = conf.VDS_HOSTS[0]
+    conf.HOST_1_IP = conf.HOSTS_IP[0]
+    conf.HOST_1 = conf.HOSTS[0]
     logger.info(
         "Add %s to %s/%s", conf.NETS_DICT, conf.DC_NAME, conf.CLUSTER_1
     )

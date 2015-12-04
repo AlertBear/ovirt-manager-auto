@@ -19,7 +19,7 @@ logger = logging.getLogger("MGMT_Net_Role_Helper")
 
 
 def install_host_new_mgmt(
-    host_resource=c.VDS_HOSTS[-1], network=c.MGMT_BRIDGE, dc=c.EXT_DC_0,
+    host_resource=None, network=c.MGMT_BRIDGE, dc=c.EXT_DC_0,
     cl=c.EXTRA_CLUSTER_0, dest_cl=c.EXTRA_CLUSTER_0, new_setup=True,
     remove_setup=False
 ):
@@ -42,7 +42,8 @@ def install_host_new_mgmt(
     :type new_setup:bool
     :raises: Network exception
     """
-
+    if host_resource is None:
+        host_resource = c.VDS_HOSTS[-1]
     host_name = ll_hosts.get_host_name_from_engine(host_resource.ip)
     prepare_host_for_installation(
         host_resource=host_resource, network=network,

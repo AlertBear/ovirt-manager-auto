@@ -9,9 +9,9 @@ from rhevmtests.networking.config import *  # NOQA
 import rhevmtests.helpers as global_helper
 
 HOST_1_NICS = None  # Filled in setup_package
-VDS_HOSTS_1 = VDS_HOSTS[0]
-HOST_1_IP = HOSTS_IP[0]
-HOST_1 = HOSTS[0]
+VDS_HOSTS_1 = None  # Filled in setup_package
+HOST_1_IP = None  # Filled in setup_package
+HOST_1 = None  # Filled in setup_package
 DC_NAME = DC_NAME[0]
 CLUSTER_1 = CLUSTER_NAME[0]
 CLUSTER_2 = CLUSTER_NAME[1]

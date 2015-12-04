@@ -6,7 +6,7 @@ MGMT network role networking feature config
 """
 from rhevmtests.networking.config import *  # NOQA
 
-LAST_HOST = HOSTS[-1]
+LAST_HOST = None  # Filled in setup_package
 EXT_DC_0 = EXTRA_DC[0]
 EXT_DC_1 = EXTRA_DC[1]
 ORIG_DC = DC_NAME[0]

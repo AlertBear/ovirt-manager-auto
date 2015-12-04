@@ -40,7 +40,7 @@ def get_vm_nic_names(vm, password):
 
 
 def check_logical_physical_layer(
-    nic=None, host=config.VDS_HOSTS[0], network=None, vlan=None, bond=None,
+    nic=None, host=None, network=None, vlan=None, bond=None,
     bond_nic1=None, bond_nic2=None, mtu=None, bridge=True, logical=True,
     physical=True
 ):
@@ -71,6 +71,8 @@ def check_logical_physical_layer(
     :type physical: bool
     :raise: NetworkException
     """
+    if host is None:
+        host = config.VDS_HOSTS[0]
     br_log = "" if bridge else "bridgeless"
     vlan_log = "with VLAN %s" % vlan if vlan else ""
     net_log = "network %s" % network if network else ""
