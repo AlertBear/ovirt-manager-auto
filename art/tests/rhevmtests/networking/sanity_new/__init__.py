@@ -18,6 +18,7 @@ def setup_package():
     """
     conf.VDS_HOST_0 = conf.VDS_HOSTS[0]
     conf.HOST_NAME_0 = conf.HOSTS[0]
+    conf.HOST_0_IP = conf.VDS_HOST_0.ip
     network.network_cleanup()
     networking_helper.set_libvirt_sasl_status(
         engine_resource=conf.ENGINE_HOST, host_resource=conf.VDS_HOST_0,

@@ -113,3 +113,15 @@ HOST_NET_QOS_TYPE = "hostnetwork"
 LIBVIRTD_CONF = "/etc/libvirt/libvirtd.conf"
 SASL_OFF = "none"
 SASL_ON = "sasl"
+
+# MAC pool range
+MAC_POOL_RANGE_LIST = [
+    ("00:00:00:10:10:10", "00:00:00:10:10:11"),
+    ("00:00:00:20:10:10", "00:00:00:20:10:12"),
+    ("00:00:00:30:10:10", "00:00:00:30:10:12")
+]
+EXT_DC_1 = EXTRA_DC[1]
+
+# Management network as role
+EXT_DC_0 = EXTRA_DC[0]
+EXTRA_CLUSTER_0 = EXTRA_CL[0]

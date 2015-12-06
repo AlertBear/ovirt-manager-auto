@@ -450,7 +450,8 @@ def delete_dummies(host_resource):
     )
     sample = apis_utils.TimeoutingSampler(
         timeout=conf.SAMPLER_TIMEOUT, sleep=1,
-        func=check_dummy_on_host_interfaces, dummy_name=conf.DUMMY_0
+        func=check_dummy_on_host_interfaces, dummy_name=conf.DUMMY_0,
+        host_name=host_name
     )
     if not sample.waitForFuncStatus(result=False):
         logger.error("Dummy interface exists on engine")

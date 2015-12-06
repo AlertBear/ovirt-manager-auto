@@ -218,7 +218,7 @@ def add_host(host_resource, host, cl):
         raise c.NET_EXCEPTION("Couldn't add %s to %s" % (host_resource.ip, cl))
 
 
-def create_setup(dc, cl):
+def create_setup(dc, cl=None):
     """
     Creates a new DC and Cluster in the setup
 
@@ -228,15 +228,14 @@ def create_setup(dc, cl):
     :type cl: str or None
     :raises: Network exception
     """
-    logger.info("Create a new DC and cluster")
+    for_log = "DC and Cluster" if cl else "DC"
+    logger.info("Create a new %s", for_log)
     if not hl_networks.create_basic_setup(
         datacenter=dc, cluster=cl,
         version=c.COMP_VERSION,
         storage_type=c.STORAGE_TYPE, cpu=c.CPU_NAME
     ):
-        raise c.NET_EXCEPTION(
-            "Failed to create a new DC/cluster: %s/%s"
-        )
+        raise c.NET_EXCEPTION("Failed to create a new %s" % for_log)
 
 
 def move_host_new_cl(host, cl, positive=True, activate_host=False):
