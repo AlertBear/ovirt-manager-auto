@@ -4,12 +4,13 @@ Scheduler - Rhevm Cluster Policies test initialization
 
 import os
 import logging
+
 from rhevmtests.sla import config
+from rhevmtests.sla.scheduler_tests import helpers
 
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
 import art.rhevm_api.tests_lib.low_level.sla as sla_api
-import art.rhevm_api.tests_lib.low_level.hosts as host_api
 import art.rhevm_api.tests_lib.high_level.datacenters as dc_api
 
 logger = logging.getLogger(__name__)
@@ -37,18 +38,15 @@ def setup_package():
                     positive=True, vmName=vm, vmDescription="Test VM",
                     cluster=config.CLUSTER_NAME[0],
                     storageDomainName=config.STORAGE_NAME[0],
-                    size=DISK_SIZE, nic='nic1',
+                    size=DISK_SIZE, nic=config.NIC_NAME[0],
                     network=config.MGMT_BRIDGE
                 ):
                     raise errors.VMException("Cannot create vm %s" % vm)
-        logger.info("Select host %s as SPM", config.HOSTS[2])
-        if not host_api.checkHostSpmStatus(True, config.HOSTS[2]):
-            if not host_api.select_host_as_spm(
-                True, config.HOSTS[2], config.DC_NAME[0]
-            ):
-                raise errors.DataCenterException(
-                    "Selecting host %s as SPM failed" % config.HOSTS[2]
-                )
+    helpers.choose_host_as_spm(
+        host_name=config.HOSTS[3],
+        data_center=config.DC_NAME[0],
+        storage_domain=config.STORAGE_NAME[0]
+    )
 
 
 def teardown_package():

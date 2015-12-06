@@ -4,11 +4,12 @@ Scheduler - Even Vm Count Distribution test initialization
 
 import os
 import logging
+
 from rhevmtests.sla import config
+from rhevmtests.sla.scheduler_tests import helpers
 
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
-import art.rhevm_api.tests_lib.low_level.hosts as host_api
 import art.rhevm_api.tests_lib.high_level.datacenters as dc_api
 
 logger = logging.getLogger(__name__)
@@ -36,14 +37,11 @@ def setup_package():
                 nic=config.NIC_NAME[0], network=config.MGMT_BRIDGE
             ):
                 raise errors.VMException("Cannot create %s" % vm)
-    logger.info("Select host %s as SPM", config.HOSTS[0])
-    if not host_api.checkHostSpmStatus(True, config.HOSTS[0]):
-        if not host_api.select_host_as_spm(
-            True, config.HOSTS[0], config.DC_NAME[0]
-        ):
-            raise errors.DataCenterException(
-                "Selecting host as SPM failed"
-            )
+    helpers.choose_host_as_spm(
+        host_name=config.HOSTS[0],
+        data_center=config.DC_NAME[0],
+        storage_domain=config.STORAGE_NAME[0]
+    )
 
 
 def teardown_package():

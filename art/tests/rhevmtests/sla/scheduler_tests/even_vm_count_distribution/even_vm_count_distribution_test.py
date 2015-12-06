@@ -64,14 +64,19 @@ class EvenVmCountDistribution(TestCase):
         Stop vms and change cluster policy to 'None'
         """
         logger.info("Stop all vms")
-        vm_api.stop_vms_safely(config.VM_NAME)
+        try:
+            vm_api.stop_vms_safely(config.VM_NAME)
+        except errors.VMException:
+            pass
         logger.info("Update cluster policy to none")
-        if not updateCluster(True, config.CLUSTER_NAME[0],
-                             scheduling_policy=CLUSTER_POLICIES[1]):
-            raise errors.ClusterException("Update cluster %s failed",
-                                          config.CLUSTER_NAME[0])
-        logger.info("Wait %s seconds until hosts update stats", UPDATE_STATS)
-        time.sleep(UPDATE_STATS)
+        if not updateCluster(
+            positive=True,
+            cluster=config.CLUSTER_NAME[0],
+            scheduling_policy=CLUSTER_POLICIES[1]
+        ):
+            logger.error(
+                "Update cluster %s failed", config.CLUSTER_NAME[0]
+            )
 
     @classmethod
     def _start_vms(cls, num_of_vms, index_host_2):
@@ -131,8 +136,7 @@ class TwoHostsTests(EvenVmCountDistribution):
         super(TwoHostsTests, cls).teardown_class()
         logger.info("Activate host %s", config.HOSTS[2])
         if not host_api.activateHost(True, config.HOSTS[2]):
-            raise errors.HostException("Activation of host %s failed"
-                                       % config.HOSTS[2])
+            logger.error("Activation of host %s failed", config.HOSTS[2])
 
 
 class BalancingWithDefaultParameters(TwoHostsTests):
@@ -305,18 +309,21 @@ class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
         Disable HA option on vms
         """
         if not host_api.waitForHostsStates(True, config.HOSTS[1]):
-            raise errors.HostException("Host %s not in up state",
-                                       config.HOSTS[1])
+            logger.error(
+                "Host %s not in up state", config.HOSTS[1]
+            )
         super(HaVmStartOnHostAboveMaxLevel, cls).teardown_class()
         logger.info("Disable HA option on all vms")
         for vm in config.VM_NAME:
-            if not vm_api.updateVm(True, vm,
-                                   highly_available=False):
-                raise errors.VMException("Update of vm %s failed", vm)
+            if not vm_api.updateVm(
+                positive=True, vm=vm, highly_available=False
+            ):
+                logger.error("Update of vm %s failed", vm)
         logger.info("Disable power management on host %s", config.HOSTS[1])
-        if not host_api.updateHost(True, config.HOSTS[1], pm=False):
-            raise errors.HostException("Can not update host %s"
-                                       % config.HOSTS[1])
+        if not host_api.updateHost(
+            positive=True, host=config.HOSTS[1], pm=False
+        ):
+            logger.error("Can not update host %s", config.HOSTS[1])
 
 
 class PutHostToMaintenance(EvenVmCountDistribution):

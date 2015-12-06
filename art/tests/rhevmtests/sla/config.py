@@ -110,3 +110,6 @@ DEFAULT_VM_PARAMETERS = {
 VDS_HOSTS_WITH_DUMMY = list(VDS_HOSTS)
 while len(VDS_HOSTS_WITH_DUMMY) < 3:
     VDS_HOSTS_WITH_DUMMY.append(None)
+
+HOST = "host"
+RESOURCE = "resource"

@@ -80,8 +80,8 @@ class BaseSchedulingClass(TestCase):
         """
         logger.info("Remove scheduler policy %s.", cls.policy_name)
         if not sch_api.remove_scheduling_policy(cls.policy_name):
-            raise errors.SchedulerException(
-                "Failed to remove scheduler policy."
+            logger.error(
+                "Failed to remove scheduler policy %s", cls.policy_name
             )
 
 
@@ -153,9 +153,11 @@ class AttachPolicyToCluster(BaseSchedulingClass):
         Update cluster scheduler policy to None.
         """
         if not updateCluster(
-            True, config.CLUSTER_NAME[0], scheduling_policy='none'
+            positive=True,
+            cluster=config.CLUSTER_NAME[0],
+            scheduling_policy='none'
         ):
-            raise errors.ClusterException("Failed to update cluster.")
+            logger.error("Failed to update cluster %s", config.CLUSTER_NAME[0])
         super(AttachPolicyToCluster, cls).teardown_class()
 
 
@@ -185,13 +187,16 @@ class UpdateVms(AttachPolicyToCluster):
         """
         Stop and update vm.
         """
-        vm_api.stop_vms_safely(config.VM_NAME[:2])
+        try:
+            vm_api.stop_vms_safely(config.VM_NAME[:2])
+        except errors.VMException:
+            pass
         for vm in cls.vms_new_parameters.iterkeys():
             logger.info(
                 "Update vm %s with parameters %s.", vm, cls.old_parameters
             )
             if not vm_api.updateVm(True, vm, **cls.old_parameters):
-                raise errors.VMException("Failed to update vm")
+                logger.error("Failed to update vm %s", vm)
 
         super(UpdateVms, cls).teardown_class()
 
@@ -357,14 +362,9 @@ class TestMemoryFilter(UpdateVms):
     policy_units = {config.ENUMS['filter_memory']: FILTER_TYPE}
     vms_new_parameters = {}
     old_parameters = {
-        'memory': config.GB, 'memory_guaranteed': config.GB, 'os_type': 'other'
+        'memory': config.GB, 'memory_guaranteed': config.GB
     }
-    bz = {
-        '1189095': {
-            'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
-        },
-        '1142081': {'engine': None, 'version': ['3.5', '3.5.1']}
-    }
+    bz = {'1289468': {'engine': None, 'version': ['3.6']}}
 
     @classmethod
     def setup_class(cls):
@@ -384,12 +384,16 @@ class TestMemoryFilter(UpdateVms):
         vm_memory_dict = dict(zip(config.VM_NAME[:2], hosts_mem))
         for vm, memory in vm_memory_dict.iteritems():
             cls.vms_new_parameters[vm] = {
-                'memory': memory, 'memory_guaranteed': memory,
-                'os_type': 'rhel_6x64'
+                'memory': memory,
+                'memory_guaranteed': memory,
+                'os_type': config.VM_OS_TYPE
             }
         super(TestMemoryFilter, cls).setup_class()
         logger.info("Start vms %s", config.VM_NAME[:2])
-        vm_api.start_vms(config.VM_NAME[:2], max_workers=2, wait_for_ip=False)
+        for vm in config.VM_NAME[:2]:
+            logger.info("Start vm %s", vm)
+            if not vm_api.startVm(True, vm, wait_for_status=config.VM_UP):
+                raise errors.VMException("Failed to start vms")
 
     @polarion("RHEVM3-9480")
     def test_check_filter(self):

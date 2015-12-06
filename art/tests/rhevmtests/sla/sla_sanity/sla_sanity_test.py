@@ -97,7 +97,7 @@ def get_pinned_cpu_info(host_resource, vm, vcpu):
         raise errors.HostException(
             "Can't read 'virsh -r vcpuinfo %s' on %s" % (vm_id, host_resource)
         )
-    regex = r"VCPU:\s+%s\s+CPU:\s+(\d)" % str(vcpu)
+    regex = r"VCPU:\s+%s\s+CPU:\s+(\d+)" % str(vcpu)
     running = re.search(regex, out).group(1)
     regex = r"VCPU:\s+%s[\w\W]+?CPU Affinity:\s+([-y]+)" % str(vcpu)
     affinity = re.search(regex, out).group(1)
@@ -1061,7 +1061,7 @@ class TestCPUPinCase6(BasicSlaClass):
             self.assertTrue(
                 ll_vms.startVm(True, self.vm_name), "Failed to start VM"
             )
-            res = get_pinned_cpu_info(c.VDS_HOSTS[0], self.vm_name, "0")
+            res = get_pinned_cpu_info(c.VDS_HOSTS[0], self.vm_name, 0)
             self.assertTrue(
                 ll_vms.stopVm(True, self.vm_name), "Failed to stop VM"
             )
@@ -1070,14 +1070,14 @@ class TestCPUPinCase6(BasicSlaClass):
                 "and is actually pinned to pCPU #%s",
                 expected_pin, res[0]
             )
+            self.assertEqual(
+                expected_pin, res[0],
+                "Actual CPU pinning does not match expectation"
+            )
             logger.info(
                 "vCPU #0 is expected to have pinning affinity of %s, "
                 "and actually has %s",
                 expected_affinity, res[1][:total_online_cpus]
-            )
-            self.assertEqual(
-                expected_pin, res[0],
-                "Actual CPU pinning does not match expectation"
             )
             self.assertEqual(
                 expected_affinity, res[1][:total_online_cpus],

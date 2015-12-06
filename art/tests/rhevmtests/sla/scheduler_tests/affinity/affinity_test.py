@@ -971,6 +971,9 @@ class TestSoftPositiveAffinityVsMemoryFilter(StartVms):
     affinity_group_name = 'memory_vs_soft_affinity'
     positive = True
     hard = False
+    bz = {
+        '1289468': {'engine': None, 'version': ['3.6']}
+    }
 
     @classmethod
     def setup_class(cls):
@@ -991,7 +994,7 @@ class TestSoftPositiveAffinityVsMemoryFilter(StartVms):
             logger.info("Update vm %s with memory %d", vm, vm_memory)
             if not vm_api.updateVm(
                 positive=True, vm=vm, memory=vm_memory,
-                memory_guaranteed=vm_memory, os_type='rhel_6x64'
+                memory_guaranteed=vm_memory, os_type=config.VM_OS_TYPE
             ):
                 raise errors.VMException("Failed to update vm")
         super(TestSoftPositiveAffinityVsMemoryFilter, cls).setup_class()

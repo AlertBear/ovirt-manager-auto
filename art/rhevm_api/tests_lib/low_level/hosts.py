@@ -94,31 +94,6 @@ def get_host_list():
     return hostUtil.get(absLink=False)
 
 
-def isHostSaturated(host, max_cpu=95, max_mem=95):
-    """
-    Description: checks if the host if saturated with VMs
-    Author: adarazs
-    Parameters:
-      * host - name of a host
-    Return: status (True if the host is saturated, False otherwise)
-    """
-    HOST_API.find(host)
-    stats = getStat(host, ELEMENT, COLLECTION, ["memory.used", "memory.total",
-                                                "cpu.current.system",
-                                                "cpu.current.user"])
-    cpu_sum = stats["cpu.current.system"] + stats["cpu.current.user"]
-    mem_percent = stats["memory.used"] / float(stats["memory.total"]) * 100.0
-    if cpu_sum > max_cpu or mem_percent > max_mem:
-        if cpu_sum > max_cpu:
-            HOST_API.logger.info("Host %s reached the CPU saturation point",
-                                 host)
-        else:
-            HOST_API.logger.info("Host %s reached the memory saturation point",
-                                 host)
-        return True
-    return False
-
-
 def getHostState(host):
     """
     Description: Returns a host's state
@@ -2498,3 +2473,90 @@ def get_host_vm_run_on(vm_name):
     """
     vm_obj = VM_API.find(vm_name)
     return HOST_API.find(vm_obj.host.id, 'id').get_address()
+
+
+def wait_for_host_spm(host_name, timeout=HOST_STATE_TIMEOUT, sleep=10):
+    """
+    Wait until host will be SPM
+
+    :param host_name: host name
+    :type host_name: str
+    :param timeout: sampler timeout
+    :type timeout: int
+    :param sleep: sampler sleep
+    :type sleep: int
+    :return: True, if host receive SPM, before timeout, otherwise False
+    :rtype: bool
+    """
+    sampler = TimeoutingSampler(
+        timeout, sleep, checkHostSpmStatus, True, host_name
+    )
+    HOST_API.logger.info("Wait until host %s will be SPM", host_name)
+    try:
+        for sample in sampler:
+            HOST_API.logger.info(
+                "Host %s SPM state equal to %s", host_name, sample
+            )
+            if sample:
+                return True
+    except APITimeout:
+        HOST_API.logger.error("Host %s still not SPM", host_name)
+        return False
+
+
+def get_host_cpu_load(host_name):
+    """
+    Get host cpu load
+
+    :param host_name: host name
+    :type host_name: str
+    :return: host current cpu load
+    :rtype: float
+    """
+    stats = getStat(host_name, ELEMENT, COLLECTION, ["cpu.current.user"])
+    return stats["cpu.current.user"]
+
+
+def wait_for_host_cpu_load(
+    host_name, expected_min_load=0,
+    expected_max_load=100, timeout=120, sleep=10
+):
+    """
+    Wait for host cpu load
+
+    :param host_name: host name
+    :type host_name: str
+    :param expected_min_load: wait for host cpu load greater
+    than expected minimum value
+    :type expected_min_load: int
+    :param expected_max_load: wait for host cpu load smaller
+    than expected maximum value
+    :type expected_max_load: int
+    :param timeout: sampler timeout
+    :type timeout: int
+    :param sleep: sampler sleep
+    :type sleep: int
+    :return: True, if host cpu load greater than expected value, before timeout
+    otherwise False
+    :rtype: bool
+    """
+    sampler = TimeoutingSampler(
+        timeout, sleep, get_host_cpu_load, host_name
+    )
+    HOST_API.logger.info(
+        "Wait until host %s will have cpu load between %d and %d",
+        host_name, expected_min_load, expected_max_load
+    )
+    try:
+        for sample in sampler:
+            HOST_API.logger.info(
+                "Host %s cpu load equal to %d", host_name, sample
+            )
+            if expected_max_load >= sample >= expected_min_load:
+                return True
+    except APITimeout:
+        HOST_API.logger.error(
+            "Host %s cpu load not between expected values %d and %d",
+            expected_min_load, expected_max_load
+        )
+        return False

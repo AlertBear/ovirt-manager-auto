@@ -3,7 +3,6 @@ Scheduler - Rhevm Cluster Policies Test
 Check different cases for migration when cluster police is Evenly Distributed
 and Power Saving
 """
-import time
 import random
 import logging
 from rhevmtests.sla import config
@@ -22,8 +21,6 @@ logger = logging.getLogger(__name__)
 MAX_CPU_LOAD = 100
 AVERAGE_CPU_LOAD = 50
 MIN_CPU_LOAD = 0
-# Time to update hosts stats
-UPDATE_STATS = 45
 # Time to wait for vm migration MAX_DURATION + 60(for migration)
 WAIT_FOR_MIGRATION = 240
 # Generate random value for CpuOverCommitDuration
@@ -57,12 +54,21 @@ class RhevmClusterPolicies(TestCase):
             if not vm_api.runVmOnce(True, vm, host=host):
                 raise errors.VMException("Failed to run vm")
         if cls.load_hosts:
-            for load, hosts in cls.load_hosts.iteritems():
-                if not sla_api.start_cpu_loading_on_resources(hosts, load):
+            for load, hosts_d in cls.load_hosts.iteritems():
+                if not sla_api.start_cpu_loading_on_resources(
+                    hosts_d[config.RESOURCE], load
+                ):
                     raise errors.HostException(
-                        "Failed to load hosts %s CPU" % hosts
+                        "Failed to load hosts %s CPU" %
+                        hosts_d[config.RESOURCE]
                     )
-        time.sleep(UPDATE_STATS)
+                for host in hosts_d[config.HOST]:
+                    if not host_api.wait_for_host_cpu_load(
+                        host_name=host, expected_min_load=load - 5
+                    ):
+                        raise errors.HostException(
+                            "Host %s have cpu load below expected one" % host
+                        )
 
     @classmethod
     def teardown_class(cls):
@@ -70,20 +76,28 @@ class RhevmClusterPolicies(TestCase):
         Stop vm
         """
         logger.info("Stopping all vms")
-        vm_api.stop_vms_safely(config.VM_NAME[:3])
+        try:
+            vm_api.stop_vms_safely(config.VM_NAME[:3])
+        except errors.VMException:
+            pass
         logger.info("Update cluster policy to none")
         if not updateCluster(
-            True,
-            config.CLUSTER_NAME[0],
+            positive=True,
+            cluster=config.CLUSTER_NAME[0],
             scheduling_policy=CLUSTER_POLICIES[2]
         ):
             logger.error(
                 "Update cluster %s failed", config.CLUSTER_NAME[0]
             )
-        for hosts in cls.load_hosts.itervalues():
-            sla_api.stop_cpu_loading_on_resources(hosts)
-        logger.info("Wait %s seconds until hosts update stats", UPDATE_STATS)
-        time.sleep(UPDATE_STATS)
+        for hosts_d in cls.load_hosts.itervalues():
+            sla_api.stop_cpu_loading_on_resources(hosts_d[config.RESOURCE])
+            for host in hosts_d[config.HOST]:
+                if not host_api.wait_for_host_cpu_load(
+                    host_name=host, expected_max_load=5
+                ):
+                    logger.error(
+                        "Host %s have cpu load below expected one", host
+                    )
 
     def _check_migration(self, migration_host):
         """
@@ -101,16 +115,6 @@ class RhevmClusterPolicies(TestCase):
         self.assertTrue(
             migration_duration,
             "Host %s still not have two vms" % migration_host
-        )
-        cpu_overcommitment_duration = DURATION - UPDATE_STATS
-        logger.info(
-            "Check that migration happen, just after %d seconds pass",
-            cpu_overcommitment_duration
-        )
-        self.assertTrue(
-            migration_duration >= cpu_overcommitment_duration,
-            "Migration took less time than %d seconds" %
-            cpu_overcommitment_duration
         )
 
     def _no_migration(self, host):
@@ -189,7 +193,10 @@ class TestMigrateFromUnderUtilizedHost(PowerSaving):
     """
     __test__ = True
     load_hosts = {
-        AVERAGE_CPU_LOAD: [config.VDS_HOSTS_WITH_DUMMY[1]]
+        AVERAGE_CPU_LOAD: {
+            config.RESOURCE: [config.VDS_HOSTS_WITH_DUMMY[1]],
+            config.HOST: [config.HOSTS_WITH_DUMMY[1]]
+        }
     }
 
     @polarion("RHEVM3-9498")
@@ -208,7 +215,10 @@ class TestNoAvailableHostForMigrationPS(PowerSaving):
     """
     __test__ = True
     load_hosts = {
-        MAX_CPU_LOAD: [config.VDS_HOSTS_WITH_DUMMY[1]]
+        MAX_CPU_LOAD: {
+            config.RESOURCE: [config.VDS_HOSTS_WITH_DUMMY[1]],
+            config.HOST: [config.HOSTS_WITH_DUMMY[1]]
+        }
     }
 
     @polarion("RHEVM3-9489")
@@ -227,8 +237,14 @@ class TestMigrationFromLowCPUUtilization(PowerSaving):
     """
     __test__ = True
     load_hosts = {
-        MAX_CPU_LOAD: [config.VDS_HOSTS_WITH_DUMMY[2]],
-        AVERAGE_CPU_LOAD: [config.VDS_HOSTS_WITH_DUMMY[1]]
+        MAX_CPU_LOAD: {
+            config.RESOURCE: [config.VDS_HOSTS_WITH_DUMMY[2]],
+            config.HOST: [config.HOSTS_WITH_DUMMY[2]]
+        },
+        AVERAGE_CPU_LOAD: {
+            config.RESOURCE: [config.VDS_HOSTS_WITH_DUMMY[1]],
+            config.HOST: [config.HOSTS_WITH_DUMMY[1]]
+        }
     }
 
     @polarion("RHEVM3-9490")
@@ -247,7 +263,10 @@ class TestPutHostToMaintenancePS(PowerSaving):
     """
     __test__ = True
     load_hosts = {
-        AVERAGE_CPU_LOAD: config.VDS_HOSTS_WITH_DUMMY[:2]
+        AVERAGE_CPU_LOAD: {
+            config.RESOURCE: config.VDS_HOSTS_WITH_DUMMY[0:2],
+            config.HOST: config.HOSTS_WITH_DUMMY[0:2]
+        }
     }
 
     @polarion("RHEVM3-9492")
@@ -277,7 +296,10 @@ class TestMigrateFromOverUtilizedHost(EvenlyDistributed):
     """
     __test__ = True
     load_hosts = {
-        MAX_CPU_LOAD: config.VDS_HOSTS_WITH_DUMMY[:2]
+        MAX_CPU_LOAD: {
+            config.RESOURCE: config.VDS_HOSTS_WITH_DUMMY[0:2],
+            config.HOST: config.HOSTS_WITH_DUMMY[0:2]
+        }
     }
 
     @polarion("RHEVM3-9493")
@@ -295,7 +317,10 @@ class TestNoAvailableHostForMigrationED(EvenlyDistributed):
     """
     __test__ = True
     load_hosts = {
-        MAX_CPU_LOAD: config.VDS_HOSTS_WITH_DUMMY[1:3]
+        MAX_CPU_LOAD: {
+            config.RESOURCE: config.VDS_HOSTS_WITH_DUMMY[1:3],
+            config.HOST: config.HOSTS_WITH_DUMMY[1:3]
+        }
     }
 
     @polarion("RHEVM3-9494")
@@ -313,7 +338,10 @@ class TestPutHostToMaintenanceED(EvenlyDistributed):
     """
     __test__ = True
     load_hosts = {
-        MAX_CPU_LOAD: [config.VDS_HOSTS_WITH_DUMMY[2]]
+        MAX_CPU_LOAD: {
+            config.RESOURCE: [config.VDS_HOSTS_WITH_DUMMY[2]],
+            config.HOST: [config.HOSTS_WITH_DUMMY[2]]
+        }
     }
 
     @polarion("RHEVM3-9496")
@@ -398,4 +426,3 @@ class TestCheckClusterPolicyParameters(TestCase):
             scheduling_policy=CLUSTER_POLICIES[2]
         ):
             logger.error("Update cluster %s failed", config.CLUSTER_NAME[0])
-        time.sleep(UPDATE_STATS)
