@@ -11,7 +11,6 @@ from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from utilities.enum import Enum
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.unittest_lib import CoreSystemTest as TestCase
 from time import sleep
@@ -170,9 +169,8 @@ class TestCaseAfterBeforeNicHotplug(TestCaseVnic):
                            wait_for_ip=True)
         super(TestCaseAfterBeforeNicHotplug, self).tearDown()
 
-    @istest
     @polarion("RHEVM3-12335")
-    def after_before_nic_hotplug(self):
+    def test_after_before_nic_hotplug(self):
         """ test_after_before_nic_hotplug """
         self.check_for_files()
         sleep(SLEEP_TIME)  # Sleep to let nic receive network stats
@@ -199,9 +197,8 @@ class TestCaseAfterBeforeNicHotunplug(TestCaseVnic):
         super(TestCaseAfterBeforeNicHotunplug, self).tearDown()
         assert vms.hotPlugNic(True, config.HOOKS_VM_NAME, HOTUNPLUG_NIC)
 
-    @istest
     @polarion("RHEVM3-12338")
-    def after_before_nic_hotunplug(self):
+    def test_after_before_nic_hotunplug(self):
         """ test_after_before_nic_hotunplug """
         self.check_for_files()
 
@@ -223,9 +220,8 @@ class TestCaseAfterBeforeUpdateDevice(TestCaseVnic):
                              linked=False, network=config.MGMT_BRIDGE,
                              vnic_profile=PROFILE_A)
 
-    @istest
     @polarion("RHEVM3-12345")
-    def after_before_update_device(self):
+    def test_after_before_update_device(self):
         """ test_after_before_update_device """
         self.check_for_files()
 
@@ -259,8 +255,7 @@ class TestCaseAfterUpdateDeviceFail(TestCaseVnic):
                               password=config.HOSTS_PW,
                               cmd=cmd)[0])
 
-    @istest
     @polarion("RHEVM3-12346")
-    def after_update_device_fail(self):
+    def test_after_update_device_fail(self):
         """ test_after_update_device_fail """
         self.check_for_files()

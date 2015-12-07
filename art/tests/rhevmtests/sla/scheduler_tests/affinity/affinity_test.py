@@ -10,7 +10,6 @@ from art.unittest_lib import attr
 from rhevmtests.sla import config
 
 from art.unittest_lib import SlaTest as TestCase
-from nose.tools import istest
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
@@ -449,7 +448,6 @@ class TestMigrateVmOppositeUnderSoftPositiveAffinity(MigrateVm):
     hard = False
 
     @polarion("RHEVM3-5546")
-    @istest
     def test_check_vm_migration(self):
         """
         Check if vm success to migrate

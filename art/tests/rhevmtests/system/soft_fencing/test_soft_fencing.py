@@ -13,7 +13,6 @@ from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import CoreSystemTest as TestCase
-from nose.tools import istest
 from art.rhevm_api.tests_lib.low_level import vms
 from art.unittest_lib import attr
 import art.test_handler.exceptions as errors
@@ -94,8 +93,7 @@ class SoftFencingPassedWithoutPM(SoftFencing):
     __test__ = True
 
     @polarion("RHEVM3-8403")
-    @istest
-    def check_host_state(self):
+    def test_check_host_state(self):
         """
         Check if engine does soft fencing to host when vdsm is stopped
         """
@@ -111,8 +109,7 @@ class SoftFencingFailedWithPM(SoftFencing):
     __test__ = True
 
     @polarion("RHEVM3-8402")
-    @istest
-    def check_host_state(self):
+    def test_check_host_state(self):
         """
         Check if job sshSoftFencing appear after timestamp,
         and job status FAILED
@@ -129,8 +126,7 @@ class SoftFencingPassedWithPM(SoftFencing):
     __test__ = True
 
     @polarion("RHEVM3-8407")
-    @istest
-    def check_host_state(self):
+    def test_check_host_state(self):
         """
         Check if engine does soft fencing to host when vdsm is stopped
         """
@@ -168,8 +164,7 @@ class CheckVmAfterSoftFencing(SoftFencing):
         logger.info("Vm started")
 
     @polarion("RHEVM3-8406")
-    @istest
-    def check_vm_state(self):
+    def test_check_vm_state(self):
         """
         Check that vm is up after soft fencing
         """
@@ -212,8 +207,7 @@ class SoftFencingToHostNoProxies(SoftFencing):
                                        % config.host_without_pm)
 
     @polarion("RHEVM3-8405")
-    @istest
-    def check_soft_fencing_without_proxies(self):
+    def test_check_soft_fencing_without_proxies(self):
         """
         Check that host do soft fencing with out proxies
         """

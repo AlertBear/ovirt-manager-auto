@@ -8,7 +8,6 @@ import time
 import logging
 
 from rhevmtests.sla import config
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
@@ -158,8 +157,7 @@ class BalancingWithDefaultParameters(TwoHostsTests):
         super(BalancingWithDefaultParameters, cls).setup_class()
 
     @polarion("RHEVM3-5565")
-    @istest
-    def check_migration(self):
+    def test_check_migration(self):
         """
         All vms runs on host_1 and three of them must migrate to host_2,
         because balancing policy
@@ -188,8 +186,7 @@ class NoHostForMigration(TwoHostsTests):
         super(NoHostForMigration, cls).setup_class()
 
     @polarion("RHEVM3-5566")
-    @istest
-    def check_migration(self):
+    def test_check_migration(self):
         """
         Vms 1 and 2 runs on host_1 and 3,4 and 5 on host_2,
         so migration must not appear, because it's no hosts for balancing
@@ -221,8 +218,7 @@ class StartVmUnderClusterPolicy(TwoHostsTests):
         super(StartVmUnderClusterPolicy, cls).setup_class()
 
     @polarion("RHEVM3-5568")
-    @istest
-    def check_migration(self):
+    def test_check_migration(self):
         """
         Host_1 and host_2 have equal number of vms, but host_1 also SPM, so
         scheduling must choose host_2 to start vm on it
@@ -282,8 +278,7 @@ class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
         super(HaVmStartOnHostAboveMaxLevel, cls).setup_class()
 
     @polarion("RHEVM3-5570")
-    @istest
-    def check_migration(self):
+    def test_check_migration(self):
         """
         Kill host_2 with HA vms, vms from host_2 must start on host_1, despite
         max vms count on host_1
@@ -346,8 +341,7 @@ class PutHostToMaintenance(EvenVmCountDistribution):
         super(PutHostToMaintenance, cls).setup_class()
 
     @polarion("RHEVM3-5567")
-    @istest
-    def check_migration(self):
+    def test_check_migration(self):
         """
         Put host_2 to maintenance and check, where migrate vms from host_2
         """
@@ -389,8 +383,7 @@ class MigrateVmUnderPolicy(EvenVmCountDistribution):
         super(MigrateVmUnderPolicy, cls).setup_class()
 
     @polarion("RHEVM3-5569")
-    @istest
-    def check_migration(self):
+    def test_check_migration(self):
         """
         Migrate vm from host_2 and check number of vms on host_3
         """

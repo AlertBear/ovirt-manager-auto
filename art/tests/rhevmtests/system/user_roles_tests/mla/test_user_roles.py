@@ -8,7 +8,6 @@ import logging
 
 from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role as role_e
-from nose.tools import istest
 from art.core_api.apis_exceptions import EntityNotFound
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
@@ -97,8 +96,7 @@ class RoleCase54413(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-7141")
-    @istest
-    def createRolePerms(self):
+    def test_createRolePerms(self):
         """ Check if user can add/del role if he has permissions for it """
         cantLogin = "Role %s not tested, because don't have login permissions."
         roles = mla.util.get(absLink=False)
@@ -189,8 +187,7 @@ class RoleCase54401(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-7146")
-    @istest
-    def editRole(self):
+    def test_editRole(self):
         """ Try to update role and check if role is updated correctly """
         mla.addRole(True, name=config.USER_ROLE, permits='login')
         common.addUser(
@@ -280,8 +277,7 @@ class RoleCase54415(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-7140")
-    @istest
-    def listOfRoles(self):
+    def test_listOfRoles(self):
         """ Check if user can see all roles in system """
         msg = "Role %s is not tested because can't login."
         roles = mla.util.get(absLink=False)
@@ -337,8 +333,7 @@ class RoleCase54402(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-7145")
-    @istest
-    def removeRole(self):
+    def test_removeRole(self):
         """ Try to remove roles which are associted to objects """
         msg = "Role %s can't be removed. It is associated with user."
         self.assertTrue(
@@ -389,8 +384,7 @@ class RoleCase54366(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-7138")
-    @istest
-    def roleCreation(self):
+    def test_roleCreation(self):
         """ Try to create role name with invalid characters """
         for char in INVALID_CHARS:
             self.assertTrue(mla.addRole(False, name=char, permits='login'))
@@ -403,8 +397,7 @@ class RoleCase54540(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-7147")
-    @istest
-    def removePreDefinedRoles(self):
+    def test_removePreDefinedRoles(self):
         """ Test that pre-defined roles can not be removed. """
         for role in mla.util.get(absLink=False):
             self.assertTrue(mla.util.delete(role, False))
@@ -423,8 +416,7 @@ class RoleCase54411(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-7143")
-    @istest
-    def predefinedRoles(self):
+    def test_predefinedRoles(self):
         """ Check if rhevm return still same predefined roles """
         l = len(mla.util.get(absLink=False))
         self.assertEqual(len(mla.util.get(absLink=False)), l)
@@ -440,8 +432,7 @@ class RoleCase54403(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-7144")
-    @istest
-    def cloneRole(self):
+    def test_cloneRole(self):
         """ Clone role """
         self.assertTrue(
             mla.addRole(
@@ -463,8 +454,7 @@ class RolesCase54412(TestCase):
 
     @polarion("RHEVM3-7142")
     @bz({'949950': {}, '977304': {}})
-    @istest
-    def rolesHiearchy(self):
+    def test_rolesHiearchy(self):
         """ Check if permissions are correctly inherited from objects """
 
         def checkIfObjectHasRole(obj, role):

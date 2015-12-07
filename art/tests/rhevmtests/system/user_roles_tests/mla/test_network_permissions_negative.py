@@ -10,7 +10,6 @@ __test__ = True
 import logging
 from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role
-from nose.tools import istest
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.core_api.apis_exceptions import EntityNotFound
@@ -113,9 +112,8 @@ class NegativeNetworkPermissions231915(NetworkingNegative):
             True, config.USER_NAME, cluster=config.CLUSTER_NAME[0]
         )
 
-    @istest
     @polarion("RHEVM3-8676")
-    def createDeleteNetworkinDC(self):
+    def test_createDeleteNetworkinDC(self):
         """ Create/Delete network in DC """
         msg = "User %s with %s can't add/remove network."
         loginAsUser(config.USER_NAME, filter_=False)
@@ -139,9 +137,8 @@ class NegativeNetworkPermissions231916(NetworkingNegative):
             True, config.USER_NAME, cluster=config.CLUSTER_NAME[0]
         )
 
-    @istest
     @polarion("RHEVM3-8677")
-    def editNetworkInDC(self):
+    def test_editNetworkInDC(self):
         """  Edit network in DC """
         msg = "User %s with %s can't update network."
         loginAsUser(config.USER_NAME, filter_=False)
@@ -195,9 +192,8 @@ class NegativeNetworkPermissions231917(NetworkingNegative):
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
 
-    @istest
     @polarion("RHEVM3-8678")
-    def attachingDetachingNetworkToFromCluster(self):
+    def test_attachingDetachingNetworkToFromCluster(self):
         """ Attaching/Detaching network to/from Cluster """
         for user in [config.USER_NAME, config.USER_NAME2]:
             loginAsUser(userName=user, filter_=False)
@@ -245,9 +241,8 @@ class NegativeNetworkPermissions231918(NetworkingNegative):
             config.NETWORK_NAME2, required=False
         )
 
-    @istest
     @polarion("RHEVM3-8679")
-    def networkRequiredToNonRequiredAndViceVersa(self):
+    def test_networkRequiredToNonRequiredAndViceVersa(self):
         """ Network required to non-required and vice versa """
         loginAsUser(config.USER_NAME, filter_=False)
         assert networks.updateClusterNetwork(
@@ -283,9 +278,8 @@ class NegativeNetworkPermissions231919(NetworkingNegative):
             interface='virtio'
         )
 
-    @istest
     @polarion("RHEVM3-8680")
-    def attachingVNICToVM(self):
+    def test_attachingVNICToVM(self):
         """ Attaching VNIC to VM """
         loginAsUser(config.USER_NAME, filter_=False)
         assert vms.addNic(
@@ -315,9 +309,8 @@ class NegativeNetworkPermissions234215(NetworkingNegative):
             True, TEMPLATE_NAME, name=NIC_NAME, network=config.NETWORK_NAME
         )
 
-    @istest
     @polarion("RHEVM3-8682")
-    def attachVNICToTemplate(self):
+    def test_attachVNICToTemplate(self):
         """ Attach VNIC to Template """
         loginAsUser(config.USER_NAME, filter_=False)
         assert templates.addTemplateNic(
@@ -356,9 +349,8 @@ class NegativeNetworkPermissions236686(NetworkingNegative):
             interface='virtio'
         )
 
-    @istest
     @polarion("RHEVM3-8683")
-    def attachNetworkToVM(self):
+    def test_attachNetworkToVM(self):
         """ Attach a network to VM """
         loginAsUser(config.USER_NAME)
         self.assertRaises(
@@ -408,9 +400,8 @@ class NegativeNetworkPermissions236736(NetworkingNegative):
             interface='virtio'
         )
 
-    @istest
     @polarion("RHEVM3-8684")
-    def visibleNetworksAndManipulation(self):
+    def test_visibleNetworksAndManipulation(self):
         """ Visible networks and manipulation """
         loginAsUser(config.USER_NAME)
         assert vms.addNic(

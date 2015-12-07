@@ -3,7 +3,6 @@ External Tasks test
 
 """
 from art.unittest_lib import CoreSystemTest as TestCase
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
@@ -46,8 +45,7 @@ class AddJobWithCorrectDescription(AddingJob):
     __test__ = True
 
     @polarion("RHEVM3-7154")
-    @istest
-    def add_job_with_correct_description(self):
+    def test_add_job_with_correct_description(self):
         '''
         Adding job with correct description
         '''
@@ -77,8 +75,7 @@ class AddJobWithEmptyDescription(AddingJob):
     __test__ = True
 
     @polarion("RHEVM3-7165")
-    @istest
-    def add_job_with_empty_description(self):
+    def test_add_job_with_empty_description(self):
         '''
         Adding job with empty description
         '''
@@ -147,8 +144,7 @@ class AddStepWithCorrectParameters(AddingStep):
     __test__ = True
 
     @polarion("RHEVM3-7159")
-    @istest
-    def add_step_with_correct_parameters(self):
+    def test_add_step_with_correct_parameters(self):
         '''
         Adding step with correct parameters under given job
         '''
@@ -164,8 +160,7 @@ class AddStepWithIncorrectType(AddingStep):
     __test__ = True
 
     @polarion("RHEVM3-7166")
-    @istest
-    def add_step_with_incorrect_type(self):
+    def test_add_step_with_incorrect_type(self):
         '''
         Adding step with incorrect type under given job
         '''
@@ -199,8 +194,7 @@ class AddSubStepWithCorrectParameters(TestCase):
             logger.error("Adding step failed")
 
     @polarion("RHEVM3-7162")
-    @istest
-    def add_sub_step_with_correct_parameters(self):
+    def test_add_sub_step_with_correct_parameters(self):
         '''
         Add sub step with correct description
         '''
@@ -261,8 +255,7 @@ class EndJobWithCorrectDescription(TestCase):
             logger.error("Adding job failed")
 
     @polarion("RHEVM3-7158")
-    @istest
-    def end_job_with_correct_description(self):
+    def test_end_job_with_correct_description(self):
         '''
         Ending job with correct description
         '''
@@ -302,8 +295,7 @@ class EndStepWithCorrectDescription(TestCase):
             logger.error("Adding step to job was failed")
 
     @polarion("RHEVM3-7155")
-    @istest
-    def end_step_with_correct_description(self):
+    def test_end_step_with_correct_description(self):
         '''
         Ending step with correct description
         '''

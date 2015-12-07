@@ -10,7 +10,6 @@ __test__ = True
 import logging
 from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.core_api.apis_exceptions import EntityNotFound
@@ -74,9 +73,8 @@ class PositiveNetworkPermissions231821(NetworkingPossitive):
             config.DC_NAME[0], role=role.NetworkAdmin
         )
 
-    @istest
     @polarion("RHEVM3-8369")
-    def createNetworkInDC(self):
+    def test_createNetworkInDC(self):
         """ CreateNetworkInDc """
         for u in [config.USER_NAME, config.USER_NAME2, config.USER_NAME3]:
             loginAsUser(userName=u, filter_=False)
@@ -109,9 +107,8 @@ class PositiveNetworkPermissions231822(NetworkingPossitive):
             data_center=config.DC_NAME[0], role=role.NetworkAdmin
         )
 
-    @istest
     @polarion("RHEVM3-8384")
-    def editNetworkInDC(self):
+    def test_editNetworkInDC(self):
         """ Edit network in DC """
         mtu = 800
         stp = True
@@ -141,9 +138,8 @@ class PositiveNetworkPermissions231823(NetworkingPossitive):
             True, config.USER_NAME2, cluster=config.CLUSTER_NAME[0]
         )
 
-    @istest
     @polarion("RHEVM3-8383")
-    def attachingNetworkToCluster(self):
+    def test_attachingNetworkToCluster(self):
         """ Attaching network to cluster """
         loginAsUser(config.USER_NAME, filter_=False)
         assert networks.addNetworkToCluster(
@@ -207,9 +203,8 @@ class TestSwitching(NetworkingPossitive):
 class PositiveNetworkPermissions231824(TestSwitching):
     __test__ = True
 
-    @istest
     @polarion("RHEVM3-8382")
-    def requiredToNonRequiredAndViceVersa(self):
+    def test_requiredToNonRequiredAndViceVersa(self):
         """ Required to non-required and vice versa """
         self._test_switching_display_and_required(required=True)
 
@@ -217,9 +212,8 @@ class PositiveNetworkPermissions231824(TestSwitching):
 class PositiveNetworkPermissions236073(TestSwitching):
     __test__ = True
 
-    @istest
     @polarion("RHEVM3-8377")
-    def displayNetwork(self):
+    def test_displayNetwork(self):
         """ Display network """
         self._test_switching_display_and_required(
             display=True, usages='display'
@@ -247,9 +241,8 @@ class PositiveNetworkPermissions231826(NetworkingPossitive):
             config.DC_NAME[0], role=role.VnicProfileUser
         )
 
-    @istest
     @polarion("RHEVM3-8381")
-    def attachDetachNetworkToVM(self):
+    def test_attachDetachNetworkToVM(self):
         """ Attach/Detach a network to VM  """
         loginAsUser(config.USER_NAME)
         assert vms.addNic(
@@ -286,9 +279,8 @@ class PositiveNetworkPermissions231827(NetworkingPossitive):
             interface='virtio'
         )
 
-    @istest
     @polarion("RHEVM3-8380")
-    def visibleNetworksAndManipulations(self):
+    def test_visibleNetworksAndManipulations(self):
         """ Visible networks and manipulations """
         loginAsUser(config.USER_NAME)
         for net in [
@@ -431,9 +423,8 @@ class PositiveNetworkPermissions231830(NetworkingPossitive):
             True, config.NETWORK_NAME1, config.DC_NAME[0], config.USER
         )
 
-    @istest
     @polarion("RHEVM3-8379")
-    def networkVisibilityInAPI(self):
+    def test_networkVisibilityInAPI(self):
         """ Network visibility in RestAPI """
         self._testPermissionsOnVnicProfile()
         self._testPermissionsOnVM()
@@ -487,9 +478,8 @@ class PositiveNetworkPermissions231832(NetworkingPossitive):
                 True, net, config.CLUSTER_NAME[0]
             )
 
-    @istest
     @polarion("RHEVM3-8378")
-    def portMirroring(self):
+    def test_portMirroring(self):
         """ Port mirroring """
         loginAsUser(userName=config.USER_NAME2)
         assert not networks.updateVnicProfile(
@@ -538,9 +528,8 @@ class PositiveNetworkPermissions236367(NetworkingPossitive):
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
 
-    @istest
     @polarion("RHEVM3-8376")
-    def addVNICToVM(self):
+    def test_addVNICToVM(self):
         """ Add a VNIC to VM  """
         loginAsUser(config.USER_NAME)
         assert vms.addNic(
@@ -582,9 +571,8 @@ class PositiveNetworkPermissions236406(NetworkingPossitive):
             interface='virtio'
         )
 
-    @istest
     @polarion("RHEVM3-8375")
-    def updateVNICOnVM(self):
+    def test_updateVNICOnVM(self):
         """ Update a VNIC on VM """
         loginAsUser(config.USER_NAME)
         assert vms.updateNic(True, VM_NAME, NIC_NAME, network=None)
@@ -623,10 +611,9 @@ class PositiveNetworkPermissions236408(NetworkingPossitive):
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
 
-    @istest
     @polarion("RHEVM3-8374")
     @bz({'1209505': {'engine': None, 'version': ['3.6']}})
-    def addVNICToTemplate(self):
+    def test_addVNICToTemplate(self):
         """ Add a VNIC to template """
         loginAsUser(config.USER_NAME)
         assert templates.createTemplate(
@@ -681,9 +668,8 @@ class PositiveNetworkPermissions236409(NetworkingPossitive):
             True, config.USER_NAME2, TEMPLATE_NAME, role=role.TemplateOwner
         )
 
-    @istest
     @polarion("RHEVM3-8373")
-    def updateVNICOnTemplate(self):
+    def test_updateVNICOnTemplate(self):
         """ Update a VNIC on the template """
         loginAsUser(config.USER_NAME)
         assert templates.updateTemplateNic(
@@ -715,9 +701,8 @@ class PositiveNetworkPermissions236577(NetworkingPossitive):
             True, config.USER_NAME, config.DC_NAME[0], role.NetworkAdmin
         )
 
-    @istest
     @polarion("RHEVM3-8372")
-    def removeNetworkFromDC(self):
+    def test_removeNetworkFromDC(self):
         """ RemoveNetwokFromDC """
         msg = "NetworkAdmin role wasn't removed after network %s was removed."
         loginAsUser(config.USER_NAME, filter_=False)
@@ -753,9 +738,8 @@ class PositiveNetworkPermissions236664(NetworkingPossitive):
             True, config.USER_NAME, config.DC_NAME[0], ROLE_NAME
         )
 
-    @istest
     @polarion("RHEVM3-8371")
-    def customRole(self):
+    def test_customRole(self):
         """ Custom Role """
         loginAsUser(config.USER_NAME, filter_=False)
         assert networks.addNetwork(
@@ -783,9 +767,8 @@ class PositiveNetworkPermissions317269(NetworkingPossitive):
         super(PositiveNetworkPermissions317269, self).tearDown()
         datacenters.removeDataCenter(True, self.dc_name)
 
-    @istest
     @polarion("RHEVM3-4031")
-    def automaticCreateionOfPermissions(self):
+    def test_automaticCreateionOfPermissions(self):
         """ Check auto permission creation on new datacenter """
         # newly created dc, vnicprofile has VnicProfileUser role on Everyone
         self.assertTrue(
@@ -814,9 +797,8 @@ class PositiveNetworkPermissions317133(NetworkingPossitive):
         super(PositiveNetworkPermissions317133, self).tearDown()
         datacenters.removeDataCenter(True, self.dc_name)
 
-    @istest
     @polarion("RHEVM3-4030")
-    def automaticCreationToUser(self):
+    def test_automaticCreationToUser(self):
         """ Check that networkadmin permissions are added automatically  """
         loginAsAdmin()
         vnic = networks.getVnicProfileObj(
@@ -873,9 +855,8 @@ class PositiveNetworkPermissions320610(NetworkingPossitive):
         )
         mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME)
 
-    @istest
     @polarion("RHEVM3-4044")
-    def vnicPermisAreRestrictedToSpecificProfile(self):
+    def test_vnicPermisAreRestrictedToSpecificProfile(self):
         """
         vnicProfile perms on vNIC profile are restricted to specific profile
         """
@@ -914,9 +895,8 @@ class PositiveNetworkPermissions317270(NetworkingPossitive):
             config.DC_NAME[0], role=role.UserRole
         )
 
-    @istest
     @polarion("RHEVM3-4032")
-    def nonVmToVmNetwork(self):
+    def test_nonVmToVmNetwork(self):
         """ When network is switched to nonvm permissions should be removed """
         vnic = networks.getVnicProfileObj(
             config.NETWORK_NAME1,

@@ -11,7 +11,6 @@ import logging
 
 from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role
-from nose.tools import istest
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import (
     users, vms, templates, mla, clusters, datacenters, hosts,
@@ -120,9 +119,8 @@ class VmUserInfoTests(TestCase):
         vms.removeVm(True, config.VM_NAME1)
         templates.removeTemplate(True, config.TEMPLATE_NAME2)
 
-    @istest
     @polarion("RHEVM3-7642")
-    def eventFilter_parentObjectEvents(self):
+    def test_eventFilter_parentObjectEvents(self):
         """ testEventFilter_parentObjectEvents """
         CHECK_OBJ = {
             'vm': {
@@ -206,9 +204,8 @@ class VmUserInfoTests2(TestCase):
         vms.removeVm(True, config.VM_NAME1)
         vms.removeVm(True, config.VM_NAME2)
 
-    @istest
     @polarion("RHEVM3-7640")
-    def filter_parentObjects(self):
+    def test_filter_parentObjects(self):
         """ filter_parentObjects """
         # TODO: Extend with /templates, /storagedomains, /users, ...
         # Consulted what should be visible to users
@@ -240,9 +237,8 @@ class VmUserInfoTests2(TestCase):
         assert len(dcs) == 1, msgVisible % ('datacenters', dcs)
         assert len(cls) == 1, msgVisible % ('clusters', cls)
 
-    @istest
     @polarion("RHEVM3-7639")
-    def filter_vms(self):
+    def test_filter_vms(self):
         """ testFilter_vms """
         msgBlind = "The user can't see VM '%s' where he has permissions"
         msgVisible = "The user can see a VM he has no permissions for"
@@ -267,9 +263,8 @@ class VmUserInfoTests2(TestCase):
             True, config.USER_NAME, config.VM_NAME1, role.UserRole
         )
 
-    @istest
     @polarion("RHEVM3-7641")
-    def eventFilter_vmEvents(self):
+    def test_eventFilter_vmEvents(self):
         """ testEventFilter_vmEvents """
         msgBlind = "User cannot see VM events where he has permissions"
         msgVissible = "User can see VM events where he's no permissions. %s"
@@ -293,9 +288,8 @@ class VmUserInfoTests2(TestCase):
         assert self.id2 in lst_of_vms, msgVissible % lst_of_vms
         LOGGER.info(msgBlind)
 
-    @istest
     @polarion("RHEVM3-7643")
-    def specificId(self):
+    def test_specificId(self):
         """ testSpecificId """
         msgBlind = "User cannot see VM where he has permmissions"
         msgVissible = "User can see VM where he's no permission. Can See '%s'"
@@ -307,9 +301,8 @@ class VmUserInfoTests2(TestCase):
         assert vms.VM_API.get(href=vms_api % self.id2) is None, msgVissible
         LOGGER.info(msgBlind)
 
-    @istest
     @polarion("RHEVM3-7644")
-    def accessDenied(self):
+    def test_accessDenied(self):
         """ testAccessDenied """
         msg = "User can see %s where he has no permissions. Can see %s"
 
@@ -325,9 +318,8 @@ class VmUserInfoTests2(TestCase):
         assert len(tms) == 1, msg % ('templates', tms)
         LOGGER.info("User see and don't see resources he can/can't.")
 
-    @istest
     @polarion("RHEVM3-7645")
-    def hostInfo(self):
+    def test_hostInfo(self):
         """ testHostPowerManagementInfo """
         self.assertRaises(
             EntityNotFound, hosts.HOST_API.find, config.HOSTS[0]
@@ -377,9 +369,8 @@ class ViewviewChildrenInfoTests(TestCase):
         loginAsAdmin()
         vms.removeVm(True, config.VM_NAME1)
 
-    @istest
     @polarion("RHEVM3-7638")
-    def canViewChildren(self):
+    def test_canViewChildren(self):
         """ CanViewChildren """
         err_msg = "User can't see vms"
         for role_can in self.roles_can:
@@ -395,9 +386,8 @@ class ViewviewChildrenInfoTests(TestCase):
             )
             LOGGER.info("%s can see children", role_can)
 
-    @istest
     @polarion("RHEVM3-7637")
-    def cantViewChildren(self):
+    def test_cantViewChildren(self):
         """ CantViewChildren """
         for role_can in self.roles_cant:
             LOGGER.info("Testing role: %s", role_can)
@@ -454,9 +444,8 @@ class VmCreatorClusterAdminInfoTests(TestCase):
             True, config.CLUSTER_NAME[0], config.USER1
         )
 
-    @istest
     @polarion("RHEVM3-7647")
-    def vmCreatorClusterAdmin_filter_vms(self):
+    def test_vmCreatorClusterAdmin_filter_vms(self):
         """ vmCreatorClusterAdmin_filter_vms """
         err_msg_can = "User can see %s"
         err_msg_cant = "User can't see %s"
@@ -493,9 +482,8 @@ class VmCreatorInfoTests(TestCase):
             True, config.CLUSTER_NAME[0], config.USER1
         )
 
-    @istest
     @polarion("RHEVM3-7646")
-    def vmCreator_filter_vms(self):
+    def test_vmCreator_filter_vms(self):
         """ vmCreator_filter_vms """
         msg = "User can see vms where he has no permissions. Can see %s"
 
@@ -555,9 +543,8 @@ class TemplateCreatorInfoTests(TestCase):
             True, config.DC_NAME[0], config.USER1
         )
 
-    @istest
     @polarion("RHEVM3-7648")
-    def templateCreator_filter_templatesAndVms(self):
+    def test_templateCreator_filter_templatesAndVms(self):
         """ Template creator with user role filter template and vms """
         msgCant = "User can't see %s '%s' which should see"
         msgCan = "User can see %s '%s' which shouldn't see"
@@ -636,9 +623,8 @@ class TemplateCreatorAndDCAdminInfoTest(TestCase):
             True, config.DC_NAME[0], config.USER1
         )
 
-    @istest
     @polarion("RHEVM3-7649")
-    def templateCreatorDataCenterAdmin_filter_templates(self):
+    def test_templateCreatorDataCenterAdmin_filter_templates(self):
         """ Template creator with datacenter admin filter templates """
         loginAsUser()
         templates.TEMPLATE_API.find(config.TEMPLATE_NAME)
@@ -707,9 +693,8 @@ class ComplexCombinationTest(TestCase):
         )
 
     # Check BZ 881109 - behaviour could be changed in future.
-    @istest
     @polarion("RHEVM3-7650")
-    def complexCombination1_filter_templatesAndVms(self):
+    def test_complexCombination1_filter_templatesAndVms(self):
         """ ComplexCombination filter templatesAndVms """
         # TODO: extend, there could be tested more than this
         loginAsUser()

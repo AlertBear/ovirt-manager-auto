@@ -11,7 +11,6 @@ import time
 
 from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role
-from nose.tools import istest
 from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 from art.rhevm_api.tests_lib.high_level import storagedomains as h_sd
@@ -114,9 +113,8 @@ class PermissionsCase54408(TestCase):
 
     # Check that there are two types of Permissions sub-tabs in the system:
     # for objects on which you can define permissions and for users.
-    @istest
     @polarion("RHEVM3-7168")
-    def objectsAndUserPermissions(self):
+    def test_objectsAndUserPermissions(self):
         """ objects and user permissions """
         msg = '%s has permissions subcollection.'
 
@@ -144,9 +142,8 @@ class PermissionsCase54409(TestCase):
             True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
         )
 
-    @istest
     @polarion("RHEVM3-7185")
-    def permissionsInheritence(self):
+    def test_permissionsInheritence(self):
         """ permissions inheritence """
         loginAsUser(config.USER_NAME, filter=False)
         self.assertTrue(
@@ -186,9 +183,8 @@ class PermissionsCase5441054414(TestCase):
     """" permissions subtab """
     __test__ = True
 
-    @istest
     @polarion("RHEVM3-7186")  # Also RHEVM3-7187, can not have multiple IDs
-    def permissionsSubTab(self):
+    def test_permissionsSubTab(self):
         """ permissions subtab """
         # Try to add UserRole and AdminRole to object, then
         # check if both role are vissbile via /api/objects/objectid/permissions
@@ -224,17 +220,15 @@ class PermissionsCase5441854419(TestCase):
     """ last permission on object and test removal of SuperUser """
     __test__ = True
 
-    @istest
     @polarion("RHEVM3-7188")
-    def lastPermOnObject(self):
+    def test_lastPermOnObject(self):
         """ last permission on object """
         loginAsAdmin()
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME)
         mla.removeUserPermissionsFromVm(True, config.VM_NAME, config.USER1)
 
-    @istest
     @polarion("RHEVM3-7189")
-    def removalOfSuperUser(self):
+    def test_removalOfSuperUser(self):
         """ test removal of SuperUser """
         assert users.removeUser(False, 'admin@internal', 'internal')
         assert mla.removeUserRoleFromDataCenter(
@@ -271,9 +265,8 @@ class PermissionsCase54425(TestCase):
             True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
         )
 
-    @istest
     @polarion("RHEVM3-7191")
-    def delegatePerms(self):
+    def test_delegatePerms(self):
         """ delegate perms """
         # Test SuperUser that he can add permissions
         for role_obj in mla.util.get(absLink=False):
@@ -349,9 +342,8 @@ class PermissionsCase54425(TestCase):
     # the ancestor (e.g. to create a new storage domain you'll need a "add
     # storage domain" permission on the "system" object,to create a new Host/VM
     # you will need appropriate permission on the relevant cluster.
-    @istest
     @polarion("RHEVM3-7192")
-    def newObjectCheckPerms(self):
+    def test_newObjectCheckPerms(self):
         """ Adding new business entity/new object. """
         msg = "This functionality tests modules admin_tests and user_tests"
         LOGGER.info(msg)
@@ -381,9 +373,8 @@ class PermissionsCase54446(TestCase):
         common.removeUser(True, config.GROUP_USER)
         users.deleteGroup(True, config.GROUP_NAME)
 
-    @istest
     @polarion("RHEVM3-7193")
-    def usersPermissions(self):
+    def test_usersPermissions(self):
         """ users permissions """
         loginAsUser(config.GROUP_USER)
         self.assertTrue(
@@ -408,10 +399,9 @@ class PermissionsCase54420(TestCase):
     """ Object creating from User and Admin portal """
     __test__ = True
 
-    @istest
     @bz({'881145': {}})
     @polarion("RHEVM3-7190")
-    def objAdminUser(self):
+    def test_objAdminUser(self):
         """ Object creating from User and Admin portal """
         # This is already implemented in test_user_roles
         def checkIfObjectHasRole(obj, role, admin):
@@ -549,9 +539,8 @@ class PermissionsCase109086(TestCase):
             True, config.DC_NAME[0], config.USER1
         )
 
-    @istest
     @polarion("RHEVM3-7170")
-    def permsInhForVmPools(self):
+    def test_permsInhForVmPools(self):
         """ Permission inheritance for desktop pools """
         loginAsUser(config.USER_NAME)
         self.assertTrue(vmpools.allocateVmFromPool(True, config.VMPOOL_NAME))
@@ -614,9 +603,8 @@ class PermissionsCase111082(TestCase):
             config.HOSTS[0]
         )
 
-    @istest
     @polarion("RHEVM3-7171")
-    def permsRemovedAfterObjectRemove(self):
+    def test_permsRemovedAfterObjectRemove(self):
         """ perms removed after object is removed """
         def checkIfObjectHasRole(obj, role):
             objPermits = mla.permisUtil.getElemFromLink(obj, get_href=False)

@@ -14,7 +14,6 @@ from art.test_handler.tools import bz  # pylint: disable=E0611
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 from art.unittest_lib.windows import WindowsGuest
 from functools import wraps
-from nose.tools import istest
 from rhevmtests.system.guest_tools import config
 
 
@@ -162,8 +161,7 @@ class Windows(TestCase):
     def teardown_class(cls):
         assert vms.removeVm(positive=True, vm=cls.diskName, stopVM='true')
 
-    @istest
-    def a00_install_guest_tools(self):
+    def test_a00_install_guest_tools(self):
         """ Install all supported apps of Windows version """
         self.assertTrue(
             self.machine.install_guest_tools(),
@@ -179,69 +177,58 @@ class Windows(TestCase):
         )
         LOGGER.info('%s is installed', product)
 
-    @istest
     @checkIfSupported
-    def checkProductQemuAgent(self):
+    def test_checkProductQemuAgent(self):
         """ Check product qemu agent """
         self._checkProduct('QEMU guest agent')
 
-    @istest
     @checkIfSupported
-    def checkProductSpice(self):
+    def test_checkProductSpice(self):
         """ Check product spice """
         self._checkProduct('RHEV-Spice%s' % self.platfPrefix)
 
-    @istest
     @checkIfSupported
-    def checkProductSpiceAgent(self):
+    def test_checkProductSpiceAgent(self):
         """ Check product spice agent """
         self._checkProduct('RHEV-Spice-Agent%s' % self.platfPrefix)
 
-    @istest
     @checkIfSupported
-    def checkProductSerial(self):
+    def test_checkProductSerial(self):
         """ Check product serial """
         self._checkProduct('RHEV-Serial%s' % self.platfPrefix)
 
-    @istest
     @checkIfSupported
-    def checkProductNetwork(self):
+    def test_checkProductNetwork(self):
         """ Check product network """
         self._checkProduct('RHEV-Network%s' % self.platfPrefix)
 
-    @istest
     @checkIfSupported
-    def checkProductAgent(self):
+    def test_checkProductAgent(self):
         """ Check product agent """
         self._checkProduct('RHEV-Agent%s' % self.platfPrefix)
 
-    @istest
     @checkIfSupported
-    def checkProductUSB(self):
+    def test_checkProductUSB(self):
         """ Check product USB """
         self._checkProduct('RHEV-USB')
 
-    @istest
     @checkIfSupported
-    def checkProductSSO(self):
+    def test_checkProductSSO(self):
         """ Check product SSO """
         self._checkProduct('RHEV-SSO%s' % self.platfPrefix)
 
-    @istest
     @checkIfSupported
-    def checkProductBlock(self):
+    def test_checkProductBlock(self):
         """ Check product block """
         self._checkProduct('RHEV-Block%s' % self.platfPrefix)
 
-    @istest
     @checkIfSupported
-    def checkProductBalloon(self):
+    def test_checkProductBalloon(self):
         """ Check product balloon """
         self._checkProduct('RHEV-Balloon%s' % self.platfPrefix)
 
-    @istest
     @checkIfSupported
-    def checkProductSCSI(self):
+    def test_checkProductSCSI(self):
         """ Check product SCSI """
         self._checkProduct('RHEV-SCSI%s' % self.platfPrefix)
 
@@ -258,34 +245,29 @@ class Windows(TestCase):
         )
         LOGGER.info('Service %s is running/enabled', service)
 
-    @istest
     @checkIfSupported
-    def checkServiceQemuGA(self):
+    def test_checkServiceQemuGA(self):
         """ Check service qqmu GA """
         self._checkService('QEMU-GA')
 
-    @istest
     @checkIfSupported
     @bz({'1218937': {'engine': None, 'version': ['7.1']}})
-    def checkServiceQemuGAVssProvider(self):
+    def test_checkServiceQemuGAVssProvider(self):
         """ Check service qqmu GA Vss provider """
         self._checkService('QEMU Guest Agent VSS Provider')
 
-    @istest
     @checkIfSupported
-    def checkServiceUSBRedirector(self):
+    def test_checkServiceUSBRedirector(self):
         """ Check service USB redirector """
         self._checkService('spiceusbredirector')
 
-    @istest
     @checkIfSupported
-    def checkServiceAgent(self):
+    def test_checkServiceAgent(self):
         """ Check service agent """
         self._checkService('RHEV-Agent')
 
-    @istest
     @checkIfSupported
-    def checkServiceSpiceAgent(self):
+    def test_checkServiceSpiceAgent(self):
         """ Check service spice agent """
         self._checkService('vdservice')
 
@@ -413,8 +395,7 @@ class Windows(TestCase):
         """ Check driver viostor """
         self._checkDeviceManager('Red Hat VirtIO SCSI controller')
 
-    @istest
-    def z_unistallGuestTools(self):
+    def test_z_unistallGuestTools(self):
         """
         This tests uninstallation of GT
         """
@@ -435,10 +416,10 @@ class WindowsDesktop(Windows):
 class WindowsServer(Windows):
     __test__ = False
     UNSUPPORTED = Windows.UNSUPPORTED + [
-        'checkProductSpice',
-        'checkProductUSB',
-        'checkProductSSO',
-        'checkServiceUSBRedirector',
+        'test_checkProductSpice',
+        'test_checkProductUSB',
+        'test_checkProductSSO',
+        'test_checkServiceUSBRedirector',
         'test_driver_usb_bus',
         'test_driver_usb_host_controller',
     ]
@@ -454,17 +435,17 @@ class Windows7_64bit(WindowsDesktop):
     diskName = config.WIN7_DISK_64b
     codename = 'Win 7'
     polarion_map = {
-        'checkProductNetwork': 'RHEVM3-13354',
-        'checkProductSpice': 'RHEVM3-13355',
-        'checkProductSerial': 'RHEVM3-13356',
-        'checkProductBlock': 'RHEVM3-13357',
-        'checkProductBalloon': 'RHEVM3-13358',
-        'checkProductUSB': 'RHEVM3-13359',
-        'checkProductQemuAgent': 'RHEVM3-13360',
-        'checkProductSSO': 'RHEVM3-13361',
-        'checkProductSpiceAgent': 'RHEVM3-13362',
-        'checkProductAgent': 'RHEVM3-13363',
-        'checkProductSCSI': 'RHEVM3-13364',
+        'test_checkProductNetwork': 'RHEVM3-13354',
+        'test_checkProductSpice': 'RHEVM3-13355',
+        'test_checkProductSerial': 'RHEVM3-13356',
+        'test_checkProductBlock': 'RHEVM3-13357',
+        'test_checkProductBalloon': 'RHEVM3-13358',
+        'test_checkProductUSB': 'RHEVM3-13359',
+        'test_checkProductQemuAgent': 'RHEVM3-13360',
+        'test_checkProductSSO': 'RHEVM3-13361',
+        'test_checkProductSpiceAgent': 'RHEVM3-13362',
+        'test_checkProductAgent': 'RHEVM3-13363',
+        'test_checkProductSCSI': 'RHEVM3-13364',
         'test_driver_vioscsi_pass_through': 'RHEVM3-13365',
         'test_driver_vioscsi_disk': 'RHEVM3-13366',
         'test_driver_vioserial': 'RHEVM3-13367',
@@ -474,11 +455,11 @@ class Windows7_64bit(WindowsDesktop):
         'test_driver_viostor': 'RHEVM3-13371',
         'test_driver_qxl_gpu': 'RHEVM3-13372',
         'test_driver_balloon': 'RHEVM3-13373',
-        'checkServiceAgent': 'RHEVM3-13374',
-        'checkServiceQemuGA': 'RHEVM3-13375',
-        'checkServiceUSBRedirector': 'RHEVM3-13376',
-        'checkServiceSpiceAgent': 'RHEVM3-13377',
-        'checkServiceQemuGAVssProvider': 'RHEVM3-13378',
+        'test_checkServiceAgent': 'RHEVM3-13374',
+        'test_checkServiceQemuGA': 'RHEVM3-13375',
+        'test_checkServiceUSBRedirector': 'RHEVM3-13376',
+        'test_checkServiceSpiceAgent': 'RHEVM3-13377',
+        'test_checkServiceQemuGAVssProvider': 'RHEVM3-13378',
         'test_guest_applications': 'RHEVM3-14437',
         'test_guest_info': 'RHEVM3-14438',
         'test_guest_timezone': 'RHEVM3-14439',
@@ -496,17 +477,17 @@ class Windows7_32b(WindowsDesktop):
     diskName = config.WIN7_DISK_32b
     codename = 'Win 7'
     polarion_map = {
-        'checkProductNetwork': 'RHEVM3-13278',
-        'checkProductSpice': 'RHEVM3-13279',
-        'checkProductSerial': 'RHEVM3-13280',
-        'checkProductBlock': 'RHEVM3-13281',
-        'checkProductBalloon': 'RHEVM3-13282',
-        'checkProductUSB': 'RHEVM3-13283',
-        'checkProductQemuAgent': 'RHEVM3-13284',
-        'checkProductSSO': 'RHEVM3-13285',
-        'checkProductSpiceAgent': 'RHEVM3-13286',
-        'checkProductAgent': 'RHEVM3-13287',
-        'checkProductSCSI': 'RHEVM3-13288',
+        'test_checkProductNetwork': 'RHEVM3-13278',
+        'test_checkProductSpice': 'RHEVM3-13279',
+        'test_checkProductSerial': 'RHEVM3-13280',
+        'test_checkProductBlock': 'RHEVM3-13281',
+        'test_checkProductBalloon': 'RHEVM3-13282',
+        'test_checkProductUSB': 'RHEVM3-13283',
+        'test_checkProductQemuAgent': 'RHEVM3-13284',
+        'test_checkProductSSO': 'RHEVM3-13285',
+        'test_checkProductSpiceAgent': 'RHEVM3-13286',
+        'test_checkProductAgent': 'RHEVM3-13287',
+        'test_checkProductSCSI': 'RHEVM3-13288',
         'test_driver_vioscsi_pass_through': 'RHEVM3-13289',
         'test_driver_vioscsi_disk': 'RHEVM3-13290',
         'test_driver_vioserial': 'RHEVM3-13291',
@@ -516,11 +497,11 @@ class Windows7_32b(WindowsDesktop):
         'test_driver_viostor': 'RHEVM3-13295',
         'test_driver_qxl_gpu': 'RHEVM3-13296',
         'test_driver_balloon': 'RHEVM3-13297',
-        'checkServiceAgent': 'RHEVM3-13298',
-        'checkServiceQemuGA': 'RHEVM3-13299',
-        'checkServiceUSBRedirector': 'RHEVM3-13300',
-        'checkServiceSpiceAgent': 'RHEVM3-13301',
-        'checkServiceQemuGAVssProvider': 'RHEVM3-13302',
+        'test_checkServiceAgent': 'RHEVM3-13298',
+        'test_checkServiceQemuGA': 'RHEVM3-13299',
+        'test_checkServiceUSBRedirector': 'RHEVM3-13300',
+        'test_checkServiceSpiceAgent': 'RHEVM3-13301',
+        'test_checkServiceQemuGAVssProvider': 'RHEVM3-13302',
         'test_guest_applications': 'RHEVM3-14425',
         'test_guest_info': 'RHEVM3-14426',
         'test_guest_timezone': 'RHEVM3-14427',
@@ -538,8 +519,8 @@ class Windows8_64bit(WindowsDesktop):
     diskName = config.WIN8_DISK_64b
     codename = 'Win 8'
     UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
-        'checkProductSpice',
-        'checkProductUSB',
+        'test_checkProductSpice',
+        'test_checkProductUSB',
         'test_driver_qxl_gpu',
     ]
 
@@ -553,8 +534,8 @@ class Windows8_32b(WindowsDesktop):
     diskName = config.WIN8_DISK_32b
     codename = 'Win 8'
     UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
-        'checkProductSpice',
-        'checkProductUSB',
+        'test_checkProductSpice',
+        'test_checkProductUSB',
         'test_driver_qxl_gpu',
     ]
 
@@ -568,22 +549,22 @@ class Windows8_1_64bit(WindowsDesktop):
     diskName = config.WIN8_1_DISK_64b
     codename = 'Win 8.1'
     UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
-        'checkProductSpice',
-        'checkProductUSB',
+        'test_checkProductSpice',
+        'test_checkProductUSB',
         'test_driver_qxl_gpu',
     ]
     polarion_map = {
-        'checkProductNetwork': 'RHEVM3-13228',
-        'checkProductSpice': 'RHEVM3-13229',
-        'checkProductSerial': 'RHEVM3-13230',
-        'checkProductBlock': 'RHEVM3-13231',
-        'checkProductBalloon': 'RHEVM3-13232',
-        'checkProductUSB': 'RHEVM3-13233',
-        'checkProductQemuAgent': 'RHEVM3-13234',
-        'checkProductSSO': 'RHEVM3-13235',
-        'checkProductSpiceAgent': 'RHEVM3-13236',
-        'checkProductAgent': 'RHEVM3-13237',
-        'checkProductSCSI': 'RHEVM3-13238',
+        'test_checkProductNetwork': 'RHEVM3-13228',
+        'test_checkProductSpice': 'RHEVM3-13229',
+        'test_checkProductSerial': 'RHEVM3-13230',
+        'test_checkProductBlock': 'RHEVM3-13231',
+        'test_checkProductBalloon': 'RHEVM3-13232',
+        'test_checkProductUSB': 'RHEVM3-13233',
+        'test_checkProductQemuAgent': 'RHEVM3-13234',
+        'test_checkProductSSO': 'RHEVM3-13235',
+        'test_checkProductSpiceAgent': 'RHEVM3-13236',
+        'test_checkProductAgent': 'RHEVM3-13237',
+        'test_checkProductSCSI': 'RHEVM3-13238',
         'test_driver_vioscsi_pass_through': 'RHEVM3-13239',
         'test_driver_vioscsi_disk': 'RHEVM3-13240',
         'test_driver_vioserial': 'RHEVM3-13241',
@@ -593,11 +574,11 @@ class Windows8_1_64bit(WindowsDesktop):
         'test_driver_viostor': 'RHEVM3-13245',
         'test_driver_qxl_gpu': 'RHEVM3-13246',
         'test_driver_balloon': 'RHEVM3-13247',
-        'checkServiceAgent': 'RHEVM3-13248',
-        'checkServiceQemuGA': 'RHEVM3-13249',
-        'checkServiceUSBRedirector': 'RHEVM3-13250',
-        'checkServiceSpiceAgent': 'RHEVM3-13251',
-        'checkServiceQemuGAVssProvider': 'RHEVM3-13252',
+        'test_checkServiceAgent': 'RHEVM3-13248',
+        'test_checkServiceQemuGA': 'RHEVM3-13249',
+        'test_checkServiceUSBRedirector': 'RHEVM3-13250',
+        'test_checkServiceSpiceAgent': 'RHEVM3-13251',
+        'test_checkServiceQemuGAVssProvider': 'RHEVM3-13252',
         'test_guest_applications': 'RHEVM3-14417',
         'test_guest_info': 'RHEVM3-14418',
         'test_guest_timezone': 'RHEVM3-14419',
@@ -619,22 +600,22 @@ class Windows8_1_32b(WindowsDesktop):
     diskName = config.WIN8_1_DISK_32b
     codename = 'Win 8.1'
     UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
-        'checkProductSpice',
-        'checkProductUSB',
-        'test_driver_qxl_gpu',
+        'test_checkProductSpice',
+        'test_checkProductUSB',
+        'test_test_driver_qxl_gpu',
     ]
     polarion_map = {
-        'checkProductNetwork': 'RHEVM3-13178',
-        'checkProductSpice': 'RHEVM3-13179',
-        'checkProductSerial': 'RHEVM3-13180',
-        'checkProductBlock': 'RHEVM3-13181',
-        'checkProductBalloon': 'RHEVM3-13182',
-        'checkProductUSB': 'RHEVM3-13183',
-        'checkProductQemuAgent': 'RHEVM3-13184',
-        'checkProductSSO': 'RHEVM3-13185',
-        'checkProductSpiceAgent': 'RHEVM3-13186',
-        'checkProductAgent': 'RHEVM3-13187',
-        'checkProductSCSI': 'RHEVM3-13188',
+        'test_checkProductNetwork': 'RHEVM3-13178',
+        'test_checkProductSpice': 'RHEVM3-13179',
+        'test_checkProductSerial': 'RHEVM3-13180',
+        'test_checkProductBlock': 'RHEVM3-13181',
+        'test_checkProductBalloon': 'RHEVM3-13182',
+        'test_checkProductUSB': 'RHEVM3-13183',
+        'test_checkProductQemuAgent': 'RHEVM3-13184',
+        'test_checkProductSSO': 'RHEVM3-13185',
+        'test_checkProductSpiceAgent': 'RHEVM3-13186',
+        'test_checkProductAgent': 'RHEVM3-13187',
+        'test_checkProductSCSI': 'RHEVM3-13188',
         'test_driver_vioscsi_pass_through': 'RHEVM3-13189',
         'test_driver_vioscsi_disk': 'RHEVM3-13190',
         'test_driver_vioserial': 'RHEVM3-13191',
@@ -644,11 +625,11 @@ class Windows8_1_32b(WindowsDesktop):
         'test_driver_viostor': 'RHEVM3-13195',
         'test_driver_qxl_gpu': 'RHEVM3-13196',
         'test_driver_balloon': 'RHEVM3-13197',
-        'checkServiceAgent': 'RHEVM3-13198',
-        'checkServiceQemuGA': 'RHEVM3-13199',
-        'checkServiceUSBRedirector': 'RHEVM3-13200',
-        'checkServiceSpiceAgent': 'RHEVM3-13201',
-        'checkServiceQemuGAVssProvider': 'RHEVM3-13202',
+        'test_checkServiceAgent': 'RHEVM3-13198',
+        'test_checkServiceQemuGA': 'RHEVM3-13199',
+        'test_checkServiceUSBRedirector': 'RHEVM3-13200',
+        'test_checkServiceSpiceAgent': 'RHEVM3-13201',
+        'test_checkServiceQemuGAVssProvider': 'RHEVM3-13202',
         'test_guest_applications': 'RHEVM3-14409',
         'test_guest_info': 'RHEVM3-14410',
         'test_guest_timezone': 'RHEVM3-14411',
@@ -680,17 +661,17 @@ class Windows2008_64b(WindowsServer):
     diskName = config.WIN2008_DISK_64b
     codename = 'Win 2008'
     polarion_map = {
-        'checkProductNetwork': 'RHEVM3-13253',
-        'checkProductSpice': 'RHEVM3-13254',
-        'checkProductSerial': 'RHEVM3-13255',
-        'checkProductBlock': 'RHEVM3-13256',
-        'checkProductBalloon': 'RHEVM3-13257',
-        'checkProductUSB': 'RHEVM3-13258',
-        'checkProductQemuAgent': 'RHEVM3-13259',
-        'checkProductSSO': 'RHEVM3-13260',
-        'checkProductSpiceAgent': 'RHEVM3-13261',
-        'checkProductAgent': 'RHEVM3-13262',
-        'checkProductSCSI': 'RHEVM3-13263',
+        'test_checkProductNetwork': 'RHEVM3-13253',
+        'test_checkProductSpice': 'RHEVM3-13254',
+        'test_checkProductSerial': 'RHEVM3-13255',
+        'test_checkProductBlock': 'RHEVM3-13256',
+        'test_checkProductBalloon': 'RHEVM3-13257',
+        'test_checkProductUSB': 'RHEVM3-13258',
+        'test_checkProductQemuAgent': 'RHEVM3-13259',
+        'test_checkProductSSO': 'RHEVM3-13260',
+        'test_checkProductSpiceAgent': 'RHEVM3-13261',
+        'test_checkProductAgent': 'RHEVM3-13262',
+        'test_checkProductSCSI': 'RHEVM3-13263',
         'test_driver_vioscsi_pass_through': 'RHEVM3-13264',
         'test_driver_vioscsi_disk': 'RHEVM3-13265',
         'test_driver_vioserial': 'RHEVM3-13266',
@@ -700,11 +681,11 @@ class Windows2008_64b(WindowsServer):
         'test_driver_viostor': 'RHEVM3-13270',
         'test_driver_qxl_gpu': 'RHEVM3-13271',
         'test_driver_balloon': 'RHEVM3-13272',
-        'checkServiceAgent': 'RHEVM3-13273',
-        'checkServiceQemuGA': 'RHEVM3-13274',
-        'checkServiceUSBRedirector': 'RHEVM3-13275',
-        'checkServiceSpiceAgent': 'RHEVM3-13276',
-        'checkServiceQemuGAVssProvider': 'RHEVM3-13277',
+        'test_checkServiceAgent': 'RHEVM3-13273',
+        'test_checkServiceQemuGA': 'RHEVM3-13274',
+        'test_checkServiceUSBRedirector': 'RHEVM3-13275',
+        'test_checkServiceSpiceAgent': 'RHEVM3-13276',
+        'test_checkServiceQemuGAVssProvider': 'RHEVM3-13277',
         'test_guest_applications': 'RHEVM3-14421',
         'test_guest_info': 'RHEVM3-14422',
         'test_guest_timezone': 'RHEVM3-14423',
@@ -722,17 +703,17 @@ class Windows2008R2_64b(WindowsServer):
     diskName = config.WIN2008R2_DISK_64b
     codename = 'Win 2008 R2'
     polarion_map = {
-        'checkProductNetwork': 'RHEVM3-13303',
-        'checkProductSpice': 'RHEVM3-13304',
-        'checkProductSerial': 'RHEVM3-13305',
-        'checkProductBlock': 'RHEVM3-13306',
-        'checkProductBalloon': 'RHEVM3-13307',
-        'checkProductUSB': 'RHEVM3-13308',
-        'checkProductQemuAgent': 'RHEVM3-13309',
-        'checkProductSSO': 'RHEVM3-13310',
-        'checkProductSpiceAgent': 'RHEVM3-13311',
-        'checkProductAgent': 'RHEVM3-13312',
-        'checkProductSCSI': 'RHEVM3-13313',
+        'test_checkProductNetwork': 'RHEVM3-13303',
+        'test_checkProductSpice': 'RHEVM3-13304',
+        'test_checkProductSerial': 'RHEVM3-13305',
+        'test_checkProductBlock': 'RHEVM3-13306',
+        'test_checkProductBalloon': 'RHEVM3-13307',
+        'test_checkProductUSB': 'RHEVM3-13308',
+        'test_checkProductQemuAgent': 'RHEVM3-13309',
+        'test_checkProductSSO': 'RHEVM3-13310',
+        'test_checkProductSpiceAgent': 'RHEVM3-13311',
+        'test_checkProductAgent': 'RHEVM3-13312',
+        'test_checkProductSCSI': 'RHEVM3-13313',
         'test_driver_vioscsi_pass_through': 'RHEVM3-13314',
         'test_driver_vioscsi_disk': 'RHEVM3-13315',
         'test_driver_vioserial': 'RHEVM3-13316',
@@ -742,11 +723,11 @@ class Windows2008R2_64b(WindowsServer):
         'test_driver_viostor': 'RHEVM3-13320',
         'test_driver_qxl_gpu': 'RHEVM3-13321',
         'test_driver_balloon': 'RHEVM3-13322',
-        'checkServiceAgent': 'RHEVM3-13323',
-        'checkServiceQemuGA': 'RHEVM3-13324',
-        'checkServiceUSBRedirector': 'RHEVM3-13325',
-        'checkServiceSpiceAgent': 'RHEVM3-13326',
-        'checkServiceQemuGAVssProvider': 'RHEVM3-13327',
+        'test_checkServiceAgent': 'RHEVM3-13323',
+        'test_checkServiceQemuGA': 'RHEVM3-13324',
+        'test_checkServiceUSBRedirector': 'RHEVM3-13325',
+        'test_checkServiceSpiceAgent': 'RHEVM3-13326',
+        'test_checkServiceQemuGAVssProvider': 'RHEVM3-13327',
         'test_guest_applications': 'RHEVM3-14429',
         'test_guest_info': 'RHEVM3-14430',
         'test_guest_timezone': 'RHEVM3-14431',
@@ -764,17 +745,17 @@ class Windows2012_64b(WindowsServer):
     diskName = config.WIN2012_DISK_64b
     codename = 'Win 2012'
     polarion_map = {
-        'checkProductNetwork': 'RHEVM3-13328',
-        'checkProductSpice': 'RHEVM3-13329',
-        'checkProductSerial': 'RHEVM3-13330',
-        'checkProductBlock': 'RHEVM3-13331',
-        'checkProductBalloon': 'RHEVM3-13332',
-        'checkProductUSB': 'RHEVM3-13333',
-        'checkProductQemuAgent': 'RHEVM3-13334',
-        'checkProductSSO': 'RHEVM3-13335',
-        'checkProductSpiceAgent': 'RHEVM3-13336',
-        'checkProductAgent': 'RHEVM3-13337',
-        'checkProductSCSI': 'RHEVM3-13338',
+        'test_checkProductNetwork': 'RHEVM3-13328',
+        'test_checkProductSpice': 'RHEVM3-13329',
+        'test_checkProductSerial': 'RHEVM3-13330',
+        'test_checkProductBlock': 'RHEVM3-13331',
+        'test_checkProductBalloon': 'RHEVM3-13332',
+        'test_checkProductUSB': 'RHEVM3-13333',
+        'test_checkProductQemuAgent': 'RHEVM3-13334',
+        'test_checkProductSSO': 'RHEVM3-13335',
+        'test_checkProductSpiceAgent': 'RHEVM3-13336',
+        'test_checkProductAgent': 'RHEVM3-13337',
+        'test_checkProductSCSI': 'RHEVM3-13338',
         'test_driver_vioscsi_pass_through': 'RHEVM3-13339',
         'test_driver_vioscsi_disk': 'RHEVM3-13340',
         'test_driver_vioserial': 'RHEVM3-13341',
@@ -784,11 +765,11 @@ class Windows2012_64b(WindowsServer):
         'test_driver_viostor': 'RHEVM3-13346',
         'test_driver_qxl_gpu': 'RHEVM3-13347',
         'test_driver_balloon': 'RHEVM3-13348',
-        'checkServiceAgent': 'RHEVM3-13349',
-        'checkServiceQemuGA': 'RHEVM3-13350',
-        'checkServiceUSBRedirector': 'RHEVM3-13351',
-        'checkServiceSpiceAgent': 'RHEVM3-13352',
-        'checkServiceQemuGAVssProvider': 'RHEVM3-13353',
+        'test_checkServiceAgent': 'RHEVM3-13349',
+        'test_checkServiceQemuGA': 'RHEVM3-13350',
+        'test_checkServiceUSBRedirector': 'RHEVM3-13351',
+        'test_checkServiceSpiceAgent': 'RHEVM3-13352',
+        'test_checkServiceQemuGAVssProvider': 'RHEVM3-13353',
         'test_guest_applications': 'RHEVM3-14433',
         'test_guest_info': 'RHEVM3-14434',
         'test_guest_timezone': 'RHEVM3-14435',
@@ -806,17 +787,17 @@ class Windows2012R2_64b(WindowsServer):
     diskName = config.WIN2012R2_DISK_64b
     codename = 'Win 2012 R2'
     polarion_map = {
-        'checkProductNetwork': 'RHEVM3-13153',
-        'checkProductSpice': 'RHEVM3-13154',
-        'checkProductSerial': 'RHEVM3-13155',
-        'checkProductBlock': 'RHEVM3-13156',
-        'checkProductBalloon': 'RHEVM3-13157',
-        'checkProductUSB': 'RHEVM3-13158',
-        'checkProductQemuAgent': 'RHEVM3-13159',
-        'checkProductSSO': 'RHEVM3-13160',
-        'checkProductSpiceAgent': 'RHEVM3-13161',
-        'checkProductAgent': 'RHEVM3-13162',
-        'checkProductSCSI': 'RHEVM3-13163',
+        'test_checkProductNetwork': 'RHEVM3-13153',
+        'test_checkProductSpice': 'RHEVM3-13154',
+        'test_checkProductSerial': 'RHEVM3-13155',
+        'test_checkProductBlock': 'RHEVM3-13156',
+        'test_checkProductBalloon': 'RHEVM3-13157',
+        'test_checkProductUSB': 'RHEVM3-13158',
+        'test_checkProductQemuAgent': 'RHEVM3-13159',
+        'test_checkProductSSO': 'RHEVM3-13160',
+        'test_checkProductSpiceAgent': 'RHEVM3-13161',
+        'test_checkProductAgent': 'RHEVM3-13162',
+        'test_checkProductSCSI': 'RHEVM3-13163',
         'test_driver_vioscsi_pass_through': 'RHEVM3-13164',
         'test_driver_vioscsi_disk': 'RHEVM3-13165',
         'test_driver_vioserial': 'RHEVM3-13166',
@@ -826,11 +807,11 @@ class Windows2012R2_64b(WindowsServer):
         'test_driver_viostor': 'RHEVM3-13170',
         'test_driver_qxl_gpu': 'RHEVM3-13171',
         'test_driver_balloon': 'RHEVM3-13172',
-        'checkServiceAgent': 'RHEVM3-13173',
-        'checkServiceQemuGA': 'RHEVM3-13174',
-        'checkServiceUSBRedirector': 'RHEVM3-13175',
-        'checkServiceSpiceAgent': 'RHEVM3-13176',
-        'checkServiceQemuGAVssProvider': 'RHEVM3-13177',
+        'test_checkServiceAgent': 'RHEVM3-13173',
+        'test_checkServiceQemuGA': 'RHEVM3-13174',
+        'test_checkServiceUSBRedirector': 'RHEVM3-13175',
+        'test_checkServiceSpiceAgent': 'RHEVM3-13176',
+        'test_checkServiceQemuGAVssProvider': 'RHEVM3-13177',
         'test_guest_applications': 'RHEVM3-14405',
         'test_guest_info': 'RHEVM3-14406',
         'test_guest_timezone': 'RHEVM3-14407',
@@ -853,17 +834,17 @@ class Windows10_64b(WindowsDesktop):
     diskName = config.WIN10_DISK_64b
     codename = 'Win 10'
     polarion_map = {
-        'checkProductNetwork': 'RHEVM3-13203',
-        'checkProductSpice': 'RHEVM3-13204',
-        'checkProductSerial': 'RHEVM3-13205',
-        'checkProductBlock': 'RHEVM3-13206',
-        'checkProductBalloon': 'RHEVM3-13207',
-        'checkProductUSB': 'RHEVM3-13208',
-        'checkProductQemuAgent': 'RHEVM3-13209',
-        'checkProductSSO': 'RHEVM3-13210',
-        'checkProductSpiceAgent': 'RHEVM3-13211',
-        'checkProductAgent': 'RHEVM3-13212',
-        'checkProductSCSI': 'RHEVM3-13213',
+        'test_checkProductNetwork': 'RHEVM3-13203',
+        'test_checkProductSpice': 'RHEVM3-13204',
+        'test_checkProductSerial': 'RHEVM3-13205',
+        'test_checkProductBlock': 'RHEVM3-13206',
+        'test_checkProductBalloon': 'RHEVM3-13207',
+        'test_checkProductUSB': 'RHEVM3-13208',
+        'test_checkProductQemuAgent': 'RHEVM3-13209',
+        'test_checkProductSSO': 'RHEVM3-13210',
+        'test_checkProductSpiceAgent': 'RHEVM3-13211',
+        'test_checkProductAgent': 'RHEVM3-13212',
+        'test_checkProductSCSI': 'RHEVM3-13213',
         'test_driver_vioscsi_pass_through': 'RHEVM3-13214',
         'test_driver_vioscsi_disk': 'RHEVM3-13215',
         'test_driver_vioserial': 'RHEVM3-13216',
@@ -873,11 +854,11 @@ class Windows10_64b(WindowsDesktop):
         'test_driver_viostor': 'RHEVM3-13220',
         'test_driver_qxl_gpu': 'RHEVM3-13221',
         'test_driver_balloon': 'RHEVM3-13222',
-        'checkServiceAgent': 'RHEVM3-13223',
-        'checkServiceQemuGA': 'RHEVM3-13224',
-        'checkServiceUSBRedirector': 'RHEVM3-13225',
-        'checkServiceSpiceAgent': 'RHEVM3-13226',
-        'checkServiceQemuGAVssProvider': 'RHEVM3-13227',
+        'test_checkServiceAgent': 'RHEVM3-13223',
+        'test_checkServiceQemuGA': 'RHEVM3-13224',
+        'test_checkServiceUSBRedirector': 'RHEVM3-13225',
+        'test_checkServiceSpiceAgent': 'RHEVM3-13226',
+        'test_checkServiceQemuGAVssProvider': 'RHEVM3-13227',
         'test_guest_applications': 'RHEVM3-14413',
         'test_guest_info': 'RHEVM3-14414',
         'test_guest_timezone': 'RHEVM3-14415',

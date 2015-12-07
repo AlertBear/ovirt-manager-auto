@@ -8,7 +8,6 @@ from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.apis_exceptions import EntityNotFound
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.unittest_lib import CoreSystemTest as TestCase
-from nose.tools import istest
 from art.unittest_lib import attr
 from rhevmtests.system.reg_hosts import config
 import logging
@@ -126,9 +125,8 @@ class TestActivateActiveHost(TestActiveHost):
     """
     __test__ = True
 
-    @istest
     @polarion("RHEVM3-8433")
-    def activate_active_host(self):
+    def test_activate_active_host(self):
         logger.info("Trying to activate host %s", HOST)
         self.assertFalse(
             hosts.activateHost(True, host=HOST))
@@ -143,9 +141,8 @@ class TestUpdateHostName(TestCase):
 
     new_name = 'test_new_name'
 
-    @istest
     @polarion("RHEVM3-8418")
-    def update_host_name(self):
+    def test_update_host_name(self):
         logger.info("Updating host %s's name", HOST)
         self.assertTrue(
             hosts.updateHost(True, host=HOST, name=self.new_name))
@@ -168,16 +165,14 @@ class TestAddRemovePowerManagement(TestCase):
     """
     __test__ = True
 
-    @istest
     @polarion("RHEVM3-8840")
-    def add_power_management(self):
+    def test_add_power_management(self):
         add_power_management(host=HOST, pm_type=PM1_TYPE,
                              pm_address=PM1_ADDRESS, pm_user=PM1_USER,
                              pm_password=PM1_PASS)
 
-    @istest
     @polarion("RHEVM3-8843")
-    def remove_power_management(self):
+    def test_remove_power_management(self):
         remove_power_management(host=HOST, pm_type=PM1_TYPE)
 
 
@@ -192,9 +187,8 @@ class TestUpdatePowerManagementType(TestPowerManagement):
     pm_user = PM1_USER
     pm_password = PM1_PASS
 
-    @istest
     @polarion("RHEVM3-8841")
-    def update_power_management_type(self):
+    def test_update_power_management_type(self):
         logger.info("Update power management type "
                     "to %s  on host: %s", PM2_TYPE, HOST)
         if not hosts.updateHost(True, host=HOST, pm='true', pm_type=PM2_TYPE,
@@ -217,9 +211,8 @@ class TestUpdatePowerManagementInvalidType(TestPowerManagement):
     pm_password = PM1_PASS
     invalid_type = 'invalid_type'
 
-    @istest
     @polarion("RHEVM3-8842")
-    def update_power_management_invalid_type(self):
+    def test_update_power_management_invalid_type(self):
         logger.info("Update power management type to %s"
                     "on host: %s", self.invalid_type, HOST)
         if not hosts.updateHost(False, host=HOST, pm='true',
@@ -249,9 +242,8 @@ class SetSPMToLow(TestCase):
                 raise HostException("Cannot set SPM level on host:"
                                     "%s to normal" % HOST)
 
-    @istest
     @polarion("RHEVM3-8432")
-    def set_spm_to_low(self):
+    def test_set_spm_to_low(self):
         logger.info("Set SPM priority on host: %s to low", HOST)
         if not hosts.updateHost(True, host=HOST, storage_manager_priority=2):
             raise HostException("Cannot set SPM level on host:"
@@ -275,9 +267,8 @@ class UpdateIPOfActiveHost(TestActiveHost):
     """
     __test__ = True
 
-    @istest
     @polarion("RHEVM3-8419")
-    def update_ip_of_activeHost(self):
+    def test_update_ip_of_activeHost(self):
         logger.info("changing ip address for the active host: %s", HOST)
         if not hosts.updateHost(False, host=HOST, address=HOST2):
             raise HostException("Host: %s update was successful although host"
@@ -297,9 +288,8 @@ class SetActiveHostToMaintenanceForReinstallation(TestActiveHost):
     """
     __test__ = True
 
-    @istest
     @polarion("RHEVM3-8420")
-    def set_active_host_to_maintenance(self):
+    def test_set_active_host_to_maintenance(self):
         logger.info("setting host %s to maintenance", HOST)
         if not hosts.deactivateHost(True, host=HOST):
             raise HostException("Could not set host: %s to maintenance" % HOST)
@@ -315,9 +305,8 @@ class ReinstallHost(TestHostInMaintenance):
     os_rhel = 'rhel'
     os_rhevh = 'rhevh'
 
-    @istest
     @polarion("RHEVM3-8421")
-    def reinstall_host(self):
+    def test_reinstall_host(self):
         logger.info("reinstall host: %s", HOST)
         if not hosts.installHost(True, host=HOST, root_password=HOST_PW,
                                  iso_image=config.ISO_IMAGE):
@@ -335,9 +324,8 @@ class ManualFenceForHost(TestHostInMaintenance):
     """
     __test__ = True
 
-    @istest
     @polarion("RHEVM3-8835")
-    def manual_fence_for_host(self):
+    def test_manual_fence_for_host(self):
         logger.info("Manual fence host: %s", HOST)
         if not hosts.fenceHost(True, host=HOST, fence_type='manual'):
             raise HostException("Manual fence for host: %s failed" % HOST)
@@ -350,9 +338,8 @@ class ActivateInactiveHost(TestHostInMaintenance):
     """
     __test__ = True
 
-    @istest
     @polarion("RHEVM3-8422")
-    def activate_inactive_host(self):
+    def test_activate_inactive_host(self):
         logger.info("activate host: %s", HOST)
         if not hosts.activateHost(True, host=HOST):
             raise HostException("host activation failed")
@@ -365,9 +352,8 @@ class ReinstallActiveHost(TestActiveHost):
     """
     __test__ = True
 
-    @istest
     @polarion("RHEVM3-8423")
-    def reinstall_active_host(self):
+    def test_reinstall_active_host(self):
         logger.info("attempting to re install host: %s ", HOST)
         if not hosts.installHost(False, host=HOST, root_password=HOST_PW,
                                  iso_image=config.ISO_IMAGE):
@@ -384,9 +370,8 @@ class CreateHostWithWrongIPAddress(TestCase):
 
     name = 'newhost'
 
-    @istest
     @polarion("RHEVM3-8424")
-    def create_host_with_wrong_IP_address(self):
+    def test_create_host_with_wrong_IP_address(self):
         logger.info("attempting to add a host with an invalid ip address")
         if not hosts.addHost(False, name=self.name, address=HOST_FALSE_IP,
                              root_password=HOST_PW):
@@ -408,9 +393,8 @@ class CreateHostWithEmptyRootPassword(TestCase):
 
     name = 'newhost'
 
-    @istest
     @polarion("RHEVM3-8425")
-    def create_host_with_empty_root_password(self):
+    def test_create_host_with_empty_root_password(self):
         logger.info("attempting to add a host without root password")
         if not hosts.addHost(False, name=self.name, root_password='',
                              address=HOST2):
@@ -430,9 +414,8 @@ class RemoveActiveHost(TestActiveHost):
     """
     __test__ = True
 
-    @istest
     @polarion("RHEVM3-8427")
-    def remove_active_host(self):
+    def test_remove_active_host(self):
         logger.info("attempting to remove host: %s while active", HOST)
         if not hosts.removeHost(False, host=HOST):
             raise HostException("Host %s was removed although"
@@ -457,9 +440,8 @@ class SearchForHost(TestCase):
     def setup_class(cls):
         _add_host_if_missing()
 
-    @istest
     @polarion("RHEVM3-8428")
-    def search_for_host(self):
+    def test_search_for_host(self):
         logger.info("search for host: %s", HOST)
         if not hosts.searchForHost(True, query_key=self.query_key,
                                    query_val=HOST, key_name=self.key_name):
@@ -478,9 +460,8 @@ class AddSecondaryPowerManagement(TestPowerManagement):
     pm_user = PM1_USER
     pm_password = PM1_PASS
 
-    @istest
     @polarion("RHEVM3-8836")
-    def add_secondary_power_management(self):
+    def test_add_secondary_power_management(self):
         logger.info("Set secondary power management to host: %s", HOST)
         if not hosts.updateHost(True, host=HOST, pm='true',
                                 pm_proxies=['cluster', 'dc'],

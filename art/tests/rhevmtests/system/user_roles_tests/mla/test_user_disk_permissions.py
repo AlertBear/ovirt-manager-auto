@@ -13,7 +13,6 @@ from art.core_api.apis_exceptions import EntityNotFound
 
 from rhevmtests.system.user_roles_tests import config, common
 from rhevmtests.system.user_roles_tests.roles import role
-from nose.tools import istest
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
@@ -92,8 +91,7 @@ class DPCase147121(TestCase):
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NO_DISK)
 
     @polarion("RHEVM3-7613")
-    @istest
-    def diskInheritedPermissions(self):
+    def test_diskInheritedPermissions(self):
         """ Check inheritance of disk permissions """
         # Check inheritance from SD
         self.assertTrue(
@@ -148,9 +146,8 @@ class DPCase14722_2(TestCase):
             config.USER_PASSWORD, filter=True
         )
 
-    @istest
     @polarion("RHEVM3-12079")
-    def createDiskWithoutPermissions(self):
+    def test_createDiskWithoutPermissions(self):
         """ Create disk without permissions """
         # Check if user has not StorageAdmin perms on SD he can't create Disk
         self.assertTrue(
@@ -196,8 +193,7 @@ class DPCase147122(TestCase):
         )
 
     @polarion("RHEVM3-7625")
-    @istest
-    def createDisk(self):
+    def test_createDisk(self):
         """ Create disk with permissions """
         # Check if user has StorageAdmin perms on SD he can create Disk
         self.assertTrue(
@@ -248,8 +244,7 @@ class DPCase147123(TestCase):
         )
 
     @polarion("RHEVM3-7626")
-    @istest
-    def attachDiskToVM(self):
+    def test_attachDiskToVM(self):
         """ Attach disk to vm """
         # Attach disk need perm on disk and on VM.
         msg = (
@@ -329,8 +324,7 @@ class DPCase147124(TestCase):
         )
 
     @polarion("RHEVM3-7627")
-    @istest
-    def detachDisk(self):
+    def test_detachDisk(self):
         """ Detach disk from vm """
         users.loginAsUser(
             config.USER_NAME, config.PROFILE,
@@ -384,9 +378,8 @@ class DPCase147125(TestCase):
         )
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME)
 
-    @istest
     @polarion("RHEVM3-7628")
-    def activateDeactivateDisk(self):
+    def test_activateDeactivateDisk(self):
         """ ActivateDeactivateDisk """
         users.loginAsUser(
             config.USER_NAME, config.PROFILE,
@@ -431,8 +424,7 @@ class DPCase147126(TestCase):
         )
 
     @polarion("RHEVM3-7629")
-    @istest
-    def removeDisk(self):
+    def test_removeDisk(self):
         """ Remove disk as user with and without permissions """
         users.loginAsUser(
             config.USER_NAME, config.PROFILE,
@@ -486,8 +478,7 @@ class DPCase147127(TestCase):
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME)
 
     @polarion("RHEVM3-7630")
-    @istest
-    def updateVmDisk(self):
+    def test_updateVmDisk(self):
         """ Update vm disk """
         users.loginAsUser(
             config.USER_NAME, config.PROFILE,
@@ -525,9 +516,8 @@ class DPCase147128(TestCase):
         )
 
     @polarion("RHEVM3-7631")
-    @istest
     @bz({'1209505': {'engine': None, 'version': ['3.6']}})
-    def moveDisk(self):
+    def test_moveDisk(self):
         """ Move disk with and without having permissions on sds """
         # Move disk without permissions
         users.loginAsUser(
@@ -615,9 +605,8 @@ class DPCase147129(TestCase):
         )
 
     @polarion("RHEVM3-7632")
-    @istest
     @bz({'1209505': {'engine': None, 'version': ['3.6']}})
-    def addDiskToVm(self):
+    def test_addDiskToVm(self):
         """ add disk to vm with and without permissions """
         users.loginAsUser(
             config.USER_NAME, config.PROFILE,
@@ -708,8 +697,7 @@ class DPCase147130(TestCase):
         )
 
     @polarion("RHEVM3-7624")
-    @istest
-    def removeVm(self):
+    def test_removeVm(self):
         """ remove vm with disk without/with having apprirate permissions """
         users.loginAsUser(
             config.USER_NAME, config.PROFILE,
@@ -764,8 +752,7 @@ class DPCase147137(TestCase):
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NO_DISK)
 
     @polarion("RHEVM3-7616")
-    @istest
-    def sharedDisk(self):
+    def test_sharedDisk(self):
         """ Basic operations with shared disk """
         users.loginAsUser(
             config.USER_NAME, config.PROFILE,

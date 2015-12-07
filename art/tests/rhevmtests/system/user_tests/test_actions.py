@@ -5,7 +5,6 @@ import logging
 import random
 
 from functools import wraps
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.core_api.apis_exceptions import EntityNotFound
 from art.test_handler.tools import bz  # pylint: disable=E0611
@@ -190,7 +189,7 @@ def user_case(login_as=None, cleanup_func=None, **kwargs_glob):
     def decorator(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            self.positive = func.__name__ in self.perms
+            self.positive = func.__name__[5:] in self.perms
             LOGGER.info('Running %s %s action',
                         'positive' if self.positive else 'negative',
                         func.__name__)
@@ -374,7 +373,6 @@ class CaseRoleActions(TestCase):
 
     # ======================= CREATE ACTIONS ================================
 
-    @istest
     @bz({'1214805': {'engine': None, 'version': ['3.6']}})
     @user_case(
         login_as=config.USER_SYSTEM,
@@ -382,7 +380,7 @@ class CaseRoleActions(TestCase):
         positive=True,
         datacenter=config.USER_SYSTEM
     )
-    def create_storage_pool(self):
+    def test_create_storage_pool(self):
         """ create_storage_pool """
         self.assertTrue(
             datacenters.addDataCenter(
@@ -393,14 +391,13 @@ class CaseRoleActions(TestCase):
             )
         )
 
-    @istest
     @user_case(
         login_as=config.USER_CLUSTER,
         cleanup_func=vms.removeVm,
         positive=True,
         vm=config.USER_CLUSTER
     )
-    def create_vm(self):
+    def test_create_vm(self):
         """ create_vm """
         self.assertTrue(
             vms.createVm(
@@ -412,14 +409,13 @@ class CaseRoleActions(TestCase):
             )
         )
 
-    @istest
     @user_case(
         login_as=config.USER_DC,
         cleanup_func=templates.removeTemplate,
         positive=True,
         template=config.USER_DC
     )
-    def create_template(self):
+    def test_create_template(self):
         """ create_template """
         self.assertTrue(
             templates.createTemplate(
@@ -429,14 +425,13 @@ class CaseRoleActions(TestCase):
             )
         )
 
-    @istest
     @user_case(
         login_as=config.USER_DC,
         cleanup_func=vmpools.removeVmPool,
         positive=True,
         vmpool=config.USER_DC,
     )
-    def create_vm_pool(self):
+    def test_create_vm_pool(self):
         """ create_vm_pool """
         self.assertTrue(
             vmpools.addVmPool(
@@ -448,14 +443,13 @@ class CaseRoleActions(TestCase):
             )
         )
 
-    @istest
     @user_case(
         login_as=config.USER_STORAGE,
         cleanup_func=disks.deleteDisk,
         positive=True,
         alias=config.USER_STORAGE
     )
-    def create_disk(self):
+    def test_create_disk(self):
         """ create_disk """
         self.assertTrue(
             disks.addDisk(
@@ -468,14 +462,13 @@ class CaseRoleActions(TestCase):
             )
         )
 
-    @istest
     @user_case(
         login_as=config.USER_DC,
         cleanup_func=clusters.removeCluster,
         positive=True,
         cluster=config.USER_DC
     )
-    def create_cluster(self):
+    def test_create_cluster(self):
         """ create_cluster """
         self.assertTrue(
             clusters.addCluster(
@@ -493,14 +486,13 @@ class CaseRoleActions(TestCase):
 
     # ==================== MANIPULATE ACTIONS ===============================
 
-    @istest
     @user_case(
         login_as=config.USER_SYSTEM,
         cleanup_func=mla.removeRole,
         positive=True,
         role=config.CREATE_ROLE
     )
-    def manipulate_roles(self):
+    def test_manipulate_roles(self):
         """ manipulate_roles """
         error_stack = []
         if not mla.addRole(
@@ -524,14 +516,13 @@ class CaseRoleActions(TestCase):
         if len(error_stack) > 0:
             raise AssertionError(' '.join(error_stack))
 
-    @istest
     @user_case(
         login_as=config.USER_SYSTEM,
         cleanup_func=users.removeUser,
         positive=True,
         user=config.CREATE_USER
     )
-    def manipulate_users(self):
+    def test_manipulate_users(self):
         """ manipulate_users """
         error_stack = []
         if not users.addUser(
@@ -554,14 +545,13 @@ class CaseRoleActions(TestCase):
         if len(error_stack) > 0:
             raise AssertionError(' '.join(error_stack))
 
-    @istest
     @user_case(
         login_as=config.USER_DC,
         cleanup_func=vmpools.stopVmPool,
         positive=True,
         vm_pool=config.CREATE_POOL
     )
-    def vm_pool_basic_operations(self):
+    def test_vm_pool_basic_operations(self):
         """ vm_pool_basic_operations """
         self.assertTrue(
             vmpools.allocateVmFromPool(
@@ -570,11 +560,10 @@ class CaseRoleActions(TestCase):
             )
         )
 
-    @istest
     @user_case(
         login_as=config.USER_CLUSTER,
     )
-    def connect_to_vm(self):
+    def test_connect_to_vm(self):
         """ connect_to_vm """
         self.assertTrue(
             vms.ticketVm(
@@ -584,7 +573,6 @@ class CaseRoleActions(TestCase):
             )
         )
 
-    @istest
     @user_case(
         login_as=config.USER_DC,
         cleanup_func=templates.removeTemplateNic,
@@ -592,7 +580,7 @@ class CaseRoleActions(TestCase):
         template=config.CREATE_TEMPLATE,
         nic=config.CREATE_TEMPLATE_NIC2
     )
-    def configure_template_network(self):
+    def test_configure_template_network(self):
         """ configure_template_network """
         error_stack = []
         if not templates.addTemplateNic(
@@ -620,11 +608,10 @@ class CaseRoleActions(TestCase):
         if len(error_stack) > 0:
             raise AssertionError(' '.join(error_stack))
 
-    @istest
     @user_case(
         login_as=config.USER_CLUSTER,
     )
-    def manipulate_permissions(self):
+    def test_manipulate_permissions(self):
         """ manipulate_permissions """
         error_stack = []
         try:
@@ -675,11 +662,10 @@ class CaseRoleActions(TestCase):
 
     # ======================== EDIT ACTIONS =================================
 
-    @istest
     @user_case(
         login_as=config.USER_DC,
     )
-    def edit_vm_pool_configuration(self):
+    def test_edit_vm_pool_configuration(self):
         """ edit_vm_pool_configuration """
         try:
             self.assertTrue(
@@ -693,11 +679,10 @@ class CaseRoleActions(TestCase):
             if self.positive:
                 raise
 
-    @istest
     @user_case(
         login_as=config.USER_DC,
     )
-    def edit_storage_pool_configuration(self):
+    def test_edit_storage_pool_configuration(self):
         """ edit_storage_pool_configuration """
         self.assertTrue(
             datacenters.updateDataCenter(
@@ -707,11 +692,10 @@ class CaseRoleActions(TestCase):
             )
         )
 
-    @istest
     @user_case(
         login_as=config.USER_CLUSTER,
     )
-    def edit_vm_properties(self):
+    def test_edit_vm_properties(self):
         """ edit_vm_properties """
         self.assertTrue(
             vms.updateVm(
@@ -722,11 +706,10 @@ class CaseRoleActions(TestCase):
             )
         )
 
-    @istest
     @user_case(
         login_as=config.USER_DC,
     )
-    def edit_template_properties(self):
+    def test_edit_template_properties(self):
         """ edit_template_properties """
         self.assertTrue(
             templates.updateTemplate(
@@ -737,11 +720,10 @@ class CaseRoleActions(TestCase):
             )
         )
 
-    @istest
     @user_case(
         login_as=config.USER_VM,
     )
-    def edit_disk_properties(self):
+    def test_edit_disk_properties(self):
         """ edit_disk_properties """
         self.assertTrue(
             vms.updateVmDisk(
@@ -752,11 +734,10 @@ class CaseRoleActions(TestCase):
             )
         )
 
-    @istest
     @user_case(
         login_as=config.USER_CLUSTER,
     )
-    def edit_cluster_configuration(self):
+    def test_edit_cluster_configuration(self):
         """ edit_cluster_configuration """
         self.assertTrue(
             clusters.updateCluster(
@@ -768,11 +749,10 @@ class CaseRoleActions(TestCase):
 
     # TODO: https://projects.engineering.redhat.com/browse/RHEVM-1960
     # After ticket is resolved enable case again.
-    # @istest
     @user_case(
         login_as=config.USER_CLUSTER,
     )
-    def edit_host_configuration(self):
+    def test_edit_host_configuration(self):
         """ edit_host_configuration """
         try:
             self.assertTrue(
@@ -786,11 +766,10 @@ class CaseRoleActions(TestCase):
             if not self.filter_:
                 raise e
 
-    @istest
     @user_case(
         login_as=config.USER_DC,
     )
-    def edit_storage_domain_configuration(self):
+    def test_edit_storage_domain_configuration(self):
         """ edit_storage_domain_configuration """
         self.assertTrue(
             storagedomains.updateStorageDomain(
@@ -805,11 +784,10 @@ class CaseRoleActions(TestCase):
     # delete_storage_domain - would be tricky
     # delete_host - would be tricky
 
-    @istest
     @user_case(
         login_as=config.USER_STORAGE,
     )
-    def delete_disk(self):
+    def test_delete_disk(self):
         """ delete_disk """
         self.assertTrue(
             disks.deleteDisk(
@@ -828,7 +806,6 @@ class CaseRoleActions(TestCase):
                 storagedomain=config.MASTER_STORAGE
             )
 
-    @istest
     @user_case(
         login_as=config.USER_DC,
         cleanup_func=clusters.addCluster,
@@ -838,7 +815,7 @@ class CaseRoleActions(TestCase):
         data_center=config.DC_NAME[0],
         version=config.COMP_VERSION
     )
-    def delete_cluster(self):
+    def test_delete_cluster(self):
         """ delete_cluster """
         self.assertTrue(
             clusters.removeCluster(
@@ -847,7 +824,6 @@ class CaseRoleActions(TestCase):
             )
         )
 
-    @istest
     @user_case(
         login_as=config.USER_CLUSTER,
         cleanup_func=vms.createVm,
@@ -857,7 +833,7 @@ class CaseRoleActions(TestCase):
         cluster=config.CLUSTER_NAME[0],
         network=config.MGMT_BRIDGE
     )
-    def delete_vm(self):
+    def test_delete_vm(self):
         """ delete_vm """
         self.assertTrue(
             vms.removeVm(
@@ -867,7 +843,6 @@ class CaseRoleActions(TestCase):
             )
         )
 
-    @istest
     @user_case(
         login_as=config.USER_DC,
         cleanup_func=templates.createTemplate,
@@ -875,7 +850,7 @@ class CaseRoleActions(TestCase):
         vm=config.CREATE_VM,
         name=config.DELETE_TEMPLATE
     )
-    def delete_template(self):
+    def test_delete_template(self):
         """ delete_template """
         self.assertTrue(
             templates.removeTemplate(
@@ -884,7 +859,6 @@ class CaseRoleActions(TestCase):
             )
         )
 
-    @istest
     @user_case(
         login_as=config.USER_SYSTEM,
         cleanup_func=datacenters.addDataCenter,
@@ -893,7 +867,7 @@ class CaseRoleActions(TestCase):
         storage_type='nfs',
         version=config.COMP_VERSION
     )
-    def delete_storage_pool(self):
+    def test_delete_storage_pool(self):
         """ delete_storage_pool """
         self.assertTrue(
             datacenters.removeDataCenter(
@@ -902,7 +876,6 @@ class CaseRoleActions(TestCase):
             )
         )
 
-    @istest
     @user_case(
         login_as=config.USER_DC,
         cleanup_func=vmpools.addVmPool,
@@ -912,7 +885,7 @@ class CaseRoleActions(TestCase):
         template=config.CREATE_TEMPLATE,
         size=1
     )
-    def delete_vm_pool(self):
+    def test_delete_vm_pool(self):
         """ delete_vm_pool """
         self.assertTrue(
             vmpools.removeVmPool(
