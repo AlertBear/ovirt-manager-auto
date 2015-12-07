@@ -104,7 +104,7 @@ class PermissionsCase54408(TestCase):
             config.VM_NAME: vms.VM_API,
             config.TEMPLATE_NAME: templates.TEMPLATE_API,
             config.DISK_NAME: disks.DISKS_API,
-            config.VMPOOL_NAME: vmpools.util,
+            config.VMPOOL_NAME: vmpools.UTIL,
             config.CLUSTER_NAME[0]: clusters.util,
             config.DC_NAME[0]: datacenters.util,
             config.HOSTS[0]: hosts.HOST_API,
@@ -391,18 +391,17 @@ class PermissionsCase54446(TestCase):
         )
 
 
-# Creating object from user API and admin API should be different:
-# for example admin API - createVm - should not delegate perms on VM
 # user API - createVm - should add perms UserVmManager on VM
+# https://bugzilla.redhat.com/show_bug.cgi?id=881145
 @attr(tier=2)
 class PermissionsCase54420(TestCase):
     """ Object creating from User and Admin portal """
     __test__ = True
 
-    @bz({'881145': {}})
+    @bz({'1209505': {}})
     @polarion("RHEVM3-7190")
     def test_objAdminUser(self):
-        """ Object creating from User and Admin portal """
+        """ Object creating from User portal """
         # This is already implemented in test_user_roles
         def checkIfObjectHasRole(obj, role, admin):
             objPermits = mla.permisUtil.getElemFromLink(obj, get_href=False)
@@ -413,7 +412,7 @@ class PermissionsCase54420(TestCase):
 
         b = False
 
-        for rr in [role.VmCreator, role.TemplateCreator, role.SuperUser]:
+        for rr in [role.VmCreator, role.TemplateCreator]:
             loginAsAdmin()
             role_obj = users.rlUtil.find(rr)
             rolePermits = mla.util.getElemFromLink(

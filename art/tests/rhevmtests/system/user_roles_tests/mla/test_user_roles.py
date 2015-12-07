@@ -11,7 +11,7 @@ from rhevmtests.system.user_roles_tests.roles import role as role_e
 from art.core_api.apis_exceptions import EntityNotFound
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import (
     users, vms, disks, vmpools, templates, mla
 )
@@ -324,6 +324,15 @@ class RoleCase54415(TestCase):
             loginAsAdmin()
             self.assertTrue(common.removeUser(True, config.USER_NAME))
 
+    @classmethod
+    def teardown_class(cls):
+        """ Recreate user """
+        common.addUser(
+            True,
+            user_name=config.USER_NAME,
+            domain=config.USER_DOMAIN
+        )
+
 
 @attr(tier=2)
 class RoleCase54402(TestCase):
@@ -453,7 +462,6 @@ class RolesCase54412(TestCase):
     __test__ = True
 
     @polarion("RHEVM3-7142")
-    @bz({'949950': {}, '977304': {}})
     def test_rolesHiearchy(self):
         """ Check if permissions are correctly inherited from objects """
 
@@ -476,7 +484,7 @@ class RolesCase54412(TestCase):
             {
                 config.HOSTS[0]: vms.HOST_API,
                 config.VM_NAME: vms.VM_API,
-                config.VMPOOL_NAME: vmpools.util,
+                config.VMPOOL_NAME: vmpools.UTIL,
                 config.VM_NO_DISK: vms.VM_API
             },
             config.MASTER_STORAGE:
@@ -487,10 +495,9 @@ class RolesCase54412(TestCase):
             {
                 config.HOSTS[0]: vms.HOST_API,
                 config.VM_NAME: vms.VM_API,
-                config.VMPOOL_NAME: vmpools.util,
+                config.VMPOOL_NAME: vmpools.UTIL,
                 config.TEMPLATE_NAME: vms.TEMPLATE_API,
                 config.VM_NO_DISK: vms.VM_API,
-                config.TEMPLATE_NO_DISK: vms.TEMPLATE_API
             }
         }
 
