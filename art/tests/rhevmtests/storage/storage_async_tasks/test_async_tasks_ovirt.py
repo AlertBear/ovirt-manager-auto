@@ -3,10 +3,9 @@ import common
 import logging
 import time
 from utilities.machine import Machine, LINUX
-from art.unittest_lib import StorageTest as TestCase
+from art.unittest_lib import StorageTest as TestCase, attr
 from concurrent.futures import ThreadPoolExecutor
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from nose.plugins.attrib import attr
 from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, waitForVMState, addSnapshot, removeSnapshot,
     validateSnapshot, startVm, suspendVm, wait_for_vm_states, get_vm_state,

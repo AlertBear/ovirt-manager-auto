@@ -13,11 +13,10 @@ import re
 import time
 import logging
 
-from nose.plugins.attrib import attr
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 
 from rhevmtests.sla.watchdog import config
-from art.unittest_lib import SlaTest as TestCase
+from art.unittest_lib import SlaTest as TestCase, attr
 from art.rhevm_api.resources.package_manager import YumPackageManager
 import rhevmtests.helpers as helpers
 import art.test_handler.exceptions as errors

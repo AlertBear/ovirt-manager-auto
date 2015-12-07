@@ -13,7 +13,7 @@ Tests covers:
         VM with memory set to max guaranteed memory, VM without guest
         agent, multiple VMs on one host with ballooning enabled
 """
-from art.unittest_lib import SlaTest as TestCase
+from art.unittest_lib import SlaTest as TestCase, attr
 import logging
 import config
 from time import sleep
@@ -27,7 +27,6 @@ import art.test_handler.exceptions as errors
 from art.test_handler import find_test_file
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.utils.test_utils import getStat
-from nose.plugins.attrib import attr
 import rhevmtests.helpers as helpers
 
 logger = logging.getLogger(__name__)
