@@ -134,35 +134,58 @@ def get_disk_obj(disk_alias):
 
 def _prepareDiskObject(**kwargs):
     """
-    Description: Prepare disk object according to its kwargs
-    Parameters:
-        * alias - name of the disk
-        * description - description of the disk
-        * provisioned_size - size of the disk
-        * interface - IDE or virtio
-        * format - raw or cow
-        * size - size of the disk
-        * sparse - True or False whether disk should be sparse
-        * bootable - True or False whether disk should be bootable
-        * shareable - True or False whether disk should be sharable
-        * allow_snapshot - True or False whether disk should allow snapshots
-        * propagate_errors - True or False whether disk should propagate errors
-        * wipe_after_delete - True or False whether disk should wiped after
-                              deletion
-        * storagedomain - name of storage domain where disk will reside
-        * quota - disk quota
-        * storage_connection - in case of direct LUN - existing storage
-                               connection to use instead of creating a new one
-        * active - True or False whether disk should be automatically activated
-        You cannot set both storage_connection and lun_* in one call!
+    Prepare or update disk object according to its kwargs
 
-        * id - disk id
-        * active - True or False whether disk should activate after creation
-        * snapshot - snapshot object of the disk
-
-
-    Author: jlibosva
-    Return: Disk object
+    __author__ = jlibosva
+    :param alias: Name of the disk
+    :type alias: str
+    :param description: Description of the disk
+    :type description: str
+    :param provisioned_size: Size of the disk
+    :type provisioned_size: int
+    :param interface: IDE or virtio or virtio-scsi
+    :type interface: str
+    :param format: raw or cow
+    :type format: str
+    :param size: Size of the disk
+    :type size: int
+    :param sparse: True if disk should be sparse, False otherwise
+    :type sparse: bool
+    :param bootable: True if disk should be marked as bootable, False otherwise
+    :type bootable: bool
+    :param shareable: True if disk should be marked as shareable,
+        False otherwise
+    :type shareable: bool
+    :param allow_snapshot: True if disk should allow snapshots, False otherwise
+    :type allow_snapshot: bool
+    :param propagate_errors: True if disk should allow errors to propagate,
+        False otherwise
+    :type propagate_errors: bool
+    :param wipe_after_delete: True if disk should be wiped after deletion,
+        False otherwise
+    :type wipe_after_delete: bool
+    :param storagedomain: Name of storage domain where disk will reside
+    :type storagedomain: str
+    :param quota: Disk quota
+    :type quota: str
+    :param storage_connection: In the case of a direct LUN, the existing
+        storage connection will be used (instead of creating a new one).
+        Note that you cannot set both this parameter and lun_* in the same call
+    :type storage_connection: str
+    :param active: True if the disk should be activated after being attached to
+        VM, False otherwise
+    :type active: bool
+    :param id: The ID of a disk that will be updated
+    :type id: str
+    :param read_only: True if disk should be marked as read-only,
+        False otherwise
+    :type read_only: bool
+    :param snapshot: Snapshot object of the disk
+    :type snapshot: snapshot object
+    :param update: Disk object to update with the kwargs
+    :type update: disk object
+    :return: Disk object with the updated kwargs
+    :rtype: Disk object
     """
     storage_domain_name = kwargs.pop('storagedomain', None)
 
@@ -181,7 +204,9 @@ def _prepareDiskObject(**kwargs):
             "You cannot set storage connection id and LUN params in one call!")
         return None
 
-    disk = data_st.Disk(**kwargs)
+    disk = kwargs.pop('update', None)
+    if disk is None:
+        disk = data_st.Disk(**kwargs)
 
     if storage_connection is not None:
         storage = data_st.Storage()
@@ -217,9 +242,14 @@ def _prepareDiskObject(**kwargs):
     if disk_id:
         disk.set_id(disk_id)
 
+    # read_only
+    read_only = kwargs.pop('read_only', None)
+    if read_only is not None:
+        disk.set_read_only(read_only)
+
     # active
     active = kwargs.pop('active', None)
-    if active:
+    if active is not None:
         disk.set_active(active)
 
     # snapshot
@@ -229,7 +259,7 @@ def _prepareDiskObject(**kwargs):
 
     # description
     description = kwargs.pop('description', None)
-    if description:
+    if description is not None:
         disk.set_description(description)
 
     return disk
@@ -342,24 +372,29 @@ def deleteDisk(positive, alias, async=True, disk_id=None):
 
 
 @is_action('attachDiskToVm')
-def attachDisk(positive, alias, vmName, active=True, read_only=False):
+def attachDisk(positive, alias, vm_name, active=True, read_only=False):
     """
-    Description: Attach disk to VM
-    Parameters:
-        * alias - disk to attach
-        * vmName - vm attaching disk to
-        * active - if disk should be activated after attaching
-        * read_only - if disk should be read only
-    Author: jlibosva
-    Return: Status of the operation dependent on positive value
-    """
-    diskObj = DISKS_API.find(alias)
-    diskObj.active = active
-    diskObj.read_only = read_only
+    Attach disk to VM
 
-    vmDisks = getObjDisks(vmName)
-    diskObj, status = DISKS_API.create(diskObj, positive, collection=vmDisks)
-    return status
+    __author__ = jlibosva
+    :param alias: Alias of the disk to be attached to specified VM
+    :type alias: str
+    :param vm_name: VM that the specified disk will be attached to
+    :type vm_name: str
+    :param active: True if disk should be activated after attaching, False
+                   otherwise
+    :type active: bool
+    :param read_only: True if disk should be read only, False otherwise
+    :type read_only: bool
+    :return: Status of the operation dependent on positive value
+    :rtype: bool
+    """
+    disk_obj = DISKS_API.find(alias)
+    updated_disk = _prepareDiskObject(
+        update=disk_obj, active=active, read_only=read_only
+    )
+    vm_disks = getObjDisks(vm_name)
+    return DISKS_API.create(updated_disk, positive, collection=vm_disks)[1]
 
 
 @is_action('detachDiskFromVm')
