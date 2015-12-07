@@ -141,9 +141,6 @@ class Maintenance(HAReservation):
     Moving host to maintenance should make cluster not HA safe
     """
     __test__ = True
-    bz = {
-        '1229002': {'engine': ['cli'], 'version': ['3.5.3']}
-    }
 
     @classmethod
     def setup_class(cls):
@@ -252,10 +249,6 @@ class NotCompatibleHost(HAReservation):
     insufficient resources
     """
     __test__ = True
-    bz = {
-        '1220134': {'engine': None, 'version': ['3.5', '3.5.1']},
-        '1229002': {'engine': ['cli'], 'version': ['3.5.3']}
-    }
 
     @classmethod
     def setup_class(cls):
@@ -355,10 +348,6 @@ class MultiVM(HAReservation):
     """
     __test__ = True
     vm_name = "VM_pool"
-    bz = {
-        '1182007': {'engine': None, 'version': ['3.5', '3.5.1']},
-        '1229002': {'engine': ['cli'], 'version': ['3.5.3']}
-    }
 
     @classmethod
     def setup_class(cls):
