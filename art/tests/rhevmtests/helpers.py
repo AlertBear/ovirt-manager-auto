@@ -10,7 +10,9 @@ from rhevmtests import config
 import art.rhevm_api.resources
 from art.rhevm_api.resources import ssh
 import art.rhevm_api.resources.user as users
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.jobs as ll_jobs
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 
 logger = logging.getLogger(__name__)
@@ -173,4 +175,22 @@ def generate_object_names(
                     ]
             ) for c in cases
         ]
+    )
+
+
+def get_host_resource_of_running_vm(vm):
+    """
+    Get host resource of given VM
+
+    :param vm: VM name
+    :type vm: str
+    :return: Host resource
+    :rtype: resources.Host
+    """
+    logger.info("Get %s host resource", vm)
+    host_ip = ll_hosts.get_host_ip_from_engine(
+        host=ll_vms.get_vm_host(vm_name=vm)
+    )
+    return get_host_resource_with_root_user(
+        ip=host_ip, root_password=config.HOSTS_PW
     )

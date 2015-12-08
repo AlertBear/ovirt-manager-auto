@@ -7,7 +7,6 @@ import logging
 import config as conf
 import rhevmtests.networking as network
 import rhevmtests.networking.helper as networking_helper
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 logger = logging.getLogger("Sanity_Init")
 
@@ -42,10 +41,5 @@ def teardown_package():
         engine_resource=conf.ENGINE_HOST, host_resource=conf.VDS_HOST_0,
         sasl=True
     )
-    logger.info("Remove all networks from setup")
-    if not hl_networks.remove_net_from_setup(
-        host=conf.HOST_NAME_0, all_net=True, mgmt_network=conf.MGMT_BRIDGE,
-        data_center=conf.DC_0_NAME
-    ):
-        logger.error("Cannot remove all networks from setup")
+    networking_helper.remove_networks_from_setup()
     networking_helper.delete_dummies(host_resource=conf.VDS_HOST_0)

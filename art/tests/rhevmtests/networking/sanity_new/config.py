@@ -26,6 +26,12 @@ QOS_NAME = global_helper.generate_object_names(
 NETS = global_helper.generate_object_names(
     num_of_cases=20, num_of_objects=10
 )
+
+# vnic_profile
+VNIC_PROFILES = global_helper.generate_object_names(
+    num_of_cases=20, num_of_objects=1, prefix="vpro"
+)
+
 VLAN_IDS = [str(i) for i in xrange(2, 20)]
 DUMMYS = ["dummy_%s" % i for i in xrange(20)]
 
@@ -131,5 +137,31 @@ SN_DICT = {
     NETS[9][0]: {
         "required": "false",
         "mtu": MTU[0]
+    },
+    NETS[10][0]: {
+        "required": "false",
+    },
+    NETS[12][0]: {
+        "required": "false",
+    },
+    NETS[14][0]: {
+        "required": "false",
+    },
+    NETS[14][1]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[12],
+    },
+    NETS[14][2]: {
+        "required": "false",
+    },
+    NETS[14][3]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[13],
+    },
+    NETS[15][0]: {
+        "required": "true",
+    },
+    NETS[16][0]: {
+        "required": "false",
     },
 }

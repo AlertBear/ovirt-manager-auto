@@ -548,5 +548,23 @@ def get_vm_resource(vm):
         ip, conf.VMS_LINUX_PW
     )
 
+
+def remove_networks_from_setup(hosts=None, dc=conf.DC_NAME[0]):
+    """
+    Remove all networks from datacenter and hosts
+
+    :param hosts: Host name
+    :type hosts: list
+    :param dc: DC name
+    :type dc: str
+    """
+    hosts = hosts if hosts else [conf.HOSTS[0]]
+    logger.info("Remove all networks from setup")
+    if not hl_networks.remove_net_from_setup(
+        host=hosts, all_net=True, mgmt_network=conf.MGMT_BRIDGE,
+        data_center=dc
+    ):
+        logger.error("Cannot remove all networks from setup")
+
 if __name__ == "__main__":
     pass
