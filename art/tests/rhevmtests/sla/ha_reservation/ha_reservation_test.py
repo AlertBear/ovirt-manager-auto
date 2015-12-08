@@ -19,6 +19,7 @@ import art.test_handler.exceptions as errors
 
 from rhevmtests.sla.ha_reservation import config
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 
@@ -257,21 +258,26 @@ class NotCompatibleHost(HAReservation):
         Create testing VM
         """
         super(NotCompatibleHost, cls).setup_class()
-        host_memory = ll_hosts.get_host_free_memory(config.HOSTS[0])
-        new_memory = (long(host_memory / config.MB)) * config.MB - config.GB
-        logger.info(
-            "Update vm %s memory and guaranteed memory",
-            config.VM_NAME[0]
+        new_memory = hl_vms.calculate_memory_for_memory_filter(
+            config.HOSTS[:2]
         )
-        if not ll_vms.updateVm(
-            positive=True,
-            vm=config.VM_NAME[0],
-            memory=new_memory,
-            memory_guaranteed=new_memory
+        for vm_name, vm_memory, vm_host in zip(
+                config.VM_NAME[:2], new_memory, config.HOSTS[:2]
         ):
-            raise errors.VMException(
-                "Failed to update vm %s" % config.VM_NAME[0]
+            logger.info(
+                "Update vm %s memory and guaranteed memory to %d",
+                vm_name, vm_memory
             )
+            if not ll_vms.updateVm(
+                positive=True,
+                vm=vm_name,
+                memory=vm_memory,
+                memory_guaranteed=vm_memory,
+                placement_host=vm_host
+            ):
+                raise errors.VMException(
+                    "Failed to update vm %s" % vm_name
+                )
         logger.info(
             "Start vms %s", config.VM_NAME[:2]
         )
