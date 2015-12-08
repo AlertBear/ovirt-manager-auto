@@ -8,11 +8,13 @@ Helper for networking jobs
 import logging
 import config as conf
 from random import randint
+from utilities import jobs
 from rhevmtests import helpers
+from art.core_api import apis_utils
 from art.test_handler import settings
 from art.test_handler import exceptions
 from art.rhevm_api.utils import test_utils
-import art.core_api.apis_utils as apis_utils
+import rhevmtests.helpers as global_helper
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
@@ -469,6 +471,81 @@ def is_network_in_vds_caps(host_resource, network):
     logger.info("Check if %s in vdsCaps output", network)
     if network not in out["info"]["networks"].keys():
         raise conf.NET_EXCEPTION("%s not in vdsCaps output" % network)
+
+
+def check_traffic_during_func_operation(
+    func_name, func_kwargs, tcpdump_kwargs
+):
+    """
+    Search for packets in tcpdump output during given func (func_name) action
+
+    :param func_name: Name of the function to run with tcpdump command
+    :type func_name: str
+    :param func_kwargs: Parameters of the function
+    :type func_kwargs: dict
+    :param tcpdump_kwargs: Parameters of the tcpdump function
+    :type tcpdump_kwargs: dict
+    :return True/False
+    :rtype: bool
+
+    :Example:
+
+    func_name="sendICMP"
+
+    icmp_kwargs = {
+        "host": src_vm,
+        "user": config.VMS_LINUX_USER,
+        "password": config.VMS_LINUX_PW,
+        "ip": dst_ip,
+        "func_path": "art.rhevm_api.utils.test_utils"
+    }
+
+    tcpdump_kwargs = {
+        "host_obj": listen_vm_obj,
+        "nic": nic,
+        "src": src_ip,
+        "dst": dst_ip,
+        "numPackets": 5,
+        "timeout": str(config.TIMEOUT)
+    }
+
+    net_help.check_traffic_during_func_operation(
+        func_name="sendICMP", func_kwargs=icmp_kwargs,
+        tcpdump_kwargs=tcpdump_kwargs
+    )
+    """
+
+    tcpdump_job = jobs.Job(test_utils.run_tcp_dump, (), tcpdump_kwargs)
+    func_path = func_kwargs.pop("func_path")
+    imp_module = __import__(
+        func_path, globals(), locals(), [func_name], -1
+    )
+    func = getattr(imp_module, func_name)
+    func_job = jobs.Job(func, (), func_kwargs)
+    job_set = jobs.JobsSet()
+    job_set.addJobs([tcpdump_job, func_job])
+    job_set.start()
+    job_set.join(int(tcpdump_kwargs.get("timeout", conf.DUMP_TIMEOUT)))
+    return tcpdump_job.result and func_job.result
+
+
+def get_vm_resource(vm):
+    """
+    Get VM executor
+
+    :param vm: VM name
+    :type vm: str
+    :return: VM executor
+    :rtype: resource_vds
+    """
+    logger.info("Get IP for: %s", vm)
+    rc, ip = ll_vms.waitForIP(vm=vm, timeout=conf.TIMEOUT)
+    if not rc:
+        raise conf.NET_EXCEPTION("Failed to get IP for: %s" % vm)
+    ip = ip["ip"]
+    return global_helper.get_host_resource_with_root_user(
+        ip, conf.VMS_LINUX_PW
+    )
 
 if __name__ == "__main__":
     pass
