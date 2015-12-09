@@ -11,6 +11,7 @@ from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import CoreSystemTest as TestCase
 from art.unittest_lib import attr
 from art.rhevm_api.utils.test_utils import get_api
+from reports.sanity.test_local_installation_sanity import SanityServicesLogs
 
 from rhevm_upgrade import config
 
@@ -82,3 +83,8 @@ class UpgradeSanityVerification(TestCase):
                 'show',
                 'admin',
             ])[0]
+
+
+@attr(tier=2)
+class UpgradeSanityDWHReports(SanityServicesLogs):
+    pass
