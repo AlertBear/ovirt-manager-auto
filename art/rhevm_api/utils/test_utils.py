@@ -1392,7 +1392,8 @@ def run_tcp_dump(host_obj, nic, **kwargs):
     logger.debug("TcpDump output:\n%s", output)
     if rc:
         logger.error(
-            "Failed to run tcpdump command. Output: %s ERR: %s", output, err
+            "Failed to run tcpdump command or no packets were captured by "
+            "filter. Output: %s ERR: %s", output, err
         )
         return False
     return True

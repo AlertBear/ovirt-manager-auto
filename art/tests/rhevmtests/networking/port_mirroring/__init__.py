@@ -11,7 +11,6 @@ import rhevmtests.helpers as helpers
 import rhevmtests.networking as networking
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as net_help
-import art.test_handler.exceptions as exceptions
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
@@ -52,7 +51,7 @@ def setup_package():
         host=conf.VDS_HOSTS[:2], network_dict=network_params,
         auto_nics=[0, 1]
     ):
-        raise exceptions.NetworkException("Cannot create and attach networks")
+        raise conf.NET_EXCEPTION("Cannot create and attach networks")
 
     logger.info(
         "Create vNIC profiles with port mirroring for %s network and %s" % (
@@ -65,7 +64,7 @@ def setup_package():
             cluster=conf.CLUSTER_NAME[0],
             network=network, port_mirroring=True
         ):
-            raise exceptions.NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Failed to create VNIC profile %s with port mirroring." %
                 conf.PM_VNIC_PROFILE[i]
             )
@@ -94,14 +93,14 @@ def setup_package():
                 network=conf.VLAN_NETWORKS[i],
                 vnic_profile=vnic_profile
             ):
-                raise exceptions.NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Failed to add nic to %s" % vmName
                 )
         logger.info("Starting %s", vmName)
         if not net_help.run_vm_once_specific_host(
             vm=vmName, host=conf.HOSTS[0], wait_for_ip=True
         ):
-            raise exceptions.NetworkException("Failed to start %s." % vmName)
+            raise conf.NET_EXCEPTION("Failed to start %s." % vmName)
 
     logger.info("Configure IPs for each VM")
     for i, vm in enumerate(conf.VM_NAME[:conf.NUM_VMS]):
@@ -109,7 +108,7 @@ def setup_package():
         rc, out = ll_vms.waitForIP(vm=vm, timeout=180, sleep=10)
 
         if not rc:
-            raise exceptions.NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Failed to get VM IP on MGMT network"
             )
         local_mgmt_ip = out["ip"]
@@ -136,13 +135,13 @@ def setup_package():
             )
         logger.info("Restarting network service on %s", vm)
         if not vm_resource.service("network").restart():
-            raise exceptions.NetworkException(
+            raise conf.NET_EXCEPTION(
                 "Failed to restart network service on %s" % vm
             )
     logger.info("Stop iptables service on hosts")
     for host in conf.VDS_HOSTS[:2]:
         if not host.service(conf.FIREWALL_SRV).stop():
-            raise exceptions.NetworkException("Cannot stop Firewall service")
+            raise conf.NET_EXCEPTION("Cannot stop Firewall service")
 
 
 def teardown_package():

@@ -526,7 +526,7 @@ def check_traffic_during_func_operation(
     job_set = jobs.JobsSet()
     job_set.addJobs([tcpdump_job, func_job])
     job_set.start()
-    job_set.join(int(tcpdump_kwargs.get("timeout", conf.DUMP_TIMEOUT)))
+    job_set.join(int(tcpdump_kwargs.get("timeout", conf.DUMP_TIMEOUT)) + 5)
     return tcpdump_job.result and func_job.result
 
 

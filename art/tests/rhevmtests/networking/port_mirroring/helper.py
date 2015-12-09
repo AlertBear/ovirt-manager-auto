@@ -6,18 +6,17 @@ Utilities used by port_mirroring_test
 """
 
 import logging
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.utils.test_utils as test_utils
-import art.test_handler.exceptions as exceptions
-import rhevmtests.networking.config as config
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as net_help
+import art.rhevm_api.utils.test_utils as test_utils
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 logger = logging.getLogger("Port_Mirroring_Helper")
 
 
 def send_and_capture_traffic(
-    src_vm, src_ip, dst_ip, listen_vm=config.VM_NAME[0], nic=config.VM_NICS[1],
+    src_vm, src_ip, dst_ip, listen_vm=conf.VM_NAME[0], nic=conf.VM_NICS[1],
     expect_traffic=True, dup_check=True
 ):
     """
@@ -40,7 +39,7 @@ def send_and_capture_traffic(
     :param dup_check: Check if packets are duplicated
     :type dup_check: bool
     :return: Raise exception.
-    :rtype: exceptions.NetworkException
+    :rtype: conf.NET_EXCEPTION
     """
     logger_info = (
         "Send and capture traffic from {0} to {1}. Listen VM is {2}. "
@@ -57,21 +56,21 @@ def send_and_capture_traffic(
             expected_text, src_ip, dst_ip, listen_vm)
     )
     logger.info(logger_info)
-    listen_vm_index = config.VM_NAME.index(listen_vm)
+    listen_vm_index = conf.VM_NAME.index(listen_vm)
     with hl_networks.TrafficMonitor(
         expectedRes=expect_traffic,
-        machine=config.MGMT_IPS[listen_vm_index],
-        user=config.VMS_LINUX_USER,
-        password=config.VMS_LINUX_PW,
+        machine=conf.MGMT_IPS[listen_vm_index],
+        user=conf.VMS_LINUX_USER,
+        password=conf.VMS_LINUX_PW,
         nic=nic, src=src_ip, dst=dst_ip, dupCheck=dup_check,
         protocol="icmp", numPackets=3
     ) as monitor:
             monitor.addTask(
-                test_utils.sendICMP, host=src_vm, user=config.VMS_LINUX_USER,
-                password=config.VMS_LINUX_PW, ip=dst_ip
+                test_utils.sendICMP, host=src_vm, user=conf.VMS_LINUX_USER,
+                password=conf.VMS_LINUX_PW, ip=dst_ip
             )
     if not monitor.getResult():
-        raise exceptions.NetworkException(network_exception_text)
+        raise conf.NET_EXCEPTION(network_exception_text)
 
 
 def set_port_mirroring(
@@ -93,7 +92,7 @@ def set_port_mirroring(
     :param teardown: True if calling from teardown
     :type teardown: bool
     :return: Raise exception if teardown=False
-    :rtype: exceptions.NetworkException
+    :rtype: conf.NET_EXCEPTION
     """
     unplug_error = "Failed to unplug %s on %s"
     update_error = "Failed to update %s to %s profile."
@@ -109,7 +108,7 @@ def set_port_mirroring(
         if teardown:
             logger.error(unplug_error, nic, vm)
         else:
-            raise exceptions.NetworkException(unplug_error % (nic, vm))
+            raise conf.NET_EXCEPTION(unplug_error % (nic, vm))
 
     if not ll_vms.updateNic(
             True, vm, nic, network=network, vnic_profile=vnic_profile
@@ -117,23 +116,23 @@ def set_port_mirroring(
         if teardown:
             logger.error(update_error, nic, vnic_profile)
         else:
-            raise exceptions.NetworkException(
+            raise conf.NET_EXCEPTION(
                 update_error % (nic, vnic_profile)
             )
     if not ll_vms.updateNic(True, vm, nic, plugged=True):
         if teardown:
             logger.error(plug_error, nic, vm)
         else:
-            raise exceptions.NetworkException(plug_error % (nic, vm))
+            raise conf.NET_EXCEPTION(plug_error % (nic, vm))
 
 
 def return_vms_to_original_host():
     """
     Returns all the VMs to original host they were on
     """
-    for vm in config.VM_NAME[:config.NUM_VMS]:
-        if ll_vms.getVmHost(vm)[1]["vmHoster"] == config.HOSTS[1]:
-            if not ll_vms.migrateVm(True, vm, config.HOSTS[0]):
+    for vm in conf.VM_NAME[:conf.NUM_VMS]:
+        if ll_vms.getVmHost(vm)[1]["vmHoster"] == conf.HOSTS[1]:
+            if not ll_vms.migrateVm(True, vm, conf.HOSTS[0]):
                 logger.error("Failed to migrate vm %s", vm)
 
 
@@ -145,21 +144,98 @@ def ge_seal_vm(vm):
     :return: None
     """
     logger.info("Sealing VM: %s", vm)
-    if not net_help.run_vm_once_specific_host(vm=vm, host=config.HOSTS[0]):
-        raise exceptions.NetworkException(
-            "Failed to start %s." % config.VM_NAME[0]
+    if not net_help.run_vm_once_specific_host(vm=vm, host=conf.HOSTS[0]):
+        raise conf.NET_EXCEPTION(
+            "Failed to start %s." % conf.VM_NAME[0]
         )
     logger.info("Waiting for IP from %s", vm)
     rc, out = ll_vms.waitForIP(vm=vm, timeout=180, sleep=10)
     if not rc:
-        raise exceptions.NetworkException(
+        raise conf.NET_EXCEPTION(
             "Failed to get VM IP on mgmt network"
         )
     ip = out["ip"]
     logger.info("Running setPersistentNetwork on %s", vm)
-    if not test_utils.setPersistentNetwork(ip, config.VMS_LINUX_PW):
-        raise exceptions.NetworkException("Failed to seal %s" % vm)
+    if not test_utils.setPersistentNetwork(ip, conf.VMS_LINUX_PW):
+        raise conf.NET_EXCEPTION("Failed to seal %s" % vm)
 
     logger.info("Stopping %s", vm)
     if not ll_vms.stopVm(positive=True, vm=vm):
-        raise exceptions.NetworkException("Failed to stop %s" % vm)
+        raise conf.NET_EXCEPTION("Failed to stop %s" % vm)
+
+
+def check_traffic_during_icmp(
+    src_ip, dst_ip, src_vm, listen_vm, nic
+):
+    """
+    Check traffic while running icmp
+
+    :param src_ip: Source IP for ICMP traffic
+    :type src_ip: str
+    :param dst_ip: Destination IP for ICMP traffic
+    :type dst_ip: str
+    :param src_vm: MGMT of VM from where the ICMP starts
+    :type src_vm: str
+    :param listen_vm: VM that performs port mirroring
+    :type listen_vm: str
+    :param nic: NIC on VM to perform port mirroring
+    :type nic: str
+    :return: True if traffic was received while sending ICMP
+    :rtype: bool
+    """
+    listen_vm_obj = net_help.get_vm_resource(listen_vm)
+    tcpdump_kwargs = {
+        "host_obj": listen_vm_obj,
+        "nic": nic,
+        "src": src_ip,
+        "dst": dst_ip,
+        "numPackets": 5,
+        "timeout": str(conf.TIMEOUT)
+    }
+
+    icmp_kwargs = {
+        "host": src_vm,
+        "user": conf.VMS_LINUX_USER,
+        "password": conf.VMS_LINUX_PW,
+        "ip": dst_ip,
+        "count": 10,
+        "func_path": "art.rhevm_api.utils.test_utils"
+    }
+
+    return net_help.check_traffic_during_func_operation(
+        func_name="sendICMP", func_kwargs=icmp_kwargs,
+        tcpdump_kwargs=tcpdump_kwargs
+    )
+
+
+def check_received_traffic(
+    src_ip, dst_ip, src_vm, listen_vm=conf.VM_NAME[0], nic=conf.VM_NICS[1],
+    positive=True
+):
+    """
+    Check if ICMP traffic was received or not according to positive and raise
+    exception if it's different than positive
+
+    :param src_ip: Source IP for ICMP traffic
+    :type src_ip: str
+    :param dst_ip: Destination IP for ICMP traffic
+    :type dst_ip: str
+    :param src_vm: MGMT of VM from where the ICMP starts
+    :type src_vm: str
+    :param listen_vm: VM that performs port mirroring
+    :type listen_vm: str
+    :param nic: NIC on VM to perform port mirroring
+    :type nic: str
+    :param positive: True if traffic is expected, False otherwise
+    :type positive: bool
+    :raise: Network Exception
+    """
+    exp_info = "Traffic is not received" if positive else "Traffic is received"
+    logger.info(
+        "Check the ICMP traffic on mirroring VM %s NIC %s", listen_vm, nic
+    )
+    if not positive == check_traffic_during_icmp(
+        src_ip=src_ip, dst_ip=dst_ip, src_vm=src_vm, listen_vm=listen_vm,
+        nic=nic
+    ):
+        raise conf.NET_EXCEPTION(exp_info)
