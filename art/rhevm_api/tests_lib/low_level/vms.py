@@ -1223,38 +1223,49 @@ def addDisk(positive, vm, size, wait=True, storagedomain=None,
 
 
 @is_action()
-def removeDisk(positive, vm, disk, wait=True):
-    '''
-    Description: remove disk from vm
-    Parameters:
-       * vm - vm name
-       * disk - name of disk that should be removed
-       * wait - wait until finish if True
-    Return: True if disk was removed properly, False otherwise
-    '''
-    diskExist = False
-    for d in getVmDisks(vm):
-        if d.name.lower() == disk.lower():
-            status = VM_API.delete(d, positive)
-            diskExist = True
+def removeDisk(positive, vm, disk=None, wait=True, disk_id=None):
+    """
+    Remove disk from vm
 
-    if not diskExist:
-        raise EntityNotFound("Disk %s not found in vm %s" % (disk, vm))
+    __Author__ = 'ratamir'
+    :param positive: Determines whether the case is positive or negative
+    :type positive: bool
+    :param vm: VM name
+    :type vm: str
+    :param disk: Name of disk that should be removed
+    :type disk: str
+    :param wait: Specifies whether to wait until the the remove disk
+    execution completes
+    :type wait: bool
+    :param disk_id: ID of the disk that should be removed
+    :type disk_id: str
+    :return: True if disk was removed successfully, False otherwise
+    :rtype: bool
+    """
+    def does_disk_exist(disk_list):
+        for disk_object in disk_list:
+            if disk_id:
+                if disk_object.get_id() == disk_id:
+                    return disk_object
+            elif disk:
+                if disk_object.name == disk:
+                    return disk_object
+        return None
+    disk_obj = does_disk_exist(getVmDisks(vm))
+    if disk_obj:
+        status = VM_API.delete(disk_obj, positive)
+    else:
+        logger.error("Disk %s not found in vm %s", disk, vm)
+        return False
     if positive and status and wait:
-        startTime = time.time()
         logger.debug('Waiting for disk to be removed.')
-        while diskExist:
-            disks = getVmDisks(vm)
-            if disks is None:
-                return False
-            disks = filter(lambda x: x.name.lower() == disk.lower(), disks)
-            diskExist = bool(disks)
-            if VM_IMAGE_OPT_TIMEOUT < time.time() - startTime:
-                raise APITimeout(
-                    'Timeouted when waiting for disk to be removed')
-            time.sleep(VM_SAMPLING_PERIOD)
-
-    return not diskExist
+        for disk_obj in TimeoutingSampler(
+            VM_IMAGE_OPT_TIMEOUT, VM_SAMPLING_PERIOD, does_disk_exist,
+                getVmDisks(vm)
+        ):
+            if not disk_obj:
+                return True
+    return status
 
 
 @is_action()
@@ -1412,25 +1423,38 @@ def addNic(positive, vm, **kwargs):
 
 @is_action()
 def updateVmDisk(positive, vm, disk, **kwargs):
-    '''
-    Description: Update already existing vm disk
-    Parameters:
-      * vm - vm where disk should be updated
-      * disk - name of the disk that should be updated
-      * alias - new name of the disk
-      * interface - IDE or virtio
-      * bootable - True or False whether disk should be bootable
-      * shareable - True or False whether disk should be sharable
-      * size - new disk size in bytes
-      * quota - disk quota
-    Author: omachace
-    Return: Status of the operation's result dependent on positive value
-    '''
-    disk_obj = _getVmFirstDiskByName(vm, disk)
-    new_disk = _prepareDiskObject(**kwargs)
+    """
+    Update already existing vm disk
 
-    disk, status = DISKS_API.update(disk_obj, new_disk, positive)
-    return status
+    :param positive: Determines whether the case is positive or negative
+    :type positive: bool
+    :param vm: VM where disk should be updated
+    :type vm: str
+    :param disk: Name of the disk that should be updated
+    :type disk: str
+    :param alias: New name of the disk
+    :type alias: str
+    :param interface: IDE, virtio or virtio_scsi
+    :type interface: str
+    :param bootable: Specifies whether the disk should be marked as bootable
+    :type bootable: bool
+    :param shareable: Specifies whether the disk should be shareable
+    :type shareable: bool
+    :param size: New disk size in bytes
+    :type size: int
+    :param quota: The disk's quote in bytes
+    :type quota: str
+    :param disk_id: ID of the disk that should be updated
+    :type disk_id: str
+    :return: Status of the operation's result dependent on positive value
+    :rtype: bool
+    """
+    if kwargs['disk_id']:
+        disk_obj = getVmDisk(vm, disk_id=kwargs.pop('disk_id'))
+    else:
+        disk_obj = getVmDisk(vm, alias=disk)
+    new_disk = _prepareDiskObject(**kwargs)
+    return DISKS_API.update(disk_obj, new_disk, positive)[1]
 
 
 @is_action()

@@ -6,28 +6,17 @@ Storage/3_6_Storage_Wipe_After_Delete
 """
 import logging
 import threading
-import time
 from concurrent.futures import ThreadPoolExecutor
-
-from art.rhevm_api.tests_lib.low_level.disks import getVmDisk
-from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost, getHostIP
-from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
+from art.test_handler import exceptions
+from art.rhevm_api.tests_lib.low_level import (
+    disks as ll_disks,
+    hosts as ll_hosts,
+    vms as ll_vms,
+    jobs as ll_jobs,
+    storagedomains as ll_sd,
+)
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.unittest_lib.common import StorageTest as BaseTestCase
-from art.rhevm_api.tests_lib.high_level.datacenters import (
-    build_setup,
-    clean_datacenter,
-)
-
-from art.rhevm_api.tests_lib.low_level import disks
-from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    getStorageDomainNamesForType,
-)
-from art.rhevm_api.tests_lib.low_level.vms import (
-    stop_vms_safely, waitForVMState, removeDisk, start_vms,
-    getVmDisks, updateVmDisk, live_migrate_vm_disk, addDisk, removeVms,
-)
-from art.rhevm_api.utils.test_utils import get_api
 
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
@@ -36,88 +25,66 @@ from rhevmtests.storage.helpers import create_vm_or_clone
 from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
-
-VM_API = get_api('vm', 'vms')
-
 ENUMS = config.ENUMS
-BLOCK_TYPES = (ENUMS['storage_type_iscsi'], ENUMS['storage_type_fcp'])
-
-FILE_TO_WATCH = "/var/log/vdsm/vdsm.log"
-
-TASK_TIMEOUT = 5 * 60
-
-GB = config.GB
-vmArgs = {'positive': True,
-          'vmDescription': config.VM_NAME,
-          'diskInterface': config.VIRTIO,
-          'volumeFormat': config.COW_DISK,
-          'cluster': config.CLUSTER_NAME,
-          'storageDomainName': None,
-          'installation': True,
-          'size': config.DISK_SIZE,
-          'nic': config.NIC_NAME[0],
-          'image': config.COBBLER_PROFILE,
-          'useAgent': True,
-          'os_type': config.OS_TYPE,
-          'user': config.VM_USER,
-          'password': config.VM_PASSWORD,
-          'network': config.MGMT_BRIDGE
-          }
-
-VM_NAME = config.VM_NAME + "_%s"
-VMS_NAMES = []
+FILE_TO_WATCH = config.VDSM_LOG
+REGEX_TEMPLATE = 'dd oflag=direct if=/dev/zero of=.*/%s'
+TASK_TIMEOUT = 120
+VM_NAMES = dict()
 ISCSI = config.STORAGE_TYPE_ISCSI
+
+vm_args = {
+    'positive': True,
+    'vmDescription': config.VM_NAME,
+    'diskInterface': config.VIRTIO,
+    'volumeFormat': config.COW_DISK,
+    'cluster': config.CLUSTER_NAME,
+    'storageDomainName': None,
+    'installation': True,
+    'size': config.DISK_SIZE,
+    'nic': config.NIC_NAME[0],
+    'image': config.COBBLER_PROFILE,
+    'useAgent': True,
+    'os_type': config.OS_TYPE,
+    'user': config.VM_USER,
+    'password': config.VM_PASSWORD,
+    'network': config.MGMT_BRIDGE,
+}
 
 
 def setup_module():
     """
     Sets up the environment - creates vms with all disk types and formats
     """
-    if not config.GOLDEN_ENV:
-        logger.info("Preparing datacenter %s with hosts %s",
-                    config.DATA_CENTER_NAME, config.VDC)
-
-        build_setup(config=config.PARAMETERS,
-                    storage=config.PARAMETERS,
-                    storage_type=config.STORAGE_TYPE)
-
+    global VM_NAMES
     exs = []
     with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
         for storage_type in config.STORAGE_SELECTOR:
-            storage_domain = getStorageDomainNamesForType(
+            storage_domain = ll_sd.getStorageDomainNamesForType(
                 config.DATA_CENTER_NAME, storage_type)[0]
 
-            vm_name = VM_NAME % storage_type
-            VMS_NAMES.append(vm_name)
-
-            args = vmArgs.copy()
+            vm_name = config.VM_NAME % storage_type
+            VM_NAMES[storage_type] = vm_name
+            args = vm_args.copy()
             args['storageDomainName'] = storage_domain
             args['vmName'] = vm_name
 
             logger.info('Creating vm %s and installing OS on it', vm_name)
-
             exs.append((vm_name, executor.submit(create_vm_or_clone, **args)))
 
+    logger.info('Powering off vms %s', VM_NAMES.values())
+    ll_vms.stop_vms_safely(VM_NAMES.values())
     for vm_name, ex in exs:
         if not ex.result():
-            raise Exception("Unable to create vm %s" % vm_name)
-
-    logger.info('Shutting down vms %s', VMS_NAMES)
-    stop_vms_safely(VMS_NAMES)
+            raise exceptions.VMException("Unable to create vm %s" % vm_name)
 
 
 def teardown_module():
     """
     Clean datacenter
     """
-    if not config.GOLDEN_ENV:
-        logger.info('Cleaning datacenter')
-        clean_datacenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
-                         vdc_password=config.VDC_PASSWORD)
-
-    else:
-        stop_vms_safely(VMS_NAMES)
-        assert removeVms(True, VMS_NAMES)
+    if not ll_vms.safely_remove_vms(VM_NAMES.values()):
+        raise exceptions.VMException("Failed to remove vms in teardown")
+    ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
 
 
 class CommonUsage(BaseTestCase):
@@ -126,79 +93,75 @@ class CommonUsage(BaseTestCase):
     """
     __test__ = False
     vm_name = None
+    disk_id = None
 
     def setUp(self):
-        self.vm_name = VM_NAME % self.storage
-        self.storage_domain = getStorageDomainNamesForType(
+        self.execution_passed = False
+        self.vm_name = VM_NAMES[self.storage]
+        self.storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[0]
 
     def tearDown(self):
-        stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
-        assert removeDisk(True, self.vm_name, self.disk_name)
+        if not self.execution_passed:
+            ll_vms.stop_vms_safely([self.vm_name])
+            ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
+            assert ll_vms.removeDisk(
+                True, self.vm_name, disk_id=self.disk_id
+            )
 
-    def _remove_disks(self, disks_names):
-        """
-        Removes created disks
-        """
-        stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
-
-        for disk in disks_names:
-            logger.info("Deleting disk %s", disk)
-            if not disks.deleteDisk(True, disk):
-                logger.error("Failed to remove disk %s", disk)
-
-    def _perform_operation(self, update=True):
+    def _perform_operation(self, update=True, wipe_after_delete=False):
         """
         Adding new disk, edit the wipe after delete flag if update=True,
         and removes the disk to see in log file that the operation succeeded
         """
-        assert addDisk(True, self.vm_name, config.DISK_SIZE,
-                       storagedomain=self.storage_domain, sparse=True,
-                       wipe_after_delete=False, interface=config.VIRTIO)
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        assert ll_vms.addDisk(
+            True, self.vm_name, config.DISK_SIZE,
+            storagedomain=self.storage_domain, sparse=True,
+            wipe_after_delete=wipe_after_delete, interface=config.VIRTIO,
+            alias=config.DISK_ALIAS
+        )
+        ll_vms.start_vms([self.vm_name], wait_for_ip=False)
+        ll_vms.waitForVMState(self.vm_name)
 
-        self.disk_name = [d.get_alias() for d in getVmDisks(self.vm_name) if
-                          not d.get_bootable()][0]
+        self.disk_id = ll_disks.get_disk_obj(config.DISK_ALIAS).get_id()
         logger.info("Selecting host from %s", config.HOSTS)
-        host = getSPMHost(config.HOSTS)
+        host = ll_hosts.getSPMHost(config.HOSTS)
         logger.info("Host %s", host)
-        self.host_ip = getHostIP(host)
+        self.host_ip = ll_hosts.getHostIP(host)
         assert self.host_ip
-        disk_obj = getVmDisk(self.vm_name, self.disk_name)
-        self.regex = self.regex % disk_obj.get_image_id()
+        disk_obj = ll_disks.getVmDisk(self.vm_name, disk_id=self.disk_id)
+        regex = REGEX_TEMPLATE % disk_obj.get_image_id()
 
         if update:
-            assert updateVmDisk(True, self.vm_name, self.disk_name,
-                                wipe_after_delete=True)
+            assert ll_vms.updateVmDisk(
+                True, self.vm_name, config.DISK_ALIAS, disk_id=self.disk_id,
+                wipe_after_delete=True
+            )
+        ll_vms.stop_vms_safely([self.vm_name])
+        ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
 
-        stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
+        t = threading.Timer(
+            5.0, ll_vms.removeDisk, (
+                True, self.vm_name, None, True, self.disk_id
+            )
+        )
+        t.start()
+        found_regex, _ = watch_logs(
+            FILE_TO_WATCH, regex, None, TASK_TIMEOUT, self.host_ip,
+            config.HOSTS_USER, config.HOSTS_PW
+        )
 
-        t = threading.Thread(
-            target=watch_logs,
-            args=(
-                FILE_TO_WATCH,
-                self.regex,
-                None,
-                TASK_TIMEOUT,
-                self.host_ip,
-                'root',
-                config.HOSTS_PW))
-
-        try:
-            t.start()
-
-            time.sleep(5)
-
-            self.assertTrue(removeDisk(True, self.vm_name, self.disk_name),
-                            "Failed to remove disk %s" % self.disk_name)
-
-        finally:
-            t.join(TASK_TIMEOUT)
-            wait_for_jobs([ENUMS['job_remove_disk']])
+        t.join(TASK_TIMEOUT)
+        ll_jobs.wait_for_jobs([ENUMS['job_remove_disk']])
+        if not found_regex and (update or wipe_after_delete):
+            raise exceptions.DiskException(
+                "Wipe after delete functionality is not working"
+            )
+        elif found_regex and not update and not wipe_after_delete:
+            raise exceptions.DiskException(
+                "Wipe after delete functionality should not work"
+            )
+        self.execution_passed = True
 
 
 @attr(tier=2)
@@ -208,7 +171,8 @@ class TestCase5116(CommonUsage):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_6_Storage_Wipe_After_Delete
     """
-    __test__ = True
+    __test__ = ISCSI in opts['storages']
+    storages = set([ISCSI])
     polarion_test_case = '5116'
 
     @polarion("RHEVM3-5116")
@@ -219,38 +183,70 @@ class TestCase5116(CommonUsage):
             2.create a new disk
             3.run the vm
             3.hot plug the disk to the vm
+        Expected Results:
+            - operation should succeed
+        """
+        ll_vms.start_vms([self.vm_name], 1, wait_for_ip=False)
+        ll_vms.waitForVMState(self.vm_name)
+
+        ll_vms.addDisk(
+            True, self.vm_name, config.DISK_SIZE,
+            storagedomain=self.storage_domain, sparse=True,
+            wipe_after_delete=False, interface=config.VIRTIO,
+            alias=config.DISK_ALIAS
+        )
+
+        self.disk_id = [d.get_id() for d in ll_vms.getVmDisks(self.vm_name) if
+                        not d.get_bootable()][0]
+
+        assert ll_vms.updateVmDisk(
+            True, self.vm_name, config.DISK_ALIAS, disk_id=self.disk_id,
+            wipe_after_delete=True
+        )
+        self.execution_passed = True
+
+
+@attr(tier=2)
+class TestCase10443(CommonUsage):
+    """
+    wipe after delete on attached disk
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_6_Storage_Wipe_After_Delete
+    """
+    __test__ = ISCSI in opts['storages']
+    storages = set([ISCSI])
+    polarion_test_case = '10443'
+
+    @polarion("RHEVM3-10443")
+    def test_wipe_after_delete_on_attached_disk(self):
+        """
+        Actions:
+            1.add vm + disk
+            2.create a new disk
+            3.run the vm
+            3.Attach the disk to the vm
             4.go to vm->disks
         Expected Results:
             - operation should succeed
         """
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        self._perform_operation(False, True)
 
-        addDisk(True, self.vm_name, config.DISK_SIZE,
-                storagedomain=self.storage_domain, sparse=True,
-                wipe_after_delete=False, interface=config.VIRTIO)
-
-        self.disk_name = [d.get_alias() for d in getVmDisks(self.vm_name) if
-                          not d.get_bootable()][0]
-
-        assert updateVmDisk(True, self.vm_name, self.disk_name,
-                            wipe_after_delete=True)
+    def tearDown(self):
+        logger.info("Test finished")
 
 
 @attr(tier=1)
-class TestCase11863(CommonUsage):
+class TestCase5113(CommonUsage):
     """
     Checking functionality - checked box
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_6_Storage_Wipe_After_Delete
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
-    polarion_test_case = '11863'
-    disk_name = None
-    regex = 'dd oflag=direct if=/dev/zero of=.*/%s'
+    polarion_test_case = '5113'
 
-    @polarion("RHEVM3-11863")
+    @polarion("RHEVM3-5113")
     def test_live_edit_wipe_after_delete(self):
         """
         Actions:
@@ -265,33 +261,61 @@ class TestCase11863(CommonUsage):
 
 
 @attr(tier=2)
+class TestCase5115(CommonUsage):
+    """
+    Checking functionality - unchecked box negative case
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_6_Storage_Wipe_After_Delete
+    """
+    __test__ = ISCSI in opts['storages']
+    storages = set([ISCSI])
+    polarion_test_case = '5115'
+
+    @polarion("RHEVM3-5115")
+    def test_uncheck_wipe_after_delete(self):
+        """
+        Actions:
+            - Checks that 'regex' is not sent in vdsm log
+        Expected Results:
+            - dd command not sent from /dev/zero to relevant image in vdsm log
+        """
+        self._perform_operation(False)
+
+    def tearDown(self):
+        logger.info("Test finished")
+
+
+@attr(tier=2)
 class TestCase11864(CommonUsage):
     """
     Wipe after delete with LSM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_6_Storage_Wipe_After_Delete
     """
-    __test__ = True
+    # Bugzilla history:
+    # 1251956 - Live storage migration is broken
+    # 1259785 - after live migrate a Virtio RAW disk, job
+    # stays in status STARTED
+    __test__ = ISCSI in opts['storages']
+    storages = set([ISCSI])
     polarion_test_case = '11864'
     disk_name = "disk_%s" % polarion_test_case
-    regex = 'dd oflag=direct if=/dev/zero of=.*/%s'
-    bz = {
-        '1251956': {'engine': None, 'version': ['3.6']},
-        '1259785': {'engine': None, 'version': ['3.6']},
-    }
+    bz = {'1292509': {'engine': None, 'version': ['3.6']}}
 
     def setUp(self):
         """
         Prepares disk with wipe_after_delete=True for VM
         """
         super(TestCase11864, self).setUp()
-        assert addDisk(True, self.vm_name, config.DISK_SIZE,
-                       storagedomain=self.storage_domain, sparse=True,
-                       wipe_after_delete=True, interface=config.VIRTIO,
-                       alias=self.disk_name)
+        assert ll_vms.addDisk(
+            True, self.vm_name, config.DISK_SIZE,
+            storagedomain=self.storage_domain, sparse=True,
+            wipe_after_delete=True, interface=config.VIRTIO,
+            alias=self.disk_name
+        )
 
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        ll_vms.start_vms([self.vm_name], 1, wait_for_ip=False)
+        ll_vms.waitForVMState(self.vm_name)
 
     @polarion("RHEVM3-11864")
     def test_live_migration_wipe_after_delete(self):
@@ -303,12 +327,63 @@ class TestCase11864(CommonUsage):
         Expected Results:
             - editing should be blocked
         """
-        second_domain = getStorageDomainNamesForType(
+        second_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[1]
-        live_migrate_vm_disk(self.vm_name, self.disk_name, second_domain,
-                             wait=False)
+        self.disk_id = ll_disks.getVmDisk(
+            self.vm_name, alias=self.disk_name
+        ).get_id()
+        ll_vms.live_migrate_vm_disk(
+            self.vm_name, self.disk_name, second_domain, wait=False
+        )
+        ll_disks.wait_for_disks_status(
+            [self.disk_name], status=config.DISK_LOCKED
+        )
+        status = ll_vms.updateVmDisk(
+            False, self.vm_name, self.disk_name, wipe_after_delete=False,
+            disk_id=self.disk_id
+        )
+        ll_vms.waitForVmsDisks(self.vm_name)
+        ll_jobs.wait_for_jobs([ENUMS['job_live_migrate_disk']])
+        if not status:
+            raise exceptions.DiskException("Disk update should be blocked")
+        self.execution_passed = True
 
-        assert updateVmDisk(False, self.vm_name, self.disk_name,
-                            wipe_after_delete=False)
 
-        wait_for_jobs([ENUMS['job_live_migrate_disk']])
+@attr(tier=2)
+class TestCase10432(CommonUsage):
+    """
+    Remove disk from configured domain with wipe after delete
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_6_Storage_Wipe_After_Delete
+    """
+    __test__ = ISCSI in opts['storages']
+    storages = set([ISCSI])
+    polarion_test_case = '10432'
+    sd_args = dict()
+
+    def setUp(self):
+        """
+        Update storage domain wipe after delete flag
+        """
+        super(TestCase10432, self).setUp()
+        self.sd_args['wipe_after_delete'] = True
+        ll_sd.updateStorageDomain(
+            True, self.storage_domain, **self.sd_args
+        )
+
+    @polarion("RHEVM3-10432")
+    def test_domain_configured_with_wipe_after_delete(self):
+        """
+        Actions:
+            1.Configure storage domain with wipe after delete
+            2.Create a new disk on that domain
+            3.Run the vm
+            4.Attach the disk to the vm
+            5.Remove the disk
+        Expected Results:
+            - Operation should succeed
+        """
+        self._perform_operation(False)
+
+    def tearDown(self):
+        logger.info("Test finished")
