@@ -87,7 +87,7 @@ class TestMigrationVirtSanityCase(common.VirtTest):
         )
 
 
-@common.attr(tier=1)
+@common.attr(tier=2)
 class TestMigrationNetworkSanity(TestMigrationCaseBase):
     """
     Network sanity: check migration of one vm over nic
@@ -761,3 +761,55 @@ class TestMigrationCase12(TestMigrationCaseBase):
         helper.migrate_vms_and_check_traffic(
             vms=[config.VM_NAME[0]], nic_index=0
         )
+
+
+@common.attr(tier=1)
+class TestMigrationCase13(TestMigrationCaseBase):
+    """
+    Network sanity: check migration of one vm over nic
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create random IPs
+        Create logical vm network on DC/Cluster/Hosts
+        Configure it as migration network
+        """
+        ips = network_helper.create_random_ips()
+        local_dict = {
+            config.NETWORKS[0]: {
+                "nic": 1,
+                "required": "true",
+                "cluster_usages": "migration",
+                "bootproto": "static",
+                "address": ips[:2],
+                "netmask": [
+                    helper.NETMASK, helper.NETMASK
+                ]
+            }
+        }
+        logger.info(
+            "Configure migration VM network %s on DC/Cluster and Host ",
+            config.NETWORKS[0]
+        )
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[:2], network_dict=local_dict,
+            auto_nics=[0]
+        ):
+            raise exceptions.NetworkException(
+                "Cannot create and attach network %s" % config.NETWORKS[0]
+            )
+
+    @polarion("RHEVM3-3878")
+    def test_migration_nic(self):
+        """
+        Check network migration for 1 VMs
+        """
+        logger.info(
+            "Check that migration of 1 VMs over migration network is working "
+            "as expected"
+        )
+        helper.migrate_vms_and_check_traffic(vms=[config.VM_NAME[0]])
