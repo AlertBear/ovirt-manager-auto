@@ -203,7 +203,7 @@ def check_if_nic_in_host_nics(nic, host):
     :return: raise NetworkException on error
     """
     logger.info("Check that %s exists on %s via engine", nic, host)
-    host_nics = ll_hosts.getHostNicsList(host=host)
+    host_nics = ll_hosts.get_host_nics_list(host=host)
     if nic not in [i.name for i in host_nics]:
         raise config.NET_EXCEPTION(
             "%s not found in %s nics" % (nic, host)

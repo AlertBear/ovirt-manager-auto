@@ -182,3 +182,7 @@ class HostedEngineException(RHEVMEntityException):
     Exception for hosted engine errors
     """
     pass
+
+
+class SriovException(RHEVMEntityException):
+    pass

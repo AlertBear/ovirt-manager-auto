@@ -117,7 +117,7 @@ def check_dummy_on_host_interfaces(host_name, dummy_name):
     :return: True if dummy interface is on host False otherwise
     :rtype: bool
     """
-    host_nics = ll_hosts.getHostNicsList(host_name)
+    host_nics = ll_hosts.get_host_nics_list(host_name)
     for nic in host_nics:
         if dummy_name == nic.name:
             return True

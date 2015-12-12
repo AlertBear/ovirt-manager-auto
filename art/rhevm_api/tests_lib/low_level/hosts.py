@@ -21,6 +21,7 @@ import time
 import shlex
 import re
 import tempfile
+import logging
 
 from utilities.utils import getIpAddressByHostName, getHostName
 from utilities import machine
@@ -85,6 +86,7 @@ FIND_QEMU = 'ps aux |grep qemu | grep -e "-name %s"'
 virsh_cmd = ['nwfilter-dumpxml', 'vdsm-no-mac-spoofing']
 search_for = ["<filterref filter='no-mac-spoofing'/>",
               "<filterref filter='no-arp-mac-spoofing'/>"]
+logger = logging.getLogger(__name__)
 
 
 def get_host_list():
@@ -875,9 +877,11 @@ def _prepareHostNicObject(**kwargs):
     return nic_obj
 
 
-def getHostNic(host, nic):
+def get_host_nic(host, nic, all_content=False):
     host_obj = HOST_API.find(host)
-    return HOST_API.getElemFromElemColl(host_obj, nic, 'nics', 'host_nic')
+    return HOST_API.getElemFromElemColl(
+        host_obj, nic, 'nics', 'host_nic', all_content=all_content
+    )
 
 
 def getHostNics(host):
@@ -886,10 +890,22 @@ def getHostNics(host):
                                     get_href=True)
 
 
-def getHostNicsList(host):
+def get_host_nics_list(host, all_content=False):
+    """
+    Get host NICs
+
+    :param host: Host name
+    :type host: str
+    :param all_content: Get NICs objects with all content
+    :type all_content: bool
+    :return: Host NICs list
+    :rtype: list
+    """
     host_obj = HOST_API.find(host)
-    return HOST_API.getElemFromLink(host_obj, 'nics', 'host_nic',
-                                    get_href=False)
+    logger.info("Get %s NICs list", host)
+    return HOST_API.getElemFromLink(
+        host_obj, 'nics', 'host_nic', get_href=False, all_content=all_content
+    )
 
 
 @is_action()
@@ -907,7 +923,7 @@ def attachHostNic(positive, host, nic, network):
     host_obj = HOST_API.find(host)
     cluster = CL_API.find(host_obj.cluster.id, 'id').get_name()
 
-    host_nic = getHostNic(host, nic)
+    host_nic = get_host_nic(host, nic)
     cl_net = getClusterNetwork(cluster, network)
 
     return bool(
@@ -935,7 +951,7 @@ def updateHostNic(positive, host, nic, **kwargs):
     Return: status (True if nic was updated properly, False otherwise)
     """
 
-    nic_obj = getHostNic(host, nic)
+    nic_obj = get_host_nic(host, nic)
     kwargs.update([('nic', nic_obj)])
     nic_new = _prepareHostNicObject(**kwargs)
     nic, status = HOST_NICS_API.update(nic_obj, nic_new, positive)
@@ -954,7 +970,7 @@ def detachHostNic(positive, host, nic, network=None):
        * nic - nic name to be detached
     Return: status (True if nic was detach properly from host, False otherwise)
     """
-    nicObj = getHostNic(host, nic)
+    nicObj = get_host_nic(host, nic)
 
     return bool(
         HOST_API.syncAction(
@@ -999,7 +1015,7 @@ def sendSNRequest(positive, host, nics=[], auto_nics=[], **kwargs):
             check_connectivity=boolean, connectivity_timeout=int, force=boolean
     """
     current_nics_obj = HOST_API.get(href=getHostNics(host))
-    new_nics_obj = nics + [getHostNic(host, nic) for nic in auto_nics]
+    new_nics_obj = nics + [get_host_nic(host, nic) for nic in auto_nics]
 
     host_nics = data_st.HostNics(host_nic=new_nics_obj)
 
@@ -1515,7 +1531,7 @@ def getHostNicAttr(host, nic, attr):
     return: True if the function succeeded, otherwise False
     """
     try:
-        nic_obj = getHostNic(host, nic)
+        nic_obj = get_host_nic(host, nic)
     except EntityNotFound:
         return False, {'attrValue': None}
 
@@ -2314,7 +2330,7 @@ def get_host_nic_statistics(host, nic):
     :return: VM NIC statistics list
     :rtype: list
     """
-    host_nic = getHostNic(host, nic)
+    host_nic = get_host_nic(host, nic)
     return HOST_NICS_API.getElemFromLink(
         host_nic, link_name="statistics", attr="statistic"
     )

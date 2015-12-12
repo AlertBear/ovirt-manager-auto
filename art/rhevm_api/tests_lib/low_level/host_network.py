@@ -61,7 +61,7 @@ def get_host_nic_network_attachments(host_name, nic):
     :return: Host NIC network attachments
     :rtype: list
     """
-    host_nic = ll_hosts.getHostNic(host_name, nic)
+    host_nic = ll_hosts.get_host_nic(host_name, nic)
     return ll_hosts.HOST_NICS_API.getElemFromLink(
         host_nic, NETWORKATTACHMENTS, NETWORK_ATTACHMENT
     )
@@ -143,7 +143,7 @@ def get_attachment_href(host_name, nic=None):
     """
     api = ll_hosts.HOST_NICS_API if nic else ll_hosts.HOST_API
     if nic:
-        entity = ll_hosts.getHostNic(host_name, nic)
+        entity = ll_hosts.get_host_nic(host_name, nic)
     else:
         entity = ll_hosts.HOST_API.find(host_name)
 
@@ -204,12 +204,12 @@ def prepare_network_attachment_obj(host_name, **kwargs):
     if nic:
         if BOND in nic:
             try:
-                host_nic = ll_hosts.getHostNic(host_name, nic)
+                host_nic = ll_hosts.get_host_nic(host_name, nic)
             except exceptions.EntityNotFound:
                 host_nic = data_st.HostNIC()
                 host_nic.set_name(nic)
         else:
-            host_nic = ll_hosts.getHostNic(host_name, nic)
+            host_nic = ll_hosts.get_host_nic(host_name, nic)
 
         network_attachment_obj.set_host_nic(host_nic)
 
@@ -241,7 +241,7 @@ def prepare_bond_attachment_obj(host_name, **kwargs):
     nic_name = kwargs.get(NIC)
     update = kwargs.get(UPDATE)
     if update:
-        host_nic_bond_obj = ll_hosts.getHostNic(host_name, kwargs.get(NIC))
+        host_nic_bond_obj = ll_hosts.get_host_nic(host_name, kwargs.get(NIC))
         bond_obj = host_nic_bond_obj.get_bonding()
         slaves = bond_obj.get_slaves()
         options = bond_obj.get_options()
@@ -259,7 +259,7 @@ def prepare_bond_attachment_obj(host_name, **kwargs):
         slaves_nics_ids = [i.get_id() for i in slaves.get_host_nic()]
         for nic in slave_list:
             if update:
-                nic_id = ll_hosts.getHostNic(host_name, nic).get_id()
+                nic_id = ll_hosts.get_host_nic(host_name, nic).get_id()
                 if nic_id in slaves_nics_ids:
                     continue
             slaves.add_host_nic(data_st.HostNIC(name=nic.strip()))
@@ -306,12 +306,12 @@ def prepare_remove_for_setupnetworks(host_name, dict_to_remove):
 
         if k == BONDS:
             for bond in dict_to_remove.get(BONDS):
-                bond_to_remove = ll_hosts.getHostNic(host_name, bond)
+                bond_to_remove = ll_hosts.get_host_nic(host_name, bond)
                 removed_bonds.add_host_nic(bond_to_remove)
 
         if k == LABELS:
             labels_list = dict_to_remove.get(LABELS)
-            host_nics = ll_hosts.getHostNicsList(host=host_name)
+            host_nics = ll_hosts.get_host_nics_list(host=host_name)
             label_objs = ll_networks.get_host_nic_label_objs_by_id(
                 host_nics=host_nics, labels_id=labels_list
             )
@@ -459,6 +459,6 @@ def create_host_nic_label_object(host_name, nic, label):
     :rtype: Label
     """
     label_obj = ll_networks.create_label(label=label)
-    host_nic_obj = ll_hosts.getHostNic(host=host_name, nic=nic)
+    host_nic_obj = ll_hosts.get_host_nic(host=host_name, nic=nic)
     label_obj.set_host_nic(host_nic_obj)
     return label_obj

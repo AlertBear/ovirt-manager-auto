@@ -297,7 +297,7 @@ def clean_host_interfaces(host_name):
     mgmt_net_name = ll_networks.NET_API.find(
         ll_clusters.get_cluster_management_network(host_cl).get_id(), "id"
     ).get_name()
-    host_nics = ll_hosts.getHostNicsList(host_name)
+    host_nics = ll_hosts.get_host_nics_list(host_name)
     for att in attachments:
         att_network_name = ll_general.get_object_name_by_id(
             ll_networks.NET_API, att.get_network().get_id()
@@ -369,7 +369,7 @@ def get_host_nic_name_from_network_attachment(host_name, network):
     if not attachment:
         return None
 
-    host_nics = ll_hosts.getHostNicsList(host_name)
+    host_nics = ll_hosts.get_host_nics_list(host_name)
     attachment_id = attachment[0].get_host_nic().get_id()
     names = [
         i.get_name() for i in host_nics if attachment_id == i.get_id()

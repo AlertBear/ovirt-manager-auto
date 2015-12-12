@@ -1191,6 +1191,14 @@ def get_host_nic_label_objs_by_id(host_nics, labels_id):
 
 
 def prepare_qos_on_net(qos_dict):
+    """
+    Prepare QoS on network
+
+    :param qos_dict: QoS values to add
+    :type qos_dict: dict
+    :return: Qos object
+    :rtype: data_st.QoS()
+    """
     # if we want to update qos to be unlimited need to send empty qos_dict,
     # otherwise update network with the QoS, given in the qos_dict
     if not qos_dict:

@@ -501,7 +501,7 @@ def getIpOnHostNic(host, nic):
                    bond(x).(xxx) - VLAN BOND NIC
     **Return**: IP or None
     '''
-    host_nic = ll_hosts.getHostNic(host=host, nic=nic)
+    host_nic = ll_hosts.get_host_nic(host=host, nic=nic)
     return host_nic.get_ip().get_address()
 
 
@@ -520,7 +520,7 @@ def checkHostNicParameters(host, nic, **kwargs):
     **Return**: True if action succeeded, otherwise False
     """
     res = True
-    host_nic = ll_hosts.getHostNic(host, nic)
+    host_nic = ll_hosts.get_host_nic(host, nic)
 
     if kwargs.get("bridge") is not None:
         bridged = host_nic.get_bridged()
@@ -532,7 +532,7 @@ def checkHostNicParameters(host, nic, **kwargs):
     if kwargs.get("vlan_id"):
         vlan_nic = ".".join([nic, kwargs.get("vlan_id")])
         try:
-            ll_hosts.getHostNic(host, vlan_nic)
+            ll_hosts.get_host_nic(host, vlan_nic)
         except apis_exceptions.EntityNotFound:
             logger.error("Fail to get %s interface from %s", vlan_nic, host)
             res = False
@@ -637,7 +637,7 @@ def update_network_host(host, nic, auto_nics, save_config=True, **kwargs):
                        "ethtool_opts": "--offload eth2 rx on"}}
     **Return**: True if update succeeded, otherwise False
     """
-    nic_obj = ll_hosts.getHostNic(host=host, nic=nic)
+    nic_obj = ll_hosts.get_host_nic(host=host, nic=nic)
     kwargs.update({'update': nic_obj})
     rc, out = ll_hosts.genSNNic(nic=nic_obj, **kwargs)
     if not rc:

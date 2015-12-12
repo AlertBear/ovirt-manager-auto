@@ -187,17 +187,23 @@ class APIUtil(object):
             setattr(action, p, params[p])
         return action
 
-    def getElemFromElemColl(self, elm, name_val, collection_name=None,
-                            elm_name=None, prop='name'):
+    def getElemFromElemColl(
+        self, elm, name_val, collection_name=None, elm_name=None,
+        prop='name', all_content=False
+    ):
         '''
         Description: get element from element's collection
         Parameters:
            * elm - element object
            * collection_name - collection name
            * elm_name - element name
-           * name_val - name of element to loof for
+           * name_val - name of element to look for
+           * all_content - Get object with all-content
         Return: element obj or None if not found
         '''
+        if all_content:
+            self.api.headers['All-content'] = True
+
         if not collection_name:
             collection_name = self.collection_name
 
