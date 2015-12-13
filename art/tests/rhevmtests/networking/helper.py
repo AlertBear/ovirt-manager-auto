@@ -362,7 +362,7 @@ def set_libvirtd_sasl(host_obj, sasl=True):
     )
     try:
         hl_hosts.restart_services_under_maintenance_state(
-            [conf.LIBVIRTD_SERVICE, conf.VDSMD_SERVICE], host_obj
+            [conf.LIBVIRTD_SERVICE, conf.VDSMD_SERVICE], host_obj, conf.TIMEOUT
         )
     except exceptions.HostException:
         logger.error(

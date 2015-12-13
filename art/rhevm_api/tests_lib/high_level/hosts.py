@@ -169,7 +169,9 @@ def activate_host_if_not_up(host):
     return True
 
 
-def restart_services_under_maintenance_state(services, host_resource):
+def restart_services_under_maintenance_state(
+    services, host_resource, timeout=None
+):
     """
     Put host to maintenance, restart given services then activate host.
     The services will be restarted by the list order.
@@ -178,6 +180,8 @@ def restart_services_under_maintenance_state(services, host_resource):
     :type services: list
     :param host_resource: host resource
     :type host_resource: instance of VDS
+    :param timeout: Timeout for restart service operation
+    :type timeout: int
     :raises: HostException
     """
     host_name = ll_hosts.get_host_name_from_engine(host_resource.ip)
@@ -188,7 +192,7 @@ def restart_services_under_maintenance_state(services, host_resource):
         )
     logging.info("Restart services %s on %s ", services, host_name)
     for srv in services:
-        if not host_resource.service(srv).restart():
+        if not host_resource.service(srv, timeout).restart():
             logging.error(
                 "Failed to restart %s, activating host %s", srv, host_name
             )
