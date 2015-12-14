@@ -31,11 +31,12 @@ def setup_module():
             (conf.SYNC_DC, conf.SYNC_CL)
         )
     logger.info(
-        "Add %s to %s/%s", conf.SYNC_DICT_1, conf.DC_NAME_1, conf.CLUSTER_2
+        "Add %s to %s/%s", conf.SYNC_DICT_1, conf.DC_NAME_1,
+        conf.CLUSTER_NAME_1
     )
     net_helper.prepare_networks_on_setup(
         networks_dict=conf.SYNC_DICT_1, dc=conf.DC_NAME_1,
-        cluster=conf.CLUSTER_2
+        cluster=conf.CLUSTER_NAME_1
     )
     logger.info(
         "Add %s to %s/%s", conf.SYNC_DICT_2, conf.SYNC_DC, conf.SYNC_CL
@@ -43,10 +44,10 @@ def setup_module():
     net_helper.prepare_networks_on_setup(
         networks_dict=conf.SYNC_DICT_2, dc=conf.SYNC_DC, cluster=conf.SYNC_CL
     )
-    logger.info("Deactivate %s", conf.LAST_HOST)
-    if not ll_hosts.deactivateHost(True, conf.LAST_HOST):
+    logger.info("Deactivate %s", conf.HOST_0_NAME)
+    if not ll_hosts.deactivateHost(True, conf.HOST_0_NAME):
         raise conf.NET_EXCEPTION(
-            "Failed to set %s to maintenance" % conf.LAST_HOST
+            "Failed to set %s to maintenance" % conf.HOST_0_NAME
         )
 
 
@@ -62,14 +63,14 @@ def teardown_module():
             "Failed to remove %s and %s", conf.SYNC_DC, conf.SYNC_CL
         )
     if not hl_networks.remove_net_from_setup(
-        host=conf.LAST_HOST, all_net=True, mgmt_network=conf.MGMT_BRIDGE
+        host=conf.HOST_0_NAME, all_net=True, mgmt_network=conf.MGMT_BRIDGE
     ):
         logger.error(
             "Failed to remove %s from setup", conf.SYNC_DICT_1.keys()
         )
-    logger.info("Activate %s", conf.LAST_HOST)
-    if not ll_hosts.activateHost(positive=True, host=conf.LAST_HOST):
-        logger.error("Failed to activate %s", conf.LAST_HOST)
+    logger.info("Activate %s", conf.HOST_0_NAME)
+    if not ll_hosts.activateHost(positive=True, host=conf.HOST_0_NAME):
+        logger.error("Failed to activate %s", conf.HOST_0_NAME)
 
 
 class TestHostNetworkApiSyncBase(helper.TestHostNetworkApiTestCaseBase):
@@ -86,19 +87,20 @@ class TestHostNetworkApiSyncBase(helper.TestHostNetworkApiTestCaseBase):
         Attach networks to the host
         Move the host the another cluster
         """
-        logger.info("Attaching networks to %s", conf.LAST_HOST)
+        logger.info("Attaching networks to %s", conf.HOST_0_NAME)
         if not hl_host_network.setup_networks(
-            host_name=conf.LAST_HOST, **cls.network_host_api_dict
+            host_name=conf.HOST_0_NAME, **cls.network_host_api_dict
         ):
             raise conf.NET_EXCEPTION(
-                "Failed to attach networks to %s" % conf.LAST_HOST
+                "Failed to attach networks to %s" % conf.HOST_0_NAME
             )
         if cls.move_host:
             if not ll_hosts.updateHost(
-                positive=True, host=conf.LAST_HOST, cluster=conf.SYNC_CL
+                positive=True, host=conf.HOST_0_NAME, cluster=conf.SYNC_CL
             ):
                 raise conf.NET_EXCEPTION(
-                    "Failed to move %s to %s" % (conf.LAST_HOST, conf.SYNC_CL)
+                    "Failed to move %s to %s" %
+                    (conf.HOST_0_NAME, conf.SYNC_CL)
                 )
 
     @classmethod
@@ -107,17 +109,19 @@ class TestHostNetworkApiSyncBase(helper.TestHostNetworkApiTestCaseBase):
         Clean the host interface
         Move the host back to the original cluster
         """
-        logger.info("Removing all networks from %s", conf.LAST_HOST)
-        if not hl_host_network.clean_host_interfaces(conf.LAST_HOST):
+        logger.info("Removing all networks from %s", conf.HOST_0_NAME)
+        if not hl_host_network.clean_host_interfaces(conf.HOST_0_NAME):
             logger.error(
-                "Failed to remove all networks from %s", conf.LAST_HOST
+                "Failed to remove all networks from %s", conf.HOST_0_NAME
             )
         if cls.move_host:
             if not ll_hosts.updateHost(
-                positive=True, host=conf.LAST_HOST, cluster=conf.CLUSTER_2
+                positive=True, host=conf.HOST_0_NAME,
+                cluster=conf.CLUSTER_NAME_1
             ):
                 logger.error(
-                    "Failed to move %s to %s", conf.LAST_HOST, conf.CLUSTER_2
+                    "Failed to move %s to %s",
+                    conf.HOST_0_NAME, conf.CLUSTER_NAME_1
                 )
 
 
@@ -147,17 +151,17 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "network": cls.net_case_1,
-                    "nic": conf.LAST_HOST_NICS[1],
+                    "nic": conf.HOST_0_NICS[1],
                     "datacenter": conf.DC_NAME_1
                 },
                 "2": {
                     "network": cls.net_case_2,
-                    "nic": conf.LAST_HOST_NICS[2],
+                    "nic": conf.HOST_0_NICS[2],
                     "datacenter": conf.DC_NAME_1
                 },
                 "3": {
                     "network": cls.net_case_3,
-                    "nic": conf.LAST_HOST_NICS[3],
+                    "nic": conf.HOST_0_NICS[3],
                     "datacenter": conf.DC_NAME_1
                 }
             }
@@ -180,7 +184,7 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
     @polarion("RHEVM3-13979")
@@ -199,7 +203,7 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_2]
+            host=conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
     @polarion("RHEVM3-13980")
@@ -218,7 +222,7 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_3]
+            host=conf.HOST_0_NAME, networks=[self.net_case_3]
         )
 
 
@@ -297,7 +301,7 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
     @polarion("RHEVM3-13982")
@@ -317,7 +321,7 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_2]
+            host=conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
     @polarion("RHEVM3-13985")
@@ -336,7 +340,7 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_3]
+            host=conf.HOST_0_NAME, networks=[self.net_case_3]
         )
 
 
@@ -366,17 +370,17 @@ class TestHostNetworkApiSync03(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "network": cls.net_case_1,
-                    "nic": conf.LAST_HOST_NICS[1],
+                    "nic": conf.HOST_0_NICS[1],
                     "datacenter": conf.DC_NAME_1
                 },
                 "2": {
                     "network": cls.net_case_2,
-                    "nic": conf.LAST_HOST_NICS[2],
+                    "nic": conf.HOST_0_NICS[2],
                     "datacenter": conf.DC_NAME_1
                 },
                 "3": {
                     "network": cls.net_case_3,
-                    "nic": conf.LAST_HOST_NICS[3],
+                    "nic": conf.HOST_0_NICS[3],
                     "datacenter": conf.DC_NAME_1
                 }
             }
@@ -399,7 +403,7 @@ class TestHostNetworkApiSync03(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
     @polarion("RHEVM3-13988")
@@ -418,7 +422,7 @@ class TestHostNetworkApiSync03(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_2]
+            host=conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
     @polarion("RHEVM3-13989")
@@ -437,7 +441,7 @@ class TestHostNetworkApiSync03(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_3]
+            host=conf.HOST_0_NAME, networks=[self.net_case_3]
         )
 
 
@@ -516,7 +520,7 @@ class TestHostNetworkApiSync04(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
     @polarion("RHEVM3-13991")
@@ -536,7 +540,7 @@ class TestHostNetworkApiSync04(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_2]
+            host=conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
     @polarion("RHEVM3-13992")
@@ -556,7 +560,7 @@ class TestHostNetworkApiSync04(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_3]
+            host=conf.HOST_0_NAME, networks=[self.net_case_3]
         )
 
 
@@ -583,12 +587,12 @@ class TestHostNetworkApiSync05(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "network": cls.net_case_1,
-                    "nic": conf.LAST_HOST_NICS[1],
+                    "nic": conf.HOST_0_NICS[1],
                     "datacenter": conf.DC_NAME_1
                 },
                 "2": {
                     "network": cls.net_case_2,
-                    "nic": conf.LAST_HOST_NICS[2],
+                    "nic": conf.HOST_0_NICS[2],
                     "datacenter": conf.DC_NAME_1
                 }
             }
@@ -611,7 +615,7 @@ class TestHostNetworkApiSync05(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
     @polarion("RHEVM3-13994")
@@ -630,7 +634,7 @@ class TestHostNetworkApiSync05(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_2]
+            host=conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
 
@@ -695,7 +699,7 @@ class TestHostNetworkApiSync06(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
     @polarion("RHEVM3-13996")
@@ -714,7 +718,7 @@ class TestHostNetworkApiSync06(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_2]
+            host=conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
 
@@ -742,7 +746,7 @@ class TestHostNetworkApiSync07(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "network": cls.net_case_1,
-                    "nic": conf.LAST_HOST_NICS[1],
+                    "nic": conf.HOST_0_NICS[1],
                     "datacenter": conf.DC_NAME_1
                 }
             }
@@ -774,7 +778,7 @@ class TestHostNetworkApiSync07(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -839,7 +843,7 @@ class TestHostNetworkApiSync08(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -864,7 +868,7 @@ class TestHostNetworkApiSync09(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "network": cls.net_case_1,
-                    "nic": conf.LAST_HOST_NICS[1],
+                    "nic": conf.HOST_0_NICS[1],
                     "ip": conf.BASIC_IP_DICT_NETMASK,
                 }
             }
@@ -890,7 +894,7 @@ class TestHostNetworkApiSync09(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -915,7 +919,7 @@ class TestHostNetworkApiSync10(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "network": cls.net_case_1,
-                    "nic": conf.LAST_HOST_NICS[1],
+                    "nic": conf.HOST_0_NICS[1],
                     "ip": conf.BASIC_IP_DICT_NETMASK,
                 }
             }
@@ -942,7 +946,7 @@ class TestHostNetworkApiSync10(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -968,7 +972,7 @@ class TestHostNetworkApiSync11(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "network": cls.net_case_1,
-                    "nic": conf.LAST_HOST_NICS[1],
+                    "nic": conf.HOST_0_NICS[1],
                     "ip": conf.BASIC_IP_DICT_PREFIX,
                 }
             }
@@ -996,7 +1000,7 @@ class TestHostNetworkApiSync11(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -1052,7 +1056,7 @@ class TestHostNetworkApiSync12(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -1109,7 +1113,7 @@ class TestHostNetworkApiSync13(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -1168,7 +1172,7 @@ class TestHostNetworkApiSync14(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -1194,7 +1198,7 @@ class TestHostNetworkApiSync15(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "network": cls.net_case_1,
-                    "nic": conf.LAST_HOST_NICS[1],
+                    "nic": conf.HOST_0_NICS[1],
                 }
             }
         }
@@ -1219,7 +1223,7 @@ class TestHostNetworkApiSync15(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -1276,7 +1280,7 @@ class TestHostNetworkApiSync16(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -1301,7 +1305,7 @@ class TestHostNetworkApiSync17(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "network": cls.net_case_1,
-                    "nic": conf.LAST_HOST_NICS[1],
+                    "nic": conf.HOST_0_NICS[1],
                     "ip": conf.BASIC_IP_DICT_NETMASK,
                 }
             }
@@ -1327,7 +1331,7 @@ class TestHostNetworkApiSync17(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -1352,7 +1356,7 @@ class TestHostNetworkApiSync18(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "network": cls.net_case_1,
-                    "nic": conf.LAST_HOST_NICS[1],
+                    "nic": conf.HOST_0_NICS[1],
                     "ip": conf.BASIC_IP_DICT_NETMASK,
                 }
             }
@@ -1378,7 +1382,7 @@ class TestHostNetworkApiSync18(TestHostNetworkApiSyncBase):
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
 
@@ -1423,17 +1427,17 @@ class TestHostNetworkApiSync19(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "network": cls.net_case_1,
-                    "nic": conf.LAST_HOST_NICS[1],
+                    "nic": conf.HOST_0_NICS[1],
                     "datacenter": conf.DC_NAME_1
                 },
                 "2": {
                     "network": cls.net_case_2,
-                    "nic": conf.LAST_HOST_NICS[2],
+                    "nic": conf.HOST_0_NICS[2],
                     "datacenter": conf.DC_NAME_1
                 },
                 "3": {
                     "network": cls.net_case_3,
-                    "nic": conf.LAST_HOST_NICS[3],
+                    "nic": conf.HOST_0_NICS[3],
                     "datacenter": conf.DC_NAME_1
                 }
             }
@@ -1455,7 +1459,7 @@ class TestHostNetworkApiSync19(TestHostNetworkApiSyncBase):
 
             helper.get_networks_sync_status_and_unsync_reason(compare_dict_)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
     @polarion("RHEVM3-14027")
@@ -1473,7 +1477,7 @@ class TestHostNetworkApiSync19(TestHostNetworkApiSyncBase):
 
             helper.get_networks_sync_status_and_unsync_reason(compare_dict_)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_2]
+            host=conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
     @polarion("RHEVM3-14028")
@@ -1491,7 +1495,7 @@ class TestHostNetworkApiSync19(TestHostNetworkApiSyncBase):
 
             helper.get_networks_sync_status_and_unsync_reason(compare_dict_)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_3]
+            host=conf.HOST_0_NAME, networks=[self.net_case_3]
         )
 
 
@@ -1584,7 +1588,7 @@ class TestHostNetworkApiSync20(TestHostNetworkApiSyncBase):
 
             helper.get_networks_sync_status_and_unsync_reason(compare_dict_)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_1]
+            host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
     @polarion("RHEVM3-14030")
@@ -1602,7 +1606,7 @@ class TestHostNetworkApiSync20(TestHostNetworkApiSyncBase):
 
             helper.get_networks_sync_status_and_unsync_reason(compare_dict_)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_2]
+            host=conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
     @polarion("RHEVM3-14031")
@@ -1620,5 +1624,5 @@ class TestHostNetworkApiSync20(TestHostNetworkApiSyncBase):
 
             helper.get_networks_sync_status_and_unsync_reason(compare_dict_)
         net_helper.sync_networks(
-            host=conf.LAST_HOST, networks=[self.net_case_3]
+            host=conf.HOST_0_NAME, networks=[self.net_case_3]
         )

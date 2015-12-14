@@ -8,12 +8,11 @@ Config for Host Network API job
 from rhevmtests.networking.config import *  # NOQA
 import rhevmtests.helpers as global_helper
 
-LAST_HOST_NICS = None  # Filled in setup_package
-VDS_LAST_HOST = VDS_HOSTS[-1]
-NET0 = NETWORKS[0]
-LAST_HOST = HOSTS[-1]
+HOST_0_NICS = None  # Filled in setup_package
+HOST_0_NAME = None  # Filled in setup_package
+VDS_0_HOST = None  # Filled in setup_package
 DC_NAME_1 = DC_NAME[0]
-CLUSTER_2 = CLUSTER_NAME[1]
+CLUSTER_NAME_1 = CLUSTER_NAME[0]
 SYNC_DC = "Sync_DC"
 SYNC_CL = "Sync_cluster"
 QOS_NAME = global_helper.generate_object_names(
