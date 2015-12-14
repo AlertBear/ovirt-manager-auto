@@ -51,12 +51,13 @@ def prepare_vms(vm_disks, add_repo=True):
             cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE,
             nic=config.NIC_NAME,
-            nicType=config.NIC_TYPE_E1000,
+            nicType=config.NIC_TYPE_VIRTIO,
+            display_type=config.ENUMS['display_type_vnc'],
         )
         config.TEST_IMAGES[image]['id'] = VM_API.find(image).id
 
     for image in vm_disks:
-        if config.TEST_IMAGES[image]['image']._is_import_success(1800):
+        if config.TEST_IMAGES[image]['image']._is_import_success(5400):
             assert disks.attachDisk(True, image, image)
             assert vms.startVm(True, image, wait_for_status=config.VM_UP)
             mac = vms.getVmMacAddress(
