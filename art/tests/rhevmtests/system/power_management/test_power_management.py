@@ -4,7 +4,7 @@ Power Management test
 
 from art.rhevm_api.tests_lib.low_level import vms
 from art.test_handler.tools import polarion
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import attr, CoreSystemTest as TestCase
 from art.rhevm_api.tests_lib.high_level import hosts
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 from art.rhevm_api.tests_lib.low_level import events
@@ -122,6 +122,7 @@ def _add_power_management(host=None, **kwargs):
                                pm_password=config.PM1_PASS, **kwargs)
 
 
+@attr(tier=3, extra_reqs={'mgmt': True})
 class TestWithHighAvailableVm(TestCase):
     """
     Base test class for tests with high available vm
@@ -158,6 +159,7 @@ class TestWithHighAvailableVm(TestCase):
             raise VMException("cannot remove vm: %s" % cls.vm2_name)
 
 
+@attr(tier=3, extra_reqs={'mgmt': True})
 class TestPMWithBadParameters(TestCase):
 
     __test__ = False
@@ -175,6 +177,7 @@ class TestPMWithBadParameters(TestCase):
         _move_host_to_up(HOST_WITH_PM)
 
 
+@attr(tier=3, extra_reqs={'fence': True})
 class TestFenceOnHost(TestCase):
 
     __test__ = False
@@ -199,6 +202,7 @@ class TestFenceOnHost(TestCase):
                                       pm_type=config.PM1_TYPE)
 
 
+@attr(tier=3, extra_reqs={'mgmt': True})
 class TestFenceHostWithTwoPMAgents(TestCase):
 
     __test__ = False
@@ -241,6 +245,7 @@ class TestFenceHostWithTwoPMAgents(TestCase):
             _move_host_to_up(HOST_WITH_PM)
 
 
+@attr(tier=3, extra_reqs={'mgmt': True})
 class TestFenceProxySelection(TestCase):
 
     __test__ = False
