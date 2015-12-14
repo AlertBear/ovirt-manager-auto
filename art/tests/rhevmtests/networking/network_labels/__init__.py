@@ -17,5 +17,4 @@ def setup_package():
     """
    Running cleanup
     """
-
     networking.network_cleanup()
