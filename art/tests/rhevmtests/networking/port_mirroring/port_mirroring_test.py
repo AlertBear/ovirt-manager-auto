@@ -7,7 +7,7 @@ using 2 hosts and 5 VMs
 """
 
 import logging
-import helper as helper
+import helper
 from art.unittest_lib import attr
 from art.core_api import apis_utils
 from art.test_handler.tools import polarion  # pylint: disable=E0611
