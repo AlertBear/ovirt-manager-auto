@@ -1759,7 +1759,7 @@ def removeSnapshot(
     if not SNAPSHOT_API.delete(snapshot, positive):
         return False
 
-    if wait:
+    if wait and positive:
         status = wait_for_snapshot_gone(vm, description, timeout)
         return status
     return True
