@@ -135,7 +135,7 @@ def migrate_vms_and_check_traffic(
     logger.info("Start migration from %s", orig_host)
     if not check_traffic_while_migrating(
         vms=vms, orig_host_obj=orig_host_obj, orig_host=orig_host,
-        dst_host=dst_host, nic=dst_host_obj.nics[nic_index], src_ip=src,
+        dst_host=dst_host, nic=orig_host_obj.nics[nic_index], src_ip=src,
         dst_ip=dst, req_nic=req_nic, maintenance=maintenance
     ):
         raise exceptions.NetworkException(
