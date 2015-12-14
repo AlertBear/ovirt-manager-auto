@@ -566,5 +566,42 @@ def remove_networks_from_setup(hosts=None, dc=conf.DC_NAME[0]):
     ):
         logger.error("Cannot remove all networks from setup")
 
+
+def remove_ifcfg_files(vms):
+    """
+    Remove all ifcfg files beside ifcfg-eth0 from vms
+
+    :param vms: List of VMs
+    :type vms: list
+    """
+    for vm in vms:
+        try:
+            vm_resource = get_vm_resource(vm)
+        except conf.NET_EXCEPTION:
+            logger.error("Failed to get VM resource for %s", vm)
+            continue
+        interfaces = get_vm_interfaces_list(vm_resource)
+        for interface in interfaces:
+            ifcfg_path = "/etc/sysconfig/network-scripts/ifcfg-%s" % interface
+            logger.info("Remove %s from %s", ifcfg_path, vm)
+            if not vm_resource.fs.remove(ifcfg_path):
+                logger.error("Fail to remove %s for %s", ifcfg_path, vm)
+
+
+def get_vm_interfaces_list(vm_resource, keep_nic):
+    """
+    Get VM interface list beside ifcfg-eth0
+
+    :param vm_resource: VM resource
+    :type vm_resource: Resource.VDS
+    :param keep_nic: NIC name to keep
+    :type keep_nic: str
+    :return: VM interfaces list
+    :rtype: list
+    """
+    logger.info("Getting interfaces list from %s", vm_resource.ip)
+    vm_nics = vm_resource.network.all_interfaces()
+    return filter(lambda x: x != keep_nic, vm_nics)
+
 if __name__ == "__main__":
     pass

@@ -5,12 +5,13 @@
 Cumulative Network Usage Statistics helper file
 """
 
-import config as conf
 import logging
+import operator
+import config as conf
 import rhevmtests.helpers as global_helper
+import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import operator
 
 logger = logging.getLogger("Cumulative_RX_TX_Statistics_Helper")
 
@@ -49,20 +50,19 @@ def config_ip(vms_and_ips):
     for vm_and_ip in vms_and_ips:
         vm = vm_and_ip[0]
         ip = vm_and_ip[1]
-
         vm_resource = get_vm_resource(vm)
-
-        logger.info("Getting interfaces list from %s", vm)
-        vm_nics = vm_resource.network.all_interfaces()
-        interface = filter(lambda x: x != conf.ETH0, vm_nics)
+        interface = network_helper.get_vm_interfaces_list(
+            vm_resource, keep_nic=conf.ETH0
+        )
         if not interface:
             raise conf.NET_EXCEPTION("Failed to get interface from %s" % vm)
-        ifcfg_params["IPADDR"] = ip
 
-        logger.info("Setting IP on %s for %s", interface[0], vm)
+        ifcfg_params["IPADDR"] = ip
+        logger.info("Setting IP %s on %s for %s", ip, interface[0], vm)
         vm_resource.network.create_ifcfg_file(
             nic=interface[0], params=ifcfg_params
         )
+        logger.info("Restart network service on %s", vm)
         if not vm_resource.service("network").restart():
             raise conf.NET_EXCEPTION("Couldn't restart network service")
 
@@ -96,6 +96,8 @@ def compare_nic_stats(
     :type total_rx: int
     :param total_tx: Total TX stats to check against
     :type total_tx: int
+    :param oper: The operator to compare with
+    :type oper: str
     :raise: Network exception
     """
     # logger.info("Get %s statistics on %s", nic, vm)

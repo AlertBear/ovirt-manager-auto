@@ -4,21 +4,89 @@
 """
 Cumulative Network Usage Statistics for Host
 """
-import config as conf
-import logging
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+
+import time
 import helper
-from art.unittest_lib import attr
-from art.unittest_lib import NetworkTest as TestCase
+import logging
+import config as conf
+from art import unittest_lib
+from art.core_api import apis_utils
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import time
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 logger = logging.getLogger("Cumulative_RX_TX_Statistics_Cases")
 
 
-@attr(tier=2)
-class CumulativeHostStatisticsBase(TestCase):
+def setup_module():
+    """
+    Create and attach networks on DC/Cluster and hosts
+    Increase rx/tx statistics on Host NICs by sending ICMP
+    """
+    add_net_dict = {
+        conf.HOST_NET: {
+            "required": "false",
+        }
+    }
+    sn_dict = {
+        "add": {
+            "1": {
+                "network": conf.HOST_NET,
+                "nic": None,
+                "ip": conf.BASIC_IP_DICT_NETMASK,
+            }
+        }
+    }
+    logger.info("Create and attach %s to DC/Clusters", conf.HOST_NET)
+    if not hl_networks.createAndAttachNetworkSN(
+        data_center=conf.DC_0, cluster=conf.CL_0, network_dict=add_net_dict
+    ):
+        raise conf.NET_EXCEPTION(
+            "Failed to create and attach %s to DC/Cluster" % conf.HOST_NET
+        )
+    for i in range(2):
+        logger.info(
+            "Attaching %s to %s via SN", conf.HOST_NET, conf.HOSTS[i]
+        )
+        sn_dict["add"]["1"]["nic"] = conf.VDS_HOSTS[i].nics[1]
+        conf.BASIC_IP_DICT_NETMASK["ip_prefix"]["address"] = conf.HOST_IPS[i]
+        if not hl_host_network.setup_networks(
+            host_name=conf.HOSTS[i], **sn_dict
+        ):
+            raise conf.NET_EXCEPTION(
+                "Failed to attach %s to %s via SN" %
+                (conf.HOST_NET, conf.HOSTS[i])
+            )
+
+    sample = apis_utils.TimeoutingSampler(
+        timeout=conf.SAMPLER_TIMEOUT, sleep=1,
+        func=hl_networks.checkICMPConnectivity,
+        host=conf.VDS_HOSTS[0].ip, user=conf.HOSTS_USER,
+        password=conf.HOSTS_PW, ip=conf.HOST_IPS[1]
+    )
+    if not sample.waitForFuncStatus(result=True):
+        raise conf.NET_EXCEPTION("Couldn't ping %s " % conf .HOST_IPS[1])
+
+    logger.info("Increase rx/tx statistics on Host NICs by sending ICMP")
+    helper.send_icmp([
+        (conf.VDS_HOSTS[1], conf.HOST_IPS[0]),
+        (conf.VDS_HOSTS[0], conf.HOST_IPS[1])
+    ])
+
+
+def teardown_module():
+    """
+    Remove all network from setup
+    """
+    network_helper.remove_networks_from_setup(
+        hosts=conf.HOSTS[:2], dc=conf.DC_0
+    )
+
+
+@unittest_lib.attr(tier=2)
+class CumulativeHostStatisticsBase(unittest_lib.NetworkTest):
     """
     Check Host statistics before the test
     Move host to another cluster if needed
@@ -35,10 +103,10 @@ class CumulativeHostStatisticsBase(TestCase):
         2. Move host to another cluster if needed
         """
         logger.info(
-            "Get %s statistics on %s", conf.HOST_4_NIC_1, conf.LAST_HOST
+            "Get %s statistics on %s", conf.HOST_0_NIC_1, conf.HOST_0_NAME
         )
         cls.nic_stat = hl_networks.get_nic_statistics(
-            nic=conf.HOST_4_NIC_1, host=conf.LAST_HOST, keys=conf.STAT_KEYS
+            nic=conf.HOST_0_NIC_1, host=conf.HOST_0_NAME, keys=conf.STAT_KEYS
         )
 
         cls.total_rx = cls.nic_stat["data.total.rx"]
@@ -46,7 +114,7 @@ class CumulativeHostStatisticsBase(TestCase):
 
         if cls.move_host:
             hl_hosts.move_host_to_another_cluster(
-                host=conf.LAST_HOST, cluster=conf.CL_0
+                host=conf.HOST_0_NAME, cluster=conf.CL_0
             )
 
 
@@ -67,13 +135,13 @@ class CumulativeNetworkUsageHostStatisticsCase1(CumulativeHostStatisticsBase):
         logger.info("Increase rx/tx statistics on Host NICs by sending ICMP")
         helper.send_icmp(
             [
-                (conf.VDS_HOSTS[-2], conf.HOST_IPS[0]),
-                (conf.VDS_HOSTS[-1], conf.HOST_IPS[1])
+                (conf.VDS_HOSTS[1], conf.HOST_IPS[0]),
+                (conf.VDS_HOSTS[0], conf.HOST_IPS[1])
             ]
         )
         time.sleep(20)
         helper.compare_nic_stats(
-            nic=conf.HOST_4_NIC_1, host=conf.LAST_HOST,
+            nic=conf.HOST_0_NIC_1, host=conf.HOST_0_NAME,
             total_rx=self.total_rx, total_tx=self.total_tx, oper=">"
         )
 
@@ -92,7 +160,7 @@ class CumulativeNetworkUsageHostStatisticsCase2(CumulativeHostStatisticsBase):
         Check statistics in a new Cluster are >= than in the original Cluster
         """
         helper.compare_nic_stats(
-            nic=conf.HOST_4_NIC_1, host=conf.LAST_HOST,
+            nic=conf.HOST_0_NIC_1, host=conf.HOST_0_NAME,
             total_rx=self.total_rx, total_tx=self.total_tx
         )
 
@@ -102,7 +170,7 @@ class CumulativeNetworkUsageHostStatisticsCase2(CumulativeHostStatisticsBase):
         Return Host back to its original cluster
         """
         hl_hosts.move_host_to_another_cluster(
-            host=conf.LAST_HOST, cluster=conf.CL_1
+            host=conf.HOST_0_NAME, cluster=conf.CL_0
         )
 
 
@@ -122,7 +190,11 @@ class CumulativeNetworkUsageHostStatisticsCase3(CumulativeHostStatisticsBase):
         1. Create a DC/Cluster with 3.5 version
         2. Attach a network to the new DC/Cluster
         """
-        add_net_dict = {conf.NET_0: {"required": "false"}}
+        add_net_dict = {
+            conf.HOST_NET: {
+                "required": "false"
+            }
+        }
         super(CumulativeNetworkUsageHostStatisticsCase3, cls).setup_class()
 
         if not hl_networks.create_basic_setup(
@@ -137,7 +209,7 @@ class CumulativeNetworkUsageHostStatisticsCase3(CumulativeHostStatisticsBase):
             network_dict=add_net_dict
         ):
             raise conf.NET_EXCEPTION(
-                "Failed to create and attach %s to DC/Cluster" % conf.NET_0
+                "Failed to create and attach %s to DC/Cluster" % conf.HOST_NET
             )
 
     @polarion("RHEVM3-6683")
@@ -147,11 +219,11 @@ class CumulativeNetworkUsageHostStatisticsCase3(CumulativeHostStatisticsBase):
         2. Check statistics in a new Cluster are N/A
         """
         hl_hosts.move_host_to_another_cluster(
-            host=conf.LAST_HOST, cluster=conf.CL_3_5
+            host=conf.HOST_0_NAME, cluster=conf.CL_3_5
         )
         time.sleep(20)
         nic_stat = hl_networks.get_nic_statistics(
-            nic=conf.HOST_4_NIC_1, host=conf.LAST_HOST,
+            nic=conf.HOST_0_NIC_1, host=conf.HOST_0_NAME,
             keys=conf.STAT_KEYS
         )
 
@@ -173,7 +245,7 @@ class CumulativeNetworkUsageHostStatisticsCase3(CumulativeHostStatisticsBase):
         2. Check statistics in the original Cluster are zero
         """
         hl_hosts.move_host_to_another_cluster(
-            host=conf.LAST_HOST, cluster=conf.CL_1
+            host=conf.HOST_0_NAME, cluster=conf.CL_0
         )
 
         logger.info(
@@ -182,7 +254,7 @@ class CumulativeNetworkUsageHostStatisticsCase3(CumulativeHostStatisticsBase):
         )
         time.sleep(15)
         nic_stat = hl_networks.get_nic_statistics(
-            nic=conf.HOST_4_NIC_1, host=conf.LAST_HOST, keys=conf.STAT_KEYS
+            nic=conf.HOST_0_NIC_1, host=conf.HOST_0_NAME, keys=conf.STAT_KEYS
         )
         if nic_stat["data.total.tx"] != 0.0:
             raise conf.NET_EXCEPTION(
