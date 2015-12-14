@@ -430,7 +430,7 @@ class Windows7_64bit(WindowsDesktop):
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 7 64bit.
     """
-    __test__ = True
+    __test__ = False
     # TODO: name disk in glance as these clasess and get rid of diskName var
     diskName = config.WIN7_DISK_64b
     codename = 'Win 7'
@@ -473,7 +473,7 @@ class Windows7_32b(WindowsDesktop):
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 7 32bit.
     """
-    __test__ = True
+    __test__ = False
     diskName = config.WIN7_DISK_32b
     codename = 'Win 7'
     polarion_map = {
@@ -545,7 +545,7 @@ class Windows8_1_64bit(WindowsDesktop):
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 7 64bit.
     """
-    __test__ = True
+    __test__ = False
     diskName = config.WIN8_1_DISK_64b
     codename = 'Win 8.1'
     UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
@@ -596,7 +596,7 @@ class Windows8_1_32b(WindowsDesktop):
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 7 32bit.
     """
-    __test__ = True
+    __test__ = False
     diskName = config.WIN8_1_DISK_32b
     codename = 'Win 8.1'
     UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
@@ -699,7 +699,7 @@ class Windows2008R2_64b(WindowsServer):
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 2008R2 64bit.
     """
-    __test__ = True
+    __test__ = False
     diskName = config.WIN2008R2_DISK_64b
     codename = 'Win 2008 R2'
     polarion_map = {
@@ -741,7 +741,7 @@ class Windows2012_64b(WindowsServer):
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 2012 64bit.
     """
-    __test__ = True
+    __test__ = False
     diskName = config.WIN2012_DISK_64b
     codename = 'Win 2012'
     polarion_map = {
@@ -783,7 +783,7 @@ class Windows2012R2_64b(WindowsServer):
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 2012R2 64bit.
     """
-    __test__ = True
+    __test__ = False
     diskName = config.WIN2012R2_DISK_64b
     codename = 'Win 2012 R2'
     polarion_map = {
@@ -830,7 +830,7 @@ class Windows10_64b(WindowsDesktop):
     Test that all product and services exist on windows machine after
     GuestTools installation for windows 10 64bit.
     """
-    __test__ = True
+    __test__ = False
     diskName = config.WIN10_DISK_64b
     codename = 'Win 10'
     polarion_map = {
