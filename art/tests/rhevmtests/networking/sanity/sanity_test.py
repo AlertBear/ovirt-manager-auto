@@ -296,6 +296,7 @@ class TestSanity04(TestSanityCaseBase):
     net = conf.NETS[4]
     bond = "bond41"
 
+    @polarion("RHEVM3-14499")
     def test_mtu_over_vm(self):
         """
         Create network with MTU 5000 over VM network
@@ -310,6 +311,7 @@ class TestSanity04(TestSanityCaseBase):
         }
         helper.send_setup_networks(sn_dict=mtu_over_vm_dict)
 
+    @polarion("RHEVM3-14500")
     def test_mtu_over_non_vm(self):
         """
         Create network with MTU 5000 over Non-VM network
@@ -324,6 +326,7 @@ class TestSanity04(TestSanityCaseBase):
         }
         helper.send_setup_networks(sn_dict=mtu_over_non_vm_dict)
 
+    @polarion("RHEVM3-14501")
     def test_mtu_over_vlan(self):
         """
         Create network with MTU 5000 over VLAN network
@@ -338,7 +341,7 @@ class TestSanity04(TestSanityCaseBase):
         }
         helper.send_setup_networks(sn_dict=mtu_over_vlan_dict)
 
-    @polarion("RHEVM3-XXX")
+    @polarion("RHEVM3-14502")
     def test_mtu_over_bond(self):
         """
         Create network with MTU 5000 over BOND
@@ -375,6 +378,7 @@ class TestSanity05(TestSanityCaseBase):
     bond_1 = "bond51"
     bond_2 = "bond52"
 
+    @polarion("RHEVM3-14503")
     def test_bridgless_on_nic(self):
         """
         Attach bridgeless network on NIC
@@ -389,6 +393,7 @@ class TestSanity05(TestSanityCaseBase):
         }
         helper.send_setup_networks(sn_dict=bridgeless_on_nic_dict)
 
+    @polarion("RHEVM3-14504")
     def test_bridgeless_vlan_on_nic(self):
         """
         Attach bridgeless network with VLAN on NIC
@@ -403,6 +408,7 @@ class TestSanity05(TestSanityCaseBase):
         }
         helper.send_setup_networks(sn_dict=bridgeless_vlan_on_nic_dict)
 
+    @polarion("RHEVM3-14505")
     def test_bridgeless_on_bond(self):
         """
         Attach bridgeless network on BOND
@@ -421,6 +427,7 @@ class TestSanity05(TestSanityCaseBase):
         }
         helper.send_setup_networks(sn_dict=bridgeless_on_bond_dict)
 
+    @polarion("RHEVM3-14506")
     def test_bridgeless_vlan_over_bond(self):
         """
         Attach bridgeless VLAN network on BOND
@@ -571,6 +578,7 @@ class TestSanity07(unittest_lib.NetworkTest):
         """
         mac_pool_helper.create_dc(mac_pool_name="")
 
+    @polarion("RHEVM3-14507")
     def test_check_default_mac_new_dc(self):
         """
         Check default MAC pool
@@ -586,6 +594,7 @@ class TestSanity07(unittest_lib.NetworkTest):
                 "New DC was not created with the default MAC pool values"
             )
 
+    @polarion("RHEVM3-14509")
     def test_extend_default_mac_range(self):
         """
         Extend the default range values of Default MAC pool
@@ -595,6 +604,7 @@ class TestSanity07(unittest_lib.NetworkTest):
             mac_pool_name=conf.DEFAULT_MAC_POOL, size=(2, 2)
         )
 
+    @polarion("RHEVM3-14510")
     def test_01_add_new_range(self):
         """
         Add new ranges to the Default MAC pool
@@ -608,6 +618,7 @@ class TestSanity07(unittest_lib.NetworkTest):
                 "Couldn't add ranges to the Default MAC Pool"
             )
 
+    @polarion("RHEVM3-14511")
     def test_02_remove_new_added_range(self):
         """
         Remove added ranges from the Default MAC pool
@@ -656,6 +667,7 @@ class TestSanity08(TestSanityCaseBase):
             networks_dict=net_dict, dc=cls.dc,
         )
 
+    @polarion("RHEVM3-14512")
     def test_create_dc_cluster_with_management_net(self):
         """
         Create new DC and cluster with non default management network
@@ -668,6 +680,7 @@ class TestSanity08(TestSanityCaseBase):
         )
         mgmt_net_helper.check_mgmt_net(cl=self.cluster_1, net=self.net)
 
+    @polarion("RHEVM3-14513")
     def test_create_dc_cluster_with_default_management_net(self):
         """
         Create new DC and cluster with default management network
@@ -715,6 +728,7 @@ class TestSanity09(TestSanityCaseBase):
         }
         helper.send_setup_networks(sn_dict=network_host_api_dict)
 
+    @polarion("RHEVM3-14515")
     def test_change_mtu(self):
         """
         Change the network MTU
@@ -767,6 +781,7 @@ class TestSanity09(TestSanityCaseBase):
                 (conf.HOST_0_NICS[1], mtu)
             )
 
+    @polarion("RHEVM3-14516")
     def test_change_vlan(self):
         """
         Change the network VLAN
@@ -803,6 +818,7 @@ class TestSanity09(TestSanityCaseBase):
                 % (self.net, conf.HOST_NAME_0, vlan_id)
             )
 
+    @polarion("RHEVM3-14517")
     def test_change_to_non_vm(self):
         """
         Change the network to be non-VM network
