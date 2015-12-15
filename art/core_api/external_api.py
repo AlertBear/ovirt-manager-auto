@@ -17,6 +17,7 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
+import os
 import logging
 from time import strftime
 from configobj import ConfigObj
@@ -80,6 +81,7 @@ class TestRunnerWrapper():
             "log", "/var/tmp/%s_tests%s.log" % (
                 opts["engine"], strftime("%Y%m%d_%H%M%S"))
         )
+        opts.setdefault('logdir', os.path.dirname(opts['log']))
         opts["urisuffix"] = ""
         opts["uri"] = (
             "%(scheme)s://%(host)s:%(port)s/%(entry_point)s%(""urisuffix)s/"
