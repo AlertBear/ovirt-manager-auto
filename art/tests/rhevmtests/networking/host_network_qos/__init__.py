@@ -17,10 +17,9 @@ def setup_package():
     """
     Running cleanup
     """
-
     networking.network_cleanup()
-    conf.HOST_1_NICS = conf.VDS_HOSTS_1.nics
     conf.VDS_HOSTS_1 = conf.VDS_HOSTS[0]
+    conf.HOST_1_NICS = conf.VDS_HOSTS_1.nics
     conf.HOST_1_IP = conf.HOSTS_IP[0]
     conf.HOST_1 = conf.HOSTS[0]
     logger.info(
