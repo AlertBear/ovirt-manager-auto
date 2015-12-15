@@ -1152,6 +1152,7 @@ class TestNetCustPrCase13(TestNCPCaseBase):
     Test on the Host that bridge_opts values were updated correctly
     """
     __test__ = True
+    bz = {"1291723": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
