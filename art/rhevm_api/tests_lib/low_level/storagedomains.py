@@ -16,7 +16,6 @@
 # License along with this software; if not, write to the Free
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-import time
 import re
 
 from art.core_api.apis_exceptions import EntityNotFound
@@ -674,31 +673,48 @@ def removeStorageDomains(positive, storagedomains, host, format='true'):
 
 
 @is_action()
-def waitForStorageDomainStatus(positive, dataCenterName, storageDomainName,
-                               expectedStatus, timeOut=900, sleepTime=10):
-    '''
-     Description: Wait till the storage domain gets the desired status or till
-                  timeout
-     Author: egerman
-     Parameters:
-        * dataCenterName - name of data center
-        * storageDomainName - storage domain name
-        * expectedStatus - storage domain status to wait for
-        * timeOut - maximum timeout [sec]
-        * sleepTime - sleep time [sec]
-     Return: status (True if storage domain get the desired status,
-                     False otherwise)
-    '''
-    handleTimeout = 0
-    while handleTimeout <= timeOut:
-        if validateElementStatus(positive, 'storagedomain', COLLECTION,
-                                 storageDomainName, expectedStatus,
-                                 dataCenterName):
-            return True
-        time.sleep(sleepTime)
-        handleTimeout += sleepTime
+def waitForStorageDomainStatus(
+        positive, dataCenterName, storageDomainName, expectedStatus,
+        timeOut=900, sleepTime=10
+):
+    """
+    Wait till the storage domain gets the desired status or until it times out
 
-    return False
+    __Author__ = 'ratamir'
+
+    :param positive: Determines whether the call for this function is
+    positive or negative
+    :type positive: bool
+    :param dataCenterName: Name of data center
+    :type dataCenterName: str
+    :param storageDomainName: Storage domain name
+    :type storageDomainName: str
+    :param expectedStatus: Storage domain status to wait for
+    :type expectedStatus: str
+    :param timeOut: Maximum timeout [sec]
+    :type timeOut: int
+    :param sleepTime: Sleep time [sec]
+    :type sleepTime: int
+    :return: True if storage domain reaches the desired status, False otherwise
+    :rtype: bool
+    """
+    for sd_object in TimeoutingSampler(
+        timeOut, sleepTime, getDCStorage, dataCenterName, storageDomainName
+    ):
+        # TODO: Remove when https://bugzilla.redhat.com/show_bug.cgi?id=1254936
+        # is fixed
+        if positive:
+            active = is_storage_domain_active(
+                dataCenterName, storageDomainName
+            )
+            if (expectedStatus ==
+                    ENUMS['storage_domain_state_maintenance'] and active):
+                deactivateStorageDomain(
+                    positive, dataCenterName, storageDomainName
+                )
+        if sd_object.get_status().get_state() == expectedStatus:
+            return positive
+    return not positive
 
 
 @is_action()
