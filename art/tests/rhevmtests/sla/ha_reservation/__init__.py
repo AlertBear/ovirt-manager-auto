@@ -9,6 +9,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.high_level.datacenters as ll_datacenters
+import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 from rhevmtests.sla.ha_reservation import config
 
 logger = logging.getLogger("HA_Reservation")
@@ -62,6 +63,15 @@ def setup_package():
                 raise errors.HostException(
                     "Failed to deactivate host %s" % config.HOSTS[2]
                 )
+            if not ll_sd.waitForStorageDomainStatus(
+                    True, config.DC_NAME[0], config.STORAGE_NAME[0],
+                    config.SD_ACTIVE,
+            ):
+                raise errors.StorageDomainException(
+                    "Failed to activate Storage Domain %s"
+                    % config.STORAGE_NAME[0]
+                )
+
         logger.info(
             "Update cluster %s memory over commitment to %d percent",
             config.CLUSTER_NAME[0], CLUSTER_OVERCOMMITMENT_NONE
