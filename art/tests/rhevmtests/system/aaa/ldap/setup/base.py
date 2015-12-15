@@ -107,3 +107,25 @@ class BaseDisabledAccount(AuthBaseCase):
     def disabled_account(self):
         """ Login as user with disabled account """
         self.assertTrue(not self.login())
+
+
+@attr(tier=1)
+class BaseSpecialCharsSearch(TestCase):
+    """ Test search of special characters """
+    __test__ = False
+
+    def search(self, special_characters=('#', '%', '$',)):
+        """ search special characters """
+        logger.info(
+            "Trying to search by these '%s' special chars",
+            ','.join(special_characters)
+        )
+        for special_char in special_characters:
+            user_name = 'special%s' % special_char
+            logger.info("Search for user '%s'", user_name)
+            # https://bugzilla.redhat.com/show_bug.cgi?id=1275237
+            # When resolved modify this test based, on implmentation details
+            self.assertTrue(
+                users.search_user(self.domain, 'name', user_name) is not None,
+                "Failed to search by special character '%s'" % special_char
+            )

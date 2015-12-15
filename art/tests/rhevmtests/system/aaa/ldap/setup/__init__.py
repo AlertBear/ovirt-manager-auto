@@ -19,3 +19,9 @@ def setup_package():
         )
     common.enableExtensions(config.OVIRT_SERVICE, config.ENGINE_HOST)
     common.loginAsAdmin()
+
+
+def teardown_module():
+    common.cleanExtDirectory(config.ENGINE_EXTENSIONS_DIR)
+    common.cleanExtDirectory(config.AAA_DIR)
+    common.enableExtensions(config.OVIRT_SERVICE, config.ENGINE_HOST)

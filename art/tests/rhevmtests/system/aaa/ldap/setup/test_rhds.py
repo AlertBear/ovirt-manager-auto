@@ -1,4 +1,4 @@
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
 
 from rhevmtests.system.aaa.ldap.setup import base
 
@@ -53,3 +53,24 @@ class RHDSDisabledAccount(base.BaseDisabledAccount):
     def test_disabled_account(self):
         """ Login as user with disabled account """
         self.disabled_account()
+
+
+class RHDSSpecialCharsSearch(base.BaseSpecialCharsSearch):
+    """ Search special characters in RHDS """
+    __test__ = True
+    domain = 'rhds-authz'
+
+    @polarion('RHEVM3-14523')
+    def test_special_characters(self):
+        """ Test search special characters in RHDS """
+        self.search()
+
+    @bz({'1267232': {'engine': None, 'version': ['3.6']}})
+    @polarion('RHEVM3-14524')
+    def test_special_characters_non_working(self):
+        """ Test search special characters in RHDS """
+        self.search(
+            special_characters=(
+                '!', '^', '&', ')', '=', "'", '"', '<', '>', ' s',
+            )
+        )

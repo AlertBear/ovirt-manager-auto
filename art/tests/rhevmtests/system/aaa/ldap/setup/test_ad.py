@@ -1,4 +1,4 @@
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
 
 from rhevmtests.system.aaa.ldap.setup import base
 
@@ -80,3 +80,19 @@ class ADDifferentUPN(base.AuthBaseCase):
     def test_different_upn(self):
         """ Login as user with disabled account """
         self.assertTrue(self.login(user='automation_upn@w2k12r2-t1.com'))
+
+
+class ADSpecialCharsSearch(base.BaseSpecialCharsSearch):
+    """ Search special characters in AD """
+    __test__ = True
+    domain = '%s-authz' % DOMAIN
+    namespace = NAMESPACE
+
+    @bz({
+        '1275237': {'engine': None, 'version': ['3.6']},
+        '1267232': {'engine': None, 'version': ['3.6']},
+    })
+    @polarion('RHEVM3-14485')
+    def test_special_characters(self):
+        """ Test search special characters in AD """
+        self.search()

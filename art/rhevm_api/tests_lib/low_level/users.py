@@ -190,6 +190,32 @@ def verifyADUserProperties(positive, domain, user, expected_username=None,
     return compareElements(userExpected, query_user, util.logger, ELEMENT)
 
 
+def search_user(authz, key, value):
+    """
+    Search for user in authz by key=value
+
+    :param authz: name of authz where user should be searched
+    :type authz: str
+    :param key: key by which user should be search
+    :type key: str
+    :param value: value of the key
+    :type value: str
+    :return: found user object or None if not found
+    """
+    query_users = util.query(
+        "%s=%s" % (key, value),
+        href='%s/%s/%s' % (
+            domUtil.links[domUtil.collection_name],
+            domUtil.find(authz).id,
+            'users?search={query}',
+        ),
+    )
+    if query_users:
+        return query_users[0]
+
+    return None
+
+
 @is_action()
 def searchForUserInAD(positive, query_key, query_val, key_name, domain):
     '''
