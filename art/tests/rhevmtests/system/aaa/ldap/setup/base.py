@@ -33,13 +33,14 @@ class AuthBaseCase(TestCase):
             role='UserRole',
         )
 
-    def login(self):
+    def login(self, user=None):
         """ test login with user """
-        users.loginAsUser(self.user, self.domain, self.password, True)
+        user = user if user else self.user
+        users.loginAsUser(user, self.domain, self.password, True)
         connected = common.connectionTest()
         logger.info(
             "User '%s' %s login",
-            self.user,
+            user,
             'can' if connected else "can't"
         )
         return connected

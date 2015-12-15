@@ -66,3 +66,17 @@ class ADDisabledAccount(base.BaseDisabledAccount):
     def test_disabled_account(self):
         """ Login as user with disabled account """
         self.disabled_account()
+
+
+class ADDifferentUPN(base.AuthBaseCase):
+    """ Login as user with different UPN """
+    __test__ = True
+    domain = DOMAIN
+    password = PASSWORD
+    namespace = NAMESPACE
+    user = 'automation_upn'
+
+    @polarion('RHEVM3-14484')
+    def test_different_upn(self):
+        """ Login as user with disabled account """
+        self.assertTrue(self.login(user='automation_upn@w2k12r2-t1.com'))
