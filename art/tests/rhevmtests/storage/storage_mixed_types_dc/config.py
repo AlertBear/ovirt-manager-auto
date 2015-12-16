@@ -43,45 +43,6 @@ FC_DOMAIN = {
     'name': 'fc_domain',
 }
 
-if not GOLDEN_ENV:
-    NFS_DOMAIN.update({
-        'address': ADDRESS[0],
-        'path': PATH[0],
-    })
-    ISCSI_DOMAIN_0.update({
-        'lun': LUN[0],
-        'lun_address': LUN_ADDRESS[0],
-        'lun_target': LUN_TARGET[0],
-    })
-    ISCSI_DOMAIN_1.update({
-        'lun': LUN[1],
-        'lun_address': LUN_ADDRESS[1],
-        'lun_target': LUN_TARGET[1],
-    })
-    GLUSTER_DOMAIN.update({
-        'address': GLUSTER_ADDRESS[0],
-        'path': GLUSTER_PATH[0],
-    })
-else:
-    NFS_DOMAIN.update({
-        'address': UNUSED_DATA_DOMAIN_ADDRESSES[0],
-        'path': UNUSED_DATA_DOMAIN_PATHS[0],
-    })
-    ISCSI_DOMAIN_0.update({
-        'lun': UNUSED_LUNS[0],
-        'lun_address': UNUSED_LUN_ADDRESSES[0],
-        'lun_target': UNUSED_LUN_TARGETS[0],
-    })
-    ISCSI_DOMAIN_1.update({
-        'lun': UNUSED_LUNS[1],
-        'lun_address': UNUSED_LUN_ADDRESSES[1],
-        'lun_target': UNUSED_LUN_TARGETS[1],
-    })
-    GLUSTER_DOMAIN.update({
-        'address': UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
-        'path': UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0],
-    })
-
 POSIX_DOMAIN = NFS_DOMAIN.copy()
 POSIX_DOMAIN['storage_type'] = STORAGE_TYPE_POSIX
 POSIX_DOMAIN['vfs_type'] = STORAGE_TYPE_NFS
