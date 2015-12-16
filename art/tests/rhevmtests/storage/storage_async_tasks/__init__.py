@@ -19,7 +19,7 @@ from rhevmtests.storage.storage_async_tasks import config
 LOGGER = logging.getLogger(__name__)
 
 
-def setup_module():
+def setup_package():
     """
     Creates datacenter, adds hosts, clusters, storages according to
     the config file
@@ -70,7 +70,7 @@ def setup_module():
     vms.startVm(True, vm_name, 'up')
 
 
-def teardown_module():
+def teardown_package():
     """
     Removes created datacenter, storages etc.
     """

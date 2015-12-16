@@ -1,6 +1,6 @@
-def setup_module():
+def setup_package():
     pass
 
 
-def teardown_module():
+def teardown_package():
     pass

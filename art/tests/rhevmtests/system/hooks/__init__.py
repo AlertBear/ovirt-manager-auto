@@ -7,7 +7,7 @@ from utilities.rhevm_tools.config import ConfigUtility
 from rhevmtests.system.hooks import config
 
 
-def setup_module():
+def setup_package():
     if not config.GOLDEN_ENV:
         datacenters.build_setup(config=config.PARAMETERS,
                                 storage=config.PARAMETERS,
@@ -53,7 +53,7 @@ def setup_module():
     assert test_utils.restartOvirtEngine(machine, 5, 25, 70)
 
 
-def teardown_module():
+def teardown_package():
     if not config.GOLDEN_ENV:
         assert templates.removeTemplate(True, config.TEMPLATE_NAME[0])
         datacenters.clean_datacenter(

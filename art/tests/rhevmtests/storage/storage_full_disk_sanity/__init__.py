@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 VM_NAMES = []
 
 
-def setup_module():
+def setup_package():
     """
     creates datacenter, adds hosts, clusters, storages according to
     the config file
@@ -41,7 +41,7 @@ def setup_module():
     vms.stop_vms_safely(VM_NAMES)
 
 
-def teardown_module():
+def teardown_package():
     """
     removes created datacenter, storages etc.
     """

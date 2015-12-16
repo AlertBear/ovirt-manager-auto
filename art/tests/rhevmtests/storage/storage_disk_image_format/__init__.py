@@ -5,7 +5,7 @@ from art.rhevm_api.tests_lib.high_level import datacenters
 from rhevmtests.storage.storage_disk_image_format import config
 
 
-def setup_module():
+def setup_package():
     """
     Creates datacenter, adds hosts, clusters, storages according to
     the config file
@@ -17,7 +17,7 @@ def setup_module():
         )
 
 
-def teardown_module():
+def teardown_package():
     """
     Removes created datacenter, storages etc.
     """

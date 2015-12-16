@@ -55,7 +55,7 @@ for role in mla.util.get(absLink=False):
 LDAP = aaa.BRQOpenLDAP(config.ENGINE_HOST, config.ENGINE)
 
 
-def setup_module():
+def setup_package():
     if not config.GOLDEN_ENV:
         datacenters.build_setup(config=config.PARAMETERS,
                                 storage=config.PARAMETERS,
@@ -67,7 +67,7 @@ def setup_module():
     LDAP.add()
 
 
-def teardown_module():
+def teardown_package():
     if not config.GOLDEN_ENV:
         datacenters.clean_datacenter(
             True, config.DC_NAME[0],

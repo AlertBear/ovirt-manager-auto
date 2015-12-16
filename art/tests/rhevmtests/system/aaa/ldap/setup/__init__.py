@@ -7,7 +7,7 @@ from rhevmtests.system.aaa.ldap import config, common
 logger = logging.getLogger(__name__)
 
 
-def setup_module():
+def setup_package():
     dir_name = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         'answerfiles',

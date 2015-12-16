@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 VM_NAMES = []
 
 
-def setup_module():
+def setup_package():
     """
     creates datacenter, adds hosts, clusters, storages according to
     the config file
@@ -47,7 +47,7 @@ def setup_module():
         assert addSnapshot(True, vm_name, config.SNAPSHOT_NAME)
 
 
-def teardown_module():
+def teardown_package():
     """
     removes created datacenter, storages etc.
     """
