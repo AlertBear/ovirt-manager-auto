@@ -1959,6 +1959,7 @@ class NetLabels14(TestLabelTestCaseBase):
 
 
 @attr(tier=2)
+@unittest_lib.common.skip_class_if(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
 class NetLabels15(TestLabelTestCaseBase):
 
     """
