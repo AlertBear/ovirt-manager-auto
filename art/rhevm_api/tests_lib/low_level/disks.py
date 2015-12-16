@@ -645,6 +645,8 @@ def get_all_disk_permutation(block=True, shared=False,
                     continue
                 if shared and disk_format is FORMAT_COW:
                     continue
+                if not sparse and not block:
+                    continue
                 permutation = {'format': disk_format,
                                'interface': interface,
                                'sparse': sparse,
