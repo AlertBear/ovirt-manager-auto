@@ -67,7 +67,7 @@ VDS_HOSTS = [
     ) for h in HOSTS_IP
 ]
 
-GOLDEN_ENV = False
+GOLDEN_ENV = ART_CONFIG.get('prepared_env', False)
 CPU_NAME = PARAMETERS['cpu_name']
 DC_NAME = PARAMETERS.get('dc_name', 'Global_DC_1')
 CLUSTER_NAME = PARAMETERS.get('cluster_name', 'Global_Cluster_1')
@@ -94,7 +94,7 @@ VDSM_LOG = '/var/log/vdsm/vdsm.log'
 PGPASS = "123456"
 
 # STORAGE SECTION
-STORAGE_TYPE = PARAMETERS.get('storage_type', None)
+STORAGE_TYPE = PARAMETERS.get('storage_types', 'nfs')
 
 STORAGE_TYPE_NFS = ENUMS['storage_type_nfs']
 STORAGE_TYPE_ISCSI = ENUMS['storage_type_iscsi']
