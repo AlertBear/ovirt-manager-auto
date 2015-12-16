@@ -96,8 +96,11 @@ class AutoCpuNameResolution(Component):
 
         m = Machine(name, 'root', passwd).util(LINUX)
         with m.ssh as ssh:
-            rc, out, err = ssh.runCmd(['cat', '/proc/cpuinfo', '|',
-                                       'grep', 'vendor_id', '|', 'uniq'])
+            rc, out, err = ssh.runCmd(
+                [
+                    'grep', 'vendor_id', '/proc/cpuinfo', '|', 'uniq'
+                ]
+            )
             out = out.strip()
             err = err.strip()
             if rc or not out:
@@ -191,8 +194,11 @@ class AutoCpuNameResolution(Component):
                     selected_cpu = host_cpu
         except CpuPluginError as ex:
             logger.debug(ex)
-            logger.warning("Failed to resolve cpu name. "
-                           "Falling back to vendor default...")
+            logger.warning(
+                "Failed to resolve cpu name. Falling back to vendor default..."
+            )
+            selected_cpu = None
+
         if selected_cpu is None:
             selected_cpu = self.get_vendor_fallback(
                 self.vds_list[0],
