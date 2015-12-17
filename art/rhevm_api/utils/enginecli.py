@@ -19,7 +19,7 @@ class EngineCLI(object):
        action_positional_argX=*args[X]
        action_named_argX=kwargs[X]
     """
-    def __init__(self, tool, session, **kwargs):
+    def __init__(self, tool, session, *args, **kwargs):
         """
         Initialize CLI
 
@@ -27,12 +27,14 @@ class EngineCLI(object):
         :type tool: str
         :param session: session of config.ENGINE_HOST
         :type session: art.rhevm_api.resources.ssh.RemoteExecutor.Session
+        :param args: unnamed arguments of cli
+        :type args: list
         :param kwargs: parameters of tool
         :type kwargs: dict
         """
         self.tool = tool
         self.session = session
-        self.cmd = [self.tool] + self._map_kwargs(**kwargs)
+        self.cmd = [self.tool] + list(args) + self._map_kwargs(**kwargs)
 
     def setup_module(self, module, **kwargs):
         """

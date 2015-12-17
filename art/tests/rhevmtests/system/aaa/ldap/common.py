@@ -281,3 +281,31 @@ def setup_ldap(host, conf_file):
         ss.run_cmd(['rm', '-f', tempconf])
         LOGGER.info(out)
     return not rc
+
+
+def extend(properties={}):
+    """
+    Extend current properties file of extension with values in properties param
+    """
+    def decorator(method):
+        @wraps(method)
+        def f(self, *args, **kwargs):
+            ret = None
+            try:
+                x = self.extended_properties.copy()
+                x.update(properties)
+                with self.executor.session() as ss:
+                    with ss.open_file(self.ext_file, 'w') as f:
+                        for k, v in x.iteritems():
+                            f.write('%s = %s\n' % (k, v))
+
+                ret = method(self, *args, **kwargs)
+            finally:
+                with self.executor.session() as ss:
+                    with ss.open_file(self.ext_file, 'w') as f:
+                        for k, v in self.extended_properties.iteritems():
+                            f.write('%s = %s\n' % (k, v))
+
+                return ret
+        return f
+    return decorator
