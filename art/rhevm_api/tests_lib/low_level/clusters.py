@@ -500,7 +500,7 @@ def checkClusterParams(positive, cluster, thrhld_low=None, thrhld_high=None,
                 util.logger.error(ERROR % ("Thresholds low", cl.get_name(),
                                            thrhld_low, clspth.get_low()))
 
-            if (None is not thrhld_low) and \
+            if (None is not thrhld_high) and \
                     (clspth.get_high() != int(thrhld_high)):
                 status = False
                 util.logger.error(ERROR % ("Thresholds high", cl.get_name(),

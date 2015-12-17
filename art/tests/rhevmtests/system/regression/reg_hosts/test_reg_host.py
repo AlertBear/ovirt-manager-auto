@@ -3,27 +3,26 @@ Regression host test
 Checks host deployment, updating and authentication methods
 """
 
-import art.rhevm_api.tests_lib.low_level.hosts as hosts
-from art.rhevm_api.utils.test_utils import get_api
+from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
+from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.core_api.apis_exceptions import EntityNotFound
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
-from art.unittest_lib import CoreSystemTest as TestCase
-from art.unittest_lib import attr
-from rhevmtests.system.reg_hosts import config
+from art.unittest_lib import (
+    attr,
+    CoreSystemTest as TestCase,
+)
+from rhevmtests.system.regression.reg_hosts import config
 import logging
 from art.test_handler.exceptions import HostException
-from art.rhevm_api.tests_lib.high_level.hosts import \
-    add_power_management, remove_power_management
 
 
-HOST_API = get_api('host', 'hosts')
-VM_API = get_api('vm', 'vms')
-DISK_SIZE = 3 * 1024 * 1024 * 1024
 PINNED = config.ENUMS['vm_affinity_pinned']
 HOST_CONNECTING = config.ENUMS['host_state_connecting']
 VM_DOWN = config.ENUMS['vm_state_down']
 HOST = None  # Filled in setup_module
+HOST_IP = None  # Filled in setup_module
 HOST2 = None  # Filled in setup_module
+HOST2_IP = None  # Filled in setup_module
 HOST_PW = None  # Filled in setup_module
 PM1_TYPE = config.PM1_TYPE
 PM2_TYPE = config.PM2_TYPE
@@ -44,20 +43,22 @@ logger = logging.getLogger(__name__)
 
 
 def setup_module():
-    global HOST, HOST2, HOST_PW
+    global HOST, HOST_IP, HOST2, HOST2_IP, HOST_PW
     HOST = config.HOSTS[0]
+    HOST_IP = config.HOSTS_IP[0]
     HOST2 = config.HOSTS[1]
+    HOST2_IP = config.HOSTS_IP[1]
     HOST_PW = config.HOSTS_PW
 
 
 def _add_host_if_missing():
     try:
-        HOST_API.find(HOST)
+        ll_hosts.get_host_object(HOST)
     except EntityNotFound:
         logger.info("adding host %s", HOST)
-        if not hosts.addHost(
-            True, name=HOST, address=HOST, root_password=HOST_PW, port=54321,
-            cluster=config.CLUSTER_NAME[0], wait=False,
+        if not ll_hosts.addHost(
+                True, name=HOST, address=HOST_IP, root_password=HOST_PW,
+                port=54321, cluster=config.CLUSTER_NAME[0], wait=False,
         ):
             raise HostException("Add host %s failed" % HOST)
 
@@ -75,13 +76,14 @@ class TestPowerManagement(TestCase):
 
     @classmethod
     def setup_class(cls):
-        add_power_management(host=HOST, pm_type=cls.pm_type,
-                             pm_address=cls.pm_address, pm_user=cls.pm_user,
-                             pm_password=cls.pm_password)
+        hl_hosts.add_power_management(
+            host=HOST, pm_type=cls.pm_type, pm_address=cls.pm_address,
+            pm_user=cls.pm_user, pm_password=cls.pm_password
+        )
 
     @classmethod
     def teardown_class(cls):
-        remove_power_management(host=HOST, pm_type=PM1_TYPE)
+        hl_hosts.remove_power_management(host=HOST, pm_type=PM1_TYPE)
 
 
 class TestActiveHost(TestCase):
@@ -93,8 +95,8 @@ class TestActiveHost(TestCase):
 
     @classmethod
     def setup_class(cls):
-        if not hosts.isHostUp(True, host=HOST):
-            if not hosts.activateHost(True, host=HOST):
+        if not ll_hosts.isHostUp(True, host=HOST):
+            if not ll_hosts.activateHost(True, host=HOST):
                 raise HostException("cannot activate host: %s" % HOST)
 
     @classmethod
@@ -111,17 +113,18 @@ class TestHostInMaintenance(TestCase):
 
     @classmethod
     def setup_class(cls):
-        if hosts.isHostUp(True, host=HOST):
+        if ll_hosts.isHostUp(True, host=HOST):
             logger.info("setting host: %s to maintenance", HOST)
-            if not hosts.deactivateHost(True, host=HOST):
-                raise HostException("Could not set host: %s "
-                                    "to maintenance" % HOST)
+            if not ll_hosts.deactivateHost(True, host=HOST):
+                raise HostException(
+                    "Could not set host: %s to maintenance" % HOST
+                )
 
     @classmethod
     def teardown_class(cls):
-        if not hosts.isHostUp(True, host=HOST):
+        if not ll_hosts.isHostUp(True, host=HOST):
             logger.info("Activating host: %s", HOST)
-            if not hosts.activateHost(True, host=HOST):
+            if not ll_hosts.activateHost(True, host=HOST):
                 raise HostException("cannot activate host: %s" % HOST)
 
 
@@ -136,7 +139,7 @@ class TestActivateActiveHost(TestActiveHost):
     def test_activate_active_host(self):
         logger.info("Trying to activate host %s", HOST)
         self.assertFalse(
-            hosts.activateHost(True, host=HOST))
+            ll_hosts.activateHost(True, host=HOST))
 
 
 @attr(tier=1)
@@ -152,7 +155,8 @@ class TestUpdateHostName(TestCase):
     def test_update_host_name(self):
         logger.info("Updating host %s's name", HOST)
         self.assertTrue(
-            hosts.updateHost(True, host=HOST, name=self.new_name))
+            ll_hosts.updateHost(True, host=HOST, name=self.new_name)
+        )
 
     @classmethod
     def teardown_class(cls):
@@ -160,7 +164,7 @@ class TestUpdateHostName(TestCase):
         Update host's name back.
         """
         logger.info("Updating host %s's name back", HOST)
-        if not hosts.updateHost(True, host=cls.new_name, name=HOST):
+        if not ll_hosts.updateHost(True, host=cls.new_name, name=HOST):
             raise HostException("Cannot change host %s's name" % HOST)
 
 
@@ -174,13 +178,14 @@ class TestAddRemovePowerManagement(TestCase):
 
     @polarion("RHEVM3-8840")
     def test_add_power_management(self):
-        add_power_management(host=HOST, pm_type=PM1_TYPE,
-                             pm_address=PM1_ADDRESS, pm_user=PM1_USER,
-                             pm_password=PM1_PASS)
+        hl_hosts.add_power_management(
+            host=HOST, pm_type=PM1_TYPE, pm_address=PM1_ADDRESS,
+            pm_user=PM1_USER, pm_password=PM1_PASS
+        )
 
     @polarion("RHEVM3-8843")
     def test_remove_power_management(self):
-        remove_power_management(host=HOST, pm_type=PM1_TYPE)
+        hl_hosts.remove_power_management(host=HOST, pm_type=PM1_TYPE)
 
 
 @attr(tier=1, extra_reqs={'pm': PM1_TYPE})
@@ -196,14 +201,16 @@ class TestUpdatePowerManagementType(TestPowerManagement):
 
     @polarion("RHEVM3-8841")
     def test_update_power_management_type(self):
-        logger.info("Update power management type "
-                    "to %s  on host: %s", PM2_TYPE, HOST)
-        if not hosts.updateHost(True, host=HOST, pm='true', pm_type=PM2_TYPE,
-                                pm_address=self.pm_address,
-                                pm_username=self.pm_user,
-                                pm_password=self.pm_password):
-            raise HostException("Cannot change power management type"
-                                " in host: %s" % HOST)
+        logger.info(
+            "Update power management type to %s  on host: %s", PM2_TYPE, HOST)
+        if not ll_hosts.updateHost(
+                True, host=HOST, pm='true', pm_type=PM2_TYPE,
+                pm_address=self.pm_address, pm_username=self.pm_user,
+                pm_password=self.pm_password
+        ):
+            raise HostException(
+                "Cannot change power management type in host: %s" % HOST
+            )
 
 
 @attr(tier=1, extra_reqs={'pm': PM1_TYPE})
@@ -220,15 +227,19 @@ class TestUpdatePowerManagementInvalidType(TestPowerManagement):
 
     @polarion("RHEVM3-8842")
     def test_update_power_management_invalid_type(self):
-        logger.info("Update power management type to %s"
-                    "on host: %s", self.invalid_type, HOST)
-        if not hosts.updateHost(False, host=HOST, pm='true',
-                                pm_type=self.invalid_type,
-                                pm_address=self.pm_address,
-                                pm_username=self.pm_user,
-                                pm_password=self.pm_password):
-            raise HostException("Power management type changed successfully"
-                                "although provided with an invalid type")
+        logger.info(
+            "Update power management type to %s on host: %s",
+            self.invalid_type, HOST
+        )
+        if not ll_hosts.updateHost(
+                False, host=HOST, pm='true', pm_type=self.invalid_type,
+                pm_address=self.pm_address, pm_username=self.pm_user,
+                pm_password=self.pm_password
+        ):
+            raise HostException(
+                "Power management type changed successfully "
+                "although provided with an invalid type"
+            )
 
 
 @bz({'1136061': {}})
@@ -241,20 +252,28 @@ class SetSPMToLow(TestCase):
 
     @classmethod
     def setup_class(cls):
-        logger.info("Check that SPM priority on host: %s is"
-                    " set to normal", HOST)
-        if not hosts.checkSPMPriority(True, hostName=HOST, expectedPriority=5):
-            if not hosts.updateHost(True, host=HOST,
-                                    storage_manager_priority=5):
-                raise HostException("Cannot set SPM level on host:"
-                                    "%s to normal" % HOST)
+        logger.info(
+            "Check that SPM priority on host: %s is set to normal", HOST
+        )
+        if not ll_hosts.checkSPMPriority(
+                True, hostName=HOST, expectedPriority=5
+        ):
+            if not ll_hosts.updateHost(
+                    True, host=HOST, storage_manager_priority=5
+            ):
+                raise HostException(
+                    "Cannot set SPM level on host:%s to normal" % HOST
+                )
 
     @polarion("RHEVM3-8432")
     def test_set_spm_to_low(self):
         logger.info("Set SPM priority on host: %s to low", HOST)
-        if not hosts.updateHost(True, host=HOST, storage_manager_priority=2):
-            raise HostException("Cannot set SPM level on host:"
-                                " %s to low" % HOST)
+        if not ll_hosts.updateHost(
+                True, host=HOST, storage_manager_priority=2
+        ):
+            raise HostException(
+                "Cannot set SPM level on host: %s to low" % HOST
+            )
 
     @classmethod
     def teardown_class(cls):
@@ -262,9 +281,12 @@ class SetSPMToLow(TestCase):
         Set SPM priority back to Normal
         """
         logger.info("Set SPM priority on host: %s back to normal", HOST)
-        if not hosts.updateHost(True, host=HOST, storage_manager_priority=5):
-            raise HostException("Cannot set SPM level on host:"
-                                " %s to normal" % HOST)
+        if not ll_hosts.updateHost(
+                True, host=HOST, storage_manager_priority=5
+        ):
+            raise HostException(
+                "Cannot set SPM level on host: %s to normal" % HOST
+            )
 
 
 @attr(tier=1)
@@ -277,14 +299,16 @@ class UpdateIPOfActiveHost(TestActiveHost):
     @polarion("RHEVM3-8419")
     def test_update_ip_of_activeHost(self):
         logger.info("changing ip address for the active host: %s", HOST)
-        if not hosts.updateHost(False, host=HOST, address=HOST2):
-            raise HostException("Host: %s update was successful although host"
-                                "is still active" % HOST)
+        if not ll_hosts.updateHost(False, host=HOST, address=HOST2_IP):
+            raise HostException(
+                "Host: %s update was successful although host is still active"
+                % HOST
+            )
 
     @classmethod
     def teardown_class(cls):
         logger.info("set host %s to correct address", HOST)
-        if not hosts.updateHost(True, host=HOST, address=HOST):
+        if not ll_hosts.updateHost(True, host=HOST, address=HOST_IP):
             raise HostException("Cannot change address for host %s" % HOST)
 
 
@@ -298,7 +322,7 @@ class SetActiveHostToMaintenanceForReinstallation(TestActiveHost):
     @polarion("RHEVM3-8420")
     def test_set_active_host_to_maintenance(self):
         logger.info("setting host %s to maintenance", HOST)
-        if not hosts.deactivateHost(True, host=HOST):
+        if not ll_hosts.deactivateHost(True, host=HOST):
             raise HostException("Could not set host: %s to maintenance" % HOST)
 
 
@@ -315,8 +339,10 @@ class ReinstallHost(TestHostInMaintenance):
     @polarion("RHEVM3-8421")
     def test_reinstall_host(self):
         logger.info("reinstall host: %s", HOST)
-        if not hosts.installHost(True, host=HOST, root_password=HOST_PW,
-                                 iso_image=config.ISO_IMAGE):
+        if not ll_hosts.installHost(
+                True, host=HOST, root_password=HOST_PW,
+                iso_image=config.ISO_IMAGE
+        ):
             raise HostException("re installation of host: %s failed" % HOST)
 
 
@@ -334,7 +360,7 @@ class ManualFenceForHost(TestHostInMaintenance):
     @polarion("RHEVM3-8835")
     def test_manual_fence_for_host(self):
         logger.info("Manual fence host: %s", HOST)
-        if not hosts.fenceHost(True, host=HOST, fence_type='manual'):
+        if not ll_hosts.fenceHost(True, host=HOST, fence_type='manual'):
             raise HostException("Manual fence for host: %s failed" % HOST)
 
 
@@ -348,7 +374,7 @@ class ActivateInactiveHost(TestHostInMaintenance):
     @polarion("RHEVM3-8422")
     def test_activate_inactive_host(self):
         logger.info("activate host: %s", HOST)
-        if not hosts.activateHost(True, host=HOST):
+        if not ll_hosts.activateHost(True, host=HOST):
             raise HostException("host activation failed")
 
 
@@ -362,10 +388,13 @@ class ReinstallActiveHost(TestActiveHost):
     @polarion("RHEVM3-8423")
     def test_reinstall_active_host(self):
         logger.info("attempting to re install host: %s ", HOST)
-        if not hosts.installHost(False, host=HOST, root_password=HOST_PW,
-                                 iso_image=config.ISO_IMAGE):
-            raise HostException("re install host: %s worked although "
-                                "host is active" % HOST)
+        if not ll_hosts.installHost(
+                False, host=HOST, root_password=HOST_PW,
+                iso_image=config.ISO_IMAGE
+        ):
+            raise HostException(
+                "re install host: %s worked although host is active" % HOST
+            )
 
 
 @attr(tier=1)
@@ -380,14 +409,16 @@ class CreateHostWithWrongIPAddress(TestCase):
     @polarion("RHEVM3-8424")
     def test_create_host_with_wrong_IP_address(self):
         logger.info("attempting to add a host with an invalid ip address")
-        if not hosts.addHost(False, name=self.name, address=HOST_FALSE_IP,
-                             root_password=HOST_PW):
+        if not ll_hosts.addHost(
+                False, name=self.name, address=HOST_FALSE_IP,
+                root_password=HOST_PW
+        ):
             raise HostException("added a host with an invalid ip address")
 
     @classmethod
     def teardown_class(cls):
-        if hosts.validateHostExist(True, host=cls.name):
-            if not hosts.removeHost(True, host=cls.name):
+        if ll_hosts.validateHostExist(True, host=cls.name):
+            if not ll_hosts.removeHost(True, host=cls.name):
                 raise HostException("unable to remove host: %s" % cls.name)
 
 
@@ -403,14 +434,15 @@ class CreateHostWithEmptyRootPassword(TestCase):
     @polarion("RHEVM3-8425")
     def test_create_host_with_empty_root_password(self):
         logger.info("attempting to add a host without root password")
-        if not hosts.addHost(False, name=self.name, root_password='',
-                             address=HOST2):
+        if not ll_hosts.addHost(
+                False, name=self.name, root_password='', address=HOST2_IP
+        ):
             raise HostException("added a host without providing root password")
 
     @classmethod
     def teardown_class(cls):
-        if hosts.validateHostExist(True, host=cls.name):
-            if not hosts.removeHost(True, host=cls.name):
+        if ll_hosts.validateHostExist(True, host=cls.name):
+            if not ll_hosts.removeHost(True, host=cls.name):
                 raise HostException("unable to remove host: %s" % cls.name)
 
 
@@ -424,9 +456,10 @@ class RemoveActiveHost(TestActiveHost):
     @polarion("RHEVM3-8427")
     def test_remove_active_host(self):
         logger.info("attempting to remove host: %s while active", HOST)
-        if not hosts.removeHost(False, host=HOST):
-            raise HostException("Host %s was removed although"
-                                " still active" % HOST)
+        if not ll_hosts.removeHost(False, host=HOST):
+            raise HostException(
+                "Host %s was removed although still active" % HOST
+            )
 
     @classmethod
     def teardown_class(cls):
@@ -450,8 +483,10 @@ class SearchForHost(TestCase):
     @polarion("RHEVM3-8428")
     def test_search_for_host(self):
         logger.info("search for host: %s", HOST)
-        if not hosts.searchForHost(True, query_key=self.query_key,
-                                   query_val=HOST, key_name=self.key_name):
+        if not ll_hosts.searchForHost(
+                True, query_key=self.query_key, query_val=HOST,
+                key_name=self.key_name
+        ):
             raise HostException("couldn't find host %s" % HOST)
 
 
@@ -470,11 +505,14 @@ class AddSecondaryPowerManagement(TestPowerManagement):
     @polarion("RHEVM3-8836")
     def test_add_secondary_power_management(self):
         logger.info("Set secondary power management to host: %s", HOST)
-        if not hosts.updateHost(True, host=HOST, pm='true',
-                                pm_proxies=['cluster', 'dc'],
-                                agents=[(PM1_TYPE, PM1_ADDRESS, PM1_USER,
-                                         PM1_PASS, None, False, 1),
-                                        (PM2_TYPE, PM2_ADDRESS, PM2_USER,
-                                         PM2_PASS, None, False, 2)]):
-            raise HostException("adding secondary power management to "
-                                "host s% failed" % HOST)
+        agents = [
+            (PM1_TYPE, PM1_ADDRESS, PM1_USER, PM1_PASS, None, False, 1),
+            (PM2_TYPE, PM2_ADDRESS, PM2_USER, PM2_PASS, None, False, 2),
+        ]
+        if not ll_hosts.updateHost(
+                True, host=HOST, pm='true', pm_proxies=['cluster', 'dc'],
+                agents=agents
+        ):
+            raise HostException(
+                "adding secondary power management to host s% failed" % HOST
+            )
