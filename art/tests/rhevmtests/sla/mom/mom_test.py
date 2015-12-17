@@ -586,11 +586,12 @@ class Balloon(MOM):
         """
         self.vm_list = ["%s-%d" % (config.POOL_NAME, i + 1) for i in range(2)]
         counter = 1
+        memory = config.GB * 5 if config.PPC_ARCH else config.GB / 2
         for vm in self.vm_list:
-            memory_guaranteed = config.GB / 2 - 128 * config.MB * counter
+            memory_guaranteed = memory - 128 * config.MB * counter
             self.assertTrue(
                 vms.updateVm(
-                    True, vm, memory=config.GB / 2,
+                    True, vm, memory=memory,
                     memory_guaranteed=memory_guaranteed
                 ),
                 "Vm update failed"
@@ -672,12 +673,18 @@ class Balloon(MOM):
         Test ballooning with multiple (8) small VMs
         """
         list_id = range(config.VM_NUM)
+        if config.PPC_ARCH:
+            memory = 2 * config.GB
+            memory_guaranteed = config.GB
+        else:
+            memory = int(config.GB/4)
+            memory_guaranteed = int(config.GB/8)
         self.vm_list = ["%s-%d" % (config.POOL_NAME, i + 1) for i in list_id]
         for vm in self.vm_list:
             self.assertTrue(
                 vms.updateVm(
-                    True, vm, memory=int(config.GB/4),
-                    memory_guaranteed=int(config.GB/8)
+                    True, vm, memory=memory,
+                    memory_guaranteed=memory_guaranteed
                 ),
                 "Vm update failed"
             )
