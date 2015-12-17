@@ -809,9 +809,9 @@ class TestSanity09(TestSanityCaseBase):
                 (self.net, vlan_id, conf.HOST_NAME_0)
             )
         logger.info("Check that the change is reflected to Host")
-        if not ll_networks.checkVlanNet(
-            host=conf.HOST_0_IP, user=conf.HOSTS_USER, password=conf.HOSTS_PW,
-            interface=conf.HOST_0_NICS[1], vlan=vlan_id
+        if not ll_networks.is_vlan_on_host_network(
+            vds_resource=conf.VDS_HOST_0, interface=conf.HOST_0_NICS[1],
+            vlan=vlan_id
         ):
             raise conf.NET_EXCEPTION(
                 "%s on host %s was not updated with correct VLAN %s"

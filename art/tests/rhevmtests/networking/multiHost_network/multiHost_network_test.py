@@ -18,7 +18,7 @@ from art.rhevm_api.tests_lib.high_level.networks import(
     createAndAttachNetworkSN, remove_net_from_setup, checkHostNicParameters
 )
 from art.rhevm_api.tests_lib.low_level.networks import(
-    updateNetwork, checkVlanNet, is_host_network_is_vm
+    updateNetwork, is_vlan_on_host_network, is_host_network_is_vm
 )
 from art.rhevm_api.tests_lib.low_level.hosts import(
     sendSNRequest, deactivateHost, updateHost, activateHost
@@ -137,9 +137,8 @@ class TestMultiHostCase01(TestMultiHostTestCaseBase):
             )
 
         logger.info("Check that the change is reflected to Host")
-        if not checkVlanNet(
-            host=config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, interface=HOST1_NICS[1],
+        if not is_vlan_on_host_network(
+            vds_resource=config.VDS_HOSTS[0], interface=HOST1_NICS[1],
             vlan=config.VLAN_ID[0]
         ):
             raise NetworkException(
@@ -172,9 +171,8 @@ class TestMultiHostCase01(TestMultiHostTestCaseBase):
             )
 
         logger.info("Check that the change is reflected to Host")
-        if not checkVlanNet(
-            host=config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, interface=HOST1_NICS[1],
+        if not is_vlan_on_host_network(
+            vds_resource=config.VDS_HOSTS[0], interface=HOST1_NICS[1],
             vlan=config.VLAN_ID[1]
         ):
             raise NetworkException(
@@ -196,9 +194,8 @@ class TestMultiHostCase01(TestMultiHostTestCaseBase):
             )
 
         logger.info("Check that the change is reflected to Host")
-        if checkVlanNet(
-            host=config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, interface=HOST1_NICS[1],
+        if is_vlan_on_host_network(
+            vds_resource=config.VDS_HOSTS[0], interface=HOST1_NICS[1],
             vlan=config.VLAN_ID[1]
         ):
             raise NetworkException(
@@ -730,9 +727,8 @@ class TestMultiHostCase05(TestMultiHostTestCaseBase):
             )
 
         logger.info("Check that the change is reflected to Host")
-        if not checkVlanNet(
-            host=config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, interface=HOST1_NICS[1],
+        if not is_vlan_on_host_network(
+            vds_resource=config.VDS_HOSTS[0], interface=HOST1_NICS[1],
             vlan=config.VLAN_ID[0]
         ):
             raise NetworkException(
@@ -931,9 +927,8 @@ class TestMultiHostCase06(TestMultiHostTestCaseBase):
                 "Couldn't get correct VLAN interface on host")
 
         logger.info("Check that the change is reflected to Host")
-        if not checkVlanNet(
-            host=config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, interface=HOST1_NICS[1],
+        if not is_vlan_on_host_network(
+            vds_resource=config.VDS_HOSTS[0], interface=HOST1_NICS[1],
             vlan=config.VLAN_ID[0]
         ):
             raise NetworkException(
@@ -1081,10 +1076,9 @@ class TestMultiHostCase07(TestMultiHostTestCaseBase):
                 )
 
         logger.info("Check that the VLAN change is reflected to both Hosts")
-        for host, nic in zip(config.HOSTS_IP, (HOST1_NICS[1], HOST2_NICS[1])):
-            if not checkVlanNet(
-                host=host, user=config.HOSTS_USER, password=config.HOSTS_PW,
-                interface=nic, vlan=config.VLAN_ID[0]
+        for host, nic in zip(config.VDS_HOSTS, (HOST1_NICS[1], HOST2_NICS[1])):
+            if not is_vlan_on_host_network(
+                vds_resource=host, interface=nic, vlan=config.VLAN_ID[0]
             ):
                 raise NetworkException(
                     "Host %s was not updated with correct VLAN %s" %
@@ -1274,10 +1268,9 @@ class TestMultiHostCase08(TestMultiHostTestCaseBase):
                 )
 
         logger.info("Check that the VLAN change is reflected to both Hosts")
-        for host, nic in zip(config.HOSTS_IP, (HOST1_NICS[1], HOST2_NICS[1])):
-            if not checkVlanNet(
-                host=host, user=config.HOSTS_USER, password=config.HOSTS_PW,
-                interface=nic, vlan=config.VLAN_ID[0]
+        for host, nic in zip(config.VDS_HOSTS, (HOST1_NICS[1], HOST2_NICS[1])):
+            if not is_vlan_on_host_network(
+                vds_resource=host, interface=nic, vlan=config.VLAN_ID[0]
             ):
                 raise NetworkException(
                     "Host %s was not updated with correct VLAN %s" %
@@ -1430,9 +1423,8 @@ class TestMultiHostCase09(TestMultiHostTestCaseBase):
             )
 
         logger.info("Check that the change is reflected to Host")
-        if not checkVlanNet(
-            host=config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, interface=config.BOND[0],
+        if not is_vlan_on_host_network(
+            vds_resource=config.VDS_HOSTS[0], interface=config.BOND[0],
             vlan=config.VLAN_ID[0]
         ):
             raise NetworkException(
@@ -1465,9 +1457,8 @@ class TestMultiHostCase09(TestMultiHostTestCaseBase):
             )
 
         logger.info("Check that the change is reflected to Host")
-        if not checkVlanNet(
-            host=config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, interface=config.BOND[0],
+        if not is_vlan_on_host_network(
+            vds_resource=config.VDS_HOSTS[0], interface=config.BOND[0],
             vlan=config.VLAN_ID[1]
         ):
             raise NetworkException(
@@ -1489,9 +1480,8 @@ class TestMultiHostCase09(TestMultiHostTestCaseBase):
             )
 
         logger.info("Check that the change is reflected to Host")
-        if checkVlanNet(
-            host=config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, interface=config.BOND[0],
+        if is_vlan_on_host_network(
+            vds_resource=config.VDS_HOSTS[0], interface=config.BOND[0],
             vlan=config.VLAN_ID[1]
         ):
             raise NetworkException(

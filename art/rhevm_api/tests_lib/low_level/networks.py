@@ -421,18 +421,18 @@ def isVMNetwork(network, cluster):
     return 'vm' in usages.usage
 
 
-def check_ip_rule(host_resource, subnet):
+def check_ip_rule(vds_resource, subnet):
     """
     Check occurence of specific ip in 'ip rule' command output
 
-    :param host_resource: Host resource object
+    :param vds_resource: VDS resource object
     :type host_resource: resources.VDS
     :param subnet: subnet to search for
     :type subnet: str
     :return: True/False
     :rtype: bool
     """
-    executor = host_resource.executor()
+    executor = vds_resource.executor()
     cmd = ["ip", "rule"]
     rc, out, err = executor.run_cmd(cmd)
     logger.info("The output of ip rule command is:\n %s", out)
@@ -802,26 +802,29 @@ def is_host_network_is_vm(vds_resource, net_name):
     return vds_resource.fs.exists(path=vm_file)
 
 
-def checkVlanNet(host, user, password, interface, vlan):
+def is_vlan_on_host_network(vds_resource, interface, vlan):
     """
     Check for VLAN value on the network that resides on Host
-    **Author**: gcheresh
-        **Parameters**:
-        *  *host* - machine ip address or fqdn of the machine
-        *  *user* - root user on the  machine
-        *  *password* - password for the user
-        *  *interface* - name of the phy interface
-        *  *vlan* - the value to check on the host (str)
-    **Return**: True if VLAN on the host == provided VLAN, False otherwise
+    :param vds_resource: VDS resource object
+    :type vds_resource: resources.VDS
+    :param interface: Name of the phy interface
+    :type interface: str
+    :param vlan: The value to check on the host (str)
+    :type vlan: str
+    :return: True if VLAN on the host == provided VLAN, False otherwise
+    :rtype: bool
     """
-    machine_obj = machine.Machine(host, user, password).util(machine.LINUX)
-    vlan_file = os.path.join(PROC_NET_DIR, "vlan", ".".join([interface,
-                                                             str(vlan)]))
-    rc, output = machine_obj.runCmd(["cat", vlan_file])
-    if not rc:
-        logger.error("Can't read {0}".format(vlan_file))
+    executor = vds_resource.executor()
+    vlan_file = os.path.join(
+        PROC_NET_DIR, "vlan", ".".join([interface, str(vlan)])
+    )
+    cmd = ["cat", vlan_file]
+    rc, out, err = executor.run_cmd(cmd)
+    if rc:
+        logger.error(
+            "Failed to run command %s. ERR: %s. OUT:%s", cmd, err, out)
         return False
-    match_obj = re.search("VID: ([0-9]+)", output)
+    match_obj = re.search("VID: ([0-9]+)", out)
     if match_obj:
         vid = match_obj.group(1)
     return vid == vlan
