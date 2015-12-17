@@ -76,9 +76,8 @@ class TestGatewaysCase1(TestCase):
         """
         Check correct configuration with ip rule function
         """
-        if not ll_networks.checkIPRule(
-            config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, subnet=SUBNET
+        if not ll_networks.check_ip_rule(
+            host_resource=config.VDS_HOSTS[0], subnet=SUBNET
         ):
             raise exceptions.NetworkException(
                 "Incorrect gateway configuration for %s" % config.NETWORKS[0]
@@ -146,9 +145,8 @@ class TestGatewaysCase2(TestCase):
         """
         Check correct configuration with ip rule function
         """
-        if not ll_networks.checkIPRule(
-            config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, subnet=SUBNET
+        if not ll_networks.check_ip_rule(
+            host_resource=config.VDS_HOSTS[0], subnet=SUBNET
         ):
             raise exceptions.NetworkException(
                 "Incorrect gateway configuration for %s" % config.NETWORKS[0]
@@ -203,9 +201,8 @@ class TestGatewaysCase3(TestCase):
         """
         Check correct configuration with ip rule function
         """
-        if not ll_networks.checkIPRule(
-            config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, subnet=SUBNET
+        if not ll_networks.check_ip_rule(
+            host_resource=config.VDS_HOSTS[0], subnet=SUBNET
         ):
             raise exceptions.NetworkException(
                 "Incorrect gateway configuration for %s" % config.NETWORKS[0]
@@ -260,9 +257,8 @@ class TestGatewaysCase4(TestCase):
         """
         Check correct configuration with ip rule function
         """
-        if not ll_networks.checkIPRule(
-            config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, subnet=SUBNET
+        if not ll_networks.check_ip_rule(
+            host_resource=config.VDS_HOSTS[0], subnet=SUBNET
         ):
             raise exceptions.NetworkException(
                 "Incorrect gateway configuration for %s" % config.NETWORKS[0]
@@ -446,9 +442,8 @@ class TestGatewaysCase7(TestCase):
         Add additional NIC to the bond and check IP rule
         """
         logger.info("Checking IP rule before adding 3rd NIC")
-        if not ll_networks.checkIPRule(
-            config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, subnet=SUBNET
+        if not ll_networks.check_ip_rule(
+            host_resource=config.VDS_HOSTS[0], subnet=SUBNET
         ):
             raise exceptions.NetworkException(
                 "Incorrect gateway configuration for %s" % config.NETWORKS[0]
@@ -475,9 +470,8 @@ class TestGatewaysCase7(TestCase):
             )
 
         logger.info("Checking IP rule after adding 3rd NIC")
-        if not ll_networks.checkIPRule(
-            config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, subnet=SUBNET
+        if not ll_networks.check_ip_rule(
+            host_resource=config.VDS_HOSTS[0], subnet=SUBNET
         ):
             raise exceptions.NetworkException(
                 "Incorrect gateway configuration after updating BOND"
@@ -534,9 +528,8 @@ class TestGatewaysCase8(TestCase):
         Remove a NIC from bond and check ip rule again
         """
         logger.info("Checking the IP rule before removing one NIC from bond")
-        if not ll_networks.checkIPRule(
-            config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, subnet=SUBNET
+        if not ll_networks.check_ip_rule(
+            host_resource=config.VDS_HOSTS[0], subnet=SUBNET
         ):
             raise exceptions.NetworkException(
                 "Incorrect gateway configuration for %s" % config.NETWORKS[0]
@@ -562,9 +555,8 @@ class TestGatewaysCase8(TestCase):
             )
 
         logger.info("Checking the IP rule after removing one NIC from bond")
-        if not ll_networks.checkIPRule(
-            config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, subnet=SUBNET
+        if not ll_networks.check_ip_rule(
+            host_resource=config.VDS_HOSTS[0], subnet=SUBNET
         ):
             raise exceptions.NetworkException(
                 "Incorrect gateway configuration after removing NIC from bond"
@@ -617,9 +609,8 @@ class TestGatewaysCase9(TestCase):
         """
         Check correct configuration with ip rule function
         """
-        if ll_networks.checkIPRule(
-            config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, subnet=SUBNET
+        if ll_networks.check_ip_rule(
+            host_resource=config.VDS_HOSTS[0], subnet=SUBNET
         ):
             raise exceptions.NetworkException(
                 "Gateway is configured when shouldn't"

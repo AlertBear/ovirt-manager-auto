@@ -895,9 +895,8 @@ class TestSanity10(unittest_lib.NetworkTest):
         """
         Check correct configuration with ip rule function
         """
-        if not ll_networks.checkIPRule(
-            conf.HOST_0_IP, user=conf.HOSTS_USER,
-            password=conf.HOSTS_PW, subnet=self.subnet
+        if not ll_networks.check_ip_rule(
+            host_resource=conf.VDS_HOST_0, subnet=self.subnet
         ):
             raise conf.NET_EXCEPTION(
                 "Incorrect gateway configuration for %s" % self.net

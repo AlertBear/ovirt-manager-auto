@@ -421,23 +421,23 @@ def isVMNetwork(network, cluster):
     return 'vm' in usages.usage
 
 
-def checkIPRule(host, user, password, subnet):
+def check_ip_rule(host_resource, subnet):
     """
     Check occurence of specific ip in 'ip rule' command output
-    Author: gcheresh
-    Parameters:
-        *  *host* - remote machine ip address or fqdn
-        *  *user* - root user on the machine
-        *  *password* - password for the root user
-        *  *subnet* - subnet to search for
-    return True/False
+
+    :param host_resource: Host resource object
+    :type host_resource: resources.VDS
+    :param subnet: subnet to search for
+    :type subnet: str
+    :return: True/False
+    :rtype: bool
     """
-    machine_obj = machine.Machine(host, user, password).util(machine.LINUX)
+    executor = host_resource.executor()
     cmd = ["ip", "rule"]
-    rc, out = machine_obj.runCmd(cmd)
+    rc, out, err = executor.run_cmd(cmd)
     logger.info("The output of ip rule command is:\n %s", out)
-    if not rc:
-        logger.error("Failed to run ip rule command")
+    if rc:
+        logger.error("Failed to run ip rule command. ERR: %s", err)
         return False
     return len(re.findall(subnet.replace('.', '[.]'), out)) == 2
 
