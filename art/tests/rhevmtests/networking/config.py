@@ -9,13 +9,8 @@ from collections import OrderedDict
 from random import randint
 import art.test_handler.exceptions as exceptions
 
-# Adjust parameters if running on golden environment
-if GOLDEN_ENV:
-    STORAGE_TYPE = "nfs"
-    VDS_HOSTS = [resources.VDS(h, HOSTS_PW) for h in HOSTS_IP]
-
 # Global parameters
-HOSTS_IP = [host.ip for host in VDS_HOSTS]
+STORAGE_TYPE = "nfs"
 EXTRA_DC = ["_".join(["EXTRA_DC", str(i)]) for i in range(6)]
 EXTRA_CL = ["".join(["NET_Cluster", str(i)]) for i in range(5)]
 MTU = [9000, 5000, 2000, 1500]

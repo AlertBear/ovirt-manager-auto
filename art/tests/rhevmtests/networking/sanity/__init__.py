@@ -4,7 +4,7 @@ Sanity init
 
 import helper
 import logging
-import config as conf
+from rhevmtests.networking.sanity import config as conf
 import rhevmtests.networking as network
 import rhevmtests.networking.helper as networking_helper
 

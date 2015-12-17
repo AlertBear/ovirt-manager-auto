@@ -4,7 +4,7 @@ network team init file
 """
 
 import logging
-import config
+from rhevmtests.networking import config
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
