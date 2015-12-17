@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 def setup_package():
     dir_name = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        'answerfiles',
+        '../answerfiles',
     )
     for answerfile in os.listdir(dir_name):
         assert common.setup_ldap(
