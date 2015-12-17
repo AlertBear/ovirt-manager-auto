@@ -21,7 +21,7 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
-import rhevmtests.networking.mgmt_net_role.helper as mgmt_net_helper
+import rhevmtests.networking.management_as_role.helper as mgmt_net_helper
 import rhevmtests.networking.multiple_queue_nics.helper as queue_helper
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import rhevmtests.networking.mac_pool_range_per_dc.helper as mac_pool_helper
@@ -843,9 +843,8 @@ class TestSanity09(TestSanityCaseBase):
                 "%s is VM network and should be Non-VM" % self.net
             )
         logger.info("Check that the change is reflected to Host")
-        if ll_networks.isVmHostNetwork(
-            host=conf.HOST_0_IP, user=conf.HOSTS_USER, password=conf.HOSTS_PW,
-            net_name=self.net, conn_timeout=45
+        if ll_networks.is_host_network_is_vm(
+            vds_resource=conf.VDS_HOST_0, net_name=self.net
         ):
             raise conf.NET_EXCEPTION(
                 "%s on host %s was not updated to be non-VM network"

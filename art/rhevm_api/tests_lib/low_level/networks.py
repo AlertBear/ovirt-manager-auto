@@ -787,23 +787,19 @@ def update_network_in_datacenter(positive, network, datacenter, **kwargs):
     return NET_API.update(net, net_update, positive)
 
 
-def isVmHostNetwork(host, user, password, net_name, conn_timeout=40):
+def is_host_network_is_vm(vds_resource, net_name):
     """
     Check if network that resides on Host is VM or non-VM
-    **Author**: gcheresh
-        **Parameters**:
-        *  *host* - machine ip address or fqdn of the machine
-        *  *user* - root user on the  machine
-        *  *password* - password for the user
-        *  *net_name* - name of the network we test for being bridged
-        *  *conn_timeout* - ssh connection timeout to the host
-    **Return**: True if net_name is VM, False otherwise
+
+    :param vds_resource: VDS resource object
+    :type vds_resource: resources.VDS
+    :param net_name: name of the network we test for being bridged
+    :type net_name: str
+    :return: True if net_name is VM, False otherwise
+    :rtype: bool
     """
-    machine_obj = machine.Machine(
-        host, user, password, conn_timeout=conn_timeout
-    ).util(machine.LINUX)
     vm_file = os.path.join(test_utils.SYS_CLASS_NET_DIR, net_name)
-    return machine_obj.isFileExists(vm_file)
+    return vds_resource.fs.exists(path=vm_file)
 
 
 def checkVlanNet(host, user, password, interface, vlan):

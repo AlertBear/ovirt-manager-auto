@@ -165,9 +165,8 @@ def update_host_mgmt_bridge(host_resource, network, dc, nic):
         raise c.NET_EXCEPTION("Network should be non-VM")
 
     logger.info("Check that the change is reflected to Host %s", host_name)
-    if ll_networks.isVmHostNetwork(
-        host=host_resource.ip, user=c.HOSTS_USER, password=c.HOSTS_PW,
-        net_name=network, conn_timeout=45
+    if ll_networks.is_host_network_is_vm(
+        vds_resource=host_resource, net_name=network
     ):
         raise c.NET_EXCEPTION(
             "Network on host %s was not updated to be non-VM" % host_name

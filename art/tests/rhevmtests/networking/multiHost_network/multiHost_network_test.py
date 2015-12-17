@@ -1,6 +1,6 @@
 """
 Testing MultiHost feature.
-1 DC, 1 Cluster, 2 Hosts and 2 VMs will be created for testing.
+1 DC, 1 Cluster, 2 Hosts and 2 VMs will be used for testing.
 MultiHost will be tested for untagged, tagged, MTU, VM/non-VM and bond
 scenarios.
 """
@@ -18,7 +18,7 @@ from art.rhevm_api.tests_lib.high_level.networks import(
     createAndAttachNetworkSN, remove_net_from_setup, checkHostNicParameters
 )
 from art.rhevm_api.tests_lib.low_level.networks import(
-    updateNetwork, checkVlanNet, isVmHostNetwork
+    updateNetwork, checkVlanNet, is_host_network_is_vm
 )
 from art.rhevm_api.tests_lib.low_level.hosts import(
     sendSNRequest, deactivateHost, updateHost, activateHost
@@ -399,10 +399,8 @@ class TestMultiHostCase03(TestMultiHostTestCaseBase):
                 "Network is VM network and should be Non-VM")
 
         logger.info("Check that the change is reflected to Host")
-        if isVmHostNetwork(
-            host=config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, net_name=config.NETWORKS[0],
-            conn_timeout=45
+        if is_host_network_is_vm(
+            vds_resource=config.VDS_HOSTS[0], net_name=config.NETWORKS[0],
         ):
             raise NetworkException(
                 "Network on host %s was not updated to be non-VM network"
@@ -431,9 +429,8 @@ class TestMultiHostCase03(TestMultiHostTestCaseBase):
             raise NetworkException("Network is not a VM network but should be")
 
         logger.info("Check that the change is reflected to Host")
-        if not isVmHostNetwork(
-            host=config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, net_name=config.NETWORKS[0]
+        if not is_host_network_is_vm(
+            vds_resource=config.VDS_HOSTS[0], net_name=config.NETWORKS[0]
         ):
             raise NetworkException(
                 "Network on host %s was not updated to be VM network"
@@ -757,9 +754,8 @@ class TestMultiHostCase05(TestMultiHostTestCaseBase):
             )
 
         logger.info("Check that the change is reflected to Host")
-        if not isVmHostNetwork(
-            host=config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, net_name=config.NETWORKS[0]
+        if not is_host_network_is_vm(
+            vds_resource=config.VDS_HOSTS[0], net_name=config.NETWORKS[0]
         ):
             raise NetworkException(
                 "Network on host %s was not updated to be non-VM network"
@@ -1705,10 +1701,8 @@ class TestMultiHostCase11(TestMultiHostTestCaseBase):
             )
 
         logger.info("Check that the change is reflected to Host")
-        if isVmHostNetwork(
-            host=config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, net_name=config.NETWORKS[0],
-            conn_timeout=45
+        if is_host_network_is_vm(
+            vds_resource=config.VDS_HOSTS[0], net_name=config.NETWORKS[0]
         ):
             raise NetworkException(
                 "Network on host %s was not updated to be non-VM network" %
@@ -1736,9 +1730,8 @@ class TestMultiHostCase11(TestMultiHostTestCaseBase):
             raise NetworkException("Network is not a VM network but should be")
 
         logger.info("Check that the change is reflected to Host")
-        if not isVmHostNetwork(
-            host=config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, net_name=config.NETWORKS[0]
+        if not is_host_network_is_vm(
+            vds_resource=config.VDS_HOSTS[0], net_name=config.NETWORKS[0]
         ):
             raise NetworkException(
                 "Network on host %s was not updated to be VM network" %
