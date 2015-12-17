@@ -21,7 +21,7 @@ def setup_package():
     common.loginAsAdmin()
 
 
-def teardown_module():
+def teardown_package():
     common.cleanExtDirectory(config.ENGINE_EXTENSIONS_DIR)
     common.cleanExtDirectory(config.AAA_DIR)
     common.enableExtensions(config.OVIRT_SERVICE, config.ENGINE_HOST)
