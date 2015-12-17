@@ -10,6 +10,7 @@ Create, update, remove and migration tests will be done for Network QoS feature
 import helper
 import config
 import logging
+from art.unittest_lib import common
 from art.unittest_lib import attr
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest as TestCase
@@ -131,6 +132,7 @@ class TestNetQOSCase01(TestCase):
 
 
 @attr(tier=2)
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class TestNetQOSCase02(TestCase):
     """
     Update Network QoS
@@ -316,6 +318,7 @@ class TestNetQOSCase02(TestCase):
 
 
 @attr(tier=2)
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class TestNetQOSCase03(TestCase):
     """
     Remove Network QoS
@@ -480,6 +483,7 @@ class TestNetQOSCase03(TestCase):
 
 
 @attr(tier=2)
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class TestNetQOSCase04(TestCase):
     """
     Network QoSs, configured on several VNIC profiles
@@ -659,6 +663,7 @@ class TestNetQOSCase04(TestCase):
 
 
 @attr(tier=2)
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class TestNetQOSCase05(TestCase):
     """
     Migrate VM with network QOS on its NIC
