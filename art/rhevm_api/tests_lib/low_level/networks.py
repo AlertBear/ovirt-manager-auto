@@ -1104,29 +1104,33 @@ def remove_label(**kwargs):
     return status
 
 
-def check_bridge_opts(host, user, password, bridge_name, opts, value):
+def check_bridge_opts(vds_resource, bridge_name, opts, value):
     """
     Checks the bridge_opts of specific network bridge
-    **Author**: gcheresh
-        **Parameters**:
-        *  *host* - machine ip address or fqdn of the machine
-        *  *user* - root user on the  machine
-        *  *password* - password for the user
-        *  *bridge_name* - name of the bridge with specific opts
-        *  *opts* - opts name to check
-        *  *value - value of opts to compare to
-    **Return**: True if the value for bridge_opts is equal to the value
-    provided, False otherwise
+
+    :param vds_resource: VDS resource
+    :type vds_resource: resources.VDS
+    :param bridge_name: name of the bridge with specific opts
+    :type bridge_name: str
+    :param opts: opts name to check
+    :type opts: str
+    :param value: value of opts to compare to
+    :type value: str
+    :return: True if the value for bridge_opts is equal to the value
+             provided, False otherwise
+    :rtype: bool
     """
-    machine_obj = machine.Machine(host, user, password).util(machine.LINUX)
+    executor = vds_resource.executor()
     bridge_file = os.path.join(
         test_utils.SYS_CLASS_NET_DIR, bridge_name, 'bridge', opts
     )
-    rc, output = machine_obj.runCmd(["cat", bridge_file])
-    if not rc:
-        logger.error("Can't read {0}".format(bridge_file))
+    rc, out, err = executor.run_cmd(["cat", bridge_file])
+    if rc:
+        logger.error(
+            "Can't read %s. ERR: %s. OUT: %s", bridge_file, err, out
+        )
         return False
-    return output.strip() == value
+    return out.strip() == value
 
 
 def check_bond_mode(vds_resource, interface, mode):
@@ -1154,19 +1158,21 @@ def check_bond_mode(vds_resource, interface, mode):
     return bond_mode == str(mode)
 
 
-def check_ethtool_opts(host, user, password, nic, opts, value):
+def check_ethtool_opts(vds_resource, nic, opts, value):
     """
     Checks the ethtool_opts of specific network interface
-    **Author**: gcheresh
-        **Parameters**:
-        *  *host* - machine ip address or fqdn of the machine
-        *  *user* - root user on the  machine
-        *  *password* - password for the user
-        *  *nic* - NIC name with specific ethtool opts configured
-        *  *opts* - ethtool_opts name to check
-        *  *value - value of ethtool_opts to compare to
-    **Return**: True if the value for ethtool_opts is equal to the value
-    provided, False otherwise
+
+    :param vds_resource: VDS resource
+    :type vds_resource: resources.VDS
+    :param nic: NIC name with specific ethtool opts configured
+    :type nic: str
+    :param opts: ethtool_opts name to check
+    :type opts: str
+    :param value: value of ethtool_opts to compare to
+    :type value: str
+    :return: True if the value for ethtool_opts is equal to the value
+             provided, False otherwise
+    :rtype: bool
     """
     cmd = []
     if opts == "tx-checksumming":
@@ -1176,33 +1182,35 @@ def check_ethtool_opts(host, user, password, nic, opts, value):
     else:
         logger.error("Not implemented for opts %s" % opts)
         return False
-    machine_obj = machine.Machine(host, user, password).util(machine.LINUX)
-    rc, output = machine_obj.runCmd(cmd)
-    if not rc:
-        logger.error("Can't run %s command", " ".join(cmd))
+    executor = vds_resource.executor()
+    rc, out, err = executor.run_cmd(cmd)
+    if rc:
+        logger.error(
+            "Can't run %s command. ERR: %s. OUT: %s",
+            " ".join(cmd), err, out
+        )
         return False
-    for line in output.splitlines():
+    for line in out.splitlines():
         if opts in line:
             return line.split(":")[1].lstrip() == value
     return False
 
 
-def check_bridge_file_exist(host, user, password, bridge_name):
+def check_bridge_file_exist(vds_resource, bridge_name):
     """
     Checks if the bridge file exists for specific network
-    **Author**: gcheresh
-        **Parameters**:
-        *  *host* - machine ip address or fqdn of the machine
-        *  *user* - root user on the  machine
-        *  *password* - password for the user
-        *  *bridge_name* - name of the bridge file to check if exists
-    **Return**: True if the bridge_name file exists, False otherwise
+
+    :param vds_resource: VDS resource
+    :type vds_resource: resources.VDS
+    :param bridge_name: name of the bridge file to check if exists
+    :type bridge_name: str
+    :return: True if the bridge_name file exists, False otherwise
+    :rtype: bool
     """
-    machine_obj = machine.Machine(host, user, password).util(machine.LINUX)
     bridge_file = os.path.join(
         test_utils.SYS_CLASS_NET_DIR, bridge_name, 'bridge'
     )
-    return machine_obj.isFileExists(bridge_file)
+    return vds_resource.fs.exists(bridge_file)
 
 
 def create_properties(**kwargs):
