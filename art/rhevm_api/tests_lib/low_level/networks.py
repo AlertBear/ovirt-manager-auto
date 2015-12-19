@@ -1129,27 +1129,28 @@ def check_bridge_opts(host, user, password, bridge_name, opts, value):
     return output.strip() == value
 
 
-def check_bond_mode(host, user, password, interface, mode):
+def check_bond_mode(vds_resource, interface, mode):
     """
     Check BOND mode on BOND interface
-    **Author**: myakove
-        **Parameters**:
-        *  *host* - machine ip address or fqdn of the machine
-        *  *user* - root user on the  machine
-        *  *password* - password for the user
-        *  *interface* - name of the BOND interface
-        *  *mode* - The BOND mode
-    **Return**: True if correct BOND mode was found, False otherwise
+
+    :param vds_resource: VDS resource
+    :type vds_resource: resources.VDS
+    :param interface:name of the BOND interface
+    :type interface: str
+    :param mode: The BOND mode
+    :type mode: int
+    :return: True if correct BOND mode was found, False otherwise
+    :rtype: bool
     """
-    machine_obj = machine.Machine(host, user, password).util(machine.LINUX)
+    executor = vds_resource.executor()
     mode_file = os.path.join(
         test_utils.SYS_CLASS_NET_DIR, interface, "bonding/mode"
     )
-    rc, output = machine_obj.runCmd(["cat", mode_file])
-    if not rc:
-        logger.error("Can't read {0}".format(mode_file))
+    rc, out, err = executor.run_cmd(["cat", mode_file])
+    if rc:
+        logger.error("Can't read %s. ERR: %s. OUT:%s", mode_file, err, out)
         return False
-    bond_mode = output.split()[1]
+    bond_mode = out.split()[1]
     return bond_mode == str(mode)
 
 

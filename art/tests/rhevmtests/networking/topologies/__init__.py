@@ -6,7 +6,7 @@ Topologies Test
 """
 
 import logging
-import rhevmtests.networking as networking
+from rhevmtests import networking
 
 logger = logging.getLogger("Topologies_Init")
 

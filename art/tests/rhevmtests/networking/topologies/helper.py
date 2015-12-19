@@ -4,15 +4,13 @@
 """
 Helper for topologies job
 """
+
 import logging
-from art.rhevm_api.tests_lib.high_level.networks import(
-    createAndAttachNetworkSN
-)
-from art.rhevm_api.tests_lib.low_level.networks import check_bond_mode
-from art.rhevm_api.tests_lib.low_level.vms import updateNic, waitForIP
-from art.rhevm_api.utils.test_utils import check_icmp
-from art.test_handler.exceptions import NetworkException
 from rhevmtests.networking import config
+from art.rhevm_api.utils import test_utils
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 logger = logging.getLogger("topologies_helper")
 
@@ -28,16 +26,16 @@ def update_vnic_driver(driver):
     :rtype: bool
     """
     logger.info("Unplug vNIC")
-    if not updateNic(
-            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
-            plugged=False
+    if not ll_vms.updateNic(
+        positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
+        plugged=False
     ):
         return False
 
     logger.info("Updating vNIC to %s driver and plug it", driver)
-    if not updateNic(
-            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
-            interface=driver, plugged=True
+    if not ll_vms.updateNic(
+        positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
+        interface=driver, plugged=True
     ):
         return False
     return True
@@ -57,7 +55,7 @@ def check_connectivity(vlan=False, vm=True, flags=list()):
     """
     vm_ip = None
     if vm:
-        ip = waitForIP(vm=config.VM_NAME[0], timeout=TIMEOUT)
+        ip = ll_vms.waitForIP(vm=config.VM_NAME[0], timeout=TIMEOUT)
         if not ip[0]:
             return False
         vm_ip = ip[1]["ip"]
@@ -67,7 +65,7 @@ def check_connectivity(vlan=False, vm=True, flags=list()):
 
     dst_ip = vm_ip if vm_ip is not None else config.DST_HOST_IP
 
-    return check_icmp(host_obj=host, dst_ip=dst_ip, flags=flags)
+    return test_utils.check_icmp(host_obj=host, dst_ip=dst_ip, flags=flags)
 
 
 def create_and_attach_bond(mode):
@@ -97,15 +95,13 @@ def create_and_attach_bond(mode):
         }
     }
 
-    if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
+    if not hl_networks.createAndAttachNetworkSN(
+        data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+        host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
     ):
         return False
-    if not check_bond_mode(
-            host=config.HOSTS_IP[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, interface=config.BOND[int(mode)],
-            mode=mode
+    if not ll_networks.check_bond_mode(
+        config.VDS_HOSTS[0], interface=config.BOND[int(mode)], mode=mode
     ):
         logger.error("BOND mode should be %s but it's not", mode)
         return False
@@ -168,12 +164,16 @@ def check_vm_connect_and_log(
     :return: True or raise exception
     :rtype: bool
     """
-    logger.info(check_connectivity_log(
-        mode=mode, driver=driver, info=True, vlan=vlan)
+    logger.info(
+        check_connectivity_log(
+            mode=mode, driver=driver, info=True, vlan=vlan
+        )
     )
 
     if not check_connectivity(vlan=vlan, vm=vm, flags=flags):
-        raise NetworkException(check_connectivity_log(
-            mode=mode, driver=driver, error=True, vlan=vlan)
+        raise config.NET_EXCEPTION(
+            check_connectivity_log(
+                mode=mode, driver=driver, error=True, vlan=vlan
+            )
         )
     return True
