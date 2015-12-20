@@ -22,7 +22,6 @@ import logging
 import configobj
 import utilities.jobs as jobs
 import art.core_api as core_api
-import utilities.machine as machine
 import art.rhevm_api.utils.cpumodel as cpumodel
 import art.test_handler.settings as test_settings
 import art.rhevm_api.utils.test_utils as test_utils
@@ -1115,73 +1114,6 @@ def update_network_host(host, nic, auto_nics, save_config=True, **kwargs):
         if not ll_hosts.commitNetConfig(True, host=host):
             logger.error("Couldn't save network configuration")
             return False
-    return True
-
-
-def add_dummy_vdsm_support(host, username, password):
-    """
-   Add support for dummy interface on VDSM
-   :param host: IP or FDQN of the host
-   :type host: str
-   :param username: host username
-   :type username: str
-   :param password: host password
-   :type password: str
-   :return: True/False
-   :rtype: bool
-   """
-    append_dummy = [
-        "/bin/sed", "-i", '-e', "/^fake_nics.*$/d", '-e',
-        "/\\[vars\\]/a fake_nics=dummy*", VDSM_CONF_FILE
-    ]
-    host_obj = machine.Machine(host, username, password).util(machine.LINUX)
-    logger.info("Adding dummy support to %s", VDSM_CONF_FILE)
-    # detect RHEV-H
-    os_type = host_obj.getOsInfo().lower()
-    if HYPERVISOR in os_type:
-        logger.info("RHEV-H detected: %s", os_type)
-        # unperist the file, change the file, persist the file
-        with host_obj.edit_files_on_rhevh(VDSM_CONF_FILE):
-            rc, out = host_obj.runCmd(append_dummy)
-    else:
-        rc, out = host_obj.runCmd(append_dummy)
-    if not rc:
-        logger.error(
-            "Add dummy support to VDSM conf file failed. ERR: %s", out
-        )
-        return False
-    return True
-
-
-def remove_dummy_vdsm_support(host, username, password):
-    """
-    Re3move support for dummy interface on VDSM
-   :param host: IP or FDQN of the host
-   :type host: str
-   :param username: host username
-   :type username: str
-   :param password: host password
-   :type password: str
-   :return: True/False
-   :rtype: bool
-    """
-    dummy_remove = ["/bin/sed", "-i", "'/^fake_nics/d'", VDSM_CONF_FILE]
-    host_obj = machine.Machine(host, username, password).util(machine.LINUX)
-    logger.info("Removing dummy support from %s", VDSM_CONF_FILE)
-    # detect RHEV-H
-    os_type = host_obj.getOsInfo().lower()
-    if HYPERVISOR in os_type:
-        logger.info("RHEV-H detected: %s", os_type)
-        # unperist the file, change the file, persist the file
-        with host_obj.edit_files_on_rhevh(VDSM_CONF_FILE):
-            rc, out = host_obj.runCmd(dummy_remove)
-    else:
-        rc, out = host_obj.runCmd(dummy_remove)
-    if not rc:
-        logger.error(
-            "Remove dummy support from VDSM conf file failed. ERR: %s", out
-        )
-        return False
     return True
 
 
