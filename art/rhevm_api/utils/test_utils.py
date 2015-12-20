@@ -66,6 +66,8 @@ ENGINE_SERVICE = "ovirt-engine"
 SUPERVDSMD = "supervdsmd"
 VDSMD = "vdsmd"
 TCDUMP_TIMEOUT = "60"
+RESTART_INTERVAL = 5
+RESTART_TIMEOUT = 70
 
 RHEVM_UTILS_ENUMS = settings.opts['elements_conf']['RHEVM Utilities']
 
@@ -1004,26 +1006,29 @@ def getAllImages(vds, vds_username, vds_password, spool_id, domain_id,
 
 
 @is_action()
-def checkSpoofingFilterRuleByVer(host, user, passwd, target_version='3.2'):
-    '''
-    Description: Check if NetworkFilter (nwfilter) rule is enabled/disabled
-    for a requested version
-    Author: myakove
-    Parameters:
-      * host - name of the rhevm
-      * user - user name for the rhevm
-      * passwd - password for the user
-      * target_version - the lower veriosn that nwfilter is enabled
-    Return True for version >= 3.2 and False for <=3.1
-     '''
+def check_spoofing_filter_rule_by_ver(engine_resource, target_version='3.2'):
+    """
+    Check if NetworkFilter (nwfilter) rule is enabled/disabled for a requested
+    version
 
-    host_obj = Machine(host, user, passwd).util(LINUX)
-    cmd = ['engine-config', '-g', 'EnableMACAntiSpoofingFilterRules']
-    rc, output = host_obj.runCmd(cmd)
-    ERR_MSG = 'Version {0} has incorrect nwfilter value: {1}'
+    :param engine_resource: Engine resource
+    :type engine_resource: resources.Engine
+    :param target_version: Target version to check
+    :type target_version: str
+    :return: True for version >= 3.2 and False for <=3.1
+    :rtype: bool
+    """
+    executor = engine_resource.host.executor()
+    cmd = ["engine-config", "-g", "EnableMACAntiSpoofingFilterRules"]
+    rc, out, err = executor.run_cmd(cmd)
+    if rc:
+        logger.error("Failed to run %s. ERR: %s. OUT: %s", cmd, err, out)
+        return False
 
-    logger.info(output)
-    for line in output.splitlines():
+    ERR_MSG = "Version {0} has incorrect nwfilter value: {1}"
+
+    logger.info(out)
+    for line in out.splitlines():
         data = line.split()
         version = data[3]
         status = data[1].lower()
@@ -1036,54 +1041,33 @@ def checkSpoofingFilterRuleByVer(host, user, passwd, target_version='3.2'):
 
 
 @is_action()
-def setNetworkFilterStatus(enable, host, user, passwd):
+def set_network_filter_status(enable, engine_resource):
     """
-    Description: Disabling or enabling network filtering.
-    Author: awinter
-    Parameters:
-      *  *enable* - True for enabling, False for disabling
-      *  *host* - IP/FQDN of the management
-      *  *user* - user name for the management
-      *  *passwd* - password for the user
-    **return**: True if operation succeeded, False otherwise
+    Disabling or enabling network filtering.
+
+    :param enable: True for enabling, False for disabling
+    :typr enable: bool
+    :param engine_resource: Engine resource
+    :type engine_resource: resources.Engine
+    :return: True if operation succeeded, False otherwise
+    :rtype: bool
     """
-    cmd = ["engine-config", "-s", "EnableMACAntiSpoofingFilterRules=%s" %
-           str(enable).lower()]
-
-    host_obj = Machine(host, user, passwd).util(LINUX)
-    if not host_obj.runCmd(cmd)[0]:
-        logger.error("Operation failed")
-        return False
-    return restartOvirtEngine(host_obj, 5, 25, 70)
-
-
-@is_action()
-def restartOvirtEngine(host_obj, interval, attempts, timeout,
-                       engine_service=ENGINE_SERVICE,
-                       health_url=ENGINE_HEALTH_URL):
-    '''
-    Description: Restarting Ovirt engine
-    Author: awinter
-    Parameters:
-      * host_obj - host object
-      * interval - Checking in "interval" time, sampling every "interval"
-                   seconds
-      * attempts - number of attempts to check that ovirt is UP
-      * timeout - the amount of time to sleep after HealthPage is UP
-    return: True if Ovirt engine was successfully restarted, False otherwise
-    '''
-    if not host_obj.restartService(engine_service):
-        logger.error("restarting %s failed", engine_service)
+    executor = engine_resource.host.executor()
+    cmd = [
+        "engine-config", "-s",
+        "EnableMACAntiSpoofingFilterRules=%s" % str(enable).lower()
+    ]
+    rc, out, err = executor.run_cmd(cmd)
+    if rc:
+        logger.error("Failed to run %s. ERR: %s. OUT: %s", cmd, err, out)
         return False
 
-    for attempt in range(1, attempts):
-        sleep(int(interval))
-        if host_obj.runCmd(["curl", health_url])[1].count("Welcome") == 1:
-            sleep(int(timeout))
-            logger.info("HealthPage is UP")
-            return True
-    logger.error("HealthPage was not up after %s attempts", attempts)
-    return False
+    try:
+        restart_engine(engine_resource, RESTART_INTERVAL, RESTART_TIMEOUT)
+    except APITimeout:
+        logger.error("Failed to restart engine service")
+        return False
+    return True
 
 
 def restart_engine(engine, interval, timeout):

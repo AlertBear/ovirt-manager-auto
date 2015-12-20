@@ -232,15 +232,8 @@ class TestCase6182(BaseTestCase):
         self.assertFalse(helpers.is_transient_directory_empty(self.host_ip),
                          "Transient directory is empty")
 
-        engine = config.VDC
-        engine_object = Machine(
-            host=engine,
-            user=config.HOSTS_USER,
-            password=config.HOSTS_PW).util('linux')
-
         logger.info("Restarting ovirt-engine...")
-        self.assertTrue(utils.restartOvirtEngine(engine_object, 5, 30, 30),
-                        "Failed restarting ovirt-engine")
+        utils.restart_engine(config.ENGINE, 5, 30)
         logger.info("Successfully restarted ovirt-engine")
 
         vm_disks = vms.getVmDisks(self.vm_names[1])

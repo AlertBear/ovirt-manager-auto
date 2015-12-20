@@ -1,7 +1,6 @@
 from art.rhevm_api.tests_lib.low_level import storagedomains, vms, templates
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.utils import test_utils
-from utilities.machine import LINUX, Machine
 from utilities.rhevm_tools.base import Setup
 from utilities.rhevm_tools.config import ConfigUtility
 from rhevmtests.system.hooks import config
@@ -39,8 +38,6 @@ def setup_package():
                                         cluster=config.CLUSTER_NAME[0])
         assert vms.removeVm(True, config.HOOKS_VM_NAME)
 
-    machine = Machine(config.VDC_HOST, config.VDC_ROOT_USER,
-                      config.VDC_ROOT_PASSWORD).util(LINUX)
     setup = Setup(
         config.VDC_HOST,
         config.VDC_ROOT_USER,
@@ -50,7 +47,7 @@ def setup_package():
     config_util = ConfigUtility(setup)
     config_util(set=config.CUSTOM_PROPERTY, cver=config.VER)
     config_util(set=config.CUSTOM_PROPERTY_VNIC, cver=config.VER)
-    assert test_utils.restartOvirtEngine(machine, 5, 25, 70)
+    test_utils.restart_engine(config.ENGINE, 5, 70)
 
 
 def teardown_package():

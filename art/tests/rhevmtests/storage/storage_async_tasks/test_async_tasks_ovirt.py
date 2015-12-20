@@ -2,7 +2,6 @@ import config
 import common
 import logging
 import time
-from utilities.machine import Machine, LINUX
 from art.unittest_lib import StorageTest as TestCase, attr
 from concurrent.futures import ThreadPoolExecutor
 from art.test_handler.tools import polarion  # pylint: disable=E0611
@@ -12,7 +11,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     VM_API, waitForVmsGone, cloneVmFromTemplate, removeVm,
 )
 from art.rhevm_api.utils.log_listener import watch_logs
-from art.rhevm_api.utils.test_utils import wait_for_tasks, restartOvirtEngine
+from art.rhevm_api.utils.test_utils import wait_for_tasks, restart_engine
 from art.rhevm_api.tests_lib.low_level.hosts import waitForHostsStates
 
 LOGGER = logging.getLogger(__name__)
@@ -27,8 +26,6 @@ OPERATION_FINISHED = False
 @attr(tier=4)
 class RestartOvirt(TestCase):
     __test__ = False
-    ovirt_host = Machine(
-        config.VDC, config.VDC_ROOT_USER, config.VDC_PASSWORD).util(LINUX)
 
     def tearDown(self):
         wait_for_tasks(
@@ -38,7 +35,7 @@ class RestartOvirt(TestCase):
         with ThreadPoolExecutor(max_workers=2) as executor:
             executor.submit(self.perform_action)
             executor.submit(
-                restartOvirtEngine, self.ovirt_host, 10, 30, 75)
+                restart_engine, config.ENGINE, 10, 75)
         wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
         LOGGER.info("checking if action failed")
@@ -55,7 +52,7 @@ class RestartOvirt(TestCase):
             password=config.VDC_PASSWORD
         )
         OPERATION_FINISHED = True
-        restartOvirtEngine(self.ovirt_host, 10, 30, 75)
+        restart_engine(config.ENGINE, 10, 75)
         LOGGER.info("ovirt-engine restarted")
 
     def _timeouting_thread(self, operation, timeout=300):
@@ -86,7 +83,7 @@ class RestartOvirt(TestCase):
             ip_for_files=config.HOSTS[0], username=config.HOSTS_USER,
             password=config.HOSTS_PW, time_out=TIMEOUT
         )
-        restartOvirtEngine(self.ovirt_host, 10, 30, 75)
+        restart_engine(config.ENGINE, 10, 75)
         LOGGER.info("ovirt-engine restarted")
         wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)

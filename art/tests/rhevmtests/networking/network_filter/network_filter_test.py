@@ -42,9 +42,8 @@ class TestNetworkFilterCase01(TestCase):
         Check that Network Filter is enabled by default on engine
         """
         logger.info("Check that Network Filter is enabled on engine")
-        if not test_utils.checkSpoofingFilterRuleByVer(
-                host=config.VDC_HOST, user=config.VDC_ROOT_USER,
-                passwd=config.VDC_ROOT_PASSWORD
+        if not test_utils.check_spoofing_filter_rule_by_ver(
+            engine_resource=config.ENGINE
         ):
             raise config.NET_EXCEPTION("Network Filter is disabled on engine")
 
@@ -291,9 +290,8 @@ class TestNetworkFilterCase05(TestCase):
             raise config.NET_EXCEPTION("fail to stop the VM")
 
         logger.info("Disabling network filter on engine")
-        if not test_utils.setNetworkFilterStatus(
-                enable=False, host=config.VDC_HOST, user=config.VDC_ROOT_USER,
-                passwd=config.VDC_ROOT_PASSWORD
+        if not test_utils.set_network_filter_status(
+                enable=False, engine_resource=config.ENGINE
         ):
             raise config.NET_EXCEPTION("Failed to disable network filter")
 
@@ -334,9 +332,8 @@ class TestNetworkFilterCase05(TestCase):
         Enabling network filter on engine
         """
         logger.info("Enabling network filter on engine")
-        if not test_utils.setNetworkFilterStatus(
-                enable=True, host=config.VDC_HOST, user=config.VDC_ROOT_USER,
-                passwd=config.VDC_ROOT_PASSWORD
+        if not test_utils.set_network_filter_status(
+                enable=True, engine_resource=config.ENGINE
         ):
             logger.error("Failed to enable network filter")
 

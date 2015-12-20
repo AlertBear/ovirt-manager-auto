@@ -28,7 +28,7 @@ from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
-from art.rhevm_api.utils.test_utils import restartVdsmd, restartOvirtEngine
+from art.rhevm_api.utils.test_utils import restartVdsmd, restart_engine
 from rhevmtests.storage.helpers import (
     get_vm_ip, create_vm_or_clone, prepare_disks_for_vm,
     get_disks_volume_count,
@@ -799,16 +799,9 @@ class TestCase6006(BasicEnvironment):
         - Create a snapshot to the VM, pick only 2 disks
         - Restart ovirt-engine service during snapshot creation
         """
-        engine = config.VDC
-        engine_object = Machine(
-            host=engine,
-            user=config.VDC,
-            password=config.VDC_ROOT_PASSWORD).util(LINUX)
-
         self._perform_snapshot_operation(wait=False)
         logger.info("Restarting ovirt-engine...")
-        self.assertTrue(restartOvirtEngine(engine_object, 5, 30, 30),
-                        "Failed restarting ovirt-engine")
+        restart_engine(config.ENGINE, 5, 30)
         waitForHostsStates(True, config.HOSTS[0])
 
     def tearDown(self):

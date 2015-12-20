@@ -5,6 +5,7 @@ Storage/3_5_Storage_ImportDomain_DetachAttach
 """
 import logging
 import shlex
+from art.core_api import apis_exceptions
 from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost
 import art.test_handler.exceptions as errors
 import rhevmtests.storage.helpers as storage_helpers
@@ -195,7 +196,7 @@ def setup_module():
         config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
     )
     logger.info("Restarting ovirt-engine service")
-    test_utils.restartOvirtEngine(engine, 10, 15, 300)
+    test_utils.restart_engine(config.ENGINE, 10, 300)
 
 
 def teardown_module():
@@ -220,7 +221,11 @@ def teardown_module():
         config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
     )
     logger.info("Restarting ovirt-engine service")
-    test_utils.restartOvirtEngine(engine, 10, 15, 300)
+    try:
+        test_utils.restart_engine(config.ENGINE, 10, 300)
+    except apis_exceptions.APITimeout:
+        logger.error("Failed to restart engine service")
+        exception_flag = True
 
     for vm_names in VM_NAMES.values():
         ll_vms.safely_remove_vms(vm_names)
@@ -965,7 +970,7 @@ class TestCase5205(CommonSetUp):
         - Restart the engine during the Import domain operation
         """
         self._restart_component(
-            test_utils.restartOvirtEngine, config.VDC_HOST, 10, 15, 300
+            test_utils.restart_engine, config.ENGINE, 10, 300
         )
 
     def tearDown(self):

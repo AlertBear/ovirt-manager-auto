@@ -10,7 +10,7 @@ import shlex
 from threading import Thread
 import time
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-from art.rhevm_api.utils.test_utils import restartVdsmd, restartOvirtEngine
+from art.rhevm_api.utils.test_utils import restartVdsmd, restart_engine
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.rhevm_api.tests_lib.low_level import disks, hosts, storagedomains, vms
 from art.unittest_lib import StorageTest as BaseTestCase
@@ -460,11 +460,8 @@ class TestCase6046(BasicEnvironment):
         assert vms.removeSnapshot(
             True, self.vm_name, self.snapshot_list[1], timeout=-1
         )
-        ovirt_host = Machine(
-            config.VDC, config.VDC_ROOT_USER, config.VDC_PASSWORD
-        ).util(LINUX)
         logger.info("Restarting ovirt-engine")
-        restartOvirtEngine(ovirt_host, 10, 30, 75)
+        restart_engine(config.ENGINE, 10, 75)
         logger.info("ovirt-engine restarted")
 
         self.verify_snapshot_files(

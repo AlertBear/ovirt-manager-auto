@@ -10,8 +10,6 @@ from art.rhevm_api.utils.log_listener import watch_logs
 from art.unittest_lib.common import StorageTest as TestCase
 from art.unittest_lib import attr
 from art.rhevm_api.utils import test_utils
-from art.rhevm_api.utils.test_utils import restartOvirtEngine
-from utilities.utils import getIpAddressByHostName
 from utilities.machine import Machine
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
@@ -450,13 +448,7 @@ class TestCase11907(TestCase):
                 state=config.VM_LOCK_STATE),
             "image status won't change to lock")
 
-        engine = config.VDC
-        engine_ip = getIpAddressByHostName(engine)
-        engine_object = Machine(host=engine_ip, user=config.VMS_LINUX_USER,
-                                password=config.VMS_LINUX_PW).util('linux')
-
-        self.assertTrue(restartOvirtEngine(engine_object, 5, 30, 75),
-                        "Failed restarting ovirt-engine")
+        test_utils.restart_engine(config.ENGINE, 5, 75)
         logger.info("Successfully restarted ovirt-engine")
 
         # Wait until VM is down

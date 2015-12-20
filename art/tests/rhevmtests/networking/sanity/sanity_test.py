@@ -1052,9 +1052,8 @@ class TestSanity13(unittest_lib.NetworkTest):
         Check that Network Filter is enabled by default on engine
         """
         logger.info("Check that Network Filter is enabled on engine")
-        if not test_utils.checkSpoofingFilterRuleByVer(
-            host=conf.VDC_HOST, user=conf.VDC_ROOT_USER,
-            passwd=conf.VDC_ROOT_PASSWORD
+        if not test_utils.check_spoofing_filter_rule_by_ver(
+            engine_resource=conf.ENGINE
         ):
             raise conf.NET_EXCEPTION("Network Filter is disabled on engine")
 
