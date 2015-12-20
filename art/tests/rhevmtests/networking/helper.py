@@ -623,5 +623,21 @@ def get_all_ifcfg_files(host_ip):
     return [] if rc else out.splitlines()
 
 
+def remove_networks_from_host(hosts=None):
+    """
+    Remove all networks from hosts
+
+    :param hosts: Host name
+    :type hosts: list
+    """
+    hosts = [conf.HOSTS[0]] if not hosts else hosts
+    logger.info("Removing all networks from %s", hosts)
+    for host_name in hosts:
+        if not hl_host_network.clean_host_interfaces(host_name=host_name):
+            logger.error(
+                "Failed to remove all networks from %s", host_name
+            )
+
+
 if __name__ == "__main__":
     pass

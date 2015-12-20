@@ -5,14 +5,12 @@ Bridgeless (Non-VM) Network will be tested for untagged, tagged,
 bond scenarios.
 """
 
-from art.unittest_lib import attr
-from art.unittest_lib import NetworkTest as TestCase
+import helper
 import logging
-from rhevmtests.networking import config
-from art.test_handler.exceptions import NetworkException
-from art.rhevm_api.tests_lib.high_level.networks import(
-    createAndAttachNetworkSN, remove_net_from_setup
-)
+import config as conf
+from art import unittest_lib
+import rhevmtests.networking.helper as networking_helper
+
 
 logger = logging.getLogger("Bridgeless_Networks_Cases")
 
@@ -23,194 +21,91 @@ logger = logging.getLogger("Bridgeless_Networks_Cases")
 #                             Test Cases                               #
 ########################################################################
 
+@unittest_lib.attr(tier=2)
+class TestBridgelessTestCaseBase(unittest_lib.NetworkTest):
 
-@attr(tier=2)
-class TestBridgelessCase1(TestCase):
     """
-    Create and attach Non-VM network
+    Base class which provides teardown class method for each test case
+    """
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove networks from the setup.
+        """
+        networking_helper.remove_networks_from_host()
+
+
+class TestBridgelessCase1(TestBridgelessTestCaseBase):
+    """
+    Attach Non-VM network to host NIC
     """
     __test__ = True
 
     def test_bridgeless_network(self):
         """
-        Create and attach Non-VM network
+         Attach Non-VM network to host NIC
         """
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": 1,
-                "required": "false",
-                "usages": "",
-            },
-        }
-
-        logger.info(
-            "Create and attach Non-VM network %s to DC/Cluster and Host",
-            config.NETWORKS[0]
+        helper.create_networks_on_host(
+            nic=conf.HOST0_NICS[1], net=conf.NETS[1][0]
         )
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0],
-        ):
-            raise NetworkException(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from the setup.
-        """
-        logger.info("Remove network from setup")
-        if not remove_net_from_setup(
-                host=config.HOSTS[0], data_center=config.DC_NAME[0],
-                network=[config.NETWORKS[0]],
-        ):
-            logger.error(
-                "Cannot remove network %s from setup", config.NETWORKS[0]
-            )
 
 
-@attr(tier=2)
-class TestBridgelessCase2(TestCase):
+class TestBridgelessCase2(TestBridgelessTestCaseBase):
     """
-    Create and attach Non-VM with VLAN network
+    Attach Non-VM with VLAN network to host NIC
     """
     __test__ = True
 
     def test_vlan_bridgeless_network(self):
         """
-        Create and attach Non-VM with VLAN network
+        Attach Non-VM with VLAN network to host NIC
         """
-        local_dict = {
-            config.VLAN_NETWORKS[0]: {
-                "vlan_id": config.VLAN_ID[0],
-                "nic": 1,
-                "required": "false",
-                "usages": "",
-            },
-        }
-
-        logger.info(
-            "Create and attach Non-VM VLAN network %s to DC/Cluster and Host",
-            config.VLAN_NETWORKS[0]
+        helper.create_networks_on_host(
+            nic=conf.HOST0_NICS[1], net=conf.NETS[2][0]
         )
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0, 1],
-        ):
-            raise NetworkException(
-                "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
-            )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup.
-        """
-        logger.info("Remove network from setup")
-        if not remove_net_from_setup(
-            host=config.HOSTS[0], data_center=config.DC_NAME[0],
-            network=[config.VLAN_NETWORKS[0]],
-        ):
-            logger.error(
-                "Cannot remove network %s from setup", config.VLAN_NETWORKS[0]
-            )
 
 
-@attr(tier=2)
-class TestBridgelessCase3(TestCase):
+class TestBridgelessCase3(TestBridgelessTestCaseBase):
     """
-    Create and attach Non-VM network with VLAN over BOND
+    Create BOND
+    Attach Non-VM network with VLAN over BOND
     """
     __test__ = True
+    bond = "bond03"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create BOND
+        """
+
+        helper.create_networks_on_host(nic=cls.bond, slaves=conf.DUMMYS[:2])
 
     def test_bond_bridgeless_network(self):
         """
-        Create and attach Non-VM network with VLAN over BOND
+        Attach Non-VM network with VLAN over BOND
         """
-        local_dict = {
-            None: {
-                "nic": config.BOND[0], "mode": 1,
-                "slaves": [2, 3],
-            },
-            config.VLAN_NETWORKS[0]: {
-                "nic": config.BOND[0],
-                "vlan_id": config.VLAN_ID[0],
-                "required": "false",
-                "usages": "",
-            },
-        }
-
-        logger.info(
-            "Create and attach Non-VM network with VLAN %s over BOND to "
-            "DC/Cluster and Host", config.VLAN_NETWORKS[0]
-        )
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0],
-        ):
-            raise NetworkException(
-                "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
-            )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup.
-        """
-        logger.info("Remove network from setup")
-        if not remove_net_from_setup(
-            host=config.HOSTS[0], data_center=config.DC_NAME[0],
-            network=[config.VLAN_NETWORKS[0]]
-        ):
-            logger.error(
-                "Cannot remove network %s from setup", config.VLAN_NETWORKS[0]
-            )
+        helper.create_networks_on_host(net=conf.NETS[3][0], nic=self.bond)
 
 
-@attr(tier=2)
-class TestBridgelessCase4(TestCase):
+class TestBridgelessCase4(TestBridgelessTestCaseBase):
     """
-    Create and attach Non-VM network over BOND
+    Create BOND
+    Attach Non-VM network over BOND
     """
     __test__ = True
+    bond = "bond04"
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create BOND
+        """
+        helper.create_networks_on_host(nic=cls.bond, slaves=conf.DUMMYS[2:4])
 
     def test_bond_bridgeless_network(self):
         """
-        Create and attach bridgeless network over BOND
+        Attach bridgeless network over BOND
         """
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": config.BOND[0], "mode": 1,
-                "slaves": [2, 3],
-                "required": "false",
-                "usages": "",
-            },
-        }
-
-        logger.info(
-            "Create and attach Non-VM network %s over BOND to DC/Cluster and "
-            "Host", config.NETWORKS[0]
-        )
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0],
-        ):
-            raise NetworkException(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup.
-        """
-        logger.info("Remove network from setup")
-        if not remove_net_from_setup(
-            host=config.HOSTS[0], data_center=config.DC_NAME[0],
-            network=[config.NETWORKS[0]],
-        ):
-            logger.error(
-                "Cannot remove network %s from setup", config.NETWORKS[0]
-            )
+        helper.create_networks_on_host(net=conf.NETS[4][0], nic=self.bond)
