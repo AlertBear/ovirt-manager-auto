@@ -113,23 +113,38 @@ class GABaseTestCase(TestCase):
         :param command: command to be checked
         :type command: list
         """
-        rc, _, err = self.machine.executor().run_cmd(
+        executor = self.machine.executor()
+        rc, _, err = executor.run_cmd(
             ['ls', '-l', '/etc/ovirt-guest-agent.conf']
         )
         self.assertTrue(
             not rc,
             "Failed to check guest agent config: %s" % err
         )
-        rc, _, err = self.machine.executor().run_cmd(
+        rc, _, err = executor.run_cmd(
             ['grep', 'ovirtagent', '/etc/{passwd,group}']
         )
         self.assertTrue(
             not rc,
             'User/Group ovirtagent was no found: %s' % err
         )
+        rc, out, err = executor.run_cmd([
+            'stat',
+            '--format=%U:%G',
+            '-L',
+            '/dev/virtio-ports/com.redhat.rhevm.vdsm',
+        ])
+        self.assertTrue(
+            not rc,
+            "Failed to run check of ownership of virtio-ports: %s" % err
+        )
+        self.assertTrue(
+            out.strip() == 'ovirtagent:ovirtagent',
+            "Virtio port have invalid ownership '%s': %s" % (out, err)
+        )
         if commands:
             for command in commands:
-                rc, _, err = self.machine.executor().run_cmd(command)
+                rc, _, err = executor.run_cmd(command)
                 self.assertTrue(
                     not rc,
                     "Failed to run command '%s': %s" % (command, err)
