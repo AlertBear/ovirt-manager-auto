@@ -16,62 +16,8 @@ import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 logger = logging.getLogger("Port_Mirroring_Helper")
 
-
-def send_and_capture_traffic(
-    src_vm, src_ip, dst_ip, listen_vm=conf.VM_NAME[0], nic=conf.VM_NICS[1],
-    expect_traffic=True, dup_check=True
-):
-    """
-    A function that sends ICMP traffic from 'src_ip' to 'dst_ip' while
-    capturing
-    traffic on 'listeningVM' to check if mirroring is happening.
-    :param src_vm: mgmt network IP of the VM to send ping from
-    :type src_vm: str
-    :param src_ip: IP to send ping form
-    :type src_ip: str
-    :param dst_ip: IP to send ping to
-    :type dst_ip: str
-    :param listen_vm: name of the VM that will listen to the traffic
-    :type listen_vm: str
-    :param nic: NIC to listen to traffic on
-    :type nic: str
-    :param expect_traffic: boolean to indicate if we expect to see the ping
-           traffic on the listening machine or not.
-    :type expect_traffic: bool
-    :param dup_check: Check if packets are duplicated
-    :type dup_check: bool
-    :raise: conf.NET_EXCEPTION
-    """
-    logger_info = (
-        "Send and capture traffic from {0} to {1}. Listen VM is {2}. "
-        "Expected traffic is {3}".format(
-            src_ip, dst_ip, listen_vm, expect_traffic
-        )
-    )
-    expected_text = (
-        "Failed to send/capture traffic" if expect_traffic else "Found traffic"
-    )
-
-    network_exception_text = (
-        "{0} from {1} to {2}. Listen VM is {3}.".format(
-            expected_text, src_ip, dst_ip, listen_vm)
-    )
-    logger.info(logger_info)
-    listen_vm_index = conf.VM_NAME.index(listen_vm)
-    with hl_networks.TrafficMonitor(
-        expectedRes=expect_traffic,
-        machine=conf.MGMT_IPS[listen_vm_index],
-        user=conf.VMS_LINUX_USER,
-        password=conf.VMS_LINUX_PW,
-        nic=nic, src=src_ip, dst=dst_ip, dupCheck=dup_check,
-        protocol="icmp", numPackets=3
-    ) as monitor:
-            monitor.addTask(
-                test_utils.sendICMP, host=src_vm, user=conf.VMS_LINUX_USER,
-                password=conf.VMS_LINUX_PW, ip=dst_ip
-            )
-    if not monitor.getResult():
-        raise conf.NET_EXCEPTION(network_exception_text)
+VLAN_0 = "1000" if conf.PPC_ARCH else conf.VLAN_ID[0]
+VLAN_1 = "1500" if conf.PPC_ARCH else conf.VLAN_ID[1]
 
 
 def set_port_mirroring(
@@ -354,12 +300,12 @@ def create_networks_pm():
             "slaves": [2, 3]
         },
         conf.VLAN_NETWORKS[0]: {
-            "vlan_id": conf.VLAN_ID[0],
+            "vlan_id": VLAN_0,
             "nic": 1,
             "required": "false"
         },
         conf.VLAN_NETWORKS[1]: {
-            "vlan_id": conf.VLAN_ID[1],
+            "vlan_id": VLAN_1,
             "nic": conf.BOND[0],
             "required": "false"
         }
