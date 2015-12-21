@@ -52,7 +52,7 @@ def config_ip(vms_and_ips):
         ip = vm_and_ip[1]
         vm_resource = get_vm_resource(vm)
         interface = network_helper.get_vm_interfaces_list(
-            vm_resource, keep_nic=conf.ETH0
+            vm_resource, exclude_nic=conf.ETH0
         )
         if not interface:
             raise conf.NET_EXCEPTION("Failed to get interface from %s" % vm)

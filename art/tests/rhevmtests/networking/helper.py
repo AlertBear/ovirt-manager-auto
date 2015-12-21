@@ -16,6 +16,7 @@ from art.test_handler import exceptions
 from art.rhevm_api.utils import test_utils
 import rhevmtests.helpers as global_helper
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
@@ -26,6 +27,7 @@ import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 logger = logging.getLogger("Global_Network_Helper")
 
 ENUMS = settings.opts['elements_conf']['RHEVM Enums']
+IFCFG_PATH = "/etc/sysconfig/network-scripts"
 
 
 def create_random_ips(num_of_ips=2, mask=16):
@@ -574,34 +576,54 @@ def remove_ifcfg_files(vms):
     :param vms: List of VMs
     :type vms: list
     """
+    exclude_nics = ["ifcfg-eth0", "ifcfg-lo"]
     for vm in vms:
         try:
-            vm_resource = get_vm_resource(vm)
+            vm_resource = get_vm_resource(vm=vm)
         except conf.NET_EXCEPTION:
             logger.error("Failed to get VM resource for %s", vm)
             continue
-        interfaces = get_vm_interfaces_list(vm_resource)
+        interfaces = get_all_ifcfg_files(hl_vms.get_vm_ip(vm, start_vm=False))
+        interfaces = filter(
+            lambda x: x.rsplit("/")[-1] not in exclude_nics, interfaces
+        )
         for interface in interfaces:
-            ifcfg_path = "/etc/sysconfig/network-scripts/ifcfg-%s" % interface
-            logger.info("Remove %s from %s", ifcfg_path, vm)
-            if not vm_resource.fs.remove(ifcfg_path):
-                logger.error("Fail to remove %s for %s", ifcfg_path, vm)
+            logger.info("Remove %s from %s", interface, vm)
+            if not vm_resource.fs.remove(path=interface):
+                logger.error("Fail to remove %s for %s", interface, vm)
 
 
-def get_vm_interfaces_list(vm_resource, keep_nic):
+def get_vm_interfaces_list(vm_resource, exclude_nic):
     """
     Get VM interface list beside ifcfg-eth0
 
     :param vm_resource: VM resource
     :type vm_resource: Resource.VDS
-    :param keep_nic: NIC name to keep
-    :type keep_nic: str
+    :param exclude_nic: NIC name to keep
+    :type exclude_nic: str
     :return: VM interfaces list
     :rtype: list
     """
     logger.info("Getting interfaces list from %s", vm_resource.ip)
     vm_nics = vm_resource.network.all_interfaces()
-    return filter(lambda x: x != keep_nic, vm_nics)
+    return filter(lambda x: x != exclude_nic, vm_nics)
+
+
+def get_all_ifcfg_files(host_ip):
+    """
+    Get all ifcfg files from Host resource
+
+    :param host_ip: Host IP
+    :type host_ip: str
+    :return: List of all ifcfg files
+    :rtype: list
+    """
+    resource = helpers.get_host_resource_with_root_user(host_ip, conf.HOSTS_PW)
+    rc, out, err = resource.run_command(["ls", "%s/ifcfg-*" % IFCFG_PATH])
+    if rc:
+        return []
+    return out.splitlines()
+
 
 if __name__ == "__main__":
     pass
