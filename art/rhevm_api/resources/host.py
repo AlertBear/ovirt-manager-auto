@@ -104,6 +104,22 @@ class Host(Resource):
             user = self.root_user
         return ssh.RemoteExecutor(user, self.ip)
 
+    def run_command(self, command):
+        """
+        Run command on host
+
+        :param command: command to run
+        :type command: list
+        :return: tuple of (rc, out, err)
+        :rtype: tuple
+        """
+        rc, out, err = self.executor().run_cmd(command)
+        if rc:
+            self.logger.error(
+                "Failed to run command %s ERR: %s OUT: %s", command, err, out
+            )
+        return rc, out, err
+
     def copy_to(self, resource, src, dst):
         """
         Copy to host from another resource

@@ -20,7 +20,6 @@
 import os
 import re
 import logging
-from utilities import machine
 from art.core_api import is_action
 from art.core_api import apis_utils
 from art.core_api import apis_exceptions
@@ -432,12 +431,9 @@ def check_ip_rule(vds_resource, subnet):
     :return: True/False
     :rtype: bool
     """
-    executor = vds_resource.executor()
-    cmd = ["ip", "rule"]
-    rc, out, err = executor.run_cmd(cmd)
+    rc, out, _ = vds_resource.run_command(["ip", "rule"])
     logger.info("The output of ip rule command is:\n %s", out)
     if rc:
-        logger.error("Failed to run ip rule command. ERR: %s", err)
         return False
     return len(re.findall(subnet.replace('.', '[.]'), out)) == 2
 
@@ -814,15 +810,11 @@ def is_vlan_on_host_network(vds_resource, interface, vlan):
     :return: True if VLAN on the host == provided VLAN, False otherwise
     :rtype: bool
     """
-    executor = vds_resource.executor()
     vlan_file = os.path.join(
         PROC_NET_DIR, "vlan", ".".join([interface, str(vlan)])
     )
-    cmd = ["cat", vlan_file]
-    rc, out, err = executor.run_cmd(cmd)
+    rc, out, _ = vds_resource.run_command(["cat", vlan_file])
     if rc:
-        logger.error(
-            "Failed to run command %s. ERR: %s. OUT:%s", cmd, err, out)
         return False
     match_obj = re.search("VID: ([0-9]+)", out)
     if match_obj:
@@ -1123,15 +1115,11 @@ def check_bridge_opts(vds_resource, bridge_name, opts, value):
              provided, False otherwise
     :rtype: bool
     """
-    executor = vds_resource.executor()
     bridge_file = os.path.join(
         test_utils.SYS_CLASS_NET_DIR, bridge_name, 'bridge', opts
     )
-    rc, out, err = executor.run_cmd(["cat", bridge_file])
+    rc, out, _ = vds_resource.run_command(["cat", bridge_file])
     if rc:
-        logger.error(
-            "Can't read %s. ERR: %s. OUT: %s", bridge_file, err, out
-        )
         return False
     return out.strip() == value
 
@@ -1149,13 +1137,11 @@ def check_bond_mode(vds_resource, interface, mode):
     :return: True if correct BOND mode was found, False otherwise
     :rtype: bool
     """
-    executor = vds_resource.executor()
     mode_file = os.path.join(
         test_utils.SYS_CLASS_NET_DIR, interface, "bonding/mode"
     )
-    rc, out, err = executor.run_cmd(["cat", mode_file])
+    rc, out, _ = vds_resource.run_command(["cat", mode_file])
     if rc:
-        logger.error("Can't read %s. ERR: %s. OUT:%s", mode_file, err, out)
         return False
     bond_mode = out.split()[1]
     return bond_mode == str(mode)
@@ -1185,13 +1171,8 @@ def check_ethtool_opts(vds_resource, nic, opts, value):
     else:
         logger.error("Not implemented for opts %s" % opts)
         return False
-    executor = vds_resource.executor()
-    rc, out, err = executor.run_cmd(cmd)
+    rc, out, _ = vds_resource.run_command(cmd)
     if rc:
-        logger.error(
-            "Can't run %s command. ERR: %s. OUT: %s",
-            " ".join(cmd), err, out
-        )
         return False
     for line in out.splitlines():
         if opts in line:
