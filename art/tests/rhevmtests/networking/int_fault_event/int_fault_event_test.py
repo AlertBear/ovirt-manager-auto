@@ -54,7 +54,7 @@ class TestNicFaultTestCaseBase(TestCase):
 
         logger.info("Setting all %s interfaces UP", c.HOST_0)
         for nic in c.HOST_NICS[1:]:
-            if not helper.set_nic_up(nic=nic, sleep=False):
+            if not helper.set_nic_up(nic=nic, wait=False, sleep=False):
                 logger.error("Couldn't set up nic %s", nic)
 
 

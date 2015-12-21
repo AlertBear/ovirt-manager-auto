@@ -16,8 +16,8 @@ def setup_package():
     """
     Running cleanup
     """
-    config.HOST_NICS = config.VDS_HOSTS_0.nics
-    config.VDS_HOSTS_0 = config.VDS_HOSTS[0]
     config.HOST_0 = config.HOSTS[0]
+    config.VDS_HOSTS_0 = config.VDS_HOSTS[0]
     config.HOST_0_IP = config.HOSTS_IP[0]
+    config.HOST_NICS = config.VDS_HOSTS_0.nics
     networking.network_cleanup()
