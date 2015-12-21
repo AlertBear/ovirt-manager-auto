@@ -1766,25 +1766,45 @@ def removeSnapshot(
 
 
 @is_action()
-def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
-              cdrom_image=None, floppy_image=None, boot_dev=None, host=None,
-              domainName=None, user_name=None, password=None):
-    '''
-    Description: run vm once
-    Author: edolinin
-    Parameters:
-       * vm - name of vm
-       * pause - if pause the vm after starting
-       * display_type - type of display to use in start up
-       * stateless - if vm should be stateless or not
-       * cdrom_image - cdrom image to use
-       * floppy_image - floppy image to use
-       * boot_dev - boot device to use
-       * domainName - name of the domain for VM
-       * user_name - name of the user
-       * password - password for specified user
-    Return: status (True if vm was run properly, False otherwise)
-    '''
+def runVmOnce(
+    positive, vm, pause=None, display_type=None, stateless=None,
+    cdrom_image=None, floppy_image=None, boot_dev=None, host=None,
+    domainName=None, user_name=None, password=None,
+    wait_for_state=ENUMS['vm_state_powering_up']
+):
+    """
+    Run once vm with specific parameters
+
+    :param positive: if run must succeed or not
+    :type positive: bool
+    :param vm: vm name to run
+    :type vm: str
+    :param pause: if vm must started in pause state
+    :type pause: str
+    :param display_type: display type of vm
+    :type display_type: str
+    :param stateless: if vm must be stateless
+    :type stateless: bool
+    :param cdrom_image: cdrom image to attach
+    :type cdrom_image: str
+    :param floppy_image: floppy image to attach
+    :type floppy_image: str
+    :param boot_dev: boot vm from device
+    :type boot_dev: str
+    :param host: run vm on host
+    :type host: str
+    :param domainName: vm domain
+    :type domainName: str
+    :param user_name: domain user name
+    :type user_name: str
+    :param password: domain password name
+    :type password: str
+    :param wait_for_state: wait for specific vm state after run
+    :type wait_for_state: str
+    :return: True, if positive and action succeed
+    or negative and action failed, otherwise False
+    :rtype: bool
+    """
     # TODO Consider merging this method with the startVm.
     vm_obj = VM_API.find(vm)
 
@@ -1811,9 +1831,7 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
 
     if boot_dev:
         os_type = data_st.OperatingSystem()
-        # boot_dev_seq = data_st.Boot()
         for dev in boot_dev.split(","):
-            # boot_dev_seq.set_dev(dev)
             os_type.add_boot(data_st.Boot(dev=dev))
         vm_for_action.set_os(os_type)
 
@@ -1827,36 +1845,22 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
         domain.set_name(domainName)
 
         if user_name and password is not None:
-            domain.set_user(data_st.User(user_name=user_name,
-                                         password=password))
+            domain.set_user(
+                data_st.User(user_name=user_name, password=password)
+            )
 
         vm_for_action.set_domain(domain)
-
-    if pause:
-        status = bool(
-            VM_API.syncAction(
-                vm_obj, 'start', positive, pause=pause, vm=vm_for_action
-            )
+    action_d = {
+        "vm": vm_for_action
+    }
+    if pause and pause.lower() == 'true':
+        wait_for_state = ENUMS['vm_state_paused']
+        action_d["pause"] = pause
+    status = bool(VM_API.syncAction(vm_obj, 'start', positive, **action_d))
+    if status and positive:
+        return VM_API.waitForElemStatus(
+            vm_obj, wait_for_state, VM_ACTION_TIMEOUT
         )
-        if positive and status:
-            # in case status is False we shouldn't wait for rest element status
-            if pause.lower() == 'true':
-                state = ENUMS['vm_state_paused']
-            else:
-                state = ENUMS['vm_state_powering_up']
-            return VM_API.waitForElemStatus(vm_obj, state, VM_ACTION_TIMEOUT)
-    else:
-        status = bool(
-            VM_API.syncAction(
-                vm_obj, 'start', positive, vm=vm_for_action
-            )
-        )
-        if positive and status:
-            # in case status is False we shouldn't wait for rest element status
-            return VM_API.waitForElemStatus(
-                vm_obj,
-                ENUMS['vm_state_powering_up'] + " " + ENUMS['vm_state_up'],
-                VM_ACTION_TIMEOUT)
     return status
 
 
@@ -4855,29 +4859,33 @@ def run_vms_once(vms, max_workers=None, **kwargs):
     :type vms: list
     :param max_workers: In how many threads should vms start
     :type max_workers: int
-    :param kwargs: kwargs for runVmOnce function
+    :param kwargs: vm_name_1: {vm_name_1 run once parameters}
+                   vm_name_2: {vm_name_2 run once parameters}
+                   ...
     :type kwargs: dict
     :raises: VMException
     """
     results = list()
     max_workers = len(vms) if not max_workers else max_workers
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        for machine in vms:
-            vm_obj = VM_API.find(machine)
+        for vm_name in vms:
+            vm_obj = VM_API.find(vm_name)
             if vm_obj.get_status().get_state() == ENUMS['vm_state_down']:
-                logger.info("Starting vm %s", machine)
+                logger.info("Starting vm %s", vm_name)
                 results.append(
-                    executor.submit(runVmOnce, True, machine, **kwargs)
+                    executor.submit(
+                        runVmOnce, True, vm_name, **kwargs[vm_name]
+                    )
                 )
-    for machine, res in zip(vms, results):
+    for vm_name, res in zip(vms, results):
         if res.exception():
             logger.error(
                 "Got exception while starting vm %s: %s",
-                machine, res.exception()
+                vm_name, res.exception()
             )
             raise res.exception()
         if not res.result():
-            raise exceptions.VMException("Cannot start vm %s" % machine)
+            raise exceptions.VMException("Cannot start vm %s" % vm_name)
 
 
 def get_vm_nic_mac_address(vm, nic='nic1'):

@@ -47,10 +47,13 @@ class BaseTestPolicyWithMemory(libs.SlaTest):
                             "Host %s have cpu load below expected one" % host
                         )
         if cls.load_memory_d:
-            for host, load_vm in cls.load_memory_d.iteritems():
-                logger.info("Start vm %s on host %s", load_vm, host)
-                if not ll_vms.runVmOnce(positive=True, vm=load_vm, host=host):
-                    raise errors.VMException("Failed to start vm %s" % load_vm)
+            vm_host_d = dict(
+                (vm_name, {"host": host_name, "wait_for_state": conf.VM_UP})
+                for host_name, vm_name in cls.load_memory_d.iteritems()
+            )
+            ll_vms.run_vms_once(
+                vms=cls.load_memory_d.values(), **vm_host_d
+            )
         cluster_policy_name = cls.cluster_policy.get("name")
         cluster_policy_params = cls.cluster_policy.get("params")
         logger.info(
@@ -104,6 +107,32 @@ class BaseTestPolicyWithMemory(libs.SlaTest):
                             "Host %s have cpu load below expected one", host
                         )
 
+    @staticmethod
+    def _check_migration(vm_name, host_name):
+        """
+        Check, if vm migrated on specific host
+
+        :param vm_name: vm name
+        :type vm_name: str
+        :param host_name: host name
+        :type host_name: str
+        :return: True, if vm migrated on given host, otherwise False
+        :rtype: bool
+        """
+        logger.info(
+            "Wait for vm %s migration to host %s", vm_name, host_name
+        )
+        if not ll_vms.is_vm_run_on_host(
+            vm_name=vm_name, host_name=host_name,
+            timeout=conf.MIGRATION_TIMEOUT
+        ):
+            logger.error("VM %s still run on host %s", vm_name, host_name)
+            return False
+        logger.info(
+            "Migration of vm %s to host %s succeeded", vm_name, host_name
+        )
+        return True
+
 
 class StartVmsClass(BaseTestPolicyWithMemory):
     """
@@ -115,10 +144,11 @@ class StartVmsClass(BaseTestPolicyWithMemory):
         """
         Start one vm on each host
         """
-        for vm_name, host_name in zip(conf.VM_NAME[:2], conf.HOSTS[:2]):
-            logger.info("Start vm %s on host %s", vm_name, host_name)
-            if not ll_vms.runVmOnce(positive=True, vm=vm_name, host=host_name):
-                raise errors.VMException("Failed to start vm %s" % vm_name)
+        vm_host_d = dict(
+            (vm_name, {"host": host_name, "wait_for_state": conf.VM_UP})
+            for vm_name, host_name in zip(conf.VM_NAME[:2], conf.HOSTS[:2])
+        )
+        ll_vms.run_vms_once(vms=conf.VM_NAME[:2], **vm_host_d)
         super(StartVmsClass, cls).setup_class()
 
     @classmethod
