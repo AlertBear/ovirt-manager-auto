@@ -332,7 +332,11 @@ def create_vm_or_clone(positive, vmName, vmDescription, cluster, **kwargs):
     # If the vm doesn't need installation don't waste time cloning the vm
     if config.GOLDEN_ENV and installation:
         storage_domains = storagedomains.get_storagedomain_names()
-        if config.GLANCE_DOMAIN in storage_domains:
+        if config.GLANCE_DOMAIN in storage_domains and (
+            config.GLANCE_IMAGE_COW in (
+                storagedomains.get_storage_domain_images(config.GLANCE_DOMAIN)
+            )
+        ):
             kwargs['cluster'] = cluster
             kwargs['vmName'] = vmName
             kwargs['vmDescription'] = vmDescription
