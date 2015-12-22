@@ -11,13 +11,15 @@ import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 logger = logging.getLogger(__name__)
 
 
-def update_configuration_constants(host_name=conf.HOSTS[0]):
+def update_configuration_constants(host_name=None):
     """
     Update configuration file constants depend on host memory
 
     :param host_name: host name
     :type host_name: str
     """
+    if host_name is None:
+        host_name = conf.HOSTS[0]
     half_host_memory = ll_hosts.get_host_memory(host_name) / 2
     conf.DEFAULT_PS_PARAMS[
         conf.MIN_FREE_MEMORY
