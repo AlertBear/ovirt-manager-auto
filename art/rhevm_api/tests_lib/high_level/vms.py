@@ -3,6 +3,7 @@ High-level functions above virtual machines
 """
 
 import logging
+import shlex
 from concurrent.futures import ThreadPoolExecutor
 from art.core_api import is_action
 import art.rhevm_api.tests_lib.low_level.vms as vms
@@ -20,13 +21,14 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 CLUSTER_API = get_api('cluster', 'clusters')
 
 VM_API = get_api('vm', 'vms')
-
+KB = 1024
 MB = 1024 ** 2
 GB = 1024 ** 3
 TIMEOUT = 120
 ATTEMPTS = 600
 INTERVAL = 2
 MIGRATION_TIMEOUT = 300
+CHECK_MEMORY_COMMAND = "grep 'MemTotal' /proc/meminfo | awk '{ print $2 }'"
 
 ProvisionContext = vms.ProvisionContext
 
@@ -74,8 +76,10 @@ def shutdown_vm_if_up(vm_name):
         * vm_name - name of the vm
     """
     vm_obj = VM_API.find(vm_name)
-    if vm_obj.status.state == ENUMS['vm_state_up'] and\
-            not vms.shutdownVm(True, vm_name):
+    if (
+        vm_obj.status.state == ENUMS['vm_state_up'] and
+        not vms.shutdownVm(True, vm_name)
+    ):
         raise errors.VMException("Shutdown of vm %s failed" % vm_name)
     return vms.waitForVMState(vm_name, state=ENUMS['vm_state_down'])
 
@@ -165,9 +169,10 @@ def start_vm_on_specific_host(vm, host, wait_for_ip=False):
 
 
 def start_vms_on_specific_host(
-        vm_list, max_workers, host,
-        wait_for_status=ENUMS['vm_state_powering_up'],
-        wait_for_ip=True):
+    vm_list, max_workers, host,
+    wait_for_status=ENUMS['vm_state_powering_up'],
+    wait_for_ip=True
+):
     """
     Description: Starts all vms in vm_list. Throws an exception if it fails
 
@@ -524,8 +529,10 @@ def set_vms_with_host_memory_by_percentage(
     for vm in test_vms:
         for host_memory in hosts_memory:
             new_memory = (
-                long(long(host_memory.get('memory.total'))
-                     * (float(percentage) / float(100)))
+                long(
+                    long(host_memory.get('memory.total')) *
+                    (float(percentage) / float(100))
+                )
             )
             LOGGER.info("normalization memory to MB: %s", str(new_memory))
             new_memory = (long(new_memory / MB)) * MB
@@ -573,7 +580,6 @@ def update_vms_memory(test_vms, memory):
             True,
             vm=vm,
             memory=memory,
-            memory_guaranteed=memory
         ):
             LOGGER.error(
                 "Failed to update memory to vm %s",
@@ -584,7 +590,7 @@ def update_vms_memory(test_vms, memory):
 
 
 def create_vm_using_glance_image(
-        glance_storage_domain_name, glance_image, **kwargs
+    glance_storage_domain_name, glance_image, **kwargs
 ):
     """
     Create a vm using an imported disk from glance repository
@@ -613,7 +619,7 @@ def create_vm_using_glance_image(
         'storageDomainName': None,  # To avoid installation process
         'installation': False,  # To avoid installation process
         'start': 'false'  # To avoid starting vm before attaching the image
-                          # to it
+        # to it
     }
     positive = kwargs.pop('positive', True)
     vm_name = kwargs.pop('vmName')
@@ -636,8 +642,8 @@ def create_vm_using_glance_image(
         return False
     LOGGER.info("Creating vm %s with nic", vm_name)
     if not vms.createVm(
-            positive=positive, vmName=vm_name,
-            vmDescription=vm_description, **kwargs
+        positive=positive, vmName=vm_name,
+        vmDescription=vm_description, **kwargs
     ):
         LOGGER.error("Failed to add vm %s", vm_name)
         return False
@@ -706,3 +712,69 @@ def get_vms_objects_from_cluster(cluster):
         vm for vm in all_vms
         if vm.get_cluster().get_id() == cluster_id]
     return vms_in_cluster
+
+
+def check_vm_memory(vm_resource, expected_mem_size):
+    """
+    Check VM memory, and compare to expected result
+
+    :param vm_resource: vm resource
+    :type vm_resource: Host
+    :param expected_mem_size: the expected value in bytes
+    :type expected_mem_size: int
+    :return: True if memory as expected else False
+    :rtype: bool
+    """
+    expected_memory = expected_mem_size / KB
+    rc, out, _ = vm_resource.run_command(shlex.split(CHECK_MEMORY_COMMAND))
+    if rc:
+        return False
+    actual_memory = shlex.split(out)[1]
+    LOGGER.info("Expected memory(kb): %s", expected_memory)
+    LOGGER.info("Actual memory(kb): %s", actual_memory)
+    if (
+            expected_memory * 0.98 < int(actual_memory) or
+            expected_memory * 0.98 > int(actual_memory)
+    ):
+        return True
+    else:
+        LOGGER.error("memory check failed")
+        return False
+
+
+def expand_vm_memory(vm_name, mem_size_to_expand, number_of_times=1):
+    """
+    Expand memory in multiple of given memory size
+
+    :param vm_name: vm name
+    :type vm_name: str
+    :param mem_size_to_expand: memory size in GB/MB
+    :type mem_size_to_expand: int
+    :param number_of_times: number of time to expend vm memory
+    :type number_of_times: int
+    :return: memory_size_before, memory_size_after, new_memory_size
+    :rtype: tuple
+    """
+
+    memory_size_before = int(get_vm_memory(vm_name))
+    new_memory_size = memory_size_before
+    LOGGER.info("VM memory before: %s", memory_size_before)
+    for i in range(0, number_of_times):
+        new_memory_size += mem_size_to_expand
+        LOGGER.info("Update vm memory to: %s", new_memory_size)
+        if not vms.updateVm(
+            positive=True,
+            vm=vm_name,
+            memory=new_memory_size
+        ):
+            LOGGER.error("Failed to update memory")
+            return memory_size_before, -1, -1
+
+    memory_size_after = get_vm_memory(vm_name)
+    LOGGER.info(
+        "After update: memory_size_before:%s \n"
+        "memory_size_after: %s \n"
+        "new_memory_size:%s "
+        % (memory_size_before, memory_size_after, new_memory_size)
+    )
+    return memory_size_before, memory_size_after, new_memory_size
