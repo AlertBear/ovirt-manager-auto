@@ -671,6 +671,7 @@ def cancel_vm_migrate(vm, wait=True, timeout=MIGRATION_TIMEOUT):
     """
 
     vm_obj = VM_API.find(vm)
+    source_host_name = vms.get_vm_host(vm)
     if not VM_API.syncAction(vm_obj, "cancelmigration", True):
         return False
 
@@ -680,25 +681,10 @@ def cancel_vm_migrate(vm, wait=True, timeout=MIGRATION_TIMEOUT):
 
     if not VM_API.waitForElemStatus(vm_obj, ENUMS["vm_state_up"], timeout):
         return False
-
-    return is_vm_run_on_host(vm, vm_obj.host)
-
-
-def is_vm_run_on_host(vm_name, host):
-    """
-    Check the after canceling migration for this this vm he stayed on the
-    same host(source host)
-    :param vm_name: vm name
-    :type vm_name: str
-    :param host: host object to check
-    :type host: Host
-    :return: True if vm stay on the same host else False
-    """
+    destination_host_name = vms.get_vm_host(vm)
     LOGGER.info(
-        "Validating that VM: %s running on host: %s", vm_name, host.name
+        "Check that vm stay on the same host "
+        "source host: %s destination host: %s",
+        source_host_name, destination_host_name
     )
-    real_dest_host_id = VM_API.find(vm_name).host.id
-    if host.id == real_dest_host_id:
-        LOGGER.info("%s stayed on the same host", vm_name)
-        return True
-    return False
+    return source_host_name == destination_host_name
