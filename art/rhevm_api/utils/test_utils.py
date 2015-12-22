@@ -1407,10 +1407,10 @@ def waitUntilGone(positive, names, api, timeout,
 
 def raise_if_exception(results):
     """
-    Description: Raises exception if any of Future object in results has
-    exception
-    Parameters:
-        * results - list of Future objects
+    Raises exception if any of Future object in results has exception
+
+    :param results: list of Future objects
+    :type results: list
     """
     for result in results:
         if result.exception():
@@ -1427,6 +1427,7 @@ def get_obj_by_query(obj, query_text):
     net_obj = NET_API = get_api("network", "networks")
     query_text = "Cluster_network.cluster_name=<name> and name=rhevm"
     query_res = get_obj_by_query(obj=net_obj, query_text=query_text)
+
     :param obj: Object to query
     :param query_text: Query text
     :return:
@@ -1443,9 +1444,10 @@ def set_engine_properties(
     """
     Running engine-config command to set specific value
     Author: gcheresh
+
     Parameters:
     :param engine_obj: Resources Engine object
-    :type engine_obj: object
+    :type engine_obj: resources.Engine
     :param param: Command to run with engine config
     :type param: list
     :param attempts: number of attempts to check if engine is up
@@ -1459,10 +1461,8 @@ def set_engine_properties(
     """
     cmd = ["engine-config", "-s"]
     cmd.extend(param)
-    engine_exec = engine_obj.host.executor()
-    rc, out, error = engine_exec.run_cmd(cmd)
+    rc, _, _ = engine_obj.run_command(cmd)
     if rc:
-        logger.error("Operation failed. Err: %s %s", out, error)
         return False
 
     if restart:
@@ -1478,13 +1478,13 @@ def set_engine_properties(
     return True
 
 
-def get_engine_properties(engine_obj, param):
+def get_engine_properties(engine_resource, param):
     """
     Running engine-config command to get specific value
     Author: gcheresh
-    Parameters:
-    :param engine_obj: Resources Engine object
-    :type engine_obj: object
+
+    :param engine_resource: Resources Engine object
+    :type engine_resource: resources.Engine
     :param param: Command to run with engine config
     :type param: list
     :return: tuple of value and version
@@ -1492,38 +1492,8 @@ def get_engine_properties(engine_obj, param):
     """
     cmd = ["engine-config", "-g"]
     cmd.extend(param)
-    engine_exec = engine_obj.host.executor()
-    rc, out, error = engine_exec.run_cmd(cmd)
+    rc, out, _ = engine_resource.run_command(cmd)
     if rc:
-        logger.error("Operation failed. Err: %s %s", out, error)
         return "", ""
     value, version = out.split("{0}:".format(param[0]))[1].split("version:")
     return value.strip(), version.strip()
-
-
-def check_icmp(host_obj, dst_ip, attempts=60, flags=None):
-    """
-    Check ICMP connectivity from host to destination IP
-    :param host_obj: resource.VDS host object
-    :type host_obj: object
-    :param dst_ip: Destination IP
-    :type dst_ip: str
-    :param attempts: Number of attempts for ICMP
-    :type attempts: int
-    :param flags: extra flags for ping command (for example -I eth1)
-    :type flags: list or None
-    :return: True/False
-    :rtype: bool
-    """
-    host_exec = host_obj.executor()
-    if not isinstance(flags, list):
-        flags = []
-    flags.extend(["-c", "1"])
-    cmd = ["ping"] + [dst_ip] + flags
-    while attempts:
-        rc, out, err = host_exec.run_cmd(cmd)
-        if rc:
-            attempts -= 1
-        else:
-            return True
-    return False

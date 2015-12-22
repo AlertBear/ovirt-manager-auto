@@ -639,5 +639,37 @@ def remove_networks_from_host(hosts=None):
             )
 
 
+def send_icmp_sampler(
+    host_resource, dst, count="5", size="1500", extra_args=None,
+    timeout=conf.SAMPLER_TIMEOUT, sleep=1
+):
+    """
+    Send ICMP to destination IP/FQDN
+
+    :param host_resource: Host resource
+    :param dst: IP/FQDN to send ICMP to
+    :type dst: str
+    :param count: Number of ICMP packets to send
+    :type count: str
+    :param size: Size of the ICMP packet
+    :type size: str
+    :param extra_args: Extra args for ping command
+    :type extra_args: str
+    :param timeout: Time to try
+    :type timeout: int
+    :param sleep: Time to sleep between each try
+    :type sleep: int
+    :raise: conf.NET_EXCEPTION
+    """
+    logger.info("Check ICMP traffic from %s to %s", host_resource.ip, dst)
+    sample = test_utils.TimeoutingSampler(
+        timeout=timeout, sleep=sleep, func=host_resource.network.send_icmp,
+        dst=dst, count=count, size=size, extra_args=extra_args
+    )
+    if not sample.waitForFuncStatus(result=True):
+        raise conf.NET_EXCEPTION("Couldn't ping %s " % dst)
+    logger.info("Traffic from %s to %s succeed", host_resource.ip, dst)
+
+
 if __name__ == "__main__":
     pass

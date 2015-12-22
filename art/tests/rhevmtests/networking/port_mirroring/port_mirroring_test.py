@@ -6,17 +6,18 @@ Test Port mirroring.
 using 2 hosts and 5 VMs
 """
 
-import logging
 import helper
+import logging
 from art.unittest_lib import attr
 from art.core_api import apis_utils
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest as TestCase
+import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 logger = logging.getLogger("Port_Mirroring_Cases")
 
@@ -336,19 +337,12 @@ class TestPortMirroringCase06(TestCase):
                 "Failed to set down %s on %s" %
                 (conf.VLAN_NETWORKS[0], conf.HOSTS[0])
             )
-
-        logger.info(
-            "Checking connectivity between %s to %s to make sure "
-            "network is UP", NET1_IPS[1], NET1_IPS[2]
+        vm_resource = global_helper.get_host_resource_with_root_user(
+            ip=conf.MGMT_IPS[1], root_password=conf.VMS_LINUX_PW
         )
-        if not hl_networks.checkICMPConnectivity(
-            host=conf.MGMT_IPS[1], user=conf.VMS_LINUX_USER,
-            password=conf.VMS_LINUX_PW, ip=NET1_IPS[2]
-        ):
-            raise conf.NET_EXCEPTION(
-                "No connectivity from %s to %s" % (NET1_IPS[1], NET1_IPS[2])
-            )
-
+        network_helper.send_icmp_sampler(
+            host_resource=vm_resource, dst=NET1_IPS[2]
+        )
         logger.info("Check port mirroring traffic down/up bridge")
         helper.check_received_traffic(
             src_ip=NET1_IPS[1], dst_ip=NET1_IPS[2], src_vm=MGMT_IPS[1],

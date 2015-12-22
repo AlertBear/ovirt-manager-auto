@@ -7,7 +7,7 @@ Helper for topologies job
 
 import logging
 from rhevmtests.networking import config
-from art.rhevm_api.utils import test_utils
+import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
@@ -65,7 +65,7 @@ def check_connectivity(vlan=False, vm=True, flags=list()):
 
     dst_ip = vm_ip if vm_ip is not None else config.DST_HOST_IP
 
-    return test_utils.check_icmp(host_obj=host, dst_ip=dst_ip, flags=flags)
+    return network_helper.send_icmp_sampler(host_resource=host, dst=dst_ip)
 
 
 def create_and_attach_bond(mode):
@@ -169,8 +169,9 @@ def check_vm_connect_and_log(
             mode=mode, driver=driver, info=True, vlan=vlan
         )
     )
-
-    if not check_connectivity(vlan=vlan, vm=vm, flags=flags):
+    try:
+        check_connectivity(vlan=vlan, vm=vm, flags=flags)
+    except Exception:
         raise config.NET_EXCEPTION(
             check_connectivity_log(
                 mode=mode, driver=driver, error=True, vlan=vlan

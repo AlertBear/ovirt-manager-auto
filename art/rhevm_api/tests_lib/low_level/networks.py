@@ -1397,3 +1397,18 @@ def prepare_qos_on_net(qos_dict):
                 datacenter, qos_name
             )
     return qos_obj
+
+
+def get_network_on_host_nic(host, nic):
+    """
+    Get network name from host NIC
+
+    :param host: Host name
+    :type host: str
+    :param nic: NIC name
+    :type nic: str
+    :return: Network name
+    :rtype: str
+    """
+    return ll.general.get_object_name_by_id(
+        NET_API, ll.hosts.getHostNic(host, nic).get_network().get_id())

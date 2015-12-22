@@ -1,9 +1,12 @@
 import re
 import os
 import shlex
+import logging
 import netaddr
 import functools
 from art.rhevm_api.resources.service import Service
+
+logger = logging.getLogger(__name__)
 
 IFCFG_PATH = "/etc/sysconfig/network-scripts/"
 
@@ -474,8 +477,8 @@ class Network(Service):
         :type size: str
         :param extra_args: Extra args for ping command
         :type extra_args: str
-        :return: Command output or raise Exception
-        :rtype: str or Exception
+        :return: True/False
+        :rtype: bool
         """
         cmd = ["ping", dst, "-c", count, "-s", size]
         if size != "1500":
@@ -483,7 +486,12 @@ class Network(Service):
         if extra_args is not None:
             for ar in extra_args.split():
                 cmd.extend(ar.split())
-        return self._cmd(cmd)
+        try:
+            self._cmd(cmd)
+        except Exception as e:
+            logger.error(e)
+            return False
+        return True
 
     def set_mtu(self, nics, mtu="1500"):
         """

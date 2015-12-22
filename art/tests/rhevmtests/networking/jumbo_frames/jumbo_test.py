@@ -18,6 +18,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.utils.test_utils as utils
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import rhevmtests.networking.helper as network_helper
+import rhevmtests.helpers as global_helper
 import helper
 
 HOST_API = utils.get_api("host", "hosts")
@@ -483,26 +484,13 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
         """
         Send ping between 2 VMs
         """
-        logger.info(
-            "Checking ICMP traffic from VM %s (IP %s) to VM %s (IP %s) via "
-            "network %s",
-            config.VM_NAME[0], self.ips[0], config.VM_NAME[1], self.ips[1],
-            config.VLAN_NETWORKS[0]
+        vm_resource = global_helper.get_host_resource_with_root_user(
+            ip=config.VM_IP_LIST[0], root_password=config.VMS_LINUX_PW
         )
-        if not hl_networks.checkICMPConnectivity(
-            host=config.VM_IP_LIST[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, ip=self.ips[1],
-            max_counter=config.TRAFFIC_TIMEOUT,
-            packet_size=config.SEND_MTU[0]
-        ):
-            raise NetworkException(
-                "Checking ICMP traffic from VM %s (IP %s) to VM %s (IP %s) via"
-                " network %s failed" % (
-                    config.VM_NAME[0], self.ips[0], config.VM_NAME[1],
-                    self.ips[1], config.VLAN_NETWORKS[0]
-                )
-            )
-        logger.info("Traffic between the VMs succeed")
+        network_helper.send_icmp_sampler(
+            host_resource=vm_resource, dst=self.ips[1],
+            size=str(config.SEND_MTU[0])
+        )
         logger.info(
             "Removing network %s from the hosts", config.VLAN_NETWORKS[1]
         )
@@ -522,20 +510,13 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
                 connectivity_timeout=config.CONNECT_TIMEOUT,
             )
             host_idx += 1
-        logger.info(
-            "Checking if sending ICMP traffic on network %s succeed after "
-            "removal of %s network",
-            config.VLAN_NETWORKS[0], config.VLAN_NETWORKS[1]
+        vm_resource = global_helper.get_host_resource_with_root_user(
+            ip=config.VM_IP_LIST[0], root_password=config.VMS_LINUX_PW
         )
-        if not hl_networks.checkICMPConnectivity(
-            host=config.VM_IP_LIST[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, ip=self.ips[1],
-            max_counter=config.TRAFFIC_TIMEOUT,
-            packet_size=config.SEND_MTU[0]
-        ):
-            raise NetworkException("ICMP traffic check failed")
-
-        logger.info("Traffic between the VMs succeed")
+        network_helper.send_icmp_sampler(
+            host_resource=vm_resource, dst=self.ips[1],
+            size=str(config.SEND_MTU[0])
+        )
         for host in config.VDS_HOSTS[:2]:
             host_nics = eval("HOST_NICS%d" % config.VDS_HOSTS[:2].index(host))
             # Checking logical and physical
@@ -760,14 +741,10 @@ class TestJumboFramesCase10(TestJumboFramesTestCaseBase):
             bond=config.BOND[0], network=config.VLAN_NETWORKS[0],
             mtu=config.MTU[0], bond_nic1=HOST_NICS0[2], bond_nic2=HOST_NICS0[3]
         )
-        logger.info("Checking traffic between the two hosts")
-        if not hl_networks.checkICMPConnectivity(
-            host=config.VDS_HOSTS[0].ip, user=config.HOSTS_USER,
-            password=config.HOSTS_PW, ip=self.ips[1],
-            max_counter=config.TRAFFIC_TIMEOUT, packet_size=config.SEND_MTU[1]
-        ):
-            raise NetworkException("Traffic check between the hosts failed")
-        logger.info("Traffic between the hosts succeed")
+        network_helper.send_icmp_sampler(
+            host_resource=config.VDS_HOSTS[0], dst=self.ips[1],
+            size=str(config.SEND_MTU[1])
+        )
 
 
 @attr(tier=2, extra_reqs={'network_hosts': True})
@@ -815,20 +792,13 @@ class TestJumboFramesCase11(TestJumboFramesTestCaseBase):
         """
         Send ping with MTU 8500 between the two VMS
         """
-        logger.info(
-            "Checking that sending ICMP traffic on %s succeeds",
-            config.VLAN_NETWORKS[0]
+        vm_resource = global_helper.get_host_resource_with_root_user(
+            ip=config.VM_IP_LIST[0], root_password=config.VMS_LINUX_PW
         )
-        if not hl_networks.checkICMPConnectivity(
-            host=config.VM_IP_LIST[0],
-            user=config.HOSTS_USER,
-            password=config.HOSTS_PW,
-            ip=self.ips[1],
-            max_counter=config.TRAFFIC_TIMEOUT,
-            packet_size=config.SEND_MTU[1]
-        ):
-            raise Exception("Traffic between the hosts failed")
-        logger.info("Traffic between the hosts succeed")
+        network_helper.send_icmp_sampler(
+            host_resource=vm_resource, dst=self.ips[1],
+            size=str(config.SEND_MTU[1])
+        )
 
     @classmethod
     def teardown_class(cls):
@@ -933,18 +903,10 @@ class TestJumboFramesCase12(TestJumboFramesTestCaseBase):
             mtu=config.MTU[0], bond=config.BOND[0],
             bond_nic1=HOST_NICS0[2], bond_nic2=HOST_NICS0[3], logical=False
         )
-        logger.info("Checking traffic between the two hosts")
-        if not hl_networks.checkICMPConnectivity(
-            host=config.VDS_HOSTS[0].ip, user=config.HOSTS_USER,
-            password=config.HOSTS_PW, ip=self.ips[1],
-            max_counter=config.TRAFFIC_TIMEOUT, packet_size=config.SEND_MTU[1]
-        ):
-            raise NetworkException(
-                "Traffic check between the hosts %s and %s failed" % (
-                    config.VDS_HOSTS[0].ip, config.VDS_HOSTS[1].ip
-                )
-            )
-        logger.info("Traffic between the hosts succeed")
+        network_helper.send_icmp_sampler(
+            host_resource=config.VDS_HOSTS[0], dst=self.ips[1],
+            size=str(config.SEND_MTU[1])
+        )
 
 
 @attr(tier=2, extra_reqs={'network_hosts': True})
@@ -1000,15 +962,13 @@ class TestJumboFramesCase13(TestJumboFramesTestCaseBase):
         """
         Send ping with MTU 8500 between the two VMs
         """
-        logger.info("Checking traffic between the two VMs")
-        if not hl_networks.checkICMPConnectivity(
-            host=config.VM_IP_LIST[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, ip=self.ips[1],
-            max_counter=config.TRAFFIC_TIMEOUT,
-            packet_size=config.SEND_MTU[1]
-        ):
-            raise NetworkException("Traffic check between the hosts failed")
-        logger.info("Traffic between the VMs succeed")
+        vm_resource = global_helper.get_host_resource_with_root_user(
+            ip=config.VM_IP_LIST[0], root_password=config.VMS_LINUX_PW
+        )
+        network_helper.send_icmp_sampler(
+            host_resource=vm_resource, dst=self.ips[1],
+            size=str(config.SEND_MTU[1])
+        )
 
     @classmethod
     def teardown_class(cls):
@@ -1067,15 +1027,13 @@ class TestJumboFramesCase14(TestJumboFramesTestCaseBase):
         """
         Send ping between 2 VMS
         """
-        logger.info("Checking traffic between the two VMs")
-        if not hl_networks.checkICMPConnectivity(
-            host=config.VM_IP_LIST[0], user=config.HOSTS_USER,
-            password=config.HOSTS_PW, ip=self.ips[1],
-            max_counter=config.TRAFFIC_TIMEOUT,
-            packet_size=config.SEND_MTU[0]
-        ):
-            raise NetworkException("Traffic check between the VMs failed")
-        logger.info("Traffic between the VMs succeed")
+        vm_resource = global_helper.get_host_resource_with_root_user(
+            ip=config.VM_IP_LIST[0], root_password=config.VMS_LINUX_PW
+        )
+        network_helper.send_icmp_sampler(
+            host_resource=vm_resource, dst=self.ips[1],
+            size=str(config.SEND_MTU[0])
+        )
 
     @classmethod
     def teardown_class(cls):

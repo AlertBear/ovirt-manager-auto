@@ -5,12 +5,13 @@
 Helper functions for virt and network migration job
 """
 
+import time
 import logging
 from utilities import jobs
 from art import test_handler
 from rhevmtests import helpers
-from rhevmtests.networking import config
 import art.core_api.apis_utils as utils
+from rhevmtests.networking import config
 from art.test_handler import exceptions
 from art.rhevm_api.utils import test_utils
 import art.rhevm_api.resources as resources
@@ -18,11 +19,12 @@ import art.rhevm_api.resources.user as users
 import art.unittest_lib.network as lib_network
 from rhevmtests.virt import config as config_virt
 from art.rhevm_api.tests_lib.low_level import hosts
+import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.clusters as ll_cluster
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.templates as ll_template
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.high_level.datacenters as hl_data_center
 
 logger = logging.getLogger("Virt_Network_Migration_Helper")
@@ -76,7 +78,8 @@ def get_dst_host(orig_host_obj):
 
 
 def migrate_vms_and_check_traffic(
-    vms, nic_index=1, vlan=None, bond=None, req_nic=None, maintenance=False
+    vms, nic_index=1, vlan=None, bond=None, req_nic=None, maintenance=False,
+    non_vm=False
 ):
     """
     Check migration by putting required network down or put host to maintenance
@@ -95,7 +98,9 @@ def migrate_vms_and_check_traffic(
     :type req_nic: int
     :param maintenance: Migrate by set host to maintenance
     :type maintenance: bool
-    :raise: exceptions.NetworkException
+    :param non_vm: True if network is Non-VM network
+    :type non_vm: bool
+    :raise: config.NET_EXCEPTION
     """
     (
         orig_host_obj,
@@ -118,29 +123,33 @@ def migrate_vms_and_check_traffic(
         src, dst = orig_host_obj.ip, dst_host_obj.ip
     else:
         src, dst = lib_network.find_ip(
-            vm=vms[0], host_list=config.VDS_HOSTS[:2],
-            nic_index=nic_index, vlan=vlan, bond=bond
+            vm=vms[0], host_list=config.VDS_HOSTS[:2], nic_index=nic_index,
+            vlan=vlan, bond=bond
         )
-        logger.info(
-            "Check ICMP connectivity between %s and %s", src, dst)
-        if not hl_networks.checkICMPConnectivity(
-            host=orig_host_obj.ip, user=config.HOSTS_USER,
-            password=config.HOSTS_PW, ip=dst
-        ):
-            raise exceptions.NetworkException(
-                "ICMP wasn't established between %s and %s" % (src, dst)
-            )
+        network_helper.send_icmp_sampler(host_resource=orig_host_obj, dst=dst)
+
     logger.info("Found: src IP: %s. dst IP: %s", src, dst)
 
-    logger.info("Start migration from %s", orig_host)
+    nic = orig_host_obj.nics[nic_index] if not bond else bond
+    nic = "%s.%s" % (nic, vlan) if vlan else nic
+    nic = nic if non_vm else ll_networks.get_network_on_host_nic(
+        orig_host, nic
+    )
+    logger.info(
+        "Start migration from %s to %s over %s (%s)", orig_host, dst_host,
+        nic, src
+    )
+    if bond:
+        logger.info("Migrate over BOND, sleep for 30 seconds")
+        time.sleep(30)
+
     if not check_traffic_while_migrating(
         vms=vms, orig_host_obj=orig_host_obj, orig_host=orig_host,
-        dst_host=dst_host, nic=orig_host_obj.nics[nic_index], src_ip=src,
-        dst_ip=dst, req_nic=req_nic, maintenance=maintenance
+        dst_host=dst_host, nic=nic, src_ip=src, dst_ip=dst,
+        req_nic=req_nic, maintenance=maintenance
     ):
-        raise exceptions.NetworkException(
-            "Couldn't migrate %s over %s %s" %
-            (vms, orig_host_obj.nics[nic_index], log_msg)
+        raise config.NET_EXCEPTION(
+            "Couldn't migrate %s over %s %s" % (vms, nic, log_msg)
         )
 
 
@@ -205,7 +214,7 @@ def check_traffic_while_migrating(
         "nic": nic,
         "src": src_ip,
         "dst": dst_ip,
-        "numPackets": config.NUM_PACKETS
+        "numPackets": config.NUM_PACKETS,
     }
     if req_nic:
         func = hl_vms.migrate_by_nic_down
@@ -243,7 +252,7 @@ def get_orig_and_dest_hosts(vms):
     orig_hosts = [ll_vms.get_vm_host(vm) for vm in vms]
     logger.info("Checking if all VMs are on the same host")
     if not orig_hosts[1:] == orig_hosts[:-1]:
-        raise exceptions.NetworkException("Not all VMs are on the same host")
+        raise config.NET_EXCEPTION("Not all VMs are on the same host")
 
     orig_host_obj, orig_host = get_origin_host(vms[0])
     dst_host_obj, dst_host = get_dst_host(orig_host_obj)

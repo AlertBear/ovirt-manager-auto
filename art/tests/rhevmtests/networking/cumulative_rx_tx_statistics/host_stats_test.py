@@ -10,7 +10,6 @@ import helper
 import logging
 import config as conf
 from art import unittest_lib
-from art.core_api import apis_utils
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
@@ -60,14 +59,9 @@ def setup_module():
                 (conf.HOST_NET, conf.HOSTS[i])
             )
 
-    sample = apis_utils.TimeoutingSampler(
-        timeout=conf.SAMPLER_TIMEOUT, sleep=1,
-        func=hl_networks.checkICMPConnectivity,
-        host=conf.VDS_HOSTS[0].ip, user=conf.HOSTS_USER,
-        password=conf.HOSTS_PW, ip=conf.HOST_IPS[1]
+    network_helper.send_icmp_sampler(
+        host_resource=conf.VDS_HOSTS[0], dst=conf.HOST_IPS[1]
     )
-    if not sample.waitForFuncStatus(result=True):
-        raise conf.NET_EXCEPTION("Couldn't ping %s " % conf .HOST_IPS[1])
 
     logger.info("Increase rx/tx statistics on Host NICs by sending ICMP")
     helper.send_icmp([

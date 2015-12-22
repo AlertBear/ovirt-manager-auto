@@ -249,7 +249,9 @@ class TestMigrationCase04(TestMigrationCaseBase):
             "Check that non-VM network migration over NIC is working as "
             "expected"
         )
-        helper.migrate_vms_and_check_traffic(vms=[config.VM_NAME[0]])
+        helper.migrate_vms_and_check_traffic(
+            vms=[config.VM_NAME[0]], non_vm=True
+        )
 
 
 @common.attr(tier=2)
@@ -469,7 +471,6 @@ class TestMigrationCase08(TestMigrationCaseBase):
         ):
             raise exceptions.NetworkException(
                 "Cannot create and attach network"
-
             )
 
     @polarion("RHEVM3-3848")
@@ -539,7 +540,7 @@ class TestMigrationCase09(TestMigrationCaseBase):
             "as expected "
         )
         helper.migrate_vms_and_check_traffic(
-            vms=[config.VM_NAME[0]], bond=config.BOND[0]
+            vms=[config.VM_NAME[0]], bond=config.BOND[0], non_vm=True
         )
 
 
