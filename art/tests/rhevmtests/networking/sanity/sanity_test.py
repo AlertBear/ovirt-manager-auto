@@ -696,6 +696,10 @@ class TestSanity08(TestSanityCaseBase):
         """
         Remove the DC and clusters
         """
+        if not hl_networks.remove_net_from_setup(
+            data_center=cls.dc, network=[cls.net], host=[]
+        ):
+            logger.error("Failed to remove %s from %s", cls.net, cls.dc)
         for cl in (cls.cluster_1, cls.cluster_2):
             mgmt_net_helper.remove_cl(cl=cl)
         mac_pool_helper.remove_dc(dc_name=cls.dc)
@@ -760,10 +764,9 @@ class TestSanity09(TestSanityCaseBase):
             "Checking logical layer of bridged network %s on host %s",
             self.net, conf.HOST_NAME_0
         )
-        if not test_utils.checkMTU(
-            host=conf.HOST_0_IP, user=conf.HOSTS_USER, password=conf.HOSTS_PW,
-            mtu=mtu, physical_layer=False, network=self.net,
-            nic=conf.HOST_0_NICS[1]
+        if not test_utils.check_mtu(
+            vds_resource=conf.VDS_HOST_0, mtu=mtu, physical_layer=False,
+            network=self.net, nic=conf.HOST_0_NICS[1]
         ):
             raise conf.NET_EXCEPTION(
                 "Logical layer: %s MTU should be %s" % (self.net, mtu)
@@ -772,9 +775,8 @@ class TestSanity09(TestSanityCaseBase):
             "Checking physical layer of bridged network %s on host %s",
             self.net, conf.HOST_NAME_0
         )
-        if not test_utils.checkMTU(
-            host=conf.HOST_0_IP, user=conf.HOSTS_USER, password=conf.HOSTS_PW,
-            mtu=mtu, nic=conf.HOST_0_NICS[1]
+        if not test_utils.check_mtu(
+            vds_resource=conf.VDS_HOST_0, mtu=mtu, nic=conf.HOST_0_NICS[1]
         ):
             raise conf.NET_EXCEPTION(
                 "Physical layer: %s MTU should be %s" %
@@ -895,7 +897,7 @@ class TestSanity10(unittest_lib.NetworkTest):
         Check correct configuration with ip rule function
         """
         if not ll_networks.check_ip_rule(
-            host_resource=conf.VDS_HOST_0, subnet=self.subnet
+            vds_resource=conf.VDS_HOST_0, subnet=self.subnet
         ):
             raise conf.NET_EXCEPTION(
                 "Incorrect gateway configuration for %s" % self.net
@@ -1286,6 +1288,12 @@ class TestSanity15(TestSanityCaseBase):
         """
         Activate all hosts
         """
+        if not hl_networks.remove_net_from_setup(
+            data_center=conf.DC_0_NAME, network=[cls.net], host=[]
+        ):
+            logger.error(
+                "Failed to remove %s from %s", cls.net, conf.DC_0_NAME
+            )
         required_network_helper.activate_hosts()
         super(TestSanity15, cls).teardown_class()
 

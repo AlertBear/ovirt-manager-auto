@@ -83,11 +83,9 @@ def check_logical_physical_layer(
             "Checking logical layer of %s %s %s %s",
             br_log, net_log, vlan_log, nic_log
         )
-        if not utils.checkMTU(
-            host=host.ip, user=config.HOSTS_USER,
-            password=config.HOSTS_PW, mtu=mtu, bond=bond,
-            physical_layer=False, network=network,
-            nic=nic, vlan=vlan, bridged=bridge
+        if not utils.check_mtu(
+            vds_resource=host, mtu=mtu, bond=bond, physical_layer=False,
+            network=network, nic=nic, vlan=vlan, bridged=bridge
         ):
             raise NetworkException(
                 "(logical) MTU on host %s should be %s and it is not" % (
@@ -99,10 +97,9 @@ def check_logical_physical_layer(
         logger.info(
             "Checking physical layer %s %s", bond_log, nic_log
         )
-        if not utils.checkMTU(
-            host=host.ip, user=config.HOSTS_USER, password=config.HOSTS_PW,
-            mtu=mtu, nic=nic, bond=bond, bond_nic1=bond_nic1,
-            bond_nic2=bond_nic2
+        if not utils.check_mtu(
+            vds_resource=host, mtu=mtu, nic=nic, bond=bond,
+            bond_nic1=bond_nic1, bond_nic2=bond_nic2
         ):
             raise NetworkException(
                 "(physical) MTU on host %s should be %s and it is not" % (
@@ -133,6 +130,9 @@ def add_vnics_to_vms(
     for i in range(2):
         vm_name = config.VM_NAME[i]
         vm_ip = config.VM_IP_LIST[i]
+        vm_resource = global_helper.get_host_resource_with_root_user(
+            ip=vm_ip, root_password=config.VMS_LINUX_PW
+        )
         logger.info(
             "Adding %s with MTU %s on %s of %s",
             network, mtu, nic_name, vm_name
@@ -151,8 +151,7 @@ def add_vnics_to_vms(
 
             logger.info("Set MTU %s on %s for %s", mtu, nic_name, vm_name)
             if not utils.configure_temp_mtu(
-                host=vm_ip, user=config.HOSTS_USER, nic=vm_nics[1],
-                password=config.HOSTS_PW, mtu=mtu,
+                vds_resource=vm_resource, mtu=mtu, nic=vm_nics[1]
             ):
                 raise NetworkException(
                     "Unable to configure VM's %s %s with MTU %s" % (
@@ -160,11 +159,8 @@ def add_vnics_to_vms(
                     )
                 )
             logger.info("Setting up temp IP %s on VM %s", ips[i], vm_name)
-            vm_exec = global_helper.get_host_executor_with_root_user(
-                ip=vm_ip, root_password=config.VMS_LINUX_PW
-            )
             if not utils.configure_temp_static_ip(
-                host=vm_exec, ip=ips[i], nic=vm_nics[1]
+                vds_resource=vm_resource, ip=ips[i], nic=vm_nics[1]
             ):
                 raise NetworkException(
                     "Couldn't configure temp IP %s on VMs %s" % (ips[i], vm_ip)

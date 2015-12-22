@@ -61,8 +61,7 @@ class TestJumboFramesTestCaseBase(TestCase):
         for host in config.VDS_HOSTS[:2]:
             for nic in host.nics:
                 if not utils.configure_temp_mtu(
-                    host=host.ip, user=config.HOSTS_USER,
-                    password=config.HOSTS_PW, mtu=str(config.MTU[3]), nic=nic
+                    vds_resource=host, mtu=str(config.MTU[3]), nic=nic
                 ):
                     logger.error(
                         "Unable to configure host's %s %s with MTU %s",
@@ -660,8 +659,8 @@ class TestJumboFramesCase09(TestJumboFramesTestCaseBase):
         without MTU on eth1, expected MTU is 1500
         """
         if not utils.configure_temp_mtu(
-            host=config.VDS_HOSTS[0].ip, user=config.HOSTS_USER,
-            password=config.HOSTS_PW, mtu=str(config.MTU[2]), nic=HOST_NICS0[1]
+            vds_resource=config.VDS_HOSTS[0], mtu=str(config.MTU[2]),
+            nic=HOST_NICS0[1]
         ):
             raise NetworkException(
                 "Unable to configure host's %s NIC with MTU %s" % (
@@ -698,8 +697,7 @@ class TestJumboFramesCase09(TestJumboFramesTestCaseBase):
             HOST_NICS0[1], config.MTU[3]
         )
         if not utils.check_configured_mtu(
-            host=config.VDS_HOSTS[0].ip, user=config.HOSTS_USER,
-            password=config.HOSTS_PW, mtu=str(config.MTU[3]),
+            vds_resource=config.VDS_HOSTS[0], mtu=str(config.MTU[3]),
             inter_or_net=HOST_NICS0[1]
         ):
             raise NetworkException(
@@ -922,8 +920,7 @@ class TestJumboFramesCase12(TestJumboFramesTestCaseBase):
                 element, config.VDS_HOSTS[0].ip
             )
             if not utils.check_configured_mtu(
-                host=config.VDS_HOSTS[0].ip, user=config.HOSTS_USER,
-                password=config.HOSTS_PW, mtu=str(config.MTU[0]),
+                vds_resource=config.VDS_HOSTS[0], mtu=str(config.MTU[0]),
                 inter_or_net=element
             ):
                 raise NetworkException(

@@ -1091,12 +1091,14 @@ def restart_engine(engine, interval, timeout):
 
 
 @is_action()
-def configure_temp_static_ip(host, ip, nic="eth1", netmask="255.255.255.0"):
+def configure_temp_static_ip(
+    vds_resource, ip, nic="eth1", netmask="255.255.255.0"
+):
     """
     Configure temporary static IP on specific interface
 
-    :param host: Host RemoteExecutor
-    :type host: RemoteExecutor
+    :param vds_resource: VDS resource
+    :type vds_resource: resources.VDS
     :param ip: temporary IP to configure on NIC
     :type ip: string
     :param nic: specific NIC to configure ip/netmask on
@@ -1107,69 +1109,75 @@ def configure_temp_static_ip(host, ip, nic="eth1", netmask="255.255.255.0"):
     :rtype: bool
     """
     cmd = ["ip", "address", "add", "%s/%s" % (ip, netmask), "dev", nic]
-    rc, out, err = host.run_cmd(cmd)
+    rc, _, _ = vds_resource.run_command(cmd)
     if rc:
-        logger.error(
-            "Failed to configure temporary IP %s on interface %s on %s\n"
-            "command: %s\nERR: %s. %s ",
-            ip, nic, host.address, ' '.join(map(str, cmd)), out, err
-        )
         return False
     return True
 
 
-def buildListFilesMtu(physical_layer=True, network=None, nic=None,
-                      vlan=None, bond=None, bond_nic1='eth3',
-                      bond_nic2='eth2', bridged=True):
-    '''
+def build_list_files_mtu(
+    physical_layer=True, network=None, nic=None, vlan=None, bond=None,
+    bond_nic1='eth3', bond_nic2='eth2', bridged=True
+):
+    """
     Builds a list of file names to check MTU value
-    Author: gcheresh
-    Parameters:
-    * network - network name to build ifcfg-network name
-    * physical_layer - flag to create file names for physical or logical layer
-    * nic - nic name to build ifcfg-nic name
-    * vlan - vlan name to build ifcfg-* files names for
-    * bond - bond name to create ifcfg-* files names for
-    * bond_nic1 - name of the first nic of the bond
-    * bond_nic2 - name of the second nic of the bond
-    * bridged - flag, to differentiate bridged and non_bridged network
-    Return: 2 lists of ifcfg files names
-    '''
+
+    :param network: network name to build ifcfg-network name
+    :type network: str
+    :param physical_layer: flag to create file names for physical or logical
+    layer
+    :type physical_layer: bool
+    :param nic: nic name to build ifcfg-nic name
+    :type nic: str
+    :param vlan: vlan name to build ifcfg-* files names for
+    :type vlan: str
+    :param bond: bond name to create ifcfg-* files names for
+    :type bond: str
+    :param bond_nic1: name of the first nic of the bond
+    :type bond_nic1: str
+    :param bond_nic2: name of the second nic of the bond
+    :type bond_nic2: str
+    :param bridged: flag, to differentiate bridged and non_bridged network
+    :type bridged: bool
+    :return: 2 lists of ifcfg files names
+    :rtype: tuple
+    """
     ifcfg_script_list = []
     sys_class_net_list = []
     temp_name_list = []
     if not physical_layer:
         if bridged:
-            temp_name_list.append('%s' % network)
+            temp_name_list.append("%s" % network)
         if vlan and bond:
-            temp_name_list.append('%s.%s' % (bond, vlan))
+            temp_name_list.append("%s.%s" % (bond, vlan))
         if vlan and not bond:
-            temp_name_list.append('%s.%s' % (nic, vlan))
+            temp_name_list.append("%s.%s" % (nic, vlan))
     else:
         if bond:
             for if_name in [bond_nic1, bond_nic2, bond]:
-                temp_name_list.append('%s' % if_name)
+                temp_name_list.append("%s" % if_name)
+
         elif vlan or nic:
-            temp_name_list.append('%s' % nic)
+            temp_name_list.append("%s" % nic)
+
     for script_name in temp_name_list:
-        ifcfg_script_list.append(os.path.join(IFCFG_NETWORK_SCRIPTS_DIR,
-                                              'ifcfg-%s' % script_name))
-        sys_class_net_list.append(os.path.join(SYS_CLASS_NET_DIR,
-                                               script_name, 'mtu'))
+        ifcfg_script_list.append(os.path.join(
+            IFCFG_NETWORK_SCRIPTS_DIR, "ifcfg-%s" % script_name)
+        )
+        sys_class_net_list.append(os.path.join(
+            SYS_CLASS_NET_DIR, script_name, "mtu")
+        )
     return ifcfg_script_list, sys_class_net_list
 
 
 @is_action()
-def check_configured_mtu(host, user, password, mtu, inter_or_net):
+def check_configured_mtu(vds_resource, mtu, inter_or_net):
     """
     Function checks if the configured MTU on an interface or network match
     provided MTU using ip command
-    :param host: resources.VDS objects
-    :type host: object
-    :param user: The username for the host
-    :type user: string
-    :param password: The password for the host
-    :type password: string
+
+    :param vds_resource: VDS resource
+    :type vds_resource: resources.VDS
     :param mtu: expected MTU for the network/interface
     :type mtu: string
     :param inter_or_net: interface name or network name
@@ -1177,113 +1185,108 @@ def check_configured_mtu(host, user, password, mtu, inter_or_net):
     :return: True if MTU on host is equal to "mtu", False otherwise.
     :rtype: bool
     """
-
-    machine_obj = Machine(host, user, password).util(LINUX)
-    cmd = [
-        "ip", "link", "list", inter_or_net, "|", "grep", mtu
-    ]
-    rc, output = machine_obj.runCmd(cmd)
-    if not rc:
-        logger.error(
-            "command %s failed\n"
-            " ERR: %s",
-            ' '.join(map(str, cmd)), output
-        )
+    cmd = ["ip", "link", "list", inter_or_net, "|", "grep", mtu]
+    rc, out, _ = vds_resource.run_command(cmd)
+    if rc:
         return False
-    if output.find(mtu) == -1:
-        logger.error("MTU is not configured correctly: %s", output)
+    if out.find(mtu) == -1:
+        logger.error("MTU is not configured correctly: %s", out)
         return False
     return True
 
 
 @is_action()
-def checkMTU(host, user, password, mtu, physical_layer=True, network=None,
-             nic=None, vlan=None, bond=None, bond_nic1='eth3',
-             bond_nic2='eth2', bridged=True):
+def check_mtu(
+    vds_resource, mtu, physical_layer=True, network=None, nic=None,
+    vlan=None, bond=None, bond_nic1='eth3', bond_nic2='eth2', bridged=True
+):
     """
-        Check MTU for all files provided from buildListFilesMtu function
-        Uses helper testMTUInScriptList function to do it
-        Author: gcheresh
-        Parameters:
-        * host - remote machine ip address or fqdn
-        * user - root user on the machine
-        * password - password for root user
-        * mtu - the value to test against
-        * network - the network name to test the MTU value
-        * physical_layer - flag to test MTU for physical or logical layer
-        * nic - interface name to test the MTU value for
-        * vlan - vlan number to test the MTU value for nic.vlan
-        * bond - bond name to test the MTU value for
-        * bond_nic1 - name of the first nic of the bond
-        * bond_nic2 - name of the second nic of the bond
-        * bridged - flag, to differentiate bridged and non_bridged network
-        Return: True value if MTU in script files is correct
+    Check MTU for all files provided from build_list_files_mtu function
+    Uses helper test_mtu_in_script_list function to do it
+
+    :param vds_resource: VDS resource
+    :type vds_resource: resources.VDS
+    :param mtu: the value to test against
+    :type mtu: int
+    :param network: the network name to test the MTU value
+    :type network: str
+    :param physical_layer: flag to test MTU for physical or logical layer
+    :type physical_layer: bool
+    :param nic: interface name to test the MTU value for
+    :type nic: str
+    :param vlan: vlan number to test the MTU value for nic.vlan
+    :type vlan: str
+    :param bond: bond name to test the MTU value for
+    :type bond: str
+    :param bond_nic1: name of the first nic of the bond
+    :type bond_nic1: str
+    :param bond_nic2: name of the second nic of the bond
+    :type bond_nic2: str
+    :param bridged: flag, to differentiate bridged and non_bridged network
+    :type bridged: bool
+    :return: True value if MTU in script files is correct
+    :rtype: bool
     """
-    ifcfg_script_list, sys_class_net_list = buildListFilesMtu(physical_layer,
-                                                              network, nic,
-                                                              vlan, bond,
-                                                              bond_nic1,
-                                                              bond_nic2,
-                                                              bridged)
+    ifcfg_script_list, sys_class_net_list = build_list_files_mtu(
+        physical_layer=physical_layer, network=network, nic=nic, vlan=vlan,
+        bond=bond, bond_nic1=bond_nic1, bond_nic2=bond_nic2, bridged=bridged
+    )
     if not ifcfg_script_list or not sys_class_net_list:
         if not physical_layer and not bridged and not vlan:
             return True
         else:
             logger.error("The file with MTU parameter is empty")
             return False
-    return testMTUInScriptList(host, user, password, ifcfg_script_list, mtu,
-                               1) and testMTUInScriptList(host, user, password,
-                                                          sys_class_net_list,
-                                                          mtu)
+    return test_mtu_in_script_list(
+        vds_resource=vds_resource, script_list=ifcfg_script_list, mtu=mtu,
+        flag_for_ifcfg=1) and test_mtu_in_script_list(
+        vds_resource=vds_resource, script_list=sys_class_net_list, mtu=mtu
+    )
 
 
-def testMTUInScriptList(host, user, password, script_list, mtu,
-                        flag_for_ifcfg=0):
-    '''
-        Helper function for checkMTU to test specific list of files
-        Author: gcheresh
-        Parameters:
-        * host - remote machine ip address or fqdn
-        * user - root user on the machine
-        * password - password for root user
-        * script_list - list with names of files to test MTU in
-        * mtu - the value to test against
-        * flag_for_ifcfg - flag if this file is ifcfg or not
-        Return: True value if MTU in script list is correct
-    '''
-    ERR_MSG = '"MTU in {0} is {1} when the expected is {2}"'
-    machine_obj = Machine(host, user, password).util(LINUX)
+def test_mtu_in_script_list(vds_resource, script_list, mtu, flag_for_ifcfg=0):
+    """
+    Helper function for check_mtu to test specific list of files
+
+    :param vds_resource: VDS resource
+    :type vds_resource: resources.VDS
+    :param script_list: list with names of files to test MTU in
+    :type script_list: list
+    :param mtu: the value to test against
+    :type mtu: int
+    :param flag_for_ifcfg: flag if this file is ifcfg or not
+    :type flag_for_ifcfg: int
+    :return: True value if MTU in script list is correct
+    :type: bool
+    """
+    err_msg = '"MTU in {0} is {1} when the expected is {2}"'
     for script_name in script_list:
-        rc, output = machine_obj.runCmd(['cat', script_name])
-        if not rc:
-            logger.error("Can't read {0}".format(script_name))
+        rc, out, _ = vds_resource.run_command(['cat', script_name])
+        if rc:
             return False
         if flag_for_ifcfg:
-            match_obj = re.search('MTU=([0-9]+)', output)
+            match_obj = re.search('MTU=([0-9]+)', out)
             if match_obj:
                 mtu_script = int(match_obj.group(1))
             else:
                 mtu_script = MTU_DEFAULT_VALUE
             if mtu_script != mtu:
-                logger.error(ERR_MSG.format(script_name, mtu_script, mtu))
+                logger.error(err_msg.format(script_name, mtu_script, mtu))
                 return False
         else:
-            if int(output) != mtu:
-                logger.error(ERR_MSG.format(script_name, output, mtu))
+            if int(out) != mtu:
+                logger.error(err_msg.format(script_name, out, mtu))
                 return False
     return True
 
 
 @is_action()
-def configure_temp_mtu(host, user, password, mtu, nic="eth1"):
+def configure_temp_mtu(vds_resource, mtu, nic="eth1"):
     """
     Configure MTU temporarily on specific host interface
-    :param host: remote machine ip address or fqdn
-    :type host: string
-    :param user: user name for the machine
-    :type user: string
-    :param password: password for root user
-    :type password: string
+
+    :param vds_resource: VDS resource
+    :type vds_resource: resources.VDS
     :param mtu: MTU to be configured on the host interface
     :type mtu: string
     :param nic: specific interface to configure MTU on
@@ -1291,18 +1294,9 @@ def configure_temp_mtu(host, user, password, mtu, nic="eth1"):
     :return: True if command executed successfully, False otherwise
     :rtype: bool
     """
-    machine_obj = Machine(host, user, password).util(LINUX)
-    cmd = [
-        "ip", "link", "set", "dev", nic, "mtu", mtu
-    ]
-    rc, output = machine_obj.runCmd(cmd)
-    if not rc:
-        logger.error(
-            "Failed to configure MTU %s for interface %s on machine %s\n"
-            "command: %s\n"
-            "ERR: %s ",
-            mtu, nic, host, ' '.join(map(str, cmd)), output
-        )
+    cmd = ["ip", "link", "set", "dev", nic, "mtu", mtu]
+    rc, _, _ = vds_resource.run_command(cmd)
+    if rc:
         return False
     return True
 

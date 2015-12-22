@@ -226,8 +226,7 @@ def set_interface_ip(ip, netmask, interface):
     """
     logger.info("Setting %s/%s on %s", ip, netmask, interface)
     if not test_utils.configure_temp_static_ip(
-        host=conf.VDS_0_HOST.executor(), ip=ip, nic=interface,
-        netmask=netmask
+        vds_resource=conf.VDS_0_HOST, ip=ip, nic=interface, netmask=netmask
     ):
         raise conf.NET_EXCEPTION(
             "Failed to set %s/%s on %s" % (ip, netmask, interface)
