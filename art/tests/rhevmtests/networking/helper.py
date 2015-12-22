@@ -571,7 +571,7 @@ def remove_networks_from_setup(hosts=None, dc=conf.DC_NAME[0]):
 
 def remove_ifcfg_files(vms):
     """
-    Remove all ifcfg files beside ifcfg-eth0 from vms
+    Remove all ifcfg files beside exclude_nics from vms
 
     :param vms: List of VMs
     :type vms: list
@@ -583,30 +583,30 @@ def remove_ifcfg_files(vms):
         except conf.NET_EXCEPTION:
             logger.error("Failed to get VM resource for %s", vm)
             continue
-        interfaces = get_all_ifcfg_files(hl_vms.get_vm_ip(vm, start_vm=False))
-        interfaces = filter(
-            lambda x: x.rsplit("/")[-1] not in exclude_nics, interfaces
+        ifcfg_files = get_all_ifcfg_files(hl_vms.get_vm_ip(vm, start_vm=False))
+        ifcfg_files = filter(
+            lambda x: x.rsplit("/")[-1] not in exclude_nics, ifcfg_files
         )
-        for interface in interfaces:
-            logger.info("Remove %s from %s", interface, vm)
-            if not vm_resource.fs.remove(path=interface):
-                logger.error("Fail to remove %s for %s", interface, vm)
+        for ifcfg in ifcfg_files:
+            logger.info("Remove %s from %s", ifcfg, vm)
+            if not vm_resource.fs.remove(path=ifcfg):
+                logger.error("Fail to remove %s for %s", ifcfg, vm)
 
 
-def get_vm_interfaces_list(vm_resource, exclude_nic):
+def get_vm_interfaces_list(vm_resource, exclude_nics):
     """
-    Get VM interface list beside ifcfg-eth0
+    Get VM interface list beside exclude_nics
 
     :param vm_resource: VM resource
     :type vm_resource: Resource.VDS
-    :param exclude_nic: NIC name to keep
-    :type exclude_nic: str
+    :param exclude_nics: NICs to exclude from the list
+    :type exclude_nics: list
     :return: VM interfaces list
     :rtype: list
     """
     logger.info("Getting interfaces list from %s", vm_resource.ip)
     vm_nics = vm_resource.network.all_interfaces()
-    return filter(lambda x: x != exclude_nic, vm_nics)
+    return filter(lambda x: x not in exclude_nics, vm_nics)
 
 
 def get_all_ifcfg_files(host_ip):
@@ -620,9 +620,7 @@ def get_all_ifcfg_files(host_ip):
     """
     resource = helpers.get_host_resource_with_root_user(host_ip, conf.HOSTS_PW)
     rc, out, err = resource.run_command(["ls", "%s/ifcfg-*" % IFCFG_PATH])
-    if rc:
-        return []
-    return out.splitlines()
+    return [] if rc else out.splitlines()
 
 
 if __name__ == "__main__":
