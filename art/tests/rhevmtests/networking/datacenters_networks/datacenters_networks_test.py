@@ -6,54 +6,47 @@ In version 3.4 there is new network collection under /api/datacenter.
 This test will create/delete/update and list networks under /api/datacenter.
 """
 
+import helper
 import logging
-from rhevmtests.networking import config
-from art.unittest_lib import attr
-from art.unittest_lib import NetworkTest as TestCase
+import config as conf
+from art import unittest_lib
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.test_handler.exceptions import NetworkException
-from art.rhevm_api.tests_lib.low_level.networks import(
-    get_networks_in_datacenter, get_network_in_datacenter,
-    create_network_in_datacenter, update_network_in_datacenter,
-    create_networks_in_datacenter, delete_networks_in_datacenter, NETWORK_NAME
-)
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 
 logger = logging.getLogger("DC_Networks_Cases")
-CREATE_NET_DICT = {"description": "New network", "stp": True,
-                   "vlan_id": 500, "usages": [],
-                   "mtu": 5555}
-VERIFY_NET_LIST = ["description", "stp", "vlan_id", "usages", "mtu"]
-DC_NAMES = [config.DC_NAME[0], "DC_NET_DC2"]
-
-########################################################################
-
-########################################################################
-#                             Test Cases                               #
-########################################################################
 
 
-@attr(tier=2)
-class TestDataCenterNetworksCase1(TestCase):
+@unittest_lib.attr(tier=2)
+class TestDatacentersNetworksTestCaseBase(unittest_lib.NetworkTest):
+
+    """
+    Base class which provides teardown class method for each test case
+    """
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove network from the setup.
+        """
+        helper.delete_net_in_datacenter()
+
+
+class TestDataCenterNetworksCase1(TestDatacentersNetworksTestCaseBase):
     """
     List all networks under datacenter.
     """
     __test__ = True
+    dc1_net_list = None
+    dc2_net_list = None
 
     @classmethod
     def setup_class(cls):
         """
         Create networks under 2 datacenters.
         """
-        logger.info("Create 10 networks under %s", DC_NAMES[0])
-        if not create_networks_in_datacenter(DC_NAMES[0], 10, "dc1_net"):
-            raise NetworkException(
-                "Fail to create 10 network on %s" % DC_NAMES[0]
-            )
-        logger.info("Create 5 networks under %s", DC_NAMES[1])
-        if not create_networks_in_datacenter(DC_NAMES[1], 5, "dc2_net"):
-            raise NetworkException(
-                "Fail to create 5 network on %s" % DC_NAMES[1]
-            )
+        cls.dc1_net_list = helper.create_net_in_datacenter(net_num=10)
+        cls.dc2_net_list = helper.create_net_in_datacenter(
+            dc=conf.DC_NAMES[1], prefix="dc2_net"
+        )
 
     @polarion("RHEVM3-4132")
     def test_get_networks_list(self):
@@ -61,19 +54,21 @@ class TestDataCenterNetworksCase1(TestCase):
         Get all networks under the datacenter.
         """
         logger.info("Checking that all networks exist in the datacenters")
-        dc1_net_list = ["_".join(["dc1_net", str(i)]) for i in xrange(10)]
-        engine_dc_net_list = get_networks_in_datacenter(DC_NAMES[0])
-        for net in dc1_net_list:
+        engine_dc_net_list = ll_networks.get_networks_in_datacenter(
+            conf.DC_NAMES[0]
+        )
+        for net in self.dc1_net_list:
             if net not in [i.name for i in engine_dc_net_list]:
-                raise NetworkException(
-                    "%s was expected to be in %s" % (net, DC_NAMES[0])
+                raise conf.NET_EXCEPTION(
+                    "%s was expected to be in %s" % (net, conf.DC_NAMES[0])
                 )
-        dc2_net_list = ["_".join(["dc2_net", str(i)]) for i in xrange(5)]
-        engine_extra_dc_net_list = get_networks_in_datacenter(DC_NAMES[1])
-        for net in dc2_net_list:
+        engine_extra_dc_net_list = ll_networks.get_networks_in_datacenter(
+            conf.DC_NAMES[1]
+        )
+        for net in self.dc2_net_list:
             if net not in [i.name for i in engine_extra_dc_net_list]:
-                raise NetworkException(
-                    "%s was expected to be in %s" % (net, DC_NAMES[1])
+                raise conf.NET_EXCEPTION(
+                    "%s was expected to be in %s" % (net, conf.DC_NAMES[1])
                 )
 
     @classmethod
@@ -81,14 +76,11 @@ class TestDataCenterNetworksCase1(TestCase):
         """
         Remove network from the setup.
         """
-        for dc_name in DC_NAMES:
-            logger.info("Remove all networks from %s", dc_name)
-            if not delete_networks_in_datacenter(dc_name, config.MGMT_BRIDGE):
-                logger.error("Fail to delete all networks from DC")
+        helper.delete_net_in_datacenter(dc=conf.DC_NAMES[1])
+        super(TestDataCenterNetworksCase1, cls).teardown_class()
 
 
-@attr(tier=2)
-class TestDataCenterNetworksCase2(TestCase):
+class TestDataCenterNetworksCase2(TestDatacentersNetworksTestCaseBase):
     """
     Create network under datacenter.
     """
@@ -104,14 +96,19 @@ class TestDataCenterNetworksCase2(TestCase):
         usages
         mtu
         """
-        for key, val in CREATE_NET_DICT.iteritems():
-            name = "_".join([NETWORK_NAME, key])
-            kwargs_dict = {key: val, "name": name}
-            if not create_network_in_datacenter(
-                True, DC_NAMES[0], **kwargs_dict
+        for key, val in conf.CREATE_NET_DICT.iteritems():
+            name = "_".join([ll_networks.NETWORK_NAME, key])
+            kwargs_dict = {
+                key: val,
+                "name": name
+            }
+            if not ll_networks.create_network_in_datacenter(
+                True, conf.DC_NAMES[0], **kwargs_dict
             ):
-                raise NetworkException(
-                    "Fail to create %s network on %s" % (name, DC_NAMES[0])
+                raise conf.NET_EXCEPTION(
+                    "Fail to create %s network on %s" % (
+                        name, conf.DC_NAMES[0]
+                    )
                 )
 
     @polarion("RHEVM3-4135")
@@ -120,9 +117,11 @@ class TestDataCenterNetworksCase2(TestCase):
         Verify that all networks have the correct parameters.
         """
         logger.info("Verify that all networks have the correct parameters")
-        for key, val in CREATE_NET_DICT.iteritems():
-            name = "_".join([NETWORK_NAME, key])
-            net_obj = get_network_in_datacenter(name, DC_NAMES[0])
+        for key, val in conf.CREATE_NET_DICT.iteritems():
+            name = "_".join([ll_networks.NETWORK_NAME, key])
+            net_obj = ll_networks.get_network_in_datacenter(
+                name, conf.DC_NAMES[0]
+            )
 
             if key == "vlan_id":
                 res = net_obj.get_vlan().get_id()
@@ -134,40 +133,24 @@ class TestDataCenterNetworksCase2(TestCase):
                 res = getattr(net_obj, key)
 
             if res != val:
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "%s %s should be %s but have %s" % (name, key, val, res)
                 )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from the setup.
-        """
-        logger.info("Remove all networks from DC")
-        if not delete_networks_in_datacenter(
-            DC_NAMES[0], config.MGMT_BRIDGE
-        ):
-            logger.error("Fail to delete all networks from DC")
 
-
-@attr(tier=2)
-class TestDataCenterNetworksCase3(TestCase):
+class TestDataCenterNetworksCase3(TestDatacentersNetworksTestCaseBase):
     """
     Update network under datacenter.
     """
     __test__ = True
+    dc1_net_list = None
 
     @classmethod
     def setup_class(cls):
         """
         Create 5 networks under datacenter
         """
-        logger.info("Create 5 networks under %s", DC_NAMES[0])
-        cls.net_list = []
-        if not create_networks_in_datacenter(DC_NAMES[0], 5, "dc1_net"):
-            raise NetworkException(
-                "Fail to create 5 network on %s" % DC_NAMES[0]
-            )
+        cls.dc1_net_list = helper.create_net_in_datacenter()
 
     @polarion("RHEVM3-4133")
     def test_update_networks_parameters(self):
@@ -179,34 +162,22 @@ class TestDataCenterNetworksCase3(TestCase):
         usages
         mtu
         """
-        dc1_net_list = ["_".join(["dc1_net", str(i)]) for i in xrange(5)]
-        logger.info("Update networks under %s", DC_NAMES[0])
-        for idx, net in enumerate(dc1_net_list):
-            key = VERIFY_NET_LIST[idx]
-            val = CREATE_NET_DICT[VERIFY_NET_LIST[idx]]
+
+        logger.info("Update networks under %s", conf.DC_NAMES[0])
+        for idx, net in enumerate(self.dc1_net_list):
+            key = conf.VERIFY_NET_LIST[idx]
+            val = conf.CREATE_NET_DICT[conf.VERIFY_NET_LIST[idx]]
             kwargs_dict = {key: val}
             logger.info("Updating %s %s to %s", net, key, val)
-            if not update_network_in_datacenter(
-                True, net, DC_NAMES[0], **kwargs_dict
+            if not ll_networks.update_network_in_datacenter(
+                True, net, conf.DC_NAMES[0], **kwargs_dict
             ):
-                raise NetworkException(
+                raise conf.NET_EXCEPTION(
                     "Fail to update %s %s to %s" % (net, key, val)
                 )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from the setup.
-        """
-        logger.info("Remove all networks from DC")
-        if not delete_networks_in_datacenter(
-            DC_NAMES[0], config.MGMT_BRIDGE
-        ):
-            logger.error("Fail to delete all networks from DC")
 
-
-@attr(tier=2)
-class TestDataCenterNetworksCase4(TestCase):
+class TestDataCenterNetworksCase4(TestDatacentersNetworksTestCaseBase):
     """
     Delete networks under datacenter.
     """
@@ -217,19 +188,11 @@ class TestDataCenterNetworksCase4(TestCase):
         """
         Create 5 networks under datacenter
         """
-        logger.info("Create 5 networks under %s", DC_NAMES[0])
-        if not create_networks_in_datacenter(DC_NAMES[0], 5, "dc1_net"):
-            raise NetworkException(
-                "Fail to create 5 network on %s" % DC_NAMES[0]
-            )
+        helper.create_net_in_datacenter()
 
     @polarion("RHEVM3-4134")
     def test_delete_networks(self):
         """
         Delete networks under datacenter.
         """
-        logger.info("Remove all networks from DC")
-        if not delete_networks_in_datacenter(
-            DC_NAMES[0], config.MGMT_BRIDGE
-        ):
-            raise NetworkException("Fail to delete all networks from DC")
+        helper.delete_net_in_datacenter()

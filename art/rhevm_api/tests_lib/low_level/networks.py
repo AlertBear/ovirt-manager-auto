@@ -831,16 +831,22 @@ def create_networks_in_datacenter(datacenter, num_of_net, prefix):
     :type num_of_net: int
     :param prefix: Prefix for network name
     :type prefix: str
-    :return: True/False
-    :rtype: bool
+    :return: list of networks that created under datacenter
+    :rtype: list
     """
+    dc_net_list = list()
     for num in range(num_of_net):
         net_name = "_".join([prefix, str(num)])
+        dc_net_list.append(net_name)
         if not create_network_in_datacenter(
             positive=True, datacenter=datacenter, name=net_name
         ):
-            return False
-    return True
+            logger.error(
+                'Failed to create %s net after successfully creation of %s',
+                net_name, dc_net_list
+            )
+            return list()
+    return dc_net_list
 
 
 def delete_networks_in_datacenter(datacenter, mgmt_net, networks=list()):
