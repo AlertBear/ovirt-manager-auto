@@ -1449,7 +1449,7 @@ def updateVmDisk(positive, vm, disk, **kwargs):
     :return: Status of the operation's result dependent on positive value
     :rtype: bool
     """
-    if kwargs['disk_id']:
+    if kwargs.get('disk_id', None) is not None:
         disk_obj = getVmDisk(vm, disk_id=kwargs.pop('disk_id'))
     else:
         disk_obj = getVmDisk(vm, alias=disk)
