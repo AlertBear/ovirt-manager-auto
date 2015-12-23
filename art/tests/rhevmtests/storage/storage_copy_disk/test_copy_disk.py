@@ -535,28 +535,28 @@ class TestCaseCopyFloatingDisk(CopyDiskWithoutContent):
     """
     __test__ = True
 
-    @polarion("RHEVM3-11246")
+    @polarion("RHEVM3-11252")
     def test_same_domain_same_alias(self):
         """
         Copy existing disk to the same storage domain with the same alias
         """
         self.basic_copy()
 
-    @polarion("RHEVM3-11248")
+    @polarion("RHEVM3-11254")
     def test_same_domain_different_alias(self):
         """
         Copy existing disk to the same storage domain with different alias
         """
         self.basic_copy(new_alias=self.new_alias)
 
-    @polarion("RHEVM3-11242")
+    @polarion("RHEVM3-11251")
     def test_different_domain_same_alias(self):
         """
         Copy existing disk to different storage domain with the same alias
         """
         self.basic_copy(same_domain=False)
 
-    @polarion("RHEVM3-11247")
+    @polarion("RHEVM3-11253")
     def test_different_domain_different_alias(self):
         """
         Copy existing disk to different storage domain with different alias
