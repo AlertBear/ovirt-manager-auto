@@ -193,30 +193,6 @@ def findNetwork(network, data_center=None, cluster=None):
         return NET_API.find(network)
 
 
-def findNetworkByCluster(network, cluster):
-    """
-    Description:Design to compare cluster DC with network DC in order to
-                workaround BZ#741111
-    **Author**: atal
-    **Parameters**:
-        *  *network* - network name
-        *  *cluster* - cluster name
-    **return**: network object in case of success,
-    raise apis_exceptions.EntityNotFound in case
-                of Failure
-    """
-    nets = NET_API.get(absLink=False)
-    cluster_obj = CL_API.find(cluster)
-    cluster_dc_id = cluster_obj.get_data_center().get_id()
-    for net in nets:
-        if cluster_dc_id == net.get_data_center().get_id() and \
-                network == net.get_name():
-            return net
-    raise apis_exceptions.EntityNotFound(
-        '%s network does not exists!' % network
-    )
-
-
 def _prepareClusterNetworkObj(**kwargs):
     """
     preparing cluster network object
@@ -335,62 +311,6 @@ def removeNetworkFromCluster(positive, network, cluster):
 
 
 @is_action()
-def addMultiNetworksToCluster(positive, networks, cluster):
-    """
-    Adding multiple networks to cluster
-    Author: atal
-    Parameters:
-        * networks - list of networks name
-        * cluster - cluster name
-    return True/False
-    """
-    for net in networks:
-        if not addNetworkToCluster(positive, net, cluster):
-            return False
-    return True
-
-
-@is_action()
-def removeMultiNetworksFromCluster(positive, networks, cluster):
-    """
-    Remove multiple networks to cluster
-    Author: atal
-    Parameters:
-        * networks - list of networks name
-        * cluster - cluster name
-    return True/False
-    """
-    for net in networks:
-        if not removeNetworkFromCluster(positive, net, cluster):
-            return False
-    return True
-
-
-# FIXME: change to use conf file for vlan networks name
-@is_action()
-def addNetworksVlans(positive, prefix, vlans, data_center):
-    """
-    Adding multiple networks with vlan according to the given prefix and range
-    Author: atal
-    Parameters:
-        * prefix - the prefix for the network name
-        * vlans - a list vlan ids
-        * date_center - the DataCenter name
-    return True with new nics name list or False with empty list
-    """
-    nics = []
-    for vlan in vlans.split(','):
-        nics.append(prefix + str(vlan))
-        net_name = prefix + str(vlan)
-        if not addNetwork(positive,
-                          name=net_name,
-                          data_center=data_center,
-                          vlan_id=vlan):
-            return False, {'nets': None}
-    return True, {'nets': nics}
-
-
-@is_action()
 def isNetworkRequired(network, cluster):
     """
     Description: Check if Network is required
@@ -403,21 +323,6 @@ def isNetworkRequired(network, cluster):
     net_obj = getClusterNetwork(cluster, network)
 
     return net_obj.get_required()
-
-
-@is_action()
-def isVMNetwork(network, cluster):
-    """
-    Description: Check if Network is VM network
-    Author: atal
-    Parameters:
-        * network - logical network name
-        * cluster = cluster name
-    return: True if network is VM network, False otherwise.
-    """
-    net_obj = getClusterNetwork(cluster, network)
-    usages = net_obj.get_usages()
-    return 'vm' in usages.usage
 
 
 def check_ip_rule(vds_resource, subnet):
@@ -1046,30 +951,6 @@ def get_label_objects(**kwargs):
     return label_list
 
 
-def get_label_ids(**kwargs):
-    """
-    Description: Get a list of network label ids from a list of given
-    networks and from the dictionary of provided Hosts and appropriate NICs
-    Example usage:
-    get_label_ids(host_nic_dict={'silver-vdsa.qa.lab.tlv.redhat.com':
-                                [eth3', 'eth2']}, networks=['net1', 'net2'])
-    It will return the list of network labels ids for networks and
-    host_nic_dict provided
-    Author: gcheresh
-    Parameters:
-    *  *kwargs* - will include the following:
-    *  *networks* - list of networks with labels
-    *  *host_nic_dict - dictionary with hosts as keys and a list of host
-    interfaces as a value for that key
-    *  *datacenter* - for network parameter datacenter that networks
-    resides on
-    *  *cluster* - for cluster parameter cluster that the network resides on
-    **Return**: List of label ids
-    """
-    labels_obj = get_label_objects(**kwargs)
-    return [obj.id for obj in labels_obj]
-
-
 def remove_label(**kwargs):
     """
     Description: Remove network labels from given network and Host NIC
@@ -1257,48 +1138,6 @@ def update_qos_on_vnic_profile(datacenter, qos_name, vnic_profile_name,
         name=vnic_profile_name, network=network_name, cluster=cluster,
         data_center=datacenter, qos=qos
     )
-
-
-def delete_qos_from_vnic_profile(vnic_profile_name, network_name,
-                                 datacenter=None, cluster=None):
-    """
-    Delete QoS from vNIC profile
-    :param vnic_profile_name: vNIC profile name
-    :param network_name: Network name
-    :param datacenter: datacenter name
-    :param cluster: Cluster name
-    :return: True/False
-    """
-    vnic_profile_obj = getVnicProfileObj(
-        name=vnic_profile_name, network=network_name, cluster=cluster,
-        data_center=datacenter
-    )
-    return VNIC_PROFILE_API.delete(vnic_profile_obj.get_qos(), True)
-
-
-def get_qos_from_vnic_profile(vnic_profile_name, network_name, qos_name,
-                              datacenter, cluster=None):
-    """
-    Get QoS from vNIC profile
-    :param vnic_profile_name: vNIC profile name
-    :param network_name: Network name
-    :param qos_name: QoS name
-    :param datacenter: datacenter name
-    :param cluster: Cluster name
-    :return: True/False
-    """
-    vnic_profile_obj = getVnicProfileObj(
-        name=vnic_profile_name, network=network_name, cluster=cluster,
-        data_center=datacenter
-    )
-    dc_qos_obj = ll_datacenters.get_qos_from_datacenter(
-        datacenter=datacenter, qos_name=qos_name
-    )
-    dc_qos_id = dc_qos_obj.get_id()
-    vnic_qos_id = vnic_profile_obj.get_qos().get_id()
-    if vnic_qos_id == dc_qos_id:
-            return True
-    return False
 
 
 def get_vnic_profile_objects():

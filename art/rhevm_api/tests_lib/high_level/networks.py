@@ -19,11 +19,8 @@
 
 import re
 import logging
-import configobj
 import art.core_api as core_api
-import art.rhevm_api.utils.cpumodel as cpumodel
 import art.test_handler.settings as test_settings
-import art.rhevm_api.utils.test_utils as test_utils
 import art.test_handler.exceptions as test_exceptions
 import art.core_api.apis_exceptions as apis_exceptions
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
@@ -31,12 +28,8 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
-import art.rhevm_api.tests_lib.high_level.datacenters as hl_datacenter
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_storagedomains
-import art.rhevm_api.tests_lib.high_level.storagedomains as hl_storagedomains
 
 ENUMS = test_settings.opts['elements_conf']['RHEVM Enums']
 
@@ -59,28 +52,6 @@ RHEVH = "Red Hat Enterprise Virtualization Hypervisor"
 # command variables
 IP_CMD = "/sbin/ip"
 MODPROBE_CMD = "/sbin/modprobe"
-
-
-@core_api.is_action()
-def addMultipleVlanedNetworks(networks, data_center, **kwargs):
-    """
-    Adding multiple networks with vlan according to the given prefix and range
-    Author: atal
-    Parameters:
-        * networks - a list of vlaned networks with their vlan suffix
-        * date_center - the DataCenter name
-        * kwargs - all arguments related to basic addNetwork
-    return True with new nics name list or False with empty list
-    """
-
-    for network in networks:
-        vlan = re.search(r'(\d+)', network)
-        if not ll_networks.addNetwork(
-            'True', name=network, data_center=data_center,
-            vlan_id=vlan.group(0), **kwargs
-        ):
-            return False
-    return True
 
 
 # FIXME: need to check if this function is being used else just remove.
@@ -393,181 +364,6 @@ def remove_net_from_setup(
     return True
 
 
-@core_api.is_action()
-def prepareSetup(
-    hosts, cpuName, username, password, datacenter, cluster, version,
-    storage_type, local=False, storageDomainName=None, lun_address='',
-    lun_target='', luns='', lun_port=LUN_PORT, diskType='system',
-    auto_nics=[0], vm_user='root', vm_password=None, vmName=None,
-    vmDescription='linux vm', nicType='virtio', display_type='spice',
-    os_type='RHEL6x64', image=RHEL_IMAGE, nic='nic1', size=DISK_SIZE,
-    useAgent=True, template_name=None, attempt=ATTEMPTS, interval=INTERVAL,
-    placement_host=None, mgmt_network=None, vnic_profile=None
-):
-    """
-    Function that creates DC, Cluster, Storage, Hosts
-    It creates VM with a NIC connected to default network and Template if
-    flag is on:
-    :param hosts: list of resources.VDS objects
-    :param cpuName: cpu type in the Cluster
-    :param username: user name for the host machines
-    :param password: password for the host machines
-    :param datacenter: data center name
-    :param storage_type: type of storage
-    :param cluster: cluster name
-    :param version: supported version like 3.1, 3.2...
-    :param storageDomainName: name of the storage domain
-    :param lun_address: address of iSCSI machine
-    :param lun_target: LUN target
-    :param luns: lun\s id. A single lun id, or a list of luns, separated by
-                 comma.
-    :param lun_port: lun port
-    :param diskType: type of the disk
-    :param vm_user: user name for the VM
-    :param vm_password: password for the VM
-    :param auto_nics: a list of nics indexes
-    :param vmName: VM name, if not None create VM
-    :param vmDescription: Description of VM
-    :param display_type: type of vm display (VNC or SPICE)
-    :param nicType: type of the NIC (virtio, RTL or e1000)
-    :param os_type: type of the OS
-    :param image: profile in cobbler
-    :param nic: nic name
-    :param size: the size of the disk
-    :param useAgent: Set to 'true', if desired to read the ip from VM. Agent
-                     exist on VM
-    :param template_name: name of the template, if not None create template.
-    :param attempt: attempts to connect after installation
-    :param interval: interval between attempts
-    :param placement_host: the host that will hold VM
-    :param mgmt_network: management network
-    :return: True if creation of the setup succeeded, otherwise False
-    """
-    hosts_obj = [hosts] if not isinstance(hosts, list) else hosts
-    hosts_ip = [h.ip for h in hosts_obj]
-
-    if not ll_datacenters.addDataCenter(
-        True, name=datacenter, storage_type=storage_type,
-        local=local, version=version,
-    ):
-        raise test_exceptions.DataCenterException(
-            "addDataCenter %s with storage type %s and version %s failed." % (
-                datacenter,
-                storage_type,
-                version,
-            )
-        )
-    logger.info("Datacenter %s was created successfully", datacenter)
-
-    if not ll_clusters.addCluster(
-        True, name=cluster, cpu=cpuName, data_center=datacenter,
-        version=version,
-    ):
-        raise test_exceptions.ClusterException(
-            "addCluster %s with cpu_type %s and version %s "
-            "to datacenter %s failed" % (
-                cluster, cpuName, version, datacenter
-            )
-        )
-    logger.info("Cluster %s was created successfully", cluster)
-
-    hl_hosts.add_hosts(hosts_ip, [password] * len(hosts_ip), cluster)
-    host_array = [ll_hosts.get_host_name_from_engine(h.ip) for h in hosts_obj]
-
-    # setting up cpu_model
-    cpu_den = cpumodel.CpuModelDenominator()
-    try:
-        cpu_info = cpu_den.get_common_cpu_model(hosts_obj, version=version)
-    except cpumodel.CpuModelError as ex:
-        logger.error("Can not determine the best cpu_model: %s", ex)
-    else:
-        logger.info("Cpu info %s for cluster: %s", cpu_info, cluster)
-        if not ll_clusters.updateCluster(True, cluster, cpu=cpu_info['cpu']):
-            logger.error(
-                "Can not update cluster cpu_model to: %s", cpu_info['cpu']
-            )
-
-    storage = configobj.ConfigObj()
-    storage['lun_address'] = [lun_address]
-    storage['lun_target'] = [lun_target]
-    storage['lun'] = test_utils.split(luns)
-
-    if not hl_storagedomains.create_storages(
-        storage, storage_type, host_array[0], datacenter
-    ):
-        raise test_exceptions.StorageDomainException(
-            "Can not add storages: %s" % storage
-        )
-
-    for host_name, host_obj in zip(host_array, hosts_obj):
-        host_auto_nics = []
-        for index in auto_nics:
-            host_auto_nics.append(host_obj.nics[index])
-
-        try:
-            logger.info("Cleaning %s interfaces", host_name)
-            ll_hosts.sendSNRequest(
-                True, host=host_name, auto_nics=host_auto_nics,
-                check_connectivity='true',
-                connectivity_timeout=CONNECTIVITY_TIMEOUT, force='false'
-            )
-            ll_hosts.commitNetConfig(True, host=host_name)
-
-        except Exception as ex:
-            logger.error(
-                "Cleaning host interfaces failed %s", ex, exc_info=True
-            )
-            return False
-
-    if vmName:
-        if not ll_vms.createVm(
-            True, vmName=vmName, vmDescription='linux vm', cluster=cluster,
-            nic=nic, storageDomainName=storageDomainName, size=size,
-            diskInterface="virtio", nicType=nicType,
-            display_type=display_type, os_type=os_type, image=image,
-            user=vm_user, password=vm_password, installation=True,
-            network=mgmt_network, useAgent=True, diskType=diskType,
-            attempt=attempt, interval=interval,
-            placement_host=placement_host, vnic_profile=vnic_profile
-        ):
-            logger.error("Cannot create VM")
-            return False
-
-    if template_name:
-        if useAgent:
-            ip_addr = ll_vms.waitForIP(vmName)[1]['ip']
-        else:
-            rc, out = ll_vms.getVmMacAddress(True, vm=vmName)
-            mac_addr = out['macAddress'] if rc else None
-            rc, out = test_utils.convertMacToIpAddress(True, mac_addr)
-            ip_addr = out['ip'] if rc else None
-        if not test_utils.setPersistentNetwork(
-            host=ip_addr, password=vm_password
-        ):
-            logger.error("Failed to setPersistentNetwork")
-            return False
-
-        if not ll_vms.stopVm(True, vm=vmName):
-            logger.error("Failed to stop VM")
-            return False
-
-        if not ll_templates.createTemplate(
-                True, vm=vmName, cluster=cluster, name=template_name
-        ):
-            logger.error("Failed to create template")
-            return False
-
-        if not ll_vms.startVm(True, vm=vmName):
-            logger.error("Can't start VM")
-            return False
-        if not ll_vms.waitForVmsStates(
-            True, names=vmName, timeout=TIMEOUT, states='up'
-        ):
-            logger.error("VM status is not up in the predefined timeout")
-
-    return True
-
-
 def create_dummy_interfaces(host, num_dummy=1, ifcfg_params=None):
     """
     create (X) dummy network interfaces on host
@@ -656,61 +452,6 @@ def delete_dummy_interfaces(host):
     return True
 
 
-def updateAndSyncMgmtNetwork(datacenter, hosts=list(), nic=[0], auto_nics=[],
-                             network=None, bridge=True):
-    """
-    Function that update existing network on DC and on the host, then sync it
-    using SetupNetworks. This function created to enable run tests with
-    management network as bridgeless network.
-    :param datacenter: Datacenter to update the management network.
-    :param hosts: list of resources.VDS objects.
-    :param nic: the nic (ETH(X)) of the management network.
-    :param network: The management network.
-    :param bridge: Desired network mode (True for bridge,
-                   False for bridgeless).
-    :param auto_nics: Host nics to preserve on setupNetworks command.
-    """
-    hosts_obj = [hosts] if not isinstance(hosts, list) else hosts
-    hosts_list = [ll_hosts.get_host_name_from_engine(h.ip) for h in hosts_obj]
-    mgmt_net_type = "bridge" if bridge else "bridgeless"
-    network_type = "vm" if bridge else ""
-
-    logger.info("Updating %s to %s network", network, mgmt_net_type)
-    if not ll_networks.updateNetwork(
-        positive=True, network=network, data_center=datacenter,
-        usages=network_type
-    ):
-        logger.error("Failed to set %s as %s network",
-                     network, mgmt_net_type)
-        return False
-
-    for host_name, host_obj in zip(hosts_list, hosts_obj):
-        host_auto_nics = []
-        for index in auto_nics:
-            host_auto_nics.append(host_obj.nics[index])
-
-        host_nic = ll_hosts.getHostNic(host=host_name, nic=nic)
-        host_nic.set_override_configuration(True)
-
-        logger.info(
-            "setupNetwork: syncing %s network on %s", network, host_name
-        )
-        if not ll_hosts.sendSNRequest(
-            True, host=host_name, nics=[host_nic], auto_nics=host_auto_nics,
-            check_connectivity='true',
-            connectivity_timeout=CONNECTIVITY_TIMEOUT, force='false'
-        ):
-            logger.error(
-                "setupNetwork: Cannot sync %s network on %s",
-                network, host_name
-            )
-            return False
-
-        ll_hosts.commitNetConfig(True, host=host_name)
-
-    return True
-
-
 def remove_all_networks(datacenter=None, cluster=None,
                         mgmt_network=None):
     """
@@ -760,50 +501,6 @@ def remove_all_networks(datacenter=None, cluster=None,
                 removal_area)
 
     return removeMultiNetworks(True, networks_to_remove, datacenter)
-
-
-def networkTeardown(datacenter, storagedomain, hosts=list(), auto_nics=list(),
-                    mgmt_net=None):
-    '''
-    Description: Network jobs teardown for unittests, set mgmt network to
-                 bridge network (default) and run cleanDataCenter function
-    **Author**: myakove
-    **Parameters**:
-        *  *datacenter* - name of the datacenter
-        *  *storagedomain* - name of the storage domain
-        *  *hosts* - list of hosts
-        *  *auto_nics* - list of host nics for setupnetwork
-        *  *bridge* - True for bridge network, False for bridgeless
-        *  *mgmt_net* - Management network.
-    return True/False
-    '''
-    logger.info("Updating %s network to bridge network", mgmt_net)
-    if not updateAndSyncMgmtNetwork(datacenter=datacenter, hosts=hosts,
-                                    auto_nics=auto_nics, bridge=True,
-                                    network=mgmt_net):
-        logger.error("Failed to set %s network as bridge", mgmt_net)
-        return False
-
-    logger.info("Wait for storage domain %s to be active", storagedomain)
-    if not ll_storagedomains.waitForStorageDomainStatus(
-        positive=True, dataCenterName=datacenter,
-        storageDomainName=storagedomain, expectedStatus="active"
-    ):
-        logger.error("StorageDomain %s state is not UP", storagedomain)
-        return False
-
-    logger.info("Wait for %s to be UP", datacenter)
-    if not ll_datacenters.waitForDataCenterState(name=datacenter):
-        logger.error("%s is not in UP state")
-        return False
-
-    logger.info("Running clean Datacenter")
-    if not hl_datacenter.clean_datacenter(
-        positive=True, datacenter=datacenter
-    ):
-        raise test_exceptions.DataCenterException("Cannot remove setup")
-
-    return True
 
 
 def getIpOnHostNic(host, nic):
