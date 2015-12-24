@@ -22,6 +22,7 @@ from utilities.jobs import JobsSet, Job
 logger = logging.getLogger('test_runner')
 
 TEST_CASES_SEPARATOR = '\n' + '=' * 80
+PACKAGE_TIME_SEPARATOR = '\n' + '*' * 15
 
 
 def serial_generator(start=0, end=None, step=1):
@@ -355,10 +356,14 @@ class TestRunner(object):
                 self._run_test_elm(test_elm, skip=True)
                 self._report_test_case_status(test_elm, test_group)
         finally:
-            test_group.end_time = datetime.now(tzutc())
             if not skip:
                 self.plmanager.test_groups.post_test_group(test_group)
+            test_group.end_time = datetime.now(tzutc())
             logger.info("Finishing %s", test_group)
+            time_diff = test_group.end_time - test_group.start_time
+            logger.info("%s %s execution took %s",
+                        PACKAGE_TIME_SEPARATOR,
+                        test_group, str(time_diff).split('.')[0])
             logger.info(TEST_CASES_SEPARATOR)
             self.plmanager.results_collector.add_test_result(test_group)
 
