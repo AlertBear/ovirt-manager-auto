@@ -39,9 +39,15 @@ class BaseTestPolicyWithMemory(libs.SlaTest):
                     raise errors.HostException(
                         "Failed to load hosts %s CPU" % hosts_d[conf.RESOURCE]
                     )
+                expected_load = max(
+                    cls.cluster_policy[
+                        conf.CLUSTER_POLICY_PARAMS
+                    ][conf.LOW_UTILIZATION],
+                    load - 10
+                )
                 for host in hosts_d[conf.HOST]:
                     if not ll_hosts.wait_for_host_cpu_load(
-                        host_name=host, expected_min_load=load - 5
+                        host_name=host, expected_min_load=expected_load
                     ):
                         raise errors.HostException(
                             "Host %s have cpu load below expected one" % host
@@ -132,6 +138,23 @@ class BaseTestPolicyWithMemory(libs.SlaTest):
             "Migration of vm %s to host %s succeeded", vm_name, host_name
         )
         return True
+
+    @staticmethod
+    def _is_migration_not_happen(host_name, expected_num_of_vms):
+        """
+        Check that no migration happen on host or from host
+
+        :param host_name: host name
+        :param expected_num_of_vms: expected number of active vms on host
+        :return: True, if host has expected number of vms, otherwise False
+        :rtype: bool
+        """
+        logger.info(
+            "Check that no migration happen on or from host %s", host_name
+        )
+        return ll_hosts.wait_for_active_vms_on_host(
+            host_name=host_name, num_of_vms=expected_num_of_vms, negative=True
+        )
 
 
 class StartVmsClass(BaseTestPolicyWithMemory):

@@ -107,7 +107,7 @@ class RhevmClusterPolicies(TestCase):
         :type migration_host: str
         """
         logger.info("Wait until host %s, will have two vms", migration_host)
-        migration_duration = host_api.count_host_active_vms(
+        migration_duration = host_api.wait_for_active_vms_on_host(
             migration_host,
             2,
             timeout=WAIT_FOR_MIGRATION

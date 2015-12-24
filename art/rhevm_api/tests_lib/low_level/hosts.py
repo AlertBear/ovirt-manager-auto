@@ -2065,32 +2065,40 @@ def run_command(host, user, password, cmd):
     return out
 
 
-def count_host_active_vms(host, num_of_vms, timeout=300, sleep=10):
+def wait_for_active_vms_on_host(
+    host_name, num_of_vms, timeout=300, sleep=10, negative=False
+):
     """
-    Count number of active vms on host in given timeout
+    Wait for specific number of active vms on host
 
-    :param host: Name of host.
-    :type host: str.
-    :param num_of_vms: Expected number of vms on host.
-    :type num_of_vms: int.
-    :param timeout: Timeout in seconds.
-    :type timeout: int.
-    :param sleep: Time between samples in seconds.
-    :type sleep: int.
-    :returns: Waiting time for vms.
-    :raises: APITimeout
+    :param host_name: host name
+    :type host_name: str
+    :param num_of_vms: expected number of active vms on host
+    :type num_of_vms: int
+    :param timeout: timeout in seconds
+    :type timeout: int
+    :param sleep: time between samples in seconds
+    :type sleep: int
+    :param negative: wait for number of active vms
+    different from expected value
+    :type negative: bool
+    :returns: True, if host have expected number of active vms, otherwise False
+    :rtype: bool
     """
-    start_time = time.time()
-    sampler = TimeoutingSampler(timeout, sleep, HOST_API.find, val=host)
+    sampler = TimeoutingSampler(timeout, sleep, HOST_API.find, val=host_name)
     try:
         for sample in sampler:
-            if sample.get_summary().get_active() == num_of_vms:
-                return time.time() - start_time
+            if (
+                sample.get_summary().get_active() == num_of_vms and
+                not negative
+            ):
+                return True
     except APITimeout:
         HOST_API.logger.error(
             "Timeout when waiting for number of vms %d on host %s",
-            num_of_vms, host)
-        return None
+            num_of_vms, host_name
+        )
+        return False
 
 
 def check_host_nic_status(host, username, password, nic, status):

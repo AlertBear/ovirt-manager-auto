@@ -102,13 +102,11 @@ class EvenVmCountDistribution(TestCase):
             "Wait until %d vms will be run on host %s",
             num_of_vms, migration_host
         )
-        status = host_api.count_host_active_vms(
-            migration_host,
-            num_of_vms,
-            WAIT_FOR_MIGRATION,
-            SLEEP_TIME
-        ) is not None
-        self.assertTrue(status)
+        self.assertTrue(
+            host_api.wait_for_active_vms_on_host(
+                migration_host, num_of_vms, WAIT_FOR_MIGRATION, SLEEP_TIME
+            )
+        )
 
 
 class TwoHostsTests(EvenVmCountDistribution):
