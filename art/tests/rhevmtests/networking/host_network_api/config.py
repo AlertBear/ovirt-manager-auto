@@ -29,11 +29,8 @@ SYNC_NETS_DC_2 = global_helper.generate_object_names(
 SN_NETS = global_helper.generate_object_names(
     num_of_cases=35, num_of_objects=10, prefix="sn"
 )
-VDSMD_SERVICE = "vdsmd"
-VLAN_ID = 2
 NUM_DUMMYS = 15
 DUMMYS = ["dummy_%s" % i for i in xrange(NUM_DUMMYS)]
-NETWORKS_DICT = {}
 VLAN_STR = "vlan"
 MTU_STR = "mtu"
 BRIDGE_STR = "bridged"
@@ -63,14 +60,6 @@ BASIC_IP_DICT_PREFIX = {
 }
 IP_DICT_NETMASK = BASIC_IP_DICT_NETMASK["ip_netmask"]
 IP_DICT_PREFIX = BASIC_IP_DICT_PREFIX["ip_prefix"]
-QOS_DICT = {
-    "datacenter": DC_NAME_1,
-    "qos_name": "QoS_0",
-    "qos_type": "hostnetwork",
-    "outbound_average_linkshare": 10,
-    "outbound_average_upperlimit": 10,
-    "outbound_average_realtime": 10
-}
 
 NIC_DICT = {
     NIC_NETS[1][0]: {

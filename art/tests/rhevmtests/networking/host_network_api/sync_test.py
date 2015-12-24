@@ -9,7 +9,7 @@ import helper
 import logging
 import config as conf
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-import rhevmtests.networking.helper as net_helper
+import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
@@ -34,14 +34,14 @@ def setup_module():
         "Add %s to %s/%s", conf.SYNC_DICT_1, conf.DC_NAME_1,
         conf.CLUSTER_NAME_1
     )
-    net_helper.prepare_networks_on_setup(
+    network_helper.prepare_networks_on_setup(
         networks_dict=conf.SYNC_DICT_1, dc=conf.DC_NAME_1,
         cluster=conf.CLUSTER_NAME_1
     )
     logger.info(
         "Add %s to %s/%s", conf.SYNC_DICT_2, conf.SYNC_DC, conf.SYNC_CL
     )
-    net_helper.prepare_networks_on_setup(
+    network_helper.prepare_networks_on_setup(
         networks_dict=conf.SYNC_DICT_2, dc=conf.SYNC_DC, cluster=conf.SYNC_CL
     )
     logger.info("Deactivate %s", conf.HOST_0_NAME)
@@ -183,7 +183,7 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -202,7 +202,7 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
@@ -221,7 +221,7 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_3]
         )
 
@@ -300,7 +300,7 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -320,7 +320,7 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
@@ -339,7 +339,7 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_3]
         )
 
@@ -402,7 +402,7 @@ class TestHostNetworkApiSync03(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -421,7 +421,7 @@ class TestHostNetworkApiSync03(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
@@ -440,7 +440,7 @@ class TestHostNetworkApiSync03(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_3]
         )
 
@@ -519,7 +519,7 @@ class TestHostNetworkApiSync04(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -539,7 +539,7 @@ class TestHostNetworkApiSync04(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
@@ -559,7 +559,7 @@ class TestHostNetworkApiSync04(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_3]
         )
 
@@ -614,7 +614,7 @@ class TestHostNetworkApiSync05(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -633,7 +633,7 @@ class TestHostNetworkApiSync05(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
@@ -698,7 +698,7 @@ class TestHostNetworkApiSync06(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -717,7 +717,7 @@ class TestHostNetworkApiSync06(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
@@ -777,7 +777,7 @@ class TestHostNetworkApiSync07(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -842,7 +842,7 @@ class TestHostNetworkApiSync08(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -893,7 +893,7 @@ class TestHostNetworkApiSync09(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -945,7 +945,7 @@ class TestHostNetworkApiSync10(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -999,7 +999,7 @@ class TestHostNetworkApiSync11(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -1055,7 +1055,7 @@ class TestHostNetworkApiSync12(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -1112,7 +1112,7 @@ class TestHostNetworkApiSync13(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -1171,7 +1171,7 @@ class TestHostNetworkApiSync14(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -1222,7 +1222,7 @@ class TestHostNetworkApiSync15(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -1279,7 +1279,7 @@ class TestHostNetworkApiSync16(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -1330,7 +1330,7 @@ class TestHostNetworkApiSync17(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -1381,7 +1381,7 @@ class TestHostNetworkApiSync18(TestHostNetworkApiSyncBase):
             }
         }
         helper.get_networks_sync_status_and_unsync_reason(compare_dict)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -1458,7 +1458,7 @@ class TestHostNetworkApiSync19(TestHostNetworkApiSyncBase):
             }
 
             helper.get_networks_sync_status_and_unsync_reason(compare_dict_)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -1476,7 +1476,7 @@ class TestHostNetworkApiSync19(TestHostNetworkApiSyncBase):
             }
 
             helper.get_networks_sync_status_and_unsync_reason(compare_dict_)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
@@ -1494,7 +1494,7 @@ class TestHostNetworkApiSync19(TestHostNetworkApiSyncBase):
             }
 
             helper.get_networks_sync_status_and_unsync_reason(compare_dict_)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_3]
         )
 
@@ -1587,7 +1587,7 @@ class TestHostNetworkApiSync20(TestHostNetworkApiSyncBase):
             }
 
             helper.get_networks_sync_status_and_unsync_reason(compare_dict_)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_1]
         )
 
@@ -1605,7 +1605,7 @@ class TestHostNetworkApiSync20(TestHostNetworkApiSyncBase):
             }
 
             helper.get_networks_sync_status_and_unsync_reason(compare_dict_)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_2]
         )
 
@@ -1623,6 +1623,6 @@ class TestHostNetworkApiSync20(TestHostNetworkApiSyncBase):
             }
 
             helper.get_networks_sync_status_and_unsync_reason(compare_dict_)
-        net_helper.sync_networks(
+        network_helper.sync_networks(
             host=conf.HOST_0_NAME, networks=[self.net_case_3]
         )

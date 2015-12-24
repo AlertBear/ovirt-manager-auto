@@ -9,7 +9,7 @@ import helper
 import logging
 import config as conf
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-import rhevmtests.networking.helper as net_helper
+import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
@@ -25,7 +25,7 @@ def setup_module():
     logger.info(
         "Add %s to %s/%s", conf.HOST_DICT, conf.DC_NAME_1, conf.CLUSTER_NAME_1
     )
-    net_helper.prepare_networks_on_setup(
+    network_helper.prepare_networks_on_setup(
         networks_dict=conf.HOST_DICT, dc=conf.DC_NAME_1,
         cluster=conf.CLUSTER_NAME_1
     )
@@ -35,7 +35,7 @@ def teardown_module():
     """
     Removes networks
     """
-    helper.remove_networks_from_setup()
+    network_helper.remove_networks_from_setup()
 
 
 class TestHostNetworkApiHost01(helper.TestHostNetworkApiTestCaseBase):

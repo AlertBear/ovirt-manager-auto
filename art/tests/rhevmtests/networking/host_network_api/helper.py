@@ -9,47 +9,12 @@ import logging
 import config as conf
 from art.unittest_lib import attr
 import art.unittest_lib as unit_lib
-import rhevmtests.networking as networking
-import art.core_api.apis_utils as api_utils
-import art.unittest_lib.network as network_lib
-import rhevmtests.networking.helper as net_helper
+import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.utils.test_utils as test_utils
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 logger = logging.getLogger("Host_Network_API_Helper")
-
-
-def check_dummy_on_host(host, positive=True):
-    """
-    Check if dummy interfaces exist/not exist on the host
-
-    :param host: Host name
-    :type host: str
-    :param positive: True to check if dummy exist and False to make sure
-                     it's not
-    :type positive: bool
-    :raise: NET_EXCEPTION
-    """
-    for_log = "exists" if positive else "not exist"
-    log = "Dummy interface %s on engine" % for_log
-    logger.info("Refresh %s capabilities", host)
-    host_obj = ll_hosts.HOST_API.find(host)
-    refresh_href = "{0};force".format(host_obj.get_href())
-    ll_hosts.HOST_API.get(href=refresh_href)
-
-    logger.info("Check if dummy_0 %s on %s via engine", for_log, host)
-    sample = api_utils.TimeoutingSampler(
-        timeout=networking.config.SAMPLER_TIMEOUT, sleep=1,
-        func=network_lib.check_dummy_on_host_interfaces,
-        host_name=host, dummy_name="dummy_0"
-    )
-    if not sample.waitForFuncStatus(result=positive):
-        if positive:
-            raise conf.NET_EXCEPTION(log)
-        else:
-            logger.error(log)
 
 
 def attach_network_attachment(
@@ -118,7 +83,7 @@ def get_networks_sync_status_and_unsync_reason(net_sync_reason):
     :raise: conf.NET_EXCEPTION
     """
     networks = [i for i in net_sync_reason]
-    if net_helper.networks_sync_status(
+    if network_helper.networks_sync_status(
         host=conf.HOST_0_NAME, networks=networks
     ):
         raise conf.NET_EXCEPTION("%s are synced but shouldn't" % networks)
@@ -136,26 +101,7 @@ class TestHostNetworkApiTestCaseBase(unit_lib.NetworkTest):
         """
         Remove all networks from the host NICs.
         """
-        logger.info("Removing all networks from %s", conf.HOST_0_NAME)
-        if not hl_host_network.clean_host_interfaces(conf.HOST_0_NAME):
-            logger.error(
-                "Failed to remove all networks from %s", conf.HOST_0_NAME
-            )
-
-
-def remove_networks_from_setup():
-    """
-    Remove all networks from setup
-    """
-    logger.info("Remove networks from setup")
-    if not hl_networks.remove_net_from_setup(
-        host=conf.HOST_0_NAME, data_center=conf.DC_NAME_1,
-        all_net=True, mgmt_network=conf.MGMT_BRIDGE
-    ):
-        logger.error(
-            "Failed to remove %s from %s and %s",
-            conf.NIC_DICT, conf.DC_NAME_1, conf.HOST_0_NAME
-        )
+        network_helper.remove_networks_from_host()
 
 
 def manage_ip_and_refresh_capabilities(
