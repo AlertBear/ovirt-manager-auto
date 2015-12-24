@@ -1,8 +1,12 @@
+import os
+import ast
+import shlex
 from repoze.lru import CacheMaker
 from art.rhevm_api.resources.host import Host
 from art.rhevm_api.resources.user import RootUser
-import shlex
-import ast
+
+
+LIBVIRTD_PID_DIRECTORY = "/var/run/libvirt/qemu/"
 
 
 class VDS(Host):
@@ -100,3 +104,17 @@ class VDS(Host):
             )
             return dict()
         return ast.literal_eval(out)
+
+    def get_vm_process_pid(self, vm_name):
+        """
+        Get vm process pid from vds resource
+
+        :param vm_name: vm name
+        :type vm_name: str
+        :returns: vm process pid
+        :rtype: str
+        """
+        vm_pid_file = os.path.join(LIBVIRTD_PID_DIRECTORY, "%s.pid" % vm_name)
+        cmd = ["cat", vm_pid_file]
+        rc, out, _ = self.run_command(command=cmd)
+        return "" if rc else out

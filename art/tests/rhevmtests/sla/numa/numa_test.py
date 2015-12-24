@@ -3,7 +3,6 @@ Numa - Numa Test
 Check creation of VNUMA on vm, run it on host with NUMA architecture and
 pining of VNUMA to host NUMA
 """
-import os
 import logging
 
 from rhevmtests.sla.numa import config as c
@@ -114,12 +113,12 @@ class BaseNumaClass(TestCase):
         return cls._get_numa_parameters_from_resource(vm_executor)
 
     @classmethod
-    def _get_pining_of_vm_from_host(cls, host_executor, vm_name, pinning_type):
+    def _get_pining_of_vm_from_host(cls, vds_resource, vm_name, pinning_type):
         """
         Get information about cpu and memory pining of vm from host
 
-        :param host_executor: host executor
-        :type host_executor: instance of RemoteExecutor
+        :param vds_resource: vds resource
+        :type vds_resource: VDS
         :param vm_name: vm name
         :type vm_name: str
         :param pinning_type: pinning type(cpu, memory)
@@ -128,16 +127,16 @@ class BaseNumaClass(TestCase):
         :rtype: dict
         """
         pinning_dict = {}
-        vm_pid = cls._get_vm_process_pid(host_executor, vm_name)
+        logger.info("Get vm %s pid from host", vm_name, vds_resource.fqdn)
+        vm_pid = vds_resource.get_vm_process_pid(vm_name)
+        if not vm_pid:
+            logger.error("Failed to get vm %s pid", vm_name)
+            return pinning_dict
         cmd = [
             "cat", "/proc/%s/task/*/status" % vm_pid, "|", "grep", pinning_type
         ]
-        rc, out, err = host_executor.run_cmd(cmd)
+        rc, out, _ = vds_resource.run_command(command=cmd)
         if rc:
-            logger.error(
-                "Failed to get pinning information about vm %s, err: %s",
-                vm_name, err
-            )
             return pinning_dict
         for proc_index, line in enumerate(out.splitlines()):
             pinning_arr = []
@@ -176,52 +175,26 @@ class BaseNumaClass(TestCase):
         return pinning_arr
 
     @classmethod
-    def _get_vm_process_pid(cls, host_executor, vm_name):
-        """
-        Get vm process pid
-
-        :param host_executor: host executor
-        :type host_executor: instance of RemoteExecutor
-        :param vm_name: vm name
-        :type vm_name: str
-        :returns: vm process pid
-        :rtype: str
-        :raises: HostException
-        """
-        vm_pid_file = os.path.join(
-            c.LIBVIRTD_PID_DIRECTORY, "%s.pid" % vm_name
-        )
-        cmd = ["cat", vm_pid_file]
-        rc, out, err = host_executor.run_cmd(cmd)
-        if rc:
-            raise errors.HostException(
-                "Failed to get vm %s process pid, err: " % vm_name, err
-            )
-        return out
-
-    @classmethod
-    def _get_numa_mode_from_vm_process(cls, host_executor, vm_name):
+    def _get_numa_mode_from_vm_process(cls, vds_resource, vm_name):
         """
         Get information about numa mode for vm process
 
-        :param host_executor: host executor
-        :type host_executor: instance of RemoteExecutor
+        :param vds_resource: vds resource
+        :type vds_resource: VDS
         :param vm_name: vm name
         :type vm_name: str
         :returns: numa memory mode
         :rtype: str
         """
         numa_mode = ""
-        vm_pid = cls._get_vm_process_pid(host_executor, vm_name)
-        cmd = ["tail", "-n", "1", "/proc/%s/numa_maps" % vm_pid]
-        rc, out, err = host_executor.run_cmd(cmd)
-        if rc:
-            logger.error(
-                "Failed to get numa mode information about vm %s, err: %s",
-                vm_name, err
-            )
+        logger.info("Get vm %s pid", vm_name)
+        vm_pid = vds_resource.get_vm_process_pid(vm_name)
+        if not vm_pid:
+            logger.error("Failed to get vm %s pid", vm_name)
             return numa_mode
-        return out.split()[1].split(":")[0]
+        cmd = ["tail", "-n", "1", "/proc/%s/numa_maps" % vm_pid]
+        rc, out, _ = vds_resource.run_command(command=cmd)
+        return numa_mode if rc else out.split()[1].split(":")[0]
 
     @classmethod
     def _create_number_of_equals_numa_nodes(
@@ -584,7 +557,7 @@ class CheckNumaModes(StartVms):
             cls.host_executor_1
         )
         vm_pinning = cls._get_pining_of_vm_from_host(
-            cls.host_executor_1, c.VM_NAME[0], pinning_type
+            c.VDS_HOSTS[0], c.VM_NAME[0], pinning_type
         )
         if pinning_type == c.CPU_PINNING_TYPE:
             return cls.__check_if_cpu_pinning_correct(
@@ -822,7 +795,7 @@ class TestCpuPinningOverrideNumaPinning(StartVms):
         Check cpu pinning
         """
         vm_pinning = self._get_pining_of_vm_from_host(
-            self.host_executor_1, c.VM_NAME[0], c.CPU_PINNING_TYPE
+            c.VDS_HOSTS[0], c.VM_NAME[0], c.CPU_PINNING_TYPE
         )
         with_pinning = sum(
             x == [0] for x in vm_pinning.values()
@@ -1109,7 +1082,7 @@ class TestPinningOneVNUMAToTwoPNUMA(BaseClassForVmNumaNodesValidations):
         Check cpu pinning
         """
         vm_pinning = self._get_pining_of_vm_from_host(
-            self.host_executor_1, c.VM_NAME[0], c.CPU_PINNING_TYPE
+            c.VDS_HOSTS[0], c.VM_NAME[0], c.CPU_PINNING_TYPE
         )
         cores_list = []
         for numa_node_index in self.new_numa_params[0]["pin_list"]:
@@ -1159,7 +1132,7 @@ class TestPinningTwoVNUMAToOnePNUMA(BaseClassForVmNumaNodesValidations):
         Check cpu pinning
         """
         vm_pinning = self._get_pining_of_vm_from_host(
-            self.host_executor_1, c.VM_NAME[0], c.CPU_PINNING_TYPE
+            c.VDS_HOSTS[0], c.VM_NAME[0], c.CPU_PINNING_TYPE
         )
         h_numa_node_obj = host_api.get_numa_node_by_index(
             c.HOSTS[0], self.new_numa_params[0]["pin_list"]
