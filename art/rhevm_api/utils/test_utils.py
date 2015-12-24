@@ -1461,7 +1461,7 @@ def set_engine_properties(
     """
     cmd = ["engine-config", "-s"]
     cmd.extend(param)
-    rc, _, _ = engine_obj.run_command(cmd)
+    rc, _, _ = engine_obj.host.run_command(cmd)
     if rc:
         return False
 
