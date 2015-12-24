@@ -1301,33 +1301,6 @@ def configure_temp_mtu(vds_resource, mtu, nic="eth1"):
     return True
 
 
-@is_action()
-def sendICMP(host, user, password, ip='', count=5, packet_size=None):
-    '''
-    Send or stop sending ICMP traffic from host to given ip
-    **Author**: gcheresh
-        **Parameters**:
-        *  *host* - machine ip address or fqdn of the source machine
-        *  *user* - root user on the source machine
-        *  *password* - password for the source root user
-        *  *ip* - ip of the remote machine where we send ICMP traffic to
-        *  *count* - number of packets to send
-        *  *packet_size* - testing for MTU different than default
-    **Return**: True value if the function execution succeeded
-    '''
-    machine_obj = Machine(host, user, password).util(LINUX)
-    # for jumbo frames disable fragmentation
-    if packet_size:
-        cmd = ["ping", "-s", str(packet_size), "-M", "do", ip,
-               "-c", str(count)]
-    else:
-        cmd = ["ping", ip, "-c", str(count)]
-    rc, output = machine_obj.runCmd(cmd)
-    if not rc:
-        return False
-    return True
-
-
 def run_tcp_dump(host_obj, nic, **kwargs):
     """
     Runs tcpdump on the given machine and returns its output.
