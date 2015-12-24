@@ -95,7 +95,6 @@ class TestMigrateVmWithLargeMemory(common.VirtTest):
     __test__ = True
     vm_name = config.VM_NAME[1]
     vm_default_mem = None
-    hosts = [config.HOSTS[0], config.HOSTS[1]]
     vm_default_os_type = None
     # RHEL7 64bit supports large memory
     os_type = ENUMS['rhel7x64']
@@ -109,6 +108,7 @@ class TestMigrateVmWithLargeMemory(common.VirtTest):
         2. updates VM to 85% of host memory
         3. start VM
         """
+        cls.hosts = [config.HOSTS[0], config.HOSTS[1]]
         logger.info("store os type vm")
         cls.vm_default_os_type = hl_vm.get_vms_os_type(
             test_vms=[cls.vm_name]
