@@ -425,7 +425,7 @@ def check_ip_rule(vds_resource, subnet):
     Check occurence of specific ip in 'ip rule' command output
 
     :param vds_resource: VDS resource object
-    :type host_resource: resources.VDS
+    :type vds_resource: resources.VDS
     :param subnet: subnet to search for
     :type subnet: str
     :return: True/False
