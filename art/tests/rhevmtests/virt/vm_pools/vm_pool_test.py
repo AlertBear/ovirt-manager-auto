@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as vm_api, vmpools as vm_pool_api
 )
 from art.test_handler import exceptions as errors
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import VirtTest as TestCase, attr
 from rhevmtests.virt.vm_pools import helpers
 
@@ -43,7 +43,7 @@ class BaseVmPool(TestCase):
         cls.pool_params.update(updated_params)
 
     @classmethod
-    def tearDown(cls):
+    def teardown_class(cls):
         logger.info("Base teardown for VM pool test")
         if vm_pool_api.does_vm_pool_exist(cls.pool_name):
             logger.info(
@@ -121,13 +121,15 @@ class TestFullCreateRemovePoolCycle(BaseVmPool):
 class TestUpdatePoolWithPrestartedVms(VmPool):
 
     __test__ = True
+    bz = {
+        '1294350': {'engine': None, 'version': ['3.6']}
+    }
 
     pool_name = 'Virt_vmpool_update_prestarted'
     pool_size = 3
     prestarted_vms = 2
 
     @polarion("RHEVM3-9873")
-    @bz({'1294350': {'engine': None, 'version': ['3.6']}})
     def test_update_vm_pool_with_prestarted_vms(self):
         if not vm_pool_api.updateVmPool(
             True,
