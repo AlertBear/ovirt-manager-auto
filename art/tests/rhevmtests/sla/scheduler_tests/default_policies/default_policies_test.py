@@ -46,13 +46,11 @@ class RhevmClusterPolicies(TestCase):
         """
         Start vm on specific host for future migration and load host CPU
         """
-        if not config.HOST_VM_MAP:
-            raise errors.SkipTest("Number of hosts not enough to run test")
-        logger.info("Starting all vms")
-        for vm, host in config.HOST_VM_MAP.iteritems():
-            logger.info("Run vm %s on host %s", vm, host)
-            if not vm_api.runVmOnce(True, vm, host=host):
-                raise errors.VMException("Failed to run vm")
+        vm_host_d = dict(
+            (vm_name, {"host": host_name, "wait_for_state": config.VM_UP})
+            for vm_name, host_name in zip(config.VM_NAME[:3], config.HOSTS[:3])
+        )
+        vm_api.run_vms_once(vms=config.VM_NAME[:3], **vm_host_d)
         if cls.load_hosts:
             for load, hosts_d in cls.load_hosts.iteritems():
                 if not sla_api.start_cpu_loading_on_resources(
@@ -63,8 +61,10 @@ class RhevmClusterPolicies(TestCase):
                         hosts_d[config.RESOURCE]
                     )
                 for host in hosts_d[config.HOST]:
+                    host_expected_cpu_load = max(load - 10, LOW_UTILIZATION)
                     if not host_api.wait_for_host_cpu_load(
-                        host_name=host, expected_min_load=load - 5
+                        host_name=host,
+                        expected_min_load=host_expected_cpu_load
                     ):
                         raise errors.HostException(
                             "Host %s have cpu load below expected one" % host
@@ -192,12 +192,16 @@ class TestMigrateFromUnderUtilizedHost(PowerSaving):
     Positive: Migrate vm from host with low CPU utilization
     """
     __test__ = True
-    load_hosts = {
-        AVERAGE_CPU_LOAD: {
-            config.RESOURCE: [config.VDS_HOSTS_WITH_DUMMY[1]],
-            config.HOST: [config.HOSTS_WITH_DUMMY[1]]
+
+    @classmethod
+    def setup_class(cls):
+        cls.load_hosts = {
+            AVERAGE_CPU_LOAD: {
+                config.RESOURCE: [config.VDS_HOSTS[1]],
+                config.HOST: [config.HOSTS[1]]
+            }
         }
-    }
+        super(TestMigrateFromUnderUtilizedHost, cls).setup_class()
 
     @polarion("RHEVM3-9498")
     def test_check_migration(self):
@@ -214,12 +218,16 @@ class TestNoAvailableHostForMigrationPS(PowerSaving):
     Positive: No available host for migration, vm stay on old host
     """
     __test__ = True
-    load_hosts = {
-        MAX_CPU_LOAD: {
-            config.RESOURCE: [config.VDS_HOSTS_WITH_DUMMY[1]],
-            config.HOST: [config.HOSTS_WITH_DUMMY[1]]
+
+    @classmethod
+    def setup_class(cls):
+        cls.load_hosts = {
+            MAX_CPU_LOAD: {
+                config.RESOURCE: [config.VDS_HOSTS[1]],
+                config.HOST: [config.HOSTS[1]]
+            }
         }
-    }
+        super(TestNoAvailableHostForMigrationPS, cls).setup_class()
 
     @polarion("RHEVM3-9489")
     def test_check_migration(self):
@@ -236,16 +244,20 @@ class TestMigrationFromLowCPUUtilization(PowerSaving):
      with average cpu level and not on host with high cpu utilization
     """
     __test__ = True
-    load_hosts = {
-        MAX_CPU_LOAD: {
-            config.RESOURCE: [config.VDS_HOSTS_WITH_DUMMY[2]],
-            config.HOST: [config.HOSTS_WITH_DUMMY[2]]
-        },
-        AVERAGE_CPU_LOAD: {
-            config.RESOURCE: [config.VDS_HOSTS_WITH_DUMMY[1]],
-            config.HOST: [config.HOSTS_WITH_DUMMY[1]]
+
+    @classmethod
+    def setup_class(cls):
+        cls.load_hosts = {
+            MAX_CPU_LOAD: {
+                config.RESOURCE: [config.VDS_HOSTS[2]],
+                config.HOST: [config.HOSTS[2]]
+            },
+            AVERAGE_CPU_LOAD: {
+                config.RESOURCE: [config.VDS_HOSTS[1]],
+                config.HOST: [config.HOSTS[1]]
+            }
         }
-    }
+        super(TestMigrationFromLowCPUUtilization, cls).setup_class()
 
     @polarion("RHEVM3-9490")
     def test_check_migration(self):
@@ -262,12 +274,16 @@ class TestPutHostToMaintenancePS(PowerSaving):
     Positive: Put host with vm to maintenance state, choose host for migration
     """
     __test__ = True
-    load_hosts = {
-        AVERAGE_CPU_LOAD: {
-            config.RESOURCE: config.VDS_HOSTS_WITH_DUMMY[0:2],
-            config.HOST: config.HOSTS_WITH_DUMMY[0:2]
+
+    @classmethod
+    def setup_class(cls):
+        cls.load_hosts = {
+            AVERAGE_CPU_LOAD: {
+                config.RESOURCE: config.VDS_HOSTS[:2],
+                config.HOST: config.HOSTS[:2]
+            }
         }
-    }
+        super(TestPutHostToMaintenancePS, cls).setup_class()
 
     @polarion("RHEVM3-9492")
     def test_check_migration(self):
@@ -295,12 +311,16 @@ class TestMigrateFromOverUtilizedHost(EvenlyDistributed):
     Positive: Migrate vm from host with high CPU utilization
     """
     __test__ = True
-    load_hosts = {
-        MAX_CPU_LOAD: {
-            config.RESOURCE: config.VDS_HOSTS_WITH_DUMMY[0:2],
-            config.HOST: config.HOSTS_WITH_DUMMY[0:2]
+
+    @classmethod
+    def setup_class(cls):
+        cls.load_hosts = {
+            MAX_CPU_LOAD: {
+                config.RESOURCE: config.VDS_HOSTS[:2],
+                config.HOST: config.HOSTS[:2]
+            }
         }
-    }
+        super(TestMigrateFromOverUtilizedHost, cls).setup_class()
 
     @polarion("RHEVM3-9493")
     def test_check_migration(self):
@@ -316,12 +336,16 @@ class TestNoAvailableHostForMigrationED(EvenlyDistributed):
     Positive: No available host for migration, vm stay on old host
     """
     __test__ = True
-    load_hosts = {
-        MAX_CPU_LOAD: {
-            config.RESOURCE: config.VDS_HOSTS_WITH_DUMMY[1:3],
-            config.HOST: config.HOSTS_WITH_DUMMY[1:3]
+
+    @classmethod
+    def setup_class(cls):
+        cls.load_hosts = {
+            MAX_CPU_LOAD: {
+                config.RESOURCE: config.VDS_HOSTS[1:3],
+                config.HOST: config.HOSTS[1:3]
+            }
         }
-    }
+        super(TestNoAvailableHostForMigrationED, cls).setup_class()
 
     @polarion("RHEVM3-9494")
     def test_check_migration(self):
@@ -337,12 +361,16 @@ class TestPutHostToMaintenanceED(EvenlyDistributed):
     Positive: Put host with vm to maintenance state, choose host for migration
     """
     __test__ = True
-    load_hosts = {
-        MAX_CPU_LOAD: {
-            config.RESOURCE: [config.VDS_HOSTS_WITH_DUMMY[2]],
-            config.HOST: [config.HOSTS_WITH_DUMMY[2]]
+
+    @classmethod
+    def setup_class(cls):
+        cls.load_hosts = {
+            MAX_CPU_LOAD: {
+                config.RESOURCE: [config.VDS_HOSTS[2]],
+                config.HOST: [config.HOSTS[2]]
+            }
         }
-    }
+        super(TestPutHostToMaintenanceED, cls).setup_class()
 
     @polarion("RHEVM3-9496")
     def test_check_migration(self):

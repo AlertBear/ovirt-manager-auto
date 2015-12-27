@@ -57,13 +57,11 @@ class PowerSavingWithPM(TestCase):
         Start vms, update cluster policy to Power_Saving
         with default parameters and load host CPU
         """
-        if not config.HOST_VM_MAP:
-            raise errors.SkipTest("Number of hosts not enough to run test")
-        logger.info("Start vms")
-        for vm in cls.vms_to_start:
-            logger.info("Run vm %s on host %s", vm, config.HOST_VM_MAP[vm])
-            if not vm_api.runVmOnce(True, vm, host=config.HOST_VM_MAP[vm]):
-                raise errors.VMException("Failed to run vm")
+        cls.vm_host_d = dict(
+            (vm_name, {"host": host_name, "wait_for_state": config.VM_UP})
+            for vm_name, host_name in zip(config.VM_NAME[:3], config.HOSTS[:3])
+        )
+        vm_api.run_vms_once(vms=cls.vms_to_start, **cls.vm_host_d)
         if cls.hosts_to_load:
             if not sla_api.start_cpu_loading_on_resources(
                 cls.hosts_to_load, AVERAGE_CPU_LOAD
@@ -185,9 +183,13 @@ class TestSPMHostNotKilledByPolicy(PowerSavingWithPM):
     Check that SPM host not killed by policy
     """
     __test__ = True
-    vms_to_start = config.VM_NAME[1:3]
-    hosts_to_load = [config.VDS_HOSTS_WITH_DUMMY[1]]
-    host_down = config.HOSTS_WITH_DUMMY[2]
+
+    @classmethod
+    def setup_class(cls):
+        cls.vms_to_start = config.VM_NAME[1:3]
+        cls.hosts_to_load = [config.VDS_HOSTS[1]]
+        cls.host_down = config.HOSTS[2]
+        super(TestSPMHostNotKilledByPolicy, cls).setup_class()
 
     @polarion("RHEVM3-5572")
     def test_check_spm(self):
@@ -207,9 +209,13 @@ class TestHostWithoutCPULoadingShutdownByPolicy(PowerSavingWithPM):
     Check that host without cpu loading shutdown by policy
     """
     __test__ = True
-    vms_to_start = config.VM_NAME[1:3]
-    hosts_to_load = [config.VDS_HOSTS_WITH_DUMMY[1]]
-    host_down = config.HOSTS_WITH_DUMMY[2]
+
+    @classmethod
+    def setup_class(cls):
+        cls.vms_to_start = config.VM_NAME[1:3]
+        cls.hosts_to_load = [config.VDS_HOSTS[1]]
+        cls.host_down = config.HOSTS[2]
+        super(TestHostWithoutCPULoadingShutdownByPolicy, cls).setup_class()
 
     @polarion("RHEVM3-5580")
     def test_check_host_with_loading(self):
@@ -231,8 +237,12 @@ class TestHostStartedByPowerManagement(PowerSavingWithPM):
     Host started by power management
     """
     __test__ = True
-    vms_to_start = config.VM_NAME[:2]
-    hosts_to_load = [config.VDS_HOSTS_WITH_DUMMY[1]]
+
+    @classmethod
+    def setup_class(cls):
+        cls.vms_to_start = config.VM_NAME[:2]
+        cls.hosts_to_load = [config.VDS_HOSTS[1]]
+        super(TestHostStartedByPowerManagement, cls).setup_class()
 
     @polarion("RHEVM3-5577")
     def test_start_host(self):
@@ -257,8 +267,6 @@ class TestCheckPolicyControlOfPowerManagementFlag(PowerSavingWithPM):
     Check policy control of power management flag
     """
     __test__ = True
-    vms_to_start = [config.VM_NAME[0]]
-    host_down = config.HOSTS_WITH_DUMMY[2]
 
     @classmethod
     def setup_class(cls):
@@ -266,6 +274,8 @@ class TestCheckPolicyControlOfPowerManagementFlag(PowerSavingWithPM):
         Disable host policy_control_flag
         """
         cls._policy_control_flag(config.HOSTS[1], False)
+        cls.vms_to_start = [config.VM_NAME[0]]
+        cls.host_down = config.HOSTS[2]
         super(TestCheckPolicyControlOfPowerManagementFlag, cls).setup_class()
 
     @polarion("RHEVM3-5579")
@@ -314,14 +324,16 @@ class TestStartHostWhenNoReservedHostLeft(PowerSavingWithPM):
         host_status = host_api.getHostState(config.HOSTS[1]) == config.HOST_UP
         host_up = config.HOSTS[1] if host_status else config.HOSTS[2]
         additional_vm = None
-        for vm, host in config.HOST_VM_MAP.iteritems():
-            if host == host_up:
-                logger.info("Run vm %s on host %s", vm, host)
+        for vm_name, vm_params in self.vm_host_d.iteritems():
+            if vm_params["host"] == host_up:
+                logger.info("Run vm %s on host %s", vm_name, vm_params["host"])
                 self.assertTrue(
-                    vm_api.runVmOnce(True, vm, host=host),
-                    "Failed to run vm %s" % vm
+                    vm_api.runVmOnce(
+                        positive=True, vm=vm_name, host=vm_params["host"]
+                    ),
+                    "Failed to run vm %s" % vm_name
                 )
-                additional_vm = vm
+                additional_vm = vm_name
                 break
         self.assertTrue(self._check_hosts_num_with_status(3, config.HOST_UP))
         logger.info("Stop additional vm %s", additional_vm)
@@ -412,14 +424,14 @@ class TestHostStoppedByUser(PowerSavingWithPM):
     Check that host shutdown by user not started by power management
     """
     __test__ = True
-    vms_to_start = [config.VM_NAME[0]]
-    host_down = config.HOSTS_WITH_DUMMY[1]
 
     @classmethod
     def setup_class(cls):
         """
         Deactivate and stop host
         """
+        cls.vms_to_start = [config.VM_NAME[0]]
+        cls.host_down = config.HOSTS[1]
         super(TestHostStoppedByUser, cls).setup_class()
         cls._update_hosts_in_reserve(2)
         logger.info("Deactivate host %s", config.HOSTS[1])

@@ -4,6 +4,7 @@ Configuration file for sla tests package
 
 from rhevmtests.config import *  # flake8: noqa
 
+# Power management constants
 IBM_PM_USERNAME = 'USERID'
 IBM_PM_PASSWORD = 'PASSW0RD'
 DELL_PM_USERNAME = 'root'
@@ -77,21 +78,13 @@ STORAGE_NAME = [
     "_".join([STORAGE_TYPE_NFS, str(i)]) for i in xrange(NUM_OF_DEVICES)
 ]
 
-HOST_VM_MAP = {
-    VM_NAME[0]: HOSTS[0],
-    VM_NAME[1]: HOSTS[1],
-    VM_NAME[2]: HOSTS[2]
-} if len(HOSTS) >= 3 else None
-
-HOSTS_WITH_DUMMY = list(HOSTS)
-while len(HOSTS_WITH_DUMMY) < 3:
-    HOSTS_WITH_DUMMY.append(None)
-
+# PPC constants
 VM_OS_TYPE = ENUMS['rhel7ppc64'] if PPC_ARCH else ENUMS['rhel6x64']
 VM_DISPLAY_TYPE = ENUMS[
     'display_type_vnc'
 ] if PPC_ARCH else ENUMS['display_type_spice']
 
+# VM parameters
 DEFAULT_VM_PARAMETERS = {
     'memory': GB,
     'memory_guaranteed': GB,
@@ -106,10 +99,6 @@ DEFAULT_VM_PARAMETERS = {
     'watchdog_model': '',
     'highly_available': False
 }
-
-VDS_HOSTS_WITH_DUMMY = list(VDS_HOSTS)
-while len(VDS_HOSTS_WITH_DUMMY) < 3:
-    VDS_HOSTS_WITH_DUMMY.append(None)
 
 HOST = "host"
 RESOURCE = "resource"

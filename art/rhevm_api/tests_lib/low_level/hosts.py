@@ -2528,7 +2528,7 @@ def get_host_cpu_load(host_name):
 
 def wait_for_host_cpu_load(
     host_name, expected_min_load=0,
-    expected_max_load=100, timeout=120, sleep=10
+    expected_max_load=100, timeout=180, sleep=10
 ):
     """
     Wait until host reach cpu load between minimal and maximal values
@@ -2566,6 +2566,6 @@ def wait_for_host_cpu_load(
     except APITimeout:
         HOST_API.logger.error(
             "Host %s cpu load not between expected values %d and %d",
-            expected_min_load, expected_max_load
+            host_name, expected_min_load, expected_max_load
         )
         return False
