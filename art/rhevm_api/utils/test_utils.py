@@ -824,14 +824,20 @@ def getImageAndVolumeID(vds, vds_username, vds_password, spool_id, domain_id,
 
 @is_action()
 def setPersistentNetwork(host, password):
-    '''
+    """
     Ensure that Network configurations are persistent
-    Author: atal
-    Parameters:
-       * host - remote machine ip address or fqdn
-       * password - password for root user
-    Return: (True if command executed successfuly, False otherwise)
-    '''
+
+    __author__: 'atal'
+
+    :param host: Remove machine IP address or FQDN
+    :type host: str
+    :param password: Password for the root user
+    :type password: str
+    :return: True if the set persistent network command executed successfully,
+        False otherwise
+    :rtype: bool
+    """
+    logger.info("Set persistent network")
     vm_obj = Host(host)
     vm_obj.users.append(RootUser(password))
 
