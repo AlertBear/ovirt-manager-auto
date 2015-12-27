@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as vm_api, vmpools as vm_pool_api
 )
 from art.test_handler import exceptions as errors
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.unittest_lib import VirtTest as TestCase, attr
 from rhevmtests.virt.vm_pools import helpers
 
@@ -127,6 +127,7 @@ class TestUpdatePoolWithPrestartedVms(VmPool):
     prestarted_vms = 2
 
     @polarion("RHEVM3-9873")
+    @bz({'1294350': {'engine': None, 'version': ['3.6']}})
     def test_update_vm_pool_with_prestarted_vms(self):
         if not vm_pool_api.updateVmPool(
             True,
