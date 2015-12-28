@@ -52,6 +52,132 @@ MAX_TIMEOUT_FOR_FILE_READ = 10
 POLLING_TIMEOUT_FOR_FILE_READ = 0.5
 KB = 1024
 
+ATTRIBUTE_MAP = {
+    'type_': 'type',
+    'from___': 'from',
+    'import___': 'import',
+}
+
+
+def cliEntety(elm, node_name):
+    """
+    Dump DS element to cli format
+    """
+    output = cli_entity(elm, node_name)
+    # reducing complexity of cli_entity by replacing
+    # of last ',' in collection to '"'
+    # take care if collection is last one in string
+    if output.endswith(','):
+        output = '%s"' % output.rstrip(',')
+    return output.replace(', ', '" ')
+
+
+def cli_entity(elm, node_name, level=0, collection=False, start=False):
+    '''
+    Dump DS element to cli format, shouldn't be used directly
+    use cliEntety as wrapper for this function
+    '''
+
+    dumped_ent = ''
+    ignore_list = ['supported_versions', 'valueOf_']
+    ignore_list.extend(validator.ATTR_IGNORE_LIST)
+
+    elmClass = elm.__class__.__name__
+    elmInstance = getattr(validator.ds, elmClass)()
+    attrList = validator.getObjAttributes(elmInstance, elmInstance)
+
+    # cleaning from unneeded attributes
+    for attr in ignore_list:
+        if attr in attrList:
+            attrList.remove(attr)
+
+    for attr in attrList:
+        try:
+            orig_attr = attr
+            attr = ATTRIBUTE_MAP.get(attr, attr)
+            attrVal = validator.getAttibuteValue(elm, attr)
+        except AttributeError:
+            continue
+
+        attrType = elmInstance.member_data_items_[orig_attr].get_data_type()
+        attrContainer = elmInstance.member_data_items_[
+            orig_attr].get_container()
+
+        if attrVal is not None and attrVal != []:
+            if attr.startswith('type'):
+                attr = attr.rstrip('_')
+
+            nodeName = "{0}".format(attr)
+            if level > 0:
+                nodeName = "{0}-{1}".format(node_name, attr)
+
+            # checking if recursion reached its stopping case
+            if attrType.startswith('xs:') or validator.is_primitive(attrVal):
+                if attrContainer and isinstance(attrVal, list):
+                    attrVal = attrVal[0]
+
+                if re.search('boolean', attrType) or isinstance(attrVal, bool):
+                    attrVal = str(attrVal).lower()
+
+                elif (re.search('(int|long|unsignedShort)', attrType) or
+                      isinstance(attrVal, (int, long))
+                      ):
+                    attrVal = "%d" % attrVal
+                elif (re.search('(string|dateTime)', attrType) or
+                      isinstance(attrVal, basestring)
+                      ):
+                    if collection:
+                        attrVal = "%s" % attrVal
+                    else:
+                        attrVal = "'%s'" % attrVal
+
+                # taking care of collection parsing
+                if collection:
+                    tmp = nodeName.rsplit('-', 2)
+                    base = '-'.join([tmp[0], tmp[1]])
+                    collectionData = '.'.join([tmp[1], tmp[2]])
+
+                    # beginning of collection
+                    if start:
+                        start = False
+                        nodeName = ''.join([base, ' "', collectionData])
+                        dumped_ent += " --{0}={1},".format(nodeName, attrVal)
+                    # Middle of collection
+                    else:
+                        nodeName = collectionData
+                        dumped_ent += "{0}={1},".format(nodeName, attrVal)
+
+                else:
+                    # default behavior for unchecked types
+                    dumped_ent += " --{0} {1}".format(nodeName, attrVal)
+                if level > 0 and attr == 'id':
+                    break
+
+            else:
+                nextLevel = level + 1
+                if not isinstance(attrVal, list):
+                    attrVal = [attrVal, ]
+                length = len(attrVal)
+                # collection ahead
+                if attrContainer:
+                    for i in range(length):
+                        if i == 0:
+                            dumped_ent += cli_entity(
+                                attrVal[i], nodeName, nextLevel,
+                                collection=True, start=True
+                            )
+                        else:
+                            dumped_ent += cli_entity(
+                                attrVal[i], nodeName, nextLevel,
+                                collection=True
+                            )
+                else:
+                    for i in range(length):
+                        dumped_ent += cli_entity(
+                            attrVal[i], nodeName, nextLevel
+                        )
+    return dumped_ent
+
 
 def threadSafeRun(func):
     """
@@ -964,7 +1090,7 @@ class CliUtil(RestUtil):
         :rtype: tuple string, bool
         """
         out = ''
-        addEntity = validator.cliEntety(entity, self.element_name)
+        addEntity = cliEntety(entity, self.element_name)
         createCmd = "add {0} {1}".format(self.cli_element_name, addEntity)
 
         if not async:
@@ -1073,7 +1199,7 @@ class CliUtil(RestUtil):
         Return: PUT response, True if PUT test succeeded, False otherwise
         '''
 
-        updateBody = validator.cliEntety(newEntity, self.element_name)
+        updateBody = cliEntety(newEntity, self.element_name)
         collHref, collection = None, None
 
         if origEntity.name and re.match(IP_FORMAT, origEntity.name):
@@ -1178,7 +1304,7 @@ class CliUtil(RestUtil):
         '''
         addBody = ''
         if body:
-            addBody = validator.cliEntety(body, self.element_name)
+            addBody = cliEntety(body, self.element_name)
 
         deleteCmd = 'remove {0} "{1}" {2}'.format(self.cli_element_name,
                                                   entity.id, addBody)
@@ -1386,7 +1512,7 @@ class CliUtil(RestUtil):
             ACTION_WAIVER.append('Image')
 
         act = self.makeAction(async, 10, **params)
-        cli_act = validator.cliEntety(act, 'action')
+        cli_act = cliEntety(act, 'action')
 
         actionCmd = ("action {0} '{1}' {2} {3}").format(
             self.element_name.replace(

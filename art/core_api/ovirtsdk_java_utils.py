@@ -1104,8 +1104,8 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                 elif upd_method_args_length == 3:
                     with measure_time('PUT'):
                         if (
-                            'hosts' == self.collection_name.lower() or
-                            'storagedomains' == self.collection_name.lower()
+                            self.collection_name.lower() in
+                            ('hosts', 'storagedomains', 'macpools')
                         ):
                             response = java_entity.update(
                                 async, correlation_id, current

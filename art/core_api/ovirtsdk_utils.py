@@ -33,6 +33,8 @@ logger = logging.getLogger(__name__)
 
 PROPERTIES_MAP = {
     'type_': 'type',
+    'from___': 'from',
+    'import___': 'import',
 }
 
 

@@ -48,8 +48,7 @@ def get_mac_pool_from_dc(dc_name):
     :rtype: MacPool object
     """
     dc_obj = ll_dc.get_data_center(dc_name)
-    mac_pool_obj = MACPOOL_API.find(dc_obj.get_mac_pool().get_id(), "id")
-    return mac_pool_obj
+    return MACPOOL_API.find(dc_obj.get_mac_pool().get_id(), "id")
 
 
 def get_mac_pool_ranges_list(mac_pool_obj):
@@ -78,9 +77,9 @@ def get_mac_pool_range_obj(mac_pool_obj, start, end):
     :rtype: Range object
     """
     ranges = get_mac_pool_ranges_list(mac_pool_obj)
-    for i in ranges:
-        if start == i.get_from() and end == i.get_to():
-            return i
+    for _range in ranges:
+        if start == _range.get_from() and end == _range.get_to():
+            return _range
     return None
 
 
@@ -198,20 +197,23 @@ def create_mac_pool(**kwargs):
 
 def update_mac_pool(**kwargs):
     """
-    Updates new MAC Pool
+    Update MAC Pool
 
     :param kwargs:
-        name: type=str
-        ranges: type=list
-        description: type=str
-        allow_duplicates: type=bool
-        mac_pool_name: type=str
+        :param mac_pool_name: current mac pool name
+        :type mac_pool_name: str
+        :param name: new mac pool name for update
+        :type name: str
+        :param ranges: list of mac ranges [(from_mac1, to_mac1), (..)]
+        :type ranges: list
+        :param description: description of the mac pool
+        :type description: str
+        :param allow_duplicates: True if allow duplicate, otherwise False
+        :type allow_duplicates: bool
     :type kwargs: dict
     :return: True if MAC pool was updated, False otherwise
     :rtype: bool
     """
     mac_pool_obj = get_mac_pool(kwargs.pop("mac_pool_name"))
     mac_pool_obj_for_update = prepare_macpool_obj(**kwargs)
-    return MACPOOL_API.update(
-        mac_pool_obj, mac_pool_obj_for_update, True
-    )[1]
+    return MACPOOL_API.update(mac_pool_obj, mac_pool_obj_for_update, True)[1]

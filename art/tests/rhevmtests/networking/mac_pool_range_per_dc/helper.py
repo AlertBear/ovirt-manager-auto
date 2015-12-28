@@ -95,7 +95,7 @@ def update_mac_pool_range_size(
     mac_pool_name=c.MAC_POOL_NAME_0, extend=True, size=(1, 1)
 ):
     """
-    Update MAC pool range size
+    Update MAC pool range size for the first range in specific mac pool
 
     :param mac_pool_name: Name of the MAC pool
     :type mac_pool_name: str

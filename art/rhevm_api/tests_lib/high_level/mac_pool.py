@@ -38,16 +38,13 @@ def remove_ranges_from_mac_pool(mac_pool_name, range_list):
     :rtype: bool
     """
     mac_pool_obj = ll_mac_pool.get_mac_pool(mac_pool_name)
-    mac_pool_obj_for_update = ll_mac_pool.get_mac_pool(mac_pool_name)
-    range_objs = ll_mac_pool.get_mac_pool_ranges_list(mac_pool_obj_for_update)
+    new_range_list = ll_mac_pool.get_mac_range_values(mac_pool_obj)
     for start, end in range_list:
-        range_ = ll_mac_pool.get_mac_pool_range_obj(
-            mac_pool_obj_for_update, start, end
-        )
-        if range_:
-            range_objs.remove(range_)
+        if ll_mac_pool.get_mac_pool_range_obj(mac_pool_obj, start, end):
+            new_range_list.remove((start, end))
+    new_mac_pool_obj = ll_mac_pool.prepare_macpool_obj(ranges=new_range_list)
     return ll_mac_pool.MACPOOL_API.update(
-        mac_pool_obj, mac_pool_obj_for_update, True
+        mac_pool_obj, new_mac_pool_obj, True
     )[1]
 
 
@@ -62,15 +59,12 @@ def add_ranges_to_mac_pool(mac_pool_name, range_list):
     :return: True if add of ranges succeeded, False otherwise
     :rtype: bool
     """
-
     mac_pool_obj = ll_mac_pool.get_mac_pool(mac_pool_name)
-    mac_pool_obj_for_update = ll_mac_pool.get_mac_pool(mac_pool_name)
-    range_objs = ll_mac_pool.get_mac_pool_ranges_list(mac_pool_obj_for_update)
-    for start, end in range_list:
-        range_objs.append(ll_mac_pool.prepare_range_obj(start, end))
-    return ll_mac_pool.MACPOOL_API.update(
-        mac_pool_obj, mac_pool_obj_for_update, True
-    )[1]
+    exist_ranges = ll_mac_pool.get_mac_range_values(mac_pool_obj)
+    exist_ranges.extend(range_list)
+    return ll_mac_pool.update_mac_pool(
+        mac_pool_name=mac_pool_name, ranges=exist_ranges
+    )
 
 
 def update_ranges_on_mac_pool(mac_pool_name, range_dict):
@@ -85,18 +79,20 @@ def update_ranges_on_mac_pool(mac_pool_name, range_dict):
     :rtype: bool
     """
     mac_pool_obj = ll_mac_pool.get_mac_pool(mac_pool_name)
-    mac_pool_obj_for_update = ll_mac_pool.get_mac_pool(mac_pool_name)
+    new_range_list = ll_mac_pool.get_mac_range_values(mac_pool_obj)
+
     for (orig_from, orig_to), (new_from, new_to) in range_dict.iteritems():
-        range_ = ll_mac_pool.get_mac_pool_range_obj(
-            mac_pool_obj_for_update, orig_from, orig_to
-        )
-        if range_:
-            range_.set_from(new_from)
-            range_.set_to(new_to)
+        if ll_mac_pool.get_mac_pool_range_obj(
+                mac_pool_obj, orig_from, orig_to
+        ):
+            new_range_list.remove((orig_from, orig_to))
+            new_range_list.append((new_from, new_to))
         else:
             return False
+    new_mac_pool_obj = ll_mac_pool.prepare_macpool_obj(ranges=new_range_list)
+
     return ll_mac_pool.MACPOOL_API.update(
-        mac_pool_obj, mac_pool_obj_for_update, True
+        mac_pool_obj, new_mac_pool_obj, True
     )[1]
 
 
