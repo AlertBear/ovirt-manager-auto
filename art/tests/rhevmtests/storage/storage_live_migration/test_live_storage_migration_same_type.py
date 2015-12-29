@@ -374,7 +374,6 @@ class TestCase5971(basePlan.TestCase5971):
     Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    bz = {'1282957': {'engine': None, 'version': ["3.6"]}}
 
 
 @attr(tier=2)

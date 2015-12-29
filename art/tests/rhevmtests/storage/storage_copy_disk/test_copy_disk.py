@@ -637,7 +637,9 @@ class TestCase11339(CopyDiskWithContent):
     """
     __test__ = True
     snapshot_description = "snapshot_11339"
-    bz = {'1292196': {'engine': None, 'version': ['3.6']}}
+    # Bugzilla history:
+    # 1292196 - Deleting disk that was copied from a disk containing a
+    # snapshot, will cause the original disk to remove
 
     @polarion("RHEVM3-11339")
     def test_copy_vm_disks_with_snapshot(self):

@@ -2092,7 +2092,9 @@ class TestCase5971(CommonUsage):
     __test__ = False
     polarion_test_case = '5971'
     disk_count = 3
-    bz = {'1282957': {'engine': None, 'version': ["3.6"]}}
+    # Bugzilla history:
+    # 1282957 - LSM fails when one of the vm's disks is located on domain
+    # in maintenance
 
     def _prepare_disks_for_vm(self, vm_name):
             """
