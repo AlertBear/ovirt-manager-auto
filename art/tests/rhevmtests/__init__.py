@@ -20,6 +20,14 @@ def setup_package():
 
     # in case of golden environment, reorder the rhel/rhevh hosts
     host_objs = ll_hosts.HOST_API.get(absLink=False)
+    if host_objs:
+        logger.info(
+            "This GE includes the following hosts: %s",
+            [host_obj.name for host_obj in host_objs]
+        )
+    else:
+        raise EnvironmentError("This environment doesn't include hosts")
+
     host_order = config.PARAMETERS.get('host_order')
     if host_order in ('rhevh_first', 'rhel_first'):
         # sort the host_objs by rhevh_first if rhevh_first else rhel_first
