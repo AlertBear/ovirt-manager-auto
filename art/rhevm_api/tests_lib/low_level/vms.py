@@ -202,6 +202,8 @@ def _prepareVmObject(**kwargs):
     :type cpu_profile_id: str
     :param numa_mode: numa mode for vm(strict, preferred, interleave)
     :type numa_mode: str
+    :param cpu_shares: cpu shares
+    :type cpu_shares: int
     :returns: vm object
     :rtype: instance of VM
     """
@@ -440,6 +442,11 @@ def _prepareVmObject(**kwargs):
     numa_mode = kwargs.pop("numa_mode", None)
     if numa_mode:
         vm.set_numa_tune_mode(numa_mode)
+
+    # cpu shares
+    cpu_shares = kwargs.pop("cpu_shares", None)
+    if cpu_shares is not None:
+        vm.set_cpu_shares(cpu_shares)
     return vm
 
 
@@ -558,6 +565,8 @@ def addVm(positive, wait=True, **kwargs):
                            relevant parameters
                            (sysprep, ovf, username, root_password etc)
     :type initialization: Initialization
+    :param cpu_shares: cpu shares
+    :type cpu_shares:int
     :returns: True, if add vm success, otherwise False
     :rtype: bool
     """
@@ -666,6 +675,8 @@ def updateVm(positive, vm, **kwargs):
     :type numa_mode: str
     :param initialization: Initialization obj for cloud init
     :type initialization: Initialization
+    :param cpu_shares: cpu shares
+    :type cpu_shares: int
     :returns: True, if update success, otherwise False
     :rtype: bool
     """
@@ -2496,7 +2507,7 @@ def createVm(
         copy_permissions=False, custom_properties=None,
         watchdog_model=None, watchdog_action=None, cpu_profile_id=None,
         numa_mode=None, ballooning=None, memory_guaranteed=None,
-        initialization=None
+        initialization=None, cpu_shares=None
 ):
     """
     Create new vm with nic, disk and OS
@@ -2595,6 +2606,8 @@ def createVm(
     :type memory_guaranteed: int
     :param initialization: Initialization obj for cloud init
     :type initialization: Initialization
+    :param cpu_shares: cpu_shares
+    :type cpu_shares: int
     :returns: True, if create vm success, otherwise False
     :rtype: bool
     """
@@ -2614,7 +2627,7 @@ def createVm(
         custom_properties=custom_properties,
         cpu_profile_id=cpu_profile_id, numa_mode=numa_mode,
         ballooning=ballooning, memory_guaranteed=memory_guaranteed,
-        initialization=initialization
+        initialization=initialization, cpu_shares=cpu_shares
     ):
         return False
 

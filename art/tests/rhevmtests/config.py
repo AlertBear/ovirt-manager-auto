@@ -457,3 +457,8 @@ ENGINE = resources.Engine(
 IBM_POWER_8 = 'IBM POWER 8'
 PPC_ARCH = True if CPU_NAME == IBM_POWER_8 else False
 PPC_SKIP_MESSAGE = 'Test not supported under PPC64 architecture'
+
+CPU_SHARE_DISABLED = 0
+CPU_SHARE_LOW = 512
+CPU_SHARE_MEDIUM = 1024
+CPU_SHARE_HIGH = 2048
