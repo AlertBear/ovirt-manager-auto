@@ -145,3 +145,11 @@ class CoreSystemTest(BaseTestCase):
     Basic class for core system tests
     """
     __test__ = False
+
+
+@attr(team="integration")
+class IntegrationTest(BaseTestCase):
+    """
+    Basic class for integration test
+    """
+    __test__ = False
