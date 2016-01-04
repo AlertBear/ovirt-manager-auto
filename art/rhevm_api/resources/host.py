@@ -6,6 +6,7 @@ from art.rhevm_api.resources.resource import Resource
 from art.rhevm_api.resources.service import Systemd, SysVinit, InitCtl
 from art.rhevm_api.resources.network import Network
 from art.rhevm_api.resources.filesystem import FileSystem
+from art.rhevm_api.resources.package_manager import PackageManagerProxy
 from art.rhevm_api.resources import ssh
 
 
@@ -51,6 +52,7 @@ class Host(Resource):
         self.ip = ip
         self.users = list()
         self._service_provider = service_provider
+        self._package_manager = PackageManagerProxy(self)
         self.add()  # adding host to inventory
 
     def __str__(self):
@@ -98,6 +100,10 @@ class Host(Resource):
     @property
     def root_user(self):
         return self.get_user('root')
+
+    @property
+    def package_manager(self):
+        return self._package_manager
 
     def executor(self, user=None):
         if user is None:

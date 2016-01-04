@@ -5,10 +5,22 @@ class PackageManager(Service):
     """
     Base class which defines interface for package management.
     """
+    binary = None
     exist_command_d = None
     install_command_d = None
     remove_command_d = None
     update_command_d = None
+
+    @classmethod
+    def is_available(cls, h):
+        if not cls.binary:
+            raise NotImplementedError("Name of binary file is not available.")
+        rc, _, _ = h.executor().run_cmd(
+            [
+                'which', '--skip-alias', cls.binary,
+            ]
+        )
+        return not rc
 
     def _run_command_on_host(self, cmd):
         """
@@ -127,28 +139,96 @@ class YumPackageManager(PackageManager):
     """
     YUM package manager class
     """
-    exist_command_d = ('yum', 'list', 'installed')
-    install_command_d = ('yum', 'install', '-y')
-    remove_command_d = ('yum', 'remove', '-y')
-    update_command_d = ('yum', 'update', '-y')
+    binary = 'yum'
+    exist_command_d = (binary, 'list', 'installed')
+    install_command_d = (binary, 'install', '-y')
+    remove_command_d = (binary, 'remove', '-y')
+    update_command_d = (binary, 'update', '-y')
+
+
+class DnfPackageManager(PackageManager):
+    """
+    DNF package manager class
+    """
+    binary = 'dnf'
+    exist_command_d = (binary, 'list', 'installed')
+    install_command_d = (binary, 'install', '-y')
+    remove_command_d = (binary, 'remove', '-y')
+    update_command_d = (binary, 'update', '-y')
 
 
 class RPMPackageManager(PackageManager):
     """
     RPM package manager class
     """
-    exist_command_d = ('rpm', '-q')
-    install_command_d = ('rpm', '-i')
-    remove_command_d = ('rpm', '-e')
-    update_command_d = ('rpm', '-U')
+    binary = 'rpm'
+    exist_command_d = (binary, '-q')
+    install_command_d = (binary, '-i')
+    remove_command_d = (binary, '-e')
+    update_command_d = (binary, '-U')
 
 
 class APTPackageManager(PackageManager):
     """
     APT package manager class
     """
+    binary = 'apt'
     # FIXME: Once apt will return correct return codes fix this
-    exist_command_d = ('apt', 'list', '--installed', '|', 'grep')
-    install_command_d = ('apt', 'install', '-y')
-    remove_command_d = ('apt', 'remove', '-y')
-    update_command_d = ('apt', 'update', '-y')
+    exist_command_d = (binary, 'list', '--installed', '|', 'grep')
+    install_command_d = (binary, 'install', '-y')
+    remove_command_d = (binary, 'remove', '-y')
+    update_command_d = (binary, 'update', '-y')
+
+
+class PackageManagerProxy(Service):
+    """
+    This class is helper to determine proper package manager for target system
+    """
+    managers = {
+        "rpm": RPMPackageManager,
+        "yum": YumPackageManager,
+        "dnf": DnfPackageManager,
+        "apt": APTPackageManager,
+    }
+    order = ('dnf', 'yum', 'apt', 'rpm')
+
+    def __init__(self, h):
+        super(PackageManagerProxy, self).__init__(h)
+        self._manager = None
+
+    def __call__(self, name):
+        """
+        This method allows you pick up specific package manager.
+
+        host.package_manager('rpm').install(...)
+        """
+        try:
+            return self.managers[name](self.host)
+        except KeyError:
+            raise ValueError("Unknown package manager: %s" % name)
+
+    def __getattr__(self, name):
+        """
+        This method let you use implicit package manager.
+
+        host.package_manager.install(...)
+        """
+        if self._manager is None:
+            for name_manager in self.order:
+                manager = self.managers[name_manager]
+                if manager.is_available(self.host):
+                    self.logger.info(
+                        "Using %s package manager for %s",
+                        name_manager, self.host,
+                    )
+                    self._manager = manager(self.host)
+                    break
+            else:
+                self.logger.error(
+                    "None of %s package managers is suitable for %s",
+                    self.order, self.host,
+                )
+                raise RuntimeError(
+                    "Can not determine package manager for %s" % self.host
+                )
+        return getattr(self._manager, name)
