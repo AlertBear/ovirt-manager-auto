@@ -19,10 +19,12 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import logging
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as exceptions
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 logger = logging.getLogger(__name__)
 DEFAULT_HOST_NICS_NUM = 4
@@ -120,3 +122,22 @@ def check_dummy_on_host_interfaces(host_name, dummy_name):
         if dummy_name == nic.name:
             return True
     return False
+
+
+def get_clusters_managements_networks_ids(cluster=None):
+    """
+    Get clusters managements networks IDs for all clusters in the engine if
+    not cluster else get only for the given cluster
+
+    :param cluster: Cluster name
+    :type cluster: list
+    :return: managements networks ids
+    :rtype: list
+    """
+    clusters = (
+        ll_clusters.CLUSTER_API.get(absLink=False) if not cluster else cluster
+    )
+    return [
+        ll_networks.get_management_network(cluster_name=cl.name).id
+        for cl in clusters
+        ]

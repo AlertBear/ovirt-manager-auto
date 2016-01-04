@@ -19,6 +19,7 @@
 
 import re
 import logging
+from art import unittest_lib
 import art.core_api as core_api
 import art.test_handler.settings as test_settings
 import art.test_handler.exceptions as test_exceptions
@@ -452,41 +453,52 @@ def delete_dummy_interfaces(host):
     return True
 
 
-def remove_all_networks(datacenter=None, cluster=None,
-                        mgmt_network=None):
+def remove_all_networks(datacenter=None, cluster=None, mgmt_network=None):
     """
-    Description: Remove all networks from DC/CL or from entire setup
+    Remove all networks from DC/CL or from entire setup
     If cluster is specified - remove all network from specified cluster
     Elif datacenter is specified - remove all networks from specified DC
     If no datacenter or cluster are specified remove all networks from all DCs
-    In all cases we don't remove rhevm network
-    **Author**: myakove
-    **Editor**: mpavlik
-    **Parameters**:
-        *  *datacenter* - name of the datacenter
-        *  *cluster* - name of the cluster
-        *  *mgmt_netowrk* - name of management network (to be excluded from
-        removal)
+    In all cases we don't remove the management network
 
-    **Returns**: True if removing networks succeeded, otherwise False
+    :param datacenter: name of the datacenter
+    :type datacenter: str
+    :param cluster: name of the cluster
+    :type cluster: str
+    :param mgmt_netowrk: name of management network (to be excluded from
+        removal)
+    :type mgmt_network: str
+    :return: True if removing networks succeeded, otherwise False
+    :rtype: bool
     """
     networks_to_remove = []
-
+    cluster_obj = (
+        ll_clusters.get_cluster_object(cluster_name=cluster) if cluster else
+        None
+    )
+    mgmt_networks_ids = (
+        unittest_lib.network.get_clusters_managements_networks_ids(
+            cluster=[cluster_obj] if cluster else None
+        )
+    )
     if cluster:
-        cl_networks = ll_networks.getClusterNetworks(cluster)
-        networks_list = ll_networks.NET_API.get(cl_networks)
-        removal_area = "cluster " + cluster
+        networks_list = ll_networks.getClusterNetworks(
+            cluster=cluster, href=False
+        )
+        removal_area = "cluster %s" % cluster
 
     elif datacenter:
-        networks_list = ll_networks.get_networks_in_datacenter(datacenter)
-        removal_area = "datacenter " + datacenter
+        networks_list = ll_networks.get_networks_in_datacenter(
+            datacenter=datacenter
+        )
+        removal_area = "datacenter %s" % datacenter
 
     else:
         networks_list = ll_networks.NET_API.get(absLink=False)
         removal_area = "all clusters and all data centers"
 
     for net in networks_list:
-        if net.name != mgmt_network:
+        if net.id not in [mgmt_net for mgmt_net in mgmt_networks_ids]:
             networks_to_remove.append(net.name)
 
     if not networks_to_remove:
@@ -495,10 +507,11 @@ def remove_all_networks(datacenter=None, cluster=None,
 
     network = "network" if len(networks_to_remove) == 1 else "networks: "
 
-    logger.info("Removing %s %s from %s",
-                network,
-                ', '.join(networks_to_remove),
-                removal_area)
+    logger.info(
+        "Removing %s %s from %s", network, ', '.join(
+            networks_to_remove
+        ), removal_area
+    )
 
     return removeMultiNetworks(True, networks_to_remove, datacenter)
 
