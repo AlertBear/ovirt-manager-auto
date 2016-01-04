@@ -11,7 +11,7 @@ cpu_name = option('Intel Conroe Family', 'Intel Penryn Family', 'Intel Nehalem F
 shared_iso_domain_path = string(default='/volumes/base/shared_iso_domain')
 shared_iso_domain_address = domain_format(default='wolf.qa.lab.tlv.redhat.com')
 vds_ovirt_port = integer(default='8443')
-mgmt_bridge = string(default='rhevm')
+mgmt_bridge = string(default='ovirtmgmt')
 compatibility_version = option('3.0', '3.1', '3.2', '3.3', '3.4', '3.5', '3.6', default='3.6')
 local_domain_path = string(default='/home/rest_test_domain')
 product_name = option('Red Hat Enterprise Virtualization Manager', 'oVirt Engine', default='Red Hat Enterprise Virtualization Manager')

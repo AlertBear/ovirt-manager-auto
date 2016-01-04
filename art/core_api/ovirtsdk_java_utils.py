@@ -1476,8 +1476,14 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
             translator_to_java(act, java_action_entity)
             with measure_time('POST'):
                 if (
+                    (
                         java_entity.__class__.__name__ == 'StorageDomainImage'
                         and action == 'importImage'
+                    )
+                    or (
+                        java_entity.__class__.__name__ == 'Host'
+                        and action == 'setupnetworks'
+                    )
                 ):
                     act = getattr(java_entity, action)(
                         java_action_entity,

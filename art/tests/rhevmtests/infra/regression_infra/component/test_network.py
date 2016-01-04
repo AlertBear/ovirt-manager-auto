@@ -13,7 +13,10 @@ from art.unittest_lib import BaseTestCase as TestCase
 from art.test_handler.exceptions import NetworkException
 
 from art.rhevm_api import resources
-from art.rhevm_api.tests_lib.high_level import networks
+from art.rhevm_api.tests_lib.high_level import (
+    networks as hl_networks,
+    host_network as hl_host_network,
+)
 
 from rhevmtests.infra.regression_infra import help_functions
 from rhevmtests.infra.regression_infra import config
@@ -62,27 +65,52 @@ class TestCaseNetwork(TestCase):
         """
         create network on DC/CL and attach it to host
         """
-        logger.info(
-            "Create network %s on DC/Cluster/Host", config.NETWORK
-        )
-        local_dict = {
+
+        sn_dict = {
             config.NETWORK:
             {"required": "false", "nic": 1}
         }
-        if not networks.createAndAttachNetworkSN(
-            data_center=config.DATA_CENTER_1_NAME, host=self.vds,
-            cluster=config.CLUSTER_1_NAME, network_dict=local_dict,
-            auto_nics=[0]
+
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": config.NETWORK,
+                    "nic": self.vds.nics[1]
+                }
+            }
+        }
+
+        logger.info(
+            "Create network %s on DC/Cluster", config.NETWORK
+        )
+
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=config.DATA_CENTER_1_NAME,
+            cluster=config.CLUSTER_1_NAME, network_dict=sn_dict
         ):
-            raise NetworkException("Cannot create and attach network")
+            raise NetworkException(
+                "Cannot create and attach %s" % config.NETWORK)
+
+        logger.info(
+            "Attaching %s to %s on %s",
+            config.NETWORK, self.vds.nics[1], self.vds
+        )
+        if not hl_host_network.setup_networks(
+            host_name=config.HOST_NAME, **network_host_api_dict
+        ):
+            raise NetworkException(
+                "Failed to attach %s to %s on %s" %
+                (config.NETWORK, self.vds.nics[1], self.vds)
+            )
 
     def test02_remove_network(self):
         """
         remove network from DC/CL
         """
-        if not networks.remove_net_from_setup(
-            host=config.HOST_NAME, all_net=True,
+        if not hl_networks.remove_net_from_setup(
+            host=config.HOST_NAME, network=[config.NETWORK],
             mgmt_network=config.MGMT_BRIDGE,
             data_center=config.DATA_CENTER_1_NAME
         ):
-            logger.error("Cannot remove network from setup")
+            raise NetworkException(
+                "Cannot remove %s from setup" % config.NETWORK)
