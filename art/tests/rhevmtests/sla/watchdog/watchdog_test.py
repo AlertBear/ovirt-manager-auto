@@ -17,7 +17,6 @@ from art.test_handler.tools import polarion  # pylint: disable=E0611
 
 from rhevmtests.sla.watchdog import config
 from art.unittest_lib import SlaTest as TestCase, attr
-from art.rhevm_api.resources.package_manager import YumPackageManager
 import rhevmtests.helpers as helpers
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
@@ -102,8 +101,7 @@ class WatchdogMixin(object):
         """
 
         vm_resource = cls.get_vm_resource_by_name(vm_name)
-        vm_yum_manager = YumPackageManager(vm_resource)
-        if not vm_yum_manager.install(KILLALL_PACKAGE):
+        if not vm_resource.package_manager.install(KILLALL_PACKAGE):
             return False
         cmd = ['killall', '-9', 'watchdog']
         logger.info("Kill watchdog service on vm %s", vm_name)
@@ -125,8 +123,7 @@ class WatchdogMixin(object):
         """
         vm_resource = self.get_vm_resource_by_name(vm_name)
         if config.PPC_ARCH:
-            vm_yum_manager = YumPackageManager(vm_resource)
-            if not vm_yum_manager.install(LSHW_PACKAGE):
+            if not vm_resource.package_manager.install(LSHW_PACKAGE):
                 return False
 
         logger.info(
@@ -193,8 +190,7 @@ class WatchdogMixin(object):
         :param vm_resource: vm resource
         :type vm_resource: Host
         """
-        vm_yum_manager = YumPackageManager(vm_resource)
-        if not vm_yum_manager.install(WATCHDOG_PACKAGE):
+        if not vm_resource.package_manager.install(WATCHDOG_PACKAGE):
             return False
 
         logger.info(

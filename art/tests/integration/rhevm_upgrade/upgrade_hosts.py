@@ -7,7 +7,6 @@ import os.path
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api import resources
 from art.rhevm_api.tests_lib.low_level import hosts, clusters, datacenters
-from art.rhevm_api.resources.package_manager import YumPackageManager
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
@@ -119,9 +118,8 @@ class UpgradeHosts(TestCase):
             "Failed to download latest rhev-h package '%s': %s" % (rhevh, err)
         )
         rhevh_rpm = '%s.noarch.rpm' % rhevh
-        yum = YumPackageManager(config.ENGINE_HOST)
         self.assertTrue(
-            yum.install(rhevh_rpm),
+            config.ENGINE_HOST.package_manager.install(rhevh_rpm),
             "Failed to install latest rhev-h '%s': %s" % (rhevh_rpm, err)
         )
 

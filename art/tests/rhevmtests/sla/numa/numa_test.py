@@ -13,7 +13,6 @@ import rhevmtests.networking.helper as network_helpers
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-from art.rhevm_api.resources.package_manager import YumPackageManager
 
 logger = logging.getLogger(__name__)
 
@@ -73,11 +72,10 @@ class BaseNumaClass(u_libs.SlaTest):
         vm_resource = network_helpers.get_vm_resource(vm=vm_name)
         if not vm_resource:
             return params_dict
-        host_yum_manager = YumPackageManager(vm_resource)
         logger.info(
             "Install %s package on host %s", conf.NUMACTL_PACKAGE, vm_resource
         )
-        if not host_yum_manager.install(conf.NUMACTL_PACKAGE):
+        if not vm_resource.package_manager.install(conf.NUMACTL_PACKAGE):
             raise errors.HostException(
                 "Failed to install package %s on host %s" %
                 (conf.NUMACTL_PACKAGE, vm_resource)

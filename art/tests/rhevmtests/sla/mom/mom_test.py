@@ -17,7 +17,6 @@ from art.unittest_lib import SlaTest as TestCase, attr
 import logging
 import config
 from time import sleep
-from art.rhevm_api.resources.package_manager import YumPackageManager
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import hosts
@@ -651,10 +650,9 @@ class Balloon(MOM):
         vm_resource = helpers.get_host_resource_with_root_user(
             hl_vms.get_vm_ip(vm), config.VMS_LINUX_PW
         )
-        vm_yum_manager = YumPackageManager(vm_resource)
-        if vm_yum_manager.exist(SERVICE_PUPPET):
+        if vm_resource.package_manager.exist(SERVICE_PUPPET):
             logger.info("remove %s", SERVICE_PUPPET)
-            if not vm_yum_manager.remove(SERVICE_PUPPET):
+            if not vm_resource.package_manager.remove(SERVICE_PUPPET):
                 raise errors.VMException(
                     "Failed to remove %s" % SERVICE_PUPPET
                 )

@@ -7,7 +7,6 @@ import config as conf
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.datacenters as hl_dc
-from art.rhevm_api.resources.package_manager import YumPackageManager
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +43,11 @@ def setup_package():
             raise errors.VMException(
                 "Failed to stop vm %s" % conf.VM_NAME[0]
             )
-    host_yum_manager = YumPackageManager(conf.VDS_HOSTS[0])
     logger.info(
         "Install %s package on host %s",
         conf.NUMACTL_PACKAGE, conf.VDS_HOSTS[0]
     )
-    if not host_yum_manager.install(conf.NUMACTL_PACKAGE):
+    if not conf.VDS_HOSTS[0].package_manager.install(conf.NUMACTL_PACKAGE):
         raise errors.HostException(
             "Failed to install package %s on host %s" %
             (conf.NUMACTL_PACKAGE, conf.VDS_HOSTS[0])
