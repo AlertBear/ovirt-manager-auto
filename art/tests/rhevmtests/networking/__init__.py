@@ -6,8 +6,11 @@ network team init file
 import logging
 from rhevmtests.networking import config
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.low_level.general as ll_general
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
@@ -55,6 +58,7 @@ def network_cleanup():
     Remove unneeded clusters
     Remove unneeded DCs
     Clean all hosts interfaces (SN)
+    Remove all non management bridges from hosts
     """
     if config.GOLDEN_ENV:
         stop_all_vms()
@@ -70,6 +74,7 @@ def network_cleanup():
         clean_hosts_interfaces()
         delete_dummy_interfaces_from_hosts()
         remove_qos_from_setup()
+        remove_bridges_from_hosts()
 
 
 @ignore_exception
@@ -286,3 +291,26 @@ def remove_qos_from_setup():
                 datacenter=dc, qos_name=qos_name
             ):
                 logger.error("Failed to remove %s from %s", qos_name, dc)
+
+
+@ignore_exception
+def remove_bridges_from_hosts():
+    """
+    Remove all bridges except management bridge from hosts
+    """
+    for host in config.VDS_HOSTS:
+        host_name = ll_hosts.get_host_name_from_engine(host_ip=host.ip)
+        host_obj = ll_hosts.get_host_object(host_name=host_name)
+        host_cluster = ll_general.get_object_name_by_id(
+            object_api=ll_clusters.CLUSTER_API,
+            object_id=host_obj.get_cluster().id
+        )
+        management_network = ll_networks.get_management_network(
+            cluster_name=host_cluster
+        ).name
+        bridges_list = host.network.list_bridges()
+        for br in bridges_list:
+            br_name = br["name"]
+            if br_name != management_network:
+                logger.info("Remove %s from %s", br_name, host.ip)
+                host.network.delete_bridge(bridge=br_name)
