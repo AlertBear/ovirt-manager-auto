@@ -960,7 +960,7 @@ class TestHostNetworkApiSync11(TestHostNetworkApiSyncBase):
     move_host = False
     net_case_1 = conf.SYNC_NETS_DC_1[11][0]
     net_case_1_netmask_prefix_expected = conf.IP_DICT_PREFIX["netmask"]
-    net_case_1_netmask_prefix_actual = "32"
+    net_case_1_netmask_prefix_actual = "255.255.255.255"
 
     @classmethod
     def setup_class(cls):
@@ -1127,7 +1127,7 @@ class TestHostNetworkApiSync14(TestHostNetworkApiSyncBase):
     move_host = False
     net_case_1 = conf.SYNC_NETS_DC_1[14][0]
     net_case_1_netmask_prefix_expected = conf.IP_DICT_PREFIX["netmask"]
-    net_case_1_netmask_prefix_actual = "32"
+    net_case_1_netmask_prefix_actual = "255.255.255.255"
     bond_1 = "bond141"
 
     @classmethod
