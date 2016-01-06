@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import copy
 import uuid
 import logging
 import random
@@ -7,7 +8,6 @@ import random
 from functools import wraps
 from art.unittest_lib import attr
 from art.core_api.apis_exceptions import EntityNotFound
-from art.test_handler.tools import bz  # pylint: disable=E0611
 from art.unittest_lib import CoreSystemTest as TestCase
 from rhevmtests.system.user_tests import config
 from art.rhevm_api.tests_lib.low_level import (
@@ -200,6 +200,7 @@ def user_case(login_as=None, cleanup_func=None, **kwargs_glob):
                 func(self, *args, **kwargs)
             except AssertionError:  # Case failed, clean even if not positive.
                 self.positive = True
+                raise
             finally:
                 if self.positive and cleanup_func is not None:
                     self.cleanup_functions.append({
@@ -210,7 +211,7 @@ def user_case(login_as=None, cleanup_func=None, **kwargs_glob):
     return decorator
 
 
-@attr(tier=3)
+@attr(tier=2)
 class CaseRoleActions(TestCase):
     """
     This class include all test actions, which role can have.
@@ -222,6 +223,44 @@ class CaseRoleActions(TestCase):
     __test__ = False
     last_logged_in = ''
     cleanup_functions = []  # List of dictionaries of cleanup functions
+
+    def __init__(self, *args, **kwargs):
+        """ Assign bz to specific cases """
+        super(CaseRoleActions, self).__init__(*args, **kwargs)
+        bzs = {
+            '1209505': {
+                'DiskCreator': ['create_disk'],
+                'DiskOperator': ['create_disk'],
+                'InstanceCreator': ['create_disk'],
+                'PowerUserRole': ['create_disk', 'create_template'],
+                'TemplateCreator': ['create_template'],
+                'UserInstanceManager': ['create_disk'],
+                'UserVmManager': ['create_disk'],
+                'UserVmRunTimeManager': ['create_disk'],
+                'VmCreator': ['create_disk'],
+                'ClusterAdmin': [
+                    'test_create_vm_pool',
+                    'edit_vm_pool_configuration',
+                ],
+                'DataCenterAdmin': [
+                    'test_create_vm_pool',
+                    'edit_vm_pool_configuration',
+                ],
+            },
+        }
+        for bzid, role in bzs.iteritems():
+            for perm in role.get(self.role, ()):
+                method_name = 'test_%s' % perm
+                m = getattr(self, method_name)
+
+                @wraps(m)
+                def wrapper(*args, **kwargs):
+                    return m(*args, **kwargs)
+                wrapper.__dict__ = copy.copy(m.__dict__)
+                wrapper.__dict__['bz'] = {
+                    bzid: {'engine': None, 'version': ['3.5', '3.6']},
+                }
+                setattr(self, method_name, wrapper)
 
     @classmethod
     def setup_class(cls):
@@ -290,8 +329,8 @@ class CaseRoleActions(TestCase):
         Need to assign permissions for roles which are not supposed to view
         children to avoid EntityNotFound exception and rather test real action
         """
-        creator = not mla.allowsViewChildren(cls.role, config.ENGINE.db)
-        if creator:
+        cls.creator = not mla.allowsViewChildren(cls.role, config.ENGINE.db)
+        if cls.creator:
             user_object_perm_map = {
                 config.USER_SYSTEM: {
                     mla.addPermissionsForDataCenter: [
@@ -373,7 +412,6 @@ class CaseRoleActions(TestCase):
 
     # ======================= CREATE ACTIONS ================================
 
-    @bz({'1214805': {'engine': None, 'version': ['3.6']}})
     @user_case(
         login_as=config.USER_SYSTEM,
         cleanup_func=datacenters.removeDataCenter,
@@ -533,11 +571,12 @@ class CaseRoleActions(TestCase):
             error_stack.append('Action add user failed.')
         try:
             assert users.removeUser(
-                self.positive,
+                True,
                 config.REMOVE_USER
             )
         except AssertionError:
-            error_stack.append('Action remove user failed.')
+            if self.positive:
+                error_stack.append('Action remove user failed.')
         except EntityNotFound:
             if self.positive:
                 error_stack.append('User was not found.')
@@ -562,6 +601,8 @@ class CaseRoleActions(TestCase):
 
     @user_case(
         login_as=config.USER_CLUSTER,
+        cleanup_func=vms.restartVm,
+        vm=config.RUNNING_VM,
     )
     def test_connect_to_vm(self):
         """ connect_to_vm """
@@ -619,27 +660,29 @@ class CaseRoleActions(TestCase):
                 mla.removeUserRoleFromVm(
                     self.positive,
                     config.CREATE_VM,
-                    config.USER_TEST,
+                    '%s@%s' % (config.USER_TEST, config.USER_DOMAIN),
                     config.UserRole
                 )
             )
-        except (EntityNotFound, AssertionError):
-            error_stack.append("Can't remove permissions.")
-            if self.positive:
-                error_stack.append('User is not visible.')
+        except EntityNotFound:
+            if not self.creator and self.positive:
+                error_stack.append('User is not visible')
+        except AssertionError:
+            error_stack.append("Can't/Can remove permissions")
         try:
             self.assertTrue(
                 mla.addVMPermissionsToUser(
                     self.positive,
                     config.USER_TEST,
                     config.CREATE_VM,
-                    config.UserTemplateBasedVm
+                    config.UserRole
                 )
             )
-        except (EntityNotFound, AssertionError):
-            error_stack.append("Can't remove permissions.")
-            if self.positive:
-                error_stack.append('User is not visible.')
+        except EntityNotFound:
+            if not self.creator and self.positive:
+                error_stack.append('User is not visible')
+        except AssertionError:
+            error_stack.append("Can't/Can assign permissions")
 
         if len(error_stack) > 0:
             raise AssertionError(' '.join(error_stack))
