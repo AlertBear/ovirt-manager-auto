@@ -231,7 +231,7 @@ def prepare_network_attachment_obj(host_name, **kwargs):
     )
 
     if network and not update:
-        add_network = ll_networks.findNetwork(
+        add_network = ll_networks.find_network(
             network=network, data_center=datacenter, cluster=cluster
         )
         network_attachment_obj.set_network(add_network)

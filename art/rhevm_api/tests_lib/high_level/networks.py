@@ -164,79 +164,72 @@ def createAndAttachNetworkSN(
     Function that creates and attach the network to the:
     a) DC, b) Cluster, c) Hosts with SetupNetworks
 
-    **Author**: gcheresh
-    :param data_center: DC name
-    :type data_center: str
-    :param cluster: Cluster name
-    :type cluster: str
-    :param host: list of resources.VDS objects
-    :type host: list
-    :param auto_nics: a list of nics indexes to preserve
-    :type auto_nics: list
-    :param save_config: flag for saving configuration
-    :type save_config: bool
-    :param vlan_auto_nics: dictionary for auto_nics with vlan
-    :type vlan_auto_nics: dict
-    :param use_new_api: Run with new host network API
-    :type use_new_api: bool
-    :param network_dict: dictionary of dictionaries
-    :type network_dict: dict
+    __author__: 'gcheresh'
+
+    Args:
+        data_center (str): DC name.
+        cluster (str): Cluster name.
+        host (list): List of resources.VDS objects.
+        auto_nics (list): A list of nics indexes to preserve.
+        save_config (bool): Flag for saving configuration.
+        network_dict (dict): Dictionary of dictionaries.
+        vlan_auto_nics (dict): Dictionary for auto_nics with vlan.
+        use_new_api (bool): Run with new host network API.
 
     vlan_auto_nics example: {162: 0} where 162 is the vlan ID and
     0 is the host_nic index. (all int)
 
     network_dict parameters:
-        logical network name as the key for the following:
-            *  *nic* - interface to create the network on
-            *  *usages* - vm or ''  value (for VM or non-VM network)
-            *  *cluster_usages* - migration and/or display
-                (can be set on one network)
-            *  *vlan_id* - VLAD ID
-            *  *mtu* - MTU
-            *  *required* - required/non-required network
-            *  *bond* - bond name to create
-            *  *slaves* - interfaces that the bond will be composed from
-            *  *mode* - the mode of the bond
-            *  *bootproto* - boot protocol (none, dhcp, static)
-            *  *address* - list of IP addresses of the network
-                if bootproto is Static
-            *  *netmask* - list of netmasks of the  network
-                if bootproto is Static
-            *  *gateway* - list of gateways of the network
-                if bootproto is Static
-            *  *profile_required* - flag to create or not VNIC profile
-                for the network
-            *  * properties* - property of bridge_opts and/or ethtool_opts
-    :return: True value if succeeded in creating and adding net list
-             to DC/Cluster and Host with all the parameters
-    :rtype: bool
+        Logical network name as the key for the following:
+            nic (str): Interface to create the network on.
+            usages (str): VM or ''  value (for VM or non-VM network).
+            cluster_usages (str): Migration and/or display
+                (can be set on one network).
+            vlan_id (str): Network vlan id.
+            mtu (int): Network mtu.
+            required (bool): required/non-required network.
+            bond (str): Bond name to create.
+            slaves (list): Interfaces that the bond will be composed from.
+            mode (int): The mode of the bond.
+            bootproto (str): Boot protocol (none, dhcp, static).
+            address (list): List of IP addresses of the network if bootproto
+                is Static.
+            netmask (list): List of netmasks of the  network if bootproto
+                is Static.
+            gateway (list): List of gateways of the network if bootproto
+                is Static.
+            profile_required (bool): Flag to create or not VNIC profile
+                for the network.
+            properties (str): Property of bridge_opts and/or ethtool_opts.
+            description (str): New network description (if relevant).
+
+    Returns:
+        bool: True value if succeeded in creating and adding net list
+            to DC/Cluster and Host with all the parameters.
     """
     # Makes sure host_list is always a list
     host_list = [host] if not isinstance(host, list) else host
 
     for net, net_param in network_dict.items():
         if data_center and net:
-            logger.info("Adding %s to %s", net, data_center)
-            if not ll_networks.addNetwork(
+            if not ll_networks.add_network(
                 True, name=net, data_center=data_center,
                 usages=net_param.get("usages", "vm"),
                 vlan_id=net_param.get("vlan_id"),
                 mtu=net_param.get("mtu"),
                 profile_required=net_param.get("profile_required"),
-                qos_dict=net_param.get("qos")
+                qos_dict=net_param.get("qos"),
+                description=net_param.get("description")
             ):
-                logger.error("Cannot add %s to %s", net, data_center)
                 return False
 
         if cluster and net:
-            logger.info("Adding %s to %s", net, cluster)
-            if not ll_networks.addNetworkToCluster(
+            if not ll_networks.add_network_to_cluster(
                 True, network=net, cluster=cluster,
                 required=net_param.get("required", "true"),
                 usages=net_param.get("cluster_usages", None),
                 data_center=data_center
             ):
-                logger.error("Cannot add %s to %s", net, cluster)
                 return False
 
     for host in host_list:
@@ -311,16 +304,13 @@ def createAndAttachNetworkSN(
                 if not hl_host_network.clean_host_interfaces(
                     host_name=host_name
                 ):
-                    logger.error("Failed to clean %s interface", host_name)
                     return False
             else:
                 if not hl_host_network.setup_networks(
                     host_name=host_name, **sn_dict
                 ):
-                        logger.error(
-                            "Failed to send SN request to host %s", host_name
-                        )
-                        return False
+
+                    return False
         else:
             logger.info("Sending SN request to host %s" % host_name)
             if not ll_hosts.sendSNRequest(

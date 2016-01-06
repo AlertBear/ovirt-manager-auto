@@ -17,15 +17,15 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
+import logging
 import os
 import re
-import logging
-from art.core_api import is_action
-from art.core_api import apis_utils
-from art.core_api import apis_exceptions
-from art.rhevm_api.utils import test_utils
 import art.rhevm_api.tests_lib.low_level as ll
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
+from art.core_api import apis_exceptions
+from art.core_api import apis_utils
+from art.core_api import is_action
+from art.rhevm_api.utils import test_utils
 
 NET_API = test_utils.get_api("network", "networks")
 CL_API = test_utils.get_api("cluster", "clusters")
@@ -91,28 +91,44 @@ def _prepareNetworkObject(**kwargs):
 
 
 @is_action()
-def addNetwork(positive, **kwargs):
+def add_network(positive, **kwargs):
     """
-    Description: add network to a data center
-    Author: edolinin
-    Parameters:
-       * name - name of a new network
-       * description - new network description (if relevant)
-       * data_center - data center name where a new network should be added
-       * address - network ip address
-       * netmask - network ip netmask
-       * gateway - network ip gateway
-       * stp - support stp true/false (note: true/false as a strings)
-       * vlan_id - network vlan id
-       * usages - a string contain list of comma-separated usages 'VM,DIPLAY'.
-       * mtu - and integer to overrule mtu on the related host nic..
-       * profile_required - flag to create or not VNIC profile for the network
-    Return: status (True if network was added properly, False otherwise)
-    """
+    Add network to a data center
 
+    __author__: 'edolinin'
+
+    Args:
+        positive (bool): True if action should succeed, False otherwise.
+        kwargs (dict): Parameters for add network.
+
+    Keyword Arguments:
+        name (str): Name of a new network.
+        description (str): New network description (if relevant).
+        data_center (str): Data center name where a new network should be added
+        address (str): Network ip address.
+        netmask (str): Network ip netmask.
+        gateway (str): Network ip gateway.
+        stp (str): Support stp true/false (note: true/false as a strings).
+        vlan_id (int): Network vlan_id.
+        usages (str): Comma separated usages for example 'VM,DISPLAY'.
+        mtu (int): Integer to overrule mtu on the related host nic.
+        profile_required (bool): Flag to create or not VNIC profile
+            for the network.
+
+    Returns:
+        bool: True if create network succeeded, False otherwise.
+    """
+    net_name = kwargs.get("name")
+    datacenter = kwargs.get("data_center")
+    log_info, log_error = ll.general.get_log_msg(
+        action="Create", obj_type="network", obj_name=net_name,
+        positive=positive, extra_txt="in datacenter %s" % datacenter, **kwargs
+    )
+    logger.info(log_info)
     net_obj = _prepareNetworkObject(**kwargs)
-    res, status = NET_API.create(net_obj, positive)
-
+    status = NET_API.create(entity=net_obj, positive=positive)[1]
+    if not status:
+        logger.error(log_error)
     return status
 
 
@@ -142,7 +158,7 @@ def updateNetwork(positive, network, **kwargs):
     Returns:
         bool: True if network was updated properly, False otherwise
     """
-    net = findNetwork(network, kwargs.get("data_center"))
+    net = find_network(network, kwargs.get("data_center"))
     log_info_txt, log_error_txt = ll.general.get_log_msg(
         action="update", obj_type="network", obj_name=network,
         positive=positive, **kwargs
@@ -167,39 +183,47 @@ def removeNetwork(positive, network, data_center=None):
     Return: status (True if network was removed properly, False otherwise)
     """
 
-    net = findNetwork(network, data_center)
+    net = find_network(network, data_center)
     return NET_API.delete(net, positive)
 
 
-def findNetwork(network, data_center=None, cluster=None):
+def find_network(network, data_center=None, cluster=None):
     """
-    Description: Find desired network using cluster or data center as an option
-                 to narrow down the search when multiple networks with the same
-                 name exist (needed due to BZ#741111). The network is retrieved
-                 at the data center level unless only the network name is
-                 passed, in which case a search is done among all the networks
-                 in the environment.
-    **Author**: atal, tgeft
-    **Parameters**:
-        *  *name* - Name of the network to find.
-        *  *cluster* - Name of the cluster in which the network is located.
-        *  *data_center* - Name of the data center in which the network is
-                           located.
-    **Return**: Returns the desired network object in case of success,
-                otherwise raises apis_exceptions.EntityNotFound
+    Find desired network using cluster or data center as an option to narrow
+    down the search when multiple networks with the same name exist
+    (needed due to BZ#741111). The network is retrieved at the data center
+    level unless only the network name is passed, in which case a search is
+    done among all the networks in the environment.
+
+     __author__: 'atal, tgeft'
+
+     Args:
+         network (str): Name of the network to find.
+         cluster (str): Name of the cluster in which the network is located.
+         data_center (str): Name of the data center in which the network is
+            located.
+
+    Returns:
+        Network: Network object if found
+
+    Raises:
+        EntityNotFound: If network was not found
     """
+    logger.info("Find desired network %s", network)
     if data_center:
         dc_obj = DC_API.find(data_center)
         nets = NET_API.get(absLink=False)
         for net in nets:
-            if net.get_data_center().get_id() == dc_obj.get_id() and \
-                    net.get_name().lower() == network.lower():
+            if (
+                net.get_data_center().get_id() == dc_obj.get_id() and
+                net.get_name().lower() == network.lower()
+            ):
                 return net
         raise apis_exceptions.EntityNotFound(
             '%s network does not exists!' % network
         )
     elif cluster:
-        return get_dc_network_by_cluster(cluster, network)
+        return get_dc_network_by_cluster(cluster=cluster, network=network)
     else:
         return NET_API.find(network)
 
@@ -236,11 +260,12 @@ def get_cluster_network(cluster, network):
         network (str): Name of the network.
 
     Returns:
-        Network: Network object
+        Network: Network object if found
 
     Raises:
         EntityNotFound: If network was not found
     """
+    logger.info("Get cluster %s network %s", cluster, network)
     cluster_obj = CL_API.find(cluster)
     return CL_API.getElemFromElemColl(
         cluster_obj, network, "networks", "network"
@@ -266,27 +291,40 @@ def get_cluster_networks(cluster, href=True):
 
 
 @is_action()
-def addNetworkToCluster(positive, network, cluster, **kwargs):
+def add_network_to_cluster(positive, network, cluster, **kwargs):
     """
-    Description: attach network to cluster
-    Author: atal
-    Parameters:
-       * network - name of a network that should be attached
-       * cluster - name of a cluster to attach to
-       * required - boolean, decide if network should be required by cluster..
-       * usages - a string contain list of usages separated by comma
-       'VM,DISPLAY'. should contain all usages every update.
-       a missing usage will be deleted!
-       * display - deprecated. boolean, a spice display network.
-    Return: status (True if network was attached properly, False otherwise)
-    """
-    kwargs.update(net=findNetwork(network, kwargs.get("data_center")))
-    net = _prepareClusterNetworkObj(**kwargs)
-    cluster_nets = get_cluster_networks(cluster)
-    res, status = NET_API.create(net,
-                                 positive,
-                                 collection=cluster_nets)
+    Attach network to cluster
 
+    __author__: 'atal'
+
+    Args:
+        positive (bool): True if test is positive, False if negative.
+        network (str): Name of a network that should be add to cluster.
+        cluster (str): Cluster name.
+        kwargs (dict): Parameters for add network to cluster.
+
+    Keyword Arguments:
+        required (bool): Flag if network should be required by cluster.
+        usages (str): Comma separated usages for example 'VM,DISPLAY'.
+        display (bool): Flag if network should display network.
+
+    Returns:
+        bool: True if network was attached properly, False otherwise
+    """
+
+    kwargs.update(net=find_network(network, kwargs.get("data_center")))
+    log_info_txt, log_error_txt = ll.general.get_log_msg(
+        action="add", obj_type="network", obj_name=network,
+        positive=positive, extra_txt="in cluster %s" % cluster, **kwargs
+    )
+    net = _prepareClusterNetworkObj(**kwargs)
+    cluster_nets = get_cluster_networks(cluster=cluster)
+    logger.info(log_info_txt)
+    status = NET_API.create(
+        entity=net, positive=positive, collection=cluster_nets
+    )[1]
+    if not status:
+        logger.error(log_error_txt)
     return status
 
 
@@ -308,6 +346,7 @@ def update_cluster_network(positive, cluster, network, **kwargs):
     Returns:
         bool: True if network was attached properly, False otherwise
     """
+
     log_info, log_error = ll.general.get_log_msg(
         action="Update", obj_type="network", obj_name=network,
         positive=positive, extra_txt="on cluster %s" % cluster, **kwargs
@@ -435,7 +474,7 @@ def getNetworkVnicProfiles(network, cluster=None, data_center=None):
     **Return**: Returns a list of VNIC profile objects that belong to the
                 provided network.
     """
-    netObj = findNetwork(network, data_center, cluster)
+    netObj = find_network(network, data_center, cluster)
     return NET_API.getElemFromLink(netObj, link_name='vnicprofiles',
                                    attr='vnic_profile', get_href=False)
 
@@ -629,29 +668,41 @@ def get_network_in_datacenter(network, datacenter):
 
 def create_network_in_datacenter(positive, datacenter, **kwargs):
     """
-    add network to a datacenter
-    :param positive: True if action should succeed, False otherwise
-    :type positive: bool
-    :param datacenter: data center name where a new network should be added
-    :type datacenter: str
-    :param kwargs:
-        name: name of a new network
-        description: new network description (if relevant)
-        stp: support stp true/false (note: true/false as a strings)
-        vlan_id: network vlan id
-        usages: a string contain list of comma-separated usages 'vm' or ""
-                for Non-VM.
-        mtu: and integer to overrule mtu on the related host nic..
-        profile_required: flag to create or not VNIC profile for the network
-    :return: True if result of action == positive, False otherwise
-    :rtype: bool
+    Add network to datacenter
+
+    Args:
+        positive (bool): True if action should succeed, False otherwise.
+        datacenter (str): Datacenter name.
+        kwargs (dict): Parameters for add network.
+
+    Keyword Arguments:
+        name (str): Network name.
+        description (str): New network description (if relevant).
+        stp (str): Support stp true/false (note: true/false as a strings).
+        vlan_id (int): Network vlan_id.
+        usages (str): Comma separated usages 'vm' or "" for non-VM.
+        mtu (int): Integer to overrule mtu on the related host nic.
+        profile_required (bool): Flag to create or not VNIC profile
+            for the network.
+
+    Returns:
+        bool: True if create network succeeded, False otherwise.
     """
+    net_name = kwargs.get("name")
+    log_info_txt, log_error_txt = ll.general.get_log_msg(
+        action="Create", obj_type="network", obj_name=net_name,
+        positive=positive, extra_txt="in datacenter %s" % datacenter, **kwargs
+    )
     dc = DC_API.find(datacenter)
+    logger.info(log_info_txt)
     net_obj = _prepareNetworkObject(**kwargs)
-    return NET_API.create(
+    status = NET_API.create(
         entity=net_obj, positive=positive, collection=NET_API.getElemFromLink
         (dc, get_href=True)
     )[1]
+    if not status:
+        logger.error(log_error_txt)
+    return status
 
 
 def delete_network_in_datacenter(positive, network, datacenter):
@@ -823,7 +874,7 @@ def getVnicProfileFromNetwork(
     :return: VNIC profile object that belong to the provided network or None
     :rtype: VnicProfile
     """
-    network_obj = findNetwork(network, data_center, cluster).id
+    network_obj = find_network(network, data_center, cluster).id
     all_vnic_profiles = VNIC_PROFILE_API.get(absLink=False)
     logger.info("Get vNIC profile object from %s", network)
     for vnic_profile_obj in all_vnic_profiles:
@@ -908,7 +959,7 @@ def add_label(**kwargs):
     try:
         if networks:
             for network in networks:
-                entity_obj = findNetwork(
+                entity_obj = find_network(
                     network, data_center=datacenter, cluster=cluster
                 )
                 labels_href = NET_API.getElemFromLink(
@@ -988,9 +1039,9 @@ def get_label_objects(**kwargs):
                     label_list.extend(label_obj)
         if networks:
             for network in networks:
-                entity_obj = findNetwork(network,
-                                         data_center=kwargs.get("datacenter"),
-                                         cluster=kwargs.get("cluster"))
+                entity_obj = find_network(network,
+                                          data_center=kwargs.get("datacenter"),
+                                          cluster=kwargs.get("cluster"))
                 label_obj = NET_API.getElemFromLink(entity_obj, "labels",
                                                     "label")
                 label_list.extend(label_obj)
@@ -1163,18 +1214,24 @@ def create_properties(**kwargs):
 def get_dc_network_by_cluster(cluster, network):
     """
     Find network on cluster and return the DC network object
-    :param cluster: Name of the cluster in which the network is located.
-    :param network: Name of the network.
-    :return: DC network object
+
+    Args:
+        cluster (str): Name of the cluster in which the network is located.
+        network (str): Name of the network.
+
+    Returns:
+        Network: DC network object if network found, None otherwise
     """
+    logger.info("Find network %s on cluster %s", cluster, network)
     cluster_obj = CL_API.find(cluster)
-    cluster_net = get_cluster_network(cluster, network)
+    cluster_net = get_cluster_network(cluster=cluster, network=network)
     dc_id = cluster_obj.get_data_center().get_id()
     dc_name = DC_API.find(dc_id, attribute='id').get_name()
-    dc_net = get_network_in_datacenter(network, dc_name)
+    dc_net = get_network_in_datacenter(network=network, datacenter=dc_name)
     if dc_net.get_id() == cluster_net.get_id():
         return dc_net
-    return False
+    logger.error("Network %s not found on cluster %s", network, cluster)
+    return None
 
 
 def update_qos_on_vnic_profile(datacenter, qos_name, vnic_profile_name,
@@ -1376,13 +1433,13 @@ def _prepare_vnic_profile_object(kwargs):
         vnic_profile_obj.set_description(description)
 
     if network:
-        net_obj = findNetwork(
+        net_obj = find_network(
             network=network, data_center=data_center, cluster=cluster
         )
         vnic_profile_obj.set_network(net_obj)
 
     if new_network:
-        new_net_obj = findNetwork(
+        new_net_obj = find_network(
             network=new_network, data_center=data_center, cluster=cluster
         )
         vnic_profile_obj.set_network(new_net_obj)

@@ -390,12 +390,12 @@ class TestLinkedCase4(TestCase):
         logger.info(
             "Creating network %s on DC, Cluster", config.NETWORKS[0]
         )
-        if not ll_networks.addNetwork(
+        if not ll_networks.add_network(
                 True, name=config.NETWORKS[0], data_center=config.DC_NAME[0]
         ):
             raise exceptions.NetworkException("Cannot add network to DC")
 
-        if not ll_networks.addNetworkToCluster(
+        if not ll_networks.add_network_to_cluster(
                 True, network=config.NETWORKS[0],
                 cluster=config.CLUSTER_NAME[0], required="false"
         ):

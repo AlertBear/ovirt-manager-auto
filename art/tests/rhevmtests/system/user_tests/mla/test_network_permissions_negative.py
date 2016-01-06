@@ -105,7 +105,7 @@ class NegativeNetworkPermissions231915(NetworkingNegative):
     __test__ = True
 
     def setUp(self):
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
         assert mla.addClusterPermissionsToUser(
@@ -117,7 +117,7 @@ class NegativeNetworkPermissions231915(NetworkingNegative):
         """ Create/Delete network in DC """
         msg = "User %s with %s can't add/remove network."
         loginAsUser(config.USER_NAME, filter_=False)
-        assert networks.addNetwork(
+        assert networks.add_network(
             False, name=config.NETWORK_NAME2, data_center=config.DC_NAME[0]
         )
         assert networks.removeNetwork(
@@ -130,7 +130,7 @@ class NegativeNetworkPermissions231916(NetworkingNegative):
     __test__ = True
 
     def setUp(self):
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
         assert mla.addClusterPermissionsToUser(
@@ -165,11 +165,11 @@ class NegativeNetworkPermissions231917(NetworkingNegative):
     __test__ = True
 
     def setUp(self):
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME1,
             data_center=config.DC_NAME[0]
         )
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME2, data_center=config.DC_NAME[0]
         )
 
@@ -188,7 +188,7 @@ class NegativeNetworkPermissions231917(NetworkingNegative):
         assert mla.addClusterPermissionsToUser(
             True, config.USER_NAME2, config.CLUSTER_NAME[0], role.HostAdmin
         )
-        assert networks.addNetworkToCluster(
+        assert networks.add_network_to_cluster(
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
 
@@ -200,7 +200,7 @@ class NegativeNetworkPermissions231917(NetworkingNegative):
             assert networks.removeNetworkFromCluster(
                 False, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
             )
-            assert networks.addNetworkToCluster(
+            assert networks.add_network_to_cluster(
                 False, config.NETWORK_NAME2, config.CLUSTER_NAME[0]
             )
 
@@ -212,10 +212,10 @@ class NegativeNetworkPermissions231918(NetworkingNegative):
         assert mla.addPermissionsForDataCenter(
             True, config.USER_NAME, config.DC_NAME[0], role=role.HostAdmin
         )
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME2, data_center=config.DC_NAME[0]
         )
         assert mla.addPermissionsForVnicProfile(
@@ -226,10 +226,10 @@ class NegativeNetworkPermissions231918(NetworkingNegative):
             True, config.USER_NAME, config.NETWORK_NAME2,
             config.NETWORK_NAME2, config.DC_NAME[0]
         )
-        assert networks.addNetworkToCluster(
+        assert networks.add_network_to_cluster(
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
-        assert networks.addNetworkToCluster(
+        assert networks.add_network_to_cluster(
             True, config.NETWORK_NAME2, config.CLUSTER_NAME[0]
         )
         assert networks.update_cluster_network(
@@ -331,17 +331,17 @@ class NegativeNetworkPermissions236686(NetworkingNegative):
             True, VM_NAME, '', cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
         )
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME2, data_center=config.DC_NAME[0]
         )
         assert mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME)
-        assert networks.addNetworkToCluster(
+        assert networks.add_network_to_cluster(
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
-        assert networks.addNetworkToCluster(
+        assert networks.add_network_to_cluster(
             True, config.NETWORK_NAME2, config.CLUSTER_NAME[0]
         )
         assert vms.addNic(
@@ -373,22 +373,22 @@ class NegativeNetworkPermissions236736(NetworkingNegative):
             network=config.MGMT_BRIDGE
         )
         assert mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME)
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME2, data_center=config.DC_NAME[0]
         )
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME3, data_center=config.DC_NAME[0]
         )
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME4, data_center=config.DC_NAME[0]
         )
-        assert networks.addNetworkToCluster(
+        assert networks.add_network_to_cluster(
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
-        assert networks.addNetworkToCluster(
+        assert networks.add_network_to_cluster(
             True, config.NETWORK_NAME2, config.CLUSTER_NAME[0]
         )
         assert vms.addNic(

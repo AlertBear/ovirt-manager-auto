@@ -456,7 +456,7 @@ class SriovNicPF(SriovNic):
                 "all_networks_allowed must be False in order to add a network "
                 "to allowed networks"
             )
-        network_obj = ll_networks.findNetwork(
+        network_obj = ll_networks.find_network(
             network=network, data_center=data_center
         )
         logger.info("Add network to allowed networks for %s", self.nic_name)

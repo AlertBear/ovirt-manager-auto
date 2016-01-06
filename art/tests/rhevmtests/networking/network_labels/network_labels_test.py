@@ -1649,7 +1649,7 @@ class NetLabels13(TestLabelTestCaseBase):
             "Reattach labeled network %s to Cluster %s ",
             conf.NETS[13][0], conf.CLUSTER_NAME[0]
         )
-        if not ll_networks.addNetworkToCluster(
+        if not ll_networks.add_network_to_cluster(
             True, conf.NETS[13][0], conf.CLUSTER_NAME[0], required=False
         ):
             raise conf.NET_EXCEPTION(
@@ -1691,7 +1691,7 @@ class NetLabels13(TestLabelTestCaseBase):
             conf.DC_NAME[0]
         )
         try:
-            ll_networks.findNetwork(conf.NETS[13][0], conf.DC_NAME[0])
+            ll_networks.find_network(conf.NETS[13][0], conf.DC_NAME[0])
             raise conf.NET_EXCEPTION(
                 "Network %s found on DC, but shouldn't" % conf.NETS[13][0]
             )

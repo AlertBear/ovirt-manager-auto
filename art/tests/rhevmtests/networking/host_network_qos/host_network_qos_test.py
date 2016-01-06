@@ -579,7 +579,7 @@ class TestHostNetQOSCase08(TestHostNetworkQoSTestCaseBase):
         """
         Create QoS when creating a new network on the setup
         """
-        if not ll_networks.addNetwork(
+        if not ll_networks.add_network(
             True, name=self.net1, data_center=conf.DC_NAME,
             qos_dict={
                 "datacenter": conf.DC_NAME,

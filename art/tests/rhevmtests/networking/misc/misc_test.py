@@ -38,7 +38,7 @@ class TestMisc01(TestCase):
         networks = ["net-155", "net-1-5-5-b----", "m-b_1-2_3_4-3_5"]
         for net in networks:
             logger.info("Create %s on %s", net, DC_0)
-            if not ll_networks.addNetwork(
+            if not ll_networks.add_network(
                 positive=True, name=net, data_center=DC_0
             ):
                 raise config.NET_EXCEPTION(

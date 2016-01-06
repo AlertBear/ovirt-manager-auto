@@ -23,7 +23,7 @@ from art.rhevm_api.utils.test_utils import get_api, split
 from art.core_api import is_action
 from art.test_handler.settings import opts
 from art.rhevm_api.tests_lib.low_level.networks import (
-    findNetwork,
+    find_network,
     get_vnic_profile_obj
 )
 
@@ -384,7 +384,7 @@ def addPermissionsForNetwork(positive, user, network, data_center,
        * role - role to add
     Return: status (True if permission was added properly, False otherwise)
     '''
-    netObj = findNetwork(network, data_center)
+    netObj = find_network(network, data_center)
     return addUserPermitsForObj(positive, user, role, netObj)
 
 
@@ -635,7 +635,7 @@ def removeUsersPermissionsFromNetwork(positive, network, data_center,
        * user_names - list with user names (ie.['user1@..', 'user2@..'])
     Return: status (True if permissions was removed, False otherwise)
     '''
-    netObj = findNetwork(network, data_center)
+    netObj = find_network(network, data_center)
     return removeUsersPermissionsFromObject(positive, netObj, user_names)
 
 

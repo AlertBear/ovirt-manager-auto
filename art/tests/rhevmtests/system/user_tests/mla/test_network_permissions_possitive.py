@@ -78,7 +78,7 @@ class PositiveNetworkPermissions231821(NetworkingPossitive):
         """ CreateNetworkInDc """
         for u in [config.USER_NAME, config.USER_NAME2, config.USER_NAME3]:
             loginAsUser(userName=u, filter_=False)
-            assert networks.addNetwork(
+            assert networks.add_network(
                 True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
             )
             loginAsAdmin()
@@ -95,7 +95,7 @@ class PositiveNetworkPermissions231822(NetworkingPossitive):
     apis = NetworkingPossitive.apis - set(['java'])
 
     def setUp(self):
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
         assert mla.addPermissionsForNetwork(
@@ -127,7 +127,7 @@ class PositiveNetworkPermissions231823(NetworkingPossitive):
     __test__ = True
 
     def setUp(self):
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
         assert mla.addPermissionsForNetwork(
@@ -142,14 +142,14 @@ class PositiveNetworkPermissions231823(NetworkingPossitive):
     def test_attachingNetworkToCluster(self):
         """ Attaching network to cluster """
         loginAsUser(config.USER_NAME, filter_=False)
-        assert networks.addNetworkToCluster(
+        assert networks.add_network_to_cluster(
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
         assert networks.removeNetworkFromCluster(
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
         loginAsUser(userName=config.USER_NAME2, filter_=False)
-        assert networks.addNetworkToCluster(
+        assert networks.add_network_to_cluster(
             False, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
         LOGGER.info("ClusterAdmin can't attach network to cluster.")
@@ -159,7 +159,7 @@ class TestSwitching(NetworkingPossitive):
     __test__ = True
 
     def setUp(self):
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
         assert mla.addClusterPermissionsToUser(
@@ -169,7 +169,7 @@ class TestSwitching(NetworkingPossitive):
             True, config.USER_NAME2, config.NETWORK_NAME1,
             data_center=config.DC_NAME[0], role=role.NetworkAdmin
         )
-        assert networks.addNetworkToCluster(
+        assert networks.add_network_to_cluster(
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
 
@@ -230,10 +230,10 @@ class PositiveNetworkPermissions231826(NetworkingPossitive):
             size=config.GB, network=config.MGMT_BRIDGE
         )
         assert mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME)
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
-        assert networks.addNetworkToCluster(
+        assert networks.add_network_to_cluster(
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
         assert mla.addPermissionsForVnicProfile(
@@ -259,13 +259,13 @@ class PositiveNetworkPermissions231827(NetworkingPossitive):
         # Not possible to create public vnicprofile, just add Everyone perms
         for net in [config.NETWORK_NAME1, config.NETWORK_NAME2,
                     config.NETWORK_NAME3, config.NETWORK_NAME4]:
-            assert networks.addNetwork(
+            assert networks.add_network(
                 True, name=net, data_center=config.DC_NAME[0]
             )
             assert mla.addVnicProfilePermissionsToGroup(
                 True, EVERYONE, net, net, config.DC_NAME[0]
             )
-            assert networks.addNetworkToCluster(
+            assert networks.add_network_to_cluster(
                 True, net, config.CLUSTER_NAME[0]
             )
 
@@ -306,14 +306,14 @@ class PositiveNetworkPermissions231830(NetworkingPossitive):
     apis = set(['rest'])
 
     def setUp(self):
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME2, data_center=config.DC_NAME[0]
         )
         for net in [config.NETWORK_NAME1, config.NETWORK_NAME2]:
-            assert networks.addNetworkToCluster(
+            assert networks.add_network_to_cluster(
                 True, net, config.CLUSTER_NAME[0]
             )
         assert vms.createVm(
@@ -345,8 +345,8 @@ class PositiveNetworkPermissions231830(NetworkingPossitive):
         net2 = config.NETWORK_NAME2
         loginAsUser(config.USER_NAME, filter_=filter_)
         self.canSee(
-            self.filterNet(net1, p1, networks.findNetwork),
-            self.filterNet(net2, p2, networks.findNetwork),
+            self.filterNet(net1, p1, networks.find_network),
+            self.filterNet(net2, p2, networks.find_network),
             self.filterNet(net1, p3, networks.VNIC_PROFILE_API.find),
             self.filterNet(net2, p4, networks.VNIC_PROFILE_API.find)
         )
@@ -439,10 +439,10 @@ class PositiveNetworkPermissions231832(NetworkingPossitive):
     __test__ = True
 
     def setUp(self):
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME2, data_center=config.DC_NAME[0]
         )
         assert networks.update_vnic_profile(
@@ -474,7 +474,7 @@ class PositiveNetworkPermissions231832(NetworkingPossitive):
             True, config.USER_NAME2, config.DC_NAME[0], role.UserRole
         )
         for net in [config.NETWORK_NAME1, config.NETWORK_NAME2]:
-            assert networks.addNetworkToCluster(
+            assert networks.add_network_to_cluster(
                 True, net, config.CLUSTER_NAME[0]
             )
 
@@ -517,7 +517,7 @@ class PositiveNetworkPermissions236367(NetworkingPossitive):
             True, VM_NAME, '', cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
         )
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
         assert mla.addPermissionsForVnicProfile(
@@ -526,7 +526,7 @@ class PositiveNetworkPermissions236367(NetworkingPossitive):
         )
         assert mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME)
         assert mla.addVMPermissionsToUser(True, config.USER_NAME2, VM_NAME)
-        assert networks.addNetworkToCluster(
+        assert networks.add_network_to_cluster(
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
 
@@ -555,7 +555,7 @@ class PositiveNetworkPermissions236406(NetworkingPossitive):
             True, VM_NAME, '', cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
         )
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
         assert mla.addPermissionsForVnicProfile(
@@ -565,7 +565,7 @@ class PositiveNetworkPermissions236406(NetworkingPossitive):
         assert mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME)
         assert mla.addVMPermissionsToUser(True, config.USER_NAME2, VM_NAME)
 
-        assert networks.addNetworkToCluster(
+        assert networks.add_network_to_cluster(
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
         assert vms.addNic(
@@ -594,7 +594,7 @@ class PositiveNetworkPermissions236408(NetworkingPossitive):
             storageDomainName=config.MASTER_STORAGE,
             size=config.GB, network=config.MGMT_BRIDGE
         )
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
         assert mla.addPermissionsForVnicProfile(
@@ -609,7 +609,7 @@ class PositiveNetworkPermissions236408(NetworkingPossitive):
         assert mla.addPermissionsForDataCenter(
             True, config.USER_NAME2, config.DC_NAME[0], role.TemplateOwner
         )
-        assert networks.addNetworkToCluster(
+        assert networks.add_network_to_cluster(
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
 
@@ -638,10 +638,10 @@ class PositiveNetworkPermissions236409(NetworkingPossitive):
     __test__ = True
 
     def setUp(self):
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
-        assert networks.addNetworkToCluster(
+        assert networks.add_network_to_cluster(
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
         assert mla.addPermissionsForVnicProfile(
@@ -708,7 +708,7 @@ class PositiveNetworkPermissions236577(NetworkingPossitive):
         """ RemoveNetwokFromDC """
         msg = "NetworkAdmin role wasn't removed after network %s was removed."
         loginAsUser(config.USER_NAME, filter_=False)
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
         assert networks.removeNetwork(
@@ -744,7 +744,7 @@ class PositiveNetworkPermissions236664(NetworkingPossitive):
     def test_customRole(self):
         """ Custom Role """
         loginAsUser(config.USER_NAME, filter_=False)
-        assert networks.addNetwork(
+        assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
         assert networks.updateNetwork(
@@ -809,7 +809,7 @@ class PositiveNetworkPermissions317133(NetworkingPossitive):
             config.CLUSTER_NAME[0],
             self.dc_name
         )
-        net = networks.findNetwork(
+        net = networks.find_network(
             config.MGMT_BRIDGE,
             data_center=self.dc_name,
             cluster=config.CLUSTER_NAME[0]
@@ -832,10 +832,10 @@ class PositiveNetworkPermissions320610(NetworkingPossitive):
     __test__ = True
 
     def setUp(self):
-        networks.addNetwork(
+        networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
         )
-        networks.addNetworkToCluster(
+        networks.add_network_to_cluster(
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
         networks.add_vnic_profile(
@@ -886,7 +886,7 @@ class PositiveNetworkPermissions317270(NetworkingPossitive):
     __test__ = True
 
     def setUp(self):
-        assert networks.addNetwork(
+        assert networks.add_network(
             True,
             name=config.NETWORK_NAME1,
             data_center=config.DC_NAME[0],

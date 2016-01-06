@@ -64,7 +64,7 @@ def _prepareClusterObject(**kwargs):
 
     cl = Cluster()
     if 'management_network' in kwargs:
-        net_obj = ll_networks.findNetwork(
+        net_obj = ll_networks.find_network(
             kwargs.get("management_network"),
             data_center=kwargs.get("data_center")
         )
