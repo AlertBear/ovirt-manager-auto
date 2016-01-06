@@ -126,11 +126,9 @@ class BaseClassEditDescription(BasicEnvironment):
 
     def setUp(self):
         """
-        Pass in all disk interfaces (including IDE) for the 2 basic sanity
-        cases
+        Pass in all disk interfaces for the 2 basic sanity cases
         """
-        disk_interfaces = (config.IDE, config.VIRTIO, config.VIRTIO_SCSI)
-        self.setup_with_disks(disk_interfaces)
+        self.setup_with_disks()
         self.original_descriptions = dict()
         self.updated_descriptions = dict()
 
