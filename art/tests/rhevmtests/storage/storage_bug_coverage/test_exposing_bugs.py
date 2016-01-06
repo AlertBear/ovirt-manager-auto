@@ -52,7 +52,7 @@ CLI_CMD_MV_REAL_DD_BACK = 'mv -f /usr/bin/dd.real /bin/dd'
 CLI_CMD_RM_FAKE_DD = 'rm -f /usr/bin/dd.fake'
 
 FILE_REMOVE_FAILURE = 'No such file or directory'
-CLI_CMD_GENERATE_BIG_FILE = 'dd if=/dev/urandom of=sample1.txt bs=64M count=32'
+CLI_CMD_GENERATE_BIG_FILE = 'fallocate -l 2G sample.txt'
 GENERATE_BIG_FILE_TIMEOUT = 60 * 5
 
 
@@ -69,7 +69,7 @@ def _create_vm(vm_name, vm_description="",
     return create_vm_or_clone(
         True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
         nic=config.NIC_NAME[0], storageDomainName=storage_domain,
-        size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
+        size=config.VM_DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
         volumeType=sparse, volumeFormat=volume_format,
         diskInterface=disk_interface, memory=GB, cpu_socket=config.CPU_SOCKET,
         cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,

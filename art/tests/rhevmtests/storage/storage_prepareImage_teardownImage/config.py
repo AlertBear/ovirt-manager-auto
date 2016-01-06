@@ -7,5 +7,3 @@ from rhevmtests.storage.config import *  # flake8: noqa
 
 # Name of the test
 TESTNAME = "storage_prepareImage_teardownImage"
-
-DISK_SIZE = 1 * GB

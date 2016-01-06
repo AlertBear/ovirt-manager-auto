@@ -38,7 +38,7 @@ def setup_package():
     assert vms.createVm(
         True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
         nic=config.NIC_NAME[0], storageDomainName=storage_domain_name,
-        size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
+        size=config.VM_DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
         volumeType=True, volumeFormat=config.COW_DISK,
         diskInterface=config.INTERFACE_VIRTIO, memory=config.GB,
         cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,

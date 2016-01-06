@@ -29,11 +29,17 @@ dc_api = test_utils.get_api('data_center', 'datacenters')
 
 vmArgs = {
     'vmDescription': 'storage_connections_description',
-    'diskInterface': config.VIRTIO, 'volumeFormat': config.COW_DISK,
+    'diskInterface': config.VIRTIO,
+    'volumeFormat': config.COW_DISK,
     'cluster': config.CLUSTER_ISCSI_CONNECTIONS,
-    'installation': True, 'size': config.DISK_SIZE, 'nic': config.NIC_NAME[0],
-    'useAgent': True, 'os_type': config.ENUMS['rhel6'], 'user': config.VM_USER,
-    'password': config.VM_PASSWORD, 'network': config.MGMT_BRIDGE,
+    'installation': True,
+    'size': config.VM_DISK_SIZE,
+    'nic': config.NIC_NAME[0],
+    'useAgent': True,
+    'os_type': config.ENUMS['rhel6'],
+    'user': config.VM_USER,
+    'password': config.VM_PASSWORD,
+    'network': config.MGMT_BRIDGE,
     'image': config.COBBLER_PROFILE,
 }
 

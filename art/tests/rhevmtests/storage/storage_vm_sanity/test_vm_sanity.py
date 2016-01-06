@@ -61,7 +61,7 @@ def _create_vm(vm_name, vm_description, disk_interface,
     return create_vm_or_clone(
         True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
         nic=config.NIC_NAME[0], storageDomainName=storage_domain,
-        size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
+        size=config.VM_DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
         volumeType=sparse, volumeFormat=volume_format,
         diskInterface=disk_interface, memory=GB,
         cpu_socket=config.CPU_SOCKET,

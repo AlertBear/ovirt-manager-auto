@@ -25,7 +25,7 @@ VM_ARGS = {
     'vmName': "",
     'vmDescription': "",
     'cluster': config.CLUSTER_NAME,
-    'size': config.DISK_SIZE,
+    'size': config.VM_DISK_SIZE,
     'nic': config.NIC_NAME[0],
     'image': config.COBBLER_PROFILE,
     'useAgent': True,

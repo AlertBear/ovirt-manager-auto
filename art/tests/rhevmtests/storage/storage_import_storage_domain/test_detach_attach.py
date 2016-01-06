@@ -46,8 +46,9 @@ vmArgs = {
     'positive': True, 'vmName': config.VM_NAME,
     'vmDescription': config.VM_NAME, 'diskInterface': config.VIRTIO,
     'volumeFormat': config.COW_DISK, 'cluster': config.CLUSTER_NAME,
-    'storageDomainName': None, 'installation': True, 'size': config.DISK_SIZE,
-    'nic': 'nic1', 'image': config.COBBLER_PROFILE, 'useAgent': True,
+    'storageDomainName': None, 'installation': True,
+    'size': config.VM_DISK_SIZE, 'nic': 'nic1',
+    'image': config.COBBLER_PROFILE, 'useAgent': True,
     'os_type': config.ENUMS['rhel6'], 'user': config.VM_USER,
     'password': config.VM_PASSWORD, 'network': config.MGMT_BRIDGE,
 }

@@ -22,10 +22,6 @@ import rhevmtests.storage.helpers as helpers
 
 logger = logging.getLogger(__name__)
 
-# This suite cointains tests that create multiple snapshots on multiple disks
-# Increase the size of the disks added to the vm
-DISK_SIZE = 2 * config.GB
-
 
 # If the test fails with error = low level Image copy failed, code = 261
 # re-open https://bugzilla.redhat.com/show_bug.cgi?id=1201268 and uncomment:
@@ -53,7 +49,7 @@ class BaseTestCase(TestCase):
         """
         Add disk with alias 'disk_alias' to vm
         """
-        assert addDisk(True, alias=disk_alias, size=DISK_SIZE,
+        assert addDisk(True, alias=disk_alias, size=config.DISK_SIZE,
                        storagedomain=self.storage_domain_0,
                        sparse=False, interface=config.VIRTIO_SCSI,
                        format=config.RAW_DISK)

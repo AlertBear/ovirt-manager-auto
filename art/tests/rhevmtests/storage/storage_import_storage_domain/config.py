@@ -9,7 +9,6 @@ from rhevmtests.storage.config import *  # flake8: noqa
 TESTNAME = "import_storage_domain"
 
 VM_NAME = "{0}_vm_%s".format(TESTNAME)
-DISK_SIZE = 5 * GB
 
 EXTEND_LUN = None
 

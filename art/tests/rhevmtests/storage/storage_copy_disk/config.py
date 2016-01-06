@@ -9,4 +9,3 @@ from rhevmtests.storage.config import *  # flake8: noqa
 TESTNAME = "copy_disk"
 
 VM_NAME = TESTNAME + "_vm_%s"
-DISK_SIZE = 1 * GB

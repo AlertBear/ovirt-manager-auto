@@ -7,10 +7,6 @@ from rhevmtests.storage.config import *  # flake8: noqa
 TESTNAME = "live_storage_migration"
 VM_COUNT = 2
 VM_NAME = TESTNAME + "_%s"
-
-VM_DISK_SIZE = 10 * GB
-DISK_SIZE = GB
-
 MIGRATE_SAME_TYPE = None
 
 # TODO: remove this

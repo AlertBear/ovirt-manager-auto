@@ -22,7 +22,6 @@ VM_IP_ADDRESSES = dict()
 BASE_SNAP_DESC = "base_snap"  # Base snapshot description
 SNAPSHOT_TEMPLATE_DESC = 'snap_%s'
 RESTORED_VM = "restored_vm"
-VM_DISK_SIZE = 6 * config.GB
 SHOULD_CREATE_SNAPSHOT = (True, False)
 TRANSIENT_DIR_PATH = "/var/lib/vdsm/transient"
 DD_COMMAND = 'dd if=/dev/%s of=/dev/%s bs=1M oflag=direct'
@@ -34,7 +33,7 @@ vm_args = {
     'cluster': config.CLUSTER_NAME,
     'nic': config.NIC_NAME[0],
     'nicType': config.NIC_TYPE_VIRTIO,
-    'size': VM_DISK_SIZE,
+    'size': config.VM_DISK_SIZE,
     'diskInterface': config.INTERFACE_VIRTIO,
     'volumeFormat': config.DISK_FORMAT_COW,
     'volumeType': True,  # sparse

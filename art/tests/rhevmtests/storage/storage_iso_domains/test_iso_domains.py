@@ -51,7 +51,7 @@ def create_vm(vm_name, master_domain):
     return ll_vms.createVm(
         True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
         storageDomainName=master_domain,
-        size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
+        size=config.VM_DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
         volumeType=True, volumeFormat=config.DISK_FORMAT_COW,
         diskInterface=config.INTERFACE_VIRTIO_SCSI, memory=config.GB,
         cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,

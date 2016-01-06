@@ -33,7 +33,6 @@ DISK_TIMEOUT = 250
 CREATION_DISKS_TIMEOUT = 600
 REMOVE_SNAPSHOT_TIMEOUT = 25 * 60
 DD_TIMEOUT = 60 * 6
-DISK_SIZE = 3 * config.GB
 DD_EXEC = '/bin/dd'
 DD_COMMAND = '{0} bs=1M count=%d if=%s of=%s'.format(DD_EXEC)
 DEFAULT_DD_SIZE = 20 * config.MB
@@ -339,14 +338,14 @@ def create_vm_or_clone(positive, vmName, vmDescription, cluster, **kwargs):
     if config.GOLDEN_ENV and installation:
         storage_domains = ll_sd.get_storagedomain_names()
         if config.GLANCE_DOMAIN in storage_domains and (
-            config.GLANCE_IMAGE_COW in (
+            config.GOLDEN_GLANCE_IMAGE in (
                 ll_sd.get_storage_domain_images(config.GLANCE_DOMAIN)
             )
         ):
             kwargs['cluster'] = cluster
             kwargs['vmName'] = vmName
             kwargs['vmDescription'] = vmDescription
-            glance_image = config.GLANCE_IMAGE_COW
+            glance_image = config.GOLDEN_GLANCE_IMAGE
             if vol_allocation_policy == 'false':
                 glance_image = config.GLANCE_IMAGE_RAW
 
@@ -616,7 +615,7 @@ def get_disks_volume_count(
 
 
 def add_new_disk(
-        sd_name, permutation, sd_type, shared=False, disk_size=DISK_SIZE
+        sd_name, permutation, sd_type, shared=False, disk_size=config.DISK_SIZE
 ):
     """
     Add a new disk
@@ -633,7 +632,7 @@ def add_new_disk(
     :type sd_type: str
     :param shared: True if the disk should be shared
     :type shared: bool
-    :param disk_size: disk size (default is 3GB)
+    :param disk_size: disk size (default is 1GB)
     :type disk_size: int
     :returns: disk's alias
     :rtype: str
@@ -668,7 +667,7 @@ def add_new_disk(
 
 
 def start_creating_disks_for_test(
-        shared=False, sd_name=None, sd_type=None, disk_size=DISK_SIZE
+        shared=False, sd_name=None, sd_type=None, disk_size=config.DISK_SIZE
 ):
     """
     Begins asynchronous creation of disks from all permutations of disk

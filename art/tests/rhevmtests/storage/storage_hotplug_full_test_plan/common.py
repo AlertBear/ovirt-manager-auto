@@ -16,53 +16,6 @@ __test__ = False
 logger = logging.getLogger(__name__)
 
 
-def start_creating_disks_for_test(storage_domain, wipe_after_delete, sd_type):
-    """
-    Begins asynchronous creation of disks of all permutations of disk
-    interfaces, shareable/non-shareable for each storage type
-    Parameters:
-        * storage_domain: name of the storage domain where the disks will be
-            created
-        * wipe_after_delete: Boolean if wipe_after_delete should be activated
-        * sd_type: storage type of the domain where the disks will be created
-    Returns: list of tuples with (disk_alias, Future object)
-    """
-    logger.info("Creating all disks for plugging/unplugging")
-    disk_args = {
-        # Fixed arguments
-        'positive': True,
-        'provisioned_size': 2 * config.GB,
-        'wipe_after_delete': wipe_after_delete,
-        'storagedomain': storage_domain,
-        'bootable': False,
-        # Custom arguments - change for each disk
-        'interface': None,
-        'shareable': None,
-        'alias': None,
-        'format': None,
-        'sparse': None
-    }
-    results = []
-    with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-        for disk_interface in config.DISK_INTERFACES:
-            for shareable in (True, False):
-                # Gluster doesn't support shareable disks
-                if shareable and sd_type == config.STORAGE_TYPE_GLUSTER:
-                    continue
-                disk_args['alias'] = config.DISK_NAME_FORMAT % (
-                    disk_interface,
-                    'shareable' if shareable else 'non-shareable',
-                    sd_type)
-                disk_args['interface'] = disk_interface
-                disk_args['shareable'] = shareable
-                disk_args['format'] = 'raw' if shareable else 'cow'
-                disk_args['sparse'] = not shareable
-                results.append((
-                    disk_args['alias'],
-                    executor.submit(disks.addDisk, **disk_args)))
-    return results
-
-
 def create_vm_and_template(cobbler_image, storage_domain, storage_type):
     """
     Creates and installs a VM from the cobbler_image provided by foreman

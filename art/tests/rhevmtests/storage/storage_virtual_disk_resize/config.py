@@ -13,8 +13,4 @@ BASE_SNAPSHOT = 'clean_os_base_snapshot'
 
 # allocation policies
 SPARSE = True
-
-DISK_SIZE = GB
-VM_DISK_SIZE = 6 * GB
-
 VM_NAME = TESTNAME

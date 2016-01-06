@@ -68,22 +68,23 @@ disk_args = {
     'alias': "%s_disk"}
 
 
-vmArgs = {'positive': True,
-          'vmDescription': config.VM_NAME,
-          'diskInterface': config.VIRTIO,
-          'volumeFormat': config.COW_DISK,
-          'cluster': config.CLUSTER_NAME,
-          'storageDomainName': None,
-          'installation': True,
-          'size': config.VM_DISK_SIZE,
-          'nic': config.NIC_NAME[0],
-          'image': config.COBBLER_PROFILE,
-          'useAgent': True,
-          'os_type': config.OS_TYPE,
-          'user': config.VMS_LINUX_USER,
-          'password': config.VMS_LINUX_PW,
-          'network': config.MGMT_BRIDGE
-          }
+vmArgs = {
+    'positive': True,
+    'vmDescription': config.VM_NAME,
+    'diskInterface': config.VIRTIO,
+    'volumeFormat': config.COW_DISK,
+    'cluster': config.CLUSTER_NAME,
+    'storageDomainName': None,
+    'installation': True,
+    'size': config.VM_DISK_SIZE,
+    'nic': config.NIC_NAME[0],
+    'image': config.COBBLER_PROFILE,
+    'useAgent': True,
+    'os_type': config.OS_TYPE,
+    'user': config.VMS_LINUX_USER,
+    'password': config.VMS_LINUX_PW,
+    'network': config.MGMT_BRIDGE
+}
 VMS_NAMES = []
 
 

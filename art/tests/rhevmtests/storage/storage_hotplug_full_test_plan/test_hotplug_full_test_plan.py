@@ -5,6 +5,7 @@ import config
 import helpers
 import common
 import logging
+import rhevmtests.storage.helpers as storage_helpers
 from concurrent.futures import ThreadPoolExecutor
 import time
 from art.test_handler.tools import polarion  # pylint: disable=E0611
@@ -53,30 +54,19 @@ def setup_module():
     for storage_type in config.STORAGE_SELECTOR:
         storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, storage_type)[0]
-        block = storage_type in config.BLOCK_TYPES
 
         VM_NAMES.append(
             helpers.create_vm_with_disks(storage_domain, storage_type))
 
-        disks_tuple = common.start_creating_disks_for_test(
-            storage_domain, block, storage_type)
-
-        DISK_NAMES[storage_type] = [disk[0] for disk in disks_tuple]
-        disk_results = [disk[1] for disk in disks_tuple]
+        disk_names = storage_helpers.start_creating_disks_for_test(
+            sd_name=storage_domain, sd_type=storage_type
+        )
+        DISK_NAMES[storage_type] = disk_names
 
         TEMPLATE_NAMES.append(
             common.create_vm_and_template(
                 config.COBBLER_PROFILE, storage_domain, storage_type))
 
-        LOGGER.info("Ensuring all disks were created successfully")
-        for result in disk_results:
-            exception = result.exception()
-            if exception is not None:
-                raise exception
-            status, diskIdDict = result.result()
-            if not status:
-                raise exceptions.DiskException("Unable to create disk")
-        LOGGER.info("All disks created successfully")
         LOGGER.info("Waiting for vms to be installed and templates "
                     "to be created")
 

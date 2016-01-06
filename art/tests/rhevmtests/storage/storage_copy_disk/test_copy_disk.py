@@ -41,7 +41,7 @@ vm_args = {
     'cluster': config.CLUSTER_NAME,
     'storageDomainName': None,
     'installation': True,
-    'size': config.DISK_SIZE,
+    'size': config.VM_DISK_SIZE,
     'nic': config.NIC_NAME[0],
     'useAgent': True,
     'os_type': config.ENUMS['rhel6'],

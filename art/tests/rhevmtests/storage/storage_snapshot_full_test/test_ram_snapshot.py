@@ -42,7 +42,7 @@ vmArgs = {
     'volumeFormat': config.ENUMS['format_cow'],
     'cluster': config.CLUSTER_NAME,
     'installation': True,
-    'size': config.DISK_SIZE,
+    'size': config.VM_DISK_SIZE,
     'nic': config.NIC_NAME[0],
     'image': config.COBBLER_PROFILE,
     'useAgent': True,

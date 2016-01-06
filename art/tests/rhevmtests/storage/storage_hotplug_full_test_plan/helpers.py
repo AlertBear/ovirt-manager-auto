@@ -90,7 +90,7 @@ def create_vm_with_disks(storage_domain, storage_type):
     create_vm_or_clone(
         True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
         nic=config.NIC_NAME[0], storageDomainName=storage_domain,
-        size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
+        size=config.VM_DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
         volumeType=True, volumeFormat=config.DISK_FORMAT_COW,
         memory=config.GB, diskInterface=config.INTERFACE_VIRTIO,
         cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
