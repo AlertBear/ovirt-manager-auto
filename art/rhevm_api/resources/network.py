@@ -352,11 +352,8 @@ class Network(Service):
                 bridge['interfaces'].append(line[5:])
             else:
                 line = line.split()
-                bridge = {}
+                bridge = dict()
                 bridge['name'] = line[0]
-                # Exclude ;vdsmdummy; from the list
-                if bridge['name'] == ";vdsmdummy;":
-                    continue
                 bridge['id'] = line[1]
                 bridge['stp'] = line[2]
                 bridge['interfaces'] = []

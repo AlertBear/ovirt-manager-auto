@@ -311,6 +311,6 @@ def remove_bridges_from_hosts():
         bridges_list = host.network.list_bridges()
         for br in bridges_list:
             br_name = br["name"]
-            if br_name != management_network:
+            if br_name not in (management_network, ";vdsmdummy;"):
                 logger.info("Remove %s from %s", br_name, host.ip)
                 host.network.delete_bridge(bridge=br_name)
