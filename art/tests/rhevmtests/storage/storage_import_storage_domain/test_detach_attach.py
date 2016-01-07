@@ -1357,6 +1357,6 @@ class TestCase10951(BasicEnvironment):
         )
         wait_for_jobs([ENUMS['job_activate_storage_domain']])
         hl_sd.remove_storage_domain(
-            self.export_domain, self.datacenter, self.host, False, config.VDC,
+            self.export_domain, self.datacenter, self.host, True, config.VDC,
             config.VDC_PASSWORD
         )

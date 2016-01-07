@@ -1713,7 +1713,9 @@ class TestCase5975(BaseTestCase):
         """Remove the added storage domains"""
         super(TestCase5975, self).tearDown()
         for sd_name in [self.sd_src, self.sd_target]:
-            remove_storage_domain(sd_name, config.HOSTS[0], True)
+            remove_storage_domain(
+                sd_name, config.DATA_CENTER_NAME, config.HOSTS[0], True
+            )
             wait_for_tasks(config.VDC, config.VDC_PASSWORD,
                            config.DATA_CENTER_NAME)
 

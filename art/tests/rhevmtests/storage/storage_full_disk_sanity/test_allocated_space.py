@@ -358,7 +358,7 @@ class TestCase11546(BaseCase):
     def teardown_class(cls):
         """Remove the added storage domain"""
         hl_sd.remove_storage_domain(
-            cls.new_sd_name, config.DATA_CENTER_NAME, cls.spm_host
+            cls.new_sd_name, config.DATA_CENTER_NAME, cls.spm_host, True
         )
 
     def perform_action(self):

@@ -189,7 +189,7 @@ def _restore_empty_dc(datacenter=config.DATACENTER_ISCSI_CONNECTIONS):
         if non_master_sds:
             for sd in non_master_sds:
                 hl_sd.remove_storage_domain(
-                    sd, datacenter, config.HOST_FOR_MOUNT, 'True'
+                    sd, datacenter, config.HOST_FOR_MOUNT, True
                 )
         master_sd = master_sd['masterDomain']
         logger.info("Waiting for tasks before deactivating the storage domain")

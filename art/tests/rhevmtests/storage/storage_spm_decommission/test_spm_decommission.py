@@ -5,6 +5,7 @@ Storage/3_5_Storage_Pool_Metadata_Removal
 """
 import logging
 import time
+from art.rhevm_api.utils.test_utils import wait_for_tasks
 
 import config
 from art.rhevm_api.tests_lib.high_level import (
@@ -292,8 +293,11 @@ class UpgradeBaseClass(StorageTest):
             ll_sd.deactivate_master_storage_domain(
                 True, self.data_center_name
             )
+        wait_for_tasks(
+            config.ENGINE, config.VDC_PASSWORD, self.data_center_name
+        )
         ll_dc.removeDataCenter(True, self.data_center_name)
-        ll_sd.remove_storage_domains(sds, self.host_1)
+        ll_sd.removeStorageDomains(True, sds, self.host_1)
         hl_hosts.move_host_to_another_cluster(self.host_1, config.CLUSTER_NAME)
         hl_hosts.move_host_to_another_cluster(self.host_2, config.CLUSTER_NAME)
         ll_clusters.removeCluster(True, self.cluster_name)
