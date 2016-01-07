@@ -61,6 +61,7 @@ DEPS = [
     'python-configobj >= 4.7.2',
     'pexpect',  # required by cli engine
     'winremote',  # required by windows tests
+    'python-rrmngmnt',
 ]
 if sys.version_info[0] == 2 and sys.version_info[1] < 7:
     DEPS.append('python-argparse')

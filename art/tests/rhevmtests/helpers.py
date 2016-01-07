@@ -6,10 +6,9 @@ rhevmtests helper functions
 """
 
 import logging
+from rrmngmnt import ssh
 from rhevmtests import config
-import art.rhevm_api.resources
-from art.rhevm_api.resources import ssh
-import art.rhevm_api.resources.user as users
+from art.rhevm_api.resources import User, Host
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.jobs as ll_jobs
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
@@ -179,9 +178,9 @@ def get_host_resource(ip, password, username=None):
     :return: Host with root user
     :rtype: Host
     """
-    host = art.rhevm_api.resources.Host(ip)
+    host = Host(ip)
     _user = username if username else config.VDC_ROOT_USER
-    host.users.append(users.User(_user, password))
+    host.users.append(User(_user, password))
     return host
 
 
@@ -201,7 +200,7 @@ def get_host_executor(ip, password, username=None, use_pkey=False):
     """
 
     _user = username if username else config.VDC_ROOT_USER
-    user = users.User(_user, password)
+    user = User(_user, password)
     return get_host_resource(
         ip, username, password
     ).executor(user, pkey=use_pkey)

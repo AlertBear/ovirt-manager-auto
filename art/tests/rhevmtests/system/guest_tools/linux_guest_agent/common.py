@@ -9,8 +9,7 @@ from art.rhevm_api.utils import test_utils
 
 from rhevmtests.system.guest_tools.linux_guest_agent import config
 
-from art.rhevm_api.resources.host import Host
-from art.rhevm_api.resources.user import RootUser
+from art.rhevm_api.resources import Host, RootUser
 
 VM_API = test_utils.get_api('vm', 'vms')
 HOST_API = test_utils.get_api('host', 'hosts')

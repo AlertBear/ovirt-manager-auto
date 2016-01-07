@@ -2,10 +2,10 @@
 import urllib2
 import contextlib
 import time
-from art.rhevm_api.resources.service import Service
-from art.rhevm_api.resources.db import Database
-from art.rhevm_api.resources.user import User
-from art.rhevm_api.resources.host import Host
+from rrmngmnt.service import Service
+from rrmngmnt.db import Database
+from rrmngmnt.user import User
+from rrmngmnt.host import Host
 
 
 DATABASE_CONFIG = "/etc/ovirt-engine/engine.conf.d/10-setup-database.conf"

@@ -2,8 +2,8 @@ import os
 import ast
 import shlex
 from repoze.lru import CacheMaker
-from art.rhevm_api.resources.host import Host
-from art.rhevm_api.resources.user import RootUser
+from rrmngmnt.host import Host
+from rrmngmnt.user import RootUser
 
 
 LIBVIRTD_PID_DIRECTORY = "/var/run/libvirt/qemu/"

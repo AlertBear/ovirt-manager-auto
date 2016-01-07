@@ -1,5 +1,4 @@
 from art.unittest_lib import CoreSystemTest as TestCase
-from art.rhevm_api.resources.filesystem import FileSystem
 from config import LOGGER
 
 
@@ -35,7 +34,7 @@ class ServiceTest(TestCase):
         :param machine: (Host object) host where service should run
         :param files: (list of strings) list containing paths to logs
         """
-        filesystem = FileSystem(machine)
+        filesystem = machine.fs
         for filename in files:
             LOGGER.info("Test if %s exists", filename)
             self.assertTrue(

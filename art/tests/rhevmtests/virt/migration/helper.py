@@ -15,7 +15,6 @@ from rhevmtests.networking import config
 from art.test_handler import exceptions
 from art.rhevm_api.utils import test_utils
 import art.rhevm_api.resources as resources
-import art.rhevm_api.resources.user as users
 import art.unittest_lib.network as lib_network
 from rhevmtests.virt import config as config_virt
 from art.rhevm_api.tests_lib.low_level import hosts
@@ -395,7 +394,7 @@ def copy_file_to_vm(vm_ip, source_file_path, destination_path):
     )
     try:
         host = resources.Host(vm_ip)
-        host.users.append(users.RootUser(config.VMS_LINUX_PW))
+        host.users.append(resources.RootUser(config.VMS_LINUX_PW))
         host.copy_to(
             config.ENGINE_HOST,
             test_handler.find_test_file(source_file_path),
