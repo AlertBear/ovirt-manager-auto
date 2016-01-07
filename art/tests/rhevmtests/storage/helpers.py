@@ -25,6 +25,10 @@ from utilities.machine import Machine, LINUX
 
 logger = logging.getLogger(__name__)
 
+SPM_TIMEOUT = 300
+SPM_SLEEP = 5
+FIND_SDS_TIMEOUT = 10
+SD_STATUS_OK_TIMEOUT = 15
 DISK_TIMEOUT = 250
 CREATION_DISKS_TIMEOUT = 600
 REMOVE_SNAPSHOT_TIMEOUT = 25 * 60
@@ -769,3 +773,53 @@ def prepare_disks_with_fs_for_vm(storage_domain, storage_type, vm_name):
         "Mount points for new disks: %s", mount_points
     )
     return disk_ids, mount_points
+
+
+def ensure_data_center_and_sd_are_active():
+    """
+    Wait for the Data center to become active, for an SPM host selection and
+    for at least one storage domain to become active
+    """
+    logger.info("Wait for the Data center to become active")
+    if not ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME):
+        raise exceptions.DataCenterException(
+            "The Data center was not up within 3 minutes, aborting test"
+        )
+
+    if not ll_hosts.waitForSPM(
+        config.DATA_CENTER_NAME, SPM_TIMEOUT, SPM_SLEEP
+    ):
+        raise exceptions.StorageDomainException(
+            "SPM host was not elected within 5 minutes, aborting test"
+        )
+
+    logger.info(
+        "Waiting up to %s seconds for at least one sd of type %s to show up",
+        FIND_SDS_TIMEOUT, config.STORAGE_TYPE_NFS
+    )
+    storage_domains = False
+    for storage_domains in TimeoutingSampler(
+            timeout=FIND_SDS_TIMEOUT, sleep=1,
+            func=ll_sd.getStorageDomainNamesForType,
+            datacenter_name=config.DATA_CENTER_NAME,
+            storage_type=config.STORAGE_TYPE_NFS
+    ):
+        if storage_domains:
+            break
+    if not storage_domains:
+        raise exceptions.StorageDomainException(
+            "There were no NFS storage domains present in data center %s "
+            "within %s seconds" % (config.DATA_CENTER_NAME, FIND_SDS_TIMEOUT)
+        )
+
+    logger.info(
+        "Waiting up to %s seconds for sd %s to be active",
+        SD_STATUS_OK_TIMEOUT, storage_domains[0]
+    )
+    if not ll_sd.waitForStorageDomainStatus(
+            True, config.DATA_CENTER_NAME, storage_domains[0],
+            config.SD_ACTIVE, SD_STATUS_OK_TIMEOUT, 1):
+        raise exceptions.StorageDomainException(
+            "NFS domain '%s' has not reached %s state after %s seconds" %
+            (storage_domains[0], config.SD_ACTIVE, SD_STATUS_OK_TIMEOUT)
+        )

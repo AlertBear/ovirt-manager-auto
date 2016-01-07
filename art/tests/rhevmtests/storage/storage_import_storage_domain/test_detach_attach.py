@@ -197,6 +197,7 @@ def setup_module():
     )
     logger.info("Restarting ovirt-engine service")
     test_utils.restart_engine(config.ENGINE, 10, 300)
+    storage_helpers.ensure_data_center_and_sd_are_active()
 
 
 def teardown_module():
@@ -226,6 +227,8 @@ def teardown_module():
     except apis_exceptions.APITimeout:
         logger.error("Failed to restart engine service")
         exception_flag = True
+
+    storage_helpers.ensure_data_center_and_sd_are_active()
 
     for vm_names in VM_NAMES.values():
         ll_vms.safely_remove_vms(vm_names)

@@ -114,10 +114,10 @@ class EnvironmentWithTwoHosts(TestCase):
         """
         Make sure there are only two active hosts for the given cluster
         """
-        # TODO: wait for all tasks in host to finish.
-        # This should be done when we have an approach to handling
-        # spm async tasks
         cls.hosts = []
+        test_utils.wait_for_tasks(
+            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+        )
         for host in config.HOSTS:
             if hosts.getHostCluster(host) == config.CLUSTER_NAME:
                 if hosts.isHostUp(True, host):

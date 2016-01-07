@@ -10,6 +10,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.hosts as hosts
 import art.rhevm_api.tests_lib.high_level.storagedomains as hl_sd
 
+DISK_SIZE = 2 * config.GB
 logger = logging.getLogger(__name__)
 
 
@@ -84,7 +85,7 @@ def add_disk_to_sd(disk_name, storagedomain, attach_to_vm=None):
 
     disk_args = {
         'alias': disk_name,
-        'size': config.DISK_SIZE,
+        'size': DISK_SIZE,
         'interface': config.INTERFACE_IDE,
         'format': config.DISK_FORMAT_COW,
         'sparse': True,

@@ -4,21 +4,15 @@ from threading import Thread
 from time import sleep
 
 import config
-from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.resources import storage as storage_resources
 from art.rhevm_api.tests_lib.low_level import (
-    datacenters, disks, hosts, storagedomains,
+    disks, storagedomains,
 )
 from art.rhevm_api.utils import log_listener
-from art.test_handler import exceptions
 from utilities.machine import LINUX, Machine
 
 logger = logging.getLogger(__name__)
 
-FIND_SDS_TIMEOUT = 10
-SD_STATUS_OK_TIMEOUT = 15
-SPM_TIMEOUT = 300
-SPM_SLEEP = 5
 OVF_STORE_DISK_NAME = "OVF_STORE"
 FILE_OVF_STORE_PATH = 'ls /rhev/data-center/%s/%s/images/%s'
 ACTIVATE_BLOCK_VOLUME = 'lvchange -ay /dev/%s/%s'
@@ -289,50 +283,3 @@ def machine_to_use(host_ip):
     return Machine(
         host=host_ip, user=config.HOSTS_USER, password=config.HOSTS_PW
     ).util(LINUX)
-
-
-def ensure_data_center_and_sd_are_active():
-    """
-    Wait for the Data center to become active, for an SPM host selection and
-    for at least one storage domain to become active
-    """
-    logger.info("Wait for the Data center to become active")
-    if not datacenters.waitForDataCenterState(config.DATA_CENTER_NAME):
-        raise exceptions.DataCenterException(
-            "The Data center was not up within 3 minutes, aborting test"
-        )
-
-    if not hosts.waitForSPM(config.DATA_CENTER_NAME, SPM_TIMEOUT, SPM_SLEEP):
-        raise exceptions.StorageDomainException(
-            "SPM host was not elected within 5 minutes, aborting test"
-        )
-
-    logger.info(
-        "Waiting up to %s seconds for at least one sd of type %s to show up",
-        FIND_SDS_TIMEOUT, config.STORAGE_TYPE_NFS
-    )
-    for storage_domains in TimeoutingSampler(
-            timeout=FIND_SDS_TIMEOUT, sleep=1,
-            func=storagedomains.getStorageDomainNamesForType,
-            datacenter_name=config.DATA_CENTER_NAME,
-            storage_type=config.STORAGE_TYPE_NFS
-    ):
-        if storage_domains:
-            break
-    if not storage_domains:
-        raise exceptions.StorageDomainException(
-            "There were no iSCSI storage domains present in data center %s "
-            "within 10 seconds" % config.DATA_CENTER_NAME
-        )
-
-    logger.info(
-        "Waiting up to %s seconds for sd %s to be active",
-        SD_STATUS_OK_TIMEOUT, storage_domains[0]
-    )
-    if not storagedomains.waitForStorageDomainStatus(
-            True, config.DATA_CENTER_NAME, storage_domains[0],
-            config.SD_ACTIVE, SD_STATUS_OK_TIMEOUT, 1):
-        raise exceptions.StorageDomainException(
-            "iSCSI domain '%s' has not reached %s state after 15 seconds" %
-            (storage_domains[0], config.SD_ACTIVE)
-        )
