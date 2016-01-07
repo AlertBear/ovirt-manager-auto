@@ -297,7 +297,7 @@ class CreateDC(TestCase):
                 state=ENUMS['vm_state_down']
             )
 
-    def _clone_vm(self, vm_description, cloned_vms, cl_name):
+    def _clone_vm(self, vm_description, cloned_vms, cl_name, destination_sd):
         suffix_num = 0
         vm_prefix = vm_description['name']
         if 'number_of_vms' in vm_description:
@@ -318,7 +318,8 @@ class CreateDC(TestCase):
                 vm_description['name'],
                 vm_description['clone_from'],
                 cl_name,
-                wait=True
+                wait=True,
+                storagedomain=destination_sd
             )
             ll_vms.updateVmDisk(
                 positive=True, vm=vm_description['name'],
@@ -368,7 +369,9 @@ class CreateDC(TestCase):
                 cl_name,
                 vol_sparse=vm_description['disk_sparse'],
                 vol_format=vm_description['disk_format'],
-                wait=False)
+                wait=False,
+                storagedomain=vm_description['storage_domain']
+            )
 
             cloned_vms.append(vm_description['name'])
 
@@ -387,7 +390,12 @@ class CreateDC(TestCase):
             cloned_vms = []
 
             if 'clone_from' in vm_description:
-                self._clone_vm(vm_description, cloned_vms, cl_name)
+                self._clone_vm(
+                    vm_description,
+                    cloned_vms,
+                    cl_name,
+                    vm_description['storage_domain']
+                )
             elif 'number_of_vms' in vm_description:
                 self._add_multiple_vms_from_template(
                     vm_description,
