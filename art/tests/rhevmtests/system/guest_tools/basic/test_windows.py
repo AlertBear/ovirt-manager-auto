@@ -584,11 +584,6 @@ class Windows8_1_64bit(WindowsDesktop):
         'test_guest_timezone': 'RHEVM3-14419',
         'test_guest_os': 'RHEVM3-14420',
     }
-    bz_map = {
-        'test_guest_os': {
-            '1279980': {'engine': None, 'version': ['3.5', '3.6']}
-        },
-    }
 
 
 class Windows8_1_32b(WindowsDesktop):
@@ -634,11 +629,6 @@ class Windows8_1_32b(WindowsDesktop):
         'test_guest_info': 'RHEVM3-14410',
         'test_guest_timezone': 'RHEVM3-14411',
         'test_guest_os': 'RHEVM3-14412',
-    }
-    bz_map = {
-        'test_guest_os': {
-            '1279980': {'engine': None, 'version': ['3.5', '3.6']}
-        },
     }
 
 
@@ -817,11 +807,6 @@ class Windows2012R2_64b(WindowsServer):
         'test_guest_timezone': 'RHEVM3-14407',
         'test_guest_os': 'RHEVM3-14408',
     }
-    bz_map = {
-        'test_guest_os': {
-            '1279980': {'engine': None, 'version': ['3.5', '3.6']}
-        },
-    }
     UNSUPPORTED = WindowsServer.UNSUPPORTED + ['test_driver_qxl_gpu']
 
 
@@ -863,11 +848,6 @@ class Windows10_64b(WindowsDesktop):
         'test_guest_info': 'RHEVM3-14414',
         'test_guest_timezone': 'RHEVM3-14415',
         'test_guest_os': 'RHEVM3-14416',
-    }
-    bz_map = {
-        'test_guest_os': {
-            '1279980': {'engine': None, 'version': ['3.5', '3.6']}
-        },
     }
     UNSUPPORTED = WindowsDesktop.UNSUPPORTED + [
         'test_driver_qxl_gpu',
