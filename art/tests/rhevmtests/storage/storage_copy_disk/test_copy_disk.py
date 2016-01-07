@@ -98,6 +98,7 @@ def teardown_module():
     Remove vm
     """
     ll_vms.safely_remove_vms(VM_NAMES.values())
+    ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
 
 
 class BasicEnvironment(BaseTestCase):
@@ -498,6 +499,7 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
         self.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
         self.check_file_existence(self.test_vm_name)
 
+    @attr(tier=2)
     @polarion("RHEVM3-11248")
     def test_same_domain_different_alias(self):
         """
@@ -507,6 +509,7 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
         self.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
         self.check_file_existence(self.test_vm_name)
 
+    @attr(tier=2)
     @polarion("RHEVM3-11242")
     def test_different_domain_same_alias(self):
         """
@@ -516,6 +519,7 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
         self.attach_new_disks_to_vm(self.test_vm_name, self.new_disks)
         self.check_file_existence(self.test_vm_name)
 
+    @attr(tier=2)
     @polarion("RHEVM3-11247")
     def test_different_domain_different_alias(self):
         """
@@ -542,6 +546,7 @@ class TestCaseCopyFloatingDisk(CopyDiskWithoutContent):
         """
         self.basic_copy()
 
+    @attr(tier=2)
     @polarion("RHEVM3-11254")
     def test_same_domain_different_alias(self):
         """
@@ -549,6 +554,7 @@ class TestCaseCopyFloatingDisk(CopyDiskWithoutContent):
         """
         self.basic_copy(new_alias=self.new_alias)
 
+    @attr(tier=2)
     @polarion("RHEVM3-11251")
     def test_different_domain_same_alias(self):
         """
@@ -556,6 +562,7 @@ class TestCaseCopyFloatingDisk(CopyDiskWithoutContent):
         """
         self.basic_copy(same_domain=False)
 
+    @attr(tier=2)
     @polarion("RHEVM3-11253")
     def test_different_domain_different_alias(self):
         """
