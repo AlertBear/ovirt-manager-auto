@@ -19,7 +19,6 @@
 
 import re
 import logging
-from art import unittest_lib
 import art.core_api as core_api
 import art.test_handler.settings as test_settings
 import art.test_handler.exceptions as test_exceptions
@@ -477,7 +476,7 @@ def remove_all_networks(datacenter=None, cluster=None, mgmt_network=None):
         None
     )
     mgmt_networks_ids = (
-        unittest_lib.network.get_clusters_managements_networks_ids(
+        get_clusters_managements_networks_ids(
             cluster=[cluster_obj] if cluster else None
         )
     )
@@ -784,3 +783,22 @@ def convert_old_sn_dict_to_new_api_dict(
         }
     }
     return new_dict
+
+
+def get_clusters_managements_networks_ids(cluster=None):
+    """
+    Get clusters managements networks IDs for all clusters in the engine if
+    not cluster else get only for the given cluster
+
+    :param cluster: Cluster name
+    :type cluster: list
+    :return: managements networks ids
+    :rtype: list
+    """
+    clusters = (
+        ll_clusters.CLUSTER_API.get(absLink=False) if not cluster else cluster
+    )
+    return [
+        ll_networks.get_management_network(cluster_name=cl.name).id
+        for cl in clusters
+        ]
