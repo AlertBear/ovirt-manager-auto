@@ -11,6 +11,7 @@ from rhevmtests import networking
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as net_help
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 logger = logging.getLogger("Port_Mirroring_Init")
@@ -24,10 +25,6 @@ def setup_package():
     helper.create_networks_pm()
     helper.create_vnic_profiles_with_pm()
 
-    for vmName in conf.VM_NAME[:conf.NUM_VMS]:
-        logger.info("sealing %s", vmName)
-        helper.ge_seal_vm(vm=vmName)
-
     logger.info(
         "Setting %s with profile %s on %s", conf.NIC_NAME[0],
         conf.MGMT_BRIDGE + "_PM", conf.VM_NAME[0]
@@ -36,14 +33,19 @@ def setup_package():
         conf.VM_NAME[0], conf.NIC_NAME[0], conf.MGMT_BRIDGE
     )
 
-    for vmName in conf.VM_NAME[:conf.NUM_VMS]:
-        logger.info("Starting %s", vmName)
-        if not net_help.run_vm_once_specific_host(
-            vm=vmName, host=conf.HOSTS[0], wait_for_ip=True
-        ):
-            raise conf.NET_EXCEPTION("Failed to start %s." % vmName)
+    vm_list = conf.VM_NAME[:conf.NUM_VMS]
+    hl_vms.start_vms_on_specific_host(
+        vm_list=vm_list, max_workers=len(vm_list), host=conf.HOSTS[0],
+        wait_for_ip=False, wait_for_status=conf.ENUMS['vm_state_up']
+    )
+
     helper.add_nics_to_vms()
     helper.configure_ip_all_vms()
+
+    logger.info("Stop iptables service on hosts")
+    for host in conf.VDS_HOSTS[:2]:
+        if not host.service(conf.FIREWALL_SRV).stop():
+            raise conf.NET_EXCEPTION("Cannot stop Firewall service")
 
 
 def teardown_package():

@@ -7,10 +7,10 @@ Utilities used by port_mirroring_test
 
 import logging
 from rhevmtests import helpers
-from art.rhevm_api.utils import test_utils
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as net_help
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
@@ -82,34 +82,6 @@ def return_vms_to_original_host():
                 logger.error("Failed to migrate vm %s", vm)
 
 
-def ge_seal_vm(vm):
-    """
-    Start VM, seal the VM and restart the VM
-    :param vm: VM IP
-    :type vm: str
-    :raise: conf.NET_EXCEPTION
-    """
-    logger.info("Sealing VM: %s", vm)
-    if not net_help.run_vm_once_specific_host(vm=vm, host=conf.HOSTS[0]):
-        raise conf.NET_EXCEPTION(
-            "Failed to start %s." % conf.VM_NAME[0]
-        )
-    logger.info("Waiting for IP from %s", vm)
-    rc, out = ll_vms.waitForIP(vm=vm, timeout=180, sleep=10)
-    if not rc:
-        raise conf.NET_EXCEPTION(
-            "Failed to get VM IP on mgmt network"
-        )
-    ip = out["ip"]
-    logger.info("Running setPersistentNetwork on %s", vm)
-    if not test_utils.setPersistentNetwork(ip, conf.VMS_LINUX_PW):
-        raise conf.NET_EXCEPTION("Failed to seal %s" % vm)
-
-    logger.info("Stopping %s", vm)
-    if not ll_vms.stopVm(positive=True, vm=vm):
-        raise conf.NET_EXCEPTION("Failed to stop %s" % vm)
-
-
 def check_traffic_during_icmp(
     src_ip, dst_ip, src_vm, listen_vm, nic
 ):
@@ -129,7 +101,10 @@ def check_traffic_during_icmp(
     :return: True if traffic was received while sending ICMP
     :rtype: bool
     """
-    listen_vm_obj = net_help.get_vm_resource(listen_vm)
+    listen_vm_obj = net_help.get_vm_resource(vm=listen_vm)
+    src_vm_obj = helpers.get_host_resource_with_root_user(
+        ip=src_vm, root_password=conf.VMS_LINUX_PW
+    )
     tcpdump_kwargs = {
         "host_obj": listen_vm_obj,
         "nic": nic,
@@ -140,16 +115,12 @@ def check_traffic_during_icmp(
     }
 
     icmp_kwargs = {
-        "host": src_vm,
-        "user": conf.VMS_LINUX_USER,
-        "password": conf.VMS_LINUX_PW,
-        "ip": dst_ip,
-        "count": 10,
-        "func_path": "art.rhevm_api.utils.test_utils"
+        "dst": dst_ip,
+        "count": "10",
     }
 
     return net_help.check_traffic_during_func_operation(
-        func_name="sendICMP", func_kwargs=icmp_kwargs,
+        func=src_vm_obj.network.send_icmp, func_kwargs=icmp_kwargs,
         tcpdump_kwargs=tcpdump_kwargs
     )
 
@@ -217,44 +188,31 @@ def configure_ip_all_vms():
     """
     logger.info("Configure IPs for each VM")
     for i, vm in enumerate(conf.VM_NAME[:conf.NUM_VMS]):
-        logger.info("Getting MGMT network IP for %s.", vm)
-        rc, out = ll_vms.waitForIP(vm=vm, timeout=180, sleep=10)
-
-        if not rc:
-            raise conf.NET_EXCEPTION(
-                "Failed to get VM IP on MGMT network"
-            )
-        local_mgmt_ip = out["ip"]
-        logger.info(
-            "Update the list of MGMT network IPs with %s from %s",
-            local_mgmt_ip, vm
-        )
+        logger.info("Getting management network IP for %s.", vm)
+        local_mgmt_ip = hl_vms.get_vm_ip(vm_name=vm, start_vm=False)
+        logger.info("%s: %s", vm, local_mgmt_ip)
         conf.MGMT_IPS.append(local_mgmt_ip)
         vm_resource = helpers.get_host_resource_with_root_user(
             ip=local_mgmt_ip, root_password=conf.VMS_LINUX_PW
         )
-        logger.info("Configure IPs on %s for nic1 and nic2", vm)
-        for nicIndex, ip in enumerate(
-            (conf.NET1_IPS[i], conf.NET2_IPS[i]), start=1
-        ):
+        vm_interfaces = vm_resource.network.all_interfaces()
+        interfaces = filter(lambda x: x != "eth0", vm_interfaces)
+
+        for inter, ip in zip(interfaces, [conf.NET1_IPS[i], conf.NET2_IPS[i]]):
+            logger.info("Configure IPs on %s for %s", vm, inter)
             params = {
                 "IPADDR": ip,
                 "BOOTPROTO": "static",
                 "NETMASK": "255.255.0.0"
             }
-            ifcfg_path = "/etc/sysconfig/network-scripts/"
             vm_resource.network.create_ifcfg_file(
-                nic="eth%s" % nicIndex, params=params, ifcfg_path=ifcfg_path
+                nic=inter, params=params, ifcfg_path=net_help.IFCFG_PATH
             )
         logger.info("Restarting network service on %s", vm)
         if not vm_resource.service("network").restart():
             raise conf.NET_EXCEPTION(
                 "Failed to restart network service on %s" % vm
             )
-    logger.info("Stop iptables service on hosts")
-    for host in conf.VDS_HOSTS[:2]:
-        if not host.service(conf.FIREWALL_SRV).stop():
-            raise conf.NET_EXCEPTION("Cannot stop Firewall service")
 
 
 def add_nics_to_vms():

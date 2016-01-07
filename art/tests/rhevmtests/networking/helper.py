@@ -477,13 +477,13 @@ def is_network_in_vds_caps(host_resource, network):
 
 
 def check_traffic_during_func_operation(
-    func_name, func_kwargs, tcpdump_kwargs
+    func, func_kwargs, tcpdump_kwargs
 ):
     """
-    Search for packets in tcpdump output during given func (func_name) action
+    Search for packets in tcpdump output during given func (func) action
 
-    :param func_name: Name of the function to run with tcpdump command
-    :type func_name: str
+    :param func: Function object to run with tcpdump command
+    :type func: function
     :param func_kwargs: Parameters of the function
     :type func_kwargs: dict
     :param tcpdump_kwargs: Parameters of the tcpdump function
@@ -493,37 +493,26 @@ def check_traffic_during_func_operation(
 
     :Example:
 
-    func_name="sendICMP"
-
-    icmp_kwargs = {
-        "host": src_vm,
-        "user": config.VMS_LINUX_USER,
-        "password": config.VMS_LINUX_PW,
-        "ip": dst_ip,
-        "func_path": "art.rhevm_api.utils.test_utils"
-    }
-
     tcpdump_kwargs = {
         "host_obj": listen_vm_obj,
         "nic": nic,
         "src": src_ip,
         "dst": dst_ip,
         "numPackets": 5,
-        "timeout": str(config.TIMEOUT)
+        "timeout": str(conf.TIMEOUT)
+    }
+
+    icmp_kwargs = {
+        "dst": dst_ip,
+        "count": "10",
     }
 
     net_help.check_traffic_during_func_operation(
-        func_name="sendICMP", func_kwargs=icmp_kwargs,
+        func=src_vm_resource.network.send_icmp, func_kwargs=icmp_kwargs,
         tcpdump_kwargs=tcpdump_kwargs
     )
     """
-
     tcpdump_job = jobs.Job(test_utils.run_tcp_dump, (), tcpdump_kwargs)
-    func_path = func_kwargs.pop("func_path")
-    imp_module = __import__(
-        func_path, globals(), locals(), [func_name], -1
-    )
-    func = getattr(imp_module, func_name)
     func_job = jobs.Job(func, (), func_kwargs)
     job_set = jobs.JobsSet()
     job_set.addJobs([tcpdump_job, func_job])
