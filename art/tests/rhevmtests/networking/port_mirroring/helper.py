@@ -195,8 +195,11 @@ def configure_ip_all_vms():
         vm_resource = helpers.get_host_resource_with_root_user(
             ip=local_mgmt_ip, root_password=conf.VMS_LINUX_PW
         )
-        vm_interfaces = vm_resource.network.all_interfaces()
-        interfaces = filter(lambda x: x != "eth0", vm_interfaces)
+        interfaces = net_help.get_vm_interfaces_list(
+            vm_resource, exclude_nics=[conf.VM_NICS[0]]
+        )
+        if not interfaces:
+            raise conf.NET_EXCEPTION("Failed to get interface from %s" % vm)
 
         for inter, ip in zip(interfaces, [conf.NET1_IPS[i], conf.NET2_IPS[i]]):
             logger.info("Configure IPs on %s for %s", vm, inter)
