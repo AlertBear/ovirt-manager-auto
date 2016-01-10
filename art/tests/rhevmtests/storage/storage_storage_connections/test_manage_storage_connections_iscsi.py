@@ -77,6 +77,9 @@ def setup_module():
         config.CONNECTIONS[1]['lun_address'] = addresses[1]
         config.CONNECTIONS[1]['lun_target'] = targets[1]
 
+        test_utils.wait_for_tasks(
+            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+        )
         assert storagedomains.removeStorageDomains(
             True, iscsi_sds, config.HOST_FOR_MOUNT, 'true'
         )
@@ -1193,6 +1196,10 @@ class TestCase5249(TestCase):
         sd_name_2_conn = storagedomains.getConnectionsForStorageDomain(
             sd_name_2
         )
+        logger.info(
+            "Connection of storage domain %s is: %s",
+            sd_name_2, sd_name_2_conn[0].id
+        )
         assert len(sd_name_2_conn) == 1
         assert storagedomains.removeStorageDomain(
             True, sd_name_2, config.HOST_FOR_MOUNT, 'true'
@@ -1211,6 +1218,13 @@ class TestCase5249(TestCase):
             lun=config.CONNECTIONS[0]['luns'][1],
             **(config.CONNECTIONS[0])
         )
+        sd_name_3_conn = storagedomains.getConnectionsForStorageDomain(
+            sd_name_3
+        )
+        logger.info(
+            "Connection of storage domain %s is: %s",
+            sd_name_3, sd_name_3_conn[0].id
+        )
         self.storage_domains.append(sd_name_3)
 
     def tearDown(self):
@@ -1221,5 +1235,8 @@ class TestCase5249(TestCase):
             storagedomains.removeStorageDomain(
                 True, storage_domain, config.HOST_FOR_MOUNT, 'true'
             )
-        storageconnections.remove_storage_connection(self.conn.id)
+        if self.conn.id in [
+            connection.id for connection in _get_all_storage_connections()
+        ]:
+            storageconnections.remove_storage_connection(self.conn.id)
         _logout_from_all_iscsi_targets()
