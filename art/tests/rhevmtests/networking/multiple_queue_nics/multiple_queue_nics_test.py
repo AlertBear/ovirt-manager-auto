@@ -6,7 +6,7 @@ import logging
 from art.rhevm_api.tests_lib.low_level.hosts import(
     get_host_ip_from_engine, get_host_name_from_engine
 )
-from art.rhevm_api.tests_lib.low_level.networks import updateVnicProfile
+from art.rhevm_api.tests_lib.low_level.networks import update_vnic_profile
 from art.rhevm_api.tests_lib.low_level.templates import(
     createTemplate, removeTemplate
 )
@@ -55,7 +55,7 @@ class TestMultipleQueueNicsTearDown(TestCase):
         logger.info(
             "Remove custom properties on %s", config.MGMT_BRIDGE
         )
-        if not updateVnicProfile(
+        if not update_vnic_profile(
             name=config.MGMT_BRIDGE, network=config.MGMT_BRIDGE,
             data_center=config.DC_NAME[0], custom_properties="clear"
         ):
@@ -85,7 +85,7 @@ class TestMultipleQueueNics01(TestMultipleQueueNicsTearDown):
             "Update custom properties on %s to %s", config.MGMT_BRIDGE,
             config.PROP_QUEUES[0]
         )
-        if not updateVnicProfile(
+        if not update_vnic_profile(
             name=config.MGMT_BRIDGE, network=config.MGMT_BRIDGE,
             data_center=config.DC_NAME[0],
             custom_properties=config.PROP_QUEUES[0]
@@ -135,7 +135,7 @@ class TestMultipleQueueNics02(TestMultipleQueueNicsTearDown):
             "Update custom properties on %s to %s", config.MGMT_BRIDGE,
             config.PROP_QUEUES[0]
         )
-        if not updateVnicProfile(
+        if not update_vnic_profile(
             name=config.MGMT_BRIDGE, network=config.MGMT_BRIDGE,
             data_center=config.DC_NAME[0],
             custom_properties=config.PROP_QUEUES[0]
@@ -172,7 +172,7 @@ class TestMultipleQueueNics02(TestMultipleQueueNicsTearDown):
             "Update custom properties on %s to %s", config.MGMT_BRIDGE,
             config.PROP_QUEUES[1]
         )
-        if not updateVnicProfile(
+        if not update_vnic_profile(
             name=config.MGMT_BRIDGE, network=config.MGMT_BRIDGE,
             data_center=config.DC_NAME[0],
             custom_properties=config.PROP_QUEUES[1]
@@ -234,7 +234,7 @@ class TestMultipleQueueNics03(TestMultipleQueueNicsTearDown):
             "Update custom properties on %s to %s", config.MGMT_BRIDGE,
             config.PROP_QUEUES[0]
         )
-        if not updateVnicProfile(
+        if not update_vnic_profile(
             name=config.MGMT_BRIDGE, network=config.MGMT_BRIDGE,
             data_center=config.DC_NAME[0],
             custom_properties=config.PROP_QUEUES[0]
@@ -307,7 +307,7 @@ class TestMultipleQueueNics04(TestMultipleQueueNicsTearDown):
             "Update custom properties on %s to %s", config.MGMT_BRIDGE,
             config.PROP_QUEUES[0]
         )
-        if not updateVnicProfile(
+        if not update_vnic_profile(
             name=config.MGMT_BRIDGE, network=config.MGMT_BRIDGE,
             data_center=config.DC_NAME[0],
             custom_properties=config.PROP_QUEUES[0]
@@ -432,7 +432,7 @@ class TestMultipleQueueNics05(TestMultipleQueueNicsTearDown):
             "Update custom properties on %s to %s", config.MGMT_BRIDGE,
             config.PROP_QUEUES[0]
         )
-        if not updateVnicProfile(
+        if not update_vnic_profile(
             name=config.MGMT_BRIDGE, network=config.MGMT_BRIDGE,
             data_center=config.DC_NAME[0],
             custom_properties=config.PROP_QUEUES[0]

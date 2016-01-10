@@ -938,7 +938,7 @@ class TestSanity11(unittest_lib.NetworkTest):
             "Update custom properties on %s to %s", conf.MGMT_BRIDGE,
             cls.prop_queue
         )
-        if not ll_networks.updateVnicProfile(
+        if not ll_networks.update_vnic_profile(
             name=conf.MGMT_BRIDGE, network=conf.MGMT_BRIDGE,
             data_center=cls.dc, custom_properties=cls.prop_queue
         ):
@@ -972,7 +972,7 @@ class TestSanity11(unittest_lib.NetworkTest):
         Stop VM
         """
         logger.info("Remove custom properties on %s", conf.MGMT_BRIDGE)
-        if not ll_networks.updateVnicProfile(
+        if not ll_networks.update_vnic_profile(
             name=conf.MGMT_BRIDGE, network=conf.MGMT_BRIDGE,
             data_center=cls.dc, custom_properties="clear"
         ):
@@ -1324,7 +1324,7 @@ class TestSanity16(TestSanityCaseBase):
             }
         }
         helper.send_setup_networks(sn_dict=network_host_api_dict)
-        if not ll_networks.addVnicProfile(
+        if not ll_networks.add_vnic_profile(
             positive=True, name=cls.vnic_profile, data_center=cls.dc,
             network=cls.net, port_mirroring=True, description=cls.description
         ):

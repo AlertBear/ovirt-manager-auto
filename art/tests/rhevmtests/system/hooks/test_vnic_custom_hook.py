@@ -49,22 +49,22 @@ def setup_module():
         wait_for_ip=True,
         placement_host=config.HOSTS[0] if config.GOLDEN_ENV else None,
     )
-    assert networks.addVnicProfile(True, name=PROFILE_A,
-                                   cluster=config.CLUSTER_NAME[0],
-                                   network=config.MGMT_BRIDGE,
-                                   custom_properties=CUSTOM_PROPERTIES)
-    assert networks.addVnicProfile(True, name=PROFILE_B,
-                                   cluster=config.CLUSTER_NAME[0],
-                                   network=config.MGMT_BRIDGE,
-                                   custom_properties=CUSTOM_PROPERTIES2)
-    assert networks.addVnicProfile(False, name=PROFILE_BAD_A,
-                                   cluster=config.CLUSTER_NAME[0],
-                                   network=config.MGMT_BRIDGE,
-                                   custom_properties='test=250')
-    assert networks.addVnicProfile(False, name=PROFILE_BAD_B,
-                                   cluster=config.CLUSTER_NAME[0],
-                                   network=config.MGMT_BRIDGE,
-                                   custom_properties='speed=abc')
+    assert networks.add_vnic_profile(True, name=PROFILE_A,
+                                     cluster=config.CLUSTER_NAME[0],
+                                     network=config.MGMT_BRIDGE,
+                                     custom_properties=CUSTOM_PROPERTIES)
+    assert networks.add_vnic_profile(True, name=PROFILE_B,
+                                     cluster=config.CLUSTER_NAME[0],
+                                     network=config.MGMT_BRIDGE,
+                                     custom_properties=CUSTOM_PROPERTIES2)
+    assert networks.add_vnic_profile(False, name=PROFILE_BAD_A,
+                                     cluster=config.CLUSTER_NAME[0],
+                                     network=config.MGMT_BRIDGE,
+                                     custom_properties='test=250')
+    assert networks.add_vnic_profile(False, name=PROFILE_BAD_B,
+                                     cluster=config.CLUSTER_NAME[0],
+                                     network=config.MGMT_BRIDGE,
+                                     custom_properties='speed=abc')
     assert vms.addNic(True, vm=config.HOOKS_VM_NAME, name=UPDATE_NIC,
                       network=config.MGMT_BRIDGE, vnic_profile=PROFILE_A,
                       linked=True)

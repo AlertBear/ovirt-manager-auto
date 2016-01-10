@@ -445,9 +445,9 @@ class PositiveNetworkPermissions231832(NetworkingPossitive):
         assert networks.addNetwork(
             True, name=config.NETWORK_NAME2, data_center=config.DC_NAME[0]
         )
-        assert networks.updateVnicProfile(
-            config.NETWORK_NAME1,
-            config.NETWORK_NAME1,
+        assert networks.update_vnic_profile(
+            name=config.NETWORK_NAME1,
+            network=config.NETWORK_NAME1,
             cluster=config.CLUSTER_NAME[0],
             data_center=config.DC_NAME[0],
             port_mirroring=True
@@ -482,25 +482,27 @@ class PositiveNetworkPermissions231832(NetworkingPossitive):
     def test_portMirroring(self):
         """ Port mirroring """
         loginAsUser(userName=config.USER_NAME2)
-        assert not networks.updateVnicProfile(
-            config.NETWORK_NAME1, config.NETWORK_NAME1, port_mirroring=False,
-            cluster=config.CLUSTER_NAME[0], data_center=config.DC_NAME[0]
+        assert not networks.update_vnic_profile(
+            name=config.NETWORK_NAME1, network=config.NETWORK_NAME1,
+            port_mirroring=False, cluster=config.CLUSTER_NAME[0],
+            data_center=config.DC_NAME[0]
         )
-        assert not networks.updateVnicProfile(
-            config.NETWORK_NAME2, config.NETWORK_NAME2, port_mirroring=True,
-            cluster=config.CLUSTER_NAME[0], data_center=config.DC_NAME[0]
+        assert not networks.update_vnic_profile(
+            name=config.NETWORK_NAME2, network=config.NETWORK_NAME2,
+            port_mirroring=True, cluster=config.CLUSTER_NAME[0],
+            data_center=config.DC_NAME[0]
         )
         loginAsUser(config.USER_NAME, filter_=False)
-        assert networks.updateVnicProfile(
-            config.NETWORK_NAME1,
-            config.NETWORK_NAME1,
+        assert networks.update_vnic_profile(
+            name=config.NETWORK_NAME1,
+            network=config.NETWORK_NAME1,
             cluster=config.CLUSTER_NAME[0],
             data_center=config.DC_NAME[0],
             port_mirroring=False
         )
-        assert networks.updateVnicProfile(
-            config.NETWORK_NAME2,
-            config.NETWORK_NAME2,
+        assert networks.update_vnic_profile(
+            name=config.NETWORK_NAME2,
+            network=config.NETWORK_NAME2,
             cluster=config.CLUSTER_NAME[0],
             data_center=config.DC_NAME[0],
             port_mirroring=True
@@ -836,7 +838,7 @@ class PositiveNetworkPermissions320610(NetworkingPossitive):
         networks.addNetworkToCluster(
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
-        networks.addVnicProfile(
+        networks.add_vnic_profile(
             True, config.NETWORK_NAME2, cluster=config.CLUSTER_NAME[0],
             data_center=config.DC_NAME[0], network=config.NETWORK_NAME1
         )

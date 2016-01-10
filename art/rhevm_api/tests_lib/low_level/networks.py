@@ -343,23 +343,33 @@ def check_ip_rule(vds_resource, subnet):
     return len(re.findall(subnet.replace('.', '[.]'), out)) == 2
 
 
-def updateVnicProfile(name, network, cluster=None, data_center=None,
-                      new_name=None, port_mirroring=None, description=None,
-                      new_network=None, qos=None, custom_properties=None):
+def update_vnic_profile(name, network, **kwargs):
     """
     Description: Update VNIC profile with provided parameters in kwargs
-    :param name: name of VNIC profile to update
-    :param network: network name used by profile to be updated
-    :param cluster: name of cluster in which the network is located
-    :param data_center: name of the data center in which the network is located
-    :param new_name: new name for the VNIC profile
-    :param port_mirroring: Enable/Disable port mirroring for profile
-    :param description: New description of vnic profile
-    :param new_network: new network for VNIC profile (for negative case)
-    :param qos: QoS name
-    :param custom_properties: vNIC profile custom properties
+
+    :param name: Name of vnic profile
+    :type name: str
+    :param network: Network name used by profile to be updated
+    :type network: str
+    :param kwargs: kwargs for vnic profile
+        :param cluster: Name of cluster in which the network is located
+        :type cluster: str
+        :param data_center: Name of the data center in which the network is
+        located
+        :type data_center: str
+        :param port_mirroring: Enable or disable port mirroring for profile
+        :type port_mirroring: bool
+        :param custom_properties: Custom properties for the profile
+        :type custom_properties: str
+        :param description: Description of vnic profile
+        :type description: str
+        :param pass_through: Enable or disable pass through mode
+        :type pass_through: bool
     :return: True, if adding vnic profile was success, otherwise False
     """
+    kwargs["name"] = name
+    cluster = kwargs.get("cluster")
+    data_center = kwargs.get("data_center")
     vnic_profile_obj = getVnicProfileFromNetwork(
         network=network, vnic_profile=name, cluster=cluster,
         data_center=data_center
@@ -368,34 +378,9 @@ def updateVnicProfile(name, network, cluster=None, data_center=None,
         logger.error("Failed to get VNIC profile object")
         return False
 
-    new_vnic_profile_obj = vnic_profile_obj
+    new_vnic_profile_obj = _prepare_vnic_profile_object(kwargs=kwargs)
 
-    logger.info("Updating VNIC profile with new parameters")
-
-    if new_name:
-        new_vnic_profile_obj.set_name(new_name)
-
-    if port_mirroring is not None:
-        new_vnic_profile_obj.set_port_mirroring(port_mirroring)
-
-    if description:
-        new_vnic_profile_obj.set_description(description)
-
-    if new_network:
-        net_obj = getClusterNetwork(cluster, new_network)
-        new_vnic_profile_obj.set_network(net_obj)
-
-    if qos:
-        new_vnic_profile_obj.set_qos(qos)
-
-    if custom_properties:
-        from art.rhevm_api.tests_lib.low_level.vms import(
-            createCustomPropertiesFromArg
-        )
-        vnic_profile_obj.set_custom_properties(
-            createCustomPropertiesFromArg(custom_properties)
-        )
-
+    logger.info("Update %s profile", name)
     if not VNIC_PROFILE_API.update(
         vnic_profile_obj, new_vnic_profile_obj, True
     )[1]:
@@ -493,51 +478,36 @@ def getVnicProfileAttr(name, network, cluster=None, data_center=None,
 
 # noinspection PyUnusedLocal
 @is_action()
-def addVnicProfile(positive, name, cluster=None, data_center=None,
-                   network=None, port_mirroring=False,
-                   custom_properties=None,
-                   description=""):
+def add_vnic_profile(positive, name, **kwargs):
     """
-    Description: Add new vnic profile to network in cluster with cluster_name
-    **Author**: alukiano
-    **Parameters**:
-        *  *positive* - Expected result
-        *  *name* - name of vnic profile
-        *  *network* - Network name to be used by profile
-        *  *cluster* - name of cluster in which the network is located
-        *  *data_center* - name of the data center in which the network
-                           is located
-        *  *port_mirroring* - Enable port mirroring for profile
-        *  *custom_properties* - Custom properties for the profile
-        *  *description* - Description of vnic profile
-    **Return**: True, if adding vnic profile was success, otherwise False
+    Add new vnic profile to network in cluster with cluster_name
+
+    :param positive: Expected result
+    :type positive: bool
+    :param name: name of vnic profile
+    :type name: str
+    :param kwargs: kwargs for vnic profile
+        :param network: Network name to be used by created profile
+        :type network: str
+        :param cluster: Name of cluster in which the network is located
+        :type cluster: str
+        :param data_center: Name of the data center in which the network is
+        located
+        :type data_center: str
+        :param port_mirroring: Enable or disable port mirroring for profile
+        :type port_mirroring: bool
+        :param custom_properties: Custom properties for the profile
+        :type custom_properties: str
+        :param description: Description of vnic profile
+        :type description: str
+        :param pass_through: Enable or disable pass through mode
+        :type pass_through: bool
+    :return: True, if adding vnic profile was success, otherwise False
+    :rtype: bool
     """
-    vnic_profile_obj = apis_utils.data_st.VnicProfile()
-    network_obj = findNetwork(network, data_center, cluster)
-    logger.info("\n"
-                "Creating vnic profile:\n"
-                "                      name: %s\n"
-                "                      Network: %s\n"
-                "                      Port mirroring: %s\n"
-                "                      Custom properties: %s\n"
-                "                      Description: %s",
-                name, network, port_mirroring, custom_properties, description)
-    vnic_profile_obj.set_name(name)
-    vnic_profile_obj.set_network(network_obj)
-
-    if port_mirroring:
-        vnic_profile_obj.set_port_mirroring(port_mirroring)
-
-    if description:
-        vnic_profile_obj.set_description(description)
-
-    if custom_properties:
-        from art.rhevm_api.tests_lib.low_level.vms import (
-            createCustomPropertiesFromArg
-        )
-        vnic_profile_obj.set_custom_properties(
-            createCustomPropertiesFromArg(custom_properties))
-
+    kwargs["name"] = name
+    vnic_profile_obj = _prepare_vnic_profile_object(kwargs=kwargs)
+    logger.info("Create %s profile", name)
     if not VNIC_PROFILE_API.create(vnic_profile_obj, positive)[1]:
         logger.error("Creating %s profile failed", name)
         return False
@@ -1134,7 +1104,7 @@ def update_qos_on_vnic_profile(datacenter, qos_name, vnic_profile_name,
     qos = ll_datacenters.get_qos_from_datacenter(
         datacenter=datacenter, qos_name=qos_name
     )
-    return updateVnicProfile(
+    return update_vnic_profile(
         name=vnic_profile_name, network=network_name, cluster=cluster,
         data_center=datacenter, qos=qos
     )
@@ -1257,3 +1227,82 @@ def get_network_on_host_nic(host, nic):
     """
     return ll.general.get_object_name_by_id(
         NET_API, ll.hosts.getHostNic(host, nic).get_network().get_id())
+
+
+def _prepare_vnic_profile_object(kwargs):
+    """
+    Prepare vnic profile object for create or update
+
+    :param kwargs: kwargs for vnic profile
+        :param name: Name of vnic profile
+        :type name: str
+        :param network: Network name to be used by profile
+        :type network: str
+        :param cluster: Name of cluster in which the network is located
+        :type cluster: str
+        :param data_center: Name of the data center in which the network is
+        located
+        :type data_center: str
+        :param port_mirroring: Enable or disable port mirroring for profile
+        :type port_mirroring: bool
+        :param custom_properties: Custom properties for the profile
+        :type custom_properties: str
+        :param description: Description of vnic profile
+        :type description: str
+        :param pass_through: Enable or disable pass through mode
+        :type pass_through: bool
+    :return: vnic profile object
+    :rtype: VnicProfile
+    """
+    name = kwargs.get("name")
+    port_mirroring = kwargs.get("port_mirroring")
+    description = kwargs.get("description")
+    network = kwargs.get("network")
+    new_network = kwargs.get("new_network")
+    qos = kwargs.get("qos")
+    custom_properties = kwargs.get("custom_properties")
+    pass_through = kwargs.get("pass_through")
+    data_center = kwargs.get("data_center")
+    cluster = kwargs.get("cluster")
+
+    vnic_profile_obj = apis_utils.data_st.VnicProfile()
+
+    if name:
+        vnic_profile_obj.set_name(name)
+
+    if port_mirroring is not None:
+        vnic_profile_obj.set_port_mirroring(port_mirroring)
+
+    if description:
+        vnic_profile_obj.set_description(description)
+
+    if network:
+        net_obj = findNetwork(
+            network=network, data_center=data_center, cluster=cluster
+        )
+        vnic_profile_obj.set_network(net_obj)
+
+    if new_network:
+        new_net_obj = findNetwork(
+            network=new_network, data_center=data_center, cluster=cluster
+        )
+        vnic_profile_obj.set_network(new_net_obj)
+
+    if qos:
+        vnic_profile_obj.set_qos(qos)
+
+    if custom_properties:
+        from art.rhevm_api.tests_lib.low_level.vms import(
+            createCustomPropertiesFromArg
+        )
+        vnic_profile_obj.set_custom_properties(
+            createCustomPropertiesFromArg(custom_properties)
+        )
+
+    if pass_through is not None:
+        mode = "enabled" if pass_through else "disabled"
+        vp_pass_through = apis_utils.data_st.VnicPassThrough()
+        vp_pass_through.set_mode(mode)
+        vnic_profile_obj.set_pass_through(vp_pass_through)
+
+    return vnic_profile_obj

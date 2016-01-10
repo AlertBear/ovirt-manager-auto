@@ -466,7 +466,7 @@ class TestLinkedCase5(TestCase):
         Create 1 plugged/linked VNIC with port mirroring enabled
         on running VM
         """
-        if not ll_networks.addVnicProfile(
+        if not ll_networks.add_vnic_profile(
                 positive=True, name=config.VNIC_PROFILE[0],
                 cluster=config.CLUSTER_NAME[0],
                 network=config.VLAN_NETWORKS[0], port_mirroring=True
@@ -745,7 +745,7 @@ class TestLinkedCase7(TestCase):
         ):
             raise exceptions.NetworkException("Cannot add VNIC to VM")
 
-        if not ll_networks.addVnicProfile(
+        if not ll_networks.add_vnic_profile(
                 positive=True, name=config.VNIC_PROFILE[0],
                 cluster=config.CLUSTER_NAME[0],
                 network=config.VLAN_NETWORKS[1], port_mirroring=True

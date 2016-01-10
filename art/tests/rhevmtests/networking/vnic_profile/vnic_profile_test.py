@@ -23,8 +23,8 @@ from art.rhevm_api.tests_lib.high_level.networks import(
     createAndAttachNetworkSN, remove_net_from_setup
 )
 from art.rhevm_api.tests_lib.low_level.networks import(
-    updateNetwork, updateVnicProfile, getNetworkVnicProfiles,
-    getVnicProfileObj, addVnicProfile, removeVnicProfile, findVnicProfile,
+    updateNetwork, update_vnic_profile, getNetworkVnicProfiles,
+    getVnicProfileObj, add_vnic_profile, removeVnicProfile, findVnicProfile,
     getVnicProfileAttr, removeNetwork
 )
 from art.rhevm_api.tests_lib.low_level.vms import(
@@ -132,7 +132,7 @@ class TestVNICProfileCase02(TestCase):
             "Creating profile %s for network %s", config.NETWORKS[0],
             config.NETWORKS[1]
         )
-        if not addVnicProfile(
+        if not add_vnic_profile(
             positive=True, name=config.NETWORKS[0],
             data_center=config.DC_NAME[0], network=config.NETWORKS[1]
         ):
@@ -144,7 +144,7 @@ class TestVNICProfileCase02(TestCase):
             "Try to create profile with the same name for network %s"
             " Expected result is Fail", config.NETWORKS[1]
         )
-        if not addVnicProfile(
+        if not add_vnic_profile(
             positive=False, name=config.NETWORKS[0],
             data_center=config.DC_NAME[0], network=config.NETWORKS[1]
         ):
@@ -203,7 +203,7 @@ class TestVNICProfileCase03(TestCase):
             "Creating additional profile %s for network %s",
             config.NETWORKS[1], config.NETWORKS[0]
         )
-        if not addVnicProfile(
+        if not add_vnic_profile(
             positive=True, name=config.NETWORKS[1],
             data_center=config.DC_NAME[0], network=config.NETWORKS[0]
         ):
@@ -280,7 +280,7 @@ class TestVNICProfileCase04(TestCase):
             "Creating additional profile %s for network %s",
             config.NETWORKS[1], config.NETWORKS[0]
         )
-        if not addVnicProfile(
+        if not add_vnic_profile(
             positive=True, name=config.NETWORKS[1],
             data_center=config.DC_NAME[0], network=config.NETWORKS[0]
         ):
@@ -369,7 +369,7 @@ class TestVNICProfileCase05(TestCase):
             "Trying to create profile %s for non-VM network %s",
             config.NETWORKS[1], config.NETWORKS[0]
         )
-        if not addVnicProfile(
+        if not add_vnic_profile(
             positive=False, name=config.NETWORKS[1],
             data_center=config.DC_NAME[0], network=config.NETWORKS[0]
         ):
@@ -582,14 +582,14 @@ class TestVNICProfileCase08(TestCase):
         )
         name_net1 = "_".join([config.NETWORKS[1], "1"])
         name_net2 = "_".join([config.NETWORKS[1], "2"])
-        if not addVnicProfile(
+        if not add_vnic_profile(
             positive=True, name=name_net1, data_center=config.DC_NAME[0],
             network=config.NETWORKS[1]
         ):
             raise NetworkException(
                 "Couldn't create %s VNIC profile" % name_net1
             )
-        if not addVnicProfile(
+        if not add_vnic_profile(
             positive=True, name=name_net2, data_center=config.DC_NAME[0],
             network=config.NETWORKS[1], port_mirroring=True
         ):
@@ -864,7 +864,7 @@ class TestVNICProfileCase10(TestCase):
             "Update VNIC profile to have port mirroring enabled for %s",
             config.NETWORKS[1]
         )
-        if not updateVnicProfile(
+        if not update_vnic_profile(
             name=config.NETWORKS[1], network=config.NETWORKS[1],
             port_mirroring=True
         ):
@@ -891,7 +891,7 @@ class TestVNICProfileCase10(TestCase):
             "Trying to change VNIC profile attached to VM on nic2 to have "
             "port mirroring enabled"
         )
-        if updateVnicProfile(
+        if update_vnic_profile(
             name=config.NETWORKS[0], network=config.NETWORKS[0],
             port_mirroring=True
         ):
@@ -901,7 +901,7 @@ class TestVNICProfileCase10(TestCase):
             "Trying to change VNIC profile attached to VM on nic3 to have "
             "port mirroring disabled"
         )
-        if updateVnicProfile(
+        if update_vnic_profile(
             name=config.NETWORKS[1], network=config.NETWORKS[1],
             port_mirroring=False
         ):
@@ -971,14 +971,14 @@ class TestVNICProfileCase11(TestCase):
         )
         name_net1 = "_".join([config.NETWORKS[1], "1"])
         name_net2 = "_".join([config.NETWORKS[1], "2"])
-        if not addVnicProfile(
+        if not add_vnic_profile(
             positive=True, name=name_net1, data_center=config.DC_NAME[0],
             network=config.NETWORKS[1]
         ):
             raise NetworkException(
                 "Couldn't create %s VNIC profile" % name_net1
             )
-        if not addVnicProfile(
+        if not add_vnic_profile(
             positive=True, name=name_net2, data_center=config.DC_NAME[0],
             network=config.NETWORKS[1], port_mirroring=True
         ):
@@ -1152,7 +1152,7 @@ class TestVNICProfileCase12(TestCase):
             "Try updating profile %s with  another network %s",
             config.NETWORKS[0], config.NETWORKS[1]
         )
-        if updateVnicProfile(
+        if update_vnic_profile(
             name=config.NETWORKS[0], network=config.NETWORKS[0],
             cluster=config.CLUSTER_NAME[0], new_network=config.NETWORKS[1]
         ):
@@ -1359,7 +1359,7 @@ class TestVNICProfileCase15(TestCase):
             "Creating additional profile %s for network %s",
             config.NETWORKS[1], config.NETWORKS[0]
         )
-        if not addVnicProfile(
+        if not add_vnic_profile(
             positive=True, name=config.NETWORKS[1],
             data_center=config.DC_NAME[0], network=config.NETWORKS[0],
             port_mirroring=True, description="vnic_p_desc"

@@ -20,7 +20,6 @@ def setup_package():
     """
     Running cleanup and starting vm
     """
-
     networking.network_cleanup()
     logger.info(
         "Starting VM %s on host %s",
@@ -40,7 +39,6 @@ def teardown_package():
     """
     Stopping vm
     """
-
     logger.info("Stopping VM %s", config.VM_NAME[0])
     if not ll_vms.stopVm(True, vm=config.VM_NAME[0]):
         logger.error("Failed to stop VM: %s", config.VM_NAME[0])

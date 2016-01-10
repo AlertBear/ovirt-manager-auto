@@ -169,7 +169,7 @@ def create_vnic_profiles_with_pm():
         conf.MGMT_BRIDGE, conf.VLAN_NETWORKS[0]
     )
     for i, network in enumerate((conf.MGMT_BRIDGE, conf.VLAN_NETWORKS[0])):
-        if not ll_networks.addVnicProfile(
+        if not ll_networks.add_vnic_profile(
             positive=True, name=conf.PM_VNIC_PROFILE[i],
             cluster=conf.CLUSTER_NAME[0],
             network=network, port_mirroring=True

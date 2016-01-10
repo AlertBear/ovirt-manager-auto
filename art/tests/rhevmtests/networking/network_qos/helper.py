@@ -213,7 +213,7 @@ def add_qos_profile_to_nic(
     logger.info(
         "Add VNIC Profile %s for mgmt network", config.MGMT_BRIDGE
     )
-    if not ll_networks.addVnicProfile(
+    if not ll_networks.add_vnic_profile(
         positive=True, name=vnic_profile_name, data_center=config.DC_NAME,
         network=config.MGMT_BRIDGE
     ):
