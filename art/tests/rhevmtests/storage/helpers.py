@@ -4,7 +4,6 @@ Storage helper functions
 import logging
 import os
 import shlex
-
 from art.core_api.apis_utils import TimeoutingSampler
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (

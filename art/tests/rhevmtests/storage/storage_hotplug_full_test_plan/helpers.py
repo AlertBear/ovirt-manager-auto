@@ -31,6 +31,14 @@ UNATTACHED_DISKS_PER_STORAGE_TYPE = dict()
 TEXT = 'Hello World!'
 DISKS_WAIT_TIMEOUT = 300
 
+disk_args = {
+    'alias': None,
+    'storagedomain': None,
+    'interface': config.INTERFACE_VIRTIO,
+    'format': config.DISK_FORMAT_COW,
+    'size': config.DISK_SIZE
+}
+
 
 MAIN_HOOK_DIR = "/usr/libexec/vdsm/hooks/"
 ALL_AVAILABLE_HOOKS = [
@@ -75,7 +83,7 @@ ONE_PIXEL_FILE = (
 
 
 def create_vm_with_disks(storage_domain, storage_type):
-    """ creates a VM and installs system on it; then creates 10 disks and
+    """ creates a VM and installs system on it; then creates 5 disks and
         attaches them to the VM
         Parameters:
             * storage_domain: name of the storage domain
@@ -98,10 +106,11 @@ def create_vm_with_disks(storage_domain, storage_type):
         user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
         type=config.VM_TYPE_DESKTOP, installation=True, slim=True,
         image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
-        useAgent=config.USE_AGENT)
+        useAgent=config.USE_AGENT
+    )
 
     DISKS_TO_PLUG.update({storage_type: []})
-    for index in xrange(10):
+    for index in xrange(5):
         DISKS_TO_PLUG[storage_type].append(
             (
                 "disk_to_plug_%s_%s" % (storage_type, str(index))
@@ -115,16 +124,14 @@ def create_vm_with_disks(storage_domain, storage_type):
         DISKS_TO_PLUG[storage_type] +
         UNATTACHED_DISKS_PER_STORAGE_TYPE[storage_type]
     )
-    for disk_name in all_disks_to_add:
-        disks.addDisk(
-            True, alias=disk_name, size=config.GB,
-            storagedomain=storage_domain,
-            format=config.DISK_FORMAT_COW, interface=config.INTERFACE_VIRTIO)
+    with ThreadPoolExecutor(max_workers=len(all_disks_to_add)) as executor:
+        for disk_name in all_disks_to_add:
+            disk_args_copy = disk_args.copy()
+            disk_args_copy['alias'] = disk_name
+            disk_args_copy['storagedomain'] = storage_domain
+            executor.submit(disks.addDisk(True, **disk_args_copy))
 
-    disks.wait_for_disks_status(
-        all_disks_to_add,
-        timeout=DISKS_WAIT_TIMEOUT,
-    )
+    disks.wait_for_disks_status(all_disks_to_add, timeout=DISKS_WAIT_TIMEOUT)
     for disk_name in DISKS_TO_PLUG[storage_type]:
         disks.attachDisk(True, disk_name, vm_name, False)
 

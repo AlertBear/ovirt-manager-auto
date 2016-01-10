@@ -5,7 +5,6 @@ import config
 import helpers
 import common
 import logging
-import rhevmtests.storage.helpers as storage_helpers
 from concurrent.futures import ThreadPoolExecutor
 import time
 from art.test_handler.tools import polarion  # pylint: disable=E0611
@@ -14,7 +13,6 @@ from art.unittest_lib import StorageTest as TestCase
 from art.rhevm_api.utils import test_utils as utils
 import art.test_handler.exceptions as exceptions
 from art.rhevm_api.utils.test_utils import wait_for_tasks
-import art.rhevm_api.tests_lib.high_level.datacenters as datacenters
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainNamesForType,
 )
@@ -22,6 +20,7 @@ from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
 from art.rhevm_api.tests_lib.low_level import vms, disks, templates, hosts
 from art.rhevm_api.tests_lib.high_level.disks import delete_disks
 from art.test_handler.settings import opts
+from rhevmtests.storage import helpers as storage_helpers
 
 LOGGER = logging.getLogger(__name__)
 ENUMS = config.ENUMS
@@ -45,37 +44,42 @@ def setup_module():
     """
     global DISK_NAMES
     LOGGER.info("setup_module")
-    if not config.GOLDEN_ENV:
-        datacenters.build_setup(
-            config=config.PARAMETERS, storage=config.PARAMETERS,
-            storage_type=config.STORAGE_TYPE)
-
     helpers.create_local_files_with_hooks()
     for storage_type in config.STORAGE_SELECTOR:
         storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, storage_type)[0]
 
         VM_NAMES.append(
-            helpers.create_vm_with_disks(storage_domain, storage_type))
-
-        disk_names = storage_helpers.start_creating_disks_for_test(
-            sd_name=storage_domain, sd_type=storage_type
+            helpers.create_vm_with_disks(storage_domain, storage_type)
         )
-        DISK_NAMES[storage_type] = disk_names
+
+        DISK_NAMES[storage_type] = (
+            storage_helpers.start_creating_disks_for_test(
+                False, storage_domain, storage_type
+            )
+        )
 
         TEMPLATE_NAMES.append(
             common.create_vm_and_template(
-                config.COBBLER_PROFILE, storage_domain, storage_type))
-
-        LOGGER.info("Waiting for vms to be installed and templates "
-                    "to be created")
+                config.COBBLER_PROFILE, storage_domain, storage_type
+            )
+        )
+        LOGGER.info(
+            "Waiting for vms to be installed and templates to be created"
+        )
 
         if config.VDC is not None and config.VDC_PASSWORD is not None:
-            LOGGER.info("Waiting for vms to be installed and "
-                        "templates to be created")
+            LOGGER.info(
+                "Waiting for vms to be installed and templates to be created"
+            )
             wait_for_tasks(
                 vdc=config.VDC, vdc_password=config.VDC_PASSWORD,
-                datacenter=config.DATA_CENTER_NAME)
+                datacenter=config.DATA_CENTER_NAME
+            )
+        LOGGER.info(
+            "All vms and templates created successfully for storage "
+            "type %s", storage_type
+        )
     LOGGER.info("All templates created successfully")
     LOGGER.info("Package setup successfully")
 
@@ -114,12 +118,6 @@ def teardown_module():
     LOGGER.info("Removing templates %s", TEMPLATE_NAMES)
     for template in TEMPLATE_NAMES:
         templates.removeTemplate(True, template)
-
-    if not config.GOLDEN_ENV:
-        datacenters.clean_datacenter(
-            True, config.DATA_CENTER_NAME, vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD
-        )
 
 
 @attr(tier=1)
@@ -209,7 +207,7 @@ class TestCase5036(helpers.HotplugHookTest):
 @attr(tier=2)
 class TestCase5037(helpers.HotplugHookTest):
     """
-    Check after_disk_hotplug for plugging 10 disks concurrently
+    Check after_disk_hotplug for plugging 5 disks concurrently
 
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_HotPlug_Hooks
@@ -220,8 +218,8 @@ class TestCase5037(helpers.HotplugHookTest):
     hooks = {'after_disk_hotplug': [helpers.HOOKWITHSLEEPFILENAME]}
 
     @polarion("RHEVM3-5037")
-    def test_after_disk_hotplug_10_disks_concurrently(self):
-        """ try to hotplug 10 tests concurrently and check that all hooks
+    def test_after_disk_hotplug_5_disks_concurrently(self):
+        """ try to hotplug 5 tests concurrently and check that all hooks
         were called
         """
         self.use_disks = DISKS_TO_PLUG[self.storage]
@@ -240,7 +238,7 @@ class TestCase5037(helpers.HotplugHookTest):
 @attr(tier=2)
 class TestCase5038(helpers.HotplugHookTest):
     """
-    Check after_disk_hotunplug for unplugging 10 disks concurrently
+    Check after_disk_hotunplug for unplugging 5 disks concurrently
 
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_HotPlug_Hooks
@@ -251,9 +249,9 @@ class TestCase5038(helpers.HotplugHookTest):
     hooks = {'after_disk_hotunplug': [helpers.HOOKWITHSLEEPFILENAME]}
 
     @polarion("RHEVM3-5038")
-    def test_after_disk_hotunplug_10_disks_concurrently(self):
-        """ Unplug concurrently 10 disks and check if after_unplug hook
-            were called 10 times
+    def test_after_disk_hotunplug_5_disks_concurrently(self):
+        """ Concurrently unplug 5 disks and check if after_unplug hook
+            were called 5 times
         """
         self.use_disks = DISKS_TO_PLUG[self.storage]
         self.perform_action_and_verify_hook_called()
