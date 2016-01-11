@@ -7,7 +7,6 @@ import config
 import logging
 import shlex
 
-from art.rhevm_api.resources import storage as storage_resources
 from art.rhevm_api.tests_lib.low_level import disks, jobs, storagedomains, vms
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
@@ -187,7 +186,8 @@ class BasicEnvironment(BaseTestCase):
         Used by Polarion cases 4572, 4575 and 4576
         """
         assert vms.startVm(True, self.vm_name, config.VM_UP, True)
-        self.initial_storage_devices = storage_resources.get_storage_devices(
+
+        self.initial_storage_devices = helpers.get_storage_devices(
             self.vm_name, STORAGE_DEVICES_FILTER
         )
         # Set the current storage devices to match the initial storage devices
@@ -219,7 +219,7 @@ class BasicEnvironment(BaseTestCase):
                             "The disk created '%s' was found before being "
                             "attached to the VM" % disk_alias)
             self.current_storage_devices = (
-                storage_resources.get_storage_devices(
+                helpers.get_storage_devices(
                     self.vm_name, STORAGE_DEVICES_FILTER
                 )
             )
@@ -237,7 +237,7 @@ class BasicEnvironment(BaseTestCase):
             if hot_unplug:
                 assert disks.detachDisk(True, disk_alias, self.vm_name)
                 self.current_storage_devices = (
-                    storage_resources.get_storage_devices(
+                    helpers.get_storage_devices(
                         self.vm_name, STORAGE_DEVICES_FILTER
                     )
                 )
@@ -267,7 +267,7 @@ class BasicEnvironment(BaseTestCase):
         for vm_name in vm_names:
             vms.waitForIP(vm_name)
             self.initial_storage_devices[vm_name] = (
-                storage_resources.get_storage_devices(
+                helpers.get_storage_devices(
                     vm_name, STORAGE_DEVICES_FILTER
                 )
             )
@@ -291,7 +291,7 @@ class BasicEnvironment(BaseTestCase):
             vm_machine.runCmd(shlex.split("udevadm trigger"))
 
             self.current_storage_devices[vm_name] = (
-                storage_resources.get_storage_devices(
+                helpers.get_storage_devices(
                     vm_name, STORAGE_DEVICES_FILTER
                 )
             )

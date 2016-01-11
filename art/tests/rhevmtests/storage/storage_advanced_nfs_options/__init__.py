@@ -17,6 +17,8 @@ def setup_package():
     """
     Deactivates the GE's export domain
     """
+    import rhevmtests.storage.helpers as storage_helpers
+    storage_helpers.storage_cleanup()
     assert hl_sd.detach_and_deactivate_domain(
         config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME,
     )

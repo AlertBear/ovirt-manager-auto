@@ -5,6 +5,7 @@ import logging
 import os
 import shlex
 from art.core_api.apis_utils import TimeoutingSampler
+import art.rhevm_api.resources.storage as storage_resource
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dc,
@@ -15,8 +16,10 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 from art.rhevm_api.utils.resource_utils import runMachineCommand
+from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler import exceptions
 from rhevmtests import helpers
+import rhevmtests.helpers as rhevm_helpers
 from rhevmtests.storage import config
 from utilities import errors
 from utilities.machine import Machine, LINUX
@@ -43,9 +46,18 @@ INTERFACES = (config.VIRTIO, config.VIRTIO_SCSI)
 FILE_SD_VOLUME_PATH_IN_FS = '/rhev/data-center/%s/%s/images/%s'
 GET_FILE_SD_NUM_DISK_VOLUMES = 'ls %s | wc -l'
 LV_COUNT = 'lvs -o lv_name,lv_tags | grep %s | wc -l'
-PVSCAN_CMD = 'pvscan --cache'
 ENUMS = config.ENUMS
 LSBLK_CMD = 'lsblk -o NAME'
+NFS = config.STORAGE_TYPE_NFS
+GULSTERFS = config.STORAGE_TYPE_GLUSTER
+ISCSI = config.STORAGE_TYPE_ISCSI
+GLUSTER_MNT_OPTS = ['-t', 'glusterfs']
+NFS_MNT_OPTS = ['-v', '-o', 'vers=3']
+LV_CHANGE_CMD = 'lvchange -a {active} {vg_name}/{lv_name}'
+PVSCAN_CACHE_CMD = 'pvscan --cache'
+PVSCAN_CMD = 'pvscan'
+FIND_CMD = 'find / -name %s'
+CREATE_FILE_CMD = 'touch %s/%s'
 
 disk_args = {
     # Fixed arguments
@@ -570,14 +582,9 @@ def get_disks_volume_count(
     """
     host = ll_hosts.get_cluster_hosts(cluster_name=cluster_name)[0]
     host_ip = ll_hosts.getHostIP(host)
-    rc, out = runMachineCommand(
-        True, ip=host_ip, user=config.HOSTS_USER, password=config.HOSTS_PW,
-        cmd=PVSCAN_CMD
-    )
-    if not rc:
+    if not storage_resource.pvscan(host):
         raise exceptions.HostException(
-            "Failed to execute '%s' on %s - %s" %
-            (PVSCAN_CMD, host_ip, out['out'])
+            "Failed to execute '%s' on %s" % (PVSCAN_CMD, host_ip)
         )
 
     data_center_obj = ll_dc.get_data_center(config.DATA_CENTER_NAME)
@@ -771,3 +778,282 @@ def prepare_disks_with_fs_for_vm(storage_domain, storage_type, vm_name):
         "Mount points for new disks: %s", mount_points
     )
     return disk_ids, mount_points
+
+
+def get_vm_executor(vm_name):
+    """
+    Takes the VM name and returns the VM resource on which commands can be
+    executed
+
+    :param vm_name:  The name of the VM for which Host resource should be
+    created
+    :type vm_name: str
+    :return: Host resource on which commands can be executed
+    :rtype: Host resource
+    """
+    logger.info("Get IP from VM %s", vm_name)
+    vm_ip = get_vm_ip(vm_name)
+    logger.info("Create VM instance with root user from vm with ip %s", vm_ip)
+    return rhevm_helpers.get_host_executor(
+        ip=vm_ip, password=config.VMS_LINUX_PW
+    )
+
+
+def _run_cmd_on_remote_machine(machine_name, command):
+    """
+    Executes Linux command on remote machine
+
+    :param machine_name: The machine to use for executing the command
+    :type machine_name: str
+    :param command: The command to execute
+    :type command: str
+    :return: True if the command executed successfully, False otherwise
+    """
+    vm_executor = get_vm_executor(machine_name)
+    rc, _, error = vm_executor.run_cmd(cmd=shlex.split(command))
+    if rc:
+        logger.error(
+            "Failed to run command %s on %s, error: %s",
+            command, machine_name, error
+        )
+        return False
+    return True
+
+
+def get_storage_devices(vm_name, filter='vd[a-z]'):
+    """
+    Retrieve list of storage devices in requested linux VM
+
+    __author__ = "ratamir, glazarov"
+    :param vm_name: The VM to use for retrieving the storage devices
+    :type vm_name: str
+    :param filter: The regular expression to use in retrieving the storage
+    devices
+    :type filter: str
+    :returns: List of connected storage devices found on vm using specified
+    filter (e.g. [vda, vdb, sda, sdb])
+    :rtype: list
+    """
+    vm_executor = get_vm_executor(vm_name)
+
+    command = 'ls /sys/block | egrep \"%s\"' % filter
+    rc, output, error = vm_executor.run_cmd(cmd=shlex.split(command))
+    if rc:
+        logger.error(
+            "Error while retrieving storage devices from VM '%s, output is "
+            "'%s', error is '%s'", output, error
+        )
+        return False
+    return output.split()
+
+
+def does_file_exist(vm_name, file_name):
+    """
+    Check if file_name refers to an existing file
+
+    __author__ = "ratamir"
+    :param vm_name: The VM to use in checking whether file exists
+    :type vm_name: str
+    :param file_name: File name to look for
+    :type file_name: str
+    :returns: True if file exists, False otherwise
+    :rtype: bool
+    """
+    command = FIND_CMD % file_name
+    return _run_cmd_on_remote_machine(vm_name, command)
+
+
+def create_file_on_vm(vm_name, file_name, path):
+    """
+    Creates a file on vm
+
+    __author__ = "ratamir"
+    :param vm_name: The VM to use in creating the file_name requested
+    :type vm_name: str
+    :param file_name: The file to create
+    :type file_name: str
+    :param path: The path that the file will be created under
+    :type path: str
+    :returns: True if succeeded in creating file requested, False otherwise
+    :rtype: bool
+    """
+    command = CREATE_FILE_CMD % (path, file_name)
+    return _run_cmd_on_remote_machine(vm_name, command)
+
+
+def is_path_empty(
+    host_name, address, path, force_clean=False, storage_type=NFS
+):
+    """
+    Determines if a specified File type path is empty, optionally cleans path
+
+    :param host_name: The host to use for mounting and verifying if the
+    given path is empty
+    :type host_name: str
+    :param address: A server address that the file located under
+    :type address: str
+    :param path: Full path
+    :type path: str
+    :param force_clean: True in case the path should be cleaned,
+    False otherwise
+    :type force_clean: bool
+    :param storage_type: The server's storage type (NFS, GLUSTERFS)
+    :type storage_type: str
+    :return: True if the path is empty, False otherwise
+    :rtype: bool
+    """
+    host_ip = ll_hosts.getHostIP(host_name)
+    host_machine = helpers.get_host_resource(host_ip, config.HOSTS_PW)
+    # The directory's mount point name will be the path name requested for
+    # mount, replacing '/' with '_' as RHEVM does on its File-based mounts
+    target_dir = path[1:].replace('/', '_')
+    full_path = os.path.join(address + ':',  path[1:])
+    if storage_type == NFS:
+        mount_point = storage_resource.mount(
+            host_name, full_path, target=target_dir, opts=NFS_MNT_OPTS
+        )
+    elif storage_type == GULSTERFS:
+        mount_point = storage_resource.mount(
+            host_name, full_path, target=target_dir, opts=GLUSTER_MNT_OPTS
+        )
+    if not mount_point:
+        logger.error("Mount point is None")
+        return False
+    dir_empty = is_dir_empty(
+        host_name, mount_point, ['__DIRECT_IO_TEST__']
+    )
+    if not dir_empty:
+        logger.warning("UNUSED PATH %s IS NOT EMPTY", full_path)
+        if force_clean:
+            logger.info("Cleaning path %s", full_path)
+            dir_empty = host_machine.fs.rmdir(
+                os.path.join(mount_point, '*')
+            )
+            if not dir_empty:
+                logger.error("Failed to clean path %s", mount_point)
+    if not storage_resource.umount(host_name, mount_point):
+        logger.error("Failed to umount directory %s", mount_point)
+    return dir_empty
+
+
+def verify_lun_not_in_use(lun_id):
+    """
+    Checks whether specified lun_id is in use
+
+    :param lun_id: LUN ID
+    :type lun_id: str
+    :return: True if LUN is not in use, False otherwise
+    :rtype: bool
+    """
+    luns = []
+    for sd in ll_sd.get_storagedomain_objects():
+        if sd.get_storage().get_type() in config.BLOCK_TYPES:
+            luns += sd.get_storage().get_volume_group().get_logical_unit()
+
+    lun_ids = [lun.get_id() for lun in luns]
+    return lun_id not in lun_ids
+
+
+def cleanup_file_resources(storage_types=(GULSTERFS, NFS)):
+    """
+    Clean all unused file resources
+    """
+    logger.info("Cleaning File based storage resources")
+    for storage in storage_types:
+        if storage == NFS:
+            for address, path in zip(
+                config.UNUSED_DATA_DOMAIN_ADDRESSES,
+                config.UNUSED_DATA_DOMAIN_PATHS
+            ):
+                if not is_path_empty(
+                    config.HOSTS[0], address, path, True, NFS
+                ):
+                    logger.error("Unused NFS path %s is still dirty")
+
+        elif storage == GULSTERFS:
+            for address, path in zip(
+                config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES,
+                config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS
+            ):
+                if not is_path_empty(
+                    config.HOSTS[0], address, path, True, GULSTERFS
+                ):
+                    logger.error("Unused GlusterFS path %s is still dirty")
+
+
+def is_dir_empty(host_name, dir_path=None, excluded_files=[]):
+    """
+    Check if directory is empty
+
+    :param host_name: The host to use for checking if a directory is empty
+    :type host_name: str
+    :param dir_path: Full path of directory
+    :type dir_path: str
+    :param excluded_files: List of files to ignore
+    :type excluded_files: list
+    :return: True if directory is empty, False otherwise
+    :rtype:bool
+    """
+    if dir_path is None:
+        logger.error(
+            "Error while checking if dir is empty, path is None"
+        )
+        return False
+
+    host_ip = ll_hosts.getHostIP(host_name)
+    host_machine = helpers.get_host_resource(host_ip, config.HOSTS_PW)
+    rc, out, err = host_machine.run_command(['ls', dir_path])
+    files = out.split()
+    for file_in_dir in files:
+        if file_in_dir not in excluded_files:
+            logger.error("Directory %s is not empty", dir_path)
+            return False
+    return True
+
+
+def storage_cleanup():
+    """
+    Clean up storage domains not in GE
+    """
+    logger.info("Retrieve all Storage domains")
+    all_sds = ll_sd.util.get(absLink=False)
+    for storage_domain in all_sds:
+        if storage_domain.name not in config.SD_LIST:
+            logger.error(
+                "LEFTOVER FOUND: SD NAME: %s, WITH SD ID: %s, SD TYPE: %s",
+                storage_domain.name, storage_domain.id,
+                storage_domain.storage.get_type()
+            )
+            wait_for_tasks(
+                config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+            )
+            if ll_sd.is_storage_domain_active(
+                config.DATA_CENTER_NAME, storage_domain.name
+            ):
+                logger.info(
+                    'Domain %s is active in dc %s' % (
+                        storage_domain.name, config.DATA_CENTER_NAME
+                    )
+                )
+                logger.info(
+                    'Deactivating domain  %s in dc %s' % (
+                        storage_domain.name, config.DATA_CENTER_NAME
+                    )
+                )
+                if not ll_sd.deactivateStorageDomain(
+                    positive=True, datacenter=config.DATA_CENTER_NAME,
+                    storagedomain=storage_domain.name
+                ):
+                    logger.error(
+                        "Failed to deactivate storage domain %s",
+                        storage_domain.name
+                    )
+            if not ll_sd.removeStorageDomain(
+                positive=True, storagedomain=storage_domain.name,
+                host=config.FIRST_HOST, format='true', destroy=True
+            ):
+                logger.error(
+                    "Failed to remove storage domain %s",
+                    storage_domain.name
+                )
+    cleanup_file_resources(config.STORAGE_SELECTOR)

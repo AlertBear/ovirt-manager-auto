@@ -6,7 +6,6 @@ import config
 import logging
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
-from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.tests_lib.low_level import (
     templates, disks, storagedomains, jobs
@@ -14,6 +13,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
 from art.test_handler.settings import opts
+from rhevmtests.storage import helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
 
@@ -34,54 +34,7 @@ def setup_module():
     """ creates datacenter, adds hosts, clusters, storages according to
     the config file
     """
-    global LUN_ADDRESS, LUN_TARGET, LUN_ID
-    if not config.GOLDEN_ENV:
-        # Backup all luns info
-        lun_address_backup = config.PARAMETERS.as_list('lun_address')
-        lun_target_backup = config.PARAMETERS.as_list('lun_target')
-        lun_backup = config.PARAMETERS.as_list('lun')
-
-        # Keep only one lun in the config, so build setup won't use both luns
-        config.PARAMETERS['lun_address'] = config.PARAMETERS.as_list(
-            'lun_address')[0]
-        config.PARAMETERS['lun_target'] = config.PARAMETERS.as_list(
-            'lun_target')[0]
-        config.PARAMETERS['lun'] = config.PARAMETERS.as_list('lun')[0]
-
-        datacenters.build_setup(
-            config=config.PARAMETERS, storage=config.PARAMETERS,
-            storage_type=config.STORAGE_TYPE)
-
-        # Restore second lun
-        config.PARAMETERS['lun_address'] = lun_address_backup
-        config.PARAMETERS['lun_target'] = lun_target_backup
-        config.PARAMETERS['lun'] = lun_backup
-
-        LUN_ADDRESS = config.PARAMETERS['lun_address'][1] if \
-            len(config.PARAMETERS['lun_address']) > 1 \
-            else config.PARAMETERS['lun_address'][0]
-        LUN_TARGET = config.PARAMETERS['lun_target'][1] if \
-            len(config.PARAMETERS['lun_target']) > 1 \
-            else config.PARAMETERS['lun_target'][0]
-        LUN_ID = config.PARAMETERS['lun'][1] if \
-            len(config.PARAMETERS['lun']) > 1 \
-            else config.PARAMETERS['lun'][0]
-    else:
-        LUN_ADDRESS = config.UNUSED_LUN_ADDRESSES[0]
-        LUN_TARGET = config.UNUSED_LUN_TARGETS[0]
-        LUN_ID = config.UNUSED_LUNS[0]
-
-
-def teardown_module():
-    """ removes created datacenter, storages etc.
-    """
-    if not config.GOLDEN_ENV:
-        datacenters.clean_datacenter(
-            True,
-            config.DATA_CENTER_NAME,
-            vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD
-        )
+    storage_helpers.storage_cleanup()
 
 
 @attr(tier=2)

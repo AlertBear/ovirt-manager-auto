@@ -2,6 +2,9 @@ import config
 
 
 def setup_package():
+    import rhevmtests.storage.helpers as storage_helpers
+    storage_helpers.storage_cleanup()
+
     config.ISO_NFS_DOMAIN['address'] = config.ADDRESS[0]
     config.ISO_NFS_DOMAIN['path'] = config.PATH[0]
 

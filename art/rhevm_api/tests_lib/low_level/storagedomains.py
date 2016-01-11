@@ -2081,3 +2081,13 @@ def get_number_of_ovf_store_disks(storage_domain):
     return len(
         [disk for disk in all_disks if disk.get_alias() == OVF_STORE_DISK_NAME]
     )
+
+
+def get_storagedomain_objects():
+    """
+    Get list of storage domain objects
+
+    :return: List of storage domain objects
+    :rtype: list
+    """
+    return util.get(absLink=False)

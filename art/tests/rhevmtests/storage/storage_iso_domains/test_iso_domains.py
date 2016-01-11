@@ -77,12 +77,6 @@ class BaseCaseIsoDomains(TestCase):
         Creates the environment with the storage domains
         Adds a vm
         """
-        if not config.GOLDEN_ENV:
-            helpers.build_environment(
-                storage_domains=cls.storagedomains,
-                local=cls.local
-            )
-
         cls.data_center_name = config.DATA_CENTER_NAME
 
         found, master_domain = ll_sd.findMasterStorageDomain(
@@ -93,7 +87,8 @@ class BaseCaseIsoDomains(TestCase):
         assert create_vm(cls.vm_name, cls.master_domain)
 
         cls.machine = machine.LinuxMachine(
-            config.VDC, config.VDC_ROOT_USER, config.VDC_PASSWORD, local=False)
+            config.VDC, config.VDC_ROOT_USER, config.VDC_PASSWORD, local=False
+        )
 
     @classmethod
     def teardown_class(cls):
@@ -144,8 +139,6 @@ class BaseCaseIsoDomains(TestCase):
         self.iso_domain_name = iso_domain['name']
 
         # Mount the nfs partition with all the isos
-        logger.info("Mounting nfs partition %s:%s to upload isos to the "
-                    "domain", config.iso_address, config.iso_path)
         with self.machine.mount(
             "%s:%s" % (config.iso_address, config.iso_path),
             opts=['-t', 'nfs'],
@@ -170,7 +163,8 @@ class BaseCaseIsoDomains(TestCase):
                 self.iso_domain_name, ssh, path)
             logger.info("Executing %s", upload_cmd)
             rc, out = self.machine.runCmd(
-                upload_cmd.split(), data=config.HOSTS_PW)
+                upload_cmd.split(), data=config.HOSTS_PW
+            )
             if not rc:
                 logger.error("Error uploading iso %s to domain %s => %s",
                              path, self.iso_domain_name, out)

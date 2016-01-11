@@ -8,7 +8,6 @@ import logging
 import os
 from art.unittest_lib import attr, StorageTest as BaseTestCase
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.rhevm_api.resources import storage as storage_resources
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     jobs as ll_jobs,
@@ -137,8 +136,8 @@ class BasicEnvironment(BaseTestCase):
             )
         for mount_dir in cls.mount_points:
             logger.info("Creating file in %s", mount_dir)
-            rc = storage_resources.create_file_on_vm(
-                vm_name, config.TESTNAME, mount_dir
+            rc = storage_helpers.create_file_on_vm(
+                vm_name, TEST_FILE_TEMPLATE, mount_dir
             )
             if not rc:
                 logger.error(
@@ -161,7 +160,7 @@ class BasicEnvironment(BaseTestCase):
         for mount_dir in self.mount_points:
             full_path = os.path.join(mount_dir, file_name)
             logger.info("Checking if file %s exists", full_path)
-            result = storage_resources.does_file_exist(
+            result = storage_helpers.does_file_exist(
                 vm_name, full_path
             )
             logger.info(

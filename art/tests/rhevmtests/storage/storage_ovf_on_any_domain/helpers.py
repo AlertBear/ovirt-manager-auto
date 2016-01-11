@@ -127,29 +127,25 @@ def get_ovf_file_path_and_num_ovf_files(
     remove_ovf_store_extracted(host, disk_or_template_or_vm_name)
 
     logger.info("Creating a directory to extract the OVF store")
-    rc, output, error = host_to_use.executor().run_cmd(
-        cmd=shlex.split(
+    rc, output, error = host_to_use.run_command(
+        shlex.split(
             CREATE_DIRECTORY_FOR_OVF_STORE % disk_or_template_or_vm_name
         )
     )
     if rc:
-        logger.error(
-            "Error while creating directory for OVF store, output is '%s', "
-            "error is '%s'", output, error
-        )
         return error_result
 
     if is_block:
         logger.info("Activating the OVF store image before copying and "
                     "extracting it")
-        refresh_volumes = storage_resources.run_pvscan_command(host)
+        refresh_volumes = storage_resources.pvscan(host)
         if not refresh_volumes:
             logger.error(
                 "Unable to refresh the physical volumes on host '%s'", host
             )
             return error_result
 
-        activate_lv_status = storage_resources.lv_change(
+        activate_lv_status = storage_resources.lvchange(
             host, sd_id, ovf_id, activate=True
         )
         if not activate_lv_status:
@@ -159,26 +155,22 @@ def get_ovf_file_path_and_num_ovf_files(
             )
             return error_result
 
-        rc, output, error = host_to_use.executor().run_cmd(
-            cmd=shlex.split(
+        rc, output, error = host_to_use.run_command(
+            shlex.split(
                 BLOCK_COPY_OVF_STORE % (
                     sd_id, ovf_id, disk_or_template_or_vm_name
                 )
             )
         )
         if rc:
-            logger.error(
-                "Error while copying OVF store for processing, output is "
-                "'%s', error is '%s'", output, error
-            )
             return error_result
 
         logger.info("Block OVF store, extracting OVF id '%s'", ovf_id)
         ovf_id_to_extract = ovf_id
 
     else:
-        rc, output, error = host_to_use.executor().run_cmd(
-            cmd=shlex.split(
+        rc, output, error = host_to_use.run_command(
+            shlex.split(
                 FILE_COPY_OVF_STORE % (
                     sp_id, sd_id, ovf_id, ovf_filename,
                     disk_or_template_or_vm_name
@@ -186,28 +178,20 @@ def get_ovf_file_path_and_num_ovf_files(
             )
         )
         if rc:
-            logger.error(
-                "Error while copying OVF store for processing, output is "
-                "'%s', error is '%s'", output, error
-            )
             return error_result
 
         logger.info("File OVF store, extracting OVF id '%s'", ovf_filename)
         ovf_id_to_extract = ovf_filename
 
     logger.info("Extracting the OVF store")
-    rc, output, error = host_to_use.executor().run_cmd(
-        cmd=shlex.split(
+    rc, output, error = host_to_use.run_command(
+        shlex.split(
             BLOCK_AND_FILE_EXTRACT_OVF_STORE % (
                 disk_or_template_or_vm_name, ovf_id_to_extract
             )
         )
     )
     if rc:
-        logger.error(
-            "Error while extracting OVF store for processing, output is "
-            "'%s', error is '%s'", output, error
-        )
         return error_result
 
     logger.info(
@@ -222,16 +206,12 @@ def get_ovf_file_path_and_num_ovf_files(
     logger.info(
         "Retrieving the total number of OVF files extracted from the OVF store"
     )
-    rc, number_of_ovf_files, error = host_to_use.executor().run_cmd(
-        cmd=shlex.split(
+    rc, number_of_ovf_files, error = host_to_use.run_command(
+        shlex.split(
             COUNT_NUMBER_OF_OVF_FILES % disk_or_template_or_vm_name
         )
     )
     if rc:
-        logger.error(
-            "Error while extracting OVF store for processing, output is "
-            "'%s', error is '%s'", output, error
-        )
         return error_result
 
     number_of_ovf_files = int(number_of_ovf_files)
@@ -257,9 +237,10 @@ def remove_ovf_store_extracted(host, disk_or_template_or_vm_name):
     :type disk_or_template_or_vm_name: str
     """
     host_to_use = storage_resources.get_host_resource(host)
+
     logger.info("Removing directory created to extract the OVF store")
-    rc, output, error = host_to_use.executor().run_cmd(
-        cmd=shlex.split(
+    rc, output, error = host_to_use.run_command(
+        shlex.split(
             REMOVE_DIRECTORY_FOR_OVF_STORE % disk_or_template_or_vm_name
         )
     )

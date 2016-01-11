@@ -59,13 +59,6 @@ def setup_module():
     Prepares environment
     """
     global IMPORT_DOMAIN, VM_NAMES
-    if not config.GOLDEN_ENV:
-        logger.info("Preparing datacenter %s with hosts %s",
-                    config.DATA_CENTER_NAME, config.VDC)
-
-        datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
-                                config.STORAGE_TYPE, config.TESTNAME)
-
     rc, masterSD = ll_sd.findMasterStorageDomain(
         True, config.DATA_CENTER_NAME
     )
@@ -116,8 +109,9 @@ def setup_module():
                 )
         elif storage_type == config.STORAGE_TYPE_GLUSTER:
             sd_name = "{0}_{1}".format(config.TESTNAME, "Gluster")
-            gluster_address = \
+            gluster_address = (
                 config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0]
+            )
             gluster_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0]
             status = hl_sd.addGlusterDomain(
                 host=spm,

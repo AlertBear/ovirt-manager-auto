@@ -1,11 +1,12 @@
 import config
 import logging
+import rhevmtests.storage.helpers as storage_helpers
 from art.core_api import apis_exceptions
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler import exceptions
 from art.unittest_lib import StorageTest as TestCase, attr
-from art.rhevm_api.tests_lib.high_level import datacenters, storagedomains
+from art.rhevm_api.tests_lib.high_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level.hosts import (
@@ -27,24 +28,7 @@ def setup_module():
     Creates datacenter, adds hosts, clusters, and storage domains depending
     on config file
     """
-    if not config.GOLDEN_ENV:
-        datacenters.build_setup(config=config.PARAMETERS,
-                                storage=config.PARAMETERS,
-                                storage_type=config.STORAGE_TYPE,
-                                basename=config.TESTNAME,
-                                local=config.LOCAL)
-
-
-def teardown_module():
-    """
-    Removes created datacenter, storage domains etc.
-    """
-    if not config.GOLDEN_ENV:
-        datacenters.clean_datacenter(
-            True, config.DATA_CENTER_NAME,
-            vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD
-        )
+    storage_helpers.storage_cleanup()
 
 
 @attr(tier=1)

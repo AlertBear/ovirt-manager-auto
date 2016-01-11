@@ -296,11 +296,12 @@ class TestCase11864(CommonUsage):
     # 1251956 - Live storage migration is broken
     # 1259785 - after live migrate a Virtio RAW disk, job
     # stays in status STARTED
+    # 1292509 - It is possible to edit a disk using the api during LSM
+    # except the snapshot operation phase
     __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '11864'
     disk_name = "disk_%s" % polarion_test_case
-    bz = {'1292509': {'engine': None, 'version': ['3.6']}}
 
     def setUp(self):
         """
