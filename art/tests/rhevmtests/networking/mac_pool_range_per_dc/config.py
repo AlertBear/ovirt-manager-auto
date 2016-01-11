@@ -11,6 +11,7 @@ MAC_POOL_CL = "MAC_POOL_CL"
 MP_VM_NAMES = ["_".join(["MAC_POOL_VM", str(i)]) for i in range(6)]
 
 LAST_HOST = None  # Filled in setup_package
+DEFAULT_MAC_POOL_VALUES = None  # Filled in setup_package
 EXT_DC_0 = EXTRA_DC[0]
 MP_VM = MP_VM_NAMES[0]
 ORIG_DC = DC_NAME[0]

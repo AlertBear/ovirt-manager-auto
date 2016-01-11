@@ -4,21 +4,21 @@
 """
 MAC pool range per DC networking feature helper
 """
-import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
-import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
-import art.rhevm_api.tests_lib.low_level.vms as ll_vm
-from art.unittest_lib import NetworkTest as TestCase
-import config as c
 import logging
+import config as conf
 import utilities.utils as utils
 import art.core_api.apis_exceptions as api_exc
+from art.unittest_lib import NetworkTest as TestCase
+import art.rhevm_api.tests_lib.low_level.vms as ll_vm
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
+import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
+import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
 
 logger = logging.getLogger("MAC_Pool_Range_Per_DC_Helper")
 
 
 def create_mac_pool(
-    mac_pool_name=c.MAC_POOL_NAME_0, mac_pool_ranges=list(), positive=True,
+    mac_pool_name=conf.MAC_POOL_NAME_0, mac_pool_ranges=list(), positive=True,
     allow_duplicates=False
 ):
     """
@@ -34,7 +34,9 @@ def create_mac_pool(
     """
     log = "Cannot" if positive else "Can"
     mac_pool_ranges = (
-        [c.MAC_POOL_RANGE_LIST[0]] if not mac_pool_ranges else mac_pool_ranges
+        [
+            conf.MAC_POOL_RANGE_LIST[0]
+        ] if not mac_pool_ranges else mac_pool_ranges
     )
     logger.info("Create MAC pool %s", mac_pool_name)
     status = ll_mac_pool.create_mac_pool(
@@ -42,13 +44,13 @@ def create_mac_pool(
         ranges=mac_pool_ranges, allow_duplicates=allow_duplicates
     )
     if status != positive:
-        raise c.NET_EXCEPTION(
+        raise conf.NET_EXCEPTION(
             "%s create new MAC pool %s" % (log, mac_pool_name)
         )
 
 
 def update_dc_with_mac_pool(
-    dc=c.DC_NAME[0], mac_pool_name=c.MAC_POOL_NAME_0, teardown=False
+    dc=conf.DC_NAME[0], mac_pool_name=conf.MAC_POOL_NAME_0, teardown=False
 ):
     """
     Update DC with MAC pool
@@ -73,10 +75,10 @@ def update_dc_with_mac_pool(
             logger.info(log_error, dc, mac_pool_name)
             TestCase.test_failed = True
         else:
-            raise c.NET_EXCEPTION(log_error % (dc, mac_pool_name))
+            raise conf.NET_EXCEPTION(log_error % (dc, mac_pool_name))
 
 
-def remove_mac_pool(mac_pool_name=c.MAC_POOL_NAME_0):
+def remove_mac_pool(mac_pool_name=conf.MAC_POOL_NAME_0):
     """
     Remove MAC pool
 
@@ -92,7 +94,7 @@ def remove_mac_pool(mac_pool_name=c.MAC_POOL_NAME_0):
 
 
 def update_mac_pool_range_size(
-    mac_pool_name=c.MAC_POOL_NAME_0, extend=True, size=(1, 1)
+    mac_pool_name=conf.MAC_POOL_NAME_0, extend=True, size=(1, 1)
 ):
     """
     Update MAC pool range size for the first range in specific mac pool
@@ -116,12 +118,12 @@ def update_mac_pool_range_size(
             mac_pool_range: (low_mac - size[0], high_mac + size[1])
         }
     ):
-        raise c.NET_EXCEPTION(
+        raise conf.NET_EXCEPTION(
             "Couldn't %s the MAC pool range for %s" % (log, mac_pool_name)
         )
 
 
-def add_nic(positive=True, vm=c.VM_NAME[0], name=c.NIC_NAME_1, **kwargs):
+def add_nic(positive=True, vm=conf.VM_NAME[0], name=conf.NIC_NAME_1, **kwargs):
     """
     Add NIC to VM
 
@@ -139,12 +141,12 @@ def add_nic(positive=True, vm=c.VM_NAME[0], name=c.NIC_NAME_1, **kwargs):
     mac_log = " with manual MAC" if kwargs.get("mac_address") else "from pool"
     logger.info("Adding %s to %s %s", name, vm, mac_log)
     if not ll_vm.addNic(positive=positive, vm=vm, name=name, **kwargs):
-        raise c.NET_EXCEPTION(
+        raise conf.NET_EXCEPTION(
             "%s to add %s to %s %s" % (status_log, name, vm, mac_log)
         )
 
 
-def remove_nic(vm=c.VM_NAME[0], nic=c.NIC_NAME_1):
+def remove_nic(vm=conf.VM_NAME[0], nic=conf.NIC_NAME_1):
     """
     Remove vNIC from VM
 
@@ -178,20 +180,20 @@ def check_single_mac_range_match(mac_ranges, start_idx, end_idx):
     macs = [i[0] for i in mac_ranges]
     for i in range(start_idx, end_idx):
         nic_mac = ll_vm.get_vm_nic_mac_address(
-            vm=c.VM_NAME[0], nic=c.NIC_NAME[i]
+            vm=conf.VM_NAME[0], nic=conf.NIC_NAME[i]
         )
         if nic_mac in macs:
             macs.remove(nic_mac)
         else:
-            raise c.NET_EXCEPTION(
+            raise conf.NET_EXCEPTION(
                 "VNIC MAC %s is not in the MAC pool range for %s" %
-                (nic_mac, c.MAC_POOL_NAME_0)
+                (nic_mac, conf.MAC_POOL_NAME_0)
             )
 
 
 def create_dc(
-    dc_name=c.EXT_DC_1, mac_pool_name=c.MAC_POOL_NAME_0,
-    mac_pool_ranges=list(), version=c.COMP_VERSION
+    dc_name=conf.EXT_DC_1, mac_pool_name=conf.MAC_POOL_NAME_0,
+    mac_pool_ranges=list(), version=conf.COMP_VERSION
 ):
     """
     Create a new DC with MAC pool
@@ -219,13 +221,13 @@ def create_dc(
     logger.info("Create a new DC with %s", mac_pool_name)
     if not ll_dc.addDataCenter(
         positive=True, name=dc_name,
-        storage_type=c.STORAGE_TYPE, version=version,
+        storage_type=conf.STORAGE_TYPE, version=version,
         local=False, mac_pool=mac_pool_obj
     ):
-        raise c.NET_EXCEPTION("Couldn't add a DC %s to the setup" % dc_name)
+        raise conf.NET_EXCEPTION("Couldn't add a DC %s to the setup" % dc_name)
 
 
-def remove_dc(dc_name=c.EXT_DC_1, teardown=True):
+def remove_dc(dc_name=conf.EXT_DC_1, teardown=True):
     """
     Remove DC
 
@@ -244,11 +246,11 @@ def remove_dc(dc_name=c.EXT_DC_1, teardown=True):
             logger.error(log_error, dc_name)
             TestCase.test_failed = True
         else:
-            raise c.NET_EXCEPTION(log_error, dc_name)
+            raise conf.NET_EXCEPTION(log_error, dc_name)
 
 
 def check_mac_in_range(
-    vm=c.MP_VM, nic=c.NIC_NAME_1, mac_range=c.MAC_POOL_RANGE_LIST[0]
+    vm=conf.MP_VM, nic=conf.NIC_NAME_1, mac_range=conf.MAC_POOL_RANGE_LIST[0]
 ):
     """
     Check if MAC of VM is in the given range
@@ -267,11 +269,11 @@ def check_mac_in_range(
 
     nic_mac = ll_vm.get_vm_nic_mac_address(vm=vm, nic=nic)
     if not nic_mac:
-        raise c.NET_EXCEPTION(
-            "MAC was not found on NIC %s" % c.NIC_NAME_1
+        raise conf.NET_EXCEPTION(
+            "MAC was not found on NIC %s" % conf.NIC_NAME_1
         )
     mac_range = utils.MACRange(mac_range[0], mac_range[1])
     if nic_mac not in mac_range:
-        raise c.NET_EXCEPTION(
+        raise conf.NET_EXCEPTION(
             "MAC %s is not in the MAC pool range  %s" % (nic_mac, mac_range)
         )
