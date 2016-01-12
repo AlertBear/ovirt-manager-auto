@@ -1,3 +1,8 @@
+"""
+This module defines new ART related hooks. See doc string relevant hook.
+"""
+
+
 def pytest_artconf_ready(config):
     """
     Called once ART_CONFIG is ready to use.

@@ -1,5 +1,27 @@
 """
 This module contains hooks which allows initialization of ART library.
+Briefly said it performs these operations:
+    - Initialize ART TestRunnerWrapper
+    - Read ART config
+    - Process --art-define options
+    - Generate DS
+    - Download certificates in case of secure connection
+    - Load GE yaml in case of GE job
+    - Execute custom hook 'pytest_artconf_ready'
+    - Execute custom hook 'pytest_art_ensure_resources'
+At the end it executes custom hook 'pytest_art_release_resources'
+
+
+More about CLI options added to pytest for ART purposes.
+These are:
+    --art-conf path/to/test-config.conf
+      It is same as we had --conf in ART - MANDATORY
+    --art-spec path/to/test-specification.spec
+      It is same as we had --spec in ART - OPTIONAL
+    --art-define NAME_OF_SECTION.name_of_option=something
+      It is same as we had -D in ART - OPTIONAL
+    --art-log path/to/log-file.log
+      It is same as we had --log in ART - OPTIONAL
 """
 import time
 import yaml

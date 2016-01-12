@@ -1,5 +1,10 @@
 """
-This module contains markers which are widely used in our tests.
+This module contains markers which are widely used in our tests, and include
+them to xunit-results which is important for us, since polarion exporter read
+polarion ids from this file.
+
+And also implements -A which behaves same as nosetest does. So we don't need
+to refactor our tests and keep @attr() decorator.
 
 See https://pytest.org/latest/mark.html
 """

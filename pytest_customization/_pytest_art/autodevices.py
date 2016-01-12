@@ -1,5 +1,8 @@
 """
 This module replaces auto_devices plugin from ART.
+
+Simply it implements hooks pytest_art_ensure_resources &
+pytest_art_release_resources.
 """
 import re
 import os

@@ -1,0 +1,28 @@
+Here you can find code which allows us to run ART lib with pytest.
+
+It is written as collection of plugins for pytest.
+Thanks to pkg_resources, pytest is able to discover these plugins without
+importing them into conftest.py. It allows us easier usage across test
+suites.
+
+artlib.py: Responsible to load ART_CONFIG and initalize library.
+matrix.py: Generate test-classes as we used to do in ART.
+           TEST x STORAGE x API
+           Responsible to switch API & STORAGE backends.
+marks.py:  Adds pytest's way to mark testcases.
+           Extends junit-plugin to include polarion, bz, jira, storage,
+           api fields to junit xml report.
+           Added -A option to match attr expressions.
+ssl.py:    Deals with rhevm certificates.
+package_fixtures.py:
+           It adds ability to exec setup_package.
+newhooks.py:
+           It defines new ART related hooks.
+
+
+Please read doc string of every module to get more information.
+
+
+py.test -p art --art-conf path/to/test.conf --junitxml path/to/results.xml \
+ -s -A="team == 'str' and tier == 2 and not extra_reqs" \
+ path/to/test/file/or/dir

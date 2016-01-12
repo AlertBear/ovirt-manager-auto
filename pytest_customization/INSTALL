@@ -1,0 +1,10 @@
+You can find setup_pytest.py in root of repository.
+In order to let pytest load our customization automaticaly you need to build
+the code which generates python egg. Then you need to put egg into pythonpath.
+
+
+Make sure that you have pytest >= 2.8.3
+
+
+python setup_pytest.py bdist
+PYTHONPATH=$PYTHONPATH:pytest_customization/
