@@ -29,7 +29,10 @@ from art.rhevm_api.tests_lib.low_level.networks import (
     getVnicProfileObj, VNIC_PROFILE_API,
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
-    DiskNotFound, _prepareWatchdogObj, getWatchdogModels,
+    DiskNotFound,
+    _prepareWatchdogObj,
+    getWatchdogModels,
+    createCustomPropertiesFromArg,
 )
 from art.test_handler.settings import opts
 from utilities.jobs import Job, JobsSet
@@ -121,6 +124,10 @@ def _prepareTemplateObject(**kwargs):
         perms.set_clone(True)
         templ.set_permissions(perms)
 
+    custom_prop = kwargs.pop("custom_properties", None)
+    if custom_prop:
+        templ.set_custom_properties(createCustomPropertiesFromArg(custom_prop))
+
     return templ
 
 
@@ -174,6 +181,7 @@ def updateTemplate(positive, template, **kwargs):
        * protected - if template is delete protected
        * watchdog_model - model of watchdog card
        * watchdog_action - action to perform when watchdog is triggered
+       * custom_properties - custom properties set to the template
     Return: status (True if template was updated properly, False otherwise)
     '''
 
