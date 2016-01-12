@@ -19,7 +19,7 @@ from art.rhevm_api.tests_lib.low_level import (mla, networks, users, vms,
 
 LOGGER = logging.getLogger(__name__)
 VM_NAME = config.VM_NAME
-TEMPLATE_NAME = config.TEMPLATE_NAME
+TEMPLATE_NAME1 = config.TEMPLATE_NAME1
 NIC_NAME = 'nic1'
 NIC_NAME2 = 'nic2'
 NIC_NAME3 = 'nic3'
@@ -43,9 +43,9 @@ def loginAsAdmin():
 
 def setUpModule():
     global VM_NAME
-    global TEMPLATE_NAME
+    global TEMPLATE_NAME1
     VM_NAME = config.VM_NAME
-    TEMPLATE_NAME = config.TEMPLATE_NAME
+    TEMPLATE_NAME1 = config.TEMPLATE_NAME1
     for user in [config.USER_NAME, config.USER_NAME2, config.USER_NAME3]:
         assert common.addUser(True, user_name=user, domain=config.USER_DOMAIN)
 
@@ -75,7 +75,7 @@ class NetworkingNegative(TestCase):
         loginAsAdmin()
         ignoreAllExceptions(vms.removeVm, positive=True, vm=VM_NAME)
         ignoreAllExceptions(
-            templates.removeTemplate, positive=True, template=TEMPLATE_NAME
+            templates.removeTemplate, positive=True, template=TEMPLATE_NAME1
         )
 
         for network in [
@@ -302,11 +302,11 @@ class NegativeNetworkPermissions234215(NetworkingNegative):
             network=config.MGMT_BRIDGE
         )
         assert templates.createTemplate(
-            True, vm=VM_NAME, name=TEMPLATE_NAME,
+            True, vm=VM_NAME, name=TEMPLATE_NAME1,
             cluster=config.CLUSTER_NAME[0]
         )
         assert templates.addTemplateNic(
-            True, TEMPLATE_NAME, name=NIC_NAME, network=config.NETWORK_NAME
+            True, TEMPLATE_NAME1, name=NIC_NAME, network=config.NETWORK_NAME
         )
 
     @polarion("RHEVM3-8682")
@@ -314,11 +314,11 @@ class NegativeNetworkPermissions234215(NetworkingNegative):
         """ Attach VNIC to Template """
         loginAsUser(config.USER_NAME, filter_=False)
         assert templates.addTemplateNic(
-            False, TEMPLATE_NAME, name=NIC_NAME2, network=config.NETWORK_NAME
+            False, TEMPLATE_NAME1, name=NIC_NAME2, network=config.NETWORK_NAME
         )
-        assert templates.removeTemplateNic(False, TEMPLATE_NAME, NIC_NAME)
+        assert templates.removeTemplateNic(False, TEMPLATE_NAME1, NIC_NAME)
         assert templates.updateTemplateNic(
-            False, TEMPLATE_NAME, NIC_NAME, name='newName'
+            False, TEMPLATE_NAME1, NIC_NAME, name='newName'
         )
 
 

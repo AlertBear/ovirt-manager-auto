@@ -41,7 +41,7 @@ def setUpModule():
         network=config.MGMT_BRIDGE
     )
     templates.createTemplate(
-        True, vm=config.VM_NAME, name=config.TEMPLATE_NAME,
+        True, vm=config.VM_NAME, name=config.TEMPLATE_NAME1,
         cluster=config.CLUSTER_NAME[0]
     )
     templates.createTemplate(
@@ -50,7 +50,7 @@ def setUpModule():
     )
     vmpools.addVmPool(
         True, name=config.VMPOOL_NAME, size=1,
-        cluster=config.CLUSTER_NAME[0], template=config.TEMPLATE_NAME
+        cluster=config.CLUSTER_NAME[0], template=config.TEMPLATE_NAME1
     )
     vms.waitForVMState('%s-%s' % (config.VMPOOL_NAME, 1), state='down')
     disks.addDisk(
@@ -70,7 +70,7 @@ def tearDownModule():
     vmpools.detachVms(True, config.VMPOOL_NAME)
     vms.removeVm(True, '%s-%s' % (config.VMPOOL_NAME, 1))
     vmpools.removeVmPool(True, config.VMPOOL_NAME)
-    templates.removeTemplate(True, config.TEMPLATE_NAME)
+    templates.removeTemplate(True, config.TEMPLATE_NAME1)
     templates.removeTemplate(True, config.TEMPLATE_NO_DISK)
 
 
@@ -496,7 +496,7 @@ class RolesCase54412(TestCase):
                 config.HOSTS[0]: vms.HOST_API,
                 config.VM_NAME: vms.VM_API,
                 config.VMPOOL_NAME: vmpools.UTIL,
-                config.TEMPLATE_NAME: vms.TEMPLATE_API,
+                config.TEMPLATE_NAME1: vms.TEMPLATE_API,
                 config.VM_NO_DISK: vms.VM_API,
             }
         }

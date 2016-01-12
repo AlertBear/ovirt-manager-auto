@@ -23,7 +23,7 @@ from art.rhevm_api.tests_lib.low_level import (
 
 LOGGER = logging.getLogger(__name__)
 VM_NAME = config.VM_NAME
-TEMPLATE_NAME = config.TEMPLATE_NAME
+TEMPLATE_NAME1 = config.TEMPLATE_NAME1
 NIC_NAME = 'nic1'
 NIC_NAME2 = 'nic2'
 NIC_NAME3 = 'nic3'
@@ -35,9 +35,9 @@ EVERYONE = 'Everyone'
 
 def setUpModule():
     global VM_NAME
-    global TEMPLATE_NAME
+    global TEMPLATE_NAME1
     VM_NAME = config.VM_NAME
-    TEMPLATE_NAME = config.TEMPLATE_NAME
+    TEMPLATE_NAME1 = config.TEMPLATE_NAME1
     for user in [config.USER_NAME, config.USER_NAME2, config.USER_NAME3]:
         assert common.addUser(True, user_name=user, domain=config.USER_DOMAIN)
 
@@ -325,7 +325,7 @@ class PositiveNetworkPermissions231830(NetworkingPossitive):
             interface='virtio'
         )
         assert templates.createTemplate(
-            True, vm=VM_NAME, name=TEMPLATE_NAME,
+            True, vm=VM_NAME, name=TEMPLATE_NAME1,
             cluster=config.CLUSTER_NAME[0]
         )
 
@@ -377,11 +377,11 @@ class PositiveNetworkPermissions231830(NetworkingPossitive):
 
     def _testPermissionsOnTemplate(self):
         mla.addPermissionsForTemplate(
-            True, config.USER_NAME, config.TEMPLATE_NAME
+            True, config.USER_NAME, config.TEMPLATE_NAME1
         )
         self._testWrap(True, False, True, False)
         mla.removeUserPermissionsFromTemplate(
-            True, config.TEMPLATE_NAME, config.USER
+            True, config.TEMPLATE_NAME1, config.USER
         )
 
     def _testPermissionsOnDC(self):
@@ -619,18 +619,18 @@ class PositiveNetworkPermissions236408(NetworkingPossitive):
         """ Add a VNIC to template """
         loginAsUser(config.USER_NAME)
         assert templates.createTemplate(
-            True, vm=VM_NAME, name=TEMPLATE_NAME,
+            True, vm=VM_NAME, name=TEMPLATE_NAME1,
             cluster=config.CLUSTER_NAME[0]
         )
         assert templates.addTemplateNic(
-            True, TEMPLATE_NAME, name=NIC_NAME, network=None
+            True, TEMPLATE_NAME1, name=NIC_NAME, network=None
         )
         assert templates.addTemplateNic(
-            True, TEMPLATE_NAME, name=NIC_NAME2, network=config.NETWORK_NAME1
+            True, TEMPLATE_NAME1, name=NIC_NAME2, network=config.NETWORK_NAME1
         )
         loginAsUser(userName=config.USER_NAME2)
         assert templates.addTemplateNic(
-            True, TEMPLATE_NAME, name=NIC_NAME3, network=None
+            True, TEMPLATE_NAME1, name=NIC_NAME3, network=None
         )
 
 
@@ -660,14 +660,14 @@ class PositiveNetworkPermissions236409(NetworkingPossitive):
         assert mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME)
         assert mla.addVMPermissionsToUser(True, config.USER_NAME2, VM_NAME)
         assert templates.createTemplate(
-            True, vm=VM_NAME, name=TEMPLATE_NAME,
+            True, vm=VM_NAME, name=TEMPLATE_NAME1,
             cluster=config.CLUSTER_NAME[0]
         )
         assert mla.addPermissionsForTemplate(
-            True, config.USER_NAME, TEMPLATE_NAME, role=role.TemplateOwner
+            True, config.USER_NAME, TEMPLATE_NAME1, role=role.TemplateOwner
         )
         assert mla.addPermissionsForTemplate(
-            True, config.USER_NAME2, TEMPLATE_NAME, role=role.TemplateOwner
+            True, config.USER_NAME2, TEMPLATE_NAME1, role=role.TemplateOwner
         )
 
     @polarion("RHEVM3-8373")
@@ -675,23 +675,23 @@ class PositiveNetworkPermissions236409(NetworkingPossitive):
         """ Update a VNIC on the template """
         loginAsUser(config.USER_NAME)
         assert templates.updateTemplateNic(
-            True, TEMPLATE_NAME, NIC_NAME, network=None
+            True, TEMPLATE_NAME1, NIC_NAME, network=None
         )
         assert templates.updateTemplateNic(
-            True, TEMPLATE_NAME, NIC_NAME, network=config.NETWORK_NAME1
+            True, TEMPLATE_NAME1, NIC_NAME, network=config.NETWORK_NAME1
         )
         assert templates.updateTemplateNic(
-            True, TEMPLATE_NAME, NIC_NAME, name='_'
+            True, TEMPLATE_NAME1, NIC_NAME, name='_'
         )
         assert templates.updateTemplateNic(
-            True, TEMPLATE_NAME, '_', name=NIC_NAME
+            True, TEMPLATE_NAME1, '_', name=NIC_NAME
         )
         loginAsUser(userName=config.USER_NAME2)
         assert templates.updateTemplateNic(
-            True, TEMPLATE_NAME, NIC_NAME, network=None
+            True, TEMPLATE_NAME1, NIC_NAME, network=None
         )
         assert templates.updateTemplateNic(
-            True, TEMPLATE_NAME, NIC_NAME, name='_'
+            True, TEMPLATE_NAME1, NIC_NAME, name='_'
         )
 
 

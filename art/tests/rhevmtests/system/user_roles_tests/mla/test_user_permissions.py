@@ -58,12 +58,12 @@ def setUpModule():
         network=config.MGMT_BRIDGE
     )
     templates.createTemplate(
-        True, vm=config.VM_NAME, name=config.TEMPLATE_NAME,
+        True, vm=config.VM_NAME, name=config.TEMPLATE_NAME1,
         cluster=config.CLUSTER_NAME[0]
     )
     vmpools.addVmPool(
         True, name=config.VMPOOL_NAME, size=1,
-        cluster=config.CLUSTER_NAME[0], template=config.TEMPLATE_NAME
+        cluster=config.CLUSTER_NAME[0], template=config.TEMPLATE_NAME1
     )
     vms.waitForVMState('%s-%s' % (config.VMPOOL_NAME, 1), state='down')
     disks.addDisk(
@@ -86,7 +86,7 @@ def tearDownModule():
     vms.waitForVMState(vm_name, state='down')
     vms.removeVm(True, vm_name)
     vmpools.removeVmPool(True, config.VMPOOL_NAME)
-    templates.removeTemplate(True, config.TEMPLATE_NAME)
+    templates.removeTemplate(True, config.TEMPLATE_NAME1)
     test_utils.wait_for_tasks(
         config.VDC_HOST, config.VDC_ROOT_PASSWORD, config.DC_NAME[0]
     )
@@ -102,7 +102,7 @@ class PermissionsCase54408(TestCase):
         # Test these object for adding/removing/viewving perms on it
         cls.OBJS = {
             config.VM_NAME: vms.VM_API,
-            config.TEMPLATE_NAME: templates.TEMPLATE_API,
+            config.TEMPLATE_NAME1: templates.TEMPLATE_API,
             config.DISK_NAME: disks.DISKS_API,
             config.VMPOOL_NAME: vmpools.UTIL,
             config.CLUSTER_NAME[0]: clusters.util,

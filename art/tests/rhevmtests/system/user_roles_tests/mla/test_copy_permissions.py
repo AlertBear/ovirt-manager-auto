@@ -35,7 +35,7 @@ def setUpModule():
         network=config.MGMT_BRIDGE
     )
     templates.createTemplate(
-        True, vm=config.VM_NAME, name=config.TEMPLATE_NAME,
+        True, vm=config.VM_NAME, name=config.TEMPLATE_NAME1,
         cluster=config.CLUSTER_NAME[0]
     )
 
@@ -72,26 +72,26 @@ def setUpModule():
     # ## Add permissions to template ##
     # PowerUserRole on template to user1 (should be copied)
     mla.addPermissionsForTemplate(
-        True, config.USER_NAME, config.TEMPLATE_NAME, role=role.PowerUserRole
+        True, config.USER_NAME, config.TEMPLATE_NAME1, role=role.PowerUserRole
     )
     # UserRole on template to user1 (should be copied)
     mla.addPermissionsForTemplate(
-        True, config.USER_NAME, config.TEMPLATE_NAME, role=role.UserRole
+        True, config.USER_NAME, config.TEMPLATE_NAME1, role=role.UserRole
     )
     # TemplateAdmin on template to user2 (should be copied)
     mla.addPermissionsForTemplate(
-        True, config.USER_NAME2, config.TEMPLATE_NAME, role=role.TemplateAdmin
+        True, config.USER_NAME2, config.TEMPLATE_NAME1, role=role.TemplateAdmin
     )
     # UserTemplateBasedVm on template to user1 (should not be copied)
     mla.addPermissionsForTemplate(
         True,
         config.USER_NAME,
-        config.TEMPLATE_NAME,
+        config.TEMPLATE_NAME1,
         role=role.UserTemplateBasedVm
     )
     # TemplateOwner on template to user2 (should not be copied)
     mla.addPermissionsForTemplate(
-        True, config.USER_NAME2, config.TEMPLATE_NAME, role=role.TemplateOwner
+        True, config.USER_NAME2, config.TEMPLATE_NAME1, role=role.TemplateOwner
     )
     # DataCenterAdmin on template to user2 (should not be copied)
     mla.addPermissionsForDataCenter(
@@ -103,7 +103,7 @@ def tearDownModule():
     common.removeUser(True, config.USER_NAME)
     common.removeUser(True, config.USER_NAME2)
     vms.removeVm(True, config.VM_NAME)
-    templates.removeTemplate(True, config.TEMPLATE_NAME)
+    templates.removeTemplate(True, config.TEMPLATE_NAME1)
 
 
 def _compare(exists, user_name, roles_list, predefined):
@@ -170,7 +170,7 @@ class CopyPermissions299326(TestCase):
             True,
             config.VM_NAME1,
             '',
-            template=config.TEMPLATE_NAME,
+            template=config.TEMPLATE_NAME1,
             cluster=config.CLUSTER_NAME[0],
             copy_permissions=True,
             network=config.MGMT_BRIDGE,
@@ -194,7 +194,7 @@ class CopyPermissions299330(TestCase):
     @classmethod
     def setUpClass(self):
         vms.createVm(
-            True, config.VM_NAME1, '', template=config.TEMPLATE_NAME,
+            True, config.VM_NAME1, '', template=config.TEMPLATE_NAME1,
             cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
         )

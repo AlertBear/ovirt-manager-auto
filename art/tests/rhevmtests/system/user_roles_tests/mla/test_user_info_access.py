@@ -523,7 +523,7 @@ class TemplateCreatorInfoTests(TestCase):
             True, config.USER_NAME, config.VM_NAME1, role.UserRole
         )
         templates.createTemplate(
-            True, vm=config.VM_NAME2, name=config.TEMPLATE_NAME,
+            True, vm=config.VM_NAME2, name=config.TEMPLATE_NAME1,
             cluster=config.CLUSTER_NAME[0]
         )
         templates.createTemplate(
@@ -536,7 +536,7 @@ class TemplateCreatorInfoTests(TestCase):
         loginAsAdmin()
         vms.removeVm(True, config.VM_NAME1)
         vms.removeVm(True, config.VM_NAME2)
-        templates.removeTemplate(True, config.TEMPLATE_NAME)
+        templates.removeTemplate(True, config.TEMPLATE_NAME1)
         templates.removeTemplate(True, config.TEMPLATE_NAME2)
         templates.removeTemplate(True, config.TEMPLATE_NAME3)
         mla.removeUserPermissionsFromDatacenter(
@@ -559,8 +559,8 @@ class TemplateCreatorInfoTests(TestCase):
 
         LOGGER.info("Checking right permissions for all templates")
         tms = [t.get_name() for t in templates.TEMPLATE_API.get(absLink=False)]
-        err_msg = msgCan % ('Template', config.TEMPLATE_NAME)
-        assert config.TEMPLATE_NAME not in tms, err_msg
+        err_msg = msgCan % ('Template', config.TEMPLATE_NAME1)
+        assert config.TEMPLATE_NAME1 not in tms, err_msg
         err_msg = msgCan % ('Template', config.TEMPLATE_NAME2)
         assert config.TEMPLATE_NAME2 not in tms, err_msg
         LOGGER.info("User can see %s" % tms)
@@ -594,7 +594,7 @@ class TemplateCreatorAndDCAdminInfoTest(TestCase):
             network=config.MGMT_BRIDGE
         )
         templates.createTemplate(
-            True, vm=config.VM_NAME1, name=config.TEMPLATE_NAME,
+            True, vm=config.VM_NAME1, name=config.TEMPLATE_NAME1,
             cluster=config.CLUSTER_NAME[0]
         )
         mla.addPermissionsForDataCenter(
@@ -617,7 +617,7 @@ class TemplateCreatorAndDCAdminInfoTest(TestCase):
         loginAsAdmin()
         vms.removeVm(True, config.VM_NAME2)
         vms.removeVm(True, config.VM_NAME1)
-        templates.removeTemplate(True, config.TEMPLATE_NAME)
+        templates.removeTemplate(True, config.TEMPLATE_NAME1)
         templates.removeTemplate(True, config.TEMPLATE_NAME2)
         mla.removeUserPermissionsFromDatacenter(
             True, config.DC_NAME[0], config.USER1
@@ -627,7 +627,7 @@ class TemplateCreatorAndDCAdminInfoTest(TestCase):
     def test_templateCreatorDataCenterAdmin_filter_templates(self):
         """ Template creator with datacenter admin filter templates """
         loginAsUser()
-        templates.TEMPLATE_API.find(config.TEMPLATE_NAME)
+        templates.TEMPLATE_API.find(config.TEMPLATE_NAME1)
         self.assertRaises(
             EntityNotFound, templates.TEMPLATE_API.find, config.TEMPLATE_NAME2
         )
@@ -651,7 +651,7 @@ class ComplexCombinationTest(TestCase):
             network=config.MGMT_BRIDGE
         )
         templates.createTemplate(
-            True, vm=config.VM_NAME1, name=config.TEMPLATE_NAME,
+            True, vm=config.VM_NAME1, name=config.TEMPLATE_NAME1,
             cluster=config.CLUSTER_NAME[0]
         )
         templates.createTemplate(
@@ -710,7 +710,7 @@ class ComplexCombinationTest(TestCase):
         )
 
         self.assertRaises(
-            EntityNotFound, templates.TEMPLATE_API.find, config.TEMPLATE_NAME
+            EntityNotFound, templates.TEMPLATE_API.find, config.TEMPLATE_NAME1
         )
         self.assertRaises(
             EntityNotFound, templates.TEMPLATE_API.find, config.TEMPLATE_NAME2
@@ -723,7 +723,7 @@ class ComplexCombinationTest(TestCase):
         )
         LOGGER.info(
             "User can't see %s, %s, %s, %s" % (
-                config.TEMPLATE_NAME, config.TEMPLATE_NAME2,
+                config.TEMPLATE_NAME1, config.TEMPLATE_NAME2,
                 config.TEMPLATE_NAME3, config.TEMPLATE_NAME4
             )
         )
@@ -735,7 +735,7 @@ class ComplexCombinationTest(TestCase):
         vms.removeVm(True, config.VM_NAME2)
         vms.removeVm(True, config.VM_NAME3)
         vms.removeVm(True, config.VM_NAME4)
-        templates.removeTemplate(True, config.TEMPLATE_NAME)
+        templates.removeTemplate(True, config.TEMPLATE_NAME1)
         templates.removeTemplate(True, config.TEMPLATE_NAME2)
         templates.removeTemplate(True, config.TEMPLATE_NAME3)
         templates.removeTemplate(True, config.TEMPLATE_NAME4)
