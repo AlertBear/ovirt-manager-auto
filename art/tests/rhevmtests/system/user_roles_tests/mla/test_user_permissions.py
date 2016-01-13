@@ -631,3 +631,70 @@ class PermissionsCase111082(TestCase):
         assert userVmManagerId not in permits_id
         assert templateOwnerId not in permits_id
         assert diskOperatorId not in permits_id
+
+
+@attr(tier=1)
+class AdminPropertiesOfTemplate(TestCase):
+    """
+    Test create of vm as PowerUserRole from template which has set
+    administrator properties. He should be able to create such vm.
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        loginAsAdmin()
+        assert templates.updateTemplate(
+            True,
+            config.TEMPLATE_NAME[0],
+            custom_properties='sndbuf=10',
+        )
+        assert mla.addPermissionsForDataCenter(
+            positive=True,
+            user=config.USER_NAME,
+            data_center=config.DC_NAME[0],
+            role=role.PowerUserRole,
+        )
+        assert mla.addPermissionsForTemplate(
+            positive=True,
+            user=config.USER_NAME,
+            template=config.TEMPLATE_NAME[0],
+            role=role.UserTemplateBasedVm,
+        )
+
+    @classmethod
+    def teardown_class(cls):
+        loginAsAdmin()
+        templates.updateTemplate(
+            True,
+            config.TEMPLATE_NAME[0],
+            custom_properties='clear',
+        )
+        mla.removeUserPermissionsFromDatacenter(
+            True,
+            config.DC_NAME[0],
+            config.USER1,
+        )
+        mla.removeUserPermissionsFromTemplate(
+            True,
+            config.TEMPLATE_NAME[0],
+            config.USER1,
+        )
+
+    @bz({'1284472': {'engine': None, 'version': ['3.6']}})
+    @polarion('RHEVM3-14560')
+    def test_create_vm_from_template_with_admin_props(self):
+        """ Test create vm from template with admin properties set """
+        loginAsUser(config.USER_NAME)
+        self.assertTrue(
+            vms.createVm(
+                True,
+                config.VM_NAME1,
+                '',
+                cluster=config.CLUSTER_NAME[0],
+                template=config.TEMPLATE_NAME[0],
+            )
+        )
+        self.assertTrue(
+            vms.removeVm(True, config.VM_NAME1)
+        )
