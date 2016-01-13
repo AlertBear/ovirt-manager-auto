@@ -17,7 +17,6 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-import re
 import logging
 import art.core_api as core_api
 import art.test_handler.settings as test_settings
@@ -409,46 +408,20 @@ def delete_dummy_interfaces(host):
     :return: True/False
     :rtype: bool
     """
-    host_obj = host.executor()
-    rhevh = (host.get_os_info()["dist"] == RHEVH)
-
-    rc, out, err = host_obj.run_cmd(["ip", "link", "|", "grep", "dummy"])
-    if rc:
-        logger.error(
-            "Failed to run ip link command on %s. ERR: %s", host.fqdn, err
-        )
-        return False
-
-    dummy_list_ = out.splitlines()
-    dummy_list = [
-        re.search('([\s])([\w.]+)', i).groups()[1]
-        for i in dummy_list_ if 'vdsm' not in i
-        ]
-
+    rhevh = RHEVH in host.get_os_info()["dist"]
+    all_interfaces = host.network.all_interfaces()
+    dummy_list = [i for i in all_interfaces if 'dummy' in i]
     for i in dummy_list:
-        cmd = ["ip", "link", "del", i]
-        rc, out, err = host_obj.run_cmd(cmd)
-        if rc:
-            logger.error("Failed to delete %s. ERR: %s. %s", i, out, err)
-            return False
-
+        host.network.delete_interface(interface=i)
         ifcfg_file = "/etc/sysconfig/network-scripts/ifcfg-%s" % i
-        logger.info("Check if %s exists", ifcfg_file)
         if host.fs.isfile(ifcfg_file):
             if rhevh:
+                host_obj = host.executor()
                 logger.info("unpersist %s", ifcfg_file)
-                rc, out, err = host_obj.run_cmd(["unpersist", ifcfg_file])
+                rc, out, err = host_obj.run_command(["unpersist", ifcfg_file])
                 if rc:
-                    logger.error(
-                        "Failed to unpersist %s. ERR: %s. %s",
-                        ifcfg_file, out, err
-                    )
                     return False
-
-            logger.info("Deleting %s", ifcfg_file)
-            if not host.fs.remove(ifcfg_file):
-                logger.error("Failed to delete %s", ifcfg_file)
-                return False
+            host.network.delete_ifcfg_file(nic=i)
     return True
 
 
