@@ -27,6 +27,10 @@ LOGGER = logging.getLogger(__name__)
 ENUMS = config.ENUMS
 GB = 1024 * 1024 * 1024
 GLANCE = 'OpenStackImageProvider'
+ADD_GROUP_CMD = ('ovirt-aaa-jdbc-tool', 'group', 'add')
+ADD_USER_CMD = ('ovirt-aaa-jdbc-tool', 'user', 'add')
+PASSWORD_RESET_CMD = ('ovirt-aaa-jdbc-tool', 'user', 'password-reset')
+GROUP_MANAGE_ADD_USER_CMD = ('ovirt-aaa-jdbc-tool', 'group-manage', 'useradd')
 
 
 class HostConfiguration(object):
@@ -652,6 +656,32 @@ class CreateDC(TestCase):
 
         assert glance.add()
 
+    def _create_users_groups(self, golden_env):
+        LOGGER.info("Creating users and groups")
+        with config.ENGINE_HOST.executor().session() as ss:
+            for group in golden_env['groups']:
+                cmd = list(ADD_GROUP_CMD)
+                cmd.append(group['name'])
+                assert not ss.run_cmd(cmd)[0], 'Failed to add group'
+
+            for user in golden_env['users']:
+                cmd = list(ADD_USER_CMD)
+                cmd.append(user['name'])
+                cmd.append('--attribute=firstName=%s' % user['name'])
+                assert not ss.run_cmd(cmd)[0], 'Failed to add user'
+
+                cmd = list(PASSWORD_RESET_CMD)
+                cmd.append(user['name'])
+                cmd.append('--password=pass:%s' % user['passwd'])
+                cmd.append('--password-valid-to=2050-01-01 00:00:00Z')
+                assert not ss.run_cmd(cmd)[0], 'Failed to reset password'
+
+                if user.get('group', None):
+                    cmd = list(GROUP_MANAGE_ADD_USER_CMD)
+                    cmd.append(user['group'])
+                    cmd.append('--user=%s' % user['name'])
+                    assert not ss.run_cmd(cmd)[0], 'Failed to assign group'
+
     def test_build_env(self):
         hl_mac_pool.update_default_mac_pool()
 
@@ -678,3 +708,5 @@ class CreateDC(TestCase):
             )
         else:
             self.import_shared_iso_domain(storage_conf, host)
+
+        self._create_users_groups(GOLDEN_ENV)

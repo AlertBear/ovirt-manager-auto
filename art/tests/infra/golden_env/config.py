@@ -8,6 +8,7 @@ import copy
 
 from art.test_handler.settings import ART_CONFIG, opts
 from art.rhevm_api.utils import test_utils
+from art.rhevm_api import resources
 
 # Name of the test
 TESTNAME = "golden_env"
@@ -87,3 +88,8 @@ STORAGE['data_domain_path'] = PARAMETERS.as_list('data_domain_path')
 
 EPS = ART_CONFIG['EPS']
 CLEAN_EXPORT_DOMAIN = PARAMETERS.as_bool('clean_export_domain')
+
+ENGINE_HOST = resources.Host(VDC)
+ENGINE_HOST.users.append(
+    resources.RootUser(VDC_PASSWORD)
+)
