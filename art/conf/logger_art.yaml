@@ -38,18 +38,11 @@ handlers:
     class: utilities.logger_utils.NullHandler
     level: DEBUG
 loggers:
-  art:
+  root:
     level: DEBUG
     handlers:
       - duplicateFileHandler
       - duplicateConsoleHandler
-    qualname: art
-    propagate: 0
-  root:
-    level: DEBUG
-    handlers:
-      - fileHandler
-      - consoleHandler
   requests:
     level: DEBUG
     handlers:
