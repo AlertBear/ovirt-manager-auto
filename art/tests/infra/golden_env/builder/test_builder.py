@@ -464,6 +464,16 @@ class CreateDC(TestCase):
                 async=False
             )
             self.add_nic_to_glance_template(glance_template['name'])
+            assert templates.waitForTemplatesStates(glance_template['name'])
+            template_disk = templates.getTemplateDisks(
+                glance_template['name']
+            )[0]
+            disks.wait_for_disks_status(template_disk.get_name())
+            assert templates.updateTemplate(
+                True,
+                glance_template['name'],
+                virtio_scsi=True
+            )
 
     def add_nic_to_glance_template(self, template_name):
         sampler = TimeoutingSampler(

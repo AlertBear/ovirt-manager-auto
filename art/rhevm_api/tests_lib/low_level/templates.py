@@ -128,6 +128,11 @@ def _prepareTemplateObject(**kwargs):
     if custom_prop:
         templ.set_custom_properties(createCustomPropertiesFromArg(custom_prop))
 
+    virtio_scsi = kwargs.pop('virtio_scsi', None)
+    if virtio_scsi is not None:
+        virtio_scsi_obj = data_st.VirtIO_SCSI(enabled=virtio_scsi)
+        templ.set_virtio_scsi(virtio_scsi_obj)
+
     return templ
 
 
@@ -182,6 +187,7 @@ def updateTemplate(positive, template, **kwargs):
        * watchdog_model - model of watchdog card
        * watchdog_action - action to perform when watchdog is triggered
        * custom_properties - custom properties set to the template
+       * virtio_scsi - Enables attaching disks using VirtIO-SCSI interface
     Return: status (True if template was updated properly, False otherwise)
     '''
 
