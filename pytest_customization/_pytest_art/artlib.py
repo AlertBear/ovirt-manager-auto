@@ -25,7 +25,6 @@ def pytest_addoption(parser):
     """
     parser.addoption(
         '--art-conf',
-        required=True,
         dest='art_conf',
         help="Path to config file to initialize ART library.",
     )
@@ -55,6 +54,9 @@ def pytest_configure(config):
     """
     Load ART config files, and initialize ART library.
     """
+    if not config.getoption('art_conf'):
+        return
+
     config.art_wrapper = TestRunnerWrapper(
         None,
         log=config.getoption('art_log'),

@@ -153,10 +153,11 @@ class JunitExtension(object):
         return getattr(self._conf, '_xml', None)
 
     def _add_marks(self, item):
+
         for mark_name in self.markers:
             mark_info = item.get_marker(mark_name)
             if mark_info:
-                self.junit.add_custom_property(*mark_info.args)
+                self.junit.add_custom_property(mark_info.name, *mark_info.args)
 
     def _add_attributes(self, item):
         for attr_name in self.attributes:
@@ -177,5 +178,6 @@ def pytest_configure(config):
     if tuple(pytest.__version__.split('.')) < ('2', '8', '3'):
         # NOTE(lbednar): this feature was released in 2.8.3
         return
+
     if config.pluginmanager.hasplugin('junitxml'):
         config.pluginmanager.register(JunitExtension(config))
