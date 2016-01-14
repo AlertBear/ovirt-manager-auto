@@ -164,7 +164,12 @@ def prepare_network_attachment_obj(host_name, **kwargs):
     :rtype: NetworkAttachment object
     """
     network = kwargs.get(NETWORK)
-    ip = kwargs.get("ip")
+    ip_none = {
+        "ip": {
+            "boot_protocol": "none"
+        }
+    }
+    ip = kwargs.get("ip", ip_none)
     update = kwargs.get(UPDATE)
     nic = kwargs.get(NIC)
     override_configuration = kwargs.get("override_configuration")
@@ -208,10 +213,9 @@ def prepare_network_attachment_obj(host_name, **kwargs):
 
         network_attachment_obj.set_host_nic(host_nic)
 
-    if ip:
-        network_attachment_obj = prepare_ip_object(
-            network_attachment_obj, ip
-        )
+    network_attachment_obj = prepare_ip_object(
+        network_attachment_obj, ip
+    )
 
     if network and not update:
         add_network = ll_networks.findNetwork(
