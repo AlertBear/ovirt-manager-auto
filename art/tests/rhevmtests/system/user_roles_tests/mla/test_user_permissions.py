@@ -538,6 +538,7 @@ class PermissionsCase109086(TestCase):
             True, config.DC_NAME[0], config.USER1
         )
 
+    @bz({'1294350': {'engine': None, 'version': ['3.6']}})
     @polarion("RHEVM3-7170")
     def test_permsInhForVmPools(self):
         """ Permission inheritance for desktop pools """
