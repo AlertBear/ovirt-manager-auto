@@ -5,7 +5,6 @@
 Virt - Migration test initialization
 """
 
-import helper
 import logging
 from rhevmtests import networking
 from rhevmtests.virt import config
@@ -16,6 +15,7 @@ from art.rhevm_api.tests_lib.low_level import vms
 from rhevmtests.networking import config as netconf
 import art.rhevm_api.tests_lib.low_level.clusters as cluster_api
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+from rhevmtests.virt import virt_helper
 
 logger = logging.getLogger("Virt_Network_Migration_Init")
 
@@ -58,7 +58,7 @@ def setup_package():
         "Set all but 2 hosts in the Cluster %s to the maintenance "
         "state", config.CLUSTER_NAME[0]
     )
-    helper.set_host_status()
+    virt_helper.set_host_status()
 
     logger.info("Add additional data center and cluster")
     if not hl_networks.create_basic_setup(
@@ -132,6 +132,6 @@ def teardown_package():
             logger.error("Failed to stop VM: %s", config.VM_NAME[0])
 
         logger.info("Set inactive hosts to the active state")
-        helper.set_host_status(activate=True)
+        virt_helper.set_host_status(activate=True)
     except Exception, e:
         logger.error("tearDown failed, %s", e.message)

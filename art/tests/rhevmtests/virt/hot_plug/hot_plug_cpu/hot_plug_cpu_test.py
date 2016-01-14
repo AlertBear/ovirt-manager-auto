@@ -8,19 +8,20 @@ Hot Plug CPU - Testing
 - Negative test: check hot plug cpu while migration
 - Negative test: check hot unplug while cores are pinned
 """
-from rhevmtests.virt import config
-from art.unittest_lib import VirtTest as TestCase
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.unittest_lib import VirtTest as TestCase
 from nose.plugins.attrib import attr
-from rhevmtests.virt.migration import helper
 from rhevmtests import helpers
+from rhevmtests.virt import config
+from rhevmtests.virt import helper
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.test_handler.exceptions as errors
 
 logger = config.logging.getLogger(__name__)
 NPROC_COMMAND = 'nproc'
+MAX_NUM_CORES_PER_SOCKET = 16
 
 
 class BaseCPUHotPlugClass(TestCase):
@@ -42,14 +43,42 @@ class BaseCPUHotPlugClass(TestCase):
             "Run %s on %s in order to get the number of cores",
             NPROC_COMMAND, resource
         )
-        rc, out, err = resource.executor().run_cmd([NPROC_COMMAND])
+        rc, out, _ = resource.run_command([NPROC_COMMAND])
         if rc:
-            errors.ResourceError(
-                "Failed to run command on resource %s; out: %s; err: %s" %
-                (config.VDS_HOSTS[0].ip, out, err)
-            )
+            return 0
         logger.info("Number of cores on:%s is:%s", resource, out)
         return int(out)
+
+    @classmethod
+    def calculate_the_cpu_topology(cls, cpu_number):
+        """
+        Calculate the cpu topology (cores and sockets) with some limitations:
+        - Maximum number of cores per socket is 16
+        - A prime number of CPU can't be set
+
+        :param cpu_number: the total number of CPU
+        :type cpu_number: int
+        :return: list with cpu_socket and cpu_core
+        :rtype: list
+        """
+        if cpu_number > MAX_NUM_CORES_PER_SOCKET:
+            for number in range(2, cpu_number):
+                if cpu_number % number == 0:
+                    cpu_core = number
+                    cpu_socket = cpu_number / number
+                    if cpu_socket <= MAX_NUM_CORES_PER_SOCKET:
+                        break
+            else:
+                errors.TestException(
+                    "Can't set cpu_topology with %d, because it's a primary"
+                    " number that is larger then %s"
+                    % cpu_number, MAX_NUM_CORES_PER_SOCKET
+                )
+        else:
+            cpu_socket = cpu_number
+            cpu_core = 1
+        logger.info("cpu socket:%d, cpu_core:%d", cpu_socket, cpu_core)
+        return cpu_socket, cpu_core
 
     @classmethod
     def setup_class(cls):
@@ -79,7 +108,6 @@ class BaseCPUHotPlugClass(TestCase):
     def teardown_class(cls):
         """
         Stop Vm and update cores and sockets to 1
-        :raise: errors.VMException
         """
         logger.info("Stop VM %s", config.VM_NAME[0])
         if not ll_vms.stopVm(True, config.VM_NAME[0]):
@@ -94,7 +122,7 @@ class BaseCPUHotPlugClass(TestCase):
 
 
 @attr(tier=1)
-class AddCPUHotPlug(BaseCPUHotPlugClass):
+class TestAddCPUHotPlug(BaseCPUHotPlugClass):
     """
     Test cpu hot plug when increasing the cpu sockets number
     while VM is running.
@@ -170,7 +198,7 @@ class AddCPUHotPlug(BaseCPUHotPlugClass):
 
 
 @attr(tier=1)
-class NegativeCpuPiningHotPlug(BaseCPUHotPlugClass):
+class TestNegativeCpuPiningHotPlug(BaseCPUHotPlugClass):
     """
     Negative test -
     Have a VM with cpu pinning defined to 3 first CPUs, in ordered manner.
@@ -183,7 +211,7 @@ class NegativeCpuPiningHotPlug(BaseCPUHotPlugClass):
     def setup_class(cls):
         """
         Update VM with cpu pinning defined to 3 first CPUs, in ordered manner
-        and Update the Vm CPUs to 4
+        and update the Vm CPUs to 4
         """
         logger.info(
             "Update VM %s CPUs to 2 cores * 2 sockets and pin",
@@ -204,7 +232,7 @@ class NegativeCpuPiningHotPlug(BaseCPUHotPlugClass):
     @polarion("RHEVM3-9629")
     def test_negative_cpu_pinning(self):
         """
-        Negative test - Try to unplug vm CPUs while
+        Negative test - unplug vm CPUs while
         cpu pinning defined to 3 first CPUs and VM is running
         """
         logger.info("Start VM %s", config.VM_NAME[0])
@@ -233,11 +261,11 @@ class NegativeCpuPiningHotPlug(BaseCPUHotPlugClass):
             logger.error(
                 "Failed to remove host pinning from VM %s", config.VM_NAME[1]
             )
-        super(NegativeCpuPiningHotPlug, cls).teardown_class()
+        super(TestNegativeCpuPiningHotPlug, cls).teardown_class()
 
 
 @attr(tier=1)
-class HotPlugDuringMigration(BaseCPUHotPlugClass):
+class TestHotPlugDuringMigration(BaseCPUHotPlugClass):
     """
     Negative test- testing hot plug during migration
     """
@@ -252,7 +280,7 @@ class HotPlugDuringMigration(BaseCPUHotPlugClass):
         Create memory load on the vm
         so that the migration process will be very slow
         """
-        super(HotPlugDuringMigration, cls).setup_class()
+        super(TestHotPlugDuringMigration, cls).setup_class()
         logger.info("Load VM %s memory", config.VM_NAME[0])
         if not helper.load_vm_memory(config.VM_NAME[0], memory_size='0.5'):
             raise errors.VMException(
@@ -275,9 +303,18 @@ class HotPlugDuringMigration(BaseCPUHotPlugClass):
             "hot plug  worked while migrating VM "
         )
 
+    @classmethod
+    def teardown_class(cls):
+        """
+        Cancel migration
+        """
+        if ll_vms.get_vm_state == "migrating":
+            hl_vms.cancel_vm_migrate(config.VM_NAME[0])
+        super(TestHotPlugDuringMigration, cls).teardown_class()
+
 
 @attr(tier=1)
-class CpuThreadHotPlug(BaseCPUHotPlugClass):
+class TestCpuThreadHotPlug(BaseCPUHotPlugClass):
     """
     Test CPU hot plug while threads is enabled on the cluster.
     """
@@ -302,9 +339,11 @@ class CpuThreadHotPlug(BaseCPUHotPlugClass):
             "pin VM %s to host %s and update the VM CPUs",
             config.VM_NAME[0], config.HOSTS[0]
         )
+        cpu_number = cls.get_number_of_cores(config.VDS_HOSTS[0]) * 2
+        cpu_topology = cls.calculate_the_cpu_topology(cpu_number)
         if not ll_vms.updateVm(
             True, config.VM_NAME[0],
-            placement_host=config.HOSTS[0],
+            placement_host=config.HOSTS[0], cpu_core=cpu_topology[1]
         ):
             raise errors.VMException(
                 "Failed to update vm %s" % config.VM_NAME[0]
@@ -320,10 +359,12 @@ class CpuThreadHotPlug(BaseCPUHotPlugClass):
         """
         Test CPU hot plug while threads is enabled on the cluster
         """
-        host_index = config.HOSTS.index(ll_vms.get_vm_host(config.VM_NAME[0]))
-        cpu_number = self.get_number_of_cores(config.VDS_HOSTS[host_index]) * 2
+        cpu_number = self.get_number_of_cores(config.VDS_HOSTS[0]) * 2
+        cpu_topology = self.calculate_the_cpu_topology(cpu_number)
         self.assertTrue(
-            ll_vms.updateVm(True, config.VM_NAME[0], cpu_socket=cpu_number),
+            ll_vms.updateVm(
+                True, config.VM_NAME[0], cpu_socket=cpu_topology[0]
+            ),
             "Failed to update VM %s cpu socket to %s" %
             (config.VM_NAME[0], cpu_number)
         )
@@ -334,7 +375,7 @@ class CpuThreadHotPlug(BaseCPUHotPlugClass):
         Update the CPU core and socket
         And disable the threads on the cluster
         """
-        super(CpuThreadHotPlug, cls).teardown_class()
+        super(TestCpuThreadHotPlug, cls).teardown_class()
         logger.info("Disable threads on %s", config.CLUSTER_NAME[0])
         if not ll_clusters.updateCluster(
             True, config.CLUSTER_NAME[0], threads=False

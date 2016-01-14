@@ -679,7 +679,9 @@ def cancel_vm_migrate(vm, wait=True, timeout=MIGRATION_TIMEOUT):
 
     vm_obj = VM_API.find(vm)
     source_host_name = vms.get_vm_host(vm)
+    LOGGER.info("Cancel migration on VM %s", vm)
     if not VM_API.syncAction(vm_obj, "cancelmigration", True):
+        LOGGER.error("Failed to cancel migration on VM %s", vm)
         return False
 
     if not wait:
@@ -687,6 +689,7 @@ def cancel_vm_migrate(vm, wait=True, timeout=MIGRATION_TIMEOUT):
         return True
 
     if not VM_API.waitForElemStatus(vm_obj, ENUMS["vm_state_up"], timeout):
+        LOGGER.error("Failed to cancel migration on VM %s", vm)
         return False
     destination_host_name = vms.get_vm_host(vm)
     LOGGER.info(

@@ -5,7 +5,6 @@
 Virt sanity testing for migration feature.
 """
 
-import helper
 import logging
 import threading as thread
 import time
@@ -17,6 +16,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.jobs as ll_jobs
 from rhevmtests.virt import config
+from rhevmtests.virt import virt_helper
 
 logger = logging.getLogger("Virt_Migration_Cases")
 RHEL_OS_TYPE_FOR_MIGRATION = "rhel"
@@ -113,7 +113,7 @@ class TestCancelVMMigration(common.VirtTest):
                 'Failed to start vm %s' %
                 config.VM_NAME[1]
             )
-        if not helper.load_vm_memory(
+        if not virt_helper.load_vm_memory(
             config.VM_NAME[1],
             memory_size='0.5',
             reuse_memory='False'

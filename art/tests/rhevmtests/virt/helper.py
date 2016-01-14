@@ -509,7 +509,7 @@ def check_vm_memory_load(vm_ip, memory_usage):
     use = run_command(vm_ip, use_mem_cmd)
     if total and use:
         current_usage = (100 * use) / total
-        logger.info("current usage is: %d", current_usage)
+        logger.info("Current usage is : {0}%".format(current_usage))
         if int(current_usage) >= memory_usage:
             return True
         else:

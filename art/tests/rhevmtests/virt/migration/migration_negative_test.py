@@ -18,9 +18,10 @@ import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 from art.unittest_lib import attr
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
-import rhevmtests.virt.migration.helper as helper
 from art.rhevm_api.tests_lib.low_level import storagedomains
 import art.unittest_lib.common as common
+from rhevmtests.virt import virt_helper
+
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 logger = logging.getLogger(__name__)
@@ -459,7 +460,7 @@ class TestMigrateVMWithLoadOnMemory(TestCase):
     def tearDown(cls):
         try:
             logging.info("Update memory usage to 60%")
-            helper.MEMORY_USAGE = 60
+            virt_helper.MEMORY_USAGE = 60
             logger.info('Stop vm: %s', config.VM_NAME[1])
             if not ll_vms.stopVm(
                 True,
@@ -481,8 +482,8 @@ class TestMigrateVMWithLoadOnMemory(TestCase):
          Negative test: Migrate VM with load on memory
         """
         logging.info("Update memory usage to 75%")
-        helper.MEMORY_USAGE = 75
-        if not helper.load_vm_memory(
+        virt_helper.MEMORY_USAGE = 75
+        if not virt_helper.load_vm_memory(
             config.VM_NAME[1],
             memory_size='0.75'
         ):

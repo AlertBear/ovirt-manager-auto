@@ -8,7 +8,6 @@ Network migration will be tested for untagged, tagged, bond scenarios.
 It will cover scenarios for VM/non-VM networks
 """
 
-import helper
 import logging
 from art.unittest_lib import common
 from art.test_handler import exceptions
@@ -18,6 +17,7 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 from rhevmtests.networking import config
 import rhevmtests.networking.helper as network_helper
+from rhevmtests.virt import virt_helper
 
 logger = logging.getLogger("Network_Migration_Cases")
 
@@ -61,7 +61,7 @@ class TestMigrationNetworkSanity(TestMigrationCaseBase):
                 "bootproto": "static",
                 "address": ips[:2],
                 "netmask": [
-                    helper.NETMASK, helper.NETMASK
+                    virt_helper.NETMASK, virt_helper.NETMASK
                 ]
             },
             config.NETWORKS[1]: {
@@ -93,7 +93,7 @@ class TestMigrationNetworkSanity(TestMigrationCaseBase):
             "over NIC is working as expected by "
             "putting NIC with required network down"
         )
-        helper.migrate_vms_and_check_traffic(
+        virt_helper.migrate_vms_and_check_traffic(
             vms=[config.VM_NAME[0]], req_nic=2
         )
 
@@ -122,7 +122,7 @@ class TestMigrationCase02(TestMigrationCaseBase):
                 "bootproto": "static",
                 "address": ips[:2],
                 "netmask": [
-                    helper.NETMASK, helper.NETMASK
+                    virt_helper.NETMASK, virt_helper.NETMASK
                 ]
             }
         }
@@ -141,7 +141,7 @@ class TestMigrationCase02(TestMigrationCaseBase):
         Check default migration on mgmt network network
         """
         logger.info("Check migration over MGMT network")
-        helper.migrate_vms_and_check_traffic(
+        virt_helper.migrate_vms_and_check_traffic(
             vms=[config.VM_NAME[0]], nic_index=0
         )
 
@@ -172,7 +172,7 @@ class TestMigrationCase03(TestMigrationCaseBase):
                 "bootproto": "static",
                 "address": ips[:2],
                 "netmask": [
-                    helper.NETMASK, helper.NETMASK
+                    virt_helper.NETMASK, virt_helper.NETMASK
                 ]
             },
             config.VLAN_NETWORKS[1]: {
@@ -196,7 +196,7 @@ class TestMigrationCase03(TestMigrationCaseBase):
         logger.info(
             "Check that VLAN network migration over NIC is working as expected"
         )
-        helper.migrate_vms_and_check_traffic(
+        virt_helper.migrate_vms_and_check_traffic(
             vms=[config.VM_NAME[0]], vlan=config.VLAN_ID[0]
         )
 
@@ -227,7 +227,7 @@ class TestMigrationCase04(TestMigrationCaseBase):
                 "bootproto": "static",
                 "address": ips[:2],
                 "netmask": [
-                    helper.NETMASK, helper.NETMASK
+                    virt_helper.NETMASK, virt_helper.NETMASK
                 ]
             },
             config.NETWORKS[1]: {"nic": 2, "required": "true"}
@@ -249,7 +249,7 @@ class TestMigrationCase04(TestMigrationCaseBase):
             "Check that non-VM network migration over NIC is working as "
             "expected"
         )
-        helper.migrate_vms_and_check_traffic(
+        virt_helper.migrate_vms_and_check_traffic(
             vms=[config.VM_NAME[0]], non_vm=True
         )
 
@@ -280,7 +280,7 @@ class TestMigrationCase05(TestMigrationCaseBase):
                 "bootproto": "static",
                 "address": ips[:2],
                 "netmask": [
-                    helper.NETMASK, helper.NETMASK
+                    virt_helper.NETMASK, virt_helper.NETMASK
                 ]
             },
             config.NETWORKS[1]: {
@@ -304,7 +304,7 @@ class TestMigrationCase05(TestMigrationCaseBase):
             "Check that network migration over NIC is working as "
             "expected when the network is also the display network"
         )
-        helper.migrate_vms_and_check_traffic(vms=[config.VM_NAME[0]])
+        virt_helper.migrate_vms_and_check_traffic(vms=[config.VM_NAME[0]])
 
 
 @common.attr(tier=2)
@@ -329,7 +329,7 @@ class TestMigrationCase06(TestMigrationCaseBase):
                 "bootproto": "static",
                 "address": ips[:2],
                 "netmask": [
-                    helper.NETMASK, helper.NETMASK
+                    virt_helper.NETMASK, virt_helper.NETMASK
                 ]
             },
             config.NETWORKS[1]: {
@@ -363,7 +363,7 @@ class TestMigrationCase06(TestMigrationCaseBase):
             "Check that network migration over NIC is working as "
             "expected when the network also resides on the VM"
         )
-        helper.migrate_vms_and_check_traffic(vms=[config.VM_NAME[0]])
+        virt_helper.migrate_vms_and_check_traffic(vms=[config.VM_NAME[0]])
 
     @classmethod
     def teardown_class(cls):
@@ -425,7 +425,7 @@ class TestMigrationCase07(TestMigrationCaseBase):
             "Verify migration over mgmt network when migration network"
             " is not attached to Hosts"
         )
-        helper.migrate_vms_and_check_traffic(
+        virt_helper.migrate_vms_and_check_traffic(
             vms=[config.VM_NAME[0]], nic_index=0
         )
 
@@ -458,7 +458,7 @@ class TestMigrationCase08(TestMigrationCaseBase):
                 "bootproto": "static",
                 "address": ips[:2],
                 "netmask": [
-                    helper.NETMASK, helper.NETMASK
+                    virt_helper.NETMASK, virt_helper.NETMASK
                 ]
             },
             config.NETWORKS[1]: {
@@ -481,7 +481,7 @@ class TestMigrationCase08(TestMigrationCaseBase):
         logger.info(
             "Check that network migration over Bond is working as expected "
         )
-        helper.migrate_vms_and_check_traffic(
+        virt_helper.migrate_vms_and_check_traffic(
             vms=[config.VM_NAME[0]], bond=config.BOND[0]
         )
 
@@ -515,7 +515,7 @@ class TestMigrationCase09(TestMigrationCaseBase):
                 "bootproto": "static",
                 "address": ips[:2],
                 "netmask": [
-                    helper.NETMASK, helper.NETMASK
+                    virt_helper.NETMASK, virt_helper.NETMASK
                 ]
             },
             config.NETWORKS[1]: {
@@ -539,7 +539,7 @@ class TestMigrationCase09(TestMigrationCaseBase):
             "Check that non-VM network migration over Bond is working "
             "as expected "
         )
-        helper.migrate_vms_and_check_traffic(
+        virt_helper.migrate_vms_and_check_traffic(
             vms=[config.VM_NAME[0]], bond=config.BOND[0], non_vm=True
         )
 
@@ -575,7 +575,7 @@ class TestMigrationCase10(TestMigrationCaseBase):
                 "bootproto": "static",
                 "address": ips[:2],
                 "netmask": [
-                    helper.NETMASK, helper.NETMASK
+                    virt_helper.NETMASK, virt_helper.NETMASK
                 ]
             },
             config.NETWORKS[1]: {
@@ -599,7 +599,7 @@ class TestMigrationCase10(TestMigrationCaseBase):
             "Check that VLAN network migration over Bond is working as "
             "expected "
         )
-        helper.migrate_vms_and_check_traffic(
+        virt_helper.migrate_vms_and_check_traffic(
             vms=[config.VM_NAME[0]], vlan=config.VLAN_ID[0],
             bond=config.BOND[0]
         )
@@ -631,7 +631,7 @@ class TestMigrationCase11(TestMigrationCaseBase):
                 "bootproto": "static",
                 "address": ips[:2],
                 "netmask": [
-                    helper.NETMASK, helper.NETMASK
+                    virt_helper.NETMASK, virt_helper.NETMASK
                 ]
             },
             config.NETWORKS[1]: {"nic": 2, "required": "true"}
@@ -663,7 +663,7 @@ class TestMigrationCase11(TestMigrationCaseBase):
             )
 
         logger.info("Make sure the migration is over mgmt network")
-        helper.migrate_vms_and_check_traffic(
+        virt_helper.migrate_vms_and_check_traffic(
             vms=[config.VM_NAME[0]], nic_index=0
         )
 
@@ -694,7 +694,7 @@ class TestMigrationCase12(TestMigrationCaseBase):
                 "cluster_usages": "migration",
                 "bootproto": "static",
                 "address": [ips[0]],
-                "netmask": [helper.NETMASK]
+                "netmask": [virt_helper.NETMASK]
             }
         }
         if not hl_networks.createAndAttachNetworkSN(
@@ -711,7 +711,7 @@ class TestMigrationCase12(TestMigrationCaseBase):
         Check dedicated network migration
         """
         logger.info("Make sure the migration is over mgmt network")
-        helper.migrate_vms_and_check_traffic(
+        virt_helper.migrate_vms_and_check_traffic(
             vms=[config.VM_NAME[0]], nic_index=0
         )
 
@@ -739,7 +739,7 @@ class TestMigrationCase13(TestMigrationCaseBase):
                 "bootproto": "static",
                 "address": ips[:2],
                 "netmask": [
-                    helper.NETMASK, helper.NETMASK
+                    virt_helper.NETMASK, virt_helper.NETMASK
                 ]
             }
         }
@@ -765,4 +765,4 @@ class TestMigrationCase13(TestMigrationCaseBase):
             "Check that migration of 1 VMs over migration network is working "
             "as expected"
         )
-        helper.migrate_vms_and_check_traffic(vms=[config.VM_NAME[0]])
+        virt_helper.migrate_vms_and_check_traffic(vms=[config.VM_NAME[0]])

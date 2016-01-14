@@ -4,7 +4,6 @@
 """
 Test migration feature mix cases.
 """
-import helper
 import logging
 from art.test_handler import exceptions
 from art.unittest_lib import common
@@ -14,6 +13,7 @@ import art.rhevm_api.tests_lib.high_level.vms as hl_vm
 import art.rhevm_api.tests_lib.low_level.vms as ll_vm
 import art.rhevm_api.tests_lib.low_level.storagedomains as sd_api
 from rhevmtests.virt import config
+from rhevmtests.virt import virt_helper
 
 logger = logging.getLogger("virt_migration_mix_cases")
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -79,7 +79,7 @@ class TestBidirectionalVmMigrationBetweenTwoHosts(common.VirtTest):
             "Check bidirectional vms migration between two hosts"
         )
         self.assertTrue(
-            helper.migration_vms_to_diff_hosts(vms=config.VM_NAME[:5]),
+            virt_helper.migration_vms_to_diff_hosts(vms=config.VM_NAME[:5]),
             "Failed to migration all VMs"
         )
 
@@ -175,7 +175,7 @@ class TestMigrateVmWithLargeMemory(common.VirtTest):
         Run load on VM with option of load false(not reuse memory)
         migrate VM.
         """
-        if not helper.load_vm_memory(
+        if not virt_helper.load_vm_memory(
             self.vm_name,
             memory_size='0.5',
             reuse_memory='False',
@@ -315,7 +315,7 @@ class TestCheckHostResourcesDuringMigration(common.VirtTest):
         table_after = config.ENGINE.db.psql(sql=self.sql)
         logger.info("table after migration %s", table_after)
         self.assertTrue(
-            helper.compare_resources_lists(table_before, table_after),
+            virt_helper.compare_resources_lists(table_before, table_after),
             "Found resource that are pended to hosts")
 
 
