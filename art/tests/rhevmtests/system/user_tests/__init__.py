@@ -5,7 +5,7 @@ import test_actions
 from rhevmtests.system.user_tests import config
 from art.rhevm_api.tests_lib.low_level import storagedomains, mla
 from art.rhevm_api.tests_lib.high_level import datacenters
-from art.rhevm_api.utils import aaa
+from art.rhevm_api.utils.enginecli import EngineCLI
 
 
 def get_action_groups(role_name):
@@ -52,7 +52,7 @@ for role in mla.util.get(absLink=False):
     setattr(module, '%s_%s' % (role_name, case_name), role_case)
     role_case = None  # Need set to None, else it will be case of this module
 
-LDAP = aaa.BRQOpenLDAP(config.ENGINE_HOST, config.ENGINE)
+TOOL = 'ovirt-aaa-jdbc-tool'
 
 
 def setup_package():
@@ -64,7 +64,20 @@ def setup_package():
     config.MASTER_STORAGE = storagedomains.get_master_storage_domain_name(
         config.DC_NAME[0]
     )
-    LDAP.add()
+    with config.ENGINE_HOST.executor().session() as session:
+        user_cli = EngineCLI(tool=TOOL, session=session).setup_module('user')
+        for user in config.USERS[:-1]:
+            assert user_cli.run(
+                'add',
+                user,
+                attribute='firstName=%s' % user,
+            )[0]
+            assert user_cli.run(
+                'password-reset',
+                user,
+                password='pass:%s' % config.USER_PASSWORD,
+                password_valid_to='2050-01-01 00:00:00Z',
+            )[0]
 
 
 def teardown_package():
@@ -74,4 +87,10 @@ def teardown_package():
             vdc=config.VDC_HOST,
             vdc_password=config.VDC_ROOT_PASSWORD
         )
-    LDAP.remove()
+    with config.ENGINE_HOST.executor().session() as session:
+        user_cli = EngineCLI(tool=TOOL, session=session).setup_module('user')
+        for user in config.USERS[:-1]:
+            assert user_cli.run(
+                'delete',
+                user,
+            )[0]

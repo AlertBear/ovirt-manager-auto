@@ -165,7 +165,7 @@ def ienf(method, *args, **kwargs):
 def login_as_user(user, filter_):
     users.loginAsUser(
         user,
-        config.USER_DOMAIN,
+        config.USER_PROFILE,
         config.USER_PASSWORD,
         filter=filter_
     )
