@@ -18,6 +18,7 @@ if __name__ == "__main__":
                 'artpackagesetup = _pytest_art.package_fixtures',
                 'artautodevices = _pytest_art.autodevices',
                 'artlogging = _pytest_art.testlogger',
+                'artmac2ip = _pytest_art.mac2ip',
             ],
         },
     )
