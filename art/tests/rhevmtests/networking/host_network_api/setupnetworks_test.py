@@ -1206,7 +1206,7 @@ class TestHostNetworkApiSetupNetworks24(helper.TestHostNetworkApiTestCaseBase):
     """
 
     __test__ = True
-    bz = {"1269481": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
+    bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
     @polarion("RHEVM3-9850")
     def test_01_multiple_actions(self):
