@@ -9,8 +9,8 @@ __test__ = True
 
 import logging
 
-from rhevmtests.system.user_roles_tests import config, common
-from rhevmtests.system.user_roles_tests.roles import role
+from rhevmtests.system.user_tests.mla import config, common
+from rhevmtests.system.user_tests.mla.roles import role
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import (
     users, vms, templates, mla, clusters, datacenters, hosts,

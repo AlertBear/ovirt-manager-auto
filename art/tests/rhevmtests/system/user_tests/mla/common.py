@@ -1,5 +1,5 @@
 from art.rhevm_api.tests_lib.low_level import users
-from rhevmtests.system.user_roles_tests import config
+from rhevmtests.system.user_tests.mla import config
 
 
 def addUser(positive, user_name, domain):

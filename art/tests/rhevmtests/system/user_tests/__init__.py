@@ -1,16 +1,17 @@
-import test_user
-import test_admin
-import test_actions
-
-from rhevmtests.system.user_tests import config
-from art.rhevm_api.tests_lib.low_level import storagedomains, mla
-from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.utils.enginecli import EngineCLI
+from art.rhevm_api.tests_lib.low_level import mla as ll_mla
+from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
+from rhevmtests.system.user_tests import (
+    config,
+    test_user,
+    test_admin,
+    test_actions,
+)
 
 
 def get_action_groups(role_name):
-    role_obj = mla.util.find(role_name)
-    permits = mla.util.getElemFromLink(
+    role_obj = ll_mla.util.find(role_name)
+    permits = ll_mla.util.getElemFromLink(
         role_obj,
         link_name='permits',
         attr='permit'
@@ -28,7 +29,7 @@ def get_action_groups(role_name):
         perms = role_actions
 """
 allActions = get_action_groups('SuperUser')
-for role in mla.util.get(absLink=False):
+for role in ll_mla.util.get(absLink=False):
     role_name = role.get_name()
     filter_ = not role.get_administrative()
     role_actions = get_action_groups(role_name)
@@ -52,20 +53,16 @@ for role in mla.util.get(absLink=False):
     setattr(module, '%s_%s' % (role_name, case_name), role_case)
     role_case = None  # Need set to None, else it will be case of this module
 
+
 TOOL = 'ovirt-aaa-jdbc-tool'
 
 
 def setup_package():
-    if not config.GOLDEN_ENV:
-        datacenters.build_setup(config=config.PARAMETERS,
-                                storage=config.PARAMETERS,
-                                storage_type=config.STORAGE_TYPE,
-                                basename=config.TEST_NAME)
-    config.MASTER_STORAGE = storagedomains.get_master_storage_domain_name(
+    config.MASTER_STORAGE = ll_sd.get_master_storage_domain_name(
         config.DC_NAME[0]
     )
-    with config.ENGINE_HOST.executor().session() as session:
-        user_cli = EngineCLI(tool=TOOL, session=session).setup_module('user')
+    with config.ENGINE_HOST.executor().session() as ss:
+        user_cli = EngineCLI(tool=TOOL, session=ss).setup_module('user')
         for user in config.USERS[:-1]:
             assert user_cli.run(
                 'add',
@@ -81,14 +78,8 @@ def setup_package():
 
 
 def teardown_package():
-    if not config.GOLDEN_ENV:
-        datacenters.clean_datacenter(
-            True, config.DC_NAME[0],
-            vdc=config.VDC_HOST,
-            vdc_password=config.VDC_ROOT_PASSWORD
-        )
-    with config.ENGINE_HOST.executor().session() as session:
-        user_cli = EngineCLI(tool=TOOL, session=session).setup_module('user')
+    with config.ENGINE_HOST.executor().session() as ss:
+        user_cli = EngineCLI(tool=TOOL, session=ss).setup_module('user')
         for user in config.USERS[:-1]:
             assert user_cli.run(
                 'delete',

@@ -8,8 +8,8 @@ if user is not permittied for it.
 __test__ = True
 
 import logging
-from rhevmtests.system.user_roles_tests import config, common
-from rhevmtests.system.user_roles_tests.roles import role
+from rhevmtests.system.user_tests.mla import config, common
+from rhevmtests.system.user_tests.mla.roles import role
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.core_api.apis_exceptions import EntityNotFound

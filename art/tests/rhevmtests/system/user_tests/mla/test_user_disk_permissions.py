@@ -11,8 +11,8 @@ import time
 import art.test_handler.exceptions as errors
 from art.core_api.apis_exceptions import EntityNotFound
 
-from rhevmtests.system.user_roles_tests import config, common
-from rhevmtests.system.user_roles_tests.roles import role
+from rhevmtests.system.user_tests.mla import config, common
+from rhevmtests.system.user_tests.mla.roles import role
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611

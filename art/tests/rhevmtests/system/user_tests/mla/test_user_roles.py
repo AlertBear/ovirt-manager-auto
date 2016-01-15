@@ -6,8 +6,8 @@ This will cover scenario for create/remove/editin/using roles.
 
 import logging
 
-from rhevmtests.system.user_roles_tests import config, common
-from rhevmtests.system.user_roles_tests.roles import role as role_e
+from rhevmtests.system.user_tests.mla import config, common
+from rhevmtests.system.user_tests.mla.roles import role as role_e
 from art.core_api.apis_exceptions import EntityNotFound
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 

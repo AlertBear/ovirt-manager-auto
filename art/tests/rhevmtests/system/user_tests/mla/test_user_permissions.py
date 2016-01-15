@@ -9,8 +9,8 @@ __test__ = True
 import logging
 import time
 
-from rhevmtests.system.user_roles_tests import config, common
-from rhevmtests.system.user_roles_tests.roles import role
+from rhevmtests.system.user_tests.mla import config, common
+from rhevmtests.system.user_tests.mla.roles import role
 from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 from art.rhevm_api.tests_lib.high_level import storagedomains as h_sd
