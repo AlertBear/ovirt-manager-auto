@@ -171,7 +171,9 @@ class ARTMatrix(object):
             logger.info("The storage type switched to %s", storage)
 
     def pytest_runtest_teardown(self, item, nextitem):
-        if settings.opts['engine'] != self._system_api:
+        if self._system_api is None:
+            self._system_api = settings.opts['engine']
+        elif settings.opts['engine'] != self._system_api:
             settings.opts['engine'] = self._system_api
             logger.info(
                 "The API backend switched to %s", self._system_api,
