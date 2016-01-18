@@ -3566,7 +3566,7 @@ def move_vm_disk(vm_name, disk_name, target_sd, wait=True,
         disk, 'move', storage_domain=sd, positive=True
     ):
         raise exceptions.DiskException(
-            "Failed to move disk %s attached to vm %s from storage domain"
+            "Failed to move disk %s attached to vm %s from storage domain "
             "%s to storage domain %s" %
             (disk_name, vm_name, source_domain, target_sd)
         )
@@ -4668,8 +4668,9 @@ def remove_all_vm_lsm_snapshots(vm_name):
     :param vm_name: name of the vm that should be cleaned out of snapshots
     created during live migration
     :type vm_name: str
-    :return: None
-    :rtype: None
+    :raises:
+        * VMException if at least one snapshot wasn't removed successfully
+        * APITimeout if snapshots are not removed by timeout period
     """
     logger.info("Removing all '%s'", LIVE_SNAPSHOT_DESCRIPTION)
     stop_vms_safely([vm_name])
@@ -4684,8 +4685,13 @@ def remove_all_vm_lsm_snapshots(vm_name):
                     VM_REMOVE_SNAPSHOT_TIMEOUT,
                 )
             )
-    assert False not in results
-    wait_for_jobs()
+        wait_for_jobs([ENUMS['job_remove_snapshot']])
+        wait_for_vm_snapshots(vm_name, ENUMS['snapshot_state_ok'])
+    if False in results:
+        raise exceptions.VMException(
+            "At least one snapshot was not removed successfully from VM '%s'" %
+            vm_name
+        )
 
 
 # TODO: use 3.5 feature - ability to get device name for vm plugged devices

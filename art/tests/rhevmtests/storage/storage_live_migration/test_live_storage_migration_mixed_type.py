@@ -18,11 +18,10 @@ def setup_module():
     """
     Initialization of several parameters
     """
-    global LOCAL_LUN, LOCAL_LUN_ADDRESS, LOCAL_LUN_TARGET
-    config.TESTNAME = "live_storage_migration_mixed"
+    config.TESTNAME = "LSM_mixed_type"
     logger.info("Setup module %s", config.TESTNAME)
     config.MIGRATE_SAME_TYPE = False
-    config.VM_NAME = config.TESTNAME + "_%s"
+    global LOCAL_LUN, LOCAL_LUN_ADDRESS, LOCAL_LUN_TARGET
     LOCAL_LUN = config.UNUSED_LUNS[:]
     LOCAL_LUN_ADDRESS = config.UNUSED_LUN_ADDRESSES[:]
     LOCAL_LUN_TARGET = config.UNUSED_LUN_TARGETS[:]
@@ -67,8 +66,8 @@ class TestCase5993(basePlan.TestCase5993):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    # TODO: This has not been verified since the bz prevents to run it,
-    # make sure it works properly
+    # TODO: This has not been verified since there is a bz that prevents it
+    # from being run. Add the bz and test this once more
     __test__ = False
 
 
@@ -91,8 +90,8 @@ class TestCase5991(basePlan.TestCase5991):
     """
     # Gluster doesn't support shareable disks
     __test__ = (
-        config.STORAGE_TYPE_NFS in opts['storages']
-        or config.STORAGE_TYPE_ISCSI in opts['storages']
+        config.STORAGE_TYPE_NFS in opts['storages'] or
+        config.STORAGE_TYPE_ISCSI in opts['storages']
     )
 
 
@@ -186,7 +185,7 @@ class TestCase5970(basePlan.TestCase5970):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Storage_Migration
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
 
 
 @attr(tier=2)

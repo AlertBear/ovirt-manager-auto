@@ -703,7 +703,7 @@ def check_disk_visibility(disk, disks_list):
 
 @is_action('getImproperStorageDomain')
 def get_other_storage_domain(
-    disk_name, vm_name=None, storage_type=None, force_type=True
+    disk_name, vm_name=None, storage_type=None, force_type=True, ignore_type=[]
 ):
     """
     Choose a random, active data storage domain from the available list of
@@ -721,13 +721,15 @@ def get_other_storage_domain(
     :param force_type: return only the storage domain of the same device type
                        (file or block)
     :type force_type: bool
+    :param ignore_type: List of storage types to ignore (e.g. ignore
+                        GlusterFS for shared disks)
+    :type ignore_type: list
     :returns: name of a storage domain that doesn't contain the disk or empty
     string
     :rtype: str
     """
     logger.info(
-        "Find the storage domain type that the disk %s is found on",
-        disk_name
+        "Find the storage domain type that the disk %s is found on", disk_name
     )
     if not vm_name:
         disk = DISKS_API.find(disk_name)
@@ -750,16 +752,18 @@ def get_other_storage_domain(
     )
     for sd in STORAGE_DOMAIN_API.getElemFromLink(dc, get_href=False):
         if sd.get_id() != disk_sd_id and (
-                sd.get_status().get_state() ==
-                ENUMS['storage_domain_state_active']) and (
-                sd.get_type() == ENUMS['storage_dom_type_data']
+            sd.get_status().get_state() ==
+            ENUMS['storage_domain_state_active']) and (
+            sd.get_type() == ENUMS['storage_dom_type_data']
         ):
             sd_type = sd.get_storage().get_type()
             if storage_type and storage_type != sd_type:
                 continue
             if force_type and (disk_sd_type != sd_type):
                 continue
-            elif not force_type and (disk_sd_type == sd_type):
+            if not force_type and (disk_sd_type == sd_type):
+                continue
+            if sd_type in ignore_type:
                 continue
             sd_list.append(sd.get_name())
 
