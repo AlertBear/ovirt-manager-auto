@@ -196,14 +196,14 @@ def remove_unneeded_vnic_profiles():
 
 def remove_unneeded_vms():
     """
-    Remove all VMs besides [config.VM_NAME]
+    Remove all unneeded VMs
     """
     logger.info("Get all VMs")
-    all_vms = ll_vms.VM_API.get(absLink=False)
-    for vm in all_vms:
-        if vm.name not in config.VM_NAME:
-            if not ll_vms.removeVm(positive=True, vm=vm.name):
-                logger.error("Failed to remove %s", vm.name)
+    vms = [vm.name for vm in ll_vms.VM_API.get(absLink=False)]
+    vms_to_remove = [vm for vm in vms if "golden_env_mixed_virtio_" not in vm]
+    if vms_to_remove:
+        logger.warning("VMs to remove: %s", vms_to_remove)
+        ll_vms.safely_remove_vms(vms=vms_to_remove)
 
 
 @ignore_exception

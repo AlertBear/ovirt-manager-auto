@@ -700,15 +700,23 @@ def updateVm(positive, vm, **kwargs):
 @is_action()
 def removeVm(positive, vm, **kwargs):
     '''
-    Description: remove vm
-    Parameters:
-       * vm - name of vm
-       * force - force remove if True
-       * stopVM - stop VM before removal
-       * wait - wait for removal if True
-       * timeout - waiting timeout
-       * waitTime - waiting time interval
-    Return: status (True if vm was removed properly, False otherwise)
+    Remove vm
+
+    :param vm: VM name
+    :type vm: str
+    :param kwargs: Extra kwargs for rmove VM
+        :param force: Force remove if True
+        :type force: bool
+        :param stopVM: Stop VM before removal
+        :type stopVM: bool
+        :param wait: Wait for removal if True
+        :type wait: bool
+        :param timeout: Waiting timeout
+        :type timeout: int
+        :param waitTime: Waiting time interval
+        :type waitTime: int
+    :return: Status (True if vm was removed properly, False otherwise)
+    :rtype: bool
     '''
     body = None
     force = kwargs.pop('force', None)
@@ -721,6 +729,7 @@ def removeVm(positive, vm, **kwargs):
     if str(stopVM).lower() == 'true' and vmStatus != ENUMS['vm_state_down']:
         if not stopVm(positive, vm):
             return False
+    logger.info("Remove %s", vm)
     status = VM_API.delete(vmObj, positive, body=body, element_name='action')
 
     wait = kwargs.pop('wait', True)
@@ -4824,6 +4833,7 @@ def safely_remove_vms(vms):
         try:
             stop_vms_safely(existing_vms)
         except exceptions.VMException:
+            logger.error("Failed to stop %s", vms)
             return False
         for vm in existing_vms:
             removeVm(True, vm, wait=False)
