@@ -14,7 +14,6 @@ from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import clusters
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
-from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.high_level import datastructures
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 
@@ -42,102 +41,119 @@ vmArgs = {
     'network': config.MGMT_BRIDGE,
     'image': config.COBBLER_PROFILE,
 }
+ISCSI_SDS = []
 
 
 def setup_module():
     """
     Remove all the storage domains since we need an empty DC
     """
-    if not config.GOLDEN_ENV:
-        datacenters.build_setup(
-            config.PARAMETERS, config.PARAMETERS, config.STORAGE_TYPE,
-            basename=config.TESTNAME,
-            local=config.STORAGE_TYPE == config.ENUMS['storage_type_local']
+    global ISCSI_SDS
+    # All of the storage connections need to be removed, and the host
+    # should be logged out from all targets for these tests. This is due
+    # to the fact that when adding a new storage domain or direct lun,
+    # ovirt will automatically link the storage  domains with the existing
+    # host's logged targets
+    logger.info("Removing all iscsi storage domains for test")
+    ISCSI_SDS = storagedomains.getStorageDomainNamesForType(
+        config.DATA_CENTER_NAME, config.STORAGE_TYPE_ISCSI
+    )
+    addresses, targets = hl_sd.discover_addresses_and_targets(
+        config.HOSTS[0], config.UNUSED_LUN_ADDRESSES[0]
+    )
+    config.CONNECTIONS[0]['lun_address'] = addresses[0]
+    config.CONNECTIONS[0]['lun_target'] = targets[0]
+    config.CONNECTIONS[1]['lun_address'] = addresses[1]
+    config.CONNECTIONS[1]['lun_target'] = targets[1]
+
+    test_utils.wait_for_tasks(
+        config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+    )
+    for sd in ISCSI_SDS:
+        assert hl_sd.detach_and_deactivate_domain(
+            config.DATA_CENTER_NAME, sd
+        )
+        # We want to destroy the domains so we will be able to restore the
+        # data on them
+        assert storagedomains.removeStorageDomain(
+            positive=True, storagedomain=sd, host=config.HOST_FOR_MOUNT,
+            format='false'
         )
 
-        # for iscsi tests we want to have an empty DC
-        if config.STORAGE_TYPE == config.STORAGE_TYPE_ISCSI:
-            sds = sd_api.get(absLink=False)
-            for sd in sds:
-                # Don't remove sds by providers
-                if sd.get_storage().get_type() not in \
-                        config.STORAGE_TYPE_PROVIDERS:
-                    assert storagedomains.removeStorageDomain(
-                        True, sd.get_name(), config.HOSTS[0]
-                    )
-    else:
-        # All of the storage connections need to be removed, and the host
-        # should be logged out from all targets for these tests. This is due
-        # to the fact that when adding a new storage domain or direct lun,
-        # ovirt will automatically link the storage  domains with the existing
-        # host's logged targets
-        logger.info("Removing all iscsi storage domains for test")
-        iscsi_sds = storagedomains.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, config.STORAGE_TYPE_ISCSI
-        )
-        addresses, targets = hl_sd.discover_addresses_and_targets(
-            config.HOSTS[0], config.UNUSED_LUN_ADDRESSES[0]
-        )
-        config.CONNECTIONS[0]['lun_address'] = addresses[0]
-        config.CONNECTIONS[0]['lun_target'] = targets[0]
-        config.CONNECTIONS[1]['lun_address'] = addresses[1]
-        config.CONNECTIONS[1]['lun_target'] = targets[1]
-
-        test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
-        )
-        assert storagedomains.removeStorageDomains(
-            True, iscsi_sds, config.HOST_FOR_MOUNT, 'true'
-        )
-        assert ll_dc.addDataCenter(
-            True, name=config.DATACENTER_ISCSI_CONNECTIONS,
-            storage_type=config.STORAGE_TYPE_ISCSI,
-            version=config.COMP_VERSION
-        )
-        assert clusters.addCluster(
-            True, name=config.CLUSTER_ISCSI_CONNECTIONS,
-            cpu=config.CPU_NAME,
-            data_center=config.DATACENTER_ISCSI_CONNECTIONS,
-            version=config.COMP_VERSION
-        )
-        hl_hosts.move_host_to_another_cluster(
-            config.HOST_FOR_MOUNT, config.CLUSTER_ISCSI_CONNECTIONS
-        )
-        _logout_from_all_iscsi_targets()
+    assert ll_dc.addDataCenter(
+        True, name=config.DATACENTER_ISCSI_CONNECTIONS,
+        storage_type=config.STORAGE_TYPE_ISCSI,
+        version=config.COMP_VERSION
+    )
+    assert clusters.addCluster(
+        True, name=config.CLUSTER_ISCSI_CONNECTIONS,
+        cpu=config.CPU_NAME,
+        data_center=config.DATACENTER_ISCSI_CONNECTIONS,
+        version=config.COMP_VERSION
+    )
+    hl_hosts.move_host_to_another_cluster(
+        config.HOST_FOR_MOUNT, config.CLUSTER_ISCSI_CONNECTIONS
+    )
+    _logout_from_all_iscsi_targets()
 
 
 def teardown_module():
     """
     Remove empty DC
     """
-    if not config.GOLDEN_ENV:
-        datacenters.clean_datacenter(True, config.DATACENTER_ISCSI_CONNECTIONS)
-    else:
-        hl_hosts.move_host_to_another_cluster(
+    test_failed = False
+    if not hl_hosts.move_host_to_another_cluster(
+        config.HOST_FOR_MOUNT, config.CLUSTER_NAME
+    ):
+        logger.error(
+            "Failed to move host %s to cluster %s",
             config.HOST_FOR_MOUNT, config.CLUSTER_NAME
         )
-        if not ll_dc.removeDataCenter(
-            True, config.DATACENTER_ISCSI_CONNECTIONS
-        ):
-            logger.error(
-                "Error removing data center %s",
-                config.DATACENTER_ISCSI_CONNECTIONS
+        test_failed = True
+    if not ll_dc.removeDataCenter(
+        True, config.DATACENTER_ISCSI_CONNECTIONS
+    ):
+        logger.error(
+            "Error removing data center %s",
+            config.DATACENTER_ISCSI_CONNECTIONS
+        )
+        test_failed = True
+    if not clusters.removeCluster(True, config.CLUSTER_ISCSI_CONNECTIONS):
+        logger.error(
+            "Error removing cluster %s", config.CLUSTER_ISCSI_CONNECTIONS
+        )
+        test_failed = True
+    _logout_from_all_iscsi_targets()
+    logger.info("Importing iscsi storage domains back")
+    # Importing all iscsi domains using the address and target of one of them
+    imported = hl_sd.importBlockStorageDomain(
+        config.HOST_FOR_MOUNT, config.LUN_ADDRESSES[0],
+        config.LUN_TARGETS[0]
+    )
+    if not imported:
+        logger.error("Failed to import iSCSI domains back")
+        test_failed = True
+    if imported:
+        register_failed = False
+        for sd in ISCSI_SDS:
+            hl_sd.attach_and_activate_domain(config.DATA_CENTER_NAME, sd)
+            unregistered_vms = storagedomains.get_unregistered_vms(sd)
+            if unregistered_vms:
+                for vm in unregistered_vms:
+                    if not storagedomains.register_object(
+                        vm, cluster=config.CLUSTER_NAME
+                    ):
+                        logger.error(
+                            "Failed to register vm %s from imported domain %s",
+                            vm, sd
+                        )
+                        register_failed = True
+        if register_failed:
+            raise errors.TearDownException(
+                "TearDown failed to register all vms from imported domain"
             )
-        if not clusters.removeCluster(True, config.CLUSTER_ISCSI_CONNECTIONS):
-            logger.error(
-                "Error removing cluster %s", config.CLUSTER_ISCSI_CONNECTIONS
-            )
-        _logout_from_all_iscsi_targets()
-        logger.info("Adding iscsi storage domains back")
-        names = [sd['name'] for sd in config.DC['storage_domains']
-                 if sd['storage_type'] == config.STORAGE_TYPE_ISCSI]
-        for name, lun, target, address in zip(
-                names, config.LUNS, config.LUN_TARGETS, config.LUN_ADDRESSES
-        ):
-            hl_sd.addISCSIDataDomain(
-                config.HOST_FOR_MOUNT, name, config.DATA_CENTER_NAME,
-                lun, address, target, override_luns=True, login_all=True
-            )
+    if test_failed:
+        raise errors.TearDownException("TearDown failed")
 
 
 def _compare_connections(conn_1, conn_2):

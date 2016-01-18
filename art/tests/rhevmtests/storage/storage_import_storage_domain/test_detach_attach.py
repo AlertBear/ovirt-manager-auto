@@ -151,9 +151,13 @@ def setup_module():
         test_utils.wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
-        hl_sd.detach_and_deactivate_domain(
+        if not hl_sd.detach_and_deactivate_domain(
             config.DATA_CENTER_NAME, IMPORT_DOMAIN[storage_type]
-        )
+        ):
+            raise errors.StorageDomainException(
+                "Failed to deactivate storage domain %s" %
+                IMPORT_DOMAIN[storage_type]
+            )
         wait_for_jobs([ENUMS['job_detach_storage_domain']])
 
         storage_domain = ll_sd.getStorageDomainNamesForType(

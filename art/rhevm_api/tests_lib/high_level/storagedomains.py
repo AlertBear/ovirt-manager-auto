@@ -26,6 +26,7 @@ from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.high_level import datastructures
 from art.core_api import is_action
+
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 
@@ -123,9 +124,6 @@ def importBlockStorageDomain(host, lun_address, lun_target):
     host_obj = ll_sd.hostUtil.find(host)
     host_obj_id = ll_sd.Host(id=host_obj.get_id())
     iscsi = ll_sd.IscsiDetails(address=lun_address)
-    # TODO: This call for asyc is not working until
-    # JIRA ticket https://projects.engineering.redhat.com/browse/RHEVM-2141
-    # will be resolved
     response = ll_sd.hostUtil.syncAction(
         host_obj, "unregisteredstoragedomainsdiscover", True, iscsi=iscsi,
         iscsi_target=[lun_target]
@@ -133,18 +131,27 @@ def importBlockStorageDomain(host, lun_address, lun_target):
     if not response:
         ll_sd.util.logger.error('Failed to find storage domains to import')
         return False
-    sd_object = response.get_storage_domains().get_storage_domain()[0]
+    response = response.split()
+    sd_ids = [item for item in response if (
+        item.startswith("id=") and item.endswith('">')
+    )]
+    sds_status = list()
+    for id in sd_ids:
+        # id == u'id="xxxx-yyyy-zzzz-qqqq">
+        # str(id) ==> convert it to str (u' is removed)
+        # id[4:-2] ==> removes id=" and ">
+        sd_id = str(id[4:-2])
 
-    storage_object = ll_sd.Storage()
-    storage_object.set_type(ENUMS['storage_type_iscsi'])
+        storage_object = ll_sd.Storage()
+        storage_object.set_type(ENUMS['storage_type_iscsi'])
 
-    sd = ll_sd.StorageDomain(id=sd_object.get_id())
-    sd.set_type(ENUMS['storage_dom_type_data'])
-    sd.set_host(host_obj_id)
-    sd.set_storage(storage_object)
-    sd.set_import('true')
-
-    return ll_sd.util.create(sd, True, compare=False)[1]
+        sd = ll_sd.StorageDomain(id=sd_id)
+        sd.set_type(ENUMS['storage_dom_type_data'])
+        sd.set_host(host_obj_id)
+        sd.set_storage(storage_object)
+        sd.set_import('true')
+        sds_status.append(ll_sd.util.create(sd, True, compare=False)[1])
+    return False not in sds_status
 
 
 @is_action()
@@ -875,34 +882,39 @@ def create_nfs_domain_and_verify_options(domain_list, host=None,
 @is_action('detachAndDeactivateDomain')
 def detach_and_deactivate_domain(datacenter, domain):
     """
-    Description: deactivates a domain (if necessary) and detaches it
-    Author: gickowic
-    Parameters:
-        * datacenter - datacenter name
-        * domain - domain name
-    Returns true if successful
+    Deactivates and detaches a storage domain
+
+    :param datacenter: Name of Data center from which domain will be
+    deactivated and detached
+    :type datacenter: str
+    :param domain: The storage domain to deactivate and detach
+    :type domain: str
+    :return: True if successful, False otherwise
+    :rtype: bool
     """
-    logger.info('Checking if domain %s active in dc %s'
-                % (domain, datacenter))
+    logger.info(
+        'Checking if domain %s is active in dc %s', domain, datacenter
+    )
     if ll_sd.is_storage_domain_active(datacenter, domain):
-        logger.info('Domain %s is active in dc %s' % (domain, datacenter))
+        logger.info('Domain %s is active in dc %s', domain, datacenter)
 
-        logger.info('Deactivating domain  %s in dc %s' % (domain, datacenter))
+        logger.info('Deactivating domain  %s in dc %s', domain, datacenter)
         if not ll_sd.deactivateStorageDomain(True, datacenter, domain):
-            raise errors.StorageDomainException(
-                'Unable to deactivate domain %s on dc %s'
-                % (domain, datacenter))
+            logger.error(
+                'Unable to deactivate domain %s on dc %s', domain, datacenter
+            )
+            return False
 
-    logger.info('Domain %s is inactive in datacenter %s'
-                % (domain, datacenter))
-
-    logger.info('Detaching domain %s from dc %s' % (domain, datacenter))
+    logger.info(
+        'Domain %s is inactive in datacenter %s', domain, datacenter
+    )
+    logger.info('Detaching domain %s from dc %s', domain, datacenter)
     if not ll_sd.detachStorageDomain(True, datacenter, domain):
-        raise errors.StorageDomainException(
-            'Unable to detach domain %s from dc %s'
-            % (domain, datacenter))
-    logger.info('Domain %s detached to dc %s' % (domain, datacenter))
-
+        logger.error(
+            'Unable to detach domain %s from dc %s', domain, datacenter
+        )
+        return False
+    logger.info('Domain %s detached to dc %s', domain, datacenter)
     return True
 
 

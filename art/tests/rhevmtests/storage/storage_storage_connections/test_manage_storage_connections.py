@@ -8,7 +8,6 @@ from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import clusters
 from art.rhevm_api.tests_lib.low_level import datacenters
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
-
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, StorageTest as TestCase
@@ -141,8 +140,14 @@ class TestCasePosix(TestCase):
         logger.info("Detaching and deactivating domain")
         test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
                                   config.DATA_CENTER_NAME)
-        hl_sd.detach_and_deactivate_domain(
-            config.DATA_CENTER_NAME, self.sd_name)
+        if not hl_sd.detach_and_deactivate_domain(
+            config.DATA_CENTER_NAME, self.sd_name
+        ):
+            logger.error(
+                "Failed to deactivate storage domain %s" %
+                self.sd_name
+            )
+            TestCase.test_failed = True
         logger.info("Removing domain %s", self.sd_name)
         storagedomains.removeStorageDomain(
             True, self.sd_name, self.host, 'true'
@@ -153,6 +158,7 @@ class TestCasePosix(TestCase):
                 addr, path, sd_id, config.HOST_FOR_MOUNT_IP, config.HOSTS_USER,
                 config.HOSTS_PW, vfs_type
             )
+        TestCase.teardown_exception()
 
     def default_update(self):
         pass

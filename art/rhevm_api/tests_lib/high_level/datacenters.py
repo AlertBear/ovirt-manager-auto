@@ -235,9 +235,13 @@ def clean_datacenter(
         for sd in sds:
             if not sd.get_master():
                 LOGGER.info("Detach and deactivate %s", sd.get_name())
-                storagedomains.detach_and_deactivate_domain(
+                if not storagedomains.detach_and_deactivate_domain(
                     dc_obj.get_name(), sd.get_name()
-                )
+                ):
+                    raise errors.StorageDomainException(
+                        "Failed to deactivate storage domain %s" %
+                        sd.get_name()
+                    )
 
         if vdc and vdc_password:
             wait_for_tasks(
