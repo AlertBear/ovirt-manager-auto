@@ -1,21 +1,23 @@
 """
 Hotplug test helpers functions
 """
-
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
 import os
-from art.unittest_lib import StorageTest as TestCase
 import tempfile
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from art.rhevm_api.utils import test_utils
-
-from utilities import machine
-from art.rhevm_api.tests_lib.low_level import vms
-from art.rhevm_api.tests_lib.low_level import disks
-from art.rhevm_api.tests_lib.low_level.hosts import getHostIP
-from rhevmtests.storage.helpers import create_vm_or_clone
 
 import config
+from art.rhevm_api.tests_lib.low_level import (
+    disks as ll_disks,
+    hosts as ll_hosts,
+    vms as ll_vms,
+)
+from art.rhevm_api.utils import test_utils
+from art.test_handler import exceptions
+from art.unittest_lib import StorageTest as TestCase
+from rhevmtests.storage import helpers as storage_helpers
+from utilities import machine
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -83,14 +85,16 @@ ONE_PIXEL_FILE = (
 
 
 def create_vm_with_disks(storage_domain, storage_type):
-    """ creates a VM and installs system on it; then creates 5 disks and
-        attaches them to the VM
-        Parameters:
-            * storage_domain: name of the storage domain
-            * storage_type: storage type of the domain where the disks will be
-                created
-        Returns:
-            name of the vm created
+    """
+    Creates a VM and installs system on it, create 7 disks and attach them to
+    the VM
+
+    Parameters:
+        * storage_domain: name of the storage domain
+        * storage_type: storage type of the domain where the disks will be
+        created
+    Returns:
+        Name of the vm created
     """
     vm_name = config.VM_NAME % storage_type
     unattached_disk = 'unattached_disk_%s' % storage_type
@@ -98,12 +102,15 @@ def create_vm_with_disks(storage_domain, storage_type):
     vm_args['vmName'] = vm_name
     vm_args['vmDescription'] = vm_name
     vm_args['storageDomainName'] = storage_domain
-    vm_args['memory'] = 2 * config.GB
+    vm_args['memory'] = 1 * config.GB
     vm_args['start'] = 'true'
-    create_vm_or_clone(**vm_args)
+    if not storage_helpers.create_vm_or_clone(**vm_args):
+        raise exceptions.VMException(
+            "Failed to create VM '%s'" % vm_name
+        )
 
     DISKS_TO_PLUG.update({storage_type: []})
-    for index in xrange(5):
+    for index in xrange(7):
         DISKS_TO_PLUG[storage_type].append(
             (
                 "disk_to_plug_%s_%s" % (storage_type, str(index))
@@ -122,29 +129,32 @@ def create_vm_with_disks(storage_domain, storage_type):
             disk_args_copy = disk_args.copy()
             disk_args_copy['alias'] = disk_name
             disk_args_copy['storagedomain'] = storage_domain
-            executor.submit(disks.addDisk(True, **disk_args_copy))
+            executor.submit(ll_disks.addDisk(True, **disk_args_copy))
 
-    disks.wait_for_disks_status(all_disks_to_add, timeout=DISKS_WAIT_TIMEOUT)
+    ll_disks.wait_for_disks_status(
+        all_disks_to_add, timeout=DISKS_WAIT_TIMEOUT
+    )
     for disk_name in DISKS_TO_PLUG[storage_type]:
-        disks.attachDisk(True, disk_name, vm_name, False)
+        ll_disks.attachDisk(True, disk_name, vm_name, False)
 
     return vm_name
 
 
 def create_local_files_with_hooks():
-    """ creates all the hook files locally, so in the tests we can only copy
-        them to the final location
     """
-    # the easiest hook
+    Creates all the hook files locally, in the tests these files are copied
+    over
+    """
+    # The easiest hook
     with open(HOOKFILENAME, "w+") as handle:
         handle.write("#!/bin/bash\nuuidgen>> %s\n" % FILE_WITH_RESULTS)
 
-    # easy hook with sleep
+    # Easy hook with sleep
     with open(HOOKWITHSLEEPFILENAME, "w+") as handle:
         handle.write(
             "#!/bin/bash\nsleep 30s\nuuidgen>> %s\n" % FILE_WITH_RESULTS)
 
-    # hook with print 'Hello World!'
+    # Hook with print 'Hello World!'
     with open(HOOKPRINTFILENAME, "w+") as handle:
         handle.write("#!/bin/bash\necho %s>> %s\n" % (TEXT, FILE_WITH_RESULTS))
 
@@ -163,12 +173,12 @@ def remove_hook_files():
 
 
 class HotplugHookTest(TestCase):
-    """ basic class for disk hotplug hooks
-        all tests work like follows:
-            * prepare/clear env
-            * install hooks
-            * perform an action (attach/activate/deactivate a disk)
-            * check if correct hooks were called
+    """
+    Basic class for disk hotplug hooks, all tests work as follows:
+        * Prepare/clear environment
+        * Install hooks
+        * Perform an action (attach/activate/deactivate a disk)
+        * Check if correct hooks were called
     """
     hook_dir = None
     vm_name = None
@@ -184,8 +194,7 @@ class HotplugHookTest(TestCase):
         return out
 
     def create_hook_file(self, local_hook, remote_hook):
-        """ copies a local hook file to a remote location
-        """
+        """ Copies a local hook file to a remote location """
         LOGGER.info("Hook file: %s" % remote_hook)
         assert self.machine.copyTo(local_hook, remote_hook)
         LOGGER.info("Changing permissions")
@@ -193,26 +202,23 @@ class HotplugHookTest(TestCase):
         self.run_cmd(["chown", "36:36", remote_hook])
 
     def put_disks_in_correct_state(self):
-        """ activate/deactivate disks we will use in the test
-        """
+        """ Activate/Deactivate disks we will use in the test """
         for disk_name in self.use_disks:
-            disk = disks.getVmDisk(self.vm_name, disk_name)
+            disk = ll_disks.getVmDisk(self.vm_name, disk_name)
             LOGGER.info("Disk active: %s" % disk.active)
             if disk.get_active() and not self.active_disk:
-                assert vms.deactivateVmDisk(True, self.vm_name, disk_name)
+                assert ll_vms.deactivateVmDisk(True, self.vm_name, disk_name)
             elif not disk.get_active() and self.active_disk:
-                assert vms.activateVmDisk(True, self.vm_name, disk_name)
+                assert ll_vms.activateVmDisk(True, self.vm_name, disk_name)
 
     def clear_hooks(self):
-        """ clear all vdsm hot(un)plug hook directories
-        """
+        """ Clear all VDSM hot(un)plug hook directories """
         for hook_dir in ALL_AVAILABLE_HOOKS:
             remote_hooks = os.path.join(MAIN_HOOK_DIR, hook_dir, '*')
             self.run_cmd(['rm', '-f', remote_hooks])
 
     def clear_file_for_hook_resuls(self):
-        """ removes old hook result file, creates an empty result file
-        """
+        """ Removes old hook result file, creates an empty result file """
         LOGGER.info("Removing old results")
         self.run_cmd(['rm', '-f', FILE_WITH_RESULTS])
         LOGGER.info("Touching result file")
@@ -221,8 +227,7 @@ class HotplugHookTest(TestCase):
         self.run_cmd(['chown', 'vdsm:kvm', FILE_WITH_RESULTS])
 
     def install_required_hooks(self):
-        """ install all the hooks required in the test
-        """
+        """ Install all the hooks required for the tests """
         for hook_dir, hooks in self.hooks.iteritems():
             for hook in hooks:
                 remote_hook = os.path.join(
@@ -230,20 +235,21 @@ class HotplugHookTest(TestCase):
                 self.create_hook_file(hook, remote_hook)
 
     def setUp(self):
-        """ performed actions:
-            * clear all hooks
-            * clear hook result file
-            * put disks in correct state
-            * install new hook(s)
+        """
+        perform actions:
+            * Clear all hooks
+            * Clear hook result file
+            * Put disks in correct state
+            * Install new hook(s)
         """
         self.use_disks = DISKS_TO_PLUG[self.storage]
         self.vm_name = config.VM_NAME % self.storage
-        if vms.get_vm_state(self.vm_name) != config.VM_UP:
+        if ll_vms.get_vm_state(self.vm_name) != config.VM_UP:
             # TODO: Because of BZ1273891 - vm can be down after the hotplug
-            vms.startVm(True, self.vm_name)
-            vms.waitForVMState(self.vm_name)
-        self.host_name = vms.getVmHost(self.vm_name)[1]['vmHoster']
-        self.host_address = getHostIP(self.host_name)
+            ll_vms.startVm(True, self.vm_name)
+            ll_vms.waitForVMState(self.vm_name)
+        self.host_name = ll_vms.getVmHost(self.vm_name)[1]['vmHoster']
+        self.host_address = ll_hosts.getHostIP(self.host_name)
         LOGGER.info("Host: %s" % self.host_address)
 
         LOGGER.info("Looking for username and password")
@@ -267,8 +273,7 @@ class HotplugHookTest(TestCase):
         self.install_required_hooks()
 
     def get_hooks_result_file(self):
-        """ reads hook result file
-        """
+        """ Reads hook result file """
         _, tmpfile = tempfile.mkstemp()
         LOGGER.info("temp: %s" % tmpfile)
         try:
@@ -281,15 +286,16 @@ class HotplugHookTest(TestCase):
             os.remove(tmpfile)
 
     def verify_hook_called(self):
-        """ verify if the correct hooks were called
-            this version only checks if the hook result file is not empty,
-            it is redefined in many subclasses
+        """
+        verify if the correct hooks were called, ensuring that the hook result
+        file is not empty
         """
         assert self.get_hooks_result_file()
 
     def perform_action(self):
-        """ perform defined action (plug/unplug disk) on given disks and checks
-            it succeeded
+        """
+        Perform defined action (plug/unplug disk) on given disks and checks
+        whether action was successful
         """
         with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
             future_to_results = dict(
@@ -305,15 +311,15 @@ class HotplugHookTest(TestCase):
             )
 
     def perform_action_and_verify_hook_called(self):
-        """ calls defined action (activate/deactivate disk) and checks if hooks
-            were called
+        """
+        Calls defined action (activate/deactivate disk) and checks if hooks
+        were called
         """
         self.perform_action()
         self.verify_hook_called()
 
     def tearDown(self):
-        """ clear hooks and removes hook results
-        """
+        """ Clear hooks and removes hook results """
         self.run_cmd(['rm', '-f', FILE_WITH_RESULTS])
         self.clear_hooks()
-        vms.stop_vms_safely([self.vm_name])
+        ll_vms.stop_vms_safely([self.vm_name])

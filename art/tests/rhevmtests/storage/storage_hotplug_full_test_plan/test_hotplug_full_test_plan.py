@@ -1,28 +1,32 @@
 """
 Hotplug full test plan
 """
+import common
+from concurrent.futures import ThreadPoolExecutor
+import logging
+import time
+
 import config
 import helpers
-import common
-import logging
-from concurrent.futures import ThreadPoolExecutor
-import time
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import attr
-from art.unittest_lib import StorageTest as TestCase
+from art.rhevm_api.tests_lib.high_level import (
+    disks as hl_disks,
+)
+from art.rhevm_api.tests_lib.low_level import (
+    datacenters as ll_dc,
+    disks as ll_disks,
+    hosts as ll_hosts,
+    storagedomains as ll_sd,
+    templates as ll_templates,
+    vms as ll_vms,
+)
 from art.rhevm_api.utils import test_utils as utils
 import art.test_handler.exceptions as exceptions
-from art.rhevm_api.utils.test_utils import wait_for_tasks
-from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    getStorageDomainNamesForType,
-)
-from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
-from art.rhevm_api.tests_lib.low_level import vms, disks, templates, hosts
-from art.rhevm_api.tests_lib.high_level.disks import delete_disks
 from art.test_handler.settings import opts
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.unittest_lib import attr, StorageTest as TestCase
 from rhevmtests.storage import helpers as storage_helpers
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
 
 FILE_WITH_RESULTS = helpers.FILE_WITH_RESULTS
@@ -32,7 +36,6 @@ TEXT = helpers.TEXT
 
 DISK_INTERFACES = (ENUMS['interface_virtio'],)
 
-positive = True
 VM_NAMES = []
 TEMPLATE_NAMES = []
 DISK_NAMES = dict()
@@ -40,84 +43,79 @@ DISK_NAMES = dict()
 
 def setup_module():
     """
-    Create VM templates with different OSs and all disk type combinations
+    Create VM templates with various disk type combinations
     """
     global DISK_NAMES
-    LOGGER.info("setup_module")
+    logger.info("setup_module")
     helpers.create_local_files_with_hooks()
     for storage_type in config.STORAGE_SELECTOR:
-        storage_domain = getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, storage_type)[0]
-
+        storage_domain = ll_sd.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, storage_type
+        )[0]
         VM_NAMES.append(
             helpers.create_vm_with_disks(storage_domain, storage_type)
         )
-
         DISK_NAMES[storage_type] = (
             storage_helpers.start_creating_disks_for_test(
                 False, storage_domain, storage_type
             )
         )
-
         TEMPLATE_NAMES.append(
-            common.create_vm_and_template(
-                config.COBBLER_PROFILE, storage_domain, storage_type
-            )
+            common.create_vm_and_template(storage_domain, storage_type)
         )
-        LOGGER.info(
+        logger.info(
             "Waiting for vms to be installed and templates to be created"
         )
-
         if config.VDC is not None and config.VDC_PASSWORD is not None:
-            LOGGER.info(
+            logger.info(
                 "Waiting for vms to be installed and templates to be created"
             )
-            wait_for_tasks(
+            utils.wait_for_tasks(
                 vdc=config.VDC, vdc_password=config.VDC_PASSWORD,
                 datacenter=config.DATA_CENTER_NAME
             )
-        LOGGER.info(
+        logger.info(
             "All vms and templates created successfully for storage "
             "type %s", storage_type
         )
-    LOGGER.info("All templates created successfully")
-    LOGGER.info("Package setup successfully")
+    logger.info("All templates created successfully")
+    logger.info("Package setup successfully")
 
 
 def teardown_module():
     """
     clean setup
     """
-    LOGGER.info("Teardown module")
+    logger.info("Teardown module")
     helpers.remove_hook_files()
 
     external_vms = ["external-%s" % name for name in VM_NAMES]
     vm_names = external_vms + VM_NAMES
-    LOGGER.info("Try to safely remove vms if they exist: %s", vm_names)
-    vms.safely_remove_vms(vm_names)
+    logger.info("Try to safely remove vms if they exist: %s", vm_names)
+    ll_vms.safely_remove_vms(vm_names)
 
     for disks_to_remove in DISK_NAMES.values():
-        LOGGER.info("Removing disks %s", DISK_NAMES.values())
-        delete_disks(disks_to_remove)
+        logger.info("Removing disks %s", DISK_NAMES.values())
+        hl_disks.delete_disks(disks_to_remove)
 
     disks_to_remove = []
     for unattached_disks_per_storage in (
             helpers.UNATTACHED_DISKS_PER_STORAGE_TYPE.values()
     ):
         for disk_to_remove in unattached_disks_per_storage:
-            if disks.checkDiskExists(True, disk_to_remove):
+            if ll_disks.checkDiskExists(True, disk_to_remove):
                 disks_to_remove.append(disk_to_remove)
     for unpluged_disks_per_storage in helpers.DISKS_TO_PLUG.values():
         for disk_to_remove in unpluged_disks_per_storage:
-            if disks.checkDiskExists(True, disk_to_remove):
+            if ll_disks.checkDiskExists(True, disk_to_remove):
                 disks_to_remove.append(disk_to_remove)
 
-    LOGGER.info("Removing disks %s", disks_to_remove)
-    delete_disks(disks_to_remove)
+    logger.info("Removing disks %s", disks_to_remove)
+    hl_disks.delete_disks(disks_to_remove)
 
-    LOGGER.info("Removing templates %s", TEMPLATE_NAMES)
+    logger.info("Removing templates %s", TEMPLATE_NAMES)
     for template in TEMPLATE_NAMES:
-        templates.removeTemplate(True, template)
+        ll_templates.removeTemplate(True, template)
 
 
 @attr(tier=1)
@@ -130,13 +128,12 @@ class TestCase5033(helpers.HotplugHookTest):
     """
     __test__ = True
     active_disk = False
-    action = [vms.activateVmDisk]
+    action = [ll_vms.activateVmDisk]
     hooks = {'before_disk_hotplug': [helpers.HOOKFILENAME]}
 
     @polarion("RHEVM3-5033")
     def test_before_disk_hotplug(self):
-        """ Check if before_disk_hotplug is called
-        """
+        """ Check if before_disk_hotplug is called """
         self.use_disks = DISKS_TO_PLUG[self.storage][0:1]
         self.perform_action_and_verify_hook_called()
 
@@ -151,13 +148,12 @@ class TestCase5034(helpers.HotplugHookTest):
     """
     __test__ = True
     active_disk = False
-    action = [vms.activateVmDisk]
+    action = [ll_vms.activateVmDisk]
     hooks = {'after_disk_hotplug': [helpers.HOOKFILENAME]}
 
     @polarion("RHEVM3-5034")
     def test_after_disk_hotplug(self):
-        """ Check if after_disk_hotplug is called
-        """
+        """ Check if after_disk_hotplug is called """
         self.use_disks = DISKS_TO_PLUG[self.storage][1:2]
         self.perform_action_and_verify_hook_called()
 
@@ -172,13 +168,12 @@ class TestCase5035(helpers.HotplugHookTest):
     """
     __test__ = True
     active_disk = True
-    action = [vms.deactivateVmDisk]
+    action = [ll_vms.deactivateVmDisk]
     hooks = {'before_disk_hotunplug': [helpers.HOOKFILENAME]}
 
     @polarion("RHEVM3-5035")
     def test_before_disk_hotunplug(self):
-        """ Check if before_disk_hotunplug is called
-        """
+        """ Check if before_disk_hotunplug is called """
         self.use_disks = DISKS_TO_PLUG[self.storage][2:3]
         self.perform_action_and_verify_hook_called()
 
@@ -193,13 +188,12 @@ class TestCase5036(helpers.HotplugHookTest):
     """
     __test__ = True
     active_disk = True
-    action = [vms.deactivateVmDisk]
+    action = [ll_vms.deactivateVmDisk]
     hooks = {'after_disk_hotunplug': [helpers.HOOKFILENAME]}
 
     @polarion("RHEVM3-5036")
     def test_after_disk_hotunplug(self):
-        """ Check if after_disk_hotunplug is called
-        """
+        """ Check if after_disk_hotunplug is called """
         self.use_disks = DISKS_TO_PLUG[self.storage][3:4]
         self.perform_action_and_verify_hook_called()
 
@@ -214,21 +208,22 @@ class TestCase5037(helpers.HotplugHookTest):
     """
     __test__ = True
     active_disk = False
-    action = [vms.activateVmDisk]
+    action = [ll_vms.activateVmDisk]
     hooks = {'after_disk_hotplug': [helpers.HOOKWITHSLEEPFILENAME]}
 
     @polarion("RHEVM3-5037")
     def test_after_disk_hotplug_5_disks_concurrently(self):
-        """ try to hotplug 5 tests concurrently and check that all hooks
-        were called
+        """
+        Try to hotplug 7 tests concurrently and check that all hooks were
+        called
         """
         self.use_disks = DISKS_TO_PLUG[self.storage]
         self.perform_action_and_verify_hook_called()
 
     def verify_hook_called(self):
         result = self.get_hooks_result_file()
-        LOGGER.info(
-            "Hook should have been called %s times" % len(
+        logger.info(
+            "Hook should have been called %s times", len(
                 DISKS_TO_PLUG[self.storage]
             )
         )
@@ -238,28 +233,29 @@ class TestCase5037(helpers.HotplugHookTest):
 @attr(tier=2)
 class TestCase5038(helpers.HotplugHookTest):
     """
-    Check after_disk_hotunplug for unplugging 5 disks concurrently
+    Check after_disk_hotunplug for unplugging 7 disks concurrently
 
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_HotPlug_Hooks
     """
     __test__ = True
     active_disk = True
-    action = [vms.deactivateVmDisk]
+    action = [ll_vms.deactivateVmDisk]
     hooks = {'after_disk_hotunplug': [helpers.HOOKWITHSLEEPFILENAME]}
 
     @polarion("RHEVM3-5038")
     def test_after_disk_hotunplug_5_disks_concurrently(self):
-        """ Concurrently unplug 5 disks and check if after_unplug hook
-            were called 5 times
+        """
+        Concurrently unplug 7 disks and check if after_unplug hook were
+        called 7 times
         """
         self.use_disks = DISKS_TO_PLUG[self.storage]
         self.perform_action_and_verify_hook_called()
 
     def verify_hook_called(self):
         result = self.get_hooks_result_file()
-        LOGGER.info(
-            "Hook should have been called %s times" % len(
+        logger.info(
+            "Hook should have been called %s times", len(
                 DISKS_TO_PLUG[self.storage]
             )
         )
@@ -277,35 +273,36 @@ class TestCase5039(helpers.HotplugHookTest):
     """
     __test__ = True
     active_disk = False
-    action = [vms.activateVmDisk]
+    action = [ll_vms.activateVmDisk]
     hooks = {'before_disk_hotplug': [helpers.HOOKFILENAME]}
 
     def perform_action(self):
         if ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME):
-            vm_disks = vms.getVmDisks(self.vm_name)
+            vm_disks = ll_vms.getVmDisks(self.vm_name)
             disk_names = [disk.get_name() for disk in vm_disks]
             if not self.use_disks[0] in disk_names:
-                self.assertTrue(disks.attachDisk(True, self.use_disks[0],
-                                                 self.vm_name),
-                                "Failed to attach disk %s to vm %s"
-                                % (self.use_disks[0], self.vm_name))
+                self.assertTrue(
+                    ll_disks.attachDisk(True, self.use_disks[0], self.vm_name),
+                    "Failed to attach disk %s to vm %s" % (
+                        self.use_disks[0], self.vm_name
+                    )
+                )
 
     def put_disks_in_correct_state(self):
         pass
 
     @polarion("RHEVM3-5039")
     def test_before_disk_hotplug_attaching_new_disk(self):
-        """ Check if after_disk_hotunplug is called
-        """
+        """ Check if after_disk_hotunplug is called """
         self.use_disks = UNATTACHED_DISK[self.storage]
         self.perform_action_and_verify_hook_called()
 
     def tearDown(self):
         super(TestCase5039, self).tearDown()
-        vm_disks = vms.getVmDisks(self.vm_name)
+        vm_disks = ll_vms.getVmDisks(self.vm_name)
         disk_names = [disk.get_name() for disk in vm_disks]
         if self.use_disks[0] in disk_names:
-            disks.detachDisk(True, self.use_disks[0], self.vm_name)
+            ll_disks.detachDisk(True, self.use_disks[0], self.vm_name)
 
 
 @attr(tier=2)
@@ -320,39 +317,42 @@ class TestCase5044(helpers.HotplugHookTest):
     """
     __test__ = True
     active_disk = False
-    action = [vms.activateVmDisk]
+    action = [ll_vms.activateVmDisk]
     hooks = {'after_disk_hotplug': [helpers.HOOKJPEG]}
 
     def perform_action(self):
-        LOGGER.info("Activating new HW - %s", self.use_disks[0])
+        logger.info("Activating new HW - %s", self.use_disks[0])
 
-        vm_disks = vms.getVmDisks(self.vm_name)
+        vm_disks = ll_vms.getVmDisks(self.vm_name)
         disk_names = [disk.get_name() for disk in vm_disks]
 
-        LOGGER.info("Attached disks - %s", disk_names)
+        logger.info("Attached disks - %s", disk_names)
         if not self.use_disks[0] in disk_names:
-            self.assertTrue(disks.attachDisk(True, self.use_disks[0],
-                                             self.vm_name, False),
-                            "Attaching disk %s to vm %s - fails"
-                            % (self.use_disks[0], self.vm_name))
+            self.assertTrue(
+                ll_disks.attachDisk(
+                    True, self.use_disks[0], self.vm_name, False
+                ), "Failed to attach disk %s to vm %s" %
+                   (self.use_disks[0], self.vm_name)
+            )
 
         self.assertTrue(
-            vms.activateVmDisk(True, self.vm_name, self.use_disks[0]),
+            ll_vms.activateVmDisk(True, self.vm_name, self.use_disks[0]),
             "Activation of VM disk %s should have succeed" % self.use_disks[0])
 
-        vms.deactivateVmDisk(True, self.vm_name, self.use_disks[0])
+        ll_vms.deactivateVmDisk(True, self.vm_name, self.use_disks[0])
 
         self.clear_hooks()
-        assert vms.activateVmDisk(True, self.vm_name, self.use_disks[0])
+        assert ll_vms.activateVmDisk(True, self.vm_name, self.use_disks[0])
 
     def verify_hook_called(self):
-        LOGGER.info("Hooks shouldn't have been called")
+        logger.info("Hooks shouldn't have been called")
         assert not self.get_hooks_result_file()
 
     @polarion("RHEVM3-5044")
     def test_after_disk_hotplug_binary_executable_hook_file(self):
-        """ check that activate succeed and hook fails if hook is binary
-            executable file
+        """
+        Check that activate succeed and hook fails if hook is binary
+        executable file
         """
         self.use_disks = DISKS_TO_PLUG[self.storage][4:5]
         self.perform_action_and_verify_hook_called()
@@ -373,22 +373,21 @@ class TestCase5041(helpers.HotplugHookTest):
              'after_disk_hotplug': [helpers.HOOKFILENAME]}
 
     def perform_action(self):
-        assert vms.activateVmDisk(True, self.vm_name, self.use_disks[0])
-        assert vms.deactivateVmDisk(True, self.vm_name, self.use_disks[0])
+        assert ll_vms.activateVmDisk(True, self.vm_name, self.use_disks[0])
+        assert ll_vms.deactivateVmDisk(True, self.vm_name, self.use_disks[0])
 
     def create_hook_file(self, local_hook, remote_hook):
-        LOGGER.info("Hook file: %s" % remote_hook)
+        logger.info("Hook file: %s", remote_hook)
         assert self.machine.copyTo(local_hook, remote_hook)
-        LOGGER.info("Don't change permissions to file")
+        logger.info("Don't change permissions to file")
 
     def verify_hook_called(self):
-        LOGGER.info("Hooks shouldn't have been called")
+        logger.info("Hooks shouldn't have been called")
         assert not self.get_hooks_result_file()
 
     @polarion("RHEVM3-5041")
     def test_non_executable_hooks(self):
-        """ check that vdsm skip a hook file if it is non-executable
-        """
+        """ Check that vdsm skips a hook file if it is non-executable """
         self.use_disks = DISKS_TO_PLUG[self.storage][5:6]
         self.perform_action_and_verify_hook_called()
 
@@ -411,22 +410,22 @@ class TestCase5040(helpers.HotplugHookTest):
             helpers.HOOKFILENAME, helpers.HOOKPRINTFILENAME]}
 
     def perform_action(self):
-        assert vms.activateVmDisk(True, self.vm_name, self.use_disks[0])
-        assert vms.deactivateVmDisk(True, self.vm_name, self.use_disks[0])
+        assert ll_vms.activateVmDisk(True, self.vm_name, self.use_disks[0])
+        assert ll_vms.deactivateVmDisk(True, self.vm_name, self.use_disks[0])
 
     def verify_hook_called(self):
-        LOGGER.info("Verifying hook files...")
+        logger.info("Verifying hook files...")
         result = self.get_hooks_result_file()
         self.assertEqual(
             len(result), 4, "There should have been 4 hooks called!")
         self.assertEqual(
             len([x for x in result if x.strip() == TEXT]), 2,
-            "'%s' should appear twice!" % TEXT)
+            "'%s' should have appeared twice!" % TEXT
+        )
 
     @polarion("RHEVM3-5040")
     def test_multiple_hooks(self):
-        """ Multiple hooks for one action, checks that all will be called
-        """
+        """ Multiple hooks for one action, checks that all will be called """
         self.use_disks = DISKS_TO_PLUG[self.storage][6:7]
         self.perform_action_and_verify_hook_called()
 
@@ -452,26 +451,26 @@ class TestCase5042(helpers.HotplugHookTest):
 
         with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
             attach = executor.submit(
-                vms.activateVmDisk, False, self.vm_name, self.use_disks[0])
+                ll_vms.activateVmDisk, False, self.vm_name, self.use_disks[0]
+            )
             executor.submit(func)
 
         self.assertTrue(attach.result(), "Activate should have failed")
 
     def verify_hook_called(self):
-        LOGGER.info("File should be empty")
+        logger.info("File should be empty")
         assert not self.get_hooks_result_file()
 
     @polarion("RHEVM3-5042")
     def test_multiple_hooks(self):
-        """ Restart vdsm during before_disk_hotplug, action should fail
-        """
+        """ Restart VDSM during before_disk_hotplug, action should fail """
         self.use_disks = DISKS_TO_PLUG[self.storage][7:8]
         self.perform_action_and_verify_hook_called()
 
     def tearDown(self):
-        """Give vdsm time to restart and clean the environment"""
+        """Give VDSM time to restart and clean the environment"""
         ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME)
-        hosts.waitForHostsStates(True, [self.host_name])
+        ll_hosts.waitForHostsStates(True, [self.host_name])
         super(TestCase5042, self).tearDown()
 
 
@@ -484,23 +483,23 @@ class BasePlugDiskTest(TestCase):
         """
         Clone a vm of each supported OS type and wait for VM boot to complete
         """
-        LOGGER.info("setup class %s" % cls.__name__)
+        logger.info("setup class %s", cls.__name__)
         cls.template_name = config.TEMPLATE_NAME % cls.storage
         cls.disks = []
         cls.vm_names = []
-        cls.storage_domain = getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, cls.storage)[0]
+        cls.storage_domain = ll_sd.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, cls.storage
+        )[0]
 
         def _create_and_start_vm():
-            """
-            Clones and starts a single vm from template
-            """
+            """ Clones and starts a single vm from template """
             vm_name = common.create_vm_from_template(
                 cls.template_name, cls.__name__, cls.storage_domain,
-                cls.storage)
-            LOGGER.info("Starting VM %s" % vm_name)
-            vms.startVm(positive, vm=vm_name, wait_for_ip=True)
-            LOGGER.info("VM %s started successfully" % vm_name)
+                cls.storage
+            )
+            logger.info("Starting VM %s", vm_name)
+            ll_vms.startVm(True, vm_name, wait_for_ip=True)
+            logger.info("VM %s started successfully", vm_name)
             cls.vm_names.append(vm_name)
 
         results = []
@@ -511,18 +510,27 @@ class BasePlugDiskTest(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        """
-        Shuts down the vm and removes it
-        """
-        common.shutdown_and_remove_vms(cls.vm_names)
-        delete_disks(filter(lambda w: disks.checkDiskExists(True, w),
-                     cls.disks))
+        """ Powers off and removes the created VMs, removes disks created """
+        if not ll_vms.stop_vms_safely(cls.vm_names):
+            logger.error(
+                "Failed to power off VMs '%s'", ', '.join(cls.vm_names)
+            )
+            cls.test_failed = True
+        hl_disks.delete_disks(
+            filter(lambda w: ll_disks.checkDiskExists(True, w), cls.disks)
+        )
+        if not ll_vms.safely_remove_vms(cls.vm_names):
+            logger.error("Failed to remove VMs '%s'", ', '.join(cls.vm_names))
+            cls.test_failed = True
+        cls.teardown_exception()
 
 
 @attr(tier=1)
 class TestCase6231(BasePlugDiskTest):
-    """Activate/Deactivate an already attached disk
-    on a running VM with supported OS"""
+    """
+    Activate/Deactivate an already attached disk on a running VM with
+    supported OS
+    """
     __test__ = True
 
     polarion_test_case = '6231'
@@ -530,15 +538,15 @@ class TestCase6231(BasePlugDiskTest):
 
     @classmethod
     def setup_class(cls):
-        """Create a VM with 2 disks extra disks - 1 active and 1 inactive"""
+        """ Create a VM with 2 disks extra disks - 1 active and 1 inactive """
         super(TestCase6231, cls).setup_class()
-        vms.stop_vms_safely(cls.vm_names)
+        ll_vms.stop_vms_safely(cls.vm_names)
         for vm_name, interface in zip(cls.vm_names, cls.interfaces):
             # add disk and deactivate it
-            LOGGER.info("Adding 2 disks to VM %s" % vm_name)
+            logger.info("Adding 2 disks to VM %s", vm_name)
             disk_args = {
                 'positive': True,
-                'size': 2 * config.GB,
+                'size': 1 * config.GB,
                 'sparse': True,
                 'wipe_after_delete': cls.storage in config.BLOCK_TYPES,
                 'storagedomain': cls.storage_domain,
@@ -550,101 +558,133 @@ class TestCase6231(BasePlugDiskTest):
             # add 2 disks:
             for active in True, False:
                 disk_alias = "%s_%s_Disk" % (vm_name, str(active))
-                LOGGER.info("Adding disk to vm %s with %s active disk",
-                            vm_name, "not" if not active else "")
-                if not vms.addDisk(active=active, alias=disk_alias,
-                                   **disk_args):
-                    raise exceptions.DiskException("Unable to add disk to VM "
-                                                   "%s" % vm_name)
+                logger.info(
+                    "Adding disk to vm %s with %s active disk",
+                    vm_name, "not" if not active else ""
+                )
+                if not ll_vms.addDisk(
+                    active=active, alias=disk_alias, **disk_args
+                ):
+                    raise exceptions.DiskException(
+                        "Unable to add disk to VM %s" % vm_name
+                    )
 
                 cls.disks.append(disk_alias)
-            if not vms.startVm(
-                    positive, vm=vm_name, wait_for_status=config.VM_UP,
-                    wait_for_ip=True
-            ):
-                raise exceptions.VMException("Unable to start VM %s" % vm_name)
+            if not ll_vms.startVm(True, vm_name, config.VM_UP, True):
+                raise exceptions.VMException(
+                    "Unable to power on VM %s" % vm_name
+                )
 
     @polarion("RHEVM3-6231")
     def test_activate_deactivate_disk(self):
-        """Activate an already attached disk on a running VM"""
+        """ Activate an already attached disk on a running VM """
         for vm in self.vm_names:
-            inactive_disks = [disk for disk in vms.getVmDisks(vm)
+            inactive_disks = [disk for disk in ll_vms.getVmDisks(vm)
                               if not disk.get_bootable() and
                               not disk.get_active()]
             disk_name = inactive_disks[0].get_name()
-            LOGGER.info("Activating disk %s on VM %s" % (disk_name, vm))
-            status = vms.activateVmDisk(positive,
-                                        vm=vm,
-                                        diskAlias=disk_name)
-            LOGGER.info("Finished activating disk %s" % disk_name)
+            logger.info("Activating disk %s on VM %s", disk_name, vm)
+            status = ll_vms.activateVmDisk(True, vm, disk_name)
+            logger.info("Finished activating disk %s", disk_name)
             self.assertTrue(status)
 
-            active_disks = [disk for disk in vms.getVmDisks(vm)
+            active_disks = [disk for disk in ll_vms.getVmDisks(vm)
                             if not disk.get_bootable() and
                             disk.get_active()]
             disk_name = active_disks[0].get_name()
-            LOGGER.info("Deactivating disk %s on VM %s" % (disk_name, vm))
-            status = vms.deactivateVmDisk(positive,
-                                          vm=vm,
-                                          diskAlias=disk_name)
-            LOGGER.info("Finished deactivating disk %s" % disk_name)
+            logger.info("Deactivating disk %s on VM %s", disk_name, vm)
+            status = ll_vms.deactivateVmDisk(True, vm, disk_name)
+            logger.info("Finished deactivating disk %s", disk_name)
             self.assertTrue(status)
 
 
 @attr(tier=2)
 class TestCase6243(BasePlugDiskTest):
-    """Hotplug floating disk (shareable and non-shareable)"""
+    """ Hotplug floating disk (shareable and non-shareable) """
     # Gluster doesn't support shareable disks
     __test__ = (
-        config.STORAGE_TYPE_NFS in opts['storages']
-        or config.STORAGE_TYPE_ISCSI in opts['storages']
+        config.STORAGE_TYPE_NFS in opts['storages'] or
+        config.STORAGE_TYPE_ISCSI in opts['storages']
     )
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
     polarion_test_case = '6243'
 
-    @polarion("RHEVM3-6243")
-    def test_plug_floating_disk(self):
-        """
-        Hotplug floating disk (shareable/non-shareable) to vm
-        """
+    def setUp(self):
+        """ Create the required disks for this test """
+        self.disk_aliases = []
         for disk_interface in DISK_INTERFACES:
             for shareable in (True, False):
-                disk_name = config.DISK_NAME_FORMAT % (
-                    disk_interface,
-                    'shareable' if shareable else 'non-shareable',
-                    self.storage)
+                disk_params = config.disk_args.copy()
+                disk_params['provisioned_size'] = 1 * config.GB
+                disk_params['interface'] = disk_interface
+                disk_params['shareable'] = shareable
+                # For shareable disks, use Raw/Preallocated disk format
+                if shareable:
+                    disk_params['format'] = config.DISK_FORMAT_RAW
+                    disk_params['sparse'] = False
+                disk_params['storagedomain'] = self.storage_domain
+                disk_params['alias'] = self.create_unique_object_name(
+                    config.OBJECT_TYPE_DISK
+                )
+                if not ll_disks.addDisk(True, **disk_params):
+                    raise exceptions.DiskException(
+                        "Can't create disk with params: %s" % disk_params
+                    )
+                logger.info(
+                    "Waiting for disk %s to be OK", disk_params['alias']
+                )
+                if not ll_disks.wait_for_disks_status(disk_params['alias']):
+                    raise exceptions.DiskException(
+                        "Disk '%s' has not reached state 'OK'" %
+                        disk_params['alias']
+                    )
+                self.disk_aliases.append(disk_params['alias'])
 
-                vm_name = self.vm_names[0]
+    @polarion("RHEVM3-6243")
+    def test_plug_floating_disk(self):
+        """ Hotplug floating disk (shareable/non-shareable) to vm """
+        for disk_alias in self.disk_aliases:
+            vm_name = self.vm_names[0]
+            logger.info(
+                "Attempting to plug disk %s to vm %s", disk_alias, vm_name
+            )
+            if not ll_disks.attachDisk(True, disk_alias, vm_name):
+                raise exceptions.DiskException(
+                    "Failed to attach disk %s to vm %s" %
+                    (disk_alias, vm_name)
+                )
 
-                LOGGER.info("attempting to plug disk %s to vm %s" %
-                            (disk_name, vm_name))
-                status = disks.attachDisk(positive,
-                                          alias=disk_name,
-                                          vmName=vm_name)
-                LOGGER.info("Plug disk status is %s" % status)
-                self.assertTrue(status)
+    def tearDown(self):
+        """ Remove the disks created for this test """
+        if not ll_vms.stop_vms_safely([self.vm_names[0]]):
+            logger.error("Failed to power off VM '%s'", self.vm_names[0])
+            BasePlugDiskTest.test_failed = True
+        for disk_alias in self.disk_aliases:
+            if not ll_vms.removeDisk(True, self.vm_names[0], disk_alias):
+                logger.error("Failed to remove disk '%s'", disk_alias)
+                BasePlugDiskTest.test_failed = True
+        BasePlugDiskTest.teardown_exception()
 
 
 @attr(tier=2)
 class TestCase6230(TestCase):
     """
-    2 vms, 1 shareable disk attached to both of them.
-    test ensure hotplug works fine
+    2 vms, 1 shareable disk attached to both of them, ensure hotplug works
     """
     # Gluster doesn't support shareable disks
     __test__ = (
-        config.STORAGE_TYPE_NFS in opts['storages']
-        or config.STORAGE_TYPE_ISCSI in opts['storages']
+        config.STORAGE_TYPE_NFS in opts['storages'] or
+        config.STORAGE_TYPE_ISCSI in opts['storages']
     )
     storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
 
     polarion_test_case = '6230'
 
     disk_count = 2
-    first_vm = 'first'
-    second_vm = 'second'
-    first_disk_name = 'non-shareable_virtio_disk'
-    second_disk_name = 'shareable_virtio_disk'
+    first_vm = polarion_test_case + '_first'
+    second_vm = polarion_test_case + '_second'
+    first_disk_name = polarion_test_case + '_non-shareable_virtio_disk'
+    second_disk_name = polarion_test_case + '_shareable_virtio_disk'
     disks_aliases = [first_disk_name, second_disk_name]
     formats = [config.DISK_FORMAT_COW, config.DISK_FORMAT_RAW]
     shareable = [False, True]
@@ -655,21 +695,25 @@ class TestCase6230(TestCase):
         """
         Create 2 VMs, 2 virtio disks and one of them is shareable
         """
-        cls.template_name = config.TEMPLATE_NAME % cls.storage
+        cls.template_name = (
+            cls.polarion_test_case + "_" + config.TESTNAME + "_" + cls.storage
+        )
         cls.vm_names = []
-        cls.storage_domain = getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, cls.storage)[0]
+        cls.storage_domain = ll_sd.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, cls.storage
+        )[0]
         cls.first_vm = common.create_vm_from_template(
-            cls.template_name, cls.first_vm, cls.storage_domain, cls.storage)
+            cls.template_name, cls.first_vm, cls.storage_domain, cls.storage
+        )
 
         # add disk and attach it
-        LOGGER.info("Adding 2 disks to VM %s" % cls.first_vm)
+        logger.info("Adding 2 disks to VM %s", cls.first_vm)
 
         for index in range(cls.disk_count):
             disk_args = {
                 'positive': True,
                 'alias': cls.disks_aliases[index],
-                'provisioned_size': 3 * config.GB,
+                'provisioned_size': 1 * config.GB,
                 'format': cls.formats[index],
                 'sparse': True,
                 'wipe_after_delete': cls.storage in config.BLOCK_TYPES,
@@ -678,85 +722,93 @@ class TestCase6230(TestCase):
                 'interface': cls.interfaces[index],
                 'shareable': cls.shareable[index],
             }
-            if cls.storage == config.ENUMS['storage_type_iscsi'] \
-                    and disk_args['format'] == ENUMS['format_raw']:
+            if cls.storage == config.ENUMS['storage_type_iscsi'] and (
+                disk_args['format'] == ENUMS['format_raw']
+            ):
                 disk_args['sparse'] = False
 
-            LOGGER.info("Adding %s disk...", cls.disks_aliases[index])
-            if not disks.addDisk(**disk_args):
-                raise exceptions.DiskException("Unable to add disk %s"
-                                               % cls.disks_aliases[index])
-            wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                           config.DATA_CENTER_NAME)
+            logger.info("Adding %s disk...", cls.disks_aliases[index])
+            if not ll_disks.addDisk(**disk_args):
+                raise exceptions.DiskException(
+                    "Unable to add disk %s" % cls.disks_aliases[index]
+                )
+            ll_vms.wait_for_disks_status([cls.disks_aliases[index]])
 
-            if not disks.attachDisk(positive, alias=cls.disks_aliases[index],
-                                    vmName=cls.first_vm, active=False):
-
-                raise exceptions.DiskException("Unable to plug %s to vm %s"
-                                               % (cls.disks_aliases[index],
-                                                  cls.first_vm))
-            LOGGER.info("%s disk added successfully", cls.disks_aliases[index])
+            if not ll_disks.attachDisk(
+                True, cls.disks_aliases[index], cls.first_vm, False
+            ):
+                raise exceptions.DiskException(
+                    "Unable to attach disk %s to vm %s" %
+                    (cls.disks_aliases[index], cls.first_vm)
+                )
+            logger.info("%s disk added successfully", cls.disks_aliases[index])
 
         cls.second_vm = common.create_vm_from_template(
-            cls.template_name, cls.second_vm, cls.storage_domain, cls.storage)
+            cls.template_name, cls.second_vm, cls.storage_domain, cls.storage
+        )
 
-        if not disks.attachDisk(positive, alias=cls.second_disk_name,
-                                vmName=cls.second_vm, active=False):
-                raise exceptions.DiskException("Unable to plug %s to vm %s"
-                                               % (cls.second_disk_name,
-                                                  cls.second_vm))
+        if not ll_disks.attachDisk(
+            True, cls.second_disk_name, cls.second_vm, False
+        ):
+            raise exceptions.DiskException(
+                "Failed to attach disk %s to vm %s" %
+                (cls.second_disk_name, cls.second_vm)
+            )
         cls.vm_names = [cls.first_vm, cls.second_vm]
 
     @polarion("RHEVM3-6230")
     def test_deactivate_and_activate_disk(self):
         """
-            Deactivate an already attached disk on a running VM
-            and then Activate them
+        Deactivate an already attached disk on a running VM and then
+        activates it
         """
         for vm in self.vm_names:
-            self.assertTrue(vms.startVm(True, vm),
-                            "Unable to start vms")
+            self.assertTrue(
+                ll_vms.startVm(True, vm), "Unable to power on VM '%s'" % vm
+            )
 
         for vm in self.vm_names:
-            active_disks = [disk for disk in vms.getVmDisks(vm)
+            active_disks = [disk for disk in ll_vms.getVmDisks(vm)
                             if not disk.get_bootable() and
                             disk.get_active()]
             if len(active_disks) > 0:
                 disk_name = active_disks[0].get_name()
-                LOGGER.info("Deactivating disk %s on VM %s" % (disk_name, vm))
-                status = vms.deactivateVmDisk(positive,
-                                              vm=vm,
-                                              diskAlias=disk_name)
-                LOGGER.info("Finished deactivating disk %s" % disk_name)
+                logger.info("Deactivating disk %s on VM %s", disk_name, vm)
+                status = ll_vms.deactivateVmDisk(True, vm, disk_name)
+                logger.info("Finished deactivating disk %s", disk_name)
                 self.assertTrue(status)
 
-        wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                       config.DATA_CENTER_NAME)
+        utils.wait_for_tasks(
+            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+        )
 
         for vm in self.vm_names:
-            inactive_disks = [disk for disk in vms.getVmDisks(vm)
+            inactive_disks = [disk for disk in ll_vms.getVmDisks(vm)
                               if not disk.get_bootable() and
                               not disk.get_active()]
             if len(inactive_disks) > 0:
                 for disk in inactive_disks:
                     disk_name = disk.get_name()
-                    LOGGER.info("Activating disk %s on VM %s"
-                                % (disk_name, vm))
-                    vms.wait_for_vm_states(vm, [config.VM_UP])
-                    status = vms.activateVmDisk(positive,
-                                                vm=vm,
-                                                diskAlias=disk_name)
-                    LOGGER.info("Finished activating disk %s" % disk_name)
+                    logger.info("Activating disk %s on VM %s", disk_name, vm)
+                    ll_vms.wait_for_vm_states(vm, [config.VM_UP])
+                    status = ll_vms.activateVmDisk(True, vm, disk_name)
+                    logger.info("Finished activating disk %s", disk_name)
                     self.assertTrue(status)
 
     @classmethod
     def teardown_class(cls):
-        """
-        Remove all vms and disks created during the test
-        """
-        LOGGER.info("Removing vms %s", cls.vm_names)
-        common.shutdown_and_remove_vms(cls.vm_names)
-
-        LOGGER.info("Removing disks  %s", cls.disks_aliases)
+        """ Remove all vms and disks created for the tests """
+        if not ll_vms.stop_vms_safely(cls.vm_names):
+            logger.error(
+                "Failed to power off VMs '%s'", ', '.join(cls.vm_names)
+            )
+            cls.test_failed = True
+        logger.info("Removing disks  %s", cls.disks_aliases)
         for disk_alias in cls.disks_aliases:
-            assert disks.deleteDisk(True, disk_alias)
+            if not ll_disks.deleteDisk(True, disk_alias):
+                logger.error("Failed to delete disk '%s'", disk_alias)
+                cls.test_failed = True
+        if not ll_vms.safely_remove_vms(cls.vm_names):
+            logger.error("Failed to remove VMs '%s'", ', '.join(cls.vm_names))
+            cls.test_failed = True
+        cls.teardown_exception()
