@@ -784,7 +784,7 @@ def check_network_on_nic(network, host, nic):
     **Return**: True if network resides on Host NIC, otherwise False
     """
     try:
-        nic_obj = ll.hosts.getHostNic(host, nic).get_network()
+        nic_obj = ll.hosts.get_host_nic(host, nic).get_network()
         net_obj_id = NET_API.find(network).get_id()
     except (apis_exceptions.EntityNotFound, AttributeError) as e:
         logger.error(e)
@@ -852,7 +852,7 @@ def add_label(**kwargs):
         if host_nic_dict:
             for host in host_nic_dict:
                 for nic in host_nic_dict.get(host):
-                    entity_obj = ll.hosts.getHostNic(host=host, nic=nic)
+                    entity_obj = ll.hosts.get_host_nic(host=host, nic=nic)
                     labels_href = HOST_NICS_API.getElemFromLink(entity_obj,
                                                                 "labels",
                                                                 "label",
@@ -898,7 +898,7 @@ def get_label_objects(**kwargs):
         if host_nic_dict:
             for host in host_nic_dict:
                 for nic in host_nic_dict.get(host):
-                    entity_obj = ll.hosts.getHostNic(host=host, nic=nic)
+                    entity_obj = ll.hosts.get_host_nic(host=host, nic=nic)
                     label_obj = HOST_NICS_API.getElemFromLink(entity_obj,
                                                               "labels",
                                                               "label")
@@ -1234,7 +1234,7 @@ def get_network_on_host_nic(host, nic):
     :rtype: str
     """
     return ll.general.get_object_name_by_id(
-        NET_API, ll.hosts.getHostNic(host, nic).get_network().get_id())
+        NET_API, ll.hosts.get_host_nic(host, nic).get_network().get_id())
 
 
 def _prepare_vnic_profile_object(kwargs):
