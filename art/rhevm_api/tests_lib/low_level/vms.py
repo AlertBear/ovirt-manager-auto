@@ -3607,18 +3607,28 @@ def migrateVmsSimultaneously(positive, vm_name, range_low, range_high, hosts,
 
 
 @is_action('moveVmDisk')
-def move_vm_disk(vm_name, disk_name, target_sd, wait=True,
-                 timeout=VM_IMAGE_OPT_TIMEOUT, sleep=DEF_SLEEP):
+def move_vm_disk(
+    vm_name, disk_name, target_sd, wait=True, timeout=VM_IMAGE_OPT_TIMEOUT,
+    sleep=DEF_SLEEP
+):
     """
-    Description: Moves disk of vm to another storage domain
-    Parameters:
-        * vm_name - Name of the disk's vm
-        * disk_name - Name of the disk
-        * target_sd - Name of storage domain disk should be moved to
-        * wait - whether should wait until disk is ready
-        * timeout - timeout for waiting
-        * sleep - polling interval while waiting
-    Throws: DiskException if syncAction returns False (syncAction should raise
+    Moves disk of vm to another storage domain
+
+    __author__ = "ratamir, libosvar"
+    :param vm_name: The VM whose disk will be moved
+    :type vm_name: str
+    :param disk_name: Name of the disk to be moved
+    :type disk_name: str
+    :param target_sd: Name of the storage domain into
+    which the disk should be moved
+    :type target_sd: str
+    :param wait: Specifies whether to wait until the disk has moved
+    :type wait: bool
+    :param timeout: Timeout for waiting
+    :type timeout: int
+    :param sleep: Polling interval while waiting
+    :type sleep: int
+    :raises: DiskException if syncAction returns False (syncAction should raise
             exception itself instead of returning False)
     """
     source_domain = get_disk_storage_domain_name(disk_name, vm_name)
@@ -4629,23 +4639,31 @@ def extend_vm_disk_size(positive, vm, disk, **kwargs):
 
 
 @is_action('liveMigrateVmDisk')
-def live_migrate_vm_disk(vm_name, disk_name, target_sd,
-                         timeout=VM_IMAGE_OPT_TIMEOUT*2,
-                         sleep=SNAPSHOT_SAMPLING_PERIOD, wait=True):
+def live_migrate_vm_disk(
+    vm_name, disk_name, target_sd, timeout=VM_IMAGE_OPT_TIMEOUT*2,
+    sleep=SNAPSHOT_SAMPLING_PERIOD, wait=True
+):
     """
-    Description: Moves vm's disk. Starts disk movement then waits until new
+    Moves vm's disk. Starts disk movement then waits until new
     snapshot appears. Then waits for disk is locked, which means
     migration started. Waits until migration is finished, which is
     when disk is moved to up.
-    Author: ratamir
-    Parameters:
-        * vm_name - Name of the disk's vm
-        * disk_name - Name of the disk
-        * target_sd - Name of storage domain disk should be moved to
-        * timeout - timeout for waiting
-        * sleep - polling interval while waiting
-        * wait - if should wait for operation to finish
-    Throws:
+
+    __author__ = "ratamir"
+
+    :param vm_name: Name of the disk's vm
+    :type vm_name: str
+    :param disk_name: Name of the disk
+    :type disk_name: str
+    :param target_sd: Name of storage domain disk should be moved to
+    :type target_sd: str
+    :param timeout: Timeout for waiting
+    :type timeout: int
+    :param sleep: Polling interval while waiting
+    :type sleep: int
+    :param wait: If should wait for operation to finish
+    :type wait: bool
+    :raises:
         * DiskException if something went wrong
         * APITimeout if waiting for snapshot was longer than 20 seconds
     """
@@ -4673,11 +4691,11 @@ def live_migrate_vm_disk(vm_name, disk_name, target_sd,
 
 @is_action('liveMigrateVm')
 def live_migrate_vm(vm_name, timeout=VM_IMAGE_OPT_TIMEOUT*2, wait=True,
-                    ensure_on=True, same_type=True):
+                    ensure_on=True, same_type=True, target_domain=None):
     """
-    Description: Live migrate all vm's disks
+    Live migrate all vm's disks
 
-    __author__ = 'ratamir'
+    __author__ = "ratamir"
 
     :param vm_name: Name of the vm
     :type vm_name: str
@@ -4692,7 +4710,10 @@ def live_migrate_vm(vm_name, timeout=VM_IMAGE_OPT_TIMEOUT*2, wait=True,
     :param same_type: If True, return only a storage domain of the same type,
     False will result in a different domain type returned
     :type same_type: bool
-    :raises
+    :param target_domain: Name of the target domain to migrate,
+    required param in case of specific domain requested
+    :type target_domain: str
+    :raises:
         * DiskException if something went wrong
         * VMException if vm is not up and ensure_on=False
         * APITimeout if waiting for snapshot was longer than 1800 seconds
@@ -4708,16 +4729,24 @@ def live_migrate_vm(vm_name, timeout=VM_IMAGE_OPT_TIMEOUT*2, wait=True,
         else:
             raise exceptions.VMException("VM must be up to perform live "
                                          "storage migration")
-    vm_disks = [disk.get_name() for disk in getObjDisks(vm_name,
-                                                        get_href=False)]
+
+    disk_objecs = getObjDisks(vm_name, get_href=False)
+    vm_disks_names = [disk.get_name() for disk in disk_objecs]
+    vm_disks_ids = [disk.get_id() for disk in disk_objecs]
+
     logger.info("Live Storage Migrating vm %s, will migrate following "
-                "disks: %s", vm_name, vm_disks)
-    for disk in vm_disks:
-        target_sd = get_other_storage_domain(
-            disk, vm_name, force_type=same_type
+                "disks: %s", vm_name, vm_disks_names)
+
+    for disk_id, disk_name in zip(vm_disks_ids, vm_disks_names):
+        if target_domain is not None:
+            target_sd = target_domain
+        else:
+            target_sd = get_other_storage_domain(
+                disk_id, vm_name, force_type=same_type, key='id'
+            )
+        live_migrate_vm_disk(
+            vm_name, disk_name, target_sd, timeout=timeout, wait=wait
         )
-        live_migrate_vm_disk(vm_name, disk, target_sd, timeout=timeout,
-                             wait=wait)
     if wait:
         wait_for_jobs([ENUMS['job_live_migrate_disk']])
         waitForVMState(vm_name, timeout=timeout, sleep=5)
@@ -4792,18 +4821,23 @@ def get_vm_storage_devices(vm_name, username, password,
 
 
 @is_action('getVmStorageDevices')
-def verify_vm_disk_moved(vm_name, disk_name, source_sd,
-                         target_sd=None):
+def verify_vm_disk_moved(vm_name, disk_name, source_sd, target_sd=None):
     """
     Function that checks if disk movement was actually succeeded
-    Author: ratamir
-    Parameters:
-        * vm_name - name of vm which write operation should occur on
-        * disk_name - the name of the disk that moved
-        * source_sd - original storage domain
-        * target_sd - destination storage domain
-    Return: True in case source and target sds are different or actual target
-            is equal to target_sd, False otherwise
+
+    __author__ =  "ratamir"
+
+    :param vm_name: Name of vm which write operation should occur on
+    :type vm_name: str
+    :param disk_name: The name of the disk that moved
+    :type disk_name: str
+    :param source_sd: Original storage domain
+    :type source_sd: str
+    :param target_sd: Destination storage domain
+    :type target_sd: str
+    :returns: True in case source and target sds are different or actual target
+    is equal to target_sd, False otherwise
+    :rtype: bool
     """
     actual_sd = get_disk_storage_domain_name(disk_name, vm_name)
     logger.info(
@@ -5032,8 +5066,8 @@ def safely_remove_vms(vms):
 
 
 def get_vm_disk_logical_name(
-    vm_name, disk_alias, wait=True, timeout=GUEST_AGENT_TIMEOUT,
-    interval=DEF_SLEEP, parse_logical_name=False
+    vm_name, disk, wait=True, timeout=GUEST_AGENT_TIMEOUT,
+    interval=DEF_SLEEP, parse_logical_name=False, key='name'
 ):
     """
     Retrieves the logical name of a disk that is attached to a VM
@@ -5043,9 +5077,9 @@ def get_vm_disk_logical_name(
     __author__ = "glazarov"
     :param vm_name - name of the vm which which contains the disk
     :type: str
-    :param disk_alias: The alias of the disk for which the logical volume
+    :param disk: The alias/ID of the disk for which the logical volume
     name should be retrieved
-    :type disk_alias: str
+    :type disk: str
     :param wait: If the function should wait until the value is set by the
     guest agent
     :type wait: bool
@@ -5058,21 +5092,34 @@ def get_vm_disk_logical_name(
     default), otherwise the logical name will be parsed to remove the /dev/
     (e.g. /dev/vdb -> vdb) when True is set
     :type parse_logical_name: bool
+    :param key: key to look for disks by, it can be name or ID
+    :type key: str
     :returns: Disk logical name, None in case is not set
     :rtype: str
     """
-    def get_logical_name(vm_name, disk_alias):
-        return getVmDisk(vm_name, disk_alias).get_logical_name()
+    def get_logical_name(vm_name, disk_alias=None, disk_id=None):
+        if disk_id:
+            return getVmDisk(vm_name, disk_id=disk_id).get_logical_name()
+        else:
+            return getVmDisk(vm_name, disk_alias).get_logical_name()
 
+    if key == 'id':
+        disk_alias = None
+        disk_id = disk
+    else:
+        disk_alias = disk
+        disk_id = None
     if not wait:
-        logical_name = get_logical_name(vm_name, disk_alias)
+        logical_name = get_logical_name(
+            vm_name, disk_alias=disk_alias, disk_id=disk_id
+        )
         if parse_logical_name:
             logical_name = logical_name.replace("/dev/", "")
         return logical_name
 
-    logger.debug("Waiting for logical volume name for disk %s", disk_alias)
+    logger.debug("Waiting for logical volume name for disk %s", disk)
     for logical_name in TimeoutingSampler(
-        timeout, interval, get_logical_name, vm_name, disk_alias,
+        timeout, interval, get_logical_name, vm_name, disk_alias, disk_id,
     ):
         if logical_name:
             if parse_logical_name:

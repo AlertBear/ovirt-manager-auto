@@ -265,7 +265,7 @@ class TestCase4562(IscsiNfsSD):
 
         vm_disk = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
         target_sd = ll_disks.get_other_storage_domain(
-            disk_name=vm_disk, force_type=False
+            disk=vm_disk, force_type=False
         )
         vm_disk2 = "%s_Disk2_%s" % (self.vm_name, self.polarion_test_case)
         helpers.add_disk_to_sd(

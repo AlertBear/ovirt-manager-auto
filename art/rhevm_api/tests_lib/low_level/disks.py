@@ -97,14 +97,14 @@ def getVmDisk(vmName, alias=None, disk_id=None):
     """
     value = None
     vmObj = VM_API.find(vmName)
-    if alias:
-        prop = "name"
-        value = alias
-    elif disk_id:
+    if disk_id:
         prop = "id"
         value = disk_id
+    elif alias:
+        prop = "name"
+        value = alias
     else:
-        raise EntityNotFound("No disk identifier was used")
+        raise EntityNotFound("No disk identifier or name was provided")
     return DISKS_API.getElemFromElemColl(vmObj, value, prop=prop)
 
 
@@ -708,45 +708,53 @@ def check_disk_visibility(disk, disks_list):
 
 @is_action('getImproperStorageDomain')
 def get_other_storage_domain(
-    disk_name, vm_name=None, storage_type=None, force_type=True, ignore_type=[]
+    disk, vm_name=None, storage_type=None, force_type=True,
+    ignore_type=[], key='name'
 ):
     """
     Choose a random, active data storage domain from the available list of
     storage domains (ignoring the storage domain on which the disk is found)
 
     __author__ = "ratamir"
-    :param disk_name: name of the disk
-    :type disk_name: str
+
+    :param disk: Disk name/ID
+    :type disk: str
     :param vm_name: In case of a non-floating disk, name of vm that contains
                     the disk
     :type vm_name: str
-    :param storage_type: if provided, only return the storage domain of the
+    :param storage_type: If provided, only return the storage domain of the
                          specified type
     :type storage_type: str
-    :param force_type: return only the storage domain of the same device type
+    :param force_type: Return only the storage domain of the same device type
                        (file or block)
     :type force_type: bool
     :param ignore_type: List of storage types to ignore (e.g. ignore
                         GlusterFS for shared disks)
     :type ignore_type: list
-    :returns: name of a storage domain that doesn't contain the disk or empty
+    :param key: Key to look for disks by, it can be name or ID
+    :type key: str
+    :returns: Name of a storage domain that doesn't contain the disk or empty
     string
     :rtype: str
     """
     logger.info(
-        "Find the storage domain type that the disk %s is found on", disk_name
+        "Find the storage domain type that the disk %s is found on", disk
     )
-    if not vm_name:
-        disk = DISKS_API.find(disk_name)
+    if vm_name:
+        if key == 'id':
+            disk = getVmDisk(vm_name, disk_id=disk)
+        else:
+            disk = getVmDisk(vm_name, disk)
     else:
-        disk = getVmDisk(vm_name, disk_name)
+        disk = DISKS_API.find(disk, key)
+
     disk_sd_id = disk.get_storage_domains().get_storage_domain()[0].get_id()
     disk_sd = STORAGE_DOMAIN_API.find(disk_sd_id, 'id')
 
     disk_sd_type = disk_sd.get_storage().get_type()
     logger.info(
         "Disk '%s' is using storage domain of type '%s'",
-        disk_name, disk_sd_type
+        disk.get_name(), disk_sd_type
     )
     dc = get_sd_datacenter(disk_sd.get_name())
     sd_list = []
@@ -771,11 +779,11 @@ def get_other_storage_domain(
             if sd_type in ignore_type:
                 continue
             sd_list.append(sd.get_name())
-
     if sd_list:
         random_sd = random.choice(sd_list)
         logger.info(
-            "Disk %s improper storage domain is: %s", disk_name, random_sd,
+            "Disk %s improper storage domain is: %s",
+            disk.get_name(), random_sd,
         )
         return random_sd
     return None
@@ -783,18 +791,29 @@ def get_other_storage_domain(
 
 def get_disk_storage_domain_name(disk_name, vm_name=None, template_name=None):
     """
-    Description: gets the disks' storage domain name
-    Author: ratamir
-    Parameters:
-    * disk_name - name of the disk
-    * vm_name - name of vm (None by default), that contains disk disk_name.
-                None if the disk is floating disk (will be searched in disks
-                collection)
-    * template_name - same as vm_name, but for templates
-    Return: Name of storage domain that contain disk_name
+    Gets the disk storage domain name
+
+    __author__ = "ratamir"
+    :param disk_name: Name of the disk
+    :type disk_name: str
+    :param vm_name: Name of the vm that contains disk.
+    None if the disk is floating disk (will be searched in disks
+    collection)
+    :type vm_name: str
+    :param template_name: Name of the template that contains disk
+    None if the disk is floating disk (will be searched in disks
+    collection)
+    :type template_name: str
+    :returns: Storage domain that contains the requested disk
+    :rtype: str
     """
     if vm_name and template_name:
-        raise Exception("You shouldn't specify both vm_name and template_name")
+        logger.error(
+            "Only one of the parameters vm_name or template_name "
+            "should be provided"
+        )
+        return None
+
     logger.info("Get disk %s storage domain", disk_name)
     if vm_name is None and template_name is None:
         disk = DISKS_API.find(disk_name)
@@ -802,6 +821,7 @@ def get_disk_storage_domain_name(disk_name, vm_name=None, template_name=None):
         disk = getVmDisk(vm_name, disk_name)
     else:
         disk = getTemplateDisk(template_name, disk_name)
+
     sd_id = disk.get_storage_domains().get_storage_domain()[0].get_id()
     disk_sd_name = STORAGE_DOMAIN_API.find(sd_id, 'id').get_name()
     logger.info("Disk %s storage domain is: %s", disk_name, disk_sd_name)

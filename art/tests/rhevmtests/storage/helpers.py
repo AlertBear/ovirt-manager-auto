@@ -184,7 +184,7 @@ def create_disks_from_requested_permutations(
 
 def perform_dd_to_disk(
     vm_name, disk_alias, protect_boot_device=True, size=DEFAULT_DD_SIZE,
-    write_to_file=False,
+    write_to_file=False
 ):
     """
     Function that performs dd command from the bootable device to the requested
@@ -217,10 +217,11 @@ def perform_dd_to_disk(
     ).util(LINUX)
     vm_disks = ll_vms.getVmDisks(vm_name)
     boot_disk = [
-        disk.get_alias() for disk in vm_disks if disk.get_bootable()
+        disk.get_id() for disk in vm_disks if disk.get_bootable()
         ][0]
-    boot_device = ll_vms.get_vm_disk_logical_name(vm_name, boot_disk)
-
+    boot_device = ll_vms.get_vm_disk_logical_name(
+        vm_name, boot_disk, key='id'
+    )
     disk_logical_volume_name = ll_vms.get_vm_disk_logical_name(
         vm_name, disk_alias
     )
@@ -230,7 +231,6 @@ def perform_dd_to_disk(
         raise exceptions.DiskException(
             "Failed to get %s disk logical name" % disk_alias
         )
-
     logger.info(
         "The logical volume name for the requested disk is: '%s'",
         disk_logical_volume_name

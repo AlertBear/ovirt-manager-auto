@@ -355,6 +355,7 @@ class TestCase5997(basePlan.TestCase5997):
 
 
 @attr(tier=2)
+@bz({'1288862': {}})
 class TestCase5985(basePlan.TestCase5985):
     """
     no space left
@@ -362,7 +363,9 @@ class TestCase5985(basePlan.TestCase5985):
     Storage/3_1_Storage_Live_Storage_Migration
     """
     # TODO: Fix, our storage domains are too big for creating preallocated
+    # TODO: this cases is disable due to ticket RHEVM-2524
     # disks
+    jira = {'RHEVM-2524': None}
     __test__ = False
 
 
