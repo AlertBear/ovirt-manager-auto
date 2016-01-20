@@ -285,11 +285,18 @@ def compareElements(expElm, actElm, logger, root, equal=True,
                 nodeName = "{0}->{1}".format(root, attr)
                 if isinstance(attrExpVal, list):
                     try:
-                        attrExpVal.sort(key=lambda x: x.name)
-                        attrActVal.sort(key=lambda x: x.name)
+                        attrExpVal.sort(
+                            key=lambda x: x.name if x.name else x.id
+                        )
+                        attrActVal.sort(
+                            key=lambda x: x.name if x.name else x.id
+                        )
                     except AttributeError:
-                        logger.warn("Can't sort {0} objects list by name".\
-                                    format(elmClass))
+                        logger.warn(
+                            "Can't sort {0} objects list by name".format(
+                                elmClass
+                            )
+                        )
 
                     for i in range(0, len(attrExpVal)):
                         if i > len(attrActVal) - 1:
