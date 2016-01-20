@@ -55,11 +55,12 @@ class ADGroupWithSpacesInName(TestCase):
     test login as user which is part of group with spaces in name
     Covers bz: https://bugzilla.redhat.com/show_bug.cgi?id=1186039
     """
-    __test__ = True
+    # They've decided to not fix, but I will let the case here for time
+    # being as if some customer insist they will have to fix it.
+    __test__ = False
     conf = config.ADTLS_EXTENSION
     group = config.ADW2k12_GROUP_SPACE
     princ = '%s@%s' % (config.ADW2k12_USER_SPACE, config.ADW2K12_DOMAINS[0])
-    bz = {'1267232': {'engine': None, 'version': ['3.5', '3.6', '4.0']}}
 
     @classmethod
     def setup_class(cls):

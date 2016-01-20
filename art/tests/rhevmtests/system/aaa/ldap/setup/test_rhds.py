@@ -1,4 +1,4 @@
-from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 
 from rhevmtests.system.aaa.ldap.setup import base
 
@@ -57,7 +57,10 @@ class RHDSDisabledAccount(base.BaseDisabledAccount):
 
 class RHDSSpecialCharsSearch(base.BaseSpecialCharsSearch):
     """ Search special characters in RHDS """
-    __test__ = True
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1186039
+    # They've decided to not fix, but I will let the case here for time
+    # being as if some customer insist they will have to fix it.
+    __test__ = False
     domain = 'rhds-authz'
 
     @polarion('RHEVM3-14523')
@@ -65,7 +68,6 @@ class RHDSSpecialCharsSearch(base.BaseSpecialCharsSearch):
         """ Test search special characters in RHDS """
         self.search()
 
-    @bz({'1267232': {'engine': None, 'version': ['3.6']}})
     @polarion('RHEVM3-14524')
     def test_special_characters_non_working(self):
         """ Test search special characters in RHDS """
