@@ -3,18 +3,21 @@ Storage Disk Image Format
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_2_Storage_Disk_Image_Format
 """
-import config
-import logging
 from concurrent.futures import ThreadPoolExecutor
-from art.unittest_lib import attr, StorageTest as TestCase
+import logging
+
+import config
+from art.test_handler import exceptions
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
+    jobs as ll_jobs,
     storagedomains as ll_sd,
-    vms as ll_vms,
     templates as ll_templates,
+    vms as ll_vms,
 )
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-from rhevmtests.storage import helpers
+from art.unittest_lib import attr, StorageTest as TestCase
+from rhevmtests.storage import helpers as storage_helpers
 
 ENUMS = config.ENUMS
 
@@ -34,6 +37,7 @@ VM_ARGS = {
     'password': config.VM_PASSWORD,
     'network': config.MGMT_BRIDGE,
 }
+MOVE_DISK_TIMEOUT = 600
 
 
 @attr(tier=2)
@@ -44,7 +48,7 @@ class BaseTestDiskImage(TestCase):
     Storage/3_2_Storage_Disk_Image_Format
     """
     installation = False
-    disk_interface = None
+    disk_interface = config.INTERFACE_VIRTIO
 
     default_disks = {}
     retrieve_disk_obj = None
@@ -116,8 +120,8 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
         Create one vm with thin provisioned disk and other one with
         preallocated disk
         """
-        self.vm_thin = "vm_thin_disk_image"
-        self.vm_prealloc = "vm_prealloc_disk_image"
+        self.vm_thin = "vm_thin_disk_image_" + self.polarion_test_id
+        self.vm_prealloc = "vm_prealloc_disk_image_" + self.polarion_test_id
         self.vms = [self.vm_thin, self.vm_prealloc]
         # Define the disk objects' retriever function
         self.retrieve_disk_obj = lambda x: ll_vms.getVmDisks(x)
@@ -144,14 +148,19 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
         vm_prealloc_args.update(prealloc_keywords)
         vm_prealloc_args.update(self.disk_keywords)
 
-        assert helpers.create_vm_or_clone(**vm_thin_args)
-        assert helpers.create_vm_or_clone(**vm_prealloc_args)
+        assert storage_helpers.create_vm_or_clone(**vm_thin_args)
+        assert storage_helpers.create_vm_or_clone(**vm_prealloc_args)
 
         if self.installation:
-            assert ll_vms.stop_vms_safely([self.vm_thin, self.vm_prealloc])
+            if not ll_vms.stop_vms_safely([self.vm_thin, self.vm_prealloc]):
+                raise exceptions.VMException(
+                    "Failed to power off VMs '%s'", ', '.join(
+                        [self.vm_thin, self.vm_prealloc]
+                    )
+                )
 
-        self.disk_thin = ll_vms.getVmDisks(self.vm_thin)[0].get_alias()
-        self.disk_prealloc = ll_vms.getVmDisks(self.vm_prealloc)[0].get_alias()
+        self.disk_thin = ll_vms.getVmDisks(self.vm_thin)[0].get_id()
+        self.disk_prealloc = ll_vms.getVmDisks(self.vm_prealloc)[0].get_id()
         self.snapshot_desc = "snapshot_disk_image_format"
 
     def execute_concurrent_vms(self, fn):
@@ -162,17 +171,17 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
         accept only one parameter, the name of the vm
         :type fn: function
         """
-        excecutions = list()
+        executions = list()
         with ThreadPoolExecutor(max_workers=2) as executor:
             for vm in self.vms:
-                excecutions.append(executor.submit(fn, **{"vm": vm}))
+                executions.append(executor.submit(fn, **{"vm": vm}))
 
-        for excecution in excecutions:
-            if not excecution.result():
-                if excecution.exception():
-                    raise excecution.exception()
+        for execution in executions:
+            if not execution.result():
+                if execution.exception():
+                    raise execution.exception()
                 else:
-                    raise Exception("Error executing %s" % excecution)
+                    raise Exception("Error executing %s" % execution)
 
     def add_snapshots(self):
         """
@@ -184,6 +193,7 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
             return ll_vms.addSnapshot(True, vm, self.snapshot_desc)
 
         self.execute_concurrent_vms(addsnapshot)
+        ll_jobs.wait_for_jobs([ENUMS['job_create_snapshot']])
 
     def export_vms(self, discard_snapshots=False):
         """
@@ -231,18 +241,21 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
         """
         Remove created vms
         """
-        ll_vms.stop_vms_safely(self.vms)
-        assert ll_vms.removeVms(True, self.vms)
+        if not ll_vms.safely_remove_vms(self.vms):
+            logger.error("Failed to remove VMs '%s'", ', '.join(self.vms))
+            TestCase.test_failed = True
+        ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
+        # teardown_exception will be called from the child classes
 
 
-class TestCasesVms(BaseTestDiskImageVms):
-    """
-    Collection of tests which utilize BaseTestDiskImageVms
-    """
-    bz = {
-        '1251956': {'engine': None, 'version': ['3.6']},
-        '1259785': {'engine': None, 'version': ['3.6']},
-    }
+class TestCase11604(BaseTestDiskImageVms):
+    """ Polarion case 11604 """
+    # Bugzilla history:
+    # 1251956: Live storage migration is broken
+    # 1259785: Error 'Unable to find org.ovirt.engine.core.common.job.Step with
+    # id' after live migrate a Virtio RAW disk, job stays in status STARTED
+    __test__ = True
+    polarion_test_id = '11604'
 
     @polarion("RHEVM3-11604")
     def test_format_and_snapshots(self):
@@ -256,7 +269,17 @@ class TestCasesVms(BaseTestDiskImageVms):
         self.add_snapshots()
         self.check_disks({self.vm_prealloc: True})
 
-    @attr(tier=1)
+
+@attr(tier=1)
+class TestCase11621(BaseTestDiskImageVms):
+    """ Polarion case 11621 """
+    # Bugzilla history:
+    # 1251956: Live storage migration is broken
+    # 1259785: Error 'Unable to find org.ovirt.engine.core.common.job.Step with
+    # id' after live migrate a Virtio RAW disk, job stays in status STARTED
+    __test__ = True
+    polarion_test_id = '11621'
+
     @polarion("RHEVM3-11621")
     def test_move_disk_offline(self):
         """
@@ -266,13 +289,25 @@ class TestCasesVms(BaseTestDiskImageVms):
         * Preallocated disk should remain the same
         """
         assert ll_disks.move_disk(
-            disk_name=self.disk_thin, target_domain=self.domain_1
+            disk_id=self.disk_thin, target_domain=self.domain_1,
+            timeout=MOVE_DISK_TIMEOUT
         )
         assert ll_disks.move_disk(
-            disk_name=self.disk_prealloc, target_domain=self.domain_1
+            disk_id=self.disk_prealloc, target_domain=self.domain_1,
+            timeout=MOVE_DISK_TIMEOUT
         )
-
+        ll_jobs.wait_for_jobs([ENUMS['job_move_or_copy_disk']])
         self.check_disks()
+
+
+class TestCase11620(BaseTestDiskImageVms):
+    """ Polarion case 11620 """
+    # Bugzilla history:
+    # 1251956: Live storage migration is broken
+    # 1259785: Error 'Unable to find org.ovirt.engine.core.common.job.Step with
+    # id' after live migrate a Virtio RAW disk, job stays in status STARTED
+    __test__ = True
+    polarion_test_id = '11620'
 
     @polarion("RHEVM3-11620")
     def test_add_snapshot_and_move_disk(self):
@@ -284,15 +319,26 @@ class TestCasesVms(BaseTestDiskImageVms):
         """
         self.add_snapshots()
         self.check_disks({self.vm_prealloc: True})
-
         assert ll_disks.move_disk(
-            disk_name=self.disk_thin, target_domain=self.domain_1
+            disk_id=self.disk_thin, target_domain=self.domain_1,
+            timeout=MOVE_DISK_TIMEOUT
         )
         assert ll_disks.move_disk(
-            disk_name=self.disk_prealloc, target_domain=self.domain_1
+            disk_id=self.disk_prealloc, target_domain=self.domain_1,
+            timeout=MOVE_DISK_TIMEOUT
         )
-
+        ll_jobs.wait_for_jobs([ENUMS['job_move_or_copy_disk']])
         self.check_disks({self.vm_prealloc: True})
+
+
+class TestCase11619(BaseTestDiskImageVms):
+    """ Polarion case 11619 """
+    # Bugzilla history:
+    # 1251956: Live storage migration is broken
+    # 1259785: Error 'Unable to find org.ovirt.engine.core.common.job.Step with
+    # id' after live migrate a Virtio RAW disk, job stays in status STARTED
+    __test__ = True
+    polarion_test_id = '11619'
 
     @polarion("RHEVM3-11619")
     def test_live_move_disk(self):
@@ -306,21 +352,46 @@ class TestCasesVms(BaseTestDiskImageVms):
             [self.vm_prealloc, self.vm_thin], max_workers=2,
             wait_for_status=config.VM_UP, wait_for_ip=False
         )
-
         assert ll_disks.move_disk(
-            disk_name=self.disk_thin, target_domain=self.domain_1
+            disk_id=self.disk_thin, target_domain=self.domain_1,
+            timeout=MOVE_DISK_TIMEOUT
         )
         assert ll_disks.move_disk(
-            disk_name=self.disk_prealloc, target_domain=self.domain_1
+            disk_id=self.disk_prealloc, target_domain=self.domain_1,
+            timeout=MOVE_DISK_TIMEOUT
         )
-
+        ll_jobs.wait_for_jobs([ENUMS['job_move_or_copy_disk']])
         self.check_disks({self.vm_prealloc: True})
 
 
-class TestCasesVmsExport(BaseTestDiskImageVms):
+class ExportVms(BaseTestDiskImageVms):
     """
-    Collection of test cases for export vms
+    Common class for export related cases
     """
+    def tearDown(self):
+        """
+        Remove the vms from the export domain
+        """
+        for vm in self.vms:
+            if not ll_vms.removeVm(True, vm, stopVM='true'):
+                logger.error("Failed to remove VM '%s'", vm)
+                TestCase.test_failed = True
+        for vm in [self.vm_thin, self.vm_prealloc]:
+            if not ll_vms.removeVmFromExportDomain(
+                True, vm, config.DATA_CENTER_NAME, self.export_domain
+            ):
+                logger.error("Failed to remove VM '%s' from export domain", vm)
+                TestCase.test_failed = True
+        ll_jobs.wait_for_jobs(
+            [ENUMS['job_remove_vm'], ENUMS['job_remove_vm_from_export_domain']]
+        )
+        TestCase.teardown_exception()
+
+
+class TestCase11618(ExportVms):
+    """ Polarion case 11618 """
+    __test__ = True
+    polarion_test_id = '11618'
 
     @polarion("RHEVM3-11618")
     def test_export_vm(self):
@@ -335,6 +406,12 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
         self.retrieve_disk_obj = lambda w: ll_vms.getVmDisks(
             w, storage_domain=self.export_domain)
         self.check_disks()
+
+
+class TestCase11617(ExportVms):
+    """ Polarion case 11617 """
+    __test__ = True
+    polarion_test_id = '11617'
 
     @polarion("RHEVM3-11617")
     def test_add_snapshot_and_export_vm(self):
@@ -351,6 +428,12 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
         self.retrieve_disk_obj = lambda w: ll_vms.getVmDisks(
             w, storage_domain=self.export_domain)
         self.check_disks({self.vm_prealloc: True})
+
+
+class TestCase11616(ExportVms):
+    """ Polarion case 11616 """
+    __test__ = True
+    polarion_test_id = '11616'
 
     @polarion("RHEVM3-11616")
     def test_add_snapshot_export_vm_with_discard_snapshots(self):
@@ -369,6 +452,12 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
         )
         self.check_disks()
 
+
+class TestCase11615(ExportVms):
+    """ Polarion case 11615 """
+    __test__ = True
+    polarion_test_id = '11615'
+
     @polarion("RHEVM3-11615")
     def test_import_vm(self):
         """
@@ -379,9 +468,15 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
         """
         self.export_vms()
         assert ll_vms.removeVms(True, [self.vm_thin, self.vm_prealloc])
+        ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
         self.import_vms()
-
         self.check_disks()
+
+
+class TestCase11614(ExportVms):
+    """ Polarion case 11614 """
+    __test__ = True
+    polarion_test_id = '11614'
 
     @polarion("RHEVM3-11614")
     def test_export_vm_after_snapshot_and_import(self):
@@ -394,9 +489,15 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
         self.add_snapshots()
         self.export_vms()
         assert ll_vms.removeVms(True, [self.vm_thin, self.vm_prealloc])
+        ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
         self.import_vms()
-
         self.check_disks({self.vm_prealloc: True})
+
+
+class TestCase11613(ExportVms):
+    """ Polarion case 11613 """
+    __test__ = True
+    polarion_test_id = '11613'
 
     @polarion("RHEVM3-11613")
     def test_export_vm_with_collapse(self):
@@ -410,20 +511,10 @@ class TestCasesVmsExport(BaseTestDiskImageVms):
         self.add_snapshots()
         self.export_vms()
         assert ll_vms.removeVms(True, [self.vm_thin, self.vm_prealloc])
+        ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
         self.import_vms(collapse=True)
         self.check_snapshots_collapsed()
         self.check_disks({self.vm_prealloc: True})
-
-    def tearDown(self):
-        """
-        Remove the vms from the export domain
-        """
-        for vm in self.vms:
-            ll_vms.removeVm(True, vm, stopVM='true')
-        for vm in [self.vm_thin, self.vm_prealloc]:
-            assert ll_vms.removeVmFromExportDomain(
-                True, vm, config.DATA_CENTER_NAME, self.export_domain
-            )
 
 
 class TestCasesImportVmLinked(BaseTestDiskImage):
@@ -432,14 +523,16 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
     """
     retrieve_disk_obj = lambda self, x: ll_vms.getVmDisks(x)
     # Bugzilla history:
-    # 1254230: Operation of exporting template to Export domain stucks
+    # 1254230: Operation of exporting template to Export domain is stuck
 
     def setUp(self):
         """
         Create a template
         """
-        self.vm_name = "vm_disk_image_format"
-        self.template_name = "template_disk_image_format"
+        self.vm_name = "vm_disk_image_format_" + self.polarion_test_id
+        self.template_name = (
+            "template_disk_image_format_" + self.polarion_test_id
+        )
         self.default_disks = {
             self.vm_name: True,
         }
@@ -451,11 +544,56 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
             'volumeType': True,
             'volumeFormat': config.COW_DISK,
         })
-        assert helpers.create_vm_or_clone(**vm_args)
+        assert storage_helpers.create_vm_or_clone(**vm_args)
         assert ll_templates.createTemplate(
             True, vm=self.vm_name, name=self.template_name
         )
         assert ll_vms.removeVm(True, self.vm_name)
+        ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
+
+    def tearDown(self):
+        """
+        Remove all templates and vms created
+        """
+        if not ll_vms.removeVm(True, self.vm_name):
+            logger.error("Failed to remove VM '%s'", self.vm_name)
+            TestCase.test_failed = True
+        if ll_templates.validateTemplate(True, self.template_name):
+            if not ll_templates.removeTemplate(True, self.template_name):
+                logger.error(
+                    "Failed to remove Template '%s'", self.template_name
+                )
+                TestCase.test_failed = True
+        if not ll_vms.removeVmFromExportDomain(
+            True, self.vm_name, config.DATA_CENTER_NAME, self.export_domain,
+        ):
+            logger.error(
+                "Failed to remove VM '%s' from export domain", self.vm_name
+            )
+            TestCase.test_failed = True
+        if self.remove_exported_template:
+            if not ll_templates.removeTemplateFromExportDomain(
+                True, self.template_name, config.DATA_CENTER_NAME,
+                self.export_domain,
+            ):
+                logger.error(
+                    "Failed to remove Template '%s' from export domain",
+                    self.template_name
+                )
+                TestCase.test_failed = True
+        ll_jobs.wait_for_jobs(
+            [ENUMS['job_remove_vm'],
+             ENUMS['job_remove_vm_template'],
+             ENUMS['job_remove_vm_from_export_domain'],
+             ENUMS['job_remove_vm_template_from_export_domain']]
+        )
+        TestCase.teardown_exception()
+
+
+class TestCase11612(TestCasesImportVmLinked):
+    """ Polarion case 11612 """
+    __test__ = True
+    polarion_test_id = '11612'
 
     @polarion("RHEVM3-11612")
     def test_import_link_to_template(self):
@@ -471,12 +609,19 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
         )
         assert ll_vms.exportVm(True, self.vm_name, self.export_domain)
         assert ll_vms.removeVm(True, self.vm_name)
+        ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
         assert ll_vms.importVm(
             True, self.vm_name, self.export_domain, self.domain_0,
             config.CLUSTER_NAME
         )
 
         self.check_disks()
+
+
+class TestCase11611(TestCasesImportVmLinked):
+    """ Polarion case 11611 """
+    __test__ = True
+    polarion_test_id = '11611'
 
     @polarion("RHEVM3-11611")
     def test_import_link_to_template_collapse(self):
@@ -497,6 +642,7 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
         assert ll_vms.exportVm(True, self.vm_name, self.export_domain)
 
         assert ll_vms.removeVm(True, self.vm_name)
+        ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
         assert ll_templates.removeTemplate(True, self.template_name)
 
         assert ll_vms.importVm(
@@ -506,29 +652,12 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
 
         self.check_disks()
 
-    def tearDown(self):
-        """
-        Remove all templates and vms created
-        """
-        assert ll_vms.removeVm(True, self.vm_name)
-        if ll_templates.validateTemplate(True, self.template_name):
-            assert ll_templates.removeTemplate(True, self.template_name)
-        assert ll_vms.removeVmFromExportDomain(
-            True, self.vm_name, config.DATA_CENTER_NAME, self.export_domain,
-        )
-        if self.remove_exported_template:
-            assert ll_templates.removeTemplateFromExportDomain(
-                True, self.template_name, config.DATA_CENTER_NAME,
-                self.export_domain,
-            )
-
 
 class TestCasesImportVmWithNewName(BaseTestDiskImageVms):
     """
     Check disk images' format after importing the vm without removing the
     original vm used in the export process
     """
-
     def import_vm_with_new_name(self):
         """
         Export the thin provisioned and preallocated disk vms, then import them
@@ -547,6 +676,37 @@ class TestCasesImportVmWithNewName(BaseTestDiskImageVms):
             config.CLUSTER_NAME, name=self.new_vm_prealloc
         )
 
+    def tearDown(self):
+        """
+        Remove new created vms
+        """
+        super(TestCasesImportVmWithNewName, self).tearDown()
+        if not ll_vms.removeVms(
+            True, [self.new_vm_thin, self.new_vm_prealloc]
+        ):
+            logger.error(
+                "Failed to remove VMs '%s'", ', '.join(
+                    [self.new_vm_thin, self.new_vm_prealloc]
+                )
+            )
+            TestCase.test_failed = True
+        for vm in [self.vm_thin, self.vm_prealloc]:
+            if not ll_vms.removeVmFromExportDomain(
+                True, vm, config.DATA_CENTER_NAME, self.export_domain
+            ):
+                logger.error("Failed to remove VM '%s' from export domain", vm)
+                TestCase.test_failed = True
+        ll_jobs.wait_for_jobs(
+            [ENUMS['job_remove_vm'], ENUMS['job_remove_vm_from_export_domain']]
+        )
+        TestCase.teardown_exception()
+
+
+class TestCase11610(TestCasesImportVmWithNewName):
+    """ Polarion case 11610 """
+    __test__ = True
+    polarion_test_id = '11610'
+
     @polarion("RHEVM3-11610")
     def test_import_vm_without_removing_old_vm(self):
         """
@@ -557,6 +717,12 @@ class TestCasesImportVmWithNewName(BaseTestDiskImageVms):
         * Preallocated disk should change to thin provisioned
         """
         self.import_vm_with_new_name()
+
+
+class TestCase11609(TestCasesImportVmWithNewName):
+    """ Polarion case 11609 """
+    __test__ = True
+    polarion_test_id = '11609'
 
     @polarion("RHEVM3-11609")
     def test_import_vm_without_removing_old_vm_with_snapshot(self):
@@ -571,25 +737,25 @@ class TestCasesImportVmWithNewName(BaseTestDiskImageVms):
         self.import_vm_with_new_name()
         self.check_disks({self.vm_prealloc: True})
 
-    def tearDown(self):
-        """
-        Remove new created vms
-        """
-        super(TestCasesImportVmWithNewName, self).tearDown()
-        assert ll_vms.removeVms(True, [self.new_vm_thin, self.new_vm_prealloc])
-        for vm in [self.vm_thin, self.vm_prealloc]:
-            assert ll_vms.removeVmFromExportDomain(
-                True, vm, config.DATA_CENTER_NAME, self.export_domain
-            )
-
 
 class TestCasesCreateTemplate(BaseTestDiskImageVms):
     """
     Verify the disk images' format of a template
     """
-    template_thin = "template_thin"
-    template_preallocated = "template_preallocated"
-    bz = {'1257240': {'engine': None, 'version': ['3.6']}}
+    template_thin = "%s_template_thin"
+    template_preallocated = "%s_template_preallocated"
+    # Bugzilla history:
+    # 1257240: Template's disk format is wrong
+
+    def setUp(self):
+        """
+        Use the test case ID as part of the template names
+        """
+        super(TestCasesCreateTemplate, self).setUp()
+        self.template_thin = self.template_thin % self.polarion_test_id
+        self.template_preallocated = (
+            self.template_preallocated % self.polarion_test_id
+        )
 
     def create_template_from_vm(self):
         """
@@ -613,6 +779,23 @@ class TestCasesCreateTemplate(BaseTestDiskImageVms):
         }
         self.check_disks()
 
+    def tearDown(self):
+        """
+        Remove the created templates
+        """
+        super(TestCasesCreateTemplate, self).tearDown()
+        for template in [self.template_thin, self.template_preallocated]:
+            if not ll_templates.removeTemplate(True, template):
+                logger.error("Failed to remove template '%s'", template)
+                TestCase.test_failed = True
+        TestCase.teardown_exception()
+
+
+class TestCase11608(TestCasesCreateTemplate):
+    """ Polarion case 11608 """
+    __test__ = True
+    polarion_test_id = '11608'
+
     @polarion("RHEVM3-11608")
     def test_create_template_from_vm(self):
         """
@@ -622,6 +805,12 @@ class TestCasesCreateTemplate(BaseTestDiskImageVms):
         * Preallocated disk should remain the same
         """
         self.create_template_from_vm()
+
+
+class TestCase11607(TestCasesCreateTemplate):
+    """ Polarion case 11607 """
+    __test__ = True
+    polarion_test_id = '11607'
 
     @polarion("RHEVM3-11607")
     def test_create_template_from_vm_with_snapshots(self):
@@ -634,21 +823,11 @@ class TestCasesCreateTemplate(BaseTestDiskImageVms):
         self.add_snapshots()
         self.create_template_from_vm()
 
-    def tearDown(self):
-        """
-        Remove the created templates
-        """
-        super(TestCasesCreateTemplate, self).tearDown()
-        for template in [self.template_thin, self.template_preallocated]:
-            assert ll_templates.removeTemplate(True, template)
-
 
 class TestCase11606(BaseTestDiskImage):
     """
     Test vm with both disk formats
     """
-    polarion_test_id = '11606'
-
     def setUp(self):
         """
         Create a vm with a thin provisioned disk and a preallocated disk
@@ -664,7 +843,7 @@ class TestCase11606(BaseTestDiskImage):
             'volumeType': True,
             'volumeFormat': config.COW_DISK,
         })
-        assert helpers.create_vm_or_clone(**vm_args)
+        assert storage_helpers.create_vm_or_clone(**vm_args)
         self.thin_disk_alias = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
 
         self.preallocated_disk_alias = "{0}_prealloc".format(self.vm_name)
@@ -681,9 +860,9 @@ class TestCase11606(BaseTestDiskImage):
         Verify the vm and template disks' format
         """
         for function, object_name in [
-                (ll_disks.getTemplateDisk, self.template_name),
-                (ll_disks.getVmDisk, self.vm_name)]:
-
+            (ll_disks.getTemplateDisk, self.template_name),
+            (ll_disks.getVmDisk, self.vm_name)
+        ]:
             thin_disk = function(object_name, self.thin_disk_alias)
             preallocated_disk = function(
                 object_name, self.preallocated_disk_alias,
@@ -705,7 +884,7 @@ class TestCase11606(BaseTestDiskImage):
         """
         assert ll_vms.exportVm(True, self.vm_name, self.export_domain)
         assert ll_vms.removeVm(True, self.vm_name)
-
+        ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
         assert ll_vms.importVm(
             True, self.vm_name, self.export_domain, self.domain_0,
             config.CLUSTER_NAME, collapse=collapse
@@ -714,6 +893,38 @@ class TestCase11606(BaseTestDiskImage):
         assert ll_templates.createTemplate(
             True, vm=self.vm_name, name=self.template_name
         )
+
+    def tearDown(self):
+        """
+        Remove created vm, exported vm and template
+        """
+        if not ll_vms.removeVm(True, self.vm_name):
+            logger.error("Failed to remove VM '%s'", self.vm_name)
+            TestCase.test_failed = True
+        if not ll_vms.removeVmFromExportDomain(
+            True, self.vm_name, config.DATA_CENTER_NAME, self.export_domain
+        ):
+            logger.error(
+                "Failed to remove VM '%s' from export domain", self.vm_name
+            )
+            TestCase.test_failed = True
+        if not ll_templates.removeTemplate(True, self.template_name):
+            logger.error("Failed to remove template '%s'", self.template_name)
+            TestCase.test_failed = True
+        ll_jobs.wait_for_jobs(
+            [ENUMS['job_remove_vm'],
+             ENUMS['job_remove_vm_template'],
+             ENUMS['job_remove_vm_from_export_domain']]
+        )
+        TestCase.teardown_exception()
+
+
+class TestCase11606A(TestCase11606):
+    """
+    No snapshot on vm
+    """
+    __test__ = True
+    polarion_test_id = '11606'
 
     @polarion("RHEVM3-11606")
     def test_different_format_same_vm(self):
@@ -725,6 +936,14 @@ class TestCase11606(BaseTestDiskImage):
         self.action_test()
         self.check_disks()
 
+
+class TestCase11606B(TestCase11606):
+    """
+    Snapshot on vm
+    """
+    __test__ = True
+    polarion_test_id = '11606'
+
     @polarion("RHEVM3-11606")
     def test_different_format_same_vm_with_snapshot(self):
         """
@@ -734,85 +953,3 @@ class TestCase11606(BaseTestDiskImage):
         """
         assert ll_vms.addSnapshot(True, self.vm_name, "another snapshot")
         self.action_test(collapse=True)
-
-    def tearDown(self):
-        """
-        Remove created vm, exported vm and template
-        """
-        assert ll_vms.removeVm(True, self.vm_name)
-        assert ll_vms.removeVmFromExportDomain(
-            True, self.vm_name, config.DATA_CENTER_NAME, self.export_domain
-        )
-        assert ll_templates.removeTemplate(True, self.template_name)
-
-
-class TestCasesVmsVIRTIO(TestCasesVms):
-    """"""
-    __test__ = True
-    disk_interface = config.INTERFACE_VIRTIO
-
-
-class TestCasesVmsIDE(TestCasesVms):
-    """"""
-    __test__ = True
-    disk_interface = config.INTERFACE_IDE
-
-
-class TestCasesVmsExportVIRTIO(TestCasesVmsExport):
-    """"""
-    __test__ = True
-    disk_interface = config.INTERFACE_VIRTIO
-
-
-class TestCasesVmsExportIDE(TestCasesVmsExport):
-    """"""
-    __test__ = True
-    disk_interface = config.INTERFACE_IDE
-
-
-class TestCasesImportVmLinkedVIRTIO(TestCasesImportVmLinked):
-    """"""
-    __test__ = True
-    disk_interface = config.INTERFACE_VIRTIO
-
-
-class TestCasesImportVmLinkedIDE(TestCasesImportVmLinked):
-    """"""
-    __test__ = True
-    disk_interface = config.INTERFACE_IDE
-
-
-class TestCasesCreateTemplateVIRTIO(TestCasesCreateTemplate):
-    """"""
-    __test__ = True
-    disk_interface = config.INTERFACE_VIRTIO
-
-
-class TestCasesCreateTemplateIDE(TestCasesCreateTemplate):
-    """"""
-    __test__ = True
-    disk_interface = config.INTERFACE_IDE
-
-
-class TestCase11606VIRTIO(TestCase11606):
-    """"""
-    __test__ = True
-    disk_interface = config.INTERFACE_VIRTIO
-
-
-class TestCase11606IDE(TestCase11606):
-    """"""
-    __test__ = True
-    disk_interface = config.INTERFACE_IDE
-
-
-class TestCasesImportVmWithNewNameVIRTIO(TestCasesImportVmWithNewName):
-    """"""
-    __test__ = True
-    disk_interface = config.INTERFACE_VIRTIO
-
-
-class TestCasesImportVmWithNewNameIDE(TestCasesImportVmWithNewName):
-    """"""
-    __test__ = True
-    disk_interface = config.INTERFACE_IDE
