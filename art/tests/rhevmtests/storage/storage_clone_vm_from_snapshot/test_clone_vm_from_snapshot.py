@@ -23,9 +23,9 @@ import rhevmtests.storage.helpers as helpers
 logger = logging.getLogger(__name__)
 
 
-# If the test fails with error = low level Image copy failed, code = 261
+# TODO: If the test fails with error = low level Image copy failed, code = 261
 # re-open https://bugzilla.redhat.com/show_bug.cgi?id=1201268 and uncomment:
-@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
+# @attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
 class BaseTestCase(TestCase):
     """
     Base Test Case for clone snapshot

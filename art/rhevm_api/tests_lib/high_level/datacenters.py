@@ -28,6 +28,10 @@ from art.rhevm_api.utils.test_utils import wait_for_tasks
 
 LOGGER = logging.getLogger(__name__)
 ENUMS = opts['elements_conf']['RHEVM Enums']
+SPM_TIMEOUT = 300
+SPM_SLEEP = 5
+FIND_SDS_TIMEOUT = 10
+SD_STATUS_OK_TIMEOUT = 120
 
 
 def build_setup(config, storage, storage_type, basename="testname",
@@ -287,3 +291,45 @@ def clean_datacenter(
             status = False
 
     return status
+
+
+def ensure_data_center_and_sd_are_active(datacenter):
+    """
+    Wait for the Data center to become active, for an SPM host selection and
+    for all storage domains to become active
+
+    ** This is a workaround for bug:
+    https://bugzilla.redhat.com/show_bug.cgi?id=1300075
+    where storage domains are coming up in Unknown state after engine restart
+
+    :param datacenter: Datacenter Name
+    :type datacenter: str
+    """
+    LOGGER.info("Wait for the Data center to become active")
+    if not datacenters.waitForDataCenterState(datacenter):
+        raise errors.DataCenterException(
+            "The Data center was not up within 3 minutes, aborting test"
+        )
+
+    if not ll_hosts.waitForSPM(
+        datacenter, SPM_TIMEOUT, SPM_SLEEP
+    ):
+        raise errors.StorageDomainException(
+            "SPM host was not elected within 5 minutes, aborting test"
+        )
+    for sd in ll_storagedomains.getDCStorages(datacenter, False):
+        LOGGER.info(
+            "Waiting up to %s seconds for sd %s to be active",
+            SD_STATUS_OK_TIMEOUT, sd.get_name()
+        )
+        if not ll_storagedomains.waitForStorageDomainStatus(
+            True, datacenter, sd.get_name(),
+            ENUMS['storage_domain_state_active'], SD_STATUS_OK_TIMEOUT, 1
+        ):
+            raise errors.StorageDomainException(
+                "NFS domain '%s' has not reached %s state after %s seconds" %
+                (
+                    sd.get_name(), ENUMS['storage_domain_state_active'],
+                    SD_STATUS_OK_TIMEOUT
+                )
+            )

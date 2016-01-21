@@ -256,6 +256,7 @@ class TestCasesVms(BaseTestDiskImageVms):
         self.add_snapshots()
         self.check_disks({self.vm_prealloc: True})
 
+    @attr(tier=1)
     @polarion("RHEVM3-11621")
     def test_move_disk_offline(self):
         """

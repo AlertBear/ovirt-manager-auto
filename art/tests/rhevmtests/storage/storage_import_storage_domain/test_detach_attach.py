@@ -198,7 +198,13 @@ def setup_module():
     )
     logger.info("Restarting ovirt-engine service")
     test_utils.restart_engine(config.ENGINE, 10, 300)
-    storage_helpers.ensure_data_center_and_sd_are_active()
+
+    # TODO: As a workaround for bug
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1300075
+    test_utils.wait_for_tasks(
+        config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+    )
+    datacenters.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
 
 
 def teardown_module():
@@ -229,7 +235,12 @@ def teardown_module():
         logger.error("Failed to restart engine service")
         exception_flag = True
 
-    storage_helpers.ensure_data_center_and_sd_are_active()
+    # TODO: As a workaround for bug
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1300075
+    test_utils.wait_for_tasks(
+        config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+    )
+    datacenters.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
 
     for vm_names in VM_NAMES.values():
         ll_vms.safely_remove_vms(vm_names)
@@ -254,13 +265,6 @@ def teardown_module():
                 storage_domain_name
             )
             exception_flag = True
-
-    if not config.GOLDEN_ENV:
-        logger.info('Cleaning datacenter')
-        datacenters.clean_datacenter(
-            True, config.DATA_CENTER_NAME, vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD
-        )
 
     if exception_flag:
         raise errors.TearDownException(

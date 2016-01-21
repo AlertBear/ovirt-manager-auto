@@ -5,7 +5,6 @@ Storage/3_5_Storage_OVF_On_Any_Domain
 """
 import logging
 import os
-
 import config
 import helpers
 from art.core_api.apis_utils import TimeoutingSampler
@@ -31,7 +30,7 @@ from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, StorageTest as BaseTestCase
 from rhevmtests.storage.helpers import (
     create_vm_or_clone, get_spuuid, get_sduuid, get_imguuid, get_voluuid,
-    host_to_use, ensure_data_center_and_sd_are_active
+    host_to_use
 )
 
 logger = logging.getLogger(__name__)
@@ -95,9 +94,11 @@ def setup_module():
         )
 
     # TODO: As a workaround for bug
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1275174 where storage
-    # domains are coming up in Unknown state after engine restart
-    ensure_data_center_and_sd_are_active()
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1300075
+    test_utils.wait_for_tasks(
+        config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+    )
+    hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
 
     vm1_args = VM_ARGS.copy()
     vm1_args['vmName'] = VM1_NAME
@@ -1612,9 +1613,11 @@ class TestCase6261(BasicEnvironment):
             )
 
         # TODO: As a workaround for bug
-        # https://bugzilla.redhat.com/show_bug.cgi?id=1275174 where storage
-        # domains are coming up in Unknown state after engine restart
-        ensure_data_center_and_sd_are_active()
+        # https://bugzilla.redhat.com/show_bug.cgi?id=1300075
+        test_utils.wait_for_tasks(
+            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+        )
+        hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
 
     def tearDown(self):
         super(TestCase6261, self).tearDown()
@@ -1634,9 +1637,11 @@ class TestCase6261(BasicEnvironment):
             )
 
         # TODO: As a workaround for bug
-        # https://bugzilla.redhat.com/show_bug.cgi?id=1275174 where storage
-        # domains are coming up in Unknown state after engine restart
-        ensure_data_center_and_sd_are_active()
+        # https://bugzilla.redhat.com/show_bug.cgi?id=1300075
+        test_utils.wait_for_tasks(
+            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+        )
+        hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
 
     @polarion(POLARION_PROJECT + polarion_test_case)
     def test_change_ovf_store_count(self):
