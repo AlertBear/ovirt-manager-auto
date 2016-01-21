@@ -64,10 +64,7 @@ class EvenVmCountDistribution(TestCase):
         Stop vms and change cluster policy to 'None'
         """
         logger.info("Stop all vms")
-        try:
-            vm_api.stop_vms_safely(config.VM_NAME)
-        except errors.VMException:
-            pass
+        vm_api.stop_vms_safely(config.VM_NAME)
         logger.info("Update cluster policy to none")
         if not updateCluster(
             positive=True,

@@ -98,10 +98,7 @@ class BaseTestPolicyWithMemory(libs.SlaTest):
             )
         if cls.load_memory_d:
             logger.info("Stop memory load on hosts")
-            try:
-                ll_vms.stop_vms_safely(vms_list=cls.load_memory_d.values())
-            except errors.VMException as e:
-                logger.error(e.message)
+            ll_vms.stop_vms_safely(vms_list=cls.load_memory_d.values())
         if cls.load_cpu_d:
             for hosts_d in cls.load_cpu_d.itervalues():
                 ll_sla.stop_cpu_loading_on_resources(hosts_d[conf.RESOURCE])
@@ -179,8 +176,5 @@ class StartVmsClass(BaseTestPolicyWithMemory):
         """
         Stop vms
         """
-        try:
-            ll_vms.stop_vms_safely(conf.VM_NAME[:2])
-        except errors.VMException as e:
-            logger.error(e.message)
+        ll_vms.stop_vms_safely(conf.VM_NAME[:2])
         super(StartVmsClass, cls).teardown_class()

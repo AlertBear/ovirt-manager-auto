@@ -76,10 +76,7 @@ class RhevmClusterPolicies(TestCase):
         Stop vm
         """
         logger.info("Stopping all vms")
-        try:
-            vm_api.stop_vms_safely(config.VM_NAME[:3])
-        except errors.VMException:
-            pass
+        vm_api.stop_vms_safely(config.VM_NAME[:3])
         logger.info("Update cluster policy to none")
         if not updateCluster(
             positive=True,

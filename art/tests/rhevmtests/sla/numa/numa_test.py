@@ -496,10 +496,7 @@ class StartVms(AddNumaNodes):
         """
         Stop vms
         """
-        try:
-            ll_vms.stop_vms_safely(cls.vms_to_update)
-        except errors.VMException:
-            pass
+        ll_vms.stop_vms_safely(cls.vms_to_update)
         super(StartVms, cls).teardown_class()
 
 
@@ -932,11 +929,8 @@ class BaseClassForVmNumaNodesValidations(AddNumaNodes):
         """
         Stop vms
         """
-        try:
-            if cls.vms_to_stop:
-                ll_vms.stop_vms_safely(cls.vms_to_stop)
-        except errors.VMException:
-            pass
+        if cls.vms_to_stop:
+            ll_vms.stop_vms_safely(cls.vms_to_stop)
         super(BaseClassForVmNumaNodesValidations, cls).teardown_class()
 
 

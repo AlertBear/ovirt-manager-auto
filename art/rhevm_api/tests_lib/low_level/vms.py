@@ -4080,16 +4080,17 @@ def create_vm_from_ovf(new_vm_name, cluster_name, ovf, compare=False):
 
 def stop_vms_safely(vms_list):
     """
-    Stop all vms passed in. Raise an exception if any of the vms were not
-    stopped
+    Powers off all vms from vms_list
 
-    __author__ = "ratamir, cmestreg"
-    :param vms_list: list of vm names
+    __author__ = "ratamir, cmestreg, glazarov"
+    :param vms_list: list of vms to power off
     :type vms_list: list
+    :return: True if all VMs were powered off successfully, False otherwise
+    :rtype: bool
     """
     vms_stop_failed = set()
     vms_action_stop = set()
-    logger.info("Stopping vms: %s", vms_list)
+    logger.info("Powering off VMs: %s", vms_list)
     for vm in vms_list:
         if not get_vm_state(vm) == ENUMS['vm_state_down']:
             if not stopVm(True, vm, async='true'):
@@ -4102,7 +4103,9 @@ def stop_vms_safely(vms_list):
             vms_stop_failed.add(vm)
 
     if vms_stop_failed:
-        raise exceptions.VMException("Failed to stop vms %s" % vms_stop_failed)
+        logger.error("Failed to stop VMs '%s'", ', '.join(vms_stop_failed))
+        return False
+    return True
 
 
 def attach_snapshot_disk_to_vm(disk_obj, vm_name, async=False, activate=True):
@@ -4846,9 +4849,7 @@ def safely_remove_vms(vms):
     if vms:
         logger.debug("Removing vms %s", vms)
         existing_vms = filter(does_vm_exist, vms)
-        try:
-            stop_vms_safely(existing_vms)
-        except exceptions.VMException:
+        if not stop_vms_safely(existing_vms):
             logger.error("Failed to stop %s", vms)
             return False
         for vm in existing_vms:

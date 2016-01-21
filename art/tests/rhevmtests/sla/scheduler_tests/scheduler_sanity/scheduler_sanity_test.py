@@ -187,10 +187,7 @@ class UpdateVms(AttachPolicyToCluster):
         """
         Stop and update vm.
         """
-        try:
-            vm_api.stop_vms_safely(config.VM_NAME[:2])
-        except errors.VMException:
-            pass
+        vm_api.stop_vms_safely(config.VM_NAME[:2])
         for vm in cls.vms_new_parameters.iterkeys():
             logger.info(
                 "Update vm %s with parameters %s.", vm, cls.old_parameters

@@ -118,10 +118,7 @@ class StartVms(Affinity):
         Stop all vms
         """
         logger.info("Stop vms %s", config.VM_NAME[:2])
-        try:
-            vm_api.stop_vms_safely(config.VM_NAME[:2])
-        except errors.VMException as e:
-            logger.error(e.message)
+        vm_api.stop_vms_safely(config.VM_NAME[:2])
         super(StartVms, cls).teardown_class()
 
 
@@ -252,10 +249,7 @@ class MigrateVm(Affinity):
         Stop vms and remove affinity group
         """
         logger.info("Stop vms %s", config.VM_NAME[:3])
-        try:
-            vm_api.stop_vms_safely(config.VM_NAME[:3])
-        except errors.VMException as e:
-            logger.error(e.message)
+        vm_api.stop_vms_safely(config.VM_NAME[:3])
         for vm in config.VM_NAME[:2]:
             logger.info(
                 "Update vm %s migration option to %s",
@@ -888,10 +882,7 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(MigrateVm):
             TestFailedToStartHAVmUnderHardNegativeAffinity, cls
         ).teardown_class()
         logger.info("Stop vm %s", cls.ha_vm)
-        try:
-            vm_api.stop_vms_safely([cls.ha_vm])
-        except errors.VMException as e:
-            logger.error(e.message)
+        vm_api.stop_vms_safely([cls.ha_vm])
         logger.info("Remove HA vm")
         if not vm_api.removeVm(True, cls.ha_vm):
             logger.error("Failed to remove vm %s", cls.ha_vm)

@@ -523,10 +523,7 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
         Don't add asserts, in case of errors in the test some of the commands
         may fail and it is OK.
         """
-        try:
-            ll_vms.stop_vms_safely([cls.vm_1])
-        except apis_exceptions.EntityNotFound:
-            pass
+        ll_vms.stop_vms_safely([cls.vm_1])
         if not ll_hosts.isHostUp(True, cls.host):
             ll_hosts.activateHost(True, cls.host)
         try:
