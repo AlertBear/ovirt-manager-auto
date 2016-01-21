@@ -238,11 +238,17 @@ class CaseRoleActions(TestCase):
                 'UserVmManager': ['create_disk'],
                 'UserVmRunTimeManager': ['create_disk'],
                 'VmCreator': ['create_disk'],
+                'TemplateAdmin': ['create_template'],
                 'ClusterAdmin': [
                     'create_vm_pool',
                     'edit_vm_pool_configuration',
                 ],
                 'DataCenterAdmin': [
+                    'create_template',
+                    'create_vm_pool',
+                    'edit_vm_pool_configuration',
+                ],
+                'VmPoolAdmin': [
                     'create_vm_pool',
                     'edit_vm_pool_configuration',
                 ],
