@@ -17,12 +17,12 @@ TOOL = 'ovirt-aaa-jdbc-tool'
 USER_CLI = None
 GROUP_CLI = None
 MANAGE_CLI = None
-TEST_USER1 = 'user1'
-TEST_USER2 = 'user2'
+TEST_USER1 = 'userX1'
+TEST_USER2 = 'userX2'
 TEST_USER_DISABLED = 'user_disabled'
 TEST_USER_DELETE = 'user_to_be_deleted'
-TEST_GROUP1 = 'group1'
-TEST_GROUP2 = 'group2'
+TEST_GROUP1 = 'groupX1'
+TEST_GROUP2 = 'groupX2'
 TEST_GROUP_DELETE = 'group_deleted'
 
 
@@ -36,11 +36,11 @@ def setup_module():
     assert USER_CLI.run(
         'add',
         TEST_USER1,
-        '--attribute=firstName=user1',
+        '--attribute=firstName=userX1',
         '--attribute=department=QA',
         '--attribute=description=our sysadmin',
         '--attribute=displayName=Uzivatel',
-        '--attribute=email=user1@internal',
+        '--attribute=email=userX1@internal',
         '--attribute=lastName=Blabla',
         '--attribute=title=user',
     )[0]
@@ -179,7 +179,7 @@ class JDBCCLIUser(TestCase):
         assert USER_CLI.run(
             'edit',
             TEST_USER2,
-            attribute='firstName=user1',
+            attribute='firstName=userX2',
         )[0]
 
     @attr(tier=2)
@@ -383,11 +383,11 @@ class JDBCCLIQuery(TestCase):
         # Test query user
         out_user = USER_CLI.run('show', TEST_USER1)[1]
         for k, v in {
-            'firstName': 'user1',
+            'firstName': 'userX1',
             'department': 'QA',
             'description': 'our sysadmin',
             'displayName': 'Uzivatel',
-            'email': 'user1@internal',
+            'email': 'userX1@internal',
             'lastName': 'Blabla',
             'title': 'user',
         }.iteritems():
