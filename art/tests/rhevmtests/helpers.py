@@ -6,6 +6,8 @@ rhevmtests helper functions
 """
 
 import logging
+import os
+
 from rrmngmnt import ssh
 from rhevmtests import config
 from art.rhevm_api.resources import User, Host
@@ -46,6 +48,12 @@ def set_passwordless_ssh(src_host, dst_host):
     :rtype: bool
     """
     ssh_keyscan = ["ssh-keyscan", "-t", "rsa"]
+    known_hosts = ssh.KNOWN_HOSTS % os.path.expanduser(
+        "~%s" % src_host.root_user.name
+    )
+    authorized_keys = ssh.AUTHORIZED_KEYS % os.path.expanduser(
+        "~%s" % dst_host.root_user.name
+    )
 
     # Remove old keys from local KNOWN_HOSTS file
     if not src_host.remove_remote_host_ssh_key(dst_host):
@@ -58,7 +66,7 @@ def set_passwordless_ssh(src_host, dst_host):
     # Get local SSH key and add it to remote host AUTHORIZED_KEYS file
     local_key = src_host.get_ssh_public_key().strip()
 
-    remote_cmd = ["echo", local_key, ">>", ssh.AUTHORIZED_KEYS]
+    remote_cmd = ["echo", local_key, ">>", authorized_keys]
     rc = dst_host.run_command(remote_cmd)[0]
     if rc:
         return False
@@ -66,7 +74,7 @@ def set_passwordless_ssh(src_host, dst_host):
     # Adding remote host SSH key to local KNOWN_HOSTS file
     for i in [dst_host.ip, dst_host.fqdn]:
         rc1, remote_key = src_host.run_command(ssh_keyscan + [i])[:2]
-        local_cmd = ["echo", remote_key, ">>", ssh.KNOWN_HOSTS]
+        local_cmd = ["echo", remote_key, ">>", known_hosts]
         rc2 = src_host.run_command(local_cmd)[0]
         if rc1 or rc2:
             return False
