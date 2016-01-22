@@ -2,8 +2,7 @@ __test__ = False
 
 from reports.config import *  # flake8: noqa
 from art.test_handler.settings import ART_CONFIG
-from art.rhevm_api.resources.host import Host
-from art.rhevm_api.resources.user import RootUser
+from rrmngmnt import Host, RootUser
 
 import logging
 
