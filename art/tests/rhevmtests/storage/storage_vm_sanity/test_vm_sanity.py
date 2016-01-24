@@ -12,7 +12,6 @@ from art.rhevm_api.utils import test_utils
 from art.rhevm_api.utils import resource_utils
 from art.test_handler import exceptions
 from threading import Thread
-from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import vms, disks
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
@@ -26,26 +25,6 @@ REGEX = 'createVolume'
 
 ENUMS = config.ENUMS
 STORAGE_DOMAIN_API = test_utils.get_api('storage_domain', 'storagedomains')
-
-
-def setup_module():
-    """ creates datacenter, adds hosts, clusters, storages according to
-    the config file
-    """
-    if not config.GOLDEN_ENV:
-        datacenters.build_setup(
-            config=config.PARAMETERS, storage=config.PARAMETERS,
-            storage_type=config.STORAGE_TYPE, basename=config.TESTNAME)
-
-
-def teardown_module():
-    """ removes created datacenter, storages etc.
-    """
-    if not config.GOLDEN_ENV:
-        datacenters.clean_datacenter(
-            True, config.DATA_CENTER_NAME, vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD
-        )
 
 
 def _create_vm(vm_name, vm_description, disk_interface,

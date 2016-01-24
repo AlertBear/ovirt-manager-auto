@@ -45,7 +45,7 @@ class BaseExportImportTestCase(TestCase):
         logger.info("Creating vm %s with type %s", self.vm_name, self.vm_type)
         if not helpers.create_vm(
                 self.vm_name, vm_type=self.vm_type,
-                storage_domain=self.storage_domain
+                storage_domain=self.storage_domain, installation=False
         ):
             raise exceptions.VMException('Unable to create vm %s for test' %
                                          self.vm_name)

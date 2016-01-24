@@ -432,7 +432,7 @@ def deactivateStorageDomain(positive, datacenter, storagedomain, wait=True):
         return waitForStorageDomainStatus(
             True, datacenter, storagedomain,
             ENUMS['storage_domain_state_maintenance'],
-            180,
+            300,
         )
     return status
 

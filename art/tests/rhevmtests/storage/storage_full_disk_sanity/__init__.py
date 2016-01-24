@@ -5,6 +5,7 @@ This creates VMs for each of the storage types
 import logging
 import config
 from art.rhevm_api.tests_lib.low_level import (
+    jobs as ll_jobs,
     storagedomains as ll_sd,
     vms as ll_vms,
 )
@@ -29,7 +30,8 @@ def setup_package():
         for vm_prefix in [config.VM1_NAME, config.VM2_NAME]:
             vm_name = vm_prefix % storage_type
             if not storage_helpers.create_vm(
-                vm_name=vm_name, storage_domain=storage_domain
+                vm_name=vm_name, storage_domain=storage_domain,
+                installation=False
             ):
                 raise exceptions.VMException(
                     "Failed to create vm %s" % vm_name
@@ -49,3 +51,4 @@ def teardown_package():
     vm_names = filter(ll_vms.does_vm_exist, VM_NAMES + external)
     ll_vms.stop_vms_safely(vm_names)
     ll_vms.removeVms(True, vm_names)
+    ll_jobs.wait_for_jobs([config.ENUMS['job_remove_vm']])

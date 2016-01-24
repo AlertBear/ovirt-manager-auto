@@ -70,7 +70,7 @@ def setup_module():
         config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
     )
     for sd in ISCSI_SDS:
-        assert hl_sd.detach_and_deactivate_domain(
+        hl_sd.detach_and_deactivate_domain(
             config.DATA_CENTER_NAME, sd
         )
         # We want to destroy the domains so we will be able to restore the

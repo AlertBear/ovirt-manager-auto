@@ -9,7 +9,7 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import (
 from art.rhevm_api.tests_lib.low_level.vms import (
     addSnapshot, stopVm, safely_remove_vms,
 )
-from art.test_handler.exceptions import VMException
+from art.test_handler import exceptions
 import config
 import rhevmtests.storage.helpers as helpers
 
@@ -24,7 +24,7 @@ vm_args = {
     'volumeFormat': config.COW_DISK,
     'cluster': config.CLUSTER_NAME,
     'storageDomainName': None,
-    'installation': True,
+    'installation': False,
     'size': config.VM_DISK_SIZE,
     'nic': config.NIC_NAME[0],
     'useAgent': True,
@@ -52,7 +52,7 @@ def setup_package():
         vm_args['vmDescription'] = vm_name
 
         if not helpers.create_vm_or_clone(**vm_args):
-            raise VMException(
+            raise exceptions.VMException(
                 'Unable to create vm %s for test' % vm_name
             )
         VM_NAMES.append(vm_name)

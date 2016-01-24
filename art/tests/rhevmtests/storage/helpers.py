@@ -5,7 +5,7 @@ import logging
 import os
 import shlex
 from art.core_api.apis_utils import TimeoutingSampler
-import art.rhevm_api.resources.storage as storage_resource
+import art.rhevm_api.resources.storage as storage_resources
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dc,
@@ -582,7 +582,7 @@ def get_disks_volume_count(
     """
     host = ll_hosts.get_cluster_hosts(cluster_name=cluster_name)[0]
     host_ip = ll_hosts.getHostIP(host)
-    if not storage_resource.pvscan(host):
+    if not storage_resources.pvscan(host):
         raise exceptions.HostException(
             "Failed to execute '%s' on %s" % (PVSCAN_CMD, host_ip)
         )
@@ -909,11 +909,11 @@ def is_path_empty(
     target_dir = path[1:].replace('/', '_')
     full_path = os.path.join(address + ':',  path[1:])
     if storage_type == NFS:
-        mount_point = storage_resource.mount(
+        mount_point = storage_resources.mount(
             host_name, full_path, target=target_dir, opts=NFS_MNT_OPTS
         )
     elif storage_type == GULSTERFS:
-        mount_point = storage_resource.mount(
+        mount_point = storage_resources.mount(
             host_name, full_path, target=target_dir, opts=GLUSTER_MNT_OPTS
         )
     if not mount_point:
@@ -931,7 +931,7 @@ def is_path_empty(
             )
             if not dir_empty:
                 logger.error("Failed to clean path %s", mount_point)
-    if not storage_resource.umount(host_name, mount_point):
+    if not storage_resources.umount(host_name, mount_point):
         logger.error("Failed to umount directory %s", mount_point)
     return dir_empty
 

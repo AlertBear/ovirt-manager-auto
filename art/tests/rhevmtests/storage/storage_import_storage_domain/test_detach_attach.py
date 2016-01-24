@@ -46,7 +46,7 @@ vmArgs = {
     'positive': True, 'vmName': config.VM_NAME,
     'vmDescription': config.VM_NAME, 'diskInterface': config.VIRTIO,
     'volumeFormat': config.COW_DISK, 'cluster': config.CLUSTER_NAME,
-    'storageDomainName': None, 'installation': True,
+    'storageDomainName': None, 'installation': False,
     'size': config.VM_DISK_SIZE, 'nic': 'nic1',
     'image': config.COBBLER_PROFILE, 'useAgent': True,
     'os_type': config.ENUMS['rhel6'], 'user': config.VM_USER,
@@ -145,13 +145,9 @@ def setup_module():
         test_utils.wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
-        if not hl_sd.detach_and_deactivate_domain(
+        hl_sd.detach_and_deactivate_domain(
             config.DATA_CENTER_NAME, IMPORT_DOMAIN[storage_type]
-        ):
-            raise errors.StorageDomainException(
-                "Failed to deactivate storage domain %s" %
-                IMPORT_DOMAIN[storage_type]
-            )
+        )
         wait_for_jobs([ENUMS['job_detach_storage_domain']])
 
         storage_domain = ll_sd.getStorageDomainNamesForType(
@@ -247,14 +243,10 @@ def teardown_module():
         test_utils.wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
-        if not hl_sd.detach_and_deactivate_domain(
+        hl_sd.detach_and_deactivate_domain(
             config.DATA_CENTER_NAME, storage_domain_name
-        ):
-            logger.error(
-                'Failed to deactivate storage domain %s',
-                storage_domain_name
-            )
-            exception_flag = True
+        )
+
         if not ll_sd.removeStorageDomain(
             True, storage_domain_name, host, format='true'
         ):
