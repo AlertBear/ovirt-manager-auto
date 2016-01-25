@@ -47,6 +47,7 @@ class VDS(Host):
                 nic_mac = net.find_mac_by_int([nic])[0]
                 if nic_mac.split(":")[:-1] == active_int_mac.split(":")[:-1]:
                     second_int = nic
+                    break
 
             try:
                 nics.remove(active_int)
