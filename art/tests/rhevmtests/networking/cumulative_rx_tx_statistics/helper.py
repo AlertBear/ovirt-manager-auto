@@ -26,10 +26,11 @@ def get_vm_resource(vm):
     :rtype: resource_vds
     """
     logger.info("Get IP for: %s", vm)
-    rc, ip = ll_vms.waitForIP(vm=vm, timeout=conf.TIMEOUT)
+    rc, ips = ll_vms.waitForIP(vm=vm, timeout=conf.TIMEOUT, get_all_ips=True)
     if not rc:
         raise conf.NET_EXCEPTION("Failed to get IP for: %s" % vm)
-    ip = ip["ip"]
+    ips = ips["ip"]
+    ip = [ip for ip in ips if "5.5" not in ip][0]
     return global_helper.get_host_resource(ip, conf.VMS_LINUX_PW)
 
 

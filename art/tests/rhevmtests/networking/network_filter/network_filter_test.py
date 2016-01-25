@@ -184,7 +184,7 @@ class TestNetworkFilterCase03(TestCase):
         """
         logger.info("Starting the VM and wait till it's up")
         if not net_help.run_vm_once_specific_host(
-            vm=config.VM_NAME[0], host=config.HOSTS[0], wait_for_ip=True
+            vm=config.VM_NAME[0], host=config.HOSTS[0], wait_for_up_status=True
         ):
             logger.error(
                 "Cannot start VM %s on host %s",

@@ -2713,7 +2713,7 @@ def createVm(
 
 
 @is_action()
-def waitForIP(vm, timeout=600, sleep=DEF_SLEEP):
+def waitForIP(vm, timeout=600, sleep=DEF_SLEEP, get_all_ips=False):
     """
     Description: Waits until agent starts reporting IP address
 
@@ -2724,6 +2724,8 @@ def waitForIP(vm, timeout=600, sleep=DEF_SLEEP):
     :type timeout: int
     :param sleep: polling interval
     :type sleep: int
+    :param get_all_ips: Get all VM ips
+    :type get_all_ips: bool
     :return: True/False whether it obtained the IP, IP if fetched or None
     :rtype: tuple
     """
@@ -2739,7 +2741,10 @@ def waitForIP(vm, timeout=600, sleep=DEF_SLEEP):
             ip = ips.get_ip()
             if not ip:
                 continue
-            ip = ip[0].get_address()
+            if get_all_ips:
+                ip = [x.address for x in ip]
+            else:
+                ip = ip[0].get_address()
             VM_API.logger.debug("Got IP %s for %s", ip, vm)
             return True, {'ip': ip}
 
@@ -3475,19 +3480,30 @@ def move_vm_disk(vm_name, disk_name, target_sd, wait=True,
                 return
 
 
-def wait_for_vm_states(vm_name, states=[ENUMS['vm_state_up']],
-                       timeout=VM_WAIT_FOR_IP_TIMEOUT, sleep=DEF_SLEEP):
+def wait_for_vm_states(
+    vm_name, states=[ENUMS['vm_state_up']], timeout=VM_WAIT_FOR_IP_TIMEOUT,
+    sleep=DEF_SLEEP
+):
     """
-    Description: Waits by polling API until vm is in desired state
-    Parameters:
-        * vm_name - name of the vm
-        * states - list of desired state
-    Throws:
-        APITimeout when vm won't reach desired state in time
+    Waits by polling API until vm is in desired state
+
+    :param vm_name: Name of the vm
+    :type vm_name: str
+    :param states: List of desired state
+    :type states: list
+    :param timeout: Timeout to wait for desire status
+    :type timeout: str
+    :param sleep: Time to sleep between retries
+    :type sleep: int
+    :raise: APITimeout when vm won't reach desired state in time
     """
     sampler = TimeoutingSampler(timeout, sleep, VM_API.find, vm_name)
+    logger.info("Wait for %s to be in states: %s", vm_name, states)
     for vm in sampler:
-        if vm.status.state in states:
+        vm_state = vm.status.state
+        logger.info("Current %s state is: %s", vm_name, vm_state)
+        if vm_state in states:
+            logger.info("%s states is %s", vm_name, vm_state)
             break
 
 

@@ -442,7 +442,8 @@ class TestMultipleQueueNics05(TestMultipleQueueNicsTearDown):
             )
         logger.info("Start %s", config.VM_NAME[0])
         if not net_help.run_vm_once_specific_host(
-                vm=config.VM_NAME[0], host=HOST_NAME0, wait_for_ip=True):
+            vm=config.VM_NAME[0], host=HOST_NAME0, wait_for_up_status=True
+        ):
             raise NetworkException("Failed to start %s" % config.VM_NAME[0])
 
         logger.info(

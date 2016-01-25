@@ -84,7 +84,7 @@ def setup_module():
             "Starting VM %s on host %s", conf.VM_NAME[i], conf.HOSTS[i]
         )
         if not network_helper.run_vm_once_specific_host(
-            vm=conf.VM_NAME[i], host=conf.HOSTS[i], wait_for_ip=True
+            vm=conf.VM_NAME[i], host=conf.HOSTS[i], wait_for_up_status=True
         ):
             raise conf.NET_EXCEPTION(
                 "Cannot start VM %s on host %s" %

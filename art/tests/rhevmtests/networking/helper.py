@@ -50,7 +50,7 @@ def create_random_ips(num_of_ips=2, mask=16):
     return ips
 
 
-def run_vm_once_specific_host(vm, host, wait_for_ip=False):
+def run_vm_once_specific_host(vm, host, wait_for_up_status=False):
     """
     Run VM once on specific host
 
@@ -58,33 +58,31 @@ def run_vm_once_specific_host(vm, host, wait_for_ip=False):
     :type vm: str
     :param host: Host name
     :type host: str
-    :param wait_for_ip: Wait for VM to get IP
-    :type wait_for_ip: bool
+    :param wait_for_up_status: Wait for VM to be UP
+    :type wait_for_up_status: bool
     :return: True if action succeeded, False otherwise
     :rtype: bool
     """
-    logger.info("Check if %s is UP", host)
+    logger.info("Check if %s is up", host)
     host_status = ll_hosts.getHostState(host)
     if not host_status == ENUMS["host_state_up"]:
         logger.error("%s status is %s, cannot run VM", host, host_status)
         return False
 
-    logging.info("Run VM once on host %s", host)
+    logger.info("Run %s once on host %s", vm, host)
     if not ll_vms.runVmOnce(positive=True, vm=vm, host=host):
-        logging.error("Couldn't run VM on host %s", host)
+        logger.error("Couldn't run %s on host %s", vm, host)
         return False
 
-    if wait_for_ip:
-        logging.info("Wait to get IP address")
-        if not ll_vms.waitForIP(vm)[0]:
-            logging.error("VM didn't get IP address")
-            return False
+    if wait_for_up_status:
+        logger.info("Wait %s to be up", vm)
+        ll_vms.wait_for_vm_states(vm_name=vm)
 
-    logging.info("Check that VM was started on host %s", host)
+    logger.info("Check that %s was started on host %s", vm, host)
     vm_host = ll_vms.getVmHost(vm)[1]["vmHoster"]
     if not host == vm_host:
-        logging.error(
-            "VM should start on %s instead of %s", host, vm_host)
+        logger.error(
+            "%s should run on %s instead of %s", vm, host, vm_host)
         return False
     return True
 
@@ -100,26 +98,26 @@ def seal_vm(vm, root_password):
     :return: True/False
     :rtype: bool
     """
-    logging.info("Start VM: %s", vm)
+    logger.info("Start VM: %s", vm)
     if not ll_vms.startVm(positive=True, vm=vm):
-        logging.error("Failed to start %s.", vm)
+        logger.error("Failed to start %s.", vm)
         return False
 
-    logging.info("Waiting for IP from %s", vm)
+    logger.info("Waiting for IP from %s", vm)
     rc, out = ll_vms.waitForIP(vm=vm, timeout=180, sleep=10)
     if not rc:
-        logging.error("Failed to get %s IP", vm)
+        logger.error("Failed to get %s IP", vm)
         return False
 
     ip = out["ip"]
-    logging.info("Running setPersistentNetwork on %s", vm)
+    logger.info("Running setPersistentNetwork on %s", vm)
     if not test_utils.setPersistentNetwork(host=ip, password=root_password):
-        logging.error("Failed to seal %s", vm)
+        logger.error("Failed to seal %s", vm)
         return False
 
-    logging.info("Stopping %s", vm)
+    logger.info("Stopping %s", vm)
     if not ll_vms.stopVm(positive=True, vm=vm):
-        logging.error("Failed to stop %s", vm)
+        logger.error("Failed to stop %s", vm)
         return False
     return True
 

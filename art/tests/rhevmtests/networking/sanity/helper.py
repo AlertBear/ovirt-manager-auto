@@ -22,7 +22,7 @@ def run_vm_on_host():
     :raise: conf.NET_EXCEPTION
     """
     if not net_help.run_vm_once_specific_host(
-        vm=conf.VM_0, host=conf.HOST_NAME_0, wait_for_ip=True
+        vm=conf.VM_0, host=conf.HOST_NAME_0, wait_for_up_status=True
     ):
         raise conf.NET_EXCEPTION(
             "Cannot start VM %s on host %s" % (conf.VM_0, conf.HOST_NAME_0)

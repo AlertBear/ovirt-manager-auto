@@ -25,7 +25,7 @@ def setup_package():
     )
 
     if not net_help.run_vm_once_specific_host(
-            vm=config.VM_NAME[0], host=config.HOSTS[0], wait_for_ip=True
+            vm=config.VM_NAME[0], host=config.HOSTS[0], wait_for_up_status=True
     ):
         raise config.NET_EXCEPTION(
             "Cannot start VM %s on host %s" %
