@@ -614,7 +614,7 @@ class PositiveNetworkPermissions236408(NetworkingPossitive):
         )
 
     @polarion("RHEVM3-8374")
-    @bz({'1209505': {'engine': None, 'version': ['3.6']}})
+    @bz({'1209505': {}})
     def test_addVNICToTemplate(self):
         """ Add a VNIC to template """
         loginAsUser(config.USER_NAME)
@@ -785,7 +785,6 @@ class PositiveNetworkPermissions317269(NetworkingPossitive):
 class PositiveNetworkPermissions317133(NetworkingPossitive):
     __test__ = True
     dc_name = 'rand_dc_name'
-    bz = {'1214805': {'engine': None, 'version': ['3.6']}}
 
     def setUp(self):
         users.addRoleToUser(True, config.USER_NAME, role.DataCenterAdmin)
@@ -800,6 +799,7 @@ class PositiveNetworkPermissions317133(NetworkingPossitive):
         datacenters.removeDataCenter(True, self.dc_name)
 
     @polarion("RHEVM3-4030")
+    @bz({'1214805': {}})
     def test_automaticCreationToUser(self):
         """ Check that networkadmin permissions are added automatically  """
         loginAsAdmin()

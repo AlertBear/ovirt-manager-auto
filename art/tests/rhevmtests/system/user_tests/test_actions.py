@@ -264,7 +264,7 @@ class CaseRoleActions(TestCase):
                     return m(*args, **kwargs)
                 wrapper.__dict__ = copy.copy(m.__dict__)
                 wrapper.__dict__['bz'] = {
-                    bzid: {'engine': None, 'version': ['3.5', '3.6']},
+                    bzid: {},
                 }
                 setattr(self, method_name, wrapper)
 

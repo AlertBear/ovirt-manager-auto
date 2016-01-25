@@ -3,12 +3,10 @@ Test possible configuration option of properties file.
 
 This is automation of- RHEVM3/wiki/System/Local user authentication management
 """
-__test__ = True
-
 from art.core_api.apis_exceptions import APIException
 from art.rhevm_api.tests_lib.low_level import general, mla, users
 from art.rhevm_api.utils.enginecli import EngineCLI
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
 from rhevmtests.system.aaa.jdbc import config
@@ -184,7 +182,6 @@ class JDBCCLIUser(TestCase):
 
     @attr(tier=2)
     @polarion('RHEVM3-11301')
-    @bz({'1258271': {'engine': None, 'version': ['3.6']}})
     def test_050_lock_user(self):
         """ lock user from aaa-jdbc"""
         users.loginAsUser(
@@ -377,7 +374,6 @@ class JDBCCLIQuery(TestCase):
 
     @attr(tier=1)
     @polarion('RHEVM3-13896')
-    @bz({'1258271': {'engine': None, 'version': ['3.6']}})
     def test_040_query_pattern(self):
         """ query users/group by pattern """
         # Test query user

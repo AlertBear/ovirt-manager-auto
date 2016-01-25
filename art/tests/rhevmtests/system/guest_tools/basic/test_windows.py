@@ -251,7 +251,7 @@ class Windows(TestCase):
         self._checkService('QEMU-GA')
 
     @checkIfSupported
-    @bz({'1218937': {'engine': None, 'version': ['7.1']}})
+    @bz({'1218937': {}})
     def test_checkServiceQemuGAVssProvider(self):
         """ Check service qqmu GA Vss provider """
         self._checkService('QEMU Guest Agent VSS Provider')
@@ -285,7 +285,6 @@ class Windows(TestCase):
             guest_info.get_fqdn() and len(guest_info.get_fqdn()) > 0
         )
 
-    @bz({'1285834': {'engine': None, 'version': ['3.5', '3.6']}})
     def test_guest_applications(self):
         """ Check guest applications are reported """
         vm = VM_API.find(self.diskName)

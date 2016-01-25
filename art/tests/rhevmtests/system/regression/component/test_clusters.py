@@ -250,7 +250,7 @@ class TestCaseCluster(TestCase):
         self.assertTrue(status, 'Check cluster - Revert memory overcommit')
 
     @attr(tier=2)
-    @bz({'1301353': {'engine': None, 'version': None}})
+    @bz({'1301353': {}})
     def test_update_cluster_memory_overcommit_to_negative_value(self):
         """
         Negative - verify update cluster functionality
@@ -274,7 +274,7 @@ class TestCaseCluster(TestCase):
         self.assertTrue(status, 'Check cluster - memory overcommit')
 
     @attr(tier=2)
-    @bz({'1279159': {'engine': ['cli'], 'version': ['3.6']}})
+    @bz({'1279159': {'engine': ['cli']}})
     def test_update_cluster_high_threshold_out_of_range(self):
         """
         Negative - verify update cluster functionality
@@ -297,7 +297,7 @@ class TestCaseCluster(TestCase):
         )
 
     @attr(tier=2)
-    @bz({'1279159': {'engine': ['cli'], 'version': ['3.6']}})
+    @bz({'1279159': {'engine': ['cli']}})
     def test_update_cluster_low_threshold_out_of_range(self):
         """
         Negative - verify update cluster functionality
@@ -319,7 +319,7 @@ class TestCaseCluster(TestCase):
             'Revert cluster - low threshold out of range'
         )
 
-    @bz({'1279159': {'engine': ['cli'], 'version': ['3.6']}})
+    @bz({'1279159': {'engine': ['cli']}})
     @attr(tier=1)
     def test_update_cluster_thresholds_power_saving(self):
         """
@@ -346,7 +346,7 @@ class TestCaseCluster(TestCase):
             check_status, 'Check cluster - power_saving thresholds'
         )
 
-    @bz({'1279159': {'engine': ['cli'], 'version': ['3.6']}})
+    @bz({'1279159': {'engine': ['cli']}})
     @attr(tier=1)
     def test_update_cluster_threshold_evenly_distributed(self):
         """
@@ -373,7 +373,7 @@ class TestCaseCluster(TestCase):
             status, 'Check cluster - evenly_distributed threshold'
         )
 
-    @bz({'1279159': {'engine': ['cli'], 'version': ['3.6']}})
+    @bz({'1279159': {'engine': ['cli']}})
     @attr(tier=1)
     def test_update_cluster_scheduling_policy(self):
         """
@@ -397,7 +397,7 @@ class TestCaseCluster(TestCase):
         self.assertTrue(update_status, 'Update cluster - scheduling policy')
         self.assertTrue(check_status, 'Check cluster - scheduling policy')
 
-    @bz({'1279159': {'engine': ['cli'], 'version': ['3.6']}})
+    @bz({'1279159': {'engine': ['cli']}})
     @attr(tier=2)
     def test_update_cluster_bad_threshold_range(self):
         """

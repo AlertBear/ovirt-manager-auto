@@ -88,10 +88,7 @@ class ADSpecialCharsSearch(base.BaseSpecialCharsSearch):
     domain = '%s-authz' % DOMAIN
     namespace = NAMESPACE
 
-    @bz({
-        '1275237': {'engine': None, 'version': ['3.6']},
-        '1267232': {'engine': None, 'version': ['3.6']},
-    })
+    @bz({'1275237': {}})
     @polarion('RHEVM3-14485')
     def test_special_characters(self):
         """ Test search special characters in AD """

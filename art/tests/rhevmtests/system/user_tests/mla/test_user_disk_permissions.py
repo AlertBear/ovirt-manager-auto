@@ -516,7 +516,7 @@ class DPCase147128(TestCase):
         )
 
     @polarion("RHEVM3-7631")
-    @bz({'1209505': {'engine': None, 'version': ['3.6']}})
+    @bz({'1209505': {}})
     def test_moveDisk(self):
         """ Move disk with and without having permissions on sds """
         # Move disk without permissions
@@ -605,7 +605,7 @@ class DPCase147129(TestCase):
         )
 
     @polarion("RHEVM3-7632")
-    @bz({'1209505': {'engine': None, 'version': ['3.6']}})
+    @bz({'1209505': {}})
     def test_addDiskToVm(self):
         """ add disk to vm with and without permissions """
         users.loginAsUser(

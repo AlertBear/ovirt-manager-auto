@@ -49,7 +49,7 @@ class TestCaseMixed(TestCase):
         self.assertTrue(status, 'Failed to check existing permissions')
 
     @attr(tier=1)
-    @bz({'1303346': {'engine': None, 'version': ['3.6']}})
+    @bz({'1303346': {}})
     def test_check_xsd_schema_validations(self):
         """
         verify xsd functionality

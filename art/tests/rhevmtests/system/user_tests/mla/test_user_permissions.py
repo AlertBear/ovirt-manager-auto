@@ -538,7 +538,6 @@ class PermissionsCase109086(TestCase):
             True, config.DC_NAME[0], config.USER1
         )
 
-    @bz({'1294350': {'engine': None, 'version': ['3.6']}})
     @polarion("RHEVM3-7170")
     def test_permsInhForVmPools(self):
         """ Permission inheritance for desktop pools """
@@ -682,7 +681,7 @@ class AdminPropertiesOfTemplate(TestCase):
             config.USER1,
         )
 
-    @bz({'1284472': {'engine': None, 'version': ['3.6']}})
+    @bz({'1284472': {}})
     @polarion('RHEVM3-14560')
     def test_create_vm_from_template_with_admin_props(self):
         """ Test create vm from template with admin properties set """
