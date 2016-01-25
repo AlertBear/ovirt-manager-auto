@@ -154,6 +154,10 @@ class CumulativeNetworkUsageStatisticsCase1(unittest_lib.NetworkTest):
             (helper.get_vm_resource(conf.VM_0), conf.VM_IPS[0]),
             (helper.get_vm_resource(conf.VM_1), conf.VM_IPS[1])
         ]
+
+        network_helper.send_icmp_sampler(
+            host_resource=vms_ips[0][0], dst=vms_ips[1][1]
+        )
         while not all([int(cls.nic_stat[x]) > 1000 for x in conf.STAT_KEYS]):
             helper.send_icmp(vms_ips)
             logger.info(
