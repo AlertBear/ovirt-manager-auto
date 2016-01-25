@@ -10,6 +10,7 @@ from art.rhevm_api.tests_lib.low_level.disks import (
     addDisk, attachDisk, wait_for_disks_status, get_disk_obj, detachDisk,
     deleteDisk, move_disk,
 )
+from art.rhevm_api.tests_lib.low_level import jobs as ll_jobs
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainNamesForType,
 )
@@ -19,9 +20,8 @@ from art.rhevm_api.tests_lib.low_level.templates import (
 from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, waitForVMState, startVm, removeVm,
     waitForVmDiskStatus, addSnapshot, removeSnapshot, cloneVmFromTemplate,
-    removeVms,
+    removeVms, safely_remove_vms,
 )
-from art.rhevm_api.tests_lib.high_level import datacenters
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion  # pylint: disable=E0611
@@ -31,13 +31,10 @@ from rhevmtests.storage.helpers import (
     create_vm_or_clone, perform_dd_to_disk, host_to_use, get_spuuid,
     get_sduuid, get_imguuid, get_voluuid,
 )
-
 logger = logging.getLogger(__name__)
-
 VM1_NAME = "vm_%s" % config.TESTNAME
 VM1_SNAPSHOT1_DESCRIPTION = "vm1_snap1_description"
 VM2_NAME = "case_4602_wipe_after_delete"
-
 vm1_args = {'positive': True,
             'vmName': VM1_NAME,
             'vmDescription': VM1_NAME + "_description",
@@ -82,49 +79,37 @@ CMD_ERROR_INVALID_VOL_UUID = "Volume does not exist: ('incorrect',)"
 
 CMD_ERROR_NO_SPACE_LEFT = "No space left on device"
 CMD_ERROR_VOLUME_DOES_NOT_EXIST = "Volume does not exist"
+ENUMS = config.ENUMS
 ISCSI = config.STORAGE_TYPE_ISCSI
+TIMEOUT_IMAGE_OPERATION = 120
 
 
 def setup_module():
     """
     Prepares environment, setting up the Data center and creating one VM
     """
-    if not config.GOLDEN_ENV:
-        logger.info("Preparing Data Center %s with hosts %s",
-                    config.DATA_CENTER_NAME, config.VDC)
-        datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
-                                config.STORAGE_TYPE, config.TESTNAME)
-
-    # Pick the 1st domain from the current storage type used, this is
-    # irrelevant for the test since the disk created here is bootable and
-    # will run the OS needed for a single test case (4602)
-    sd_name = getStorageDomainNamesForType(config.DATA_CENTER_NAME,
-                                           config.STORAGE_SELECTOR[0])[0]
-    vm2_args['storageDomainName'] = sd_name
-
     logger.info('Creating VM to be used for all tests except for case 4602')
-    logger.info('Creating VM to be used only for case 4602')
-    for args in [vm1_args, vm2_args]:
-        if not create_vm_or_clone(**args):
-            raise exceptions.VMException("Unable to create or clone VM '%s'"
-                                         % args['vmName'])
+    if not create_vm_or_clone(**vm1_args):
+        raise exceptions.VMException(
+            "Unable to create or clone VM '%s'" % VM1_NAME
+        )
 
 
 def teardown_module():
     """
     Clean Data Center and VM created for test
     """
+    test_failed = False
     logger.info('Removing created VM')
-    stop_vms_safely([VM1_NAME, VM2_NAME])
+    stop_vms_safely([VM1_NAME])
     waitForVMState(VM1_NAME, config.VM_DOWN)
-    waitForVMState(VM2_NAME, config.VM_DOWN)
-    removeVms(True, [VM1_NAME, VM2_NAME])
-
-    if not config.GOLDEN_ENV:
-        logger.info('Cleaning Data Center')
-        datacenters.clean_datacenter(
-            True, config.DATA_CENTER_NAME, vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD
+    if not removeVms(True, [VM1_NAME]):
+        logger.error("Failed to remove VM %s" % VM1_NAME)
+        test_failed = True
+    ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
+    if test_failed:
+        raise exceptions.TearDownException(
+            "Test failed while executing teardown_module"
         )
 
 
@@ -154,9 +139,9 @@ class BasicEnvironment(BaseTestCase):
         Remove the disks created as part of the initial setup, this is to
         ensure no conflict between runs including Rest API and SDK
         """
-        stop_vms_safely([VM1_NAME])
+        stop_vms_safely([self.vm_name])
         for disk_alias in self.disk_aliases:
-            detachDisk(True, disk_alias, VM1_NAME)
+            detachDisk(True, disk_alias, self.vm_name)
             deleteDisk(True, disk_alias)
 
     def initialize_variables(self):
@@ -167,7 +152,6 @@ class BasicEnvironment(BaseTestCase):
         self.sd_ids = []
         self.img_ids = []
         self.vol_ids = []
-        self.timeout_image_operation = None
 
     def register_required_storage_uuids(self, wipe_after_delete=False):
         # Add the 4 required parameters for prepareImage and teardownImage
@@ -260,7 +244,7 @@ class BasicEnvironment(BaseTestCase):
             status, prepare_output = \
                 self.host_machine.execute_prepareImage_command(
                     self.sp_id, self.sd_ids[i], self.img_ids[i], volume_id,
-                    timeout=self.timeout_image_operation
+                    timeout=TIMEOUT_IMAGE_OPERATION
                 )
             # Ensure that a status of True is returned for the prepareImage
             # execution
@@ -286,7 +270,7 @@ class BasicEnvironment(BaseTestCase):
             status, teardown_image_output = \
                 self.host_machine.execute_teardownImage_command(
                     self.sp_id, self.sd_ids[i], self.img_ids[i],
-                    self.vol_ids[i], timeout=self.timeout_image_operation
+                    self.vol_ids[i], timeout=TIMEOUT_IMAGE_OPERATION
                 )
             # Ensure that a status of True is returned for the teardownImage
             # execution
@@ -434,8 +418,8 @@ class TestCase4581(BasicEnvironment):
         self.basic_positive_flow()
 
         logger.info("Ensure that the VM can be powered on successfully")
-        self.assertTrue(startVm(True, VM1_NAME, config.VM_UP),
-                        "Failed to start VM '%s'" % VM1_NAME)
+        self.assertTrue(startVm(True, self.vm_name, config.VM_UP),
+                        "Failed to start VM '%s'" % self.vm_name)
 
 
 @attr(tier=2)
@@ -504,7 +488,7 @@ class TestCase4596(BasicEnvironment):
     def setUp(self):
         super(TestCase4596, self).setUp()
         logger.info("Create a snapshot that includes all attached disks")
-        self.snapshot_success = addSnapshot(True, VM1_NAME,
+        self.snapshot_success = addSnapshot(True, self.vm_name,
                                             VM1_SNAPSHOT1_DESCRIPTION,
                                             wait=True,
                                             persist_memory=False,
@@ -516,7 +500,7 @@ class TestCase4596(BasicEnvironment):
         logger.info("Remove the snapshot created (if it succeeded), paving "
                     "the way for the disk to be detached and removed")
         if self.snapshot_success:
-            removeSnapshot(True, VM1_NAME, VM1_SNAPSHOT1_DESCRIPTION)
+            removeSnapshot(True, self.vm_name, VM1_SNAPSHOT1_DESCRIPTION)
         super(TestCase4596, self).tearDown()
 
     @polarion("RHEVM3-4596")
@@ -638,7 +622,7 @@ class TestCase4599(BasicEnvironment):
         logger.info("Remove the snapshot created (if it succeeded), paving "
                     "the way for the disk to be detached and removed")
         if self.snapshot_success:
-            removeSnapshot(True, VM1_NAME, VM1_SNAPSHOT1_DESCRIPTION)
+            removeSnapshot(True, self.vm_name, VM1_SNAPSHOT1_DESCRIPTION)
         super(TestCase4599, self).tearDown()
 
     @polarion("RHEVM3-4599")
@@ -654,7 +638,7 @@ class TestCase4599(BasicEnvironment):
         self.basic_positive_flow()
 
         logger.info("Create a snapshot that includes all attached disks")
-        self.snapshot_success = addSnapshot(True, VM1_NAME,
+        self.snapshot_success = addSnapshot(True, self.vm_name,
                                             VM1_SNAPSHOT1_DESCRIPTION,
                                             wait=True, persist_memory=False,
                                             disks_lst=self.disk_aliases)
@@ -687,11 +671,13 @@ class TestCase4600(BasicEnvironment):
         target_storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[1]
         for index in xrange(2):
-            self.assertTrue(move_disk(disk_name=self.disk_aliases[
-                self.disk_count - index - 1],
-                target_domain=target_storage_domain),
-                "Migrating disk failed for disk '%s" %
-                self.disk_aliases[self.disk_count - index - 1])
+            self.assertTrue(
+                move_disk(
+                    disk_name=self.disk_aliases[self.disk_count - index - 1],
+                    target_domain=target_storage_domain
+                ), "Migrating disk failed for disk '%s" %
+                self.disk_aliases[self.disk_count - index - 1]
+            )
             # Update the Storage domain ID for the disk that was migrated
             disk_obj = get_disk_obj(self.disk_aliases[self.disk_count -
                                                       index - 1])
@@ -701,7 +687,7 @@ class TestCase4600(BasicEnvironment):
         logger.info("Remove the snapshot created (if it succeeded), paving "
                     "the way for the disk to be detached and removed")
         if self.snapshot_success:
-            removeSnapshot(True, VM1_NAME, VM1_SNAPSHOT1_DESCRIPTION)
+            removeSnapshot(True, self.vm_name, VM1_SNAPSHOT1_DESCRIPTION)
         super(TestCase4600, self).tearDown()
 
     @polarion("RHEVM3-4600")
@@ -717,7 +703,7 @@ class TestCase4600(BasicEnvironment):
         self.basic_positive_flow()
 
         logger.info("Create a snapshot that includes all attached disks")
-        self.snapshot_success = addSnapshot(True, VM1_NAME,
+        self.snapshot_success = addSnapshot(True, self.vm_name,
                                             VM1_SNAPSHOT1_DESCRIPTION,
                                             wait=True, persist_memory=False,
                                             disks_lst=self.disk_aliases)
@@ -746,7 +732,7 @@ class TestCase4601(BasicEnvironment):
         super(TestCase4601, self).setUp()
         logger.info("Create a template with 3 disks")
         template_name = "template_%s" % self.polarion_test_case
-        self.assertTrue(createTemplate(True, wait=True, vm=VM1_NAME,
+        self.assertTrue(createTemplate(True, wait=True, vm=self.vm_name,
                                        name=template_name,
                                        cluster=config.CLUSTER_NAME),
                         "Failed to create template '%s'" % template_name)
@@ -754,16 +740,18 @@ class TestCase4601(BasicEnvironment):
         logger.info("Remove the original VM created which was used to "
                     "generate the template so that there are no duplicate "
                     "VMs or disk aliases")
-        removeVm(True, VM1_NAME)
+        if not removeVm(True, self.vm_name):
+            logger.error("Failed to remove VM %s", self.vm_name)
+            BaseTestCase.test_failed = True
 
         logger.info("Create a VM from the template created earlier in the "
                     "test")
-        self.assertTrue(cloneVmFromTemplate(True, name=VM1_NAME,
+        self.assertTrue(cloneVmFromTemplate(True, name=self.vm_name,
                                             template=template_name,
                                             cluster=config.CLUSTER_NAME),
                         "Failed to clone a VM from template '%s'" %
                         template_name)
-        waitForVMState(VM1_NAME, config.VM_DOWN)
+        waitForVMState(self.vm_name, config.VM_DOWN)
 
         logger.info("Remove the template so that there are no duplicate disk "
                     "aliases left")
@@ -803,30 +791,38 @@ class TestCase4602(BasicEnvironment):
     vm_name = VM2_NAME
 
     def setUp(self):
+        logger.info('Creating VM to be used only for case 4602')
+        sd_name = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )[0]
+        vm2_args['storageDomainName'] = sd_name
+        if not create_vm_or_clone(**vm2_args):
+            raise exceptions.VMException(
+                "Unable to create or clone VM '%s'" % self.vm_name
+            )
         logger.info('Powering off VM %s', self.vm_name)
         stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
-
         logger.info("Register the %s standard disks", self.disk_count)
         super(TestCase4602, self).setUp()
         # For wipe after delete disks the prepareImage/teardownImage operation
         # takes longer to finish
-        self.timeout_image_operation = 2 * 60
-
         logger.info("Create and attach a 5 GB disk with wipe after delete "
                     "marked to existing VM")
         self.create_and_attach_disks(wipe_after_delete=True)
         # Register the UUIDs for the wipe after delete disk
         self.register_required_storage_uuids(wipe_after_delete=True)
         logger.info('Powering on VM %s', self.vm_name)
-        self.assertTrue(startVm(True, self.vm_name, config.VM_UP),
-                        "Failed to start VM '%s'" % self.vm_name)
+        if not startVm(True, self.vm_name, config.VM_UP, wait_for_ip=True):
+            raise exceptions.VMException(
+                "Failed to start VM '%s'" % self.vm_name
+            )
 
     def tearDown(self):
-        stop_vms_safely([self.vm_name])
-        for disk_alias in self.disk_aliases:
-            detachDisk(True, disk_alias, self.vm_name)
-            deleteDisk(True, disk_alias)
+        """ Power off VM, remove its disks and then remove VM """
+        if not safely_remove_vms([self.vm_name]):
+            logger.error("Failed to power off and remove VM %s", self.vm_name)
+            BaseTestCase.test_failed = True
+        BaseTestCase.teardown_exception()
 
     @polarion("RHEVM3-4602")
     def test_prepare_image_with_large_disk_marked_for_wipe_after_delete(self):
@@ -847,7 +843,6 @@ class TestCase4602(BasicEnvironment):
         status, out = perform_dd_to_disk(self.vm_name, self.disk_aliases[-1])
         logger.info("The output of the file copy from the boot disk into the "
                     "5 GB disk was '%s'", out)
-
         logger.info("Power off the VM in order to delete the 5 GB disk and "
                     "attempt to run prepareImage and teardownImage while "
                     "delete is in progress")
@@ -879,7 +874,6 @@ class TestCase4602(BasicEnvironment):
         # Remove the wipe after delete disk alias so it doesn't get deleted
         # again in the class tearDown
         self.disk_aliases.pop(-1)
-
         logger.info("Run through the prepareImage and teardownImage flows "
                     "for all disks on the powered off VM")
         self.basic_positive_flow()
