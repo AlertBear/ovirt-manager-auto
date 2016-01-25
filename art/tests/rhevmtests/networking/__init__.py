@@ -52,12 +52,14 @@ def network_cleanup():
     Remove unneeded VMs NICs
     Remove unneeded templates
     Remove unneeded templates NICs
+    Setting all hosts up
+    Clean all hosts interfaces (SN)
     Remove unneeded networks
     Remove unneeded vNIC profiles
-    Setting all hosts up
     Remove unneeded clusters
     Remove unneeded DCs
-    Clean all hosts interfaces (SN)
+    Remove all dummy interfaces from hosts
+    Remove all QOS from setup
     Remove all non management bridges from hosts
     """
     if config.GOLDEN_ENV:
@@ -66,12 +68,12 @@ def network_cleanup():
         remove_unneeded_vms_nics()
         remove_unneeded_templates()
         remove_unneeded_templates_nics()
+        set_hosts_up()
+        clean_hosts_interfaces()
         remove_unneeded_networks()
         remove_unneeded_vnic_profiles()
-        set_hosts_up()
         remove_unneeded_clusters()
         remove_unneeded_dcs()
-        clean_hosts_interfaces()
         delete_dummy_interfaces_from_hosts()
         remove_qos_from_setup()
         remove_bridges_from_hosts()

@@ -1189,8 +1189,9 @@ class TestHostNetworkApiSync15(TestHostNetworkApiSyncBase):
     bz = {"1270807": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
     move_host = False
     net_case_1 = conf.SYNC_NETS_DC_1[15][0]
-    net_case_1_ip_expected = None
-    net_case_1_ip_actual = "10.10.10.10"
+    net_case_1_ip = "10.10.10.10"
+    net_case_1_boot_proto_expected = "NONE"
+    net_case_1_boot_proto_actual = "STATIC_IP"
 
     @classmethod
     def setup_class(cls):
@@ -1208,7 +1209,7 @@ class TestHostNetworkApiSync15(TestHostNetworkApiSyncBase):
         }
         super(TestHostNetworkApiSync15, cls).setup_class()
         helper.manage_ip_and_refresh_capabilities(
-            ip=cls.net_case_1_ip_actual, interface=cls.net_case_1
+            ip=cls.net_case_1_ip, interface=cls.net_case_1
         )
 
     @polarion("RHEVM3-14009")
@@ -1219,9 +1220,9 @@ class TestHostNetworkApiSync15(TestHostNetworkApiSyncBase):
         """
         compare_dict = {
             self.net_case_1: {
-                conf.IPADDR_STR: {
-                    "expected": self.net_case_1_ip_expected,
-                    "actual": self.net_case_1_ip_actual
+                conf.BOOTPROTO_STR: {
+                    "expected": self.net_case_1_boot_proto_expected,
+                    "actual": self.net_case_1_boot_proto_actual
                 }
             }
         }
@@ -1240,8 +1241,9 @@ class TestHostNetworkApiSync16(TestHostNetworkApiSyncBase):
     bz = {"1270807": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
     move_host = False
     net_case_1 = conf.SYNC_NETS_DC_1[16][0]
-    net_case_1_ip_expected = None
-    net_case_1_ip_actual = "10.10.10.10"
+    net_case_1_ip = "10.10.10.10"
+    net_case_1_boot_proto_expected = "NONE"
+    net_case_1_boot_proto_actual = "STATIC_IP"
     bond_1 = "bond161"
 
     @classmethod
@@ -1265,7 +1267,7 @@ class TestHostNetworkApiSync16(TestHostNetworkApiSyncBase):
         }
         super(TestHostNetworkApiSync16, cls).setup_class()
         helper.manage_ip_and_refresh_capabilities(
-            ip=cls.net_case_1_ip_actual, interface=cls.net_case_1
+            ip=cls.net_case_1_ip, interface=cls.net_case_1
         )
 
     @polarion("RHEVM3-14010")
@@ -1276,9 +1278,9 @@ class TestHostNetworkApiSync16(TestHostNetworkApiSyncBase):
         """
         compare_dict = {
             self.net_case_1: {
-                conf.IPADDR_STR: {
-                    "expected": self.net_case_1_ip_expected,
-                    "actual": self.net_case_1_ip_actual
+                conf.BOOTPROTO_STR: {
+                    "expected": self.net_case_1_boot_proto_expected,
+                    "actual": self.net_case_1_boot_proto_actual
                 }
             }
         }

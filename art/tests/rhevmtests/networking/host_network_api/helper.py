@@ -87,6 +87,7 @@ def get_networks_sync_status_and_unsync_reason(net_sync_reason):
         host=conf.HOST_0_NAME, networks=networks
     ):
         raise conf.NET_EXCEPTION("%s are synced but shouldn't" % networks)
+
     if not networks_unsync_reasons(net_sync_reason):
         raise conf.NET_EXCEPTION("%s unsync reason is incorrect" % networks)
 
