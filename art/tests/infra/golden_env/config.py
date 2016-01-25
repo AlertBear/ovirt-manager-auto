@@ -13,8 +13,6 @@ from art.rhevm_api import resources
 # Name of the test
 TESTNAME = "golden_env"
 
-ENGINE = ART_CONFIG['RUN']['engine'].lower()
-
 PARAMETERS = ART_CONFIG['PARAMETERS']
 
 REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
