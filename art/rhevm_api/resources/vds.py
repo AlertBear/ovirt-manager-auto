@@ -39,6 +39,7 @@ class VDS(Host):
         info = net.get_info()
         active_int = info.get('interface')
         second_int = None
+        self.logger.info("Get NICs from %s", self.fqdn)
         if active_int is not None:
             active_int_mac = net.find_mac_by_int([active_int])[0]
             for nic in nics:

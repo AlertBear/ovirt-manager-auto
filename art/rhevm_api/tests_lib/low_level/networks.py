@@ -380,12 +380,11 @@ def update_vnic_profile(name, network, **kwargs):
         data_center=data_center
     )
     if not vnic_profile_obj:
-        logger.error("Failed to get VNIC profile object")
         return False
 
     new_vnic_profile_obj = _prepare_vnic_profile_object(kwargs=kwargs)
 
-    logger.info("Update %s profile", name)
+    logger.info("Update %s profile with %s", name, kwargs)
     if not VNIC_PROFILE_API.update(
         vnic_profile_obj, new_vnic_profile_obj, True
     )[1]:
@@ -512,7 +511,9 @@ def add_vnic_profile(positive, name, **kwargs):
     """
     kwargs["name"] = name
     vnic_profile_obj = _prepare_vnic_profile_object(kwargs=kwargs)
-    logger.info("Create %s profile", name)
+    logger.info(
+        "Create %s profile for network %s", name, kwargs.get("network")
+    )
     if not VNIC_PROFILE_API.create(vnic_profile_obj, positive)[1]:
         logger.error("Creating %s profile failed", name)
         return False
@@ -525,25 +526,27 @@ def removeVnicProfile(positive, vnic_profile_name, network, cluster=None,
                       data_center=None):
     """
     Description: Remove vnic profiles with given names
-    **Author**: alukiano
-    **Parameters**:
-        *  *positive* - Expected result
-        *  *vnic_profile_name* -Vnic profile name
-        *  *network* - Network name used by profile
-        *  *cluster* - name of the cluster the network reside on (None for all
-                       clusters)
-        *  *data_center* - Name of the data center in which the network
-                           is located (None for all data centers)
-    **Return**: True if action succeeded, otherwise False
+    __author__ = "alukiano"
+    :param positive: Expected result for remove vNIC profile
+    :type positive: bool
+    :param vnic_profile_name: Vnic profile name
+    :type vnic_profile_name: str
+    :param network: Network name used by profile
+    :type network: str
+    :param cluster: Name of the cluster the network reside on
+    :type cluster: str or None (for all clusters)
+    :param data_center:  Name of the data center the network reside on
+    :type data_center: str or None (for all DCs)
+    :return: True if action succeeded, otherwise False
+    :rtype: bool
     """
     profileObj = getVnicProfileObj(vnic_profile_name, network, cluster,
                                    data_center)
-    logger.info("Trying to remove vnic profile %s", vnic_profile_name)
+    logger.info("Remove vNIC profile %s", vnic_profile_name)
 
     if not VNIC_PROFILE_API.delete(profileObj, positive):
-        logger.error("Expected result was %s, got the opposite", positive)
+        logger.error("Expected result should be %s", positive)
         return False
-
     return True
 
 
@@ -760,26 +763,32 @@ def delete_networks_in_datacenter(datacenter, mgmt_net, networks=list()):
     return True
 
 
-def getVnicProfileFromNetwork(network, vnic_profile, cluster=None,
-                              data_center=None):
+def getVnicProfileFromNetwork(
+    network, vnic_profile, cluster=None, data_center=None
+):
     """
     Returns the VNIC profile object that belong to a certain network.
-    **Author**: myakove
-    **Parameters**:
-        *  *network* - Name of the network.
-        *  *vnic_profile* - VNIC profile name
-        *  *cluster* - Name of the cluster in which the network is located.
-        *  *data_center* - Name of the data center in which the network is
-                           located.
-    **Return**: Returns a VNIC profile object that belong to the
-                provided network.
+
+    :param network:Name of the network
+    :type network: str
+    :param vnic_profile: VNIC profile name
+    :type vnic_profile: str
+    :param cluster: Name of the cluster in which the network is located
+    :type cluster: str
+    :param data_center: Name of the data center in which the network resides
+    :type data_center: str
+    :return: VNIC profile object that belong to the provided network or None
+    :rtype: VnicProfile
     """
     network_obj = findNetwork(network, data_center, cluster).id
     all_vnic_profiles = VNIC_PROFILE_API.get(absLink=False)
+    logger.info("Get vNIC profile object from %s", network)
     for vnic_profile_obj in all_vnic_profiles:
         if vnic_profile_obj.name == vnic_profile:
             if vnic_profile_obj.get_network().id == network_obj:
                 return vnic_profile_obj
+    logger.error("Failed to get VNIC profile object from %s", network)
+    return None
 
 
 def check_network_on_nic(network, host, nic):

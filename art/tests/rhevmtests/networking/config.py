@@ -103,6 +103,7 @@ VM_DISPLAY_TYPE = ENUMS[
 # QoS parameters
 QOS_TEST_VALUE = 10
 HOST_NET_QOS_TYPE = "hostnetwork"
+NET_QOS_TYPE = "network"
 
 # libvirt
 LIBVIRTD_CONF = "/etc/libvirt/libvirtd.conf"

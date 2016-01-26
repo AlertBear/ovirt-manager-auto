@@ -63,6 +63,7 @@ def network_cleanup():
     Remove all QOS from setup
     Remove all non management bridges from hosts
     """
+    logger.info("Running network cleanup")
     if config.GOLDEN_ENV:
         stop_all_vms()
         remove_unneeded_vms()
