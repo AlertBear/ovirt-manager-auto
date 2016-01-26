@@ -39,6 +39,11 @@ class RHEL5GATest(common.GABaseTestCase):
     def setup_class(cls):
         super(RHEL5GATest, cls).setup_class()
         assert vms.preview_snapshot(True, cls.disk_name, cls.disk_name)
+        vms.wait_for_vm_snapshots(
+            cls.disk_name,
+            config.SNAPSHOT_IN_PREVIEW,
+            cls.disk_name
+        )
         assert vms.startVm(True, cls.disk_name, wait_for_status=config.VM_UP)
         common.wait_for_connective(cls.machine)
 
@@ -46,6 +51,7 @@ class RHEL5GATest(common.GABaseTestCase):
     def teardown_class(cls):
         vms.stop_vms_safely([cls.disk_name])
         vms.undo_snapshot_preview(True, cls.disk_name)
+        vms.wait_for_vm_snapshots(cls.disk_name, config.SNAPSHOT_OK)
 
 
 class RHEL532bGATest(RHEL5GATest):
