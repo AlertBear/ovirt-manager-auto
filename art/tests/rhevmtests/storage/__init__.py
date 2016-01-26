@@ -1,4 +1,5 @@
 from rhevmtests.storage import config
+from art.rhevm_api.utils.inventory import Inventory
 
 
 def assign_storgage_params(targets, keywords, *args):
@@ -27,4 +28,13 @@ def setup_package():
         ('address', 'path'),
         config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES,
         config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS,
+    )
+
+
+def teardown_package():
+    reporter = Inventory.get_instance()
+    reporter.get_setup_inventory_report(
+        print_report=True,
+        check_inventory=True,
+        rhevm_config_file=config
     )

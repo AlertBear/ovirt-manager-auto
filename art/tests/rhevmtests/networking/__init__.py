@@ -5,6 +5,7 @@ network team init file
 
 import logging
 from rhevmtests.networking import config
+from art.rhevm_api.utils.inventory import Inventory
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
@@ -316,3 +317,12 @@ def remove_bridges_from_hosts():
             if br_name not in (management_network, ";vdsmdummy;"):
                 logger.info("Remove %s from %s", br_name, host.ip)
                 host.network.delete_bridge(bridge=br_name)
+
+
+def teardown_package():
+    reporter = Inventory.get_instance()
+    reporter.get_setup_inventory_report(
+        print_report=True,
+        check_inventory=True,
+        rhevm_config_file=config
+    )

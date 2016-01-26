@@ -7,6 +7,7 @@ from rhevmtests import config
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 from art.rhevm_api import resources
+from art.rhevm_api.utils.inventory import Inventory
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,14 @@ def setup_package():
             raise EnvironmentError(
                 "This environment doesn't include rhev-h hosts"
             )
+
+    # setup inventory reporter
+    reporter = Inventory.get_instance()
+    reporter.get_setup_inventory_report(
+        print_report=True,
+        check_inventory=True,
+        rhevm_config_file=config
+    )
 
 
 def teardown_package():
