@@ -214,25 +214,24 @@ class TestCaseCluster(TestCase):
         self.assertTrue(remove_status, 'Remove data center')
         self.assertTrue(test_status, 'Update cluster data center')
 
-    @attr(tier=2)
-    @bz({'1301353': {'engine': None, 'version': None}})
+    @attr(tier=1)
     def test_update_cluster_memory_overcommit(self):
         """
-        Negative - verify update cluster functionality
+        verify update cluster functionality
         update cluster specific memory overcommit & revert the change
-        should fail - allowed values- 100/150/200 %
+        allowed values- 100/150/200% (in the UI), but all positive in API
         """
         cluster = ll_cluster.get_cluster_object(self.cluster_name)
         old_ovrcmt = cluster.get_memory_policy().get_overcommit().get_percent()
         logger.info('Update cluster - memory overcommit')
         status = ll_cluster.updateCluster(
-            positive=False, cluster=self.cluster_name,
-            data_center=self.dc_name, mem_ovrcmt_prc='76'
+            positive=True, cluster=self.cluster_name,
+            data_center=self.dc_name, mem_ovrcmt_prc='77'
         )
         self.assertTrue(status, 'Update cluster memory overcommit')
         logger.info('Check cluster - memory overcommit')
         status = ll_cluster.checkClusterParams(
-            positive=False, cluster=self.cluster_name, mem_ovrcmt_prc='76'
+            positive=True, cluster=self.cluster_name, mem_ovrcmt_prc='77'
         )
         self.assertTrue(status, 'Check cluster - memory overcommit')
 
@@ -249,6 +248,30 @@ class TestCaseCluster(TestCase):
             mem_ovrcmt_prc=old_ovrcmt
         )
         self.assertTrue(status, 'Check cluster - Revert memory overcommit')
+
+    @attr(tier=2)
+    @bz({'1301353': {'engine': None, 'version': None}})
+    def test_update_cluster_memory_overcommit_to_negative_value(self):
+        """
+        Negative - verify update cluster functionality
+        update cluster specific memory overcommit & revert the change
+        should fail - only positive numbers are allowed
+        """
+        cluster = ll_cluster.get_cluster_object(self.cluster_name)
+        old_ovrcmt = cluster.get_memory_policy().get_overcommit().get_percent()
+        logger.info('Update cluster - memory overcommit')
+        status = ll_cluster.updateCluster(
+            positive=False, cluster=self.cluster_name,
+            data_center=self.dc_name, mem_ovrcmt_prc='-7'
+        )
+        self.assertTrue(status, 'Update cluster memory overcommit')
+        logger.info('Check cluster - memory overcommit')
+        status = ll_cluster.checkClusterParams(
+            positive=False, cluster=self.cluster_name,
+            mem_ovrcmt_prc=old_ovrcmt
+        )
+
+        self.assertTrue(status, 'Check cluster - memory overcommit')
 
     @attr(tier=2)
     @bz({'1279159': {'engine': ['cli'], 'version': ['3.6']}})
