@@ -5,14 +5,16 @@ from concurrent.futures import ThreadPoolExecutor
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
 from art.rhevm_api.utils import test_utils
+import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.storage.helpers as storage_helpers
-from art.rhevm_api.tests_lib.low_level import storagedomains
-from art.rhevm_api.tests_lib.low_level import storageconnections
-from art.rhevm_api.tests_lib.low_level import disks
-from art.rhevm_api.tests_lib.low_level import hosts
-from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import clusters
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
+from art.rhevm_api.tests_lib.low_level import disks
+from art.rhevm_api.tests_lib.low_level import hosts
+from art.rhevm_api.tests_lib.low_level import storageconnections
+from art.rhevm_api.tests_lib.low_level import storagedomains
+from art.rhevm_api.tests_lib.low_level import templates as ll_templates
+from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 from art.rhevm_api.tests_lib.high_level import datastructures
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
@@ -79,10 +81,15 @@ def setup_module():
         )
         # We want to destroy the domains so we will be able to restore the
         # data on them
+
+        # TODO: WA for bug https://bugzilla.redhat.com/show_bug.cgi?id=1302780
+        # 1) We are formatting the domain (format='false' => format='true')
+        #    Change back to 'false' when bug is fixed
         assert storagedomains.removeStorageDomain(
             positive=True, storagedomain=sd, host=config.HOST_FOR_MOUNT,
-            format='false'
+            format='true'
         )
+        # TODO END
 
     assert ll_dc.addDataCenter(
         True, name=config.DATACENTER_ISCSI_CONNECTIONS,
@@ -128,34 +135,82 @@ def teardown_module():
         )
         test_failed = True
     _logout_from_all_iscsi_targets()
-    logger.info("Importing iscsi storage domains back")
-    # Importing all iscsi domains using the address and target of one of them
-    imported = hl_sd.importBlockStorageDomain(
-        config.HOST_FOR_MOUNT, config.LUN_ADDRESSES[0],
-        config.LUN_TARGETS[0]
-    )
-    if not imported:
-        logger.error("Failed to import iSCSI domains back")
-        test_failed = True
-    if imported:
-        register_failed = False
-        for sd in ISCSI_SDS:
-            hl_sd.attach_and_activate_domain(config.DATA_CENTER_NAME, sd)
-            unregistered_vms = storagedomains.get_unregistered_vms(sd)
-            if unregistered_vms:
-                for vm in unregistered_vms:
-                    if not storagedomains.register_object(
-                        vm, cluster=config.CLUSTER_NAME
-                    ):
-                        logger.error(
-                            "Failed to register vm %s from imported domain %s",
-                            vm, sd
-                        )
-                        register_failed = True
-        if register_failed:
-            raise errors.TearDownException(
-                "TearDown failed to register all vms from imported domain"
+
+    # TODO: WA for bug https://bugzilla.redhat.com/show_bug.cgi?id=1302780
+    # Add iSCSI domains back
+    # 1) Remove block1 when bug is fixed
+    # 2) Uncomment block2 when bug is fixed
+
+    # TODO: block1
+    logger.info("Adding iscsi storage domains back")
+    iscsi_sds = [sd['name'] for sd in config.DC['storage_domains']
+                 if sd['storage_type'] == config.STORAGE_TYPE_ISCSI]
+    for name, lun, target, address in zip(
+            iscsi_sds, config.LUNS, config.LUN_TARGETS, config.LUN_ADDRESSES
+    ):
+        hl_sd.addISCSIDataDomain(
+            config.HOST_FOR_MOUNT, name, config.DATA_CENTER_NAME,
+            lun, address, target, override_luns=True, login_all=True
+        )
+    # TODO: block1 END
+
+    # TODO: block2
+    # logger.info("Importing iscsi storage domains back")
+    # # Importing all iscsi domains using the address and target of one of them
+    # imported = hl_sd.importBlockStorageDomain(
+    #     config.HOST_FOR_MOUNT, config.LUN_ADDRESSES[0],
+    #     config.LUN_TARGETS[0]
+    # )
+    # if not imported:
+    #     logger.error("Failed to import iSCSI domains back")
+    #     test_failed = True
+    # if imported:
+    #     register_failed = False
+    #     for sd in ISCSI_SDS:
+    #         hl_sd.attach_and_activate_domain(config.DATA_CENTER_NAME, sd)
+    #         unregistered_vms = storagedomains.get_unregistered_vms(sd)
+    #         if unregistered_vms:
+    #             for vm in unregistered_vms:
+    #                 if not storagedomains.register_object(
+    #                     vm, cluster=config.CLUSTER_NAME
+    #                 ):
+    #                     logger.error(
+    #                         "Failed to register vm %s from imported domain "
+    #                         "%s", vm, sd
+    #                     )
+    #                     register_failed = True
+    #     if register_failed:
+    #         raise errors.TearDownException(
+    #             "TearDown failed to register all vms from imported domain"
+    #         )
+    # TODO: block2 END
+
+    # TODO: WA for bug https://bugzilla.redhat.com/show_bug.cgi?id=1302780
+    # Copying template disk to the new iSCSI domains and create 2 vms
+    # Delete this block when fix
+
+    for vm in [config.VM_NAME[2], config.VM_NAME[3]]:
+        vms.cloneVmFromTemplate(
+            True,
+            vm,
+            rhevm_helpers.get_golden_template_name(config.CLUSTER_NAME),
+            config.CLUSTER_NAME,
+            wait=True,
+            storagedomain=iscsi_sds[0]
+        )
+    template_name = config.TEMPLATE_NAME[0]
+    disk = ll_templates.getTemplateDisks(template_name)[0].get_alias()
+    for sd in iscsi_sds:
+        logger.info("Copying disk %s fof template %s to sd %s",
+                    disk, template_name, sd)
+        if not ll_templates.copyTemplateDisk(template_name, disk, sd):
+            logger.error(
+                "Failed to copy template disk to imported iSCSI domain %s",
+                sd
             )
+        ll_templates.wait_for_template_disks_state(template_name)
+    # TODO END - Delete this block when fixed
+
     if test_failed:
         raise errors.TearDownException("TearDown failed")
 

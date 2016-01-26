@@ -14,6 +14,7 @@ Check with NFS, POSIXFS and local ISO domains
 import config
 import logging
 import helpers
+from art.test_handler import exceptions
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
@@ -24,10 +25,10 @@ from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler.tools import polarion  # pylint: disable=E0611
+import rhevmtests.storage.helpers as storage_helpers
 from utilities import machine
 from utilities.rhevm_tools.base import Utility, Setup
 from art.test_handler.settings import opts
-from art.test_handler.exceptions import SkipTest
 
 logger = logging.getLogger(__name__)
 
@@ -43,22 +44,6 @@ def setup_module():
     utility = Utility(setup)
     assert utility.setRestConnPassword(
         "iso-uploader", config.ISO_UPLOADER_CONF_FILE, config.REST_PASS)
-
-
-def create_vm(vm_name, master_domain):
-    """
-    Create a vm
-    """
-    return ll_vms.createVm(
-        True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
-        storageDomainName=master_domain,
-        size=config.VM_DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
-        volumeType=True, volumeFormat=config.DISK_FORMAT_COW,
-        diskInterface=config.INTERFACE_VIRTIO_SCSI, memory=config.GB,
-        cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
-        os_type=config.OS_TYPE, type=config.VM_TYPE_DESKTOP,
-        display_type=config.DISPLAY_TYPE
-    )
 
 
 class BaseCaseIsoDomains(TestCase):
@@ -83,7 +68,7 @@ class BaseCaseIsoDomains(TestCase):
             # TODO: Re-write this case to use the already added NFS domain.
             # For POSIX, use a small ISO image so it can be uploaded
             # quickly to the remote server
-            raise SkipTest("ISO not working on PPC")
+            raise exceptions.SkipTest("ISO not working on PPC")
 
         cls.data_center_name = config.DATA_CENTER_NAME
 
@@ -92,8 +77,14 @@ class BaseCaseIsoDomains(TestCase):
         assert found
         cls.master_domain = master_domain['masterDomain']
         cls.spm_host = getSPMHost(config.HOSTS)
-        assert create_vm(cls.vm_name, cls.master_domain)
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = cls.master_domain
+        vm_args['vmName'] = cls.vm_name
 
+        if not storage_helpers.create_vm_or_clone(**vm_args):
+            raise exceptions.VMException(
+                'Unable to create vm %s for test' % cls.vm_name
+            )
         cls.machine = machine.LinuxMachine(
             config.VDC, config.VDC_ROOT_USER, config.VDC_PASSWORD, local=False
         )

@@ -4,7 +4,7 @@ already imported disks - if it doesn't, the second import will fail
 """
 import config
 import logging
-
+from art.test_handler import exceptions
 from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest as TestCase
 
@@ -55,10 +55,16 @@ class TestCase11628(TestCase):
             config.DATA_CENTER_NAME)[0]
 
         LOGGER.info("Create a VM")
-        assert helpers.create_vm(
-            self.vm_name, storage_domain=self.storage_domain
-        )
-        assert vms.shutdownVm(True, self.vm_name, 'false')
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = self.storage_domain
+        vm_args['vmName'] = self.vm_name
+        vm_args['installation'] = False
+        vm_args['start'] = 'false'
+
+        if not helpers.create_vm_or_clone(**vm_args):
+            raise exceptions.VMException(
+                'Unable to create vm %s for test' % self.vm_name
+            )
 
         LOGGER.info("Create second VM disk")
         disk_name, disk_size = "disk_%s_1" % self.polarion_test_case, GB

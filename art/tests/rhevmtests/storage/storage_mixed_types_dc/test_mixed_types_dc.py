@@ -44,6 +44,17 @@ POSIX = config.STORAGE_TYPE_POSIX
 ALL_TYPES = (
     GLUSTERFS, ISCSI, NFS, POSIX
 )
+VM_ARGS = dict()
+
+
+def setup_module():
+    """
+    Prepares environment
+    """
+    global VM_ARGS
+    VM_ARGS = config.create_vm_args.copy()
+    VM_ARGS['volumeType'] = False  # Preallocated
+    VM_ARGS['volumeFormat'] = config.DISK_FORMAT_RAW
 
 
 class BaseCaseDCMixed(TestCase):
@@ -155,18 +166,17 @@ class IscsiNfsSdVMs(IscsiNfsSD):
         """
         * Create a nfs and iscsi SD, and a vm on each SD.
         """
+        vm_args = VM_ARGS.copy()
+        vm_args['vmName'] = self.vm_name
+
         super(IscsiNfsSD, self).setUp()
-        if not storage_helpers.create_vm(
-                vm_name=self.nfs_vm, sparse=False,
-                volume_format=config.DISK_FORMAT_RAW, storage_domain=self.nfs
-        ):
+        vm_args['storageDomainName'] = self.nfs
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % self.nfs_vm
             )
-        if not storage_helpers.create_vm(
-                vm_name=self.iscsi_vm, sparse=False,
-                volume_format=config.DISK_FORMAT_RAW, storage_domain=self.iscsi
-        ):
+        vm_args['storageDomainName'] = self.iscsi
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % self.iscsi_vm
             )
@@ -242,10 +252,12 @@ class TestCase4561(IscsiNfsSD):
         for sd in self.iscsi, self.nfs:
             vm = "vm_%s_%s" % (sd, self.polarion_test_case)
             logger.info("Creating vm %s in storage domain %s", vm, sd)
-            if not storage_helpers.create_vm(
-                vm_name=vm, sparse=False, volume_format=config.DISK_FORMAT_RAW,
-                installation=False, storage_domain=sd
-            ):
+            vm_args = VM_ARGS.copy()
+            vm_args['vmName'] = vm
+            vm_args['storageDomainName'] = sd
+            vm_args['installation'] = False
+
+            if not storage_helpers.create_vm_or_clone(**vm_args):
                 raise exceptions.VMException(
                     'Unable to create vm %s for test' % vm
                 )
@@ -263,11 +275,12 @@ class TestCase4561(IscsiNfsSD):
 
         logger.info("Creating vm %s with disk in different domains",
                     self.vm_name)
-        if not storage_helpers.create_vm(
-                vm_name=self.vm_name, sparse=False,
-                volume_format=config.DISK_FORMAT_RAW, installation=False,
-                storage_domain=self.iscsi
-        ):
+        vm_args = VM_ARGS.copy()
+        vm_args['vmName'] = self.vm_name
+        vm_args['storageDomainName'] = self.iscsi
+        vm_args['installation'] = False
+
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % self.vm_name
             )
@@ -367,17 +380,15 @@ class TestCase4563(IscsiNfsSD):
         * Create a vm on a nfs storage domain
         """
         super(TestCase4563, self).setUp()
+        vm_args = VM_ARGS.copy()
+        vm_args['vmName'] = self.vm_name
+        vm_args['storageDomainName'] = self.nfs
+        vm_args['installation'] = False
 
-        if not storage_helpers.create_vm(
-                vm_name=self.vm_name, sparse=False,
-                volume_format=config.DISK_FORMAT_RAW, installation=False,
-                storage_domain=self.nfs
-        ):
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % self.vm_name
             )
-        ll_vms.stop_vms_safely([self.vm_name])
-        self.vms_to_remove.append(self.vm_name)
 
     @polarion("RHEVM3-4563")
     def test_copy_template(self):
@@ -444,11 +455,11 @@ class TestCase4565(IscsiNfsSD):
         * Add a disk on iscsi sd to the vm.
         """
         super(TestCase4565, self).setUp()
+        vm_args = VM_ARGS.copy()
+        vm_args['vmName'] = self.vm_name
+        vm_args['storageDomainName'] = self.nfs
 
-        if not storage_helpers.create_vm(
-                vm_name=self.vm_name, sparse=False,
-                volume_format=config.DISK_FORMAT_RAW, storage_domain=self.nfs
-        ):
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % self.vm_name
             )
@@ -839,16 +850,18 @@ class TestCase4564(IscsiNfsSD):
             "Creating vm %s in iscsi storage domain and installing OS",
             self.vm_name
         )
-        if not storage_helpers.create_vm(
-                vm_name=self.vm_name, sparse=False,
-                volume_format=config.DISK_FORMAT_RAW, storage_domain=self.iscsi
-        ):
+        vm_args = VM_ARGS.copy()
+        vm_args['vmName'] = self.vm_name
+        vm_args['storageDomainName'] = self.iscsi
+
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % self.vm_name
             )
         self.vms_to_remove.append(self.vm_name)
         helpers.add_disk_to_sd("vm_second_disk", self.nfs,
                                attach_to_vm=self.vm_name)
+        ll_vms.startVm(True, self.vm_name, config.VM_UP)
 
         vm_ip = storage_helpers.get_vm_ip(self.vm_name)
         linux_machine = Machine(
@@ -885,16 +898,15 @@ class TestCase4551(IscsiNfsSD):
         Create a vm in nfs storage and create a template
         """
         super(TestCase4551, self).setUp()
-        if not storage_helpers.create_vm(
-                vm_name=self.vm_name, sparse=False,
-                volume_format=config.DISK_FORMAT_RAW, storage_domain=self.nfs
-        ):
+        vm_args = VM_ARGS.copy()
+        vm_args['vmName'] = self.vm_name
+        vm_args['storageDomainName'] = self.nfs
+
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % self.vm_name
             )
         self.vms_to_remove.append(self.vm_name)
-        assert ll_vms.shutdownVm(True, self.vm_name, async='false')
-
         assert ll_templates.createTemplate(
             True, vm=self.vm_name, name=self.template_name,
         )
@@ -947,11 +959,12 @@ class TestCase4553(IscsiNfsSD):
         """
         Import VM and choose disk location on different SD
         """
-        if not storage_helpers.create_vm(
-                vm_name=self.vm_name, sparse=False,
-                volume_format=config.DISK_FORMAT_RAW, installation=False,
-                storage_domain=self.iscsi
-        ):
+        vm_args = VM_ARGS.copy()
+        vm_args['vmName'] = self.vm_name
+        vm_args['storageDomainName'] = self.iscsi
+        vm_args['installation'] = False
+
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % self.vm_name
             )

@@ -34,25 +34,6 @@ TEST_FILE_TEMPLATE = 'test_file_%s'
 SNAPSHOT_DESCRIPTION_TEMPLATE = 'snapshot_%s_%s_%s'
 ISCSI = config.STORAGE_TYPE_ISCSI
 
-vmArgs = {
-    'positive': True,
-    'vmDescription': '',
-    'diskInterface': config.VIRTIO,
-    'volumeFormat': config.COW_DISK,
-    'cluster': config.CLUSTER_NAME,
-    'storageDomainName': None,
-    'installation': True,
-    'size': config.VM_DISK_SIZE,
-    'nic': config.NIC_NAME[0],
-    'useAgent': True,
-    'os_type': config.OS_TYPE,
-    'user': config.VM_USER,
-    'password': config.VM_PASSWORD,
-    'network': config.MGMT_BRIDGE,
-    'image': config.COBBLER_PROFILE,
-    'display_type': config.DISPLAY_TYPE,
-}
-
 disk_args = {
     'positive': True,
     'provisioned_size': config.DISK_SIZE,
@@ -85,12 +66,13 @@ class BasicEnvironment(BaseTestCase):
         self.host = Machine(host_ip, config.HOSTS_USER,
                             config.HOSTS_PW).util(LINUX)
         logger.info("Creating VM %s", self.vm_name)
-        vmArgs['vmDescription'] = self.vm_name + "_description"
-        vmArgs['storageDomainName'] = self.storage_domain
-        vmArgs['vmName'] = self.vm_name
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = self.storage_domain
+        vm_args['vmName'] = self.vm_name
+        vm_args['start'] = 'true'
 
         logger.info('Creating vm and installing OS on it')
-        if not storage_helpers.create_vm_or_clone(**vmArgs):
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % self.vm_name)
         VM_NAMES[self.storage].append(self.vm_name)

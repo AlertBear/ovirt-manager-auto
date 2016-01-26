@@ -6,7 +6,6 @@ Storage/3_6_Storage_Wipe_After_Delete
 """
 import logging
 import threading
-from concurrent.futures import ThreadPoolExecutor
 from art.test_handler import exceptions
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
@@ -32,49 +31,24 @@ TASK_TIMEOUT = 120
 VM_NAMES = dict()
 ISCSI = config.STORAGE_TYPE_ISCSI
 
-vm_args = {
-    'positive': True,
-    'vmDescription': config.VM_NAME,
-    'diskInterface': config.VIRTIO,
-    'volumeFormat': config.COW_DISK,
-    'cluster': config.CLUSTER_NAME,
-    'storageDomainName': None,
-    'installation': True,
-    'size': config.VM_DISK_SIZE,
-    'nic': config.NIC_NAME[0],
-    'image': config.COBBLER_PROFILE,
-    'useAgent': True,
-    'os_type': config.OS_TYPE,
-    'user': config.VM_USER,
-    'password': config.VM_PASSWORD,
-    'network': config.MGMT_BRIDGE,
-}
-
 
 def setup_module():
     """
     Sets up the environment - creates vms with all disk types and formats
     """
     global VM_NAMES
-    exs = []
-    with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-        for storage_type in config.STORAGE_SELECTOR:
-            storage_domain = ll_sd.getStorageDomainNamesForType(
-                config.DATA_CENTER_NAME, storage_type)[0]
+    for storage_type in config.STORAGE_SELECTOR:
+        storage_domain = ll_sd.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, storage_type)[0]
 
-            vm_name = config.VM_NAME % storage_type
-            VM_NAMES[storage_type] = vm_name
-            args = vm_args.copy()
-            args['storageDomainName'] = storage_domain
-            args['vmName'] = vm_name
+        vm_name = config.VM_NAME % storage_type
+        VM_NAMES[storage_type] = vm_name
+        args = config.create_vm_args.copy()
+        args['storageDomainName'] = storage_domain
+        args['vmName'] = vm_name
 
-            logger.info('Creating vm %s and installing OS on it', vm_name)
-            exs.append((vm_name, executor.submit(create_vm_or_clone, **args)))
-
-    logger.info('Powering off vms %s', VM_NAMES.values())
-    ll_vms.stop_vms_safely(VM_NAMES.values())
-    for vm_name, ex in exs:
-        if not ex.result():
+        logger.info('Creating vm %s and installing OS on it', vm_name)
+        if not create_vm_or_clone(**args):
             raise exceptions.VMException("Unable to create vm %s" % vm_name)
 
 

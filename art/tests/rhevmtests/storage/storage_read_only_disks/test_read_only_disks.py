@@ -38,24 +38,6 @@ ENUMS = config.ENUMS
 READ_ONLY = 'Read-only'
 NOT_PERMITTED = 'Operation not permitted'
 
-vmArgs = {
-    'positive': True,
-    'vmDescription': config.TEST_NAME,
-    'diskInterface': config.VIRTIO,
-    'volumeFormat': config.COW_DISK,
-    'cluster': config.CLUSTER_NAME,
-    'storageDomainName': None,
-    'installation': True,
-    'size': config.VM_DISK_SIZE,
-    'nic': config.NIC_NAME[0],
-    'image': config.COBBLER_PROFILE,
-    'useAgent': True,
-    'os_type': config.OS_TYPE,
-    'user': config.VM_USER,
-    'password': config.VM_PASSWORD,
-    'network': config.MGMT_BRIDGE
-}
-
 not_bootable = lambda d: (not d.get_bootable()) and (d.get_active())
 ISCSI = config.STORAGE_TYPE_ISCSI
 NFS = config.STORAGE_TYPE_NFS
@@ -79,17 +61,14 @@ def setup_module():
         )[0]
 
         vm_name = config.VM_NAME % storage_type
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = storage_domain
+        vm_args['vmName'] = vm_name
 
-        vmArgs['storageDomainName'] = storage_domain
-        vmArgs['vmName'] = vm_name
-
-        if not storage_helpers.create_vm_or_clone(**vmArgs):
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % vm_name
             )
-
-        logger.info('Shutting down VM %s', vm_name)
-        ll_vms.stop_vms_safely([vm_name])
 
 
 def teardown_module():
@@ -144,15 +123,13 @@ class DefaultEnvironment(BaseTestCase):
         """If vm does not exist, create it"""
         if not ll_vms.does_vm_exist(self.vm_name):
             # The storage domain will be accessible at class level
-            vmArgs['storageDomainName'] = self.storage_domains[0]
+            vm_args = config.create_vm_args.copy()
+            vm_args['storageDomainName'] = self.storage_domains[0]
             logger.info('Creating vm and installing OS on it')
-            if not storage_helpers.create_vm_or_clone(**vmArgs):
+            if not storage_helpers.create_vm_or_clone(**vm_args):
                 raise exceptions.VMException(
                     'Unable to create vm %s for test' % self.vm_name
                 )
-
-            logger.info('Shutting down VM %s', self.vm_name)
-        ll_vms.stop_vms_safely([self.vm_name])
 
     def setUp(self):
         """
@@ -363,11 +340,13 @@ class TestCase4908(DefaultEnvironment):
         assert ll_vms.waitForVMState(self.vm_name)
 
         self.test_vm_name = 'test_%s' % self.polarion_test_case
-        vmArgs['vmName'] = self.test_vm_name
-        vmArgs['storageDomainName'] = self.storage_domains[0]
+        vm_args = config.create_vm_args.copy()
+        vm_args['vmName'] = self.test_vm_name
+        vm_args['storageDomainName'] = self.storage_domains[0]
+        vm_args['start'] = 'true'
 
         logger.info('Creating vm and installing OS on it')
-        if not storage_helpers.create_vm_or_clone(**vmArgs):
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 "Failed to create vm %s" % self.test_vm_name
             )
@@ -421,11 +400,13 @@ class TestCase4909(DefaultEnvironment):
         assert ll_vms.waitForVMState(self.vm_name)
 
         self.test_vm_name = 'test_%s' % self.polarion_test_case
-        vmArgs['vmName'] = self.test_vm_name
-        vmArgs['storageDomainName'] = self.storage_domains[0]
+        vm_args = config.create_vm_args.copy()
+        vm_args['vmName'] = self.test_vm_name
+        vm_args['storageDomainName'] = self.storage_domains[0]
+        vm_args['start'] = 'true'
 
         logger.info('Creating vm and installing OS on it')
-        if not storage_helpers.create_vm_or_clone(**vmArgs):
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException("Failed to create vm %s"
                                          % self.test_vm_name)
         assert ll_vms.waitForVMState(self.test_vm_name)

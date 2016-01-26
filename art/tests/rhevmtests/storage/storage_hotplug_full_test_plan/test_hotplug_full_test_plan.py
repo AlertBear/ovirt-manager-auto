@@ -707,8 +707,6 @@ class TestCase6230(TestCase):
                                                   cls.second_vm))
         cls.vm_names = [cls.first_vm, cls.second_vm]
 
-        vms.stop_vms_safely(cls.vm_names)
-
     @polarion("RHEVM3-6230")
     def test_deactivate_and_activate_disk(self):
         """

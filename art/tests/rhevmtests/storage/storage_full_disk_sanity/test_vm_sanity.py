@@ -28,10 +28,11 @@ def _prepare_data(sparse, vol_format, template_names, storage_type):
     vm_name = '%s_%s_%s_%s_prep' % (
         config.TESTNAME, sparse, vol_format, storage_type)
     LOGGER.info("Creating vm %s %s %s..." % (sparse, vol_format, storage_type))
-    if not helpers.create_vm(
-            vm_name, config.INTERFACE_VIRTIO,
-            sparse=sparse, volume_format=vol_format,
-            storage_domain=storage_domain):
+    if not helpers.create_vm_or_clone(
+        True, vm_name, diskInterface=config.INTERFACE_VIRTIO,
+            volumeType=sparse, volumeFormat=vol_format,
+            storageDomainName=storage_domain
+    ):
         raise exceptions.VMException("Creation of vm %s failed!" % vm_name)
     LOGGER.info("Waiting for ip of %s" % vm_name)
     vm_ip = vms.waitForIP(vm_name)[1]['ip']
@@ -171,9 +172,9 @@ class TestReadLock(TestCase):
         cls.template_name = "template_%s" % (cls.vm_name)
         storage_domain = storagedomains.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, cls.storage)[0]
-        if not helpers.create_vm(
-                cls.vm_name, config.INTERFACE_VIRTIO, vm_type=cls.vm_type,
-                storage_domain=storage_domain
+        if not helpers.create_vm_or_clone(
+            True, cls.vm_name, diskInterface=config.INTERFACE_VIRTIO,
+            type=cls.vm_type, storageDomainName=storage_domain
         ):
             raise exceptions.VMException(
                 "Creation of VM %s failed!" % cls.vm_name)

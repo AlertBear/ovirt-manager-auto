@@ -29,17 +29,15 @@ def setup_package():
 
         for vm_prefix in [config.VM1_NAME, config.VM2_NAME]:
             vm_name = vm_prefix % storage_type
-            if not storage_helpers.create_vm(
-                vm_name=vm_name, storage_domain=storage_domain,
-                installation=False
-            ):
+            vm_args = config.create_vm_args.copy()
+            vm_args['storageDomainName'] = storage_domain
+            vm_args['vmName'] = vm_name
+            vm_args['installation'] = False
+            if not storage_helpers.create_vm_or_clone(**vm_args):
                 raise exceptions.VMException(
                     "Failed to create vm %s" % vm_name
                 )
             VM_NAMES.append(vm_name)
-
-    logger.info("Stopping vms %s", VM_NAMES)
-    ll_vms.stop_vms_safely(VM_NAMES)
 
 
 def teardown_package():

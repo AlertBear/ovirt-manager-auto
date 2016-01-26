@@ -25,7 +25,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     stopVm, restore_snapshot, undo_snapshot_preview, preview_snapshot,
     removeVm, exportVm, importVm, removeVmFromExportDomain,
     removeSnapshot, kill_process_by_pid_on_vm, shutdownVm,
-    wait_for_vm_snapshots, stop_vms_safely,  startVms,
+    wait_for_vm_snapshots,  startVms,
     cloneVmFromSnapshot, waitForIP, getVmHost, safely_remove_vms,
 )
 from art.rhevm_api.tests_lib.high_level.vms import shutdown_vm_if_up
@@ -34,24 +34,6 @@ from rhevmtests.storage.helpers import create_vm_or_clone, get_vm_ip
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
-
-vmArgs = {
-    'positive': True,
-    'vmDescription': "",
-    'diskInterface': config.ENUMS['interface_virtio'],
-    'volumeFormat': config.ENUMS['format_cow'],
-    'cluster': config.CLUSTER_NAME,
-    'installation': True,
-    'size': config.VM_DISK_SIZE,
-    'nic': config.NIC_NAME[0],
-    'image': config.COBBLER_PROFILE,
-    'useAgent': True,
-    'os_type': config.OS_TYPE,
-    'user': config.VM_USER,
-    'password': config.VM_PASSWORD,
-    'network': config.MGMT_BRIDGE,
-}
-
 VM_PREFIX = "vm_ram_snapshot"
 VM_NAME = VM_PREFIX + "_%s"
 VM_NAMES = []
@@ -66,7 +48,7 @@ def setup_module():
             config.DATA_CENTER_NAME, storage_type
         )[0]
         vm_name = VM_NAME % storage_type
-        args = vmArgs.copy()
+        args = config.create_vm_args.copy()
         args['storageDomainName'] = storage_domain
         args['vmName'] = vm_name
         logger.info('Creating vm %s and installing OS on it', vm_name)
@@ -77,9 +59,6 @@ def setup_module():
             vm_name
         )
         assert addSnapshot(True, vm_name, config.BASE_SNAPSHOT)
-
-    logger.info('Shutting down vms %s', VM_NAMES)
-    stop_vms_safely(VM_NAMES)
 
 
 def teardown_module():

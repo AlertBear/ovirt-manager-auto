@@ -21,23 +21,6 @@ logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
 POLL_PERIOD = 10
 
-vm_args = {
-    'vmDescription': config.VM_NAME % "description",
-    'diskInterface': config.VIRTIO,
-    'volumeFormat': config.COW_DISK,
-    'cluster': config.CLUSTER_NAME,
-    'storageDomainName': None,
-    'installation': True,
-    'size': config.VM_DISK_SIZE,
-    'nic': config.NIC_NAME[0],
-    'useAgent': True,
-    'os_type': config.OS_TYPE,
-    'user': config.VM_USER,
-    'password': config.VM_PASSWORD,
-    'network': config.MGMT_BRIDGE,
-    'image': config.COBBLER_PROFILE,
-}
-
 # Clone a vm from a template with the correct parameters
 args_for_clone = {
     'positive': True,
@@ -303,7 +286,7 @@ class TestCase5738(BasicEnvironment):
         )
 
         self.basic_flow_import_image_as_disk(self.new_disk_alias, True)
-        kwargs = vm_args.copy()
+        kwargs = config.create_vm_args.copy()
         kwargs['vmName'] = self.vm_name_from_disk
         kwargs['vmDescription'] = self.vm_name_from_disk
         kwargs['storageDomainName'] = self.storage_domain

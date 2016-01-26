@@ -4,7 +4,6 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_1_Storage_Live_Snapshot
 """
 import config
-import helpers
 import logging
 import os
 import shlex
@@ -19,16 +18,16 @@ from art.unittest_lib import StorageTest as TestCase, attr
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level import hosts, templates, vms
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    getStorageDomainNamesForType)
+    getStorageDomainNamesForType,
+)
 
-from art.rhevm_api.utils.test_utils import get_api, raise_if_exception
-from rhevmtests.storage.helpers import remove_all_vm_snapshots
+from art.rhevm_api.utils import test_utils
 from utilities.machine import Machine, LINUX
 
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
-VM_API = get_api('vm', 'vms')
+VM_API = test_utils.get_api('vm', 'vms')
 
 BASE_SNAP = "base_snap"  # Base snapshot description
 SNAP_1 = 'spm_snapshot1'
@@ -39,25 +38,6 @@ ACTIVE_VM = 'Active VM'
 
 SPM = None
 HSM = None
-
-vm_args = {
-    'positive': True,
-    'vmName': "",
-    'vmDescription': "",
-    'diskInterface': config.VIRTIO,
-    'volumeFormat': config.COW_DISK,
-    'cluster': config.CLUSTER_NAME,
-    'installation': True,
-    'size': config.VM_DISK_SIZE,
-    'nic': config.NIC_NAME[0],
-    'image': config.COBBLER_PROFILE,
-    'useAgent': True,
-    'os_type': config.OS_TYPE,
-    'user': config.VM_USER,
-    'password': config.VM_PASSWORD,
-    'network': config.MGMT_BRIDGE,
-}
-
 VM_LIST = []
 
 
@@ -74,15 +54,20 @@ def setup_module():
     for storage_type in config.STORAGE_SELECTOR:
         storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, storage_type)[0]
-
-        args = vm_args.copy()
-        args['storageDomainName'] = storage_domain
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = storage_domain
+        vm_args['start'] = 'true'
         for host, vm_name in [(SPM, VM_ON_SPM), (HSM, VM_ON_HSM)]:
-            args['vmName'] = vm_name % storage_type
-            args['vmDescription'] = vm_name % storage_type
-            helpers.prepare_vm(**args)
+            vm_args['vmName'] = vm_name % storage_type
+            vm_args['vmDescription'] = vm_name % storage_type
+            assert storage_helpers.create_vm_or_clone(**vm_args)
+            vm_ip = vms.waitForIP(vm_args['vmName'])[1]['ip']
+            assert test_utils.setPersistentNetwork(vm_ip, config.VM_PASSWORD)
+            assert vms.addSnapshot(
+                True, vm=vm_args['vmName'], description=BASE_SNAP
+            )
 
-            VM_LIST.append(args['vmName'])
+            VM_LIST.append(vm_args['vmName'])
 
 
 def teardown_module():
@@ -130,7 +115,9 @@ class BasicEnvironmentSetUp(TestCase):
                           config.VM_PASSWORD).util(LINUX)
 
     def tearDown(self):
-        remove_all_vm_snapshots(self.vm_name, self.snapshot_desc)
+        storage_helpers.remove_all_vm_snapshots(
+            self.vm_name, self.snapshot_desc
+        )
         if not vms.start_vms([self.vm_name]):
             raise exceptions.VMException(
                 "Failed to start vm %s" % self.vm_name)
@@ -210,7 +197,7 @@ class BaseTestCase(TestCase):
                         vms.restore_snapshot, True, vm_name, BASE_SNAP, True
                     )
                 )
-        raise_if_exception(results)
+        test_utils.raise_if_exception(results)
 
 
 @attr(tier=1)
@@ -310,7 +297,9 @@ class TestCase11660(BasicEnvironmentSetUp):
                     True, self.vm_name, ensure_vm_down=True):
                 raise exceptions.SnapshotException(
                     "Failed to undo snapshot for vm %s" % self.vm_name)
-        remove_all_vm_snapshots(self.vm_name, self.snapshot_desc)
+        storage_helpers.remove_all_vm_snapshots(
+            self.vm_name, self.snapshot_desc
+        )
 
 
 @attr(tier=2)

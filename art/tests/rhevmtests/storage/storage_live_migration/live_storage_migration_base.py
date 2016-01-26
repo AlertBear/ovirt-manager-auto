@@ -78,29 +78,8 @@ LIVE_MIGRATE_LARGE_SIZE = 3600
 # After the deletion of a snapshot, vdsm allocates around 128MB of data for
 # the extent metadata
 EXTENT_METADATA_SIZE = 128 * config.MB
-
 FILE_TO_WATCH = "/var/log/vdsm/vdsm.log"
-
 DISK_NAMES = dict()
-
-vmArgs = {'positive': True,
-          'vmDescription': config.VM_NAME % "description",
-          'diskInterface': config.VIRTIO,
-          'volumeFormat': config.COW_DISK,
-          'cluster': config.CLUSTER_NAME,
-          'storageDomainName': None,
-          'installation': True,
-          'size': config.VM_DISK_SIZE,
-          'nic': config.NIC_NAME[0],
-          'image': config.COBBLER_PROFILE,
-          'useAgent': True,
-          'os_type': config.OS_TYPE,
-          'user': config.VM_USER,
-          'password': config.VM_PASSWORD,
-          'network': config.MGMT_BRIDGE
-          }
-
-
 LOCAL_LUN = []
 LOCAL_LUN_ADDRESS = []
 LOCAL_LUN_TARGET = []
@@ -159,12 +138,13 @@ def setup_module():
             config.DATA_CENTER_NAME, storage_type)[0]
 
         vm_name = config.VM_NAME % storage_type
-        vmArgs['storageDomainName'] = storage_domain
-        vmArgs['vmName'] = vm_name
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = storage_domain
+        vm_args['vmName'] = vm_name
 
         logger.info('Creating vm and installing OS on it')
 
-        if not storage_helpers.create_vm_or_clone(**vmArgs):
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException('Unable to create vm %s for test'
                                          % vm_name)
 
@@ -221,7 +201,7 @@ class BaseTestCase(StorageTest):
         else:
             self.disk_sd = self.storage_domains[0]
 
-        vm_args_copy = vmArgs.copy()
+        vm_args_copy = config.create_vm_args.copy()
         vm_args_copy['vmName'] = self.vm_name
         vm_args_copy['storageDomainName'] = self.disk_sd
         # For each test, create a vm and remove it once the test completes
@@ -233,7 +213,6 @@ class BaseTestCase(StorageTest):
             True, vmName=self.vm_name, id=disk_obj.get_id(),
             alias=self.vm_disk_name, interface=self.interface,
         )
-        stop_vms_safely([self.vm_name])
 
     def tearDown(self):
         """
@@ -2393,11 +2372,11 @@ class TestCase5983(BaseTestCase):
     vm_name_format = 'vm_%s_%s'
     vm_count = 5
     vm_names = None
-    vm_args = vmArgs.copy()
 
     def setUp(self):
         super(TestCase5983, self).setUp()
         self.vm_names = []
+        self.vm_args = config.create_vm_args.copy()
         self.vm_args['installation'] = False
         for index in range(self.vm_count):
             self.vm_args['storageDomainName'] = self.storage_domains[0]

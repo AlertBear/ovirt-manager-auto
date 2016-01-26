@@ -8,7 +8,6 @@ import helpers
 import logging
 import time
 from threading import Thread
-from concurrent.futures import ThreadPoolExecutor
 from utilities.machine import Machine
 from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest as BaseTestCase
@@ -32,7 +31,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     removeSnapshot, getVmDisks, preview_snapshot,
     commit_snapshot, start_vms, undo_snapshot_preview, extend_vm_disk_size,
     removeVm, waitForVmsStates, wait_for_vm_snapshots,
-    get_vms_disks_storage_domain_name, removeVms,
+    get_vms_disks_storage_domain_name, removeVms, safely_remove_vms,
 )
 import rhevmtests.storage.helpers as storage_helpers
 from art.rhevm_api.utils.log_listener import watch_logs
@@ -67,25 +66,8 @@ disk_args = {
     'sparse': True,
     'alias': "%s_disk"}
 
-
-vmArgs = {
-    'positive': True,
-    'vmDescription': config.VM_NAME,
-    'diskInterface': config.VIRTIO,
-    'volumeFormat': config.COW_DISK,
-    'cluster': config.CLUSTER_NAME,
-    'storageDomainName': None,
-    'installation': True,
-    'size': config.VM_DISK_SIZE,
-    'nic': config.NIC_NAME[0],
-    'image': config.COBBLER_PROFILE,
-    'useAgent': True,
-    'os_type': config.OS_TYPE,
-    'user': config.VMS_LINUX_USER,
-    'password': config.VMS_LINUX_PW,
-    'network': config.MGMT_BRIDGE
-}
 VMS_NAMES = []
+DISKS_NAMES = []
 
 
 def setup_module():
@@ -99,29 +81,19 @@ def setup_module():
                                 config.STORAGE_TYPE, config.TESTNAME)
 
     # Loop through all the storage types to execute the tests and create the vm
-    exs = []
-    with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-        for storage_type in config.STORAGE_SELECTOR:
-            storage_domain = getStorageDomainNamesForType(
-                config.DATA_CENTER_NAME, storage_type)[0]
+    for storage_type in config.STORAGE_SELECTOR:
+        storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, storage_type)[0]
 
-            vm_name = "%s_%s" % (config.VM_NAME, storage_type)
-            VMS_NAMES.append(vm_name)
-            args = vmArgs.copy()
-            args['storageDomainName'] = storage_domain
-            args['vmName'] = vm_name
+        vm_name = "%s_%s" % (config.VM_NAME, storage_type)
+        VMS_NAMES.append(vm_name)
+        args = config.create_vm_args.copy()
+        args['storageDomainName'] = storage_domain
+        args['vmName'] = vm_name
 
-            logger.info('Creating vm %s and installing OS on it', vm_name)
-
-            # TODO: Remove threads for creating vm when create_vm_or_clone is
-            # async
-            exs.append(
-                executor.submit(storage_helpers.create_vm_or_clone, **args)
-            )
-
-    [ex.result() for ex in exs]  # make sure all threads are finish
-    logger.info('Shutting down vms %s', VMS_NAMES)
-    stop_vms_safely(VMS_NAMES)
+        logger.info('Creating vm %s and installing OS on it', vm_name)
+        if not storage_helpers.create_vm_or_clone(**args):
+            raise exceptions.VMException("Failed to create vm %s" % vm_name)
 
 
 def teardown_module():
@@ -157,15 +129,15 @@ class DisksPermutationEnvironment(BaseTestCase):
         )[0]
         self.vm = "%s_%s" % (config.VM_NAME, self.storage)
         block = self.storage in config.BLOCK_TYPES
-        helpers.DISKS_NAMES = create_all_legal_disk_permutations(
+        DISKS_NAMES = create_all_legal_disk_permutations(
             self.storage_domain, shared=self.shared,
             block=block, size=config.DISK_SIZE,
             interfaces=storage_helpers.INTERFACES
         )
-        assert wait_for_disks_status(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
+        assert wait_for_disks_status(DISKS_NAMES, timeout=TASK_TIMEOUT)
         stop_vms_safely([self.vm])
         waitForVMState(vm=self.vm, state=config.VM_DOWN)
-        storage_helpers.prepare_disks_for_vm(self.vm, helpers.DISKS_NAMES)
+        storage_helpers.prepare_disks_for_vm(self.vm, DISKS_NAMES)
 
     def tearDown(self):
         """
@@ -173,7 +145,7 @@ class DisksPermutationEnvironment(BaseTestCase):
         """
         stop_vms_safely([self.vm])
         logger.info("Removing all disks")
-        for disk in helpers.DISKS_NAMES:
+        for disk in DISKS_NAMES:
             deactivateVmDisk(True, self.vm, disk)
             if not removeDisk(True, self.vm, disk):
                 raise exceptions.DiskException("Failed to remove disk %s"
@@ -239,8 +211,11 @@ class BasicResize(BaseTestCase):
         status = extend_vm_disk_size(True, self.vm,
                                      disk=self.disk_name,
                                      provisioned_size=self.new_size)
-        self.assertTrue(status, "Failed to resize disk %s to size %s"
-                                % (self.disk_name, self.new_size))
+        if not status:
+            raise exceptions.DiskException(
+                "Failed to resize disk %s to size %s"
+                % (self.disk_name, self.new_size)
+            )
         assert wait_for_disks_status(self.disk_name, timeout=TASK_TIMEOUT)
 
         # TODO: Check the capacity value in getVolumeInfo
@@ -253,15 +228,14 @@ class BasicResize(BaseTestCase):
             dd_size = self.new_size - 600 * config.MB
         else:
             # For file devices the true size will be the same as the dd size.
-            dd_size = self.new_size - 90 * config.MB
+            dd_size = self.new_size
         ecode, output = storage_helpers.perform_dd_to_disk(
             self.vm, self.disk_name, size=dd_size
         )
-        self.assertTrue(ecode, "dd command failed")
-
+        self.assertTrue(ecode, "dd command failed. output: %s" % output)
         disks_objs = getVmDisks(self.vm)
         disk_obj = [disk_obj for disk_obj in disks_objs if
-                    (not disk_obj.get_bootable())][0]
+                    (self.disk_name == disk_obj.get_alias())][0]
         datacenter_obj = get_data_center(config.DATA_CENTER_NAME)
 
         logger.info("Checking volume size in host %s with ip %s for disk %s",
@@ -344,7 +318,6 @@ class BasicResize(BaseTestCase):
         Clean environment
         """
         flushIptables(self.host_ip, config.HOSTS_USER, config.HOSTS_PW)
-        waitForVMState(self.vm, config.VM_DOWN)
         self.assertTrue(deactivateVmDisk(True, self.vm, self.disk_name),
                         "Failed to deactivate disks %s" % self.disk_name)
         self.assertTrue(removeDisk(True, self.vm, self.disk_name),
@@ -375,7 +348,7 @@ class TestCase5061(DisksPermutationEnvironment):
 
         wait_for_vm_snapshots(self.vm, ENUMS['snapshot_state_ok'])
 
-        for disk in helpers.DISKS_NAMES:
+        for disk in DISKS_NAMES:
             logger.info("Resizing disk %s", disk)
 
             status = extend_vm_disk_size(True, self.vm,
@@ -384,7 +357,7 @@ class TestCase5061(DisksPermutationEnvironment):
 
             self.assertTrue(status, "Failed to resize disk %s to size %s"
                                     % (disk, self.new_size))
-        assert wait_for_disks_status(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
+        assert wait_for_disks_status(DISKS_NAMES, timeout=TASK_TIMEOUT)
 
         devices, boot_device = helpers.get_vm_storage_devices(self.vm)
 
@@ -433,13 +406,13 @@ class TestCase5060(DisksPermutationEnvironment):
                         "Failed to add snapshot %s" % self.snap_description)
         wait_for_vm_snapshots(self.vm, config.SNAPSHOT_OK)
 
-        for disk in helpers.DISKS_NAMES:
+        for disk in DISKS_NAMES:
             status = extend_vm_disk_size(True, self.vm,
                                          disk=disk,
                                          provisioned_size=self.new_size)
             self.assertTrue(status, "Failed to resize disk %s to size %s"
                                     % (disk, self.new_size))
-        assert wait_for_disks_status(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
+        assert wait_for_disks_status(DISKS_NAMES, timeout=TASK_TIMEOUT)
 
         status = preview_snapshot(True, self.vm, self.snap_description)
         self.is_preview = status
@@ -478,7 +451,7 @@ class TestCase5062(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '5062'
     test_disk_args = {
@@ -504,7 +477,7 @@ class TestCase5063(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '5063'
     test_disk_args = {
@@ -524,33 +497,6 @@ class TestCase5063(BasicResize):
 
 
 @attr(tier=1)
-class TestCase5064(BasicResize):
-    """
-    Virtual disk resize - preallocated file disk
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_3_Storage_Virtual_Disk_Resize
-    """
-    # TODO: Verify it works in glusterfs and enable the test for this storage
-    __test__ = (NFS in opts['storages'])
-    storages = set([NFS])
-    polarion_test_case = '5064'
-    test_disk_args = {
-        'sparse': False,
-        'format': config.RAW_DISK,
-    }
-
-    @polarion("RHEVM3-5064")
-    def test_preallocated_file_resize(self):
-        """
-        - VM with 6G preallocated disk and OS
-        - Resize the VM disk to 7G total
-        - Send IOs to disk
-        - Check size on VDSM and disk size on guest
-        """
-        self.perform_basic_action()
-
-
-@attr(tier=1)
 class TestCase5065(BasicResize):
     """
     Virtual disk resize - Thin file disk
@@ -558,7 +504,7 @@ class TestCase5065(BasicResize):
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
     # TODO: Verify it works in glusterfs and enable the test for this storage
-    __test__ = (NFS in opts['storages'])
+    __test__ = NFS in opts['storages']
     storages = set([NFS])
     polarion_test_case = '5065'
     test_disk_args = {
@@ -584,7 +530,7 @@ class TestCase5066(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '5066'
     test_disk_args = {
@@ -611,7 +557,7 @@ class TestCase5067(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '5067'
     test_disk_args = {
@@ -658,20 +604,16 @@ class TestCase5069(BasicResize):
         """
         super(TestCase5069, self).setUp()
         self.test_vm_name = 'test_%s' % self.polarion_test_case
-
-        vmArgs['vmName'] = self.test_vm_name
-        vmArgs['storageDomainName'] = self.storage_domain
+        vm_args = config.create_vm_args.copy()
+        vm_args['vmName'] = self.test_vm_name
+        vm_args['storageDomainName'] = self.storage_domain
 
         logger.info('Creating vm and installing OS on it')
-        if not storage_helpers.create_vm_or_clone(**vmArgs):
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException("Failed to create vm %s"
                                          % self.test_vm_name)
-        assert waitForVMState(self.test_vm_name)
         assert attachDisk(True, self.disk_name, self.test_vm_name)
-        start_vms([self.test_vm_name], max_workers=1, wait_for_ip=False)
-        assert waitForVMState(self.test_vm_name)
         assert wait_for_disks_status(self.disk_name)
-        stop_vms_safely([self.vm, self.test_vm_name])
 
     @polarion("RHEVM3-5069")
     def test_shared_block_disk_resize(self):
@@ -707,7 +649,7 @@ class TestCase5070(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
 
     polarion_test_case = '5070'
@@ -810,7 +752,7 @@ class TestCase5073(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '5073'
     vm_name = "vm_%s_%s"
@@ -826,16 +768,17 @@ class TestCase5073(BasicResize):
         self.storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )[0]
-        vmArgs['storageDomainName'] = self.storage_domain
-        vmArgs['installation'] = False
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = self.storage_domain
+        vm_args['installation'] = False
 
         logger.info('Creating vm and installing OS on it')
 
         for i in range(self.vm_count):
             self.vm_name = "vm_%s_%s_%s" % (
                 self.polarion_test_case, self.storage, i)
-            vmArgs['vmName'] = self.vm_name
-            if not storage_helpers.create_vm_or_clone(**vmArgs):
+            vm_args['vmName'] = self.vm_name
+            if not storage_helpers.create_vm_or_clone(**vm_args):
                 raise exceptions.VMException('Unable to create vm %s for test'
                                              % self.vm_name)
             self.vm_names.append(self.vm_name)
@@ -863,7 +806,7 @@ class TestCase11862(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '11862'
     vm_name = "vm_%s_%s"
@@ -875,18 +818,19 @@ class TestCase11862(BasicResize):
         Creating disk
         """
         self.vm_names = list()
-        vmArgs['installation'] = False
+        vm_args = config.create_vm_args.copy()
+        vm_args['installation'] = False
 
-        logger.info('Creating vm and installing OS on it')
+        logger.info('Creating vm')
         sd_list = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[0:1]
 
         for i, sd in zip(range(self.vm_count), sd_list):
             self.vm_name = "vm_%s_%s"
-            vmArgs['storageDomainName'] = sd
+            vm_args['storageDomainName'] = sd
             self.vm_name = self.vm_name % (self.polarion_test_case, i)
-            vmArgs['vmName'] = self.vm_name
-            if not storage_helpers.create_vm_or_clone(**vmArgs):
+            vm_args['vmName'] = self.vm_name
+            if not storage_helpers.create_vm_or_clone(**vm_args):
                 raise exceptions.VMException('Unable to create vm %s for test'
                                              % self.vm_name)
             self.vm_names.append(self.vm_name)
@@ -903,6 +847,11 @@ class TestCase11862(BasicResize):
         self.multiple_disks(self.vm_names)
 
     def tearDown(self):
-        vmArgs['installation'] = True
-        for vm in self.vm_names:
-            assert removeVm(True, vm)
+        if not safely_remove_vms(self.vm_names):
+            BaseTestCase.test_failed = True
+            logger.error(
+                "Failed to power off and remove VMs '%s'", ', '.join(
+                    self.vm_names
+                )
+            )
+        BaseTestCase.teardown_exception()

@@ -545,9 +545,9 @@ class TestCase5911(DirectLunAttachTestCase):
     def tearDown(self):
         if self.vm_removed:
             # Adding back vm since the test removes it
-            assert helpers.create_vm(
-                self.vm_name, config.VIRTIO_BLK,
-                storage_domain=self.vm_storage_domain
+            assert helpers.create_vm_or_clone(
+                True, self.vm_name, diskInterface=config.INTERFACE_VIRTIO,
+                storageDomainName=self.vm_storage_domain
             )
             wait_for_jobs([ENUMS['job_add_vm']])
         else:

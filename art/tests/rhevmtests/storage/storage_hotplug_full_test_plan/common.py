@@ -31,23 +31,14 @@ def create_vm_and_template(cobbler_image, storage_domain, storage_type):
     template_name = config.TEMPLATE_NAME % storage_type
     logger.info("Creating VM %s and installing OS from image: %s" %
                 (vm_name, cobbler_image))
-    if not create_vm_or_clone(
-            config.positive,
-            vmName=vm_name,
-            vmDescription=vm_name,
-            cluster=config.CLUSTER_NAME,
-            nic=config.NIC_NAME[0],
-            storageDomainName=storage_domain,
-            size=10 * config.GB,
-            diskInterface=config.ENUMS['interface_virtio'],
-            memory=2 * config.GB,
-            image=cobbler_image,
-            installation=True,
-            useAgent=True,
-            os_type=config.OS_TYPE,
-            user=config.VMS_LINUX_USER,
-            password=config.VMS_LINUX_PW,
-            network=config.MGMT_BRIDGE):
+    vm_args = config.create_vm_args.copy()
+    vm_args['vmName'] = vm_name
+    vm_args['vmDescription'] = vm_name
+    vm_args['storageDomainName'] = storage_domain
+    vm_args['template'] = template_name
+    vm_args['memory'] = 2 * config.GB
+    vm_args['start'] = 'true'
+    if not create_vm_or_clone(**vm_args):
         raise exceptions.VMException("Could not create vm %s" % vm_name)
     logger.info("VM %s created and started successfully" % vm_name)
 
@@ -61,12 +52,12 @@ def create_vm_and_template(cobbler_image, storage_domain, storage_type):
     logging.info("Network settings changed successfully")
 
     logger.info("Shutting down VM %s" % vm_name)
-    if not vms.shutdownVm(config.positive, vm=vm_name, async='false'):
+    if not vms.shutdownVm(True, vm=vm_name, async='false'):
         raise exceptions.VMException("Unable to stop vm %s" % vm_name)
     logger.info("VM Stopped successfully")
 
     logger.info("Creating template %s from vm %s" % (template_name, vm_name))
-    if not templates.createTemplate(config.positive, vm=vm_name,
+    if not templates.createTemplate(True, vm=vm_name,
                                     name=template_name,
                                     cluster=config.CLUSTER_NAME):
         raise exceptions.TemplateException("Unable to create template %s" %
@@ -75,7 +66,7 @@ def create_vm_and_template(cobbler_image, storage_domain, storage_type):
     logger.info("Template %s created successfully from vm - %s" %
                 (template_name, vm_name))
     logger.info("Removing master vm - %s" % vm_name)
-    if not vms.removeVm(config.positive, vm=vm_name):
+    if not vms.removeVm(True, vm=vm_name):
         raise exceptions.VMException("Unable to remove vm - %s" % vm_name)
 
     return template_name
@@ -89,15 +80,13 @@ def create_vm_from_template(template_name, class_name, storage_domain,
     """
     vm_name = config.CLASS_VM_NAME_FORMAT % (
         class_name, storage_type)
+    vm_args = config.create_vm_args.copy()
+    vm_args['vmName'] = vm_name
+    vm_args['vmDescription'] = vm_name
+    vm_args['storageDomainName'] = storage_domain
+    vm_args['template'] = template_name
     logger.info("Cloning VM %s from template %s" % (vm_name, template_name))
-    if not vms.createVm(positive=config.positive,
-                        vmName=vm_name,
-                        vmDescription=vm_name,
-                        template=template_name,
-                        storageDomainName=storage_domain,
-                        start='false',
-                        cluster=config.CLUSTER_NAME,
-                        network=config.MGMT_BRIDGE):
+    if not create_vm_or_clone(**vm_args):
         raise exceptions.VMException("Unable to clone vm %s from template %s" %
                                      (vm_name, template_name))
     logger.info("VM %s cloned successfully from template %s" %
@@ -124,7 +113,7 @@ def shutdown_and_remove_vms(vm_names):
             if not disk.get_bootable():
                 assert disks.detachDisk(True, disk.get_alias(), vm_name)
         stopVm = vms.get_vm_state(vm_name) == config.VM_UP
-        assert vms.removeVm(config.positive, vm_name, stopVM=str(stopVm))
+        assert vms.removeVm(True, vm_name, stopVM=str(stopVm))
 
     with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
         for index in xrange(len(vm_names)):

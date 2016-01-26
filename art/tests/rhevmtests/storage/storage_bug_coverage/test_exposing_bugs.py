@@ -56,31 +56,6 @@ CLI_CMD_GENERATE_BIG_FILE = 'fallocate -l 2G sample.txt'
 GENERATE_BIG_FILE_TIMEOUT = 60 * 5
 
 
-def _create_vm(vm_name, vm_description="",
-               disk_interface=config.INTERFACE_VIRTIO,
-               sparse=True, volume_format=config.DISK_FORMAT_COW,
-               vm_type=config.VM_TYPE_DESKTOP, storage_domain=None,
-               installation=True, placement_host=None,
-               highly_available=None):
-    """ helper function for creating vm (passes common arguments, mostly taken
-    from the configuration file)
-    """
-    logger.info("Creating VM %s", vm_name)
-    return create_vm_or_clone(
-        True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
-        nic=config.NIC_NAME[0], storageDomainName=storage_domain,
-        size=config.VM_DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
-        volumeType=sparse, volumeFormat=volume_format,
-        diskInterface=disk_interface, memory=GB, cpu_socket=config.CPU_SOCKET,
-        cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
-        display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
-        user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW, type=vm_type,
-        installation=installation, bootable=True, image=config.COBBLER_PROFILE,
-        slim=True, highly_available=highly_available,
-        network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT,
-        placement_host=placement_host)
-
-
 def setup_module():
     """ creates datacenter, adds hosts, clusters, storages according to
     the config file
@@ -151,12 +126,6 @@ class EnvironmentWithTwoHosts(TestCase):
                 hosts.activateHost(True, host)
 
 
-"""
-Polarion Test Case 11909 11909, exposing BZ 1066834
-Add a second bootable disks to a vm should fail
-"""
-
-
 @attr(tier=2)
 class TestCase11909(TestCase):
     """
@@ -178,9 +147,9 @@ class TestCase11909(TestCase):
         self.storage_domain = storagedomains.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage,
         )[0]
-        assert _create_vm(
-            self.vm_name, storage_domain=self.storage_domain,
-            installation=False,
+        assert create_vm_or_clone(
+            True, self.vm_name, storageDomainName=self.storage_domain,
+            installation=False
         )
 
     @polarion("RHEVM3-11909")
@@ -222,12 +191,6 @@ class TestCase11909(TestCase):
             self.vm_name)]
         ll_disks.wait_for_disks_status(disks=disks_aliases)
         assert ll_vms.removeVm(True, self.vm_name)
-
-
-"""
-Test elect spm before start vm
-Test exposing BZ 969343
-"""
 
 
 @attr(tier=2)
@@ -274,15 +237,16 @@ class TestCase11630(EnvironmentWithTwoHosts):
         args = {
             "highly_available": True,
             "placement_host": self.spm_host,
-            "storage_domain": self.sd,
+            "storageDomainName": self.sd,
+            "start": 'true',
         }
 
         logger.info("Create VMs")
         for i in range(self.num_of_vms):
             name = "%s_%s" % (self.vm_name_base, i)
             self.vm_names.append(name)
-            args["vm_name"] = name
-            if not _create_vm(**args):
+            args["vmName"] = name
+            if not create_vm_or_clone(True, **args):
                 logger.error("Error creating vm %s", name)
 
         for name in self.vm_names:
@@ -389,11 +353,6 @@ class TestCase11630(EnvironmentWithTwoHosts):
         ll_vms.removeVms(True, self.vm_names)
 
 
-"""
-Test image lock free after engine restart
-"""
-
-
 @attr(tier=4)
 class TestCase11907(TestCase):
     """
@@ -415,14 +374,13 @@ class TestCase11907(TestCase):
         self.storage_domain = storagedomains.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage,
         )[0]
-        if not _create_vm(self.vm_name, self.vm_desc, config.INTERFACE_VIRTIO,
-                          storage_domain=self.storage_domain):
+        if not create_vm_or_clone(
+            True, self.vm_name, self.vm_desc,
+            diskInterface=config.INTERFACE_VIRTIO,
+            storageDomainName=self.storage_domain
+        ):
             raise errors.VMException("Failed to create vm %s" % self.vm_name)
         logger.info("Successfully created VM.")
-
-        if not ll_vms.shutdownVm(True, self.vm_name, async="false"):
-            raise errors.VMException("Cannot shutdown vm %s" % self.vm_name)
-        logger.info("Successfully shutdown VM.")
 
     def _create_template(self):
         logger.info("Creating new template")
@@ -506,12 +464,6 @@ class TestCase11907(TestCase):
             raise errors.TestException("Test failed during tearDown")
 
 
-"""
-Test exposing BZ 986961
-Maintenance spm with a running vm
-"""
-
-
 @attr(tier=2)
 class TestCase11956(EnvironmentWithTwoHosts):
     """
@@ -538,10 +490,10 @@ class TestCase11956(EnvironmentWithTwoHosts):
             config.DATA_CENTER_NAME, self.storage)[0]
 
         logger.info("Create VM")
-        assert _create_vm(self.vm_name_base,
-                          storage_domain=self.storage_domain,
-                          placement_host=self.spm_host,
-                          highly_available=True)
+        assert create_vm_or_clone(
+            True, self.vm_name_base, storageDomainName=self.storage_domain,
+            placement_host=self.spm_host, highly_available=True
+        )
 
     @polarion("RHEVM3-11956")
     def test_maintenance_spm_with_running_vm(self):
@@ -564,14 +516,6 @@ class TestCase11956(EnvironmentWithTwoHosts):
     def tearDown(self):
         """Delete the vm"""
         assert ll_vms.removeVm(True, self.vm_name_base, **{'stopVM': 'true'})
-
-
-"""
-Test exposing BZ 962549
-
-Polarion plan: https://polarion.engineering.redhat.com/polarion/#/project/
-RHEVM3/wiki/Storage/3_3_Storage_Bug_Coverage
-"""
 
 
 @attr(tier=2)
@@ -618,11 +562,10 @@ class TestCase11625(TestCase):
             config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES, SLEEP_TIME,
         )
 
-        assert _create_vm(self.vm_name,
-                          storage_domain=self.storage_domain,
-                          placement_host=spm_host)
-        logger.info("Stopping VM")
-        assert ll_vms.stopVm(True, self.vm_name)
+        assert create_vm_or_clone(
+            True, self.vm_name, storageDomainName=self.storage_domain,
+            placement_host=spm_host
+        )
         logger.info("Adding snapshot")
         assert ll_vms.addSnapshot(True, self.vm_name, self.snap_name)
         hsm_host = hosts.getAnyNonSPMHost(
@@ -680,7 +623,9 @@ class TestCase11624(TestCase):
 
         # create a vm with 1 thin provision disk
         logger.info("Create a vm named %s ", self.vm_name)
-        if not _create_vm(self.vm_name, storage_domain=self.storage_domain):
+        if not create_vm_or_clone(
+            True, self.vm_name, storageDomainName=self.storage_domain
+        ):
             raise errors.VMException(
                 "Creation of VM %s failed!" % self.vm_name)
 

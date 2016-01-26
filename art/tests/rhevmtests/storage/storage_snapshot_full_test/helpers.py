@@ -3,9 +3,6 @@ from art.rhevm_api.utils.resource_utils import copyDataToVm, verifyDataOnVm
 from art.rhevm_api.utils.test_utils import removeDirOnHost
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.tests_lib.low_level import vms
-from art.rhevm_api.utils.test_utils import setPersistentNetwork
-
-from rhevmtests.storage.helpers import create_vm_or_clone
 import config
 from rhevmtests.storage import helpers
 import logging
@@ -34,7 +31,8 @@ def verify_data_on_vm(positive, vm_name, path):
         password=config.VM_PASSWORD,
         osType='linux',
         dest=DEST_DIR,
-        destToCompare=path)
+        destToCompare=path
+    )
 
 
 def copy_data_to_vm(vm_name, path):
@@ -50,7 +48,8 @@ def copy_data_to_vm(vm_name, path):
         password=config.VM_PASSWORD,
         osType='linux',
         src=path,
-        dest=DEST_DIR)
+        dest=DEST_DIR
+    )
 
 
 def remove_dir_on_host(vm_name, dirname):
@@ -67,21 +66,8 @@ def remove_dir_on_host(vm_name, dirname):
         user=config.VM_USER,
         password=config.VM_PASSWORD,
         osType='linux',
-        dirname=dirname)
-
-
-def prepare_vm(**vm_args):
-    """
-    Installs vm and creates base snapshot
-    """
-    vm_name = vm_args['vmName']
-    assert create_vm_or_clone(**vm_args)
-    vm_ip = vms.waitForIP(vm_name)[1]['ip']
-    VM_IP_ADDRESSES[vm_name] = vm_ip
-    assert setPersistentNetwork(
-        vm_ip, config.VM_PASSWORD)
-    assert vms.stopVm(True, vm_name)
-    assert vms.addSnapshot(True, vm=vm_name, description=BASE_SNAP)
+        dirname=dirname
+    )
 
 
 """

@@ -6,10 +6,7 @@ Storage/3_3_Storage_Backup_API
 import config
 import logging
 import shlex
-
-from art.rhevm_api.tests_lib.low_level import vms as vms
 from art.rhevm_api.utils.test_utils import get_api
-from rhevmtests.storage.helpers import create_vm_or_clone
 from utilities.machine import Machine
 
 DISKS_API = get_api('disk', 'disks')
@@ -20,91 +17,9 @@ LOGGER = logging.getLogger(__name__)
 
 VM_IP_ADDRESSES = dict()
 BASE_SNAP_DESC = "base_snap"  # Base snapshot description
-SNAPSHOT_TEMPLATE_DESC = 'snap_%s'
 RESTORED_VM = "restored_vm"
-SHOULD_CREATE_SNAPSHOT = (True, False)
 TRANSIENT_DIR_PATH = "/var/lib/vdsm/transient"
 DD_COMMAND = 'dd if=/dev/%s of=/dev/%s bs=1M oflag=direct'
-
-vm_args = {
-    'positive': True,
-    'vmName': "",
-    'vmDescription': '',
-    'cluster': config.CLUSTER_NAME,
-    'nic': config.NIC_NAME[0],
-    'nicType': config.NIC_TYPE_VIRTIO,
-    'size': config.VM_DISK_SIZE,
-    'diskInterface': config.INTERFACE_VIRTIO,
-    'volumeFormat': config.DISK_FORMAT_COW,
-    'volumeType': True,  # sparse
-    'bootable': True,
-    'type': config.VM_TYPE_DESKTOP,
-    'os_type': config.OS_TYPE,
-    'memory': config.GB,
-    'cpu_socket': config.CPU_SOCKET,
-    'cpu_cores': config.CPU_CORES,
-    'display_type': config.DISPLAY_TYPE,
-    'start': True,
-    'installation': True,
-    'user': config.COBBLER_USER,
-    'password': config.COBBLER_PASSWD,
-    'image': config.COBBLER_PROFILE,
-    'network': config.MGMT_BRIDGE,
-    'useAgent': config.USE_AGENT,
-}
-
-
-def prepare_vm(vm_name, create_snapshot=False, storage_domain=None):
-    """
-    Installs vm with disks and create snapshot by demand
-
-    Parameters:
-        * vm_name - vm name
-        * create_snapshot - True if should create snapshot
-        * storage_domain - name of the storage domain
-        * vm_args:
-        - vmName = VM name
-        - vmDescription = Decription of VM
-        - cluster = cluster name
-        - nic = nic name
-        - storageDomainName = storage doamin name
-        - size = size of disk (in bytes)
-        - volumeType = true its mean sparse (thin provision) ,
-                     false - preallocated.
-        - volumeFormat = format type (COW)
-        - diskInterface = disk interface (VIRTIO or IDE ...)
-        - bootable = True when disk bootable otherwise False
-        - type - vm type (SERVER or DESKTOP)
-        - start = in case of true the function start vm
-        - display_type - type of vm display (VNC or SPICE)
-        - installation - true for install os and check connectivity in the end
-        - user - user to connect to vm after installation
-        - password - password to connect to vm after installation
-        - osType - type of OS as it appears in art/conf/elements.conf
-        - useAgent - Set to 'true', if desired to read the ip from VM
-                   (agent exist on VM)
-        - network - The network that the VM's VNIC will be attached to. (If
-                  'vnic_profile' is not specified as well, a profile without
-                  port mirroring will be selected for the VNIC arbitrarily
-                  from the network's profiles).
-    """
-    args = vm_args.copy()
-    args['storageDomainName'] = storage_domain
-    args['vmName'] = vm_name
-    assert create_vm_or_clone(**args)
-
-    vm_ip = vms.waitForIP(vm_name)[1]['ip']
-    assert vm_ip is not None
-    LOGGER.info("Storing ip address %s for vm %s", vm_ip, vm_name)
-
-    VM_IP_ADDRESSES[vm_name] = vm_ip
-
-    assert vms.stopVm(True, vm_name)
-
-    if create_snapshot:
-        assert vms.addSnapshot(
-            True, vm=vm_name,
-            description=SNAPSHOT_TEMPLATE_DESC % vm_name)
 
 
 def is_transient_directory_empty(host):

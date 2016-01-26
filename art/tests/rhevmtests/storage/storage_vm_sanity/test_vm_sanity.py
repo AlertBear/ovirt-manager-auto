@@ -17,7 +17,7 @@ from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.utils import log_listener
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from rhevmtests.storage.helpers import get_vm_ip, create_vm_or_clone
+from rhevmtests.storage import helpers as storage_helpers
 
 LOGGER = logging.getLogger(__name__)
 GB = 1024 * 1024 * 1024
@@ -25,31 +25,6 @@ REGEX = 'createVolume'
 
 ENUMS = config.ENUMS
 STORAGE_DOMAIN_API = test_utils.get_api('storage_domain', 'storagedomains')
-
-
-def _create_vm(vm_name, vm_description, disk_interface,
-               sparse=True, volume_format=ENUMS['format_cow'],
-               vm_type=config.VM_TYPE_DESKTOP,
-               storage_type=config.STORAGE_TYPE):
-    """ helper function for creating vm (passes common arguments, mostly taken
-    from the configuration file)
-    """
-    LOGGER.info("Creating VM %s" % vm_name)
-    storage_domain = storagedomains.getStorageDomainNamesForType(
-        config.DATA_CENTER_NAME, storage_type)[0]
-    return create_vm_or_clone(
-        True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
-        nic=config.NIC_NAME[0], storageDomainName=storage_domain,
-        size=config.VM_DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
-        volumeType=sparse, volumeFormat=volume_format,
-        diskInterface=disk_interface, memory=GB,
-        cpu_socket=config.CPU_SOCKET,
-        cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
-        display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
-        user=config.VM_LINUX_USER, password=config.VM_LINUX_PASSWORD,
-        type=vm_type, installation=True, slim=True,
-        image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
-        useAgent=config.USE_AGENT)
 
 
 def _prepare_data(sparse, vol_format, template_names, storage_type):
@@ -62,10 +37,16 @@ def _prepare_data(sparse, vol_format, template_names, storage_type):
     vm_description = '%s_%s_prep' % (
         config.VM_BASE_NAME, storage_type)
     LOGGER.info("Creating vm %s %s ..." % (sparse, vol_format))
-    if not _create_vm(
-            vm_name, vm_description, config.INTERFACE_VIRTIO,
-            sparse=sparse, volume_format=vol_format,
-            storage_type=storage_type):
+    storage_domain = storagedomains.getStorageDomainNamesForType(
+        config.DATA_CENTER_NAME, storage_type)[0]
+    vm_args = config.create_vm_args.copy()
+    vm_args['vmName'] = vm_name
+    vm_args['vmDescription'] = vm_description
+    vm_args['volumeType'] = sparse
+    vm_args['volumeFormat'] = vol_format
+    vm_args['storageDomainName'] = storage_domain
+    vm_args['start'] = 'true'
+    if not storage_helpers.create_vm_or_clone(**vm_args):
         raise exceptions.VMException("Creation of vm %s failed!" % vm_name)
     LOGGER.info("Waiting for ip of %s" % vm_name)
     vm_ip = vms.waitForIP(vm_name)[1]['ip']
@@ -108,8 +89,14 @@ class TestCase11834(TestCase):
         cls.vm_name = '%s_%s_snap' % (config.VM_BASE_NAME, cls.storage)
         vm_description = '%s_%s_snap' % (
             config.VM_BASE_NAME, cls.storage)
-        if not _create_vm(cls.vm_name, vm_description, config.INTERFACE_VIRTIO,
-                          storage_type=cls.storage):
+        storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, cls.storage)[0]
+        vm_args = config.create_vm_args.copy()
+        vm_args['vmName'] = cls.vm_name
+        vm_args['vmDescription'] = vm_description
+        vm_args['storageDomainName'] = storage_domain
+        vm_args['start'] = 'true'
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 "Creation of VM %s failed!" % cls.vm_name)
         LOGGER.info("Waiting for vm %s state 'up'" % cls.vm_name)
@@ -141,7 +128,7 @@ class TestCase11834(TestCase):
 
     def _copy_data_to_vm_and_make_snapshot(self, source_path, snapshot_name):
         LOGGER.info("Copying data from %s to %s" % (source_path, self.vm_name))
-        vm_ip = get_vm_ip(self.vm_name)
+        vm_ip = storage_helpers.get_vm_ip(self.vm_name)
         self.assertTrue(
             resource_utils.copyDataToVm(
                 ip=vm_ip, user=config.VM_LINUX_USER,
@@ -168,7 +155,7 @@ class TestCase11834(TestCase):
     def _verify_data_on_vm(self, paths):
         for path in paths:
             LOGGER.info("Verify data from %s in VM %s" % (path, self.vm_name))
-            vm_ip = get_vm_ip(self.vm_name)
+            vm_ip = storage_helpers.get_vm_ip(self.vm_name)
             self.assertTrue(
                 resource_utils.verifyDataOnVm(
                     positive=True, ip=vm_ip,
@@ -281,10 +268,14 @@ class TestCase11586(TestCase):
         cls.alias = "%s_Disk1" % cls.vm_name
         vm_description = '%s_%s_snap' % (
             config.VM_BASE_NAME, cls.storage)
-        # create vm with thin provision disk
-        if not _create_vm(cls.vm_name, vm_description, config.INTERFACE_VIRTIO,
-                          sparse=True, volume_format=ENUMS['format_cow'],
-                          storage_type=cls.storage):
+        storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, cls.storage)[0]
+        vm_args = config.create_vm_args.copy()
+        vm_args['vmName'] = cls.vm_name
+        vm_args['vmDescription'] = vm_description
+        vm_args['storageDomainName'] = storage_domain
+        vm_args['start'] = 'true'
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 "Creation of VM %s failed!" % cls.vm_name)
         LOGGER.info("Waiting for vm %s state 'up'" % cls.vm_name)
@@ -381,19 +372,15 @@ class TestCase11830(TestCase):
     def setUp(self):
         self.vm_name = '%s_%s' % (config.VM_BASE_NAME, self.vm_type)
         self.template_name = "template_%s" % self.vm_name
-        if not _create_vm(self.vm_name, self.vm_name, config.VIRTIO_SCSI,
-                          vm_type=self.vm_type, storage_type=self.storage):
+        storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)[0]
+        vm_args = config.create_vm_args.copy()
+        vm_args['vmName'] = self.vm_name
+        vm_args['vmDescription'] = self.vm_name
+        vm_args['storageDomainName'] = storage_domain
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 "Creation of VM %s failed!" % self.vm_name)
-        LOGGER.info("Waiting for vm %s state 'up'" % self.vm_name)
-        if not vms.waitForVMState(self.vm_name):
-            raise exceptions.VMException(
-                "Waiting for VM %s status 'up' failed" % self.vm_name)
-        LOGGER.info("Shutting down %s" % self.vm_name)
-        if not vms.stopVm(True, self.vm_name):
-            raise exceptions.VMException("Can't stop vm %s" %
-                                         self.vm_name)
-        vms.waitForVMState(self.vm_name, state=config.VM_DOWN)
 
     @polarion("RHEVM3-11830")
     def test_create_vm_from_template_basic_flow(self):

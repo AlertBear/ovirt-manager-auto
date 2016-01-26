@@ -42,33 +42,6 @@ GLUSTER = config.STORAGE_TYPE_GLUSTER
 NFS = config.STORAGE_TYPE_NFS
 HOST_TO_USE = None
 
-vm_args = {
-    'positive': True,
-    'vmName': None,
-    'vmDescription': None,
-    'cluster': config.CLUSTER_NAME,
-    'nicType': config.NIC_TYPE_VIRTIO,
-    'size': config.DISK_SIZE,
-    'diskInterface': config.INTERFACE_VIRTIO,
-    'volumeFormat': config.DISK_FORMAT_COW,
-    'storageDomainName': None,
-    'volumeType': True,  # sparse
-    'bootable': True,
-    'type': config.VM_TYPE_DESKTOP,
-    'os_type': config.OS_TYPE,
-    'memory': config.GB,
-    'cpu_socket': config.CPU_SOCKET,
-    'cpu_cores': config.CPU_CORES,
-    'display_type': config.DISPLAY_TYPE,
-    'start': True,
-    'installation': True,
-    'user': config.COBBLER_USER,
-    'password': config.COBBLER_PASSWD,
-    'image': config.COBBLER_PROFILE,
-    'network': config.MGMT_BRIDGE,
-    'useAgent': config.USE_AGENT,
-}
-
 
 def setup_module():
     """
@@ -488,7 +461,7 @@ class TestCase11581(CommonCase):
             config.DATA_CENTER_NAME, cls.storage
         )[0]
         logger.info("Creating vm and installing OS on it")
-        create_vm_args = vm_args.copy()
+        create_vm_args = config.create_vm_args.copy()
         create_vm_args['vmName'] = config.LIFECYCLE_VM
         create_vm_args['vmDescription'] = config.LIFECYCLE_VM
         create_vm_args['diskInterface'] = config.INTERFACE_VIRTIO_SCSI
@@ -496,12 +469,6 @@ class TestCase11581(CommonCase):
         if not storage_helpers.create_vm_or_clone(**create_vm_args):
             raise exceptions.VMException(
                 "Failed to create VM '%s'" % config.LIFECYCLE_VM
-            )
-
-        logger.info("Shutting down VM '%s'", config.LIFECYCLE_VM)
-        if not ll_vms.stopVm(True, config.LIFECYCLE_VM):
-            raise exceptions.VMException(
-                "Failed to shutdown VM '%s'" % config.LIFECYCLE_VM
             )
 
     def setUp(self):
@@ -736,7 +703,7 @@ class TestUpgrade(TestCase):
         """
         Changes DC version while installing a VM
         """
-        create_vm_args = vm_args.copy()
+        create_vm_args = config.create_vm_args.copy()
         create_vm_args['vmName'] = self.vm_name
         create_vm_args['vmDescription'] = self.vm_name
         create_vm_args['cluster'] = self.cluster_name

@@ -71,15 +71,15 @@ class TestCase11588(TestCase):
         )[0]
 
         logger.info("Create vm and template")
-        if not storage_helpers.create_vm(
-            self.vm_name, storage_domain=self.storage_domain
-        ):
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = self.storage_domain
+        vm_args['vmName'] = self.vm_name
+
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
-                "Failed to create VM '%s'" % self.vm_name
+                'Unable to create vm %s for test' % self.vm_name
             )
         self.vms_dict[self.vm_name] = True
-
-        ll_vms.stop_vms_safely([self.vm_name])
 
         if not network_helper.seal_vm(self.vm_name, config.VM_PASSWORD):
             raise exceptions.NetworkException(

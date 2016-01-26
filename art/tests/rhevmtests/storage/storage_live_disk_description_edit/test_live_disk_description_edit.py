@@ -348,8 +348,8 @@ class TestCase11504(BasicEnvironment):
     def setUp(self):
         """ Setup disks for this test case """
         self.setup_with_disks()
-        storage_helpers.create_vm(
-            self.vm_name, storage_domain=self.storage_domain
+        storage_helpers.create_vm_or_clone(
+            True, self.vm_name, storageDomainName=self.storage_domain
         )
 
     @polarion("RHEVM3-11504")

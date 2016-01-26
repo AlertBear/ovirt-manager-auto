@@ -7,7 +7,6 @@ from concurrent.futures import ThreadPoolExecutor
 import logging
 
 import config
-from art.test_handler import exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
@@ -23,23 +22,6 @@ from rhevmtests.storage import helpers as storage_helpers
 ENUMS = config.ENUMS
 
 logger = logging.getLogger(__name__)
-
-VM_ARGS = {
-    'positive': True,
-    'vmName': "",
-    'vmDescription': "",
-    'cluster': config.CLUSTER_NAME,
-    'size': config.VM_DISK_SIZE,
-    'nic': config.NIC_NAME[0],
-    'image': config.COBBLER_PROFILE,
-    'useAgent': True,
-    'os_type': config.OS_TYPE,
-    'display_type': config.DISPLAY_TYPE,
-    'type': config.VM_TYPE,
-    'user': config.VM_USER,
-    'password': config.VM_PASSWORD,
-    'network': config.MGMT_BRIDGE,
-}
 MOVE_DISK_TIMEOUT = 600
 
 
@@ -129,8 +111,8 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
         # Define the disk objects' retriever function
         self.retrieve_disk_obj = lambda x: ll_vms.getVmDisks(x)
 
-        vm_thin_args = VM_ARGS.copy()
-        vm_prealloc_args = VM_ARGS.copy()
+        vm_thin_args = config.create_vm_args.copy()
+        vm_prealloc_args = config.create_vm_args.copy()
         self.default_disks = {
             self.vm_thin: True,
             self.vm_prealloc: False,
@@ -153,14 +135,6 @@ class BaseTestDiskImageVms(BaseTestDiskImage):
 
         assert storage_helpers.create_vm_or_clone(**vm_thin_args)
         assert storage_helpers.create_vm_or_clone(**vm_prealloc_args)
-
-        if self.installation:
-            if not ll_vms.stop_vms_safely([self.vm_thin, self.vm_prealloc]):
-                raise exceptions.VMException(
-                    "Failed to power off VMs '%s'", ', '.join(
-                        [self.vm_thin, self.vm_prealloc]
-                    )
-                )
 
         self.disk_thin = ll_vms.getVmDisks(self.vm_thin)[0].get_id()
         self.disk_prealloc = ll_vms.getVmDisks(self.vm_prealloc)[0].get_id()
@@ -541,7 +515,7 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
             self.vm_name: True,
         }
         self.remove_exported_template = False
-        vm_args = VM_ARGS.copy()
+        vm_args = config.create_vm_args.copy()
         vm_args.update(self.disk_keywords)
         vm_args.update({
             'vmName': self.vm_name,
@@ -840,7 +814,7 @@ class TestCase11606(BaseTestDiskImage):
         self.template_name = "template_%s" % self.polarion_test_id
 
         # First disk is thin provisioned
-        vm_args = VM_ARGS.copy()
+        vm_args = config.create_vm_args.copy()
         vm_args.update(self.disk_keywords)
         vm_args.update({
             'vmName': self.vm_name,

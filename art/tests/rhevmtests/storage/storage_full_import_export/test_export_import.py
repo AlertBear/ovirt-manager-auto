@@ -43,15 +43,13 @@ class BaseExportImportTestCase(TestCase):
             config.DATA_CENTER_NAME, self.storage)[0]
 
         logger.info("Creating vm %s with type %s", self.vm_name, self.vm_type)
-        if not helpers.create_vm(
-                self.vm_name, vm_type=self.vm_type,
-                storage_domain=self.storage_domain, installation=False
-        ):
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = self.storage_domain
+        vm_args['vmName'] = self.vm_name
+        vm_args['type'] = self.vm_type
+        vm_args['installation'] = False
+        if not helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException('Unable to create vm %s for test' %
-                                         self.vm_name)
-        vms.stop_vms_safely([self.vm_name])
-        if not vms.waitForVMState(self.vm_name, config.VM_DOWN):
-            raise exceptions.VMException('Unable to stop vm %s for test' %
                                          self.vm_name)
 
     def tearDown(self):

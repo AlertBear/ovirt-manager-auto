@@ -94,20 +94,13 @@ def create_vm_with_disks(storage_domain, storage_type):
     """
     vm_name = config.VM_NAME % storage_type
     unattached_disk = 'unattached_disk_%s' % storage_type
-
-    create_vm_or_clone(
-        True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
-        nic=config.NIC_NAME[0], storageDomainName=storage_domain,
-        size=config.VM_DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
-        volumeType=True, volumeFormat=config.DISK_FORMAT_COW,
-        memory=config.GB, diskInterface=config.INTERFACE_VIRTIO,
-        cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
-        display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
-        user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
-        type=config.VM_TYPE, installation=True, slim=True,
-        image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
-        useAgent=config.USE_AGENT
-    )
+    vm_args = config.create_vm_args.copy()
+    vm_args['vmName'] = vm_name
+    vm_args['vmDescription'] = vm_name
+    vm_args['storageDomainName'] = storage_domain
+    vm_args['memory'] = 2 * config.GB
+    vm_args['start'] = 'true'
+    create_vm_or_clone(**vm_args)
 
     DISKS_TO_PLUG.update({storage_type: []})
     for index in xrange(5):
@@ -323,3 +316,4 @@ class HotplugHookTest(TestCase):
         """
         self.run_cmd(['rm', '-f', FILE_WITH_RESULTS])
         self.clear_hooks()
+        vms.stop_vms_safely([self.vm_name])

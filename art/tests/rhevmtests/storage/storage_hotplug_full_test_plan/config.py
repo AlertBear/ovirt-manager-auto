@@ -7,7 +7,6 @@ __test__ = False
 from rhevmtests.storage.config import * # flake8: noqa
 
 DISK_INTERFACES = (ENUMS['interface_virtio'],)
-positive = True
 
 TESTNAME = "hotplug_full_test"
 

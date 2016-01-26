@@ -348,11 +348,10 @@ class TestCase6111(BaseTestCase):
         Create a server type vm
         """
         super(TestCase6111, self).setUp()
-        helpers.create_vm(
-            self.vm_server, disk_interface=config.VIRTIO_SCSI,
-            vm_type=config.VM_TYPE_SERVER, installation=False
+        helpers.create_vm_or_clone(
+            True, self.vm_server, diskInterface=config.VIRTIO_SCSI,
+            type=config.VM_TYPE_SERVER, installation=False
         )
-        waitForVMState(self.vm, config.VM_DOWN)
         addSnapshot(True, self.vm_server, self.snapshot_server)
 
     @polarion("RHEVM3-6111")

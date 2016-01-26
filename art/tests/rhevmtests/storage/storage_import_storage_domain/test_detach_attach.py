@@ -39,26 +39,6 @@ UPDATE_OVF_INTERVAL_CMD = "OvfUpdateIntervalInMinutes=%(minutes)s"
 VM_NAMES = dict()
 IMPORT_DOMAIN = dict()
 
-vmArgs = {
-    'positive': True,
-    'vmName': config.VM_NAME,
-    'vmDescription': config.VM_NAME,
-    'diskInterface': config.VIRTIO,
-    'volumeFormat': config.COW_DISK,
-    'cluster': config.CLUSTER_NAME,
-    'storageDomainName': None,
-    'installation': True,
-    'size': config.VM_DISK_SIZE,
-    'nic': config.NIC_NAME[0],
-    'image': config.COBBLER_PROFILE,
-    'useAgent': True,
-    'os_type': config.OS_TYPE,
-    'user': config.VM_USER,
-    'password': config.VM_PASSWORD,
-    'network': config.MGMT_BRIDGE,
-    'display_type': config.DISPLAY_TYPE,
-}
-
 
 def setup_module():
     """
@@ -160,19 +140,16 @@ def setup_module():
             config.DATA_CENTER_NAME, storage_type
         )[0]
         vm_name = config.VM_NAME % storage_type
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = storage_domain
+        vm_args['vmName'] = vm_name
+        vm_args['vmDescription'] = vm_name
 
-        vmArgs['storageDomainName'] = storage_domain
-        vmArgs['vmName'] = vm_name
-        vmArgs['vmDescription'] = vm_name
-
-        if not storage_helpers.create_vm_or_clone(**vmArgs):
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % vm_name
             )
         VM_NAMES[storage_type].append(vm_name)
-        logger.info('Shutting down VM %s', vm_name)
-        ll_vms.stop_vms_safely([vm_name])
-
         logger.info(
             "Attaching storage domain %s", IMPORT_DOMAIN[storage_type]
         )
@@ -1083,12 +1060,12 @@ class TestCase5201(BasicEnvironment):
         super(TestCase5201, self).setUp()
         self._add_storage()
         self._create_environment(self.dc_name, self.cluster_name)
-
-        vmArgs['storageDomainName'] = self.sd_name
-        vmArgs['vmName'] = self.test_vm
-        vmArgs['vmDescription'] = self.test_vm
-        vmArgs['installation'] = False
-        self.vm_created = storage_helpers.create_vm_or_clone(**vmArgs)
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = self.sd_name
+        vm_args['vmName'] = self.test_vm
+        vm_args['vmDescription'] = self.test_vm
+        vm_args['installation'] = False
+        self.vm_created = storage_helpers.create_vm_or_clone(**vm_args)
 
         if not self.vm_created:
             raise exceptions.VMException(
@@ -1174,12 +1151,12 @@ class TestCase12207(BasicEnvironment):
         super(TestCase12207, self).setUp()
         self._add_storage()
         self._create_environment(self.dc_name, self.cluster_name)
-
-        vmArgs['storageDomainName'] = self.sd_name
-        vmArgs['vmName'] = self.test_vm
-        vmArgs['vmDescription'] = self.test_vm
-        vmArgs['installation'] = False
-        self.vm_created = storage_helpers.create_vm_or_clone(**vmArgs)
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = self.sd_name
+        vm_args['vmName'] = self.test_vm
+        vm_args['vmDescription'] = self.test_vm
+        vm_args['installation'] = False
+        self.vm_created = storage_helpers.create_vm_or_clone(**vm_args)
 
         if not self.vm_created:
             raise exceptions.VMException(

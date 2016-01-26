@@ -37,7 +37,7 @@ CREATION_DISKS_TIMEOUT = 600
 REMOVE_SNAPSHOT_TIMEOUT = 25 * 60
 DD_TIMEOUT = 60 * 6
 DD_EXEC = '/bin/dd'
-DD_COMMAND = '{0} bs=1M count=%d if=%s of=%s'.format(DD_EXEC)
+DD_COMMAND = '{0} bs=1M count=%d if=%s of=%s status=none'.format(DD_EXEC)
 DEFAULT_DD_SIZE = 20 * config.MB
 ERROR_MSG = "Error: Boot device is protected"
 TARGET_FILE = 'written_test_storage'
@@ -65,47 +65,6 @@ REGEX_DEVICE_NAME = '[sv]d[a-z]'
 CREATE_DISK_LABEL_CMD = '/sbin/parted %s --script -- mklabel gpt'
 CREATE_DISK_PARTITION_CMD = \
     '/sbin/parted %s --script -- mkpart primary 0 100%%'
-
-disk_args = {
-    # Fixed arguments
-    'provisioned_size': config.DISK_SIZE,
-    'wipe_after_delete': config.BLOCK_FS,
-    'storagedomain': config.SD_NAMES_LIST[0],
-    'bootable': False,
-    'shareable': False,
-    'active': True,
-    'interface': config.VIRTIO,
-    # Custom arguments - change for each disk
-    'format': config.COW_DISK,
-    'sparse': True,
-    'alias': '',
-    'description': '',
-}
-
-
-def create_vm(
-        vm_name, disk_interface=config.VIRTIO, sparse=True,
-        volume_format=config.COW_DISK, vm_type=config.VM_TYPE_DESKTOP,
-        installation=True, storage_domain=None
-):
-    """
-    helper function for creating vm (passes common arguments, mostly taken
-    from the configuration file)
-    """
-    logger.info("Creating VM %s", vm_name)
-    return create_vm_or_clone(
-        True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
-        nic=config.NIC_NAME[0], storageDomainName=storage_domain,
-        size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
-        volumeType=sparse, volumeFormat=volume_format,
-        diskInterface=disk_interface, memory=config.GB,
-        cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
-        nicType=config.NIC_TYPE_VIRTIO, display_type=config.DISPLAY_TYPE,
-        os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
-        password=config.VMS_LINUX_PW, type=vm_type, installation=installation,
-        slim=True, image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
-        useAgent=config.USE_AGENT
-    )
 
 
 def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
@@ -231,7 +190,8 @@ def create_disks_from_requested_permutations(
 
 
 def perform_dd_to_disk(
-    vm_name, disk_alias, size=DEFAULT_DD_SIZE
+    vm_name, disk_alias, protect_boot_device=True, size=DEFAULT_DD_SIZE,
+    write_to_file=False,
 ):
     """
     Function that performs dd command from the bootable device to the requested
@@ -246,20 +206,69 @@ def perform_dd_to_disk(
     :param disk_alias: The alias of the disk on which the dd operations will
     occur
     :type disk_alias: str
+    :param protect_boot_device: True if boot device should be protected and
+    writing to this device ignored, False if boot device should be
+    overwritten (use with caution!)
+    : type protect_boot_device: bool
     :param size: number of bytes to dd (Default size 20MB)
     :type size: int
+    :param write_to_file: Determines whether a file should be written into the
+    file system (True) or directly to the device (False)
+    :param write_to_file: bool
     :returns: ecode and output
     :rtype: tuple
     """
-    boot_disk = get_vm_boot_disk(vm_name)
-    status, mount_point = create_fs_on_disk(vm_name, disk_alias)
-    if not status:
-        return status, mount_point
-    destination = os.path.join(mount_point, TARGET_FILE)
     vm_ip = get_vm_ip(vm_name)
     vm_machine = Machine(
         host=vm_ip, user=config.VM_USER, password=config.VM_PASSWORD
     ).util(LINUX)
+    # TODO: Workaround for bug:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1144860
+    vm_machine.runCmd(shlex.split("udevadm trigger"))
+    output = vm_machine.get_boot_storage_device()
+    boot_disk = 'vda' if 'vd' in output else 'sda'
+
+    disk_logical_volume_name = ll_vms.get_vm_disk_logical_name(
+        vm_name, disk_alias
+    )
+    if not disk_logical_volume_name:
+        # This function is used to test whether logical volume was found,
+        # raises an exception if it wasn't found
+        raise exceptions.DiskException(
+            "Failed to get %s disk logical name" % disk_alias
+        )
+
+    logger.info(
+        "The logical volume name for the requested disk is: '%s'",
+        disk_logical_volume_name
+    )
+    if protect_boot_device:
+        if disk_logical_volume_name == boot_disk:
+            logger.warn(
+                "perform_dd_to_disk function aborted since the requested "
+                "disk alias translates into the boot device, this would "
+                "overwrite the OS"
+            )
+
+            return False, ERROR_MSG
+
+    if write_to_file:
+        dev = disk_logical_volume_name.split('/')[-1]
+        dev_size = vm_machine.get_storage_device_size(dev)
+        # Create a partition of the size of the disk but take into account the
+        # usual offset for logical partitions, setting to 10 MB
+        partition = vm_machine.createPartition(
+            disk_logical_volume_name, dev_size * config.GB - config.MB * 10,
+        )
+        assert partition
+        mount_point = vm_machine.createFileSystem(
+            disk_logical_volume_name, partition, FILESYSTEM, '?',
+        )
+        assert mount_point
+        destination = os.path.join(mount_point, TARGET_FILE)
+    else:
+        destination = disk_logical_volume_name
+
     command = DD_COMMAND % (
         size / config.MB, "/dev/{0}".format(boot_disk), destination,
     )
@@ -267,8 +276,6 @@ def perform_dd_to_disk(
 
     ecode, out = vm_machine.runCmd(shlex.split(command), timeout=DD_TIMEOUT)
     logger.info("Output for dd: %s", out)
-    rc_umount, out_umount = vm_machine.runCmd(['umount', mount_point])
-    logger.info(out_umount)
     return ecode, out
 
 
@@ -285,7 +292,10 @@ def get_vm_ip(vm_name):
     return ll_vms.waitForIP(vm_name)[1]['ip']
 
 
-def create_vm_or_clone(positive, vmName, vmDescription, cluster, **kwargs):
+def create_vm_or_clone(
+    positive, vmName, vmDescription='', cluster=config.CLUSTER_NAME,
+    **kwargs
+):
     """
     Create a VM from scratch for non-GE environments, clones VM from
     cluster's templates for GE environments. This function greatly improves
@@ -300,60 +310,41 @@ def create_vm_or_clone(positive, vmName, vmDescription, cluster, **kwargs):
     :type vmDescription: str
     :param cluster: Name of the cluster
     :type cluster: str
+    :param clone_from_template: True if a clone from template should be
+    performed, False if a glance image should be used (and is valid,
+    otherwise vm will be created from scratch)
+    :type clone_from_template: bool
+    :param deep_copy: (Used only when clone_from_template is True)
+    True in case clone vm from template should be deep copy, False if clone
+    should be thin copy (Default is thin copy - False)
+    :type deep_copy: bool
     :return: True if successful in creating the vm, False otherwise
     :rtype: bool
     """
     storage_domain = kwargs.get('storageDomainName')
-    disk_interface = kwargs.get('diskInterface')
-    vol_format = kwargs.get('volumeFormat', 'cow')
+    disk_interface = kwargs.get('diskInterface', config.VIRTIO)
+    vol_format = kwargs.get('volumeFormat', config.DISK_FORMAT_COW)
     vol_allocation_policy = kwargs.get('volumeType', 'true')
     installation = kwargs.get('installation', False)
+    clone_from_template = kwargs.pop('clone_from_template', True)
+    deep_copy = kwargs.pop('deep_copy', False)
     # If the vm doesn't need installation don't waste time cloning the vm
-    if config.GOLDEN_ENV and installation:
+    if installation:
+        start = kwargs.get('start', 'false')
         storage_domains = ll_sd.get_storagedomain_names()
-        # Don't copy from glance for PPC_ARCH
-        if (not config.PPC_ARCH and
-                config.GLANCE_DOMAIN in storage_domains and
-                config.GOLDEN_GLANCE_IMAGE in (
-                    ll_sd.get_storage_domain_images(config.GLANCE_DOMAIN)
-                )):
-            kwargs['cluster'] = cluster
-            kwargs['vmName'] = vmName
-            kwargs['vmDescription'] = vmDescription
-            glance_image = config.GOLDEN_GLANCE_IMAGE
-            if vol_allocation_policy == 'false':
-                glance_image = config.GLANCE_IMAGE_RAW
-
-            assert hl_vms.create_vm_using_glance_image(
-                config.GLANCE_DOMAIN, glance_image, **kwargs
-            )
-        else:
+        template_name = helpers.get_golden_template_name(cluster)
+        # Create VM from template
+        if clone_from_template and template_name:
             logger.info("Cloning vm %s", vmName)
-            template_name = helpers.get_golden_template_name(cluster)
-            if not template_name:
-                logger.error(
-                    "Cannot find any templates to use under cluster %s",
-                    cluster
-                )
-                return False
-
             # Clone a vm from a template with the correct parameters
-            args_clone = {
-                'positive': True,
-                'name': vmName,
-                'cluster': cluster,
-                'template': template_name,
-                'clone': True,  # Always clone
-                # If sparse is not defined, use thin by default to speed up
-                # the test run
-                'vol_sparse': vol_allocation_policy,
-                'vol_format': vol_format,
-                'storagedomain': storage_domain,
-                'virtio_scsi': True,
-                'display_type': config.DISPLAY_TYPE,
-                'os_type': config.OS_TYPE,
-                'type': config.VM_TYPE,
-            }
+            args_clone = config.clone_vm_args.copy()
+            args_clone['name'] = vmName
+            args_clone['cluster'] = cluster
+            args_clone['template'] = template_name
+            args_clone['clone'] = deep_copy
+            args_clone['vol_sparse'] = vol_allocation_policy
+            args_clone['vol_format'] = vol_format
+            args_clone['storagedomain'] = storage_domain
             update_keys = [
                 'vmDescription', 'type', 'placement_host',
                 'placement_affinity', 'highly_available',
@@ -361,19 +352,51 @@ def create_vm_or_clone(positive, vmName, vmDescription, cluster, **kwargs):
             ]
             update_args = dict((key, kwargs.get(key)) for key in update_keys)
             args_clone.update(update_args)
-            assert ll_vms.cloneVmFromTemplate(**args_clone)
+            if not ll_vms.cloneVmFromTemplate(**args_clone):
+                logger.error(
+                    "Failed to clone vm %s from template %s",
+                    vmName, template_name
+                )
+                return False
             # Because alias is not a unique property and a lot of test use it
             # as identifier, rename the vm's disk alias to be safe
             # Since cloning doesn't allow to specify disk interface, change it
             disks_obj = ll_vms.getVmDisks(vmName)
             for i in range(len(disks_obj)):
+                # TODO: mark the boot disk as workaround for bug:
+                # https://bugzilla.redhat.com/show_bug.cgi?id=1303320
+                boot = i == 0
                 ll_disks.updateDisk(
                     True, vmName=vmName, id=disks_obj[i].get_id(),
                     alias="{0}_Disk_{1}".format(vmName, i),
-                    interface=disk_interface
+                    interface=disk_interface, bootable=boot
                 )
-            # createVm always leaves the vm up when installation is True
-        return ll_vms.startVm(positive, vmName, wait_for_status=config.VM_UP)
+        # Create VM using image imported from Glance
+        # Don't copy from glance for PPC_ARCH
+        elif not config.PPC_ARCH and not clone_from_template and (
+            config.GLANCE_DOMAIN in storage_domains and (
+                config.GOLDEN_GLANCE_IMAGE in (
+                    ll_sd.get_storage_domain_images(config.GLANCE_DOMAIN)
+                )
+            )
+        ):
+            kwargs['cluster'] = cluster
+            kwargs['vmName'] = vmName
+            kwargs['vmDescription'] = vmDescription
+            glance_image = config.GOLDEN_GLANCE_IMAGE
+            if not hl_vms.create_vm_using_glance_image(
+                config.GLANCE_DOMAIN, glance_image, **kwargs
+            ):
+                logger.error(
+                    "Failed to create vm %s from glance image %s",
+                    vmName, glance_image
+                )
+                return False
+        if start == 'true':
+            return ll_vms.startVm(
+                positive, vmName, wait_for_status=config.VM_UP
+            )
+        return True
     else:
         return ll_vms.createVm(
             positive, vmName, vmDescription, cluster, **kwargs

@@ -46,24 +46,6 @@ ACTIVE_VM = 'Active VM'
 VM_NAMES = []
 ISCSI = config.STORAGE_TYPE_ISCSI
 
-vmArgs = {
-    'positive': True,
-    'vmDescription': config.VM_NAME % "description",
-    'diskInterface': config.VIRTIO,
-    'volumeFormat': config.COW_DISK,
-    'cluster': config.CLUSTER_NAME,
-    'storageDomainName': None,
-    'installation': True,
-    'size': config.DISK_SIZE,
-    'nic': config.NIC_NAME[0],
-    'useAgent': True,
-    'os_type': config.OS_TYPE,
-    'user': config.VM_USER,
-    'password': config.VM_PASSWORD,
-    'network': config.MGMT_BRIDGE,
-    'image': config.COBBLER_PROFILE,
-}
-
 
 def setup_module():
     """
@@ -80,19 +62,17 @@ def setup_module():
         logger.info("Creating VM %s", vm_name)
         storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, storage_type)[0]
-        vmArgs['storageDomainName'] = storage_domain
-        vmArgs['vmName'] = vm_name
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = storage_domain
+        vm_args['vmName'] = vm_name
 
         logger.info('Creating vm and installing OS on it')
 
-        if not storage_helpers.create_vm_or_clone(**vmArgs):
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % vm_name)
 
         VM_NAMES.append(vm_name)
-
-    logger.info('Shutting down vms %s', VM_NAMES)
-    stop_vms_safely(VM_NAMES)
 
 
 def teardown_module():
@@ -853,10 +833,10 @@ class TestCase6032(BasicEnvironment):
         """
         super(TestCase6032, self).setUp()
         self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
-        profile = vmArgs['network']
+        profile = config.MGMT_BRIDGE
         if not addNic(True, vm=self.vm_name, name=self.nic,
                       mac_address=None,
-                      network=vmArgs['network'],
+                      network=config.MGMT_BRIDGE,
                       vnic_profile=profile, plugged='true', linked='true'):
             raise exceptions.NetworkException("Can't add nic %s" % self.nic)
 
