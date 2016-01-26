@@ -54,7 +54,7 @@ class TestCaseUserAndRoles(TestCase):
         logger.info('Remove user')
         ll_users.removeUser(positive=True, user=config.USERNAME_NAME)
 
-    @bz({'1188176': {'engine': ['cli'], 'version': ['3.5', '3.6']}})
+    @bz({'1302034': {'engine': None, 'version': ['3.6']}})
     @attr(tier=1)
     def test_remove_all_permissions_for_user(self):
         """
