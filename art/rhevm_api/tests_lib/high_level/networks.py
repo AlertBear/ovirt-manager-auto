@@ -380,22 +380,15 @@ def create_dummy_interfaces(host, num_dummy=1, ifcfg_params=None):
     if ifcfg_params is None:
         ifcfg_params = {}
 
-    host_exec = host.executor()
     for i in range(num_dummy):
         cmd = ["ip", "link", "add", dummy_int % i, "type", "dummy"]
-        rc, out, error = host_exec.run_cmd(cmd)
+        rc, out, error = host.run_command(cmd)
         if rc:
-            logger.error(
-                "Create %s interfaces failed. ERR: %s. %s", i, out, error
-            )
             return False
 
         nic_name = dummy_int % i
         host.network.create_ifcfg_file(nic=nic_name, params=ifcfg_params)
 
-    logger.info(
-        host_exec.run_cmd([IP_CMD, "a", "l", "|", "grep", "dummy"])[1]
-    )
     return True
 
 
@@ -416,9 +409,7 @@ def delete_dummy_interfaces(host):
         ifcfg_file = "/etc/sysconfig/network-scripts/ifcfg-%s" % i
         if host.fs.isfile(ifcfg_file):
             if rhevh:
-                host_obj = host.executor()
-                logger.info("unpersist %s", ifcfg_file)
-                rc, out, err = host_obj.run_command(["unpersist", ifcfg_file])
+                rc, out, err = host.run_command(["unpersist", ifcfg_file])
                 if rc:
                     return False
             host.network.delete_ifcfg_file(nic=i)
