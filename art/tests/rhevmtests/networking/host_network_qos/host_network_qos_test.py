@@ -849,7 +849,6 @@ class TestHostNetQOSCase12(TestHostNetworkQoSTestCaseBase):
      attached to the host
     """
     __test__ = True
-    bz = {"1278297": {"engine": None, "version": ["3.6"]}}
     nets = conf.NETS[12][:2]
 
     @classmethod
@@ -895,7 +894,7 @@ class TestHostNetQOSCase12(TestHostNetworkQoSTestCaseBase):
             )
 
     @polarion("RHEVM3-14300")
-    def test_remove_anonymous_qos_for_network_on_host_nic(self):
+    def test_01_remove_anonymous_qos_for_network_on_host_nic(self):
         """
         Negative: Remove QoS from the first network
         """
@@ -904,6 +903,7 @@ class TestHostNetQOSCase12(TestHostNetworkQoSTestCaseBase):
                 "1": {
                     "network": self.nets[0],
                     "nic": conf.HOST_1_NICS[1],
+                    "qos": {"type_": conf.HOST_NET_QOS_TYPE}
                     }
             }
         }
@@ -912,7 +912,6 @@ class TestHostNetQOSCase12(TestHostNetworkQoSTestCaseBase):
             "Negative: Try to remove QoS from %s on %s",
             self.nets[0], conf.HOST_1_NICS[1]
         )
-
         if hl_host_network.setup_networks(
             host_name=conf.HOST_1, **network_host_api_dict_1
         ):
@@ -922,7 +921,7 @@ class TestHostNetQOSCase12(TestHostNetworkQoSTestCaseBase):
             )
 
     @polarion("RHEVM3-14354")
-    def test_remove_anonymous_qos_for_all_networks_on_host_nic(self):
+    def test_02_remove_anonymous_qos_for_all_networks_on_host_nic(self):
         """
         Remove QoS from both networks
         """
@@ -931,10 +930,12 @@ class TestHostNetQOSCase12(TestHostNetworkQoSTestCaseBase):
                 "1": {
                     "network": self.nets[0],
                     "nic": conf.HOST_1_NICS[1],
+                    "qos": {"type_": conf.HOST_NET_QOS_TYPE}
                     },
                 "2": {
                     "network": self.nets[1],
                     "nic": conf.HOST_1_NICS[1],
+                    "qos": {"type_": conf.HOST_NET_QOS_TYPE}
                     }
             }
         }
