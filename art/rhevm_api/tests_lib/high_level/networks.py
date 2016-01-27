@@ -113,18 +113,21 @@ def validateNetwork(positive, cluster, network, tag, val):
 
 
 @core_api.is_action()
-def removeMultiNetworks(positive, networks, data_center=None):
+def remove_networks(positive, networks, data_center=None):
     """
-    Remove Multiple networks
-    Author: atal
-    Parameters:
-        * positive - expected state that the function should return
-        * networks- a list of networks
-        * data_center - In case more then one network with the same name
-                        exists.
-    return  True if remove networks succeeded, otherwise False
+    Remove networks
+
+    :param positive: Expected state that the function should return
+    :type positive: bool
+    :param networks: List of networks
+    :type networks: list
+    :param data_center: DC from where to remove network
+    :type data_center: str
+    :return: True if remove networks succeeded, otherwise False
+    :rtype: bool
     """
     for net in networks:
+        logger.info("Removing %s", net)
         if not ll_networks.removeNetwork(positive, net, data_center):
             logger.error("Failed to remove %s", net)
             return False
@@ -192,7 +195,7 @@ def createAndAttachNetworkSN(
 
     for net, net_param in network_dict.items():
         if data_center and net:
-            logger.info("Adding network to DC")
+            logger.info("Adding %s to %s", net, data_center)
             if not ll_networks.addNetwork(
                 True, name=net, data_center=data_center,
                 usages=net_param.get("usages", "vm"),
@@ -201,18 +204,18 @@ def createAndAttachNetworkSN(
                 profile_required=net_param.get("profile_required"),
                 qos_dict=net_param.get("qos")
             ):
-                logger.info("Cannot add network to DC")
+                logger.error("Cannot add %s to %s", net, data_center)
                 return False
 
         if cluster and net:
-            logger.info("Adding network to Cluster")
+            logger.info("Adding %s to %s", net, cluster)
             if not ll_networks.addNetworkToCluster(
                 True, network=net, cluster=cluster,
                 required=net_param.get("required", "true"),
                 usages=net_param.get("cluster_usages", None),
                 data_center=data_center
             ):
-                logger.info("Cannot add network to Cluster")
+                logger.error("Cannot add %s to %s", net, cluster)
                 return False
 
     for host in host_list:
@@ -278,7 +281,7 @@ def createAndAttachNetworkSN(
                     properties=net_param.get("properties", None)
                 )
                 if not rc:
-                    logger.error("Cannot generate network object")
+                    logger.error("Cannot generate network object for %s", net)
                     return False
                 net_obj.append(out["host_nic"])
 
@@ -293,8 +296,8 @@ def createAndAttachNetworkSN(
                 if not hl_host_network.setup_networks(
                     host_name=host_name, **sn_dict
                 ):
-                        logger.info(
-                            "Failed to send SN request to host %s" % host_name
+                        logger.error(
+                            "Failed to send SN request to host %s", host_name
                         )
                         return False
         else:
@@ -304,12 +307,14 @@ def createAndAttachNetworkSN(
                 check_connectivity="true", connectivity_timeout=60,
                 force="false"
             ):
-                logger.info("Failed to send SN request to host %s" % host_name)
+                logger.error(
+                    "Failed to send SN request to host %s", host_name
+                )
                 return False
 
             if save_config:
                 logger.info(
-                    "Saving network configuration on host %s" % host_name
+                    "Saving network configuration on host %s", host_name
                 )
                 if not ll_hosts.commitNetConfig(True, host=host_name):
                     logger.error("Could not save network configuration")
@@ -335,26 +340,18 @@ def remove_net_from_setup(
             from Hosts, Cluster, DC
     :rtype: bool
     """
-
     hosts_list = [host] if not isinstance(host, list) else host
-    dc_log = "from %s" % data_center if data_center else ""
     if all_net:
-        logger.info("Remove all networks %s", dc_log)
         if not remove_all_networks(
                 datacenter=data_center, mgmt_network=mgmt_network
         ):
-            logger.error("Couldn't remove networks %s", dc_log)
             return False
     else:
-        logger.info("Remove %s %s ", network, dc_log)
-        if not removeMultiNetworks(True, network, data_center):
-            logger.error("Couldn't remove %s %s", network, dc_log)
+        if not remove_networks(True, network, data_center):
             return False
     try:
         for host_name in hosts_list:
-            logger.info("Clean %s interfaces", host_name)
             if not hl_host_network.clean_host_interfaces(host_name):
-                logger.error("Clean %s interfaces failed", host_name)
                 return False
 
     except Exception as ex:
@@ -445,38 +442,28 @@ def remove_all_networks(datacenter=None, cluster=None, mgmt_network=None):
         )
     )
     if cluster:
-        networks_list = ll_networks.getClusterNetworks(
+        networks_list = ll_networks.get_cluster_networks(
             cluster=cluster, href=False
         )
-        removal_area = "cluster %s" % cluster
 
     elif datacenter:
         networks_list = ll_networks.get_networks_in_datacenter(
             datacenter=datacenter
         )
-        removal_area = "datacenter %s" % datacenter
 
     else:
+        logger.info("Get all networks")
         networks_list = ll_networks.NET_API.get(absLink=False)
-        removal_area = "all clusters and all data centers"
 
     for net in networks_list:
-        if net.id not in [mgmt_net for mgmt_net in mgmt_networks_ids]:
+        if net.id not in mgmt_networks_ids:
             networks_to_remove.append(net.name)
 
     if not networks_to_remove:
-        logger.info("There is no network to be removed")
+        logger.info("There are no networks to remove")
         return True
 
-    network = "network" if len(networks_to_remove) == 1 else "networks: "
-
-    logger.info(
-        "Removing %s %s from %s", network, ', '.join(
-            networks_to_remove
-        ), removal_area
-    )
-
-    return removeMultiNetworks(True, networks_to_remove, datacenter)
+    return remove_networks(True, networks_to_remove, datacenter)
 
 
 def getIpOnHostNic(host, nic):
@@ -496,43 +483,56 @@ def getIpOnHostNic(host, nic):
     return host_nic.get_ip().get_address()
 
 
-def checkHostNicParameters(host, nic, **kwargs):
+def check_host_nic_params(host, nic, **kwargs):
     """
-    Description: Check MTU, VLAN interface and bridge (VM/Non-VM) host nic
-    parameters .
-    Author: myakove
-    Parameters:
-       *  *host* - Host name
-       *  *nic* - Nic to get parameters from
-       *  *vlan_id* - expected VLAN id on the host
-       *  *mtu* - expected mtu on the host
-       *  *bridge* - Expected VM, Non-VM network (True for VM, False for
-           Non-VM)
-    **Return**: True if action succeeded, otherwise False
+    Check MTU, VLAN interface and bridge (VM/Non-VM) host nic parameters.
+
+    :param host: Host name
+    :type host: str
+    :param nic: Nic to get parameters from
+    :type nic: str
+    :param kwargs:
+        vlan_id: expected VLAN id on the host (str)
+        mtu: expected mtu on the host (str)
+        bridge: Expected VM, Non-VM network (True for VM, False for
+               Non-VM) (bool)
+    :type kwargs: dict
+    :return: True if action succeeded, otherwise False
+    :rtype: bool
     """
     res = True
     host_nic = ll_hosts.get_host_nic(host, nic)
+    expected_bridge = kwargs.get("bridge")
+    expected_vlan_id = kwargs.get("vlan_id")
+    expected_mtu = kwargs.get("mtu")
 
-    if kwargs.get("bridge") is not None:
+    if expected_bridge is not None:
         bridged = host_nic.get_bridged()
-        if kwargs.get("bridge") != bridged:
-            logger.error("%s interface is bridge: %s, expected is %s", nic,
-                         bridged, kwargs.get("bridge"))
+        logger.info("Check that %s has bridge %s", nic, expected_bridge)
+        if expected_bridge != bridged:
+            logger.error(
+                "%s interface has bridge %s, expected is %s", nic, bridged,
+                expected_bridge
+            )
             res = False
 
-    if kwargs.get("vlan_id"):
-        vlan_nic = ".".join([nic, kwargs.get("vlan_id")])
+    if expected_vlan_id:
+        vlan_nic = ".".join([nic, expected_vlan_id])
+        logger.info("Check that %s has vlan tag %s", nic, expected_vlan_id)
         try:
             ll_hosts.get_host_nic(host, vlan_nic)
         except apis_exceptions.EntityNotFound:
             logger.error("Fail to get %s interface from %s", vlan_nic, host)
             res = False
 
-    if kwargs.get("mtu"):
+    if expected_mtu:
+        logger.info("Check that %s have MTU %s", nic, expected_mtu)
         mtu = host_nic.get_mtu()
-        if int(kwargs.get("mtu")) != mtu:
-            logger.error("MTU value on %s is %s, expected is %s", nic, mtu,
-                         kwargs.get("mtu"))
+        if int(expected_mtu) != mtu:
+            logger.error(
+                "MTU value on %s is %s, expected is %s", nic, mtu,
+                expected_mtu
+            )
             res = False
 
     return res
@@ -761,6 +761,9 @@ def get_clusters_managements_networks_ids(cluster=None):
     """
     clusters = (
         ll_clusters.CLUSTER_API.get(absLink=False) if not cluster else cluster
+    )
+    logger.info(
+        "Get management networks id from %s", [cl.name for cl in clusters]
     )
     return [
         ll_networks.get_management_network(cluster_name=cl.name).id

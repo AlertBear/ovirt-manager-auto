@@ -21,7 +21,6 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.events as ll_events
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
@@ -138,6 +137,7 @@ def prepare_networks_on_setup(networks_dict, dc, cluster=None):
     :raise: NetworkException
     """
     log = "%s/%s" % (dc, cluster) if cluster else "%s" % dc
+    logger.info("Add %s to %s", networks_dict, log)
     if not hl_networks.createAndAttachNetworkSN(
         data_center=dc, cluster=cluster, network_dict=networks_dict
     ):
@@ -676,12 +676,24 @@ def wait_for_sn(content):
         raise conf.NET_EXCEPTION()
 
 
-def update_network_and_wait_for_sn(network, **kwargs):
-    if not ll_networks.updateNetwork(positive=True, network=network, **kwargs):
+def call_function_and_wait_for_sn(func, content, **func_kwargs):
+    """
+    Call related network function (update_network, add_label) and wait for
+    setupNetworks to finish (By waiting for event)
+
+    :param func: Function to call
+    :type func: function
+    :param content: Content to search in event description
+    :type content: str
+    :param func_kwargs: Function kwargs
+    :type func_kwargs: dict
+    :raise: conf.NET_EXCEPTION
+    """
+    if not func(**func_kwargs):
         raise conf.NET_EXCEPTION(
-            "Failed to update %s with %s" % network, kwargs
+            "Failed to call %s with %s" % (func.__name__, func_kwargs)
         )
-    wait_for_sn(content=network)
+    wait_for_sn(content=content)
 
 
 if __name__ == "__main__":

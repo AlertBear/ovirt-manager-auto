@@ -7,12 +7,15 @@ http://www.ovirt.org/Features/HostNetworkingApi
 http://www.ovirt.org/Features/NetworkingApi
 """
 
+import logging
 from art.core_api.apis_utils import data_st
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
+
+logger = logging.getLogger(__name__)
 
 CONNECTIVITY_TIMEOUT = 60
 NETWORKS = "networks"
@@ -262,8 +265,8 @@ def setup_networks(host_name, **kwargs):
         )
         synchronized_network_attachments.set_network_attachment(nets_to_sync)
 
-    # running with sampler BZ 1262051
-    return bool(
+    logger.info("Sending SetupNetworks to %s with %s", host_name, kwargs)
+    res = bool(
         ll_hosts.HOST_API.syncAction(
             entity=host, action=SETUPNETWORKS, positive=True,
             modified_network_attachments=network_attachments,
@@ -275,6 +278,9 @@ def setup_networks(host_name, **kwargs):
             check_connectivity=check_connectivity
         )
     )
+    if not res:
+        logger.error("Failed to send SetupNetworks to %s", host_name)
+    return res
 
 
 def clean_host_interfaces(host_name):
@@ -286,6 +292,7 @@ def clean_host_interfaces(host_name):
     :return: True/False
     :rtype: bool
     """
+    logger.info("Clean %s interfaces", host_name)
     networks = []
     bonds = []
     labels = []
@@ -328,7 +335,10 @@ def clean_host_interfaces(host_name):
     }
     if not ll_host_network.remove_unmanaged_networks(host_name):
         return False
-    return setup_networks(host_name, **kwargs)
+    res = setup_networks(host_name, **kwargs)
+    if not res:
+        logger.error("Failed to clean %s interfaces", host_name)
+    return res
 
 
 def get_attached_networks_names_from_host_nic(host_name, nic):

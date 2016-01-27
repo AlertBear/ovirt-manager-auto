@@ -1016,14 +1016,19 @@ def startVms(vms, wait_for_status=ENUMS['vm_state_powering_up']):
 
 @is_action()
 def stopVm(positive, vm, async='false'):
-    '''
-    Description: stop vm
-    Author: edolinin
-    Parameters:
-       * vm - name of vm
-       * async - stop VM asynchronously if 'true' ('false' by default)
-    Return: status (True if vm was stopped properly, False otherwise)
-    '''
+    """
+    Stop vm
+
+    :param positive: Expected status
+    :type positive: bool
+    :param vm: Name of vm
+    :type vm: str
+    :param async: Stop VM asynchronously if 'true' ('false' by default)
+    :type async: str
+    :return: Status (True if vm was stopped properly, False otherwise)
+    :rtype: bool
+    """
+    logger.info("Stopping %s", vm)
     return changeVMStatus(positive, vm, 'stop', 'DOWN', async)
 
 
@@ -1415,29 +1420,32 @@ def getVmNic(vm, nic):
 
 @is_action()
 def addNic(positive, vm, **kwargs):
-    '''
-    Description: add nic to vm
-    Author: edolinin
-    Parameters:
-       * vm - vm where nic should be added
-       * name - nic name
-       * network - network name
-       * vnic_profile - the VNIC profile that will be selected for the NIC
-       * interface - nic type. available types: virtio, rtl8139 and e1000
-                     (for 2.2 also rtl8139_virtio)
-       * mac_address - nic mac address
-       * active - Boolean attribute which present nic hostplug state
-       * plugged - shows if VNIC is plugged/unplugged
-       * linked - shows if VNIC is linked or not
-    Return: status (True if nic was added properly, False otherwise)
-    '''
+    """
+    Add NIC to vm
 
+    :param positive: Expected status
+    :type positive: bool
+    :param vm: VM name where nic should be added
+    :type vm: str
+    :param kwargs: kwargs for NIC properties
+        :name: NIC name (str)
+        :network: Network name (str)
+        :vnic_profile: The VNIC profile that will be selected for the NIC (str)
+        :interface: NIC type. (virtio, rtl8139, e1000 and passthrough) (str)
+        :mac_address: NIC mac address (str)
+        :plugged: Add the NIC with plugged/unplugged state (bool)
+        :linked: Add the NIC with linked/unlinked state (bool)
+    :type kwargs: dict
+    :return: Status (True if NIC was added properly, False otherwise)
+    :rtype: bool
+    """
     vm_obj = VM_API.find(vm)
     expectedStatus = vm_obj.get_status().get_state()
 
     nic_obj = _prepareNicObj(vm=vm, **kwargs)
     nics_coll = getVmNics(vm)
 
+    logger.info("Add %s to %s", kwargs.get("name"), vm)
     res, status = NIC_API.create(nic_obj, positive, collection=nics_coll)
 
     # TODO: remove wait section. func need to be atomic. wait can be done
@@ -1526,6 +1534,7 @@ def removeNic(positive, vm, nic):
 
     expectedStatus = vm_obj.get_status().get_state()
 
+    logger.info("Remove %s from %s", nic, vm)
     status = NIC_API.delete(nic_obj, positive)
 
     # TODO: remove wait section. func need to be atomic. wait can be done

@@ -357,6 +357,7 @@ def addTemplateNic(positive, template, **kwargs):
     nic_obj = _prepareNicObj(**kwargs)
     nics_coll = getTemplatesNics(template)
 
+    logger.info("Add %s to %s", kwargs.get("name"), template)
     res, status = NIC_API.create(nic_obj, positive, collection=nics_coll)
 
     return status
@@ -439,7 +440,7 @@ def removeTemplateNic(positive, template, nic):
     Return: status (True if nic was removed properly, False otherwise)
     '''
     nic_obj = getTemplatesNic(template, nic)
-
+    logger.info("Remove %s from %s", nic, template)
     return NIC_API.delete(nic_obj, positive)
 
 

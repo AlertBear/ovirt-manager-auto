@@ -1261,6 +1261,7 @@ def test_mtu_in_script_list(vds_resource, script_list, mtu, flag_for_ifcfg=0):
     """
     err_msg = '"MTU in {0} is {1} when the expected is {2}"'
     for script_name in script_list:
+        logger.info("Check if MTU for %s is %s", script_name, mtu)
         rc, out, _ = vds_resource.run_command(['cat', script_name])
         if rc:
             return False

@@ -137,8 +137,9 @@ def updateNetwork(positive, network, **kwargs):
        * mtu - and integer to overrule mtu on the related host nic..
     Return: status (True if network was updated properly, False otherwise)
     """
-
     net = findNetwork(network, kwargs.get('data_center'))
+    log_txt = "Update" if positive else "Try to update"
+    logger.info("%s %s with %s", log_txt, network, kwargs)
     net_update = _prepareNetworkObject(**kwargs)
     res, status = NET_API.update(net, net_update, positive)
 
@@ -232,18 +233,22 @@ def getClusterNetwork(cluster, network):
                                       'network')
 
 
-def getClusterNetworks(cluster, href=True):
+def get_cluster_networks(cluster, href=True):
     """
-    Get href of the cluster's networks.
-    **Parameters**:
-        *  *cluster* - Name of the cluster.
-    **Return**: Returns the href that links to the cluster's networks.
+    Get href of the cluster networks or the networks objects
+
+    :param cluster: Name of the cluster.
+    :type cluster: str
+    :param href: Get cluster networks href if True
+    :type href: bool
+    :return: Href that links to the cluster networks or list of networks
+    :rtype: str or list
     """
-    clusterObj = CL_API.find(cluster)
-    return CL_API.getElemFromLink(clusterObj,
-                                  link_name='networks',
-                                  attr='network',
-                                  get_href=href)
+    cluster_obj = CL_API.find(cluster)
+    logger.info("Get all networks from %s", cluster)
+    return CL_API.getElemFromLink(
+        cluster_obj, link_name='networks', attr='network', get_href=href
+    )
 
 
 @is_action()
@@ -263,7 +268,7 @@ def addNetworkToCluster(positive, network, cluster, **kwargs):
     """
     kwargs.update(net=findNetwork(network, kwargs.get("data_center")))
     net = _prepareClusterNetworkObj(**kwargs)
-    cluster_nets = getClusterNetworks(cluster)
+    cluster_nets = get_cluster_networks(cluster)
     res, status = NET_API.create(net,
                                  positive,
                                  collection=cluster_nets)
@@ -561,13 +566,15 @@ def findVnicProfile(vnic_profile_name):
 
 def get_networks_in_datacenter(datacenter):
     """
-    Get all networks under datacenter.
+    Get all networks in datacenter.
+
     :param datacenter: datacenter name
     :type datacenter: str
     :return: list of all networks
     :rtype: list
     """
     dc = DC_API.find(datacenter)
+    logger.info("Get all networks from %s", datacenter)
     return NET_API.getElemFromLink(dc, get_href=False)
 
 
@@ -583,6 +590,7 @@ def get_network_in_datacenter(network, datacenter):
     """
     for net in get_networks_in_datacenter(datacenter=datacenter):
         if net.get_name() == network:
+            logger.info("Get %s from %s", network, datacenter)
             return net
     return None
 
@@ -670,6 +678,7 @@ def is_host_network_is_vm(vds_resource, net_name):
     :rtype: bool
     """
     vm_file = os.path.join(test_utils.SYS_CLASS_NET_DIR, net_name)
+    logger.info("Check if %s exist on %s", vm_file, vds_resource.fqdn)
     return vds_resource.fs.exists(path=vm_file)
 
 
@@ -1129,11 +1138,13 @@ def get_management_network(cluster_name):
     :rtype: object
     """
     try:
+        logger.info("Get management network from %s", cluster_name)
         net_obj = [
-            i for i in getClusterNetworks(cluster_name, href=False)
+            i for i in get_cluster_networks(cluster_name, href=False)
             if "management" in i.get_usages().get_usage()
         ][0]
     except IndexError:
+        logger.error("management networks not found in %s", cluster_name)
         return None
 
     return net_obj

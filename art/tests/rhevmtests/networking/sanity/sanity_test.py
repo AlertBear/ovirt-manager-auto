@@ -742,18 +742,14 @@ class TestSanity09(TestSanityCaseBase):
         mtu_dict = {
             "mtu": mtu
         }
-        logger.info("Update %s with MTU %s", self.net, mtu)
-        if not ll_networks.updateNetwork(
-            positive=True, network=self.net, data_center=self.dc, mtu=mtu
-        ):
-            raise conf.NET_EXCEPTION(
-                "Cannot update %s with MTU %s" % (self.net, mtu)
-            )
 
-        network_helper.wait_for_sn(content=self.net)
+        network_helper.call_function_and_wait_for_sn(
+            func=ll_networks.updateNetwork, content=self.net, positive=True,
+            network=self.net, mtu=mtu
+        )
 
         logger.info("Check if the Host is updated with the change")
-        if not hl_networks.checkHostNicParameters(
+        if not hl_networks.check_host_nic_params(
             host=conf.HOST_NAME_0, nic=conf.HOST_0_NICS[1], **mtu_dict
         ):
             raise conf.NET_EXCEPTION()
@@ -789,21 +785,14 @@ class TestSanity09(TestSanityCaseBase):
         """
         vlan_id = conf.VLAN_IDS[11]
         vlan_dict = {"vlan_id": vlan_id}
-        logger.info("Update %s with VLAN %s", self.net, vlan_id)
-        if not ll_networks.updateNetwork(
-            positive=True, network=self.net, data_center=self.dc,
-            vlan_id=vlan_id
-        ):
-            raise conf.NET_EXCEPTION(
-                "Cannot update %s to be tagged with VLAN %s"
-                % (self.net, vlan_id)
-            )
 
-        network_helper.wait_for_sn(content=self.net)
+        network_helper.call_function_and_wait_for_sn(
+            func=ll_networks.updateNetwork, content=self.net, positive=True,
+            network=self.net, vlan_id=vlan_id
+        )
 
         logger.info("Check if the Host is updated with the change")
-
-        if not hl_networks.checkHostNicParameters(
+        if not hl_networks.check_host_nic_params(
             host=conf.HOST_NAME_0, nic=conf.HOST_0_NICS[1], **vlan_dict
         ):
             raise conf.NET_EXCEPTION()
@@ -824,19 +813,14 @@ class TestSanity09(TestSanityCaseBase):
         Change the network to be non-VM network
         """
         bridge_dict = {"bridge": False}
-        logger.info("Update network %s to be non-VM network", self.net)
-        if not ll_networks.updateNetwork(
-            positive=True, network=self.net, data_center=self.dc,
-            usages=""
-        ):
-            raise conf.NET_EXCEPTION(
-                "Cannot update %s to be non-VM network" % self.net
-            )
 
-        network_helper.wait_for_sn(content=self.net)
+        network_helper.call_function_and_wait_for_sn(
+            func=ll_networks.updateNetwork, content=self.net, positive=True,
+            network=self.net, usages=""
+        )
 
         logger.info("Check if the Host is updated with the change")
-        if not hl_networks.checkHostNicParameters(
+        if not hl_networks.check_host_nic_params(
             host=conf.HOST_NAME_0, nic=conf.HOST_0_NICS[1], **bridge_dict
         ):
             raise conf.NET_EXCEPTION()

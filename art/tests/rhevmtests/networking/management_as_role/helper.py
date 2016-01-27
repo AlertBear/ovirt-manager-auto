@@ -156,7 +156,7 @@ def update_host_mgmt_bridge(host_resource, network, dc, nic):
     sample1 = utils.TimeoutingSampler(
         timeout=c.SAMPLER_TIMEOUT,
         sleep=1,
-        func=hl_networks.checkHostNicParameters,
+        func=hl_networks.check_host_nic_params,
         host=host_name,
         nic=nic,
         **{"bridge": False}

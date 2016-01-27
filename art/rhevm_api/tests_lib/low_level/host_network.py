@@ -7,6 +7,7 @@ http://www.ovirt.org/Features/HostNetworkingApi
 http://www.ovirt.org/Features/NetworkingApi
 """
 
+import logging
 from art.core_api.apis_utils import data_st
 import art.core_api.apis_exceptions as exceptions
 from art.rhevm_api.utils.test_utils import get_api
@@ -14,6 +15,8 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
+
+logger = logging.getLogger(__name__)
 
 NETWORK = "network"
 BOND = "bond"
@@ -426,6 +429,9 @@ def remove_unmanaged_networks(host_name, networks=list()):
     """
     unmanged_networks = get_host_unmanaged_networks(host_name, networks)
     for unmanaged_network in unmanged_networks:
+        logger.info(
+            "Removing %s (un-managed network)", unmanaged_network.name
+        )
         if not UNMANAGED_NETWORKS_API.delete(unmanaged_network, True):
             return False
     return True
