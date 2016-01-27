@@ -89,10 +89,9 @@ class TestCase11594(TestCase):
                         "non-master storage domain")
             wait_for_tasks(config.VDC, config.VDC_PASSWORD,
                            config.DATA_CENTER_NAME)
-            assert storagedomains.deactivateStorageDomain(
-                True, config.DATA_CENTER_NAME, sd)
-            assert storagedomains.detachStorageDomain(
-                True, config.DATA_CENTER_NAME, sd)
+            assert hl_sd.detach_and_deactivate_domain(
+                config.DATA_CENTER_NAME, sd
+            )
             assert storagedomains.removeStorageDomain(
                 True, sd, self.host, format=format)
 

@@ -218,7 +218,7 @@ class BasicEnvironment(BaseTestCase):
             self.storage_domain_0 = master_domain['masterDomain']
             # Use the storage domain to determine whether the storage type
             # to use is block (True) or File (False)
-            sd_obj = ll_sd.getStorageDomainObj(self.storage_domain_0)
+            sd_obj = ll_sd.get_storage_domain_obj(self.storage_domain_0)
             storage_type = sd_obj.get_storage().get_type()
             self.is_block_storage = storage_type in config.BLOCK_TYPES
         elif self.domain_to_use == ANY_NON_MASTER_DOMAIN:
@@ -374,7 +374,7 @@ class BasicEnvironment(BaseTestCase):
 
         # Use the storage domain of the disk to determine whether the storage
         # type to use is block (True) or File (False)
-        sd_obj = ll_sd.getStorageDomainObj(storage_domain)
+        sd_obj = ll_sd.get_storage_domain_obj(storage_domain)
         storage_type = sd_obj.get_storage().get_type()
         is_block_storage = storage_type in config.BLOCK_TYPES
 

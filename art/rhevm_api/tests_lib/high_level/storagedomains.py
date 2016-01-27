@@ -516,7 +516,7 @@ class StorageAdder(object):
             raise errors.StorageDomainException(
                 "%s domain adding function with arguments %s failed" % (
                     add_func.__name__, args))
-        logging.info(
+        logger.info(
             "%s function added storage with args %s", add_func.__name__, args)
 
     def add_storage(self, i):
@@ -549,10 +549,10 @@ class StorageAdder(object):
                 raise errors.StorageDomainException(
                     "addNFSDomain %s (%s, %s, %s) to DC %s failed." %
                     (sd_type, address, path, self.host, self.datacenter))
-            logging.info(
+            logger.info(
                 "%s domain %s was created successfully", sd_type, name)
         else:
-            logging.info(
+            logger.info(
                 "There is no %s domain defined in config file", sd_type)
 
     def add_export_domains(self):
@@ -731,24 +731,17 @@ def remove_storage_domain(name, datacenter, host, format_disk=False, vdc=None,
         dc_storages = [x.name for x in ll_sd.getDCStorages(datacenter, False)]
 
     if name in dc_storages:
-        if ll_sd.is_storage_domain_active(datacenter, name):
-            logging.info("Deactivating storage domain")
-            if not ll_sd.deactivateStorageDomain(True, datacenter, name):
-                raise errors.StorageDomainException(
-                    "Cannot deactivate storage domain %s in datacenter %s!" % (
-                        name, datacenter))
-
-        logging.info("Detaching storage domain")
-        if not ll_sd.detachStorageDomain(True, datacenter, name):
-            raise errors.StorageDomainException(
-                "Cannot detach storage domain %s from datacenter %s!" % (
-                    name, datacenter))
-
-    logging.info("Removing storage domain")
+        if not detach_and_deactivate_domain(datacenter, name):
+            logger.error(
+                "Failed to detach and deactivate storage domain %s!", name
+            )
+            return False
+    logger.info("Removing storage domain")
     if not ll_sd.removeStorageDomain(True, name, host, str(format_disk)):
-        raise errors.StorageDomainException(
-            "Cannot remove storage domain %s!" % name)
-    logging.info("Storage domain %s removed" % name)
+        logger.error("Cannot remove storage domain %s!", name)
+        return False
+    logger.info("Storage domain %s removed", name)
+    return True
 
 
 @is_action()
@@ -776,7 +769,7 @@ def create_nfs_domain_with_options(
 
     **Returns**: nothing, raise an exception in case of an error
     """
-    logging.info("Adding storage domain")
+    logger.info("Adding storage domain")
     old_storage = ll_sd.Storage
     if not positive:  # in positive tests we won't pass incorrect values
         ll_sd.Storage = datastructures.Storage
@@ -791,7 +784,7 @@ def create_nfs_domain_with_options(
     ll_sd.Storage = old_storage
 
     if datacenter is not None and positive:
-        logging.info("Attaching storage domain")
+        logger.info("Attaching storage domain")
         if not ll_sd.attachStorageDomain(True, datacenter, name):
             raise errors.StorageDomainException(
                 "Cannot attach %s to %s" % (name, datacenter))
@@ -896,19 +889,14 @@ def detach_and_deactivate_domain(datacenter, domain):
         'Checking if domain %s is active in dc %s', domain, datacenter
     )
     if ll_sd.is_storage_domain_active(datacenter, domain):
-        logger.info('Domain %s is active in dc %s', domain, datacenter)
-
-        logger.info('Deactivating domain  %s in dc %s', domain, datacenter)
         if not ll_sd.deactivateStorageDomain(True, datacenter, domain):
             logger.error(
                 'Unable to deactivate domain %s on dc %s', domain, datacenter
             )
             return False
-
     logger.info(
         'Domain %s is inactive in datacenter %s', domain, datacenter
     )
-    logger.info('Detaching domain %s from dc %s', domain, datacenter)
     if not ll_sd.detachStorageDomain(True, datacenter, domain):
         logger.error(
             'Unable to detach domain %s from dc %s', domain, datacenter

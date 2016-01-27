@@ -224,18 +224,17 @@ class TestCaseNFSOptions(TestCase):
         for storage_domain in cls.sds_for_cleanup:
             logger.info("Removing storage domain %s", storage_domain)
             if ll_sd.checkIfStorageDomainExist(True, storage_domain):
-                try:
-                    test_utils.wait_for_tasks(
-                        config.VDC, config.VDC_PASSWORD,
-                        config.DATA_CENTER_NAME
-                    )
-                    hl_sd.remove_storage_domain(
+                test_utils.wait_for_tasks(
+                    config.VDC, config.VDC_PASSWORD,
+                    config.DATA_CENTER_NAME
+                )
+                if not hl_sd.remove_storage_domain(
                         storage_domain, config.DATA_CENTER_NAME,
                         cls.host, True
+                ):
+                    logger.error(
+                        "Unable to remove storage domain %s", storage_domain
                     )
-                except exceptions.StorageDomainException:
-                    logger.error("Unable to remove storage domain %s",
-                                 storage_domain)
             # TODO: mount and remove all the content just in case
 
     def create_nfs_domain_and_verify_options(self, domain_list, host=None,

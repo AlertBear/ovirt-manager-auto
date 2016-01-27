@@ -6,11 +6,15 @@ Author: Alex Jia <ajia@redhat.com>, Bing Li <bili@redhat.com>
 import time
 import logging
 from unittest import TestCase
-from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
-from art.rhevm_api.tests_lib.low_level import datacenters as ll_datacenters
-from art.rhevm_api.tests_lib.low_level import vms
-from art.rhevm_api.tests_lib.high_level import datacenters
-
+from art.rhevm_api.tests_lib.low_level import (
+    storagedomains as ll_sds,
+    datacenters as ll_dcs,
+    vms as ll_vms,
+)
+from art.rhevm_api.tests_lib.high_level import (
+    storagedomains as hl_sds,
+    datacenters as hl_dcs,
+)
 from art.test_handler.tools import tcms
 
 from art.rhevm_api.utils.test_utils import get_api
@@ -19,11 +23,7 @@ from art.test_handler import exceptions
 from sys import modules
 
 import config
-from common import install_vm, add_vm_with_nic, add_disk_into_vm, \
-    block_storage, unblock_storage, kill_all_vms, perform_actions, \
-    create_live_snapshots, get_vm_snapshots, get_host, find_ip, \
-    migrate_vm_more_than_once, tcms_case_id, create_one_more_sd, \
-    attach_and_activate_domain, deactivate_and_detach_domain, move_vm_disk
+import common
 
 LOGGER = logging.getLogger(__name__)
 
@@ -51,10 +51,10 @@ def setup_module():
     LOGGER.info("Preparing datacenter %s with hosts %s",
                 config.DATA_CENTER_NAME, config.VDC)
 
-    datacenters.build_setup(config=config.PARAMETERS,
-                            storage=config.PARAMETERS,
-                            storage_type=config.DATA_CENTER_TYPE,
-                            basename=config.BASENAME)
+    hl_dcs.build_setup(
+        config=config.PARAMETERS, storage=config.PARAMETERS,
+        storage_type=config.DATA_CENTER_TYPE, basename=config.BASENAME
+    )
 
     if config.DATA_CENTER_TYPE == config.STORAGE_TYPE_NFS:
         config.PARAMETERS['data_domain_path'] = domain_path
@@ -66,7 +66,7 @@ def teardown_module():
     """
     Removes created datacenter, storages etc.
     """
-    datacenters.clean_datacenter(
+    hl_dcs.clean_datacenter(
         True, config.DATA_CENTER_NAME, vdc=config.VDC,
         vdc_password=config.VDC_PASSWORD
     )
@@ -93,20 +93,21 @@ class BaseTestCase(TestCase):
         """
         if cls.installation:
             LOGGER.info('Creating vm and installing OS on it')
-            if not install_vm(vm_name=cls.vm_name,
-                              vm_description=cls.vm_name,
-                              disk_interface=cls.disk_iface):
+            if not common.install_vm(
+                    vm_name=cls.vm_name, vm_description=cls.vm_name,
+                    disk_interface=cls.disk_iface
+            ):
                 raise exceptions.VMException("Failed to create VM")
         else:
             LOGGER.info('Creating vm without installing OS on it')
             # Add a VM w/ a network interface
-            add_vm_with_nic(cls.vm_name, cls.net_name, cls.boot_options)
+            common.add_vm_with_nic(cls.vm_name, cls.net_name, cls.boot_options)
 
             # Add a disk into VM if needs
             if not cls.diskless:
-                add_disk_into_vm(cls.vm_name)
+                common.add_disk_into_vm(cls.vm_name)
 
-            assert vms.startVm(True, cls.vm_name)
+            assert ll_vms.startVm(True, cls.vm_name)
 
     @classmethod
     def teardown_class(cls):
@@ -114,7 +115,7 @@ class BaseTestCase(TestCase):
         Removes disks and vm
         """
         LOGGER.info("Removing the VMs: %s", cls.vms_list)
-        assert vms.removeVms(True, cls.vms_list, stop='true')
+        assert ll_vms.removeVms(True, cls.vms_list, stop='true')
 
 
 class TestInstallVMWithDisplayType(BaseTestCase):
@@ -122,7 +123,7 @@ class TestInstallVMWithDisplayType(BaseTestCase):
     Install VM with different display type
     """
     __test__ = (VM_MIGRATION == 'false')
-    tcms_test_case = tcms_case_id(['279579', '309549'])
+    tcms_test_case = common.tcms_case_id(['279579', '309549'])
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_install_vm_with_different_disk_type(self):
@@ -138,7 +139,7 @@ class TestSuspendVMWithDiskless(BaseTestCase):
     Suspend VM with diskless
     """
     __test__ = (VM_MIGRATION == 'false')
-    tcms_test_case = tcms_case_id(['278104', '279577'])
+    tcms_test_case = common.tcms_case_id(['278104', '279577'])
     vm_name = 'vm_%s' % tcms_test_case
     diskless = True
     installation = False
@@ -157,7 +158,7 @@ class TestSuspendVMWithDiskless(BaseTestCase):
 
         action_list = ['suspend', 'stop', 'start']
         for action in action_list:
-            perform_actions(self.vm_name, action)
+            common.perform_actions(self.vm_name, action)
 
         LOGGER.info("Test finished successfully")
 
@@ -167,7 +168,7 @@ class TestSuspendStartVMWithDiskNoSystem(BaseTestCase):
     Suspend, start VM with disk no system
     """
     __test__ = (VM_MIGRATION == 'false')
-    tcms_test_case = tcms_case_id(['278088', '279572'])
+    tcms_test_case = common.tcms_case_id(['278088', '279572'])
     vm_name = 'vm_%s' % tcms_test_case
     installation = False
 
@@ -181,7 +182,7 @@ class TestSuspendStartVMWithDiskNoSystem(BaseTestCase):
         """
         action_list = ['suspend', 'start']
         for action in action_list:
-            perform_actions(self.vm_name, action)
+            common.perform_actions(self.vm_name, action)
 
         LOGGER.info("Test finished successfully")
 
@@ -191,7 +192,7 @@ class TestDisconnectHostFromStorageDomain(BaseTestCase):
     Disconnect host from storage domain
     """
     __test__ = False
-    tcms_test_case = tcms_case_id(['279583', '279573'])
+    tcms_test_case = common.tcms_case_id(['279583', '279573'])
     vm_name = 'vm_%s' % tcms_test_case
     net_name = 'net_%s_1' % tcms_test_case
     new_vm_name = 'vm_%s_1' % tcms_test_case
@@ -205,9 +206,10 @@ class TestDisconnectHostFromStorageDomain(BaseTestCase):
         """
         Add another VM w/o OS installation
         """
-        self.vms_list = add_vm_with_nic(vm_name=self.new_vm_name,
-                                        net_name=self.net_name)
-        add_disk_into_vm(vm_name=self.new_vm_name)
+        self.vms_list = common.add_vm_with_nic(
+            vm_name=self.new_vm_name, net_name=self.net_name
+        )
+        common.add_disk_into_vm(vm_name=self.new_vm_name)
 
         LOGGER.info("Successfully add new VM: %s.", self.new_vm_name)
 
@@ -219,7 +221,9 @@ class TestDisconnectHostFromStorageDomain(BaseTestCase):
         LOGGER.info('Unblocking connections')
         try:
             # Unblock connection
-            unblock_storage(cls.host, cls.ht_user, cls.ht_pwd, cls.sd_address)
+            common.unblock_storage(
+                cls.host, cls.ht_user, cls.ht_pwd, cls.sd_address
+            )
         except exceptions.NetworkException as msg:
             LOGGER.info("Connection already unblocked. reason: %s", msg)
 
@@ -235,21 +239,21 @@ class TestDisconnectHostFromStorageDomain(BaseTestCase):
 
         LOGGER.info("Waiting for master domain to become active")
         self.assertTrue(
-            ll_st_domains.waitForStorageDomainStatus(
+            ll_sds.waitForStorageDomainStatus(
                 True, dataCenterName=dc_name,
                 storageDomainName=sd_name,
                 expectedStatus=sd_state,
                 timeOut=1800))
 
         LOGGER.info("Waiting until DC is up")
-        self.assertTrue(ll_datacenters.waitForDataCenterState(dc_name))
+        self.assertTrue(ll_dcs.waitForDataCenterState(dc_name))
 
         LOGGER.info("Validating that host is up")
         host_obj = HOST_API.find(self.host)
         self.assertTrue(host_obj.status.state == ht_state)
 
         LOGGER.info("Validate master domain %s is UP", sd_name)
-        sd_obj = ll_st_domains.getDCStorage(dc_name, sd_name)
+        sd_obj = ll_sds.getDCStorage(dc_name, sd_name)
         self.assertTrue(sd_obj.status.state == sd_state)
 
         LOGGER.info("Validate that DC is UP")
@@ -270,7 +274,7 @@ class TestDisconnectHostFromStorageDomain(BaseTestCase):
         # Add another VM w/o OS installation and start it
         self.add_one_more_vm()
         self.vm_name = self.new_vm_name
-        perform_actions(self.vm_name, "start")
+        common.perform_actions(self.vm_name, "start")
 
         # Get storage address
         if config.DATA_CENTER_TYPE == 'nfs':
@@ -281,17 +285,23 @@ class TestDisconnectHostFromStorageDomain(BaseTestCase):
         LOGGER.info("Master domain ip found : %s", self.sd_address)
 
         # Block connection from host to storage domain
-        self.assertTrue(block_storage(self.host, self.ht_user,
-                                      self.ht_pwd, self.sd_address))
+        self.assertTrue(
+            common.block_storage(
+                self.host, self.ht_user, self.ht_pwd, self.sd_address
+            )
+        )
         # Sleep 60s then stop VM
         time.sleep(60)
         # Stop VM
-        perform_actions(self.vm_name, 'stop')
+        common.perform_actions(self.vm_name, 'stop')
         # Wait for VM down
-        vms.waitForVMState(self.vm_name, 'down')
+        ll_vms.waitForVMState(self.vm_name, 'down')
         # Unblock connection
-        self.assertTrue(unblock_storage(self.host, self.ht_user,
-                                        self.ht_pwd, self.sd_address))
+        self.assertTrue(
+            common.unblock_storage(
+                self.host, self.ht_user, self.ht_pwd, self.sd_address
+            )
+        )
         # Wait for DC, SD and host recovery
         self.wait_for_dc_host_sd_up()
         LOGGER.info("Test finished successfully")
@@ -302,7 +312,7 @@ class TestKillVMWithMultipleSnapshots(BaseTestCase):
     Kill VM with multiple live snapshots
     """
     __test__ = (VM_MIGRATION == 'false')
-    tcms_test_case = tcms_case_id(['362877', '278065'])
+    tcms_test_case = common.tcms_case_id(['362877', '278065'])
     vm_name = 'vm_%s' % tcms_test_case
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -315,15 +325,19 @@ class TestKillVMWithMultipleSnapshots(BaseTestCase):
         """
         # Create 3 live snapshots for vm
         iter_num = 3
-        self.snap_name_list = create_live_snapshots(self.vm_name, iter_num)
+        self.snap_name_list = common.create_live_snapshots(
+            self.vm_name, iter_num
+        )
         # Kill vms
-        self.assertTrue(kill_all_vms(config.FIRST_HOST,
-                                     config.VDS_USER,
-                                     config.VDS_PASSWORD[0]))
+        self.assertTrue(
+            common.kill_all_vms(
+                config.FIRST_HOST, config.VDS_USER, config.VDS_PASSWORD[0]
+            )
+        )
         # Wait for vm down
-        vms.waitForVMState(self.vm_name, 'down')
+        ll_vms.waitForVMState(self.vm_name, 'down')
         # Try to start vm again
-        perform_actions(self.vm_name, 'start')
+        common.perform_actions(self.vm_name, 'start')
 
 
 class TestMigrateVMWithMultipleSnapshots(BaseTestCase):
@@ -331,7 +345,7 @@ class TestMigrateVMWithMultipleSnapshots(BaseTestCase):
     Migrate VM with multiple live snapshots
     """
     __test__ = (VM_MIGRATION == 'true')
-    tcms_test_case = tcms_case_id(['362877', '278065'])
+    tcms_test_case = common.tcms_case_id(['362877', '278065'])
     vm_name = 'vm_%s' % tcms_test_case
     snap_state = config.SNAPSHOT_OK
 
@@ -339,7 +353,7 @@ class TestMigrateVMWithMultipleSnapshots(BaseTestCase):
         """
         Check VM snapshots state
         """
-        snapshots = get_vm_snapshots(self.vm_name, False)
+        snapshots = common.get_vm_snapshots(self.vm_name, False)
         for snapshot in snapshots:
             self.assertTrue(snapshot.snapshot_status == self.snap_state)
 
@@ -352,19 +366,26 @@ class TestMigrateVMWithMultipleSnapshots(BaseTestCase):
         """
         # Create 3 live snapshots for VM
         iter_num = 3
-        self.snap_name_list = create_live_snapshots(self.vm_name, iter_num)
+        self.snap_name_list = common.create_live_snapshots(
+            self.vm_name, iter_num
+        )
 
         # Get original host address of the running VM
-        orig_host = get_host(self.vm_name)
+        orig_host = common.get_host(self.vm_name)
 
         # Get source and target host address
         ht_nic = config.HOST_NICS[0]
-        src, dst = find_ip(self.vm_name, host_list=config.HOSTS, nic=ht_nic)
+        src, dst = common.find_ip(
+            self.vm_name, host_list=config.HOSTS, nic=ht_nic
+        )
 
         # Migrate VM more than once
         iter_num = 2
-        self.assertTrue(migrate_vm_more_than_once(self.vm_name, orig_host,
-                                                  ht_nic, src, dst, iter_num))
+        self.assertTrue(
+            common.migrate_vm_more_than_once(
+                self.vm_name, orig_host, ht_nic, src, dst, iter_num
+            )
+        )
         # Check VM snapshots state
         self.check_snapshots_state()
 
@@ -374,7 +395,7 @@ class TestMigrationWithInactiveISODomain(BaseTestCase):
     Migrate VM with inactive ISO domain
     """
     __test__ = (VM_MIGRATION == 'true')
-    tcms_test_case = tcms_case_id(['279133', '279575'])
+    tcms_test_case = common.tcms_case_id(['279133', '279575'])
     vm_name = 'vm_%s' % tcms_test_case
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -388,34 +409,42 @@ class TestMigrationWithInactiveISODomain(BaseTestCase):
         Migrate the VM back
         """
         # attach and active ISO_DOMAIN.
-        attach_and_activate_domain(config.DATA_CENTER_NAME,
-                                   config.ISO_DOMAIN_NAME)
+        common.attach_and_activate_domain(
+            config.DATA_CENTER_NAME, config.ISO_DOMAIN_NAME
+        )
 
         # shut down the VM if need
-        if "Down" not in vms.get_vm_state(self.vm_name):
-            perform_actions(self.vm_name, 'shutdown')
-            vms.waitForVMState(self.vm_name, 'down')
+        if "Down" not in ll_vms.get_vm_state(self.vm_name):
+            common.perform_actions(self.vm_name, 'shutdown')
+            ll_vms.waitForVMState(self.vm_name, 'down')
 
         # attach iso image to VM
-        vms.runVmOnce(True, vm=self.vm_name,
-                      cdrom_image='rhev-tools-setup.iso')
-        vms.waitForVMState(self.vm_name, 'up')
+        ll_vms.runVmOnce(
+            True, vm=self.vm_name, cdrom_image='rhev-tools-setup.iso'
+        )
+        ll_vms.waitForVMState(self.vm_name, 'up')
 
         # deactive and detach ISO_DOMAIN
-        deactivate_and_detach_domain(config.DATA_CENTER_NAME,
-                                     config.ISO_DOMAIN_NAME)
+        hl_sds.detach_and_deactivate_domain(
+            config.DATA_CENTER_NAME, config.ISO_DOMAIN_NAME
+        )
 
         # Get original host address of the running VM
-        orig_host = get_host(self.vm_name)
+        orig_host = common.get_host(self.vm_name)
 
         # Get source and target host address
         ht_nic = config.HOST_NICS[0]
-        src, dst = find_ip(self.vm_name, host_list=config.HOSTS, nic=ht_nic)
+        src, dst = common.find_ip(
+            self.vm_name, host_list=config.HOSTS, nic=ht_nic
+        )
 
         # Migrate VM more than once
         iter_num = 2
-        self.assertTrue(migrate_vm_more_than_once(self.vm_name, orig_host,
-                                                  ht_nic, src, dst, iter_num))
+        self.assertTrue(
+            common.migrate_vm_more_than_once(
+                self.vm_name, orig_host, ht_nic, src, dst, iter_num
+            )
+        )
 
 
 class TestLiveStorageMigration(BaseTestCase):
@@ -424,7 +453,7 @@ class TestLiveStorageMigration(BaseTestCase):
     """
     __test__ = (VM_MIGRATION == 'false')
     disk_name = None
-    tcms_test_case = tcms_case_id(['279585', '279581'])
+    tcms_test_case = common.tcms_case_id(['279585', '279581'])
     vm_name = 'vm_%s' % tcms_test_case
 
     dc_name = config.DATA_CENTER_NAME
@@ -448,23 +477,29 @@ class TestLiveStorageMigration(BaseTestCase):
                    'host': self.host}
 
         # create one more storage domain
-        create_one_more_sd(sd_args)
+        common.create_one_more_sd(sd_args)
 
         # attach and active storage domain
-        attach_and_activate_domain(self.dc_name, self.sd_name2)
+        common.attach_and_activate_domain(self.dc_name, self.sd_name2)
 
         # start the VM if need
-        if "up" not in vms.get_vm_state(self.vm_name):
-            perform_actions(self.vm_name, 'start')
-            vms.waitForVMState(self.vm_name, 'up')
+        if "up" not in ll_vms.get_vm_state(self.vm_name):
+            common.perform_actions(self.vm_name, 'start')
+            ll_vms.waitForVMState(self.vm_name, 'up')
 
         # get vm disk's name
         self.disk_name = '%s%s' % (self.vm_name, '_Disk1')
 
         # live storage migrate vm's disk
-        self.assertTrue(move_vm_disk(self.vm_name, self.disk_name,
-                                     self.sd_name2))
+        self.assertTrue(
+            common.move_vm_disk(
+                self.vm_name, self.disk_name, self.sd_name2
+            )
+        )
 
         # migrate back
-        self.assertTrue(move_vm_disk(self.vm_name, self.disk_name,
-                                     self.sd_name1))
+        self.assertTrue(
+            common.move_vm_disk(
+                self.vm_name, self.disk_name, self.sd_name1
+            )
+        )

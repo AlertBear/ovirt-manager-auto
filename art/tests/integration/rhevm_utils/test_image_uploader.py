@@ -1,4 +1,5 @@
-import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
+from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sds
+from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sds
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
 from rhevm_utils import base, unittest_conf
@@ -16,20 +17,20 @@ IMAGE_UPLOAD_COMMAND = 'upload'
 
 def setup_module():
     if unittest_conf.GOLDEN_ENV:
-        export_domain = storagedomains.findExportStorageDomains()[0]
-        storagedomains.attachStorageDomain(True, unittest_conf.DC_NAME,
-                                           export_domain)
+        export_domain = ll_sds.findExportStorageDomains()[0]
+        ll_sds.attachStorageDomain(
+            True, unittest_conf.DC_NAME, export_domain
+        )
     else:
         base.setup_module()
 
 
 def teardown_module():
     if unittest_conf.GOLDEN_ENV:
-        export_domain = storagedomains.findExportStorageDomains()[0]
-        storagedomains.deactivateStorageDomain(True, unittest_conf.DC_NAME,
-                                               export_domain)
-        storagedomains.detachStorageDomain(True, unittest_conf.DC_NAME,
-                                           export_domain)
+        export_domain = ll_sds.findExportStorageDomains()[0]
+        hl_sds.detach_and_deactivate_domain(
+            unittest_conf.DC_NAME, export_domain
+        )
     else:
         base.teardown_module()
 
@@ -123,13 +124,14 @@ class ImageUploaderTestCase(base.RHEVMUtilsTestCase):
         """ image_uploader_upload_inactive """
         assert self.ut.setRestConnPassword(NAME, unittest_conf.IMAGE_UP_CONF,
                                            unittest_conf.VDC_PASSWORD)
-        storagedomains.deactivateStorageDomain(
-            True, unittest_conf.DC_NAME, unittest_conf.EXPORT_DOMAIN_NAME)
+        ll_sds.deactivateStorageDomain(
+            True, unittest_conf.DC_NAME, unittest_conf.EXPORT_DOMAIN_NAME
+        )
         try:
             self.ut(IMAGE_UPLOAD_COMMAND, IMAGE_UPLOAD_FILE_PATH,
                     e=unittest_conf.EXPORT_DOMAIN_NAME, ovf_id=None)
             self.ut.autoTest()
         finally:
-            storagedomains.activateStorageDomain(
-                True, unittest_conf.DC_NAME,
-                unittest_conf.EXPORT_DOMAIN_NAME)
+            ll_sds.activateStorageDomain(
+                True, unittest_conf.DC_NAME, unittest_conf.EXPORT_DOMAIN_NAME
+            )

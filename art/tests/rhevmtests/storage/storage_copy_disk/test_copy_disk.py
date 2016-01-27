@@ -187,8 +187,8 @@ class BasicEnvironment(BaseTestCase):
         storage_id = (
             disk_object.get_storage_domains().get_storage_domain()[0].get_id()
         )
-        storage_domain_object = ll_sd.getStorageDomainObj(
-            storagedomain=storage_id, key='id'
+        storage_domain_object = ll_sd.get_storage_domain_obj(
+            storage_domain=storage_id, key='id'
         )
         return storage_domain_object.get_name()
 

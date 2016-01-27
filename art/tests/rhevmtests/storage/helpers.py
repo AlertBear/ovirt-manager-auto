@@ -194,7 +194,7 @@ def create_disks_from_requested_permutations(
     logger.info("Generating a list of disk permutations")
     # Get the storage domain object and its type, use this to ascertain
     # whether the storage is of a block or file type
-    storage_domain_object = ll_sd.getStorageDomainObj(domain_to_use)
+    storage_domain_object = ll_sd.get_storage_domain_obj(domain_to_use)
     storage_type = storage_domain_object.get_storage().get_type()
     is_block = storage_type in config.BLOCK_TYPES
     disk_permutations = ll_disks.get_all_disk_permutation(
@@ -565,8 +565,8 @@ def get_disks_volume_count(
         storage_id = (
             disk_obj.get_storage_domains().get_storage_domain()[0].get_id()
         )
-        storage_domain_object = ll_sd.getStorageDomainObj(
-            storagedomain=storage_id, key='id'
+        storage_domain_object = ll_sd.get_storage_domain_obj(
+            storage_domain=storage_id, key='id'
         )
         storage_type = storage_domain_object.get_storage().get_type()
 

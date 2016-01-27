@@ -1,7 +1,8 @@
 import sys
 
 from rhevm_utils import base, unittest_conf
-import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
+from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sds
+from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sds
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
 from utilities.rhevm_tools.iso_uploader import ISOUploadUtility
@@ -16,20 +17,18 @@ ISO_UPLOAD_COMMAND = 'upload'
 
 def setup_module():
     if unittest_conf.GOLDEN_ENV:
-        iso_domain = storagedomains.findIsoStorageDomains()[1]
-        storagedomains.attachStorageDomain(True, unittest_conf.DC_NAME[0],
-                                           iso_domain)
+        iso_domain = ll_sds.findIsoStorageDomains()[1]
+        ll_sds.attachStorageDomain(True, unittest_conf.DC_NAME[0], iso_domain)
     else:
         base.setup_module()
 
 
 def teardown_module():
     if unittest_conf.GOLDEN_ENV:
-        iso_domain = storagedomains.findIsoStorageDomains()[1]
-        storagedomains.deactivateStorageDomain(True, unittest_conf.DC_NAME[0],
-                                               iso_domain)
-        storagedomains.detachStorageDomain(True, unittest_conf.DC_NAME[0],
-                                           iso_domain)
+        iso_domain = ll_sds.findIsoStorageDomains()[1]
+        hl_sds.detach_and_deactivate_domain(
+            unittest_conf.DC_NAME[0], iso_domain
+        )
     else:
         base.teardown_module()
 

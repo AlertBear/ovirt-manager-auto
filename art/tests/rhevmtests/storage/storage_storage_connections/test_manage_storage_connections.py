@@ -501,7 +501,6 @@ class TestCase5252(TestCaseLocalFS):
         logger.info("Waiting for tasks before deactivating the storage domain")
         test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
                                   config.DATA_CENTER_NAME)
-        logger.info("Deactivating storage domain")
         assert storagedomains.deactivateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name)
 

@@ -261,10 +261,8 @@ class UpgradeBaseClass(StorageTest):
             True, name=self.domain_2, host=self.host_1,
             **self.domain2_parameters
         )
-        domain_1_id = ll_sd.getStorageDomainObj(self.domain_1).get_id()
-        domain_2_id = ll_sd.getStorageDomainObj(
-            self.domain_2
-        ).get_id()
+        domain_1_id = ll_sd.get_storage_domain_obj(self.domain_1).get_id()
+        domain_2_id = ll_sd.get_storage_domain_obj(self.domain_2).get_id()
 
         # It appears that the order of the domains map is random,
         # so attempt both possible combinations

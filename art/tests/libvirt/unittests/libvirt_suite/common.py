@@ -310,20 +310,6 @@ def attach_and_activate_domain(dc_name, sd_name, attach=True,
                                             storagedomain=sd_name)
 
 
-def deactivate_and_detach_domain(dc_name, sd_name, deactivate=True,
-                                 detach=True):
-    """
-    Deactive and detach storage domain.
-    """
-    if deactivate:
-        ll_st_domains.deactivateStorageDomain(True, datacenter=dc_name,
-                                              storagedomain=sd_name)
-    if detach:
-        ll_st_domains.detachStorageDomain(True, datacenter=dc_name,
-
-                                          storagedomain=sd_name)
-
-
 def migrate_vm_more_than_once(vm_name, orig_host, ht_nic, src, dst,
                               iter_num=1, ht_user=config.VDS_USER,
                               ht_pwd=config.VDS_PASSWORD[0],

@@ -6,7 +6,7 @@ from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler import exceptions
 from art.unittest_lib import StorageTest as TestCase, attr
-from art.rhevm_api.tests_lib.high_level import storagedomains
+from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sds
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level.hosts import (
@@ -57,7 +57,7 @@ class TestCase11591(TestCase):
         self.sd_name = "{0}_{1}".format(self.polarion_test_case,
                                         "iSCSI_Domain")
         logger.info("The unused LUNs found are: '%s'", config.UNUSED_LUNS)
-        status_attach_and_activate = storagedomains.addISCSIDataDomain(
+        status_attach_and_activate = hl_sds.addISCSIDataDomain(
             self.spm_host, self.sd_name,
             config.DATA_CENTER_NAME, config.UNUSED_LUNS["lun_list"][0],
             config.UNUSED_LUNS["lun_addresses"][0],
@@ -100,8 +100,9 @@ class TestCase11591(TestCase):
             "override_luns": True
         }
         logger.info("Extending storage domain %s", self.sd_name)
-        storagedomains.extend_storage_domain(self.sd_name, self.storage,
-                                             self.spm_host, **extend_lun)
+        hl_sds.extend_storage_domain(
+            self.sd_name, self.storage, self.spm_host, **extend_lun
+        )
         ll_st_domains.wait_for_change_total_size(self.sd_name,
                                                  self.domain_size)
         extended_sd_size = ll_st_domains.get_total_size(self.sd_name)
@@ -138,7 +139,7 @@ class TestCase11592(TestCase):
                 )
             self.sd_name = "{0}_{1}".format(self.polarion_test_case,
                                             "iSCSI_Domain")
-            status_attach_and_activate = storagedomains.addISCSIDataDomain(
+            status_attach_and_activate = hl_sds.addISCSIDataDomain(
                 self.spm_host,
                 self.sd_name,
                 config.DATA_CENTER_NAME,
@@ -156,7 +157,7 @@ class TestCase11592(TestCase):
                                             "NFS_Domain")
             self.nfs_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[0]
             self.nfs_path = config.UNUSED_DATA_DOMAIN_PATHS[0]
-            status = storagedomains.addNFSDomain(
+            status = hl_sds.addNFSDomain(
                 host=self.spm_host,
                 storage=self.sd_name,
                 data_center=config.DATA_CENTER_NAME,
@@ -174,7 +175,7 @@ class TestCase11592(TestCase):
             self.gluster_address = \
                 config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0]
             self.gluster_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0]
-            status = storagedomains.addGlusterDomain(
+            status = hl_sds.addGlusterDomain(
                 host=self.spm_host,
                 name=self.sd_name,
                 data_center=config.DATA_CENTER_NAME,
@@ -247,18 +248,10 @@ class TestCase11592(TestCase):
                        config.DATA_CENTER_NAME)
         logger.info("Deactivating non-master data domain")
         self.assertTrue(
-            ll_st_domains.deactivateStorageDomain(
-                True, config.DATA_CENTER_NAME, self.sd_name
-            ),
-            "De-activating non-master domain '%s' failed" % self.sd_name
-        )
-
-        logger.info("Detaching non-master data domain")
-        self.assertTrue(
-            ll_st_domains.detachStorageDomain(
-                True, config.DATA_CENTER_NAME, self.sd_name
-            ),
-            "Detaching non-master domain '%s' failed" % self.sd_name
+            hl_sds.detach_and_deactivate_domain(
+                config.DATA_CENTER_NAME, self.sd_name
+            ), "Detaching and De-activating non-master domain '%s' failed" %
+               self.sd_name
         )
 
         # In local DC, once a domain is detached it is removed completely

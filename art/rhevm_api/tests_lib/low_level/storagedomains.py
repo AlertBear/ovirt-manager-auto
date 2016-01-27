@@ -220,7 +220,7 @@ def updateStorageDomain(positive, storagedomain, **kwargs):
     Return: status (True if storage domain was updated properly,
                     False otherwise)
     '''
-    storDomObj = util.find(storagedomain)
+    storDomObj = get_storage_domain_obj(storagedomain)
     storDomNew = _prepareStorageDomainObject(positive, **kwargs)
     sd, status = util.update(storDomObj, storDomNew, positive)
     return status
@@ -255,7 +255,7 @@ def extendStorageDomain(positive, storagedomain, **kwargs):
     :returns: True on success, False otherwise
     :rtype: bool
     """
-    storDomObj = util.find(storagedomain)
+    storDomObj = get_storage_domain_obj(storagedomain)
 
     storDomNew = _prepareStorageDomainObject(positive, **kwargs)
     sd, status = util.update(storDomObj, storDomNew, positive)
@@ -312,7 +312,7 @@ def attachStorageDomain(positive, datacenter, storagedomain, wait=True,
     :returns: True if storage domain was attached properly, False otherwise
     :rtype: bool
     """
-    storDomObj = util.find(storagedomain)
+    storDomObj = get_storage_domain_obj(storagedomain)
     attachDom = StorageDomain(id=storDomObj.get_id())
 
     dcStorages = getDCStorages(datacenter)
@@ -338,6 +338,9 @@ def detachStorageDomain(positive, datacenter, storagedomain):
     Return: status (True if storage domain was detached properly,
                     False otherwise)
     '''
+    util.logger.info(
+        'Detaching domain %s from data center %s', storagedomain, datacenter
+    )
     storDomObj = getDCStorage(datacenter, storagedomain)
     return util.delete(storDomObj, positive)
 
@@ -423,7 +426,9 @@ def deactivateStorageDomain(positive, datacenter, storagedomain, wait=True):
     '''
 
     storDomObj = getDCStorage(datacenter, storagedomain)
-
+    util.logger.info(
+        'Deactivating domain  %s in data center %s', storagedomain, datacenter
+    )
     async = 'false' if wait else 'true'
     status = bool(
         util.syncAction(storDomObj, "deactivate", positive, async=async)
@@ -514,7 +519,7 @@ def teardownStorageDomain(positive, storagedomain, host):
     Return: status (True if tear down succeeded, False otherwise)
     '''
 
-    storDomObj = util.find(storagedomain)
+    storDomObj = get_storage_domain_obj(storagedomain)
     hostObj = hostUtil.find(host)
 
     sdHost = Host(id=hostObj.get_id())
@@ -544,7 +549,7 @@ def removeStorageDomain(positive, storagedomain, host, format='false',
     """
     format_bool = format.lower() == "true"
 
-    storDomObj = util.find(storagedomain)
+    storDomObj = get_storage_domain_obj(storagedomain)
     hostObj = hostUtil.find(host)
 
     stHost = Host(id=hostObj.get_id())
@@ -662,7 +667,7 @@ def removeStorageDomains(positive, storagedomains, host, format='true'):
                     if not detach_status:
                         status = False
 
-    for sd_listed in util.get(absLink=False):
+    for sd_listed in get_storage_domains():
         if sd_listed.get_name() in storagedomains:
             removeStatus = removeStorageDomain(positive, sd_listed.get_name(),
                                                host, format)
@@ -829,7 +834,7 @@ def remove_storage_domains(
     """
     for sd in sds:
         try:
-            util.find(sd.get_name())
+            get_storage_domain_obj(sd.get_name())
         except EntityNotFound:
             continue
         format_storage = True
@@ -908,7 +913,7 @@ def getDomainAddress(positive, storageDomain):
 
     # Get the storage domain object
     try:
-        storageDomainObject = util.find(storageDomain)
+        storageDomainObject = get_storage_domain_obj(storageDomain)
 
         # Check for iscsi storage domain
         if storageDomainObject.get_storage().get_type() == 'iscsi':
@@ -964,7 +969,7 @@ def findIsoStorageDomains(datacenter=None):
     if datacenter:
         sdObjList = getDCStorages(datacenter, False)
     else:
-        sdObjList = util.get(absLink=False)
+        sdObjList = get_storage_domains()
 
     isoDomains = [sdObj.get_name() for sdObj in sdObjList if
                   sdObj.get_type() == ENUMS['storage_dom_type_iso']]
@@ -984,7 +989,7 @@ def findExportStorageDomains(datacenter=None):
     if datacenter:
         sdObjList = getDCStorages(datacenter, False)
     else:
-        sdObjList = util.get(absLink=False)
+        sdObjList = get_storage_domains()
 
     exportDomains = [sdObj.get_name() for sdObj in sdObjList if
                      sdObj.get_type() == ENUMS['storage_dom_type_export']]
@@ -1026,7 +1031,7 @@ def getStorageDomainFiles(positive, storagedomain, files_count):
      Return: status (True if number of files is correct, False otherwise)
      '''
 
-    storDomObj = util.find(storagedomain)
+    storDomObj = get_storage_domain_obj(storagedomain)
     storFiles = util.getElemFromLink(storDomObj, 'files', attr='file',
                                      get_href=True)
     return compareCollectionSize(storFiles, files_count, util.logger)
@@ -1043,7 +1048,7 @@ def getStorageDomainFile(positive, storagedomain, file):
      Return: status (True if file exists, False otherwise)
      '''
 
-    storDomObj = util.find(storagedomain)
+    storDomObj = get_storage_domain_obj(storagedomain)
 
     fileObj = None
     if storDomObj:
@@ -1077,7 +1082,7 @@ def getTemplateImageId(positive, vdsName, username, passwd, dataCenter,
     # Get vms list on storageDomain
     dcObj = dcUtil.find(dataCenter)
     dcId = dcObj.get_id()
-    storDomObj = util.find(storageDomain)
+    storDomObj = get_storage_domain_obj(storageDomain)
     storDomId = storDomObj.get_id()
     vmObjList = util.getElemFromLink(storDomObj, 'vms', attr='vm',
                                      get_href=True)
@@ -1136,7 +1141,7 @@ def checkTemplateOnHost(positive, vdsName, username, passwd, dataCenter,
                it doesn't exist
             False otherwise
     """
-    domain = util.find(storageDomain)
+    domain = get_storage_domain_obj(storageDomain)
     templates = util.getElemFromLink(domain, 'templates', attr='template')
     dc = dcUtil.find(dataCenter)
 
@@ -1196,7 +1201,7 @@ def checkIfStorageDomainExist(positive, storagedomain):
        positive == False:If storagedomain exist return False, otherwise True
     '''
 
-    storagedomains = util.get(absLink=False)
+    storagedomains = get_storage_domains()
     sdObj = filter(lambda sdObj: sdObj.get_name() == storagedomain,
                    storagedomains)
     return (len(sdObj) == 1) == positive
@@ -1213,7 +1218,7 @@ def checkStorageDomainParameters(positive, storagedomain, **kwargs):
             False if any attribute is missing or if the attribute's value
             differs
     """
-    domainObj = util.find(storagedomain)
+    domainObj = get_storage_domain_obj(storagedomain)
 
     for attr in kwargs:
         if not hasattr(domainObj.storage, attr) or \
@@ -1235,7 +1240,7 @@ def checkStorageFormatVersion(positive, storagedomain, version):
     Return: True if versions are the same and positive is True
             False if versions are not the same and positive is True
     """
-    domainObj = util.find(storagedomain)
+    domainObj = get_storage_domain_obj(storagedomain)
 
     return (domainObj.storage_format == version) == positive
 
@@ -1329,7 +1334,7 @@ def checkVolume(positive, vdsName, username, passwd, dataCenter, storageDomain,
                it doesn't exist
             False otherwise
     """
-    domainObj = util.find(storageDomain)
+    domainObj = get_storage_domain_obj(storageDomain)
     dcObj = dcUtil.find(dataCenter)
     objCollection = getObjList(domainObj, coll)
 
@@ -1396,6 +1401,7 @@ def is_storage_domain_active(datacenter, domain):
     """
     sdObj = getDCStorage(datacenter, domain)
     active = sdObj.get_status().get_state()
+    util.logger.info('Domain %s in dc %s is %s', domain, active, datacenter)
     return active == ENUMS['storage_domain_state_active']
 
 
@@ -1408,7 +1414,7 @@ def getConnectionsForStorageDomain(storagedomain):
         * storagedomain - storage domain name
     Returns: List of Connection objects
     """
-    sdObj = util.find(storagedomain)
+    sdObj = get_storage_domain_obj(storagedomain)
     return connUtil.getElemFromLink(sdObj)
 
 
@@ -1422,7 +1428,7 @@ def addConnectionToStorageDomain(storagedomain, conn_id):
         * conn_id - id of the connection
     Returns: true if operation succeeded
     """
-    sdObj = util.find(storagedomain)
+    sdObj = get_storage_domain_obj(storagedomain)
     connObj = connUtil.find(conn_id, attribute='id')
     conn_objs = util.getElemFromLink(
         sdObj, link_name='storageconnections', attr='storage_connection',
@@ -1442,7 +1448,7 @@ def detachConnectionFromStorageDomain(storagedomain, conn_id):
         * conn_id - id of the connection
     Returns: true if operation succeeded
     """
-    sdObj = util.find(storagedomain)
+    sdObj = get_storage_domain_obj(storagedomain)
     conn_objs = util.getElemFromLink(
         sdObj, link_name='storageconnections', attr='storage_connection')
     for conn in conn_objs:
@@ -1464,7 +1470,7 @@ def get_allocated_size(storagedomain):
         * storagedomain - name of the storage domain
     Returns: allocated space on the storagedomain in bytes
     """
-    sdObj = util.find(storagedomain)
+    sdObj = get_storage_domain_obj(storagedomain)
     return sdObj.get_committed()
 
 
@@ -1477,7 +1483,7 @@ def get_total_size(storagedomain):
         * storagedomain - name of the storage domain
     Returns: total size of the storage domain in bytes
     """
-    sdObj = util.find(storagedomain)
+    sdObj = get_storage_domain_obj(storagedomain)
     return sdObj.get_available() + sdObj.get_used()
 
 
@@ -1490,7 +1496,7 @@ def get_free_space(storagedomain):
         * storagedomain - name of the storage domain
     Returns: total size of the storage domain in bytes
     """
-    sdObj = util.find(storagedomain)
+    sdObj = get_storage_domain_obj(storagedomain)
     return sdObj.get_available()
 
 
@@ -1507,7 +1513,7 @@ def get_unregistered_vms(storage_domain):
     or empty list when no unregistered vms are found
     :rtype: list
     """
-    storage_domain_obj = util.find(storage_domain)
+    storage_domain_obj = get_storage_domain_obj(storage_domain)
     unregistered_vms = util.get(
         "%s/vms;unregistered" % storage_domain_obj.href
     )
@@ -1527,7 +1533,7 @@ def get_unregistered_templates(storage_domain):
     or empty list when no unregistered templates are found
     :rtype: list
     """
-    storage_domain_obj = util.find(storage_domain)
+    storage_domain_obj = get_storage_domain_obj(storage_domain)
     unregistered_templates = util.get(
         "%s/templates;unregistered" % storage_domain_obj.href
     )
@@ -1567,7 +1573,7 @@ def get_used_size(storagedomain):
         * storagedomain - name of the storage domain
     Returns: used size of the storagedomain in bytes
     """
-    sdObj = util.find(storagedomain)
+    sdObj = get_storage_domain_obj(storagedomain)
     return sdObj.get_used()
 
 
@@ -1733,23 +1739,32 @@ def verify_nfs_options(
     **Returns**: None in case of success or tuple (param_name, expected, real)
     """
     if not _verify_one_option(real_timeo, expected_timeout):
-        return ("timeo", expected_timeout, real_timeo)
+        return "timeo", expected_timeout, real_timeo
     if not _verify_one_option(real_retrans, expected_retrans):
-        return ("retrans", expected_retrans, real_retrans)
+        return "retrans", expected_retrans, real_retrans
     if not _verify_one_option(real_nfsvers, expected_nfsvers):
-        return ("nfsvers", expected_nfsvers, real_nfsvers)
+        return "nfsvers", expected_nfsvers, real_nfsvers
     if expected_mount_options and "sync" in expected_mount_options:
         if not _verify_one_option(real_mount_options, True):
-            return ("sync", True, real_mount_options)
+            return "sync", True, real_mount_options
+
+
+def get_storage_domains():
+    """
+    Get list of storage domains
+    :return: List of storage domains object from the engine
+    :rtype: list
+    """
+    return util.get(absLink=False)
 
 
 def get_storagedomain_names():
     """
-    Get list of storagedomain names
-
-    **Returns**: List of storage domains
+    Get list of storage domain names
+    :return: List of storage domains name
+    :rtype: list
     """
-    return [x.get_name() for x in util.get(absLink=False)]
+    return [sd.get_name() for sd in get_storage_domains()]
 
 
 @is_action()
@@ -1802,19 +1817,20 @@ def get_master_storage_domain_name(datacenter_name):
     return masterSD
 
 
-def getStorageDomainObj(storagedomain, key='name'):
+def get_storage_domain_obj(storage_domain, key='name'):
     """
-    Returns storage domain object, fails with EntityNotFound
+    Get storage domain object from engine by name
 
-    :param storagedomain: name or id of the desired storage domain
-    :type storagedomain: str
+    :param storage_domain: the storage domain name/id
+    :type storage_domain: str
     :param key: key to look for storage domain, it can be name or id
-    Important: If key='id', storagedomain should be the storage domain's id
+    Important: If key='id', storage domain should be the storage domain's id
     :type key: str
-    :returns: Storage domain object
-    :rtype: obj
+    :return: the storage domain object
+    :rtype: Storage Domain Object
+    :raise: EntityNotFound
     """
-    return util.find(storagedomain, attribute=key)
+    return util.find(storage_domain, attribute=key)
 
 
 def wait_for_change_total_size(storagedomain_name, original_size=0,
@@ -1861,7 +1877,7 @@ def get_storage_domain_images(storage_domain_name):
     :return: List of disk image names
     :rtype: list
     """
-    storage_domain_obj = getStorageDomainObj(storage_domain_name)
+    storage_domain_obj = get_storage_domain_obj(storage_domain_name)
     all_images = util.getElemFromLink(
         storage_domain_obj,
         link_name='images',
@@ -1977,7 +1993,7 @@ class GlanceImage(object):
         self._imported_disk_name = new_disk_alias
         self._imported_template_name = new_template_name
 
-        source_sd_obj = util.find(self._glance_repository_name)
+        source_sd_obj = get_storage_domain_obj(self._glance_repository_name)
         destination_sd_obj = StorageDomain(name=destination_storage_domain)
         disk_obj = None
         template_obj = None
