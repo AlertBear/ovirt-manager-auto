@@ -21,6 +21,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.events as ll_events
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
@@ -29,6 +30,7 @@ logger = logging.getLogger("Global_Network_Helper")
 
 ENUMS = settings.opts['elements_conf']['RHEVM Enums']
 IFCFG_PATH = "/etc/sysconfig/network-scripts"
+APPLY_NETWORK_CHANGES_EVENT_CODE = 1146
 
 
 def create_random_ips(num_of_ips=2, mask=16):
@@ -657,22 +659,29 @@ def send_icmp_sampler(
     logger.info("Traffic from %s to %s succeed", host_resource.ip, dst)
 
 
-def wait_for_sn(event_code, string):
+def wait_for_sn(content):
     """
     Wait for setupNetworks call to finish by checking events
 
-    :param event_code: Event code to search
-    :type event_code: int
-    :param string: String to search in event description
-    :type string: str
+    :param content: String to search in event description
+    :type content: str
     :return:
     """
-    last_event = ll_events.get_last_event(event_code)
+    last_event = ll_events.get_last_event(APPLY_NETWORK_CHANGES_EVENT_CODE)
     res = ll_events.find_event_sampler(
-        last_event=last_event, event_code=event_code, content=string
+        last_event=last_event, event_code=APPLY_NETWORK_CHANGES_EVENT_CODE,
+        content=content
     )
     if not res:
         raise conf.NET_EXCEPTION()
+
+
+def update_network_and_wait_for_sn(network, **kwargs):
+    if not ll_networks.updateNetwork(positive=True, network=network, **kwargs):
+        raise conf.NET_EXCEPTION(
+            "Failed to update %s with %s" % network, kwargs
+        )
+    wait_for_sn(content=network)
 
 
 if __name__ == "__main__":

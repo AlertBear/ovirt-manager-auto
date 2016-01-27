@@ -8,11 +8,11 @@ Testing Sanity for the network features.
 import helper
 import logging
 import config as conf
-from art import unittest_lib
 from art.core_api import apis_exceptions
 from art.rhevm_api.utils import test_utils
 import rhevmtests.helpers as global_helper
 import art.unittest_lib.network as lib_network
+from art.unittest_lib import attr, NetworkTest
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
@@ -31,8 +31,8 @@ import rhevmtests.networking.required_network.helper as required_network_helper
 logger = logging.getLogger("Sanity_Cases")
 
 
-@unittest_lib.attr(tier=1)
-class TestSanityCaseBase(unittest_lib.NetworkTest):
+@attr(tier=1)
+class TestSanityCaseBase(NetworkTest):
     """
     Base class which provides teardown class method for each test case
     that inherits this class
@@ -560,8 +560,8 @@ class TestSanity06(TestSanityCaseBase):
         super(TestSanity06, cls).teardown_class()
 
 
-@unittest_lib.attr(tier=1)
-class TestSanity07(unittest_lib.NetworkTest):
+@attr(tier=1)
+class TestSanity07(NetworkTest):
     """
     1. Create a new DC and check it was created with updated Default
     MAC pool values
@@ -716,7 +716,6 @@ class TestSanity09(TestSanityCaseBase):
     __test__ = True
     net = conf.NETS[9][0]
     dc = conf.DC_0_NAME
-    event_code = 1146  # Successfully applied changes for network(s) event
 
     @classmethod
     def setup_class(cls):
@@ -750,7 +749,7 @@ class TestSanity09(TestSanityCaseBase):
                 "Cannot update %s with MTU %s" % (self.net, mtu)
             )
 
-        network_helper.wait_for_sn(event_code=self.event_code, string=self.net)
+        network_helper.wait_for_sn(content=self.net)
 
         logger.info("Check if the Host is updated with the change")
         if not hl_networks.checkHostNicParameters(
@@ -799,7 +798,7 @@ class TestSanity09(TestSanityCaseBase):
                 % (self.net, vlan_id)
             )
 
-        network_helper.wait_for_sn(event_code=self.event_code, string=self.net)
+        network_helper.wait_for_sn(content=self.net)
 
         logger.info("Check if the Host is updated with the change")
 
@@ -833,7 +832,7 @@ class TestSanity09(TestSanityCaseBase):
                 "Cannot update %s to be non-VM network" % self.net
             )
 
-        network_helper.wait_for_sn(event_code=self.event_code, string=self.net)
+        network_helper.wait_for_sn(content=self.net)
 
         logger.info("Check if the Host is updated with the change")
         if not hl_networks.checkHostNicParameters(
@@ -851,8 +850,8 @@ class TestSanity09(TestSanityCaseBase):
             )
 
 
-@unittest_lib.attr(tier=1)
-class TestSanity10(unittest_lib.NetworkTest):
+@attr(tier=1)
+class TestSanity10(NetworkTest):
     """
     Verify you can configure additional network beside management with gateway
     Verify you can remove network configured with gateway
@@ -913,8 +912,8 @@ class TestSanity10(unittest_lib.NetworkTest):
         helper.send_setup_networks(sn_dict=network_host_api_dict)
 
 
-@unittest_lib.attr(tier=1)
-class TestSanity11(unittest_lib.NetworkTest):
+@attr(tier=1)
+class TestSanity11(NetworkTest):
     """
     Configure queue on existing network
     """
@@ -1022,8 +1021,8 @@ class TestSanity12(TestSanityCaseBase):
             )
 
 
-@unittest_lib.attr(tier=1)
-class TestSanity13(unittest_lib.NetworkTest):
+@attr(tier=1)
+class TestSanity13(NetworkTest):
     """
     Check that Network Filter is enabled by default
     """

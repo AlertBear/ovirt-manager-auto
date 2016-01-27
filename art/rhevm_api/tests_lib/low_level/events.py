@@ -196,7 +196,7 @@ def find_event_sampler(
     """
     sample = apis_utils.TimeoutingSampler(
         timeout=timeout, sleep=sleep, func=find_event, last_event=last_event,
-        event_code=event_code, string=content,
+        event_code=event_code, content=content,
     )
     return sample.waitForFuncStatus(result=True)
 
