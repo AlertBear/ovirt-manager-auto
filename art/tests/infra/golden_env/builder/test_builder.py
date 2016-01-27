@@ -678,6 +678,7 @@ class CreateDC(TestCase):
                 cmd = list(ADD_USER_CMD)
                 cmd.append(user['name'])
                 cmd.append('--attribute=firstName=%s' % user['name'])
+                cmd.append('--attribute=department="Quality Assurance"')
                 assert not ss.run_cmd(cmd)[0], 'Failed to add user'
 
                 cmd = list(PASSWORD_RESET_CMD)

@@ -41,8 +41,9 @@ class TestCaseUserAndRoles(TestCase):
         """
         logger.info('Add user')
         ll_users.addExternalUser(
-            positive=True, user_name=config.USERNAME,
-            principal=config.USERNAME, domain=config.USER_DOMAIN
+            positive=True,
+            user_name=config.USERNAME_NAME,
+            domain=config.USER_DOMAIN,
         )
 
     @classmethod
@@ -85,8 +86,9 @@ class TestCaseUserAndRoles(TestCase):
         """
         logger.info('Create user - wrong domain')
         status = ll_users.addExternalUser(
-            positive=False, domain='bad_config',
-            principal=config.USERNAME, user_name=config.USERNAME
+            positive=False,
+            domain='bad_config',
+            user_name=config.USERNAME_NAME,
         )
         self.assertTrue(status, 'Create user - wrong domain')
 
@@ -98,9 +100,9 @@ class TestCaseUserAndRoles(TestCase):
         """
         logger.info('Create user which does not exists in domain')
         status = ll_users.addExternalUser(
-            positive=False, domain=config.USER_DOMAIN,
+            positive=False,
+            domain=config.USER_DOMAIN,
             user_name=config.USER_NON_EXISTING,
-            principal=config.USER_NON_EXISTING,
         )
         self.assertTrue(status, 'Create user which does not exists in domain')
 
@@ -185,11 +187,14 @@ class TestCaseUserAndRoles(TestCase):
         verify users functionality
         verify user properties in active directory
         """
-        logger.info('Check user properties in active directory')
-        exp_name = '%s@%s' % (config.USER_VDCADMIN_NAME, config.USER_DOMAIN)
+        logger.info('Check user properties in aaa-jdbc provider')
         status = ll_users.verifyADUserProperties(
             positive=True, domain=config.USER_DOMAIN,
-            user=config.USER_VDCADMIN_NAME, expected_username=exp_name,
+            user=config.USERNAME_NAME,
+            expected_username='%s@%s' % (
+                config.USERNAME_NAME,
+                config.USER_DOMAIN
+            ),
             expected_department='Quality Assurance'
         )
-        self.assertTrue(status, 'Check user properties in active directory')
+        self.assertTrue(status, 'Check user properties in aaa-jdbc provider')
