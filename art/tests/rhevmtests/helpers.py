@@ -46,36 +46,28 @@ def set_passwordless_ssh(src_host, dst_host):
     :rtype: bool
     """
     ssh_keyscan = ["ssh-keyscan", "-t", "rsa"]
-    src_host_exec = src_host.executor()
-    dst_host_exec = dst_host.executor()
 
     # Remove old keys from local KNOWN_HOSTS file
     if not src_host.remove_remote_host_ssh_key(dst_host):
-        logger.error("Failed to remove %s ssh keys", dst_host.ip)
         return False
 
     # Remove local key from remote host AUTHORIZED_KEYS file
     if not dst_host.remove_remote_key_from_authorized_keys():
-        logger.error("Failed to remove remote ssh keys from %s", dst_host.ip)
         return False
 
     # Get local SSH key and add it to remote host AUTHORIZED_KEYS file
     local_key = src_host.get_ssh_public_key().strip()
 
     remote_cmd = ["echo", local_key, ">>", ssh.AUTHORIZED_KEYS]
-    rc = dst_host_exec.run_cmd(remote_cmd)[0]
+    rc = dst_host.run_command(remote_cmd)[0]
     if rc:
-        logger.error(
-            "Failed to add %s to %s on %s",
-            local_key, ssh.AUTHORIZED_KEYS, dst_host.ip
-        )
         return False
 
     # Adding remote host SSH key to local KNOWN_HOSTS file
     for i in [dst_host.ip, dst_host.fqdn]:
-        rc1, remote_key = src_host_exec.run_cmd(ssh_keyscan + [i])[:2]
+        rc1, remote_key = src_host.run_command(ssh_keyscan + [i])[:2]
         local_cmd = ["echo", remote_key, ">>", ssh.KNOWN_HOSTS]
-        rc2 = src_host_exec.run_cmd(local_cmd)[0]
+        rc2 = src_host.run_command(local_cmd)[0]
         if rc1 or rc2:
             return False
     return True
