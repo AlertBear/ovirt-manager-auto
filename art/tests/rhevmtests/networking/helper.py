@@ -19,6 +19,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.low_level.events as ll_events
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
@@ -654,6 +655,24 @@ def send_icmp_sampler(
     if not sample.waitForFuncStatus(result=True):
         raise conf.NET_EXCEPTION("Couldn't ping %s " % dst)
     logger.info("Traffic from %s to %s succeed", host_resource.ip, dst)
+
+
+def wait_for_sn(event_code, string):
+    """
+    Wait for setupNetworks call to finish by checking events
+
+    :param event_code: Event code to search
+    :type event_code: int
+    :param string: String to search in event description
+    :type string: str
+    :return:
+    """
+    last_event = ll_events.get_last_event(event_code)
+    res = ll_events.find_event_sampler(
+        last_event=last_event, event_code=event_code, content=string
+    )
+    if not res:
+        raise conf.NET_EXCEPTION()
 
 
 if __name__ == "__main__":

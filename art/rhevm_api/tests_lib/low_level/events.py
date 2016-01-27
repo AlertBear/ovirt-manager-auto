@@ -16,12 +16,16 @@
 # License along with this software; if not, write to the Free
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-from art.core_api.apis_exceptions import APITimeout
-from art.core_api.apis_utils import TimeoutingSampler
 
+import logging
+from art.core_api import apis_utils
+from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.validator import compareCollectionSize
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 from art.core_api import is_action
+
+logger = logging.getLogger(__name__)
 
 ELEMENT = 'event'
 COLLECTION = 'events'
@@ -29,6 +33,7 @@ util = get_api(ELEMENT, COLLECTION)
 
 DEF_TIMEOUT = 120
 DEF_SLEEP = 5
+SAMPLER_TIMEOUT = 210
 
 
 def get_max_event_id(query):
@@ -108,7 +113,7 @@ def wait_for_event(query, start_id=None, win_start_query=None,
         start_id = get_max_event_id(win_start_query)
     if start_id is None:
         start_id = get_max_event_id('')
-    sampler = TimeoutingSampler(
+    sampler = apis_utils.TimeoutingSampler(
         timeout, sleep, get_events_after_some_event, start_id
     )
     try:
@@ -130,3 +135,82 @@ def get_events_after_some_event(event_id):
     """
     events_obj = util.get(absLink=False)
     return filter(lambda x: int(x.get_id()) > int(event_id), events_obj)
+
+
+def find_event(last_event, event_code, content):
+    """
+    Find event in RHEV-M event log by event code and keywords in event
+    description. Search for the event only from last event ID.
+
+    :param last_event: Event id to search from
+    :type last_event: int
+    :param event_code: Event code to search for
+    :type event_code: int
+    :param content: content to search in description
+    :type content: str
+    :return: True if event was found otherwise False
+    :rtype: bool
+    """
+    query = "type={0}".format(event_code)
+    logger.info("Last event ID: %s", last_event)
+    try:
+        event = ll_hosts.EVENT_API.query(constraint=query)[0]
+        event_id = event.get_id()
+        event_description = event.get_description()
+    except IndexError:
+        return False
+
+    if last_event:
+        if int(event_id) <= last_event:
+            logger.info("No new events since %s", last_event)
+            return False
+
+    if content in event_description:
+        logger.info(
+            "Event found: [%s] %s", event_id, event_description
+        )
+        return True
+
+    logger.warning("Event not found")
+    return False
+
+
+def find_event_sampler(
+    last_event, event_code, content, timeout=SAMPLER_TIMEOUT, sleep=5
+):
+    """
+    Run find_event function in sampler.
+
+    :param last_event: Event id to search from
+    :type last_event: int
+    :param event_code: Event code to search for
+    :type event_code: int
+    :param content: String to search in description
+    :type content: str
+    :param timeout: Timeout for sampler
+    :type timeout: int
+    :param sleep: Sleep between sampler calls
+    :type sleep: int
+    :return: True if event was found otherwise False
+    :rtype: bool
+    """
+    sample = apis_utils.TimeoutingSampler(
+        timeout=timeout, sleep=sleep, func=find_event, last_event=last_event,
+        event_code=event_code, string=content,
+    )
+    return sample.waitForFuncStatus(result=True)
+
+
+def get_last_event(code):
+    """
+    Get last event ID by event code
+
+    :param code: Event code
+    :type code: int
+    :return: Last event ID or None
+    :rtype: int or None
+    """
+    query = "type={0}".format(code)
+    all_events = ll_hosts.EVENT_API.query(constraint=query)
+    all_events_ids = [int(i.id) for i in all_events]
+    return max(all_events_ids) if all_events_ids else None

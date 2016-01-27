@@ -9,7 +9,7 @@ import helper
 import logging
 import config as conf
 from art import unittest_lib
-from art.core_api import apis_utils, apis_exceptions
+from art.core_api import apis_exceptions
 from art.rhevm_api.utils import test_utils
 import rhevmtests.helpers as global_helper
 import art.unittest_lib.network as lib_network
@@ -716,6 +716,7 @@ class TestSanity09(TestSanityCaseBase):
     __test__ = True
     net = conf.NETS[9][0]
     dc = conf.DC_0_NAME
+    event_code = 1146  # Successfully applied changes for network(s) event
 
     @classmethod
     def setup_class(cls):
@@ -733,7 +734,7 @@ class TestSanity09(TestSanityCaseBase):
         helper.send_setup_networks(sn_dict=network_host_api_dict)
 
     @polarion("RHEVM3-14515")
-    def test_change_mtu(self):
+    def test_01_change_mtu(self):
         """
         Change the network MTU
         """
@@ -748,17 +749,15 @@ class TestSanity09(TestSanityCaseBase):
             raise conf.NET_EXCEPTION(
                 "Cannot update %s with MTU %s" % (self.net, mtu)
             )
-        logger.info("Wait till the Host is updated with the change")
-        sample1 = apis_utils.TimeoutingSampler(
-            timeout=conf.SAMPLER_TIMEOUT, sleep=1,
-            func=hl_networks.checkHostNicParameters, host=conf.HOST_NAME_0,
-            nic=conf.HOST_0_NICS[1], **mtu_dict
-        )
-        if not sample1.waitForFuncStatus(result=True):
-            raise conf.NET_EXCEPTION(
-                "Couldn't get correct MTU (%s) on host NIC %s" %
-                (mtu, conf.HOST_0_NICS[1])
-            )
+
+        network_helper.wait_for_sn(event_code=self.event_code, string=self.net)
+
+        logger.info("Check if the Host is updated with the change")
+        if not hl_networks.checkHostNicParameters(
+            host=conf.HOST_NAME_0, nic=conf.HOST_0_NICS[1], **mtu_dict
+        ):
+            raise conf.NET_EXCEPTION()
+
         logger.info("Check that the change is reflected to Host")
         logger.info(
             "Checking logical layer of bridged network %s on host %s",
@@ -784,7 +783,7 @@ class TestSanity09(TestSanityCaseBase):
             )
 
     @polarion("RHEVM3-14516")
-    def test_change_vlan(self):
+    def test_02_change_vlan(self):
         """
         Change the network VLAN
         """
@@ -799,17 +798,16 @@ class TestSanity09(TestSanityCaseBase):
                 "Cannot update %s to be tagged with VLAN %s"
                 % (self.net, vlan_id)
             )
-        logger.info("Wait till the Host is updated with the change")
-        sample1 = apis_utils.TimeoutingSampler(
-            timeout=conf.SAMPLER_TIMEOUT, sleep=1,
-            func=hl_networks.checkHostNicParameters, host=conf.HOST_NAME_0,
-            nic=conf.HOST_0_NICS[1], **vlan_dict
-        )
-        if not sample1.waitForFuncStatus(result=True):
-            raise conf.NET_EXCEPTION(
-                "%s.%s doesn't exist on %s" %
-                (self.net, vlan_id, conf.HOST_NAME_0)
-            )
+
+        network_helper.wait_for_sn(event_code=self.event_code, string=self.net)
+
+        logger.info("Check if the Host is updated with the change")
+
+        if not hl_networks.checkHostNicParameters(
+            host=conf.HOST_NAME_0, nic=conf.HOST_0_NICS[1], **vlan_dict
+        ):
+            raise conf.NET_EXCEPTION()
+
         logger.info("Check that the change is reflected to Host")
         if not ll_networks.is_vlan_on_host_network(
             vds_resource=conf.VDS_HOST_0, interface=conf.HOST_0_NICS[1],
@@ -821,7 +819,7 @@ class TestSanity09(TestSanityCaseBase):
             )
 
     @polarion("RHEVM3-14517")
-    def test_change_to_non_vm(self):
+    def test_03_change_to_non_vm(self):
         """
         Change the network to be non-VM network
         """
@@ -834,16 +832,15 @@ class TestSanity09(TestSanityCaseBase):
             raise conf.NET_EXCEPTION(
                 "Cannot update %s to be non-VM network" % self.net
             )
-        logger.info("Wait till the Host is updated with the change")
-        sample1 = apis_utils.TimeoutingSampler(
-            timeout=conf.SAMPLER_TIMEOUT, sleep=1,
-            func=hl_networks.checkHostNicParameters, host=conf.HOST_NAME_0,
-            nic=conf.HOST_0_NICS[1], **bridge_dict
-        )
-        if not sample1.waitForFuncStatus(result=True):
-            raise conf.NET_EXCEPTION(
-                "%s is VM network and should be Non-VM" % self.net
-            )
+
+        network_helper.wait_for_sn(event_code=self.event_code, string=self.net)
+
+        logger.info("Check if the Host is updated with the change")
+        if not hl_networks.checkHostNicParameters(
+            host=conf.HOST_NAME_0, nic=conf.HOST_0_NICS[1], **bridge_dict
+        ):
+            raise conf.NET_EXCEPTION()
+
         logger.info("Check that the change is reflected to Host")
         if ll_networks.is_host_network_is_vm(
             vds_resource=conf.VDS_HOST_0, net_name=self.net
