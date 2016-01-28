@@ -258,6 +258,7 @@ class TestSanity03(TestSanityCaseBase):
         )
 
     @polarion("RHEVM3-6526")
+    @bz({'1271220': {'engine': None, 'version': None}})
     def test_qos_for_network_on_host_nic(self):
         """
         Attach network to host NIC with QoS parameters (Anonymous' QoS)
