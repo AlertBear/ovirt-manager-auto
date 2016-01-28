@@ -20,6 +20,8 @@ logger = config.logging.getLogger(__name__)
 class BaseCpuShares(TestCase):
     """
     Base class for CPU shares
+    The parameters: cpu_share_status and vm_list,
+    have to be defined in the child class as a class member.
     """
 
     @classmethod
@@ -54,14 +56,17 @@ class BaseCpuShares(TestCase):
         current_dict = {}
         for vm_name in vm_list:
             vm_pid = config.VDS_HOSTS[0].get_vm_process_pid(vm_name)
-            logger.info("Get the CPU consumption of the VM %s", vm_name)
             command = "top -b -n 1 -c -p %s | awk FNR==8" % vm_pid
             rc, out, _ = config.VDS_HOSTS[0].run_command(
                 shlex.split(command)
             )
             if rc:
                 return False
-            current_dict[vm_name] = float(out.split()[8])
+            current_dict[vm_name] = int(float(out.split()[8]))
+        logger.info(
+            "Current dict of VM's names and their cpu consumption :%s",
+            current_dict
+        )
         return current_dict
 
     @classmethod
@@ -81,7 +86,6 @@ class BaseCpuShares(TestCase):
         """
         for key, value in current_dict.iteritems():
             target = expected_dict[key]
-            logger.info("current CPU usage of %s is %s", key, value)
             if not (target - 5 <= value <= target + 5):
                 logger.warning(
                     "current CPU usage of %s should be around %s", key, target
@@ -101,7 +105,7 @@ class BaseCpuShares(TestCase):
         """
         sampler = apis_utils.TimeoutingSampler(
             300, 20, cls.get_vms_cpu_consumption_on_host,
-            cls.expected_dict.keys()
+            cls.vm_list
         )
         try:
             for sample in sampler:
@@ -117,7 +121,7 @@ class BaseCpuShares(TestCase):
         Update the Vms CPU share, Start the Vms and run CPU load.
         """
         for vm_name, cpu_share in zip(
-            cls.expected_dict.keys(), cls.cpu_share_status,
+            cls.vm_list, cls.cpu_share_status
         ):
             logger.info("Update VM %s CPU shares to %s", vm_name, cpu_share)
             if not ll_vms.updateVm(True, vm_name, cpu_shares=cpu_share):
@@ -125,27 +129,28 @@ class BaseCpuShares(TestCase):
                     "Failed to update VM %s CPU share to %d" %
                     (vm_name, cpu_share)
                 )
-        logger.info("Start vms: %s", cls.expected_dict.keys())
-        if not ll_vms.startVms(cls.expected_dict.keys()):
+        logger.info("Start vms: %s", cls.vm_list)
+        if not ll_vms.startVms(cls.vm_list):
             raise errors.VMException("Failed to start VMs")
-        cls.load_vm_cpu(cls.expected_dict.keys())
+        cls.load_vm_cpu(cls.vm_list)
 
     @classmethod
     def teardown_class(cls):
         """
         Stop Vms in the list
         """
-        ll_vms.stop_vms_safely(cls.expected_dict.keys())
+        ll_vms.stop_vms_safely(cls.vm_list)
 
 
-class ClassLowShare(BaseCpuShares):
+class TestLowShare(BaseCpuShares):
     """
     Check that two vms that have the same low CPU share
     are competing evenly on the same core
     """
     __test__ = True
     cpu_share_status = [config.CPU_SHARE_LOW, config.CPU_SHARE_LOW]
-    expected_dict = dict((vm, 50) for vm in config.VM_NAME[:2])
+    vm_list = config.VM_NAME[:2]
+    expected_dict = dict((vm, 50) for vm in vm_list)
 
     @polarion("RHEVM3-4980")
     def test_low_share(self):
@@ -157,14 +162,15 @@ class ClassLowShare(BaseCpuShares):
         )
 
 
-class ClassMediumShare(BaseCpuShares):
+class TestMediumShare(BaseCpuShares):
     """
     Check that two vms that have the same medium CPU share
     are competing evenly on the same core
     """
     __test__ = True
     cpu_share_status = [config.CPU_SHARE_MEDIUM, config.CPU_SHARE_MEDIUM]
-    expected_dict = dict((vm, 50) for vm in config.VM_NAME[:2])
+    vm_list = config.VM_NAME[:2]
+    expected_dict = dict((vm, 50) for vm in vm_list)
 
     @polarion("RHEVM3-4981")
     def test_medium_share(self):
@@ -176,14 +182,15 @@ class ClassMediumShare(BaseCpuShares):
         )
 
 
-class ClassHighShare(BaseCpuShares):
+class TestHighShare(BaseCpuShares):
     """
     Check that two vms that have the same high CPU share
     are competing evenly on the same core
     """
     __test__ = True
     cpu_share_status = [config.CPU_SHARE_HIGH, config.CPU_SHARE_HIGH]
-    expected_dict = dict((vm, 50) for vm in config.VM_NAME[:2])
+    vm_list = config.VM_NAME[:2]
+    expected_dict = dict((vm, 50) for vm in vm_list)
 
     @polarion("RHEVM3-4982")
     def test_high_share(self):
@@ -195,14 +202,15 @@ class ClassHighShare(BaseCpuShares):
         )
 
 
-class ClassCustomShare(BaseCpuShares):
+class TestCustomShare(BaseCpuShares):
     """
     Check that two vms that have the same custom CPU share
     are competing evenly on the same core
     """
     __test__ = True
     cpu_share_status = [300, 300]
-    expected_dict = dict((vm, 50) for vm in config.VM_NAME[:2])
+    vm_list = config.VM_NAME[:2]
+    expected_dict = dict((vm, 50) for vm in vm_list)
 
     @polarion("RHEVM3-4983")
     def test_custom_share(self):
@@ -214,7 +222,7 @@ class ClassCustomShare(BaseCpuShares):
         )
 
 
-class ClassPredefinedValues(BaseCpuShares):
+class TestPredefinedValues(BaseCpuShares):
     """
     Check that 4 vms that have the different CPU share values
     are taking a different percent of core
@@ -224,7 +232,8 @@ class ClassPredefinedValues(BaseCpuShares):
         config.CPU_SHARE_LOW, config.CPU_SHARE_LOW,
         config.CPU_SHARE_MEDIUM, config.CPU_SHARE_HIGH
     ]
-    expected_dict = dict(zip(config.VM_NAME[:4], (50, 25, 13, 13)))
+    vm_list = config.VM_NAME[:4]
+    expected_dict = dict(zip(vm_list, (13, 13, 25, 50)))
 
     @polarion("RHEVM3-4984")
     def test_predefined_values(self):
@@ -237,14 +246,15 @@ class ClassPredefinedValues(BaseCpuShares):
         )
 
 
-class ClassCustomValuesOfShare(BaseCpuShares):
+class TestCustomValuesOfShare(BaseCpuShares):
     """
     Check that 4 vms that have the different custom CPU share values
     are taking a different percent of core
     """
     __test__ = True
     cpu_share_status = [100, 100, 200, 400]
-    expected_dict = dict(zip(config.VM_NAME[:4], (50, 25, 13, 13)))
+    vm_list = config.VM_NAME[:4]
+    expected_dict = dict(zip(vm_list, (13, 13, 25, 50)))
 
     @polarion("RHEVM3-4985")
     def test_custom_values_of_share(self):
