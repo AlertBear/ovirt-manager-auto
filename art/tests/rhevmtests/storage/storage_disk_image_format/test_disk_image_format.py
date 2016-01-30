@@ -17,6 +17,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 from art.unittest_lib import attr, StorageTest as TestCase
+from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage import helpers as storage_helpers
 
 ENUMS = config.ENUMS
@@ -282,6 +283,7 @@ class TestCase11621(BaseTestDiskImageVms):
     __test__ = True
     polarion_test_id = '11621'
 
+    @rhevm_helpers.wait_for_jobs_deco([ENUMS['job_move_or_copy_disk']])
     @polarion("RHEVM3-11621")
     def test_move_disk_offline(self):
         """

@@ -481,3 +481,30 @@ CPU_SHARE_DISABLED = 0
 CPU_SHARE_LOW = 512
 CPU_SHARE_MEDIUM = 1024
 CPU_SHARE_HIGH = 2048
+
+# Common related jobs
+# Disk section
+JOB_ADD_DISK = ENUMS['job_add_disk']
+JOB_IMPORT_IMAGE = ENUMS['job_import_repo_image']
+JOB_LIVE_MIGRATE_DISK = ENUMS['job_live_migrate_disk']
+JOB_MOVE_COPY_DISK = ENUMS['job_move_or_copy_disk']
+JOB_MOVE_DISK = ENUMS['job_move_disk']
+JOB_REGISTER_DISK = ENUMS['job_register_disk']
+JOB_REMOVE_DISK = ENUMS['job_remove_disk']
+# Snapshot section
+JOB_CLONE_VM_FROM_SNAPSHOT = ENUMS['job_add_vm_from_snapshot']
+JOB_CREATE_SNAPSHOT = ENUMS['job_create_snapshot']
+JOB_PREVIEW_SNAPSHOT = ENUMS['job_preview_snapshot']
+JOB_REMOVE_SNAPSHOT = ENUMS['job_remove_snapshot']
+JOB_RESTORE_SNAPSHOT = ENUMS['job_restore_vm_snapshot']
+# Storage Domain section
+JOB_ACTIVATE_DOMAIN = ENUMS['job_activate_storage_domain']
+JOB_DETACH_DOMAIN = ENUMS['job_detach_storage_domain']
+JOB_REMOVE_DOMAIN = ENUMS['job_remove_storage_domain']
+# Template section
+JOB_ADD_VM_FROM_TEMPLATE = ENUMS['job_add_vm_from_template']
+JOB_IMPORT_TEMPLATE = ENUMS['job_import_template']
+JOB_REMOVE_TEMPLATE = ENUMS['job_remove_template']
+# VM section
+JOB_IMPORT_VM = ENUMS['job_import_vm']
+JOB_REMOVE_VM = ENUMS['job_remove_vm']

@@ -4,7 +4,7 @@
 """
 rhevmtests helper functions
 """
-
+import functools
 import logging
 import os
 
@@ -204,3 +204,27 @@ def get_host_executor(ip, password, username=None, use_pkey=False):
     return get_host_resource(
         ip, username, password
     ).executor(user, pkey=use_pkey)
+
+
+def wait_for_jobs_deco(jobs):
+    """
+    Decorator used to ensure that following a test execution, a list of
+    specified jobs will be waited on
+
+    Sample usage:
+    @wait_for_jobs_deco([ENUMS['job_move_or_copy_disk']])
+    def test_x(self):
+
+    :param jobs: List of jobs to wait for
+    :type jobs: list
+    """
+    def deco(f):
+        @functools.wraps(f)
+        def run(*args, **kwargs):
+            try:
+                result = f(*args, **kwargs)
+            finally:
+                ll_jobs.wait_for_jobs(jobs)
+            return result
+        return run
+    return deco
