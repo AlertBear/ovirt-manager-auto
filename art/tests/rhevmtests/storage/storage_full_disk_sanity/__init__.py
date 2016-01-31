@@ -21,7 +21,8 @@ def setup_package():
     Creates VMs for each storage type and powers them off
     """
     import rhevmtests.storage.helpers as storage_helpers
-    storage_helpers.storage_cleanup()
+    storage_helpers.rhevm_helpers.storage_cleanup()
+
     for storage_type in config.STORAGE_SELECTOR:
         storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, storage_type

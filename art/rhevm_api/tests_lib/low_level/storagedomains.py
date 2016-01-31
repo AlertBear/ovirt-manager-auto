@@ -427,7 +427,7 @@ def deactivateStorageDomain(positive, datacenter, storagedomain, wait=True):
 
     storDomObj = getDCStorage(datacenter, storagedomain)
     util.logger.info(
-        'Deactivating domain  %s in data center %s', storagedomain, datacenter
+        'Deactivating domain %s in data center %s', storagedomain, datacenter
     )
     async = 'false' if wait else 'true'
     status = bool(
@@ -547,6 +547,7 @@ def removeStorageDomain(positive, storagedomain, host, format='false',
     :return: True if storage domain was removed properly, False otherwise
     :rtype: bool
     """
+    util.logger.info("Removing storage domain %s", storagedomain)
     format_bool = format.lower() == "true"
 
     storDomObj = get_storage_domain_obj(storagedomain)
@@ -1391,18 +1392,24 @@ def checkVolume(positive, vdsName, username, passwd, dataCenter, storageDomain,
 @is_action("isStorageDomainActive")
 def is_storage_domain_active(datacenter, domain):
     """
-    Description: Checks if the storage domain is
-    active in the given datacenter
-    Author: gickowic
-    Parameters:
-        * datacenter - datacenter name
-        * domain - domain name
-    Returns: True if domain is active in the domain, false otherwise
+    Checks if the storage domain is active in the given datacenter
+
+    __author__: gickowic
+
+    :param datacenter: datacenter name
+    :type datacenter: str
+    :param domain: storage domain name
+    :type domain: str
+    :return: True if the storage domain state is active, otherwise False
+    :rtype: bool
     """
+    util.logger.info(
+        'Checking if domain %s is active in dc %s', domain, datacenter
+    )
     sdObj = getDCStorage(datacenter, domain)
-    active = sdObj.get_status().get_state()
-    util.logger.info('Domain %s in dc %s is %s', domain, active, datacenter)
-    return active == ENUMS['storage_domain_state_active']
+    state = sdObj.get_status().get_state()
+    util.logger.info('Domain %s in dc %s is %s', domain, datacenter, state)
+    return state == ENUMS['storage_domain_state_active']
 
 
 @is_action()

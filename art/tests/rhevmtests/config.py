@@ -225,7 +225,7 @@ if 'prepared_env' in ART_CONFIG:
     for ep_to_add in eps_to_add:
         if EPS[ep_to_add]['type'] == GLANCE:
             provider_type = GLANCE
-            EXTERNAL_PROVIDERS[provider_type] = EPS[ep_to_add]['name']
+        EXTERNAL_PROVIDERS[provider_type] = EPS[ep_to_add]['name']
 
     GOLDEN_GLANCE_IMAGE = 'golden_env_mixed_virtio_0_Disk1'
 
@@ -297,6 +297,15 @@ else:
             PARAMETERS['data_domain_mount_options'] = "vers=4.1"
 
         PARAMETERS['vfs_type'] = VFS_TYPE
+
+GLANCE_DOMAIN = EXTERNAL_PROVIDERS[GLANCE]
+DEFAULT_ISO_DOMAIN = 'ISO_DOMAIN'
+ISO_DOMAIN_NAME_LIST = [ISO_DOMAIN_NAME] if ISO_DOMAIN_NAME else []
+
+SD_LIST = (
+    STORAGE_NAME + [EXPORT_STORAGE_NAME] + ISO_DOMAIN_NAME_LIST +
+    [GLANCE_DOMAIN] + [DEFAULT_ISO_DOMAIN]
+)
 
 UNUSED_DATA_DOMAIN_ADDRESSES = get_list(
     PARAMETERS, 'extra_data_domain_address'

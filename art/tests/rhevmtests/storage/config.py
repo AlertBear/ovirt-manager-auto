@@ -8,8 +8,6 @@ __test__ = False
 TESTNAME = "GlobalStorage"
 DATA_CENTER_NAME = DC_NAME[0]
 CLUSTER_NAME = CLUSTER_NAME[0]
-EXPORT_DOMAIN_NAME = PARAMETERS.get('export_domain_name', 'export_domain')
-GLANCE_DOMAIN = 'rhevm-qe-infra-glance'
 GLANCE_IMAGE_COW = 'cow_sparse_disk'
 GLANCE_IMAGE_RAW = 'raw_preallocated_disk'
 # CLUSTER SECTION
@@ -35,7 +33,6 @@ STORAGE_DEVICE_TYPE_MAP = {
     STORAGE_TYPE_LOCAL: "local",           # localfs -> local_devices
     STORAGE_TYPE_GLUSTER: "gluster",       # glusterfs -> gluster_devices
 }
-DEFAULT_ISO_DOMAIN = 'ISO_DOMAIN'
 
 STORAGE_DEVICE_NAME = STORAGE_DEVICE_TYPE_MAP.get(STORAGE_TYPE, STORAGE_TYPE)
 
@@ -67,9 +64,6 @@ for idx in range(NUMBER_OF_SDS):
     SD_NAMES_LIST.append(sd_name)
     globals()["SD_NAME_%d" % idx] = sd_name
 
-SD_LIST = STORAGE_NAME + [EXPORT_DOMAIN_NAME] + [ISO_DOMAIN_NAME] + (
-    [GLANCE_DOMAIN] + [DEFAULT_ISO_DOMAIN]
-)
 DISK_INTERFACE_VIRTIO = INTERFACE_VIRTIO
 VOLUME_FORMAT_COW = DISK_FORMAT_COW
 SPARSE = True

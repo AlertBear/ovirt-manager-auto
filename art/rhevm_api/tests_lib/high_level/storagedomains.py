@@ -736,7 +736,6 @@ def remove_storage_domain(name, datacenter, host, format_disk=False, vdc=None,
                 "Failed to detach and deactivate storage domain %s!", name
             )
             return False
-    logger.info("Removing storage domain")
     if not ll_sd.removeStorageDomain(True, name, host, str(format_disk)):
         logger.error("Cannot remove storage domain %s!", name)
         return False
@@ -885,18 +884,8 @@ def detach_and_deactivate_domain(datacenter, domain):
     :return: True if successful, False otherwise
     :rtype: bool
     """
-    logger.info(
-        'Checking if domain %s is active in dc %s', domain, datacenter
-    )
-    if ll_sd.is_storage_domain_active(datacenter, domain):
-        if not ll_sd.deactivateStorageDomain(True, datacenter, domain):
-            logger.error(
-                'Unable to deactivate domain %s on dc %s', domain, datacenter
-            )
-            return False
-    logger.info(
-        'Domain %s is inactive in datacenter %s', domain, datacenter
-    )
+    if not deactivate_domain(datacenter, domain):
+        return False
     if not ll_sd.detachStorageDomain(True, datacenter, domain):
         logger.error(
             'Unable to detach domain %s from dc %s', domain, datacenter
@@ -904,6 +893,49 @@ def detach_and_deactivate_domain(datacenter, domain):
         return False
     logger.info('Domain %s detached to dc %s', domain, datacenter)
     return True
+
+
+def deactivate_domain(dc_name, sd_name):
+    """
+    Deactivate a storage domain
+
+    :param dc_name: Name of Data center from which domain will be deactivated
+    :type dc_name: str
+    :param sd_name: The storage domain to deactivate
+    :type sd_name: str
+    :return: True if successful, False otherwise
+    :rtype: bool
+    """
+    if ll_sd.is_storage_domain_active(dc_name, sd_name):
+        if not ll_sd.deactivateStorageDomain(True, dc_name, sd_name):
+            logger.error(
+                'Unable to deactivate domain %s on dc %s', sd_name, dc_name
+            )
+            return False
+    logger.info('Domain %s is inactive in datacenter %s', sd_name, dc_name)
+    return True
+
+
+def destroy_storage_domain(sd_name, dc_name, host_name):
+    """
+    Deactivate and destroy storage domain
+
+    :param sd_name: storage domain name
+    :type sd_name: str
+    :param dc_name: data center name
+    :type dc_name: str
+    :param host_name: host name/ip to use
+    :type host_name: str
+    :return: True if successful, False otherwise
+    :rtype: bool
+    """
+    if deactivate_domain(dc_name, sd_name):
+        if ll_sd.removeStorageDomain(True, sd_name, host_name, destroy=True):
+            logger.info("Storage domain %s removed", sd_name)
+            return True
+        else:
+            logger.error("Failed to remove storage domain %s!", sd_name)
+    return False
 
 
 def get_master_storage_domain_ip(datacenter):

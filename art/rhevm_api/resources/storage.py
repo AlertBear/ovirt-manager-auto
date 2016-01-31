@@ -1,6 +1,7 @@
 import logging
 import random
 import shlex
+import os
 
 from art.rhevm_api import resources
 from art.rhevm_api.tests_lib.low_level import hosts
@@ -11,6 +12,7 @@ logger = logging.getLogger(__name__)
 LV_CHANGE_CMD = 'lvchange -a {active} {vg_name}/{lv_name}'
 PVSCAN_CACHE_CMD = 'pvscan --cache'
 PVSCAN_CMD = 'pvscan'
+DEFAULT_MNT_DIR = "/tmp/mnt_point"
 
 
 def get_host_resource(host_name):
@@ -114,9 +116,8 @@ def mount(host, source, target=None, opts=None):
     :rtype: str
     """
     host_machine = get_host_resource(host)
-    target = (
-        '/tmp/mnt_point_%s' % random.randint(1, 1000)
-    ) if target is None else target
+    if target is None:
+        target = '%s_%s' % (DEFAULT_MNT_DIR, random.randint(1, 1000))
 
     cmd = ['mkdir', '-p', target]
     logger.info(
@@ -179,4 +180,37 @@ def umount(host, mount_point, force=True, remove_mount_point=True):
         if not rc:
             logger.error("failed to remove directory %s", mount_point)
             return False
+    return True
+
+
+def clean_mount_point(host, src_ip, src_path, opts=None):
+    """
+    Clean the directory of mount_point
+    __author__ = khakimi
+    :param host: Host name to use for mount and umount operations
+    :type host: str
+    :param src_ip: source ip address
+    :type src_ip: str
+    :param src_path: path to source.
+                    to use them both such as: "src_ip:src_path"
+    :type src_path: str
+    :param opts: List of mount options such as: ['-tnfs', '-o', 'vers=3', '-v']
+                 or in case of gluster storage: ['-tglusterfs', '-v']
+    :type opts: list
+    :return: True if clean mount point succeeded, False otherwise
+    :rtype: bool
+    """
+    source = '%s:%s' % (src_ip, src_path)
+    mnt_dir = mount(host, source, opts=opts)
+    if mnt_dir:
+        rm_cmd = ['rm', '-rfv', os.path.join(mnt_dir, '*')]
+        host_machine = get_host_resource(host)
+        logger.info('Clean the mount point %s', source)
+        rc, out, _ = host_machine.run_command(rm_cmd)
+        if out:
+            logger.warning("The following files and folders deleted:\n%s", out)
+        umount(host, mnt_dir)
+    if not mnt_dir or rc:
+        logger.error('Failed to clean the mount point %s', source)
+        return False
     return True

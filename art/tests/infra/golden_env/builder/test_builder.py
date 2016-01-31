@@ -17,7 +17,7 @@ from art.rhevm_api.tests_lib.low_level import external_providers
 from art.rhevm_api.tests_lib.high_level import mac_pool as hl_mac_pool
 from art.rhevm_api.tests_lib.high_level import storagedomains
 
-from art.rhevm_api.resources import VDS
+from art.rhevm_api.resources import VDS, storage
 
 import art.test_handler.exceptions as errors
 
@@ -219,9 +219,10 @@ class CreateDC(TestCase):
             storage_type = sd['storage_type']
             if storage_type == ENUMS['storage_type_nfs']:
                 address, path = storage_conf.get_nfs_share()
-                self.delete_data_from_storage_domain(address, path)
+                storage.clean_mount_point(host, address, path)
                 assert storagedomains.addNFSDomain(
-                    host, sd_name, datacenter_name, address, path, format=True)
+                    host, sd_name, datacenter_name, address, path, format=True
+                )
             elif storage_type == ENUMS['storage_type_iscsi']:
                 lun, address, target = storage_conf.get_iscsi_share()
                 assert storagedomains.addISCSIDataDomain(
@@ -236,8 +237,8 @@ class CreateDC(TestCase):
                 )
             elif storage_type == ENUMS['storage_type_gluster']:
                 address, path, vfs = storage_conf.get_gluster_share()
-                self.delete_data_from_storage_domain(
-                    address, path, fs_type='-tglusterfs'
+                storage.clean_mount_point(
+                    host, address, path, opts=['-tglusterfs']
                 )
                 assert storagedomains.addGlusterDomain(
                     host, sd_name, datacenter_name, address, path,
@@ -586,35 +587,13 @@ class CreateDC(TestCase):
             else:
                 LOGGER.info("No templates to add")
 
-    def _get_executor(self):
-        return self.vds_objs[0].executor()
-
-    def _execute_cmd(self, cmd, ss=None):
-        if ss is None:
-            ss = self._get_executor()
-        rc, out, err = ss.run_cmd(cmd)
-        assert rc == 0, "Return code %s != 0" % rc
-
-    def delete_data_from_storage_domain(self, address, path, fs_type='-tnfs'):
-        mount_dir = "/tmp/mount_dir"
-        nfs_path = "%s:%s" % (address, path)
-        create_dir_cmd = ['mkdir', '-p', mount_dir]
-        mount_cmd = ['mount', fs_type, nfs_path, mount_dir]
-        rm_cmd = ['rm', '-rf', mount_dir + '/*']
-        umount_cmd = ['umount', mount_dir]
-        with self._get_executor().session() as ss:
-            self._execute_cmd(create_dir_cmd, ss)
-            self._execute_cmd(mount_cmd, ss)
-            self._execute_cmd(rm_cmd, ss)
-            self._execute_cmd(umount_cmd, ss)
-
     def add_export_domain(self, export_domain, storage_conf, dc, host):
         if export_domain['name']:
             name = export_domain['name']
             address, path = storage_conf.get_export_share()
             # Delete existed export domain
             if config.CLEAN_EXPORT_DOMAIN:
-                self.delete_data_from_storage_domain(address, path)
+                storage.clean_mount_point(host, address, path)
             # Add export storage domain
             assert ll_sd.addStorageDomain(
                 True,

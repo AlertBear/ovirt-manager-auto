@@ -4,8 +4,8 @@ This package contains RHEVM tests
 import helpers
 import logging
 from rhevmtests import config
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
+from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.rhevm_api import resources
 from art.rhevm_api.utils.inventory import Inventory
 
@@ -81,10 +81,9 @@ def setup_package():
     logger.info("The vds hosts list: %s", config.VDS_HOSTS)
 
     if host_order == 'rhevh_first' and not config.HOSTS_RHEVH:
-            raise EnvironmentError(
-                "This environment doesn't include rhev-h hosts"
-            )
-
+        raise EnvironmentError(
+            "This environment doesn't include rhev-h hosts"
+        )
     # setup inventory reporter
     reporter = Inventory.get_instance()
     reporter.get_setup_inventory_report(
@@ -95,5 +94,11 @@ def setup_package():
 
 
 def teardown_package():
-    """ Check unfinished jobs after all tests """
+    """
+    Teardown after all tests
+    """
+    # Check unfinished jobs after all tests
     helpers.get_unfinished_jobs_list()
+
+    # Clean up all storage domains which are not in GE yaml
+    helpers.storage_cleanup()

@@ -10,12 +10,23 @@ import os
 
 from rrmngmnt import ssh
 from rhevmtests import config
-from art.rhevm_api.resources import User, Host
 from art.test_handler import exceptions
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.low_level.jobs as ll_jobs
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
+from art.rhevm_api.resources import User, Host, storage
+from art.rhevm_api.tests_lib.low_level import (
+    vms as ll_vms,
+    jobs as ll_jobs,
+    hosts as ll_hosts,
+    templates as ll_templates,
+    storagedomains as ll_sd,
+)
+from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
+from art.rhevm_api.utils.test_utils import wait_for_tasks
+
+
+NFS = config.STORAGE_TYPE_NFS
+GULSTERFS = config.STORAGE_TYPE_GLUSTER
+GLUSTER_MNT_OPTS = ['-t', 'glusterfs']
+NFS_MNT_OPTS = ['-t', 'nfs', '-v', '-o', 'vers=3']
 
 logger = logging.getLogger(__name__)
 
@@ -246,3 +257,55 @@ def get_vm_resource(vm):
         raise exceptions.CanNotFindIP("Failed to get IP for: %s" % vm)
     ip = ip["ip"]
     return get_host_resource(ip, config.VMS_LINUX_PW)
+
+
+def cleanup_file_resources(storage_types=(GULSTERFS, NFS)):
+    """
+    Clean all unused file resources
+    """
+    logger.info("Cleaning File based storage resources: %s", storage_types)
+    for storage_type in storage_types:
+        if storage_type == NFS:
+            for address, path in zip(
+                    config.UNUSED_DATA_DOMAIN_ADDRESSES,
+                    config.UNUSED_DATA_DOMAIN_PATHS
+            ):
+                storage.clean_mount_point(
+                    config.HOSTS[0], address, path, opts=NFS_MNT_OPTS
+                )
+        elif storage_type == GULSTERFS:
+            for address, path in zip(
+                    config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES,
+                    config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS
+            ):
+                storage.clean_mount_point(
+                    config.HOSTS[0], address, path, opts=GLUSTER_MNT_OPTS
+                )
+
+
+def storage_cleanup():
+    """
+    Clean up all storage domains which are not in GE yaml
+    """
+    logger.info("Retrieve all Storage domains")
+    engine_sds_objs = ll_sd.get_storage_domains()
+    logger.info(
+        "The storage domains names in engine: %s",
+        [sd_obj.get_name() for sd_obj in engine_sds_objs]
+    )
+    logger.info("The GE storage domains names: %s", config.SD_LIST)
+    for dc in config.dcs:
+        dc_name = dc['name']
+        spm = None
+        wait_for_tasks(config.VDC_HOST, config.VDC_ROOT_PASSWORD, dc_name)
+        for sd_obj in engine_sds_objs:
+            sd_name = sd_obj.get_name()
+            if sd_name not in config.SD_LIST:
+                spm = spm if spm else ll_hosts.getSPMHost(config.HOSTS)
+                logger.error(
+                    "SD LEFTOVER FOUND: NAME: %s, ID: %s, TYPE: %s",
+                    sd_name, sd_obj.id, sd_obj.storage.get_type()
+                )
+                hl_sd.destroy_storage_domain(sd_name, dc_name, host_name=spm)
+
+    cleanup_file_resources(config.opts['storages'])

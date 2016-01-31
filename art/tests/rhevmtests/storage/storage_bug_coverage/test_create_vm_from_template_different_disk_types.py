@@ -16,7 +16,7 @@ import art.test_handler.exceptions as errors
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
 from art.unittest_lib import attr, StorageTest as TestCase
-from rhevmtests.storage import helpers as storage_helpers
+import rhevmtests.helpers as rhevm_helpers
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ def setup_module():
     """ creates datacenter, adds hosts, clusters, storages according to
     the config file
     """
-    storage_helpers.storage_cleanup()
+    rhevm_helpers.storage_cleanup()
 
 
 @attr(tier=2)

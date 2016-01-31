@@ -8,8 +8,8 @@ def setup_package():
     config.HOSTS_FOR_TEST = config.HOSTS[:]
     config.HOSTS_FOR_TEST.remove(config.HOST_FOR_MOUNT)
 
-    import rhevmtests.storage.helpers as storage_helpers
-    storage_helpers.storage_cleanup()
+    import rhevmtests.helpers as rhevm_helpers
+    rhevm_helpers.storage_cleanup()
 
     config.CONNECTIONS.append(config.ISCSI_STORAGE_ENTRIES.copy())
     config.CONNECTIONS.append(config.ISCSI_STORAGE_ENTRIES.copy())

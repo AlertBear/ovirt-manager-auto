@@ -1,6 +1,6 @@
 import config
 import logging
-import rhevmtests.storage.helpers as storage_helpers
+import rhevmtests.helpers as rhevm_helpers
 from art.core_api import apis_exceptions
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.utils.test_utils import wait_for_tasks
@@ -25,10 +25,9 @@ ENUMS = config.ENUMS
 
 def setup_module():
     """
-    Creates datacenter, adds hosts, clusters, and storage domains depending
-    on config file
+    Clean the storage domains which not in the ge yaml
     """
-    storage_helpers.storage_cleanup()
+    rhevm_helpers.storage_cleanup()
 
 
 @attr(tier=1)
