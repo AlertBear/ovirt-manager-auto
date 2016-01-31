@@ -363,6 +363,7 @@ class MultiVM(HAReservation):
         super(MultiVM, cls).setup_class()
         param_dict = dict(config.GENERAL_VM_PARAMS)
         param_dict['memory'] = config.GB / 2
+        param_dict['memory_guaranteed'] = config.GB / 2
         param_dict.update(config.INSTALL_VM_PARAMS)
         cls.vm_list = ["%s_%d" % (cls.vm_name, i) for i in range(8)]
         for vm_name in cls.vm_list:
