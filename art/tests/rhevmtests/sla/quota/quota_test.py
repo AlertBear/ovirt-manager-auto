@@ -6,8 +6,8 @@ Include CRUD tests, different limitations of storage, memory and vcpu tests
 import logging
 import unittest2
 
+import config as conf
 from art.unittest_lib import attr
-from rhevmtests.sla.quota import config as c
 import art.test_handler.exceptions as errors
 from art.unittest_lib import SlaTest as TestCase
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
@@ -57,7 +57,7 @@ class BaseQuotaClass(TestCase):
             if not ll_datacenters.create_quota_limits(
                 dc_name=dc_name,
                 quota_name=quota_name,
-                limit_type=c.LIMIT_TYPE_CLUSTER,
+                limit_type=conf.LIMIT_TYPE_CLUSTER,
                 limits_d=quota_cluster_limit
             ):
                 logger.error(
@@ -74,7 +74,7 @@ class BaseQuotaClass(TestCase):
             if not ll_datacenters.create_quota_limits(
                 dc_name=dc_name,
                 quota_name=quota_name,
-                limit_type=c.LIMIT_TYPE_STORAGE,
+                limit_type=conf.LIMIT_TYPE_STORAGE,
                 limits_d=quota_storage_limit
             ):
                 logger.error(
@@ -141,17 +141,17 @@ class QuotaTestCRUD(BaseQuotaClass):
         Create Quota with some limits
         """
         logger.info(
-            "Create quota %s with cluster and storage limits", c.QUOTA2_NAME
+            "Create quota %s with cluster and storage limits", conf.QUOTA2_NAME
         )
         self.assertTrue(
             self._create_quota_with_limits(
-                dc_name=c.DC_NAME_0,
-                quota_name=c.QUOTA2_NAME,
-                quota_params={"description": c.QUOTA2_DESC},
+                dc_name=conf.DC_NAME_0,
+                quota_name=conf.QUOTA2_NAME,
+                quota_params={"description": conf.QUOTA2_DESC},
                 quota_cluster_limit={
-                    None: {c.VCPU_LIMIT: 1, c.MEMORY_LIMIT: 1024}
+                    None: {conf.VCPU_LIMIT: 1, conf.MEMORY_LIMIT: 1024}
                 },
-                quota_storage_limit={None: {c.STORAGE_LIMIT: 10}}
+                quota_storage_limit={None: {conf.STORAGE_LIMIT: 10}}
             )
         )
 
@@ -160,25 +160,25 @@ class QuotaTestCRUD(BaseQuotaClass):
         """
         Update quota
         """
-        logger.info("Update quota %s description", c.QUOTA2_NAME)
+        logger.info("Update quota %s description", conf.QUOTA2_NAME)
         self.assertTrue(
             ll_datacenters.update_dc_quota(
-                dc_name=c.DC_NAME_0,
-                quota_name=c.QUOTA2_NAME,
-                description=c.QUOTA_DESC
+                dc_name=conf.DC_NAME_0,
+                quota_name=conf.QUOTA2_NAME,
+                description=conf.QUOTA_DESC
             ),
-            "Failed to update quota %s description" % c.QUOTA2_NAME
+            "Failed to update quota %s description" % conf.QUOTA2_NAME
         )
 
-        logger.info("Update quota %s limits", c.QUOTA2_NAME)
+        logger.info("Update quota %s limits", conf.QUOTA2_NAME)
         self.assertTrue(
             self._create_quota_limits(
-                dc_name=c.DC_NAME_0,
-                quota_name=c.QUOTA2_NAME,
+                dc_name=conf.DC_NAME_0,
+                quota_name=conf.QUOTA2_NAME,
                 quota_cluster_limit={
-                    None: {c.VCPU_LIMIT: 2, c.MEMORY_LIMIT: 2048}
+                    None: {conf.VCPU_LIMIT: 2, conf.MEMORY_LIMIT: 2048}
                 },
-                quota_storage_limit={None: {c.STORAGE_LIMIT: 20}}
+                quota_storage_limit={None: {conf.STORAGE_LIMIT: 20}}
             )
         )
 
@@ -188,15 +188,16 @@ class QuotaTestCRUD(BaseQuotaClass):
         Delete Quota
         """
         logger.info(
-            "Remove quota %s from datacenter %s", c.QUOTA2_NAME, c.DC_NAME_0
+            "Remove quota %s from datacenter %s",
+            conf.QUOTA2_NAME, conf.DC_NAME_0
         )
         self.assertTrue(
             ll_datacenters.delete_dc_quota(
-                dc_name=c.DC_NAME_0,
-                quota_name=c.QUOTA2_NAME
+                dc_name=conf.DC_NAME_0,
+                quota_name=conf.QUOTA2_NAME
             ),
             "Failed to delete quota %s from datacenter %s" %
-            (c.QUOTA2_NAME, c.DC_NAME_0)
+            (conf.QUOTA2_NAME, conf.DC_NAME_0)
         )
 
 
@@ -207,8 +208,8 @@ class QuotaTestMode(BaseQuotaClass):
     """
     __test__ = False
     quota_mode = None
-    quota_storage_limit = {None: {c.STORAGE_LIMIT: 20}}
-    quota_cluster_limit = {None: {c.MEMORY_LIMIT: 1, c.VCPU_LIMIT: 1}}
+    quota_storage_limit = {None: {conf.STORAGE_LIMIT: 20}}
+    quota_cluster_limit = {None: {conf.MEMORY_LIMIT: 1, conf.VCPU_LIMIT: 1}}
     cluster_hard_limit_pct = None
 
     def _check_hotplug(self, vm_state, audit_msg_type, vm_sockets):
@@ -224,26 +225,29 @@ class QuotaTestMode(BaseQuotaClass):
         :raise: assertError
         """
         max_id = ll_events.get_max_event_id(None)
-        logger.info("Start vm %s", c.VM_NAME)
+        logger.info("Start vm %s", conf.VM_NAME)
         self.assertTrue(
             ll_vms.startVm(
-                positive=True, vm=c.VM_NAME, wait_for_status=vm_state
+                positive=True, vm=conf.VM_NAME, wait_for_status=vm_state
             ),
-            "Failed to start vm %s" % c.VM_NAME
+            "Failed to start vm %s" % conf.VM_NAME
         )
 
-        compare = False if self.quota_mode == c.QUOTA_ENFORCED_MODE else True
+        compare = (
+            False if self.quota_mode == conf.QUOTA_ENFORCED_MODE else True
+        )
         logger.info(
-            "Update vm %s number of cpu sockets to %d", c.VM_NAME, vm_sockets
+            "Update vm %s number of cpu sockets to %d",
+            conf.VM_NAME, vm_sockets
         )
         self.assertTrue(
             ll_vms.updateVm(
                 positive=True,
-                vm=c.VM_NAME,
+                vm=conf.VM_NAME,
                 cpu_socket=vm_sockets,
                 compare=compare
             ),
-            "Failed to update vm %s" % c.VM_NAME
+            "Failed to update vm %s" % conf.VM_NAME
         )
 
         logger.info("Check quota message under events")
@@ -261,7 +265,7 @@ class QuotaTestMode(BaseQuotaClass):
         otherwise False
         :rtype: bool
         """
-        message = c.QUOTA_EVENTS[self.quota_mode][audit_msg_type]
+        message = conf.QUOTA_EVENTS[self.quota_mode][audit_msg_type]
         logger.info(
             "Waiting for event with message %s, after event with id %s",
             message, max_id
@@ -285,24 +289,24 @@ class QuotaTestMode(BaseQuotaClass):
             last_event_id = ll_events.get_max_event_id(None)
         if vm_params:
             logger.info(
-                "Update vm %s with parameters: %s", c.VM_NAME, vm_params
+                "Update vm %s with parameters: %s", conf.VM_NAME, vm_params
             )
             self.assertTrue(
                 ll_vms.updateVm(
-                    positive=True, vm=c.VM_NAME, **vm_params
+                    positive=True, vm=conf.VM_NAME, **vm_params
                 ),
-                "Failed to update vm %s" % c.VM_NAME
+                "Failed to update vm %s" % conf.VM_NAME
             )
         positive = True
         if (
-            audit_msg_type and audit_msg_type == c.EXCEED_TYPE and
-            self.quota_mode == c.QUOTA_ENFORCED_MODE
+            audit_msg_type and audit_msg_type == conf.EXCEED_TYPE and
+            self.quota_mode == conf.QUOTA_ENFORCED_MODE
         ):
             positive = False
-        logger.info("Start vm %s", c.VM_NAME)
+        logger.info("Start vm %s", conf.VM_NAME)
         self.assertTrue(
-            ll_vms.startVm(positive=positive, vm=c.VM_NAME),
-            "Failed to start vm %s" % c.VM_NAME
+            ll_vms.startVm(positive=positive, vm=conf.VM_NAME),
+            "Failed to start vm %s" % conf.VM_NAME
         )
         if last_event_id:
             logger.info(
@@ -332,28 +336,28 @@ class QuotaTestMode(BaseQuotaClass):
             last_event_id = ll_events.get_max_event_id(None)
         positive = True
         if (
-            audit_msg_type and audit_msg_type == c.EXCEED_TYPE and
-            self.quota_mode == c.QUOTA_ENFORCED_MODE
+            audit_msg_type and audit_msg_type == conf.EXCEED_TYPE and
+            self.quota_mode == conf.QUOTA_ENFORCED_MODE
         ):
             positive = False
-        logger.info("Get quota %s id", c.QUOTA_NAME)
+        logger.info("Get quota %s id", conf.QUOTA_NAME)
         q_id = ll_datacenters.get_quota_id_by_name(
-            dc_name=c.DC_NAME_0, quota_name=c.QUOTA_NAME
+            dc_name=conf.DC_NAME_0, quota_name=conf.QUOTA_NAME
         )
         logger.info(
-            "Add new disk %s with size of %d", c.DISK_NAME, provisioned_size
+            "Add new disk %s with size of %d", conf.DISK_NAME, provisioned_size
         )
         self.assertTrue(
             ll_disks.addDisk(
                 positive=positive,
-                alias=c.DISK_NAME,
+                alias=conf.DISK_NAME,
                 provisioned_size=provisioned_size,
-                interface=c.DISK_INTERFACE,
-                format=c.DISK_FORMAT_COW,
-                storagedomain=c.STORAGE_NAME[0],
+                interface=conf.DISK_INTERFACE,
+                format=conf.DISK_FORMAT_COW,
+                storagedomain=conf.STORAGE_NAME[0],
                 quota=q_id
             ),
-            "Failed to add new disk %s" % c.DISK_NAME
+            "Failed to add new disk %s" % conf.DISK_NAME
         )
         if last_event_id:
             logger.info(
@@ -379,8 +383,8 @@ class QuotaTestMode(BaseQuotaClass):
         :type usage: float
         """
         quota_limit_usage = ll_datacenters.get_quota_limit_usage(
-            dc_name=c.DC_NAME_0,
-            quota_name=c.QUOTA_NAME,
+            dc_name=conf.DC_NAME_0,
+            quota_name=conf.QUOTA_NAME,
             limit_type=limit_type,
             usage=usage_type
         )
@@ -400,63 +404,59 @@ class QuotaTestMode(BaseQuotaClass):
         """
         logger.info(
             "Update datacenter %s quota mode to %s",
-            c.DC_NAME_0, c.QUOTA_MODES[cls.quota_mode]
+            conf.DC_NAME_0, conf.QUOTA_MODES[cls.quota_mode]
         )
         if not ll_datacenters.updateDataCenter(
             positive=True,
-            datacenter=c.DC_NAME_0,
-            quota_mode=c.QUOTA_MODES[cls.quota_mode]
+            datacenter=conf.DC_NAME_0,
+            quota_mode=conf.QUOTA_MODES[cls.quota_mode]
         ):
             raise errors.DataCenterException(
-                "Failed to update datacenter %s quota mode" % c.DC_NAME_0
+                "Failed to update datacenter %s quota mode" % conf.DC_NAME_0
             )
         if cls.cluster_hard_limit_pct:
-            logger.info("Update quota %s cluster grace value", c.QUOTA_NAME)
+            logger.info("Update quota %s cluster grace value", conf.QUOTA_NAME)
             if not ll_datacenters.update_dc_quota(
-                dc_name=c.DC_NAME_0,
-                quota_name=c.QUOTA_NAME,
+                dc_name=conf.DC_NAME_0,
+                quota_name=conf.QUOTA_NAME,
                 cluster_hard_limit_pct=cls.cluster_hard_limit_pct
             ):
                 raise errors.DataCenterException(
-                    "Failed to update quota %s" % c.QUOTA_NAME
+                    "Failed to update quota %s" % conf.QUOTA_NAME
                 )
         logger.info(
-            "Create limits on quota %s", c.QUOTA_NAME
+            "Create limits on quota %s", conf.QUOTA_NAME
         )
         if not cls._create_quota_limits(
-            dc_name=c.DC_NAME_0,
-            quota_name=c.QUOTA_NAME,
+            dc_name=conf.DC_NAME_0,
+            quota_name=conf.QUOTA_NAME,
             quota_cluster_limit=cls.quota_cluster_limit,
             quota_storage_limit=cls.quota_storage_limit
         ):
             raise errors.DataCenterException(
                 "Failed to create cluster memory limit on quota %s" %
-                c.QUOTA_NAME
+                conf.QUOTA_NAME
             )
-        logger.info("Get quota %s id", c.QUOTA_NAME)
+        logger.info("Get quota %s id", conf.QUOTA_NAME)
         q_id = ll_datacenters.get_quota_id_by_name(
-            dc_name=c.DC_NAME_0, quota_name=c.QUOTA_NAME
+            dc_name=conf.DC_NAME_0, quota_name=conf.QUOTA_NAME
         )
         cpu_profile_id = ll_clusters.get_cpu_profile_id_by_name(
-            c.CLUSTER_NAME[0], c.CLUSTER_NAME[0]
+            conf.CLUSTER_NAME[0], conf.CLUSTER_NAME[0]
         )
-        logger.info("Create new vm %s", c.VM_NAME)
-        # TODO: add type as W/A for bug
-        # https://bugzilla.redhat.com/show_bug.cgi?id=1253261
-        # add display_type as W/A for bug
-        # https://bugzilla.redhat.com/show_bug.cgi?id=1253263
-        # must remove both after bugs fixed
+        logger.info("Create new vm %s", conf.VM_NAME)
         if not ll_vms.createVm(
-            positive=True, vmName=c.VM_NAME,
-            vmDescription=c.VM_DESC,
-            cluster=c.CLUSTER_NAME[0],
-            storageDomainName=c.STORAGE_NAME[0],
-            size=c.SIZE_10_GB, memory=c.SIZE_512_MB,
-            vm_quota=q_id, disk_quota=q_id, type=c.VM_TYPE_SERVER,
-            nic=c.NIC_NAME[0], network=c.MGMT_BRIDGE,
-            cpu_profile_id=cpu_profile_id, display_type=c.VM_DISPLAY_TYPE
+            positive=True, vmName=conf.VM_NAME,
+            vmDescription=conf.VM_DESC,
+            cluster=conf.CLUSTER_NAME[0],
+            storageDomainName=conf.STORAGE_NAME[0],
+            size=conf.SIZE_10_GB, memory=conf.SIZE_512_MB,
+            memory_guaranteed=conf.SIZE_512_MB,
+            vm_quota=q_id, disk_quota=q_id,
+            nic=conf.NIC_NAME[0], network=conf.MGMT_BRIDGE,
+            cpu_profile_id=cpu_profile_id
         ):
-            raise errors.VMException("Failed to create vm %s", c.VM_NAME)
+            raise errors.VMException("Failed to create vm %s", conf.VM_NAME)
 
     @classmethod
     def teardown_class(cls):
@@ -466,49 +466,49 @@ class QuotaTestMode(BaseQuotaClass):
         3) Update quota grace value
         4) Update datacenter quota mode
         """
-        ll_vms.stop_vms_safely([c.VM_NAME])
-        logger.info("Remove vm %s", c.VM_NAME)
-        if not ll_vms.removeVm(positive=True, vm=c.VM_NAME):
-            logger.error("Failed to remove vm %s", c.VM_NAME)
+        ll_vms.stop_vms_safely([conf.VM_NAME])
+        logger.info("Remove vm %s", conf.VM_NAME)
+        if not ll_vms.removeVm(positive=True, vm=conf.VM_NAME):
+            logger.error("Failed to remove vm %s", conf.VM_NAME)
         quota_limits_d = {
-            c.LIMIT_TYPE_CLUSTER: cls.quota_cluster_limit,
-            c.LIMIT_TYPE_STORAGE: cls.quota_storage_limit
+            conf.LIMIT_TYPE_CLUSTER: cls.quota_cluster_limit,
+            conf.LIMIT_TYPE_STORAGE: cls.quota_storage_limit
         }
         for limit_type, limits in quota_limits_d.iteritems():
             if limits:
                 logger.info(
-                    "Delete %s limit on quota %s", limit_type, c.QUOTA_NAME
+                    "Delete %s limit on quota %s", limit_type, conf.QUOTA_NAME
                 )
                 if not ll_datacenters.delete_quota_limits(
-                    dc_name=c.DC_NAME_0,
-                    quota_name=c.QUOTA_NAME,
+                    dc_name=conf.DC_NAME_0,
+                    quota_name=conf.QUOTA_NAME,
                     limit_type=limit_type,
                     objects_names_l=[None]
                 ):
                     logger.error(
                         "Failed to delete %s limit from quota %s",
-                        limit_type, c.QUOTA_NAME
+                        limit_type, conf.QUOTA_NAME
                     )
-        logger.info("Update quota %s cluster grace value", c.QUOTA_NAME)
+        logger.info("Update quota %s cluster grace value", conf.QUOTA_NAME)
         if not ll_datacenters.update_dc_quota(
-            dc_name=c.DC_NAME_0,
-            quota_name=c.QUOTA_NAME,
+            dc_name=conf.DC_NAME_0,
+            quota_name=conf.QUOTA_NAME,
             cluster_hard_limit_pct=20
         ):
             logger.error(
-                "Failed to update quota %s", c.QUOTA_NAME
+                "Failed to update quota %s", conf.QUOTA_NAME
             )
         logger.info(
             "Update datacenter %s quota mode to %s",
-            c.DC_NAME_0, c.QUOTA_MODES[c.QUOTA_NONE_MODE]
+            conf.DC_NAME_0, conf.QUOTA_MODES[conf.QUOTA_NONE_MODE]
         )
         if not ll_datacenters.updateDataCenter(
             positive=True,
-            datacenter=c.DC_NAME_0,
-            quota_mode=c.QUOTA_MODES[c.QUOTA_NONE_MODE]
+            datacenter=conf.DC_NAME_0,
+            quota_mode=conf.QUOTA_MODES[conf.QUOTA_NONE_MODE]
         ):
             logger.error(
-                "Failed to update datacenter %s quota mode", c.DC_NAME_0
+                "Failed to update datacenter %s quota mode", conf.DC_NAME_0
             )
 
 
@@ -517,7 +517,7 @@ class TestDeleteQuotaInUseAudit(QuotaTestMode):
     Negative: Delete quota in use under audit quota
     """
     __test__ = True
-    quota_mode = c.QUOTA_AUDIT_MODE
+    quota_mode = conf.QUOTA_AUDIT_MODE
 
     @polarion("RHEVM3-9406")
     def test_n_delete_quota_in_use(self):
@@ -526,7 +526,7 @@ class TestDeleteQuotaInUseAudit(QuotaTestMode):
         """
         self.assertFalse(
             ll_datacenters.delete_dc_quota(
-                dc_name=c.DC_NAME_0, quota_name=c.QUOTA_NAME
+                dc_name=conf.DC_NAME_0, quota_name=conf.QUOTA_NAME
             )
         )
 
@@ -536,7 +536,7 @@ class TestDeleteQuotaInUseEnforced(QuotaTestMode):
     Negative: Delete quota in use under enforced quota
     """
     __test__ = True
-    quota_mode = c.QUOTA_ENFORCED_MODE
+    quota_mode = conf.QUOTA_ENFORCED_MODE
 
     @polarion("RHEVM3-9447")
     def test_n_delete_quota_in_use(self):
@@ -545,7 +545,7 @@ class TestDeleteQuotaInUseEnforced(QuotaTestMode):
         """
         self.assertFalse(
             ll_datacenters.delete_dc_quota(
-                dc_name=c.DC_NAME_0, quota_name=c.QUOTA_NAME
+                dc_name=conf.DC_NAME_0, quota_name=conf.QUOTA_NAME
             )
         )
 
@@ -560,12 +560,12 @@ class TestQuotaCluster(QuotaTestMode):
         """
         Safely stop vm
         """
-        ll_vms.stop_vms_safely(vms_list=[c.VM_NAME])
-        logger.info("Update vm %s socket and cores number", c.VM_NAME)
+        ll_vms.stop_vms_safely(vms_list=[conf.VM_NAME])
+        logger.info("Update vm %s socket and cores number", conf.VM_NAME)
         if not ll_vms.updateVm(
-            positive=True, vm=c.VM_NAME, cpu_socket=1, cpu_cores=1
+            positive=True, vm=conf.VM_NAME, cpu_socket=1, cpu_cores=1
         ):
-            logger.error("Failed to update vm %s", c.VM_NAME)
+            logger.error("Failed to update vm %s", conf.VM_NAME)
 
 
 class TestQuotaAuditModeMemory(TestQuotaCluster):
@@ -573,8 +573,8 @@ class TestQuotaAuditModeMemory(TestQuotaCluster):
     Check cluster memory limit under audit quota
     """
     __test__ = True
-    quota_mode = c.QUOTA_AUDIT_MODE
-    quota_cluster_limit = {None: {c.MEMORY_LIMIT: 1, c.VCPU_LIMIT: -1}}
+    quota_mode = conf.QUOTA_AUDIT_MODE
+    quota_cluster_limit = {None: {conf.MEMORY_LIMIT: 1, conf.VCPU_LIMIT: -1}}
     cluster_hard_limit_pct = 50
 
     @polarion("RHEVM3-9428")
@@ -590,8 +590,8 @@ class TestQuotaAuditModeMemory(TestQuotaCluster):
         Check in grace memory limit
         """
         self._check_cluster_limits(
-            vm_params={c.VM_MEMORY: c.SIZE_1280_MB},
-            audit_msg_type=c.GRACE_TYPE
+            vm_params={conf.VM_MEMORY: conf.SIZE_1280_MB},
+            audit_msg_type=conf.GRACE_TYPE
         )
 
     @polarion("RHEVM3-9433")
@@ -600,7 +600,8 @@ class TestQuotaAuditModeMemory(TestQuotaCluster):
         Check over grace memory limit
         """
         self._check_cluster_limits(
-            vm_params={c.VM_MEMORY: c.SIZE_2_GB}, audit_msg_type=c.EXCEED_TYPE
+            vm_params={conf.VM_MEMORY: conf.SIZE_2_GB},
+            audit_msg_type=conf.EXCEED_TYPE
         )
 
 
@@ -609,8 +610,8 @@ class TestQuotaEnforcedModeMemory(TestQuotaCluster):
     Check cluster memory limit under enforced quota
     """
     __test__ = True
-    quota_mode = c.QUOTA_ENFORCED_MODE
-    quota_cluster_limit = {None: {c.MEMORY_LIMIT: 1, c.VCPU_LIMIT: -1}}
+    quota_mode = conf.QUOTA_ENFORCED_MODE
+    quota_cluster_limit = {None: {conf.MEMORY_LIMIT: 1, conf.VCPU_LIMIT: -1}}
     cluster_hard_limit_pct = 50
 
     @polarion("RHEVM3-9418")
@@ -626,8 +627,8 @@ class TestQuotaEnforcedModeMemory(TestQuotaCluster):
         Check in grace memory limit
         """
         self._check_cluster_limits(
-            vm_params={c.VM_MEMORY: c.SIZE_1280_MB},
-            audit_msg_type=c.GRACE_TYPE
+            vm_params={conf.VM_MEMORY: conf.SIZE_1280_MB},
+            audit_msg_type=conf.GRACE_TYPE
         )
 
     @polarion("RHEVM3-9409")
@@ -636,7 +637,8 @@ class TestQuotaEnforcedModeMemory(TestQuotaCluster):
         Check over grace memory limit
         """
         self._check_cluster_limits(
-            vm_params={c.VM_MEMORY: c.SIZE_2_GB}, audit_msg_type=c.EXCEED_TYPE
+            vm_params={conf.VM_MEMORY: conf.SIZE_2_GB},
+            audit_msg_type=conf.EXCEED_TYPE
         )
 
 
@@ -645,11 +647,11 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
     Check cluster vcpu limit under audit quota
     """
     __test__ = True
-    quota_mode = c.QUOTA_AUDIT_MODE
+    quota_mode = conf.QUOTA_AUDIT_MODE
     quota_cluster_limit = {
         None: {
-            c.VCPU_LIMIT: c.MINIMAL_CPU_LIMIT,
-            c.MEMORY_LIMIT: c.DEFAULT_MEMORY_LIMIT
+            conf.VCPU_LIMIT: conf.MINIMAL_CPU_LIMIT,
+            conf.MEMORY_LIMIT: conf.DEFAULT_MEMORY_LIMIT
         }
     }
     cluster_hard_limit_pct = 100
@@ -667,31 +669,33 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
         Check in grace vcpu limit
         """
         self._check_cluster_limits(
-            vm_params={c.VM_CPU_CORES: c.NUM_OF_CPUS[c.GRACE_TYPE]},
-            audit_msg_type=c.GRACE_TYPE
+            vm_params={conf.VM_CPU_CORES: conf.NUM_OF_CPUS[conf.GRACE_TYPE]},
+            audit_msg_type=conf.GRACE_TYPE
         )
 
-    @unittest2.skipIf(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
+    @unittest2.skipIf(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-9438")
     def test_c_quota_vcpu_limit_over_grace(self):
         """
         Check over grace vcpu limit
         """
         self._check_cluster_limits(
-            vm_params={c.VM_CPU_CORES: c.NUM_OF_CPUS[c.EXCEED_TYPE]},
-            audit_msg_type=c.EXCEED_TYPE
+            vm_params={conf.VM_CPU_CORES: conf.NUM_OF_CPUS[conf.EXCEED_TYPE]},
+            audit_msg_type=conf.EXCEED_TYPE
         )
 
-    @unittest2.skipIf(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
+    @unittest2.skipIf(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12366")
     def test_d_quota_vcpu_hotplug_in_grace_vm_up(self):
         """
         Hotplug additional vCPU, when vm is up,
         to put quota vCPU limit in grace
         """
-        self._check_hotplug(c.VM_UP, c.GRACE_TYPE, c.NUM_OF_CPUS[c.GRACE_TYPE])
+        self._check_hotplug(
+            conf.VM_UP, conf.GRACE_TYPE, conf.NUM_OF_CPUS[conf.GRACE_TYPE]
+        )
 
-    @unittest2.skipIf(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
+    @unittest2.skipIf(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12367")
     def test_e_quota_vcpu_hotplug_in_exceed_vm_up(self):
         """
@@ -699,31 +703,39 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
         to put quota vCPU limit over grace
         """
         self._check_hotplug(
-            c.VM_UP, c.EXCEED_TYPE, c.NUM_OF_CPUS[c.EXCEED_TYPE]
+            conf.VM_UP, conf.EXCEED_TYPE, conf.NUM_OF_CPUS[conf.EXCEED_TYPE]
         )
 
-    @unittest2.skipIf(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
+    @unittest2.skipIf(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12364")
-    @bz({"1167081": {c.BZ_ENGINE: None, c.BZ_VERSION: [c.VERSION_35]}})
+    @bz(
+        {"1167081": {conf.BZ_ENGINE: None, conf.BZ_VERSION: [conf.VERSION_35]}}
+    )
     def test_f_quota_vcpu_hotplug_in_grace_vm_powering_up(self):
         """
         Hotplug additional vCPU, when vm is powering up,
         to put quota vCPU limit in grace
         """
         self._check_hotplug(
-            c.VM_POWER_UP, c.GRACE_TYPE, c.NUM_OF_CPUS[c.GRACE_TYPE]
+            conf.VM_POWER_UP,
+            conf.GRACE_TYPE,
+            conf.NUM_OF_CPUS[conf.GRACE_TYPE]
         )
 
-    @unittest2.skipIf(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
+    @unittest2.skipIf(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12365")
-    @bz({"1167081": {c.BZ_ENGINE: None, c.BZ_VERSION: [c.VERSION_35]}})
+    @bz(
+        {"1167081": {conf.BZ_ENGINE: None, conf.BZ_VERSION: [conf.VERSION_35]}}
+    )
     def test_g_quota_vcpu_hotplug_in_exceed_vm_up(self):
         """
         Hotplug additional vCPU, when vm is powering up,
         to put quota vCPU limit over grace
         """
         self._check_hotplug(
-            c.VM_POWER_UP, c.EXCEED_TYPE, c.NUM_OF_CPUS[c.EXCEED_TYPE]
+            conf.VM_POWER_UP,
+            conf.EXCEED_TYPE,
+            conf.NUM_OF_CPUS[conf.EXCEED_TYPE]
         )
 
 
@@ -732,11 +744,11 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
     Check cluster vcpu limit under enforced quota
     """
     __test__ = True
-    quota_mode = c.QUOTA_ENFORCED_MODE
+    quota_mode = conf.QUOTA_ENFORCED_MODE
     quota_cluster_limit = {
         None: {
-            c.VCPU_LIMIT: c.MINIMAL_CPU_LIMIT,
-            c.MEMORY_LIMIT: c.DEFAULT_MEMORY_LIMIT
+            conf.VCPU_LIMIT: conf.MINIMAL_CPU_LIMIT,
+            conf.MEMORY_LIMIT: conf.DEFAULT_MEMORY_LIMIT
         }
     }
     cluster_hard_limit_pct = 100
@@ -754,8 +766,8 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
         Check in grace vcpu limit
         """
         self._check_cluster_limits(
-            vm_params={c.VM_CPU_CORES: c.NUM_OF_CPUS[c.GRACE_TYPE]},
-            audit_msg_type=c.GRACE_TYPE
+            vm_params={conf.VM_CPU_CORES: conf.NUM_OF_CPUS[conf.GRACE_TYPE]},
+            audit_msg_type=conf.GRACE_TYPE
         )
 
     @polarion("RHEVM3-9403")
@@ -764,11 +776,11 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
         Check over grace vcpu limit
         """
         self._check_cluster_limits(
-            vm_params={c.VM_CPU_CORES: c.NUM_OF_CPUS[c.EXCEED_TYPE]},
-            audit_msg_type=c.EXCEED_TYPE
+            vm_params={conf.VM_CPU_CORES: conf.NUM_OF_CPUS[conf.EXCEED_TYPE]},
+            audit_msg_type=conf.EXCEED_TYPE
         )
 
-    @unittest2.skipIf(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
+    @unittest2.skipIf(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12370")
     def test_d_quota_vcpu_hotplug_in_grace_vm_up(self):
         """
@@ -776,10 +788,10 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
         to put quota vCPU limit in grace
         """
         self._check_hotplug(
-            c.VM_UP, c.GRACE_TYPE, c.NUM_OF_CPUS[c.GRACE_TYPE]
+            conf.VM_UP, conf.GRACE_TYPE, conf.NUM_OF_CPUS[conf.GRACE_TYPE]
         )
 
-    @unittest2.skipIf(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
+    @unittest2.skipIf(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12371")
     def test_e_quota_vcpu_hotplug_in_exceed_vm_up(self):
         """
@@ -787,31 +799,39 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
         to put quota vCPU limit over grace
         """
         self._check_hotplug(
-            c.VM_UP, c.EXCEED_TYPE, c.NUM_OF_CPUS[c.EXCEED_TYPE]
+            conf.VM_UP, conf.EXCEED_TYPE, conf.NUM_OF_CPUS[conf.EXCEED_TYPE]
         )
 
-    @unittest2.skipIf(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
+    @unittest2.skipIf(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12368")
-    @bz({"1167081": {c.BZ_ENGINE: None, c.BZ_VERSION: [c.VERSION_35]}})
+    @bz(
+        {"1167081": {conf.BZ_ENGINE: None, conf.BZ_VERSION: [conf.VERSION_35]}}
+    )
     def test_f_quota_vcpu_hotplug_in_grace_vm_powering_up(self):
         """
         Hotplug additional vCPU, when vm is powering up,
         to put quota vCPU limit in grace
         """
         self._check_hotplug(
-            c.VM_POWER_UP, c.GRACE_TYPE, c.NUM_OF_CPUS[c.GRACE_TYPE]
+            conf.VM_POWER_UP,
+            conf.GRACE_TYPE,
+            conf.NUM_OF_CPUS[conf.GRACE_TYPE]
         )
 
-    @unittest2.skipIf(c.PPC_ARCH, c.PPC_SKIP_MESSAGE)
+    @unittest2.skipIf(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12369")
-    @bz({"1167081": {c.BZ_ENGINE: None, c.BZ_VERSION: [c.VERSION_35]}})
+    @bz(
+        {"1167081": {conf.BZ_ENGINE: None, conf.BZ_VERSION: [conf.VERSION_35]}}
+    )
     def test_g_quota_vcpu_hotplug_in_exceed_vm_up(self):
         """
         Hotplug additional vCPU, when vm is powering up,
         to put quota vCPU limit over grace
         """
         self._check_hotplug(
-            c.VM_POWER_UP, c.EXCEED_TYPE, c.NUM_OF_CPUS[c.EXCEED_TYPE]
+            conf.VM_POWER_UP,
+            conf.EXCEED_TYPE,
+            conf.NUM_OF_CPUS[conf.EXCEED_TYPE]
         )
 
 
@@ -825,11 +845,11 @@ class TestQuotaStorage(QuotaTestMode):
         """
         If disk exist, remove it
         """
-        logger.info("Check if disk %s exist", c.DISK_NAME)
-        if ll_disks.checkDiskExists(True, c.DISK_NAME):
-            logger.info("Delete disk %s", c.DISK_NAME)
-            if not hl_disks.delete_disks([c.DISK_NAME]):
-                logger.error("Failed to remove disk %s", c.DISK_NAME)
+        logger.info("Check if disk %s exist", conf.DISK_NAME)
+        if ll_disks.checkDiskExists(True, conf.DISK_NAME):
+            logger.info("Delete disk %s", conf.DISK_NAME)
+            if not hl_disks.delete_disks([conf.DISK_NAME]):
+                logger.error("Failed to remove disk %s", conf.DISK_NAME)
 
 
 class TestQuotaAuditModeStorage(TestQuotaStorage):
@@ -837,14 +857,14 @@ class TestQuotaAuditModeStorage(TestQuotaStorage):
     Check storage limitation under audit quota
     """
     __test__ = True
-    quota_mode = c.QUOTA_AUDIT_MODE
+    quota_mode = conf.QUOTA_AUDIT_MODE
 
     @polarion("RHEVM3-9440")
     def test_a_quota_storage_limit(self):
         """
         Check under grace storage limit
         """
-        self._check_storage_limit(provisioned_size=c.SIZE_10_GB)
+        self._check_storage_limit(provisioned_size=conf.SIZE_10_GB)
 
     @polarion("RHEVM3-9443")
     def test_b_quota_storage_limit_in_grace(self):
@@ -852,7 +872,7 @@ class TestQuotaAuditModeStorage(TestQuotaStorage):
         Check in grace storage limit
         """
         self._check_storage_limit(
-            provisioned_size=c.SIZE_14_GB, audit_msg_type=c.GRACE_TYPE
+            provisioned_size=conf.SIZE_14_GB, audit_msg_type=conf.GRACE_TYPE
         )
 
     @polarion("RHEVM3-9446")
@@ -861,7 +881,7 @@ class TestQuotaAuditModeStorage(TestQuotaStorage):
         Check over grace storage limit
         """
         self._check_storage_limit(
-            provisioned_size=c.SIZE_15_GB, audit_msg_type=c.EXCEED_TYPE
+            provisioned_size=conf.SIZE_15_GB, audit_msg_type=conf.EXCEED_TYPE
         )
 
 
@@ -870,14 +890,14 @@ class TestQuotaEnforcedModeStorage(TestQuotaStorage):
     Check storage limitation under audit quota
     """
     __test__ = True
-    quota_mode = c.QUOTA_ENFORCED_MODE
+    quota_mode = conf.QUOTA_ENFORCED_MODE
 
     @polarion("RHEVM3-9405")
     def test_a_quota_storage_limit(self):
         """
         Check under grace storage limit
         """
-        self._check_storage_limit(provisioned_size=c.SIZE_10_GB)
+        self._check_storage_limit(provisioned_size=conf.SIZE_10_GB)
 
     @polarion("RHEVM3-9407")
     def test_b_quota_storage_limit_in_grace(self):
@@ -885,7 +905,7 @@ class TestQuotaEnforcedModeStorage(TestQuotaStorage):
         Check in grace storage limit
         """
         self._check_storage_limit(
-            provisioned_size=c.SIZE_14_GB, audit_msg_type=c.GRACE_TYPE
+            provisioned_size=conf.SIZE_14_GB, audit_msg_type=conf.GRACE_TYPE
         )
 
     @polarion("RHEVM3-9404")
@@ -894,7 +914,7 @@ class TestQuotaEnforcedModeStorage(TestQuotaStorage):
         Check over grace storage limit
         """
         self._check_storage_limit(
-            provisioned_size=c.SIZE_15_GB, audit_msg_type=c.EXCEED_TYPE
+            provisioned_size=conf.SIZE_15_GB, audit_msg_type=conf.EXCEED_TYPE
         )
 
 
@@ -903,11 +923,11 @@ class TestQuotaConsumptionRunOnceVM(QuotaTestMode):
     Run vm once and check quota consumption
     """
     __test__ = True
-    quota_mode = c.QUOTA_AUDIT_MODE
+    quota_mode = conf.QUOTA_AUDIT_MODE
     quota_cluster_limit = {
         None: {
-            c.VCPU_LIMIT: c.DEFAULT_CPU_LIMIT,
-            c.MEMORY_LIMIT: c.DEFAULT_MEMORY_LIMIT
+            conf.VCPU_LIMIT: conf.DEFAULT_CPU_LIMIT,
+            conf.MEMORY_LIMIT: conf.DEFAULT_MEMORY_LIMIT
         }
     }
 
@@ -916,20 +936,20 @@ class TestQuotaConsumptionRunOnceVM(QuotaTestMode):
         """
         Run vm once and check quota consumption
         """
-        logger.info("Run once vm %s", c.VM_NAME)
+        logger.info("Run once vm %s", conf.VM_NAME)
         self.assertTrue(
-            ll_vms.runVmOnce(positive=True, vm=c.VM_NAME),
-            "Failed to run vm %s once" % c.VM_NAME
+            ll_vms.runVmOnce(positive=True, vm=conf.VM_NAME),
+            "Failed to run vm %s once" % conf.VM_NAME
         )
         self.check_limit_usage(
-            limit_type=c.LIMIT_TYPE_CLUSTER,
-            usage_type=c.MEMORY_USAGE,
-            usage=c.DEFAULT_MEMORY_USAGE
+            limit_type=conf.LIMIT_TYPE_CLUSTER,
+            usage_type=conf.MEMORY_USAGE,
+            usage=conf.DEFAULT_MEMORY_USAGE
         )
         self.check_limit_usage(
-            limit_type=c.LIMIT_TYPE_CLUSTER,
-            usage_type=c.VCPU_USAGE,
-            usage=c.DEFAULT_CPU_USAGE
+            limit_type=conf.LIMIT_TYPE_CLUSTER,
+            usage_type=conf.VCPU_USAGE,
+            usage=conf.DEFAULT_CPU_USAGE
         )
 
 
@@ -938,39 +958,39 @@ class TestQuotaConsumptionSnapshot(QuotaTestMode):
     Make snapshot and check quota consumption
     """
     __test__ = True
-    quota_mode = c.QUOTA_AUDIT_MODE
+    quota_mode = conf.QUOTA_AUDIT_MODE
 
     @polarion("RHEVM3-9397")
     def test_make_snapshot(self):
         """
         Make snapshot and check quota consumption
         """
-        logger.info("Start vm %s", c.VM_NAME)
+        logger.info("Start vm %s", conf.VM_NAME)
         self.assertTrue(
-            ll_vms.startVm(positive=True, vm=c.VM_NAME),
-            "Failed to start vm %s" % c.VM_NAME
+            ll_vms.startVm(positive=True, vm=conf.VM_NAME),
+            "Failed to start vm %s" % conf.VM_NAME
         )
-        logger.info("Create snapshot from vm %s", c.VM_NAME)
+        logger.info("Create snapshot from vm %s", conf.VM_NAME)
         self.assertTrue(
             ll_vms.addSnapshot(
-                positive=True, vm=c.VM_NAME, description=c.VM_SNAPSHOT
+                positive=True, vm=conf.VM_NAME, description=conf.VM_SNAPSHOT
             ),
-            "Failed to create snapshot from vm %s" % c.VM_NAME
+            "Failed to create snapshot from vm %s" % conf.VM_NAME
         )
         quota_limit_usage = ll_datacenters.get_quota_limit_usage(
-            dc_name=c.DC_NAME_0,
-            quota_name=c.QUOTA_NAME,
-            limit_type=c.LIMIT_TYPE_STORAGE,
-            usage=c.STORAGE_USAGE
+            dc_name=conf.DC_NAME_0,
+            quota_name=conf.QUOTA_NAME,
+            limit_type=conf.LIMIT_TYPE_STORAGE,
+            usage=conf.STORAGE_USAGE
         )
         logger.info(
             "Check if quota %s storage usage greater than %dGB",
-            c.QUOTA_NAME, c.DEFAULT_DISK_USAGE
+            conf.QUOTA_NAME, conf.DEFAULT_DISK_USAGE
         )
         self.assertTrue(
-            quota_limit_usage > c.DEFAULT_DISK_USAGE,
+            quota_limit_usage > conf.DEFAULT_DISK_USAGE,
             "Quota %s storage usage less or equal to %d" %
-            (c.QUOTA_NAME, c.DEFAULT_DISK_USAGE)
+            (conf.QUOTA_NAME, conf.DEFAULT_DISK_USAGE)
         )
 
 
@@ -979,37 +999,37 @@ class TestQuotaConsumptionTemplate(QuotaTestMode):
     Create template from vm, remove it and check quota consumption
     """
     __test__ = True
-    quota_mode = c.QUOTA_AUDIT_MODE
+    quota_mode = conf.QUOTA_AUDIT_MODE
 
     @polarion("RHEVM3-9394")
     def test_a_template_consumption(self):
         """
         Create template from vm, remove it and check quota consumption
         """
-        logger.info("Create template from vm %s", c.VM_NAME)
+        logger.info("Create template from vm %s", conf.VM_NAME)
         self.assertTrue(
             ll_templates.createTemplate(
-                positive=True, vm=c.VM_NAME,
-                name=c.TEMPLATE_NAME, cluster=c.CLUSTER_NAME[0]
+                positive=True, vm=conf.VM_NAME,
+                name=conf.TEMPLATE_NAME, cluster=conf.CLUSTER_NAME[0]
             ),
-            "Failed to create template from vm %s" % c.VM_NAME
+            "Failed to create template from vm %s" % conf.VM_NAME
         )
         self.check_limit_usage(
-            limit_type=c.LIMIT_TYPE_STORAGE,
-            usage_type=c.STORAGE_USAGE,
-            usage=c.FULL_DISK_USAGE
+            limit_type=conf.LIMIT_TYPE_STORAGE,
+            usage_type=conf.STORAGE_USAGE,
+            usage=conf.FULL_DISK_USAGE
         )
-        logger.info("Remove template %s", c.TEMPLATE_NAME)
+        logger.info("Remove template %s", conf.TEMPLATE_NAME)
         self.assertTrue(
             ll_templates.removeTemplate(
-                positive=True, template=c.TEMPLATE_NAME
+                positive=True, template=conf.TEMPLATE_NAME
             ),
-            "Failed to remove template %s" % c.TEMPLATE_NAME
+            "Failed to remove template %s" % conf.TEMPLATE_NAME
         )
         self.check_limit_usage(
-            limit_type=c.LIMIT_TYPE_STORAGE,
-            usage_type=c.STORAGE_USAGE,
-            usage=c.DEFAULT_DISK_USAGE
+            limit_type=conf.LIMIT_TYPE_STORAGE,
+            usage_type=conf.STORAGE_USAGE,
+            usage=conf.DEFAULT_DISK_USAGE
         )
 
     @classmethod
@@ -1017,13 +1037,15 @@ class TestQuotaConsumptionTemplate(QuotaTestMode):
         """
         Check if template still exist and remove it
         """
-        logger.info("Check if template %s exist", c.TEMPLATE_NAME)
-        if ll_templates.check_template_existence(c.TEMPLATE_NAME):
-            logger.info("Try to remove template %s", c.TEMPLATE_NAME)
+        logger.info("Check if template %s exist", conf.TEMPLATE_NAME)
+        if ll_templates.check_template_existence(conf.TEMPLATE_NAME):
+            logger.info("Try to remove template %s", conf.TEMPLATE_NAME)
             if not ll_templates.removeTemplate(
-                positive=True, template=c.TEMPLATE_NAME
+                positive=True, template=conf.TEMPLATE_NAME
             ):
-                logger.error("Failed to remove template %s", c.TEMPLATE_NAME)
+                logger.error(
+                    "Failed to remove template %s", conf.TEMPLATE_NAME
+                )
         super(TestQuotaConsumptionTemplate, cls).teardown_class()
 
 
@@ -1032,49 +1054,49 @@ class TestQuotaConsumptionVmWithDisk(QuotaTestMode):
     Create and remove vm with disk and check quota consumption
     """
     __test__ = True
-    quota_mode = c.QUOTA_AUDIT_MODE
+    quota_mode = conf.QUOTA_AUDIT_MODE
 
     @polarion("RHEVM3-9393")
     def test_vm_with_disk_consumption(self):
         """
         Check storage quota consumption, when add or remove vm with disk
         """
-        logger.info("Get quota %s id", c.QUOTA_NAME)
+        logger.info("Get quota %s id", conf.QUOTA_NAME)
         q_id = ll_datacenters.get_quota_id_by_name(
-            dc_name=c.DC_NAME_0, quota_name=c.QUOTA_NAME
+            dc_name=conf.DC_NAME_0, quota_name=conf.QUOTA_NAME
         )
         cpu_profile_id = ll_clusters.get_cpu_profile_id_by_name(
-            c.CLUSTER_NAME[0], c.CLUSTER_NAME[0]
+            conf.CLUSTER_NAME[0], conf.CLUSTER_NAME[0]
         )
-        logger.info("Create new vm %s", c.VM_NAME)
+        logger.info("Create new vm %s", conf.VM_NAME)
         self.assertTrue(
             ll_vms.createVm(
-                positive=True, vmName=c.TMP_VM_NAME,
-                vmDescription=c.VM_DESC,
-                cluster=c.CLUSTER_NAME[0],
-                storageDomainName=c.STORAGE_NAME[0],
-                size=c.SIZE_10_GB, memory=c.SIZE_512_MB,
+                positive=True, vmName=conf.TMP_VM_NAME,
+                vmDescription=conf.VM_DESC,
+                cluster=conf.CLUSTER_NAME[0],
+                storageDomainName=conf.STORAGE_NAME[0],
+                size=conf.SIZE_10_GB, memory=conf.SIZE_512_MB,
+                memory_guaranteed=conf.SIZE_512_MB,
                 vm_quota=q_id, disk_quota=q_id,
-                nic=c.NIC_NAME[0], network=c.MGMT_BRIDGE,
-                cpu_profile_id=cpu_profile_id,
-                display_type=c.VM_DISPLAY_TYPE
+                nic=conf.NIC_NAME[0], network=conf.MGMT_BRIDGE,
+                cpu_profile_id=cpu_profile_id
             ),
-            "Failed to create new vm %s" % c.TMP_VM_NAME
+            "Failed to create new vm %s" % conf.TMP_VM_NAME
         )
         self.check_limit_usage(
-            limit_type=c.LIMIT_TYPE_STORAGE,
-            usage_type=c.STORAGE_USAGE,
-            usage=c.FULL_DISK_USAGE
+            limit_type=conf.LIMIT_TYPE_STORAGE,
+            usage_type=conf.STORAGE_USAGE,
+            usage=conf.FULL_DISK_USAGE
         )
-        logger.info("Remove vm %s", c.TMP_VM_NAME)
+        logger.info("Remove vm %s", conf.TMP_VM_NAME)
         self.assertTrue(
-            ll_vms.removeVm(positive=True, vm=c.TMP_VM_NAME),
-            "Failed to remove vm %s" % c.TMP_VM_NAME
+            ll_vms.removeVm(positive=True, vm=conf.TMP_VM_NAME),
+            "Failed to remove vm %s" % conf.TMP_VM_NAME
         )
         self.check_limit_usage(
-            limit_type=c.LIMIT_TYPE_STORAGE,
-            usage_type=c.STORAGE_USAGE,
-            usage=c.DEFAULT_DISK_USAGE
+            limit_type=conf.LIMIT_TYPE_STORAGE,
+            usage_type=conf.STORAGE_USAGE,
+            usage=conf.DEFAULT_DISK_USAGE
         )
 
     @classmethod
@@ -1082,11 +1104,11 @@ class TestQuotaConsumptionVmWithDisk(QuotaTestMode):
         """
         Check if vm exist and remove it
         """
-        logger.info("Check if vm %s exist", c.TMP_VM_NAME)
-        if ll_vms.does_vm_exist(vm_name=c.TMP_VM_NAME):
-            logger.info("Remove vm %s", c.TMP_VM_NAME)
-            if not ll_vms.removeVm(positive=True, vm=c.TMP_VM_NAME):
-                logger.error("Failed to remove vm %s", c.TMP_VM_NAME)
+        logger.info("Check if vm %s exist", conf.TMP_VM_NAME)
+        if ll_vms.does_vm_exist(vm_name=conf.TMP_VM_NAME):
+            logger.info("Remove vm %s", conf.TMP_VM_NAME)
+            if not ll_vms.removeVm(positive=True, vm=conf.TMP_VM_NAME):
+                logger.error("Failed to remove vm %s", conf.TMP_VM_NAME)
         super(TestQuotaConsumptionVmWithDisk, cls).teardown_class()
 
 
@@ -1095,11 +1117,11 @@ class TestQuotaConsumptionBasicVmActions(QuotaTestMode):
     Run basic vm actions and check quota consumption
     """
     __test__ = True
-    quota_mode = c.QUOTA_AUDIT_MODE
+    quota_mode = conf.QUOTA_AUDIT_MODE
     quota_cluster_limit = {
         None: {
-            c.VCPU_LIMIT: c.DEFAULT_CPU_LIMIT,
-            c.MEMORY_LIMIT: c.DEFAULT_MEMORY_LIMIT
+            conf.VCPU_LIMIT: conf.DEFAULT_CPU_LIMIT,
+            conf.MEMORY_LIMIT: conf.DEFAULT_MEMORY_LIMIT
         }
     }
 
@@ -1108,80 +1130,81 @@ class TestQuotaConsumptionBasicVmActions(QuotaTestMode):
         """
         Run basic vm actions and check quota consumption
         """
-        logger.info("Start vm %s", c.VM_NAME)
+        logger.info("Start vm %s", conf.VM_NAME)
         self.assertTrue(
-            ll_vms.startVm(positive=True, vm=c.VM_NAME),
-            "Failed to start vm %s" % c.VM_NAME
+            ll_vms.startVm(positive=True, vm=conf.VM_NAME),
+            "Failed to start vm %s" % conf.VM_NAME
         )
         self.check_limit_usage(
-            limit_type=c.LIMIT_TYPE_CLUSTER,
-            usage_type=c.MEMORY_USAGE,
-            usage=c.DEFAULT_MEMORY_USAGE
+            limit_type=conf.LIMIT_TYPE_CLUSTER,
+            usage_type=conf.MEMORY_USAGE,
+            usage=conf.DEFAULT_MEMORY_USAGE
         )
         self.check_limit_usage(
-            limit_type=c.LIMIT_TYPE_CLUSTER,
-            usage_type=c.VCPU_USAGE,
-            usage=c.DEFAULT_CPU_USAGE
+            limit_type=conf.LIMIT_TYPE_CLUSTER,
+            usage_type=conf.VCPU_USAGE,
+            usage=conf.DEFAULT_CPU_USAGE
         )
         logger.info(
-            "Wait until vm %s state will not equal to %s", c.VM_NAME, c.VM_UP
+            "Wait until vm %s state will not equal to %s",
+            conf.VM_NAME, conf.VM_UP
         )
         self.assertTrue(
-            ll_vms.waitForVmsStates(positive=True, names=c.VM_NAME),
-            "Vm %s still not have state %s" % (c.VM_NAME, c.VM_UP)
+            ll_vms.waitForVmsStates(positive=True, names=conf.VM_NAME),
+            "Vm %s still not have state %s" % (conf.VM_NAME, conf.VM_UP)
         )
         self.check_limit_usage(
-            limit_type=c.LIMIT_TYPE_CLUSTER,
-            usage_type=c.MEMORY_USAGE,
-            usage=c.DEFAULT_MEMORY_USAGE
+            limit_type=conf.LIMIT_TYPE_CLUSTER,
+            usage_type=conf.MEMORY_USAGE,
+            usage=conf.DEFAULT_MEMORY_USAGE
         )
         self.check_limit_usage(
-            limit_type=c.LIMIT_TYPE_CLUSTER,
-            usage_type=c.VCPU_USAGE,
-            usage=c.DEFAULT_CPU_USAGE
+            limit_type=conf.LIMIT_TYPE_CLUSTER,
+            usage_type=conf.VCPU_USAGE,
+            usage=conf.DEFAULT_CPU_USAGE
         )
-        logger.info("Suspend vm %s", c.VM_NAME)
+        logger.info("Suspend vm %s", conf.VM_NAME)
         self.assertTrue(
-            ll_vms.suspendVm(positive=True, vm=c.VM_NAME),
-            "Failed to suspend vm %s" % c.VM_NAME
+            ll_vms.suspendVm(positive=True, vm=conf.VM_NAME),
+            "Failed to suspend vm %s" % conf.VM_NAME
         )
         self.check_limit_usage(
-            limit_type=c.LIMIT_TYPE_CLUSTER,
-            usage_type=c.MEMORY_USAGE,
-            usage=c.ZERO_USAGE
+            limit_type=conf.LIMIT_TYPE_CLUSTER,
+            usage_type=conf.MEMORY_USAGE,
+            usage=conf.ZERO_USAGE
         )
         self.check_limit_usage(
-            limit_type=c.LIMIT_TYPE_CLUSTER,
-            usage_type=c.VCPU_USAGE,
-            usage=c.ZERO_USAGE
+            limit_type=conf.LIMIT_TYPE_CLUSTER,
+            usage_type=conf.VCPU_USAGE,
+            usage=conf.ZERO_USAGE
         )
-        logger.info("Start vm %s", c.VM_NAME)
+        logger.info("Start vm %s", conf.VM_NAME)
         self.assertTrue(
-            ll_vms.startVm(positive=True, vm=c.VM_NAME),
-            "Failed to start vm %s" % c.VM_NAME
+            ll_vms.startVm(positive=True, vm=conf.VM_NAME),
+            "Failed to start vm %s" % conf.VM_NAME
         )
         self.check_limit_usage(
-            limit_type=c.LIMIT_TYPE_CLUSTER,
-            usage_type=c.MEMORY_USAGE,
-            usage=c.DEFAULT_MEMORY_USAGE
+            limit_type=conf.LIMIT_TYPE_CLUSTER,
+            usage_type=conf.MEMORY_USAGE,
+            usage=conf.DEFAULT_MEMORY_USAGE
         )
         self.check_limit_usage(
-            limit_type=c.LIMIT_TYPE_CLUSTER,
-            usage_type=c.VCPU_USAGE,
-            usage=c.DEFAULT_CPU_USAGE
+            limit_type=conf.LIMIT_TYPE_CLUSTER,
+            usage_type=conf.VCPU_USAGE,
+            usage=conf.DEFAULT_CPU_USAGE
         )
-        logger.info("Stop vm %s", c.VM_NAME)
+        logger.info("Stop vm %s", conf.VM_NAME)
         self.assertTrue(
-            ll_vms.stopVm(positive=True, vm=c.VM_NAME),
-            "Failed to stop vm %s" % c.VM_NAME
+            ll_vms.stopVm(positive=True, vm=conf.VM_NAME),
+            "Failed to stop vm %s" % conf.VM_NAME
         )
         self.check_limit_usage(
-            limit_type=c.LIMIT_TYPE_CLUSTER,
-            usage_type=c.MEMORY_USAGE,
-            usage=c.ZERO_USAGE
+            limit_type=conf.LIMIT_TYPE_CLUSTER,
+            usage_type=conf.MEMORY_USAGE,
+            usage=conf.ZERO_USAGE
         )
         self.check_limit_usage(
-            limit_type=c.LIMIT_TYPE_CLUSTER,
-            usage_type=c.VCPU_USAGE,
-            usage=c.ZERO_USAGE
+            limit_type=conf.LIMIT_TYPE_CLUSTER,
+            usage_type=conf.VCPU_USAGE,
+            usage=conf.ZERO_USAGE
         )

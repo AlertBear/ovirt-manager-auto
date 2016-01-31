@@ -4101,12 +4101,14 @@ def stop_vms_safely(vms_list):
     vms_action_stop = set()
     logger.info("Powering off VMs: %s", vms_list)
     for vm in vms_list:
-        if not get_vm_state(vm) == ENUMS['vm_state_down']:
-            if not stopVm(True, vm, async='true'):
-                vms_stop_failed.add(vm)
-            else:
-                vms_action_stop.add(vm)
-
+        if does_vm_exist(vm):
+            if not get_vm_state(vm) == ENUMS['vm_state_down']:
+                if not stopVm(True, vm, async='true'):
+                    vms_stop_failed.add(vm)
+                else:
+                    vms_action_stop.add(vm)
+        else:
+            logger.warning("Vm %s is not exist under engine", vm)
     for vm in vms_action_stop:
         if not waitForVMState(vm, ENUMS['vm_state_down']):
             vms_stop_failed.add(vm)

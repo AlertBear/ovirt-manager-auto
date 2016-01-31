@@ -18,8 +18,9 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import os
-import Queue
 import time
+import Queue
+import logging
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS, data_st
 from art.rhevm_api.utils.test_utils import get_api, split
@@ -79,6 +80,8 @@ QUOTA_LIMITS = {
         ATTR: QUOTA_STORAGE_DOMAIN_LIMIT_ELM
     }
 }
+
+logger = logging.getLogger(__name__)
 
 
 @is_action()
@@ -619,9 +622,16 @@ def create_dc_quota(dc_name, quota_name, **kwargs):
     quota_obj = __prepare_quota_obj(name=quota_name, **kwargs)
     if not quota_obj:
         return False
-    return QUOTA_API.create(
+    logger.info("Create quota %s under datacenter %s", quota_name, dc_name)
+    if not QUOTA_API.create(
         entity=quota_obj, positive=True, collection=quotas_href
-    )[1]
+    )[1]:
+        logger.error(
+            "Failed to create quota %s under datacenter %s",
+            quota_name, dc_name
+        )
+        return False
+    return True
 
 
 def update_dc_quota(dc_name, quota_name, **kwargs):
@@ -662,7 +672,13 @@ def delete_dc_quota(dc_name, quota_name):
     quota_obj = get_quota_obj_from_dc(dc_name, quota_name)
     if not quota_obj:
         return False
-    return QUOTA_API.delete(quota_obj, True)
+    logger.info("Delete quota %s from datacenter %s", quota_name, dc_name)
+    if not QUOTA_API.delete(quota_obj, True):
+        logger.error(
+            "Failed to delete quota %s from datacenter %s", quota_name, dc_name
+        )
+        return False
+    return True
 
 
 def __prepare_quota_limit_object(limit_type, **kwargs):
