@@ -17,7 +17,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 logger = logging.getLogger(__name__)
 
 
-@attr(tier=4)
+@attr(tier=2)
 class BaseNumaClass(u_libs.SlaTest):
     """
     Base class for Numa Test
@@ -232,6 +232,7 @@ class BaseNumaClass(u_libs.SlaTest):
         return ver_arr[0], ver_arr[1]
 
 
+@attr(tier=1)
 class TestGetNumaStatisticFromHost(BaseNumaClass):
     """
     Check that engine receives correct information from host about numa nodes
@@ -636,6 +637,7 @@ class CheckNumaModes(StartVms):
         return True
 
 
+@attr(tier=1)
 class TestStrictNumaModeOnVM(CheckNumaModes):
     """
     Run vm with two numa nodes, with pinning under strict mode and
@@ -665,21 +667,8 @@ class TestStrictNumaModeOnVM(CheckNumaModes):
             "Memory pinning not correct"
         )
 
-    @bz({"1294475": {"engine": None, "version": ["7.2"]}})
-    @polarion("RHEVM3-12235")
-    def test_numa_memory_mode(self):
-        """
-        Check memory numa mode
-        """
-        self.assertEqual(
-            self._get_numa_mode_from_vm_process(
-                conf.VDS_HOSTS[0], conf.VM_NAME[0]
-            ),
-            self.numa_mode,
-            "Vm process numa mode not equal to %s" % self.numa_mode
-        )
 
-
+@attr(tier=1)
 class TestPreferModeOnVm(CheckNumaModes):
     """
     Run vm with one pinned numa node under prefer mode and
@@ -727,6 +716,7 @@ class TestPreferModeOnVm(CheckNumaModes):
         )
 
 
+@attr(tier=1)
 class TestInterleaveModeOnVm(CheckNumaModes):
     """
     Run vm with two numa nodes, with pinning under interleave mode and
@@ -934,6 +924,7 @@ class BaseClassForVmNumaNodesValidations(AddNumaNodes):
         super(BaseClassForVmNumaNodesValidations, cls).teardown_class()
 
 
+@attr(tier=1)
 class TestTotalVmMemoryEqualToNumaNodesMemory(
     BaseClassForVmNumaNodesValidations
 ):
@@ -1001,6 +992,7 @@ class TestNegativeTotalVmMemoryEqualToNumaNodesMemory(
         )
 
 
+@attr(tier=1)
 class TestTotalVmCpusEqualToNumaNodesCpus(BaseClassForVmNumaNodesValidations):
     """
     Create two numa nodes on vm, that sum of numa nodes cpus equal to
@@ -1050,13 +1042,28 @@ class TestTotalVmCpusNotEqualToNumaNodesCpus(
         """
         Start vm
         """
-        logger.info("Start vm %s", conf.VM_NAME[0])
-        self.assertFalse(
-            ll_vms.startVm(
-                True, conf.VM_NAME[0], timeout=conf.START_VM_TIMEOUT
-            ),
-            "Success to start vm %s" % conf.VM_NAME[0]
-        )
+        # W/A until we will have normal validation on VNUMA nodes creation
+        logger.info("Try to start vm %s", conf.VM_NAME[0])
+        if ll_vms.startVm(
+            positive=True, vm=conf.VM_NAME[0], timeout=conf.START_VM_TIMEOUT
+        ):
+            logger.info("Get numa parameters from vm %s", conf.VM_NAME[0])
+            vm_numa_params = self._get_numa_parameters_from_vm(
+                conf.VM_NAME[0]
+            )
+            self.assertTrue(
+                vm_numa_params,
+                "Failed to get numa parameters from vm %s" % conf.VM_NAME[0]
+            )
+            logger.info(
+                "Check that vm %s has different NUMA architecture",
+                conf.VM_NAME[0]
+            )
+            self.assertNotEqual(
+                vm_numa_params[0][conf.NUMA_NODE_CPUS],
+                self.new_numa_params[0]["cores"],
+                "Vm %s has correct NUMA architecture" % conf.VM_NAME[0]
+            )
 
 
 class TestPinningOneVNUMAToTwoPNUMA(BaseClassForVmNumaNodesValidations):
@@ -1287,10 +1294,18 @@ class TestHotplugCpuUnderNumaPinning(StartVms):
             vm_numa_params,
             "Failed to receive numa parameters from vm %s" % conf.VM_NAME[0]
         )
-        expected_value = 6
-        logging.info("Check number of cores for second numa node")
+        expected_amount_of_cpus = 8
+        logging.info(
+            "Check total number of cpus under NUMA stats on vm %s",
+            conf.VM_NAME[0]
+        )
+        real_amount_of_cpus = sum(
+            len(params[conf.NUMA_NODE_CPUS])
+            for params in vm_numa_params.itervalues()
+        )
         self.assertEqual(
-            len(vm_numa_params[1][conf.NUMA_NODE_CPUS]), expected_value,
-            "Number of cpus on second vm %s numa node not equal to %d" %
-            (conf.VM_NAME[0], expected_value)
+            real_amount_of_cpus, expected_amount_of_cpus,
+            "Total number of cpus under NUMA stats on vm %s "
+            "does not equal to %d" %
+            (conf.VM_NAME[0], expected_amount_of_cpus)
         )
