@@ -9,6 +9,7 @@ from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import vms
 from art.test_handler.settings import opts
 import live_storage_migration_base as basePlan
+from art.test_handler.tools import bz  # pylint: disable=E0611
 
 logger = logging.getLogger(__name__)
 ISCSI = config.STORAGE_TYPE_ISCSI
@@ -273,6 +274,7 @@ class TestCase5976(basePlan.TestCase5976):
 
 
 @attr(tier=2)
+@bz({'1258219': {}})
 class TestCase5977(basePlan.TestCase5977):
     """
     migrate a vm between hosts + LSM
@@ -280,7 +282,6 @@ class TestCase5977(basePlan.TestCase5977):
     Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = True
-    bz = {'1258219': {'engine': None, 'version': ["3.6"]}}
 
 
 @attr(tier=2)

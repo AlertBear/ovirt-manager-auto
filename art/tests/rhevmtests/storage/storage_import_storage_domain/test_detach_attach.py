@@ -24,7 +24,7 @@ from art.rhevm_api.utils import storage_api as utils
 from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.unittest_lib import attr, StorageTest as BaseTestCase
 import rhevmtests.storage.helpers as storage_helpers
 
@@ -430,7 +430,6 @@ class TestCase5297(BasicEnvironment):
     __test__ = True
     polarion_test_case = '5297'
     vm_from_template = 'vm_from_temp'
-    bz = {'1138142': {'engine': ['rest', 'sdk'], 'version': ['3.5', '3.6']}}
 
     def setUp(self):
         self.vm_created = False
@@ -454,6 +453,7 @@ class TestCase5297(BasicEnvironment):
         )
 
     @polarion("RHEVM3-5297")
+    @bz({'1138142': {'engine': ['rest', 'sdk']}})
     def test_new_vm_from_imported_domain_template(self):
         """
         - import data domain
@@ -522,7 +522,6 @@ class TestCase5299(BasicEnvironment):
     __test__ = True
     polarion_test_case = '5299'
     vm_no_disks = "vm_without_disks"
-    bz = {'1138142': {'engine': ['rest', 'sdk'], 'version': ["3.5", "3.6"]}}
 
     def setUp(self):
         self.vm_created = False
@@ -542,6 +541,7 @@ class TestCase5299(BasicEnvironment):
         )
 
     @polarion("RHEVM3-5299")
+    @bz({'1138142': {'engine': ['rest', 'sdk']}})
     def test_register_vm_without_disks(self):
         """
         - Detach domain
@@ -972,7 +972,6 @@ class TestCase5304(CommonSetUp):
     """
     __test__ = True
     polarion_test_case = '5304'
-    bz = {'1210771': {'engine': ['rest', 'sdk'], 'version': ["3.5", "3.6"]}}
 
     @polarion("RHEVM3-5304")
     def test_reboot_host_during_import_domain(self):

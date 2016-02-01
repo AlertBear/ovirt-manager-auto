@@ -338,7 +338,6 @@ class TestCase11504(BasicEnvironment):
     __test__ = True
     polarion_test_case = '11504'
     vm_name = polarion_test_case + "_Test_VM"
-    bz = {'1289538': {'engine': None, 'version': ['3.6']}}
     # Bugzilla history:
     # 1251956: Live storage migration is broken
     # 1259785:  Error 'Unable to find org.ovirt.engine.core.common.job.Step

@@ -7,10 +7,10 @@ import logging
 from multiprocessing import Process, Queue
 from time import sleep
 
+
 import config
 import helpers
 from art.core_api.apis_exceptions import APITimeout
-
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
 )
@@ -33,7 +33,7 @@ from art.rhevm_api.utils.test_utils import (
 
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest
 
@@ -1614,7 +1614,6 @@ class TestCase5977(BaseTestCase):
     """
     __test__ = False
     polarion_test_case = '5977'
-    bz = {'1258219': {'engine': None, 'version': ["3.6"]}}
 
     def _migrate_vm_during_lsm_ops(self, wait):
         ll_vms.live_migrate_vm(
@@ -1625,6 +1624,7 @@ class TestCase5977(BaseTestCase):
         return status
 
     @polarion("RHEVM3-5977")
+    @bz({'1258219': {}})
     def test_LSM_during_vm_migration(self):
         """
         Actions:
@@ -1646,6 +1646,7 @@ class TestCase5977(BaseTestCase):
         )
 
     @polarion("RHEVM3-5977")
+    @bz({'1258219': {}})
     def test_migrate_vm_during_snap_creation_of_LSM(self):
         """
         Actions:
@@ -1660,6 +1661,7 @@ class TestCase5977(BaseTestCase):
         self.assertFalse(status, "Succeeded to migrate vm during LSM")
 
     @polarion("RHEVM3-5977")
+    @bz({'1258219': {}})
     def test_migrate_vm_after_LSM(self):
         """
         Actions:
@@ -1781,6 +1783,7 @@ class TestCase6000(BaseTestCase):
     # 1106593: Failed recovering from crash or initializing after blocking
     # connection from host to target storage domain during LSM (marked as
     # Won't Fix)
+
     polarion_test_case = '6000'
 
     def _migrate_vm_disk_and_block_connection(self, disk, source, username,
@@ -1881,10 +1884,10 @@ class TestCase5999(BaseTestCase):
     Storage/3_1_Storage_Live_Storage_Migration
     """
     __test__ = False
-    polarion_test_case = '5999'
     # Bugzilla history:
     # 1210771: After rebooting the spm job "Handling non responsive Host" is
     # stuck in STARTED (even if the host is back up)
+    polarion_test_case = '5999'
 
     @polarion("RHEVM3-5999")
     def test_reboot_spm_during_lsm(self):

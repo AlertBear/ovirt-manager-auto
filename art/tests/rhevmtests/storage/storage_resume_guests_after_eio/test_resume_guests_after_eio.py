@@ -3,7 +3,7 @@ import logging
 import time
 from multiprocessing import Process
 from art.unittest_lib import attr
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import vms, storagedomains, disks, hosts
 from art.rhevm_api.utils import storage_api
 from rhevmtests.storage.helpers import perform_dd_to_disk
@@ -184,7 +184,6 @@ class TestCase5012(TestCaseBlockedConnection):
     __test__ = (NFS in opts['storages'])
     storages = set([NFS])
     polarion_test_case = '5012'
-    bz = {'1138144': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
     @polarion("RHEVM3-5012")
     def test_nfs_blocked_connection(self):
@@ -201,9 +200,9 @@ class TestCase5013(TestNoSpaceLeftOnDevice):
     storages = set([NFS])
     polarion_test_case = '5013'
     left_space = 10 * GB
-    bz = {'1024353': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
     @polarion("RHEVM3-5013")
+    @bz({'1024353': {'engine': ['rest', 'sdk']}})
     def test_nfs_no_space_left_on_device(self):
         """ checks if VM is paused after no-space-left error on sd,
             checks if VM is unpaused after there is again free space on sd
@@ -216,7 +215,6 @@ class TestCase5014(TestCaseBlockedConnection):
     __test__ = (ISCSI in opts['storages'])
     storages = set([ISCSI])
     polarion_test_case = '5014'
-    bz = {'1138144': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
     @polarion("RHEVM3-5014")
     def test_iscsi_blocked_connection(self):
@@ -285,7 +283,6 @@ class TestCase5016(TestCaseBlockedConnection):
     __test__ = ('fcp' in opts['storages'])
     storages = set(['fcp'])
     polarion_test_case = '5016'
-    bz = {'1138144': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
     @polarion("RHEVM3-5016")
     def test_fc_blocked_connection(self):

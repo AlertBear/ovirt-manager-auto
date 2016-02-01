@@ -569,10 +569,6 @@ class TestCase6058(BasicEnvironment):
     """
     __test__ = True
     test_case = '6058'
-    bz = {
-        '1275836': {'engine': None, 'version': ['3.6']},
-        '1302215': {'engine': None, 'version': ['3.6'], 'storage': [ISCSI]},
-    }
 
     @polarion("RHEVM3-6058")
     def test_live_merge_with_stop_vm(self):
@@ -656,7 +652,6 @@ class TestCase12216(BasicEnvironment):
     # Bugzilla history:
     # 1232481: Live merge fails after a disk containing a snapshot has
     # been extended
-    bz = {'1302215': {'engine': None, 'version': ['3.6'], 'storage': [ISCSI]}}
 
     @polarion("RHEVM3-12216")
     def test_basic_live_merge_after_disk_resize(self):

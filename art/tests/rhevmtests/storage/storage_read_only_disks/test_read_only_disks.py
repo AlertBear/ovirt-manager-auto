@@ -19,7 +19,7 @@ from art.rhevm_api.utils.storage_api import (
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest as TestCase
 from rhevmtests import helpers as rhevm_helpers
@@ -207,11 +207,9 @@ class TestCase4907(BaseTestCase):
     # Bugzilla history:
     # 1220824:[REST] Adding a disk to a vm fails with NullPointerException if
     # not disk.storage_domains is provided
-    bz = {
-        '1194695': {'engine': ['rest', 'sdk'], 'version': ["3.5"]},
-    }
 
     @polarion("RHEVM3-4907")
+    @bz({'1194695': {'engine': ['rest', 'sdk']}})
     def test_attach_RO_direct_LUN_disk(self):
         """
         - VM with OS
@@ -688,6 +686,7 @@ class TestCase4915(DefaultEnvironment):
 
 
 @attr(tier=2)
+@bz({'1309788': {}})
 class TestCase4917(DefaultEnvironment):
     """
     Import more than once VM with read-only disk, and verify that it's
@@ -700,7 +699,6 @@ class TestCase4917(DefaultEnvironment):
     imported_vm_1 = 'imported_vm_1'
     imported_vm_2 = 'imported_vm_2'
     export_domain = ''
-    bz = {'1309788': {'engine': None, 'version': ['3.6']}}
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
     # Same issue happens after the vm is imported
 
@@ -1027,9 +1025,9 @@ class TestCase4922(DefaultEnvironment):
     snapshot_description = 'test_snap'
     cloned = False
     cloned_vm_name = 'cloned_vm'
-    bz = {'1201268': {'engine': None, 'version': ['3.6']}}
 
     @polarion("RHEVM3-4922")
+    @bz({'1201268': {}})
     def test_clone_vm_from_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -1264,12 +1262,12 @@ class TestCase4925(DefaultEnvironment):
     # delete them across all storage types
     __test__ = True
     polarion_test_case = '4925'
-    bz = {'1246114': {'engine': None, 'version': ["3.6", "4.0"]}}
     # Bugzilla history:
     # 1196049, 1176673: After live storage migration on block storage vdsm
     # extends migrated drive using all free space in the vg
 
     @polarion("RHEVM3-4925")
+    @bz({'1246114': {}})
     def test_live_migrate_RO_disk(self):
         """
         - 2 storage domains

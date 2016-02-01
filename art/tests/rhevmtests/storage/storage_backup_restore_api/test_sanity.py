@@ -1056,12 +1056,8 @@ class TestCase6173(TestCase):
     """
     __test__ = True
     polarion_test_case = '6173'
-    # Bugzilla history:
+    # Bugzilla history
     # 1176673 1196049
-    bz = {
-        '1251956': {'engine': None, 'version': ['3.6']},
-        '1259785': {'engine': None, 'version': ['3.6']},
-    }
 
     def setUp(self):
         self.vm_names = VM_NAMES[self.storage]

@@ -16,7 +16,7 @@ from art.rhevm_api.tests_lib.low_level import vms, disks
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.utils import log_listener
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from rhevmtests.storage import helpers as storage_helpers
 
 LOGGER = logging.getLogger(__name__)
@@ -260,7 +260,6 @@ class TestCase11586(TestCase):
     snapshots = [snapShot1_name, snapShot2_name]
     disk_size_before = 0
     disk_size_after = 0
-    bz = {'1185782': {'engine': None, 'version': ['3.5']}}
 
     @classmethod
     def setup_class(cls):
@@ -311,6 +310,7 @@ class TestCase11586(TestCase):
                 "Removing snapshot %s failed!" % snapshot)
 
     @polarion("RHEVM3-11586")
+    @bz({'1185782': {}})
     def test_delete_snapshot(self):
         """
         Create 2 snapshot, Deleting them and Check that actual disk

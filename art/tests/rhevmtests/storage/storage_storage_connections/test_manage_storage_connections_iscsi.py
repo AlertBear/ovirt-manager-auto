@@ -2,7 +2,7 @@ import config
 import logging
 from art.unittest_lib import StorageTest, attr
 from concurrent.futures import ThreadPoolExecutor
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
 from art.rhevm_api.utils import test_utils
 import rhevmtests.helpers as rhevm_helpers
@@ -318,9 +318,9 @@ class TestCase5243(TestCase):
     polarion_test_case = '5243'
     conn = None
     sd_name = None
-    bz = {'1275845': {'engine': None, 'version': ['3.6']}}
 
     @polarion("RHEVM3-5243")
+    @bz({'1275845': {}})
     def test_adding_storage_connections(self):
         """ test adding a storage connection to a dc without storage domains
             and to a dc with a storage domain
@@ -558,7 +558,6 @@ class TestCase5246(TestCase):
     sd_name_1 = "sd_%s_1" % polarion_test_case
     sd_name_2 = "sd_%s_2" % polarion_test_case
     master_sd = "master_%s" % polarion_test_case
-    bz = {'1272110': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """
@@ -744,7 +743,6 @@ class TestCase5242(TestCase):
     """
     __test__ = (config.STORAGE_TYPE_ISCSI in opts['storages'])
     polarion_test_case = '5242'
-    bz = {'1272110': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         self.disks = []
@@ -918,7 +916,6 @@ class TestCase5245(TestCase):
     conn = None
     sd_name_1 = "sd_%s_1" % polarion_test_case
     sd_name_2 = "sd_%s_2" % polarion_test_case
-    bz = {'1272110': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """
@@ -1028,7 +1025,6 @@ class TestCase5244(TestCase):
     conn = None
     sd_name_1 = "sd_%s_1" % polarion_test_case
     sd_name_2 = "sd_%s_2" % polarion_test_case
-    bz = {'1272110': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         """
@@ -1116,7 +1112,6 @@ class TestCase5241(TestCase):
     disk_1 = "disk_%s_1" % polarion_test_case
     sd_name = "sd_%s" % polarion_test_case
     disk_2 = "disk_%s_2" % polarion_test_case
-    bz = {'1272110': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         assert storagedomains.addStorageDomain(

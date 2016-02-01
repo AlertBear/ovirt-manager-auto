@@ -262,7 +262,6 @@ class PlanIsoDomainLocal(BaseCaseIsoDomains):
     local = True
     vm_name = "TestCasePlanIsoDomainLocal"
     storagedomains = [config.LOCAL_DOMAIN]
-    bz = {'1188326': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
     @polarion("RHEVM3-11859")
     def test_detaching_local_iso_vm(self):

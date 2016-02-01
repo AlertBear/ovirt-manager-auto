@@ -19,7 +19,7 @@ from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage import helpers as storage_helpers
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from utilities.machine import Machine, LINUX
 
 logger = logging.getLogger(__name__)
@@ -261,6 +261,7 @@ class TestCase5931(DirectLunAttachTestCase):
 
 
 @attr(tier=2)
+@bz({'1245630': {}})
 class TestCase5932(DirectLunAttachTestCase):
     """
     attach lun to vm, run vm as stateless and create snapshot.
@@ -269,7 +270,6 @@ class TestCase5932(DirectLunAttachTestCase):
     polarion_test_case = "5932"
     snap_desc = "snapshot_name_%s" % polarion_test_case
     snap_added = False
-    bz = {'1245630': {'engine': None, 'version': ["3.6"]}}
 
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_REMOVE_SNAPSHOT])
     @polarion("RHEVM3-5932")

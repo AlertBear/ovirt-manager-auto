@@ -5,7 +5,7 @@ from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
 from art.rhevm_api.tests_lib.low_level.hosts import waitForSPM
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import hosts
 import art.rhevm_api.utils.storage_api as st_api
 
@@ -45,7 +45,6 @@ class TestCase4742(TestCase):
     polarion_test_case = '4742'
     master_domain_ip = None
     spm = None
-    bz = {'1017207': {'engine': None, 'version': None}}
 
     @classmethod
     def setup_class(cls):
@@ -64,6 +63,7 @@ class TestCase4742(TestCase):
         logger.info("Master domain ip found : %s", cls.master_domain_ip)
 
     @polarion("RHEVM3-4742")
+    @bz({'1017207': {}})
     def test_disconnect_SPM_from_storage(self):
         """ test checks if disconnecting SPM from storage domain
             works properly

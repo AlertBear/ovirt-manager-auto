@@ -24,7 +24,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
 )
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.unittest_lib import StorageTest as BaseTestCase
 from art.unittest_lib import attr
 from rhevmtests.storage.helpers import (
@@ -483,7 +483,6 @@ class TestCase4596(BasicEnvironment):
     disk_count = 2
     snapshot_success = False
     # Bugzilla history: 1115556
-    bz = {'1254001': {'engine': None, 'version': ["3.6"]}}
 
     def setUp(self):
         super(TestCase4596, self).setUp()
@@ -504,6 +503,7 @@ class TestCase4596(BasicEnvironment):
         super(TestCase4596, self).tearDown()
 
     @polarion("RHEVM3-4596")
+    @bz({'1254001': {}})
     def test_prepare_image_without_volume_id(self):
         """
         1. Create a VM with 2 disks
@@ -530,9 +530,9 @@ class TestCase4597(BasicEnvironment):
     storages = set([ISCSI])
     polarion_test_case = '4597'
     disk_count = 1
-    bz = {'1130995': {'engine': None, 'version': ["3.6"]}}
 
     @polarion("RHEVM3-4597")
+    @bz({'1130995': {}})
     def test_prepare_image_with_1_invalid_parameter(self):
         """
         1. Create a VM with 1 disk
@@ -576,9 +576,9 @@ class TestCase4598(BasicEnvironment):
     storages = set([ISCSI])
     polarion_test_case = '4598'
     disk_count = 2
-    bz = {'1130995': {'engine': None, 'version': ["3.6"]}}
 
     @polarion("RHEVM3-4598")
+    @bz({'1130995': {}})
     def test_prepare_image_with_several_invalid_parameters(self):
         """
         1. Create a VM with 2 disks
@@ -1032,9 +1032,9 @@ class TestCase4585(BasicEnvironment):
     storages = set([ISCSI])
     polarion_test_case = '4585'
     disk_count = 1
-    bz = {'1130995': {'engine': None, 'version': ["3.6"]}}
 
     @polarion("RHEVM3-4585")
+    @bz({'1130995': {}})
     def test_teardown_image_with_1_invalid_parameter(self):
         """
         1. Create a VM with 1 disk
@@ -1077,9 +1077,9 @@ class TestCase4586(BasicEnvironment):
     storages = set([ISCSI])
     polarion_test_case = '4586'
     disk_count = 2
-    bz = {'1130995': {'engine': None, 'version': ["3.6"]}}
 
     @polarion("RHEVM3-4586")
+    @bz({'1130995': {}})
     def test_prepare_image_with_several_invalid_parameters(self):
         """
         1. Create a VM with 1 disk

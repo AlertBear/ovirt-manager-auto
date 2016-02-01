@@ -94,7 +94,6 @@ class TestCase6157(RestartVDSM):
     __test__ = True
     polarion_test_case = '6157'
     snapshot_name = 'snapshot_%s' % polarion_test_case
-    bz = {'1069610': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
 
     def tearDown(self):
         super(TestCase6157, self).tearDown()
