@@ -745,7 +745,6 @@ class TestMultiHostCase09(TestMultiHostTestCaseBase):
     the Host bond
     """
     __test__ = True
-    bz = {"1271524": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -880,7 +879,6 @@ class TestMultiHostCase10(TestMultiHostTestCaseBase):
     the Host bond
     """
     __test__ = True
-    bz = {"1271518": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -1014,7 +1012,6 @@ class TestMultiHostCase11(TestMultiHostTestCaseBase):
     the Host bond
     """
     __test__ = True
-    bz = {"1271518": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):

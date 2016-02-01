@@ -11,7 +11,7 @@ import config as conf
 from art.unittest_lib import attr
 import rhevmtests.networking.helper as net_helper
 from art.unittest_lib import NetworkTest as TestCase
-from art.test_handler.tools import polarion, bz as bzd  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
@@ -250,7 +250,6 @@ class TestHostNetQOSCase04(TestHostNetworkQoSTestCaseBase):
     """
     __test__ = True
     net1 = conf.NETS[4][0]
-    bz = {"1271220": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -279,6 +278,7 @@ class TestHostNetQOSCase04(TestHostNetworkQoSTestCaseBase):
             )
 
     @polarion("RHEVM3-6528")
+    @bz({"1271220": {}})
     def test_rate_share_limit(self):
         """
         Negative: Try to update networks on host NIC with:
@@ -677,7 +677,6 @@ class TestHostNetQOSCase09(TestHostNetworkQoSTestCaseBase):
                 (self.net1, self.qos_name2, conf.DC_NAME)
             )
 
-    @bzd({"1278297": {'engine': None, 'version': ["3.6"]}})
     @polarion("RHEVM3-14273")
     def test_03_unlimited_qos_when_update_network(self):
         """

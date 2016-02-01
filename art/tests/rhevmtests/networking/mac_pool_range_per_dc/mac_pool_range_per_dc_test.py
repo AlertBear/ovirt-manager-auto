@@ -1,13 +1,10 @@
-#! /usr/bin/python
-# -*- coding: utf-8 -*-
-
 """
 MAC pool range per DC networking feature test
 """
 import helper
 import config as conf
 from art.unittest_lib import attr
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest as TestCase
 import art.rhevm_api.tests_lib.low_level.vms as ll_vm
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
@@ -703,7 +700,6 @@ class TestMacPoolRange12(TestCase):
     with manual MAC allocation to VM
     """
     __test__ = True
-    bz = {"1212461": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
     log = "Check adding vNIC to VM on DC %s when allow duplicates is True"
 
     @classmethod
@@ -785,7 +781,6 @@ class TestMacPoolRange13(TestCase):
     the new VNICs will be created with unicast addresses only
     """
     __test__ = True
-    bz = {"1219383": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
     MAC_POOL_RANGES = [
         ("00:ff:ff:ff:ff:ff", "02:00:00:00:00:01")
     ]
@@ -800,6 +795,7 @@ class TestMacPoolRange13(TestCase):
         helper.update_dc_with_mac_pool()
 
     @polarion("RHEVM3-6454")
+    @bz({"1219383": {"engine": ["rest", "sdk", "java"]}})
     def test_multicast_unicast_mix(self):
         """
         Add 2 VNICs to VM

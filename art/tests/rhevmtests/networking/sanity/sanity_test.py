@@ -124,7 +124,6 @@ class TestSanity02(TestSanityCaseBase):
     bond_2 = "bond22"
     bond_3 = "bond23"
     bond_4 = "bond24"
-    bz = {"1269481": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
 
     @polarion("RHEVM3-9850")
     def test_01_multiple_actions(self):
@@ -247,7 +246,6 @@ class TestSanity03(TestSanityCaseBase):
     net = conf.NETS[3][0]
 
     @polarion("RHEVM3-6525")
-    @bz({"1274187": {"engine": None, "version": ["3.6"]}})
     def test_add_network_qos(self):
         """
         Create new Host Network QoS profile under DC
@@ -258,7 +256,7 @@ class TestSanity03(TestSanityCaseBase):
         )
 
     @polarion("RHEVM3-6526")
-    @bz({'1271220': {'engine': None, 'version': None}})
+    @bz({'1271220': {}})
     def test_qos_for_network_on_host_nic(self):
         """
         Attach network to host NIC with QoS parameters (Anonymous' QoS)

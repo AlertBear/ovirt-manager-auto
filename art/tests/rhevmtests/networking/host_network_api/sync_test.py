@@ -858,7 +858,6 @@ class TestHostNetworkApiSync09(TestHostNetworkApiSyncBase):
     net_case_1 = conf.SYNC_NETS_DC_1[9][0]
     net_case_1_ip_expected = ip_netmask
     net_case_1_ip_actual = "10.10.10.10"
-    bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -912,7 +911,6 @@ class TestHostNetworkApiSync10(TestHostNetworkApiSyncBase):
     net_case_1_netmask_expected = conf.IP_DICT_NETMASK["netmask"]
     net_case_1_netmask_actual = "255.255.255.255"
     ip_netmask = conf.IPS[37]
-    bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -967,7 +965,6 @@ class TestHostNetworkApiSync11(TestHostNetworkApiSyncBase):
     net_case_1_netmask_prefix_expected = conf.IP_DICT_PREFIX["netmask"]
     net_case_1_netmask_prefix_actual = "255.255.255.255"
     ip_prefix = conf.IPS[41]
-    bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -1024,8 +1021,6 @@ class TestHostNetworkApiSync12(TestHostNetworkApiSyncBase):
     net_case_1_ip_expected = ip_netmask
     net_case_1_ip_actual = "10.10.10.10"
     bond_1 = "bond121"
-
-    bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -1084,7 +1079,6 @@ class TestHostNetworkApiSync13(TestHostNetworkApiSyncBase):
     net_case_1_netmask_actual = "255.255.255.255"
     bond_1 = "bond131"
     ip_netmask = conf.IPS[35]
-    bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -1144,7 +1138,6 @@ class TestHostNetworkApiSync14(TestHostNetworkApiSyncBase):
     net_case_1_netmask_prefix_actual = "255.255.255.255"
     bond_1 = "bond141"
     ip_prefix = conf.IPS[40]
-    bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -1199,7 +1192,6 @@ class TestHostNetworkApiSync15(TestHostNetworkApiSyncBase):
     Sync the network
     """
     __test__ = True
-    bz = {"1270807": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
     move_host = False
     net_case_1 = conf.SYNC_NETS_DC_1[15][0]
     net_case_1_ip = "10.10.10.10"
@@ -1251,7 +1243,6 @@ class TestHostNetworkApiSync16(TestHostNetworkApiSyncBase):
     Sync the network
     """
     __test__ = True
-    bz = {"1270807": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
     move_host = False
     net_case_1 = conf.SYNC_NETS_DC_1[16][0]
     net_case_1_ip = "10.10.10.10"
@@ -1314,7 +1305,6 @@ class TestHostNetworkApiSync17(TestHostNetworkApiSyncBase):
     net_case_1_boot_proto_expected = "STATIC_IP"
     net_case_1_boot_proto_actual = "NONE"
     ip_netmask = conf.IPS[34]
-    bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -1368,7 +1358,6 @@ class TestHostNetworkApiSync18(TestHostNetworkApiSyncBase):
     net_case_1_boot_proto_expected = "STATIC_IP"
     net_case_1_boot_proto_actual = "NONE"
     ip_netmask = conf.IPS[33]
-    bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):

@@ -138,7 +138,6 @@ class TestNetQOSCase02(TestCase):
     Update Network QoS
     """
     __test__ = True
-    bz = {"1274187": {"engine": None, "version": ["3.6"]}}
     qos_name = config.QOS_NAME[2][0]
     vnic_profile = config.VNIC_PROFILE[1]
 

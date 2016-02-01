@@ -435,7 +435,6 @@ class TestMGMTNetRole07(TestCase):
     5. Make sure a new cluster was created with sw1 as its MGMT network
     """
     __test__ = True
-    bz = {"1209041": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -633,7 +632,6 @@ class TestMGMTNetRole10(TestCase):
     5. Change MGMT to ovirtmgmt and succeed
     """
     __test__ = True
-    bz = {"1250063": {"engine": ["rest", "sdk", "java"], "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):

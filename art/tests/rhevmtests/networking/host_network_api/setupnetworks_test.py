@@ -1228,10 +1228,10 @@ class TestHostNetworkApiSetupNetworks24(helper.TestHostNetworkApiTestCaseBase):
     """
 
     __test__ = True
+
     ip_netmask = conf.IPS[20]
     ip_prefix = conf.IPS[21]
     ip_prefix_2 = conf.IPS[39]
-    bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
     @polarion("RHEVM3-9850")
     def test_01_multiple_actions(self):
@@ -1654,7 +1654,6 @@ class TestHostNetworkApiSetupNetworks28(helper.TestHostNetworkApiTestCaseBase):
     """
     __test__ = True
     bond_1 = "bond281"
-    bz = {"1275717": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
