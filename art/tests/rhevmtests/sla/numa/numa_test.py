@@ -371,9 +371,6 @@ class TestNegativeUpdateVmWithNumaAndAutomaticMigration(UpdateVm):
     Try to add numa node to vm with AutomaticMigration option
     """
     __test__ = True
-    bz = {
-        "1211176": {"engine": None, "version": ["3.5.1"]}
-    }
 
     @classmethod
     def setup_class(cls):
@@ -402,9 +399,6 @@ class TestNegativeUpdateVmWithNumaAndManualMigration(UpdateVm):
     __test__ = True
     new_vm_params = {
         "placement_affinity": conf.VM_USER_MIGRATABLE
-    }
-    bz = {
-        '1211176': {'engine': None, 'version': ['3.5.1']}
     }
 
     @classmethod
@@ -656,7 +650,7 @@ class TestStrictNumaModeOnVM(CheckNumaModes):
             "CPU pinning not correct"
         )
 
-    @bz({"1173928": {"engine": None, "version": ["3.5"]}})
+    @bz({"1173928": {}})
     @polarion("RHEVM3-12234")
     def test_check_memory_pinning(self):
         """
@@ -677,9 +671,6 @@ class TestPreferModeOnVm(CheckNumaModes):
     __test__ = True
     numa_mode = conf.PREFER_MODE
     num_of_vm_numa_nodes = 1
-    bz = {
-        "1211270": {"engine": None, "version": ["3.5.1"]}
-    }
 
     @polarion("RHEVM3-9568")
     def test_check_cpu_pinning(self):
@@ -961,34 +952,6 @@ class TestTotalVmMemoryEqualToNumaNodesMemory(
                 conf.NUMA_NODE_MEMORY, vm_numa_params
             ),
             "Vm %s numa node memory have incorrect value" % conf.VM_NAME[0]
-        )
-
-
-class TestNegativeTotalVmMemoryEqualToNumaNodesMemory(
-    BaseClassForVmNumaNodesValidations
-):
-    """
-    Create two numa nodes on vm, that sum of numa nodes memory not equal to
-    vm memory, start vm and check number of numa node on guest OS
-    """
-    __test__ = True
-    new_numa_params = [{"memory": 100}, {"memory": 200}]
-    vms_to_stop = [conf.VM_NAME[0]]
-    bz = {
-        "1294462": {"engine": None, "version": ["3.6"]}
-    }
-
-    @polarion("RHEVM3-9572")
-    def test_check_numa_node(self):
-        """
-        Start vm
-        """
-        logger.info("Start vm %s", conf.VM_NAME[0])
-        self.assertTrue(
-            ll_vms.startVm(
-                True, conf.VM_NAME[0], timeout=conf.START_VM_TIMEOUT
-            ),
-            "Failed to start vm %s" % conf.VM_NAME[0]
         )
 
 

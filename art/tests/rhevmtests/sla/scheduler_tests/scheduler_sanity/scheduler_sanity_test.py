@@ -93,11 +93,6 @@ class TestCRUD(TestCase):
     __test__ = True
     policy_name = 'crud_policy'
     new_policy_name = 'new_crud_policy'
-    bz = {
-        '1189095': {
-            'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
-        }
-    }
 
     @polarion("RHEVM3-9486")
     def test_crud_check(self):
@@ -205,11 +200,6 @@ class TestDeletePolicyInUse(AttachPolicyToCluster):
     """
     __test__ = True
     policy_name = 'delete_policy_in_use'
-    bz = {
-        '1189095': {
-            'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
-        }
-    }
 
     @polarion("RHEVM3-9477")
     def test_delete_policy(self):
@@ -225,11 +215,6 @@ class TestRemoveBuildInPolicy(TestCase):
     Negative: remove build-in scheduler policy.
     """
     __test__ = True
-    bz = {
-        '1189095': {
-            'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
-        }
-    }
 
     @polarion("RHEVM3-9478")
     def test_delete_policy(self):
@@ -254,11 +239,6 @@ class TestPinToHostFilter(UpdateVms):
     }
     old_parameters = {
         'placement_host': ANY_HOST, 'placement_affinity': MIGRATABLE
-    }
-    bz = {
-        '1189095': {
-            'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
-        }
     }
 
     @classmethod
@@ -308,11 +288,6 @@ class TestNegativePinToHostFilter(UpdateVms):
     old_parameters = {
         'placement_host': ANY_HOST, 'placement_affinity': MIGRATABLE
     }
-    bz = {
-        '1189095': {
-            'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
-        }
-    }
 
     @classmethod
     def setup_class(cls):
@@ -361,7 +336,6 @@ class TestMemoryFilter(UpdateVms):
     old_parameters = {
         'memory': config.GB, 'memory_guaranteed': config.GB
     }
-    bz = {'1289468': {'engine': None, 'version': ['3.6']}}
 
     @classmethod
     def setup_class(cls):
@@ -428,11 +402,6 @@ class TestCpuFilter(UpdateVms):
     old_parameters = {
         'cpu_socket': 1, 'cpu_cores': 1, 'placement_host': ANY_HOST
     }
-    bz = {
-        '1189095': {
-            'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
-        }
-    }
 
     @classmethod
     def setup_class(cls):
@@ -491,11 +460,6 @@ class TestNegativeCpuFilter(UpdateVms):
         'cpu_socket': 1, 'cpu_cores': 1,
         'placement_host': ANY_HOST, 'placement_affinity': MIGRATABLE
     }
-    bz = {
-        '1189095': {
-            'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
-        }
-    }
 
     @classmethod
     def setup_class(cls):
@@ -546,11 +510,6 @@ class TestNetworkFilter(UpdateVms):
         }
     }
     network_name = 'network_filter'
-    bz = {
-        '1189095': {
-            'engine': ['cli', 'sdk', 'java'], 'version': ['3.5', '3.5.1']
-        }
-    }
 
     @classmethod
     def setup_class(cls):

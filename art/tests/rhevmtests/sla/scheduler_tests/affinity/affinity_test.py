@@ -10,7 +10,7 @@ from art.unittest_lib import attr
 from rhevmtests.sla import config
 
 from art.unittest_lib import SlaTest as TestCase
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
 import art.rhevm_api.tests_lib.high_level.vms as high_vm_api
@@ -627,11 +627,9 @@ class TestPutHostToMaintenanceUnderHardPositiveAffinity(StartVms):
     affinity_group_name = 'maintenance_hard_positive_affinity_group'
     positive = True
     hard = True
-    bz = {
-        "1261880": {"engine": None, "version": ["3.6.0"]}
-    }
 
     @polarion("RHEVM3-5563")
+    @bz({"1261880": {}})
     def test_check_affinity_group(self):
         """
         Check that after deactivate hosts vms migrated on the same host
@@ -962,9 +960,6 @@ class TestSoftPositiveAffinityVsMemoryFilter(StartVms):
     affinity_group_name = 'memory_vs_soft_affinity'
     positive = True
     hard = False
-    bz = {
-        '1289468': {'engine': None, 'version': ['3.6']}
-    }
 
     @classmethod
     def setup_class(cls):

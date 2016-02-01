@@ -140,11 +140,6 @@ class BalancingWithDefaultParameters(TwoHostsTests):
     default parameters
     """
     __test__ = True
-    bz = {
-        '1189095': {
-            'engine': ['cli', 'java'], 'version': ['3.5', '3.5.1']
-        }
-    }
 
     @classmethod
     def setup_class(cls):
@@ -170,11 +165,6 @@ class NoHostForMigration(TwoHostsTests):
     that no migration appear under vm_evenly_distributed cluster policy
     """
     __test__ = True
-    bz = {
-        '1189095': {
-            'engine': ['cli', 'java'], 'version': ['3.5', '3.5.1']
-        }
-    }
 
     @classmethod
     def setup_class(cls):
@@ -202,11 +192,6 @@ class StartVmUnderClusterPolicy(TwoHostsTests):
     when on host_1(SPM) and host_2 equal number of vms
     """
     __test__ = True
-    bz = {
-        '1189095': {
-            'engine': ['cli', 'java'], 'version': ['3.5', '3.5.1']
-        }
-    }
 
     @classmethod
     def setup_class(cls):
@@ -237,11 +222,6 @@ class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
     after killing host_2 vms from host_2 must start on host_1
     """
     __test__ = True
-    bz = {
-        '1189095': {
-            'engine': ['cli', 'java'], 'version': ['3.5', '3.5.1']
-        }
-    }
 
     @classmethod
     def setup_class(cls):
@@ -328,11 +308,6 @@ class PutHostToMaintenance(EvenVmCountDistribution):
     maintenance, as result all vms from host_2 must migrate on host_3
     """
     __test__ = True
-    bz = {
-        '1189095': {
-            'engine': ['cli', 'java'], 'version': ['3.5', '3.5.1']
-        }
-    }
 
     @classmethod
     def setup_class(cls):
@@ -368,11 +343,6 @@ class MigrateVmUnderPolicy(EvenVmCountDistribution):
     must migrate vm on host_3
     """
     __test__ = True
-    bz = {
-        '1189095': {
-            'engine': ['cli', 'java'], 'version': ['3.5', '3.5.1']
-        }
-    }
 
     @classmethod
     def setup_class(cls):
