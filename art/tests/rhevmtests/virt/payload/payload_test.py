@@ -8,7 +8,7 @@ import logging
 import unittest2
 from art.unittest_lib import attr
 from art.unittest_lib import VirtTest as TestCase
-from art.test_handler.tools import polarion   # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz   # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vms
@@ -205,14 +205,13 @@ class TestCreateVmWithCdromPayload(PayloadViaCreate):
     """
     __test__ = True
 
-    bz = {'1198677': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}}
-
     vm_name = 'CreateVmWithCdromPayload'
     payload_filename = PAYLOADS_FILENAME[0]
     payload_content = PAYLOADS_CONTENT[0]
     payload_type = PAYLOADS_TYPE[0]
 
     @polarion("RHEVM3-10061")
+    @bz({'1198677': {'engine': ['cli']}})
     def test_check_existence_of_payload(self):
         """
         Check if cdrom payload exist on vm
@@ -220,6 +219,7 @@ class TestCreateVmWithCdromPayload(PayloadViaCreate):
         self.assertTrue(self._check_existence_of_payload(PAYLOADS_DEVICES[0]))
 
     @polarion("RHEVM3-10074")
+    @bz({'1198677': {'engine': ['cli']}})
     def test_check_object_existence(self):
         """
         Check if payload object exist under vm
@@ -233,14 +233,13 @@ class TestUpdateVmWithCdromPayloadAndCheckPayloadObject(PayloadViaUpdate):
     """
     __test__ = True
 
-    bz = {'1198677': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}}
-
     vm_name = 'UpdateVmWithCdromPayload'
     payload_filename = PAYLOADS_FILENAME[0]
     payload_content = PAYLOADS_CONTENT[1]
     payload_type = PAYLOADS_TYPE[0]
 
     @polarion("RHEVM3-10063")
+    @bz({'1198677': {'engine': ['cli']}})
     def test_check_existence_of_payload(self):
         """
         Check if cdrom payload exist on vm
@@ -256,14 +255,13 @@ class TestCdromPayloadComplexContent(PayloadViaUpdate):
     """
     __test__ = True
 
-    bz = {'1198677': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}}
-
     vm_name = 'CdromPayloadComplexContent'
     payload_filename = PAYLOADS_FILENAME[0]
     payload_content = PAYLOADS_CONTENT[4]
     payload_type = PAYLOADS_TYPE[0]
 
     @polarion("RHEVM3-12155")
+    @bz({'1198677': {'engine': ['cli']}})
     def test_check_existence_of_payload(self):
         """
         Check if cdrom payload exist on vm
@@ -277,8 +275,6 @@ class TestCreateVmWithFloppyPayload(PayloadViaCreate):
     """
     __test__ = True
 
-    bz = {'1198677': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}}
-
     vm_name = 'CreateVmWithFloppyPayload'
     payload_filename = PAYLOADS_FILENAME[1]
     payload_content = PAYLOADS_CONTENT[2]
@@ -286,6 +282,7 @@ class TestCreateVmWithFloppyPayload(PayloadViaCreate):
 
     @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-10070")
+    @bz({'1198677': {'engine': ['cli']}})
     def test_check_existence_of_payload(self):
         """
         Check if floppy payload exist on vm
@@ -299,8 +296,6 @@ class TestUpdateVmWithFloppyPayload(PayloadViaUpdate):
     """
     __test__ = True
 
-    bz = {'1198677': {'engine': ['cli'], 'version': ['3.5', '3.5.1']}}
-
     vm_name = 'UpdateVmWithFloppyPayload'
     payload_filename = PAYLOADS_FILENAME[1]
     payload_content = PAYLOADS_CONTENT[3]
@@ -308,6 +303,7 @@ class TestUpdateVmWithFloppyPayload(PayloadViaUpdate):
 
     @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-10072")
+    @bz({'1198677': {'engine': ['cli']}})
     def test_check_existence_of_payload(self):
         """
         Check if floppy payload exist on vm

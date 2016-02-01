@@ -121,9 +121,6 @@ class TestFullCreateRemovePoolCycle(BaseVmPool):
 class TestUpdatePoolWithPrestartedVms(VmPool):
 
     __test__ = True
-    bz = {
-        '1294350': {'engine': None, 'version': ['3.6']}
-    }
 
     pool_name = 'Virt_vmpool_update_prestarted'
     pool_size = 3

@@ -165,7 +165,7 @@ class TestRunVmOnce(TestCase):
             )
         )
 
-    @bz({'1117783': {'engine': None, 'version': None}})
+    @bz({'1117783': {}})
     @polarion("RHEVM3-12352")
     def test_run_once_vm_with_specific_domain(self):
         """

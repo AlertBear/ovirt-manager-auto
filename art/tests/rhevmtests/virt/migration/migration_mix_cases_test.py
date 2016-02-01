@@ -33,8 +33,6 @@ class TestBidirectionalVmMigrationBetweenTwoHosts(common.VirtTest):
     """
     __test__ = True
 
-    bz = {'1273965': {'engine': None, 'version': ['3.6']}}
-
     @classmethod
     def setup_class(cls):
         """

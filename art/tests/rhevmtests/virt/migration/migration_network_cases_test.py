@@ -436,7 +436,6 @@ class TestMigrationCase08(TestMigrationCaseBase):
     Verify dedicated regular network migration over Bond
     """
     __test__ = True
-    bz = {"1271518": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -492,7 +491,6 @@ class TestMigrationCase09(TestMigrationCaseBase):
     Verify dedicated regular non-vm network migration over Bond
     """
     __test__ = True
-    bz = {"1271518": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -550,7 +548,6 @@ class TestMigrationCase10(TestMigrationCaseBase):
     Verify dedicated regular tagged network migration over Bond
     """
     __test__ = True
-    bz = {"1271524": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):

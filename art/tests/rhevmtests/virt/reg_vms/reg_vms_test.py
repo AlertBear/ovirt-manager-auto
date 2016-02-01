@@ -577,7 +577,7 @@ class UpdateVm(BaseVm):
 
     @attr(tier=2)
     @polarion("RHEVM3-12528")
-    @bz({'1260732': {'engine': None, 'version': ['3.6']}})
+    @bz({'1260732': {}})
     def test_update_vm_affinity_to_migratable_with_host(self):
         """
         Positive: Update vm affinity to migratable with host
@@ -593,7 +593,7 @@ class UpdateVm(BaseVm):
 
     @attr(tier=2)
     @polarion("RHEVM3-12531")
-    @bz({'1260732': {'engine': None, 'version': ['3.6']}})
+    @bz({'1260732': {}})
     def test_update_vm_affinity_to_user_migratable_with_host(self):
         """
         Positive: Update vm affinity to user migratable with host
@@ -609,7 +609,7 @@ class UpdateVm(BaseVm):
 
     @attr(tier=2)
     @polarion("RHEVM3-12529")
-    @bz({'1260732': {'engine': None, 'version': ['3.6']}})
+    @bz({'1260732': {}})
     def test_update_vm_affinity_to_pinned_with_host(self):
         """
         Positive: Update vm affinity to pinned with host
@@ -621,7 +621,7 @@ class UpdateVm(BaseVm):
 
     @attr(tier=2)
     @polarion("RHEVM3-12527")
-    @bz({'1260732': {'engine': None, 'version': ['3.6']}})
+    @bz({'1260732': {}})
     def test_update_vm_affinity_to_migratable_to_any_host(self):
         """
         Positive: Update vm affinity to migratable on any host
@@ -637,7 +637,7 @@ class UpdateVm(BaseVm):
 
     @attr(tier=2)
     @polarion("RHEVM3-12530")
-    @bz({'1260732': {'engine': None, 'version': ['3.6']}})
+    @bz({'1260732': {}})
     def test_update_vm_affinity_to_user_migratable_to_any_host(self):
         """
         Positive: Update vm affinity to user migratable on any host
@@ -663,7 +663,7 @@ class UpdateVm(BaseVm):
             )
         )
 
-    @bz({'1218528': {'engine': ['java', 'sdk', 'cli'], 'version': None}})
+    @bz({'1218528': {'engine': ['java', 'sdk', 'cli']}})
     @polarion("RHEVM3-12532")
     def test_update_vm_cluster(self):
         """
@@ -1183,7 +1183,6 @@ class VmSnapshots(BaseVmWithDisk):
                 )
         super(VmSnapshots, cls).teardown_class()
 
-    @bz({'1253338': {'engine': None, 'version': ['3.6']}})
     @polarion("RHEVM3-10089")
     def test_basic_vm_snapshots(self):
         """
@@ -1241,7 +1240,6 @@ class VmSnapshots(BaseVmWithDisk):
                 )
             )
 
-    @bz({'1253338': {'engine': None, 'version': ['3.6']}})
     @polarion("RHEVM3-12581")
     def test_basic_vm_snapshots_with_memory(self):
         """
@@ -1520,7 +1518,6 @@ class VmTemplate(BaseVmWithDiskTemplate):
             )
         )
 
-    @bz({'1082977': {'engine': ['cli'], 'version': None}})
     @polarion("RHEVM3-12585")
     def test_create_vm_from_template_with_wrong_sd(self):
         """
