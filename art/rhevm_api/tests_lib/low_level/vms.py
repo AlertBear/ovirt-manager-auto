@@ -2738,32 +2738,28 @@ def waitForIP(vm, timeout=600, sleep=DEF_SLEEP, get_all_ips=False):
     :return: True/False whether it obtained the IP, IP if fetched or None
     :rtype: tuple
     """
-    guest_info = None
-    start_time = time.time()
-    while time.time() - start_time < timeout:
-        time.sleep(sleep)
-        guest_info = VM_API.find(vm).get_guest_info()
-        if guest_info is not None:
-            ips = guest_info.get_ips()
-            if ips is None:
-                continue
-            ip = ips.get_ip()
-            if not ip:
-                continue
+    def _get_ip(vm):
+        try:
+            ips = VM_API.find(vm).get_guest_info().get_ips().get_ip()
+            if not ips:
+                return False
             if get_all_ips:
-                ip = [x.address for x in ip]
+                ip = [x.address for x in ips]
             else:
-                ip = ip[0].get_address()
-            VM_API.logger.debug("Got IP %s for %s", ip, vm)
-            return True, {'ip': ip}
+                ip = ips[0].get_address()
+        except AttributeError:
+            return False
+        VM_API.logger.debug("Got IP %s for %s", ip, vm)
+        return ip
 
-    if guest_info is None:
-        logger.error(
-            "%s: rhevm-guest-agent wasn't installed or it is stopped", vm
-        )
-    else:
-        logger.error("Guest agent doesn't provide IP for vm %s", vm)
-
+    try:
+        for ip in TimeoutingSampler(timeout, sleep, _get_ip, vm):
+            if ip:
+                return True, {'ip': ip}
+    except APITimeout:
+            logger.error(
+                "%s: rhevm-guest-agent wasn't installed or it is stopped", vm
+            )
     return False, {'ip': None}
 
 
