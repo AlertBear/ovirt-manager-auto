@@ -12,6 +12,7 @@ from art.core_api import apis_exceptions
 from art.rhevm_api.utils import test_utils
 import rhevmtests.helpers as global_helper
 import art.unittest_lib.network as lib_network
+import art.unittest_lib.common as lib_common
 from art.unittest_lib import attr, NetworkTest
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import rhevmtests.networking.helper as network_helper
@@ -641,6 +642,7 @@ class TestSanity07(NetworkTest):
         mac_pool_helper.remove_dc()
 
 
+@lib_common.skip_class_if(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
 class TestSanity08(TestSanityCaseBase):
     """
     Create new DC and cluster with non default management network
