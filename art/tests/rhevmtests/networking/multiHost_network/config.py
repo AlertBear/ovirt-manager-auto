@@ -15,6 +15,7 @@ HOST_NAME_1 = None  # Filled in setup_package
 HOST_0_NICS = None  # Filled in setup_package
 HOST_1_NICS = None  # Filled in setup_package
 HOSTS_LIST = None  # Filled in setup_package
+VDS_HOSTS_LIST = None  # Filled in setup_package
 NETS = global_helper.generate_object_names(num_of_cases=11)
 VLAN_IDS = [str(i) for i in xrange(2, 60)]
 UPDATE_CHANGES_ENGINE = "Check that the host nic was updated via engine"
@@ -38,5 +39,14 @@ NETS_DICT = {
     },
     NETS[4][0]: {
         "required": "false"
+    },
+    NETS[5][0]: {
+        "required": "false"  # case05 use VLAN_IDS[2]
+    },
+    NETS[6][0]: {
+        "required": "false"  # case06 use VLAN_IDS[3]
+    },
+    NETS[7][0]: {
+        "required": "false"  # case07 use VLAN_IDS[4]
     },
 }

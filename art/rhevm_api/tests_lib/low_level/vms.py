@@ -37,7 +37,7 @@ from art.rhevm_api.tests_lib.low_level.disks import (
 )
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-from art.rhevm_api.tests_lib.low_level.networks import getVnicProfileObj
+from art.rhevm_api.tests_lib.low_level.networks import get_vnic_profile_obj
 
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.test_utils import (
@@ -1391,7 +1391,7 @@ def _prepareNicObj(**kwargs):
         if kwargs.get('network') is None:
             nic_obj.set_vnic_profile(vnic_profile_obj)
         else:
-            vnic_profile_obj = getVnicProfileObj(
+            vnic_profile_obj = get_vnic_profile_obj(
                 kwargs.get('vnic_profile') if 'vnic_profile' in kwargs
                 else kwargs.get('network'),
                 kwargs.get('network'), cluster_obj.get_name()
@@ -1402,19 +1402,36 @@ def _prepareNicObj(**kwargs):
     return nic_obj
 
 
-@is_action()
-def getVmNics(vm):
+def get_vm_nics(vm):
+    """
+    Get VM NICS href
 
+    Args:
+        vm (str): VM name
+
+    Returns:
+        str: VM NICs href
+    """
     vm_obj = VM_API.find(vm)
-    return VM_API.getElemFromLink(vm_obj,
-                                  link_name='nics',
-                                  attr='vm_nic',
-                                  get_href=True)
+    logger.info("Get NICs href from VM %s", vm)
+    return VM_API.getElemFromLink(
+        vm_obj, link_name='nics', attr='vm_nic', get_href=True
+    )
 
 
-def getVmNic(vm, nic):
+def get_vm_nic(vm, nic):
+    """
+    Get VM NIC
 
+    Args:
+        vm (str): VM name
+        nic (str): NIC name
+
+    Returns:
+        NIC: VM NIC object
+    """
     vm_obj = VM_API.find(vm)
+    logger.info("Get %s vNIC object from %s", nic, vm)
     return VM_API.getElemFromElemColl(vm_obj, nic, 'nics', 'nic')
 
 
@@ -1439,21 +1456,28 @@ def addNic(positive, vm, **kwargs):
     :return: Status (True if NIC was added properly, False otherwise)
     :rtype: bool
     """
+    nic_name = kwargs.get("name")
     vm_obj = VM_API.find(vm)
-    expectedStatus = vm_obj.get_status().get_state()
+    expected_status = vm_obj.get_status().get_state()
 
     nic_obj = _prepareNicObj(vm=vm, **kwargs)
-    nics_coll = getVmNics(vm)
-
-    logger.info("Add %s to %s", kwargs.get("name"), vm)
+    nics_coll = get_vm_nics(vm)
+    log_info, log_error = ll_general.get_log_msg(
+        action="add", obj_type="nic", obj_name=nic_name, positive=positive,
+        **kwargs
+    )
+    logger.info(log_info)
     res, status = NIC_API.create(nic_obj, positive, collection=nics_coll)
+    if not status:
+        logger.error(log_error)
+        return False
 
     # TODO: remove wait section. func need to be atomic. wait can be done
     # externally!
     if positive and status:
-        return VM_API.waitForElemStatus(vm_obj,
-                                        expectedStatus,
-                                        VM_ACTION_TIMEOUT)
+        return VM_API.waitForElemStatus(
+            vm_obj, expected_status, VM_ACTION_TIMEOUT
+        )
     return status
 
 
@@ -1495,53 +1519,71 @@ def updateVmDisk(positive, vm, disk, **kwargs):
 
 @is_action()
 def updateNic(positive, vm, nic, **kwargs):
-    '''
-    Description: update nic of vm
-    Author: edolinin
-    Parameters:
-       * vm - vm where nic should be updated
-       * nic - nic name that should be updated
-       * name - new nic name
-       * network - network name
-       * vnic_profile - the VNIC profile that will be selected for the NIC
-       * interface - nic type. available types: virtio, rtl8139 and e1000
-                     (for 2.2 also rtl8139_virio)
-       * mac_address - nic mac address
-       * active - Boolean attribute which present nic hostplug state
-       * plugged - shows if VNIC is plugged/unplugged
-       * linked - shows if VNIC is linked or not
-    Return: status (True if nic was updated properly, False otherwise)
-    '''
+    """
+    Update nic of vm
+
+    :param positive: Expected status
+    :type positive: bool
+    :param vm: VM name where nic should be updated
+    :type vm: str
+    :param nic: NIC name that should be updated
+    :type nic: str
+    :param kwargs: kwargs for update VM NIC
+        name (str): NIC name
+        network (str): Network name
+        vnic_profile (str): The VNIC profile that will be selected for the NIC
+        interface (str): NIC type. (virtio, rtl8139, e1000 and passthrough)
+        mac_address (str): NIC mac address
+        plugged (bool): Add the NIC with plugged/unplugged state
+        linked (bool): Add the NIC with linked/unlinked state
+    :type kwargs: dict
+    :return: status (True if NIC was updated properly, False otherwise)
+    :rtype: bool
+    """
+    log_info_txt, log_error_txt = ll_general.get_log_msg(
+        action="update vNIC", obj_type="nic", obj_name=nic,
+        positive=positive, **kwargs
+    )
     nic_new = _prepareNicObj(vm=vm, **kwargs)
-    nic_obj = getVmNic(vm, nic)
+    nic_obj = get_vm_nic(vm, nic)
+    logger.info("%s on %s", log_info_txt, vm)
+    if not NIC_API.update(nic_obj, nic_new, positive)[1]:
+        logger.error(log_error_txt)
+        return False
+    return True
 
-    nic, status = NIC_API.update(nic_obj, nic_new, positive)
-    return status
 
-
-@is_action()
 def removeNic(positive, vm, nic):
-    '''
-    Description: remove nic from vm
-    Author: edolinin
-    Parameters:
-       * vm - vm where nic should be removed
-       * nic - nic name that should be removed
-    Return: status (True if nic was removed properly, False otherwise)
-    '''
+    """
+    Remove nic from vm
+
+    Args:
+        positive (bool): Expected status
+        vm (str): VM where nic should be removed from
+        nic (str): NIC name that should be removed
+
+    Returns:
+        bool: True if nic was removed properly, False otherwise
+    """
+    log_info, log_error = ll_general.get_log_msg(
+        action="remove", obj_type="nic", obj_name=nic, positive=positive
+    )
     vm_obj = VM_API.find(vm)
-    nic_obj = getVmNic(vm, nic)
+    nic_obj = get_vm_nic(vm, nic)
+    expected_status = vm_obj.get_status().get_state()
 
-    expectedStatus = vm_obj.get_status().get_state()
-
-    logger.info("Remove %s from %s", nic, vm)
+    logger.info(log_info)
     status = NIC_API.delete(nic_obj, positive)
+    if not status:
+        logger.error(log_error)
+        return False
 
     # TODO: remove wait section. func need to be atomic. wait can be done
     # externally!
     if positive and status:
-        return VM_API.waitForElemStatus(vm_obj, expectedStatus,
-                                        VM_ACTION_TIMEOUT)
+        return VM_API.waitForElemStatus(
+            vm_obj, expected_status, VM_ACTION_TIMEOUT
+        )
     return status
 
 
@@ -1556,7 +1598,7 @@ def hotPlugNic(positive, vm, nic):
     Return: True in case of succeed, False otherwise
     '''
     try:
-        nic_obj = getVmNic(vm, nic)
+        nic_obj = get_vm_nic(vm, nic)
     except EntityNotFound:
         logger.error('Entity %s not found!' % nic)
         return not positive
@@ -1575,7 +1617,7 @@ def hotUnplugNic(positive, vm, nic):
     Return: True in case of succeed, False otherwise
     '''
     try:
-        nic_obj = getVmNic(vm, nic)
+        nic_obj = get_vm_nic(vm, nic)
     except EntityNotFound:
         logger.error('Entity %s not found!' % nic)
         return not positive
@@ -2767,7 +2809,7 @@ def waitForIP(vm, timeout=600, sleep=DEF_SLEEP, get_all_ips=False):
 def getVmMacAddress(positive, vm, nic='nic1'):
     '''Function return mac address of vm with specific nic'''
     try:
-        nicObj = getVmNic(vm, nic)
+        nicObj = get_vm_nic(vm, nic)
     except EntityNotFound:
         VM_API.logger.error("Vm %s doesn't have nic '%s'", vm, nic)
         return False, {'macAddress': None}
@@ -2788,7 +2830,7 @@ def check_vnic_on_vm_nic(vm, nic='nic1', vnic='rhevm'):
     of the vm
     """
     try:
-        nic = getVmNic(vm, nic)
+        nic = get_vm_nic(vm, nic)
     except EntityNotFound:
         VM_API.logger.error("Vm %s doesn't have nic '%s'", vm, nic)
         return False
@@ -3088,7 +3130,7 @@ def getVmNicPortMirroring(positive, vm, nic='nic1'):
         * nic - nic name
     Return: True if port_mirroring is enabled on NIC, otherwise False
     '''
-    nic_obj = getVmNic(vm, nic)
+    nic_obj = get_vm_nic(vm, nic)
     return bool(nic_obj.get_port_mirroring()) == positive
 
 
@@ -3102,22 +3144,31 @@ def getVmNicPlugged(vm, nic='nic1'):
         *  *nic* - nic name
     **Returns**: True if NIC is plugged, otherwise False
     '''
-    nic_obj = getVmNic(vm, nic)
+    nic_obj = get_vm_nic(vm, nic)
     return nic_obj.get_plugged()
 
 
-@is_action()
-def getVmNicLinked(vm, nic='nic1'):
-    '''
+def get_vm_nic_linked(vm, nic='nic1', positive=True):
+    """
     Get nic linked parameter value of the NIC
-    **Author**: gcheresh
-    **Parameters**:
-        *  *vm* - vm name
-        *  *nic* - nic name
-    **Returns**: True if NIC is linked, otherwise False
-    '''
-    nic_obj = getVmNic(vm, nic)
-    return nic_obj.get_linked()
+
+    Args:
+        vm (str): vm name
+        nic (str): nic name
+        positive (bool): Expected results
+
+    Returns:
+        bool: True if NIC is linked, otherwise False
+    """
+    log_txt_info = "linked" if positive else "not linked"
+    log_txt_error = "not linked" if positive else "linked"
+    nic_obj = get_vm_nic(vm, nic)
+    logger.info("Check if %s vNIC is %s on VM %s", nic, log_txt_info, vm)
+    res = nic_obj.get_linked()
+    if res != positive:
+        logger.error("%s vNIC on VM %s is %s", nic, vm, log_txt_error)
+        return False
+    return True
 
 
 def getVmNicNetwork(vm, nic='nic1'):
@@ -3130,7 +3181,7 @@ def getVmNicNetwork(vm, nic='nic1'):
     **Returns**: True if NIC contains non-empty network object
                 or False for Empty network object
     '''
-    nic_obj = getVmNic(vm, nic)
+    nic_obj = get_vm_nic(vm, nic)
 
     return bool(nic_obj.get_network())
 
@@ -3146,7 +3197,7 @@ def checkVmNicProfile(vm, vnic_profile_name, nic='nic1'):
     **Returns**: True if vnic_profile_name exists on nic,
                  False otherwise
     '''
-    nic_obj = getVmNic(vm, nic)
+    nic_obj = get_vm_nic(vm, nic)
     if vnic_profile_name is None:
         if nic_obj.get_vnic_profile():
             return False
@@ -3170,7 +3221,7 @@ def getVmNicVlanId(vm, nic='nic1'):
                    False and {'vlan_id': 0} otherwise)
     '''
     try:
-        nic_obj = getVmNic(vm, nic)
+        nic_obj = get_vm_nic(vm, nic)
         net_obj = NETWORK_API.find(nic_obj.network.id, 'id')
     except EntityNotFound:
         return False, {'vlan_id': 0}
@@ -4967,7 +5018,7 @@ def get_vm_nic_mac_address(vm, nic='nic1'):
     :rtype: str
     """
     try:
-        nicObj = getVmNic(vm, nic)
+        nicObj = get_vm_nic(vm, nic)
     except EntityNotFound:
         VM_API.logger.error("Vm %s doesn't have nic '%s'", vm, nic)
         return ""
@@ -4985,7 +5036,7 @@ def get_vm_nic_statistics(vm, nic):
     :return: VM NIC statistics list
     :rtype: list
     """
-    vm_nic = getVmNic(vm, nic)
+    vm_nic = get_vm_nic(vm, nic)
     return NIC_API.getElemFromLink(
         vm_nic, link_name="statistics", attr="statistic"
     )

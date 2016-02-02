@@ -75,7 +75,7 @@ class TestLinkedCase1(TestCase):
         for nic_name in (
             config.NIC_NAME[1], config.NIC_NAME[3], config.NIC_NAME[5]
         ):
-            if not ll_vms.getVmNicLinked(config.VM_NAME[0], nic=nic_name):
+            if not ll_vms.get_vm_nic_linked(config.VM_NAME[0], nic=nic_name):
                 raise exceptions.NetworkException(
                     "NIC %s is not linked but should be" % nic_name
                 )
@@ -89,7 +89,7 @@ class TestLinkedCase1(TestCase):
                 )
         logger.info("Checking Linked on nic3, nic5 is False")
         for nic_name in (config.NIC_NAME[2], config.NIC_NAME[4]):
-            if ll_vms.getVmNicLinked(config.VM_NAME[0], nic=nic_name):
+            if ll_vms.get_vm_nic_linked(config.VM_NAME[0], nic=nic_name):
                 raise exceptions.NetworkException(
                     "NIC %s is linked but shouldn't be" % nic_name
                 )
@@ -154,7 +154,7 @@ class TestLinkedCase2(TestCase):
         Check the default values for the Plugged/Linked options on VNIC
         """
         logger.info(" Checking linked state of nic2 to be True")
-        if not ll_vms.getVmNicLinked(
+        if not ll_vms.get_vm_nic_linked(
             config.VM_NAME[1], nic=config.NIC_NAME[1]
         ):
             raise exceptions.NetworkException(
@@ -228,7 +228,7 @@ class TestLinkedCase3(TestCase):
             "Checking linked state of nic3 is False and Updating its state "
             "to True"
         )
-        if ll_vms.getVmNicLinked(config.VM_NAME[1], nic=config.NIC_NAME[2]):
+        if ll_vms.get_vm_nic_linked(config.VM_NAME[1], nic=config.NIC_NAME[2]):
             raise exceptions.NetworkException(
                 "%s is linked, but shouldn't be" % config.NIC_NAME[2]
             )
@@ -241,7 +241,7 @@ class TestLinkedCase3(TestCase):
             "Checking linked state on nic2 is True and Updating its state to "
             "False"
         )
-        if not ll_vms.getVmNicLinked(
+        if not ll_vms.get_vm_nic_linked(
             config.VM_NAME[1], nic=config.NIC_NAME[1]
         ):
             raise exceptions.NetworkException(
@@ -255,11 +255,11 @@ class TestLinkedCase3(TestCase):
             )
 
         logger.info("Checking that linked state on nics was correctly updated")
-        if ll_vms.getVmNicLinked(config.VM_NAME[1], nic=config.NIC_NAME[1]):
+        if ll_vms.get_vm_nic_linked(config.VM_NAME[1], nic=config.NIC_NAME[1]):
             raise exceptions.NetworkException(
                 "%s is linked, but it shouldn't be" % config.NIC_NAME[1]
             )
-        if not ll_vms.getVmNicLinked(
+        if not ll_vms.get_vm_nic_linked(
             config.VM_NAME[1], nic=config.NIC_NAME[2]
         ):
             raise exceptions.NetworkException(
@@ -568,13 +568,13 @@ class TestLinkedCase6(TestCase):
         """
         link_param_list = ["false", "true"]
         logger.info("Checking linked state of nic2/nic3 to be True/False")
-        if not ll_vms.getVmNicLinked(
+        if not ll_vms.get_vm_nic_linked(
             config.VM_NAME[0], nic=config.NIC_NAME[1]
         ):
             raise exceptions.NetworkException(
                 "NIC2  isn't linked but should be"
             )
-        if ll_vms.getVmNicLinked(config.VM_NAME[0], nic=config.NIC_NAME[2]):
+        if ll_vms.get_vm_nic_linked(config.VM_NAME[0], nic=config.NIC_NAME[2]):
             raise exceptions.NetworkException(
                 "NIC3 is linked but shouldn't be"
             )
@@ -600,11 +600,11 @@ class TestLinkedCase6(TestCase):
                 )
 
         logger.info("Checking linked state on vnic2/vnic3 to be False/True")
-        if not ll_vms.getVmNicLinked(config.VM_NAME[0], nic="vnic3"):
+        if not ll_vms.get_vm_nic_linked(config.VM_NAME[0], nic="vnic3"):
             raise exceptions.NetworkException(
                 "VNIC3 isn't linked but should be"
             )
-        if ll_vms.getVmNicLinked(config.VM_NAME[0], nic="vnic2"):
+        if ll_vms.get_vm_nic_linked(config.VM_NAME[0], nic="vnic2"):
             raise exceptions.NetworkException(
                 "VNIC2 is linked but shouldn't be"
             )
@@ -785,7 +785,7 @@ class TestLinkedCase7(TestCase):
             raise exceptions.NetworkException(
                 "Couldn't update nic with linked, network and name params"
             )
-        if ll_vms.getVmNicLinked(config.VM_NAME[1], nic=config.NIC_NAME[1]):
+        if ll_vms.get_vm_nic_linked(config.VM_NAME[1], nic=config.NIC_NAME[1]):
             raise exceptions.NetworkException(
                 "NIC2 is linked, but shouldn't be"
             )

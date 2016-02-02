@@ -25,6 +25,7 @@ def setup_package():
     conf.HOST_0_NICS = conf.VDS_HOST_0.nics
     conf.HOST_1_NICS = conf.VDS_HOST_1.nics
     conf.HOSTS_LIST = conf.HOSTS[:2]
+    conf.VDS_HOSTS_LIST = [conf.VDS_HOST_0, conf.VDS_HOST_1]
     networking.network_cleanup()
     network_helper.prepare_networks_on_setup(
         networks_dict=conf.NETS_DICT, dc=conf.DC_NAME_0,

@@ -24,8 +24,8 @@ from art.rhevm_api.tests_lib.high_level.networks import(
 )
 from art.rhevm_api.tests_lib.low_level.networks import(
     updateNetwork, update_vnic_profile, getNetworkVnicProfiles,
-    getVnicProfileObj, add_vnic_profile, removeVnicProfile, findVnicProfile,
-    getVnicProfileAttr, removeNetwork
+    get_vnic_profile_obj, add_vnic_profile, removeVnicProfile, findVnicProfile,
+    get_vnic_profile_attr, removeNetwork
 )
 from art.rhevm_api.tests_lib.low_level.vms import(
     addNic, updateNic, removeNic, createVm, checkVmNicProfile, removeVm
@@ -76,7 +76,7 @@ class TestVNICProfileCase01(TestCase):
             "Check MGMT VNIC profile is created for MGMT network when "
             "creating a new DC %s", self.dc_name2
         )
-        if not getVnicProfileObj(
+        if not get_vnic_profile_obj(
             name=config.MGMT_BRIDGE, network=config.MGMT_BRIDGE,
             data_center=self.dc_name2
         ):
@@ -1371,7 +1371,7 @@ class TestVNICProfileCase15(TestCase):
         """
         Check VNIC profile created with parameters has these parameters
         """
-        attr_dict = getVnicProfileAttr(
+        attr_dict = get_vnic_profile_attr(
             name=config.NETWORKS[1], network=config.NETWORKS[0],
             attr_list=["description", "port_mirroring", "name"]
         )

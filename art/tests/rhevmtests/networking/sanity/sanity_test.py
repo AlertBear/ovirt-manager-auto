@@ -524,7 +524,7 @@ class TestSanity06(TestSanityCaseBase):
             conf.NIC_NAME[1], conf.NIC_NAME[3], conf.NIC_NAME[5]
         ):
             logger.info("Check that linked status on %s in True", nic_name)
-            if not ll_vms.getVmNicLinked(vm=conf.VM_0, nic=nic_name):
+            if not ll_vms.get_vm_nic_linked(vm=conf.VM_0, nic=nic_name):
                 raise conf.NET_EXCEPTION(
                     "NIC %s is not linked but should be" % nic_name
                 )
@@ -538,7 +538,7 @@ class TestSanity06(TestSanityCaseBase):
                 )
         for nic_name in (conf.NIC_NAME[2], conf.NIC_NAME[4]):
             logger.info("Check that linked status on %s in False", nic_name)
-            if ll_vms.getVmNicLinked(vm=conf.VM_0, nic=nic_name):
+            if ll_vms.get_vm_nic_linked(vm=conf.VM_0, nic=nic_name):
                 raise conf.NET_EXCEPTION(
                     "NIC %s is linked but shouldn't be" % nic_name
                 )
@@ -1321,7 +1321,7 @@ class TestSanity16(TestSanityCaseBase):
         Check vNIC profile was created with description, port mirroring and
         name
         """
-        attr_dict = ll_networks.getVnicProfileAttr(
+        attr_dict = ll_networks.get_vnic_profile_attr(
             name=self.vnic_profile, network=self.net,
             attr_list=["description", "port_mirroring", "name"]
         )

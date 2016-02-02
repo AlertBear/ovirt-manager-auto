@@ -137,10 +137,11 @@ def get_events_after_some_event(event_id):
     return filter(lambda x: int(x.get_id()) > int(event_id), events_obj)
 
 
-def find_event(last_event, event_code, content):
+def find_event(last_event, event_code, content, matches=1):
     """
-    Find event in RHEV-M event log by event code and keywords in event
-    description. Search for the event only from last event ID.
+    Find one event or more in RHEV-M event log by event code and keywords in
+    event description. Search for the event only from last event ID.
+    Call this function only with find_event_sampler()
 
     :param last_event: Event id to search from
     :type last_event: int
@@ -148,8 +149,9 @@ def find_event(last_event, event_code, content):
     :type event_code: int
     :param content: content to search in description
     :type content: str
-    :return: True if event with event_code and content was found otherwise
-        False
+    :param matches: Number of matches to find in events
+    :type matches: int
+    :return: True if number of given matches events found otherwise False
     :rtype: bool
     """
     if not last_event:
@@ -157,31 +159,31 @@ def find_event(last_event, event_code, content):
         logger.error("No last event of type %s found", event_code)
         return False
 
-    query = "type={0}".format(event_code)
     logger.info("Last event ID: %s", last_event)
-    try:
-        event = ll_hosts.EVENT_API.query(constraint=query)[0]
-        event_id = event.get_id()
-        event_description = event.get_description()
-    except IndexError:
-        return False
+    found = False
+    while matches:
+        event_id, event_description = get_first_event(code=event_code)
+        if not event_id:
+            return False
 
-    if int(event_id) <= last_event:
-        logger.info("No new events since %s", last_event)
-        return False
-
-    if content in event_description:
-        logger.info(
-            "Event found: [%s] %s", event_id, event_description
-        )
-        return True
-
-    logger.warning("Event not found")
-    return False
+        if event_id > last_event and content in event_description:
+            logger.info(
+                "Event found: [%s] %s", event_id, event_description
+            )
+            found = True
+            matches -= 1
+            last_event = event_id
+        else:
+            logger.info("No new events since %s", last_event)
+            if found:
+                continue
+            return False
+    return True
 
 
 def find_event_sampler(
-    last_event, event_code, content, timeout=SAMPLER_TIMEOUT, sleep=5
+    last_event, event_code, content, timeout=SAMPLER_TIMEOUT, sleep=5,
+    matches=1
 ):
     """
     Run find_event function in sampler.
@@ -196,12 +198,14 @@ def find_event_sampler(
     :type timeout: int
     :param sleep: Sleep between sampler calls
     :type sleep: int
+    :param matches: Number of matches to find in events
+    :type matches: int
     :return: True if event was found otherwise False
     :rtype: bool
     """
     sample = apis_utils.TimeoutingSampler(
         timeout=timeout, sleep=sleep, func=find_event, last_event=last_event,
-        event_code=event_code, content=content,
+        event_code=event_code, content=content, matches=matches
     )
     return sample.waitForFuncStatus(result=True)
 
@@ -215,7 +219,33 @@ def get_last_event(code):
     :return: Last event ID or None
     :rtype: int or None
     """
+    logger.info("Get last event with event code %s", code)
     query = "type={0}".format(code)
     all_events = ll_hosts.EVENT_API.query(constraint=query)
     all_events_ids = [int(i.id) for i in all_events]
-    return max(all_events_ids) if all_events_ids else None
+    if all_events_ids:
+        return max(all_events_ids)
+    logger.error("Event with code %s not found", code)
+    return None
+
+
+def get_first_event(code):
+    """
+    Get the first event from engine
+
+    :param code: Event code
+    :type code: int
+    :return: Event id and event description
+    :rtype: tuple
+    """
+    logger.info("Searching for event with %s", code)
+    query = "type={0}".format(code)
+    try:
+        event = ll_hosts.EVENT_API.query(constraint=query)[0]
+    except IndexError:
+        logger.error("Event match %s not found", query)
+        return None, None
+
+    event_id = int(event.get_id())
+    event_description = event.get_description()
+    return event_id, event_description

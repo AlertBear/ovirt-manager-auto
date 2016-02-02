@@ -184,7 +184,7 @@ def sync_networks(host, networks):
     :type host: str
     :param networks: List of networks to sync
     :type networks: list
-    :raise: conf.NET_EXCEPTION
+    :raise: NetworkException
     """
     network_sync_dict = {
         "sync": {
@@ -212,6 +212,7 @@ def remove_qos_from_dc(qos_name, datacenter=conf.DC_NAME[0], teardown=True):
     :type datacenter: str
     :param teardown: If running on teardown
     :type teardown: bool
+    :raise: NetworkException
     """
     msg = "Couldn't delete the QoS %s from DC %s", qos_name, datacenter
     logger.info("Remove QoS %s from %s", qos_name, datacenter)
@@ -239,7 +240,7 @@ def create_host_net_qos(
     :type datacenter: str
     :param qos_dict: Dict of host network qos values to create QoS with
     :type qos_dict: dict
-    :raises: Network exception
+    :raises: NetworkException
     """
     logger.info(
         "Create new network host QoS profile with parameters %s", qos_dict
@@ -268,7 +269,7 @@ def update_host_net_qos(qos_name, datacenter=conf.DC_NAME[0], **qos_dict):
     :type datacenter: str
     :param qos_dict: dict of host network qos values to update
     :type qos_dict: dict
-    :raises: Network exception
+    :raises: NetworkException
     """
     logger.info("Update network host QoS values with %s ", qos_dict)
     if not ll_dc.update_qos_in_datacenter(
@@ -290,7 +291,7 @@ def set_libvirt_sasl_status(engine_resource, host_resource, sasl=False):
     :type host_resource: resources.VDS
     :param sasl: Set sasl on/off (True/False)
     :type sasl: bool
-    :raise: conf.NET_EXCEPTION
+    :raise: NetworkException
     """
     if not sasl:
         logger.info(
@@ -384,7 +385,7 @@ def prepare_dummies(host_resource, num_dummy=2):
     :type host_resource: resources.VDS
     :param num_dummy: Number of dummies to create
     :type num_dummy: int
-    :raise: conf.NET_EXCEPTION
+    :raise: NetworkException
     """
     host_name = ll_hosts.get_host_name_from_engine(host_resource.ip)
     logger.info(
@@ -563,6 +564,7 @@ def remove_ifcfg_files(vms):
 
     :param vms: List of VMs
     :type vms: list
+    :raise: NetworkException
     """
     exclude_nics = ["ifcfg-eth0", "ifcfg-lo"]
     for vm in vms:
@@ -647,7 +649,7 @@ def send_icmp_sampler(
     :type timeout: int
     :param sleep: Time to sleep between each try
     :type sleep: int
-    :raise: conf.NET_EXCEPTION
+    :raise: NetworkException
     """
     logger.info("Check ICMP traffic from %s to %s", host_resource.ip, dst)
     sample = test_utils.TimeoutingSampler(
@@ -659,24 +661,26 @@ def send_icmp_sampler(
     logger.info("Traffic from %s to %s succeed", host_resource.ip, dst)
 
 
-def wait_for_sn(content, last_event):
+def wait_for_sn(content, last_event, matches=1):
     """
     Wait for setupNetworks call to finish by checking events
 
     :param content: String to search in event description
     :type content: str
-    :param last_event: Event id to search from
-    :type last_event: int
+    :param last_event: The last event id to check events from
+    :type: int
+    :param matches: Number of matches to find in events
+    :type matches: int
     :raise: NetworkException
     """
     if not ll_events.find_event_sampler(
         last_event=last_event, event_code=APPLY_NETWORK_CHANGES_EVENT_CODE,
-        content=content
+        content=content, matches=matches
     ):
         raise conf.NET_EXCEPTION()
 
 
-def call_function_and_wait_for_sn(func, content, **func_kwargs):
+def call_function_and_wait_for_sn(func, content, matches=1, **func_kwargs):
     """
     Call related network function (update_network, add_label) and wait for
     setupNetworks to finish (By waiting for event)
@@ -685,19 +689,18 @@ def call_function_and_wait_for_sn(func, content, **func_kwargs):
     :type func: function
     :param content: Content to search in event description
     :type content: str
+    :param matches: Number of matches to find in events
+    :type matches: int
     :param func_kwargs: Function kwargs
     :type func_kwargs: dict
-    :raise: conf.NET_EXCEPTION
+    :raise: NetworkException
     """
     last_event = ll_events.get_last_event(APPLY_NETWORK_CHANGES_EVENT_CODE)
-    if not last_event:
-        last_event = 1
-
     if not func(**func_kwargs):
         raise conf.NET_EXCEPTION(
             "Failed to call %s with %s" % (func.__name__, func_kwargs)
         )
-    wait_for_sn(content=content, last_event=last_event)
+    wait_for_sn(content=content, last_event=last_event, matches=matches)
 
 
 if __name__ == "__main__":

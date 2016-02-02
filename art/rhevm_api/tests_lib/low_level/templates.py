@@ -25,8 +25,9 @@ from art.core_api.apis_utils import getDS, data_st, TimeoutingSampler
 from art.rhevm_api.utils.test_utils import get_api, split, waitUntilGone
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.rhevm_api.tests_lib.low_level.disks import getObjDisks
+import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.rhevm_api.tests_lib.low_level.networks import (
-    getVnicProfileObj, VNIC_PROFILE_API,
+    get_vnic_profile_obj, VNIC_PROFILE_API,
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
     DiskNotFound,
@@ -309,13 +310,11 @@ def _prepareNicObj(**kwargs):
         if kwargs.get('network') is None:
             nic_obj.set_vnic_profile(vnic_profile_obj)
         else:
-            vnic_profile_obj = getVnicProfileObj(kwargs.get('vnic_profile')
-                                                 if 'vnic_profile' in kwargs
-                                                 else
-                                                 kwargs.get('network'),
-                                                 kwargs.get('network'),
-                                                 cl_obj.get_name())
-
+            vnic_profile_obj = get_vnic_profile_obj(
+                kwargs.get('vnic_profile') if 'vnic_profile' in kwargs else
+                kwargs.get('network'), kwargs.get('network'),
+                cl_obj.get_name()
+            )
             nic_obj.set_vnic_profile(vnic_profile_obj)
 
     if 'active' in kwargs:
@@ -339,28 +338,38 @@ def getTemplatesNic(template, nic):
 
 @is_action()
 def addTemplateNic(positive, template, **kwargs):
-    '''
-    Description: add nic to template
-    Author: atal
-    Parameters:
-       * template - name of template that we add the nic to
-       * name - name of nic
-       * network - network that nic depends on
-       * interface - nic type. available types: virtio, rtl8139 and e1000
-                     (for 2.2 also rtl8139_virtio)
-       * active - Boolean attribute which present nic hostplug state
-    Return: status (True if nic was added properly, False otherwise)
-    '''
+    """
+    Add nic to template
+
+    :param positive: Expected status
+    :type positive: bool
+    :param template: Name of template to add the NIC to
+    :type template: str
+    :param kwargs: NIC kwargs
+        name (str): Name of NIC
+        network (str): Network that should reside in NIC
+        interface (str): NIC type. (virtio, rtl8139, e1000 and passthrough)
+    :type kwargs: dict
+    :return: Status (True if nic was added properly, False otherwise)
+    :rtype: bool
+    """
+    nic_name = kwargs.get("name")
+    log_info_txt, log_error_txt = ll_general.get_log_msg(
+        action="add", obj_type="nic", obj_name=nic_name, positive=positive,
+        **kwargs
+    )
     templ_obj = TEMPLATE_API.find(template)
-    kwargs.update([('cluster', templ_obj.cluster.id)])
+    kwargs.update([("cluster", templ_obj.cluster.id)])
 
     nic_obj = _prepareNicObj(**kwargs)
     nics_coll = getTemplatesNics(template)
 
-    logger.info("Add %s to %s", kwargs.get("name"), template)
-    res, status = NIC_API.create(nic_obj, positive, collection=nics_coll)
-
-    return status
+    logger.info("%s to %s", log_info_txt, template)
+    status = NIC_API.create(nic_obj, positive, collection=nics_coll)[1]
+    if not status:
+        logger.error(log_error_txt)
+        return False
+    return True
 
 
 @is_action()
@@ -431,17 +440,28 @@ def updateTemplateNic(positive, template, nic, **kwargs):
 
 @is_action()
 def removeTemplateNic(positive, template, nic):
-    '''
-    Description: remove nic from template
-    Author: atal
-    Parameters:
-       * template - template where nic should be removed
-       * nic - nic name that should be removed
-    Return: status (True if nic was removed properly, False otherwise)
-    '''
+    """
+    Remove nic from template
+
+    :param positive: Expected status
+    :type positive: bool
+    :param template: Template where nic should be removed
+    :type template: str
+    :param nic: NIC name that should be removed
+    :type nic: str
+    :return: status (True if nic was removed properly, False otherwise)
+    :rtype: bool
+    """
+    log_info_txt, log_error_txt = ll_general.get_log_msg(
+        action="remove", obj_type="nic", obj_name=nic, positive=positive
+    )
     nic_obj = getTemplatesNic(template, nic)
-    logger.info("Remove %s from %s", nic, template)
-    return NIC_API.delete(nic_obj, positive)
+    logger.info("%s from %s", log_info_txt, template)
+    res = NIC_API.delete(nic_obj, positive)
+    if not res:
+        logger.error(log_error_txt)
+        return False
+    return True
 
 
 @is_action()

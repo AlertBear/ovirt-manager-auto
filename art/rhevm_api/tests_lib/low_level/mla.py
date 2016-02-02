@@ -24,7 +24,7 @@ from art.core_api import is_action
 from art.test_handler.settings import opts
 from art.rhevm_api.tests_lib.low_level.networks import (
     findNetwork,
-    getVnicProfileObj
+    get_vnic_profile_obj
 )
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -365,7 +365,9 @@ def addPermissionsForVnicProfile(positive, user, vnicprofile, network,
       * role - role to add
     Return: status (True if permission was added properly, False otherwise)
     '''
-    vnicObj = getVnicProfileObj(vnicprofile, network, data_center=data_center)
+    vnicObj = get_vnic_profile_obj(
+        vnicprofile, network, data_center=data_center
+    )
     return addUserPermitsForObj(positive, user, role, vnicObj)
 
 
@@ -428,7 +430,9 @@ def addVnicProfilePermissionsToGroup(positive, group, vnicprofile, network,
        * role - role to add
     Return: status (True if permission was added properly, False otherwise)
     '''
-    vnicObj = getVnicProfileObj(vnicprofile, network, data_center=data_center)
+    vnicObj = get_vnic_profile_obj(
+        vnicprofile, network, data_center=data_center
+    )
     return addUserPermitsForObj(positive, group, role, vnicObj, True)
 
 
@@ -596,7 +600,9 @@ def removeUsersPermissionsFromVnicProfile(positive, vnicprofile, network,
        * user_names - list with user names (ie.['user1@..', 'user2@..'])
     Return: status (True if permissions was removed, False otherwise)
     '''
-    vnicObj = getVnicProfileObj(vnicprofile, network, data_center=data_center)
+    vnicObj = get_vnic_profile_obj(
+        vnicprofile, network, data_center=data_center
+    )
     return removeUsersPermissionsFromObject(positive, vnicObj, user_names)
 
 

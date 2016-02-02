@@ -119,31 +119,41 @@ def addNetwork(positive, **kwargs):
 @is_action()
 def updateNetwork(positive, network, **kwargs):
     """
-    Description: update existing network
-    Author: edolinin, atal
-    Parameters:
-       * network - name of a network that should be updated
-       * name - new network name (if relevant)
-       * data_center - In case more then one network with the same name exists.
-       * address - network ip address
-       * netmask - network ip netmask
-       * gateway - network ip gateway
-       * description - new network description (if relevant)
-       * stp - new network support stp (if relevant). (true/false string)
-       * vlan_id - new network vlan id (if relevant)
-       * usages - a string contain list of comma-separated usages 'VM,DISPLAY'.
-                    should contain all usages every update.
-                    a missing usage will be deleted!
-       * mtu - and integer to overrule mtu on the related host nic..
-    Return: status (True if network was updated properly, False otherwise)
-    """
-    net = findNetwork(network, kwargs.get('data_center'))
-    log_txt = "Update" if positive else "Try to update"
-    logger.info("%s %s with %s", log_txt, network, kwargs)
-    net_update = _prepareNetworkObject(**kwargs)
-    res, status = NET_API.update(net, net_update, positive)
+    Update network
 
-    return status
+    Args:
+        positive (bool): True if test is positive, False if negative
+        network (str): Name of a network that should be updated
+        kwargs (dict): Parameters for update network
+
+    Keyword arguments:
+        name: New network name. (str)
+        data_center: In case more than one network with the same name
+            exists.
+        address (str): Network ip address.
+        netmask (str): Network ip netmask.
+        gateway (str): Network ip gateway.
+        description (str): New network description.
+        stp (str): New network support stp.
+        vlan_id (str): New network vlan id.
+        usages (str): Comma separated usages for example 'VM,DISPLAY'.
+        mtu (int): Integer to overrule mtu on the related host nic.
+
+    Returns:
+        bool: True if network was updated properly, False otherwise
+    """
+    net = findNetwork(network, kwargs.get("data_center"))
+    log_info_txt, log_error_txt = ll.general.get_log_msg(
+        action="update", obj_type="network", obj_name=network,
+        positive=positive, **kwargs
+    )
+    logger.info(log_info_txt)
+    net_update = _prepareNetworkObject(**kwargs)
+    status = NET_API.update(net, net_update, positive)[1]
+    if not status:
+        logger.error(log_error_txt)
+        return False
+    return True
 
 
 @is_action()
@@ -372,6 +382,9 @@ def update_vnic_profile(name, network, **kwargs):
         :type pass_through: bool
     :return: True, if adding vnic profile was success, otherwise False
     """
+    log_info, log_error = ll.general.get_log_msg(
+        action="update", obj_type="nic", obj_name=name, **kwargs
+    )
     kwargs["name"] = name
     cluster = kwargs.get("cluster")
     data_center = kwargs.get("data_center")
@@ -384,13 +397,12 @@ def update_vnic_profile(name, network, **kwargs):
 
     new_vnic_profile_obj = _prepare_vnic_profile_object(kwargs=kwargs)
 
-    logger.info("Update %s profile with %s", name, kwargs)
+    logger.info(log_info)
     if not VNIC_PROFILE_API.update(
         vnic_profile_obj, new_vnic_profile_obj, True
     )[1]:
-        logger.error("Updating %s profile failed", name)
+        logger.error(log_error)
         return False
-
     return True
 
 
@@ -411,22 +423,29 @@ def getNetworkVnicProfiles(network, cluster=None, data_center=None):
                                    attr='vnic_profile', get_href=False)
 
 
-def getVnicProfileObj(name, network, cluster=None, data_center=None):
+def get_vnic_profile_obj(name, network, cluster=None, data_center=None):
     """
-    Finds the VNIC profile object.
-    **Author**: tgeft
-    **Parameters**:
-        *  *name* - Name of the VNIC profile to find.
-        *  *network* - Name of the network used by the VNIC profile.
-        *  *cluster* - Name of the cluster in which the network is located.
-        *  *data_center* - Name of the data center in which the network
-                           is located.
-    **Return**: Returns the VNIC profile object if it's found or raises
-                apis_exceptions.EntityNotFound exception if it's not.
+    Get VNIC profile object.
+
+    Args:
+        name (str): Name of the VNIC profile to find.
+        network (str): Name of the network used by the VNIC profile.
+        cluster (str): Name of the cluster in which the network is located.
+        data_center (str): Name of the data center in which the network is
+            located.
+
+    Returns:
+        VnicProfile: Returns the VNIC profile object if it's found
+
+    Raises:
+        EntityNotFound: if vNIC profile object not found
     """
-    matching_profiles = filter(lambda profile: profile.get_name() == name,
-                               getNetworkVnicProfiles(network, cluster,
-                                                      data_center))
+    logger.info("Get vNIC profile %s object", name)
+    matching_profiles = filter(
+        lambda profile: profile.get_name() == name, getNetworkVnicProfiles(
+            network, cluster, data_center
+        )
+    )
     if matching_profiles:
         return matching_profiles[0]
     else:
@@ -436,46 +455,38 @@ def getVnicProfileObj(name, network, cluster=None, data_center=None):
         )
 
 
-def getVnicProfileAttr(name, network, cluster=None, data_center=None,
-                       attr_list=[]):
+def get_vnic_profile_attr(
+    name, network, cluster=None, data_center=None, attr_list=list()
+):
     """
     Finds the VNIC profile object.
-    **Author**: gcheresh
-    **Parameters**:
-        *  *name* - Name of the VNIC profile to find.
-        *  *network* - Name of the network used by the VNIC profile.
-        *  *cluster* - Name of the cluster in which the network is located.
-        *  *data_center* - Name of the data center in which the network
-                           is located.
-        *   *attr_list - attributes of VNIC profile to get:
-                port_mirroring
-                description
-                id
-                custom_properties
-                network_obj
-                name
 
-    **Return**: Returns the dictionary of VNIC profile attributes
+    Args:
+        name (str): Name of the VNIC profile to find.
+        network (str: )Name of the network used by the VNIC profile.
+        cluster (str): Name of the cluster in which the network is located.
+        data_center (str): Name of the data center in which the network is
+            located.
+        attr_list (list): attributes of VNIC profile to get:
+            port_mirroring
+            description
+            id
+            custom_properties
+            network_obj
+            name
+
+    Returns:
+        dict: Returns the dictionary of VNIC profile attributes
     """
-
-    vnic_profile_obj = getVnicProfileObj(name=name, network=network,
-                                         cluster=cluster,
-                                         data_center=data_center)
-    attr_dict = {}
+    vnic_profile_obj = get_vnic_profile_obj(
+        name=name, network=network, cluster=cluster, data_center=data_center
+    )
+    logger.info("Get vNIC profile %s attributes", name)
+    attr_dict = dict()
     for arg in attr_list:
-        if arg == "port_mirroring":
-            attr_dict["port_mirroring"] = vnic_profile_obj.get_port_mirroring()
-        elif arg == "description":
-            attr_dict["description"] = vnic_profile_obj.get_description()
-        elif arg == "id":
-            attr_dict["id"] = vnic_profile_obj.get_id()
-        elif arg == "custom_properties":
-            attr_dict["custom_properties"] =\
-                vnic_profile_obj.get_custom_properties()
-        elif arg == "name":
-            attr_dict["name"] = vnic_profile_obj.get_name()
-        elif arg == "network_obj":
-            attr_dict["network_obj"] = vnic_profile_obj.get_network()
+        if arg == "network_obj":
+            arg = "network"
+        attr_dict[arg] = getattr(vnic_profile_obj, arg)
 
     return attr_dict
 
@@ -540,8 +551,8 @@ def removeVnicProfile(positive, vnic_profile_name, network, cluster=None,
     :return: True if action succeeded, otherwise False
     :rtype: bool
     """
-    profileObj = getVnicProfileObj(vnic_profile_name, network, cluster,
-                                   data_center)
+    profileObj = get_vnic_profile_obj(vnic_profile_name, network, cluster,
+                                      data_center)
     logger.info("Remove vNIC profile %s", vnic_profile_name)
 
     if not VNIC_PROFILE_API.delete(profileObj, positive):
@@ -682,7 +693,10 @@ def is_host_network_is_vm(vds_resource, net_name):
     """
     vm_file = os.path.join(test_utils.SYS_CLASS_NET_DIR, net_name)
     logger.info("Check if %s exist on %s", vm_file, vds_resource.fqdn)
-    return vds_resource.fs.exists(path=vm_file)
+    res = vds_resource.fs.exists(path=vm_file)
+    if not res:
+        logger.error("%s not exist on %s", net_name, vds_resource.fqdn)
+    return res
 
 
 def is_vlan_on_host_network(vds_resource, interface, vlan):
@@ -697,16 +711,27 @@ def is_vlan_on_host_network(vds_resource, interface, vlan):
     :return: True if VLAN on the host == provided VLAN, False otherwise
     :rtype: bool
     """
+    vid = None
     vlan_file = os.path.join(
         PROC_NET_DIR, "vlan", ".".join([interface, str(vlan)])
     )
     rc, out, _ = vds_resource.run_command(["cat", vlan_file])
     if rc:
         return False
+    logger.info(
+        "Check if %s is tagged with vlan %s on %s",
+        interface, vlan, vds_resource.fqdn
+    )
     match_obj = re.search("VID: ([0-9]+)", out)
     if match_obj:
         vid = match_obj.group(1)
-    return vid == vlan
+    res = vid == vlan
+    if not res:
+        logger.error(
+            "%s is not tagged with vlan %s on %s",
+            interface, vlan, vds_resource.fqdn
+        )
+    return res
 
 
 def create_networks_in_datacenter(datacenter, num_of_net, prefix):
@@ -793,14 +818,17 @@ def getVnicProfileFromNetwork(
 
 def check_network_on_nic(network, host, nic):
     """
-    Description: Checks if network resides on Host NIC
-    Author: gcheresh
-    Parameters:
-       *  *network* - network name to check
-       *  *host* - Host name
-       *  *nic* - NIC name on Host
-    **Return**: True if network resides on Host NIC, otherwise False
+    Checks if network resides on Host NIC
+
+    Args:
+        network (str): Network name to check
+        host (str): Host name
+        nic (str): NIC name on Host
+
+    Returns:
+        bool: True if network resides on Host NIC, otherwise False
     """
+    logger.info("Check if network %s is resides on NIC %s", network, nic)
     try:
         nic_obj = ll.hosts.get_host_nic(host, nic).get_network()
         net_obj_id = NET_API.find(network).get_id()
@@ -809,6 +837,7 @@ def check_network_on_nic(network, host, nic):
         return False
     if nic_obj is not None:
         return nic_obj.get_id() == net_obj_id
+    logger.error("Network %s doesn't exist on NIC %s", network, nic)
     return False
 
 

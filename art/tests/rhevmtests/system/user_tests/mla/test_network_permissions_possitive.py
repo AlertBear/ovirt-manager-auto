@@ -803,7 +803,7 @@ class PositiveNetworkPermissions317133(NetworkingPossitive):
     def test_automaticCreationToUser(self):
         """ Check that networkadmin permissions are added automatically  """
         loginAsAdmin()
-        vnic = networks.getVnicProfileObj(
+        vnic = networks.get_vnic_profile_obj(
             config.MGMT_BRIDGE,
             config.MGMT_BRIDGE,
             config.CLUSTER_NAME[0],
@@ -900,7 +900,7 @@ class PositiveNetworkPermissions317270(NetworkingPossitive):
     @polarion("RHEVM3-4032")
     def test_nonVmToVmNetwork(self):
         """ When network is switched to nonvm permissions should be removed """
-        vnic = networks.getVnicProfileObj(
+        vnic = networks.get_vnic_profile_obj(
             config.NETWORK_NAME1,
             config.NETWORK_NAME1,
             config.CLUSTER_NAME[0],
