@@ -3,7 +3,7 @@ This package contains RHEVM tests
 """
 import helpers
 import logging
-from rhevmtests import config
+import config
 from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.rhevm_api import resources

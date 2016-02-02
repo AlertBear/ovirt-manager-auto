@@ -23,6 +23,7 @@ These are:
     --art-log path/to/log-file.log
       It is same as we had --log in ART - OPTIONAL
 """
+import atexit
 import time
 import yaml
 import signal
@@ -121,6 +122,10 @@ def pytest_configure(config):
     # Watch MainThread and report if it gets stucked.
     settings.stuck_handler()
     signal.signal(signal.SIGUSR1, settings.dump_stacks)
+
+    # Add thread to monitor GC in ART run
+    mon_gc = settings.MonitorGC()
+    atexit.register(mon_gc.collect_gc)
 
 
 def pytest_unconfigure(config):

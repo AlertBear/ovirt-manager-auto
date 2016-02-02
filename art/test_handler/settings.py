@@ -30,6 +30,7 @@ import threading
 import traceback
 import time
 from configobj import ConfigObj
+import gc
 
 from art.test_handler.handler_lib.configs import ARTConfigValidator, \
     ConfigLoader
@@ -41,6 +42,9 @@ opts = {}
 ART_CONFIG = ConfigObj()
 """ A options global for all REST tests. """
 RC_RANGE = [2, 9]
+
+# garbage collector interval in seconds
+GC_INTERVAL = 600
 
 
 class ReturnCode:
@@ -345,3 +349,56 @@ def stuck_check(main_thread):
                 "Check debug log to see traceback where it is stucked on."
             )
             logger.debug(''.join(t[-1]))
+
+
+class MonitorGC(object):
+
+    logger = logging.getLogger('art_monitor_gc')
+
+    def __init__(self, interval=GC_INTERVAL):
+        self.interval = interval
+        self.thread = threading.Thread(target=self.run, name='monitor_gc')
+        self.thread.daemon = True
+        self.thread.start()
+
+    def run(self):
+        self.logger.info("monitor Garbage Collector started")
+        saved_flags = gc.get_debug()
+        gc.set_debug(0)
+        try:
+            while True:
+                time.sleep(GC_INTERVAL)
+                self.collect_gc()
+        finally:
+            gc.set_debug(saved_flags)
+            self.logger.debug("monitor GC stopped")
+
+    def collect_gc(self):
+        try:
+            collected = gc.collect()
+            self.logger.debug("Collected %d objects from GC", collected)
+            # Copy garbage so it is not modified while iterate over it.
+            uncollectable = gc.garbage[:]
+            if uncollectable:
+                uncollectable = [
+                    self.saferepr(obj) for obj in uncollectable
+                    ]
+                self.logger.warning(
+                    "Found %d uncollectable objects: %s",
+                    len(uncollectable), uncollectable
+                )
+        except Exception as exc:
+            self.logger.exception("Error checking GC: %s", exc)
+
+    def saferepr(self, obj):
+        """
+        Some objects from standard library fail in repr because of buggy
+        __repr__ implementation. Try the builtin repr() and if it fails,
+        warn and fallback to simple repr.
+        """
+        try:
+            return repr(obj)
+        except Exception as e:
+            simple_repr = "<%s at 0x%x>" % (type(obj), id(obj))
+            self.logger.warning("repr() failed for %s: %s", simple_repr, e)
+            return simple_repr
