@@ -6,14 +6,14 @@ from art.rhevm_api.utils import test_utils, cpumodel
 from art.core_api.apis_utils import TimeoutingSampler
 
 
-from art.rhevm_api.tests_lib.low_level import datacenters
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import clusters
 from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
-from art.rhevm_api.tests_lib.low_level import external_providers
+from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
+from art.rhevm_api.tests_lib.low_level import external_providers as ll_ep
 from art.rhevm_api.tests_lib.high_level import mac_pool as hl_mac_pool
 from art.rhevm_api.tests_lib.high_level import storagedomains
 
@@ -27,6 +27,7 @@ LOGGER = logging.getLogger(__name__)
 ENUMS = config.ENUMS
 GB = 1024 * 1024 * 1024
 GLANCE = 'OpenStackImageProvider'
+CINDER = 'OpenStackVolumeProvider'
 ADD_GROUP_CMD = ('ovirt-aaa-jdbc-tool', 'group', 'add')
 ADD_USER_CMD = ('ovirt-aaa-jdbc-tool', 'user', 'add')
 PASSWORD_RESET_CMD = ('ovirt-aaa-jdbc-tool', 'user', 'password-reset')
@@ -110,7 +111,7 @@ class StorageConfiguration(object):
         return self.export_shares.pop(0)
 
 
-class GlanceConfiguration(object):
+class OpenStackEPConfiguration(object):
     def __init__(self, configuration):
         self._name = configuration.get('name')
         self._url = configuration.get('url')
@@ -118,38 +119,78 @@ class GlanceConfiguration(object):
         self._password = configuration.get('password')
         self._tenant = configuration.get('tenant')
         self._authentication_url = configuration.get('authentication_url')
+        self._ep_type = configuration.get('type')
 
-    def get_name(self):
+    @property
+    def name(self):
         return self._name
 
-    def get_url(self):
+    @property
+    def url(self):
         return self._url
 
-    def get_username(self):
+    @property
+    def username(self):
         return self._username
 
-    def get_password(self):
+    @property
+    def password(self):
         return self._password
 
-    def get_tenant(self):
+    @property
+    def tenant(self):
         return self._tenant
 
-    def get_authentication_url(self):
+    @property
+    def authentication_url(self):
         return self._authentication_url
+
+    @property
+    def ep_type(self):
+        return self._ep_type
+
+
+class GlanceEPConfiguration(OpenStackEPConfiguration):
+    def __init__(self, configuration):
+        super(GlanceEPConfiguration, self).__init__(configuration)
+
+
+class CinderEPConfiguration(OpenStackEPConfiguration):
+    def __init__(self, configuration):
+        super(CinderEPConfiguration, self).__init__(configuration)
+        self._auth_key_uuid = configuration.get('authentication_key_uuid')
+        self._auth_key_value = configuration.get('authentication_key_value')
+
+    @property
+    def authentication_key_uuid(self):
+        return self._auth_key_uuid
+
+    @property
+    def authentication_key_value(self):
+        return self._auth_key_value
 
 
 class EPConfiguration(object):
     def __init__(self, configuration):
         self.eps_to_add = configuration.as_list('ep_to_add')
         self._glance_providers = []
+        self._cinder_providers = []
 
         for ep in self.eps_to_add:
             if configuration[ep]['type'] == GLANCE:
-                ep_conf = GlanceConfiguration(configuration[ep])
+                ep_conf = GlanceEPConfiguration(configuration[ep])
                 self._glance_providers.append(ep_conf)
+            elif configuration[ep]['type'] == CINDER:
+                ep_conf = CinderEPConfiguration(configuration[ep])
+                self._cinder_providers.append(ep_conf)
 
+    @property
     def glance_providers(self):
         return self._glance_providers[:]
+
+    @property
+    def cinder_providers(self):
+        return self._cinder_providers[:]
 
 
 class CreateDC(TestCase):
@@ -213,7 +254,7 @@ class CreateDC(TestCase):
                     "Can not update cluster cpu_model to: %s", cpu_info['cpu'],
                 )
 
-    def add_sds(self, storages, host, datacenter_name, storage_conf):
+    def add_sds(self, storages, host, datacenter_name, storage_conf, ep_conf):
         for sd in storages:
             sd_name = sd['name']
             storage_type = sd['storage_type']
@@ -248,6 +289,19 @@ class CreateDC(TestCase):
                 path = storage_conf.get_unused_local_share()
                 assert storagedomains.addLocalDataDomain(
                     host, sd_name, datacenter_name, path)
+            elif storage_type == ENUMS['storage_type_cinder']:
+                if ep_conf:
+                    for cinder in ep_conf.cinder_providers:
+                        if cinder.name == sd_name:
+                            self.connect_openstack_ep(cinder, datacenter_name)
+                            break
+                    else:
+                        LOGGER.warning(
+                            "No cinder EP with name %s found", sd_name
+                        )
+                else:
+                    LOGGER.warning("No external provider defined")
+
             else:
                 LOGGER.warning("unknown type: %s", storage_type)
 
@@ -526,11 +580,11 @@ class CreateDC(TestCase):
                 name=export_template['name']
             )
 
-    def build_dc(self, dc_def, host_conf, storage_conf):
+    def build_dc(self, dc_def, host_conf, storage_conf, ep_conf=None):
         datacenter_name = dc_def['name']
         local = bool(dc_def['local'])
         comp_version = dc_def['compatibility_version']
-        if not datacenters.addDataCenter(
+        if not ll_dc.addDataCenter(
                 True, name=datacenter_name, local=local, version=comp_version):
             raise errors.DataCenterException(
                 "addDataCenter %s with local %s and version %s failed."
@@ -548,7 +602,9 @@ class CreateDC(TestCase):
             storages = dc_def['storage_domains']
             host = clusters[0]['hosts'][0]['name']
             if storages is not None:
-                self.add_sds(storages, host, datacenter_name, storage_conf)
+                self.add_sds(
+                    storages, host, datacenter_name, storage_conf, ep_conf
+                )
             else:
                 LOGGER.info("No storage_domains on yaml description file")
 
@@ -631,31 +687,47 @@ class CreateDC(TestCase):
             True, ENUMS['storage_dom_type_iso'], ENUMS['storage_type_nfs'],
             address[0], path[0], host)
 
-    def connect_glance(self, external_provider_def):
+    def connect_openstack_ep(self, external_provider_def, dc_name=None):
         LOGGER.info(
-            "Connecting %s to environment", external_provider_def.get_name()
+            "Connecting %s to environment", external_provider_def.name
         )
         LOGGER.info(
-            "OpenStackImageProvider %s %s %s %s %s %s",
-            external_provider_def.get_name(),
-            external_provider_def.get_url(),
-            external_provider_def.get_username(),
-            external_provider_def.get_password(),
-            external_provider_def.get_tenant(),
-            external_provider_def.get_authentication_url()
+            "%s %s %s %s %s %s %s",
+            external_provider_def.ep_type,
+            external_provider_def.name,
+            external_provider_def.url,
+            external_provider_def.username,
+            external_provider_def.password,
+            external_provider_def.tenant,
+            external_provider_def.authentication_url
         )
 
-        glance = external_providers.OpenStackImageProvider(
-            name=external_provider_def.get_name(),
-            url=external_provider_def.get_url(),
-            requires_authentication=True,
-            username=external_provider_def.get_username(),
-            password=external_provider_def.get_password(),
-            authentication_url=external_provider_def.get_authentication_url(),
-            tenant_name=external_provider_def.get_tenant()
-        )
+        if external_provider_def.ep_type == GLANCE:
+            external_provider = ll_ep.OpenStackImageProvider(
+                name=external_provider_def.name,
+                url=external_provider_def.url,
+                requires_authentication=True,
+                username=external_provider_def.username,
+                password=external_provider_def.password,
+                authentication_url=external_provider_def.authentication_url,
+                tenant_name=external_provider_def.tenant
+            )
+        if external_provider_def.ep_type == CINDER:
+            dc_obj = ll_dc.get_data_center(dc_name)
+            external_provider = ll_ep.OpenStackVolumeProvider(
+                name=external_provider_def.name,
+                url=external_provider_def.url,
+                requires_authentication=True,
+                username=external_provider_def.username,
+                password=external_provider_def.password,
+                authentication_url=external_provider_def.authentication_url,
+                tenant_name=external_provider_def.tenant,
+                data_center=dc_obj,
+                key_uuid=external_provider_def.authentication_key_uuid,
+                key_value=external_provider_def.authentication_key_value
+            )
 
-        assert glance.add()
+        assert external_provider.add()
 
     def _create_users_groups(self, golden_env):
         LOGGER.info("Creating users and groups")
@@ -688,18 +760,18 @@ class CreateDC(TestCase):
         hl_mac_pool.update_default_mac_pool()
 
         GOLDEN_ENV = config.ART_CONFIG['prepared_env']
-
+        eps = None
         if GOLDEN_ENV['external_providers']:
             eps = EPConfiguration(config.EPS)
-            for glance in eps.glance_providers():
-                self.connect_glance(glance)
+            for glance in eps.glance_providers:
+                self.connect_openstack_ep(glance)
 
         dcs = GOLDEN_ENV['dcs']
 
         storage_conf = StorageConfiguration(config.STORAGE)
         host_conf = HostConfiguration(config.HOSTS, config.PASSWORDS)
         for dc in dcs:
-            self.build_dc(dc, host_conf, storage_conf)
+            self.build_dc(dc, host_conf, storage_conf, eps)
 
         iso_domains = GOLDEN_ENV['iso_domains']
         host = (hosts.get_host_list()[0]).get_name()

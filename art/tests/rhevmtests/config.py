@@ -89,6 +89,7 @@ STORAGE_TYPE_FCP = ENUMS['storage_type_fcp']
 STORAGE_TYPE_LOCAL = ENUMS['storage_type_local']
 STORAGE_TYPE_POSIX = ENUMS['storage_type_posixfs']
 STORAGE_TYPE_GLANCE = ENUMS['storage_type_glance']
+STORAGE_TYPE_CINDER = ENUMS['storage_type_cinder']
 STORAGE_TYPE_GLUSTER = ENUMS['storage_type_gluster']
 
 if STORAGE_TYPE is None:
@@ -97,7 +98,7 @@ else:
     LOCAL = (STORAGE_TYPE == STORAGE_TYPE_LOCAL)
 
 
-STORAGE_TYPE_PROVIDERS = [STORAGE_TYPE_GLANCE]
+STORAGE_TYPE_PROVIDERS = [STORAGE_TYPE_GLANCE, STORAGE_TYPE_CINDER]
 # We provision for posix with the subtype, like: "posixfs_subfix"
 # For the moment just revert back
 if STORAGE_TYPE.startswith(STORAGE_TYPE_POSIX):
@@ -216,6 +217,7 @@ if 'prepared_env' in ART_CONFIG:
 
     # External Provider types
     GLANCE = 'OpenStackImageProvider'
+    CINDER = 'OpenStackVolumeProvider'
 
     EXTERNAL_PROVIDERS = {}
 
@@ -225,6 +227,8 @@ if 'prepared_env' in ART_CONFIG:
     for ep_to_add in eps_to_add:
         if EPS[ep_to_add]['type'] == GLANCE:
             provider_type = GLANCE
+        elif EPS[ep_to_add]['type'] == CINDER:
+            provider_type = CINDER
         EXTERNAL_PROVIDERS[provider_type] = EPS[ep_to_add]['name']
 
     GOLDEN_GLANCE_IMAGE = 'golden_env_mixed_virtio_0_Disk1'
