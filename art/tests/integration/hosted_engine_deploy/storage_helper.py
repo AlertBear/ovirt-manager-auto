@@ -14,16 +14,15 @@ class StorageForHostedEngine(object):
     """
     Base class to create storage for HE deployment
     """
-    def __init__(self, storage_type, storage_config, **kwargs):
+    storage_type = None
+
+    def __init__(self, storage_config, **kwargs):
         """
         Initiate new StorageForHostedEngine class
 
-        :param storage_type: storage type
-        :type storage_type: str
         :param storage_config: storage configuration
         :type storage_config: dict
         """
-        self.he_storage_type = storage_type
         self.storage_config = storage_config
         logger.debug("Create storage manager with parameters: %s", kwargs)
         self.manager = self._get_manager(**kwargs)
@@ -35,10 +34,10 @@ class StorageForHostedEngine(object):
 
         :returns: correct manager for storage
         """
-        storage_server = "%s_server" % self.he_storage_type
+        storage_server = "%s_server" % self.storage_type
         return StorageManagerWrapper(
             self.storage_config.get(storage_server),
-            self.he_storage_type,
+            self.storage_type,
             self.storage_config["storage_conf"],
             **kwargs
         ).manager
@@ -50,73 +49,120 @@ class StorageForHostedEngine(object):
         raise NotImplementedError("Please implement this method")
 
 
-class NFSStorage(StorageForHostedEngine):
+class FileStorageForHostedEngine(StorageForHostedEngine):
+    """
+    Base class for all file storages
+    """
+
+    def __init__(self, storage_config, **kwargs):
+        """
+        Initiate new FileStorageForHostedEngine class
+
+        :param storage_config: storage configuration
+        :type storage_config: dict
+        """
+        super(FileStorageForHostedEngine, self).__init__(
+            storage_config=storage_config, **kwargs
+        )
+        self.volume_dir = None
+        self.volume_path = None
+
+    def create_storage(self):
+        """
+        Create file storage
+
+        :raise: HostedEngineException
+        """
+
+        fs_server = self.storage_config.get(
+            "%s_server" % self.storage_type
+        )
+        logger.info(
+            "Create %s storage %s on server %s",
+            self.storage_type, self.name, fs_server
+        )
+        try:
+            self.volume_dir = self.manager.createDevice(self.name)
+        except strg_errors.StorageAPIGeneralException as err:
+            raise errors.HostedEngineException(str(err))
+        self.volume_path = "%s:%s" % (fs_server,  self.volume_dir)
+        logger.info(
+            "%s Storage path is: %s", self.storage_type, self.volume_path
+        )
+
+    def clean_storage(self):
+        """
+        Remove file storage
+
+        :raise: HostedEngineException
+        """
+        if self.volume_dir:
+            try:
+                fs_server = self.storage_config.get(
+                    "%s_server" % self.storage_type
+                )
+                logger.info(
+                    "Remove %s storage %s from server %s",
+                    self.storage_type, self.name, fs_server
+                )
+                self.manager.removeDevice(self.volume_dir)
+            except strg_errors.StorageAPIGeneralException as err:
+                raise errors.HostedEngineException(str(err))
+
+
+class NFSStorage(FileStorageForHostedEngine):
     """
     NFS storage class for hosted engine deployment
     """
+    storage_type = "nfs"
 
-    def __init__(self, storage_type, storage_config):
+    def __init__(self, storage_config):
         """
         Initiate new NFSStorage class
 
-        :param storage_type: storage type
-        :type storage_type: str
         :param storage_config: storage configuration
         :type storage_config: dict
         """
         super(NFSStorage, self).__init__(
-            storage_type, storage_config,
+            storage_config,
             vol_nfs=storage_config.get("vol_nfs", conf.DEFAULT_VOL_NFS)
         )
-        self.nfs_dir = None
-        self.nfs_path = None
 
-    def create_storage(self):
+
+class GlusterStorage(FileStorageForHostedEngine):
+    """
+    Gluster storage class for hosted engine deployment
+    """
+    storage_type = "gluster"
+
+    def __init__(self, storage_config):
         """
-        Create NFS storage
+        Initiate new GlusterStorage class
 
-        :raise: HostedEngineException
+        :param storage_config: storage configuration
+        :type storage_config: dict
         """
-
-        nfs_server = self.storage_config.get("nfs_server")
-        logger.info(
-            "Create NFS directory %s on server %s", self.name, nfs_server
+        super(GlusterStorage, self).__init__(
+            storage_config,
+            replica=storage_config["gluster_replica"],
+            hosts_list=storage_config["gluster_hosts_list"]
         )
-        try:
-            self.nfs_dir = self.manager.createDevice(self.name)
-        except strg_errors.CreateLinuxNFSError as err:
-            raise errors.HostedEngineException(str(err))
-        self.nfs_path = "%s:%s" % (nfs_server,  self.nfs_dir)
-        logger.info("NFS Storage path is: %s", self.nfs_path)
-
-    def clean_storage(self):
-        """
-        Remove NFS storage
-
-        :raise: HostedEngineException
-        """
-        if self.nfs_dir:
-            try:
-                self.manager.removeDevice(self.nfs_dir)
-            except strg_errors.RemoveLinuxNFSError as err:
-                raise errors.HostedEngineException(str(err))
 
 
 class ISCSIStorage(StorageForHostedEngine):
     """
     Create ISCSI storage for hosted engine deployment
     """
+    storage_type = "iscsi"
 
-    def __init__(self, storage_type, storage_config):
+    def __init__(self, storage_config):
         """
         Initiate new ISCSIStorage class
 
-        :param storage_type: storage type
-        :type storage_type: str
         :param storage_config: storage configuration
         :type storage_config: dict
         """
-        super(ISCSIStorage, self).__init__(storage_type, storage_config)
+        super(ISCSIStorage, self).__init__(storage_config)
         self.hosts_initiators = []
         self.lun_id = None
         self.target_name = None
