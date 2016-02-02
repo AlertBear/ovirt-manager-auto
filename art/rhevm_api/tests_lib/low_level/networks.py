@@ -827,25 +827,29 @@ def create_label(label):
 
 def add_label(**kwargs):
     """
-    Description: Add network label to the network in the list provided or to
+    Add network label to the network in the list provided or to
     the NIC on the host for a dictionary of host: [nics] items
     Example: add_label(networks=['vlan0'], host_nic_dict={
             'silver-vdsb.qa.lab.tlv.redhat.com': ['eth3']}, label='vl1')
     Author: gcheresh
-    Parameters:
-        *  *kwargs* - will include the following:
-        *  *label* - label to be added to network or NIC on the Host:
+
+    :param kwargs: Label params
+        :label: label to be added to network or NIC on the Host:
         if string is provided will create a new label, otherwise expect
-        already existed Label object
-        *  *networks* - list of networks with labels
-        *  *host_nic_dict - dictionary with hosts as keys and a list of host
-        interfaces as a value for that key
-        *  *datacenter* - for network parameter datacenter that networks
-        resides on
-        *  *cluster* - for cluster parameter cluster that the network
-        resides on
-    **Return**: status (True if label was added properly, False otherwise)
+        already existed Label object (str)
+        :networks: list of networks with labels (list)
+        :host_nic_dict: dictionary with hosts as keys and a list of host
+        interfaces as a value for that key (dict)
+        :datacenter: for network parameter datacenter that networks
+        resides on (str)
+        :cluster: for cluster parameter cluster that the network
+        resides on (str)
+    :type kwargs: dict
+    :return: status (True if label was added properly, False otherwise)
+    :rtype: bool
     """
+    datacenter = kwargs.get("datacenter")
+    cluster = kwargs.get("cluster")
     networks = kwargs.get("networks")
     host_nic_dict = kwargs.get("host_nic_dict")
     label = kwargs.get("label")
@@ -857,29 +861,43 @@ def add_label(**kwargs):
     try:
         if networks:
             for network in networks:
-                entity_obj = findNetwork(network,
-                                         data_center=kwargs.get("datacenter"),
-                                         cluster=kwargs.get("cluster"))
-                labels_href = NET_API.getElemFromLink(entity_obj, "labels",
-                                                      "label", get_href=True)
-                if not LABEL_API.create(entity=label_obj, positive=True,
-                                        collection=labels_href,
-                                        coll_elm_name="label")[1]:
-                    logger.error("Can't add label to the network %s", network)
+                entity_obj = findNetwork(
+                    network, data_center=datacenter, cluster=cluster
+                )
+                labels_href = NET_API.getElemFromLink(
+                    entity_obj, "labels", "label", get_href=True
+                )
+                logger.info(
+                    "Add label %s to network %s", label_obj.id, network
+                )
+                if not LABEL_API.create(
+                    entity=label_obj, positive=True, collection=labels_href,
+                    coll_elm_name="label"
+                )[1]:
+                    logger.error(
+                        "Can't add label %s to the network %s", label_obj.id,
+                        network
+                    )
                     status = False
         if host_nic_dict:
             for host in host_nic_dict:
                 for nic in host_nic_dict.get(host):
                     entity_obj = ll.hosts.get_host_nic(host=host, nic=nic)
-                    labels_href = HOST_NICS_API.getElemFromLink(entity_obj,
-                                                                "labels",
-                                                                "label",
-                                                                get_href=True)
-                    if not LABEL_API.create(entity=label_obj, positive=True,
-                                            collection=labels_href,
-                                            coll_elm_name="label")[1]:
-                        logger.error("Can't add label to the NIC %s on Host "
-                                     "%s", nic, host)
+                    labels_href = HOST_NICS_API.getElemFromLink(
+                        entity_obj, "labels", "label", get_href=True
+                    )
+                    logger.info(
+                        "Add label %s to the NIC %s on Host %s",
+                        label_obj.id, nic, host
+                    )
+                    if not LABEL_API.create(
+                        entity=label_obj, positive=True,
+                        collection=labels_href, coll_elm_name="label"
+                    )[1]:
+                        logger.error(
+                            "Can't add label %s to the NIC %s on Host %s",
+                            label_obj.id, nic, host
+                        )
                         status = False
 
     except apis_exceptions.EntityNotFound as e:
@@ -941,22 +959,28 @@ def get_label_objects(**kwargs):
 
 def remove_label(**kwargs):
     """
-    Description: Remove network labels from given network and Host NIC
-    dictionary
+    Remove network labels from given network and Host NIC dictionary
     Example usage:
-    remove_label(host_nic_dict={'silver-vdsb.qa.lab.tlv.redhat.com':
-                                    ['eth2']}, networks=['net1', 'vlan0'],
-                                    labels=['net1', 'net2'])
+    remove_label(
+        host_nic_dict={
+            'silver-vdsb.qa.lab.tlv.redhat.com': ['eth2']
+            },
+            networks=['net1', 'vlan0'],
+            labels=['net1', 'net2']
+            )
     Author: gcheresh
-    Parameters:
-       *  *labels* - list of label names if specific labels should be removed
-       *  *networks* - list of networks with labels
-       *  *host_nic_dict - dictionary with hosts as keys and a list of host
-       interfaces as a value for that key
-       *  *datacenter* - for network parameter datacenter that networks
-       resides on
-       *  *cluster* - for cluster parameter cluster that the network resides on
-    **Return**: status (True if labels were properly removed, False otherwise)
+    :param kwargs: Host NIC dict with labels params to remove
+
+       :labels: list of label names if specific labels should be removed (list)
+       :networks: list of networks with labels (list)
+       :host_nic_dict: dictionary with hosts as keys and a list of host
+       interfaces as a value for that key (dict)
+       :datacenter: for network parameter datacenter that networks resides
+       on (str)
+       :cluster: for cluster parameter cluster that the network resides on
+        (str)
+    :return: status (True if labels were properly removed, False otherwise)
+    :rtype: bool
     """
     labels_obj = get_label_objects(**kwargs)
     status = True
@@ -969,7 +993,9 @@ def remove_label(**kwargs):
         labels_obj = remove_obj_list
 
     for obj in labels_obj:
+        logger.info("Remove label %s", obj.id)
         if not LABEL_API.delete(obj, True):
+            logger.error("Fail to remove label %s", obj.id)
             status = False
     return status
 

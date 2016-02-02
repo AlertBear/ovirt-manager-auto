@@ -151,6 +151,11 @@ def find_event(last_event, event_code, content):
     :return: True if event was found otherwise False
     :rtype: bool
     """
+    if not last_event:
+        # last_event will be None if no events with event_code occurred yet
+        logger.error("No last event of type %s found", event_code)
+        return False
+
     query = "type={0}".format(event_code)
     logger.info("Last event ID: %s", last_event)
     try:

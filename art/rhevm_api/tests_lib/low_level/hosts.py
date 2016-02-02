@@ -509,6 +509,7 @@ def activateHost(positive, host, wait=True):
     Return: status (True if host was activated properly, False otherwise)
     """
     hostObj = HOST_API.find(host)
+    logger.info("Activate host %s", host)
     status = bool(HOST_API.syncAction(hostObj, "activate", positive))
 
     if status and wait and positive:

@@ -165,7 +165,9 @@ def activate_host_if_not_up(host):
     :return: True if host was activated properly False otherwise
     """
     if not ll_hosts.getHostState(host) == ENUMS["host_state_up"]:
-        return ll_hosts.activateHost(True, host)
+        if not ll_hosts.activateHost(True, host):
+            logging.error("Failed to activate host %s", host)
+            return False
     return True
 
 
