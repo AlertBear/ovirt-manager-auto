@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 @test_libs.attr(tier=4)
-class BaseDeployClass(test_libs.IntegrationTest):
+class BaseDeploy(test_libs.IntegrationTest):
     """
     Base HE deployment class
     """
@@ -38,9 +38,7 @@ class BaseDeployClass(test_libs.IntegrationTest):
         storage_class = getattr(
             storage_helper, conf.STORAGE_CLASS_D[cls.storage_type]
         )
-        cls.storage_api = storage_class(
-            cls.storage_type, conf.STORAGE_PARAMETERS
-        )
+        cls.storage_api = storage_class(conf.STORAGE_PARAMETERS)
         cls.otopi_parser = otopi_parser_helper.OtopiParser()
         results = []
         with ThreadPoolExecutor(max_workers=len(conf.VDS_HOSTS)) as executor:
@@ -284,28 +282,46 @@ class BaseDeployClass(test_libs.IntegrationTest):
         return True
 
 
-class BaseDeployOverNFSClass(BaseDeployClass):
+class BaseDeployOverFileStorage(BaseDeploy):
     """
-    Base HE deployment over NFS storage class
+    Base class for deployment over file storage
     """
-    storage_type = conf.NFS_TYPE
+    storage_params_d = None
 
     @classmethod
     def setup_class(cls):
         """
-        1) Create NFS storage
+        1) Create file storage
         2) Update answer file with correct values
         """
-        super(BaseDeployOverNFSClass, cls).setup_class()
+        super(BaseDeployOverFileStorage, cls).setup_class()
         cls.storage_api.create_storage()
-        nfs_params_d = copy.deepcopy(conf.NFS_SPECIFIC_PARAMETERS)
-        nfs_params_d["storageDomainConnection"] = cls.storage_api.nfs_path
+        storage_params_d = copy.deepcopy(cls.storage_params_d)
+        storage_params_d[
+            "storageDomainConnection"
+        ] = cls.storage_api.volume_path
         cls.answer_file_d[conf.ANSWER_SECTION_OVEHOSTED_STORAGE].update(
-            nfs_params_d
+            storage_params_d
         )
 
 
-class BaseDeployOverISCSIClass(BaseDeployClass):
+class BaseDeployOverNFS(BaseDeployOverFileStorage):
+    """
+    Base HE deployment over NFS storage class
+    """
+    storage_type = conf.NFS_TYPE
+    storage_params_d = conf.NFS_SPECIFIC_PARAMETERS
+
+
+class BaseDeployOverGluster(BaseDeployOverFileStorage):
+    """
+    Base HE deployment over Gluster storage class
+    """
+    storage_type = conf.GLUSTER_TYPE
+    storage_params_d = conf.GLUSTER_SPECIFIC_PARAMETERS
+
+
+class BaseDeployOverISCSI(BaseDeploy):
     """
     Base HE deployment over ISCSI storage class
     """
@@ -318,7 +334,7 @@ class BaseDeployOverISCSIClass(BaseDeployClass):
         2) Map vds resources to ISCSI lun
         3) Update answer file with correct values
         """
-        super(BaseDeployOverISCSIClass, cls).setup_class()
+        super(BaseDeployOverISCSI, cls).setup_class()
         cls.storage_api.create_storage()
         for vds_resource in conf.VDS_HOSTS:
             cls.storage_api.add_host_to_hostgroup(vds_resource)
