@@ -3,6 +3,8 @@
 
 """
 SR_IOV feature init
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Network/3_6_Network_SR_IOV
 """
 import logging
 import config as conf
@@ -16,11 +18,10 @@ def setup_package():
     """
     Prepare environment
     """
+    networking.network_cleanup()
     conf.HOST_0_NAME = conf.HOSTS[0]
     conf.VDS_0_HOST = conf.VDS_HOSTS[0]
     conf.HOST_0_NICS = conf.VDS_0_HOST.nics
-    networking.network_cleanup()
-
     conf.HOST_O_SRIOV_NICS_OBJ = ll_sriov.SriovHostNics(conf.HOST_0_NAME)
     conf.HOST_0_PF_LIST = conf.HOST_O_SRIOV_NICS_OBJ.get_all_pf_nics_objects()
     conf.HOST_0_PF_NAMES = conf.HOST_O_SRIOV_NICS_OBJ.get_all_pf_nics_names()
