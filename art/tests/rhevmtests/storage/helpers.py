@@ -468,13 +468,13 @@ def get_voluuid(disk_object):
     return disk_object.get_image_id()
 
 
-def get_lv_count_for_block_disk(disk_alias, host_ip, user, password):
+def get_lv_count_for_block_disk(disk_id, host_ip, user, password):
     """
     Get amount of volumes for disk name
 
     __author__ = "ratamir"
-    :param disk_alias: Disk alias
-    :type disk_alias:  str
+    :param disk_id: Disk ID
+    :type disk_id:  str
     :param host_ip: Host IP or FQDN
     :type host_ip: str
     :param user: Username for host
@@ -484,7 +484,6 @@ def get_lv_count_for_block_disk(disk_alias, host_ip, user, password):
     :return: Number of logical volumes found for input disk
     :rtype: int
     """
-    disk_id = ll_disks.get_disk_obj(disk_alias).get_id()
     cmd = LV_COUNT % disk_id
     rc, out = runMachineCommand(
         True, ip=host_ip, user=user, password=password, cmd=cmd
@@ -530,17 +529,14 @@ def get_amount_of_file_type_volumes(
         return num_volumes
 
 
-def get_disks_volume_count(
-        disk_names=None, cluster_name=config.CLUSTER_NAME
-):
+def get_disks_volume_count(disk_ids, cluster_name=config.CLUSTER_NAME):
     """
     Returns the logical volume count, with logic for block and file domain
     types
 
     __author__ = "glazarov", "ratamir"
-    :param disk_names: List of disk aliases (only used with file domain type to
-    retrieve the individual number of volumes per disk)
-    :type disk_names: list
+    :param disk_ids: List of disk IDs
+    :type disk_ids: list
     :param cluster_name: Cluster from which to fetch a host which will
     run the disk query
     :type cluster_name: str
@@ -560,8 +556,8 @@ def get_disks_volume_count(
     logger.debug("The Storage Pool ID is: '%s'", sp_id)
     # Initialize the volume count before iterating through the disk aliases
     volume_count = 0
-    for disk in disk_names:
-        disk_obj = ll_disks.get_disk_obj(disk)
+    for disk_id in disk_ids:
+        disk_obj = ll_disks.get_disk_obj(disk_id, attribute='id')
         storage_id = (
             disk_obj.get_storage_domains().get_storage_domain()[0].get_id()
         )
@@ -572,8 +568,8 @@ def get_disks_volume_count(
 
         if storage_type in config.BLOCK_TYPES:
             volume_count += get_lv_count_for_block_disk(
-                disk_alias=disk, host_ip=host_ip,
-                user=config.HOSTS_USER, password=config.HOSTS_PW
+                disk_id=disk_id, host_ip=host_ip,
+                user=config.HOSTS_USER, password=config.HOSTS_PW,
             )
         else:
             sd_id = get_sduuid(disk_obj)

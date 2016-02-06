@@ -8,7 +8,7 @@ import shlex
 import os
 import re
 from art.rhevm_api.tests_lib.low_level.disks import (
-    deleteDisk, addDisk, wait_for_disks_status,
+    deleteDisk, addDisk, wait_for_disks_status, get_disk_ids,
 )
 from art.rhevm_api.tests_lib.low_level.hosts import (
     waitForHostsStates, getSPMHost, getHostIP,
@@ -264,20 +264,21 @@ class BasicEnvironment(BaseTestCase):
         return True
 
     def _perform_snapshot_with_verification(self, disks_for_snap, live=False):
+        disk_ids = get_disk_ids(disks_for_snap)
         initial_vol_count = storage_helpers.get_disks_volume_count(
-            disks_for_snap
+            disk_ids
         )
         logger.info("Before snapshot: %s volumes", initial_vol_count)
 
         self._perform_snapshot_operation(disks_for_snap, live=live)
 
         current_vol_count = storage_helpers.get_disks_volume_count(
-            disks_for_snap
+            disk_ids
         )
         logger.info("After snapshot: %s volumes", current_vol_count)
 
         self.assertEqual(current_vol_count,
-                         initial_vol_count + len(disks_for_snap))
+                         initial_vol_count + len(disk_ids))
 
     def _prepare_environment(self):
         start_vms([self.vm_name], 1, wait_for_ip=False)
@@ -952,8 +953,9 @@ class TestCase6033(BasicEnvironment):
         wait_for_jobs([ENUMS['job_create_snapshot']])
         start_vms([self.vm_name], 1, wait_for_ip=True)
 
+        disk_ids = get_disk_ids(self.disks_names)
         initial_vol_count = storage_helpers.get_disks_volume_count(
-            self.disks_names
+            disk_ids
         )
         logger.info("The number of volumes is: %s", initial_vol_count)
 
@@ -966,7 +968,7 @@ class TestCase6033(BasicEnvironment):
         start_vms([self.vm_name], 1, wait_for_ip=True)
 
         current_vol_count = storage_helpers.get_disks_volume_count(
-            self.disks_names
+            disk_ids
         )
         logger.info("The number of volumes after removing one snapshot is: "
                     "%s", current_vol_count)

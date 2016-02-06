@@ -120,15 +120,19 @@ def getTemplateDisk(template_name, alias):
     return DISKS_API.getElemFromElemColl(template_obj, alias)
 
 
-def get_disk_obj(disk_alias):
+def get_disk_obj(disk_alias, attribute='name'):
     """
-    Description: Returns disk obj from disks collection
-    Parameters:
-        * disk_alias - name of disk
-    Author: ratamir
-    Return: Disk from disks collection
+    Returns disk object from disks' collection
+
+    __author__ = "ratamir"
+    :param disk_alias: Name of disk
+    :type disk_alias: str
+    :param attribute: The key to use for finding disk object ('id', 'name')
+    :type attribute:str
+    :return: Disk from disks collection
+    :rtype: Disk object
     """
-    return DISKS_API.find(disk_alias)
+    return DISKS_API.find(disk_alias, attribute=attribute)
 
 
 def _prepareDiskObject(**kwargs):
@@ -793,3 +797,15 @@ def get_disk_storage_domain_name(disk_name, vm_name=None, template_name=None):
     disk_sd_name = STORAGE_DOMAIN_API.find(sd_id, 'id').get_name()
     logger.info("Disk %s storage domain is: %s", disk_name, disk_sd_name)
     return disk_sd_name
+
+
+def get_disk_ids(disk_names):
+    """
+    gets the disks' storage domain ids
+
+    :param disk_names: List of disks aliases
+    :type disk_names: list
+    :return: List of disks' id
+    :rtype: list
+    """
+    return [get_disk_obj(disk_name).get_id() for disk_name in disk_names]

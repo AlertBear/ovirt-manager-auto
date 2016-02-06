@@ -1835,6 +1835,7 @@ def removeSnapshot(
     if timeout < 0:
         wait = False
     snapshot = _getVmSnapshot(vm, description)
+    logger.info("Removing snapshot %s", description)
     if not SNAPSHOT_API.delete(snapshot, positive):
         return False
 

@@ -6,9 +6,6 @@ Storage/3_5_Storage_Live_Merge
 import logging
 import os
 import shlex
-from threading import Thread
-import time
-
 import config
 import helpers
 from art.rhevm_api.tests_lib.low_level import (
@@ -18,7 +15,6 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
     vms as ll_vms,
 )
-from art.rhevm_api.utils.log_listener import watch_logs
 from art.rhevm_api.utils.test_utils import (
     restartVdsmd, restart_engine,
 )
@@ -34,14 +30,8 @@ ENUMS = config.ENUMS
 
 VM_NAMES = dict()
 CMD_CREATE_FILE = 'touch %s/test_file_%s'
-CMD_DELETE_FILE = 'rm -f %s/test_file_%s'
-VM_TEMPLATE = 'template_live_merge'
 TEST_FILE_TEMPLATE = 'test_file_%s'
 SNAPSHOT_DESCRIPTION_TEMPLATE = 'snapshot_%s_%s_%s'
-REGEX = "All Live Merge child commands have completed, status 'SUCCEEDED'"
-# Live snapshot removal required long timeout
-REMOVE_SNAPSHOT_TIMEOUT = 2400
-POLL_TIMEOUT = 20
 ISCSI = config.STORAGE_TYPE_ISCSI
 
 vmArgs = {
@@ -187,7 +177,9 @@ class BasicEnvironment(BaseTestCase):
         self.snapshot_list.append(snapshot_description)
         if not live:
             if ll_vms.get_vm_state(self.vm_name) == config.VM_DOWN:
-                if not ll_vms.startVm(True, self.vm_name, config.VM_UP):
+                if not ll_vms.startVm(
+                    True, self.vm_name, config.VM_UP, wait_for_ip=True
+                ):
                     raise exceptions.VMException(
                         "Failed to power on VM '%s'" % self.vm_name
                     )
@@ -195,20 +187,21 @@ class BasicEnvironment(BaseTestCase):
     def perform_snapshot_with_verification(
         self, snap_description, disks_for_snap
     ):
+        disk_ids = ll_disks.get_disk_ids(disks_for_snap)
         initial_vol_count = storage_helpers.get_disks_volume_count(
-            disks_for_snap
+            disk_ids
         )
         logger.info("Before snapshot: %s volumes", initial_vol_count)
 
         self.perform_snapshot_operation(snap_description)
 
         current_vol_count = storage_helpers.get_disks_volume_count(
-            disks_for_snap
+            disk_ids
         )
         logger.info("After snapshot: %s volumes", current_vol_count)
 
         self.assertEqual(current_vol_count,
-                         initial_vol_count + len(disks_for_snap))
+                         initial_vol_count + len(disk_ids))
 
     def check_files_existence(self, files, should_exist=True):
         """
@@ -274,26 +267,35 @@ class BasicEnvironment(BaseTestCase):
     def live_delete_snapshot_with_verification(
             self, vm_name, snapshot_description
     ):
-        if ll_vms.get_vm_state(self.vm_name) == config.VM_DOWN:
-            if not ll_vms.startVm(True, self.vm_name, config.VM_UP):
-                raise exceptions.VMException(
-                    "Failed to power on VM '%s'" % self.vm_name
-                )
-
-        t = Thread(target=watch_logs, args=(
-            config.ENGINE_LOG, REGEX, '', None,
-            config.VDC, 'root', config.VDC_ROOT_PASSWORD)
+        if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
+            ll_vms.startVm(True, vm_name, config.VM_UP, wait_for_ip=True)
+        snapshot_disks = [
+            disk.get_id() for disk in ll_vms.get_snapshot_disks(
+                vm_name, snapshot_description
+            )
+        ]
+        initial_vol_count = storage_helpers.get_disks_volume_count(
+            snapshot_disks
         )
-        t.start()
-        time.sleep(5)
-        logger.info("Removing snapshot %s", snapshot_description)
-        status = ll_vms.removeSnapshot(True, vm_name, snapshot_description)
-        t.join()
+        logger.info("Before live merge: %s volumes", initial_vol_count)
 
-        self.assertTrue(
-            status, "Failed to remove snapshot %s" % snapshot_description
+        if not ll_vms.removeSnapshot(True, vm_name, snapshot_description):
+            exceptions.VMException(
+                "Failed to live delete snapshot %s" % snapshot_description
+            )
+
+        current_vol_count = storage_helpers.get_disks_volume_count(
+            snapshot_disks
         )
-        logger.info("Snapshot %s removed", snapshot_description)
+        logger.info("After live merge: %s volumes", current_vol_count)
+
+        if not current_vol_count == initial_vol_count - len(snapshot_disks):
+            raise exceptions.VMException(
+                "Live merge failed - before live merge: %s volumes, "
+                "after live merge: %s volumes, snapshot contains %s disks" %
+                (initial_vol_count, current_vol_count, len(snapshot_disks))
+            )
+        logger.info("Snapshot %s was removed", snapshot_description)
         ll_jobs.wait_for_jobs([ENUMS['job_remove_snapshot']])
 
     def basic_flow(self, snapshot_count=3):
@@ -446,7 +448,9 @@ class TestCase6043(BasicEnvironment):
         self.verify_snapshot_files(
             self.snapshot_list[1], [TEST_FILE_TEMPLATE % i for i in xrange(2)]
         )
-        assert ll_vms.startVm(True, self.vm_name, config.VM_UP)
+        assert ll_vms.startVm(
+            True, self.vm_name, config.VM_UP, wait_for_ip=True
+        )
 
 
 @attr(tier=4)
