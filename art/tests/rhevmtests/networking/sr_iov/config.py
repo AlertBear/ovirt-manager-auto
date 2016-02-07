@@ -34,5 +34,8 @@ GENERAL_DICT = {
 VM_DICT = {
     VM_NETS[1][0]: {
         "required": "false"
+    },
+    VM_NETS[1][1]: {
+        "required": "false"
     }
 }

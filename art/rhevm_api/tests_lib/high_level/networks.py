@@ -62,6 +62,7 @@ def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
      networks link under cluster even though we check the DC network
      configurations only because cluster networks related
      to main networks href.
+
      Author: atal
      Parameters:
         * cluster - cluster name
@@ -325,7 +326,8 @@ def remove_net_from_setup(
     host, network=[], data_center=None, all_net=False, mgmt_network=None
 ):
     """
-    Function that removes networks from the host, Cluster and DC:
+    Function that removes networks from the host, Cluster and DC
+
     :param host: list or str of hosts names
     :type host: str or list
     :param network: list of networks to remove
@@ -469,6 +471,7 @@ def remove_all_networks(datacenter=None, cluster=None, mgmt_network=None):
 def getIpOnHostNic(host, nic):
     '''
     Description: Get IP on host NIC
+
     **Author**: myakove
     **Parameters**:
         *  *host* - IP or FDQN of the host
@@ -543,6 +546,7 @@ def create_basic_setup(datacenter, storage_type, version, cluster=None,
     """
     Description: Create basic setup with datacenter and optional cluster and
     hosts
+
     Author: myakove
     Parameters:
        *  *datacenter* - Datacenter name
@@ -586,6 +590,7 @@ def remove_basic_setup(datacenter, cluster=None, hosts=[]):
     """
     Description: Remove basic setup with datacenter and optional cluster and
     hosts
+
     :param datacenter: Datacenter name
     :param cluster: name
     :param hosts: name or a list of Host names
@@ -614,6 +619,7 @@ def remove_basic_setup(datacenter, cluster=None, hosts=[]):
 def update_network_host(host, nic, auto_nics, save_config=True, **kwargs):
     """
     Description: Updates network on Host NIC
+
     Author: gcheresh
     Parameters:
        *  *host* - Host name
@@ -769,3 +775,26 @@ def get_clusters_managements_networks_ids(cluster=None):
         ll_networks.get_management_network(cluster_name=cl.name).id
         for cl in clusters
         ]
+
+
+def get_management_network_host_nic(host, cluster):
+    """
+    Get host NIC name that management network resides on
+
+    Args:
+        host (str): Host name
+        cluster (str): Cluster name
+
+    Returns:
+        HostNic or None: Host NIC  if found else None
+
+    """
+    mgmt_net = ll_networks.get_management_network(cluster_name=cluster)
+    host_nics_list = ll_hosts.get_host_nics_list(host=host)
+    host_nics_with_network = filter(
+        lambda nic: getattr(nic, "network"), host_nics_list
+    )
+    for nic in host_nics_with_network:
+        if nic.network.id == mgmt_net.id:
+            return nic
+    return None

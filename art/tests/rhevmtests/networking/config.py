@@ -32,6 +32,7 @@ DUMP_TIMEOUT = TIMEOUT * 4
 DC_0 = DC_NAME[0]
 CL_0 = CLUSTER_NAME[0]
 PASSTHROUGH_INTERFACE = "pci_passthrough"
+VM_0 = VM_NAME[0]
 
 # Network Custom Priority parameters
 BRIDGE_OPTS = OrderedDict({"priority": ["32768", "1"],

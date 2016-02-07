@@ -30,8 +30,8 @@ class SriovHostNics(object):
         """
         Initializes object of class for SR-IOV capable host NICs
 
-        :param host: Host name
-        :type host: str
+        Args:
+            host (str): Host name
         """
         self.host = host
         self.host_nics = ll_hosts.get_host_nics_list(
@@ -42,10 +42,13 @@ class SriovHostNics(object):
         """
         Get all PF host NICs objects
 
-        :return: List of all PF objects
-        :rtype: list
+        Return:
+            list: List of all PF objects
         """
         pfs_nics = list()
+        logger.info(
+            "Get all SR-IOV NICs objects (PFs) from host %s", self.host
+        )
         for nic in self.host_nics:
             nic_name = nic.get_name()
             try:
@@ -53,16 +56,24 @@ class SriovHostNics(object):
                 pfs_nics.append(nic)
             except exceptions.SriovException:
                 continue
+
+        if not pfs_nics:
+            raise exceptions.SriovException(
+                "Host %s doesn't have SR-IOV NICs" % self.host
+            )
         return pfs_nics
 
     def get_all_vf_nics_objects(self):
         """
         Get all VF host NICs objects
 
-        :return: List of all VF objects
-        :rtype: list
+        Returns:
+            list: List of all VF objects
         """
         vfs_nics = list()
+        logger.info(
+            "Get all SR-IOV NICs objects (VFs) from host %s", self.host
+        )
         for nic in self.host_nics:
             nic_name = nic.get_name()
             try:
@@ -70,25 +81,30 @@ class SriovHostNics(object):
                 vfs_nics.append(nic)
             except exceptions.SriovException:
                 continue
+
         return vfs_nics
 
     def get_all_pf_nics_names(self):
         """
         Get all PF nics names
 
-        :return: List of all PF names
-        :rtype: list
+        Returns:
+            list: List of all PF names
         """
-        return [pf.get_name() for pf in self.get_all_pf_nics_objects()]
+        return sorted(
+            [pf.get_name() for pf in self.get_all_pf_nics_objects()]
+        )
 
     def get_all_vf_nics_names(self):
         """
         Get all VF nics names
 
-        :return: List of all VF names
-        :rtype: list
+        Returns:
+            list: List of all VF names
         """
-        return [vf.get_name() for vf in self.get_all_vf_nics_objects()]
+        return sorted(
+            [vf.get_name() for vf in self.get_all_vf_nics_objects()]
+        )
 
 
 class SriovNic(object):
@@ -103,10 +119,9 @@ class SriovNic(object):
         """
         Initializes object of class for SR-IOV capable NIC
 
-        :param host: Host name
-        :type host: str
-        :param nic: NIC name
-        :type nic: str
+        Args:
+            host (str): Host name
+            nic (str): NIC name
         """
         self.update_nic = False
         self.host = host
@@ -122,8 +137,8 @@ class SriovNic(object):
         """
         Check if NIC is PF
 
-        :return: True/False
-        :rtype: bool
+        Returns:
+            bool: True if NIC is PF else False
         """
         return bool(self.vf_config)
 
@@ -131,14 +146,22 @@ class SriovNic(object):
         """
         Check if NIC is VF
 
-        :return: True/False
-        :rtype: bool
+        Returns:
+            bool: True if NIC is VF else False
         """
         return bool(self.nic_obj.get_physical_function())
 
 
 class SriovNicVF(SriovNic):
+    """
+    Class handles SR-IOV capable VF NICs
+    """
     def __init__(self, host, nic):
+        """
+        Args:
+            host (str): Host name
+            nic (str): NIC name
+        """
         super(SriovNicVF, self).__init__(host, nic)
         if not self.vf:
             raise exceptions.SriovException(
@@ -149,16 +172,23 @@ class SriovNicVF(SriovNic):
         """
         Get the PF of the VF
 
-        :return: PF NIC object
-        :rtype: HostNIC
-        :raise: exceptions.SriovException
+        Returns:
+            HostNIC: PF NIC object
         """
         logger.info("Get PF for %s", self.nic_name)
         return self.nic_obj.get_physical_function()
 
 
 class SriovNicPF(SriovNic):
+    """
+    Class handles SR-IOV capable PF NICs
+    """
     def __init__(self, host, nic):
+        """
+        Args:
+            host (str): Host name
+            nic (str): NIC name
+        """
         super(SriovNicPF, self).__init__(host, nic)
         if not self.pf:
             raise exceptions.SriovException(
@@ -172,6 +202,9 @@ class SriovNicPF(SriovNic):
         )
 
     def _update_nic_obj(self):
+        """
+        Update HostNIC object if HostNIC had changed
+        """
         if self.update_nic:
             self.nic_obj = ll_hosts.get_host_nic(
                 host=self.host, nic=self.nic_name, all_content=True
@@ -183,11 +216,14 @@ class SriovNicPF(SriovNic):
         """
         Get label_id object by ID
 
-        :param label_id: Label ID
-        :type label_id: str
-        :return: Label object
-        :rtype: Labels
-        :raise: exceptions.SriovException
+        Args:
+            label_id (str): Label ID
+
+        Returns:
+            Label: Label object
+
+        Raises:
+            SriovException: If label not found
         """
         try:
             return filter(
@@ -203,11 +239,14 @@ class SriovNicPF(SriovNic):
         """
         Get network object by name
 
-        :param network_name: Network name
-        :type network_name: str
-        :return: Network object
-        :rtype: Network
-        :raise: exceptions.SriovException
+        Args:
+            network_name (str): Network name
+
+        Returns:
+            Network: Network object
+
+        Raises:
+            SriovException: If network not found
         """
         try:
             return filter(
@@ -225,8 +264,8 @@ class SriovNicPF(SriovNic):
         """
         Get all VF objects for PF
 
-        :return: List of all VF objects for PF
-        :rtype: list
+        Returns:
+            list: List of all VF objects for PF
         """
         all_vfs = SriovHostNics(host=self.host).get_all_vf_nics_objects()
         all_nic_vfs = list()
@@ -239,20 +278,25 @@ class SriovNicPF(SriovNic):
         """
         Get all VF names for PF
 
-        :return: List of all  VF names for PF
-        :rtype: list
+        Returns:
+            list: List of all  VF names for PF
         """
         return [vf.get_name() for vf in self.get_all_vf_objects()]
 
-    def set_sriov_host_nic_params(self, kwargs):
+    def set_sriov_host_nic_params(self, **kwargs):
         """
         Update host NIC with SR-IOV params
 
-        :param kwargs: SR-IOV params
-        :type kwargs: dict
-        :return: True/False
-        :rtype: bool
-        :raise: exceptions.SriovException
+        Args:
+            kwargs (dict): SR-IOV params
+
+        Keyword arguments:
+            number_of_virtual_functions (int): Set number of virtual functions
+            all_networks_allowed (bool): Set all networks allowed
+
+        Returns:
+            bool: True if operation succeed False otherwise
+
         """
         vf_obj = apis_utils.data_st.HostNicVirtualFunctionsConfiguration()
         for k, v in kwargs.iteritems():
@@ -265,14 +309,19 @@ class SriovNicPF(SriovNic):
                 positive=True, virtual_functions_configuration=vf_obj
             )
         )
+        if not self.update_nic:
+            logger.error(
+                "Failed to set %s to %s on %s", kwargs, self.nic_name,
+                self.host
+            )
         return self._update_nic_obj()
 
     def get_max_number_of_vf(self):
         """
         Get max number of virtual functions
 
-        :return: Max number of virtual functions
-        :rtype: int
+        Returns:
+            int: Max number of virtual functions
         """
         logger.info("Get max number of VF on %s", self.nic_name)
         return self.vf_config.get_max_number_of_virtual_functions()
@@ -281,8 +330,8 @@ class SriovNicPF(SriovNic):
         """
         Get number of virtual functions
 
-        :return: Number of virtual functions
-        :rtype: int
+        Returns:
+            int: Number of virtual functions
         """
         logger.info("Get number of VF on %s", self.nic_name)
         return self.vf_config.get_number_of_virtual_functions()
@@ -292,8 +341,8 @@ class SriovNicPF(SriovNic):
         Get all_networks_allowed flag
         If all_networks_allowed is True all networks are allowed to use this vf
 
-        :return: True/False
-        :rtype: bool
+        Returns:
+            bool: True if operation succeed False otherwise
         """
         logger.info("Get all_networks_allowed property for %s", self.nic_name)
         return self.vf_config.get_all_networks_allowed()
@@ -302,40 +351,41 @@ class SriovNicPF(SriovNic):
         """
         Set number of virtual functions
 
-        :param num_of_vf: Number of virtual functions
-        :type num_of_vf: int
-        :return: True/False
-        :rtype: bool
+        Args:
+            num_of_vf (int): Number of virtual functions
+
+        Returns:
+            bool: True if operation succeed False otherwise
         """
         kwargs = {
             "number_of_virtual_functions": num_of_vf
         }
-        logger.info("Set number of VF for %s", self.nic_name)
-        return self.set_sriov_host_nic_params(kwargs=kwargs)
+        return self.set_sriov_host_nic_params(**kwargs)
 
     def set_all_networks_allowed(self, enable):
         """
         Set all_networks_allowed flag
 
-        :param enable: True to enable, False otherwise
-        :type enable: bool
-        :return: True/False
-        :rtype: bool
+        Args:
+            enable (bool): True to enable, False otherwise
+
+        Returns:
+            bool: True if operation succeed False otherwise
         """
         kwargs = {
             "all_networks_allowed": enable
         }
-        logger.info("Set all_networks_allowed param for %s", self.nic_name)
-        return self.set_sriov_host_nic_params(kwargs=kwargs)
+        return self.set_sriov_host_nic_params(**kwargs)
 
     def delete_allowed_label(self, label_id):
         """
         Delete label_id from allowed PF
 
-        :param label_id: Label name to delete
-        :type label_id: str
-        :return: True/False
-        :rtype: bool
+        Args:
+            label_id (str): Label name to delete
+
+        Returns:
+            True if operation succeed False otherwise
         """
         label_obj = self._get_label_obj_by_id(label_id=label_id)
         logger.info("Delete label from allowed labels for %s", self.nic_name)
@@ -346,10 +396,11 @@ class SriovNicPF(SriovNic):
         """
         Delete network from allowed PF
 
-        :param network: Network name to delete
-        :type network: str
-        :return: True/False
-        :rtype: bool
+        Args:
+            network (str): Network name to delete
+
+        Returns:
+            True if operation succeed False otherwise
         """
         network_obj = self._get_network_obj_by_name(network_name=network)
         logger.info(
@@ -364,11 +415,14 @@ class SriovNicPF(SriovNic):
         """
         Add label to allowed labels on PF
 
-        :param label: Label name
-        :type label: str
-        :return: True/False
-        :rtype: bool
-        :raise: exceptions.SriovException
+        Args:
+            label (str): Label name
+
+        Returns:
+            True if operation succeed False otherwise
+
+        Raises:
+            SriovException: If all_networks_allowed is not enabled
         """
         if self.get_all_networks_allowed():
             raise exceptions.SriovException(
@@ -387,13 +441,15 @@ class SriovNicPF(SriovNic):
         """
         Add network to allowed networks on PF
 
-        :param network: Network name
-        :type network: str
-        :param data_center: DC name where the network is
-        :type data_center: str
-        :return: True/False
-        :rtype: bool
-        :raise: exceptions.SriovException
+        Args:
+            network (str): Network name
+            data_center (str): DC name where the network is
+
+        Returns:
+            True if operation succeed False otherwise
+
+        Raises:
+            SriovException: If all_networks_allowed is not enabled
         """
         if self.get_all_networks_allowed():
             raise exceptions.SriovException(
@@ -414,8 +470,8 @@ class SriovNicPF(SriovNic):
         """
         Get PF allowed networks objects
 
-        :return: Allowed networks objects
-        :rtype: list
+        Returns:
+            list: Allowed networks objects
         """
         logger.info("Get all allowed networks objects for %s", self.nic_name)
         return ll_networks.HOST_NICS_API.getElemFromLink(
@@ -427,8 +483,8 @@ class SriovNicPF(SriovNic):
         """
         Get PF allowed networks names
 
-        :return: Allowed networks name
-        :rtype: list
+        Returns:
+            list: Allowed networks names
         """
         logger.info("Get all allowed networks for %s", self.nic_name)
         return [
@@ -441,8 +497,8 @@ class SriovNicPF(SriovNic):
         """
         Get PF allowed labels IDs
 
-        :return: Allowed labels IDs
-        :rtype: list
+        Returns:
+            list: Allowed labels IDs
         """
         logger.info("Get all allowed labels for %s", self.nic_name)
         return [lb.id for lb in self.get_allowed_labels_obj]
@@ -451,8 +507,8 @@ class SriovNicPF(SriovNic):
         """
         Get PF allowed labels objects
 
-        :return:Allowed labels objects
-        :rtype: list
+        Returns:
+            list: Allowed labels objects
         """
         logger.info("Get all allowed labels objects for %s", self.nic_name)
         return ll_networks.HOST_NICS_API.getElemFromLink(
