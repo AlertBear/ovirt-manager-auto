@@ -91,6 +91,7 @@ def art(path_to_config):
     ds_conf = settings.opts.setdefault("GENERATE_DS", {})
     ds_conf.setdefault("encoding", "utf8")
     ds_conf.setdefault("enabled", False)
+    ds_conf.setdefault("schema_url", "/ovirt-engine/api?schema")
     settings.opts["user"] = USER
     settings.opts["password"] = PASS
     settings.opts["user_domain"] = DOMAIN
