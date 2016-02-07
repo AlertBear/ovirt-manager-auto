@@ -10,7 +10,7 @@ See https://pytest.org/latest/mark.html
 """
 import ast
 import pytest
-
+from pkg_resources import parse_version
 
 __all__ = [
     "attr",
@@ -39,6 +39,7 @@ attr = pytest.mark.attr
 
 
 def pytest_addoption(parser):
+
     parser.addoption(
         '-A',
         dest='attr_expr',
@@ -148,6 +149,12 @@ class JunitExtension(object):
         'storage',
     )
 
+    global_properties = {
+        'Planned In': None,
+        'Automated': 'True',
+        'ARCH': None
+    }
+
     def __init__(self, config):
         super(JunitExtension, self).__init__()
         self._conf = config
@@ -157,14 +164,13 @@ class JunitExtension(object):
         return getattr(self._conf, '_xml', None)
 
     def _add_property(self, item, name, value):
-        if tuple(pytest.__version__.split('.')) > ('2', '8', '3'):
+        if parse_version(pytest.__version__) >= parse_version("2.8.3"):
             reporter = self.junit.node_reporter(item.nodeid)
             reporter.add_property(name, value)
         else:
             self.junit.add_custom_property(name, value)
 
     def _add_marks(self, item):
-
         for mark_name in self.markers:
             mark_info = item.get_marker(mark_name)
             if mark_info:
@@ -177,9 +183,29 @@ class JunitExtension(object):
             if attr_value:
                 self._add_property(item, attr_name, attr_value)
 
+    def _add_global_properties(self):
+        # junit.add_global_property(k, v) will be available in pytest 2.10.1
+        # This will check if the junit have such method and if not we simply
+        # won't add global properties node
+        if getattr(self.junit, 'add_global_property', None):
+            for k, v in self.global_properties.iteritems():
+                self.junit.add_global_property(k, v)
+
     def pytest_runtest_setup(self, item):
         self._add_marks(item)
         self._add_attributes(item)
+
+    def pytest_artconf_ready(self, config):
+        self.global_properties['Planned In'] = (
+            config.ART_CONFIG['DEFAULT']['PRODUCT'] +
+            config.ART_CONFIG['DEFAULT']['VERSION']
+        )
+        self.global_properties['ARCH'] = (
+            config.ART_CONFIG['PARAMETERS']['arch']
+        )
+
+    def pytest_sessionstart(self, session):
+        self._add_global_properties()
 
 
 def pytest_configure(config):
@@ -187,8 +213,8 @@ def pytest_configure(config):
         config.pluginmanager.register(
             AttribDecorator(config.getoption('-A'))
         )
-    if tuple(pytest.__version__.split('.')) < ('2', '8', '3'):
-        # NOTE(lbednar): this feature was released in 2.8.3
+
+    if parse_version(pytest.__version__) <= parse_version("2.8.3"):
         return
 
     if config.pluginmanager.hasplugin('junitxml'):
