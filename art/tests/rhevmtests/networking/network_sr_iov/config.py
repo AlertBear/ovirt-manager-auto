@@ -25,6 +25,9 @@ VM_NETS = global_helper.generate_object_names(
 GENERAL_DICT = {
     GENERAL_NETS[5][0]: {
         "required": "false"
+    },
+    GENERAL_NETS[6][0]: {
+        "required": "false"
     }
 }
 

@@ -14,6 +14,8 @@ from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest
 import rhevmtests.networking.helper as network_helper
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.sriov as ll_sriov
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
@@ -106,14 +108,19 @@ class TestSriov02(NetworkTest):
     __test__ = True
     ver = conf.COMP_VERSION
     net_qos = "net_qos"
+    vnic_p_list = conf.VNIC_PROFILE[:3]
+    dc = conf.DC_0
+    mgmt_net = conf.MGMT_BRIDGE
 
     @classmethod
     def setup_class(cls):
         """
-        Configure Engine to support multiple queues
-        Create QoS under DC
-        Create a vNIC profile for existing MGMT network
-        Update vNIC profile with passthrough property
+        1. Configure Engine to support multiple queues
+        2. Create QoS under DC
+        3. Create a vNIC profile for existing MGMT network
+        4. Update vNIC profile with passthrough property
+        5. Create a new vNIC with passthrough property
+        6. Create a new vNIC with port mirroring enabled
         """
 
         logger.info(
@@ -133,7 +140,7 @@ class TestSriov02(NetworkTest):
 
         logger.info("Create new Network QoS profile under DC")
         if not ll_datacenters.add_qos_to_datacenter(
-            datacenter=conf.DC_0,
+            datacenter=cls.dc,
             qos_name=cls.net_qos, qos_type=conf.NET_QOS_TYPE,
             inbound_average=conf.BW_VALUE,
             inbound_peak=conf.BW_VALUE,
@@ -145,48 +152,138 @@ class TestSriov02(NetworkTest):
             raise conf.NET_EXCEPTION()
 
         if not ll_networks.add_vnic_profile(
-            positive=True, name=conf.VNIC_PROFILE[0],
-            data_center=conf.DC_0, network=conf.MGMT_BRIDGE
+            positive=True, name=cls.vnic_p_list[0],
+            data_center=cls.dc, network=cls.mgmt_net
         ):
             raise conf.NET_EXCEPTION()
 
         if not ll_networks.update_vnic_profile(
-            name=conf.VNIC_PROFILE[0], network=conf.MGMT_BRIDGE,
-            pass_through=True, data_center=conf.DC_0
+            name=cls.vnic_p_list[0], network=cls.mgmt_net,
+            pass_through=True, data_center=cls.dc
+        ):
+            raise conf.NET_EXCEPTION()
+
+        if not ll_networks.add_vnic_profile(
+            positive=True, name=cls.vnic_p_list[1],
+            data_center=cls.dc, network=cls.mgmt_net,
+            pass_through=True
+        ):
+            raise conf.NET_EXCEPTION()
+
+        if not ll_networks.add_vnic_profile(
+            positive=True, name=cls.vnic_p_list[2],
+            data_center=cls.dc, network=cls.mgmt_net,
+            port_mirroring=True
         ):
             raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-6305")
-    def test_port_mirroring_update(self):
+    def test_01_port_mirroring_update(self):
         """
         Check that port mirroring can't be configured
         """
         if ll_networks.update_vnic_profile(
-            name=conf.VNIC_PROFILE[0], network=conf.MGMT_BRIDGE,
-            data_center=conf.DC_0, port_mirroring=True
+            name=self.vnic_p_list[0], network=self.mgmt_net,
+            data_center=self.dc, port_mirroring=True
         ):
             raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-14628")
-    def test_network_qos_update(self):
+    def test_02_network_qos_update(self):
         """
         Check that QoS can't be configured
         """
         if ll_networks.update_qos_on_vnic_profile(
-            datacenter=conf.DC_0, qos_name=self.net_qos,
-            vnic_profile_name=conf.VNIC_PROFILE[0],
-            network_name=conf.MGMT_BRIDGE
+            datacenter=self.dc, qos_name=self.net_qos,
+            vnic_profile_name=self.vnic_p_list[0],
+            network_name=self.mgmt_net
         ):
             raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-14629")
-    def test_queues_update(self):
+    def test_03_queues_update(self):
         """
         Check that queues can be configured
         """
         if not ll_networks.update_vnic_profile(
-            name=conf.VNIC_PROFILE[0], network=conf.MGMT_BRIDGE,
-            data_center=conf.DC_0, custom_properties=conf.PROP_QUEUES[0]
+            name=self.vnic_p_list[0], network=self.mgmt_net,
+            data_center=self.dc, custom_properties=conf.PROP_QUEUES[0]
+        ):
+            raise conf.NET_EXCEPTION()
+
+    @polarion("RHEVM3-14630")
+    def test_04_pm_qos_update(self):
+        """
+        Check that port mirroring and QoS are available after
+        disabling passthrough on vNIC
+        """
+        if not ll_networks.update_vnic_profile(
+            name=self.vnic_p_list[0], network=self.mgmt_net,
+            pass_through=False, data_center=self.dc
+        ):
+            raise conf.NET_EXCEPTION()
+
+        if not ll_networks.update_vnic_profile(
+            name=self.vnic_p_list[0], network=self.mgmt_net,
+            data_center=self.dc, port_mirroring=True
+        ):
+            raise conf.NET_EXCEPTION()
+
+        if not ll_networks.update_qos_on_vnic_profile(
+            datacenter=self.dc, qos_name=self.net_qos,
+            vnic_profile_name=self.vnic_p_list[0],
+            network_name=self.mgmt_net
+        ):
+            raise conf.NET_EXCEPTION()
+
+    @polarion("RHEVM3-6310")
+    def test_05_passthrough_enabled_vnic(self):
+        """
+        Check that passthrough property is enabled on created vNIC profile
+        """
+        logger.info(
+            "Check passthrough on %s", self.vnic_p_list[1]
+        )
+        vnic_profile_obj = ll_networks.get_vnic_profile_obj(
+            name=self.vnic_p_list[1], network=self.mgmt_net,
+            cluster=conf.CL_0,  data_center=self.dc
+        )
+        if vnic_profile_obj.get_pass_through().get_mode() == "disable":
+            raise conf.NET_EXCEPTION()
+
+    @polarion("RHEVM3-14581")
+    def test_06_port_mirroring_update_created_vnic(self):
+        """
+        Check that port mirroring can't be configured on vNIC profile
+        with passthrough property
+        """
+        if ll_networks.update_vnic_profile(
+            name=self.vnic_p_list[1], network=self.mgmt_net,
+            data_center=self.dc, port_mirroring=True
+        ):
+            raise conf.NET_EXCEPTION()
+
+    @polarion("RHEVM3-14631")
+    def test_07_network_qos_update_created_vnic(self):
+        """
+        Check that QoS can't be configured on vNIC profile
+        with passthrough property
+        """
+        if ll_networks.update_qos_on_vnic_profile(
+            datacenter=self.dc, qos_name=self.net_qos,
+            vnic_profile_name=self.vnic_p_list[1],
+            network_name=self.mgmt_net
+        ):
+            raise conf.NET_EXCEPTION()
+
+    @polarion("RHEVM3-14632")
+    def test_08_pm_update_enable(self):
+        """
+        Try to update vNIC profile with passthrough property when pm is enabled
+        """
+        if ll_networks.update_vnic_profile(
+            name=self.vnic_p_list[2], network=self.mgmt_net,
+            pass_through=True, data_center=self.dc
         ):
             raise conf.NET_EXCEPTION()
 
@@ -196,12 +293,10 @@ class TestSriov02(NetworkTest):
         Remove vNIC profile
         Remove queue support from engine
         """
-        if not ll_networks.removeVnicProfile(
-            positive=True, vnic_profile_name=conf.VNIC_PROFILE[0],
-            network=conf.MGMT_BRIDGE, data_center=conf.DC_0
-        ):
-            logger.error(
-                "Couldn't remove VNIC profile %s", conf.VNIC_PROFILE[0]
+        for vnic in cls.vnic_p_list:
+            ll_networks.removeVnicProfile(
+                positive=True, vnic_profile_name=vnic,
+                network=cls.mgmt_net, data_center=cls.dc
             )
 
         logger.info(
@@ -246,8 +341,8 @@ class TestSriov03(helper.TestSriovBase):
         Check for the same number of VFs on engine and on host file
         """
         path = conf.NUM_VF_PATH % self.nic_name
-        vf_num_in_file = int(conf.VDS_0_HOST.fs.read_file(path).strip())
-        if self.num_vf != vf_num_in_file:
+        rc, out, _ = conf.VDS_0_HOST.run_command(["cat", path])
+        if rc or self.num_vf != int(out):
             raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-14633")
@@ -255,14 +350,17 @@ class TestSriov03(helper.TestSriovBase):
         """
         Check that putting link up and down doesn't change the number of VFs
         """
-        for action in ("if_down", "if_up"):
-            func = getattr(conf.VDS_0_HOST.network, action)
-            if not func(self.nic_name):
-                raise conf.NET_EXCEPTION()
+        if not ll_hosts.ifdownNic(
+            host=conf.HOSTS_IP[0], root_password=conf.HOSTS_PW,
+            nic=self.nic_name
+        ):
+            raise conf.NET_EXCEPTION()
 
-            helper.update_host_nics()
-            if not set(self.vf_list) <= set(conf.HOST_0_NICS):
-                raise conf.NET_EXCEPTION()
+        if not ll_hosts.ifupNic(
+            host=conf.HOSTS_IP[0], root_password=conf.HOSTS_PW,
+            nic=self.nic_name
+        ):
+            raise conf.NET_EXCEPTION()
 
 
 class TestSriov04(helper.TestSriovBase):
@@ -310,6 +408,7 @@ class TestSriov05(helper.TestSriovBase):
      Changing the number of VFs for a PF when PF contains non-free VFs
     """
     __test__ = True
+    net1 = conf.GENERAL_NETS[5][0]
 
     @classmethod
     def setup_class(cls):
@@ -330,12 +429,12 @@ class TestSriov05(helper.TestSriovBase):
         """
         logger.info(
             "Negative: Try to change the number of VFs when one of the VFs is "
-            "occupied by network %s attached to it", conf.GENERAL_NETS[5][0]
+            "occupied by network %s attached to it", self.net1
         )
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": conf.GENERAL_NETS[5][0],
+                    "network": self.net1,
                     "nic": self.pf_obj.get_all_vf_names()[0]
                 }
             }
@@ -356,7 +455,7 @@ class TestSriov05(helper.TestSriovBase):
         """
         logger.info(
             "Remove network %s and check you can change the VF number",
-            conf.GENERAL_NETS[5][0]
+            self.net1
         )
         if not hl_host_network.clean_host_interfaces(
             host_name=conf.HOST_0_NAME
@@ -374,3 +473,87 @@ class TestSriov05(helper.TestSriovBase):
         """
         hl_host_network.clean_host_interfaces(conf.HOST_0_NAME)
         super(TestSriov05, cls).teardown_class()
+
+
+@attr(tier=2)
+class TestSriov06(NetworkTest):
+    """
+    Try to edit regular vNIC profile on VM to have passthrough property
+     Try to edit vNIC profile with passthrough property to become regular vNIC
+    """
+    __test__ = True
+    net1 = conf.GENERAL_NETS[6][0]
+    pt_vnic = conf.VNIC_PROFILE[0]
+    dc = conf.DC_0
+
+    @classmethod
+    def setup_class(cls):
+        """
+        1. Attach network to host NIC
+        2. Create vNIC profile with passthrough property for the network
+        3. Add 2 vNICs to VM (one with passthrough property and one without)
+        """
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": cls.net1,
+                    "nic": conf.HOST_0_NICS[1]
+                }
+            }
+        }
+
+        if not hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
+        ):
+            raise conf.NET_EXCEPTION()
+
+        if not ll_networks.add_vnic_profile(
+            positive=True, name=cls.pt_vnic,
+            data_center=cls.dc, network=cls.net1,
+            pass_through=True
+        ):
+            raise conf.NET_EXCEPTION()
+
+        # add 2 vNICs - one with passthrough and one without
+        for i, vnic_profile in enumerate([cls.net1, cls.pt_vnic]):
+            if not ll_vms.addNic(
+                positive=True, vm=conf.VM_NAME[0], name=conf.NIC_NAME[i+1],
+                network=cls.net1, vnic_profile=vnic_profile,
+                interface=conf.PASSTHROUGH_INTERFACE if i else "virtio"
+            ):
+                raise conf.NET_EXCEPTION()
+
+    @polarion("RHEVM3-10630")
+    def test_01_update_vnic_with_passthrough(self):
+        """
+        Check that it's impossible to change regular vNIC on VM to have
+        passthrough property
+        """
+        if ll_networks.update_vnic_profile(
+            name=self.net1, network=self.net1,
+            data_center=self.dc, pass_through=True
+        ):
+            raise conf.NET_EXCEPTION()
+
+    @polarion("RHEVM3-14641")
+    def test_02_update_vnic_with_non_passthrough(self):
+        """
+        Check that it's impossible to change vNIC on VM with passthrough
+        property to become regular vNIC
+        """
+        if ll_networks.update_vnic_profile(
+            name=self.pt_vnic, network=self.net1,
+            data_center=self.dc, pass_through=False
+        ):
+            raise conf.NET_EXCEPTION()
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove vNICs from VM
+        Remove network from host
+        """
+        for nic in conf.NIC_NAME[1:3]:
+            ll_vms.removeNic(positive=True, vm=conf.VM_NAME[0], nic=nic)
+
+        hl_host_network.clean_host_interfaces(conf.HOST_0_NAME)
