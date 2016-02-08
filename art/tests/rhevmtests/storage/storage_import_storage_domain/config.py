@@ -1,11 +1,8 @@
 """
 Config module for storage Import Storage Domain
 """
-__test__ = False
-
 from rhevmtests.storage.config import *  # flake8: noqa
 
-# Name of the test
 TESTNAME = "import_storage_domain"
 
 VM_NAME = "{0}_vm_%s".format(TESTNAME)
