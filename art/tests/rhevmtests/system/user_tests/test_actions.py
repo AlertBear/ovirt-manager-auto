@@ -10,6 +10,7 @@ from art.unittest_lib import attr
 from art.core_api.apis_exceptions import EntityNotFound
 from art.unittest_lib import CoreSystemTest as TestCase
 from rhevmtests.system.user_tests import config
+from art.rhevm_api.tests_lib.high_level import vmpools as hl_vmpools
 from art.rhevm_api.tests_lib.low_level import (
     disks, users, vms, vmpools, mla, templates,
     datacenters, clusters, hosts, storagedomains
@@ -592,8 +593,7 @@ class CaseRoleActions(TestCase):
 
     @user_case(
         login_as=config.USER_DC,
-        cleanup_func=vmpools.stopVmPool,
-        positive=True,
+        cleanup_func=hl_vmpools.stop_vm_pool,
         vm_pool=config.CREATE_POOL
     )
     def test_vm_pool_basic_operations(self):

@@ -15,6 +15,7 @@ from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 from art.rhevm_api.tests_lib.high_level import storagedomains as h_sd
 from art.rhevm_api.utils import test_utils
+from art.rhevm_api.tests_lib.high_level import vmpools as hl_vmpools
 from art.rhevm_api.tests_lib.low_level import (
     users, vms, disks, vmpools, templates, mla, clusters, datacenters, hosts,
     storagedomains
@@ -81,7 +82,7 @@ def tearDownModule():
     vms.removeVm(True, config.VM_NAME)
     disks.deleteDisk(True, config.DISK_NAME)
     disks.waitForDisksGone(True, config.DISK_NAME)
-    vmpools.detachVms(True, config.VMPOOL_NAME)
+    hl_vmpools.detach_vms_from_pool(config.VMPOOL_NAME)
     vm_name = '%s-1' % config.VMPOOL_NAME
     vms.waitForVMState(vm_name, state='down')
     vms.removeVm(True, vm_name)
@@ -546,7 +547,7 @@ class PermissionsCase109086(TestCase):
         loginAsAdmin()
         vms.waitForVMState('%s-%s' % (config.VMPOOL_NAME, 1), state='up')
         loginAsUser(config.USER_NAME)
-        self.assertTrue(vmpools.stopVmPool(True, config.VMPOOL_NAME))
+        self.assertTrue(hl_vmpools.stop_vm_pool(config.VMPOOL_NAME))
         loginAsAdmin()
         vms.waitForVMState('%s-%s' % (config.VMPOOL_NAME, 1), state='down')
         time.sleep(10)  # Didn't find any reliable way how to wait.

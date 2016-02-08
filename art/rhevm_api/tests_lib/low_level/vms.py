@@ -950,6 +950,7 @@ def startVm(
 ):
     """
     Start VM
+
     :param vm: name of vm
     :type vm: str
     :param wait_for_status: vm status should wait for (default is
@@ -983,8 +984,13 @@ def startVm(
             return False
     if use_cloud_init:
         action_params['use_cloud_init'] = 'true'
-
+    log_info, log_error = ll_general.get_log_msg(
+        action="start", obj_type="vm", obj_name=vm, positive=positive,
+        **action_params
+    )
+    logger.info(log_info)
     if not VM_API.syncAction(vmObj, 'start', positive, **action_params):
+        logger.error(log_error)
         return False
 
     if wait_for_status is None:
@@ -1049,8 +1055,14 @@ def stopVm(positive, vm, async='false'):
     :return: Status (True if vm was stopped properly, False otherwise)
     :rtype: bool
     """
-    logger.info("Stopping %s", vm)
-    return changeVMStatus(positive, vm, 'stop', 'DOWN', async)
+    log_info, log_error = ll_general.get_log_msg(
+        action="stop", obj_type="vm", obj_name=vm, positive=positive
+    )
+    logger.info(log_info)
+    if not changeVMStatus(positive, vm, 'stop', 'DOWN', async):
+        logger.error(log_error)
+        return False
+    return True
 
 
 @is_action()
@@ -1117,9 +1129,16 @@ def detachVm(positive, vm):
     Return: status (True if vm was detached properly, False otherwise)
     '''
     vmObj = VM_API.find(vm)
+    log_info, log_error = ll_general.get_log_msg(
+        action="detach", obj_type="vm", obj_name=vm, positive=positive
+    )
     expectedStatus = vmObj.get_status().get_state()
 
     status = bool(VM_API.syncAction(vmObj, "detach", positive))
+    logger.info(log_info)
+    if not status:
+        logger.error(log_error)
+        return False
     if status and positive:
         return VM_API.waitForElemStatus(vmObj, expectedStatus,
                                         VM_ACTION_TIMEOUT)
@@ -1820,11 +1839,19 @@ def wait_for_snapshot_gone(
     False otherwise
     :rtype: bool
     """
+    logger.info(
+        "Waiting until snapshot: %s of vm: %s is gone",
+        snapshot, vm_name
+    )
     for sample in TimeoutingSampler(
             timeout, SNAPSHOT_SAMPLING_PERIOD, get_vm_snapshots, vm_name
     ):
         if snapshot not in [snap.get_description() for snap in sample]:
             return True
+    logger.error(
+        "Snapshot: %s is not removed from vm: %s",
+        snapshot, vm_name
+        )
     return False
 
 
@@ -3704,8 +3731,6 @@ def wait_for_vm_snapshots(
         """
         snapshots = _getVmSnapshots(vm_name, False)
         if description is not None:
-            if isinstance(description, basestring):
-                description = description.split()
             snapshots = [
                 snapshot for snapshot in snapshots
                 if snapshot.get_description() in description

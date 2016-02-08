@@ -688,8 +688,9 @@ def cancel_vm_migrate(vm, wait=True, timeout=MIGRATION_TIMEOUT):
     vm_obj = VM_API.find(vm)
     source_host_name = vms.get_vm_host(vm)
     LOGGER.info("Cancel migration on VM %s", vm)
+    log_err = "Failed to cancel migration on VM %s"
     if not VM_API.syncAction(vm_obj, "cancelmigration", True):
-        LOGGER.error("Failed to cancel migration on VM %s", vm)
+        LOGGER.error(log_err, vm)
         return False
 
     if not wait:
@@ -697,7 +698,7 @@ def cancel_vm_migrate(vm, wait=True, timeout=MIGRATION_TIMEOUT):
         return True
 
     if not VM_API.waitForElemStatus(vm_obj, ENUMS["vm_state_up"], timeout):
-        LOGGER.error("Failed to cancel migration on VM %s", vm)
+        LOGGER.error(log_err, vm)
         return False
     destination_host_name = vms.get_vm_host(vm)
     LOGGER.info(
@@ -909,3 +910,46 @@ def create_windows_vm(
         )
     LOGGER.info("RHEV Tools installation completed successfully")
     return True, "Vm '%s' successfully created" % vm_name
+
+
+def wait_for_restored_stateless_snapshot(vm):
+    """
+    This function waits for the whole statless snapshot restoration flow to
+    complete.
+    1. Wait until statless snapshot is removed -> in practice 'Active VM'
+    points to that snapshot.
+    2. Wait until 'Active VM' is in state 'OK'.
+
+    :param vm: Name of vm
+    :type vm: str
+    :return: True if 'stateless snapshot' was deleted and 'Active' snapshot is
+    is in state 'ok', False otherwise.
+    :rtype: bool
+    """
+    if not vms.wait_for_snapshot_gone(
+        vm, ENUMS['snapshot_stateless_description']
+    ):
+        return False
+    vms.wait_for_vm_snapshots(
+        vm, ENUMS['snapshot_state_ok'],
+        ENUMS['snapshot_active_vm_description']
+    )
+    return True
+
+
+def stop_stateless_vm(vm):
+    """
+    Stops a stateless vm and verifies that the stateless snapshot
+    is removed after the shut down and that that 'Active VM' is at satatus OK.
+
+    :param vm: Name of vm.
+    :type vm: str
+    :return: True if vm stopped and restored to original snapshot state, False
+    otherwise.
+    :rtype: bool
+    """
+    if not vms.stop_vms_safely([vm]):
+        return False
+    if not wait_for_restored_stateless_snapshot(vm):
+        return False
+    return True

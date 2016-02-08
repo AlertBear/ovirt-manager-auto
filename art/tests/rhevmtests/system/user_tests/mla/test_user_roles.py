@@ -12,6 +12,7 @@ from art.core_api.apis_exceptions import EntityNotFound
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
 from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.rhevm_api.tests_lib.high_level import vmpools as hl_vmpools
 from art.rhevm_api.tests_lib.low_level import (
     users, vms, disks, vmpools, templates, mla
 )
@@ -67,7 +68,7 @@ def tearDownModule():
     vms.removeVm(True, config.VM_NO_DISK)
     disks.deleteDisk(True, config.DISK_NAME)
     disks.waitForDisksGone(True, config.DISK_NAME)
-    vmpools.detachVms(True, config.VMPOOL_NAME)
+    hl_vmpools.detach_vms_from_pool(config.VMPOOL_NAME)
     vms.removeVm(True, '%s-%s' % (config.VMPOOL_NAME, 1))
     vmpools.removeVmPool(True, config.VMPOOL_NAME)
     templates.removeTemplate(True, config.TEMPLATE_NAME1)

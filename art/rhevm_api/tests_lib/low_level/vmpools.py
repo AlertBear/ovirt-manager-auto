@@ -22,11 +22,9 @@ import art.core_api.apis_utils as api_utils
 from art.core_api import is_action
 import art.core_api.validator as validator
 import art.rhevm_api.utils.test_utils as test_utils
-import art.rhevm_api.data_struct.data_structures as ds
-import art.rhevm_api.tests_lib.low_level.vms as vms
+import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.test_handler.settings import opts
 import art.core_api.apis_exceptions as exceptions
-import concurrent.futures as futures
 
 ELEMENT = 'vmpool'
 COLLECTION = 'vmpools'
@@ -89,7 +87,9 @@ def _prepareVmPoolObject(**kwargs):
 def addVmPool(positive, wait=True, **kwargs):
     """
     Description: create vm pool
+
     __Author__ = edolinin, slitmano
+
     :param positive: True if action is expected to succeed False otherwise
     :type positive: bool
     :param wait: If True wait until VMs in pool are down, False otherwise
@@ -111,10 +111,19 @@ def addVmPool(positive, wait=True, **kwargs):
     """
     size = kwargs.get('size', 0)
     pool = _prepareVmPoolObject(**kwargs)
+    log_info, log_error = ll_general.get_log_msg(
+        action="create", obj_type="vmpool", obj_name=pool, positive=positive,
+        **kwargs
+    )
+    logger.info(log_info)
     pool, status = UTIL.create(pool, positive)
 
-    if not pool or isinstance(pool, ds.Fault):
-        return positive is False
+    if not status:
+        logger.error(log_error)
+        return False
+
+    if positive is False:
+        return True
 
     time.sleep(int(size) * 3)
 
@@ -135,8 +144,10 @@ def addVmPool(positive, wait=True, **kwargs):
 @is_action()
 def updateVmPool(positive, vmpool, **kwargs):
     """
-    Description: update vm pool
-    Author: edolinin
+    Description: update vm pool.
+
+    Author: edolinin.
+
     :param positive: True if action is to end successfully, False otherwise
     :type positive: bool
     :param vmpool: VM pool name.
@@ -162,9 +173,15 @@ def updateVmPool(positive, vmpool, **kwargs):
     kwargs['cluster'] = CLUSTER_UTIL.find(pool_cluster, 'id').name
     kwargs['id'] = pool.id
     pool_new_object = _prepareVmPoolObject(**kwargs)
-
+    log_info, log_error = ll_general.get_log_msg(
+        action="update", obj_type="vmpool", obj_name=vmpool, positive=positive,
+        **kwargs
+    )
+    logger.info(log_info)
     pool, status = UTIL.update(pool, pool_new_object, positive)
-
+    if not status:
+        logger.error(log_error)
+        return False
     if size and pool:
         time.sleep(size * 3)
         vms_in_pool = get_vms_in_pool(pool)
@@ -173,116 +190,12 @@ def updateVmPool(positive, vmpool, **kwargs):
     return status
 
 
-def _control_vms_in_pool(
-    positive, vm_pool, action, max_workers=2, threading=False
-):
-    """
-    Description: Common function for starting, stopping and detaching
-    all VMs in a pool
-    __Author__ = edolinin, alukiano, slitmano
-    :param vm_pool: name of the pool
-    :type vm_pool: str
-    :param action: action to run on VMs, can be start, stop or detach
-    :type action: str
-    :param max_workers: max number of threads to be used
-    :type max_workers: int
-    :param threading: determines with to use threads or not
-    :type threading: bool
-    :return: True if every operation was successful, False otherwise
-    :rtype: bool
-    """
-    if action == ENUMS['start_vm']:
-        action_function = vms.startVm
-        expected_status = ENUMS['vm_state_up']
-    elif action == ENUMS['stop_vm']:
-        action_function = vms.stopVm
-        expected_status = ENUMS['vm_state_down']
-    elif action == ENUMS['detach_vm']:
-        action_function = vms.detachVm
-        expected_status = ENUMS['vm_state_down']
-    else:
-        raise ValueError("Unsupported action given")
-
-    vms_list = get_vms_in_pool_by_name(vm_pool)
-    if threading:
-        results = list()
-        with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            for vm_name in vms_list:
-                results.append(executor.submit(action_function, True, vm_name))
-        test_utils.raise_if_exception(results)
-    else:
-        for vm_name in vms_list:
-            if not vms.changeVMStatus(
-                positive, vm_name, action, expected_status
-            ):
-                logger.warning(
-                    "Failed to set status: %s for vm: %s",
-                    expected_status, vm_name
-                )
-                return False
-        if not vms.waitForVmsStates(
-            positive, vms_list, states=expected_status
-        ):
-            logger.warning(
-                "At least one vm from pool: %s has the wrong state,"
-                " expected: %s." % (vm_pool, expected_status)
-            )
-            return False
-    return True
-
-
-@is_action()
-def start_vm_pool(positive, vm_pool):
-    """
-    Wrapper for starting all VMs in a pool
-    :param positive: positive or negative result expected
-    :type positive: bool
-    :param vm_pool: name of the pool
-    :type vm_pool: str
-    :return: True if every operation was successful, False otherwise
-    :rtype: bool
-    """
-    return _control_vms_in_pool(positive, vm_pool, "start")
-
-
-@is_action()
-def stopVmPool(positive, vm_pool):
-    """
-    Wrapper for stopping all VMs in a pool
-    :param positive: positive or negative result expected
-    :type positive: bool
-    :param vm_pool: name of the pool
-    :type vm_pool: str
-    :return: True if every operation was successful, False otherwise
-    :rtype: bool
-    """
-    return _control_vms_in_pool(positive, vm_pool=vm_pool, action="stop")
-
-
-@is_action()
-def detachVms(positive, vm_pool, stop_vms=False):
-    """
-    Wrapper for detaching all VMs in a pool
-    :param positive: positive or negative result expected
-    :type positive: bool
-    :param vm_pool: name of the pool
-    :type vm_pool: str
-    :param stop_vms: False by default - stops vms before detaching from pool
-    :type stop_vms: bool
-    :return: True if every operation was successful, False otherwise
-    :rtype: bool
-    """
-    ret = True
-    if stop_vms:
-        ret = _control_vms_in_pool(positive, vm_pool, "stop")
-    return ret and _control_vms_in_pool(positive, vm_pool, "detach")
-
-
 def get_vms_in_pool(vm_pool):
     """
     Description: returns a list of vm objects attached to the vm_pool
+
     :param vm_pool: vm pool object
-    :type VmPool object
+    :type vm_pool: VmPool object
     :return: list of VMs in pool (Vm objects)
     :rtype: list
     """
@@ -298,6 +211,7 @@ def get_vms_in_pool(vm_pool):
 def get_vms_in_pool_by_name(vm_pool):
     """
     Description: returns a list of the pool's vm names
+
     :param vm_pool: name of vm pool
     :type vm_pool: str
     :return: list of VM names
@@ -312,7 +226,9 @@ def get_vms_in_pool_by_name(vm_pool):
 def removeVmPool(positive, vmpool):
     """
     Description: remove vm pool
+
     Author: edolinin
+
     :param positive: positive or negative result expected
     :type positive: bool
     :param vmpool:  vmpool name
@@ -321,14 +237,20 @@ def removeVmPool(positive, vmpool):
     :rtype: bool
     """
     pool = UTIL.find(vmpool)
+    log_info, log_error = ll_general.get_log_msg(
+        action="remove", obj_type="vmpool", obj_name=vmpool, positive=positive
+    )
+    logger.info(log_info)
     status = UTIL.delete(pool, positive)
-
+    if not status:
+        logger.error(log_error)
     return status
 
 
 def allocateVmFromPool(positive, vmpool):
     """
     Description: Allocate vm from pool
+
     :param positive: True if action is expected to succeed False otherwise
     :type positive: bool
     :param vmpool: VM pool name
@@ -344,15 +266,15 @@ def allocateVmFromPool(positive, vmpool):
 def does_vm_pool_exist(vmpool_name):
     """
     __Author__= slitmano
+
     Checks if a vm pool with given name exist
+
     :param vmpool_name: name of vm pool
     :type vmpool_name: str
     :return: True if vm pool exist, False if not
     :rtype: bool
     """
-    try:
-        UTIL.find(vmpool_name)
-    except exceptions.EntityNotFound:
+    if get_vm_pool_object(vmpool_name) is None:
         return False
     return True
 
@@ -360,7 +282,9 @@ def does_vm_pool_exist(vmpool_name):
 def get_vm_pool_size(vmpool):
     """
     __Author__ = slitmano
+
     function gets the size of the given vm_pool
+
     :param vmpool: name of the vmpool
     :type vmpool: str
     :return: returns the size of the vm pool, otherwise raises Entity not found
@@ -373,7 +297,9 @@ def get_vm_pool_size(vmpool):
 def get_vm_pool_number_of_prestarted_vms(vmpool):
     """
     __Author__ = slitmano
+
     function gets the number of prestarted vms defined for the pool
+
     :param vmpool: name of the vmpool
     :type vmpool: str
     :return: returns the  number of prestarted vms defined for the pool
@@ -387,7 +313,9 @@ def get_vm_pool_number_of_prestarted_vms(vmpool):
 def get_vm_pool_max_user_vms(vmpool):
     """
     __Author__ = slitmano
+
     function gets max number of vms per user defined for the pool
+
     :param vmpool: name of the vmpool
     :type vmpool: str
     :return: returns the max number of vms per user defined for the pool
@@ -401,13 +329,15 @@ def get_vm_pool_max_user_vms(vmpool):
 def get_vms_in_pool_by_states(vmpool, states):
     """
     __Author__ = slitmano
+
     This function returns all the vms in pool with state in states
+
     :param vmpool: Name of vmPool
     :type vmpool: str
     :param states: a list of possible states to check
     :type states: list
     :return: vm objects of vms in pool with state in states
-    :rtype: vm object
+    :rtype: object
     """
     if states is None:
         states = [ENUMS['vm_state_up'], ENUMS['vm_state_powering_up']]
@@ -418,3 +348,20 @@ def get_vms_in_pool_by_states(vmpool, states):
         if vm.get_status().get_state() in states:
             found_pool_vms.append(vm)
     return found_pool_vms
+
+
+def get_vm_pool_object(vm_pool):
+    """
+    Returns the vm pool object corresponding to the input name, returns None
+    if such vm pool name doesn't exist in the system.
+
+    :param vm_pool: vm pool name
+    :type vm_pool: str
+    :return: The vm pool object if one exist, else None
+    :rtype: object
+    """
+    try:
+        vm_pool_obj = UTIL.find(vm_pool)
+    except exceptions.EntityNotFound:
+        return None
+    return vm_pool_obj

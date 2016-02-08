@@ -8,6 +8,7 @@ import logging
 import art.test_handler.exceptions as errors
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import templates
+from art.rhevm_api.tests_lib.high_level import vmpools as hl_pools
 import art.rhevm_api.tests_lib.low_level.vmpools as pools
 from art.rhevm_api.tests_lib.high_level import datacenters
 import art.rhevm_api.tests_lib.high_level.hosts as h_hosts
@@ -137,7 +138,7 @@ def setup_package():
         )
     # detach VMs from pool to be editable
     logger.info("Detach vms from vms pool %s", config.POOL_NAME)
-    if not pools.detachVms(True, config.POOL_NAME):
+    if not hl_pools.detach_vms_from_pool(config.POOL_NAME):
         raise errors.VMException(
             "Failed to detach VMs from %s pool" % config.POOL_NAME
         )
