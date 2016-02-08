@@ -2,31 +2,31 @@
 Test exposing BZ 1000789, checks that creating a vm
 from a template with no disks is working
 """
-import config
 import logging
-from art.unittest_lib import StorageTest as TestCase
-from art.unittest_lib import attr
-from art.rhevm_api.tests_lib.low_level import vms as ll_vms
+
+import config
 from art.rhevm_api.tests_lib.low_level import (
-    templates, disks, storagedomains, jobs
+    disks as ll_disks,
+    jobs as ll_jobs,
+    storagedomains as ll_sd,
+    templates as ll_templates,
+    vms as ll_vms,
 )
-from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
+from art.unittest_lib import attr, StorageTest as TestCase
 from rhevmtests.storage import helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
 
-VM_NO_DISKS = 'no_disk_vm'
-TEMPLATE_NO_DISKS = 'no_disks_template'
-VM_SHARED_DISK = 'shared_disk_vm'
-TEMPLATE_SHARED_DISK = 'shared_disk_template'
-VM_DIRECT_LUN = 'direct_lun_vm'
-TEMPLATE_DIRECT_LUN = 'direct_lun_template'
+VM_NO_DISKS = '11843_no_disk_vm'
+TEMPLATE_NO_DISKS = '11843_no_disks_template'
+VM_SHARED_DISK = '11843_shared_disk_vm'
+TEMPLATE_SHARED_DISK = '11843_shared_disk_template'
+VM_DIRECT_LUN = '11843_direct_lun_vm'
+TEMPLATE_DIRECT_LUN = '11843_direct_lun_template'
 
-LUN_ADDRESS = None
-LUN_TARGET = None
-LUN_ID = None
 ISCSI = config.STORAGE_TYPE_ISCSI
 
 
@@ -48,17 +48,18 @@ class TestCase11843(TestCase):
     Storage/2_3_Storage_Templates_General
     """
     # TODO: Why is this only for ISCSI?
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     polarion_test_case = '11843'
     storages = set([ISCSI])
-    bz = {'1220824': {'engine': None, 'version': ['3.6']}}
+    # Bugzilla history:
+    # 1220824:  [REST] Adding a disk to a vm fails with NullPointerException
+    # if not disk.storage_domains is provided (even for direct lun disks)
 
     def setUp(self):
         """ Create vms and templates"""
-        self.test_failed = False
         self.vms = []
         self.templates = []
-        self.storage_domains = storagedomains.getStorageDomainNamesForType(
+        self.storage_domains = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage,
         )
 
@@ -73,7 +74,7 @@ class TestCase11843(TestCase):
         template_kwargs = {"vm": VM_NO_DISKS,
                            "name": TEMPLATE_NO_DISKS}
 
-        if not templates.createTemplate(True, **template_kwargs):
+        if not ll_templates.createTemplate(True, **template_kwargs):
             raise errors.TemplateException("Can't create template "
                                            "from vm %s" % VM_NO_DISKS)
         self.templates.append(TEMPLATE_NO_DISKS)
@@ -86,11 +87,11 @@ class TestCase11843(TestCase):
         self.vms.append(VM_SHARED_DISK)
 
         # Add a shared disk
-        self.shared_disk_alias = "sharable_disk_%s" % self.polarion_test_case
+        self.shared_disk_alias = "%s_sharable_disk" % self.polarion_test_case
         shared_disk_kwargs = {
-            "interface": "virtio",
+            "interface": config.DISK_INTERFACE_VIRTIO,
             "alias": self.shared_disk_alias,
-            "format": "raw",
+            "format": config.DISK_FORMAT_RAW,
             "size": config.DISK_SIZE,
             "bootable": True,
             "storagedomain": self.storage_domains[0],
@@ -98,11 +99,13 @@ class TestCase11843(TestCase):
             "sparse": False,
         }
 
-        if not disks.addDisk(True, **shared_disk_kwargs):
+        if not ll_disks.addDisk(True, **shared_disk_kwargs):
             raise errors.DiskException("Cannot create shared disk %s"
                                        % self.shared_disk_alias)
-        disks.wait_for_disks_status([self.shared_disk_alias], timeout=300)
-        if not disks.attachDisk(True, self.shared_disk_alias, VM_SHARED_DISK):
+        ll_disks.wait_for_disks_status([self.shared_disk_alias], timeout=300)
+        if not ll_disks.attachDisk(
+            True, self.shared_disk_alias, VM_SHARED_DISK
+        ):
             raise errors.DiskException("Cannot attach shared disk to vm %s"
                                        % VM_SHARED_DISK)
 
@@ -110,7 +113,7 @@ class TestCase11843(TestCase):
         template_kwargs = {"vm": VM_SHARED_DISK,
                            "name": TEMPLATE_SHARED_DISK}
 
-        if not templates.createTemplate(True, **template_kwargs):
+        if not ll_templates.createTemplate(True, **template_kwargs):
             raise errors.TemplateException("Can't create template "
                                            "from vm %s" % VM_SHARED_DISK)
         self.templates.append(TEMPLATE_SHARED_DISK)
@@ -123,27 +126,39 @@ class TestCase11843(TestCase):
         self.vms.append(VM_DIRECT_LUN)
 
         # Add a direct lun disk
-        self.direct_lun_disk_alias = "direct_lun_disk"
+        self.direct_lun_disk_alias = (
+            "%s_direct_lun_disk" % self.polarion_test_case
+        )
         direct_lun_disk_kwargs = {
-            "interface": "virtio",
+            "interface": config.VIRTIO_SCSI,
+            "format": config.DISK_FORMAT_COW,
             "alias": self.direct_lun_disk_alias,
             "size": config.DISK_SIZE,
             "bootable": True,
-            "lun_address": LUN_ADDRESS,
-            "lun_target": LUN_TARGET,
-            "lun_id": LUN_ID,
-            "type_": ISCSI,
+            "shareable": False,
+            "active": True,
+            "lun_address": config.UNUSED_LUN_ADDRESSES[0],
+            "lun_target": config.UNUSED_LUN_TARGETS[0],
+            "lun_id": config.UNUSED_LUNS[0],
+            "type_": self.storage,
         }
 
-        if not disks.addDisk(True, **direct_lun_disk_kwargs):
+        if not ll_disks.addDisk(True, **direct_lun_disk_kwargs):
             raise errors.DiskException("Cannot add direct lun disk to vm %s"
                                        % VM_DIRECT_LUN)
 
-        # Create a template from vm without disks
+        if not ll_disks.attachDisk(
+            True, self.direct_lun_disk_alias, VM_DIRECT_LUN
+        ):
+            raise errors.DiskException(
+                "Cannot attach disk lun disk to vm %s" % VM_DIRECT_LUN
+            )
+
+        # Create a template from vm with a direct lun disk
         template_kwargs = {"vm": VM_DIRECT_LUN,
                            "name": TEMPLATE_DIRECT_LUN}
 
-        if not templates.createTemplate(True, **template_kwargs):
+        if not ll_templates.createTemplate(True, **template_kwargs):
             raise errors.TemplateException("Can't create template "
                                            "from vm %s" % VM_DIRECT_LUN)
         self.templates.append(TEMPLATE_DIRECT_LUN)
@@ -175,28 +190,23 @@ class TestCase11843(TestCase):
                                         template=TEMPLATE_DIRECT_LUN,
                                         cluster=config.CLUSTER_NAME))
         self.vms.append(new_vm_name)
+        ll_jobs.wait_for_jobs([config.JOB_ADD_VM_FROM_TEMPLATE])
 
     def tearDown(self):
         """
-        Wait for all vm's disk status to be OK, remove all created vms,
-        templates and disks
+        Remove all created vms, templates and disks
         """
-        for vm in self.vms:
-            ll_vms.waitForDisksStat(vm)
         if not ll_vms.safely_remove_vms(self.vms):
             logger.error("Failed to remove vms %s", self.vms)
-            self.test_failed = True
-        if not templates.removeTemplates(True, self.templates):
+            TestCase.test_failed = True
+        if not ll_templates.removeTemplates(True, self.templates):
             logger.error("Failed to remove templates %s", self.templates)
-            self.test_failed = True
-        if not disks.deleteDisk(True, self.shared_disk_alias):
+            TestCase.test_failed = True
+        if not ll_disks.deleteDisk(True, self.shared_disk_alias):
             logger.error("Failed to delete disk %s", self.shared_disk_alias)
-            self.test_failed = True
-        if not disks.deleteDisk(True, self.direct_lun_disk_alias):
-            logger.error(
-                "Failed to delete disk %s", self.direct_lun_disk_alias,
-            )
-            self.test_failed = True
-        jobs.wait_for_jobs([config.ENUMS['job_remove_disk']])
-        if self.test_failed:
-            raise errors.TestException("Test failed during tearDown")
+            TestCase.test_failed = True
+        ll_jobs.wait_for_jobs(
+            [config.JOB_REMOVE_DISK, config.JOB_REMOVE_VM,
+             config.JOB_REMOVE_TEMPLATE]
+        )
+        TestCase.teardown_exception()
