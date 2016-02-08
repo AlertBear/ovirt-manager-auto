@@ -1,57 +1,29 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 __Author__ = slitmano
 This is a helpers module with helper functions dedicated for vm_pool_test.py
 """
-import logging
 import config
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.low_level.vmpools as ll_vmpools
-from art.test_handler import exceptions as errors
+import logging
+import os
+from datetime import datetime
+from art.rhevm_api.tests_lib.high_level import (
+    vmpools as hl_vmpools,
+)
+from art.rhevm_api.tests_lib.low_level import (
+    vms as ll_vms,
+    vmpools as ll_vmpools,
+    mla as ll_mla,
+    users as ll_users,
+)
+from art.rhevm_api.utils import test_utils
+from art.test_handler import exceptions
 import utilities.timeout as timeout_api
 
 
-logger = logging.getLogger(__name__)
-
-
-def wait_for_prestarted_vms(
-    vmpool, timeout=config.PRESTARTED_VMS_TIMEOUT, interval=5
-):
-    """
-    __Author__ = slitmano
-    :param vmpool: name of vm pool
-    :type vmpool: str
-    :param timeout: timeout threshold for waiting for prestarted vms to start
-    :type timeout: int
-    :param interval: waiting time between each check
-    :type interval: int
-    :return: True if the amount of vms in pool that are up is at least the size
-    of prestarted vms defined for the vm pool.
-    :rtype: bool
-    """
-    prestarted_vms = ll_vmpools.get_vm_pool_number_of_prestarted_vms(vmpool)
-    logger.info(
-        'Waiting for at least %d vms from vm pool %s to start',
-        prestarted_vms, vmpool
-    )
-    expected_states = [
-        config.ENUMS['vm_state_up'], config.ENUMS['vm_state_powering_up']
-    ]
-    sampler = timeout_api.TimeoutingSampler(
-        timeout, interval, ll_vmpools.get_vms_in_pool_by_states,
-        vmpool, expected_states
-    )
-    timeout_message = (
-        "Timeout when waiting for {0} vms in vmPool: '{1}' to start'".format(
-            prestarted_vms, vmpool
-        )
-    )
-    try:
-        for found_vms in sampler:
-            if len(found_vms) >= prestarted_vms:
-                return True
-    except timeout_api.TimeoutExpiredError:
-        logger.error(timeout_message)
-    return False
+logger = logging.getLogger("virt.vm_pools.helpers")
 
 
 def generate_vms_name_list_from_pool(pool_name, size):
@@ -61,129 +33,22 @@ def generate_vms_name_list_from_pool(pool_name, size):
     VMs name will be foo-i (i in range (1, pool_vms_num +1))
     if pool name contains a number of consecutive '?' e.g foo-???-bar:
     Vms name will be foo-001-bar, foo-002-bar....
-    No name like foo??bar?? wil be accepted from engine so no need to cover.
 
-    :param pool_name: the name of the pool
+    :param pool_name: The name of the pool
     :type pool_name: str
-    :param size: size of the pool
+    :param size: Size of the pool
     :type size: int
-    :return: the list of vms according to pool's name
+    :return: The list of vms according to pool's name
     """
     vm_list = []
     index_len = pool_name.count("?")
     for i in range(1, size + 1):
         if index_len:
-            vm_number = ('{:0%sd}' % index_len).format(i)
+            vm_number = ('{:0%d}' % index_len).format(i)
             vm_list.append(pool_name.replace("?" * index_len, vm_number))
         else:
-            vm_list.append("%s-%s" % (pool_name, i))
+            vm_list.append("%s-%d" % (pool_name, i))
     return vm_list
-
-
-def validate_pool_size(vmpool, size):
-    """
-    __Author__ = slitmano
-    This function compares vmpool size to an expected size
-    :param vmpool: name of vm pool
-    :type vmpool: str
-    :param size: expected size of vm pool
-    :type size: int
-    :return: True if vmpool size == size, False otherwise
-    :rtype: bool
-    """
-    return ll_vmpools.get_vm_pool_size(vmpool=vmpool) == size
-
-
-def wait_for_empty_vm_pool(
-    vmpool, timeout=config.VM_POOL_ACTION_TIMEOUT,
-    interval=config.VM_POOL_ACTION_SLEEP
-):
-    """
-    __Author__ = slitmano
-    waits until vmpool is empty or TIMEOUT exceeds
-    :param vmpool: name of vmpool.
-    :type vmpool: str
-    :param timeout: timeout threshold for getting an empty vmpool
-    :type timeout: int
-    :param interval: waiting time between each size check
-    :type interval: int
-    :return: True if vm pool got empty, False otherwise
-    :rtype: bool
-    """
-    logger.info(
-        'Waiting for vm pool %s to get empty up to %d seconds,'
-        'sampling every %d second.', vmpool, timeout, interval
-    )
-    sampler = timeout_api.TimeoutingSampler(
-        timeout=timeout, sleep=interval, func=validate_pool_size,
-        vmpool=vmpool, size=0
-    )
-    timeout_message = (
-        "Timeout when waiting for vm pool: '{0}' to empty'".format(vmpool)
-    )
-    try:
-        for sample in sampler:
-            if sample:
-                return True
-    except timeout_api.TimeoutExpiredError:
-        logger.error(timeout_message)
-    return False
-
-
-def remove_whole_vm_pool(vmpool, size, remove_vms=True, stop_vms=False):
-    """
-    Description: Detach vms, remove them and remove vm pool.
-    :param vmpool: name of the VMPool
-    :type vmpool: str
-    :param size: number of vms in pool
-    :type size: int
-    :param remove_vms: remove all vms in pool
-    :type remove_vms: bool
-    :param stop_vms: stop vms before detaching
-    :type stop_vms: bool
-    :return: True if operation was successful, False otherwise
-    :rtype: bool
-    """
-    vms_in_pool = ll_vmpools.get_vms_in_pool_by_name(vm_pool=vmpool)
-    ret = ll_vmpools.detachVms(
-        positive=True, vm_pool=vmpool, stop_vms=stop_vms
-    )
-    if not ret:
-        logger.warning("Failed to stop and detach vms on pool: %s", vmpool)
-        return False
-    if not wait_for_empty_vm_pool(vmpool=vmpool):
-        return False
-    if remove_vms:
-        ret = ll_vms.safely_remove_vms(vms=vms_in_pool)
-        if not ret:
-            logger.warning("Failed to remove vms from pool: %s", vmpool)
-            return False
-    ret = ll_vmpools.removeVmPool(positive=True, vmpool=vmpool)
-    return ret
-
-
-def create_vm_pool(positive, pool_name, pool_params):
-    """
-    Create a vm pool with given parameters
-    :param positive: True if vm pool creation is expected to succeed,
-    False otherwise
-    :type positive: bool
-    :param pool_name: name of vm pool
-    :type pool_name: str
-    :param pool_params: a dictionary with vm pool parameters and their values
-    :type pool_params: dict
-    :raises: VmPoolException
-    """
-    message = (
-        config.POSITIVE_CREATION_MESSAGE if positive else
-        config.NEGATIVE_CREATION_MESSAGE
-    )
-    logger.info(
-        "Creating vm pool: %s with following parameters: %s",
-        pool_name, pool_params
-    )
-    if not ll_vmpools.addVmPool(positive, **pool_params):
-        raise errors.VmPoolException(message, pool_name)
 
 
 def wait_for_vm_pool_removed(vmpool, timeout=60, interval=5):
@@ -191,21 +56,23 @@ def wait_for_vm_pool_removed(vmpool, timeout=60, interval=5):
     This function serves as WA for two existing bugs in remove vmPool flow.
     It is necessary for test cases' teardown.
     First bz: 1246886 - Remove vm-pool fails if vms are running.
-    Second bz: 1245630 -  [RFE] VM.delete() should wait for snapshot deletion
-    :param vmpool: name of the vm pool to be removed
+    Second bz: 1245630 -  [RFE] VM.delete() should wait for snapshot deletion.
+
+    :param vmpool: Name of the vm pool to be removed
     :type vmpool: str
     :param timeout: Total waiting time for removeVmPool to succeed
     :type timeout: int
-    :param interval: intervals between each sample of removeVmPool call
+    :param interval: Intervals between each sample of removeVmPool call
     :type interval: int
     """
     logger.info("Stopping all vms in pool: %s", vmpool)
-    vm_pool_size = ll_vmpools.get_vm_pool_size(vmpool)
-    # TODO: if bz 1246886 is fixed change code to handle one removeVmPool call
-    if not ll_vmpools.stopVmPool(True, vmpool):
+    if not hl_vmpools.stop_vm_pool(vmpool):
         logger.error(
             "Failed to stop vms in pool: %s", vmpool
         )
+    vm_pool_size = ll_vmpools.get_vm_pool_size(vmpool)
+    pool_vms_names = generate_vms_name_list_from_pool(vmpool, vm_pool_size)
+    # TODO: if bz 1246886 is fixed change code to handle one removeVmPool call
     sampler = timeout_api.TimeoutingSampler(
         timeout, interval, ll_vmpools.removeVmPool, True, vmpool
     )
@@ -220,7 +87,6 @@ def wait_for_vm_pool_removed(vmpool, timeout=60, interval=5):
                 break
     except timeout_api.TimeoutExpiredError:
         logger.error(timeout_message)
-    pool_vms_names = generate_vms_name_list_from_pool(vmpool, vm_pool_size)
     # TODO: remove this iteration after bz 1245630 is resolved
     for vm in pool_vms_names:
         if ll_vms.does_vm_exist(vm):
@@ -228,11 +94,298 @@ def wait_for_vm_pool_removed(vmpool, timeout=60, interval=5):
                 "Remove vm pool did not remove vm: %s after detaching it due "
                 "to bz: 1245630. applying WA", vm
             )
-            if not ll_vms.wait_for_snapshot_gone(
-                vm, config.STATELESS_SNAPSHOT_DESCRIPTION
-            ):
-                logger.error(
-                    "snapshot: %s is not removed from vm: %s",
-                    config.STATELESS_SNAPSHOT_DESCRIPTION, vm)
-            if not ll_vms.removeVm(True, vm):
-                logger.error("Failed to remove vm: %s" % vm)
+            ll_vms.removeVm(True, vm)
+
+
+def update_prestarted_vms(vm_pool, prestarted_vms, other_running_vms=0):
+    """
+    Add prestarted vms to pool and take to account vms in pool which were
+    started by admin or taken by user.
+
+    :param vm_pool: Name of vm pool
+    :type vm_pool: str
+    :param prestarted_vms: Amount of prestarted vms in the pool
+    :type prestarted_vms: int
+    :param other_running_vms: Amount of already started vms
+    :type other_running_vms: size
+    :raises: VmPoolException
+    """
+    if not ll_vmpools.updateVmPool(
+        True,
+        vm_pool,
+        prestarted_vms=prestarted_vms
+    ):
+        raise exceptions.VmPoolException(
+            "couldn't update pool: %s and set %d prestarted vms" % (
+                vm_pool, prestarted_vms
+            )
+        )
+    hl_vmpools.wait_for_prestarted_vms(
+        vm_pool=vm_pool, running_vms=other_running_vms
+    )
+
+
+def allocate_vms_as_user(
+    positive, pool_name, user, user_vms, new_vms, verify=True
+):
+    """
+    Attempts to allocate number_of_vms from the pool with user.
+    Should fail and raise exception according to positive parameter and result
+    Function logs in engine with the specific user, then verifies that the user
+    got the number_of_vms which were allocated.
+    Logs in back as admin at the end.
+
+    :param positive: Expected result
+    :type positive: bool
+    :param pool_name: Name of the pool to allocate vm from
+    :type pool_name: str
+    :param user: Name of user (first name not to be confused with user_name)
+    :type user: str
+    :param user_vms: Number of vms allocated previously by user
+    :type user_vms: int
+    :param new_vms: Number of additional vms to allocate for user
+    :type new_vms: int
+    :param verify: Verify that user got permission for user_vms + new_vms at
+    the end of the flow if True, otherwise skip step.
+    :type verify: bool
+    :raises: VmPoolExecption
+    """
+    user_name = '%s@%s' % (user, config.USER_DOMAIN)
+    if user == config.USER:
+        ll_users.loginAsUser(
+            user, config.INTERNAL_DOMAIN, config.USER_PASSWORD, True
+        )
+    for i in range(new_vms):
+        logger.info(
+            "allocating vm from pool: %s as user: %s", pool_name, user
+        )
+        message = config.ALLOCATE_VM_POSITIVE_MSG if positive else (
+            config.ALLOCATE_VM_NEGETIVE_MSG
+        )
+        if not ll_vmpools.allocateVmFromPool(positive, pool_name):
+            raise exceptions.VmPoolException(
+                message % (pool_name, user)
+            )
+    if user == config.USER:
+        ll_users.loginAsUser(
+            config.VDC_ADMIN_USER, config.INTERNAL_DOMAIN,
+            config.VDC_PASSWORD, False
+        )
+    if positive and verify:
+        if get_user_vms(
+            pool_name, user_name, config.USER_ROLE, user_vms + new_vms
+        ) is None:
+            raise exceptions.VmPoolException(
+                "Couldn't find %d vms in pool: %s with permissions"
+                " for user: %s " % (user_vms + new_vms, pool_name, user_name)
+            )
+
+
+def get_user_vms(pool_name, user_name, user_role, number_of_vms):
+    """
+    Verifies that a vm from the pool is allocated to the user and that user was
+    given user_role permissions on the vm. Returns the list of vms for the pool
+    that belong to the user.
+
+    :param pool_name: Name of the pool from which vms were taken
+    :type pool_name: str
+    :param user_name: Full user_name of the user (e.g. user@domain.com)
+    :type user_name: str
+    :param user_role: The expected role that user has permissions for on pool
+    :type user_role: str
+    :param number_of_vms: Number of vms that should be allocated for the user
+    :type number_of_vms: int
+    :returns: User_vms - a list of the vms from the pool attached to the user
+    :rtype: list
+    """
+    logger.info(
+        "Verifying that user: %s got %d from the pool: %s", user_name,
+        number_of_vms, pool_name
+    )
+    pool_vms = ll_vmpools.get_vms_in_pool(
+        ll_vmpools.get_vm_pool_object(pool_name)
+    )
+    user_vms = []
+    hl_vmpools.wait_for_vms_in_pool_to_start(
+        pool_name, number_of_vms=number_of_vms, wait_until_up=True
+    )
+    for vm in pool_vms:
+        if ll_mla.hasUserPermissionsOnObject(user_name, vm, user_role):
+            logger.info(
+                "User : %s successfully took vm: %s and got permission: %s "
+                "for it", user_name, vm.get_name(), user_role
+            )
+            user_vms.append(vm)
+    if len(user_vms) == number_of_vms:
+        return [vm.get_name() for vm in user_vms]
+    else:
+        logger.error("User got an unexpected number of vms: %d", len(user_vms))
+        return []
+
+
+def verify_vms_have_no_permissions_for_user(vms, user_name, user_role):
+    """
+    Verifies that the a user doesn't have permissions for a list of vms.
+    This should be the state after a user stopped a vm it took from the pool.
+
+    :param vms: List of vm names
+    :type vms: list
+    :param user_name: Full user_name of the user (e.g. user@domain.com)
+    :type user_name: str
+    :param user_role: The expected role that user has permissions for on pool
+    :type user_role: str
+    :raises: VmPoolExecption
+    """
+    logger.info(
+        "Verifying that user: %s has lost permission to vms: %s",
+        user_name, vms
+    )
+    vm_objects = [ll_vms.get_vm(vm) for vm in vms]
+    for vm in vm_objects:
+        if ll_mla.hasUserPermissionsOnObject(user_name, vm, user_role):
+            raise exceptions.VmPoolException(
+                "user: %s still has permission for vm: %s" % (
+                    user_name, vm.get_name()
+                )
+            )
+
+
+def create_file_in_vm(vm, vm_resource):
+    """
+    Create an empty file in vm using vm resource entity
+
+    :param vm: Vm name
+    :type vm: str
+    :param vm_resource: Resource for the vm
+    :type vm_resource: Host resource
+    :raises: VMException
+    """
+    logger.info("attempting to create an empty file in vm: %s", vm)
+    if not vm_resource.fs.touch(config.FILE_NAME, config.TEMP_PATH):
+        raise exceptions.VMException(
+            "Failed to create an empty file on vm: '%s'" % vm
+        )
+
+
+def check_if_file_exist(positive, vm, vm_resource):
+    """
+    Checks if file (name of file in config) exist or not in the vm using vm
+    resource entity
+
+    :param positive: Signifies the expected result
+    :type positive: bool
+    :param vm: Vm name
+    :type vm: str
+    :param vm_resource: Command executor for the vm
+    :type vm_resource: Host resource executor
+    :raises: VMException
+    """
+    logger.info(
+        "checking if file: %s exists in vm: %s. expecting result: %s",
+        config.FILE_NAME, vm, positive
+    )
+    full_path_to_file = os.path.join(config.TEMP_PATH, config.FILE_NAME)
+    file_exists = vm_resource.fs.exists(full_path_to_file)
+    if file_exists and not positive:
+        raise exceptions.VMException("Error: file exists on vm: '%s'" % vm)
+    if not file_exists and positive:
+        raise exceptions.VMException("File doesn't exist on vm: %s" % vm)
+
+
+def wait_for_no_available_prestarted_vms(vmpool, prestarted_vms):
+    """
+    This function verifies in engine.log that when all vms in a pool are taken
+    no prestarted vms can run. VmPoolMonitor checks if there are prestarted vms
+    missing every 'VmPoolMonitorIntervalInMinutes', if so it attempt to start
+    the correct amount of vms. If there are no available vms to start in the
+    pool it should produce the correct message.
+    This function checks that the two messages are produced one after the other
+    for the specific vm_pool_id.
+
+    :param vmpool: Name of vm pool
+    :type vmpool: str
+    :param prestarted_vms: Amount of prestarted vms in the pool
+    :type prestarted_vms: int
+    :raises: VmPoolException
+    """
+    engine_executor = config.ENGINE.host.executor()
+    vmpool_id = ll_vmpools.UTIL.find(vmpool).get_id()
+    logger.info("vm pool ID is: %s", vmpool_id)
+    no_more_vms_cmd = [
+        "grep", "-i", config.NO_AVAILABLE_VMS_MSG, config.ENGINE_LOG, "|",
+        "grep", "-o", config.TIME_PATTERN, "|", "tail", "-1"
+    ]
+    missing_prestarted_cmd = [
+        "grep", "-i",
+        config.MISSING_PRESTARTED_MSG % (vmpool_id, prestarted_vms),
+        config.ENGINE_LOG, "|", "grep", "-o", config.TIME_PATTERN, "|", "tail",
+        "-1"
+    ]
+    sampler = timeout_api.TimeoutingSampler(
+        config.PRESTARTED_VMS_TIMEOUT, config.VM_POOL_ACTION_SLEEP,
+        engine_executor.run_cmd, no_more_vms_cmd
+    )
+    try:
+        logger.info("running cmd: %s", no_more_vms_cmd)
+        for rc_1, out_1, error_1 in sampler:
+            if not out_1 == '':
+                logger.info("running cmd: %s", missing_prestarted_cmd)
+                rc_2, out_2, error_2 = engine_executor.run_cmd(
+                    missing_prestarted_cmd
+                )
+                delta = (
+                    datetime.strptime(out_2.strip(), "%H:%M") -
+                    datetime.strptime(out_1.strip(), "%H:%M")
+                )
+                if delta.seconds <= 60:
+                    break
+    except timeout_api.TimeoutExpiredError:
+        raise exceptions.VmPoolException(
+            "Failed to verify that VmPoolMonitor finds no available vms to"
+            "to prestart in pool: %s " % vmpool
+        )
+
+
+def set_vm_pool_monitor_interval(interval):
+    """
+    Sets a value for 'VmPoolMonitorIntervalInMinutes' parameter via
+    engine-config (value is in minutes).
+
+    :param interval: VmPoolMonitorIntervalInMinutes value
+    :type interval: int
+    :raises: RHEVMEntityException
+    """
+    logger.info(
+        "setting 'VmPoolMonitorIntervalInMinutes' parameter to %d "
+        "via engine-config", interval
+    )
+    param = ["VmPoolMonitorIntervalInMinutes=%d" % interval]
+    if not test_utils.set_engine_properties(config.ENGINE, param):
+        raise exceptions.RHEVMEntityException(
+            "Failed to set value of parameter: VmPoolMonitorIntervalInMinutes "
+            "to %d via engine-config" % interval
+        )
+
+
+def get_vm_pool_monitor_interval():
+    """
+    Gets the value for 'VmPoolMonitorIntervalInMinutes' parameter via
+    engine-config (value is in minutes).
+
+    :return: value of param VmPoolMonitorIntervalInMinutes
+    :rtype: int
+    """
+    logger.info(
+        "Get 'VmPoolMonitorIntervalInMinutes' parameter value "
+        "via engine-config"
+    )
+    param = ["VmPoolMonitorIntervalInMinutes"]
+    value, version = test_utils.get_engine_properties(
+        config.ENGINE.host, param
+    )
+    if value is None:
+        logger.error(
+            "Failed to get value of parameter: VmPoolMonitorIntervalInMinutes "
+            "via engine-config"
+        )
+    return value
