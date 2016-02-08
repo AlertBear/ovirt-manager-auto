@@ -744,7 +744,6 @@ class TestSanity09(TestSanityCaseBase):
         mtu_dict = {
             "mtu": mtu
         }
-
         network_helper.call_function_and_wait_for_sn(
             func=ll_networks.updateNetwork, content=self.net, positive=True,
             network=self.net, mtu=mtu

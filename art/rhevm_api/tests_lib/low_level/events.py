@@ -148,7 +148,8 @@ def find_event(last_event, event_code, content):
     :type event_code: int
     :param content: content to search in description
     :type content: str
-    :return: True if event was found otherwise False
+    :return: True if event with event_code and content was found otherwise
+        False
     :rtype: bool
     """
     if not last_event:
@@ -165,10 +166,9 @@ def find_event(last_event, event_code, content):
     except IndexError:
         return False
 
-    if last_event:
-        if int(event_id) <= last_event:
-            logger.info("No new events since %s", last_event)
-            return False
+    if int(event_id) <= last_event:
+        logger.info("No new events since %s", last_event)
+        return False
 
     if content in event_description:
         logger.info(

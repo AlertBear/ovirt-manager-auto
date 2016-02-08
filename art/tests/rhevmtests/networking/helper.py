@@ -659,20 +659,20 @@ def send_icmp_sampler(
     logger.info("Traffic from %s to %s succeed", host_resource.ip, dst)
 
 
-def wait_for_sn(content):
+def wait_for_sn(content, last_event):
     """
     Wait for setupNetworks call to finish by checking events
 
     :param content: String to search in event description
     :type content: str
-    :return:
+    :param last_event: Event id to search from
+    :type last_event: int
+    :raise: NetworkException
     """
-    last_event = ll_events.get_last_event(APPLY_NETWORK_CHANGES_EVENT_CODE)
-    res = ll_events.find_event_sampler(
+    if not ll_events.find_event_sampler(
         last_event=last_event, event_code=APPLY_NETWORK_CHANGES_EVENT_CODE,
         content=content
-    )
-    if not res:
+    ):
         raise conf.NET_EXCEPTION()
 
 
@@ -689,11 +689,15 @@ def call_function_and_wait_for_sn(func, content, **func_kwargs):
     :type func_kwargs: dict
     :raise: conf.NET_EXCEPTION
     """
+    last_event = ll_events.get_last_event(APPLY_NETWORK_CHANGES_EVENT_CODE)
+    if not last_event:
+        last_event = 1
+
     if not func(**func_kwargs):
         raise conf.NET_EXCEPTION(
             "Failed to call %s with %s" % (func.__name__, func_kwargs)
         )
-    wait_for_sn(content=content)
+    wait_for_sn(content=content, last_event=last_event)
 
 
 if __name__ == "__main__":
