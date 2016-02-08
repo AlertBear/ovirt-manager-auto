@@ -7,10 +7,11 @@ import config
 import helpers
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
+    jobs as ll_jobs,
     storagedomains as ll_sd,
     vms as ll_vms,
 )
-import art.test_handler.exceptions as exceptions
+from art.test_handler import exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, StorageTest as TestCase
 import rhevmtests.storage.helpers as storage_helpers
@@ -29,7 +30,6 @@ class VmWithOs(TestCase):
     __test__ = False
     polarion_test_case = None
     vm_name = None
-    vm_with_virtio_scsi_disabled = False
     vm_initial_disks = list()
 
     @classmethod
@@ -49,22 +49,6 @@ class VmWithOs(TestCase):
         cls.vm_initial_disks = [d.get_id() for d in ll_vms.getVmDisks(
             cls.vm_name)]
 
-        logger.info(
-            "Return VM object for current VM which will be checked for "
-            "VirtIO-SCSI Enabled configuration"
-        )
-        vm = ll_vms.get_vm_obj(cls.vm_name, all_content=True)
-        is_virtio_scsi_enabled = vm.get_virtio_scsi().get_enabled()
-        if not is_virtio_scsi_enabled:
-            # Update global list, appending VM that had its VirtIO-SCSI
-            # Enabled set to False, this will be reverted in teardown_class
-            cls.vm_with_virtio_scsi_disabled = True
-            if not ll_vms.updateVm(True, cls.vm_name, virtio_scsi=True):
-                raise exceptions.VMException(
-                    "Failed to set VirtIO-SCSI Enabled flag to True on VM "
-                    "'%s'" % cls.vm_name
-                )
-
         cls.storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, cls.storage
         )[0]
@@ -82,12 +66,6 @@ class VmWithOs(TestCase):
                 "Restore configuration to any VM that had its VirtIO-SCSI "
                 "Enabled set to False before the start of the test run"
             )
-            if cls.vm_with_virtio_scsi_disabled:
-                if not ll_vms.updateVm(True, cls.vm_name, virtio_scsi=False):
-                    raise exceptions.VMException(
-                        "Failed to set VirtIO-SCSI Enabled flag to False on "
-                        "VM '%s'" % cls.vm_name
-                    )
 
     def setUp(self):
         """ Start VM for test """
@@ -108,6 +86,7 @@ class VmWithOs(TestCase):
                     logger.error(
                         "Deleting disk with ID '%s' failed", disk.get_id()
                     )
+        ll_jobs.wait_for_jobs(config.JOB_REMOVE_DISK)
         self.teardown_exception()
 
 
@@ -219,20 +198,10 @@ class TestCase4937(VmWithAnotherDiskWhileStatus):
         for permutation in DISK_PERMUTATIONS:
             logger.info(
                 "Adding disk %s %s %s", permutation['interface'],
-                permutation['sparse'], permutation['disk_format'])
+                permutation['sparse'], permutation['format'])
             self.attach_new_disk_while_status(
                 config.VM_SUSPEND,
                 config.VM_SUSPENDED,
                 activate_expected_status=False,
                 **permutation
             )
-            logger.info("Powering on vm %s", self.vm_name)
-            # Wait for vm's ip to make sure the vm is in full restored state
-            # before adding a new disk
-            if not ll_vms.startVm(True, self.vm_name, wait_for_ip=True):
-                raise exceptions.VMException(
-                    "VM '%s' couldn't be powered on" % self.vm_name
-                )
-
-        logger.info("Starting vm %s", self.vm_name)
-        assert ll_vms.startVm(True, self.vm_name, config.VM_UP)

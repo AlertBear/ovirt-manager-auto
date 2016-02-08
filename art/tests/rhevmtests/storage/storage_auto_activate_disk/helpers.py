@@ -4,7 +4,10 @@ Collection of helper functions for auto activate disk tests
 import logging
 
 import config
-from art.rhevm_api.tests_lib.low_level import disks, vms
+from art.rhevm_api.tests_lib.low_level import (
+    disks as ll_disks,
+    vms as ll_vms,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +37,10 @@ def attach_new_disk(
         "storagedomain": storage_domain
     }
 
-    assert vms.addDisk(True, vm_name, ADDITIONAL_DISK_SIZE, **disk_args)
+    assert ll_vms.addDisk(True, vm_name, ADDITIONAL_DISK_SIZE, **disk_args)
+    ll_disks.wait_for_disks_status(disk_args["alias"])
 
-    disk_obj = disks.getVmDisk(vm_name, disk_alias)
+    disk_obj = ll_disks.getVmDisk(vm_name, disk_alias)
     logger.info(
         "Disk '%s' has status of '%s'", disk_alias, disk_obj.get_active()
     )
