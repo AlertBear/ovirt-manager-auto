@@ -488,7 +488,6 @@ JOB_ADD_DISK = ENUMS['job_add_disk']
 JOB_IMPORT_IMAGE = ENUMS['job_import_repo_image']
 JOB_LIVE_MIGRATE_DISK = ENUMS['job_live_migrate_disk']
 JOB_MOVE_COPY_DISK = ENUMS['job_move_or_copy_disk']
-JOB_MOVE_DISK = ENUMS['job_move_disk']
 JOB_REGISTER_DISK = ENUMS['job_register_disk']
 JOB_REMOVE_DISK = ENUMS['job_remove_disk']
 # Snapshot section
@@ -503,8 +502,8 @@ JOB_DETACH_DOMAIN = ENUMS['job_detach_storage_domain']
 JOB_REMOVE_DOMAIN = ENUMS['job_remove_storage_domain']
 # Template section
 JOB_ADD_VM_FROM_TEMPLATE = ENUMS['job_add_vm_from_template']
-JOB_IMPORT_TEMPLATE = ENUMS['job_import_template']
-JOB_REMOVE_TEMPLATE = ENUMS['job_remove_template']
+JOB_IMPORT_TEMPLATE = ENUMS['job_import_vm_template']
+JOB_REMOVE_TEMPLATE = ENUMS['job_remove_vm_template']
 # VM section
 JOB_IMPORT_VM = ENUMS['job_import_vm']
 JOB_REMOVE_VM = ENUMS['job_remove_vm']
