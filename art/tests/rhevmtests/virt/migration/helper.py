@@ -25,6 +25,7 @@ import art.rhevm_api.tests_lib.low_level.clusters as ll_cluster
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.templates as ll_template
 import art.rhevm_api.tests_lib.high_level.datacenters as hl_data_center
+import rhevmtests.sla.scheduler_tests.helpers as sla_helper
 
 logger = logging.getLogger("Virt_Network_Migration_Helper")
 
@@ -160,6 +161,11 @@ def set_host_status(activate=False):
     :type activate: bool
     :raise: exceptions.NetworkException
     """
+    sla_helper.choose_host_as_spm(
+        host_name=config.HOSTS[1],
+        data_center=config.DC_NAME[0],
+        storage_domain=config.STORAGE_NAME[0]
+    )
     host_state = "active" if activate else "maintenance"
     func = "activateHost" if activate else "deactivateHost"
     call_func = getattr(hosts, func)
