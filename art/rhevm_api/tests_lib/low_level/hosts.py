@@ -68,7 +68,6 @@ PmProxies = getDS('PmProxies')
 Agent = getDS('Agent')
 Agents = getDS('Agents')
 Tag = getDS('Tag')
-StorageManager = getDS('StorageManager')
 
 SED = '/bin/sed'
 SERVICE = '/sbin/service'
@@ -402,10 +401,7 @@ def updateHost(positive, host, **kwargs):
 
     if 'storage_manager_priority' in kwargs:
         new_priority = kwargs.pop('storage_manager_priority')
-        sm = StorageManager(new_priority,
-                            host_obj.storage_manager.get_valueOf_())
-
-        host_upd.set_storage_manager(sm)
+        host_upd.set_spm(data_st.SPM(new_priority))
 
     if 'pm' in kwargs:
         pm_address = kwargs.get('pm_address')
