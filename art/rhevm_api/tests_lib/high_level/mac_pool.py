@@ -17,11 +17,14 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
-import art.rhevm_api.utils.test_utils as utils
+import logging
 from utilities.utils import MACRange
+import art.rhevm_api.utils.test_utils as utils
 from art.test_handler.settings import ART_CONFIG
+import art.rhevm_api.tests_lib.low_level.general as ll_general
+import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
 
+logger = logging.getLogger(__name__)
 
 DEFAULT_MAC_POOL = 'Default'
 
@@ -37,15 +40,23 @@ def remove_ranges_from_mac_pool(mac_pool_name, range_list):
     :return: True if remove of range succeeded, False otherwise
     :rtype: bool
     """
+    log_info, log_error = ll_general.get_log_msg(
+        action="remove", obj_type="MAC pool range(s)", obj_name=mac_pool_name,
+        range_list=range_list
+    )
     mac_pool_obj = ll_mac_pool.get_mac_pool(mac_pool_name)
     new_range_list = ll_mac_pool.get_mac_range_values(mac_pool_obj)
     for start, end in range_list:
         if ll_mac_pool.get_mac_pool_range_obj(mac_pool_obj, start, end):
             new_range_list.remove((start, end))
     new_mac_pool_obj = ll_mac_pool.prepare_macpool_obj(ranges=new_range_list)
-    return ll_mac_pool.MACPOOL_API.update(
+    logger.info(log_info)
+    res = ll_mac_pool.MACPOOL_API.update(
         mac_pool_obj, new_mac_pool_obj, True
     )[1]
+    if not res:
+        logger.error(log_error)
+    return res
 
 
 def add_ranges_to_mac_pool(mac_pool_name, range_list):
@@ -62,9 +73,17 @@ def add_ranges_to_mac_pool(mac_pool_name, range_list):
     mac_pool_obj = ll_mac_pool.get_mac_pool(mac_pool_name)
     exist_ranges = ll_mac_pool.get_mac_range_values(mac_pool_obj)
     exist_ranges.extend(range_list)
-    return ll_mac_pool.update_mac_pool(
+    log_info, log_error = ll_general.get_log_msg(
+        action="add", obj_type="MAC pool range(s)", obj_name=mac_pool_name,
+        range_list=range_list
+    )
+    logger.info(log_info)
+    res = ll_mac_pool.update_mac_pool(
         mac_pool_name=mac_pool_name, ranges=exist_ranges
     )
+    if not res:
+        logger.error(log_error)
+    return res
 
 
 def update_ranges_on_mac_pool(mac_pool_name, range_dict):

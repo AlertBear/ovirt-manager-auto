@@ -24,16 +24,13 @@ def run_vm_on_host():
     if not net_help.run_vm_once_specific_host(
         vm=conf.VM_0, host=conf.HOST_NAME_0, wait_for_up_status=True
     ):
-        raise conf.NET_EXCEPTION(
-            "Cannot start VM %s on host %s" % (conf.VM_0, conf.HOST_NAME_0)
-        )
+        raise conf.NET_EXCEPTION()
 
 
 def stop_vm():
     """
     Stop first VM
     """
-    logger.info("Stop VM %s", conf.VM_0)
     if not ll_vms.stopVm(positive=True, vm=conf.VM_0):
         logger.error("Failed to stop VM %s", conf.VM_0)
 
@@ -80,13 +77,5 @@ def send_setup_networks(sn_dict):
     :type sn_dict: dict
     :raise: conf.NET_EXCEPTION
     """
-    logger.info(
-        "Perform SetupNetwork update action on %s", conf.HOST_NAME_0
-    )
-    if not hl_host_network.setup_networks(
-        conf.HOST_NAME_0, **sn_dict
-    ):
-        raise conf.NET_EXCEPTION(
-            "Update SetupNetwork action with %s failed on %s" %
-            (sn_dict, conf.HOST_NAME_0)
-        )
+    if not hl_host_network.setup_networks(conf.HOST_NAME_0, **sn_dict):
+        raise conf.NET_EXCEPTION()

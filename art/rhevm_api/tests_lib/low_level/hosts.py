@@ -20,7 +20,6 @@
 import time
 import shlex
 import re
-import tempfile
 import logging
 
 from utilities.utils import getIpAddressByHostName, getHostName
@@ -82,9 +81,13 @@ TIMEOUT = 120
 TIMEOUT_NON_RESPONSIVE_HOST = 360
 FIND_QEMU = 'ps aux |grep qemu | grep -e "-name %s"'
 
-virsh_cmd = ['nwfilter-dumpxml', 'vdsm-no-mac-spoofing']
-search_for = ["<filterref filter='no-mac-spoofing'/>",
-              "<filterref filter='no-arp-mac-spoofing'/>"]
+VIRSH_CMD = ["virsh", "-r"]
+VDSM_MAC_SPOOFING = "vdsm-no-mac-spoofing"
+NWF_XML_FILE = RHEVM_UTILS["NWFILTER_DUMPXML"]
+MAC_SPOOF_LINES = [
+    "<filterref filter='no-mac-spoofing'/>",
+    "<filterref filter='no-arp-mac-spoofing'/>"
+]
 logger = logging.getLogger(__name__)
 
 
@@ -195,23 +198,30 @@ def waitForOvirtAppearance(positive, host, attempts=10, interval=3):
     return False
 
 
-@is_action()
-def waitForHostsStates(positive, names, states='up',
-                       timeout=HOST_STATE_TIMEOUT,
-                       stop_states=[ENUMS['host_state_install_failed']]):
+def waitForHostsStates(
+    positive, names, states='up', timeout=HOST_STATE_TIMEOUT,
+    stop_states=[ENUMS['host_state_install_failed']]
+):
     """
     Wait until all of the hosts identified by names exist and have the desired
     status declared in states.
-    Parameters:
-        * names - A comma separated names of the hosts with status to wait for.
-        * states - A state of the hosts to wait for.
-    Author: talayan
+
+    Args:
+        positive (bool): Expected result.
+        timeout (int): Timeout for sampler.
+        stop_states (str): Host state that the function will exit on.
+        names (str): A comma separated names of the hosts.
+        states (str): A state of the hosts to wait for.
+
+    Returns:
+        bool: True if hosts are in states, False otherwise.
     """
 
     if isinstance(names, basestring):
         list_names = split(names)
     else:
         list_names = names[:]
+
     [HOST_API.find(host) for host in list_names]
     number_of_hosts = len(list_names)
 
@@ -222,18 +232,28 @@ def waitForHostsStates(positive, names, states='up',
             ok = 0
             for host in sample:
                 if host.name in names:
+                    logger.info(
+                        "Check if host %s has state %s", host.name, states
+                    )
                     if host.status.state in stop_states:
-                        HOST_API.logger.error("Host state: %s",
-                                              host.status.state)
+                        logger.error(
+                            "Host %s state: %s", host.name, host.status.state
+                        )
                         return False
+
                     elif host.status.state == states:
+                        logger.info(
+                            "Host %s has state %s", host.name, states
+                        )
                         ok += 1
+
                     if ok == number_of_hosts:
                         return True
 
     except APITimeout:
-        HOST_API.logger.error("Timeout waiting for all hosts in state %s",
-                              states)
+        HOST_API.logger.error(
+            "Timeout waiting for all hosts in state %s", states
+        )
         return False
 
 
@@ -1746,77 +1766,92 @@ def waitForHostPmOperation(host, engine):
 
 
 @is_action()
-def checkNetworkFiltering(positive, host, user, passwd):
+def check_network_filtering(positive, vds_resource):
     """
-    Description: Check that network filtering is enabled via VDSM
-                 This function is also described in tcms_plan 6955
-                 test_case 198901
-    Author: awinter
-    Parameters:
-      * host - ip or fqdn
-      * user - user name for the host
-      * passwd - password for the user
-    return: True if network filtering is enabled, False otherwise
-    """
+    Check that network filtering is enabled via VDSM
 
-    host_obj = machine.Machine(host, user, passwd).util(machine.LINUX)
-    if host_obj.runVirshCmd(['nwfilter-list'])[1].count(
-            "vdsm-no-mac-spoofing") != 1:
-        HOST_API.logger.error("nwfilter-list does not have"
-                              " 'vdsm-no-mac-spoofing'")
+    Args:
+        positive (bool): Expected status
+        vds_resource (resource.VDS): VDS resource
+
+    Returns:
+        bool: True if network filtering is enabled, False otherwise
+    """
+    log_txt = "not found" if positive else "found"
+    cmd = VIRSH_CMD[:]
+    cmd.extend(["nwfilter-list"])
+    rc, out, _ = vds_resource.run_command(cmd)
+    if rc:
+        return False
+
+    if VDSM_MAC_SPOOFING not in out:
+        logger.error("%s %s in virsh", VDSM_MAC_SPOOFING, log_txt)
         return not positive
-    if not host_obj.isFileExists(RHEVM_UTILS['NWFILTER_DUMPXML']):
-        HOST_API.logger.error("vdsm-no-mac-spoofing.xml file not found")
+
+    if not vds_resource.fs.exists(NWF_XML_FILE):
+        logger.error("%s.xml file %s", VDSM_MAC_SPOOFING, log_txt)
         return not positive
-    if not checkNWFilterVirsh(host_obj):
+
+    if not check_nwfilter_virsh(vds_resource):
         return not positive
     return positive
 
 
-def checkNWFilterVirsh(host_obj):
+def check_nwfilter_virsh(vds_resource):
     """
-    Description: Checking that NWfilter is enable in dumpxml and in virsh
-    Author: awinter
-    Parameters:
-      * host_obj - the host's object
-    return: True if all the elements were found, False otherwise
-    """
-    not_found = -1
+    Checking that NWfilter is enable in dumpxml and in virsh
 
-    xml_file = tempfile.NamedTemporaryFile()
-    if not host_obj.copyFrom(RHEVM_UTILS['NWFILTER_DUMPXML'], xml_file.name):
-        HOST_API.logger.error("Coping failed")
+    Args:
+        vds_resource (resource.VDS): VDS resource
+
+    Returns:
+        bool: True if all the elements were found, False otherwise
+    """
+    cmd = VIRSH_CMD[:]
+    cmd.extend(["nwfilter-dumpxml", VDSM_MAC_SPOOFING])
+    rc1, out1, _ = vds_resource.run_command(["cat", NWF_XML_FILE])
+    rc2, out2, _ = vds_resource.run_command(cmd)
+    logger.info(
+        "Compare %s with running configuration on virsh", NWF_XML_FILE
+    )
+    if rc1 or rc2:
         return False
-    with xml_file as f:
-        tmp_file = f.read().strip()
-        for string in search_for:
-            if (tmp_file.find(string) == not_found) or \
-                    (host_obj.runVirshCmd(virsh_cmd)[1].count(string) != 1):
-                HOST_API.logger.error("nwfilter tags weren't found in file")
-                return False
+
+    if VDSM_MAC_SPOOFING not in (out1 and out2):
+        logger.error(
+            "%s and virsh running configuration are not equal", NWF_XML_FILE
+        )
+        return False
     return True
 
 
 @is_action()
-def checkNetworkFilteringDumpxml(positive, host, user, passwd, vm, nics):
+def check_network_filtering_dumpxml(positive, vds_resource, vm, nics):
     """
-    Description: Check that network filtering is enabled via dumpxml
-                 This function is also described in tcms_plan 6955
-                 test_case 198914
-    Author: awinter
-    Parameters:
-      * host - ip or fqdn
-      * user - user name for the host
-      * passwd - password for the user
-      * vm - name of the vm
-      * nics - number nics for vm in dumpxml
-    return: True if network filtering is enabled, False otherwise
+    Check that network filtering is enabled via dumpxml
+
+    Args:
+        positive (bool): Expected status
+        vds_resource (resource.VDS): VDS resource
+        vm (str): Name of the vm
+        nics (str): Number of NICs for vm in dumpxml
+
+    Returns:
+        bool: True if network filtering is enabled, False otherwise
     """
-    host_obj = machine.Machine(host, user, passwd).util(machine.LINUX)
-    res, out = host_obj.runVirshCmd(['dumpxml', '%s' % vm])
-    HOST_API.logger.debug("Output of dumpxml: %s", out)
-    if not out.count(
-            "<filterref filter='vdsm-no-mac-spoofing'/>") == int(nics):
+    cmd = VIRSH_CMD[:]
+    cmd.extend(["dumpxml", vm])
+    log_txt = "all" if positive else "none of"
+    rc, out, _ = vds_resource.run_command(cmd)
+    logger.info(
+        "Check that %s VM NICs have network filter enabled on VM %s",
+        log_txt, vm
+    )
+    if out.count(
+            "<filterref filter='vdsm-no-mac-spoofing'/>") != int(nics):
+        logger.error(
+            "%s VM NICs have network filter enabled on VM %s", log_txt, vm
+        )
         return not positive
     return positive
 
@@ -1824,7 +1859,7 @@ def checkNetworkFilteringDumpxml(positive, host, user, passwd, vm, nics):
 @is_action()
 def check_network_filtering_ebtables(host_obj, vm_macs):
     """
-    Description: Check that network filtering is enabled via ebtables
+    Check that network filtering is enabled via ebtables
 
     :param host_obj: Host object
     :type host_obj: resources.VDS object
@@ -1833,21 +1868,18 @@ def check_network_filtering_ebtables(host_obj, vm_macs):
     :return: True if network filtering is enabled, False otherwise
     :rtype: bool
     """
-    host_exec = host_obj.executor()
     cmd = "ebtables -t nat -L"
-    rc, output, err = host_exec.run_cmd(shlex.split(cmd))
+    rc, output, err = host_obj.run_command(shlex.split(cmd))
     if rc:
-        HOST_API.logger.error("Failed to run command %s", cmd)
         return False
+
     for mac in vm_macs:
         vm_mac = ":".join(
             [i[1] if i.startswith('0') else i for i in mac.split(':')]
         )
         num_macs_ebtable = output.count(vm_mac)
         if num_macs_ebtable != 2:
-            HOST_API.logger.info(
-                "%s MACs found instead of 2", num_macs_ebtable
-            )
+            logger.info("%s MACs found instead of 2", num_macs_ebtable)
             return False
     return True
 

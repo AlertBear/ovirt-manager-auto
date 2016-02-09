@@ -30,6 +30,8 @@ def create_mac_pool(
     :type mac_pool_ranges: list
     :param positive: Expected result
     :type positive: bool
+    :param allow_duplicates: Allow to use duplicate MACs from the pool
+    :type allow_duplicates: bool
     :raise: NetworkException
     """
     log = "Cannot" if positive else "Can"

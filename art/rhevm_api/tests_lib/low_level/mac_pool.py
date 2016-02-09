@@ -17,10 +17,13 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
-import art.rhevm_api.utils.test_utils as utils
-import art.rhevm_api.tests_lib.low_level.general as general
+import logging
 from art.core_api.apis_utils import data_st
+import art.rhevm_api.utils.test_utils as utils
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
+import art.rhevm_api.tests_lib.low_level.general as ll_general
+
+logger = logging.getLogger(__name__)
 
 MACPOOL_API = utils.get_api("mac_pool", "macpools")
 RANGES = "ranges"
@@ -90,6 +93,7 @@ def get_all_mac_pools():
     :return: list of MAC pool objects
     :rtype: list
     """
+    logger.info("Get all MAC pools from setup")
     return MACPOOL_API.get(absLink=False)
 
 
@@ -121,17 +125,23 @@ def remove_mac_pool(mac_pool_name):
 def prepare_macpool_obj(**kwargs):
     """
     Prepare MacPool object
-   :param kwargs:
-        name: type=str
-        ranges: type=list
-        description: type=str
-        allow_duplicates: type=bool
-    :return: MAC pool instance
-    :rtype: MacPool object
+
+    Args:
+        kwargs (dict): MAC pool parameters
+
+    Keyword arguments:
+        name (str): MAC pool name
+        ranges (list): List of ranges when each element in the list is a
+            tuple with (start_mac_address, end_mac_address)
+        description (str): MAC pool description
+        allow_duplicates (bool): Allow to use duplicate MACs from the pool
+
+    Returns:
+        MacPool: MAC pool object
     """
     if kwargs.get(RANGES):
         kwargs[RANGES] = prepare_ranges_obj(kwargs[RANGES])
-    mac_pool_obj = general.prepare_ds_object("MacPool", **kwargs)
+    mac_pool_obj = ll_general.prepare_ds_object("MacPool", **kwargs)
     return mac_pool_obj
 
 
@@ -175,45 +185,58 @@ def get_default_mac_pool():
     :rtype: MacPool object
     """
     mac_pool_list = get_all_mac_pools()
+    logger.info("Get default MAC pool from setup")
     return filter(lambda x: x.get_default_pool(), mac_pool_list)[0]
 
 
-def create_mac_pool(**kwargs):
+def create_mac_pool(name, ranges, **kwargs):
     """
     Creates new MAC Pool
 
-    :param kwargs:
-        name: type=str
-        ranges: type=list
-        description: type=str
-        allow_duplicates: type=bool
-    :type kwargs: dict
-    :return: True if create MAC pool succeeded, False otherwise
-    :rtype: bool
+    Args:
+        name (str): MAC pool name
+        ranges (list): List of ranges when each element in the list is a
+            tuple with (start_mac_address, end_mac_address)
+        kwargs (dict): MAC pool parameters
+
+    Keyword arguments:
+        description (str): MAC pool description
+        allow_duplicates (bool): Allow to use duplicate MACs from the pool
+
+    Returns:
+        bool: True if create MAC pool succeeded, False otherwise
     """
+    kwargs["name"] = name
+    kwargs["ranges"] = ranges
     mac_pool_obj = prepare_macpool_obj(**kwargs)
     return MACPOOL_API.create(mac_pool_obj, True)[1]
 
 
-def update_mac_pool(**kwargs):
+def update_mac_pool(mac_pool_name, **kwargs):
     """
     Update MAC Pool
 
-    :param kwargs:
-        :param mac_pool_name: current mac pool name
-        :type mac_pool_name: str
-        :param name: new mac pool name for update
-        :type name: str
-        :param ranges: list of mac ranges [(from_mac1, to_mac1), (..)]
-        :type ranges: list
-        :param description: description of the mac pool
-        :type description: str
-        :param allow_duplicates: True if allow duplicate, otherwise False
-        :type allow_duplicates: bool
-    :type kwargs: dict
-    :return: True if MAC pool was updated, False otherwise
-    :rtype: bool
+    Args:
+        mac_pool_name (str): Current mac pool name
+        kwargs (dict): MAC pool parameters
+
+    Keyword arguments:
+        param mac_pool_name (str): current mac pool name
+        name (str: new mac pool name for update
+        ranges (list): list of mac ranges [(from_mac1, to_mac1), (..)]
+        description (str): description of the mac pool
+        allow_duplicates (bool): Allow to use duplicate MACs from the pool
+
+    Returns:
+        bool: True if MAC pool was updated, False otherwise
     """
-    mac_pool_obj = get_mac_pool(kwargs.pop("mac_pool_name"))
+    log_info, log_error = ll_general.get_log_msg(
+        action="update", obj_type="MAC pool", obj_name=mac_pool_name, **kwargs
+    )
+    mac_pool_obj = get_mac_pool(mac_pool_name)
     mac_pool_obj_for_update = prepare_macpool_obj(**kwargs)
-    return MACPOOL_API.update(mac_pool_obj, mac_pool_obj_for_update, True)[1]
+    logger.info(log_info)
+    if not MACPOOL_API.update(mac_pool_obj, mac_pool_obj_for_update, True)[1]:
+        logger.error(log_error)
+        return False
+    return True

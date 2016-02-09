@@ -53,9 +53,8 @@ class TestNetworkFilterCase01(TestCase):
         Check that Network Filter is enabled by default on VDSM
         """
         logger.info("Check that Network Filter is enabled on VDSM")
-        if not ll_hosts.checkNetworkFiltering(
-                positive=True, host=config.HOSTS_IP[0],
-                user=config.HOSTS_USER, passwd=config.HOSTS_PW
+        if not ll_hosts.check_network_filtering(
+                positive=True, vds_resource=config.VDS_HOSTS[0]
         ):
             raise config.NET_EXCEPTION("Network Filter is disabled on VDSM")
 
@@ -65,9 +64,9 @@ class TestNetworkFilterCase01(TestCase):
         Check that Network Filter is enabled by default via dumpxml
         """
         logger.info("Check that Network Filter is enabled via dumpxml")
-        if not ll_hosts.checkNetworkFilteringDumpxml(
-                positive=True, host=config.HOSTS_IP[0], user=config.HOSTS_USER,
-                passwd=config.HOSTS_PW, vm=config.VM_NAME[0], nics="1"
+        if not ll_hosts.check_network_filtering_dumpxml(
+            positive=True, vds_resource=config.VDS_HOSTS[0],
+            vm=config.VM_NAME[0], nics="1"
         ):
             raise config.NET_EXCEPTION(
                 "Network Filter is disabled via dumpxml"
@@ -107,9 +106,9 @@ class TestNetworkFilterCase02(TestCase):
             "Check that Network Filter is enabled for %s via dumpxml",
             config.NIC_NAME[1]
         )
-        if not ll_hosts.checkNetworkFilteringDumpxml(
-                positive=True, host=config.HOSTS_IP[0], user=config.HOSTS_USER,
-                passwd=config.HOSTS_PW, vm=config.VM_NAME[0], nics="2"
+        if not ll_hosts.check_network_filtering_dumpxml(
+            positive=True, vds_resource=config.VDS_HOSTS[0],
+            vm=config.VM_NAME[0], nics="2"
         ):
             raise config.NET_EXCEPTION(
                 "Network Filter is disabled for %s via dumpxml" %
@@ -307,10 +306,9 @@ class TestNetworkFilterCase05(TestCase):
         Check that VM run without network filter.
         """
         logger.info("Check that Network Filter is enabled via dumpxml")
-        if not ll_hosts.checkNetworkFilteringDumpxml(
-                positive=False, host=config.HOSTS_IP[0],
-                user=config.HOSTS_USER, passwd=config.HOSTS_PW,
-                vm=config.VM_NAME[0], nics="1"
+        if not ll_hosts.check_network_filtering_dumpxml(
+            positive=False, vds_resource=config.VDS_HOSTS[0],
+            vm=config.VM_NAME[0], nics="1"
         ):
             raise config.NET_EXCEPTION("Network Filter is enabled via dumpxml")
 

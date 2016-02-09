@@ -14,19 +14,18 @@ def check_queues_from_qemu(vm, host_obj, num_queues):
     :param vm: VM name
     :type vm: str
     :param host_obj: resource.VDS host object
-    :type host_obj: object
+    :type host_obj: resources.VDS
     :param num_queues: Number of queues to check
     :type num_queues: int
     :return: True/False
     :rtype: bool
     """
     cmd = ["pgrep", "-a", "qemu-kvm"]
-    host_exec = host_obj.executor()
-    rc, out, error = host_exec.run_cmd(cmd)
+    rc, out, _ = host_obj.run_command(cmd)
     if rc:
-        logger.error("Failed to run %s. ERR: %s", cmd, error)
         return False
 
+    logger.info("Check if VM %s have number of queues == %s", vm, num_queues)
     running_vms = re.findall(r'\d+ .*qemu-kvm.*', out)
     for run_vm in running_vms:
         if re.findall(r'-name %s' % vm, run_vm):

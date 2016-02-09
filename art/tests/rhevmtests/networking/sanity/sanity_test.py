@@ -1047,9 +1047,8 @@ class TestSanity13(NetworkTest):
         Check that Network Filter is enabled by default on VDSM
         """
         logger.info("Check that Network Filter is enabled on VDSM")
-        if not ll_hosts.checkNetworkFiltering(
-            positive=True, host=self.host_resource.ip, user=conf.HOSTS_USER,
-            passwd=conf.HOSTS_PW
+        if not ll_hosts.check_network_filtering(
+            positive=True, vds_resource=self.host_resource
         ):
             raise conf.NET_EXCEPTION("Network Filter is disabled on VDSM")
 
@@ -1059,9 +1058,9 @@ class TestSanity13(NetworkTest):
         Check that Network Filter is enabled by default via dumpxml
         """
         logger.info("Check that Network Filter is enabled via dumpxml")
-        if not ll_hosts.checkNetworkFilteringDumpxml(
-            positive=True, host=self.host_resource.ip, user=conf.HOSTS_USER,
-            passwd=conf.HOSTS_PW, vm=self.vm, nics="1"
+        if not ll_hosts.check_network_filtering_dumpxml(
+            positive=True, vds_resource=self.host_resource, vm=self.vm,
+            nics="1"
         ):
             raise conf.NET_EXCEPTION("Network Filter is disabled via dumpxml")
 

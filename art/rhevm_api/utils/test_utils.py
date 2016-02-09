@@ -1018,6 +1018,9 @@ def check_spoofing_filter_rule_by_ver(engine_resource, target_version='3.2'):
     :return: True for version >= 3.2 and False for <=3.1
     :rtype: bool
     """
+    logger.info(
+        "Check if MAC spoofing is enabled for version %s", target_version
+    )
     executor = engine_resource.host.executor()
     cmd = ["engine-config", "-g", "EnableMACAntiSpoofingFilterRules"]
     rc, out, err = executor.run_cmd(cmd)
