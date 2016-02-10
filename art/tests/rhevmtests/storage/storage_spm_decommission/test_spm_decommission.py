@@ -30,6 +30,8 @@ logger = logging.getLogger(__name__)
 TIMEOUT_SD_OPERATION = 300
 
 
+# TODO: Enable once this test plan is stabilized
+@attr(**{'extra_reqs': {'convert_to_ge': True}})
 @attr(tier=2)
 class ActivateDeactivate(StorageTest):
     """
@@ -125,6 +127,8 @@ class ActivateDeactivateMixedStorageTypes(ActivateDeactivate):
         )[0]
 
 
+# TODO: Enable once this test plan is stabilized
+@attr(**{'extra_reqs': {'convert_to_ge': True}})
 @attr(tier=2)
 class UpgradeBaseClass(StorageTest):
     """
