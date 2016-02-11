@@ -274,7 +274,7 @@ def createAndAttachNetworkSN(
             else:
                 rc, out = ll_hosts.genSNNic(
                     nic=nic, network=net, slaves=slaves,
-                    mode=net_param.get("mode", 1),
+                    mode=net_param.get("mode", 4),
                     boot_protocol=net_param.get("bootproto", None),
                     address=address_list.pop(0) if address_list else None,
                     netmask=netmask_list.pop(0) if netmask_list else None,
