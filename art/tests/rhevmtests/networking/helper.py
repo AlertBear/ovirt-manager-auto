@@ -696,6 +696,9 @@ def call_function_and_wait_for_sn(func, content, matches=1, **func_kwargs):
     :raise: NetworkException
     """
     last_event = ll_events.get_last_event(APPLY_NETWORK_CHANGES_EVENT_CODE)
+    if not last_event:
+        last_event = 1
+
     if not func(**func_kwargs):
         raise conf.NET_EXCEPTION(
             "Failed to call %s with %s" % (func.__name__, func_kwargs)
