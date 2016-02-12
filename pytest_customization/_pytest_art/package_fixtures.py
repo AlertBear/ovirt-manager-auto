@@ -93,6 +93,7 @@ class Entry(object):
 
         if self._setup_exc is not None:
             raise self._setup_exc
+        pytest.config.hook.pytest_package_setup(entry=self)
         try:
             self._setup()
         except Exception as ex:
@@ -140,6 +141,8 @@ class Entry(object):
         except Exception as ex:
             self._teardown_exc = ex
             raise
+        finally:
+            pytest.config.hook.pytest_package_teardown(entry=self)
         self.teardown_done = True
 
     def __cmp__(self, o):
