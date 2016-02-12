@@ -41,7 +41,6 @@ ENABLED = 'enabled'
 VITAL = 'vital'
 DEFAULT_VITAL = True
 
-MODEL_RE = re.compile(r'model_[A-Za-z_1-9]+')
 MIN_MODEL = {'Intel': "model_Conroe", 'AMD': "model_Opteron_G1",
              'IBM POWER': 'model_POWER7_v2.0'}
 
@@ -67,8 +66,14 @@ class AutoCpuNameResolution(Component):
 
         m = Machine(name, 'root', passwd).util(LINUX)
         logger.debug("Running vdsClient on {0}".format(name))
+        cmd_caps = [
+            'vdsClient', '-s', '0', 'getVdsCaps', '|',
+            'grep', 'cpuFlags', '|',
+            'tr', '-d', "' \t", '|',
+            'cut', '-d=', '-f2',
+        ]
         with m.ssh as ssh:
-            rc, out, err = ssh.runCmd(['vdsClient', '-s', '0', 'getVdsCaps'])
+            rc, out, err = ssh.runCmd(cmd_caps)
             out = out.strip()
             err = err.strip()
             if rc or not out:
@@ -77,7 +82,7 @@ class AutoCpuNameResolution(Component):
                                      'Error message: {1} '
                                      'vdsClient output: {2}'.format(name, err,
                                                                     out))
-        host_cpu_models = MODEL_RE.findall(out)
+        host_cpu_models = out.split(',')
         if not host_cpu_models:
             raise CpuPluginError('Failed to get CPU models of {0}'
                                  ' vdsClient output: {1}'.format(name, out))
