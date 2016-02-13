@@ -275,3 +275,6 @@ clone_vm_args = {
     'placement_affinity': None,
     'highly_available': None,
 }
+
+GLUSTER_REPLICA_PATH = PARAMETERS.get('gluster_replica_path', None)
+GLUSTER_REPLICA_SERVERS= get_list(PARAMETERS, 'gluster_replica_servers')

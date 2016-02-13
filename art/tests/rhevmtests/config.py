@@ -402,6 +402,7 @@ DISK_INTERFACE = ENUMS['interface_virtio']
 # Storage Domain states     DISK_INTERFACE = ENUMS['interface_virtio']
 SD_ACTIVE = ENUMS['storage_domain_state_active']
 SD_MAINTENANCE = ENUMS['storage_domain_state_maintenance']
+SD_INACTIVE = ENUMS['storage_domain_state_inactive']
 
 # DC states
 DATA_CENTER_PROBLEMATIC = ENUMS['data_center_state_problematic']

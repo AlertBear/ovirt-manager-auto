@@ -18,7 +18,7 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 import re
 
-from art.core_api.apis_exceptions import EntityNotFound
+from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 from art.core_api.apis_utils import getDS, TimeoutingSampler
 from art.core_api.validator import compareCollectionSize
 from art.rhevm_api.tests_lib.low_level.disks import (
@@ -2139,3 +2139,39 @@ def get_storagedomain_objects():
     :rtype: list
     """
     return util.get(absLink=False)
+
+
+def wait_storage_domain_status_is_unchanged(
+        data_center_name, storage_domain_name, status,
+        timeout=30, sleep=5
+):
+    """
+    Waits for timeout amount of time and checks that the storage domain
+    status doesn't change
+
+    :param data_center_name: Name of data center
+    :type data_center_name: str
+    :param storage_domain_name: Name of the storage domain
+    :type storage_domain_name: str
+    :param status: Storage domain status to check
+    :type status: str
+    :param timeout: Maximum timeout [sec]
+    :type timeout: int
+    :param sleep: Sleep time [sec]
+    :type sleep: int
+    :return: True if storage domain status doesn't change, False otherwise
+    :rtype: bool
+    """
+    try:
+        for sd_object in TimeoutingSampler(
+            timeout, sleep, getDCStorage, data_center_name, storage_domain_name
+        ):
+            current_status = sd_object.get_status().get_state()
+            if current_status != status:
+                util.logger.error(
+                    "Storage domain %s changed to status %s",
+                    storage_domain_name, current_status
+                )
+                return False
+    except APITimeout:
+        return True
