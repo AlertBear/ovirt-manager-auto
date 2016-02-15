@@ -9,10 +9,11 @@ import helper
 import logging
 import config as conf
 import rhevmtests.helpers as global_helper
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.sriov as ll_sriov
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 
 logger = logging.getLogger("SR_IOV_Cases")
@@ -273,3 +274,89 @@ class TestSriovVm01(helper.TestSriovBase):
 
         cls.pf_obj.set_all_networks_allowed(enable=True)
         super(TestSriovVm01, cls).teardown_class()
+
+
+class TestSriovVm02(helper.TestSriovBase):
+    """
+    Test run VM with VLAN and with queues
+    """
+    __test__ = True
+    vm = conf.VM_0
+    vm_nic = conf.NIC_NAME[1]
+    net_1 = conf.VM_NETS[2][0]
+    vlan_id = conf.VLAN_IDS[2]
+    queues = conf.PROP_QUEUES[0]
+    dc = conf.DC_0
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Set number of VFs to 1
+        Update vNIC profile with queues and passthrough
+        Add vNIC to VM
+        Run VM
+        """
+        cls.pf_obj = ll_sriov.SriovNicPF(
+            conf.HOST_0_NAME, conf.HOST_0_PF_NAMES[0]
+        )
+        if not cls.pf_obj.set_number_of_vf(1):
+            raise conf.NET_EXCEPTION()
+
+        if not ll_networks.update_vnic_profile(
+            name=cls.net_1, network=cls.net_1, data_center=conf.DC_0,
+            pass_through=True, custom_properties=cls.queues
+        ):
+            raise conf.NET_EXCEPTION()
+
+        if not ll_vms.addNic(
+            positive=True, vm=cls.vm, name=cls.vm_nic, network=cls.net_1,
+            interface=conf.PASSTHROUGH_INTERFACE
+        ):
+            raise conf.NET_EXCEPTION()
+
+        if not network_helper.run_vm_once_specific_host(
+            vm=cls.vm, host=conf.HOST_0_NAME, wait_for_up_status=True
+        ):
+            raise conf.NET_EXCEPTION()
+
+    @polarion("RHEVM3-6314")
+    def test_01_vm_with_vlan(self):
+        """
+        Check that VLAN tag passed to virsh XML
+        """
+        vlan_from_xml = helper.get_vlan_id_from_vm_xml(vm=self.vm)
+        if not vlan_from_xml == self.vlan_id:
+            raise conf.NET_EXCEPTION(
+                "VLAN tag on XML is %s but should be %s" %
+                (vlan_from_xml, self.vlan_id)
+            )
+
+    @bz({"1258206": {}})
+    @polarion("RHEVM3-9445")
+    def test_02_multiple_queue_nics(self):
+        """
+        Check that queue exist in qemu process
+        """
+        # get IP of the host where VM runs
+        vm_host_ip = ll_hosts.get_host_ip_from_engine(
+            ll_vms.get_vm_host(self.vm)
+        )
+        host_obj = conf.VDS_0_HOST.get(vm_host_ip)
+        if not network_helper.check_queues_from_qemu(
+            vm=self.vm, host_obj=host_obj, num_queues=self.queues
+        ):
+            raise conf.NET_EXCEPTION()
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Stop VM
+        Remove vNIC
+        """
+        if not ll_vms.stopVm(positive=True, vm=cls.vm):
+            raise conf.NET_EXCEPTION()
+
+        if not ll_vms.removeNic(positive=True, vm=cls.vm, nic=cls.vm_nic):
+            raise conf.NET_EXCEPTION()
+
+        super(TestSriovVm02, cls).teardown_class()
