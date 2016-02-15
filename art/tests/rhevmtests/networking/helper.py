@@ -668,13 +668,13 @@ def wait_for_sn(content, last_event, matches=1):
 
     :param content: String to search in event description
     :type content: str
-    :param last_event: The last event id to check events from
-    :type: int
+    :param last_event: The last event to check events from
+    :type: Event
     :param matches: Number of matches to find in events
     :type matches: int
     :raise: NetworkException
     """
-    if not ll_events.find_event_sampler(
+    if not ll_events.find_event(
         last_event=last_event, event_code=APPLY_NETWORK_CHANGES_EVENT_CODE,
         content=content, matches=matches
     ):
@@ -697,9 +697,6 @@ def call_function_and_wait_for_sn(func, content, matches=1, **func_kwargs):
     :raise: NetworkException
     """
     last_event = ll_events.get_last_event(APPLY_NETWORK_CHANGES_EVENT_CODE)
-    if not last_event:
-        last_event = 1
-
     if not func(**func_kwargs):
         raise conf.NET_EXCEPTION(
             "Failed to call %s with %s" % (func.__name__, func_kwargs)

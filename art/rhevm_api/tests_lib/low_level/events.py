@@ -17,13 +17,14 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
+import time
 import logging
+from art.core_api import is_action
 from art.core_api import apis_utils
-from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api.utils.test_utils import get_api
+from art.core_api.apis_exceptions import APITimeout
 from art.core_api.validator import compareCollectionSize
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-from art.core_api import is_action
 
 logger = logging.getLogger(__name__)
 
@@ -137,115 +138,106 @@ def get_events_after_some_event(event_id):
     return filter(lambda x: int(x.get_id()) > int(event_id), events_obj)
 
 
-def find_event(last_event, event_code, content, matches=1):
-    """
-    Find one event or more in RHEV-M event log by event code and keywords in
-    event description. Search for the event only from last event ID.
-    Call this function only with find_event_sampler()
-
-    :param last_event: Event id to search from
-    :type last_event: int
-    :param event_code: Event code to search for
-    :type event_code: int
-    :param content: content to search in description
-    :type content: str
-    :param matches: Number of matches to find in events
-    :type matches: int
-    :return: True if number of given matches events found otherwise False
-    :rtype: bool
-    """
-    if not last_event:
-        # last_event will be None if no events with event_code occurred yet
-        logger.error("No last event of type %s found", event_code)
-        return False
-
-    logger.info("Last event ID: %s", last_event)
-    found = False
-    while matches:
-        event_id, event_description = get_first_event(code=event_code)
-        if not event_id:
-            return False
-
-        if event_id > last_event and content in event_description:
-            logger.info(
-                "Event found: [%s] %s", event_id, event_description
-            )
-            found = True
-            matches -= 1
-            last_event = event_id
-        else:
-            logger.info("No new events since %s", last_event)
-            if found:
-                continue
-            return False
-    return True
-
-
-def find_event_sampler(
-    last_event, event_code, content, timeout=SAMPLER_TIMEOUT, sleep=5,
-    matches=1
+def find_event(
+    last_event, event_code, content, matches, timeout=SAMPLER_TIMEOUT
 ):
     """
-    Run find_event function in sampler.
+    Find one event or more in RHEVM event log by event code and keywords in
+    event description. Search for the event only from last event ID.
 
-    :param last_event: Event id to search from
-    :type last_event: int
-    :param event_code: Event code to search for
-    :type event_code: int
-    :param content: String to search in description
-    :type content: str
-    :param timeout: Timeout for sampler
-    :type timeout: int
-    :param sleep: Sleep between sampler calls
-    :type sleep: int
-    :param matches: Number of matches to find in events
-    :type matches: int
-    :return: True if event was found otherwise False
-    :rtype: bool
+    Args:
+        last_event (Event): Event object to search from
+        event_code (int): Event code to search for
+        content (str): content to search in description
+        matches (int): Number of matches to find in events
+        timeout (int): Timeout to exit if number of events not found
+
+    Returns:
+        bool: True if number of given matches events found otherwise False
     """
-    sample = apis_utils.TimeoutingSampler(
-        timeout=timeout, sleep=sleep, func=find_event, last_event=last_event,
-        event_code=event_code, content=content, matches=matches
-    )
-    return sample.waitForFuncStatus(result=True)
+    start_time = time.time()
+    found_events = list()
+    last_event_id = int(last_event.get_id())
+    logger.info("Last event ID: %s", last_event_id)
+    while matches:
+        if timeout < time.time() - start_time:
+            logger.error("Not all events with code %s are found", event_code)
+            return False
+
+        # Get all events again, we may have new events
+        events = get_all_events_from_specific_event_id(
+            code=event_code, start_event_id=last_event_id
+        )
+        # Filter events that already found
+        events = [
+            v for v in events if int(v.get_id()) not in found_events
+            ]
+
+        for event in events:
+            event_id = int(event.get_id())
+            event_description = event.get_description()
+            if content in event_description and event_id > last_event_id:
+                logger.info(
+                    "Event found: [%s] %s", event_id, event_description
+                )
+                matches -= 1
+                found_events.append(event_id)
+    return True
 
 
 def get_last_event(code):
     """
     Get last event ID by event code
 
-    :param code: Event code
-    :type code: int
-    :return: Last event ID or None
-    :rtype: int or None
+    Args:
+        code (int): Event code
+
+    Returns:
+        Event: Event object if event found else dummy Event object
     """
     logger.info("Get last event with event code %s", code)
-    query = "type={0}".format(code)
-    all_events = ll_hosts.EVENT_API.query(constraint=query)
-    all_events_ids = [int(i.id) for i in all_events]
-    if all_events_ids:
-        return max(all_events_ids)
-    logger.error("Event with code %s not found", code)
-    return None
+    all_events = get_all_events_by_event_code(code=code)
+    if all_events:
+        # The last event is the first on the events list
+        return all_events[0]
+
+    else:
+        logger.warning(
+            "Event with code %s was not found. Creating dummy Event with ID 1",
+            code
+        )
+        event_obj = apis_utils.data_st.Event()
+        event_obj.set_id("1")
+        event_obj.set_description("Dummy object (get_last_event())")
+        return event_obj
 
 
-def get_first_event(code):
+def get_all_events_from_specific_event_id(code, start_event_id):
     """
-    Get the first event from engine
+    Get all events since start_event_id
 
-    :param code: Event code
-    :type code: int
-    :return: Event id and event description
-    :rtype: tuple
+    Args:
+        code (int): Event code to query
+        start_event_id (int): Start event ID to get events from
+
+    Returns:
+        list: List of events objects
     """
-    logger.info("Searching for event with %s", code)
-    query = "type={0}".format(code)
-    try:
-        event = ll_hosts.EVENT_API.query(constraint=query)[0]
-    except IndexError:
-        logger.error("Event match %s not found", query)
-        return None, None
+    all_events = get_all_events_by_event_code(code=code)
+    logger.info("Filter events with event ID > %s", start_event_id)
+    return [i for i in all_events if int(i.id) > int(start_event_id)]
 
-    event_id = int(event.get_id())
-    event_description = event.get_description()
-    return event_id, event_description
+
+def get_all_events_by_event_code(code):
+    """
+    Get all events that match given event code
+
+    Args:
+        code (int): Event code to query events
+
+    Returns:
+        list: All events with matching event code
+    """
+    query = "type={0}".format(code)
+    logger.info("Get all events with code %s", code)
+    return ll_hosts.EVENT_API.query(constraint=query)
