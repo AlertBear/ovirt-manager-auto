@@ -14,6 +14,7 @@ test:
 	git diff $(TARGET_BRANCH) | flake8 --diff
 	flake8 art/tests
 	flake8 nose_customization
+	flake8 pytest_customization
 	flake8 art/rhevm_api/tests_lib/
 
 core_rpm:
