@@ -808,7 +808,7 @@ class CaseRoleActions(TestCase):
                 hosts.updateHost(
                     self.positive,
                     config.HOSTS[0],
-                    storage_manager_priority=str(random.randint(1, 5))
+                    storage_manager_priority=random.randint(1, 5),
                 )
             )
         except EntityNotFound as e:
