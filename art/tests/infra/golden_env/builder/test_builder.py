@@ -329,7 +329,8 @@ class CreateDC(TestCase):
                 cl_name,
                 wait=True,
                 storagedomain=destination_sd,
-                vol_sparse=vol_sparse
+                vol_sparse=vol_sparse,
+                clone=False
             )
             ll_vms.updateVmDisk(
                 positive=True, vm=vm_description['name'],
@@ -432,6 +433,11 @@ class CreateDC(TestCase):
         for sd in all_sds:
             if disk_sd != sd:
                 for disk in template_disks:
+                    templates.wait_for_template_disks_state(template)
+                    LOGGER.info(
+                        "Copy disk: %s from template %s to sd: %s", disk,
+                        template, sd
+                    )
                     templates.copyTemplateDisk(template, disk, sd)
 
     def _get_data_storage_domains(self, data_center):
@@ -480,6 +486,7 @@ class CreateDC(TestCase):
                 glance_template['name'],
                 virtio_scsi=True
             )
+            self.copy_template_disks(glance_template['name'], data_sds)
 
     def add_nic_to_glance_template(self, template_name):
         sampler = TimeoutingSampler(
