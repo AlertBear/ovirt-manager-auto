@@ -67,7 +67,7 @@ class TestSriov01(NetworkTest):
         }
 
         if not hl_host_network.setup_networks(
-            conf.HOSTS[0], **network_host_api_dict
+            conf.HOST_0_NAME, **network_host_api_dict
         ):
             raise conf.NET_EXCEPTION()
 
@@ -421,7 +421,7 @@ class TestSriov05(helper.TestSriovBase):
         if not cls.pf_obj.set_number_of_vf(3):
             raise conf.NET_EXCEPTION()
 
-    @polarion("RHEVM3-10628")
+    @polarion("RHEVM3-14637")
     def test_01_change_vf_num_for_occupied_vf_network(self):
         """
         1. Add network to VF

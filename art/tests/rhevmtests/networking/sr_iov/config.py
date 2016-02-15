@@ -14,6 +14,7 @@ HOST_O_SRIOV_NICS_OBJ = None  # Filled in setup_package
 HOST_0_PF_LIST = list()  # Filled in setup_package
 HOST_0_PF_NAMES = list()  # Filled in setup_package
 NUM_VF_PATH = "/sys/class/net/%s/device/sriov_numvfs"
+MAC_ADDR_FILE = "/sys/class/net/%s/address"
 BW_VALUE = 10
 BURST_VALUE = 100
 GENERAL_NETS = global_helper.generate_object_names(
@@ -37,5 +38,5 @@ VM_DICT = {
     },
     VM_NETS[1][1]: {
         "required": "false"
-    }
+    },
 }
