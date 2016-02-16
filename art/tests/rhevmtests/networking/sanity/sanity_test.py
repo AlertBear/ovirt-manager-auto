@@ -23,7 +23,6 @@ import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
 import rhevmtests.networking.management_as_role.helper as mgmt_net_helper
-import rhevmtests.networking.multiple_queue_nics.helper as queue_helper
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import rhevmtests.networking.mac_pool_range_per_dc.helper as mac_pool_helper
 import rhevmtests.networking.arbitrary_vlan_device_name.helper as vlan_helper
@@ -940,7 +939,7 @@ class TestSanity11(NetworkTest):
             vm=self.vm
         )
         logger.info("Check that qemu has %s queues", self.num_queues)
-        if not queue_helper.check_queues_from_qemu(
+        if not network_helper.check_queues_from_qemu(
             vm=self.vm, host_obj=host_resource, num_queues=self.num_queues
         ):
             raise conf.NET_EXCEPTION(

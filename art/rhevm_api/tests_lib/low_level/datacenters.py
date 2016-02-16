@@ -28,6 +28,7 @@ from art.rhevm_api.utils.test_utils import searchForObj
 from art.core_api import is_action
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as exceptions
+import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.rhevm_api.tests_lib.low_level.general import prepare_ds_object
 
 
@@ -408,6 +409,9 @@ def add_qos_to_datacenter(datacenter, qos_name, qos_type, **kwargs):
     """
     kwargs["name"] = qos_name
     kwargs["type_"] = qos_type
+    log_info, log_error = ll_general.get_log_msg(
+        action="Add", obj_name=qos_name, obj_type="QoS"
+    )
     qos_obj = prepare_qos_obj(**kwargs)
     dc = get_data_center(datacenter)
     qoss_coll = data_st.QoSs()
@@ -417,10 +421,14 @@ def add_qos_to_datacenter(datacenter, qos_name, qos_type, **kwargs):
         dc, link_name="qoss", attr="qos", get_href=True
     )
 
-    return QOS_API.create(
+    logger.info(log_info)
+    res = QOS_API.create(
         qos_obj, collection=qoss_dc_coll_href, coll_elm_name="qos",
         positive=True
     )[1]
+    if not res:
+        logger.error(log_error)
+    return res
 
 
 def get_qoss_from_datacenter(datacenter):
@@ -443,9 +451,15 @@ def get_qos_from_datacenter(datacenter, qos_name):
     :return: QoS object or False
     """
     qoss = get_qoss_from_datacenter(datacenter)
+    log_info, log_error = ll_general.get_log_msg(
+        action="Get", obj_name=qos_name, obj_type="QoS"
+    )
+    logger.info(log_info)
     for qos in qoss:
         if qos.get_name() == qos_name:
             return qos
+
+    logger.error(log_error)
     return False
 
 
@@ -456,8 +470,15 @@ def delete_qos_from_datacenter(datacenter, qos_name):
     :param qos_name: Qos name
     :return: True/False
     """
+    log_info, log_error = ll_general.get_log_msg(
+        action="delete", obj_name=qos_name, obj_type="QoS"
+    )
     qos = get_qos_from_datacenter(datacenter, qos_name)
-    return util.delete(qos, True)
+    logger.info(log_info)
+    res = util.delete(qos, True)
+    if not res:
+        logger.error(log_error)
+    return res
 
 
 def update_qos_in_datacenter(datacenter, qos_name, **kwargs):

@@ -17,6 +17,8 @@ NUM_VF_PATH = "/sys/class/net/%s/device/sriov_numvfs"
 MAC_ADDR_FILE = "/sys/class/net/%s/address"
 BW_VALUE = 10
 BURST_VALUE = 100
+VLAN_IDS = [str(i) for i in xrange(2, 60)]
+NETWORK_QOS = "network_qos"
 GENERAL_NETS = global_helper.generate_object_names(
     num_of_cases=35, num_of_objects=10, prefix="gen"
 )
@@ -39,4 +41,8 @@ VM_DICT = {
     VM_NETS[1][1]: {
         "required": "false"
     },
+    VM_NETS[2][0]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[2]
+    }
 }

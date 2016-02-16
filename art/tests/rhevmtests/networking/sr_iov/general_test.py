@@ -10,7 +10,6 @@ import helper
 import logging
 import config as conf
 from art.unittest_lib import attr
-from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest
 import rhevmtests.networking.helper as network_helper
@@ -18,7 +17,6 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.sriov as ll_sriov
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 logger = logging.getLogger("SR_IOV_Cases")
@@ -106,7 +104,6 @@ class TestSriov02(NetworkTest):
     Edit vNIC profile with passthrough property
     """
     __test__ = True
-    ver = conf.COMP_VERSION
     net_qos = "net_qos"
     vnic_p_list = conf.VNIC_PROFILE[:3]
     dc = conf.DC_0
@@ -115,42 +112,11 @@ class TestSriov02(NetworkTest):
     @classmethod
     def setup_class(cls):
         """
-        1. Configure Engine to support multiple queues
-        2. Create QoS under DC
-        3. Create a vNIC profile for existing MGMT network
-        4. Update vNIC profile with passthrough property
-        5. Create a new vNIC with passthrough property
-        6. Create a new vNIC with port mirroring enabled
+        1. Create a vNIC profile for existing MGMT network
+        2. Update vNIC profile with passthrough property
+        3. Create a new vNIC with passthrough property
+        4. Create a new vNIC with port mirroring enabled
         """
-
-        logger.info(
-            "Configuring engine to support queues for %s version", cls.ver
-        )
-        param = [
-            "CustomDeviceProperties="
-            "'{type=interface;prop={queues=[1-9][0-9]*}}'",
-            "'--cver=%s'" % cls.ver
-        ]
-        if not test_utils.set_engine_properties(
-            engine_obj=conf.ENGINE, param=param
-        ):
-            raise conf.NET_EXCEPTION(
-                "Failed to enable queue via engine-config"
-            )
-
-        logger.info("Create new Network QoS profile under DC")
-        if not ll_datacenters.add_qos_to_datacenter(
-            datacenter=cls.dc,
-            qos_name=cls.net_qos, qos_type=conf.NET_QOS_TYPE,
-            inbound_average=conf.BW_VALUE,
-            inbound_peak=conf.BW_VALUE,
-            inbound_burst=conf.BURST_VALUE,
-            outbound_average=conf.BW_VALUE,
-            outbound_peak=conf.BW_VALUE,
-            outbound_burst=conf.BURST_VALUE
-        ):
-            raise conf.NET_EXCEPTION()
-
         if not ll_networks.add_vnic_profile(
             positive=True, name=cls.vnic_p_list[0],
             data_center=cls.dc, network=cls.mgmt_net
@@ -297,17 +263,6 @@ class TestSriov02(NetworkTest):
             ll_networks.removeVnicProfile(
                 positive=True, vnic_profile_name=vnic,
                 network=cls.mgmt_net, data_center=cls.dc
-            )
-
-        logger.info(
-            "Removing queues support from engine for %s version", cls.ver
-        )
-        param = ["CustomDeviceProperties=''", "'--cver=%s'" % cls.ver]
-        if not test_utils.set_engine_properties(
-            engine_obj=conf.ENGINE, param=param
-        ):
-            logger.error(
-                "Failed to remove queues support via engine-config"
             )
 
 

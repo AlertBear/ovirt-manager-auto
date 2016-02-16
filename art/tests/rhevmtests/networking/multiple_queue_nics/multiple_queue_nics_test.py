@@ -21,10 +21,6 @@ from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 from rhevmtests.networking import config
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from rhevmtests.networking.multiple_queue_nics.helper import(
-    check_queues_from_qemu
-)
-
 
 logger = logging.getLogger("Multiple_Queues_Nics_Cases")
 HOST_NAME0 = None  # Fill in setup_module
@@ -107,7 +103,7 @@ class TestMultipleQueueNics01(TestMultipleQueueNicsTearDown):
         vm_host_ip = get_host_ip_from_engine(get_vm_host(config.VM_NAME[0]))
         # find apropriate host object for the vm_host_ip in VDS_HOSTS
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
-        if not check_queues_from_qemu(
+        if not net_help.check_queues_from_qemu(
             vm=config.VM_NAME[0],
             host_obj=host_obj,
             num_queues=config.NUM_QUEUES[0]
@@ -151,7 +147,7 @@ class TestMultipleQueueNics02(TestMultipleQueueNicsTearDown):
         # find apropriate host object for the vm_host_ip in VDS_HOSTS
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
         logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
-        if not check_queues_from_qemu(
+        if not net_help.check_queues_from_qemu(
             vm=config.VM_NAME[0],
             host_obj=host_obj,
             num_queues=config.NUM_QUEUES[0]
@@ -188,7 +184,7 @@ class TestMultipleQueueNics02(TestMultipleQueueNicsTearDown):
 
         logger.info("Check that qemu still has %s queues after properties "
                     "update", config.NUM_QUEUES[0])
-        if not check_queues_from_qemu(
+        if not net_help.check_queues_from_qemu(
             vm=config.VM_NAME[0],
             host_obj=host_obj, num_queues=config.NUM_QUEUES[0]
         ):
@@ -207,7 +203,7 @@ class TestMultipleQueueNics02(TestMultipleQueueNicsTearDown):
         # find apropriate host object for the vm_host_ip in VDS_HOSTS
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
         logger.info("Check that qemu has %s queues", config.NUM_QUEUES[1])
-        if not check_queues_from_qemu(
+        if not net_help.check_queues_from_qemu(
             vm=config.VM_NAME[0],
             host_obj=host_obj,
             num_queues=config.NUM_QUEUES[1]
@@ -250,7 +246,7 @@ class TestMultipleQueueNics03(TestMultipleQueueNicsTearDown):
         # find apropriate host object for the vm_host_ip in VDS_HOSTS
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
         logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
-        if not check_queues_from_qemu(
+        if not net_help.check_queues_from_qemu(
             vm=config.VM_NAME[0],
             host_obj=host_obj,
             num_queues=config.NUM_QUEUES[0]
@@ -277,7 +273,7 @@ class TestMultipleQueueNics03(TestMultipleQueueNicsTearDown):
         # find apropriate host object for the vm_host_ip in VDS_HOSTS
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
         logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
-        if not check_queues_from_qemu(
+        if not net_help.check_queues_from_qemu(
             vm=config.VM_NAME[0],
             host_obj=host_obj,
             num_queues=config.NUM_QUEUES[0]
@@ -323,7 +319,7 @@ class TestMultipleQueueNics04(TestMultipleQueueNicsTearDown):
         # find apropriate host object for the vm_host_ip in VDS_HOSTS
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
         logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
-        if not check_queues_from_qemu(
+        if not net_help.check_queues_from_qemu(
             vm=config.VM_NAME[0],
             host_obj=host_obj,
             num_queues=config.NUM_QUEUES[0]
@@ -382,7 +378,7 @@ class TestMultipleQueueNics04(TestMultipleQueueNicsTearDown):
         # find apropriate host object for the vm_host_ip in VDS_HOSTS
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
         logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
-        if not check_queues_from_qemu(
+        if not net_help.check_queues_from_qemu(
             vm=config.VM_FROM_TEMPLATE,
             host_obj=host_obj,
             num_queues=config.NUM_QUEUES[0]
@@ -448,7 +444,7 @@ class TestMultipleQueueNics05(TestMultipleQueueNicsTearDown):
 
         logger.info(
             "Check that qemu has %s queues", config.NUM_QUEUES[0])
-        if not check_queues_from_qemu(
+        if not net_help.check_queues_from_qemu(
             vm=config.VM_NAME[0],
             host_obj=config.VDS_HOSTS[0],
             num_queues=config.NUM_QUEUES[0]
@@ -471,7 +467,7 @@ class TestMultipleQueueNics05(TestMultipleQueueNicsTearDown):
         """
         logger.info(
             "Check that qemu has %s queues", config.NUM_QUEUES[0])
-        if not check_queues_from_qemu(
+        if not net_help.check_queues_from_qemu(
             vm=config.VM_NAME[0],
             host_obj=config.VDS_HOSTS[1],
             num_queues=config.NUM_QUEUES[0]
