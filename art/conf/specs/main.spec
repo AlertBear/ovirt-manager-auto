@@ -44,3 +44,15 @@ cli_exit_timeout = integer(default=240)
 [REPORT]
 has_sub_tests = boolean(default=True)
 add_report_nodes = string(default=no)
+
+[PROVISIONING_TOOLS]
+enabled = boolean(default=False)
+provisioning_tool = option("cobbler", "foreman", default="foreman")
+[[COBBLER]]
+api = string(default=None)
+user = string(default=None)
+password = string(default=None)
+[[FOREMAN]]
+api = string(default=None)
+user = string(default=None)
+password = string(default=None)
