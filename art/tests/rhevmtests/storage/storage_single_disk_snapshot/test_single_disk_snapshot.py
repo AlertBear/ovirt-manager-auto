@@ -4,34 +4,22 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_4_Storage_Single_Snapshot
 """
 import logging
-import shlex
 import os
 import re
-from art.rhevm_api.tests_lib.low_level.disks import (
-    deleteDisk, addDisk, wait_for_disks_status, get_disk_ids,
+import shlex
+import config
+from art.rhevm_api.tests_lib.low_level import (
+    disks as ll_disks,
+    hosts as ll_hosts,
+    jobs as ll_jobs,
+    storagedomains as ll_sds,
+    vms as ll_vms,
 )
-from art.rhevm_api.tests_lib.low_level.hosts import (
-    waitForHostsStates, getSPMHost, getHostIP,
-)
-from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    getStorageDomainNamesForType, getDomainAddress,
-)
-from art.rhevm_api.tests_lib.low_level.vms import (
-    addSnapshot, stop_vms_safely, preview_snapshot, start_vms,
-    waitForVMState, startVm, commit_snapshot,
-    get_vm_bootable_disk, undo_snapshot_preview, cloneVmFromSnapshot, addNic,
-    removeNic, shutdownVm, removeSnapshot,
-    wait_for_vm_snapshots, get_vm_state, safely_remove_vms,
-    get_vms_disks_storage_domain_name,
-)
-from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
 from art.rhevm_api.utils.test_utils import restartVdsmd, restart_engine
 from rhevmtests.storage import helpers as storage_helpers
-from rhevmtests.storage.storage_single_disk_snapshot import config, helpers
 from art.unittest_lib import StorageTest as BaseTestCase
 from art.unittest_lib import attr
 from art.test_handler import exceptions
@@ -40,53 +28,9 @@ from utilities.machine import Machine, LINUX
 
 logger = logging.getLogger(__name__)
 
-ENUMS = config.ENUMS
-
 ACTIVE_VM = 'Active VM'
 VM_NAMES = []
 ISCSI = config.STORAGE_TYPE_ISCSI
-
-
-def setup_module():
-    """
-    Prepares environment
-    """
-    if not config.GOLDEN_ENV:
-        logger.info("Preparing datacenter %s with hosts %s",
-                    config.DATA_CENTER_NAME, config.VDC)
-        datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
-                                config.STORAGE_TYPE, config.TESTNAME)
-
-    for storage_type in config.STORAGE_SELECTOR:
-        vm_name = config.VM_NAME % storage_type
-        logger.info("Creating VM %s", vm_name)
-        storage_domain = getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, storage_type)[0]
-        vm_args = config.create_vm_args.copy()
-        vm_args['storageDomainName'] = storage_domain
-        vm_args['vmName'] = vm_name
-
-        logger.info('Creating vm and installing OS on it')
-
-        if not storage_helpers.create_vm_or_clone(**vm_args):
-            raise exceptions.VMException(
-                'Unable to create vm %s for test' % vm_name)
-
-        VM_NAMES.append(vm_name)
-
-
-def teardown_module():
-    """
-    Clean datacenter
-    """
-    if config.GOLDEN_ENV:
-        safely_remove_vms(VM_NAMES)
-    else:
-        logger.info('Cleaning datacenter')
-        datacenters.clean_datacenter(
-            True, config.DATA_CENTER_NAME, vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD
-        )
 
 
 class BasicEnvironment(BaseTestCase):
@@ -108,16 +52,22 @@ class BasicEnvironment(BaseTestCase):
         Creating disks for case
         """
         self.vm_name = config.VM_NAME % self.storage
-        self.storage_domain = getStorageDomainNamesForType(
+        logger.info("Creating VM %s", self.vm_name)
+        self.storage_domain = ll_sds.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[0]
-        start_vms([self.vm_name], 1, wait_for_ip=True)
-        vm_ip = storage_helpers.get_vm_ip(self.vm_name)
-        self.vm = Machine(
-            vm_ip, config.VM_USER, config.VM_PASSWORD).util(LINUX)
-        self.boot_disk = get_vm_bootable_disk(self.vm_name)
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = self.storage_domain
+        vm_args['vmName'] = self.vm_name
+
+        logger.info('Creating vm and installing OS on it')
+
+        if not storage_helpers.create_vm_or_clone(**vm_args):
+            raise exceptions.VMException(
+                'Unable to create vm %s for test' % self.vm_name)
+
         self.mounted_paths = []
-        spm = getSPMHost(config.HOSTS)
-        host_ip = getHostIP(spm)
+        spm = ll_hosts.getSPMHost(config.HOSTS)
+        host_ip = ll_hosts.getHostIP(spm)
         self.host = Machine(host_ip, config.HOSTS_USER,
                             config.HOSTS_PW).util(LINUX)
 
@@ -125,20 +75,28 @@ class BasicEnvironment(BaseTestCase):
                             for d in range(self.disk_count)]
         logger.info("DISKS: %s", self.disks_names)
         for disk_name in self.disks_names:
-            addDisk(
+            ll_disks.addDisk(
                 True, alias=disk_name, size=config.GB,
                 storagedomain=self.storage_domain, format=config.COW_DISK,
                 interface=config.INTERFACE_VIRTIO, sparse=True,
             )
-        wait_for_disks_status(self.disks_names)
+        ll_disks.wait_for_disks_status(self.disks_names)
         storage_helpers.prepare_disks_for_vm(self.vm_name, self.disks_names)
-        stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
+        ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
+        vm_ip = storage_helpers.get_vm_ip(self.vm_name)
+        self.vm = Machine(
+            vm_ip, config.VM_USER, config.VM_PASSWORD).util(LINUX)
+        self.boot_disk = ll_vms.get_vm_bootable_disk(self.vm_name)
+        self.vm.runCmd(shlex.split(self.cmd_create))
+        if not ll_vms.shutdownVm(True, self.vm_name, 'false'):
+            raise exceptions.VMException(
+                "Failed to shutdown vm %s" % self.vm_name
+            )
 
     def check_file_existence_operation(self, should_exist=True,
                                        operation='snapshot'):
 
-        start_vms([self.vm_name], 1, wait_for_ip=True)
+        ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
         lst = []
         state = not should_exist
         self._get_non_bootable_devices()
@@ -154,10 +112,9 @@ class BasicEnvironment(BaseTestCase):
                                                % operation)
 
     def delete_operation(self):
-        start_vms(
+        ll_vms.start_vms(
             [self.vm_name], 1, wait_for_status=config.VM_UP, wait_for_ip=True
         )
-        waitForVMState(self.vm_name)
         for dev in self.devices:
             mount_path = self.mount_path % dev
             cmd = self.cm_del % mount_path
@@ -168,28 +125,29 @@ class BasicEnvironment(BaseTestCase):
                     "Failed to delete file(s) from vm %s, Output: %s"
                     % (self.vm_name, output)
                 )
-
-        shutdownVm(True, self.vm_name)
-        waitForVMState(self.vm_name, config.VM_DOWN)
+        if not ll_vms.shutdownVm(True, self.vm_name, async='false'):
+            raise exceptions.VMException(
+                "Failed to shutdown vm %s" % self.vm
+            )
 
     def _perform_snapshot_operation(self, disks=None, wait=True, live=False):
         if not live:
-            if not get_vm_state(self.vm_name) == config.VM_DOWN:
-                shutdownVm(True, self.vm_name)
-                waitForVMState(self.vm_name, config.VM_DOWN)
+            if not ll_vms.get_vm_state(self.vm_name) == config.VM_DOWN:
+                ll_vms.shutdownVm(True, self.vm_name, 'false')
         if disks:
             is_disks = 'disks: %s' % disks
         else:
             is_disks = 'all disks'
         logger.info("Adding new snapshot to vm %s with %s", self.vm_name,
                     is_disks)
-        status = addSnapshot(True, self.vm_name, self.snapshot_desc,
-                             disks_lst=disks, wait=wait)
+        status = ll_vms.addSnapshot(
+            True, self.vm_name, self.snapshot_desc, disks_lst=disks, wait=wait
+        )
         self.assertTrue(status, "Failed to create snapshot %s" %
                                 self.snapshot_desc)
         if wait:
-            wait_for_vm_snapshots(
-                self.vm_name, [config.SNAPSHOT_OK], [self.snapshot_desc],
+            ll_vms.wait_for_vm_snapshots(
+                self.vm_name, [config.SNAPSHOT_OK]
             )
 
     def _get_non_bootable_devices(self):
@@ -211,19 +169,18 @@ class BasicEnvironment(BaseTestCase):
         logger.info("Devices (excluding boot disk): %s", self.devices)
 
     def _prepare_fs_on_devs(self):
-        start_vms([self.vm_name], 1, wait_for_ip=True)
+        ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
 
         self._get_non_bootable_devices()
-
         for dev in self.devices:
             dev_path = os.path.join('/dev', dev)
             rc, out = self.vm.runCmd(
-                (storage_helpers.CREATE_DISK_LABEL % dev_path).split()
+                (storage_helpers.CREATE_DISK_LABEL_CMD % dev_path).split()
             )
             logger.info(out)
             assert rc
             rc, out = self.vm.runCmd(
-                (storage_helpers.CREATE_DISK_PARTITION % dev_path).split()
+                (storage_helpers.CREATE_DISK_PARTITION_CMD % dev_path).split()
             )
             logger.info(out)
             assert rc
@@ -244,7 +201,7 @@ class BasicEnvironment(BaseTestCase):
         return True
 
     def _perform_snapshot_with_verification(self, disks_for_snap, live=False):
-        disk_ids = get_disk_ids(disks_for_snap)
+        disk_ids = ll_disks.get_disk_ids(disks_for_snap)
         initial_vol_count = storage_helpers.get_disks_volume_count(
             disk_ids
         )
@@ -260,24 +217,12 @@ class BasicEnvironment(BaseTestCase):
         self.assertEqual(current_vol_count,
                          initial_vol_count + len(disk_ids))
 
-    def _prepare_environment(self):
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
-        vm_ip = storage_helpers.get_vm_ip(self.vm_name)
-        self.vm = Machine(vm_ip, config.VM_USER,
-                          config.VM_PASSWORD).util(LINUX)
-
-        self.vm.runCmd(shlex.split(self.cmd_create))
-        shutdownVm(True, self.vm_name)
-        waitForVMState(self.vm_name, config.VM_DOWN)
-
     def tearDown(self):
-        stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
-        for disk in self.disks_names:
-            assert deleteDisk(True, disk)
-        helpers.remove_all_vm_snapshots(self.vm_name,
-                                        self.snapshot_desc)
+        if not ll_vms.safely_remove_vms([self.vm_name]):
+            logger.error("Failed to remove vm %s", self.vm_name)
+            BaseTestCase.test_failed = True
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_VM])
+        BaseTestCase.teardown_exception()
 
 
 @attr(tier=1)
@@ -327,7 +272,6 @@ class TestCase6023(BasicEnvironment):
         """
         super(TestCase6023, self).setUp()
         self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
-        self._prepare_environment()
 
     @polarion("RHEVM3-6023")
     def test_preview_snapshot(self):
@@ -338,7 +282,7 @@ class TestCase6023(BasicEnvironment):
         - Preview the snapshot of the first disk
         """
         self._perform_snapshot_operation()
-        start_vms([self.vm_name], 1, wait_for_ip=True)
+        ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
         status, output = self.vm.runCmd(shlex.split(self.cm_del))
         self.assertTrue(status, "Files were not deleted {0}".format(output))
 
@@ -350,31 +294,33 @@ class TestCase6023(BasicEnvironment):
 
         logger.info("Custom preview with disks %s", disks_to_preview)
 
-        self.previewed = preview_snapshot(True, self.vm_name,
-                                          self.snapshot_desc,
-                                          ensure_vm_down=True,
-                                          disks_lst=disks_to_preview)
+        self.previewed = ll_vms.preview_snapshot(
+            True, self.vm_name, self.snapshot_desc, ensure_vm_down=True,
+            disks_lst=disks_to_preview
+        )
 
         assert self.previewed
-        wait_for_vm_snapshots(
-            self.vm_name, [config.SNAPSHOT_IN_PREVIEW], [self.snapshot_desc],
+        ll_vms.wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_IN_PREVIEW], self.snapshot_desc
         )
-        start_vms([self.vm_name], 1, wait_for_ip=True)
+        ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
 
         logger.info("Check that the file exist after previewing the snapshot")
         assert self.vm.isFileExists(self.file_name)
 
     def tearDown(self):
-        stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
+        if not ll_vms.stop_vms_safely([self.vm_name]):
+            BaseTestCase.test_failed = True
+            logger.error("Failed to remove vm %s", self.vm_name)
         if self.previewed:
-            assert undo_snapshot_preview(True, self.vm_name)
-            wait_for_vm_snapshots(
-                self.vm_name, [config.SNAPSHOT_OK],
-                [self.snapshot_desc],
+            if not ll_vms.undo_snapshot_preview(True, self.vm_name):
+                BaseTestCase.test_failed = True
+                logger.error("Failed to undo snapshot of vm %s", self.vm_name)
+            ll_vms.wait_for_vm_snapshots(
+                self.vm_name, [config.SNAPSHOT_OK]
             )
-        wait_for_jobs([ENUMS['job_preview_snapshot']])
         super(TestCase6023, self).tearDown()
+        BaseTestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -409,7 +355,7 @@ class TestCase6024(BasicEnvironment):
         logger.info("Snapshot with disks: %s", disks_for_snap)
         self._perform_snapshot_operation(
             disks=disks_for_snap)
-        start_vms([self.vm_name], 1, wait_for_ip=True)
+        ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
 
         self.delete_operation()
 
@@ -420,17 +366,17 @@ class TestCase6024(BasicEnvironment):
                             (self.disks_names[3], self.snapshot_desc)]
 
         logger.info("Previewing the snapshot %s", self.snapshot_desc)
-        self.previewed = preview_snapshot(True, self.vm_name,
-                                          self.snapshot_desc,
-                                          ensure_vm_down=True,
-                                          disks_lst=disks_to_preview)
-
-        assert self.previewed
-        wait_for_vm_snapshots(
-            self.vm_name, [config.SNAPSHOT_IN_PREVIEW], [self.snapshot_desc],
+        self.previewed = ll_vms.preview_snapshot(
+            True, self.vm_name, self.snapshot_desc, ensure_vm_down=True,
+            disks_lst=disks_to_preview
         )
 
-        assert startVm(True, self.vm_name, wait_for_ip=True)
+        assert self.previewed
+        ll_vms.wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_IN_PREVIEW], self.snapshot_desc
+        )
+
+        assert ll_vms.startVm(True, self.vm_name, wait_for_ip=True)
         lst = []
         self._get_non_bootable_devices()
         for dev in self.devices:
@@ -444,15 +390,18 @@ class TestCase6024(BasicEnvironment):
         self.assertEqual(len(results), len(disks_for_snap))
 
     def tearDown(self):
-        for path in self.mounted_paths:
-            self.vm.runCmd(shlex.split(self.umount_cmd % path))
-
-        stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
+        if not ll_vms.stop_vms_safely([self.vm_name]):
+            BaseTestCase.test_failed = True
+            logger.error("Failed to remove vm %s", self.vm_name)
         if self.previewed:
-            assert undo_snapshot_preview(True, self.vm_name)
-
+            if not ll_vms.undo_snapshot_preview(True, self.vm_name):
+                BaseTestCase.test_failed = True
+                logger.error("Failed to undo snapshot of vm %s", self.vm_name)
+            ll_vms.wait_for_vm_snapshots(
+                self.vm_name, [config.SNAPSHOT_OK]
+            )
         super(TestCase6024, self).tearDown()
+        BaseTestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -487,49 +436,46 @@ class TestCase6026(BasicEnvironment):
         """
         logger.info("Creating snapshot")
         self._perform_snapshot_operation()
-        wait_for_jobs([ENUMS['job_create_snapshot']])
+        ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
 
         self.delete_operation()
 
         logger.info("Previewing the snapshot %s", self.snapshot_desc)
-        self.previewed = preview_snapshot(True, self.vm_name,
-                                          self.snapshot_desc,
-                                          ensure_vm_down=True)
+        self.previewed = ll_vms.preview_snapshot(
+            True, self.vm_name, self.snapshot_desc, ensure_vm_down=True
+        )
         assert self.previewed
 
-        wait_for_vm_snapshots(
-            self.vm_name, [config.SNAPSHOT_IN_PREVIEW],
-            [self.snapshot_desc],
+        ll_vms.wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_IN_PREVIEW], self.snapshot_desc
         )
 
         self.check_file_existence_operation(True, 'snapshot')
 
         if self.previewed:
             logger.info("Undo the snapshot %s", self.snapshot_desc)
-            assert undo_snapshot_preview(True, self.vm_name,
-                                         ensure_vm_down=True)
-            self.previewed = False
-            wait_for_vm_snapshots(
-                self.vm_name, [config.SNAPSHOT_OK],
-                [self.snapshot_desc],
+            assert ll_vms.undo_snapshot_preview(
+                True, self.vm_name, ensure_vm_down=True
             )
-
+            self.previewed = False
+            ll_vms.wait_for_vm_snapshots(
+                self.vm_name, [config.SNAPSHOT_OK]
+            )
         self.check_file_existence_operation(False, 'undo')
 
     def tearDown(self):
         if self.previewed:
             logger.info("Undo the snapshot %s", self.snapshot_desc)
-            assert undo_snapshot_preview(True, self.vm_name,
-                                         ensure_vm_down=True)
-
-            wait_for_vm_snapshots(
-                self.vm_name, [config.SNAPSHOT_OK],
-                [self.snapshot_desc],
+            if not ll_vms.undo_snapshot_preview(
+                True, self.vm_name, ensure_vm_down=True
+            ):
+                BaseTestCase.test_failed = True
+                logger.error("Failed to undo snapshot of vm %s", self.vm_name)
+            ll_vms.wait_for_vm_snapshots(
+                self.vm_name, [config.SNAPSHOT_OK]
             )
-        for path in self.mounted_paths:
-            self.vm.runCmd(shlex.split(self.umount_cmd % path))
-
         super(TestCase6026, self).tearDown()
+        BaseTestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -551,9 +497,8 @@ class TestCase6027(BasicEnvironment):
         """
         Prepares the environment
         """
-        super(TestCase6027, self).setUp()
         self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
-        self._prepare_environment()
+        super(TestCase6027, self).setUp()
 
     @polarion("RHEVM3-6027")
     def test_preview_snapshot(self):
@@ -571,9 +516,8 @@ class TestCase6027(BasicEnvironment):
         disks_for_snap = [self.boot_disk]
         logger.info("Creating snapshot")
         self._perform_snapshot_operation(disks_for_snap)
-        wait_for_jobs([ENUMS['job_create_snapshot']])
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
+        ll_vms.start_vms([self.vm_name], 1, config.VM_UP, wait_for_ip=False)
         self.vm.runCmd(shlex.split(self.cm_del))
 
         disks_to_preview = [(self.boot_disk, self.snapshot_desc),
@@ -582,30 +526,32 @@ class TestCase6027(BasicEnvironment):
                             (self.disks_names[2], ACTIVE_VM),
                             (self.disks_names[3], ACTIVE_VM)]
 
-        self.previewed = preview_snapshot(True, self.vm_name,
-                                          self.snapshot_desc,
-                                          ensure_vm_down=True,
-                                          disks_lst=disks_to_preview)
+        self.previewed = ll_vms.preview_snapshot(
+            True, self.vm_name, self.snapshot_desc, ensure_vm_down=True,
+            disks_lst=disks_to_preview
+        )
         assert self.previewed
-        wait_for_vm_snapshots(
-            self.vm_name, [config.SNAPSHOT_IN_PREVIEW],
-            [self.snapshot_desc],
+        ll_vms.wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_IN_PREVIEW], self.snapshot_desc
         )
 
-        start_vms([self.vm_name], 1, wait_for_ip=True)
+        ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
 
         assert self.vm.isFileExists(self.file_name)
 
     def tearDown(self):
-        stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
+        if not ll_vms.stop_vms_safely([self.vm_name]):
+            BaseTestCase.test_failed = True
+            logger.error("Failed to remove vm %s", self.vm_name)
         if self.previewed:
-            assert undo_snapshot_preview(True, self.vm_name)
-
-        wait_for_vm_snapshots(
-            self.vm_name, [config.SNAPSHOT_OK], self.snapshot_desc
-        )
+            if not ll_vms.undo_snapshot_preview(True, self.vm_name):
+                BaseTestCase.test_failed = True
+                logger.error("Failed to undo snapshot of vm %s", self.vm_name)
+            ll_vms.wait_for_vm_snapshots(
+                self.vm_name, [config.SNAPSHOT_OK]
+            )
         super(TestCase6027, self).tearDown()
+        BaseTestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -637,27 +583,19 @@ class TestCase6013(BasicEnvironment):
         - Clone VM from the snapshot
         """
         self._perform_snapshot_operation(disks=[self.boot_disk])
-        wait_for_jobs([ENUMS['job_create_snapshot']])
-
-        self._get_non_bootable_devices()
-        for dev in self.devices:
-            mount_path = self.mount_path % dev
-            cmd = self.cm_del % mount_path
-            status, _ = self.vm.runCmd(shlex.split(cmd))
-            logger.info("File %s", 'deleted' if status else 'not deleted')
-
-        cloneVmFromSnapshot(True, self.new_vm_name, config.CLUSTER_NAME,
-                            self.vm_name, self.snapshot_desc, )
-        wait_for_jobs([ENUMS['job_add_vm_from_snapshot']])
-
-        start_vms([self.vm_name], 1, wait_for_ip=False)
-        waitForVMState(self.vm_name)
+        ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
+        ll_vms.cloneVmFromSnapshot(
+            True, self.new_vm_name, config.CLUSTER_NAME, self.vm_name,
+            self.snapshot_desc
+        )
+        ll_jobs.wait_for_jobs([config.JOB_CLONE_VM_FROM_SNAPSHOT])
 
     def tearDown(self):
-        for path in self.mounted_paths:
-            self.vm.runCmd(shlex.split(self.umount_cmd % path))
-
+        if not ll_vms.safely_remove_vms([self.new_vm_name]):
+            BaseTestCase.test_failed = True
+            logger.error("Failed to power off vm %s", self.vm_name)
         super(TestCase6013, self).tearDown()
+        BaseTestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -703,15 +641,15 @@ class TestCase6030(BasicEnvironment):
                             (self.disks_names[2], ACTIVE_VM),
                             (self.disks_names[3], ACTIVE_VM)]
 
-        self.previewed = preview_snapshot(True, self.vm_name,
-                                          self.snapshot_desc,
-                                          ensure_vm_down=True,
-                                          disks_lst=disks_to_preview)
+        self.previewed = ll_vms.preview_snapshot(
+            True, self.vm_name, self.snapshot_desc, ensure_vm_down=True,
+            disks_lst=disks_to_preview
+        )
         assert self.previewed
 
-        wait_for_jobs([ENUMS['job_preview_snapshot']])
+        ll_jobs.wait_for_jobs([config.JOB_PREVIEW_SNAPSHOT])
 
-        start_vms([self.vm_name], 1, wait_for_ip=True)
+        ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
 
         lst = []
         self._get_non_bootable_devices()
@@ -726,14 +664,18 @@ class TestCase6030(BasicEnvironment):
         self.assertEqual(len(results), self.disks_for_custom_preview)
 
     def tearDown(self):
-        stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
+        if not ll_vms.stop_vms_safely([self.vm_name]):
+            BaseTestCase.test_failed = True
+            logger.error("Failed to remove vm %s", self.vm_name)
         if self.previewed:
-            assert undo_snapshot_preview(True, self.vm_name)
-        wait_for_vm_snapshots(
-            self.vm_name, [config.SNAPSHOT_OK], self.snapshot_desc
-        )
+            if not ll_vms.undo_snapshot_preview(True, self.vm_name):
+                BaseTestCase.test_failed = True
+                logger.error("Failed to undo snapshot of vm %s", self.vm_name)
+            ll_vms.wait_for_vm_snapshots(
+                self.vm_name, [config.SNAPSHOT_OK]
+            )
         super(TestCase6030, self).tearDown()
+        BaseTestCase.teardown_exception()
 
 
 @attr(tier=4)
@@ -765,15 +707,10 @@ class TestCase6014(BasicEnvironment):
         - Restart vdsm during snapshot creation
         """
         self._perform_snapshot_operation(wait=False)
-        self.host = getSPMHost(config.HOSTS)
-        self.host_ip = getHostIP(self.host)
+        self.host = ll_hosts.getSPMHost(config.HOSTS)
+        self.host_ip = ll_hosts.getHostIP(self.host)
         assert restartVdsmd(self.host_ip, config.HOSTS_PW)
-        waitForHostsStates(True, self.host)
-
-    def tearDown(self):
-        stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
-        super(TestCase6014, self).tearDown()
+        ll_hosts.waitForHostsStates(True, self.host)
 
 
 @attr(tier=4)
@@ -806,12 +743,7 @@ class TestCase6006(BasicEnvironment):
         self._perform_snapshot_operation(wait=False)
         logger.info("Restarting ovirt-engine...")
         restart_engine(config.ENGINE, 5, 30)
-        waitForHostsStates(True, config.HOSTS[0])
-
-    def tearDown(self):
-        stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
-        super(TestCase6006, self).tearDown()
+        ll_hosts.waitForHostsStates(True, config.HOSTS[0])
 
 
 @attr(tier=2)
@@ -834,10 +766,11 @@ class TestCase6032(BasicEnvironment):
         super(TestCase6032, self).setUp()
         self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
         profile = config.MGMT_BRIDGE
-        if not addNic(True, vm=self.vm_name, name=self.nic,
-                      mac_address=None,
-                      network=config.MGMT_BRIDGE,
-                      vnic_profile=profile, plugged='true', linked='true'):
+        if not ll_vms.addNic(
+            True, vm=self.vm_name, name=self.nic, mac_address=None,
+            network=config.MGMT_BRIDGE, vnic_profile=profile, plugged='true',
+            linked='true'
+        ):
             raise exceptions.NetworkException("Can't add nic %s" % self.nic)
 
         assert self._prepare_fs_on_devs()
@@ -856,31 +789,35 @@ class TestCase6032(BasicEnvironment):
         self.delete_operation()
         disks_to_preview = []
 
-        assert preview_snapshot(True, self.vm_name, self.snapshot_desc,
-                                ensure_vm_down=True,
-                                disks_lst=disks_to_preview)
-        wait_for_vm_snapshots(
+        assert ll_vms.preview_snapshot(
+            True, self.vm_name, self.snapshot_desc, ensure_vm_down=True,
+            disks_lst=disks_to_preview
+        )
+        ll_vms.wait_for_vm_snapshots(
             self.vm_name, [config.SNAPSHOT_IN_PREVIEW], self.snapshot_desc
         )
 
-        assert commit_snapshot(True, self.vm_name)
+        assert ll_vms.commit_snapshot(True, self.vm_name)
         self.commit = True
 
-        assert removeNic(True, self.vm_name, self.nic)
-        wait_for_vm_snapshots(
-            self.vm_name, [config.SNAPSHOT_OK], self.snapshot_desc
+        assert ll_vms.removeNic(True, self.vm_name, self.nic)
+        ll_vms.wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_OK]
         )
 
     def tearDown(self):
-        stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
-
+        if not ll_vms.stop_vms_safely([self.vm_name]):
+            BaseTestCase.test_failed = True
+            logger.error("Failed to remove vm %s", self.vm_name)
         if not self.commit:
-            assert undo_snapshot_preview(True, self.vm_name)
-            wait_for_vm_snapshots(
-                self.vm_name, [config.SNAPSHOT_OK], self.snapshot_desc
+            if not ll_vms.undo_snapshot_preview(True, self.vm_name):
+                BaseTestCase.test_failed = True
+                logger.error("Failed to undo snapshot of vm %s", self.vm_name)
+            ll_vms.wait_for_vm_snapshots(
+                self.vm_name, [config.SNAPSHOT_OK]
             )
         super(TestCase6032, self).tearDown()
+        BaseTestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -917,35 +854,32 @@ class TestCase6033(BasicEnvironment):
         - Now you have 3 snapshots from disk #2. Delete snapshot #2
         """
         for index, snap_desc in enumerate(self.snaps):
-            start_vms([self.vm_name], 1, wait_for_ip=True)
+            ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
             self._get_non_bootable_devices()
             for dev in self.devices:
                 logger.info("writing file to disk %s", dev)
                 self.vm.runCmd(shlex.split(self.cmd_create
                                            % ((self.mount_path % dev), index)))
+            ll_vms.shutdownVm(True, self.vm_name, 'false')
+            ll_vms.addSnapshot(
+                True, self.vm_name, snap_desc,
+                disks_lst=[self.disks_names[0]], wait=True
+            )
 
-            shutdownVm(True, self.vm_name)
-            waitForVMState(self.vm_name, config.VM_DOWN)
+        ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
+        ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
 
-            addSnapshot(True, self.vm_name, snap_desc,
-                        disks_lst=[self.disks_names[0]], wait=True)
-
-        wait_for_jobs([ENUMS['job_create_snapshot']])
-        start_vms([self.vm_name], 1, wait_for_ip=True)
-
-        disk_ids = get_disk_ids(self.disks_names)
+        disk_ids = ll_disks.get_disk_ids(self.disks_names)
         initial_vol_count = storage_helpers.get_disks_volume_count(
             disk_ids
         )
         logger.info("The number of volumes is: %s", initial_vol_count)
 
-        stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
-        removeSnapshot(True, self.vm_name, self.snap_1,
-                       helpers.SNAPSHOT_TIMEOUT)
-        wait_for_jobs([ENUMS['job_remove_snapshot']])
+        ll_vms.stop_vms_safely([self.vm_name])
+        ll_vms.removeSnapshot(True, self.vm_name, self.snap_1)
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
 
-        start_vms([self.vm_name], 1, wait_for_ip=True)
+        ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
 
         current_vol_count = storage_helpers.get_disks_volume_count(
             disk_ids
@@ -973,10 +907,10 @@ class TestCase6015(BasicEnvironment):
     def setUp(self):
         self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
         super(TestCase6015, self).setUp()
-        self.host = getSPMHost(config.HOSTS)
-        self.host_ip = getHostIP(self.host)
-        self.sd = get_vms_disks_storage_domain_name(self.vm_name)
-        found, address = getDomainAddress(True, self.sd)
+        self.host = ll_hosts.getSPMHost(config.HOSTS)
+        self.host_ip = ll_hosts.getHostIP(self.host)
+        self.sd = ll_vms.get_vms_disks_storage_domain_name(self.vm_name)
+        found, address = ll_sds.getDomainAddress(True, self.sd)
         self.assertTrue(found, "IP for storage domain %s not found" % self.sd)
         self.sd_ip = address['address']
 
@@ -991,7 +925,7 @@ class TestCase6015(BasicEnvironment):
         self._perform_snapshot_operation(self.disks_names[0:2], wait=False)
         blockOutgoingConnection(self.host_ip, config.HOSTS_USER,
                                 config.HOSTS_PW, self.sd_ip)
-        wait_for_jobs([ENUMS['job_create_snapshot']])
+        ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
         # TODO: cmestreg: doesn't this test needs to check the rollback and
         #                 that the volumes are gone?
 
