@@ -27,7 +27,7 @@ FLOPPY_IMAGE = 'win2k3.vfd'
 storage_name = PARAMETERS.get('storage_name', '%s_%d' % (STORAGE_TYPE, 0))
 nfs_storage_0 = PARAMETERS.get('storage_name_0', '%s_0' % STORAGE_TYPE)
 nfs_storage_1 = PARAMETERS.get('storage_name_1', '%s_1' % STORAGE_TYPE)
-export_storage = PARAMETERS.get('export_storage', EXPORT_STORAGE_NAME)
+export_storage = PARAMETERS.get('export_storage', EXPORT_DOMAIN_NAME)
 # #################################################
 # Following paramaters are virt specific paramaters
 # #################################################

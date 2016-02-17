@@ -109,7 +109,7 @@ def setup_package():
     )
     if not ll_templates.exportTemplate(
             positive=True, template=config.IE_TEMPLATE,
-            storagedomain=config.EXPORT_STORAGE_NAME
+            storagedomain=config.EXPORT_DOMAIN_NAME
     ):
         raise exceptions.NetworkException(
             "Couldn't export Template %s to export Domain" % config.IE_TEMPLATE
@@ -118,7 +118,7 @@ def setup_package():
     logger.info("Export %s to Export domain", config.IE_VM)
     if not ll_vms.exportVm(
             positive=True, vm=config.IE_VM,
-            storagedomain=config.EXPORT_STORAGE_NAME
+            storagedomain=config.EXPORT_DOMAIN_NAME
     ):
         raise exceptions.NetworkException(
             "Couldn't export VM %s to export Domain" % config.IE_VM
@@ -152,7 +152,7 @@ def teardown_package():
     if not ll_vms.removeVmFromExportDomain(
             True, vm=config.IE_VM,
             datacenter=config.DC_NAME[0],
-            export_storagedomain=config.EXPORT_STORAGE_NAME
+            export_storagedomain=config.EXPORT_DOMAIN_NAME
     ):
         logger.error(
             "Couldn't remove VM %s form Export Domain", config.IE_VM
@@ -163,7 +163,7 @@ def teardown_package():
     if not ll_templates.removeTemplateFromExportDomain(
             True, template=config.IE_TEMPLATE,
             datacenter=config.DC_NAME[0],
-            export_storagedomain=config.EXPORT_STORAGE_NAME
+            export_storagedomain=config.EXPORT_DOMAIN_NAME
     ):
         logger.error(
             "Couldn't remove template %s form Export Domain",

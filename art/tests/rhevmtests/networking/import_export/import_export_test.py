@@ -58,7 +58,7 @@ class TestIECase01(TestCase):
             log_vm = name if name is not None else config.IE_VM
             if not importVm(
                     positive=True, vm=config.IE_VM,
-                    export_storagedomain=config.EXPORT_STORAGE_NAME,
+                    export_storagedomain=config.EXPORT_DOMAIN_NAME,
                     import_storagedomain=sd_name,
                     cluster=config.CLUSTER_NAME[0], name=name
             ):
@@ -147,7 +147,7 @@ class TestIECase02(TestCase):
             log_temp = name if name is not None else config.IE_TEMPLATE
             if not import_template(
                     positive=True, template=config.IE_TEMPLATE,
-                    source_storage_domain=config.EXPORT_STORAGE_NAME,
+                    source_storage_domain=config.EXPORT_DOMAIN_NAME,
                     destination_storage_domain=sd_name,
                     cluster=config.CLUSTER_NAME[0],
                     name=name
@@ -277,7 +277,7 @@ class TestIECase03(TestCase):
         )[0]
         if not import_template(
                 positive=True, template=config.IE_TEMPLATE,
-                source_storage_domain=config.EXPORT_STORAGE_NAME,
+                source_storage_domain=config.EXPORT_DOMAIN_NAME,
                 destination_storage_domain=sd_name,
                 cluster=config.CLUSTER_NAME[0]
         ):
@@ -289,7 +289,7 @@ class TestIECase03(TestCase):
         )
         if not importVm(
                 positive=True, vm=config.IE_VM,
-                export_storagedomain=config.EXPORT_STORAGE_NAME,
+                export_storagedomain=config.EXPORT_DOMAIN_NAME,
                 import_storagedomain=sd_name,
                 cluster=config.CLUSTER_NAME[0]
         ):

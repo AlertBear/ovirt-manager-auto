@@ -203,7 +203,7 @@ if 'prepared_env' in ART_CONFIG:
     STORAGE_NAME = [x['name'] for x in storage_domains]
 
     export_sds = DC['export_domains']
-    EXPORT_STORAGE_NAME = export_sds[0]['name']
+    EXPORT_DOMAIN_NAME = export_sds[0]['name']
 
     iso_sds = GOLDEN_ENV['iso_domains']
     ISO_DOMAIN_NAME = iso_sds[0]['name']
@@ -281,7 +281,7 @@ else:
 
     EXPORT_STORAGE_ADDRESS = PARAMETERS.as_list('export_domain_address')[0]
     EXPORT_STORAGE_PATH = PARAMETERS.as_list('export_domain_path')[0]
-    EXPORT_STORAGE_NAME = "Export"
+    EXPORT_DOMAIN_NAME = "Export"
 
     CPU_CORES = PARAMETERS.get('cpu_cores')
     CPU_SOCKET = PARAMETERS.get('cpu_socket')
@@ -303,7 +303,7 @@ DEFAULT_ISO_DOMAIN = 'ISO_DOMAIN'
 ISO_DOMAIN_NAME_LIST = [ISO_DOMAIN_NAME] if ISO_DOMAIN_NAME else []
 
 SD_LIST = (
-    STORAGE_NAME + [EXPORT_STORAGE_NAME] + ISO_DOMAIN_NAME_LIST +
+    STORAGE_NAME + [EXPORT_DOMAIN_NAME] + ISO_DOMAIN_NAME_LIST +
     [GLANCE_DOMAIN] + [DEFAULT_ISO_DOMAIN]
 )
 
