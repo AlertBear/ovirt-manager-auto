@@ -44,5 +44,18 @@ VM_DICT = {
     VM_NETS[2][0]: {
         "required": "false",
         "vlan_id": VLAN_IDS[2]
+    },
+    VM_NETS[3][0]: {
+        "required": "false"
+    },
+    VM_NETS[3][1]: {
+        "required": "false"
+    },
+    VM_NETS[3][2]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[3]
+    },
+    VM_NETS[3][3]: {
+        "required": "false"
     }
 }

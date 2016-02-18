@@ -104,7 +104,7 @@ class TestSriov02(NetworkTest):
     Edit vNIC profile with passthrough property
     """
     __test__ = True
-    net_qos = "net_qos"
+    net_qos = conf.NETWORK_QOS
     vnic_p_list = conf.VNIC_PROFILE[:3]
     dc = conf.DC_0
     mgmt_net = conf.MGMT_BRIDGE
@@ -166,19 +166,8 @@ class TestSriov02(NetworkTest):
         ):
             raise conf.NET_EXCEPTION()
 
-    @polarion("RHEVM3-14629")
-    def test_03_queues_update(self):
-        """
-        Check that queues can be configured
-        """
-        if not ll_networks.update_vnic_profile(
-            name=self.vnic_p_list[0], network=self.mgmt_net,
-            data_center=self.dc, custom_properties=conf.PROP_QUEUES[0]
-        ):
-            raise conf.NET_EXCEPTION()
-
     @polarion("RHEVM3-14630")
-    def test_04_pm_qos_update(self):
+    def test_03_pm_qos_update(self):
         """
         Check that port mirroring and QoS are available after
         disabling passthrough on vNIC
@@ -203,7 +192,7 @@ class TestSriov02(NetworkTest):
             raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-6310")
-    def test_05_passthrough_enabled_vnic(self):
+    def test_04_passthrough_enabled_vnic(self):
         """
         Check that passthrough property is enabled on created vNIC profile
         """
@@ -218,7 +207,7 @@ class TestSriov02(NetworkTest):
             raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-14581")
-    def test_06_port_mirroring_update_created_vnic(self):
+    def test_05_port_mirroring_update_created_vnic(self):
         """
         Check that port mirroring can't be configured on vNIC profile
         with passthrough property
@@ -230,7 +219,7 @@ class TestSriov02(NetworkTest):
             raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-14631")
-    def test_07_network_qos_update_created_vnic(self):
+    def test_06_network_qos_update_created_vnic(self):
         """
         Check that QoS can't be configured on vNIC profile
         with passthrough property
@@ -243,7 +232,7 @@ class TestSriov02(NetworkTest):
             raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-14632")
-    def test_08_pm_update_enable(self):
+    def test_07_pm_update_enable(self):
         """
         Try to update vNIC profile with passthrough property when pm is enabled
         """
@@ -257,7 +246,6 @@ class TestSriov02(NetworkTest):
     def teardown_class(cls):
         """
         Remove vNIC profile
-        Remove queue support from engine
         """
         for vnic in cls.vnic_p_list:
             ll_networks.removeVnicProfile(
