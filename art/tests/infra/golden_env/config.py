@@ -93,3 +93,8 @@ ENGINE_HOST = resources.Host(VDC)
 ENGINE_HOST.users.append(
     resources.RootUser(VDC_PASSWORD)
 )
+
+IBM_POWER_8 = 'IBM POWER8'
+IBM_POWER_8E = 'IBM POWER8E'
+PPC_CPUS = [IBM_POWER_8, IBM_POWER_8E]
+PPC_ARCH = True if CPU_NAME in PPC_CPUS else False

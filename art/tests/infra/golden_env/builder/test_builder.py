@@ -225,6 +225,7 @@ class CreateDC(TestCase):
                 )
             elif storage_type == ENUMS['storage_type_iscsi']:
                 lun, address, target = storage_conf.get_iscsi_share()
+                login_all = False if config.PPC_ARCH else True
                 assert storagedomains.addISCSIDataDomain(
                     host,
                     sd_name,
@@ -233,7 +234,7 @@ class CreateDC(TestCase):
                     address,
                     target,
                     override_luns=True,
-                    login_all=True
+                    login_all=login_all
                 )
             elif storage_type == ENUMS['storage_type_gluster']:
                 address, path, vfs = storage_conf.get_gluster_share()
@@ -318,13 +319,15 @@ class CreateDC(TestCase):
                 vm_description['clone_from']
             )
 
+            vol_sparse = False if 'iscsi' in destination_sd else None
             ll_vms.cloneVmFromTemplate(
                 True,
                 vm_description['name'],
                 vm_description['clone_from'],
                 cl_name,
                 wait=True,
-                storagedomain=destination_sd
+                storagedomain=destination_sd,
+                vol_sparse=vol_sparse
             )
             ll_vms.updateVmDisk(
                 positive=True, vm=vm_description['name'],
