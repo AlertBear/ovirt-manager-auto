@@ -24,7 +24,6 @@ from rhevmtests.storage.helpers import create_vm_or_clone
 from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
-ENUMS = config.ENUMS
 FILE_TO_WATCH = config.VDSM_LOG
 REGEX_TEMPLATE = 'dd oflag=direct if=/dev/zero of=.*/%s'
 TASK_TIMEOUT = 120
@@ -39,7 +38,8 @@ def setup_module():
     global VM_NAMES
     for storage_type in config.STORAGE_SELECTOR:
         storage_domain = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, storage_type)[0]
+            config.DATA_CENTER_NAME, storage_type
+        )[0]
 
         vm_name = config.VM_NAME % storage_type
         VM_NAMES[storage_type] = vm_name
@@ -58,7 +58,7 @@ def teardown_module():
     """
     if not ll_vms.safely_remove_vms(VM_NAMES.values()):
         raise exceptions.VMException("Failed to remove vms in teardown")
-    ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
+    ll_jobs.wait_for_jobs([config.JOB_REMOVE_VM])
 
 
 class CommonUsage(BaseTestCase):
@@ -126,7 +126,7 @@ class CommonUsage(BaseTestCase):
         )
 
         t.join(TASK_TIMEOUT)
-        ll_jobs.wait_for_jobs([ENUMS['job_remove_disk']])
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_DISK])
         if not found_regex and (update or wipe_after_delete):
             raise exceptions.DiskException(
                 "Wipe after delete functionality is not working"
@@ -318,7 +318,7 @@ class TestCase11864(CommonUsage):
             disk_id=self.disk_id
         )
         ll_vms.waitForVmsDisks(self.vm_name)
-        ll_jobs.wait_for_jobs([ENUMS['job_live_migrate_disk']])
+        ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
         if not status:
             raise exceptions.DiskException("Disk update should be blocked")
         self.execution_passed = True
