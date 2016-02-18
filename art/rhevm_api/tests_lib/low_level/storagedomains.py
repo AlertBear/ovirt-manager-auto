@@ -46,6 +46,9 @@ from utilities import sshConnection, machine
 
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
+ACTIVE_DOMAIN = ENUMS['storage_domain_state_active']
+DATA_DOMAIN_TYPE = ENUMS['storage_dom_type_data']
+CINDER_DOMAIN_TYPE = ENUMS['storage_dom_type_cinder']
 RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
 
 StorageDomain = getDS('StorageDomain')
@@ -100,7 +103,7 @@ def _prepareStorageDomainObject(positive, **kwargs):
     storage_type = kwargs.pop('storage_type', None)
 
     # Set storage domain metadata format - only for data domains
-    if type_ and type_.lower() == ENUMS['storage_dom_type_data']:
+    if type_ and type_.lower() == DATA_DOMAIN_TYPE:
         storage_format = kwargs.pop('storage_format', None)
         if host and storage_format is None:
             hostCompVer = getHostCompatibilityVersion(host)
@@ -407,7 +410,7 @@ def activateStorageDomain(positive, datacenter, storagedomain, wait=True):
     if status and positive and wait:
         return waitForStorageDomainStatus(
             True, datacenter, storagedomain,
-            ENUMS['storage_domain_state_active'], 180,
+            ACTIVE_DOMAIN, 180,
         )
     return status
 
@@ -948,7 +951,7 @@ def findNonMasterStorageDomains(positive, datacenter):
     # Filter out master domain and ISO/Export domains
     non_master_domains = [
         sd_object.get_name() for sd_object in sd_obj_list if
-        sd_object.get_type() == ENUMS['storage_dom_type_data']
+        sd_object.get_type() == DATA_DOMAIN_TYPE
         and not sd_object.get_master()
     ]
     if non_master_domains and positive:
@@ -1009,10 +1012,11 @@ def findMasterStorageDomain(positive, datacenter):
 
     sdObjList = getDCStorages(datacenter, False)
 
-    # Find the master DATA storage domain.
-    masterResult = filter(lambda sdObj: sdObj.get_type() ==
-                          ENUMS['storage_dom_type_data'] and
-                          sdObj.get_master() in [True, 'true'], sdObjList)
+    # Find the master DATA_DOMAIN storage domain.
+    masterResult = filter(
+        lambda sdObj: sdObj.get_type() == DATA_DOMAIN_TYPE and
+        sdObj.get_master() in [True, 'true'], sdObjList
+    )
     masterCount = len(masterResult)
     if masterCount == 1:
         return True, {'masterDomain': masterResult[0].get_name()}
@@ -1409,7 +1413,7 @@ def is_storage_domain_active(datacenter, domain):
     sdObj = getDCStorage(datacenter, domain)
     state = sdObj.get_status().get_state()
     util.logger.info('Domain %s in dc %s is %s', domain, datacenter, state)
-    return state == ENUMS['storage_domain_state_active']
+    return state == ACTIVE_DOMAIN
 
 
 @is_action()
@@ -1803,7 +1807,7 @@ class NFSStorage(object):
                  "expected_retrans", "expected_vers", "expected_mount_options")
 
     def __init__(self, **kwargs):
-        self.sd_type = ENUMS['storage_dom_type_data']
+        self.sd_type = DATA_DOMAIN_TYPE
         for k, v in kwargs.iteritems():
             assert (k in self.__allowed)
             setattr(self, k, v)
@@ -1862,17 +1866,38 @@ def wait_for_change_total_size(storagedomain_name, original_size=0,
 
 def getStorageDomainNamesForType(datacenter_name, storage_type):
     """
-    Returns a list of names of available data storage domain of storage_type
+    Returns a list of data domain names of a certain storage_type
+    Note: Only the active data domains are returned
      * datacenter_name: name of datacenter
      * storage_type: type of storage (nfs, iscsi, ...)
     """
-    sdObjList = getDCStorages(datacenter_name, False)
+    def validate_domain_storage_type(storage_domain_object, storage_type):
+        """
+        A validator for storage objects that checks whether a storage is a data
+        domain of a certain type
 
+        __author__ = "ogofen"
+        :param storage_domain_object: Storage domain object
+        :type storage_domain_object: Storage Object
+        :param storage_type: The type of storage to use (NFS,
+        iSCSI, GlusterFS, Volume etc.)
+        :type storage_type: str
+        :returns: True if a data domain is active and is of a chosen type,
+        False otherwise
+        :rtype: bool
+        """
+        state = storage_domain_object.get_status().get_state()
+        sd_type = storage_domain_object.get_type()
+        _storage_type = storage_domain_object.get_storage().get_type()
+
+        if sd_type == DATA_DOMAIN_TYPE or sd_type == CINDER_DOMAIN_TYPE:
+            if _storage_type == storage_type and state == ACTIVE_DOMAIN:
+                return True
+        return False
+
+    sdObjList = getDCStorages(datacenter_name, False)
     return [sdObj.get_name() for sdObj in sdObjList if
-            sdObj.get_type() == ENUMS['storage_dom_type_data']
-            and sdObj.get_storage().get_type() == storage_type
-            and sdObj.get_status().get_state() ==
-            ENUMS['storage_domain_state_active']]
+            validate_domain_storage_type(sdObj, storage_type)]
 
 
 def get_storage_domain_images(storage_domain_name):
