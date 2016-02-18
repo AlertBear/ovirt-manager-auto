@@ -525,7 +525,7 @@ class TestLinkedCase5(TestCase):
             logger.error("Cannot remove nic from setup")
 
         logger.info("Removing vnic profile")
-        if not ll_networks.removeVnicProfile(
+        if not ll_networks.remove_vnic_profile(
                 positive=True, vnic_profile_name=config.VNIC_PROFILE[0],
                 network=config.VLAN_NETWORKS[0]
         ):
@@ -854,7 +854,7 @@ class TestLinkedCase7(TestCase):
                 "Cannot remove nic %s from setup", config.NIC_NAME[1]
             )
 
-        if not ll_networks.removeVnicProfile(
+        if not ll_networks.remove_vnic_profile(
                 positive=True, vnic_profile_name=config.VNIC_PROFILE[0],
                 network=config.VLAN_NETWORKS[1]
         ):

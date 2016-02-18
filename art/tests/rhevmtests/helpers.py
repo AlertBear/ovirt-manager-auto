@@ -10,8 +10,8 @@ import os
 
 from rrmngmnt import ssh
 from rhevmtests import config
-from art.test_handler import exceptions
 from art.rhevm_api.resources import User, Host, storage
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     jobs as ll_jobs,
@@ -253,18 +253,15 @@ def wait_for_jobs_deco(jobs):
 
 def get_vm_resource(vm):
     """
-    Get VM executor
+    Get VM resource
 
-    :param vm: VM name
-    :type vm: str
-    :return: VM executor
-    :rtype: resource_vds
+    Args:
+        vm (str): VM name
+
+    Returns:
+        Host: VM resource
     """
-    logger.info("Get IP for: %s", vm)
-    rc, ip = ll_vms.waitForIP(vm=vm, timeout=config.VM_IP_TIMEOUT)
-    if not rc:
-        raise exceptions.CanNotFindIP("Failed to get IP for: %s" % vm)
-    ip = ip["ip"]
+    ip = hl_vms.get_vm_ip(vm_name=vm)
     return get_host_resource(ip, config.VMS_LINUX_PW)
 
 

@@ -17,7 +17,6 @@ from art.test_handler import exceptions
 from art.rhevm_api.utils import test_utils
 import rhevmtests.helpers as global_helper
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.events as ll_events
@@ -30,12 +29,14 @@ logger = logging.getLogger("Global_Network_Helper")
 
 ENUMS = settings.opts['elements_conf']['RHEVM Enums']
 IFCFG_PATH = "/etc/sysconfig/network-scripts"
+EXCLUDE_NICS = ["ifcfg-eth0", "ifcfg-lo"]
 APPLY_NETWORK_CHANGES_EVENT_CODE = 1146
 
 
 def create_random_ips(num_of_ips=2, mask=16):
     """
     Create random IPs (only support masks 8/16/24)
+
     :param num_of_ips: Number of IPs to create
     :type num_of_ips: int
     :param mask: IP subnet to create the IPs for
@@ -283,7 +284,7 @@ def update_host_net_qos(qos_name, datacenter=conf.DC_NAME[0], **qos_dict):
 
 def set_libvirt_sasl_status(engine_resource, host_resource, sasl=False):
     """
-    Set passwordless ssh from emgine to host
+    Set passwordless ssh from engine to host
     Set sasl on/off for libvirtd on host
 
     :param engine_resource: Engine resource
@@ -302,6 +303,7 @@ def set_libvirt_sasl_status(engine_resource, host_resource, sasl=False):
 
         if not set_libvirtd_sasl(host_obj=host_resource, sasl=sasl):
             raise conf.NET_EXCEPTION()
+
     else:
         set_libvirtd_sasl(host_obj=host_resource, sasl=sasl)
 
@@ -512,23 +514,6 @@ def check_traffic_during_func_operation(
     return tcpdump_job.result and func_job.result
 
 
-def get_vm_resource(vm):
-    """
-    Get VM executor
-
-    :param vm: VM name
-    :type vm: str
-    :return: VM executor
-    :rtype: resource_vds
-    """
-    logger.info("Get IP for: %s", vm)
-    rc, ip = ll_vms.waitForIP(vm=vm, timeout=conf.TIMEOUT)
-    if not rc:
-        raise conf.NET_EXCEPTION("Failed to get IP for: %s" % vm)
-    ip = ip["ip"]
-    return global_helper.get_host_resource(ip, conf.VMS_LINUX_PW)
-
-
 def remove_networks_from_setup(hosts=None, dc=conf.DC_NAME[0]):
     """
     Remove all networks from datacenter and hosts
@@ -547,29 +532,32 @@ def remove_networks_from_setup(hosts=None, dc=conf.DC_NAME[0]):
         logger.error("Cannot remove all networks from setup")
 
 
-def remove_ifcfg_files(vms):
+def remove_ifcfg_files(vms, exclude_nics=list()):
     """
     Remove all ifcfg files beside exclude_nics from vms
 
-    :param vms: List of VMs
-    :type vms: list
-    :raise: NetworkException
+    Args:
+        vms (list): List of VMs
+        exclude_nics (list): NICs to exclude from remove
+
+    Returns:
+        bool: True if operation succeed, False otherwise
     """
-    exclude_nics = ["ifcfg-eth0", "ifcfg-lo"]
+    exclude_nics = exclude_nics if exclude_nics else EXCLUDE_NICS
     for vm in vms:
-        try:
-            vm_resource = get_vm_resource(vm=vm)
-        except conf.NET_EXCEPTION:
-            logger.error("Failed to get VM resource for %s", vm)
-            continue
-        ifcfg_files = get_all_ifcfg_files(hl_vms.get_vm_ip(vm, start_vm=False))
+        vm_resource = global_helper.get_vm_resource(vm=vm)
+        rc, out, _ = vm_resource.run_command(["ls", "%s/ifcfg-*" % IFCFG_PATH])
+        if rc:
+            return False
+
         ifcfg_files = filter(
-            lambda x: x.rsplit("/")[-1] not in exclude_nics, ifcfg_files
+            lambda x: x.rsplit("/")[-1] not in exclude_nics, out.splitlines()
         )
         for ifcfg in ifcfg_files:
             logger.info("Remove %s from %s", ifcfg, vm)
             if not vm_resource.fs.remove(path=ifcfg):
                 logger.error("Fail to remove %s for %s", ifcfg, vm)
+    return True
 
 
 def get_vm_interfaces_list(vm_resource, exclude_nics):
@@ -585,21 +573,10 @@ def get_vm_interfaces_list(vm_resource, exclude_nics):
     """
     logger.info("Getting interfaces list from %s", vm_resource.ip)
     vm_nics = vm_resource.network.all_interfaces()
-    return filter(lambda x: x not in exclude_nics, vm_nics)
-
-
-def get_all_ifcfg_files(host_ip):
-    """
-    Get all ifcfg files from Host resource
-
-    :param host_ip: Host IP
-    :type host_ip: str
-    :return: List of all ifcfg files
-    :rtype: list
-    """
-    resource = helpers.get_host_resource(host_ip, conf.HOSTS_PW)
-    rc, out, err = resource.run_command(["ls", "%s/ifcfg-*" % IFCFG_PATH])
-    return [] if rc else out.splitlines()
+    res = filter(lambda x: x not in exclude_nics, vm_nics)
+    if not res:
+        logger.error("Failed to get VM %s interfaces list", vm_resource.ip)
+    return res
 
 
 def remove_networks_from_host(hosts=None):
@@ -647,6 +624,7 @@ def send_icmp_sampler(
     )
     if not sample.waitForFuncStatus(result=True):
         raise conf.NET_EXCEPTION("Couldn't ping %s " % dst)
+
     logger.info("Traffic from %s to %s succeed", host_resource.ip, dst)
 
 

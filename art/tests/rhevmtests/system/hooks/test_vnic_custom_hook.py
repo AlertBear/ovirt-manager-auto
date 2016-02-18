@@ -78,10 +78,10 @@ def teardown_module():
                              password=config.HOSTS_PW,
                              cmd=REMOVE_HOOKS)[0]
     assert vms.removeVm(True, config.HOOKS_VM_NAME, stopVM='true')
-    networks.removeVnicProfile(
+    networks.remove_vnic_profile(
         True, PROFILE_A, config.MGMT_BRIDGE, config.CLUSTER_NAME[0]
     )
-    networks.removeVnicProfile(
+    networks.remove_vnic_profile(
         True, PROFILE_B, config.MGMT_BRIDGE, config.CLUSTER_NAME[0]
     )
 

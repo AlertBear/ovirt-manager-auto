@@ -1520,28 +1520,28 @@ def updateVmDisk(positive, vm, disk, **kwargs):
 @is_action()
 def updateNic(positive, vm, nic, **kwargs):
     """
-    Update nic of vm
+    Update VM NIC
 
-    :param positive: Expected status
-    :type positive: bool
-    :param vm: VM name where nic should be updated
-    :type vm: str
-    :param nic: NIC name that should be updated
-    :type nic: str
-    :param kwargs: kwargs for update VM NIC
+    Args:
+        positive (bool): Expected status
+        vm (str): VM name where nic should be updated
+        nic (str): NIC name that should be updated
+        kwargs (dict): kwargs for update VM NIC
+
+    Keyword Arguments:
         name (str): NIC name
         network (str): Network name
         vnic_profile (str): The VNIC profile that will be selected for the NIC
         interface (str): NIC type. (virtio, rtl8139, e1000 and passthrough)
         mac_address (str): NIC mac address
-        plugged (bool): Add the NIC with plugged/unplugged state
-        linked (bool): Add the NIC with linked/unlinked state
-    :type kwargs: dict
-    :return: status (True if NIC was updated properly, False otherwise)
-    :rtype: bool
+        plugged (bool): Update the NIC with plugged/unplugged state
+        linked (bool): Update the NIC with linked/unlinked state
+
+    Returns:
+        bool: status (True if NIC was updated properly, False otherwise)
     """
     log_info_txt, log_error_txt = ll_general.get_log_msg(
-        action="update vNIC", obj_type="nic", obj_name=nic,
+        action="update", obj_type="vNIC", obj_name=nic,
         positive=positive, **kwargs
     )
     nic_new = _prepareNicObj(vm=vm, **kwargs)

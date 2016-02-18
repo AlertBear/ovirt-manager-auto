@@ -8,8 +8,8 @@ import config as conf
 import art.unittest_lib as u_libs
 from art.unittest_lib import attr
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+import rhevmtests.helpers as global_helpers
 import art.test_handler.exceptions as errors
-import rhevmtests.networking.helper as network_helpers
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
@@ -69,7 +69,7 @@ class BaseNumaClass(u_libs.SlaTest):
         :rtype: dict
         """
         params_dict = {}
-        vm_resource = network_helpers.get_vm_resource(vm=vm_name)
+        vm_resource = global_helpers.get_vm_resource(vm=vm_name)
         if not vm_resource:
             return params_dict
         logger.info(

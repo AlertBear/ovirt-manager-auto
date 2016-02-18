@@ -23,7 +23,7 @@ def update_host_nics():
     conf.HOST_0_NICS = conf.VDS_0_HOST.nics
 
 
-@attr(tier=2)
+@attr(tier=2, extra_reqs={"sriov": True})
 class TestSriovBase(NetworkTest):
     """
     base class which provides teardown class method for each test case
@@ -34,8 +34,10 @@ class TestSriovBase(NetworkTest):
     def teardown_class(cls):
         """
         Set number of VFs for PF to be 0
+        Set all_allowed_networks to True
         """
         cls.pf_obj.set_number_of_vf(0)
+        cls.pf_obj.set_all_networks_allowed(enable=True)
 
 
 def get_vlan_id_from_vm_xml(vm):

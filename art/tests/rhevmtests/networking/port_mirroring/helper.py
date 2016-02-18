@@ -101,7 +101,7 @@ def check_traffic_during_icmp(
     :return: True if traffic was received while sending ICMP
     :rtype: bool
     """
-    listen_vm_obj = net_help.get_vm_resource(vm=listen_vm)
+    listen_vm_obj = helpers.get_vm_resource(vm=listen_vm)
     src_vm_obj = helpers.get_host_resource(
         ip=src_vm, password=conf.VMS_LINUX_PW
     )

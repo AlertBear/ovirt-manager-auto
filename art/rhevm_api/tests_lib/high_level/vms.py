@@ -121,24 +121,27 @@ def prepare_vm_for_rhel_template(vm_name, vm_password, image):
 
 def get_vm_ip(vm_name, start_vm=True):
     """
-    Start vm and return vm ip
-    **Author**: alukiano
+    Start VM and return VM IP
 
-    **Parameters**:
-        * *vm_name* - vm name
-    **Returns**: vm ip as string
+    __Author__: alukiano
+
+    Args:
+        vm_name (str): vm name
+
+    Returns:
+        str: VM IP
     """
     logging.info("Check vm %s status", vm_name)
     if vms.checkVmState(True, vm_name, ENUMS['vm_state_down']) and start_vm:
         logging.info("Start vm %s", vm_name)
         if not vms.startVm(True, vm_name):
-            raise errors.VMException("Failed to start vm %s" %
-                                     vm_name)
-    logging.info("Wait until vm %s up and fetch ip", vm_name)
+            raise errors.VMException("Failed to start vm %s" % vm_name)
+
+    logging.info("Wait until vm %s is up and fetch ip", vm_name)
     status, result = vms.waitForIP(vm_name)
     if not status:
-        raise errors.VMException("Vm %s still not have ip" %
-                                 vm_name)
+        raise errors.VMException("Vm %s didn't get IP" % vm_name)
+
     return result.get('ip')
 
 

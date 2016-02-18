@@ -24,8 +24,8 @@ from art.rhevm_api.tests_lib.high_level.networks import(
 )
 from art.rhevm_api.tests_lib.low_level.networks import(
     updateNetwork, update_vnic_profile, getNetworkVnicProfiles,
-    get_vnic_profile_obj, add_vnic_profile, removeVnicProfile, findVnicProfile,
-    get_vnic_profile_attr, removeNetwork
+    get_vnic_profile_obj, add_vnic_profile, remove_vnic_profile,
+    findVnicProfile, get_vnic_profile_attr, removeNetwork
 )
 from art.rhevm_api.tests_lib.low_level.vms import(
     addNic, updateNic, removeNic, createVm, checkVmNicProfile, removeVm
@@ -797,7 +797,7 @@ class TestVNICProfileCase09(TestCase):
             raise NetworkException("Couldn't remove NIC from template")
 
         logger.info("Remove VNIC profile %s", config.NETWORKS[0])
-        if not removeVnicProfile(
+        if not remove_vnic_profile(
             positive=True, vnic_profile_name=config.NETWORKS[0],
             network=config.NETWORKS[0]
         ):
@@ -1299,7 +1299,7 @@ class TestVNICProfileCase14(TestCase):
         logger.info(
             "Try to remove %s profile when VM is using it", config.NETWORKS[0]
         )
-        if not removeVnicProfile(
+        if not remove_vnic_profile(
             positive=False, vnic_profile_name=config.NETWORKS[0],
             network=config.NETWORKS[0]
         ):

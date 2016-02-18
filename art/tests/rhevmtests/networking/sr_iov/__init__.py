@@ -23,9 +23,13 @@ def setup_package():
     """
     networking.network_cleanup()
     conf.HOST_0_NAME = conf.HOSTS[0]
+    conf.HOST_1_NAME = conf.HOSTS[1]
     conf.VDS_0_HOST = conf.VDS_HOSTS[0]
+    conf.VDS_1_HOST = conf.VDS_HOSTS[1]
     conf.HOST_0_NICS = conf.VDS_0_HOST.nics
+    conf.HOST_1_NICS = conf.VDS_1_HOST.nics
     conf.HOST_O_SRIOV_NICS_OBJ = ll_sriov.SriovHostNics(conf.HOST_0_NAME)
+    conf.HOST_1_SRIOV_NICS_OBJ = ll_sriov.SriovHostNics(conf.HOST_1_NAME)
     conf.HOST_0_PF_LIST = conf.HOST_O_SRIOV_NICS_OBJ.get_all_pf_nics_objects()
     conf.HOST_0_PF_NAMES = conf.HOST_O_SRIOV_NICS_OBJ.get_all_pf_nics_names()
     mgmt_nic_obj = hl_networks.get_management_network_host_nic(

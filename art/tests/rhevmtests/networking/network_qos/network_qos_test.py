@@ -115,7 +115,7 @@ class TestNetQOSCase01(TestCase):
                 config.NIC_NAME_1, config.VM_NAME_0
             )
         logger.info("Remove VNIC profile %s", cls.vnic_profile)
-        if not ll_networks.removeVnicProfile(
+        if not ll_networks.remove_vnic_profile(
             positive=True, vnic_profile_name=cls.vnic_profile,
             network=config.MGMT_BRIDGE, data_center=config.DC_NAME
         ):
@@ -308,7 +308,7 @@ class TestNetQOSCase02(TestCase):
                 "Couldn't delete the QoS newQoS from DC %s", config.DC_NAME
             )
         logger.info("Remove VNIC profile %s", cls.vnic_profile)
-        if not ll_networks.removeVnicProfile(
+        if not ll_networks.remove_vnic_profile(
             positive=True, vnic_profile_name=cls.vnic_profile,
             network=config.MGMT_BRIDGE, data_center=config.DC_NAME
         ):
@@ -473,7 +473,7 @@ class TestNetQOSCase03(TestCase):
                 )
 
         logger.info("Remove VNIC profile %s", cls.vnic_profile)
-        if not ll_networks.removeVnicProfile(
+        if not ll_networks.remove_vnic_profile(
             positive=True, vnic_profile_name=cls.vnic_profile,
             network=config.MGMT_BRIDGE, data_center=config.DC_NAME
         ):
@@ -644,7 +644,7 @@ class TestNetQOSCase04(TestCase):
 
         logger.info("Remove VNIC profiles %s", cls.vnic_profiles)
         for vnic_profile in cls.vnic_profiles:
-            if not ll_networks.removeVnicProfile(
+            if not ll_networks.remove_vnic_profile(
                 positive=True, vnic_profile_name=vnic_profile,
                 network=config.MGMT_BRIDGE, data_center=config.DC_NAME
             ):
@@ -781,7 +781,7 @@ class TestNetQOSCase05(TestCase):
             )
 
         logger.info("Remove VNIC profile %s", cls.vnic_profile)
-        if not ll_networks.removeVnicProfile(
+        if not ll_networks.remove_vnic_profile(
             positive=True, vnic_profile_name=cls.vnic_profile,
             network=config.MGMT_BRIDGE, data_center=config.DC_NAME
         ):

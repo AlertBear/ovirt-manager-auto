@@ -248,7 +248,7 @@ class TestSriov02(NetworkTest):
         Remove vNIC profile
         """
         for vnic in cls.vnic_p_list:
-            ll_networks.removeVnicProfile(
+            ll_networks.remove_vnic_profile(
                 positive=True, vnic_profile_name=vnic,
                 network=cls.mgmt_net, data_center=cls.dc
             )

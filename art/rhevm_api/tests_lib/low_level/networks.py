@@ -383,7 +383,7 @@ def update_vnic_profile(name, network, **kwargs):
     :return: True, if adding vnic profile was success, otherwise False
     """
     log_info, log_error = ll.general.get_log_msg(
-        action="update", obj_type="nic", obj_name=name, **kwargs
+        action="update", obj_type="vNIC profile", obj_name=name, **kwargs
     )
     kwargs["name"] = name
     cluster = kwargs.get("cluster")
@@ -497,66 +497,67 @@ def add_vnic_profile(positive, name, **kwargs):
     """
     Add new vnic profile to network in cluster with cluster_name
 
-    :param positive: Expected result
-    :type positive: bool
-    :param name: name of vnic profile
-    :type name: str
-    :param kwargs: kwargs for vnic profile
-        :param network: Network name to be used by created profile
-        :type network: str
-        :param cluster: Name of cluster in which the network is located
-        :type cluster: str
-        :param data_center: Name of the data center in which the network is
-        located
-        :type data_center: str
-        :param port_mirroring: Enable or disable port mirroring for profile
-        :type port_mirroring: bool
-        :param custom_properties: Custom properties for the profile
-        :type custom_properties: str
-        :param description: Description of vnic profile
-        :type description: str
-        :param pass_through: Enable or disable pass through mode
-        :type pass_through: bool
-    :return: True, if adding vnic profile was success, otherwise False
-    :rtype: bool
+    Args:
+        positive (bool): Expected result
+        name (str): Name of vnic profile
+        kwargs (dict): kwargs for vnic profile
+
+    Keyword Arguments:
+        network (str): Network name to be used by created profile
+        cluster (str): Name of cluster in which the network is located
+        data_center (str): Name of the data center in which the network is
+            located
+        port_mirroring (bool): Enable or disable port mirroring for profile
+        custom_properties (str): Custom properties for the profile
+        description (str): Description of vnic profile
+        pass_through (bool): Enable or disable pass through mode
+
+    Returns:
+        bool: True, if adding vnic profile was success, otherwise False
     """
+    log_info_txt, log_error_txt = ll.general.get_log_msg(
+        action="Add", obj_type="vNIC profile", obj_name=name,
+        positive=positive, **kwargs
+    )
     kwargs["name"] = name
     vnic_profile_obj = _prepare_vnic_profile_object(kwargs=kwargs)
-    logger.info(
-        "Create %s profile for network %s", name, kwargs.get("network")
-    )
+    logger.info(log_info_txt)
     if not VNIC_PROFILE_API.create(vnic_profile_obj, positive)[1]:
-        logger.error("Creating %s profile failed", name)
+        logger.error(log_error_txt)
         return False
-
     return True
 
 
 @is_action()
-def removeVnicProfile(positive, vnic_profile_name, network, cluster=None,
-                      data_center=None):
+def remove_vnic_profile(
+    positive, vnic_profile_name, network, cluster=None, data_center=None
+):
     """
-    Description: Remove vnic profiles with given names
-    __author__ = "alukiano"
-    :param positive: Expected result for remove vNIC profile
-    :type positive: bool
-    :param vnic_profile_name: Vnic profile name
-    :type vnic_profile_name: str
-    :param network: Network name used by profile
-    :type network: str
-    :param cluster: Name of the cluster the network reside on
-    :type cluster: str or None (for all clusters)
-    :param data_center:  Name of the data center the network reside on
-    :type data_center: str or None (for all DCs)
-    :return: True if action succeeded, otherwise False
-    :rtype: bool
-    """
-    profileObj = get_vnic_profile_obj(vnic_profile_name, network, cluster,
-                                      data_center)
-    logger.info("Remove vNIC profile %s", vnic_profile_name)
+    Remove vnic profiles with given names
 
-    if not VNIC_PROFILE_API.delete(profileObj, positive):
-        logger.error("Expected result should be %s", positive)
+    __author__ = "alukiano"
+
+    Args:
+        positive (bool): Expected result for remove vNIC profile
+        vnic_profile_name (str): Vnic profile name
+        network (str): Network name used by profile
+        cluster (str): Name of the cluster the network resides on
+        data_center (str):  Name of the data center the network resides on
+
+    Returns:
+        bool: True if action succeeded, otherwise False
+    """
+    log_info_txt, log_error_txt = ll.general.get_log_msg(
+        action="Remove", obj_type="vNIC profile", obj_name=vnic_profile_name,
+        positive=positive, network=network, cluster=None, data_center=None
+    )
+    profile_obj = get_vnic_profile_obj(
+        vnic_profile_name, network, cluster, data_center
+    )
+    logger.info(log_info_txt)
+
+    if not VNIC_PROFILE_API.delete(profile_obj, positive):
+        logger.error(log_error_txt)
         return False
     return True
 
