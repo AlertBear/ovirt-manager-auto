@@ -207,6 +207,8 @@ def _prepareVmObject(**kwargs):
     :type numa_mode: str
     :param cpu_shares: cpu shares
     :type cpu_shares: int
+    :param serial_number: serial number to use
+    :type serial_number: str
     :returns: vm object
     :rtype: instance of VM
     """
@@ -450,6 +452,15 @@ def _prepareVmObject(**kwargs):
     cpu_shares = kwargs.pop("cpu_shares", None)
     if cpu_shares is not None:
         vm.set_cpu_shares(cpu_shares)
+
+    # serial number
+    serial_number = kwargs.pop("serial_number", None)
+    if serial_number is not None:
+        sr = data_st.SerialNumber()
+        sr.set_policy('custom')
+        sr.set_value(serial_number)
+        vm.set_serial_number(sr)
+
     return vm
 
 
@@ -570,6 +581,8 @@ def addVm(positive, wait=True, **kwargs):
     :type initialization: Initialization
     :param cpu_shares: cpu shares
     :type cpu_shares:int
+    :param serial_number: serial number to use
+    :type serial_number: str
     :returns: True, if add vm success, otherwise False
     :rtype: bool
     """
@@ -2588,7 +2601,7 @@ def createVm(
         copy_permissions=False, custom_properties=None,
         watchdog_model=None, watchdog_action=None, cpu_profile_id=None,
         numa_mode=None, ballooning=None, memory_guaranteed=None,
-        initialization=None, cpu_shares=None
+        initialization=None, cpu_shares=None, serial_number=None,
 ):
     """
     Create new vm with nic, disk and OS
@@ -2689,6 +2702,8 @@ def createVm(
     :type initialization: Initialization
     :param cpu_shares: cpu_shares
     :type cpu_shares: int
+    :param serial_number: serial number to use
+    :type serial_number: str
     :returns: True, if create vm success, otherwise False
     :rtype: bool
     """
@@ -2708,7 +2723,8 @@ def createVm(
         custom_properties=custom_properties,
         cpu_profile_id=cpu_profile_id, numa_mode=numa_mode,
         ballooning=ballooning, memory_guaranteed=memory_guaranteed,
-        initialization=initialization, cpu_shares=cpu_shares
+        initialization=initialization, cpu_shares=cpu_shares,
+        serial_number=serial_number,
     ):
         return False
 

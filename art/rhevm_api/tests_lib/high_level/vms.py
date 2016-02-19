@@ -5,6 +5,8 @@ High-level functions above virtual machines
 from art.rhevm_api import resources
 import logging
 import shlex
+import urllib
+
 from concurrent.futures import ThreadPoolExecutor
 from art.core_api import is_action
 import art.rhevm_api.tests_lib.low_level.vms as vms
@@ -17,6 +19,8 @@ from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 from art.rhevm_api.utils.test_utils import getStat
 
+from utilities.timeout import TimeoutingSampler
+
 LOGGER = logging.getLogger("art.hl_lib.vms")
 ENUMS = opts['elements_conf']['RHEVM Enums']
 CLUSTER_API = get_api('cluster', 'clusters')
@@ -28,7 +32,9 @@ GB = 1024 ** 3
 TIMEOUT = 120
 ATTEMPTS = 600
 INTERVAL = 2
+SLEEP_TIME = 30
 MIGRATION_TIMEOUT = 300
+WGT_INSTALL_TIMEOUT = 600
 CHECK_MEMORY_COMMAND = "grep 'MemTotal' /proc/meminfo | awk '{ print $2 }'"
 
 ProvisionContext = vms.ProvisionContext
@@ -786,3 +792,123 @@ def expand_vm_memory(vm_name, mem_size_to_expand, number_of_times=1):
         % (memory_size_before, memory_size_after, new_memory_size)
     )
     return memory_size_before, memory_size_after, new_memory_size
+
+
+def create_windows_vm(
+    disk_name,
+    iso_name,
+    agent_url,
+    glance_domain=None,
+    storage_name=None,
+    **vm_kwargs
+):
+    """
+    Create vm with windows image from glance and install guest tools
+
+    :param disk_name: Name of the disk with windows to use
+    :type disk_name: str
+    :param iso_name: ISO file with guest tools to install
+    :type iso_name: str
+    :param agent_url: URL where agent of guest tools is running
+    :type agent_url: str
+    :param glance_domain: Name of glance domain to use
+    :type glance_domain: str
+    :param storage_name: Name of storage where import glance image
+    :type storage_name: str
+    :param vm_kwargs: kwargs to createVm method
+    :type vm_kwargs: dictionary
+    :return: Tuple with status and failure message
+    :rtype: tuple
+    """
+    def __get_install_status(
+        vm_id,
+        sleep_time=SLEEP_TIME,
+        max_time=WGT_INSTALL_TIMEOUT
+    ):
+        request = None
+        LOGGER.info("Quering for WGT installation status")
+
+        for request in TimeoutingSampler(
+            max_time,
+            sleep_time,
+            urllib.urlopen,
+            agent_url.format(action='query', vm_id=vm_id),
+        ):
+            status = request.getcode()
+            if status == 200:
+                break
+            elif status == 404:
+                LOGGER.info('Still waiting for results...')
+            else:
+                LOGGER.error("Got invalid status: '%s'", status)
+                request = None
+                break
+
+        return request
+
+    # import image from glance
+    if glance_domain and storage_name:
+        if not storagedomains.import_glance_image(
+            glance_repository=glance_domain,
+            glance_image=disk_name,
+            target_storage_domain=storage_name,
+            target_cluster=vm_kwargs.get('cluster'),
+            new_disk_alias=disk_name,
+        ):
+            return False, "Failed to import image '%s'" % disk_name
+
+    # create vm & start vm
+    vm_name = vm_kwargs.get('vmName')
+    if not vms.createVm(**vm_kwargs):
+        return False, "Failed to create vm '%s'" % vm_name
+
+    if not vms.addNic(
+        positive=True,
+        vm=vm_name,
+        name='virtioNIC',
+        network=vm_kwargs.get('network'),
+        interface=ENUMS['nic_type_virtio'],
+    ):
+        return False, "Failed to add nic to vm '%s'" % vm_name
+
+    if not disks.attachDisk(True, disk_name, vm_name):
+        return False, "Failed to attach disk to vm '%s'" % vm_name
+
+    if not vms.startVm(True, vm_name, wait_for_status=ENUMS["vm_state_up"]):
+        return False, "Failed to start vm '%s'" % vm_name
+
+    # Reset vm
+    vm_id = vms.get_vm(vm_name).get_id()
+    LOGGER.info("Resseting vm '%s' record", vm_name)
+    request = urllib.urlopen(
+        agent_url.format(
+            action='reset',
+            vm_id=vm_id,
+        )
+    )
+    if request.getcode() != 202:
+        return False, 'Error resetting VM record'
+
+    # Attach CD & run installation
+    if not vms.changeCDWhileRunning(
+        vm_name=vm_name,
+        cdrom_image=iso_name,
+    ):
+        return False, "Failed to change CD to %s" % iso_name
+
+    # Get install status and verify
+    request = __get_install_status(vm_id)
+    if request is None:
+        return (
+            False,
+            "There was an error installing RHEV tools, please examine logs"
+        )
+
+    status_code = request.read()
+    if status_code != '3010':
+        return (
+            False,
+            "RHEV Tools installation completed with code: '%s'" % status_code
+        )
+    LOGGER.info("RHEV Tools installation completed successfully")
+    return True, "Vm '%s' successfully created" % vm_name

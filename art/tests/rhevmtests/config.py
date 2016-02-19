@@ -523,3 +523,6 @@ JOB_ADD_VM = ENUMS['job_add_vm']
 JOB_IMPORT_VM = ENUMS['job_import_vm']
 JOB_MIGRATE_VM = ENUMS['job_migrate_vm']
 JOB_REMOVE_VM = ENUMS['job_remove_vm']
+
+# agent URL for guest tools testing
+AGENT_URL = 'http://10.34.63.72/cirunner/ci.php?action={action}&hostID={vm_id}'
