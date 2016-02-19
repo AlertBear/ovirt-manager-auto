@@ -84,6 +84,15 @@ def setup_package():
         raise EnvironmentError(
             "This environment doesn't include rhev-h hosts"
         )
+
+    # set best cpu family model for all hosts
+    cpu_model = helpers.determine_best_cpu_model(
+        config.VDS_HOSTS,
+        config.COMP_VERSION,
+    )
+    if cpu_model:
+        config.CPU_NAME = cpu_model
+
     # setup inventory reporter
     reporter = Inventory.get_instance()
     reporter.get_setup_inventory_report(

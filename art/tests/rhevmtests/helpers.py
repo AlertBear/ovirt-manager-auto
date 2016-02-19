@@ -21,6 +21,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 from art.rhevm_api.utils.test_utils import wait_for_tasks
+from art.rhevm_api.utils import cpumodel
 
 
 NFS = config.STORAGE_TYPE_NFS
@@ -315,3 +316,24 @@ def storage_cleanup():
                 hl_sd.destroy_storage_domain(sd_name, dc_name, host_name=spm)
 
     cleanup_file_resources(config.opts['storages'])
+
+
+def determine_best_cpu_model(hosts, comp_version=None):
+    """
+    Returns the best cpu family for given hosts
+
+    :param hosts: list of hosts
+    :type hosts: list of resources.Host instances
+    :param comp_version: compatibility version
+    :type comp_version: str
+
+    :returns: cpu family name
+    :rtype: str (None in case of failure)
+    """
+    cpu_den = cpumodel.CpuModelDenominator()
+    try:
+        return cpu_den.get_common_cpu_model(
+            hosts, version=comp_version,
+        )
+    except cpumodel.CpuModelError as ex:
+        logger.error("Can not determine the best cpu_model: %s", ex)
