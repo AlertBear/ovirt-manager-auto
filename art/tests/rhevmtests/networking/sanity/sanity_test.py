@@ -1249,6 +1249,7 @@ class TestSanity15(TestSanityCaseBase):
                 "Failed to set down %s" % conf.HOST_0_NICS[1]
             )
 
+    @bz({"1310417": {}})
     @polarion("RHEVM3-3750")
     def test_non_operational(self):
         """
