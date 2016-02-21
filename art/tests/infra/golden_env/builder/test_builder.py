@@ -319,7 +319,9 @@ class CreateDC(TestCase):
                 vm_description['clone_from']
             )
 
-            vol_sparse = False if 'iscsi' in destination_sd else None
+            vol_sparse = None
+            if 'iscsi' in destination_sd and config.PPC_ARCH:
+                vol_sparse = False
             ll_vms.cloneVmFromTemplate(
                 True,
                 vm_description['name'],
