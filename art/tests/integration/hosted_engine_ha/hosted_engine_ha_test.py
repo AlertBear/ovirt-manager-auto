@@ -1213,9 +1213,6 @@ class TestLocalMaintenance(GeneralSetupTeardownClass):
     host score dropped to zero.
     """
     __test__ = True
-    bz = {
-        "1280380": {"engine": None, "version": ["3.6"]}
-    }
 
     @classmethod
     def setup_class(cls):
@@ -1413,8 +1410,8 @@ class TestStopAgentAndBrokerServices(StopServices):
     and check that vm not migrate to second host
     """
     __test__ = True
-    stop_services = [conf.BROKER_SERVICE, conf.AGENT_SERVICE]
-    start_services = [conf.BROKER_SERVICE, conf.AGENT_SERVICE]
+    stop_services = [conf.AGENT_SERVICE, conf.BROKER_SERVICE]
+    start_services = [conf.AGENT_SERVICE, conf.BROKER_SERVICE]
 
     @tools.polarion("RHEVM3-5522")
     def test_check_he_vm(self):

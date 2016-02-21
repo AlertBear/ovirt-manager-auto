@@ -96,7 +96,7 @@ compute_servers = {
         PM_TYPE: ENUMS["pm_bladecenter"],
         PM_USERNAME: IBM_PM_USERNAME,
         PM_PASSWORD: IBM_PM_PASSWORD,
-        PM_SLOT: 3
+        PM_SLOT: "3"
     },
     "aqua-vds2.qa.lab.tlv.redhat.com": {
         PM_ADDRESS: "aqua-vds2-mgmt.qa.lab.tlv.redhat.com",
