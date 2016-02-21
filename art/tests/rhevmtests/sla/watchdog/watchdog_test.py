@@ -35,6 +35,7 @@ DUMP_PATH = '/var/lib/libvirt/qemu/dump'
 ENGINE_LOG = '/var/log/ovirt-engine/engine.log'
 WATCHDOG_PACKAGE = 'watchdog'
 LSHW_PACKAGE = 'lshw'
+LSPCI_PACKAGE = 'lspci'
 KILLALL_PACKAGE = 'psmisc'
 WATCHDOG_CONFIG_FILE = '/etc/watchdog.conf'
 
@@ -122,16 +123,15 @@ class WatchdogMixin(object):
         :type vm_name: str
         """
         vm_resource = self.get_vm_resource_by_name(vm_name)
-        if config.PPC_ARCH:
-            if not vm_resource.package_manager.install(LSHW_PACKAGE):
-                return False
+        get_dev_package = LSHW_PACKAGE if config.PPC_ARCH else LSPCI_PACKAGE
+        if not vm_resource.package_manager.install(get_dev_package):
+            return False
 
         logger.info(
             "Check if vm %s have watchdog device %s",
             vm_name, config.WATCHDOG_MODEL[1:]
         )
-        command = "lshw" if config.PPC_ARCH else "lspci"
-        cmd = [command, '|', 'grep', '-i', config.WATCHDOG_MODEL[1:]]
+        cmd = [get_dev_package, '|', 'grep', '-i', config.WATCHDOG_MODEL[1:]]
         status = self.run_command_on_resource(vm_resource, cmd)
         if positive:
             self.assertTrue(
