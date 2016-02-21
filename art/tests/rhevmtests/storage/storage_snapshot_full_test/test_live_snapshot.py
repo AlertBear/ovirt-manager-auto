@@ -7,83 +7,66 @@ import config
 import logging
 import os
 import shlex
+from rhevmtests import helpers as rhevm_helpers
+from rhevmtests.networking.helper import seal_vm
 from rhevmtests.storage import helpers as storage_helpers
-
-from concurrent.futures import ThreadPoolExecutor
-
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import StorageTest as TestCase, attr
-
-from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-from art.rhevm_api.tests_lib.low_level import hosts, templates, vms
-from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    getStorageDomainNamesForType,
+from art.rhevm_api.tests_lib.low_level import (
+    jobs as ll_jobs,
+    storagedomains as ll_sds,
+    templates as ll_templates,
+    vms as ll_vms,
 )
-
-from art.rhevm_api.utils import test_utils
 from utilities.machine import Machine, LINUX
 
 
 logger = logging.getLogger(__name__)
-ENUMS = config.ENUMS
-VM_API = test_utils.get_api('vm', 'vms')
-
-BASE_SNAP = "base_snap"  # Base snapshot description
-SNAP_1 = 'spm_snapshot1'
-ACTIVE_SNAP = 'Active VM'
-VM_ON_SPM = 'vm_on_spm_%s'
-VM_ON_HSM = 'vm_on_hsm-%s'
-ACTIVE_VM = 'Active VM'
-
-SPM = None
-HSM = None
-VM_LIST = []
 
 
-def setup_module():
+class BaseTestCase(TestCase):
     """
-    Prepares VMs for testing, sets HSM and SPM hosts
+    This class implements the common setUp and tearDown functions
     """
-    global SPM
-    global HSM
-    assert hosts.waitForSPM(config.DATA_CENTER_NAME, timeout=100, sleep=10)
-    SPM = hosts.returnSPMHost(config.HOSTS)[1]['spmHost']
-    HSM = hosts.getAnyNonSPMHost(config.HOSTS, [config.HOST_UP],
-                                 config.CLUSTER_NAME)[1]['hsmHost']
-    for storage_type in config.STORAGE_SELECTOR:
-        storage_domain = getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, storage_type)[0]
+    __test__ = False
+    polarion_test_case = None
+    # Bugzilla history
+    # 1253338: restore snapshot via API results in snapshot being stuck on
+    # "In preview" status
+
+    def setUp(self):
+        """
+        Create a VM to be used with each test
+        """
+        self.storage_domains = ll_sds.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )
+        self.vm_name = config.VM_NAME % (self.storage, self.polarion_test_case)
         vm_args = config.create_vm_args.copy()
-        vm_args['storageDomainName'] = storage_domain
-        vm_args['start'] = 'true'
-        for host, vm_name in [(SPM, VM_ON_SPM), (HSM, VM_ON_HSM)]:
-            vm_args['vmName'] = vm_name % storage_type
-            vm_args['vmDescription'] = vm_name % storage_type
-            assert storage_helpers.create_vm_or_clone(**vm_args)
-            vm_ip = vms.waitForIP(vm_args['vmName'])[1]['ip']
-            assert test_utils.setPersistentNetwork(vm_ip, config.VM_PASSWORD)
-            assert vms.addSnapshot(
-                True, vm=vm_args['vmName'], description=BASE_SNAP
+        vm_args['storageDomainName'] = self.storage_domains[0]
+        vm_args['vmName'] = self.vm_name
+        vm_args['vmDescription'] = self.vm_name
+        if not storage_helpers.create_vm_or_clone(**vm_args):
+            raise exceptions.VMException(
+                "Failed to create vm %s" % self.vm_name
             )
 
-            VM_LIST.append(vm_args['vmName'])
+    def tearDown(self):
+        """
+        Removes the VM created
+        """
+        if not ll_vms.safely_remove_vms([self.vm_name]):
+            logger.error("Failed to remove vm %s", self.vm_name)
+            TestCase.test_failed = True
+        TestCase.teardown_exception()
 
 
-def teardown_module():
-    """
-    Removes vms
-    """
-    vms.stop_vms_safely(VM_LIST)
-    vms.removeVms(True, VM_LIST)
-
-
-class BasicEnvironmentSetUp(TestCase):
+class BasicEnvironmentSetUp(BaseTestCase):
     """
     This class implements setup, teardowns and common functions
     """
     __test__ = False
-    vm_name = ''
     file_name = 'test_file'
     mount_path = '/root'
     cmd_create = 'echo "test_txt" > test_file'
@@ -93,70 +76,54 @@ class BasicEnvironmentSetUp(TestCase):
         """
         Prepare environment
         """
-        self.vm_on_hsm = VM_ON_HSM % self.storage
-        self.vm_on_spm = VM_ON_SPM % self.storage
+        super(BasicEnvironmentSetUp, self).setUp()
+        if not seal_vm(self.vm_name, config.VM_PASSWORD):
+            raise exceptions.VMException(
+                "Failed to seal vm %s" % self.vm_name
+            )
         self.disk_name = 'test_disk_%s' % self.polarion_test_case
         self.snapshot_desc = 'snapshot_%s' % self.polarion_test_case
-        self.storage_domain = getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )[0]
-        vms.start_vms([self.vm_name], 1, wait_for_ip=False)
-        if not vms.waitForVMState(self.vm_name):
-            raise exceptions.VMException(
-                "Timeout when waiting for vm %s and state up" % self.vm_name)
         self.mounted_paths = []
-        self.boot_disk = vms.get_vm_bootable_disk(self.vm_name)
+        self.boot_disk = ll_vms.get_vm_bootable_disk(self.vm_name)
         logger.info("The boot disk is: %s", self.boot_disk)
-
-    def set_vm_machine_object(self):
+        if not ll_vms.startVm(True, self.vm_name, wait_for_ip=True):
+            raise exceptions.VMException(
+                "Failed to power on vm %s" % self.vm_name
+            )
         vm_ip = storage_helpers.get_vm_ip(self.vm_name)
-        logger.debug("IP for vm %s is %s", self.vm_name, vm_ip)
-        self.vm = Machine(vm_ip, config.VM_USER,
-                          config.VM_PASSWORD).util(LINUX)
-
-    def tearDown(self):
-        storage_helpers.remove_all_vm_snapshots(
-            self.vm_name, self.snapshot_desc
-        )
-        if not vms.start_vms([self.vm_name]):
+        self.vm = Machine(
+            vm_ip, config.VM_USER, config.VM_PASSWORD
+        ).util(LINUX)
+        if not ll_vms.stop_vms_safely([self.vm_name]):
             raise exceptions.VMException(
-                "Failed to start vm %s" % self.vm_name)
-        if not vms.waitForVMState(self.vm_name):
-            raise exceptions.VMException(
-                "Timeout when waiting for vm %s to start" % self.vm_name)
-        self.set_vm_machine_object()
-        if self.check_file_existence_operation(self.vm_name, True):
-            status, _ = self.vm.runCmd(shlex.split(self.cm_del))
-            if not status:
-                raise exceptions.DiskException(
-                    "File deletion from disk failed"
-                )
+                "Failed to power off vm %s" % self.vm_name
+            )
 
     def _perform_snapshot_operation(
             self, vm_name, disks=None, wait=True, live=False):
         if not live:
-            if not vms.get_vm_state(vm_name) == config.VM_DOWN:
-                vms.shutdownVm(True, vm_name)
-                vms.waitForVMState(vm_name, config.VM_DOWN)
+            if not ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
+                ll_vms.shutdownVm(True, vm_name)
+                ll_vms.waitForVMState(vm_name, config.VM_DOWN)
         if disks:
             is_disks = 'disks: %s' % disks
         else:
             is_disks = 'all disks'
         logger.info("Adding new snapshot to vm %s with %s",
                     self.vm_name, is_disks)
-        status = vms.addSnapshot(
+        status = ll_vms.addSnapshot(
             True, vm_name, self.snapshot_desc, disks_lst=disks, wait=wait)
-        self.assertTrue(status, "Failed to create snapshot %s" %
-                                self.snapshot_desc)
+        self.assertTrue(
+            status, "Failed to create snapshot %s" % self.snapshot_desc
+        )
         if wait:
-            vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
-            wait_for_jobs([ENUMS['job_create_snapshot']])
+            ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
+            ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
 
     def check_file_existence_operation(self, vm_name, should_exist=True):
 
-        vms.start_vms([vm_name], 1, wait_for_ip=False)
-        vms.waitForVMState(vm_name)
-        self.set_vm_machine_object()
+        ll_vms.start_vms([vm_name], 1, wait_for_ip=False)
+        ll_vms.waitForVMState(vm_name)
         full_path = os.path.join(self.mount_path, self.file_name)
         logger.info("Checking full path %s", full_path)
         result = self.vm.isFileExists(full_path)
@@ -165,39 +132,6 @@ class BasicEnvironmentSetUp(TestCase):
         if should_exist != result:
             return False
         return True
-
-
-class BaseTestCase(TestCase):
-    """
-    This class implements setup and teardowns of common things
-    """
-    __test__ = False
-    # Bugzilla history
-    # 1253338: restore snapshot via API results in snapshot being stuck on
-    # "In preview" status
-
-    def setUp(self):
-        """
-        Start machines
-        """
-        self.vm_on_hsm = VM_ON_HSM % self.storage
-        self.vm_on_spm = VM_ON_SPM % self.storage
-        self.vm_list = [self.vm_on_spm, self.vm_on_hsm]
-        vms.start_vms(self.vm_list, config.MAX_WORKERS)
-
-    def tearDown(self):
-        """
-        Returns VM to the base snapshot and cleans out all other snapshots
-        """
-        results = list()
-        with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-            for vm_name in self.vm_list:
-                results.append(
-                    executor.submit(
-                        vms.restore_snapshot, True, vm_name, BASE_SNAP, True
-                    )
-                )
-        test_utils.raise_if_exception(results)
 
 
 @attr(tier=1)
@@ -225,8 +159,6 @@ class TestCase11660(BasicEnvironmentSetUp):
 
     def setUp(self):
         self.previewed = False
-
-        self.vm_name = VM_ON_SPM % self.storage
         super(TestCase11660, self).setUp()
 
     def _test_Live_snapshot(self, vm_name):
@@ -234,13 +166,12 @@ class TestCase11660(BasicEnvironmentSetUp):
         Tests live snapshot on given vm
         """
         logger.info("Make sure vm %s is up", vm_name)
-        if vms.get_vm_state(vm_name) == config.VM_DOWN:
-            vms.startVms([vm_name])
-            vms.waitForVMState(vm_name)
+        if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
+            ll_vms.startVms([vm_name])
+            ll_vms.waitForVMState(vm_name)
         logger.info("Creating snapshot")
         self._perform_snapshot_operation(vm_name, live=True)
-        wait_for_jobs([ENUMS['job_create_snapshot']])
-        self.set_vm_machine_object()
+        ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
 
         logger.info("writing file to disk")
         cmd = self.cmd_create
@@ -250,33 +181,34 @@ class TestCase11660(BasicEnvironmentSetUp):
             raise exceptions.DiskException(
                 "Writing operation failed"
             )
-
-        vms.shutdownVm(True, vm_name)
-        vms.waitForVMState(vm_name, state=config.VM_DOWN)
-
-        logger.info("Previewing snapshot %s on vm %s",
-                    self.snapshot_desc, vm_name)
-
-        self.previewed = vms.preview_snapshot(
+        ll_vms.shutdownVm(True, vm_name, 'false')
+        logger.info(
+            "Previewing snapshot %s on vm %s", self.snapshot_desc, vm_name
+        )
+        self.previewed = ll_vms.preview_snapshot(
             True, vm=vm_name, description=self.snapshot_desc,
-            ensure_vm_down=True)
-        self.assertTrue(self.previewed,
-                        "Failed to preview snapshot %s" % self.snapshot_desc)
-        wait_for_jobs([ENUMS['job_preview_snapshot']])
+            ensure_vm_down=True
+        )
+        self.assertTrue(
+            self.previewed,
+            "Failed to preview snapshot %s" % self.snapshot_desc
+        )
+        ll_jobs.wait_for_jobs([config.JOB_PREVIEW_SNAPSHOT])
 
-        assert vms.startVm(
-            True, vm=vm_name, wait_for_status=config.VM_UP)
-        assert vms.waitForIP(vm=vm_name)
+        assert ll_vms.startVm(
+            True, vm=vm_name, wait_for_ip=True
+        )
         logger.info("Checking that files no longer exist after preview")
         if not self.check_file_existence_operation(vm_name, False):
             raise exceptions.SnapshotException(
                 "Snapshot operation failed"
             )
 
-        self.assertTrue(vms.commit_snapshot(
-            True, vm=vm_name, ensure_vm_down=True),
+        self.assertTrue(ll_vms.commit_snapshot(
+            True, vm=vm_name, ensure_vm_down=True
+        ),
             "Failed to commit snapshot %s" % self.snapshot_desc)
-        wait_for_jobs([ENUMS['job_restore_vm_snapshot']])
+        ll_jobs.wait_for_jobs([config.JOB_RESTORE_SNAPSHOT])
         self.previewed = False
         logger.info("Checking that files no longer exist after commit")
         if not self.check_file_existence_operation(vm_name, False):
@@ -287,19 +219,22 @@ class TestCase11660(BasicEnvironmentSetUp):
     @polarion("RHEVM3-11660")
     def test_live_snapshot(self):
         """
-        Create a snapshot while VM is running on SPM host
+        Create a snapshot while VM is running
         """
         self._test_Live_snapshot(self.vm_name)
 
     def tearDown(self):
         if self.previewed:
-            if not vms.undo_snapshot_preview(
+            if not ll_vms.undo_snapshot_preview(
                     True, self.vm_name, ensure_vm_down=True):
-                raise exceptions.SnapshotException(
-                    "Failed to undo snapshot for vm %s" % self.vm_name)
-        storage_helpers.remove_all_vm_snapshots(
-            self.vm_name, self.snapshot_desc
-        )
+                logger.error(
+                    "Failed to undo snapshot for vm %s", self.vm_name
+                )
+                TestCase.test_failed = True
+            ll_vms.wait_for_vm_snapshots(
+                self.vm_name, [config.SNAPSHOT_OK]
+            )
+            super(TestCase11660, self).tearDown()
 
 
 @attr(tier=2)
@@ -325,19 +260,24 @@ class TestCase11679(BasicEnvironmentSetUp):
 
     def setUp(self):
         self.previewed = False
-        self.vm_name = VM_ON_SPM % self.storage
         super(TestCase11679, self).setUp()
         logger.info("Adding disk to vm %s", self.vm_name)
-        assert vms.addDisk(
+        if not ll_vms.addDisk(
             True, vm=self.vm_name, size=3 * config.GB, wait='True',
-            storagedomain=self.storage_domain,
-            type=ENUMS['disk_type_data'], interface=config.INTERFACE_VIRTIO,
+            storagedomain=self.storage_domains[0],
+            type=config.DISK_TYPE_DATA, interface=config.INTERFACE_VIRTIO,
             format=config.DISK_FORMAT_COW, sparse='true'
-        )
+        ):
+            raise exceptions.DiskException(
+                "Failed to add new disk to vm %s" % self.vm_name
+            )
         self._prepare_fs_on_devs()
 
     def _prepare_fs_on_devs(self):
-        self.set_vm_machine_object()
+        if not ll_vms.startVm(True, self.vm_name, wait_for_ip=True):
+            raise exceptions.VMException(
+                "Failed to start vm %s" % self.vm_name
+            )
         vm_devices = self.vm.get_storage_devices()
         if not vm_devices:
             logger.error("No devices found in vm %s", self.vm_name)
@@ -362,10 +302,7 @@ class TestCase11679(BasicEnvironmentSetUp):
     def check_file_existence_operation(
             self, should_exist=True, operation='snapshot'
     ):
-
-        vms.start_vms([self.vm_name], 1, wait_for_ip=False)
-        vms.waitForVMState(self.vm_name)
-        self.set_vm_machine_object()
+        ll_vms.start_vms([self.vm_name], 1, config.VM_UP)
         lst = []
         state = not should_exist
         for dev in self.devices:
@@ -385,13 +322,11 @@ class TestCase11679(BasicEnvironmentSetUp):
         Tests live snapshot on given vm
         """
         logger.info("Make sure vm %s is up", vm_name)
-        if vms.get_vm_state(vm_name) == config.VM_DOWN:
-            vms.startVms([vm_name])
-            vms.waitForVMState(vm_name)
-        self.set_vm_machine_object()
+        if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
+            ll_vms.startVms([vm_name], config.VM_UP)
         logger.info("Creating snapshot")
         self._perform_snapshot_operation(vm_name, live=True)
-        wait_for_jobs([ENUMS['job_create_snapshot']])
+        ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
 
         vm_devices = self.vm.get_storage_devices()
         if not vm_devices:
@@ -407,32 +342,33 @@ class TestCase11679(BasicEnvironmentSetUp):
 
             assert status
             self.check_file_existence_operation(True, 'writing')
-
-        vms.stop_vms_safely([vm_name])
+        ll_vms.stop_vms_safely([vm_name])
 
         logger.info("Previewing snapshot %s on vm %s",
                     self.snapshot_desc, vm_name)
 
-        self.previewed = vms.preview_snapshot(
+        self.previewed = ll_vms.preview_snapshot(
             True, vm=vm_name, description=self.snapshot_desc,
             ensure_vm_down=True)
-        self.assertTrue(self.previewed,
-                        "Failed to preview snapshot %s" % self.snapshot_desc)
+        self.assertTrue(
+            self.previewed,
+            "Failed to preview snapshot %s" % self.snapshot_desc
+        )
         logger.info("Wait for all jobs to complete")
-        wait_for_jobs([ENUMS['job_preview_snapshot']])
+        ll_jobs.wait_for_jobs([config.JOB_PREVIEW_SNAPSHOT])
 
-        assert vms.startVm(
-            True, vm=vm_name, wait_for_status=config.VM_UP)
-        assert vms.waitForIP(vm=vm_name)
+        assert ll_vms.startVm(
+            True, vm=vm_name, wait_for_status=config.VM_UP, wait_for_ip=True
+        )
 
         logger.info("Checking that files no longer exist after preview")
         self.check_file_existence_operation(False)
 
-        self.assertTrue(vms.commit_snapshot(
+        self.assertTrue(ll_vms.commit_snapshot(
             True, vm=vm_name, ensure_vm_down=True),
             "Failed to commit snapshot %s" % self.snapshot_desc)
         logger.info("Wait for all jobs to complete")
-        wait_for_jobs([ENUMS['job_restore_vm_snapshot']])
+        ll_jobs.wait_for_jobs([config.JOB_RESTORE_SNAPSHOT])
         self.previewed = False
         logger.info("Checking that files no longer exist after commit")
         self.check_file_existence_operation(False)
@@ -440,18 +376,19 @@ class TestCase11679(BasicEnvironmentSetUp):
     @polarion("RHEVM3-11679")
     def test_live_snapshot(self):
         """
-        Create a snapshot while VM is running on SPM host
+        Create a snapshot while VM is running
         """
         self._test_Live_snapshot(self.vm_name)
 
     def tearDown(self):
         if self.previewed:
-            if not vms.undo_snapshot_preview(
+            if not ll_vms.undo_snapshot_preview(
                     True, self.vm_name, ensure_vm_down=True
             ):
                 raise exceptions.SnapshotException(
                     "Failed to undo snapshot for vm %s" % self.vm_name
                 )
+        super(TestCase11679, self).tearDown()
 
 
 @attr(tier=2)
@@ -477,29 +414,38 @@ class TestCase11676(BaseTestCase):
         Parameters:
             * length - how many 'a' chars should description contain
         """
+        self.assertTrue(
+            ll_vms.startVm(True, vm_name), "Failed to start vm %s" % vm_name
+        )
         description = length * 'a'
         logger.info("Trying to create snapshot on vm %s with description "
                     "containing %d 'a' letters", vm_name, length)
         self.assertTrue(
-            vms.addSnapshot(positive, vm=vm_name, description=description))
+            ll_vms.addSnapshot(positive, vm=vm_name, description=description)
+        )
 
     @polarion("RHEVM3-11676")
     def test_snapshot_description_length_positive(self):
         """
         Try to create a snapshot with max chars length
         """
-        self._test_snapshot_desc_length(True, config.MAX_DESC_LENGTH,
-                                        self.vm_on_hsm)
+        self._test_snapshot_desc_length(
+            True, config.MAX_DESC_LENGTH, self.vm_name
+        )
 
     @polarion("RHEVM3-11676")
     def test_special_characters(self):
         """
         Try to create snapshots containing special characters
         """
-        logger.info("Trying to create snapshot with description %s",
-                    config.SPECIAL_CHAR_DESC)
-        assert vms.addSnapshot(True, vm=self.vm_on_hsm,
-                               description=config.SPECIAL_CHAR_DESC)
+        logger.info(
+            "Trying to create snapshot with description %s",
+            config.SPECIAL_CHAR_DESC
+        )
+        self.assertTrue(ll_vms.addSnapshot(
+            True, vm=self.vm_name, description=config.SPECIAL_CHAR_DESC
+        ), "Failed to add snapshot %s to vm %s" %
+           (config.SPECIAL_CHAR_DESC, self.vm_name))
 
 
 @attr(tier=2)
@@ -508,38 +454,39 @@ class TestCase11665(BaseTestCase):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_1_Storage_Live_Snapshot?selection=RHEVM3-11665
 
-    Create 2 additional disks in a different storage domain
-    to the VM on HSM
+    Create 2 additional disks on a VM, each on a different storage domain
     Add snapshot
 
     Expected Results:
-
     You should be able to create a snapshot
     """
     __test__ = True
     polarion_test_case = '11665'
+    snapshot_description = (
+        config.LIVE_SNAPSHOT % polarion_test_case
+    )
 
     def setUp(self):
         """
-        Adds disk to vm_on_spm that will be on second domain
+        Adds disk to vm that will be on second domain
         """
-        self.disks_names = []
-        self.vm_on_hsm = VM_ON_HSM % self.storage
-        self.vm_on_spm = VM_ON_SPM % self.storage
-        self.vm_list = [self.vm_on_spm, self.vm_on_hsm]
-        storage_domain = getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage)[1]
+        super(TestCase11665, self).setUp()
         for index in range(2):
             alias = "disk_%s_%d" % (self.polarion_test_case, index)
-            logger.info("Adding disk %s to vm %s", alias, self.vm_on_hsm)
-            assert vms.addDisk(
-                True, vm=self.vm_on_hsm, size=3 * config.GB, wait='True',
-                storagedomain=storage_domain, type=ENUMS['disk_type_data'],
-                interface=ENUMS['interface_ide'], format=ENUMS['format_cow'],
-                sparse='true', alias=alias)
-            self.disks_names.append(alias)
-        super(TestCase11665, self).setUp()
+            logger.info("Adding disk %s to vm %s", alias, self.vm_name)
+            assert ll_vms.addDisk(
+                True, vm=self.vm_name, size=3 * config.GB, wait='True',
+                storagedomain=self.storage_domains[1],
+                type=config.DISK_TYPE_DATA,
+                interface=config.VIRTIO, format=config.COW_DISK,
+                sparse='true', alias=alias
+            )
+        if not ll_vms.startVm(True, self.vm_name):
+            raise exceptions.VMException(
+                "Failed to start vm %s" % self.vm_name
+            )
 
+    @rhevm_helpers.wait_for_jobs_deco([config.JOB_CREATE_SNAPSHOT])
     @polarion("RHEVM3-11665")
     def test_snapshot_on_multiple_domains(self):
         """
@@ -547,7 +494,10 @@ class TestCase11665(BaseTestCase):
         storage domains
         """
         self.assertTrue(
-            vms.addSnapshot(True, vm=self.vm_on_hsm, description=SNAP_1))
+            ll_vms.addSnapshot(
+                True, vm=self.vm_name, description=self.snapshot_description
+            )
+        )
 
 
 @attr(tier=2)
@@ -565,23 +515,26 @@ class TestCase11680(BaseTestCase):
     """
     __test__ = True
     polarion_test_case = '11680'
+    snapshot_description = (
+        config.LIVE_SNAPSHOT % polarion_test_case
+    )
 
-    def tearDown(self):
-        """
-        Waits until migration finishes
-        """
-
-        vms.waitForVMState(self.vm_on_hsm)
-        super(TestCase11680, self).tearDown()
-
+    @rhevm_helpers.wait_for_jobs_deco([config.JOB_MIGRATE_VM])
     @polarion("RHEVM3-11680")
     def test_migration(self):
         """
         Tests live snapshot during migration
         """
-        assert vms.migrateVm(True, self.vm_on_hsm, wait=False)
         self.assertTrue(
-            vms.addSnapshot(False, vm=self.vm_on_hsm, description=SNAP_1))
+            ll_vms.startVm(True, self.vm_name),
+            "Failed to start vm %s" % self.vm_name
+        )
+        assert ll_vms.migrateVm(True, self.vm_name, wait=False)
+        self.assertTrue(
+            ll_vms.addSnapshot(
+                False, vm=self.vm_name, description=self.snapshot_description
+            )
+        )
 
 
 @attr(tier=2)
@@ -601,24 +554,30 @@ class TestCase11674(BaseTestCase):
     """
     __test__ = True
     polarion_test_case = '11674'
+    snapshot_description = (
+        config.LIVE_SNAPSHOT % polarion_test_case
+    )
 
     def setUp(self):
         """
-        Adds disk to vm_on_spm that will be on second domain
+        Adds disk to vm that will be on second domain
         """
-        self.vm_on_hsm = VM_ON_HSM % self.storage
-        self.vm_on_spm = VM_ON_SPM % self.storage
-        storage_domain = getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage)[1]
-        self.disk_name = "disk_%s" % self.polarion_test_case
-        logger.info("Adding disk %s to vm %s", self.disk_name, self.vm_on_spm)
-        assert vms.addDisk(
-            True, vm=self.vm_on_spm, size=3 * config.GB, wait='True',
-            storagedomain=storage_domain, type=ENUMS['disk_type_data'],
-            interface=ENUMS['interface_ide'], format=ENUMS['format_cow'],
-            sparse='true', alias=self.disk_name
-        )
         super(TestCase11674, self).setUp()
+        self.disk_name = "disk_%s" % self.polarion_test_case
+        logger.info("Adding disk %s to vm %s", self.disk_name, self.vm_name)
+        if not ll_vms.addDisk(
+            True, vm=self.vm_name, size=3 * config.GB, wait=True,
+            storagedomain=self.storage_domain[0], type=config.DISK_TYPE_DATA,
+            interface=config.VIRTIO, format=config.COW_DISK,
+            sparse='true', alias=self.disk_name
+        ):
+            raise exceptions.DiskException(
+                "Failed to add new disk to vm %s" % self.vm_name
+            )
+        if not ll_vms.startVm(True, self.vm_name):
+            raise exceptions.VMException(
+                "Failed to start vm %s" % self.vm_name
+            )
 
     @polarion("RHEVM3-11674")
     def test_snapshot_with_multiple_disks(self):
@@ -626,10 +585,13 @@ class TestCase11674(BaseTestCase):
         Checks that created snapshot appears only once although vm has more
         disks
         """
-        snap_descs = set([SNAP_1, BASE_SNAP, ACTIVE_SNAP])
+        snap_descs = set([config.ACTIVE_SNAPSHOT, self.snapshot_description])
         self.assertTrue(
-            vms.addSnapshot(True, vm=self.vm_on_spm, description=SNAP_1))
-        snapshots = vms._getVmSnapshots(self.vm_on_spm, False)
+            ll_vms.addSnapshot(
+                True, vm=self.vm_name, description=self.snapshot_description
+            )
+        )
+        snapshots = ll_vms._getVmSnapshots(self.vm_name, False)
         current_snap_descs = set([snap.description for snap in snapshots])
         self.assertTrue(snap_descs == current_snap_descs)
 
@@ -652,38 +614,65 @@ class TestCase11684(BaseTestCase):
     """
     __test__ = True
     polarion_test_case = '11684'
+    snapshot_description = (
+        config.LIVE_SNAPSHOT % polarion_test_case
+    )
 
     def setUp(self):
         """
         Prepares template and two VMs based on this template: one clone and one
         thinly provisioned
         """
-        self.vm_on_hsm = VM_ON_HSM % self.storage
-        self.vm_on_spm = VM_ON_SPM % self.storage
-        storage_domain = getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage)[0]
-        assert templates.createTemplate(
-            True, vm=self.vm_on_spm, name='template_test',
-            cluster=config.CLUSTER_NAME)
-        assert vms.addVm(
-            True, name='vm_thin', description='', cluster=config.CLUSTER_NAME,
-            storagedomain=storage_domain, template='template_test')
-        assert vms.addVm(
-            True, name='vm_clone', description='', cluster=config.CLUSTER_NAME,
-            storagedomain=storage_domain, template='template_test',
-            disk_clone='True')
-        vms.start_vms(['vm_thin', 'vm_clone'], config.MAX_WORKERS)
+        self.template_name = 'template_test_%s' % self.polarion_test_case
+        self.vm_thin = 'vm_thin_%s' % self.polarion_test_case
+        self.vm_clone = 'vm_clone_%s' % self.polarion_test_case
+        super(TestCase11684, self).setUp()
+        if not ll_templates.createTemplate(
+            True, vm=self.vm_name, name=self.template_name,
+            cluster=config.CLUSTER_NAME
+        ):
+            raise exceptions.TemplateException(
+                "Failed to create template %s from vm %s" %
+                (self.template_name, self.vm_name)
+            )
+        if not ll_vms.addVm(
+            True, name=self.vm_thin, description='',
+            cluster=config.CLUSTER_NAME,
+            storagedomain=self.storage_domain[0], template=self.template_name
+        ):
+            raise exceptions.VMException(
+                "Failed to create new vm %s from template %s as thin copy" %
+                (self.vm_thin, self.template_name)
+            )
+        if not ll_vms.addVm(
+            True, name=self.vm_clone, description='',
+            cluster=config.CLUSTER_NAME, storagedomain=self.storage_domain[0],
+            template=self.template_name, disk_clone='True'
+        ):
+            raise exceptions.VMException(
+                "Failed to create new vm %s from template %s as deep copy" %
+                (self.vm_clone, self.template_name)
+            )
+        ll_vms.start_vms([self.vm_thin, self.vm_clone], config.MAX_WORKERS)
 
     def tearDown(self):
         """
         Removes cloned, thinly provisioned vm and template
         """
-        assert vms.removeVm(True, 'vm_thin', stopVM='true')
-        assert vms.removeVm(True, 'vm_clone', stopVM='true')
-        assert templates.removeTemplate(True, template='template_test')
-        wait_for_jobs(
-            [ENUMS['job_remove_vm'], ENUMS['job_remove_vm_template']]
+        if not ll_vms.safely_remove_vms([self.vm_thin, self.vm_clone]):
+            logger.error(
+                "Failed to remove vms %s", [self.vm_thin, self.vm_clone]
+            )
+            BaseTestCase.test_failed = True
+        if not ll_templates.removeTemplate(True, template=self.template_name):
+            logger.error(
+                "Failed to remove template %s", self.template_name
+            )
+            BaseTestCase.test_failed = True
+        ll_jobs.wait_for_jobs(
+            [config.JOB_REMOVE_VM, config.JOB_REMOVE_TEMPLATE]
         )
+        super(TestCase11684, self).tearDown()
 
     @polarion("RHEVM3-11684")
     def test_snapshot_on_thin_vm(self):
@@ -691,7 +680,10 @@ class TestCase11684(BaseTestCase):
         Try to make a live snapshot from thinly provisioned VM
         """
         self.assertTrue(
-            vms.addSnapshot(True, vm='vm_thin', description=SNAP_1))
+            ll_vms.addSnapshot(
+                True, vm=self.vm_thin, description=self.snapshot_description
+            )
+        )
 
     @polarion("RHEVM3-11684")
     def test_snapshot_on_cloned_vm(self):
@@ -699,4 +691,7 @@ class TestCase11684(BaseTestCase):
         Try to make a live snapshot from cloned VM
         """
         self.assertTrue(
-            vms.addSnapshot(True, vm='vm_clone', description=SNAP_1))
+            ll_vms.addSnapshot(
+                True, vm=self.vm_clone, description=self.snapshot_description
+            )
+        )

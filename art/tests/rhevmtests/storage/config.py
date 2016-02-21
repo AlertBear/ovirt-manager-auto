@@ -128,6 +128,7 @@ VIRTIO = INTERFACE_VIRTIO
 PREVIEW = ENUMS['preview_snapshot']
 UNDO = ENUMS['undo_snapshot']
 COMMIT = ENUMS['commit_snapshot']
+ACTIVE_SNAPSHOT = 'Active VM'
 
 HOST_NONOPERATIONAL = ENUMS['search_host_state_non_operational']
 

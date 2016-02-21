@@ -11,6 +11,8 @@ TESTNAME = "storage_snapshot_full"
 
 # TODO: remove
 BASE_SNAPSHOT = 'clean_os_base_snapshot'
+LIVE_SNAPSHOT = 'test_live_snapshot_%s'
+VM_NAME = "vm_live_snapshot_%s_%s"
 EXPORT_DOMAIN = EXPORT_DOMAIN_NAME
 
 # TODO: remove
