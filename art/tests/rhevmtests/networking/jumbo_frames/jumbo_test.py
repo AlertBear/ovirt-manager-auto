@@ -485,7 +485,7 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
         Send ping between 2 VMs
         """
         vm_resource = global_helper.get_host_resource(
-            ip=config.VM_IP_LIST[0], root_password=config.VMS_LINUX_PW
+            ip=config.VM_IP_LIST[0], password=config.VMS_LINUX_PW
         )
         network_helper.send_icmp_sampler(
             host_resource=vm_resource, dst=self.ips[1],
