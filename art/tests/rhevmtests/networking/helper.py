@@ -295,28 +295,15 @@ def set_libvirt_sasl_status(engine_resource, host_resource, sasl=False):
     :raise: NetworkException
     """
     if not sasl:
-        logger.info(
-            "Setting passwordless ssh from engine (%s) to host (%s)",
-            engine_resource.ip, host_resource.ip
-        )
         if not helpers.set_passwordless_ssh(
-            engine_resource, host_resource
+            src_host=engine_resource, dst_host=host_resource
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to set passwordless SSH to %s" % host_resource.ip
-            )
+            raise conf.NET_EXCEPTION()
 
-        logger.info("Disabling sasl in libvirt")
-        if not set_libvirtd_sasl(
-            host_obj=host_resource, sasl=sasl
-        ):
-            raise conf.NET_EXCEPTION(
-                "Failed to disable sasl on %s" % host_resource.ip
-            )
-    else:
-        logger.info("Enabling sasl in libvirt")
         if not set_libvirtd_sasl(host_obj=host_resource, sasl=sasl):
-            logger.error("Failed to enable sasl on %s", host_resource.ip)
+            raise conf.NET_EXCEPTION()
+    else:
+        set_libvirtd_sasl(host_obj=host_resource, sasl=sasl)
 
 
 def set_libvirtd_sasl(host_obj, sasl=True):
@@ -331,6 +318,7 @@ def set_libvirtd_sasl(host_obj, sasl=True):
     :return: True/False
     :rtype: bool
     """
+    logger.info("%s sasl in libvirt" % "Enable" if not sasl else "Disable")
     sasl_off = 'auth_unix_rw="{0}"'.format(conf.SASL_OFF)
     sasl_on = 'auth_unix_rw="{0}"'.format(conf.SASL_ON)
     sed_arg = "'s/{0}/{1}/g'".format(
@@ -369,10 +357,10 @@ def set_libvirtd_sasl(host_obj, sasl=True):
         hl_hosts.restart_services_under_maintenance_state(
             [conf.LIBVIRTD_SERVICE, conf.VDSMD_SERVICE], host_obj, conf.TIMEOUT
         )
-    except exceptions.HostException:
+    except exceptions.HostException as e:
         logger.error(
-            "Failed to restart %s/%s services", conf.VDSMD_SERVICE,
-            conf.LIBVIRTD_SERVICE
+            "Failed to restart %s/%s services. ERR: %s", conf.VDSMD_SERVICE,
+            conf.LIBVIRTD_SERVICE, e
         )
         return False
     return True
