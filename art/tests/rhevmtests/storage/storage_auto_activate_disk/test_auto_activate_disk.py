@@ -86,7 +86,7 @@ class VmWithOs(TestCase):
                     logger.error(
                         "Deleting disk with ID '%s' failed", disk.get_id()
                     )
-        ll_jobs.wait_for_jobs(config.JOB_REMOVE_DISK)
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_DISK])
         self.teardown_exception()
 
 

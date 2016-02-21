@@ -236,9 +236,7 @@ class TestCase4906(DefaultEnvironment):
         - Verify that it's impossible to write to the disk
         """
         self.prepare_disks_for_vm(read_only=True)
-        ll_vms.start_vms([self.vm_name], 1, wait_for_ip=False)
-        assert ll_vms.waitForVMState(self.vm_name)
-
+        ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
         helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
 
