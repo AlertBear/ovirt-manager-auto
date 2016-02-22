@@ -6,7 +6,9 @@ Storage/3_5_Storage_Live_Merge
 import logging
 import os
 import shlex
+
 import config
+from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     hosts as ll_hosts,
@@ -25,7 +27,6 @@ from socket import timeout as TimeoutError
 from utilities.machine import LINUX, Machine
 
 logger = logging.getLogger(__name__)
-ENUMS = config.ENUMS
 
 VM_NAMES = dict()
 CMD_CREATE_FILE = 'touch %s/test_file_%s'
@@ -105,7 +106,7 @@ class BasicEnvironment(BaseTestCase):
         if not ll_vms.safely_remove_vms([self.vm_name]):
             logger.error("Failed to remove vm %s", self.vm_name)
             self.test_failed = True
-        ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_VM])
         for disk_name in DISK_NAMES.iteritems():
             if ll_disks.checkDiskExists(True, disk_name):
                 if not ll_disks.deleteDisk(True, disk_name):
@@ -158,7 +159,7 @@ class BasicEnvironment(BaseTestCase):
             ll_vms.wait_for_vm_snapshots(
                 self.vm_name, [config.SNAPSHOT_OK], [snapshot_description]
             )
-            ll_jobs.wait_for_jobs([ENUMS['job_create_snapshot']])
+            ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
         self.snapshot_list.append(snapshot_description)
         if not live:
             if ll_vms.get_vm_state(self.vm_name) == config.VM_DOWN:
@@ -226,7 +227,7 @@ class BasicEnvironment(BaseTestCase):
                 "Failed to preview snapshot %s. Can't verify files",
                 snapshot_description
             )
-        ll_jobs.wait_for_jobs([ENUMS['job_preview_snapshot']])
+        ll_jobs.wait_for_jobs([config.JOB_PREVIEW_SNAPSHOT])
         try:
             logger.info(
                 "Verifying files %s on snapshot %s",
@@ -242,7 +243,7 @@ class BasicEnvironment(BaseTestCase):
         finally:
             logger.info("Undoing snapshot preview")
             status = ll_vms.undo_snapshot_preview(True, self.vm_name, True)
-            ll_jobs.wait_for_jobs([ENUMS['job_restore_vm_snapshot']])
+            ll_jobs.wait_for_jobs([config.JOB_RESTORE_SNAPSHOT])
             ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
             if not status:
                 raise exceptions.VMException(
@@ -281,7 +282,7 @@ class BasicEnvironment(BaseTestCase):
                 (initial_vol_count, current_vol_count, len(snapshot_disks))
             )
         logger.info("Snapshot %s was removed", snapshot_description)
-        ll_jobs.wait_for_jobs([ENUMS['job_remove_snapshot']])
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
 
     def basic_flow(self, snapshot_count=3):
         vm_disks = ll_vms.getVmDisks(self.vm_name)
@@ -297,7 +298,7 @@ class BasicEnvironment(BaseTestCase):
             self.perform_snapshot_with_verification(
                 snap_description, disk_names
             )
-            ll_jobs.wait_for_jobs([ENUMS['job_create_snapshot']])
+            ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
 
 
 @attr(tier=1)
@@ -310,7 +311,9 @@ class TestCase6038(BasicEnvironment):
     """
     __test__ = True
     test_case = '6038'
-    bz = {'1302215': {'engine': None, 'version': ['3.6'], 'storage': [ISCSI]}}
+    # Bugzilla history:
+    # 1302215: Live merge operation fails noting Failed child command status
+    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6038")
     def test_basic_live_deletion(self):
@@ -333,7 +336,9 @@ class TestCase12215(BasicEnvironment):
     """
     __test__ = True
     test_case = '12215'
-    bz = {'1302215': {'engine': None, 'version': ['3.6'], 'storage': [ISCSI]}}
+    # Bugzilla history:
+    # 1302215: Live merge operation fails noting Failed child command status
+    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-12215")
     def test_live_deletion_of_all_snapshots(self):
@@ -363,7 +368,9 @@ class TestCase6044(BasicEnvironment):
     """
     __test__ = True
     test_case = '6044'
-    bz = {'1302215': {'engine': None, 'version': ['3.6'], 'storage': [ISCSI]}}
+    # Bugzilla history:
+    # 1302215: Live merge operation fails noting Failed child command status
+    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6044")
     def test_live_deletion_base_snapshot(self):
@@ -390,7 +397,9 @@ class TestCase6045(BasicEnvironment):
     """
     __test__ = True
     test_case = '6045'
-    bz = {'1302215': {'engine': None, 'version': ['3.6'], 'storage': [ISCSI]}}
+    # Bugzilla history:
+    # 1302215: Live merge operation fails noting Failed child command status
+    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6045")
     def test_live_deletion_during_vdsm_restart(self):
@@ -421,7 +430,9 @@ class TestCase6043(BasicEnvironment):
     """
     __test__ = True
     test_case = '6043'
-    bz = {'1302215': {'engine': None, 'version': ['3.6'], 'storage': [ISCSI]}}
+    # Bugzilla history:
+    # 1302215: Live merge operation fails noting Failed child command status
+    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6043")
     def test_basic_live_deletion(self):
@@ -448,7 +459,9 @@ class TestCase6046(BasicEnvironment):
     """
     __test__ = True
     test_case = '6046'
-    bz = {'1302215': {'engine': None, 'version': ['3.6'], 'storage': [ISCSI]}}
+    # Bugzilla history:
+    # 1302215: Live merge operation fails noting Failed child command status
+    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6046")
     def test_live_deletion_during_engine_restart(self):
@@ -478,7 +491,9 @@ class TestCase6048(BasicEnvironment):
     """
     __test__ = True
     test_case = '6048'
-    bz = {'1302215': {'engine': None, 'version': ['3.6'], 'storage': [ISCSI]}}
+    # Bugzilla history:
+    # 1302215: Live merge operation fails noting Failed child command status
+    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6048")
     def test_consecutive_live_deletion_of_snapshots(self):
@@ -515,7 +530,9 @@ class TestCase6050(BasicEnvironment):
     """
     __test__ = True
     test_case = '6050'
-    bz = {'1302215': {'engine': None, 'version': ['3.6'], 'storage': [ISCSI]}}
+    # Bugzilla history:
+    # 1302215: Live merge operation fails noting Failed child command status
+    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6050")
     def test_live_merge_during_live_merge(self):
@@ -531,7 +548,7 @@ class TestCase6050(BasicEnvironment):
         assert ll_vms.wait_for_snapshot_gone(
             self.vm_name, self.snapshot_list[1]
         )
-        ll_jobs.wait_for_jobs([ENUMS['job_remove_snapshot']])
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
 
 
 @attr(tier=2)
@@ -544,7 +561,9 @@ class TestCase6057(BasicEnvironment):
     """
     __test__ = True
     test_case = '6057'
-    bz = {'1302215': {'engine': None, 'version': ['3.6'], 'storage': [ISCSI]}}
+    # Bugzilla history:
+    # 1302215: Live merge operation fails noting Failed child command status
+    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6057")
     def test_live_deletion_after_disk_migration(self):
@@ -569,6 +588,9 @@ class TestCase6058(BasicEnvironment):
     """
     __test__ = True
     test_case = '6058'
+    # Bugzilla history:
+    # 1302215: Live merge operation fails noting Failed child command status
+    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6058")
     def test_live_merge_with_stop_vm(self):
@@ -616,7 +638,10 @@ class TestCase6062(BasicEnvironment):
     """
     __test__ = True
     test_case = '6062'
-    bz = {'1302215': {'engine': None, 'version': ['3.6'], 'storage': [ISCSI]}}
+    disk_to_migrate = None
+    # Bugzilla history:
+    # 1302215: Live merge operation fails noting Failed child command status
+    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-6062")
     def test_live_merge_during_lsm(self):
@@ -625,18 +650,45 @@ class TestCase6062(BasicEnvironment):
         vm_disk_aliases = [
             disk.get_alias() for disk in vm_disks if not disk.get_bootable()
         ]
-
+        self.disk_to_migrate = vm_disk_aliases[0]
         target_sd = ll_disks.get_other_storage_domain(
-            vm_disk_aliases[0],  self.vm_name
+            self.disk_to_migrate, self.vm_name
         )
         ll_vms.live_migrate_vm_disk(
-            self.vm_name, vm_disk_aliases[0], target_sd, wait=False
+            self.vm_name, self.disk_to_migrate, target_sd, wait=False
+        )
+        ll_disks.wait_for_disks_status(
+            [self.disk_to_migrate], status=config.DISK_LOCKED
+        )
+        self.assertTrue(
+            ll_vms.removeSnapshot(
+                False, self.vm_name, self.snapshot_list[1], wait=False
+            ),
+            "Removing snapshot '%s' during a live migration of disk %s was "
+            "expected to fail" % (self.snapshot_list[1], self.disk_to_migrate)
         )
 
-        self.assertTrue(ll_vms.removeSnapshot(
-            False, self.vm_name, self.snapshot_list[1], wait=False
-        ), "Live merge should fail")
-        ll_vms.waitForVmsDisks(self.vm_name)
+    def tearDown(self):
+        """
+        Ensure the Live disk migrate has completed before cleaning up the
+        environment. Note that a snapshot is taken before the disk is
+        migrated
+        """
+        ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
+        try:
+            ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
+        except APITimeout:
+            logger.error(
+                "Snapshots failed to reach OK state on VM '%s'", self.vm_name
+            )
+            BaseTestCase.test_failed = True
+        ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
+        if not ll_vms.waitForVmsDisks(self.vm_name):
+            logger.error(
+                "Disks in VM '%s' failed to reach state 'OK'", self.vm_name
+            )
+            BaseTestCase.test_failed = True
+        super(TestCase6062, self).tearDown()
 
 
 @attr(tier=2)
@@ -652,6 +704,8 @@ class TestCase12216(BasicEnvironment):
     # Bugzilla history:
     # 1232481: Live merge fails after a disk containing a snapshot has
     # been extended
+    # 1302215: Live merge operation fails noting Failed child command status
+    # for step 'DESTROY_IMAGE_CHECK'
 
     @polarion("RHEVM3-12216")
     def test_basic_live_merge_after_disk_resize(self):
