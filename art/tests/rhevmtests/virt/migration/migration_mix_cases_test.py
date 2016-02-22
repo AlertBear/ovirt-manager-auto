@@ -23,9 +23,8 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 #                             Test Cases                               #
 ########################################################################
 
-
 @common.attr(tier=2)
-class TestBidirectionalVmMigrationBetweenTwoHosts(common.VirtTest):
+class TestMigrationMixCase1(common.VirtTest):
     """
     1. Start all VMs (3 VMs on host_1, 2 VMs on host_2)
     2. Bidirectional vms migration between two hosts (simultaneous)
@@ -77,13 +76,14 @@ class TestBidirectionalVmMigrationBetweenTwoHosts(common.VirtTest):
             "Check bidirectional vms migration between two hosts"
         )
         self.assertTrue(
-            virt_helper.migration_vms_to_diff_hosts(vms=config.VM_NAME[:5]),
+            virt_helper.migration_vms_to_diff_hosts(vms=config.VM_NAME[1:5]),
             "Failed to migration all VMs"
         )
 
 
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 @common.attr(tier=2)
-class TestMigrateVmWithLargeMemory(common.VirtTest):
+class TestMigrationMixCase2(common.VirtTest):
     """
     Migrate VM with large memory
     VM memory is 85% of host memory
@@ -91,41 +91,25 @@ class TestMigrateVmWithLargeMemory(common.VirtTest):
     real working station
     """
     __test__ = True
-    vm_name = config.VM_NAME[1]
-    vm_default_mem = None
-    vm_default_os_type = None
-    # RHEL7 64bit supports large memory
-    os_type = ENUMS['rhel7x64']
+    vm_name = config.MIGRATION_VM
+    vm_default_mem = config.GB*2
+    new_vm_memory = None
     percentage = 85
+    load_of_2_gb = 2000
+    time_to_run_load = 120
 
     @classmethod
     def setup_class(cls):
         """
         Setup:
-        1. update VM os type to RHEL7 64bit to support large memory
-        2. updates VM to 85% of host memory
-        3. start VM
+        1. Stop VM (since migration VM up all test)
+        1. Updates VM to 85% of host memory
+        2. Start VM
         """
+        logger.info("Stop vm: %s", cls.vm_name)
+        if not ll_vm.stop_vms_safely([cls.vm_name]):
+            logger.error("Failed to stop vm: %s", cls.vm_name)
         cls.hosts = [config.HOSTS[0], config.HOSTS[1]]
-        logger.info("store os type vm")
-        cls.vm_default_os_type = hl_vm.get_vms_os_type(
-            test_vms=[cls.vm_name]
-        )[0]
-        logger.info(
-            "set os type to %s vm %s", cls.os_type, cls.vm_name)
-        if not hl_vm.update_os_type(
-            os_type=cls.os_type,
-            test_vms=[cls.vm_name]
-        ):
-            raise exceptions.VMException(
-                "Failed to update os type for vm %s" %
-                cls.vm_name
-            )
-        logger.info("store vm memory, for later update(in teardown)")
-        cls.vm_default_mem = hl_vm.get_vm_memory(vm=cls.vm_name)
-        logger.info(
-            "update vm memory to %s percent of host memory", cls.percentage
-        )
         status, cls.host_index_max_mem = (
             hl_vm.set_vms_with_host_memory_by_percentage(
                 test_hosts=cls.hosts,
@@ -137,7 +121,6 @@ class TestMigrateVmWithLargeMemory(common.VirtTest):
             raise exceptions.VMException(
                 "Failed to update vm memory with hosts memory"
             )
-        logger.info("Start vm")
         if not ll_vm.startVm(True, cls.vm_name, wait_for_ip=True):
             raise exceptions.VMException(
                 "Failed to start vm %s" % config.VM_NAME[1])
@@ -146,19 +129,13 @@ class TestMigrateVmWithLargeMemory(common.VirtTest):
     def teardown_class(cls):
         """
         tearDown:
-        update Vm back to configure memory,os
+        1. Stop VM
+        2. Update VM back to configure memory
+        3. Start VM
         """
         logger.info("Stop vm: %s", cls.vm_name)
         if not ll_vm.stop_vms_safely([cls.vm_name]):
             logger.error("Failed to stop vm: %s", cls.vm_name)
-        logger.info(
-            "restore vm %s os type %s",
-            cls.vm_name, cls.vm_default_os_type
-        )
-        if not hl_vm.update_os_type(cls.vm_default_os_type, [cls.vm_name]):
-            logger.error(
-                "Failed to update os type for vm %s", cls.vm_name
-            )
         logger.info(
             "restore vm %s memory %s", cls.vm_name, cls.vm_default_mem
         )
@@ -166,20 +143,20 @@ class TestMigrateVmWithLargeMemory(common.VirtTest):
             logger.error(
                 "Failed to update memory for vm %s", cls.vm_name
             )
+        if not ll_vm.startVm(True, cls.vm_name, wait_for_ip=True):
+            raise exceptions.VMException(
+                "Failed to start vm %s" % config.VM_NAME[1]
+            )
 
     @polarion("RHEVM3-14033")
     def test_migrate_vm_with_large_memory(self):
         """
-        Run load on VM with option of load false(not reuse memory)
-        migrate VM.
+        Run load on VM, migrate VM.
         """
-        if not virt_helper.load_vm_memory(
-            self.vm_name,
-            memory_size='0.5',
-            reuse_memory='False',
-            memory_usage=5
-        ):
-            raise exceptions.VMException("Failed to load VM memory")
+        virt_helper.load_vm_memory_with_load_tool(
+            vm_name=self.vm_name, load=self.load_of_2_gb,
+            time_to_run=self.time_to_run_load
+        )
         self.assertTrue(
             ll_vm.migrateVm(
                 positive=True, vm=self.vm_name),
@@ -188,7 +165,7 @@ class TestMigrateVmWithLargeMemory(common.VirtTest):
 
 
 @common.attr(tier=2)
-class TestMigrateVmMoreThenOneDisk(common.VirtTest):
+class TestMigrationMixCase3(common.VirtTest):
     """
     Migrate VM with more then 1 disk.
     Add to VM 2 disks and migrate VM
@@ -220,7 +197,12 @@ class TestMigrateVmMoreThenOneDisk(common.VirtTest):
                 "Cannot create vm %s from template" % cls.vm_name
             )
         logger.info("Successfully created VM from template")
-        logger.info("Start vm")
+        ll_vm.updateVmDisk(
+            positive=True,
+            vm=cls.vm_name,
+            disk=config.TEMPLATE_NAME[0],
+            bootable=True
+        )
         if not ll_vm.startVm(positive=True, vm=cls.vm_name, wait_for_ip=True):
             raise exceptions.VMException("Failed to start vm %s" % cls.vm_name)
         logger.info("Add 2 disks to VM %s", cls.vm_name)
@@ -258,8 +240,9 @@ class TestMigrateVmMoreThenOneDisk(common.VirtTest):
         )
 
 
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 @common.attr(tier=2)
-class TestCheckHostResourcesDuringMigration(common.VirtTest):
+class TestMigrationMixCase4(common.VirtTest):
     """
     In migration the destination host saves memory and CPU for the new VM,
     This test checks that those resources released at host after
@@ -268,29 +251,9 @@ class TestCheckHostResourcesDuringMigration(common.VirtTest):
     If resources are released the after list should be equals to the before,
     which is empty.
     """
-    __test__ = True
+    __test__ = False
     sql = "select vds_name,pending_vmem_size,pending_vcpus_count from vds;"
-    vm_name = config.VM_NAME[1]
-
-    @classmethod
-    def setup_class(cls):
-
-        logger.info('Start vm %s', cls.vm_name)
-        if not ll_vm.startVm(
-            True,
-            cls.vm_name,
-            wait_for_ip=True
-        ):
-            raise exceptions.VMException('Failed to start vm %s' % cls.vm_name)
-
-    @classmethod
-    def teardown_class(cls):
-        logger.info('Stop vm: %s', cls.vm_name)
-        if not ll_vm.stopVm(
-            True,
-            cls.vm_name
-        ):
-            logger.error('Failed to stop vm %s', cls.vm_name)
+    vm_name = config.MIGRATION_VM
 
     @polarion("RHEVM3-5619")
     def test_check_DB_resources(self):
@@ -315,58 +278,3 @@ class TestCheckHostResourcesDuringMigration(common.VirtTest):
         self.assertTrue(
             virt_helper.compare_resources_lists(table_before, table_after),
             "Found resource that are pended to hosts")
-
-
-@common.attr(tier=3)
-class TestMigrationWithStorageMatrix(common.VirtTest):
-    """
-    Create VM from glance and test VM migration
-
-    """
-    __test__ = True
-    vm_name = 'virt_vm_from_glance'
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create VM from glance
-        Start VM
-        """
-
-        sd_name = sd_api.getStorageDomainNamesForType(
-            datacenter_name=config.DC_NAME[0],
-            storage_type=config.STORAGE_TYPE
-        )[0]
-        glance_name = config.EXTERNAL_PROVIDERS[config.GLANCE]
-        if not hl_vm.create_vm_using_glance_image(
-            vmName=cls.vm_name, vmDescription="linux vm",
-            cluster=config.CLUSTER_NAME[0], nic=config.NIC_NAME[0],
-            storageDomainName=sd_name, network=config.MGMT_BRIDGE,
-            glance_storage_domain_name=glance_name,
-            glance_image=config.GOLDEN_GLANCE_IMAGE
-
-        ):
-            raise exceptions.VMException(
-                "Cannot create VM %s" % cls.vm_name
-            )
-        logger.info("Starting %s", cls.vm_name)
-        if not ll_vm.startVm(True, cls.vm_name):
-            raise exceptions.VMException(
-                "Failed to start %s" % cls.vm_name
-            )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Stop and remove VM
-        """
-        if not ll_vm.safely_remove_vms([cls.vm_name]):
-            logger.error("Failed to stop and remove vm: %s", cls.vm_name)
-
-    @polarion("RHEVM3-14034")
-    def test_migration_vm(self):
-        self.assertTrue(ll_vm.migrateVm(
-            positive=True,
-            vm=self.vm_name,
-            wait=True), "Failed to migrate VM"
-        )

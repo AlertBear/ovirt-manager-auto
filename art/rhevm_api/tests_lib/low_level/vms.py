@@ -971,6 +971,7 @@ def startVm(
     :return: status (True if vm was started properly, False otherwise)
     :rtype: bool
     """
+    logger.info("Starting VM %s", vm)
     if not positive:
         wait_for_status = None
 
@@ -4322,6 +4323,7 @@ def remove_all_vms_from_cluster(cluster_name, skip=None, wait=False):
     :return: True, if all vms removed from cluster, False otherwise
     :rtype: bool
     """
+    logger.info("Remove VMs in cluster except %s", ', '.join(skip))
     if skip is None:
         skip = []
     vms_in_cluster = []

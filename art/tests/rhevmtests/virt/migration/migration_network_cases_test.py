@@ -16,6 +16,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 from rhevmtests.networking import config
+import rhevmtests.virt.config as virt_config
 import rhevmtests.networking.helper as network_helper
 import rhevmtests.virt.helper as virt_helper
 
@@ -94,7 +95,7 @@ class TestMigrationNetworkSanity(TestMigrationCaseBase):
             "putting NIC with required network down"
         )
         virt_helper.migrate_vms_and_check_traffic(
-            vms=[config.VM_NAME[0]], req_nic=2
+            vms=[virt_config.MIGRATION_VM], req_nic=2
         )
 
 
@@ -142,7 +143,7 @@ class TestMigrationCase02(TestMigrationCaseBase):
         """
         logger.info("Check migration over MGMT network")
         virt_helper.migrate_vms_and_check_traffic(
-            vms=[config.VM_NAME[0]], nic_index=0
+            vms=[virt_config.MIGRATION_VM], nic_index=0
         )
 
 
@@ -197,7 +198,7 @@ class TestMigrationCase03(TestMigrationCaseBase):
             "Check that VLAN network migration over NIC is working as expected"
         )
         virt_helper.migrate_vms_and_check_traffic(
-            vms=[config.VM_NAME[0]], vlan=config.VLAN_ID[0]
+            vms=[virt_config.MIGRATION_VM], vlan=config.VLAN_ID[0]
         )
 
 
@@ -250,7 +251,7 @@ class TestMigrationCase04(TestMigrationCaseBase):
             "expected"
         )
         virt_helper.migrate_vms_and_check_traffic(
-            vms=[config.VM_NAME[0]], non_vm=True
+            vms=[virt_config.MIGRATION_VM], non_vm=True
         )
 
 
@@ -304,7 +305,9 @@ class TestMigrationCase05(TestMigrationCaseBase):
             "Check that network migration over NIC is working as "
             "expected when the network is also the display network"
         )
-        virt_helper.migrate_vms_and_check_traffic(vms=[config.VM_NAME[0]])
+        virt_helper.migrate_vms_and_check_traffic(
+            vms=[virt_config.MIGRATION_VM]
+        )
 
 
 @common.attr(tier=2)
@@ -363,7 +366,9 @@ class TestMigrationCase06(TestMigrationCaseBase):
             "Check that network migration over NIC is working as "
             "expected when the network also resides on the VM"
         )
-        virt_helper.migrate_vms_and_check_traffic(vms=[config.VM_NAME[0]])
+        virt_helper.migrate_vms_and_check_traffic(
+            vms=[virt_config.MIGRATION_VM]
+        )
 
     @classmethod
     def teardown_class(cls):
@@ -426,7 +431,7 @@ class TestMigrationCase07(TestMigrationCaseBase):
             " is not attached to Hosts"
         )
         virt_helper.migrate_vms_and_check_traffic(
-            vms=[config.VM_NAME[0]], nic_index=0
+            vms=[virt_config.MIGRATION_VM], nic_index=0
         )
 
 
@@ -481,7 +486,7 @@ class TestMigrationCase08(TestMigrationCaseBase):
             "Check that network migration over Bond is working as expected "
         )
         virt_helper.migrate_vms_and_check_traffic(
-            vms=[config.VM_NAME[0]], bond=config.BOND[0]
+            vms=[virt_config.MIGRATION_VM], bond=config.BOND[0]
         )
 
 
@@ -538,7 +543,7 @@ class TestMigrationCase09(TestMigrationCaseBase):
             "as expected "
         )
         virt_helper.migrate_vms_and_check_traffic(
-            vms=[config.VM_NAME[0]], bond=config.BOND[0], non_vm=True
+            vms=[virt_config.MIGRATION_VM], bond=config.BOND[0], non_vm=True
         )
 
 
@@ -597,7 +602,7 @@ class TestMigrationCase10(TestMigrationCaseBase):
             "expected "
         )
         virt_helper.migrate_vms_and_check_traffic(
-            vms=[config.VM_NAME[0]], vlan=config.VLAN_ID[0],
+            vms=[virt_config.MIGRATION_VM], vlan=config.VLAN_ID[0],
             bond=config.BOND[0]
         )
 
@@ -661,7 +666,7 @@ class TestMigrationCase11(TestMigrationCaseBase):
 
         logger.info("Make sure the migration is over mgmt network")
         virt_helper.migrate_vms_and_check_traffic(
-            vms=[config.VM_NAME[0]], nic_index=0
+            vms=[virt_config.MIGRATION_VM], nic_index=0
         )
 
 
@@ -709,11 +714,11 @@ class TestMigrationCase12(TestMigrationCaseBase):
         """
         logger.info("Make sure the migration is over mgmt network")
         virt_helper.migrate_vms_and_check_traffic(
-            vms=[config.VM_NAME[0]], nic_index=0
+            vms=[virt_config.MIGRATION_VM], nic_index=0
         )
 
 
-@common.attr(tier=2)
+@common.attr(tier=1)
 class TestMigrationCase13(TestMigrationCaseBase):
     """
     Network sanity: check migration of one vm over nic
@@ -762,4 +767,6 @@ class TestMigrationCase13(TestMigrationCaseBase):
             "Check that migration of 1 VMs over migration network is working "
             "as expected"
         )
-        virt_helper.migrate_vms_and_check_traffic(vms=[config.VM_NAME[0]])
+        virt_helper.migrate_vms_and_check_traffic(
+            vms=[virt_config.MIGRATION_VM]
+        )

@@ -20,7 +20,6 @@ from art.unittest_lib import attr
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 from art.rhevm_api.tests_lib.low_level import storagedomains
 import art.unittest_lib.common as common
-import rhevmtests.virt.helper as virt_helper
 
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -29,7 +28,7 @@ TCMS_PLAN_ID = '10421'
 
 
 @attr(tier=2)
-class TestMigrateNoAvailableHostOnCluster(TestCase):
+class TestMigrateNegativeCase1(TestCase):
     """
     Negative: No available host on cluster
     """
@@ -56,21 +55,21 @@ class TestMigrateNoAvailableHostOnCluster(TestCase):
         )
 
     @polarion("RHEVM3-5666")
-    def test_migrate_vm(self):
+    def test_migrate_no_available_host_on_cluster(self):
         """
         Negative: Check vm migration
         """
         self.assertFalse(
             ll_vms.migrateVm(
                 True,
-                config.VM_NAME[0]
+                config.MIGRATION_VM
             ), 'migration success although'
                'no available host on cluster'
         )
 
 
 @attr(tier=2)
-class TestMigrateVmOnOtherDataCenter(TestCase):
+class TestMigrateNegativeCase2(TestCase):
     """
     Negative: Migrate vm on another data center
     """
@@ -97,14 +96,14 @@ class TestMigrateVmOnOtherDataCenter(TestCase):
         )
 
     @polarion("RHEVM3-5658")
-    def test_migrate_vm(self):
+    def test_migrate_vm_on_other_data_center(self):
         """
         Negative: Check vm migration
         """
         self.assertFalse(
             ll_vms.migrateVm(
                 True,
-                config.VM_NAME[0],
+                config.MIGRATION_VM,
                 host=config.HOSTS[1]
             ), 'migration success although'
                'migration between data centers is not supported'
@@ -112,21 +111,21 @@ class TestMigrateVmOnOtherDataCenter(TestCase):
 
 
 @attr(tier=2)
-class TestMigrateVmOnSameHost(TestCase):
+class TestMigrateNegativeCase3(TestCase):
     """
     Negative: Migrate vm on the same host
     """
     __test__ = True
 
     @polarion("RHEVM3-5657")
-    def test_migrate_vm(self):
+    def test_migrate_vm_on_same_host(self):
         """
         Negative: Check vm migration
         """
         self.assertFalse(
             ll_vms.migrateVm(
                 True,
-                config.VM_NAME[0],
+                config.MIGRATION_VM,
                 host=config.HOSTS[0]
             ), 'migration success although'
                'migration to the same host is NOT supported'
@@ -135,7 +134,7 @@ class TestMigrateVmOnSameHost(TestCase):
 
 @attr(tier=2)
 @common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
-class TestMigrationOverloadHost(TestCase):
+class TestMigrateNegativeCase4(TestCase):
     """
     Negative test:
      Test details:
@@ -157,8 +156,6 @@ class TestMigrationOverloadHost(TestCase):
     hosts = None
     host_index_max_mem = -1
     vm_default_os_type = None
-    # RHEL7 64bit supports large memory
-    os_type = ENUMS['rhel7x64']
     percentage = 85
 
     @classmethod
@@ -175,11 +172,10 @@ class TestMigrationOverloadHost(TestCase):
         )[0]
         logger.info(
             "set os type to %s for vms %s",
-            cls.os_type,
-            cls.test_vms
+            config.OS_RHEL_7, cls.test_vms
         )
         if not hl_vms.update_os_type(
-            os_type=cls.os_type,
+            os_type=config.OS_RHEL_7,
             test_vms=cls.test_vms
         ):
             raise VMException(
@@ -253,7 +249,7 @@ class TestMigrationOverloadHost(TestCase):
             )
 
     @polarion("RHEVM3-5656")
-    def test_check_host_and_vm_status(self):
+    def test_migration_overload_host(self):
         """
         Negative case:
         Set the host with the large memory to maintenance
@@ -431,70 +427,4 @@ class TestVMMigrateOptionsCase2(TestCase):
                 config.VM_NAME[1],
                 host=config.HOSTS[1]),
             'Migration succeed although vm set to "Do not allow migration"'
-        )
-
-
-@attr(tier=2)
-class TestMigrateVMWithLoadOnMemory(TestCase):
-    """
-    Negative test:
-    Migrate VM With load on VM memory to fail migration.
-    The load memory script is copy to VM, and run on it.
-    """
-    __test__ = True
-
-    @classmethod
-    def setUp(cls):
-        logger.info('Start vm %s', config.VM_NAME[1])
-        if not ll_vms.startVm(
-            True,
-            config.VM_NAME[1],
-            wait_for_ip=True
-        ):
-            raise errors.VMException(
-                'Failed to start vm %s',
-                config.VM_NAME[1]
-            )
-
-    @classmethod
-    def tearDown(cls):
-        try:
-            logging.info("Update memory usage to 60%")
-            virt_helper.MEMORY_USAGE = 60
-            logger.info('Stop vm: %s', config.VM_NAME[1])
-            if not ll_vms.stopVm(
-                True,
-                config.VM_NAME[1]
-            ):
-                logger.error(
-                    'Failed to stop vm %s'
-                    % config.VM_NAME[1]
-                )
-        except Exception, e:
-            logger.error(
-                'TestMigrateVMWithLoadOnMemory teardown failed'
-            )
-            logger.error(e)
-
-    @polarion("RHEVM3-5633")
-    def test_check_migration_with_load_on_memory(self):
-        """
-         Negative test: Migrate VM with load on memory
-        """
-        logging.info("Update memory usage to 75%")
-        virt_helper.MEMORY_USAGE = 75
-        if not virt_helper.load_vm_memory(
-            config.VM_NAME[1],
-            memory_size='0.75'
-        ):
-            raise VMException("Failed to load VM memory")
-        logger.info(
-            "Start migration for VM: %s , migration should failed",
-            config.VM_NAME[1]
-        )
-        self.assertFalse(
-            ll_vms.migrateVm(
-                True,
-                config.VM_NAME[1]),
-            'Migration pass although vm memory is loaded.'
         )

@@ -1910,9 +1910,8 @@ def killProcesses(hostObj, procName, **kwargs):
         HOST_API.logger.info(str(out))
 
 
-@is_action()
 def select_host_as_spm(
-    positive, host, datacenter, timeout=HOST_STATE_TIMEOUT, sleep=10,
+    positive, host, data_center, timeout=HOST_STATE_TIMEOUT, sleep=10,
     wait=True
 ):
     """
@@ -1930,19 +1929,22 @@ def select_host_as_spm(
     Returns:
         bool: True if host was elected as spm properly, False otherwise
     """
-    host_obj = HOST_API.find(host)
-    HOST_API.logger.info('Selecting host %s as SPM', host)
-    response = HOST_API.syncAction(host_obj, "forceselectspm", positive)
-
-    if response:
-        # only wait for spm election if action is expected to succeed
-        if wait and positive:
-            waitForSPM(datacenter, timeout=timeout, sleep=sleep)
-            return checkHostSpmStatus(True, host)
+    if not checkHostSpmStatus(True, host):
+        host_obj = HOST_API.find(host)
+        HOST_API.logger.info('Selecting host %s as SPM', host)
+        response = HOST_API.syncAction(host_obj, "forceselectspm", positive)
+        if response:
+            if positive and wait:
+                waitForSPM(data_center, timeout=timeout, sleep=sleep)
+                return checkHostSpmStatus(True, host)
+            else:
+                return positive
         else:
-            return True
-    logger.error("Failed to select host %s as SPM", host)
-    return False
+            logger.error("Failed to select host %s as SPM", host)
+        return response == positive
+    else:
+        logger.info("Host %s already SPM", host)
+        return positive
 
 
 def set_host_non_operational_nic_down(host_resource, nic):

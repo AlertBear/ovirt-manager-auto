@@ -19,13 +19,15 @@ def deactivate_hosts(host=None):
 
     Args:
         host (str): Host name
+    Raises:
+        NetworkException if failed to deactivate host
     """
     host = host if host else conf.HOST_0_NAME
     if not ll_hosts.checkHostSpmStatus(
         positive=True, hostName=host
     ):
         if not ll_hosts.select_host_as_spm(
-            positive=True, host=host, datacenter=conf.DC_0
+            positive=True, host=host, data_center=conf.DC_0
         ):
             raise conf.NET_EXCEPTION()
 

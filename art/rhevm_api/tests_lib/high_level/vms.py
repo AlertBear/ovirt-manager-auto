@@ -221,7 +221,8 @@ def calculate_memory_for_memory_filter(hosts_list):
 
 
 def migrate_by_maintenance(
-    vms_list, src_host, vm_os_type, vm_user, vm_password
+    vms_list, src_host, vm_os_type, vm_user, vm_password,
+    connectivity_check=True
 ):
     """
     Migrate VMs by setting host to maintenance
@@ -236,6 +237,8 @@ def migrate_by_maintenance(
     :type vm_password: str
     :param vm_os_type: Type of the OS of VM
     :type vm_os_type: str
+    :param connectivity_check: check VM connectivity after maintenance
+    :type connectivity_check: bool
     :return: True/False
     :rtype: bool
     """
@@ -244,14 +247,13 @@ def migrate_by_maintenance(
     if not hosts.deactivateHost(positive=True, host=src_host):
         LOGGER.error("Failed to set %s into maintenance", src_host)
         return False
-
     LOGGER.info("Checking VMs after migration")
-    if not check_vms_after_migration(
-        vms_list=vms_list, src_host=src_host, vm_os_type=vm_os_type,
-        vm_user=vm_user, vm_password=vm_password
-    ):
-        status = False
-
+    if connectivity_check:
+        if not check_vms_after_migration(
+            vms_list=vms_list, src_host=src_host, vm_os_type=vm_os_type,
+            vm_user=vm_user, vm_password=vm_password
+        ):
+            status = False
     LOGGER.info("Activating %s", src_host)
     if not hosts.activateHost(True, host=src_host):
         LOGGER.error("Couldn't activate host %s", src_host)
@@ -555,8 +557,7 @@ def set_vms_with_host_memory_by_percentage(
             if not vms.updateVm(
                 True,
                 vm=vm,
-                memory=new_memory,
-                memory_guaranteed=new_memory
+                memory=new_memory
             ):
                 LOGGER.error(
                     "Failed to update memory to vm %s",
@@ -566,24 +567,20 @@ def set_vms_with_host_memory_by_percentage(
     return True, host_index_max_mem
 
 
-def update_vms_memory(test_vms, memory):
+def update_vms_memory(vms_list, memory):
     """
-     update memory for vms in list
-    :param test_vms:list of vms
-    :type test_vms: list
+    Update memory for vms in list
+
+    :param vms_list:list of vms for update
+    :type vms_list: list
     :param memory: memory to update
-    :type memory: str
+    :type memory: int
     :return: True if memory updated
     :rtype: bool
     """
-    LOGGER.info(
-        "update memory %s for vms %s",
-        memory,
-        test_vms
-    )
-    for vm in test_vms:
+    for vm in vms_list:
         LOGGER.info(
-            "update vm: %s memory to %s",
+            "update vm: %s memory to %d",
             vm,
             memory
         )

@@ -39,10 +39,6 @@ VM_DESCRIPTION = PARAMETERS.get('vm_description', '%s_test' % TEST_NAME)
 
 USERNAME = VDC_ADMIN_USER
 
-MIGRATION_TEMPLATE_NAME = "vm_migration_template"
-MIGRATION_BASE_VM = "base_vm_migration_test"
-RHEL_IMAGE = "rhel6.5-agent3.5"
-
 VM_OS_TYPE = ENUMS[RHEL7PPC64] if PPC_ARCH else ENUMS['rhel6x64']
 VM_DISPLAY_TYPE = ENUMS[
     'display_type_vnc'
@@ -53,3 +49,9 @@ RHEL_OS_TYPE_FOR_MIGRATION = "rhel"
 # glance
 RHEL_IMAGE_GLANCE_IMAGE = 'latest-rhel-guest-image-7.2'
 GLANCE_DOMAIN = 'rhevm-qe-infra-glance'
+
+# migration
+MIGRATION_VM = VM_NAME[0] if PPC_ARCH else "migration_vm"
+CONNECTIVITY_CHECK = False if PPC_ARCH else True
+MIGRATION_IMAGE_VM = "vm_with_loadTool"
+OS_RHEL_7 = ENUMS['rhel7x64']

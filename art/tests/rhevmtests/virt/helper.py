@@ -4,7 +4,7 @@
 """
 Helper functions for virt and network migration job
 """
-
+import shlex
 import time
 import logging
 from utilities import jobs
@@ -16,18 +16,15 @@ from art.test_handler import exceptions
 from art.rhevm_api.utils import test_utils
 import art.rhevm_api.resources as resources
 import art.unittest_lib.network as lib_network
-from rhevmtests.virt import config as config_virt
-from art.rhevm_api.tests_lib.low_level import hosts
 import rhevmtests.networking.helper as network_helper
+from art.rhevm_api.tests_lib.low_level import hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-import art.rhevm_api.tests_lib.low_level.clusters as ll_cluster
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.templates as ll_template
-import art.rhevm_api.tests_lib.high_level.datacenters as hl_data_center
-import rhevmtests.sla.scheduler_tests.helpers as sla_helper
+import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 
-logger = logging.getLogger("Virt_Network_Migration_Helper")
+logger = logging.getLogger("Virt_Helper")
 
 VDSM_LOG = "/var/log/vdsm/vdsm.log"
 SERVICE_STATUS = "id"
@@ -39,7 +36,9 @@ RUN_SCRIPT_COMMAND = (
     'python /tmp/memoryLoad.py -s %s -r %s &> /tmp/OUT1 & echo $!'
 )
 NETMASK = "255.255.0.0"
-
+LOAD_VM_COMMAND = (
+    '/home/loadTool -v -p 1 -t 1 -m %s -l mem -s %s &> /tmp/OUT1 & echo $!'
+)
 test_handler.find_test_file.__test__ = False
 
 
@@ -161,18 +160,19 @@ def set_host_status(activate=False):
     :type activate: bool
     :raise: exceptions.NetworkException
     """
-    sla_helper.choose_host_as_spm(
-        host_name=config.HOSTS[1],
-        data_center=config.DC_NAME[0],
-        storage_domain=config.STORAGE_NAME[0]
-    )
     host_state = "active" if activate else "maintenance"
     func = "activateHost" if activate else "deactivateHost"
+    if not activate:
+        ll_hosts.select_host_as_spm(
+            positive=True,
+            host=config.HOSTS[0],
+            data_center=config.DC_NAME[0]
+        )
     call_func = getattr(hosts, func)
     logger.info("Putting hosts besides first two to %s", host_state)
     for host in config.HOSTS[2:]:
         if not call_func(True, host):
-            raise exceptions.NetworkException(
+            raise exceptions.HostException(
                 "Couldn't put %s into %s" % (host, host_state)
             )
 
@@ -264,121 +264,6 @@ def get_orig_and_dest_hosts(vms):
     return orig_host_obj, orig_host, dst_host_obj, dst_host
 
 
-def create_template():
-    """
-    create template
-
-    :return: True: if template created else return false
-    :rtype: bool
-    """
-    logger.info("Create VM for Template ")
-    if not ll_vms.createVm(
-        positive=True,
-        vmName=config_virt.MIGRATION_BASE_VM,
-        vmDescription=config_virt.VM_DESCRIPTION,
-        cluster=config_virt.CLUSTER_NAME[0],
-        storageDomainName=config_virt.STORAGE_NAME[0],
-        size=config_virt.DISK_SIZE,
-        nic=config.NIC_NAME[0],
-        network=config_virt.MGMT_BRIDGE,
-        user=config_virt.VMS_LINUX_USER,
-        password=config_virt.VMS_LINUX_PW,
-    ):
-        logger.error(
-            exceptions.VMException(
-                "Failed to create VM %s" %
-                config_virt.MIGRATION_BASE_VM
-            )
-        )
-        return False
-    logger.info("Create template")
-    if not hl_vms.prepare_vm_for_rhel_template(
-        config_virt.MIGRATION_BASE_VM,
-        config_virt.VMS_LINUX_PW,
-        config_virt.RHEL_IMAGE
-    ):
-        logger.error(exceptions.VMException("Failed to seal VM for template"))
-        return False
-    if not ll_template.createTemplate(
-        True,
-        vm=config_virt.MIGRATION_BASE_VM,
-        cluster=config_virt.CLUSTER_NAME[0],
-        name=config_virt.MIGRATION_TEMPLATE_NAME
-    ):
-        logger.error(exceptions.TemplateException("Failed to create Template"))
-        return False
-    logger.info("VM template is ready")
-    return True
-
-
-def add_setup_components():
-    """
-    Add to setup: New Data Center, Clusters , Hosts
-
-    :return: True: if setup created else returns false
-    :rtype: bool
-    """
-    logger.info("Create new setup...")
-    if not hl_data_center.build_setup(
-        config_virt.PARAMETERS,
-        config_virt.PARAMETERS,
-        config_virt.STORAGE_TYPE,
-        config_virt.TEST_NAME
-    ):
-        logger.error("Setup environment failed")
-        return False
-    logger.info(
-        "Add one more cluster %s to data center %s",
-        config_virt.CLUSTER_NAME[1],
-        config_virt.DC_NAME[0]
-    )
-    if not ll_cluster.addCluster(
-        True,
-        name=config_virt.CLUSTER_NAME[1],
-        version=config_virt.COMP_VERSION,
-        data_center=config_virt.DC_NAME[0],
-        cpu=config_virt.CPU_NAME
-    ):
-        logger.error(
-            "Cluster %s creation failed ",
-            config_virt.CLUSTER_NAME[1]
-        )
-        return False
-    return True
-
-
-def prepare_environment():
-    """
-    Prepare environment
-
-     1. Create DC, Cluster, hosts
-     2. Create template
-     3. Create VMs from template
-    :return: True if setup is ready else return False
-    :rtype: bool
-    """
-    logger.info("Prepare environment")
-    if not add_setup_components():
-        raise exceptions.TestException("Failed create setup")
-    if not create_template():
-        logger.error("Failed to create Template")
-        return False
-    logger.info(
-        'Create vms: %s %s',
-        config.VM_NAME[:5],
-        " from template"
-    )
-    for vm_name in config.VM_NAME[:5]:
-        if not ll_vms.cloneVmFromTemplate(
-            True, name=vm_name,
-            template=config_virt.MIGRATION_TEMPLATE_NAME,
-            cluster=config.CLUSTER_NAME[0]
-        ):
-            logger.error("Failed to clone VM")
-            return False
-    return True
-
-
 def copy_file_to_vm(vm_ip, source_file_path, destination_path):
     """
     Copy file to VM using Machine.
@@ -427,7 +312,7 @@ def load_vm_memory(
     :type vm_name: str
     :param memory_size:  Memory size for script
     :type memory_size: str
-    :param reuse_memory: re-use allocated memory
+    :param reuse_memory: Re-use allocated memory
     :type reuse_memory: str
     :param memory_usage: Memory usage in percent
     :type: memory_usage: int
@@ -453,20 +338,20 @@ def load_vm_memory(
             vm_name, DESTINATION_PATH
         )
     logger.info('Running script')
-    run_command(vm_ip, command)
+    run_command(vm_name, command)
     logger.info('Wait till memory is catch by script')
-    return monitor_vm_load_status(vm_ip, memory_usage)
+    return monitor_vm_load_status(vm_name, memory_usage)
 
 
-def run_command(vm_ip, cmd):
+def run_command(vm_name, cmd):
     """
-    running command using resource HOST, if command failed
+    running command using resource VM, if command failed
     it returns 0 (False) . Command is string send to run as list
     usage: 1. To run load memory script in BG - No output
            2. To run free - output memory usage
 
-    :param vm_ip: VM IP
-    :type: vm_ip: str
+    :param vm_name: VM name
+    :type: vm_name: str
     :param cmd: Command to run
     :type cmd: str
     :return: If command success returns command out
@@ -475,38 +360,28 @@ def run_command(vm_ip, cmd):
     """
     cmd_array = cmd.split()
 
-    vm_exec = helpers.get_host_executor(
-        vm_ip, config.VMS_LINUX_PW
-    )
-    rc, out, error = vm_exec.run_cmd(cmd_array)
-    if rc:
-        logger.error(
-            "Failed to run command on VM:%s ,error:%s ,output:%s",
-            vm_ip,
-            error,
-            out
-        )
-        return 0
+    vm_exec = helpers.get_vm_resource(vm_name)
+    rc, out, error = vm_exec.run_command(cmd_array)
     logger.info("output: %s", out)
     return int(out)
 
 
-def check_vm_memory_load(vm_ip, memory_usage):
+def check_vm_memory_load(vm_name, memory_usage):
     """
      checks VM memory status using free command
      compare with expected memory.
 
-    :param vm_ip: vm ip to monitor
+    :param vm_name: VM name to monitor
     :type: vm_name: str
-    :param memory_usage: memory usage in percents
+    :param memory_usage: Memory usage in percents
     :type: memory_usage:int
     :return: True if VM load is as expected else False
     :rtype: bool
     """
     total_mem_cmd = "free | grep Mem | awk '{ print $2 }'"
     use_mem_cmd = "free | grep Mem | awk '{ print $3 }'"
-    total = run_command(vm_ip, total_mem_cmd)
-    use = run_command(vm_ip, use_mem_cmd)
+    total = run_command(vm_name, total_mem_cmd)
+    use = run_command(vm_name, use_mem_cmd)
     if total and use:
         current_usage = (100 * use) / total
         logger.info("Current usage is : {0}%".format(current_usage))
@@ -518,14 +393,14 @@ def check_vm_memory_load(vm_ip, memory_usage):
         return False
 
 
-def monitor_vm_load_status(vm_ip, memory_usage):
+def monitor_vm_load_status(vm_name, memory_usage):
     """
      uses timer to monitor VM load status
      calls check_vm_memory_load method in 5 sec
      intervals, time out after 70 sec.
 
-    :param vm_ip: vm IP to monitor
-    :type: vm_ip: str
+    :param vm_name: VM name to monitor
+    :type: vm_name: str
     :param memory_usage: memory usage in percents
     :type: memory_usage: int
     :return: True if VM load is as expected else False
@@ -535,7 +410,7 @@ def monitor_vm_load_status(vm_ip, memory_usage):
         timeout=DELAY_FOR_SCRIPT,
         sleep=5,
         func=check_vm_memory_load,
-        vm_ip=vm_ip,
+        vm_ip=vm_name,
         memory_usage=memory_usage
     )
     return sample.waitForFuncStatus(result=True)
@@ -611,3 +486,53 @@ def compare_resources_lists(before_list, after_list):
                     return False
     logging.info("Resources cleaned from hosts")
     return True
+
+
+def create_vm_from_glance_image(image_name, vm_name):
+    """
+    Create VM with glance image on NFS storage domain
+
+    :param image_name: The image name in glance
+    :type image_name: str
+    :param vm_name: VM name to create
+    :type vm_name: str
+    :raise VMException in case of failure
+    """
+    sd_name = ll_sd.getStorageDomainNamesForType(
+        datacenter_name=config.DC_NAME[0],
+        storage_type=config.STORAGE_TYPE
+    )[0]
+    glance_name = config.EXTERNAL_PROVIDERS[config.GLANCE]
+    if not hl_vms.create_vm_using_glance_image(
+        vmName=vm_name, vmDescription=vm_name,
+        cluster=config.CLUSTER_NAME[0], nic=config.NIC_NAME[0],
+        storageDomainName=sd_name, network=config.MGMT_BRIDGE,
+        glance_storage_domain_name=glance_name,
+        glance_image=image_name
+
+    ):
+        raise exceptions.VMException()
+
+
+def load_vm_memory_with_load_tool(vm_name, load=500, time_to_run=60):
+    """
+    Load VM memory with load tool that install on VM
+
+    :param vm_name: VM name
+    :type vm_name: str
+    :param load: Load value in MB
+    :type load: int
+    :param time_to_run: Time to run memory load in sec
+    :type time_to_run: int
+    :return: Process id
+    :rtype: int
+    """
+    logger.info(
+        "Run load %s MB on vm %s for %s sec",
+        load, vm_name, time_to_run
+    )
+    cmd = LOAD_VM_COMMAND % (load, time_to_run)
+    vm_resource = helpers.get_vm_resource(vm_name)
+    ps_id = vm_resource.run_command(command=shlex.split(cmd))[1]
+    time.sleep(5)
+    return ps_id

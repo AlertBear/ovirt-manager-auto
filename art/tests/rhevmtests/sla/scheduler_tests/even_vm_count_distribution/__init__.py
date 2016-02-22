@@ -6,10 +6,9 @@ import os
 import logging
 
 from rhevmtests.sla import config
-from rhevmtests.sla.scheduler_tests import helpers
-
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.datacenters as dc_api
 
 logger = logging.getLogger(__name__)
@@ -37,10 +36,10 @@ def setup_package():
                 nic=config.NIC_NAME[0], network=config.MGMT_BRIDGE
             ):
                 raise errors.VMException("Cannot create %s" % vm)
-    helpers.choose_host_as_spm(
-        host_name=config.HOSTS[0],
-        data_center=config.DC_NAME[0],
-        storage_domain=config.STORAGE_NAME[0]
+    ll_hosts.select_host_as_spm(
+        positive=True,
+        host=config.HOSTS[0],
+        data_center=config.DC_NAME[0]
     )
 
 
