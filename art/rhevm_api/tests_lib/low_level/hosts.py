@@ -88,7 +88,7 @@ MAC_SPOOF_LINES = [
     "<filterref filter='no-mac-spoofing'/>",
     "<filterref filter='no-arp-mac-spoofing'/>"
 ]
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.ll_lib.hosts")
 
 
 def get_host_list():

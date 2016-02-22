@@ -66,7 +66,7 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 xpathMatch = is_action('xpathTemplates',
                        id_name='xpathMatch')(XPathMatch(TEMPLATE_API))
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.ll_lib.templates")
 
 
 def _prepareTemplateObject(**kwargs):

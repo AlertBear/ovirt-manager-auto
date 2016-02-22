@@ -15,7 +15,7 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.hl_lib.host_net")
 
 CONNECTIVITY_TIMEOUT = 60
 NETWORKS = "networks"

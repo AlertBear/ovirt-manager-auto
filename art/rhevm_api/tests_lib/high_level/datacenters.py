@@ -26,7 +26,7 @@ from art.test_handler.settings import opts
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("art.hl_lib.dcs")
 ENUMS = opts['elements_conf']['RHEVM Enums']
 SPM_TIMEOUT = 300
 SPM_SLEEP = 5

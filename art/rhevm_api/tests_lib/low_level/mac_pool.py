@@ -23,7 +23,7 @@ import art.rhevm_api.utils.test_utils as utils
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.ll_lib.mac_pool")
 
 MACPOOL_API = utils.get_api("mac_pool", "macpools")
 RANGES = "ranges"

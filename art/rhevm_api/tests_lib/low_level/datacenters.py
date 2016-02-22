@@ -82,7 +82,7 @@ QUOTA_LIMITS = {
     }
 }
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.ll_lib.dcs")
 
 
 @is_action()

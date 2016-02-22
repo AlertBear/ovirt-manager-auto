@@ -24,7 +24,7 @@ from art.test_handler.settings import ART_CONFIG
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.hl_lib.mac_pool")
 
 DEFAULT_MAC_POOL = 'Default'
 

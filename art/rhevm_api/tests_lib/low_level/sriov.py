@@ -18,7 +18,7 @@ PF_NETWORK_API = test_utils.get_api(
     "network", "virtualfunctionallowednetworks"
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.ll_lib.sriov")
 
 
 class SriovHostNics(object):

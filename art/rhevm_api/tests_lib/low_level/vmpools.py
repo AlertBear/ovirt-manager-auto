@@ -39,7 +39,7 @@ TEMPLATE_UTIL = test_utils.get_api('template', 'templates')
 VM_POOL = api_utils.getDS('VmPool')
 TEMPLATE = api_utils.getDS('Template')
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.ll_lib.vmpools")
 
 VM_ACTION_TIMEOUT = 600
 VM_POOL_ACTION_TIMEOUT = 600

@@ -26,7 +26,7 @@ from art.core_api.apis_exceptions import APITimeout
 from art.core_api.validator import compareCollectionSize
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.ll_lib.events")
 
 ELEMENT = 'event'
 COLLECTION = 'events'

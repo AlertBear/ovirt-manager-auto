@@ -31,7 +31,7 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 api = test_utils.get_api('storage_connection', 'storageconnections')
 hostApi = test_utils.get_api('host', 'hosts')
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("art.ll_lib.storageconnections")
 
 
 def _prepare_connection_object(**kwargs):

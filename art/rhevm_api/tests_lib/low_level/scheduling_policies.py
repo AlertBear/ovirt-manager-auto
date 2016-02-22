@@ -50,7 +50,7 @@ UNIT_ATTR = {
     BALANCE_TYPE: 'balance'
 }
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.ll_lib.scheduling_policies")
 
 
 def _prepare_scheduling_policy_object(**kwargs):

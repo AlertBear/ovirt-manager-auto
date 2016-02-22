@@ -12,7 +12,7 @@ import test_utils
 
 from art.test_handler import find_test_file
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("art.utils.aaa")
 
 
 def copy_extension_file(host, ext_file, target_file, chown='ovirt'):

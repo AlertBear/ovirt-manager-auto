@@ -10,7 +10,7 @@ import logging
 from threading import Thread
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.utils.mac2ip")
 
 
 class MacToIpConverterError(Exception):

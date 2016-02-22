@@ -32,7 +32,7 @@ import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 ENUMS = test_settings.opts['elements_conf']['RHEVM Enums']
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.hl_lib.networks")
 CONNECTIVITY_TIMEOUT = 60
 DISK_SIZE = 21474836480
 LUN_PORT = 3260

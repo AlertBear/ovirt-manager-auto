@@ -112,7 +112,7 @@ Snapshots = getDS('Snapshots')
 
 NUMA_NODE_LINK = "numanodes"
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.ll_lib.vms")
 xpathMatch = is_action('xpathVms', id_name='xpathMatch')(XPathMatch(VM_API))
 xpathVmsLinks = is_action(
     'xpathVmsLinks', id_name='xpathVmsLinks'

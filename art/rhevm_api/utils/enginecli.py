@@ -3,7 +3,7 @@ Helper classes to use oVirt cli tools
 """
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.utils.enginecli")
 
 
 class EngineCLI(object):

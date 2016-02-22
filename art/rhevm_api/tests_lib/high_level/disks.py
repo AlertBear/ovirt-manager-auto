@@ -3,7 +3,7 @@ from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.low_level.disks import get_all_disk_permutation,\
     addDisk
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.hl_lib.disks")
 
 # Polling interval
 SLEEP_TIME = 10

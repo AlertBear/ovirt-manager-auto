@@ -4,7 +4,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("art.hl_lib.cls")
 
 
 def remove_templates_connected_cluster(cluster_name):

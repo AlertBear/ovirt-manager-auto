@@ -4,7 +4,7 @@ from art.core_api import is_action
 from art.test_handler.settings import opts
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.utils.iptables")
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
 BLOCK_FUNCTION = st_api.blockOutgoingConnection

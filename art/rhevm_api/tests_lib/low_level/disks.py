@@ -47,7 +47,7 @@ TAG_API = get_api('tag', 'tags')
 CDROM_API = get_api('cdrom', 'cdroms')
 CONN_API = get_api('storage_connection', 'storageconnections')
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.ll_lib.disks")
 xpathMatch = is_action('xpathMatch')(XPathMatch(VM_API))
 BLOCK_DEVICES = [ENUMS['storage_type_iscsi'], ENUMS['storage_type_fcp']]
 

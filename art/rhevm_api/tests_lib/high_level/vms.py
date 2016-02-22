@@ -16,7 +16,7 @@ from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 from art.rhevm_api.utils.test_utils import getStat
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("art.hl_lib.vms")
 ENUMS = opts['elements_conf']['RHEVM Enums']
 CLUSTER_API = get_api('cluster', 'clusters')
 

@@ -7,7 +7,7 @@ import time
 from utilities.machine import Machine
 import argparse
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.utils.log_listener")
 
 
 class LogListener():

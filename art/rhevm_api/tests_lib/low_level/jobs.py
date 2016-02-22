@@ -9,7 +9,7 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 
 JOBS_API = get_api('job', 'jobs')
 STEPS_API = get_api('step', 'steps')
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("art.ll_lib.jobs")
 TASK_TIMEOUT = 600
 JOB_TIMEOUT = 1200
 TASK_POLL = 5

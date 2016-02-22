@@ -41,7 +41,7 @@ Role = getDS('Role')
 Tag = getDS('Tag')
 Permission = getDS('Permission')
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.ll_lib.users")
 
 
 @is_action()

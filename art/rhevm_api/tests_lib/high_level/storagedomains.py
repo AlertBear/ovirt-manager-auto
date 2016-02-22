@@ -32,7 +32,7 @@ import art.test_handler.exceptions as errors
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.hl_lib.sds")
 
 
 def _ISCSIdiscoverAndLogin(host, lun_address, lun_target, login_all=False):

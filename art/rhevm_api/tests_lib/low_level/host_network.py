@@ -16,7 +16,7 @@ import art.rhevm_api.tests_lib.low_level.general as ll_general
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.ll_lib.host_nets")
 
 NETWORK = "network"
 BOND = "bond"

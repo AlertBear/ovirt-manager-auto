@@ -25,7 +25,7 @@ from art.rhevm_api.utils.test_utils import get_api
 from utilities.machine import Machine
 from art.core_api import is_action
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.ll_lib.hooks")
 
 CHMOD = "/bin/chmod"
 

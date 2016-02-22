@@ -10,7 +10,7 @@ import art.test_handler.exceptions as errors
 from art.test_handler.settings import opts
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("art.hl_lib.hosts")
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
 

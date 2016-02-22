@@ -31,7 +31,7 @@ VM_API = get_api('vm', 'vms')
 LOAD_SCRIPT_NAME = "load_host.sh"
 LOAD_SCRIPT_DIR = "/tmp"
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("art.ll_lib.sla")
 
 
 def get_pinned_cpu(host, host_user, host_pwd, vm, vcpu):
