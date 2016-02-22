@@ -185,8 +185,9 @@ def compareElements(expElm, actElm, logger, root, equal=True,
     ignore_list.extend(ATTR_IGNORE_LIST)
 
     if not actElm:
-        logger.warn("Attribute '{0}' doesn't exist"
-                    " in actual results".format(root))
+        logger.debug(
+            "Attribute '{0}' doesn't exist in actual results".format(root)
+        )
         return True
 
     if expElm.__class__.__name__ == 'JavaTranslator':
@@ -250,7 +251,7 @@ def compareElements(expElm, actElm, logger, root, equal=True,
         if attrExpVal is not None:
             if attrActVal is None:
                 MSG = "Attribute '{0}->{1}' doesn't exist in actual results"
-                logger.warn(MSG.format(root, attr))
+                logger.debug(MSG.format(root, attr))
                 continue
 
             if attrType.startswith('xs:') or is_primitive(attrActVal):
