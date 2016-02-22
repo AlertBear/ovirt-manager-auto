@@ -20,7 +20,7 @@ from art.unittest_lib import attr
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 from art.rhevm_api.tests_lib.low_level import storagedomains
 import art.unittest_lib.common as common
-from rhevmtests.virt import virt_helper
+import rhevmtests.virt.helper as virt_helper
 
 
 ENUMS = opts['elements_conf']['RHEVM Enums']

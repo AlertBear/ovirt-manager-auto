@@ -16,7 +16,8 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.jobs as ll_jobs
 from rhevmtests.virt import config
-from rhevmtests.virt import virt_helper
+import rhevmtests.virt.helper as virt_helper
+
 
 logger = logging.getLogger("Virt_Migration_Cases")
 RHEL_OS_TYPE_FOR_MIGRATION = "rhel"

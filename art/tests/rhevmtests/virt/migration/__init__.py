@@ -15,7 +15,7 @@ from art.rhevm_api.tests_lib.low_level import vms
 from rhevmtests.networking import config as netconf
 import art.rhevm_api.tests_lib.low_level.clusters as cluster_api
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-from rhevmtests.virt import virt_helper
+import rhevmtests.virt.helper as virt_helper
 
 logger = logging.getLogger("Virt_Network_Migration_Init")
 

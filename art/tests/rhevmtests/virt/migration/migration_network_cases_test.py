@@ -17,7 +17,7 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 from rhevmtests.networking import config
 import rhevmtests.networking.helper as network_helper
-from rhevmtests.virt import virt_helper
+import rhevmtests.virt.helper as virt_helper
 
 logger = logging.getLogger("Network_Migration_Cases")
 

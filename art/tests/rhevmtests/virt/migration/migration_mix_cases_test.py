@@ -13,7 +13,7 @@ import art.rhevm_api.tests_lib.high_level.vms as hl_vm
 import art.rhevm_api.tests_lib.low_level.vms as ll_vm
 import art.rhevm_api.tests_lib.low_level.storagedomains as sd_api
 from rhevmtests.virt import config
-from rhevmtests.virt import virt_helper
+import rhevmtests.virt.helper as virt_helper
 
 logger = logging.getLogger("virt_migration_mix_cases")
 ENUMS = opts['elements_conf']['RHEVM Enums']
