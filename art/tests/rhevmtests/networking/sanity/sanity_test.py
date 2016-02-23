@@ -842,7 +842,6 @@ class TestSanity10(NetworkTest):
     Verify you can remove network configured with gateway
     """
     __test__ = True
-    ip = conf.MG_IP_ADDR
     gateway = conf.MG_GATEWAY
     netmask = conf.NETMASK
     subnet = conf.SUBNET
@@ -853,9 +852,10 @@ class TestSanity10(NetworkTest):
         """
         Attach VM network with IP and gateway to host
         """
+        ip = network_helper.create_random_ips(num_of_ips=1, mask=24)[0]
         ip_addr_dict = {
             "ip_gateway": {
-                "address": cls.ip,
+                "address": ip,
                 "netmask": cls.netmask,
                 "boot_protocol": "static",
                 "gateway": cls.gateway

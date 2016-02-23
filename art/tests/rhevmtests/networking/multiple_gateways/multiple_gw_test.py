@@ -9,17 +9,16 @@ It will cover scenarios for VM/non-VM networks.
 Only static IP configuration is tested.
 """
 
+import config
 import logging
-from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
-from art.unittest_lib import NetworkTest as TestCase
-import rhevmtests.networking.config as config
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.test_handler.exceptions as exceptions
+from art.unittest_lib import NetworkTest as TestCase
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 
-IP = config.MG_IP_ADDR
 NETMASK = config.NETMASK
 GATEWAY = config.MG_GATEWAY
 SUBNET = config.SUBNET
@@ -59,7 +58,8 @@ class TestGatewaysCase1(TestCase):
         local_dict = {
             config.NETWORKS[0]: {
                 "nic": 1, "required": False, "bootproto": "static",
-                "address": [IP], "netmask": [NETMASK], "gateway": [GATEWAY]
+                "address": [config.IPS[0]], "netmask": [NETMASK],
+                "gateway": [GATEWAY]
             }
         }
 
@@ -127,8 +127,8 @@ class TestGatewaysCase2(TestCase):
         local_dict = {
             config.VLAN_NETWORKS[0]: {
                 "nic": 1, "vlan_id": config.VLAN_ID[0], "required": False,
-                "bootproto": "static", "address": [IP], "netmask": [NETMASK],
-                "gateway": [GATEWAY]
+                "bootproto": "static", "address": [config.IPS[1]],
+                "netmask": [NETMASK], "gateway": [GATEWAY]
             }
         }
 
@@ -183,8 +183,8 @@ class TestGatewaysCase3(TestCase):
         local_dict = {
             config.NETWORKS[0]: {
                 "nic": 1, "usages": "", "required": False,
-                "bootproto": "static", "address": [IP], "netmask": [NETMASK],
-                "gateway": [GATEWAY]
+                "bootproto": "static", "address": [config.IPS[2]],
+                "netmask": [NETMASK], "gateway": [GATEWAY]
             }
         }
 
@@ -239,8 +239,8 @@ class TestGatewaysCase4(TestCase):
         local_dict = {
             config.NETWORKS[0]: {
                 "nic": 1, "cluster_usages": "display", "required": False,
-                "bootproto": "static", "address": [IP], "netmask": [NETMASK],
-                "gateway": [GATEWAY]
+                "bootproto": "static", "address": [config.IPS[3]],
+                "netmask": [NETMASK], "gateway": [GATEWAY]
             }
         }
 
@@ -315,7 +315,7 @@ class TestGatewaysCase5(TestCase):
         net_obj = []
         rc, out = ll_hosts.genSNNic(
             nic=HOST_NICS[1], network=config.NETWORKS[0],
-            boot_protocol="static", address="1.1.1.298", netmask=NETMASK,
+            boot_protocol="static", address="5.5.5.298", netmask=NETMASK,
             gateway=GATEWAY
         )
         if not rc:
@@ -337,8 +337,8 @@ class TestGatewaysCase5(TestCase):
         net_obj = []
         rc, out = ll_hosts.genSNNic(
             nic=HOST_NICS[1], network=config.NETWORKS[0],
-            boot_protocol="static", address=IP, netmask=NETMASK,
-            gateway="1.1.1.289"
+            boot_protocol="static", address=config.IPS[4], netmask=NETMASK,
+            gateway="5.5.5.289"
         )
         if not rc:
             raise exceptions.NetworkException("Cannot generate SNNIC object")
@@ -382,7 +382,8 @@ class TestGatewaysCase6(TestCase):
         local_dict = {
             config.NETWORKS[0]: {
                 "nic": 1, "required": False, "bootproto": "static",
-                "address": [IP], "netmask": [NETMASK], "gateway": ["0.0.0.0"]
+                "address": [config.IPS[5]], "netmask": [NETMASK],
+                "gateway": ["0.0.0.0"]
             }
         }
         if not hl_networks.createAndAttachNetworkSN(
@@ -423,8 +424,8 @@ class TestGatewaysCase7(TestCase):
         local_dict = {
             config.NETWORKS[0]: {
                 "nic": "bond0", "slaves": [-2, -1], "required": False,
-                "bootproto": "static", "address": [IP], "netmask": [NETMASK],
-                "gateway": [GATEWAY]
+                "bootproto": "static", "address": [config.IPS[6]],
+                "netmask": [NETMASK], "gateway": [GATEWAY]
             }
         }
 
@@ -454,7 +455,7 @@ class TestGatewaysCase7(TestCase):
         rc, out = ll_hosts.genSNNic(
             nic="bond0", network=config.NETWORKS[0],
             slaves=[HOST_NICS[-2], HOST_NICS[-3], HOST_NICS[-1]],
-            boot_protocol="static", address=IP, netmask=NETMASK,
+            boot_protocol="static", address=config.IPS[6], netmask=NETMASK,
             gateway=GATEWAY
         )
         if not rc:
@@ -508,8 +509,8 @@ class TestGatewaysCase8(TestCase):
         local_dict = {
             config.NETWORKS[0]: {
                 "nic": "bond0", "slaves": [-2, -3, -1], "required": False,
-                "bootproto": "static", "address": [IP], "netmask": [NETMASK],
-                "gateway": [GATEWAY]
+                "bootproto": "static", "address": [config.IPS[7]],
+                "netmask": [NETMASK], "gateway": [GATEWAY]
             }
         }
 
@@ -540,7 +541,7 @@ class TestGatewaysCase8(TestCase):
         rc, out = ll_hosts.genSNNic(
             nic="bond0", network=config.NETWORKS[0],
             slaves=[HOST_NICS[-2], HOST_NICS[-1]], boot_protocol="static",
-            address=IP, netmask=NETMASK, gateway=GATEWAY
+            address=config.IPS[7], netmask=NETMASK, gateway=GATEWAY
         )
         if not rc:
             raise exceptions.NetworkException("Cannot generate SNNIC object")
@@ -592,7 +593,7 @@ class TestGatewaysCase9(TestCase):
         local_dict = {
             config.NETWORKS[0]: {
                 "nic": 1, "required": False, "bootproto": "static",
-                "address": [IP], "netmask": [NETMASK]
+                "address": [config.IPS[8]], "netmask": [NETMASK]
             }
         }
 

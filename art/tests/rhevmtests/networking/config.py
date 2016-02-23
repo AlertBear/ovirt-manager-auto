@@ -48,9 +48,9 @@ TX_CHECKSUM = "-K {nic} tx {state}"
 AUTONEG = "-A {nic} autoneg {state}"
 
 # MultiHost and multiple_gw parameters
-SUBNET = "1.1.1.0"
-MG_GATEWAY = "1.1.1.254"
-MG_IP_ADDR = "1.1.1.1"
+SUBNET = "5.5.5.0"
+MG_GATEWAY = "5.5.5.254"
+MG_IP_ADDR = "5.5.5.1"
 
 # Jumbo frame parameters
 NUM_PACKETS = 1000
