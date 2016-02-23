@@ -27,12 +27,15 @@ def _prepare_data(sparse, vol_format, template_names, storage_type):
         config.TEMPLATE_NAME, sparse, vol_format, storage_type)
     vm_name = '%s_%s_%s_%s_prep' % (
         config.TESTNAME, sparse, vol_format, storage_type)
-    LOGGER.info("Creating vm %s %s %s..." % (sparse, vol_format, storage_type))
-    if not helpers.create_vm_or_clone(
-        True, vm_name, diskInterface=config.INTERFACE_VIRTIO,
-            volumeType=sparse, volumeFormat=vol_format,
-            storageDomainName=storage_domain
-    ):
+    LOGGER.info("Creating vm sparse - %s %s %s..." %
+                (sparse, vol_format, storage_type))
+    vm_args = config.create_vm_args.copy()
+    vm_args['vmName'] = vm_name
+    vm_args['storageDomainName'] = storage_domain
+    vm_args['volumeType'] = sparse
+    vm_args['volumeFormat'] = vol_format
+    vm_args['start'] = 'true'
+    if not helpers.create_vm_or_clone(**vm_args):
         raise exceptions.VMException("Creation of vm %s failed!" % vm_name)
     LOGGER.info("Waiting for ip of %s" % vm_name)
     vm_ip = vms.waitForIP(vm_name)[1]['ip']

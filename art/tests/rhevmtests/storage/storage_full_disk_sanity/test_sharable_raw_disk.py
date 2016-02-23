@@ -5,12 +5,16 @@ Storage/3_3_Storage_Hosted_Engine_Sanity
 """
 import config
 import logging
-from art.rhevm_api.tests_lib.low_level import disks, storagedomains, vms
+from art.rhevm_api.tests_lib.low_level import (
+    disks as ll_disks,
+    storagedomains as ll_sds,
+    vms as ll_vms,
+)
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import StorageTest as TestCase, attr
+from rhevmtests.storage import helpers as storage_helpers
+from art.test_handler import exceptions
 from art.test_handler.settings import opts
-
-ENUMS = config.ENUMS
 
 logger = logging.getLogger(__name__)
 
@@ -32,13 +36,22 @@ class TestCase11513(TestCase):
     disk_name = "shareableDisk"
 
     def setUp(self):
+        self.storage_domain = ll_sds.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )[0]
+        for vm_prefix in [config.VM1_NAME, config.VM2_NAME]:
+            vm_name = vm_prefix % self.storage
+            vm_args = config.create_vm_args.copy()
+            vm_args['storageDomainName'] = self.storage_domain
+            vm_args['vmName'] = vm_name
+            vm_args['installation'] = False
+            vm_args['start'] = 'true'
+            if not storage_helpers.create_vm_or_clone(**vm_args):
+                raise exceptions.VMException(
+                    "Failed to create vm %s" % vm_name
+                )
         self.vm_1 = config.VM1_NAME % self.storage
         self.vm_2 = config.VM2_NAME % self.storage
-        """Start the two vms and get the storage_domain name"""
-        self.storage_domain = storagedomains.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage)[0]
-        for vm in [self.vm_1, self.vm_2]:
-            assert vms.startVm(True, vm, wait_for_status=ENUMS['vm_state_up'])
 
     @polarion("RHEVM3-11513")
     def test_shared(self):
@@ -46,42 +59,50 @@ class TestCase11513(TestCase):
         """
         logger.info("Creating sharable raw disk")
         self.assertTrue(
-            disks.addDisk(
+            ll_disks.addDisk(
                 True, alias=self.disk_name, provisioned_size=config.GB,
                 size=config.GB, interface=config.VIRTIO_SCSI,
-                format=ENUMS['format_raw'], storagedomain=self.storage_domain,
-                shareable=True, sparse=False)
+                format=config.RAW_DISK, storagedomain=self.storage_domain,
+                shareable=True, sparse=False
+            )
         )
 
-        self.assertTrue(disks.wait_for_disks_status(disks=[self.disk_name]))
+        self.assertTrue(ll_disks.wait_for_disks_status(disks=[self.disk_name]))
         logger.info("Attaching disk to vm %s" % self.vm_1)
-        self.assertTrue(disks.attachDisk(True, self.disk_name, self.vm_1))
-        self.assertTrue(disks.wait_for_disks_status(disks=[self.disk_name]))
+        self.assertTrue(ll_disks.attachDisk(True, self.disk_name, self.vm_1))
+        self.assertTrue(ll_disks.wait_for_disks_status(disks=[self.disk_name]))
         self.assertTrue(
-            vms.waitForVmDiskStatus(self.vm_1, True, diskAlias=self.disk_name,
-                                    sleep=1)
+            ll_vms.waitForVmDiskStatus(
+                self.vm_1, True, self.disk_name, sleep=1
+            )
         )
         # TODO: Extra validation ?
 
-        logger.info("Attaching disk to vm %s" % self.vm_2)
-        self.assertTrue(disks.attachDisk(True, self.disk_name, self.vm_2))
-        self.assertTrue(disks.wait_for_disks_status(disks=[self.disk_name]))
+        logger.info("Attaching disk to vm %s", self.vm_2)
+        self.assertTrue(ll_disks.attachDisk(True, self.disk_name, self.vm_2))
+        self.assertTrue(ll_disks.wait_for_disks_status([self.disk_name]))
         self.assertTrue(
-            vms.waitForVmDiskStatus(self.vm_1, True, diskAlias=self.disk_name,
-                                    sleep=1)
+            ll_vms.waitForVmDiskStatus(
+                self.vm_1, True, self.disk_name, sleep=1
+            )
         )
         self.assertTrue(
-            vms.waitForVmDiskStatus(self.vm_2, True, diskAlias=self.disk_name,
-                                    sleep=1)
+            ll_vms.waitForVmDiskStatus(
+                self.vm_2, True, self.disk_name, sleep=1
+            )
         )
         # TODO: Extra validation ?
 
     def tearDown(self):
         """
-        Make sure vms are down and the disk is removed
+        Remove vms
         """
-        assert vms.stopVms(",".join([self.vm_1, self.vm_2]), wait='true')
-        assert disks.deleteDisk(True, self.disk_name)
+        if not ll_vms.safely_remove_vms([self.vm_1, self.vm_2]):
+            logger.error(
+                "Failed to power off and remove vms %s", [self.vm_1, self.vm_2]
+            )
+            TestCase.test_failed = True
+        TestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -116,32 +137,41 @@ class TestCase11624(TestCase):
         for i in range(4):
             vm_name = "vm_%s_%s" % (self.polarion_test_case, i)
             nic = "nic_%s" % i
-            vms.createVm(
+            ll_vms.createVm(
                 True, vm_name, vm_name, config.CLUSTER_NAME, nic=nic,
                 placement_host=config.HOSTS[0], network=config.MGMT_BRIDGE,
                 display_type=config.DISPLAY_TYPE, type=config.VM_TYPE,
                 os_type=config.OS_TYPE
             )
             self.vm_names.append(vm_name)
-        storage_domain = storagedomains.getStorageDomainNamesForType(
+        storage_domain = ll_sds.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[0]
         self.disk_name = 'disk_%s' % self.polarion_test_case
-        logger.info("Creating disk")
-        assert disks.addDisk(
+        logger.info("Creating disk %s", self.disk_name)
+        assert ll_disks.addDisk(
             True, alias=self.disk_name, shareable=True, bootable=False,
             size=self.disk_size, storagedomain=storage_domain,
-            format=ENUMS['format_raw'], interface=config.VIRTIO_SCSI,
-            sparse=False)
-        assert disks.wait_for_disks_status(self.disk_name)
-        logger.info("Disk created")
+            format=config.RAW_DISK, interface=config.VIRTIO_SCSI,
+            sparse=False
+        )
+        assert ll_disks.wait_for_disks_status(self.disk_name)
+        logger.info("Disk %s created successfully", self.disk_name)
 
         for vm in self.vm_names:
-            assert disks.attachDisk(True, self.disk_name, vm, True)
+            assert ll_disks.attachDisk(True, self.disk_name, vm, True)
 
-        vms.start_vms(self.vm_names, max_workers=config.MAX_WORKERS,
-                      wait_for_ip=False)
+        ll_vms.start_vms(
+            self.vm_names, max_workers=config.MAX_WORKERS, wait_for_ip=False
+        )
 
     def tearDown(self):
-        assert vms.removeVms(True, self.vm_names, stop='true')
+        if not ll_vms.safely_remove_vms(self.vm_names):
+            logger.error(
+                "Failed to power off and remove vms %s", self.vm_names
+            )
+            TestCase.test_failed = True
         if self.disk_name is not None:
-            assert disks.deleteDisk(True, self.disk_name)
+            if not ll_disks.deleteDisk(True, self.disk_name):
+                logger.error("Failed to delete disk %s", self.disk_name)
+                TestCase.test_failed = True
+        TestCase.teardown_exception()

@@ -1,51 +1,41 @@
 """
 Test Direct Lun Sanity
-
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/Storage/
 3_1_Storage_Direct_Lun_General
 """
 import config
 import logging
 from art.rhevm_api.tests_lib.low_level.hosts import getHostIP
-from art.core_api.apis_exceptions import EntityNotFound
 from art.unittest_lib.common import StorageTest as TestCase
 from art.unittest_lib import attr
-from utilities.machine import Machine, LINUX
-
-from art.rhevm_api.tests_lib.low_level.disks import (
-    addDisk, attachDisk, detachDisk, deleteDisk, get_other_storage_domain,
+from art.rhevm_api.tests_lib.low_level import (
+    disks as ll_disks,
+    jobs as ll_jobs,
+    storagedomains as ll_sds,
+    templates as ll_templates,
+    vms as ll_vms,
 )
-from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    getStorageDomainNamesForType,
-)
-from art.rhevm_api.tests_lib.low_level.templates import (
-    createTemplate, removeTemplate,
-)
-from art.rhevm_api.tests_lib.low_level.vms import (
-    stop_vms_safely, waitForVMState, getVmDisks, startVm, suspendVm,
-    runVmOnce, addSnapshot, updateVm, removeSnapshot,
-    get_snapshot_disks, moveVm, removeVm, getVmHost,
-    get_vms_disks_storage_domain_name, wait_for_vm_snapshots,
-)
-from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-import rhevmtests.storage.helpers as helpers
-
+from rhevmtests import helpers as rhevm_helpers
+from rhevmtests.storage import helpers as storage_helpers
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+from utilities.machine import Machine, LINUX
 
 logger = logging.getLogger(__name__)
 
+ISCSI = config.STORAGE_TYPE_ISCSI
+ENUMS = config.ENUMS
+VM_NAME = 'direct_lun_vm_%s_%s'
+STATELESS_SNAPSHOT_DESCRIPTION = 'stateless snapshot'
 BASE_KWARGS = {
     "interface": config.VIRTIO_SCSI,
     "alias": "direct_lun_disk",
     "format": config.COW_DISK,
     "size": config.DISK_SIZE,
     "bootable": False,
-    "type_": config.STORAGE_TYPE,
+    "type_": ISCSI,
 }
-ISCSI = config.STORAGE_TYPE_ISCSI
-ENUMS = config.ENUMS
 
 
 def setup_module():
@@ -64,71 +54,69 @@ class DirectLunAttachTestCase(TestCase):
     """
     # This tests are only desing to run on ISCSI
     # TODO: Enable for FC when our environment is stable
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     vm_name = None
     polarion_test_case = ""
-    bz = {'1220824': {'engine': None, 'version': ['3.6']}}
+    # Bugzilla history:
+    # 1220824: Adding a disk to a vm fails with NullPointerException if not
+    # disk.storage_domains is provided (even for direct lun disks)
 
     def setUp(self):
         """
         Build disk's parameters
         """
-        self.vm_name = config.VM1_NAME % self.storage
+        self.storage_domain = ll_sds.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )[0]
+
+        self.vm_name = VM_NAME % (self.storage, self.polarion_test_case)
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = self.storage_domain
+        vm_args['vmName'] = self.vm_name
+        vm_args['installation'] = False
+        if not storage_helpers.create_vm_or_clone(**vm_args):
+            raise exceptions.VMException(
+                "Failed to create vm %s" % self.vm_name
+            )
         BASE_KWARGS.update({'type_': self.storage})
         self.disk_alias = "direct_lun_%s" % self.polarion_test_case
-
-        self.storage_domains = getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage)
-
-        self.vm_storage_domain = get_vms_disks_storage_domain_name(
-            self.vm_name)
         self.lun_kwargs = BASE_KWARGS.copy()
         self.lun_kwargs["alias"] = self.disk_alias
-
-        stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
 
     def attach_disk_to_vm(self):
         """
         Attach the lun to the VM
         """
         logger.info("Adding new disk (direct lun) %s", self.disk_alias)
-        assert addDisk(True, **self.lun_kwargs)
-        wait_for_jobs([ENUMS['job_add_disk']])
-
-        logger.info("Attaching disk %s to vm %s", self.disk_alias,
-                    self.vm_name)
-        status = attachDisk(True, self.disk_alias, self.vm_name,
-                            active=True)
-        self.assertTrue(status, "Failed to attach direct lun to vm")
-        assert self.disk_alias in (
-            [d.get_alias() for d in getVmDisks(self.vm_name)]
+        if not ll_disks.addDisk(True, **self.lun_kwargs):
+            raise exceptions.DiskException(
+                "Failed to add direct LUN %s" % self.lun_kwargs['alias']
+            )
+        ll_jobs.wait_for_jobs([config.JOB_ADD_DISK])
+        logger.info(
+            "Attaching disk %s to vm %s", self.disk_alias, self.vm_name
         )
-
-    def detach_and_delete_disk_from_vm(self, disk_alias):
-        logger.info("Wait in case an disks are not ready")
-
-        stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
-
-        logger.info("Detaching disk %s from vm %s", disk_alias,
-                    self.vm_name)
-        try:
-            detachDisk(True, disk_alias, self.vm_name)
-        except EntityNotFound:
-            logger.error("Disk %s was not found attached to %s", disk_alias,
-                         self.vm_name)
-
-        logger.info("Deleting disk %s", disk_alias)
-        assert deleteDisk(True, disk_alias)
-        wait_for_jobs([ENUMS['job_remove_disk']])
+        status = ll_disks.attachDisk(
+            True, self.disk_alias, self.vm_name, active=True
+        )
+        if not status:
+            raise exceptions.VMException(
+                "Failed to attach direct lun to vm %s" % self.vm_name
+            )
+        if self.disk_alias not in (
+            [d.get_alias() for d in ll_vms.getVmDisks(self.vm_name)]
+        ):
+            raise exceptions.DiskException(
+                "Direct LUN wasn't attached to vm %s" % self.vm_name)
 
     def tearDown(self):
         """
-        Removed disks
+        Remove VM
         """
-        self.detach_and_delete_disk_from_vm(self.disk_alias)
+        if not ll_vms.safely_remove_vms([self.vm_name]):
+            logger.error("Failed to remove vm %s", self.vm_name)
+            TestCase.test_failed = True
 
 
 @attr(tier=2)
@@ -143,14 +131,21 @@ class TestCase5927(DirectLunAttachTestCase):
         Start the vm
         """
         super(TestCase5927, self).setUp()
-        assert startVm(True, self.vm_name, config.VM_UP)
+        if not ll_vms.startVm(True, self.vm_name, config.VM_UP):
+            raise exceptions.VMException(
+                "Failed to start vm %s" % self.vm_name
+            )
 
     @polarion("RHEVM3-5927")
     def test_attach_lun_vm_running(self):
         """
-        Attach the lun when vm is up
+        1) Attach a lun to running vm
         """
         self.attach_disk_to_vm()
+
+    def tearDown(self):
+        super(TestCase5927, self).tearDown()
+        TestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -163,19 +158,30 @@ class TestCase5920(DirectLunAttachTestCase):
     @polarion("RHEVM3-5920")
     def test_suspend_vm(self):
         """
-        attach direct lun and suspend vm
+        1) attach direct lun
+        2) suspend vm
         """
         self.attach_disk_to_vm()
-        startVm(True, self.vm_name, config.VM_UP)
-        assert suspendVm(True, self.vm_name)
+        if not ll_vms.startVm(True, self.vm_name, config.VM_UP):
+            raise exceptions.VMException(
+                "Failed to start vm %s" % self.vm_name
+            )
+        if not ll_vms.suspendVm(True, self.vm_name):
+            raise exceptions.VMException(
+                "Failed to change vm %s state to suspend" % self.vm_name
+            )
 
     def tearDown(self):
         """
-        Remove disk
+        Resume vm after suspend and remove it
         """
-        assert startVm(True, self.vm_name)
-        waitForVMState(self.vm_name)
-        super(TestCase5920, self).tearDown()
+        if not ll_vms.startVm(True, self.vm_name, config.VM_UP):
+            logger.error("Failed to start vm %s" % self.vm_name)
+            TestCase.test_failed = True
+        if not ll_vms.safely_remove_vms([self.vm_name]):
+            logger.error("Failed to remove vm %s", self.vm_name)
+            TestCase.test_failed = True
+        TestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -193,18 +199,16 @@ class TestCase5930(DirectLunAttachTestCase):
     @polarion("RHEVM3-5930")
     def test_more_then_one_direct_lun(self):
         """
-        Adds and attach two different direct luns to the same vm
+        1) Add and attach first LUN to vm
+        2) Add and attach second LUN to the same vm
         """
         self.attach_disk_to_vm()
-
         disk_alias = self.disk_alias
         self.disk_alias = self.disk_to_add
-
         self.lun_kwargs['alias'] = self.disk_to_add
         self.lun_kwargs['lun_address'] = config.EXTEND_LUN_ADDRESS[1]
         self.lun_kwargs['lun_target'] = config.EXTEND_LUN_TARGET[1]
         self.lun_kwargs['lun_id'] = config.EXTEND_LUN[1]
-
         self.attach_disk_to_vm()
         self.disk_alias = disk_alias
 
@@ -213,7 +217,7 @@ class TestCase5930(DirectLunAttachTestCase):
         Remove disks
         """
         super(TestCase5930, self).tearDown()
-        self.detach_and_delete_disk_from_vm(self.disk_to_add)
+        TestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -225,28 +229,35 @@ class TestCase5931(DirectLunAttachTestCase):
     # TODO: verify template's disks
     polarion_test_case = "5931"
     template_name = "template_%s" % polarion_test_case
-    temp_created = False
+    template_created = False
 
     @polarion("RHEVM3-5931")
     def test_create_template_from_vm_with_lun(self):
         """
-        Create template from vm with direct lun attached
+        1) Attach direct LUN to vm
+        2) Create template from the vm
         """
         self.attach_disk_to_vm()
-        self.temp_created = createTemplate(True, vm=self.vm_name,
-                                           name=self.template_name,
-                                           cluster=config.CLUSTER_NAME)
-
-        assert self.temp_created
+        self.template_created = ll_templates.createTemplate(
+            True, vm=self.vm_name, name=self.template_name,
+            cluster=config.CLUSTER_NAME
+        )
+        self.assertTrue(
+            self.template_created,
+            "Failed to create template %s" % self.template_name
+        )
 
     def tearDown(self):
-        if self.temp_created:
-            stop_vms_safely([self.vm_name])
-            waitForVMState(self.vm_name, config.VM_DOWN)
+        if self.template_created:
             logger.info("Removing template %s", self.template_name)
-            assert removeTemplate(True, self.template_name)
-            wait_for_jobs([ENUMS['job_remove_vm_template']])
+            if not ll_templates.removeTemplate(True, self.template_name):
+                logger.error(
+                    "Failed to remove template %s", self.template_name
+                )
+                TestCase.test_failed = True
+            ll_jobs.wait_for_jobs([config.JOB_REMOVE_TEMPLATE])
         super(TestCase5931, self).tearDown()
+        TestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -258,34 +269,40 @@ class TestCase5932(DirectLunAttachTestCase):
     polarion_test_case = "5932"
     snap_desc = "snapshot_name_%s" % polarion_test_case
     snap_added = False
+    bz = {'1245630': {'engine': None, 'version': ["3.6"]}}
 
+    @rhevm_helpers.wait_for_jobs_deco([config.JOB_REMOVE_SNAPSHOT])
     @polarion("RHEVM3-5932")
     def test_create_snapshot_from_stateless_vm(self):
         """
+        1) Attach direct LUN to vm
+        2) Run vm in stateless mode
+        3) Create snapshot from stateless vm (should fail)
         """
         self.attach_disk_to_vm()
-        assert runVmOnce(True, self.vm_name, stateless=True)
-        waitForVMState(self.vm_name)
-        self.snap_added = addSnapshot(False, self.vm_name, self.snap_desc)
-        assert self.snap_added
+        if not ll_vms.runVmOnce(
+            True, self.vm_name, stateless=True, wait_for_state=config.VM_UP
+        ):
+            raise exceptions.VMException(
+                "Failed to run vm %s in stateless mode" % self.vm_name
+            )
+        self.snap_added = ll_vms.addSnapshot(
+            False, self.vm_name, self.snap_desc
+        )
+        self.assertTrue(
+            self.snap_added, "Succeeded to create snapshot from stateless "
+                             "vm with direct LUN attached"
+        )
 
     def tearDown(self):
-        stop_vms_safely([self.vm_name])
-        if not waitForVMState(self.vm_name, config.VM_DOWN):
-            raise exceptions.VMException(
-                "Failed to stop vm %s" % self.vm_name
-            )
-
-        # after stopping vm that runs in stateless mode a temporary snapshot
-        # is deleted and the ACTIVE_VM volume is locked for few seconds
-        wait_for_vm_snapshots(
-            self.vm_name, config.SNAPSHOT_OK, [self.snap_desc],
+        if not ll_vms.stop_vms_safely([self.vm_name]):
+            logger.error("Failed to power off vm %s", self.vm_name)
+            TestCase.test_failed = True
+        ll_vms.wait_for_snapshot_gone(
+            self.vm_name, STATELESS_SNAPSHOT_DESCRIPTION
         )
-        if not self.snap_added:
-            logger.info("Removing snapshot %s", self.snap_desc)
-            assert removeSnapshot(True, self.vm_name, self.snap_desc)
-
         super(TestCase5932, self).tearDown()
+        TestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -296,23 +313,23 @@ class TestCase5933(DirectLunAttachTestCase):
     """
     polarion_test_case = "5933"
     snap_desc = "snapshot_name_%s" % polarion_test_case
-    snap_added = False
 
     @polarion("RHEVM3-5933")
     def test_create_snapshot_from_vm_with_lun(self):
         """
-        Create snapshot with direct lun
+        1) Attach direct LUN to vm
+        2) Create snapshot
         """
         self.attach_disk_to_vm()
-
         logger.info("Create new snapshot %s", self.snap_desc)
-        self.snap_added = addSnapshot(True, self.vm_name, self.snap_desc)
-        assert self.snap_added
-        wait_for_vm_snapshots(
+        self.assertTrue(ll_vms.addSnapshot(
+            True, self.vm_name, self.snap_desc
+        ), "Failed to create snapshot %s to vm %s" %
+            (self.snap_desc, self.vm_name))
+        ll_vms.wait_for_vm_snapshots(
             self.vm_name, config.SNAPSHOT_OK, [self.snap_desc],
         )
-
-        snap_disks = get_snapshot_disks(self.vm_name, self.snap_desc)
+        snap_disks = ll_vms.get_snapshot_disks(self.vm_name, self.snap_desc)
 
         if self.disk_alias in snap_disks:
             raise exceptions.SnapshotException(
@@ -320,12 +337,8 @@ class TestCase5933(DirectLunAttachTestCase):
                 % (self.disk_alias, self.snap_desc))
 
     def tearDown(self):
-        if self.snap_added:
-            stop_vms_safely([self.vm_name])
-            waitForVMState(self.vm_name, config.VM_DOWN)
-            logger.info("Removing snapshot %s", self.snap_desc)
-            assert removeSnapshot(True, self.vm_name, self.snap_desc)
         super(TestCase5933, self).tearDown()
+        TestCase.teardown_exception()
 
 
 @attr(tier=4)
@@ -338,71 +351,32 @@ class TestCase5934(DirectLunAttachTestCase):
     @polarion("RHEVM3-5934")
     def test_ha_vm_with_direct_lun(self):
         """
-        * Run vm with direct lun in HA mode
-        * kill qemu precess
+        1) Run vm with direct lun in HA mode
+        2) kill qemu precess
         """
         self.attach_disk_to_vm()
-        assert updateVm(True, self.vm_name, highly_available='true')
-        startVm(True, self.vm_name)
-
-        _, host = getVmHost(self.vm_name)
+        self.assertTrue(ll_vms.updateVm(
+            True, self.vm_name, highly_available='true'),
+            "Failed to update vm %s HA attribute to 'true" % self.vm_name
+        )
+        ll_vms.startVm(True, self.vm_name)
+        _, host = ll_vms.getVmHost(self.vm_name)
         host_ip = getHostIP(host['vmHoster'])
         host_machine = Machine(
             host_ip, config.HOSTS_USER, config.HOSTS_PW).util(LINUX)
-
-        assert host_machine.kill_qemu_process(self.vm_name)
-
-        assert waitForVMState(self.vm_name)
+        self.assertTrue(
+            host_machine.kill_qemu_process(self.vm_name),
+            "Failed to kill the QEMU process"
+        )
+        self.assertTrue(
+            ll_vms.waitForVMState(self.vm_name),
+            "VM state is not up after killing QEMU process and setting HA "
+            "attribute to 'true"
+        )
 
     def tearDown(self):
-        waitForVMState(self.vm_name)
-        assert updateVm(True, self.vm_name, highly_available='false')
         super(TestCase5934, self).tearDown()
-
-
-@attr(tier=2)
-class TestCase5937(DirectLunAttachTestCase):
-    """
-    direct lun and disk interface
-    """
-    # TODO: Why? IDE disk cannot be hot plugged - fix whole test
-    __test__ = False
-    polarion_test_case = "5937"
-
-    @polarion("RHEVM3-5937")
-    def test_direct_lun_interface_ide(self):
-        """
-        Create direct lun - interface ide
-        """
-        self.lun_kwargs['interface'] = config.INTERFACE_IDE
-
-        assert addDisk(True, **self.lun_kwargs)
-        wait_for_jobs([ENUMS['job_add_disk']])
-
-    @polarion("RHEVM3-5937")
-    def test_direct_lun_interface_virtio(self):
-        """
-        Create direct lun - interface virtio
-        """
-        self.lun_kwargs['interface'] = config.INTERFACE_VIRTIO
-
-        assert addDisk(True, **self.lun_kwargs)
-        wait_for_jobs([ENUMS['job_add_disk']])
-
-    @polarion("RHEVM3-5937")
-    def test_direct_lun_interface_virtio_scsi(self):
-        """
-        Create direct lun - interface virtio-scsi
-        """
-        self.lun_kwargs['interface'] = config.INTERFACE_VIRTIO_SCSI
-
-        assert addDisk(True, **self.lun_kwargs)
-        wait_for_jobs([ENUMS['job_add_disk']])
-
-    def tearDown(self):
-        logger.info("Deleting disk %s", self.disk_alias)
-        assert deleteDisk(True, self.disk_alias)
-        wait_for_jobs([ENUMS['job_remove_disk']])
+        TestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -416,20 +390,29 @@ class TestCase5938(DirectLunAttachTestCase):
         """
         Create direct lun as bootable disk
         """
-        super(TestCase5938, self).setUp()
-        self.lun_kwargs["bootable"] = True
+        self.disk_alias = "direct_lun_%s" % self.polarion_test_case
+        self.kwargs = BASE_KWARGS.copy()
+        self.kwargs["alias"] = self.disk_alias
+        self.kwargs["bootable"] = True
 
     @polarion("RHEVM3-5938")
     def test_bootable_disk(self):
-
-        assert addDisk(True, **self.lun_kwargs)
-        wait_for_jobs([ENUMS['job_add_disk']])
+        """
+        1) Add direct LUN as bootable
+        """
+        self.assertTrue(
+            ll_disks.addDisk(True, **self.kwargs),
+            "Failed to add direct LUN with bootable attribute set to 'true"
+        )
+        ll_jobs.wait_for_jobs([config.JOB_ADD_DISK])
 
     def tearDown(self):
-        self.lun_kwargs["bootable"] = False
         logger.info("Deleting disk %s", self.disk_alias)
-        assert deleteDisk(True, self.disk_alias)
-        wait_for_jobs([ENUMS['job_remove_disk']])
+        if not ll_disks.deleteDisk(True, self.disk_alias):
+            logger.error("Failed to remove disk %s", self.disk_alias)
+            TestCase.test_failed = True
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_DISK])
+        TestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -443,20 +426,29 @@ class TestCase5939(DirectLunAttachTestCase):
         """
         Create a direct lun as shared disk
         """
-        super(TestCase5939, self).setUp()
-        self.lun_kwargs["shareable"] = True
+        self.disk_alias = "direct_lun_%s" % self.polarion_test_case
+        self.kwargs = BASE_KWARGS.copy()
+        self.kwargs["alias"] = self.disk_alias
+        self.kwargs["shareable"] = True
 
+    @rhevm_helpers.wait_for_jobs_deco([config.JOB_ADD_DISK])
     @polarion("RHEVM3-5939")
     def test_shared_direct_lun(self):
-
-        assert addDisk(True, **self.lun_kwargs)
-        wait_for_jobs([ENUMS['job_add_disk']])
+        """
+        1) Add direct LUN as shareable
+        """
+        self.assertTrue(
+            ll_disks.addDisk(True, **self.kwargs),
+            "Failed to add direct LUN with shareable attribute set to 'true"
+        )
 
     def tearDown(self):
-        self.lun_kwargs["shareable"] = False
         logger.info("Deleting disk %s", self.disk_alias)
-        assert deleteDisk(True, self.disk_alias)
-        wait_for_jobs([ENUMS['job_remove_disk']])
+        if not ll_disks.deleteDisk(True, self.disk_alias):
+            logger.error("Failed to remove disk %s", self.disk_alias)
+            TestCase.test_failed = True
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_DISK])
+        TestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -470,28 +462,34 @@ class TestCase5940(DirectLunAttachTestCase):
     @polarion("RHEVM3-5940")
     def test_migrate_vm_direct_lun(self):
         """
-        Attache a direct lun to vm and move it to other domain
+        1) Attach a direct LUN to vm
+        2) Move the disk to another domain
         """
         self.target_sd, self.vm_moved = None, None
         self.attach_disk_to_vm()
-        vm_disk = filter(lambda w: w.get_alias() != self.disk_alias,
-                         getVmDisks(self.vm_name))[0]
-        self.original_sd = get_vms_disks_storage_domain_name(
-            self.vm_name, vm_disk.get_alias())
-        self.target_sd = get_other_storage_domain(
-            vm_disk.get_alias(), self.vm_name, storage_type=self.storage)
+        vm_disk = filter(
+            lambda w: w.get_alias() != self.disk_alias,
+            ll_vms.getVmDisks(self.vm_name)
+        )[0]
+        self.original_sd = ll_vms.get_vms_disks_storage_domain_name(
+            self.vm_name, vm_disk.get_alias()
+        )
+        self.target_sd = ll_disks.get_other_storage_domain(
+            vm_disk.get_alias(), self.vm_name, storage_type=self.storage
+        )
 
-        assert self.target_sd
-        self.vm_moved = moveVm(True, self.vm_name, self.target_sd)
+        self.assertTrue(
+            self.target_sd, "Target SD %s wasn't found" % self.target_sd
+        )
+        self.vm_moved = ll_vms.moveVm(True, self.vm_name, self.target_sd)
         self.assertTrue(self.vm_moved, "Failed to move vm %s" % self.vm_name)
 
     def tearDown(self):
-        """Move the vm back to the original storage domain"""
-        waitForVMState(self.vm_name)
-        if self.target_sd and self.vm_moved:
-            moveVm(True, self.vm_name, self.original_sd)
-        waitForVMState(self.vm_name)
+        """
+        Remove vm
+        """
         super(TestCase5940, self).tearDown()
+        TestCase.teardown_exception()
 
 
 @attr(tier=1)
@@ -504,21 +502,23 @@ class TestCase5924(DirectLunAttachTestCase):
     @polarion("RHEVM3-5924")
     def test_remove_direct_lun(self):
         """
-        * Create direct lun and attach it to vm.
-        * Detach it and remove it
+        1) Create a direct LUN and attach it to the vm
+        2) Detach the LUN from the vm and remove it
         """
-        stop_vms_safely([self.vm_name])
         self.attach_disk_to_vm()
         # TODO: Verify write operation to direct lun
 
         logger.info("Detaching direct lun %s", self.disk_alias)
-        assert detachDisk(True, self.disk_alias, self.vm_name)
+        assert ll_disks.detachDisk(True, self.disk_alias, self.vm_name)
         logger.info("Removing direct lun %s", self.disk_alias)
-        assert deleteDisk(True, self.disk_alias)
-        wait_for_jobs([ENUMS['job_remove_disk']])
+        assert ll_disks.deleteDisk(True, self.disk_alias)
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_DISK])
 
     def tearDown(self):
-        pass
+        if not ll_vms.safely_remove_vms([self.vm_name]):
+            logger.error("Failed to remove vm %s", self.vm_name)
+            TestCase.test_failed = True
+        TestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -536,22 +536,16 @@ class TestCase5911(DirectLunAttachTestCase):
         self.vm_removed = False
         self.attach_disk_to_vm()
 
-        stop_vms_safely([self.vm_name])
-        waitForVMState(self.vm_name, config.VM_DOWN)
-        self.vm_removed = removeVm(True, self.vm_name)
-        self.assertTrue(self.vm_removed,
-                        "Failed to remove vm %s" % self.vm_name)
+        ll_vms.stop_vms_safely([self.vm_name])
+        self.vm_removed = ll_vms.removeVm(True, self.vm_name)
+        self.assertTrue(
+            self.vm_removed, "Failed to remove vm %s" % self.vm_name
+        )
 
     def tearDown(self):
-        if self.vm_removed:
-            # Adding back vm since the test removes it
-            assert helpers.create_vm_or_clone(
-                True, self.vm_name, diskInterface=config.INTERFACE_VIRTIO,
-                storageDomainName=self.vm_storage_domain
-            )
-            wait_for_jobs([ENUMS['job_add_vm']])
-        else:
+        if not self.vm_removed:
             super(TestCase5911, self).tearDown()
+        TestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -565,17 +559,24 @@ class TestCase5913(DirectLunAttachTestCase):
         """
         Create a direct lun with wipe after delete
         """
-        super(TestCase5913, self).setUp()
-        self.lun_kwargs["wipe_after_delete"] = True
+        self.disk_alias = "direct_lun_%s" % self.polarion_test_case
+        self.kwargs = BASE_KWARGS.copy()
+        self.kwargs["alias"] = self.disk_alias
+        self.kwargs["wipe_after_delete"] = True
 
+    @rhevm_helpers.wait_for_jobs_deco([config.JOB_ADD_DISK])
     @polarion("RHEVM3-5913")
     def test_wipe_after_delete_with_direct_lun(self):
 
-        assert addDisk(True, **self.lun_kwargs)
-        wait_for_jobs([ENUMS['job_add_disk']])
+        self.assertTrue(
+            ll_disks.addDisk(True, **self.kwargs),
+            "Failed to add direct LUN with shareable attribute set to 'true"
+        )
 
     def tearDown(self):
-        self.lun_kwargs["wipe_after_delete"] = False
         logger.info("Deleting disk %s", self.disk_alias)
-        assert deleteDisk(True, self.disk_alias)
-        wait_for_jobs([ENUMS['job_remove_disk']])
+        if not ll_disks.deleteDisk(True, self.disk_alias):
+            logger.error("Failed to remove disk %s", self.disk_alias)
+            TestCase.test_failed = True
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_DISK])
+        TestCase.teardown_exception()
