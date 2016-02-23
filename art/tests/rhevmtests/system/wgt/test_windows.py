@@ -47,6 +47,7 @@ def setup_module():
         ) if getattr(x[1], '__test__', False)
     ]
     assert len(WIN_IMAGES) > 0, "There are no test cases to run"
+    logger.info("Windows images to test: %s", WIN_IMAGES)
     GLANCE_IMAGE = import_image(WIN_IMAGES.pop())
 
 
@@ -191,4 +192,22 @@ class Windows7_64bit(Windows):
         'test_guest_info': 'RHEVM3-14438',
         'test_guest_timezone': 'RHEVM3-14439',
         'test_guest_os': 'RHEVM3-14440',
+    }
+
+
+class Windows2012R2_64bit(Windows):
+    """
+    Test that all product and services exist on windows machine after
+    GuestTools installation for windows 2012R2 64bit.
+    """
+    __test__ = True
+    disk_name = 'Windows2012R2_CI_64b_Disk1'
+    serial_number = '0a223f48-f6ef-2s1o-1o5k-3c970e16e256'
+    architecture = 'x86_64'
+    codename = 'Win 2012 R2'
+    polarion_map = {
+        'test_guest_applications': 'RHEVM3-14405',
+        'test_guest_info': 'RHEVM3-14406',
+        'test_guest_timezone': 'RHEVM3-14407',
+        'test_guest_os': 'RHEVM3-14408',
     }
