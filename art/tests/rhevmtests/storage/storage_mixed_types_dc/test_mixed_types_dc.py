@@ -40,6 +40,9 @@ GLUSTERFS = config.STORAGE_TYPE_GLUSTER
 ISCSI = config.STORAGE_TYPE_ISCSI
 NFS = config.STORAGE_TYPE_NFS
 POSIX = config.STORAGE_TYPE_POSIX
+PARTITION_CREATE_CMD = 'echo 0 1024 | sfdisk %s -uM'
+MKFS_CMD = 'mkfs.ext4 %s1'
+
 
 ALL_TYPES = (
     GLUSTERFS, ISCSI, NFS, POSIX
@@ -837,6 +840,7 @@ class TestCase4564(IscsiNfsSD):
 
     polarion_test_case = '4564'
     vm_name = "vm_%s" % polarion_test_case
+    second_disk_alias = "vm_second_disk_%s" % polarion_test_case
 
     # Bugzilla history:
     # 1265672: [SCALE] Disk performance is really slow
@@ -859,8 +863,9 @@ class TestCase4564(IscsiNfsSD):
                 'Unable to create vm %s for test' % self.vm_name
             )
         self.vms_to_remove.append(self.vm_name)
-        helpers.add_disk_to_sd("vm_second_disk", self.nfs,
-                               attach_to_vm=self.vm_name)
+        helpers.add_disk_to_sd(
+            self.second_disk_alias, self.nfs, attach_to_vm=self.vm_name
+        )
         ll_vms.startVm(True, self.vm_name, config.VM_UP)
 
         vm_ip = storage_helpers.get_vm_ip(self.vm_name)
@@ -868,12 +873,15 @@ class TestCase4564(IscsiNfsSD):
             host=vm_ip, user=config.VM_USER,
             password=config.VM_PASSWORD).util('linux')
 
+        device_name = ll_vms.get_vm_disk_logical_name(
+            self.vm_name, self.second_disk_alias
+        )
         logger.info("Create a partition in newly attached disk")
-        success, output = linux_machine.runCmd(
-            'echo 0 1024 | sfdisk /dev/sda -uM'.split())
+        partition_cmd = PARTITION_CREATE_CMD % device_name
+        success, output = linux_machine.runCmd(partition_cmd.split())
         self.assertTrue(success, "Failed to create partition: %s" % output)
-
-        success, output = linux_machine.runCmd('mkfs.ext4 /dev/sda1'.split())
+        mkfs_cmd = MKFS_CMD % device_name
+        success, output = linux_machine.runCmd(mkfs_cmd.split())
         self.assertTrue(success, "Failed to create filesystem: %s" % output)
 
 

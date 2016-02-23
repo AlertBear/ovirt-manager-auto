@@ -7,7 +7,6 @@ import logging
 import os
 import shlex
 import config
-import helpers
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     hosts as ll_hosts,
@@ -33,6 +32,8 @@ CMD_CREATE_FILE = 'touch %s/test_file_%s'
 TEST_FILE_TEMPLATE = 'test_file_%s'
 SNAPSHOT_DESCRIPTION_TEMPLATE = 'snapshot_%s_%s_%s'
 ISCSI = config.STORAGE_TYPE_ISCSI
+DISK_NAMES = dict()
+MOUNT_POINTS = dict()
 
 disk_args = {
     'positive': True,
@@ -76,9 +77,11 @@ class BasicEnvironment(BaseTestCase):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % self.vm_name)
         VM_NAMES[self.storage].append(self.vm_name)
-        helpers.prepare_disks_with_fs_for_vm(
+        disks, mount_points = storage_helpers.prepare_disks_with_fs_for_vm(
             self.storage_domain, self.storage, self.vm_name
         )
+        DISK_NAMES[self.storage] = disks
+        MOUNT_POINTS[self.storage] = mount_points
 
         disk_objects = ll_vms.getVmDisks(self.vm_name)
         for disk in disk_objects:
@@ -103,7 +106,7 @@ class BasicEnvironment(BaseTestCase):
             logger.error("Failed to remove vm %s", self.vm_name)
             self.test_failed = True
         ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
-        for disk_name in helpers.DISK_NAMES.iteritems():
+        for disk_name in DISK_NAMES.iteritems():
             if ll_disks.checkDiskExists(True, disk_name):
                 if not ll_disks.deleteDisk(True, disk_name):
                     logger.error("Failed to delete disk %s", self.disk_name)
@@ -119,7 +122,7 @@ class BasicEnvironment(BaseTestCase):
             assert ll_vms.startVm(
                 True, self.vm_name, config.VM_UP, wait_for_ip=True
             )
-        for idx, mount_dir in enumerate(helpers.MOUNT_POINTS[self.storage]):
+        for idx, mount_dir in enumerate(MOUNT_POINTS[self.storage]):
             logger.info("Creating file in %s", mount_dir)
             status, output = self.vm_machine.runCmd(
                 shlex.split(CMD_CREATE_FILE % (mount_dir, iteration_number))
@@ -193,7 +196,7 @@ class BasicEnvironment(BaseTestCase):
         result_list = []
         state = not should_exist
         # For each mount point, check if the corresponding file exists
-        for mount_dir in helpers.MOUNT_POINTS[self.storage]:
+        for mount_dir in MOUNT_POINTS[self.storage]:
             for file_name in files:
                 full_path = os.path.join(mount_dir, file_name)
                 try:
@@ -575,7 +578,7 @@ class TestCase6058(BasicEnvironment):
     def test_live_merge_with_stop_vm(self):
         self.basic_flow()
         # Creation of 4th disk
-        for mount_dir in helpers.MOUNT_POINTS[self.storage]:
+        for mount_dir in MOUNT_POINTS[self.storage]:
             logger.info("Creating file in %s", mount_dir)
             status, output = self.vm_machine.runCmd(
                 shlex.split(CMD_CREATE_FILE % (mount_dir, 3))

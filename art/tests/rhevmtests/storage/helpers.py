@@ -215,11 +215,11 @@ def perform_dd_to_disk(
     vm_machine = Machine(
         host=vm_ip, user=config.VM_USER, password=config.VM_PASSWORD
     ).util(LINUX)
-    # TODO: Workaround for bug:
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1144860
-    vm_machine.runCmd(shlex.split("udevadm trigger"))
-    output = vm_machine.get_boot_storage_device()
-    boot_disk = 'vda' if 'vd' in output else 'sda'
+    vm_disks = ll_vms.getVmDisks(vm_name)
+    boot_disk = [
+        disk.get_alias() for disk in vm_disks if disk.get_bootable()
+        ][0]
+    boot_device = ll_vms.get_vm_disk_logical_name(vm_name, boot_disk)
 
     disk_logical_volume_name = ll_vms.get_vm_disk_logical_name(
         vm_name, disk_alias
@@ -236,7 +236,7 @@ def perform_dd_to_disk(
         disk_logical_volume_name
     )
     if protect_boot_device:
-        if disk_logical_volume_name == boot_disk:
+        if disk_logical_volume_name == boot_device:
             logger.warn(
                 "perform_dd_to_disk function aborted since the requested "
                 "disk alias translates into the boot device, this would "
@@ -263,7 +263,7 @@ def perform_dd_to_disk(
         destination = disk_logical_volume_name
 
     command = DD_COMMAND % (
-        size / config.MB, "/dev/{0}".format(boot_disk), destination,
+        size / config.MB, "{0}".format(boot_device), destination,
     )
     logger.info("Performing command '%s'", command)
 
