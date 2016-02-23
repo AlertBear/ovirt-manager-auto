@@ -35,7 +35,7 @@ class TestCaseUserAndRoles(TestCase):
     __test__ = True
 
     @classmethod
-    def setupClass(cls):
+    def setup_class(cls):
         """
         Create user for tests
         """

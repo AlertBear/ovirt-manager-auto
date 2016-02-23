@@ -20,7 +20,7 @@ class TestJiraPluginSkipWholeClass(TestCase):
         raise Exception("Setup should not run")
 
     @classmethod
-    def setupClass(cls):
+    def setup_class(cls):
         raise Exception("Setup class should not run")
 
     def test_01(self):
@@ -59,7 +59,7 @@ class TestJiraPluginSkipClassWhenNFS(TestCase):
         logging.info("Passing test case if not NFS")
 
     @classmethod
-    def setupClass(cls):
+    def setup_class(cls):
         if cls.storage == 'nfs':
             raise Exception("Setup should not run")
         logging.info("Passing test case if not NFS")

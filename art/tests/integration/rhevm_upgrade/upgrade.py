@@ -23,7 +23,7 @@ class UpgradeSanityUpgrade(TestCase):
     __test__ = True
 
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.machine = Setup(config.VDC,
                             config.HOSTS_USER,
                             config.VDC_PASSWORD,
@@ -36,7 +36,7 @@ class UpgradeSanityUpgrade(TestCase):
         LOGGER.debug("setUpClass: verify engine running")
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         LOGGER.debug("tearDownClass: verify engine running")
         with cls.ut.setup.ssh as ssh:
             ssh.runCmd(['rm', '-f', cls.answerfile])

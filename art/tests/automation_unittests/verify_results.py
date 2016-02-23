@@ -18,7 +18,7 @@ class VerifyUnittestResults(TestCase):
     __test__ = False
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         """
         Initialize test summary parameters to verify results
         """

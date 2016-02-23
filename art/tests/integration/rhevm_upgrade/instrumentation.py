@@ -31,7 +31,7 @@ class UpgradeSanityInstrumentation(TestCase):
     __test__ = True
 
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         LOGGER.debug("setUpClass: adding VMs")
 
     def run_tests(self):

@@ -165,7 +165,7 @@ class CopyPermissions299326(TestCase):
     __test__ = True
 
     @classmethod
-    def setUpClass(self):
+    def setup_class(self):
         vms.createVm(
             True,
             config.VM_NAME1,
@@ -182,7 +182,7 @@ class CopyPermissions299326(TestCase):
         checkForVmPermissions(True)
 
     @classmethod
-    def tearDownClass(self):
+    def teardown_class(self):
         vms.removeVm(True, config.VM_NAME1)
 
 
@@ -192,7 +192,7 @@ class CopyPermissions299330(TestCase):
     __test__ = True
 
     @classmethod
-    def setUpClass(self):
+    def setup_class(self):
         vms.createVm(
             True, config.VM_NAME1, '', template=config.TEMPLATE_NAME1,
             cluster=config.CLUSTER_NAME[0],
@@ -205,7 +205,7 @@ class CopyPermissions299330(TestCase):
         checkForVmPermissions(False)
 
     @classmethod
-    def tearDownClass(self):
+    def teardown_class(self):
         vms.removeVm(True, config.VM_NAME1)
 
 
@@ -215,7 +215,7 @@ class CopyPermissions299328(TestCase):
     __test__ = True
 
     @classmethod
-    def setUpClass(self):
+    def setup_class(self):
         templates.createTemplate(
             True, vm=config.VM_NAME, name=config.TEMPLATE_NAME2,
             cluster=config.CLUSTER_NAME[0], copy_permissions=True
@@ -227,7 +227,7 @@ class CopyPermissions299328(TestCase):
         checkForTemplatePermissions(True)
 
     @classmethod
-    def tearDownClass(self):
+    def teardown_class(self):
         templates.removeTemplate(True, config.TEMPLATE_NAME2)
 
 
@@ -237,7 +237,7 @@ class CopyPermissions299331(TestCase):
     __test__ = True
 
     @classmethod
-    def setUpClass(self):
+    def setup_class(self):
         templates.createTemplate(
             True,
             vm=config.VM_NAME,
@@ -251,5 +251,5 @@ class CopyPermissions299331(TestCase):
         checkForTemplatePermissions(False)
 
     @classmethod
-    def tearDownClass(self):
+    def teardown_class(self):
         templates.removeTemplate(True, config.TEMPLATE_NAME2)

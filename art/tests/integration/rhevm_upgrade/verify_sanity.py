@@ -37,7 +37,7 @@ class UpgradeSanityVerification(TestCase):
     __test__ = True
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         if not removeVm(positive=True, vm=config.VM_NAME, stopVM='true'):
             raise VMException("Cannot remove vm %s" % config.VM_NAME)
         LOGGER.info("Successfully removed %s.", config.VM_NAME)

@@ -93,7 +93,7 @@ class VmUserInfoTests(TestCase):
     __test__ = True
 
     @classmethod
-    def setUpClass(self):
+    def setup_class(self):
         vms.createVm(
             True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
             storageDomainName=config.MASTER_STORAGE, size=config.GB,
@@ -113,7 +113,7 @@ class VmUserInfoTests(TestCase):
         loginAsUser()
 
     @classmethod
-    def tearDownClass(self):
+    def teardown_class(self):
         loginAsAdmin()
         vms.removeVm(True, config.VM_NAME2)
         vms.removeVm(True, config.VM_NAME1)
@@ -177,7 +177,7 @@ class VmUserInfoTests2(TestCase):
         loginAsUser()
 
     @classmethod
-    def setUpClass(self):
+    def setup_class(self):
         vms.createVm(
             True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
             storageDomainName=config.MASTER_STORAGE, size=config.GB,
@@ -199,7 +199,7 @@ class VmUserInfoTests2(TestCase):
         self.id2 = vms.VM_API.find(config.VM_NAME2).get_id()
 
     @classmethod
-    def tearDownClass(self):
+    def teardown_class(self):
         loginAsAdmin()
         vms.removeVm(True, config.VM_NAME1)
         vms.removeVm(True, config.VM_NAME2)
@@ -358,14 +358,14 @@ class ViewviewChildrenInfoTests(TestCase):
     ]
 
     @classmethod
-    def setUpClass(self):
+    def setup_class(self):
         vms.createVm(
             True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
         )
 
     @classmethod
-    def tearDownClass(self):
+    def teardown_class(self):
         loginAsAdmin()
         vms.removeVm(True, config.VM_NAME1)
 
@@ -409,7 +409,7 @@ class VmCreatorClusterAdminInfoTests(TestCase):
     __test__ = True
 
     @classmethod
-    def setUpClass(self):
+    def setup_class(self):
         mla.addClusterPermissionsToUser(
             True, config.USER_NAME, config.CLUSTER_NAME[0], role.UserRole
         )
@@ -434,7 +434,7 @@ class VmCreatorClusterAdminInfoTests(TestCase):
         )
 
     @classmethod
-    def tearDownClass(self):
+    def teardown_class(self):
         loginAsAdmin()
         vms.removeVm(True, config.VM_NAME1)
         vms.removeVm(True, config.VM_NAME2)
@@ -464,7 +464,7 @@ class VmCreatorInfoTests(TestCase):
     __test__ = True
 
     @classmethod
-    def setUpClass(self):
+    def setup_class(self):
         mla.addClusterPermissionsToUser(
             True, config.USER_NAME, config.CLUSTER_NAME[0], role.VmCreator
         )
@@ -474,7 +474,7 @@ class VmCreatorInfoTests(TestCase):
         )
 
     @classmethod
-    def tearDownClass(self):
+    def teardown_class(self):
         loginAsAdmin()
         vms.removeVm(True, config.VM_NAME1)
         vms.removeVm(True, config.VM_NAME2)
@@ -507,7 +507,7 @@ class TemplateCreatorInfoTests(TestCase):
     __test__ = True
 
     @classmethod
-    def setUpClass(self):
+    def setup_class(self):
         vms.createVm(
             True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
@@ -532,7 +532,7 @@ class TemplateCreatorInfoTests(TestCase):
         )
 
     @classmethod
-    def tearDownClass(self):
+    def teardown_class(self):
         loginAsAdmin()
         vms.removeVm(True, config.VM_NAME1)
         vms.removeVm(True, config.VM_NAME2)
@@ -588,7 +588,7 @@ class TemplateCreatorAndDCAdminInfoTest(TestCase):
     __test__ = True
 
     @classmethod
-    def setUpClass(self):
+    def setup_class(self):
         vms.createVm(
             True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
@@ -613,7 +613,7 @@ class TemplateCreatorAndDCAdminInfoTest(TestCase):
         )
 
     @classmethod
-    def tearDownClass(self):
+    def teardown_class(self):
         loginAsAdmin()
         vms.removeVm(True, config.VM_NAME2)
         vms.removeVm(True, config.VM_NAME1)
@@ -639,7 +639,7 @@ class ComplexCombinationTest(TestCase):
     __test__ = True
 
     @classmethod
-    def setUpClass(self):
+    def setup_class(self):
         vms.createVm(
             True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
             storageDomainName=config.MASTER_STORAGE, size=config.GB,
@@ -729,7 +729,7 @@ class ComplexCombinationTest(TestCase):
         )
 
     @classmethod
-    def tearDownClass(self):
+    def teardown_class(self):
         loginAsAdmin()
         vms.removeVm(True, config.VM_NAME1)
         vms.removeVm(True, config.VM_NAME2)

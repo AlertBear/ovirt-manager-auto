@@ -15,7 +15,7 @@ class TestBzPluginSkipWholeModule(TestCase):
     __test__ = True
 
     @classmethod
-    def setupClass(cls):
+    def setup_class(cls):
         raise Exception("Should be skipped!")
 
     def setUp(self):

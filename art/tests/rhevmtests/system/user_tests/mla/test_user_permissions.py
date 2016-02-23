@@ -98,7 +98,7 @@ class PermissionsCase54408(TestCase):
     __test__ = True
 
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         # Test these object for adding/removing/viewving perms on it
         cls.OBJS = {
             config.VM_NAME: vms.VM_API,
@@ -131,11 +131,11 @@ class PermissionsCase54409(TestCase):
     __test__ = True
 
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         users.addRoleToUser(True, config.USER_NAME, role.ClusterAdmin)
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         loginAsAdmin()
         common.removeUser(True, config.USER_NAME)
         common.addUser(
@@ -250,14 +250,14 @@ class PermissionsCase54425(TestCase):
     __test__ = True
 
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         vms.createVm(
             True, config.VM_NAME1, '', cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE
         )
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         loginAsAdmin()
         vms.removeVm(True, config.VM_NAME1)
         common.removeUser(True, config.USER_NAME)
@@ -356,7 +356,7 @@ class PermissionsCase54446(TestCase):
     __test__ = True
 
     @classmethod
-    def setUpClass(self):
+    def setup_class(self):
         users.addGroup(
             True,
             config.GROUP_NAME,
@@ -367,7 +367,7 @@ class PermissionsCase54446(TestCase):
         )
 
     @classmethod
-    def tearDownClass(self):
+    def teardown_class(self):
         loginAsAdmin()
         vms.removeVm(True, config.VM_NAME1)
         common.removeUser(True, config.GROUP_USER)
@@ -489,7 +489,7 @@ class PermissionsCase108233(TestCase):
     __test__ = True
 
     @classmethod
-    def setUpClass(self):
+    def setup_class(self):
         users.addGroup(
             True,
             config.GROUP_NAME,
@@ -500,7 +500,7 @@ class PermissionsCase108233(TestCase):
         )
 
     @classmethod
-    def tearDownClass(self):
+    def teardown_class(self):
         loginAsAdmin()
         common.removeUser(True, config.GROUP_USER)
         users.deleteGroup(True, config.GROUP_NAME)
@@ -526,13 +526,13 @@ class PermissionsCase109086(TestCase):
     __test__ = True
 
     @classmethod
-    def setUpClass(self):
+    def setup_class(self):
         mla.addPermissionsForDataCenter(
             True, config.USER_NAME, config.DC_NAME[0], role.UserRole
         )
 
     @classmethod
-    def tearDownClass(self):
+    def teardown_class(self):
         loginAsAdmin()
         mla.removeUserPermissionsFromDatacenter(
             True, config.DC_NAME[0], config.USER1
@@ -564,7 +564,7 @@ class PermissionsCase111082(TestCase):
     apis = set(['rest'])
 
     @classmethod
-    def setUpClass(self):
+    def setup_class(self):
         h_sd.addNFSDomain(
             config.HOSTS[0], config.STORAGE_NAME[1],
             config.DC_NAME[0], config.ADDRESS[1],
@@ -591,7 +591,7 @@ class PermissionsCase111082(TestCase):
         mla.addPermissionsForDisk(True, config.USER_NAME, config.DISK_NAME1)
 
     @classmethod
-    def tearDownClass(self):
+    def teardown_class(self):
         loginAsAdmin()
         common.removeUser(True, config.USER_NAME)
         common.addUser(

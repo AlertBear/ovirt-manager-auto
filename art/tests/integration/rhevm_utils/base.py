@@ -77,7 +77,7 @@ class RHEVMUtilsTestCase(TestCase):
     installation = None
 
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         """
         dispatch setup for the cleanup and setup tests
         """
@@ -95,7 +95,7 @@ class RHEVMUtilsTestCase(TestCase):
                 cls.machine.clean(config)
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         """
         Remove all snapshots and release the machine
         """

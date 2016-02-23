@@ -40,7 +40,7 @@ class TestBzPluginSkipWholeClass(TestCase):
     bz = {'2': {'engine': None, 'version': None}}
 
     @classmethod
-    def setupClass(cls):
+    def setup_class(cls):
         raise Exception("Should be skipped!")
 
     def setUp(self):
@@ -80,7 +80,7 @@ class TestBzPluginSkipClassDueToNFSBug(TestCase):
     bz = {'10': {'engine': None, 'version': None, 'storage': NFS}}
 
     @classmethod
-    def setupClass(cls):
+    def setup_class(cls):
         if cls.storage == NFS:
             raise Exception("Should be skipped when storage_type: nfs!")
 
