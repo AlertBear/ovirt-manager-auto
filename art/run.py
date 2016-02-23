@@ -21,7 +21,6 @@ from art.test_handler.settings import (
 from art.test_handler.handler_lib.configs import ValidationError
 from art.test_handler import find_config_file
 
-LOGGER_ART_CONF = 'conf/logger_art.yaml'
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +56,7 @@ def init_logger():
         opts['logdir'] = '/var/tmp'
     log_file = 'art_tests_%s.log' % strftime('%Y%m%d_%H%M%S')
     opts['log'] = os.path.join(opts['logdir'], log_file)
-    initialize_logger(conf_file=find_config_file(LOGGER_ART_CONF),
+    initialize_logger(conf_file=find_config_file(opts['log_conf']),
                       log_file=opts['log'])
 
 

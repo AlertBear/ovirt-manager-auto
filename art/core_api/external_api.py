@@ -81,6 +81,7 @@ class TestRunnerWrapper():
             "log", "/var/tmp/%s_tests%s.log" % (
                 opts["engine"], strftime("%Y%m%d_%H%M%S"))
         )
+        opts["log_conf"] = kwargs.get('log_conf', LOGGER_ART_CONF)
         opts.setdefault('logdir', os.path.dirname(opts['log']))
         opts["urisuffix"] = ""
         opts["uri"] = (
@@ -99,7 +100,7 @@ class TestRunnerWrapper():
 
         if logger_init:
             initialize_logger(
-                conf_file=find_config_file(LOGGER_ART_CONF),
+                conf_file=find_config_file(opts['log_conf']),
                 log_file=opts["log"]
             )
         self.logger = logging.getLogger(__name__)

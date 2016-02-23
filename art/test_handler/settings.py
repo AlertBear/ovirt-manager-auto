@@ -87,6 +87,10 @@ def populateOptsFromArgv(argv):
     parser.add_argument('--log', '-log',
                         default=None,
                         help='path to the log files')
+    parser.add_argument('--log-conf',
+                        help='path to log config',
+                        default='conf/logger_art.yaml',
+                        dest='log_conf')
     parser.add_argument('--configFile', '-conf', required=True,
                         help='path to the config file',
                         dest='conf')

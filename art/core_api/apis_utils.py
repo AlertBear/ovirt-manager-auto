@@ -44,6 +44,7 @@ HEADERS = 'headers'
 CORRELATION_ID = 'Correlation-Id'
 MAX_CORRELATION_ID_LENGTH = 50
 logger = logging.getLogger('api_utils')
+flow_logger = logging.getLogger('art.flow')  # CI logger
 
 api_error = namedtuple('api_error', 'reason status detail')
 
@@ -280,6 +281,7 @@ class APIUtil(object):
 
         if positive:
             logger.error(''.join(error_msg))
+            flow_logger.error(''.join(error_msg))  # CI logger
         else:
             logger.warn(''.join(error_msg))
 

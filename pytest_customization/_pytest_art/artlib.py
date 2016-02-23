@@ -70,6 +70,13 @@ def pytest_addoption(parser):
         default="/var/tmp/art_tests_%s.log" % time.strftime('%Y%m%d_%H%M%S'),
         help="Specify path to ART logs.",
     )
+    parser.addoption(
+        '--art-log-conf',
+        action="store",
+        dest="art_log_conf",
+        default="conf/logger_art.yaml",
+        help="Specify path to ART logger config.",
+    )
 
 
 def pytest_configure(config):
@@ -82,6 +89,7 @@ def pytest_configure(config):
     config.art_wrapper = TestRunnerWrapper(
         None,
         log=config.getoption('art_log'),
+        log_conf=config.getoption('art_log_conf'),
     )
     config.ART_CONFIG = settings.ART_CONFIG
     settings.opts['confSpec'] = config.getoption('art_spec')
