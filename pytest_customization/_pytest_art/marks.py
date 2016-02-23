@@ -168,7 +168,11 @@ class JunitExtension(object):
         for attr_name in self.attributes:
             attr_value = getattr(item.parent.obj, attr_name, None)
             if attr_value:
-                self.junit.add_custom_property(attr_name, attr_value)
+                if tuple(pytest.__version__.split('.')) > ('2', '8', '3'):
+                    reporter = self.junit.node_reporter(item.nodeid)
+                    reporter.add_property(attr_name, attr_value)
+                else:
+                    self.junit.add_custom_property(attr_name, attr_value)
 
     def pytest_runtest_setup(self, item):
         self._add_marks(item)
