@@ -7,6 +7,7 @@ Config for Host Network API job
 
 from rhevmtests.networking.config import *  # NOQA
 import rhevmtests.helpers as global_helper
+import rhevmtests.networking.helper as network_helper
 
 HOST_0_NICS = None  # Filled in setup_package
 HOST_0_NAME = None  # Filled in setup_package
@@ -42,24 +43,24 @@ AVERAGE_LIMIT_STR = "outAverageUpperLimit"
 AVERAGE_REAL_STR = "outAverageRealTime"
 QOS_VALUES = [AVERAGE_SHARE_STR, AVERAGE_LIMIT_STR, AVERAGE_REAL_STR]
 VLAN_IDS = [str(i) for i in xrange(2, 60)]
-
+IPS = network_helper.create_random_ips(num_of_ips=50, mask=24)
 BASIC_IP_DICT_NETMASK = {
-    "ip_netmask": {
-        "address": "1.1.1.1",
+    "ip": {
+        "address": None,
         "netmask": "255.255.255.0",
         "boot_protocol": "static"
     }
 }
 
 BASIC_IP_DICT_PREFIX = {
-    "ip_prefix": {
-        "address": "2.2.2.2",
+    "ip": {
+        "address": None,
         "netmask": "24",
         "boot_protocol": "static"
     }
 }
-IP_DICT_NETMASK = BASIC_IP_DICT_NETMASK["ip_netmask"]
-IP_DICT_PREFIX = BASIC_IP_DICT_PREFIX["ip_prefix"]
+IP_DICT_NETMASK = BASIC_IP_DICT_NETMASK["ip"]
+IP_DICT_PREFIX = BASIC_IP_DICT_PREFIX["ip"]
 
 NIC_DICT = {
     NIC_NETS[1][0]: {

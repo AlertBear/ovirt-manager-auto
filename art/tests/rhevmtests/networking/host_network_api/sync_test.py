@@ -854,8 +854,9 @@ class TestHostNetworkApiSync09(TestHostNetworkApiSyncBase):
     """
     __test__ = True
     move_host = False
+    ip_netmask = conf.IPS[37]
     net_case_1 = conf.SYNC_NETS_DC_1[9][0]
-    net_case_1_ip_expected = conf.IP_DICT_NETMASK["address"]
+    net_case_1_ip_expected = ip_netmask
     net_case_1_ip_actual = "10.10.10.10"
     bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
@@ -865,6 +866,7 @@ class TestHostNetworkApiSync09(TestHostNetworkApiSyncBase):
         Attach network with IP the host
         Change the IP on attached network
         """
+        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = cls.ip_netmask
         TestHostNetworkApiSync09.network_host_api_dict = {
             "add": {
                 "1": {
@@ -909,6 +911,7 @@ class TestHostNetworkApiSync10(TestHostNetworkApiSyncBase):
     net_case_1 = conf.SYNC_NETS_DC_1[10][0]
     net_case_1_netmask_expected = conf.IP_DICT_NETMASK["netmask"]
     net_case_1_netmask_actual = "255.255.255.255"
+    ip_netmask = conf.IPS[37]
     bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
@@ -917,6 +920,7 @@ class TestHostNetworkApiSync10(TestHostNetworkApiSyncBase):
         Attach network with IP the host
         Change the netmask on attached network
         """
+        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = cls.ip_netmask
         TestHostNetworkApiSync10.network_host_api_dict = {
             "add": {
                 "1": {
@@ -962,6 +966,7 @@ class TestHostNetworkApiSync11(TestHostNetworkApiSyncBase):
     net_case_1 = conf.SYNC_NETS_DC_1[11][0]
     net_case_1_netmask_prefix_expected = conf.IP_DICT_PREFIX["netmask"]
     net_case_1_netmask_prefix_actual = "255.255.255.255"
+    ip_prefix = conf.IPS[41]
     bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
@@ -970,6 +975,7 @@ class TestHostNetworkApiSync11(TestHostNetworkApiSyncBase):
         Attach network with IP the host
         Change the netmask prefix on the attached network
         """
+        conf.BASIC_IP_DICT_PREFIX["ip"]["address"] = cls.ip_prefix
         TestHostNetworkApiSync11.network_host_api_dict = {
             "add": {
                 "1": {
@@ -1013,10 +1019,12 @@ class TestHostNetworkApiSync12(TestHostNetworkApiSyncBase):
     """
     __test__ = True
     move_host = False
+    ip_netmask = conf.IPS[36]
     net_case_1 = conf.SYNC_NETS_DC_1[12][0]
-    net_case_1_ip_expected = conf.IP_DICT_NETMASK["address"]
+    net_case_1_ip_expected = ip_netmask
     net_case_1_ip_actual = "10.10.10.10"
     bond_1 = "bond121"
+
     bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
@@ -1025,6 +1033,7 @@ class TestHostNetworkApiSync12(TestHostNetworkApiSyncBase):
         Attach network with IP to the host over BOND
         Change the IP on attached network
         """
+        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = cls.ip_netmask
         TestHostNetworkApiSync12.network_host_api_dict = {
             "add": {
                 "1": {
@@ -1074,6 +1083,7 @@ class TestHostNetworkApiSync13(TestHostNetworkApiSyncBase):
     net_case_1_netmask_expected = conf.IP_DICT_NETMASK["netmask"]
     net_case_1_netmask_actual = "255.255.255.255"
     bond_1 = "bond131"
+    ip_netmask = conf.IPS[35]
     bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
@@ -1082,6 +1092,7 @@ class TestHostNetworkApiSync13(TestHostNetworkApiSyncBase):
         Attach network with IP to the host over BOND
         Change the netmask on attached network
         """
+        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = cls.ip_netmask
         TestHostNetworkApiSync13.network_host_api_dict = {
             "add": {
                 "1": {
@@ -1132,6 +1143,7 @@ class TestHostNetworkApiSync14(TestHostNetworkApiSyncBase):
     net_case_1_netmask_prefix_expected = conf.IP_DICT_PREFIX["netmask"]
     net_case_1_netmask_prefix_actual = "255.255.255.255"
     bond_1 = "bond141"
+    ip_prefix = conf.IPS[40]
     bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
@@ -1140,6 +1152,7 @@ class TestHostNetworkApiSync14(TestHostNetworkApiSyncBase):
         Attach network with IP to the host over BOND
         Change the netmask prefix on the attached network
         """
+        conf.BASIC_IP_DICT_PREFIX["ip"]["address"] = cls.ip_prefix
         TestHostNetworkApiSync14.network_host_api_dict = {
             "add": {
                 "1": {
@@ -1300,6 +1313,7 @@ class TestHostNetworkApiSync17(TestHostNetworkApiSyncBase):
     net_case_1 = conf.SYNC_NETS_DC_1[17][0]
     net_case_1_boot_proto_expected = "STATIC_IP"
     net_case_1_boot_proto_actual = "NONE"
+    ip_netmask = conf.IPS[34]
     bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
@@ -1308,6 +1322,7 @@ class TestHostNetworkApiSync17(TestHostNetworkApiSyncBase):
         Attach network with IP to the host
         Remove the IP from the host
         """
+        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = cls.ip_netmask
         TestHostNetworkApiSync17.network_host_api_dict = {
             "add": {
                 "1": {
@@ -1352,6 +1367,7 @@ class TestHostNetworkApiSync18(TestHostNetworkApiSyncBase):
     net_case_1 = conf.SYNC_NETS_DC_1[18][0]
     net_case_1_boot_proto_expected = "STATIC_IP"
     net_case_1_boot_proto_actual = "NONE"
+    ip_netmask = conf.IPS[33]
     bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
@@ -1360,6 +1376,7 @@ class TestHostNetworkApiSync18(TestHostNetworkApiSyncBase):
         Attach network with IP the host over BOND
         Remove the IP from the host
         """
+        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = cls.ip_netmask
         TestHostNetworkApiSync18.network_host_api_dict = {
             "add": {
                 "1": {

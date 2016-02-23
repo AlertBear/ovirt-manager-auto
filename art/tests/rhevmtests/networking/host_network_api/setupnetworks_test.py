@@ -143,12 +143,16 @@ class TestHostNetworkApiSetupNetworks04(helper.TestHostNetworkApiTestCaseBase):
     Attach network with IP (prefix) to host NIC
     """
     __test__ = True
+    ip_netmask = conf.IPS[23]
+    ip_prefix = conf.IPS[24]
 
     @polarion("RHEVM3-10474")
     def test_ip_network_on_host(self):
         """
         Attach network with IP (netmask and prefix) to host NIC
         """
+        conf.BASIC_IP_DICT_PREFIX["ip"]["address"] = self.ip_prefix
+        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = self.ip_netmask
         network_host_api_dict = {
             "add": {
                 "1": {
@@ -186,12 +190,16 @@ class TestHostNetworkApiSetupNetworks05(helper.TestHostNetworkApiTestCaseBase):
     Attach VLAN network with IP (prefix) to host NIC
     """
     __test__ = True
+    ip_netmask = conf.IPS[29]
+    ip_prefix = conf.IPS[30]
 
     @polarion("RHEVM3-10475")
     def test_ip_vlan_network_on_host(self):
         """
         Attach VLAN network with IP (netmask and prefix) to host NIC
         """
+        conf.BASIC_IP_DICT_PREFIX["ip"]["address"] = self.ip_prefix
+        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = self.ip_netmask
         network_host_api_dict = {
             "add": {
                 "1": {
@@ -229,12 +237,16 @@ class TestHostNetworkApiSetupNetworks06(helper.TestHostNetworkApiTestCaseBase):
     Attach Non-VM network with IP (prefix) to host NIC
     """
     __test__ = True
+    ip_netmask = conf.IPS[25]
+    ip_prefix = conf.IPS[26]
 
     @polarion("RHEVM3-10476")
     def test_ip_non_vm_network_on_host(self):
         """
         Attach Non-VM network with IP (netmask and prefix) to host NIC
         """
+        conf.BASIC_IP_DICT_PREFIX["ip"]["address"] = self.ip_prefix
+        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = self.ip_netmask
         network_host_api_dict = {
             "add": {
                 "1": {
@@ -410,6 +422,8 @@ class TestHostNetworkApiSetupNetworks10(helper.TestHostNetworkApiTestCaseBase):
     3.Update the network to have IP (prefix)
     """
     __test__ = True
+    ip_netmask = conf.IPS[31]
+    ip_prefix = conf.IPS[32]
 
     @classmethod
     def setup_class(cls):
@@ -445,6 +459,8 @@ class TestHostNetworkApiSetupNetworks10(helper.TestHostNetworkApiTestCaseBase):
         """
         Update the network to have IP (netmask and prefix)
         """
+        conf.BASIC_IP_DICT_PREFIX["ip"]["address"] = self.ip_prefix
+        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = self.ip_netmask
         network_host_api_dict = {
             "update": {
                 "1": {
@@ -547,6 +563,7 @@ class TestHostNetworkApiSetupNetworks12(helper.TestHostNetworkApiTestCaseBase):
     5. Attach network with IP to BOND
     """
     __test__ = True
+    ip_netmask = conf.IPS[22]
 
     @polarion("RHEVM3-9621")
     def test_01create_bond(self):
@@ -639,6 +656,7 @@ class TestHostNetworkApiSetupNetworks12(helper.TestHostNetworkApiTestCaseBase):
         """
         Attach network with IP to BOND
         """
+        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = self.ip_netmask
         network_host_api_dict = {
             "add": {
                 "1": {
@@ -995,12 +1013,16 @@ class TestHostNetworkApiSetupNetworks19(helper.TestHostNetworkApiTestCaseBase):
     Attach Non-VM VLAN network with IP (prefix) to host NIC
     """
     __test__ = True
+    ip_netmask = conf.IPS[27]
+    ip_prefix = conf.IPS[28]
 
     @polarion("RHEVM3-10477")
     def test_ip_non_vm_vlan_network_on_host(self):
         """
         Attach Non-VM VLAN network with IP (netmask) to host NIC
         """
+        conf.BASIC_IP_DICT_PREFIX["ip"]["address"] = self.ip_prefix
+        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = self.ip_netmask
         network_host_api_dict = {
             "add": {
                 "1": {
@@ -1206,6 +1228,9 @@ class TestHostNetworkApiSetupNetworks24(helper.TestHostNetworkApiTestCaseBase):
     """
 
     __test__ = True
+    ip_netmask = conf.IPS[20]
+    ip_prefix = conf.IPS[21]
+    ip_prefix_2 = conf.IPS[39]
     bz = {"1298534": {"engine": None, "version": ["3.6"]}}
 
     @polarion("RHEVM3-9850")
@@ -1215,6 +1240,8 @@ class TestHostNetworkApiSetupNetworks24(helper.TestHostNetworkApiTestCaseBase):
         Create BOND and attach Non-VM + 1 VLAN network with IP to BOND
         Create empty BOND
         """
+        conf.BASIC_IP_DICT_PREFIX["ip"]["address"] = self.ip_prefix
+        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = self.ip_netmask
         properties_dict = {
             "bridge_opts": conf.PRIORITY,
             "ethtool_opts": conf.TX_CHECKSUM.format(
@@ -1284,6 +1311,7 @@ class TestHostNetworkApiSetupNetworks24(helper.TestHostNetworkApiTestCaseBase):
         Remove network from BOND
         Remove BOND
         """
+        conf.BASIC_IP_DICT_PREFIX["ip"]["address"] = self.ip_prefix_2
         network_host_api_dict = {
             "update": {
                 "1": {

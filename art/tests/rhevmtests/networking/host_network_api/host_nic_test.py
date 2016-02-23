@@ -19,9 +19,6 @@ def setup_module():
     """
     Add networks
     """
-    logger.info(
-        "Add %s to %s/%s", conf.NIC_DICT, conf.DC_NAME_1, conf.CLUSTER_NAME_1
-    )
     network_helper.prepare_networks_on_setup(
         networks_dict=conf.NIC_DICT, dc=conf.DC_NAME_1,
         cluster=conf.CLUSTER_NAME_1
@@ -98,6 +95,8 @@ class TestHostNetworkApiHostNic04(helper.TestHostNetworkApiTestCaseBase):
     Attach network with IP (prefix) to host NIC
     """
     __test__ = True
+    ip_netmask = conf.IPS[0]
+    ip_prefix = conf.IPS[1]
 
     @polarion("RHEVM3-10446")
     def test_ip_netmask_network_on_host_nic(self):
@@ -105,6 +104,7 @@ class TestHostNetworkApiHostNic04(helper.TestHostNetworkApiTestCaseBase):
         Attach network with IP (netmask) to host NIC
         Attach network with IP (prefix) to host NIC
         """
+        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = self.ip_netmask
         network_host_api_dict = {
             "network": conf.NIC_NETS[4][0],
             "ip": conf.BASIC_IP_DICT_NETMASK
@@ -117,6 +117,7 @@ class TestHostNetworkApiHostNic04(helper.TestHostNetworkApiTestCaseBase):
         """
         Attach network with IP (prefix) to host NIC
         """
+        conf.BASIC_IP_DICT_PREFIX["ip"]["address"] = self.ip_prefix
         network_host_api_dict = {
             "network": conf.NIC_NETS[4][1],
             "ip": conf.BASIC_IP_DICT_PREFIX
@@ -132,12 +133,15 @@ class TestHostNetworkApiHostNic05(helper.TestHostNetworkApiTestCaseBase):
     Attach VLAN network with IP (prefix) to host NIC
     """
     __test__ = True
+    ip_netmask = conf.IPS[4]
+    ip_prefix = conf.IPS[5]
 
     @polarion("RHEVM3-10447")
     def test_ip_netmask_vlan_network_on_host_nic(self):
         """
         Attach VLAN network with IP (netmask) to host NIC
         """
+        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = self.ip_netmask
         network_host_api_dict = {
             "network": conf.NIC_NETS[5][0],
             "ip": conf.BASIC_IP_DICT_NETMASK
@@ -150,6 +154,7 @@ class TestHostNetworkApiHostNic05(helper.TestHostNetworkApiTestCaseBase):
         """
         Attach VLAN network with IP (prefix) to host NIC
         """
+        conf.BASIC_IP_DICT_PREFIX["ip"]["address"] = self.ip_prefix
         network_host_api_dict = {
             "network": conf.NIC_NETS[5][1],
             "ip": conf.BASIC_IP_DICT_PREFIX
@@ -165,12 +170,15 @@ class TestHostNetworkApiHostNic06(helper.TestHostNetworkApiTestCaseBase):
     Attach Non-VM network with IP (prefix) to host NIC
     """
     __test__ = True
+    ip_netmask = conf.IPS[2]
+    ip_prefix = conf.IPS[3]
 
     @polarion("RHEVM3-10448")
     def test_ip_netmask_non_vm_network_on_host_nic(self):
         """
         Attach Non-VM network with IP (netmask) to host NIC
         """
+        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = self.ip_netmask
         network_host_api_dict = {
             "network": conf.NIC_NETS[6][0],
             "ip": conf.BASIC_IP_DICT_NETMASK
@@ -183,6 +191,7 @@ class TestHostNetworkApiHostNic06(helper.TestHostNetworkApiTestCaseBase):
         """
         Attach Non-VM network with IP (prefix) to host NIC
         """
+        conf.BASIC_IP_DICT_PREFIX["ip"]["address"] = self.ip_prefix
         network_host_api_dict = {
             "network": conf.NIC_NETS[6][1],
             "ip": conf.BASIC_IP_DICT_PREFIX
@@ -295,6 +304,8 @@ class TestHostNetworkApiHostNic10(helper.TestHostNetworkApiTestCaseBase):
     3.Update the network to have IP (prefix)
     """
     __test__ = True
+    ip_netmask = conf.IPS[8]
+    ip_prefix = conf.IPS[9]
 
     @classmethod
     def setup_class(cls):
@@ -319,6 +330,7 @@ class TestHostNetworkApiHostNic10(helper.TestHostNetworkApiTestCaseBase):
         """
         Update the network to have IP (netmask)
         """
+        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = self.ip_netmask
         network_host_nic_1_api_dict = {
             "network": conf.NIC_NETS[10][0],
             "ip": conf.BASIC_IP_DICT_NETMASK
@@ -341,6 +353,7 @@ class TestHostNetworkApiHostNic10(helper.TestHostNetworkApiTestCaseBase):
         """
         Update the network to have IP (prefix)
         """
+        conf.BASIC_IP_DICT_PREFIX["ip"]["address"] = self.ip_prefix
         network_host_nic_1_api_dict = {
             "network": conf.NIC_NETS[10][1],
             "ip": conf.BASIC_IP_DICT_PREFIX
@@ -486,12 +499,15 @@ class TestHostNetworkApiHostNic14(helper.TestHostNetworkApiTestCaseBase):
     Attach Non-VM VLAN network with IP (prefix) to host NIC
     """
     __test__ = True
+    ip_netmask = conf.IPS[6]
+    ip_prefix = conf.IPS[7]
 
     @polarion("RHEVM3-10449")
     def test_non_vm_vlan_ip_netmask_network_on_host_nic(self):
         """
         Attach Non-VM VLAN network with IP (netmask) to host NIC
         """
+        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = self.ip_netmask
         network_host_api_dict = {
             "network": conf.NIC_NETS[14][0],
             "ip": conf.BASIC_IP_DICT_NETMASK
@@ -505,6 +521,7 @@ class TestHostNetworkApiHostNic14(helper.TestHostNetworkApiTestCaseBase):
         """
         Attach Non-VM VLAN network with IP (prefix) to host NIC
         """
+        conf.BASIC_IP_DICT_PREFIX["ip"]["address"] = self.ip_prefix
         network_host_api_dict = {
             "network": conf.NIC_NETS[14][1],
             "ip": conf.BASIC_IP_DICT_PREFIX
