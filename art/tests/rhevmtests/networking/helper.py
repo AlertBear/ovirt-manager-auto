@@ -331,39 +331,23 @@ def set_libvirtd_sasl(host_obj, sasl=True):
     # TODO: add persist after config.VDS_HOST.os is available see
     # https://projects.engineering.redhat.com/browse/RHEVM-2049
     sed_cmd = ["sed", sed_arg, conf.LIBVIRTD_CONF]
-    host_exec = host_obj.executor()
     logger_str = "Enable" if sasl else "Disable"
     logger.info("%s sasl in %s", logger_str, conf.LIBVIRTD_CONF)
-    rc, sed_out, err = host_exec.run_cmd(sed_cmd)
+    rc, sed_out, _ = host_obj.run_command(command=sed_cmd)
     if rc:
-        logger.error(
-            "Failed to run sed %s %s err: %s. out: %s",
-            sed_arg, conf.LIBVIRTD_CONF, logger_str, err, sed_out
-        )
         return False
 
     cat_cmd = ["echo", "%s" % sed_out, ">", conf.LIBVIRTD_CONF]
-    rc, cat_out, err = host_exec.run_cmd(cat_cmd)
+    rc, _, _ = host_obj.run_command(command=cat_cmd)
     if rc:
-        logger.error(
-            "Failed to %s sasl in libvirt. err: %s. out: %s",
-            logger_str, err, cat_out
-        )
         return False
 
-    logger.info(
-        "Restarting %s and %s services",
-        conf.LIBVIRTD_SERVICE, conf.VDSMD_SERVICE
-    )
     try:
         hl_hosts.restart_services_under_maintenance_state(
             [conf.LIBVIRTD_SERVICE, conf.VDSMD_SERVICE], host_obj, conf.TIMEOUT
         )
     except exceptions.HostException as e:
-        logger.error(
-            "Failed to restart %s/%s services. ERR: %s", conf.VDSMD_SERVICE,
-            conf.LIBVIRTD_SERVICE, e
-        )
+        logger.error(e)
         return False
     return True
 
