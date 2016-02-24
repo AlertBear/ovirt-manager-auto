@@ -23,17 +23,16 @@ __all__ = [
 
 
 # Polarion decorator
-polarion = pytest.mark.polarion('polarion-id')
+polarion = pytest.mark.polarion
+polarion.name = 'polarion-id'
 
 # Bugzilla decorator
-# Consider using 3rd part, I don't think it will suite us ...
-# https://github.com/davehunt/pytest-bugzilla/blob/master/pytest_bugzilla.py
-bz = pytest.mark.bugzilla('bz-id')
+# https://github.com/rhevm-qe-automation/pytest_marker_bugzilla
+bz = pytest.mark.bugzilla
 
 # Jira decorator
-# Consider using 3rd part, it could suite us ...
-# missing components support, we could send patch.
-jira = pytest.mark.jira('jira-id')
+# https://github.com/vkondula/pytest_jira/
+jira = pytest.mark.jira
 
 # Attrib decorator, same as nose has
 attr = pytest.mark.attr
@@ -141,7 +140,7 @@ class JunitExtension(object):
     markers = (
         'bugzilla',
         'jira',
-        'polarion',
+        'polarion-id',
     )
 
     attributes = (
@@ -157,22 +156,26 @@ class JunitExtension(object):
     def junit(self):
         return getattr(self._conf, '_xml', None)
 
+    def _add_property(self, item, name, value):
+        if tuple(pytest.__version__.split('.')) > ('2', '8', '3'):
+            reporter = self.junit.node_reporter(item.nodeid)
+            reporter.add_property(name, value)
+        else:
+            self.junit.add_custom_property(name, value)
+
     def _add_marks(self, item):
 
         for mark_name in self.markers:
             mark_info = item.get_marker(mark_name)
             if mark_info:
-                self.junit.add_custom_property(mark_info.name, *mark_info.args)
+                for value in mark_info.args:
+                    self._add_property(item, mark_info.name, value)
 
     def _add_attributes(self, item):
         for attr_name in self.attributes:
             attr_value = getattr(item.parent.obj, attr_name, None)
             if attr_value:
-                if tuple(pytest.__version__.split('.')) > ('2', '8', '3'):
-                    reporter = self.junit.node_reporter(item.nodeid)
-                    reporter.add_property(attr_name, attr_value)
-                else:
-                    self.junit.add_custom_property(attr_name, attr_value)
+                self._add_property(item, attr_name, attr_value)
 
     def pytest_runtest_setup(self, item):
         self._add_marks(item)
