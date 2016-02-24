@@ -62,10 +62,9 @@ SIMPLE_IPA = {
 }
 
 IPA_GROUP32 = 'group32'
-IPA_GROUP_LOOP1 = 'grouploop1'
 IPA_GROUP_LOOP2 = 'grouploop2'
 IPA_GROUP_USER = 'user1'
-IPA_NAMESPACE = 'dc=brq-ipa,dc=rhev,dc=lab,dc=eng,dc=brq,dc=redhat,dc=com'
+IPA_NAMESPACE = 'dc=brq-ipa-4,dc=rhev,dc=lab,dc=eng,dc=brq,dc=redhat,dc=com'
 IPA_PASSWORD = '123456'
 
 ADDIGEST_EXTENSION = {

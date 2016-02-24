@@ -90,22 +90,20 @@ class GroupRecursion(TestCase):
     """
     __test__ = True
     conf = config.SIMPLE_IPA
-    GROUPS = [config.IPA_GROUP_LOOP1, config.IPA_GROUP_LOOP2]
     USER = config.IPA_GROUP_USER
     PASSWORD = config.IPA_PASSWORD
 
     def setUp(self):
-        for group in self.GROUPS:
-            assert users.addGroup(
-                True,
-                group,
-                self.conf['authz_name']
-            )
-            assert mla.addClusterPermissionsToGroup(
-                True,
-                group,
-                config.DEFAULT_CLUSTER_NAME
-            )
+        assert users.addGroup(
+            True,
+            config.IPA_GROUP_LOOP2,
+            self.conf['authz_name']
+        )
+        assert mla.addClusterPermissionsToGroup(
+            True,
+            config.IPA_GROUP_LOOP2,
+            config.DEFAULT_CLUSTER_NAME
+        )
 
     @classmethod
     def teardown_class(cls):
