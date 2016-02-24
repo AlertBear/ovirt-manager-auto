@@ -339,28 +339,30 @@ def get_object_name_by_id(object_api, object_id):
     return object_api.find(object_id, "id").get_name()
 
 
-def get_log_msg(action, obj_type, obj_name, positive=True, **kwargs):
+def get_log_msg(
+    action, obj_type, obj_name, positive=True, extra_txt="", **kwargs
+):
     """
     Generate info and error logs for action on object.
 
-    :param action: The action to perform on the object
-    (create, update, remove)
-    :type action: str
-    :param obj_type: Object type
-    :type obj_type: str
-    :param obj_name: Object name
-    :type obj_name: str
-    :param positive: Expected results
-    :type positive: bool
-    :param kwargs: Parameters for the action if any
-    :type kwargs: dict
-    :return: Log info and log error text
-    :rtype: tuple
+    Args:
+        action (str): The action to perform on the object
+            (create, update, remove)
+        obj_type (str): Object type
+        obj_name (str): Object name
+        positive (bool): Expected results
+        extra_txt (str): Extra text to add to the log
+        kwargs (dict): Parameters for the action if any
+
+    Returns:
+        tuple: Log info and log error text
     """
     action = action.capitalize()
     with_kwargs = "with %s" % kwargs if kwargs else ""
     state = "Succeeded to" if not positive else "Failed to"
-    info_text = "%s %s %s %s" % (action, obj_type, obj_name, with_kwargs)
+    info_text = "%s %s %s %s %s" % (
+        action, obj_type, obj_name, with_kwargs, extra_txt
+    )
     log_info_txt = info_text if positive else "Negative: %s" % info_text
     log_error_txt = ("%s %s" % (state, info_text))
     return log_info_txt, log_error_txt

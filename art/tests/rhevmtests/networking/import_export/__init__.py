@@ -81,7 +81,7 @@ def teardown_package():
     Remove IE_VM and IE_TEMPLATE from export domain
     Remove networks from setup
     """
-    ll_vms.removeVmFromExportDomain(
+    ll_vms.remove_vm_from_export_domain(
         positive=True, vm=conf.IE_VM,
         export_storagedomain=conf.EXPORT_DOMAIN_NAME
     )

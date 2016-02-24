@@ -128,7 +128,7 @@ class TestCase4665(BaseExportImportTestCase):
         """
         assert templates.removeTemplateFromExportDomain(
             True, self.template_name, config.CLUSTER_NAME, self.export_domain)
-        assert vms.removeVmFromExportDomain(
+        assert vms.remove_vm_from_export_domain(
             True, self.vm_name, config.CLUSTER_NAME, self.export_domain)
         assert templates.removeTemplate(True, self.template_name)
 
@@ -176,7 +176,7 @@ class TestCase4684(BaseExportImportTestCase):
         """
         super(TestCase4684, self).tearDown()
         assert vms.removeVm(True, self.imported_vm, stopVM="true")
-        assert vms.removeVmFromExportDomain(
+        assert vms.remove_vm_from_export_domain(
             True, self.vm_name, config.CLUSTER_NAME, self.export_domain)
 
 
@@ -252,9 +252,9 @@ class TestCase11987(BaseExportImportTestCase):
         """
         * Remove import and exported vms
         """
-        assert vms.removeVmFromExportDomain(
+        assert vms.remove_vm_from_export_domain(
             True, self.vm_name, config.CLUSTER_NAME, self.export_domain)
-        assert vms.removeVmFromExportDomain(
+        assert vms.remove_vm_from_export_domain(
             True, self.vm_from_template, config.CLUSTER_NAME,
             self.export_domain)
         vms_list = [

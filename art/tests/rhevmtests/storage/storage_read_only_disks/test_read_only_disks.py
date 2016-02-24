@@ -767,7 +767,7 @@ class TestCase4917(DefaultEnvironment):
         if not ll_vms.safely_remove_vms(vm_list):
             logger.error("Failed to stop and remove vms %s" % vm_list)
             BaseTestCase.test_failed = True
-        if self.vm_exported and not ll_vms.removeVmFromExportDomain(
+        if self.vm_exported and not ll_vms.remove_vm_from_export_domain(
                 True, vm=self.vm_name, datacenter=config.DATA_CENTER_NAME,
                 export_storagedomain=self.export_domain
         ):

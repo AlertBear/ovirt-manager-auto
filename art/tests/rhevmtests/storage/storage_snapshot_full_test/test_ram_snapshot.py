@@ -615,7 +615,7 @@ class TestCase5134(VMWithMemoryStateSnapshot):
             'Removing vm %s from export domain %s', self.vm,
             config.EXPORT_DOMAIN
         )
-        ll_vms.removeVmFromExportDomain(
+        ll_vms.remove_vm_from_export_domain(
             True, self.vm, config.DATA_CENTER_NAME, config.EXPORT_DOMAIN
         )
         super(TestCase5134, self).tearDown()

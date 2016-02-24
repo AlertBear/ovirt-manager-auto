@@ -142,7 +142,7 @@ class BaseCaseDCMixed(TestCase):
         else:
             ll_vms.safely_remove_vms(self.vms_to_remove)
             for vm in self.vms_to_remove_from_export_domain:
-                ll_vms.removeVmFromExportDomain(
+                ll_vms.remove_vm_from_export_domain(
                     True, vm, self.data_center_name, self.export_domain,
                 )
             for template in self.templates_to_remove:

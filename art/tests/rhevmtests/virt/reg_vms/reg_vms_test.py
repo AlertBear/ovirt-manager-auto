@@ -1174,7 +1174,7 @@ class VmSnapshots(BaseVmWithDisk):
             config.DC_NAME[0]
         )[0]
         if vm_api.export_domain_vm_exist(cls.vm_name, export_domain):
-            if not vm_api.removeVmFromExportDomain(
+            if not vm_api.remove_vm_from_export_domain(
                 True, cls.vm_name, config.DC_NAME[0], export_domain
             ):
                 logger.error(
@@ -1311,7 +1311,7 @@ class ImportExportVm(BaseVmWithDisk):
         export_domain = storagedomains.findExportStorageDomains(
             config.DC_NAME[0]
         )[0]
-        if not vm_api.removeVmFromExportDomain(
+        if not vm_api.remove_vm_from_export_domain(
             True,
             cls.vm_name, config.DC_NAME[0],
             export_domain

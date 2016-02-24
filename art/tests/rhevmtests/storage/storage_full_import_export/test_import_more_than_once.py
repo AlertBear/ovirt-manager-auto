@@ -201,7 +201,7 @@ class TestCase11588(TestCase):
 
         if self.initial_vm_exported:
             logger.info("Remove vm and template created in the export domain")
-            if not ll_vms.removeVmFromExportDomain(
+            if not ll_vms.remove_vm_from_export_domain(
                 True, self.vm_name, config.DATA_CENTER_NAME, self.export_domain
             ):
                 TestCase.test_failed = True

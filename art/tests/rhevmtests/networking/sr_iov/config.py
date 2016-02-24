@@ -14,8 +14,15 @@ HOST_1_NAME = None  # Filled in setup_package
 VDS_0_HOST = None  # Filled in setup_package
 VDS_1_HOST = None  # Filled in setup_package
 HOST_O_SRIOV_NICS_OBJ = None  # Filled in setup_package
+HOST_1_SRIOV_NICS_OBJ = None  # Filled in setup_package
 HOST_0_PF_LIST = list()  # Filled in setup_package
+HOST_1_PF_LIST = list()  # Filled in setup_package
 HOST_0_PF_NAMES = list()  # Filled in setup_package
+HOST_1_PF_NAMES = list()  # Filled in setup_package
+
+HOSTS_PARAM_DICT = None
+
+VM_DISK_SIZE = 1024
 NUM_VF_PATH = "/sys/class/net/%s/device/sriov_numvfs"
 MAC_ADDR_FILE = "/sys/class/net/%s/address"
 BW_VALUE = 10
@@ -30,6 +37,9 @@ GENERAL_NETS = global_helper.generate_object_names(
 )
 VM_NETS = global_helper.generate_object_names(
     num_of_cases=35, num_of_objects=10, prefix="vm"
+)
+IMPORT_EXPORT_NETS = global_helper.generate_object_names(
+    num_of_cases=35, num_of_objects=10, prefix="IE"
 )
 GENERAL_DICT = {
     GENERAL_NETS[5][0]: {
@@ -75,5 +85,15 @@ VM_DICT = {
     },
     VM_NETS[4][3]: {
         "required": "false",
+    },
+}
+
+IMPORT_EXPORT_DICT = {
+    IMPORT_EXPORT_NETS[1][0]: {
+        "required": "false",
+        "vlan_id": VLAN_IDS[4],
+    },
+    IMPORT_EXPORT_NETS[1][1]: {
+        "required": "false"
     },
 }

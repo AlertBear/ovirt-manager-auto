@@ -355,7 +355,7 @@ class ExportVms(BaseTestDiskImageVms):
                 logger.error("Failed to remove VM '%s'", vm)
                 TestCase.test_failed = True
         for vm in [self.vm_thin, self.vm_prealloc]:
-            if not ll_vms.removeVmFromExportDomain(
+            if not ll_vms.remove_vm_from_export_domain(
                 True, vm, config.DATA_CENTER_NAME, self.export_domain
             ):
                 logger.error("Failed to remove VM '%s' from export domain", vm)
@@ -542,7 +542,7 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
                     "Failed to remove Template '%s'", self.template_name
                 )
                 TestCase.test_failed = True
-        if not ll_vms.removeVmFromExportDomain(
+        if not ll_vms.remove_vm_from_export_domain(
             True, self.vm_name, config.DATA_CENTER_NAME, self.export_domain,
         ):
             logger.error(
@@ -669,7 +669,7 @@ class TestCasesImportVmWithNewName(BaseTestDiskImageVms):
             )
             TestCase.test_failed = True
         for vm in [self.vm_thin, self.vm_prealloc]:
-            if not ll_vms.removeVmFromExportDomain(
+            if not ll_vms.remove_vm_from_export_domain(
                 True, vm, config.DATA_CENTER_NAME, self.export_domain
             ):
                 logger.error("Failed to remove VM '%s' from export domain", vm)
@@ -879,7 +879,7 @@ class TestCase11606(BaseTestDiskImage):
         if not ll_vms.removeVm(True, self.vm_name):
             logger.error("Failed to remove VM '%s'", self.vm_name)
             TestCase.test_failed = True
-        if not ll_vms.removeVmFromExportDomain(
+        if not ll_vms.remove_vm_from_export_domain(
             True, self.vm_name, config.DATA_CENTER_NAME, self.export_domain
         ):
             logger.error(

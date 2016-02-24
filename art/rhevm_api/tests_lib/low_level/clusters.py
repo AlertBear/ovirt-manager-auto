@@ -18,6 +18,7 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import time
+import logging
 from Queue import Queue
 
 from art.core_api import is_action
@@ -56,6 +57,7 @@ CPU_PROFILE_API = get_api('cpu_profile', 'cpu_profiles')
 VM_API = get_api('vm', 'vms')
 
 xpathMatch = is_action('xpathClusters', id_name='xpathMatch')(XPathMatch(util))
+logger = logging.getLogger(__name__)
 
 
 def _prepareClusterObject(**kwargs):
@@ -162,43 +164,52 @@ def _prepareClusterObject(**kwargs):
 
 @is_action()
 def addCluster(positive, **kwargs):
-    '''
-    Description: add cluster
-    Author: edolinin
-    Parameters:
-       * name - name of a cluster
-       * cpu - CPU name
-       * data_center - name of data center attached to cluster
-       * description - description of cluster
-       * version - supported version (2.2, 3)
-       * gluster_support - Gluster support (boolean)
-       * virt_support - virt support (boolean)
-       * mem_ovrcmt_prc - The percentage of host memory allowed
-                          Recommended values include 100 (None),
-                          150 (Server Load) and 200 (Desktop Load)
-       * thrhld_high - The highest CPU usage percentage the host can have
-                       before being considered overloaded
-       * thrhld_low - the lowest CPU usage percentage the host can have
-                       before being considered underutilized.
-       * duration - the number of seconds the host needs to be overloaded
-                    before the scheduler starts and moves the load to
-                    another host
-       * scheduling_policy - VM scheduling mode for hosts in the cluster
-                             (evenly_distributed, power_saving)
-       * properties - properties of scheduling policy
-       * transparent_hugepages - boolean, Defines the availability of
-                                Transparent Hugepages
-       * on_error - in case of non - operational
-                    (migrate, do_not_migrate, migrate_highly_available)
-       * threads - if True, will count threads as cores, otherwise counts
-                   only cores
-       * ballooning_enabled - if True, enables ballooning on cluster
-       * ksm_enabled - if True, enables KSM on cluster
-    Return: status (True if cluster was removed properly, False otherwise)
-    '''
+    """
+    Add cluster
 
+    __Author__: edolinin
+
+    Args:
+        positive (bool): Expected status
+
+    Keyword arguments:
+        name (str): Name of a cluster
+        cpu (str): CPU name
+        data_center (str): Name of data-center that cluster will be attached to
+        description (str): Description of cluster
+        version (str): Supported version
+        gluster_support (bool): Gluster support
+        virt_support (bool): virt support
+        mem_ovrcmt_prc (str): The percentage of host memory allowed
+            Recommended values include 100 (None), 150 (Server Load) and 200
+            (Desktop Load)
+        thrhld_high (str): The highest CPU usage percentage the host can have
+            before being considered overloaded
+        thrhld_low (str): The lowest CPU usage percentage the host can have
+            before being considered underutilized.
+        duration (int): The number of seconds the host needs to be overloaded
+            before the scheduler starts and moves the load to another host
+        scheduling_policy (str): VM scheduling mode for hosts in the cluster
+            (evenly_distributed, power_saving)
+        properties (str): Properties of scheduling policy
+        transparent_hugepages (bool): Defines the availability of Transparent
+            Hugepages
+        on_error (str): In case of non-operational (migrate, do_not_migrate,
+            migrate_highly_available)
+        threads (bool): If True, will count threads as cores, otherwise counts
+            only cores
+        ballooning_enabled (bool): If True, enables ballooning on cluster
+        ksm_enabled (bool): If True, enables KSM on cluster
+
+    Returns:
+        bool: True if cluster was created properly, False otherwise
+    """
+    name = kwargs.get("name")
+    logger.info("Create cluster %s with %s", name, kwargs)
     cl = _prepareClusterObject(**kwargs)
-    cl, status = util.create(cl, positive)
+    status = util.create(cl, positive)[1]
+    if not status:
+        logger.error("Failed to create cluster %s", name)
     return status
 
 

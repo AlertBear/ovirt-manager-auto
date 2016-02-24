@@ -22,6 +22,7 @@ import time
 
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS, data_st, TimeoutingSampler
+import art.rhevm_api.tests_lib.low_level.jobs as ll_jobs
 from art.rhevm_api.utils.test_utils import get_api, split, waitUntilGone
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.rhevm_api.tests_lib.low_level.disks import getObjDisks
@@ -60,6 +61,8 @@ CPU = getDS('CPU')
 CpuTopology = getDS('CpuTopology')
 StorageDomain = getDS('StorageDomain')
 VM = getDS('VM')
+SAMPLER_TIMEOUT = 120
+SAMPLER_SLEEP = 5
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
@@ -138,34 +141,50 @@ def _prepareTemplateObject(**kwargs):
 
 
 @is_action()
-def createTemplate(positive, wait=True, timeout=CREATE_TEMPLATE_TIMEOUT,
-                   **kwargs):
-    '''
-    Description: add new template
-    Author: edolinin
-    Parameters:
-       * vm - name of vm for template generation
-       * name - template name
-       * description - template description
-       * cluster - template cluster
-       * memory - template memory size
-       * cpu_socket - number of cpu sockets
-       * cpu_cores - number of cpu cores
-       * boot - template boot device
-       * type - template type
-       * wait - wait until end of creation of template (true) or exit without
-                waiting (false)
-       * storagedomain - name of storagedomain
-       * protected - if template is delete protected
-       * copy_permissions - True if perms from vm to template should be copied
-    Return: status (True if template was added properly, False otherwise)
-    '''
+def createTemplate(
+    positive, wait=True, timeout=CREATE_TEMPLATE_TIMEOUT, **kwargs
+):
+    """
+    create new template
 
-    templ = _prepareTemplateObject(**kwargs)
-    templ, status = TEMPLATE_API.create(templ, positive)
+    __author__: edolinin
+
+    Args:
+        positive (bool): Expected status
+        wait (bool): wait till creation of template is done or timeout exceeds
+        timeout (int): Timeout for wait
+
+    Keyword arguments:
+        vm (str): Name of vm for template generation
+        name (str): Template name
+        description (str):Template description
+        cluster (str): Template cluster
+        memory (str): Template memory size
+        cpu_socket (str): Number of cpu sockets
+        cpu_cores (str): Number of cpu cores
+        boot (str): Template boot device
+        type (str): Template type
+        storagedomain (str): Name of storage domain
+        protected (str): If template is delete protected
+        copy_permissions (bool): True if permissions from vm to template
+            should be copied
+
+    Returns:
+        bool: True if template was added properly, False otherwise
+    """
+    name = kwargs.get("name")
+    log_info, log_error = ll_general.get_log_msg(
+        action="Create", obj_type="template", obj_name=name, positive=positive,
+        **kwargs
+    )
+    template = _prepareTemplateObject(**kwargs)
+    logger.info(log_info)
+    template, status = TEMPLATE_API.create(template, positive)
     if wait and status and positive:
-        status = TEMPLATE_API.waitForElemStatus(templ, 'OK', timeout)
+        status = TEMPLATE_API.waitForElemStatus(template, 'OK', timeout)
 
+    if not status:
+        logger.error(log_error)
     return status
 
 
@@ -211,36 +230,49 @@ def updateTemplate(positive, template, **kwargs):
 
 
 @is_action()
-def removeTemplate(positive, template, wait=True, sleepTime=10, timeout=60):
-    '''
-    Description: remove existed template
-    Author: edolinin
-    Parameters:
-       * template - name of template that should be removed
-       * wait - wait until end of action if true, else return without wait
-       * sleepTime - How much time wait between validation
-       * timeout - maximun waiting time
-    Return: status (True if template was removed properly, False otherwise)
-    '''
-    templObj = TEMPLATE_API.find(template)
-    status = TEMPLATE_API.delete(templObj, positive)
+def removeTemplate(
+    positive, template, wait=True, sleepTime=SAMPLER_SLEEP,
+    timeout=SAMPLER_TIMEOUT
+):
+    """
+    Remove template
 
+    __author__: edolinin
+
+    Args:
+        positive (bool): Expected status
+        template (str): Name of template that should be removed
+        wait (str): Wait until end of action if true, else return without wait
+        sleepTime (int): Sleep between sampler iterations
+        timeout (int): Timeout to wait for template removal
+
+    Returns:
+        bool: True if template was removed properly, False otherwise
+    """
+    log_info, log_error = ll_general.get_log_msg(
+        action="Remove", obj_type="template", obj_name=template,
+        positive=positive
+    )
+    template_obj = TEMPLATE_API.find(template)
+    logger.info(log_info)
+    status = TEMPLATE_API.delete(template_obj, positive)
     if status and positive and wait:
-        handleTimeout = 0
-        while handleTimeout <= timeout:
-            if not validateTemplate(positive, template):
-                # Add a delay, required as a workaround, for actual template
-                # removal
-                time.sleep(30)
-                return True
-            time.sleep(sleepTime)
-            handleTimeout += sleepTime
-        return False
+        sample = TimeoutingSampler(
+            timeout=timeout, sleep=sleepTime, func=check_template_existence,
+            template_name=template
+        )
+        res = sample.waitForFuncStatus(result=False)
+        if not res:
+            logger.error(log_error)
+            return False
+
     elif status and positive and not wait:
         return True
+
     elif status and not positive:
         return True
 
+    logger.error(log_error)
     return False
 
 
@@ -465,22 +497,49 @@ def removeTemplateNic(positive, template, nic):
 
 
 @is_action()
-def removeTemplateFromExportDomain(positive, template, datacenter,
-                                   export_storagedomain):
-    '''
-    Description: removes a template from export domain
-    Author: istein
-    Parameters:
-       * template - template name
-       * datacenter - name of data center
-       * export_storagedomain - storage domain where to remove vm from
-    Return: status (True if template was removed properly, False otherwise)
-    '''
-    expStorDomObj = SD_API.find(export_storagedomain)
-    templObj = TEMPLATE_API.getElemFromElemColl(expStorDomObj, template)
-    status = TEMPLATE_API.delete(templObj, positive)
-    time.sleep(30)
-    return status
+def removeTemplateFromExportDomain(
+    positive, template, datacenter, export_storagedomain,
+    timeout=SAMPLER_TIMEOUT, sleep=SAMPLER_SLEEP
+):
+    """
+    Removes a template from export domain
+
+    __author__: istein
+
+    Args:
+        positive (bool): Expected status
+        template (str): Template name
+        datacenter (str): Name of data center
+        export_storagedomain (str): Storage domain where to remove vm from
+        timeout (int): Timeout to wait for template removal
+        sleep (int): Sleep between sampler iterations
+
+    Returns:
+        bool: True if template was removed properly, False otherwise
+    """
+    log_info, log_error = ll_general.get_log_msg(
+        action="Remove", obj_type="template", obj_name=template,
+        positive=positive,
+        extra_txt="from export domain %s" % export_storagedomain
+    )
+    export_storage_domain_obj = SD_API.find(export_storagedomain)
+    template_obj = TEMPLATE_API.getElemFromElemColl(
+        export_storage_domain_obj, template
+    )
+    logger.info(log_info)
+    status = TEMPLATE_API.delete(template_obj, positive)
+    if not status:
+        logger.error(log_error)
+        return False
+
+    if positive:
+        sample = TimeoutingSampler(
+            timeout=timeout, sleep=sleep,
+            func=export_domain_template_exist, template=template,
+            export_domain=export_storagedomain
+        )
+        return sample.waitForFuncStatus(result=False)
+    return True
 
 
 @is_action()
@@ -538,58 +597,73 @@ def getTemplateId(positive, template):
 
 
 @is_action()
-def exportTemplate(positive, template, storagedomain, exclusive='false',
-                   wait=False):
-    '''
-    Description: export template
-    Author: edolinin
-    Parameters:
-       * template - name of template that should be exported
-       * storagedomain - name of export storage domain where to export to
-       * exclusive - 'true' if overwrite already existed templates with the
-                      same name, 'false' otherwise ('false' by default)
-       * wait - waits until template is exported
-    Return: status (True if template was exported properly, False otherwise)
-    '''
+def exportTemplate(
+    positive, template, storagedomain, exclusive='false', wait=False
+):
+    """
+    Export template
 
-    templObj = TEMPLATE_API.find(template)
+    __author__: edolinin
 
+    Args:
+        positive (bool): Expected status
+        template (str): Name of template that should be exported
+        storagedomain (str): Name of export storage domain where to export to
+        exclusive (str): 'true' if overwrite already existed templates with the
+            same name, 'false' otherwise ('false' by default)
+        wait (bool): Waits until template is exported
+
+    Returns:
+        bool: True if template was exported properly, False otherwise
+    """
+    log_info, log_error = ll_general.get_log_msg(
+        action="Create", obj_type="template", obj_name=template,
+        positive=positive, extra_txt="to export domain %s" % storagedomain
+    )
+    template_obj = TEMPLATE_API.find(template)
     sd = StorageDomain(name=storagedomain)
-    actionParams = dict(storage_domain=sd, exclusive=exclusive)
+    action_params = dict(storage_domain=sd, exclusive=exclusive)
+    logger.info(log_info)
     result = bool(
-        TEMPLATE_API.syncAction(templObj, "export", positive, **actionParams)
+        TEMPLATE_API.syncAction(
+            template_obj, "export", positive, **action_params
+        )
     )
     if wait and result:
         return wait_for_export_domain_template_state(storagedomain, template)
 
+    if not result:
+        logger.error(log_error)
     return result
 
 
 @is_action()
-def import_template(positive, template, source_storage_domain,
-                    destination_storage_domain, cluster, name=None,
-                    async=False):
+def import_template(
+    positive, template, source_storage_domain, destination_storage_domain,
+    cluster, name=None, async=False
+):
     """
-    Description: import template from export_domain
-    _author_: edolinin
-    :param positive: True if success, False otherwise
-    :type positive: bool
-    :param template: name of template to be imported
-    :type template: str
-    :param source_storage_domain: from which to export the template
-    :type source_storage_domain: str
-    :param destination_storage_domain: which to import the template
-    :type destination_storage_domain: str
-    :param cluster: cluster into which template will be imported
-    :type cluster: str
-    :param name: new name for the imported template
-    :type name: str
-    :param async: True wait for response, False otherwise
-    :type async: bool
-    :returns: True if function should wait for response, False otherwise
-    :rtype: bool
-    """
+    Import template from export_domain
 
+    __author__: edolinin
+
+    Args:
+        positive (bool): True if success, False otherwise
+        template (str): name of template to be imported
+        source_storage_domain (str): from which to export the template
+        destination_storage_domain (str): which to import the template
+        cluster (str): cluster into which template will be imported
+        name (str): new name for the imported template
+        async (bool): True wait for response, False otherwise
+
+    Returns:
+        bool: True if function should wait for response, False otherwise
+    """
+    log_info, log_error = ll_general.get_log_msg(
+        action="Import", obj_type="template", obj_name=template,
+        positive=positive,
+        extra_txt="from export domain %s" % source_storage_domain
+    )
     export_storage_domain_obj = SD_API.find(source_storage_domain)
     template_obj = TEMPLATE_API.getElemFromElemColl(
         export_storage_domain_obj,
@@ -614,15 +688,17 @@ def import_template(positive, template, source_storage_domain,
         new_template = Template(name=name)
         action_params['template'] = new_template
 
+    logger.info(log_info)
     status = bool(
         TEMPLATE_API.syncAction(
             template_obj, action_name, positive, **action_params
         )
     )
-
     if not async:
-        time.sleep(30)
+        ll_jobs.wait_for_jobs([ENUMS['job_add_vm_template']])
 
+    if not status:
+        logger.error(log_error)
     return status
 
 

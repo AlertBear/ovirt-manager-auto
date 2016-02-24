@@ -120,5 +120,5 @@ class TestCase11627(TestCase):
         logger.info("Removing vm %s from DC and from the export domain",
                     self.vm_name)
         vms.removeVm(True, self.vm_name)
-        vms.removeVmFromExportDomain(
+        vms.remove_vm_from_export_domain(
             True, self.vm_name, config.DATA_CENTER_NAME, self.export_domain)

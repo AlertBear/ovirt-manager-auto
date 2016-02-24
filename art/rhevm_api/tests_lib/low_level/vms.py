@@ -109,10 +109,13 @@ WATCHDOG_API = get_api('watchdog', 'watchdogs')
 CAP_API = get_api('version', 'capabilities')
 NUMA_NODE_API = get_api("vm_numa_node", "vm_numa_nodes")
 Snapshots = getDS('Snapshots')
-
 NUMA_NODE_LINK = "numanodes"
+SAMPLER_TIMEOUT = 120
+SAMPLER_SLEEP = 5
 
 logger = logging.getLogger("art.ll_lib.vms")
+
+
 xpathMatch = is_action('xpathVms', id_name='xpathMatch')(XPathMatch(VM_API))
 xpathVmsLinks = is_action(
     'xpathVmsLinks', id_name='xpathVmsLinks'
@@ -699,43 +702,47 @@ def updateVm(positive, vm, **kwargs):
 
 @is_action()
 def removeVm(positive, vm, **kwargs):
-    '''
-    Remove vm
+    """
+    Remove VM
 
-    :param vm: VM name
-    :type vm: str
-    :param kwargs: Extra kwargs for rmove VM
-        :param force: Force remove if True
-        :type force: bool
-        :param stopVM: Stop VM before removal
-        :type stopVM: bool
-        :param wait: Wait for removal if True
-        :type wait: bool
-        :param timeout: Waiting timeout
-        :type timeout: int
-        :param waitTime: Waiting time interval
-        :type waitTime: int
-    :return: Status (True if vm was removed properly, False otherwise)
-    :rtype: bool
-    '''
+    Args:
+        positive (bool): Expected status
+        vm (str): VM name
+        kwargs (dict): Extra kwargs for remove VM
+
+    Keyword arguments:
+        force (bool): Force remove if True
+        stopVM (bool): Stop VM before removal
+        wait (bool): Wait for removal if True
+        timeout (int): Waiting timeout
+        waitTime (int): Waiting time interval
+
+    Returns:
+        bool: True if VM was removed properly, False otherwise
+    """
     body = None
     force = kwargs.pop('force', None)
     if force:
         body = data_st.Action(force=True)
 
-    vmObj = VM_API.find(vm)
-    vmStatus = vmObj.get_status().get_state().lower()
-    stopVM = kwargs.pop('stopVM', 'false')
-    if str(stopVM).lower() == 'true' and vmStatus != ENUMS['vm_state_down']:
+    vm_obj = VM_API.find(vm)
+    vm_status = vm_obj.get_status().get_state().lower()
+    stop_vm = kwargs.pop('stopVM', 'false')
+    if str(stop_vm).lower() == 'true' and vm_status != ENUMS['vm_state_down']:
         if not stopVm(positive, vm):
             return False
-    logger.info("Remove %s", vm)
-    status = VM_API.delete(vmObj, positive, body=body, element_name='action')
+    logger.info("Remove VM %s", vm)
+    status = VM_API.delete(vm_obj, positive, body=body, element_name='action')
+
+    if not status:
+        logger.error("Failed to remove VM %s", vm)
 
     wait = kwargs.pop('wait', True)
     if positive and wait and status:
-        return waitForVmsGone(positive, vm, kwargs.pop('timeout', 60),
-                              kwargs.pop('waitTime', 10))
+        return waitForVmsGone(
+            positive, vm, kwargs.pop('timeout', 60),
+            kwargs.pop('waitTime', 10)
+        )
     return status
 
 
@@ -2131,63 +2138,74 @@ def removeTagFromVm(positive, vm, tag):
 
 
 @is_action()
-def exportVm(positive, vm, storagedomain, exclusive='false',
-             discard_snapshots='false', timeout=VM_ACTION_TIMEOUT):
-    '''
-    Description: export vm to export storage domain
-    Author: edolinin, jhenner
-    Parameters:
-       * vm - name of vm to export
-       * storagedomain - name of export storage domain where to export vm to
-       * exclusive - overwrite any existing vm of the same name
-                       in the destination domain ('false' by default)
-       * discard_snapshots - do not include vm snapshots
-                               with the exported vm ('false' by default)
-    Return: status (True if vm was exported properly, False otherwise)
-    '''
-    vmObj = VM_API.find(vm)
+def exportVm(
+    positive, vm, storagedomain, exclusive='false',
+    discard_snapshots='false', timeout=VM_ACTION_TIMEOUT
+):
+    """
+    Export vm to export storage domain
+
+    __Author__: edolinin, jhenner
+
+    Args:
+        positive (bool): Expected status
+        vm (str): Name of vm to export
+        storagedomain (str): Name of export storage domain where to export
+            vm to
+        exclusive (str): Overwrite any existing vm of the same name in the
+            destination domain ('false' by default)
+        discard_snapshots (str): Do not include vm snapshots with the
+            exported vm ('false' by default)
+        timeout (int): Timeout for the export operation
+
+    Returns:
+        bool: True if vm was exported properly, False otherwise
+    """
+    vm_obj = VM_API.find(vm)
     sd = data_st.StorageDomain(name=storagedomain)
-
-    expectedStatus = vmObj.status.state
-
-    actionParams = dict(storage_domain=sd, exclusive=exclusive,
-                        discard_snapshots=discard_snapshots)
-    status = bool(VM_API.syncAction(vmObj, "export", positive, **actionParams))
+    expected_status = vm_obj.status.state
+    action_params = dict(
+        storage_domain=sd, exclusive=exclusive,
+        discard_snapshots=discard_snapshots
+    )
+    status = bool(
+        VM_API.syncAction(vm_obj, "export", positive, **action_params)
+    )
+    logger.info("Export VM %s to export domain %s", vm, storagedomain)
     if status and positive:
         return VM_API.waitForElemStatus(
-            vmObj, expectedStatus, timeout)
+            vm_obj, expected_status, timeout)
+    logger.error(
+        "Failed to export VM %s to export domain %s", vm, storagedomain
+    )
     return status
 
 
 @is_action()
-def importVm(positive, vm, export_storagedomain, import_storagedomain,
-             cluster, name=None, async=False, collapse=False, clone=False,
-             timeout=VM_ACTION_TIMEOUT):
+def importVm(
+    positive, vm, export_storagedomain, import_storagedomain, cluster,
+    name=None, async=False, collapse=False, clone=False,
+    timeout=VM_ACTION_TIMEOUT
+):
     """
     Import a vm from an export domain
 
     __author__ = "edolinin, cmestreg"
-    :param positive: True when importVm is expected to succeed, False
-    otherwise
-    :type positive: bool
-    :param vm: name of the vm to import
-    :type vm: str
-    :param export_storagedomain: storage domain where to export vm from
-    :type export_storagedomain: str
-    :param import_storagedomain: storage domain where to import vm to
-    :type import_storagedomain: str
-    :param cluster: name of cluster to import the vm into
-    :type cluster: str
-    :param name: new name for the imported vm
-    :type name: str
-    :param async: if the action should be asynchronous
-    :param async: bool
-    :param collapse: if the snapshots should be collapsed, default False
-    :type collapse: bool
-    :param clone: if the disk should be cloned, default False
-    :type clone: bool
-    :return: True if vm was imported properly, False otherwise
-    :rtype: bool
+
+    Args:
+        positive (bool): True when importVm is expected to succeed, False
+            otherwise
+        vm (str): Name of the vm to import
+        export_storagedomain (str): Storage domain where to export vm from
+        import_storagedomain (str): Storage domain where to import vm to
+        cluster (str): Name of cluster to import the vm into
+        name (str): New name for the imported vm
+        async (bool): If the action should be asynchronous
+        collapse (bool): If the snapshots should be collapsed, default False
+        clone (bool): If the disk should be cloned, default False
+
+    Returns:
+        bool: True if vm was imported properly, False otherwise
     """
     export_domain_obj = STORAGE_DOMAIN_API.find(export_storagedomain)
     sd_vms = VM_API.getElemFromLink(
@@ -2226,6 +2244,7 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
         new_vm.snapshots.collapse_snapshots = True
         action_params['vm'] = new_vm
 
+    logger.info("Import VM %s into cluster %s", vm, cluster)
     status = bool(
         VM_API.syncAction(vm_obj, action_name, positive, **action_params)
     )
@@ -2235,6 +2254,7 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
 
     if status and positive:
         return waitForVMState(expected_name, expected_status, timeout=timeout)
+    logger.error("Failed to import VM %s into cluster %s", vm, cluster)
     return status
 
 
@@ -3285,25 +3305,45 @@ def checkVmState(positive, vmName, state, host=None):
 
 
 @is_action()
-def removeVmFromExportDomain(positive, vm, datacenter,
-                             export_storagedomain):
-    '''
-    Description: removes a vm, from export domain
-    Author: istein
-    Parameters:
-       * vm - name of vm to remove from export domain
-       * datacenter - name of data center
-       * export_storagedomain - export domain containing the exported vm
-    Return: status (True if vm was removed properly, False otherwise)
-    '''
+def remove_vm_from_export_domain(
+    positive, vm, datacenter, export_storagedomain, timeout=SAMPLER_TIMEOUT,
+    sleep=SAMPLER_SLEEP
+):
+    """
+    Remove VM from export domain
 
-    expStorDomObj = STORAGE_DOMAIN_API.find(export_storagedomain)
-    vmObj = VM_API.getElemFromElemColl(expStorDomObj, vm)
+    __author__: istein
 
-    status = VM_API.delete(vmObj, positive)
-    # replac sleep with true diagnostic
-    time.sleep(30)
-    return status
+    Args:
+        positive (bool): Expected status
+        vm (str): Name of the VM to remove from export domain
+        datacenter (str): Name of data center
+        export_storagedomain (str): Export domain containing the exported vm
+        timeout (int): Timeout to wait for VM removal
+        sleep (int): Sleep between sampler iterations
+
+    Returns:
+        bool: True if vm was removed properly, False otherwise
+    """
+    log_info, log_error = ll_general.get_log_msg(
+        action="Remove", obj_type="VM", obj_name=vm, positive=positive,
+        extra_txt="from export domain %s" % export_storagedomain
+    )
+    export_storage_domain_obj = STORAGE_DOMAIN_API.find(export_storagedomain)
+    vm_obj = VM_API.getElemFromElemColl(export_storage_domain_obj, vm)
+
+    logger.info(log_info)
+    status = VM_API.delete(vm_obj, positive)
+
+    if not status:
+        logger.error(log_error)
+        return False
+
+    sample = TimeoutingSampler(
+        timeout=timeout, sleep=sleep, func=export_domain_vm_exist, vm=vm,
+        export_domain=export_storagedomain
+    )
+    return sample.waitForFuncStatus(result=False)
 
 
 @is_action()
@@ -5271,7 +5311,8 @@ def export_domain_vm_exist(vm, export_domain):
     __Author__ = slitmano
 
     Checks if a vm exists in an export domain
-    :param vm: Template name
+
+    :param vm: VM name
     :type vm: str
     :param export_domain: Export domain name
     :type export_domain: str
@@ -5283,7 +5324,7 @@ def export_domain_vm_exist(vm, export_domain):
         VM_API.getElemFromElemColl(export_domain_object, vm)
     except EntityNotFound:
         logger.error(
-            "template %s cannot be found in export domain: %s",
+            "VM %s cannot be found in export domain: %s",
             vm, export_domain
         )
         return False
