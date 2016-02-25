@@ -48,6 +48,7 @@ from art.rhevm_api.utils.test_utils import (
 from art.rhevm_api.utils.provisioning_utils import ProvisionProvider
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
+
 from art.test_handler.settings import opts
 from art.test_handler.exceptions import CanNotFindIP
 from art.test_handler import exceptions
@@ -5218,6 +5219,64 @@ def get_vm_cores(vm_name):
     return vm_obj.get_cpu().get_topology().get_cores()
 
 
+def get_vm_sockets(vm_name):
+    """
+    Get the VM sockets number
+
+    :param vm_name: host name
+    :type vm_name: str
+    :return: number of host sockets
+    :rtype int
+    """
+    logger.info("Get VM %s socket", vm_name)
+    vm_obj = get_vm_obj(vm_name)
+    sockets = vm_obj.cpu.topology.sockets
+    if sockets:
+        return sockets
+    logger.error("Failed to get cpu sockets from %s", vm_name)
+    return 0
+
+
+def get_vm_threads(vm_name):
+    """
+    Get the VM Threads number
+
+    :param vm_name: host name
+    :type vm_name: str
+    :return: number of host threads
+    :rtype: int
+    """
+    logger.info("Get VM %s threads", vm_name)
+    vm_obj = get_vm_obj(vm_name)
+    threads = vm_obj.cpu.topology.threads
+    if threads:
+        return threads
+    logger.error("Failed to get cpu threads from %s", vm_name)
+    return 0
+
+
+def get_vm_processing_units_number(vm_name):
+    """
+    Get the VM processing units number
+    ( sockets * cores * threads )
+
+    :param vm_name: host name
+    :type vm_name: str
+    :return number of host processing units
+    :rtype: int
+    """
+    logger.info("Get VM %s processing units", vm_name)
+    processing_units_number = (
+        get_vm_cores(vm_name) *
+        get_vm_sockets(vm_name) *
+        get_vm_threads(vm_name)
+    )
+    if processing_units_number:
+        return processing_units_number
+    logger.error("Failed to get the %s processing units number" % vm_name)
+    return 0
+
+
 def get_vm_numa_nodes(vm_name):
     """
     Get vm numa nodes
@@ -5570,3 +5629,16 @@ def reboot_vm(positive, vm):
     """
     vmObj = VM_API.find(vm)
     return VM_API.syncAction(vmObj, 'reboot', positive)
+
+
+def get_cpu_profile_id(vm_name):
+    """
+    Get VM cpu profile id
+
+    :param vm_name: Name of VM
+    :type vm_name: str
+    :return: cpu profile id
+    :rtype: str
+    """
+    vm_obj = VM_API.find(vm_name)
+    return vm_obj.get_cpu_profile().id

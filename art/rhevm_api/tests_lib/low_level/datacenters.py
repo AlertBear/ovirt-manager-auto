@@ -467,6 +467,7 @@ def add_qos_to_datacenter(datacenter, qos_name, qos_type, **kwargs):
 def get_qoss_from_datacenter(datacenter):
     """
     Get all QoSs in datacenter
+
     :param datacenter: Datacenter name
     :return: List of QoSs
     """
@@ -474,6 +475,19 @@ def get_qoss_from_datacenter(datacenter):
     return util.getElemFromLink(
         dc, link_name="qoss", attr="qos", get_href=False
     )
+
+
+def get_cpu_qoss_from_data_center(datacenter):
+    """
+    Get all CPU QoSs in datacenter
+
+    :param datacenter: Datacenter name
+    :type datacenter: str
+    :return: List of QoSs
+    :rtype: list
+    """
+    qoss = get_qoss_from_datacenter(datacenter)
+    return [qos.get_name() for qos in qoss if qos.get_type() == 'cpu']
 
 
 def get_qos_from_datacenter(datacenter, qos_name):

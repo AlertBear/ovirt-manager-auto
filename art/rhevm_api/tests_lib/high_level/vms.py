@@ -17,6 +17,7 @@ from art.rhevm_api.utils.test_utils import get_api, setPersistentNetwork
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
+
 from art.rhevm_api.utils.test_utils import getStat
 
 
@@ -959,7 +960,36 @@ def stop_stateless_vm(vm):
     if not wait_for_restored_stateless_snapshot(vm):
         logging.error(log_error)
         return False
-    return True
+
+
+def get_vm_cluster(vm_name):
+    """
+    Get the VM cluster name
+
+    :param vm_name: vm name
+    :type vm_name: str
+    :return:cluster name
+    :rtype: str
+    """
+    LOGGER.info("Get VM %s cluster name", vm_name)
+    vm_obj = VM_API.find(vm_name)
+    cluster_id = vm_obj.cluster.id
+    return CLUSTER_API.find(cluster_id, attribute='id').name
+
+
+def get_vm_cpu_consumption_on_the_host(vm_name):
+    """
+    Get the VM CPU consumption on the host
+
+    :param vm_name: vm name
+    :type vm_name: str
+    :return: VM CPU consumption on the host
+    :rtype: int
+    """
+    LOGGER.info("Get VM %s cpu consumption", vm_name)
+    stats = getStat(vm_name, "vm", "vms", ["cpu.current.total"])
+    vm_cpus = vms.get_vm_processing_units_number(vm_name)
+    return int(stats["cpu.current.total"]) / vm_cpus
 
 
 def get_vms_for_storage_type(datacenter_name, cluster_name, storage_type):

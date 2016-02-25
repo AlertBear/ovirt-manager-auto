@@ -100,5 +100,6 @@ BALANCE_LOG_MSG_POSITIVE = (
     "Wait until balance module will migrate VM's on host %s"
 )
 BALANCE_LOG_MSG_NEGATIVE = "Check that no migration happen on or from host %s"
-
 ENGINE_CONFIG_LOW_UTILIZATION = "LowUtilizationForEvenlyDistribute"
+SERVICE_PUPPET = "puppet"
+SERVICE_GUEST_AGENT = "ovirt-guest-agent"

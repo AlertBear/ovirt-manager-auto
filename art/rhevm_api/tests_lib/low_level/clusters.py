@@ -777,6 +777,22 @@ def _prepare_cpu_profile_object(**kwargs):
     return ll_general.prepare_ds_object('CpuProfile', **kwargs)
 
 
+def get_all_cpu_profile_names(cluster_name):
+    """
+    Get all CPU profile from a specific cluster
+
+    :param cluster_name: cluster name
+    :type cluster_name: str
+    :return: list with CPUs instances
+    :rtype: CPUs instances
+    """
+    cluster_obj = get_cluster_object(cluster_name)
+    cpu_profiles = CLUSTER_API.getElemFromLink(
+        cluster_obj, link_name='cpuprofiles', attr='cpu_profile'
+    )
+    return [cpu_profile.get_name() for cpu_profile in cpu_profiles]
+
+
 def get_cpu_profile_obj(cluster_name, cpu_prof_name):
     """
     Get cpu profile by name from specific cluster
@@ -820,6 +836,7 @@ def add_cpu_profile(cluster_name, **kwargs):
 
 def update_cpu_profile(cluster_name, cpu_prof_name, **kwargs):
     """
+    Update cpu profile
 
     :param cluster_name: cpu profile cluster
     :param cpu_prof_name: name of cpu profile to update

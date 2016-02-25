@@ -2653,3 +2653,68 @@ def remove_fence_agent(fence_agent_obj):
     if not status:
         logger.info(log_error)
     return status
+
+
+def get_host_cores(host_name):
+    """
+    Get the host cores number
+
+    :param host_name: host name
+    :type host_name: str
+    :return: number of host cores
+    :rtype: int
+    """
+    cores = get_host_topology(host_name).cores
+    if cores:
+        return cores
+    logger.error("Failed to get cpu cores from %s", host_name)
+    return 0
+
+
+def get_host_sockets(host_name):
+    """
+    Get the host sockets number
+
+    :param host_name: host name
+    :type host_name: str
+    :return: number of host sockets
+    :rtype: int
+    """
+    sockets = get_host_topology(host_name).sockets
+    if sockets:
+        return sockets
+    logger.error("Failed to get cpu sockets from %s", host_name)
+    return 0
+
+
+def get_host_threads(host_name):
+    """
+    Get the host sockets number
+
+    :param host_name: host name
+    :type host_name: str
+    :return: number of host threads
+    :rtype: int
+    """
+    threads = get_host_topology(host_name).threads
+    if threads:
+        return threads
+    logger.error("Failed to get cpu threads from %s", host_name)
+    return 0
+
+
+def get_host_processing_units_number(host_name):
+    """
+    Get the host processing units number
+    ( sockets * cores * threads )
+
+    :param host_name: host name
+    :type host_name: str
+    :return: number of host processing units
+    :rtype: int
+    """
+    return (
+        get_host_cores(host_name) *
+        get_host_sockets(host_name) *
+        get_host_threads(host_name)
+    )
