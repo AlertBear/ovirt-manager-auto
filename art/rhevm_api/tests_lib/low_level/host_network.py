@@ -46,10 +46,14 @@ def get_host_network_attachments(host_name):
     :return: Host network attachments
     :rtype: list
     """
+    logger.info("Get host %s network attachments", host_name)
     host = ll_hosts.HOST_API.find(host_name)
-    return ll_hosts.HOST_API.getElemFromLink(
+    res = ll_hosts.HOST_API.getElemFromLink(
         host, NETWORKATTACHMENTS, NETWORK_ATTACHMENT
     )
+    if not res:
+        logger.error("Failed to get host %s network attachments", host_name)
+    return res
 
 
 def get_host_nic_network_attachments(host_name, nic):
@@ -64,10 +68,16 @@ def get_host_nic_network_attachments(host_name, nic):
     :return: Host NIC network attachments
     :rtype: list
     """
+    logger.info("Get host %s NIC %s network attachments", host_name, nic)
     host_nic = ll_hosts.get_host_nic(host_name, nic)
-    return ll_hosts.HOST_NICS_API.getElemFromLink(
+    res = ll_hosts.HOST_NICS_API.getElemFromLink(
         host_nic, NETWORKATTACHMENTS, NETWORK_ATTACHMENT
     )
+    if not res:
+        logger.error(
+            "Failed to get host %s NIC %s network attachments", host_name, nic
+        )
+    return res
 
 
 def get_networks_attachments(host_name, networks, nic=None):

@@ -17,7 +17,7 @@ import art.test_handler.exceptions as exceptions
 from art.unittest_lib import NetworkTest as TestCase
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 NETMASK = config.NETMASK
 GATEWAY = config.MG_GATEWAY
@@ -88,15 +88,10 @@ class TestGatewaysCase1(TestCase):
         """
         Remove network with gw configuration from setup
         """
-        if not ll_hosts.sendSNRequest(
-            True, host=config.HOSTS[0],
-            auto_nics=[config.VDS_HOSTS[0].nics[0]], check_connectivity="true",
-            connectivity_timeout=TIMEOUT, force=False
+        if not hl_host_network.clean_host_interfaces(
+            host_name=config.HOSTS[0]
         ):
-            raise exceptions.NetworkException(
-                "Couldn't remove %s with gateway from setup" %
-                config.NETWORKS[0]
-            )
+            raise exceptions.NetworkException()
 
     @classmethod
     def teardown_class(cls):
@@ -312,45 +307,45 @@ class TestGatewaysCase5(TestCase):
             "Trying to attach network %s with incorrect IP on NIC %s. "
             "The test should fail to do it", config.NETWORKS[0], HOST_NICS[1]
         )
-        net_obj = []
-        rc, out = ll_hosts.genSNNic(
-            nic=HOST_NICS[1], network=config.NETWORKS[0],
-            boot_protocol="static", address="5.5.5.298", netmask=NETMASK,
-            gateway=GATEWAY
-        )
-        if not rc:
-            raise exceptions.NetworkException("Cannot generate SNNIC object")
-        net_obj.append(out["host_nic"])
-        if not ll_hosts.sendSNRequest(
-            False, host=config.HOSTS[0], nics=net_obj,
-            auto_nics=[config.VDS_HOSTS[0].nics[0]], check_connectivity="true",
-            connectivity_timeout=TIMEOUT, force=False
+
+        local_dict = {
+            config.NETWORKS[0]: {
+                "nic": 1,
+                "bootproto": "static",
+                "address": ["5.5.5.298"],
+                "netmask": [NETMASK],
+                "gateway": [GATEWAY],
+                "required": "false",
+            },
+        }
+
+        if hl_networks.createAndAttachNetworkSN(
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0]
         ):
-            raise exceptions.NetworkException(
-                "Can setupNetworks when shouldn't"
-            )
+            raise exceptions.NetworkException()
 
         logger.info(
             "Trying to attach network %s with incorrect gateway on NIC %s."
             " The test should fail to do it", config.NETWORKS[0], HOST_NICS[1]
         )
-        net_obj = []
-        rc, out = ll_hosts.genSNNic(
-            nic=HOST_NICS[1], network=config.NETWORKS[0],
-            boot_protocol="static", address=config.IPS[4], netmask=NETMASK,
-            gateway="5.5.5.289"
-        )
-        if not rc:
-            raise exceptions.NetworkException("Cannot generate SNNIC object")
-        net_obj.append(out["host_nic"])
-        if not ll_hosts.sendSNRequest(
-            False, host=config.HOSTS[0], nics=net_obj,
-            auto_nics=[config.VDS_HOSTS[0].nics[0]], check_connectivity="true",
-            connectivity_timeout=TIMEOUT, force=False
+
+        local_dict = {
+            config.NETWORKS[0]: {
+                "nic": 1,
+                "bootproto": "static",
+                "address": [config.IPS[4]],
+                "netmask": [NETMASK],
+                "gateway": ["5.5.5.289"],
+                "required": "false",
+            },
+        }
+
+        if hl_networks.createAndAttachNetworkSN(
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0]
         ):
-            raise exceptions.NetworkException(
-                "Can setupNetworks when shouldn't"
-            )
+            raise exceptions.NetworkException()
 
     @classmethod
     def teardown_class(cls):
@@ -423,7 +418,7 @@ class TestGatewaysCase7(TestCase):
         """
         local_dict = {
             config.NETWORKS[0]: {
-                "nic": "bond0", "slaves": [-2, -1], "required": False,
+                "nic": config.BOND[0], "slaves": [-2, -1], "required": False,
                 "bootproto": "static", "address": [config.IPS[6]],
                 "netmask": [NETMASK], "gateway": [GATEWAY]
             }
@@ -450,25 +445,23 @@ class TestGatewaysCase7(TestCase):
                 "Incorrect gateway configuration for %s" % config.NETWORKS[0]
             )
 
-        logger.info("Generating network object for 3 NIC bond ")
-        net_obj = []
-        rc, out = ll_hosts.genSNNic(
-            nic="bond0", network=config.NETWORKS[0],
-            slaves=[HOST_NICS[-2], HOST_NICS[-3], HOST_NICS[-1]],
-            boot_protocol="static", address=config.IPS[6], netmask=NETMASK,
-            gateway=GATEWAY
-        )
-        if not rc:
-            raise exceptions.NetworkException("Cannot generate SNNIC object")
-        net_obj.append(out["host_nic"])
-        if not ll_hosts.sendSNRequest(
-            True, host=config.HOSTS[0], nics=net_obj,
-            auto_nics=[config.VDS_HOSTS[0].nics[0]], check_connectivity="true",
-            connectivity_timeout=TIMEOUT, force=False
+        local_dict = {
+            config.NETWORKS[0]: {
+                "nic": config.BOND[0],
+                "slaves": [-3, -2, -1],
+                "bootproto": "static",
+                "address": [config.IPS[6]],
+                "netmask": [NETMASK],
+                "gateway": [GATEWAY],
+                "required": "false",
+            },
+        }
+
+        if not hl_networks.createAndAttachNetworkSN(
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0]
         ):
-            raise exceptions.NetworkException(
-                "Cannot update bond to have 2 NICs"
-            )
+            raise exceptions.NetworkException()
 
         logger.info("Checking IP rule after adding 3rd NIC")
         if not ll_networks.check_ip_rule(
@@ -508,9 +501,10 @@ class TestGatewaysCase8(TestCase):
         """
         local_dict = {
             config.NETWORKS[0]: {
-                "nic": "bond0", "slaves": [-2, -3, -1], "required": False,
-                "bootproto": "static", "address": [config.IPS[7]],
-                "netmask": [NETMASK], "gateway": [GATEWAY]
+                "nic": config.BOND[0], "slaves": [-2, -3, -1],
+                "required": False, "bootproto": "static",
+                "address": [config.IPS[7]], "netmask": [NETMASK],
+                "gateway": [GATEWAY]
             }
         }
 
@@ -536,24 +530,23 @@ class TestGatewaysCase8(TestCase):
                 "Incorrect gateway configuration for %s" % config.NETWORKS[0]
             )
 
-        logger.info("Generating network object for 2 NIC bond ")
-        net_obj = []
-        rc, out = ll_hosts.genSNNic(
-            nic="bond0", network=config.NETWORKS[0],
-            slaves=[HOST_NICS[-2], HOST_NICS[-1]], boot_protocol="static",
-            address=config.IPS[7], netmask=NETMASK, gateway=GATEWAY
-        )
-        if not rc:
-            raise exceptions.NetworkException("Cannot generate SNNIC object")
-        net_obj.append(out["host_nic"])
-        if not ll_hosts.sendSNRequest(
-            True, host=config.HOSTS[0], nics=net_obj,
-            auto_nics=[config.VDS_HOSTS[0].nics[0]], check_connectivity="true",
-            connectivity_timeout=TIMEOUT, force=False
+        local_dict = {
+            config.NETWORKS[0]: {
+                "nic": config.BOND[0],
+                "slaves": [-2, -1],
+                "bootproto": "static",
+                "address": [config.IPS[7]],
+                "netmask": [NETMASK],
+                "gateway": [GATEWAY],
+                "required": "false",
+            },
+        }
+
+        if not hl_networks.createAndAttachNetworkSN(
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0]
         ):
-            raise exceptions.NetworkException(
-                "Cannot update bond to have 2 NICs"
-            )
+            raise exceptions.NetworkException()
 
         logger.info("Checking the IP rule after removing one NIC from bond")
         if not ll_networks.check_ip_rule(

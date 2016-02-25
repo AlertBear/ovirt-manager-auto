@@ -670,34 +670,16 @@ class NetLabels06(TestLabelTestCaseBase):
     def test_break_labeled_bond(self):
         """
         1) Break Bond on both Hosts
-        2) Make sure the network was detached from Bond on both Hosts
-        3) Make sure that the bond slave interfaces don't have label
+        2) Make sure that the bond slave interfaces don't have label
         confured
         """
 
         logger.info("Break bond on both Hosts")
-        for i, host_i in enumerate(conf.HOSTS[:2]):
-            if not ll_hosts.sendSNRequest(
-                True, host=host_i, auto_nics=[conf.VDS_HOSTS[i].nics[0]],
-                check_connectivity="true", connectivity_timeout=60,
-                force="false"
+        for host_name in conf.HOSTS[:2]:
+            if not hl_host_network.clean_host_interfaces(
+                host_name=host_name
             ):
-                raise conf.NET_EXCEPTION(
-                    "Couldn't break bond on Host %s" % host_i
-                )
-
-        for host in conf.HOSTS[:2]:
-            logger.info(
-                "Check that the network %s is not attached to Hosts %s bond ",
-                conf.NETS[6][0], host
-            )
-            if ll_networks.check_network_on_nic(
-                network=conf.NETS[6][0], host=host, nic=self.bond
-            ):
-                raise conf.NET_EXCEPTION(
-                    "Network %s is attached to Bond %s on host %s when "
-                    "shouldn't" % (conf.NETS[6][0], self.bond, host)
-                )
+                raise conf.NET_EXCEPTION()
 
         logger.info(
             "Check that the label %s doesn't appear on slaves of both Hosts"
@@ -779,10 +761,9 @@ class NetLabels07(TestLabelTestCaseBase):
             "setupNetwork command ",
             conf.NETS[7][0], conf.HOST0_NICS[1]
         )
-        if not ll_hosts.sendSNRequest(
-            False, host=conf.HOSTS[0],
-            auto_nics=[conf.VDS_HOSTS[0].nics[0]], check_connectivity="true",
-            connectivity_timeout=60, force="false"
+
+        if hl_host_network.remove_networks_from_host(
+            host_name=conf.HOSTS[0], networks=[conf.NETS[7][0]]
         ):
             raise conf.NET_EXCEPTION(
                 "Could remove labeled network %s from Host NIC % s" %

@@ -8,18 +8,19 @@ jumbo frames will be tested for untagged, tagged, bond scenarios.
 It will cover scenarios for VM/non-VM networks.
 """
 
+import helper
 import logging
-from rhevmtests.networking import config
-from art.unittest_lib import NetworkTest as TestCase
 from art.unittest_lib import attr
+from rhevmtests.networking import config
+import rhevmtests.helpers as global_helper
 from art.test_handler.tools import polarion  # pylint: disable=E0611
+import art.rhevm_api.utils.test_utils as utils
+from art.unittest_lib import NetworkTest as TestCase
+import rhevmtests.networking.helper as network_helper
 from art.test_handler.exceptions import NetworkException
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.utils.test_utils as utils
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import rhevmtests.networking.helper as network_helper
-import rhevmtests.helpers as global_helper
-import helper
 
 HOST_API = utils.get_api("host", "hosts")
 VM_API = utils.get_api("vm", "vms")
@@ -170,22 +171,12 @@ class TestJumboFramesCase02(TestJumboFramesTestCaseBase):
             nic=HOST_NICS0[1], network=config.VLAN_NETWORKS[1],
             mtu=config.MTU[0], vlan=config.VLAN_ID[1], bridge=False
         )
+
         logger.info(
             "Removing %s, Sending SN request to %s",
             config.VLAN_NETWORKS[0], HOST_NAME0)
-        auto_nics = [
-            HOST_NICS0[0], HOST_NICS0[1], "%s.%s" %
-            (HOST_NICS0[1], config.VLAN_ID[0])
-        ]
-        if not ll_hosts.sendSNRequest(
-            True, host=HOST_NAME0, nics=[],
-            auto_nics=auto_nics, check_connectivity=True,
-            connectivity_timeout=config.CONNECT_TIMEOUT, force=False
-        ):
-            raise NetworkException(
-                "Failed to remove %s from %s" %
-                (config.VLAN_NETWORKS[0], HOST_NAME0)
-            )
+        hl_host_network.remove_networks_from_host(
+            host_name=HOST_NAME0, networks=[config.VLAN_NETWORKS[1]])
         # Checking logical and physical
         helper.check_logical_physical_layer(
             nic=HOST_NICS0[1], network=config.VLAN_NETWORKS[0],
@@ -199,7 +190,6 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
     Positive: Test BOND mode change
     """
     __test__ = True
-    bz = {"1271524": {"engine": None, "version": ["3.6"]}}
 
     @classmethod
     def setup_class(cls):
@@ -210,7 +200,7 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
         local_dict = {
             None: {
                 "nic": config.BOND[0], "mode": "1",
-                "slaves": [2, 3]},
+                "slaves": [-2, -1]},
             config.VLAN_NETWORKS[0]: {
                 "nic": config.BOND[0],
                 "mtu": config.MTU[1],
@@ -237,30 +227,31 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
         # Checking logical and physical
         helper.check_logical_physical_layer(
             network=config.VLAN_NETWORKS[0], mtu=config.MTU[1],
-            bond=config.BOND[0], bond_nic1=HOST_NICS0[2],
-            bond_nic2=HOST_NICS0[3]
+            bond=config.BOND[0], bond_nic1=HOST_NICS0[-2],
+            bond_nic2=HOST_NICS0[-1]
         )
         logger.info("Changing the bond mode to mode4")
-        rc, out = ll_hosts.genSNNic(
-            nic=config.BOND[0], network=config.VLAN_NETWORKS[0],
-            slaves=[HOST_NICS0[2], HOST_NICS0[3]], mode="4")
 
-        if not rc:
-            raise NetworkException("Cannot generate network object")
-        logger.info(
-            "Sending Setup Networks request to host %s", HOST_NAME0
-        )
-        ll_hosts.sendSNRequest(
-            positive=True, host=HOST_NAME0,
-            nics=[out["host_nic"]], auto_nics=[HOST_NICS0[0]],
-            check_connectivity=True,
-            connectivity_timeout=config.CONNECT_TIMEOUT, force=False
-        )
+        local_dict = {
+            config.VLAN_NETWORKS[0]: {
+                "nic": config.BOND[0],
+                "slaves": [-2, -1],
+                "mode": "4",
+                "required": "false",
+            }
+        }
+
+        if not hl_networks.createAndAttachNetworkSN(
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0]
+        ):
+            raise NetworkException()
+
         # Checking logical and physical
         helper.check_logical_physical_layer(
             network=config.VLAN_NETWORKS[0],
-            mtu=config.MTU[1], bond=config.BOND[0], bond_nic1=HOST_NICS0[2],
-            bond_nic2=HOST_NICS0[3]
+            mtu=config.MTU[1], bond=config.BOND[0], bond_nic1=HOST_NICS0[-2],
+            bond_nic2=HOST_NICS0[-1]
         )
 
 
@@ -338,7 +329,7 @@ class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
             None: {
                 "nic": config.BOND[0],
                 "mode": "1",
-                "slaves": [2, 3]},
+                "slaves": [-2, -1]},
             config.VLAN_NETWORKS[0]: {
                 "nic": config.BOND[0],
                 "mtu": config.MTU[1],
@@ -364,28 +355,31 @@ class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
         # Checking logical and physical
         helper.check_logical_physical_layer(
             bond=config.BOND[0], network=config.VLAN_NETWORKS[0],
-            mtu=config.MTU[1], bond_nic1=HOST_NICS0[2], bond_nic2=HOST_NICS0[3]
+            mtu=config.MTU[1], bond_nic1=HOST_NICS0[-2],
+            bond_nic2=HOST_NICS0[-1]
         )
-        logger.info("Changing the bond to consist of 3 NICs")
-        rc, out = ll_hosts.genSNNic(
-            nic=config.BOND[0], network=config.VLAN_NETWORKS[0],
-            slaves=[HOST_NICS0[1], HOST_NICS0[2], HOST_NICS0[3]]
-        )
-        if not rc:
-            raise NetworkException("Cannot generate network object")
 
-        logger.info("Sending SN request to %s", HOST_NAME0)
-        ll_hosts.sendSNRequest(
-            positive=True, host=HOST_NAME0,
-            nics=[out["host_nic"]], auto_nics=[HOST_NICS0[0]],
-            check_connectivity=True,
-            connectivity_timeout=config.CONNECT_TIMEOUT, force=False
-        )
+        logger.info("Changing the bond to consist of 3 NICs")
+
+        local_dict = {
+            config.VLAN_NETWORKS[0]: {
+                "nic": config.BOND[0],
+                "slaves": [-3, -2, -1],
+                "required": "false",
+            },
+        }
+
+        if not hl_networks.createAndAttachNetworkSN(
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0]
+        ):
+            raise NetworkException()
 
         # Checking logical and physical
         helper.check_logical_physical_layer(
             bond=config.BOND[0], network=config.VLAN_NETWORKS[0],
-            mtu=config.MTU[1], bond_nic1=HOST_NICS0[2], bond_nic2=HOST_NICS0[3]
+            mtu=config.MTU[1], bond_nic1=HOST_NICS0[-2],
+            bond_nic2=HOST_NICS0[-1]
         )
 
 
@@ -494,22 +488,11 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
         logger.info(
             "Removing network %s from the hosts", config.VLAN_NETWORKS[1]
         )
-        host_idx = 0
+
         for host_name in HOST_NAME0, HOST_NAME1:
-            ll_hosts.sendSNRequest(
-                True, host=host_name, nics=[],
-                auto_nics=[
-                    config.VDS_HOSTS[host_idx].nics[0],
-                    config.VDS_HOSTS[host_idx].nics[1],
-                    "%s.%s" % (
-                        config.VDS_HOSTS[host_idx].nics[1],
-                        config.VLAN_ID[0]
-                    )
-                ],
-                check_connectivity=True, force=False,
-                connectivity_timeout=config.CONNECT_TIMEOUT,
-            )
-            host_idx += 1
+            hl_host_network.remove_networks_from_host(
+                host_name=host_name, networks=[config.VLAN_NETWORKS[1]])
+
         vm_resource = global_helper.get_host_resource(
             ip=config.VM_IP_LIST[0], password=config.VMS_LINUX_PW
         )

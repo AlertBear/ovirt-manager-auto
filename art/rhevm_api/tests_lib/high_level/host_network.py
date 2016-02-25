@@ -87,8 +87,15 @@ def remove_networks_from_host(host_name, networks, nic=None):
     if not attachments:
         return False
 
+    logger.info(
+        "Remove networks %s attachments from host %s", networks, host_name
+    )
     for att in attachments:
         if not ll_host_network.NETWORK_ATTACHMENT_API.delete(att, True):
+            logger.error(
+                "Failed to remove networks %s attachments from host %s",
+                networks, host_name
+            )
             return False
     return True
 
