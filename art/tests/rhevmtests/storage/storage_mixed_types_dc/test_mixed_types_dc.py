@@ -9,9 +9,6 @@ import logging
 
 from utilities.machine import Machine
 from art.unittest_lib import attr, StorageTest as TestCase
-
-from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
-
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.disks as ll_disks
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
@@ -69,43 +66,15 @@ class BaseCaseDCMixed(TestCase):
     installing a host every time
     """
     __test__ = False
-    storages = 'N/A'
 
-    compatibility_version = config.COMP_VERSION
     storagedomains = []
     data_center_name = config.DATA_CENTER_NAME
     cluster_name = config.CLUSTER_NAME
-    new_datacenter_for_ge = False
 
     def setUp(self):
         """
         Add a DC/Cluster with host with the storage domains
         """
-        self.remove_datacenter = False
-        if not config.GOLDEN_ENV or (
-                config.GOLDEN_ENV and self.new_datacenter_for_ge
-        ):
-            if config.GOLDEN_ENV:
-                status, host = ll_hosts.getAnyNonSPMHost(
-                    config.HOSTS, cluster_name=config.CLUSTER_NAME,
-                )
-                self.host = host['hsmHost']
-                self.host_ip = ll_hosts.getHostIP(self.host)
-                ll_hosts.deactivateHost(True, self.host)
-                ll_hosts.removeHost(True, self.host)
-            else:
-                self.host = config.HOSTS[0]
-                self.host_ip = self.host
-
-            self.remove_datacenter = True
-            helpers.build_environment(
-                compatibility_version=self.compatibility_version,
-                storage_domains=self.storagedomains,
-                datacenter_name=self.data_center_name,
-                cluster_name=self.cluster_name,
-                hosts_for_cluster=[self.host_ip],
-            )
-
         for storage_domain_type in ALL_TYPES:
             storage_domain_names = ll_sd.getStorageDomainNamesForType(
                 self.data_center_name, storage_domain_type,
@@ -123,30 +92,22 @@ class BaseCaseDCMixed(TestCase):
         """
         Clean the whole environment
         """
-        if self.remove_datacenter:
-            test_utils.wait_for_tasks(
-                config.VDC, config.VDC_ROOT_PASSWORD, self.data_center_name,
+        if not ll_vms.safely_remove_vms(self.vms_to_remove):
+            logger.error(
+                "Failed to power off and remove vms %s", self.vms_to_remove
             )
-            clean_datacenter(
-                True, self.data_center_name, vdc=config.VDC,
-                vdc_password=config.VDC_ROOT_PASSWORD,
-                formatExpStorage='true')
-
-            if self.new_datacenter_for_ge:
-                ll_hosts.addHost(
-                    True, name=self.host, cluster=config.CLUSTER_NAME,
-                    root_password=config.HOSTS_PW,
-                    address=self.host_ip,
-                )
-                ll_hosts.waitForHostsStates(True, self.host)
-        else:
-            ll_vms.safely_remove_vms(self.vms_to_remove)
-            for vm in self.vms_to_remove_from_export_domain:
-                ll_vms.remove_vm_from_export_domain(
-                    True, vm, self.data_center_name, self.export_domain,
-                )
-            for template in self.templates_to_remove:
-                ll_templates.removeTemplate(True, template)
+            TestCase.test_failed = True
+        for vm in self.vms_to_remove_from_export_domain:
+            if not ll_vms.remove_vm_from_export_domain(
+                True, vm, self.data_center_name, self.export_domain,
+            ):
+                logger.error("Failed to remove vm %sd from export domain", vm)
+                TestCase.test_failed = True
+        for template in self.templates_to_remove:
+            if not ll_templates.removeTemplate(True, template):
+                logger.error("Failed to remove template %s", template)
+                TestCase.test_failed = True
+        TestCase.teardown_exception()
 
 
 class IscsiNfsSD(BaseCaseDCMixed):
@@ -154,37 +115,6 @@ class IscsiNfsSD(BaseCaseDCMixed):
     Base case with ISCSI (master) and NFS domain
     """
     storagedomains = [config.ISCSI_DOMAIN_0, config.NFS_DOMAIN]
-
-
-class IscsiNfsSdVMs(IscsiNfsSD):
-    """
-    Create a vm on each SD
-    """
-    __test__ = False
-
-    iscsi_vm = "iscsi_vm"
-    nfs_vm = "nfs_vm"
-
-    def setUp(self):
-        """
-        * Create a nfs and iscsi SD, and a vm on each SD.
-        """
-        vm_args = VM_ARGS.copy()
-        vm_args['vmName'] = self.vm_name
-
-        super(IscsiNfsSD, self).setUp()
-        vm_args['storageDomainName'] = self.nfs
-        if not storage_helpers.create_vm_or_clone(**vm_args):
-            raise exceptions.VMException(
-                'Unable to create vm %s for test' % self.nfs_vm
-            )
-        vm_args['storageDomainName'] = self.iscsi
-        if not storage_helpers.create_vm_or_clone(**vm_args):
-            raise exceptions.VMException(
-                'Unable to create vm %s for test' % self.iscsi_vm
-            )
-
-        self.vms_to_remove = [self.nfs_vm, self.iscsi_vm]
 
 
 # TODO: doesn't work - need verification when FC is available
@@ -301,11 +231,11 @@ class TestCase4561(IscsiNfsSD):
 
 
 @attr(tier=2)
-class TestCase4562(IscsiNfsSdVMs):
+class TestCase4562(IscsiNfsSD):
     """
     * Create a shared DC
     * Create ISCSI and NFS storage domains
-    * Create 2 VMs
+    * Create VM
     * Attach disks to VM from different storage domains
     * Create a snapshot
     * Clone VM from snapshot
@@ -317,15 +247,29 @@ class TestCase4562(IscsiNfsSdVMs):
         """
         * Add a new disk to each vms on different sd
         """
-        super(TestCase4562, self).setUp()
-
-        nfs_vm_disk2 = "%s_Disk2" % self.nfs_vm
-        iscsi_vm_disk2 = "%s_Disk2" % self.iscsi_vm
-        helpers.add_disk_to_sd(
-            nfs_vm_disk2, self.iscsi, attach_to_vm=self.nfs_vm,
+        self.vm_name = "vm_{0}_{1}".format(
+            self.storage, self.polarion_test_case
         )
+        self.storage_domains = ll_sd.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )
+        super(TestCase4562, self).setUp()
+        vm_args = VM_ARGS.copy()
+        vm_args['vmName'] = self.vm_name
+        vm_args['storageDomainName'] = self.storage_domains[0]
+        if not storage_helpers.create_vm_or_clone(**vm_args):
+            raise exceptions.VMException(
+                'Unable to create vm %s for test' % self.vm_name
+            )
+        self.vms_to_remove = [self.vm_name]
+
+        vm_disk = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
+        target_sd = ll_disks.get_other_storage_domain(
+            disk_name=vm_disk, force_type=False
+        )
+        vm_disk2 = "%s_Disk2_%s" % (self.vm_name, self.polarion_test_case)
         helpers.add_disk_to_sd(
-            iscsi_vm_disk2, self.nfs, attach_to_vm=self.iscsi_vm,
+            vm_disk2, target_sd, attach_to_vm=self.vm_name,
         )
 
     @polarion("RHEVM3-4562")
@@ -352,13 +296,11 @@ class TestCase4562(IscsiNfsSdVMs):
                 get_sd_id(disks[0]), get_sd_id(disks[1]),
                 "Disks are not in different storage domains"
             )
-
             logger.info("Starting up vm %s to make sure is operational")
             assert ll_vms.startVm(
                 True, cloned_vm_name, config.VM_UP)
 
-        add_snapshot_and_clone(self.nfs_vm)
-        add_snapshot_and_clone(self.iscsi_vm)
+        add_snapshot_and_clone(self.vm_name)
 
 
 @attr(tier=2)
@@ -392,6 +334,7 @@ class TestCase4563(IscsiNfsSD):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % self.vm_name
             )
+        self.vms_to_remove.append(self.vm_name)
 
     @polarion("RHEVM3-4563")
     def test_copy_template(self):
@@ -498,6 +441,7 @@ class TestCase4565(IscsiNfsSD):
                                        snap_name, ensure_vm_down=True)
         assert ll_vms.undo_snapshot_preview(True, self.vm_name,
                                             ensure_vm_down=True)
+        ll_vms.wait_for_vm_snapshots(self.vm_name, [config.SNAPSHOT_OK])
 
         logger.info("Restore a snapshot")
         assert ll_vms.restore_snapshot(
@@ -690,12 +634,10 @@ class TestCase4554(BaseCaseDCMixed):
         ll_disks.wait_for_disks_status(
             [self.gluster_disk_name, self.nfs_disk_name],
         )
-        if not self.remove_datacenter:
-            ll_disks.deleteDisk(True, self.gluster_disk_name)
-            ll_disks.deleteDisk(True, self.nfs_disk_name)
-            ll_disks.waitForDisksGone(
-                True, [self.gluster_disk_name, self.nfs_disk_name],
-            )
+        for disk in [self.nfs_disk_name, self.gluster_disk_name]:
+            if not ll_disks.deleteDisk(True, disk):
+                logger.error("Failed to delete disk %s", disk)
+                TestCase.test_failed = True
 
         super(TestCase4554, self).tearDown()
 
