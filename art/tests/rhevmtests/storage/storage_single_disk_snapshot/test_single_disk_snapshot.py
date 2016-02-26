@@ -320,7 +320,6 @@ class TestCase6023(BasicEnvironment):
                 self.vm_name, [config.SNAPSHOT_OK]
             )
         super(TestCase6023, self).tearDown()
-        BaseTestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -401,7 +400,6 @@ class TestCase6024(BasicEnvironment):
                 self.vm_name, [config.SNAPSHOT_OK]
             )
         super(TestCase6024, self).tearDown()
-        BaseTestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -475,7 +473,6 @@ class TestCase6026(BasicEnvironment):
                 self.vm_name, [config.SNAPSHOT_OK]
             )
         super(TestCase6026, self).tearDown()
-        BaseTestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -551,7 +548,6 @@ class TestCase6027(BasicEnvironment):
                 self.vm_name, [config.SNAPSHOT_OK]
             )
         super(TestCase6027, self).tearDown()
-        BaseTestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -595,7 +591,6 @@ class TestCase6013(BasicEnvironment):
             BaseTestCase.test_failed = True
             logger.error("Failed to power off vm %s", self.vm_name)
         super(TestCase6013, self).tearDown()
-        BaseTestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -675,7 +670,6 @@ class TestCase6030(BasicEnvironment):
                 self.vm_name, [config.SNAPSHOT_OK]
             )
         super(TestCase6030, self).tearDown()
-        BaseTestCase.teardown_exception()
 
 
 @attr(tier=4)
@@ -817,7 +811,6 @@ class TestCase6032(BasicEnvironment):
                 self.vm_name, [config.SNAPSHOT_OK]
             )
         super(TestCase6032, self).tearDown()
-        BaseTestCase.teardown_exception()
 
 
 @attr(tier=2)
