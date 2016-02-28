@@ -226,21 +226,25 @@ def _prepareClusterNetworkObj(**kwargs):
     return net
 
 
-def getClusterNetwork(cluster, network):
+def get_cluster_network(cluster, network):
     """
     Find a network by cluster (along with the network properties that are
     specific to the cluster).
-    **Parameters**:
-        *  *cluster* - Name of the cluster in which the network is located.
-        *  *network* - Name of the network.
-    **Return**: Returns the network object if it's found or raises
-                apis_exceptions.EntityNotFound exception if it's not.
+
+    Args:
+        cluster (str): Name of the cluster in which the network is located.
+        network (str): Name of the network.
+
+    Returns:
+        Network: Network object
+
+    Raises:
+        EntityNotFound: If network was not found
     """
     cluster_obj = CL_API.find(cluster)
-    return CL_API.getElemFromElemColl(cluster_obj,
-                                      network,
-                                      'networks',
-                                      'network')
+    return CL_API.getElemFromElemColl(
+        cluster_obj, network, "networks", "network"
+    )
 
 
 def get_cluster_networks(cluster, href=True):
@@ -287,25 +291,33 @@ def addNetworkToCluster(positive, network, cluster, **kwargs):
 
 
 @is_action()
-def updateClusterNetwork(positive, cluster, network, **kwargs):
+def update_cluster_network(positive, cluster, network, **kwargs):
     """
-    Description: update network to cluster
-    Author: atal
-    Parameters:
-       * network - name of a network that should be attached
-       * cluster - name of a cluster to attach to
-       * required - boolean, decide if network should be required by cluster..
-       * usages - a string contain list of usages separated by
-       commas 'VM,DISPLAY'. should contain all usages every update.
-       a missing usage will be deleted!
-       * display - deprecated. boolean, a spice display network.
-    Return: status (True if network was attached properly, False otherwise)
-    """
+    Update network on cluster
 
-    net = getClusterNetwork(cluster, network)
+    Args:
+        positive (bool): Expected results
+        cluster (str): Cluster name
+        network (str): Network name
+
+    Keyword Arguments:
+        required (bool): Set network as required
+        usages (str): usages separated by commas 'VM,DISPLAY'. should
+            contain all usages every update
+
+    Returns:
+        bool: True if network was attached properly, False otherwise
+    """
+    log_info, log_error = ll.general.get_log_msg(
+        action="Update", obj_type="network", obj_name=network,
+        positive=positive, extra_txt="on cluster %s" % cluster, **kwargs
+    )
+    net = get_cluster_network(cluster, network)
+    logger.info(log_info)
     net_update = _prepareClusterNetworkObj(**kwargs)
-    res, status = NET_API.update(net, net_update, positive)
-
+    status = NET_API.update(net, net_update, positive)[1]
+    if not status:
+        logger.error(log_error)
     return status
 
 
@@ -320,7 +332,7 @@ def removeNetworkFromCluster(positive, network, cluster):
     Return: status (True if network was detached properly, False otherwise)
     """
 
-    net_obj = getClusterNetwork(cluster, network)
+    net_obj = get_cluster_network(cluster, network)
 
     return NET_API.delete(net_obj, positive)
 
@@ -335,7 +347,7 @@ def isNetworkRequired(network, cluster):
         * cluster = cluster name
     return: True if network is required, False otherwise.
     """
-    net_obj = getClusterNetwork(cluster, network)
+    net_obj = get_cluster_network(cluster, network)
 
     return net_obj.get_required()
 
@@ -1151,7 +1163,7 @@ def get_dc_network_by_cluster(cluster, network):
     :return: DC network object
     """
     cluster_obj = CL_API.find(cluster)
-    cluster_net = getClusterNetwork(cluster, network)
+    cluster_net = get_cluster_network(cluster, network)
     dc_id = cluster_obj.get_data_center().get_id()
     dc_name = DC_API.find(dc_id, attribute='id').get_name()
     dc_net = get_network_in_datacenter(network, dc_name)
@@ -1225,7 +1237,7 @@ def check_network_usage(cluster_name, network, *attrs):
     :return: True/False
     :rtype: bool
     """
-    net_obj = getClusterNetwork(cluster_name, network)
+    net_obj = get_cluster_network(cluster_name, network)
     for attr in attrs:
         if attr not in net_obj.get_usages().get_usage():
             return False

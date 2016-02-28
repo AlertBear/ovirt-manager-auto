@@ -267,6 +267,7 @@ def compareElements(expElm, actElm, logger, root, equal=True,
                                 and x in VALS_IGNORE_DICT[attr], attrActVal)
                             attrActVal = list(set(attrActVal) -
                                               set(ignoreVals))
+                            attrActVal.sort()
 
                 if (re.search('boolean', attrType) or
                         isinstance(attrActVal, bool)):

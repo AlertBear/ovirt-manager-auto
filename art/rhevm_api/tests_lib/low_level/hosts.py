@@ -34,7 +34,7 @@ from art.test_handler import settings
 
 from art.rhevm_api.utils.test_utils import get_api, split, getStat, \
     searchElement, searchForObj, stopVdsmd, startVdsmd
-from art.rhevm_api.tests_lib.low_level.networks import getClusterNetwork, \
+from art.rhevm_api.tests_lib.low_level.networks import get_cluster_network, \
     create_properties
 from art.rhevm_api.tests_lib.low_level.datacenters import \
     waitForDataCenterState
@@ -941,7 +941,7 @@ def attachHostNic(positive, host, nic, network):
     cluster = CL_API.find(host_obj.cluster.id, 'id').get_name()
 
     host_nic = get_host_nic(host, nic)
-    cl_net = getClusterNetwork(cluster, network)
+    cl_net = get_cluster_network(cluster, network)
 
     return bool(
         HOST_API.syncAction(host_nic, "attach", positive, network=cl_net)

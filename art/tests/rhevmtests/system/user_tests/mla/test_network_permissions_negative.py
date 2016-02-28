@@ -232,11 +232,11 @@ class NegativeNetworkPermissions231918(NetworkingNegative):
         assert networks.addNetworkToCluster(
             True, config.NETWORK_NAME2, config.CLUSTER_NAME[0]
         )
-        assert networks.updateClusterNetwork(
+        assert networks.update_cluster_network(
             True, config.CLUSTER_NAME[0],
             config.NETWORK_NAME1, required=True
         )
-        assert networks.updateClusterNetwork(
+        assert networks.update_cluster_network(
             True, config.CLUSTER_NAME[0],
             config.NETWORK_NAME2, required=False
         )
@@ -245,11 +245,11 @@ class NegativeNetworkPermissions231918(NetworkingNegative):
     def test_networkRequiredToNonRequiredAndViceVersa(self):
         """ Network required to non-required and vice versa """
         loginAsUser(config.USER_NAME, filter_=False)
-        assert networks.updateClusterNetwork(
+        assert networks.update_cluster_network(
             False, config.CLUSTER_NAME[0],
             config.NETWORK_NAME1, required=False
         )
-        assert networks.updateClusterNetwork(
+        assert networks.update_cluster_network(
             False, config.CLUSTER_NAME[0],
             config.NETWORK_NAME1, required=True
         )

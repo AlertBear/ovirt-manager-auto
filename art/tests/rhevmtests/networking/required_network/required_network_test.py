@@ -18,7 +18,7 @@ from art.rhevm_api.tests_lib.low_level.hosts import (
     ifdownNic, waitForHostsStates, ifupNic, check_host_nic_status,
 )
 from art.rhevm_api.tests_lib.low_level.networks import (
-    isNetworkRequired, updateClusterNetwork
+    isNetworkRequired, update_cluster_network
 )
 
 logger = logging.getLogger("Required_Network_Cases")
@@ -97,7 +97,7 @@ class TestRequiredNetwork01(TearDownRequiredNetwork):
             )
 
         logger.info("Editing %s to be non-required", config.MGMT_BRIDGE)
-        if updateClusterNetwork(
+        if update_cluster_network(
             positive=True, cluster=config.CLUSTER_NAME[0],
             network=config.MGMT_BRIDGE, required="false"
         ):

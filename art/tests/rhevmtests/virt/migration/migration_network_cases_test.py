@@ -651,7 +651,7 @@ class TestMigrationCase11(TestMigrationCaseBase):
             "Replace migration from the network %s with display network",
             config.NETWORKS[0]
         )
-        if not ll_networks.updateClusterNetwork(
+        if not ll_networks.update_cluster_network(
             True, cluster=config.CLUSTER_NAME[0], network=config.NETWORKS[0],
             usages="display"
         ):

@@ -299,7 +299,7 @@ def update_cluster_mgmt(cl):
     :raises: Network exception
     """
     logger.info("Update MGMT network to be %s", c.net1)
-    if not ll_networks.updateClusterNetwork(
+    if not ll_networks.update_cluster_network(
         positive=True, cluster=cl,
         network=c.NETWORKS[0], usages="management"
     ):
@@ -377,7 +377,7 @@ def update_mgmt_net(net=c.net1, cl=c.EXTRA_CLUSTER_0, positive=True):
     :raises: Network exception
     """
     logger.info("Update MGMT network on Cluster %s to be %s", cl, net)
-    if not ll_networks.updateClusterNetwork(
+    if not ll_networks.update_cluster_network(
         positive=positive, cluster=cl,
         network=net, usages=c.MGMT
     ):

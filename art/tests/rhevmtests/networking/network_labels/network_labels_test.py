@@ -1635,7 +1635,7 @@ class NetLabels13(TestLabelTestCaseBase):
             conf.NETS[13][0], conf.CLUSTER_NAME[0]
         )
         try:
-            ll_networks.getClusterNetwork(
+            ll_networks.get_cluster_network(
                 conf.CLUSTER_NAME[0], conf.NETS[13][0]
             )
             raise conf.NET_EXCEPTION(

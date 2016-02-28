@@ -185,17 +185,17 @@ class TestSwitching(NetworkingPossitive):
             )
 
     def _test_switching_display_and_required(self, **kwargs):
-        assert networks.updateClusterNetwork(
+        assert networks.update_cluster_network(
             True, config.CLUSTER_NAME[0], config.NETWORK_NAME1, **kwargs
         )
         for uName in [config.USER_NAME, config.USER_NAME2]:
             loginAsUser(userName=uName, filter_=False)
             self._inverseParams(kwargs)
-            assert networks.updateClusterNetwork(
+            assert networks.update_cluster_network(
                 True, config.CLUSTER_NAME[0], config.NETWORK_NAME1, **kwargs
             )
             self._inverseParams(kwargs)
-            assert networks.updateClusterNetwork(
+            assert networks.update_cluster_network(
                 True, config.CLUSTER_NAME[0], config.NETWORK_NAME1, **kwargs
             )
 

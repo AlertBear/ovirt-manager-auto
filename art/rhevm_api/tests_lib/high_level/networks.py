@@ -73,7 +73,7 @@ def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
      return: True and value of the given filed, otherwise False and None
     """
     try:
-        netObj = ll_networks.getClusterNetwork(cluster, network)
+        netObj = ll_networks.get_cluster_network(cluster, network)
     except apis_exceptions.EntityNotFound:
         return False, {'value': None}
 

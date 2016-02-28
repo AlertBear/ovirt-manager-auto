@@ -1182,24 +1182,29 @@ def build_list_files_mtu(
 @is_action()
 def check_configured_mtu(vds_resource, mtu, inter_or_net):
     """
-    Function checks if the configured MTU on an interface or network match
+    Checks if the configured MTU on an interface or network match
     provided MTU using ip command
 
-    :param vds_resource: VDS resource
-    :type vds_resource: resources.VDS
-    :param mtu: expected MTU for the network/interface
-    :type mtu: string
-    :param inter_or_net: interface name or network name
-    :type inter_or_net: string
-    :return: True if MTU on host is equal to "mtu", False otherwise.
-    :rtype: bool
+    Args:
+        vds_resource (VDS): VDS resource
+        mtu (str): expected MTU for the network/interface
+        inter_or_net (str): interface name or network name
+
+    Returns:
+        bool: True if MTU on host is equal to "mtu", False otherwise.
     """
+    logger.info(
+        "Checking if %s is configured correctly with MTU %s", inter_or_net, mtu
+    )
     cmd = ["ip", "link", "list", inter_or_net, "|", "grep", mtu]
     rc, out, _ = vds_resource.run_command(cmd)
     if rc:
         return False
+
     if out.find(mtu) == -1:
-        logger.error("MTU is not configured correctly: %s", out)
+        logger.error(
+            "MTU is not configured correctly on %s: %s", inter_or_net, out
+        )
         return False
     return True
 

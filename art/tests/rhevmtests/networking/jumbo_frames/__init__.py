@@ -3,100 +3,80 @@
 
 """
 Jumbo Frames init
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/Network
+/3_1_Network_JumboFrame
 """
 
 import logging
-import rhevmtests.networking as networking
-import rhevmtests.networking.config as config
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import config as conf
+from rhevmtests import networking
+import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import rhevmtests.networking.helper as net_help
-import art.test_handler.exceptions as exceptions
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 logger = logging.getLogger("Jumbo_frame_Init")
 
 
 def setup_package():
     """
-    Prepare environment
-    Running cleanup an start vms
+    Start two VMs on separated hosts
+    Get VMs IPs
     """
-
+    conf.HOST_0_NAME = conf.HOSTS[0]
+    conf.HOST_1_NAME = conf.HOSTS[1]
+    conf.VDS_0_HOST = conf.VDS_HOSTS[0]
+    conf.VDS_1_HOST = conf.VDS_HOSTS[1]
+    conf.HOST_0_NICS = conf.VDS_0_HOST.nics
+    conf.HOST_1_NICS = conf.VDS_1_HOST.nics
+    vms_list = [conf.VM_0, conf.VM_1]
+    hosts_list = [conf.HOST_0_NAME, conf.HOST_1_NAME]
     networking.network_cleanup()
 
-    for i in range(2):
-        logger.info(
-            "Starting up VM %s on host %s", config.VM_NAME[i],
-            config.HOSTS[i]
-        )
-        if not net_help.run_vm_once_specific_host(
-                vm=config.VM_NAME[i], host=config.HOSTS[i]
+    network_helper.prepare_networks_on_setup(
+        networks_dict=conf.NETS_DICT, dc=conf.DC_0, cluster=conf.CL_0
+    )
+    for vm, host in zip(vms_list, hosts_list):
+        if not network_helper.run_vm_once_specific_host(
+            vm=vm, host=host, wait_for_up_status=True
         ):
-            raise exceptions.NetworkException(
-                "Cannot start VM %s on host %s" % (
-                    config.VM_NAME[i], config.HOSTS[i]
-                )
-            )
-
-    logger.info("Getting VMs IPs")
-    for i in range(2):
-        config.VM_IP_LIST.append(
-            ll_vms.waitForIP(config.VM_NAME[i])[1]["ip"]
-        )
+            raise conf.NET_EXCEPTION()
 
 
 def teardown_package():
     """
-    Cleans the environment
+    Set all hosts interfaces with MTU 1500
+    Clean hosts interfaces
+    Stop VMs
+    Remove networks from engine
     """
-    local_dict = {
-        config.NETWORKS[0]: {
-            "mtu": config.MTU[3],
-            "nic": 1,
-            "required": "false"
+    network_dict = {
+        "1": {
+            "network": "clear_net_1",
+            "nic": None
         },
-        config.NETWORKS[1]: {
-            "mtu": config.MTU[3],
-            "nic": 2,
-            "required": "false"
+        "2": {
+            "network": "clear_net_1",
+            "nic": None
         },
-        config.NETWORKS[2]: {
-            "mtu": config.MTU[3],
-            "nic": 3,
-            "required": "false"
+        "3": {
+            "network": "clear_net_1",
+            "nic": None
         }
     }
 
-    logger.info(
-        "Setting all hosts NICs to MTU: %s", config.MTU[3]
-    )
-    if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[:2], network_dict=local_dict, auto_nics=[0]
+    for host, nics in zip(
+        [conf.HOST_0_NAME, conf.HOST_1_NAME],
+        [conf.HOST_0_NICS, conf.HOST_1_NICS]
     ):
-        logger.error(
-            "Cannot set MTU %s on %s", config.MTU[3], config.VDS_HOSTS[:2]
-        )
+        network_dict["1"]["nic"] = nics[1]
+        network_dict["2"]["nic"] = nics[2]
+        network_dict["3"]["nic"] = nics[3]
+        hl_host_network.setup_networks(host_name=host, **network_dict)
+        hl_host_network.clean_host_interfaces(host_name=host)
 
-    logger.info("Cleaning hosts interface")
-    if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[:2], network_dict={}, auto_nics=[0]
-    ):
-        logger.error("Failed to Clean hosts interfaces")
-
-    logger.info(
-        "Stopping VMs: %s, %s",
-        config.VM_NAME[0], config.VM_NAME[1]
+    ll_vms.stopVms(vms=[conf.VM_0, conf.VM_1])
+    hl_networks.remove_net_from_setup(
+        host=conf.HOSTS[:2], data_center=conf.DC_0,
+        mgmt_network=conf.MGMT_BRIDGE, all_net=True
     )
-    if not ll_vms.stopVms(vms=[config.VM_NAME[0], config.VM_NAME[1]]):
-        logger.error(
-            "Failed to stop VMs: %s %s",
-            config.VM_NAME[0], config.VM_NAME[1]
-        )
-    if not hl_networks.remove_net_from_setup(
-            host=config.HOSTS[:2],
-            data_center=config.DC_NAME[0], mgmt_network=config.MGMT_BRIDGE,
-            all_net=True
-    ):
-        logger.error("Cannot remove networks from setup")
