@@ -10,18 +10,18 @@ from art.rhevm_api.utils.log_listener import watch_logs
 from art.unittest_lib.common import StorageTest as TestCase
 from art.unittest_lib import attr
 from art.rhevm_api.utils import test_utils
-from utilities.machine import Machine
-from art.rhevm_api.tests_lib.high_level import datacenters
-from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
-from art.rhevm_api.tests_lib.low_level import vms as ll_vms
-from art.rhevm_api.tests_lib.low_level import templates
-from art.rhevm_api.tests_lib.low_level import storagedomains
-from art.rhevm_api.tests_lib.low_level import disks as ll_disks
-from art.rhevm_api.tests_lib.low_level import hosts
-
+from art.rhevm_api.tests_lib.low_level import (
+    datacenters as ll_dc,
+    disks as ll_disks,
+    hosts as ll_hosts,
+    storagedomains as ll_sds,
+    templates as ll_templates,
+    vms as ll_vms,
+)
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-import art.test_handler.exceptions as errors
-from rhevmtests.storage.helpers import create_vm_or_clone
+import art.test_handler.exceptions as exceptions
+from rhevmtests.storage import helpers as storage_helpers
+from utilities.machine import Machine
 
 logger = logging.getLogger(__name__)
 
@@ -31,11 +31,9 @@ ENUMS = config.ENUMS
 TIMEOUT_10_MINUTES = 600
 SLEEP_TIME = 10
 
-STORAGE_DOMAIN_API = test_utils.get_api('storage_domain', 'storagedomains')
 VDSM_RESPAWN_FILE = '/usr/share/vdsm/respawn'
 LINUX = test_utils.LINUX
 
-VDSM_LOG_FILE = "/var/log/vdsm/vdsm.log"
 IO_ERROR_TIMEOUT = 10
 IO_ERROR_READ_RETRIES = 10
 IO_ERROR_IN_VDSM_LOG_REGEX = "new extend msg created"
@@ -56,28 +54,6 @@ CLI_CMD_GENERATE_BIG_FILE = 'fallocate -l 2G sample.txt'
 GENERATE_BIG_FILE_TIMEOUT = 60 * 5
 
 
-def setup_module():
-    """ creates datacenter, adds hosts, clusters, storages according to
-    the config file
-    """
-    if not config.GOLDEN_ENV:
-        datacenters.build_setup(
-            config=config.PARAMETERS, storage=config.PARAMETERS,
-            storage_type=config.STORAGE_TYPE)
-
-
-def teardown_module():
-    """ removes created datacenter, storages etc.
-    """
-    if not config.GOLDEN_ENV:
-        datacenters.clean_datacenter(
-            True,
-            config.DATA_CENTER_NAME,
-            vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD
-        )
-
-
 class EnvironmentWithTwoHosts(TestCase):
     """Setup/teardown for an environment with 2 hosts as part of a cluster"""
     __test__ = False
@@ -94,22 +70,22 @@ class EnvironmentWithTwoHosts(TestCase):
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
         )
         for host in config.HOSTS:
-            if hosts.getHostCluster(host) == config.CLUSTER_NAME:
-                if hosts.isHostUp(True, host):
+            if ll_hosts.getHostCluster(host) == config.CLUSTER_NAME:
+                if ll_hosts.isHostUp(True, host):
                     if cls.num_active_hosts > 0:
                         cls.num_active_hosts -= 1
                     else:
-                        hosts.deactivateHost(True, host)
+                        ll_hosts.deactivateHost(True, host)
             else:
-                hosts.deactivateHost(True, host)
+                ll_hosts.deactivateHost(True, host)
 
-        hosts.waitForSPM(
+        ll_hosts.waitForSPM(
             config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES, SLEEP_TIME)
         logger.info("Getting SPM host")
-        cls.spm_host = hosts.getSPMHost(config.HOSTS)
+        cls.spm_host = ll_hosts.getSPMHost(config.HOSTS)
 
         logger.info("Getting HSM host")
-        cls.hsm_host = hosts.getAnyNonSPMHost(
+        cls.hsm_host = ll_hosts.getAnyNonSPMHost(
             config.HOSTS,
             expected_states=[config.HOST_UP],
             cluster_name=config.CLUSTER_NAME,
@@ -121,9 +97,9 @@ class EnvironmentWithTwoHosts(TestCase):
     def teardown_class(cls):
         """Activate all the hosts"""
         for host in config.HOSTS:
-            if not hosts.isHostUp(True, host):
+            if not ll_hosts.isHostUp(True, host):
                 logger.info("Activating host %s", host)
-                hosts.activateHost(True, host)
+                ll_hosts.activateHost(True, host)
 
 
 @attr(tier=2)
@@ -136,7 +112,6 @@ class TestCase11909(TestCase):
     """
     polarion_test_case = '11909'
     expected_disk_number = 2
-    vm_name = "vm_%s" % polarion_test_case
     bz_id = '1066834'
     __test__ = True
 
@@ -144,13 +119,21 @@ class TestCase11909(TestCase):
         """
         Create a vm with a bootable disk
         """
-        self.storage_domain = storagedomains.getStorageDomainNamesForType(
+        self.storage_domain = ll_sds.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage,
         )[0]
-        assert create_vm_or_clone(
-            True, self.vm_name, storageDomainName=self.storage_domain,
-            installation=False
+        self.vm_name = self.vm_name_base = self.create_unique_object_name(
+            config.OBJECT_TYPE_VM
         )
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = self.storage_domain
+        vm_args['installation'] = False
+        vm_args['vmName'] = self.vm_name
+
+        if not storage_helpers.create_vm_or_clone(**vm_args):
+            raise exceptions.VMException(
+                'Unable to create vm %s for test' % self.vm_name
+            )
 
     @polarion("RHEVM3-11909")
     def test_add_multiple_bootable_disks(self):
@@ -176,11 +159,10 @@ class TestCase11909(TestCase):
         logger.info("Adding a second bootable disk to vm %s should fail",
                     self.vm_name)
         self.bootable_disk = "bootable_disk_%s" % self.bz_id
-        self.assertTrue(ll_vms.addDisk(False, self.vm_name, GB, wait=True,
-                                       alias=self.bootable_disk,
-                                       storagedomain=self.storage_domain,
-                                       bootable=True),
-                        "Shouldn't be possible to add a second bootable disk")
+        self.assertTrue(ll_vms.addDisk(
+            False, self.vm_name, GB, wait=True, alias=self.bootable_disk,
+            storagedomain=self.storage_domain, bootable=True
+        ), "Shouldn't be possible to add a second bootable disk")
 
     def tearDown(self):
         """
@@ -193,7 +175,7 @@ class TestCase11909(TestCase):
         assert ll_vms.removeVm(True, self.vm_name)
 
 
-@attr(tier=2)
+@attr(tier=4)
 class TestCase11630(EnvironmentWithTwoHosts):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=969343
@@ -208,53 +190,50 @@ class TestCase11630(EnvironmentWithTwoHosts):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Bug_Coverage
     """
-    # TODO: Due to BZ1210771 this test case couldn't be fully verified (as in
-    # is sure to PASS after the bz is fixed), so marking it as False until it
-    # can be fully verified.
-    __test__ = False
+    __test__ = True
     polarion_test_case = '11630'
     vm_name_base = "vm_%s" % polarion_test_case
-    num_of_vms = 6
+    num_of_vms = 2
     vm_names = []
     vm_ips = []
-    bz = {'1210771': {'engine': None, 'version': ["3.5", "3.6"]}}
 
     def setUp(self):
         """
-        create 6 VMs
+        create 2 VMs
         """
         self.machine_rebooted = None
         self.vm_names = []
         self.vm_ips = []
         self.original_perms = None
-        self.sd = storagedomains.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage)[0]
-        self.spm_host = hosts.getSPMHost(config.HOSTS)
-        self.spm_host_ip = hosts.getHostIP(self.spm_host)
+        self.sd = ll_sds.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )[0]
+        self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
+        self.spm_host_ip = ll_hosts.getHostIP(self.spm_host)
         self.spm_admin = config.HOSTS_USER
         self.spm_password = config.HOSTS_PW
 
-        args = {
-            "highly_available": True,
-            "placement_host": self.spm_host,
-            "storageDomainName": self.sd,
-            "start": 'true',
-        }
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = self.sd
+        vm_args['highly_available'] = True
+        vm_args['placement_host'] = self.spm_host
+        vm_args['start'] = 'true'
 
         logger.info("Create VMs")
         for i in range(self.num_of_vms):
             name = "%s_%s" % (self.vm_name_base, i)
             self.vm_names.append(name)
-            args["vmName"] = name
-            if not create_vm_or_clone(True, **args):
+            vm_args["vmName"] = name
+            if not storage_helpers.create_vm_or_clone(True, **vm_args):
                 logger.error("Error creating vm %s", name)
 
         for name in self.vm_names:
             self.vm_ips.append(ll_vms.waitForIP(name, timeout=30)[1]['ip'])
 
     def _shutdown_machine(self, ip):
-        machine = test_utils.Machine(ip, config.VMS_LINUX_USER,
-                                     config.VMS_LINUX_PW).util(LINUX)
+        machine = test_utils.Machine(
+            ip, config.VMS_LINUX_USER, config.VMS_LINUX_PW
+        ).util(LINUX)
         machine.shutdown()
 
     @polarion("RHEVM3-11630")
@@ -283,7 +262,7 @@ class TestCase11630(EnvironmentWithTwoHosts):
         assert rc
 
         logger.info("Waiting for host being non responsive")
-        hosts.waitForHostsStates(
+        ll_hosts.waitForHostsStates(
             True, self.spm_host, ENUMS['search_host_state_non_responsive'],
             timeout=TIMEOUT_10_MINUTES,
         )
@@ -295,7 +274,7 @@ class TestCase11630(EnvironmentWithTwoHosts):
         )
 
         logger.info("Waiting for storage domain state")
-        storagedomains.waitForStorageDomainStatus(
+        ll_sds.waitForStorageDomainStatus(
             True, config.DATA_CENTER_NAME, self.sd,
             ENUMS['storage_domain_state_unknown'], timeOut=900,
         )
@@ -313,10 +292,10 @@ class TestCase11630(EnvironmentWithTwoHosts):
             True, self.spm_host_ip, self.spm_admin, self.spm_password, LINUX)
 
         logger.info("Wait for hosts being up")
-        assert hosts.waitForHostsStates(True, [self.spm_host])
+        assert ll_hosts.waitForHostsStates(True, [self.spm_host])
 
         logger.info("Wait for SPM")
-        assert hosts.waitForSPM(
+        assert ll_hosts.waitForSPM(
             config.DATA_CENTER_NAME, 2 * TIMEOUT_10_MINUTES, SLEEP_TIME,
         )
 
@@ -340,17 +319,24 @@ class TestCase11630(EnvironmentWithTwoHosts):
             )
 
             logger.info("Wait for the host to come up")
-            if not hosts.waitForHostsStates(True, [self.spm_host]):
+            if not ll_hosts.waitForHostsStates(True, [self.spm_host]):
                 logger.error("Host %s didn't came back up", self.spm_host)
 
         logger.info("Make sure the Data Center is up before cleaning up")
-        if not hosts.waitForSPM(config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES,
-                                SLEEP_TIME):
-            logger.error("Datacenter %s didn't came back up",
-                         config.DATA_CENTER_NAME)
-
-        ll_vms.stop_vms_safely(self.vm_names)
-        ll_vms.removeVms(True, self.vm_names)
+        if not ll_hosts.waitForSPM(
+            config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES, SLEEP_TIME
+        ):
+            logger.error(
+                "Datacenter %s didn't came back up", config.DATA_CENTER_NAME
+            )
+        if not ll_vms.safely_remove_vms(self.vm_names):
+            logger.error(
+                "Failed to power off and remove vms %s", ', '.join(
+                    self.vm_names
+                )
+            )
+            TestCase.test_failed = True
+        TestCase.teardown_exception()
 
 
 @attr(tier=4)
@@ -363,32 +349,39 @@ class TestCase11907(TestCase):
     __test__ = True
     polarion_test_case = '11907'
 
-    vm_name = "base_vm"
     vm_desc = "VM for creating template"
-    template_name = "template_from_%s" % vm_name
     vm_from_template = "vm_from_template"
 
     def setUp(self):
         """Create vm for test"""
         self.test_failed = False
-        self.storage_domain = storagedomains.getStorageDomainNamesForType(
+        # Templates are limited to only 40 characters
+        self.template_name = self.create_unique_object_name(
+            config.OBJECT_TYPE_TEMPLATE
+        )[:40]
+        self.storage_domain = ll_sds.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage,
         )[0]
-        if not create_vm_or_clone(
-            True, self.vm_name, self.vm_desc,
-            diskInterface=config.INTERFACE_VIRTIO,
-            storageDomainName=self.storage_domain
-        ):
-            raise errors.VMException("Failed to create vm %s" % self.vm_name)
+        self.vm_name = self.vm_name_base = self.create_unique_object_name(
+            config.OBJECT_TYPE_VM
+        )
+        vm_args = config.create_vm_args.copy()
+        vm_args['vmName'] = self.vm_name
+        vm_args['storageDomainName'] = self.storage_domain
+        vm_args['vmDescription'] = self.vm_desc
+        vm_args['diskInterface'] = config.INTERFACE_VIRTIO
+        if not storage_helpers.create_vm_or_clone(**vm_args):
+            raise exceptions.VMException(
+                "Failed to create vm %s" % self.vm_name
+            )
         logger.info("Successfully created VM.")
 
     def _create_template(self):
         logger.info("Creating new template")
-        self.assertTrue(templates.createTemplate(positive=True,
-                                                 vm=self.vm_name,
-                                                 name=self.template_name,
-                                                 wait=False),
-                        "Failed to create template from vm %s" % self.vm_name)
+        self.assertTrue(ll_templates.createTemplate(
+            positive=True, vm=self.vm_name, name=self.template_name,
+            wait=False
+        ), "Failed to create template from vm %s" % self.vm_name)
         logger.info("Successfully created template")
 
     @polarion("RHEVM3-11907")
@@ -403,8 +396,9 @@ class TestCase11907(TestCase):
         self.assertTrue(
             ll_vms.waitForVMState(
                 self.vm_name,
-                state=config.VM_LOCK_STATE),
-            "image status won't change to lock")
+                state=config.VM_LOCK_STATE
+            ), "Image status won't change to lock"
+        )
 
         test_utils.restart_engine(config.ENGINE, 5, 75)
         logger.info("Successfully restarted ovirt-engine")
@@ -412,7 +406,8 @@ class TestCase11907(TestCase):
         # Wait until VM is down
         self.assertTrue(
             ll_vms.waitForVMState(self.vm_name, state=config.VM_DOWN_STATE),
-            "image status won't change to down")
+            "image status won't change to down"
+        )
 
         logger.info("starting vm %s", self.vm_name)
         self.assertTrue(ll_vms.startVm(True, self.vm_name),
@@ -422,8 +417,10 @@ class TestCase11907(TestCase):
         logger.info("wait for template %s - state to be 'ok'",
                     self.template_name)
 
-        self.assertTrue(templates.waitForTemplatesStates(self.template_name),
-                        "template %s state is not ok" % self.template_name)
+        self.assertTrue(
+            ll_templates.waitForTemplatesStates(self.template_name),
+            "template %s state is not ok" % self.template_name
+        )
         logger.info("template %s - state is 'ok'",
                     self.template_name)
 
@@ -456,12 +453,13 @@ class TestCase11907(TestCase):
                 self.test_failed = True
 
         logger.info("Removing template %s", self.template_name)
-        if not templates.removeTemplate(positive=True,
-                                        template=self.template_name):
+        if not ll_templates.removeTemplate(
+            positive=True, template=self.template_name
+        ):
             logger.error("Failed to remove template %s", self.template_name)
             self.test_failed = True
         if self.test_failed:
-            raise errors.TestException("Test failed during tearDown")
+            raise exceptions.TestException("Test failed during tearDown")
 
 
 @attr(tier=2)
@@ -477,7 +475,6 @@ class TestCase11956(EnvironmentWithTwoHosts):
     """
     __test__ = True
     polarion_test_case = '11956'
-    vm_name_base = "vm_%s" % polarion_test_case
     # Bugzilla history:
     # 1248035
     # 1254582: Failed to created vm pinned to specific host
@@ -486,14 +483,23 @@ class TestCase11956(EnvironmentWithTwoHosts):
         """
         create a VM on SPM
         """
-        self.storage_domain = storagedomains.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage)[0]
-
-        logger.info("Create VM")
-        assert create_vm_or_clone(
-            True, self.vm_name_base, storageDomainName=self.storage_domain,
-            placement_host=self.spm_host, highly_available=True
+        self.storage_domain = ll_sds.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )[0]
+        self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
+        self.vm_name_base = self.create_unique_object_name(
+            config.OBJECT_TYPE_VM
         )
+        vm_args = config.create_vm_args.copy()
+        vm_args['vmName'] = self.vm_name_base
+        vm_args['storageDomainName'] = self.storage_domain
+        vm_args['placement_host'] = self.spm_host
+        vm_args['highly_available'] = True
+        vm_args['start'] = 'true'
+        if not storage_helpers.create_vm_or_clone(**vm_args):
+            raise exceptions.VMException(
+                "Failed to create vm %s" % self.vm_name_base
+            )
 
     @polarion("RHEVM3-11956")
     def test_maintenance_spm_with_running_vm(self):
@@ -501,16 +507,18 @@ class TestCase11956(EnvironmentWithTwoHosts):
             * maintenance SPM
         """
         logger.info("Deactivating SPM host %s", self.spm_host)
-        hosts.deactivateHost(True, self.spm_host)
-        hosts.waitForHostsStates(True, self.spm_host, config.HOST_MAINTENANCE)
+        ll_hosts.deactivateHost(True, self.spm_host)
+        ll_hosts.waitForHostsStates(
+            True, self.spm_host, config.HOST_MAINTENANCE
+        )
 
         logger.info("Waiting DC state to be up with the new spm")
         ll_dc.wait_for_datacenter_state_api(config.DATA_CENTER_NAME)
 
-        assert hosts.waitForSPM(
+        assert ll_hosts.waitForSPM(
             config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES, SLEEP_TIME,
         )
-        new_spm = hosts.getSPMHost(self.hosts)
+        new_spm = ll_hosts.getSPMHost(self.hosts)
         logger.info("New SPM is: %s", new_spm)
 
     def tearDown(self):
@@ -532,11 +540,10 @@ class TestCase11625(TestCase):
     """
     __test__ = True
     polarion_test_case = '11625'
-    vm_name = "vm_%s" % polarion_test_case
     snap_name = "snap_%s" % polarion_test_case
-    bz = {
-        '1252396': {'engine': None, 'version': ["3.6"]}
-    }
+    # Bugzilla history:
+    # 1252396: Create a vm and start running on a specific host fails with
+    # Internal Server Error - SQL error
 
     @polarion("RHEVM3-11625")
     def test_merge_snapshots_on_hsm(self):
@@ -544,31 +551,37 @@ class TestCase11625(TestCase):
         checks that a VM with a snapshot, which where created when the VM was
         run on SPM and removed when the VM was moved to an HSM, can be booted
         """
-        logger.info("Create VM")
-        self.storage_domain = storagedomains.getStorageDomainNamesForType(
+        self.storage_domain = ll_sds.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage,
         )[0]
-        spm_host = hosts.getSPMHost(config.HOSTS)
-        if hosts.getHostCluster(spm_host) != config.CLUSTER_NAME:
-            _, host_dict = hosts.getAnyNonSPMHost(
+        spm_host = ll_hosts.getSPMHost(config.HOSTS)
+        if ll_hosts.getHostCluster(spm_host) != config.CLUSTER_NAME:
+            _, host_dict = ll_hosts.getAnyNonSPMHost(
                 config.HOSTS, cluster_name=config.CLUSTER_NAME,
             )
             host = host_dict['hsmHost']
-            assert hosts.select_host_as_spm(True, host,
-                                            config.DATA_CENTER_NAME)
+            assert ll_hosts.select_host_as_spm(
+                True, host, config.DATA_CENTER_NAME
+            )
             spm_host = host
 
-        assert hosts.waitForSPM(
+        assert ll_hosts.waitForSPM(
             config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES, SLEEP_TIME,
         )
-
-        assert create_vm_or_clone(
-            True, self.vm_name, storageDomainName=self.storage_domain,
-            placement_host=spm_host
+        self.vm_name = self.vm_name_base = self.create_unique_object_name(
+            config.OBJECT_TYPE_VM
         )
+        vm_args = config.create_vm_args.copy()
+        vm_args['vmName'] = self.vm_name
+        vm_args['storageDomainName'] = self.storage_domain
+        vm_args['placement_host'] = spm_host
+        if not storage_helpers.create_vm_or_clone(**vm_args):
+            raise exceptions.VMException(
+                "Failed to create vm %s" % self.vm_name
+            )
         logger.info("Adding snapshot")
         assert ll_vms.addSnapshot(True, self.vm_name, self.snap_name)
-        hsm_host = hosts.getAnyNonSPMHost(
+        hsm_host = ll_hosts.getAnyNonSPMHost(
             config.HOSTS, cluster_name=config.CLUSTER_NAME,
         )[1]['hsmHost']
         assert hsm_host
@@ -588,7 +601,9 @@ class TestCase11625(TestCase):
         Remove the vm
         """
         if not ll_vms.safely_remove_vms([self.vm_name]):
-            raise errors.VMException("Failed to remove vm %s" % self.vm_name)
+            logger.error("Failed to power off and remove vm %s", self.vm_name)
+            TestCase.test_failed = True
+        TestCase.teardown_exception()
 
 
 @attr(tier=4)
@@ -601,53 +616,66 @@ class TestCase11624(TestCase):
     # TODO Disabled due to problematic leftovers (/tmp/dd.error)
     __test__ = False
     polarion_test_case = '11624'
-    vm_name = "vm_%s" % polarion_test_case
     snap_name = "snap_%s" % polarion_test_case
 
     def setUp(self):
         # on the spm host - trigger "read error" by manipulating dd behaviour
         self.test_failed = False
-        self.spm_host_name = hosts.getSPMHost(config.HOSTS)
-        self.spm_host_ip = hosts.getHostIP(self.spm_host_name)
-        connection = Machine(host=self.spm_host_ip, user=config.HOSTS_USER,
-                             password=config.HOSTS_PW).util('linux')
+        self.spm_host_name = ll_hosts.getSPMHost(config.HOSTS)
+        self.spm_host_ip = ll_hosts.getHostIP(self.spm_host_name)
+        connection = Machine(
+            host=self.spm_host_ip, user=config.HOSTS_USER,
+            password=config.HOSTS_PW
+        ).util('linux')
 
-        self.storage_domain = storagedomains.getStorageDomainNamesForType(
+        self.storage_domain = ll_sds.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage,
         )[0]
         # put all other hosts in maintenance
         for host in config.HOSTS:
-            if host != self.spm_host_name and hosts.isHostUp(True, host):
-                hosts.deactivateHost(True, host)
-        hosts.waitForHostsStates(True, [self.spm_host_name])
-
+            if host != self.spm_host_name and ll_hosts.isHostUp(True, host):
+                ll_hosts.deactivateHost(True, host)
+        ll_hosts.waitForHostsStates(True, [self.spm_host_name])
+        self.vm_name = self.vm_name_base = self.create_unique_object_name(
+            config.OBJECT_TYPE_VM
+        )
         # create a vm with 1 thin provision disk
-        logger.info("Create a vm named %s ", self.vm_name)
-        if not create_vm_or_clone(
-            True, self.vm_name, storageDomainName=self.storage_domain
-        ):
-            raise errors.VMException(
-                "Creation of VM %s failed!" % self.vm_name)
-
+        vm_args = config.create_vm_args.copy()
+        vm_args['vmName'] = self.vm_name
+        vm_args['storageDomainName'] = self.storage_domain
+        if not storage_helpers.create_vm_or_clone(**vm_args):
+            raise exceptions.VMException(
+                "Failed to create vm %s" % self.vm_name
+            )
         logger.info("Waiting for vm %s state 'up'", self.vm_name)
         if not ll_vms.waitForVMState(self.vm_name):
-            raise errors.VMException("Waiting for VM %s status 'up' failed"
-                                     % self.vm_name)
+            raise exceptions.VMException(
+                "Waiting for VM %s status 'up' failed" % self.vm_name
+            )
 
         # Installation :
         # cp dd.fake /usr/bin/dd.fake
-        assert connection.copyTo(os.path.join(os.path.dirname(__file__),
-                                              'dd.fake'), '/usr/bin/')
+        assert connection.copyTo(
+            os.path.join(
+                os.path.dirname(__file__), 'dd.fake'
+            ), '/usr/bin/'
+        )
 
         # mv /bin/dd /usr/bin/dd.real
         # ln -sf /usr/bin/dd.fake /bin/dd
         # touch /tmp/dd.error
-        hosts.run_command(self.spm_host_name, config.HOSTS_USER,
-                          config.HOSTS_PW, CLI_CMD_MV_DD)
-        hosts.run_command(self.spm_host_name, config.HOSTS_USER,
-                          config.HOSTS_PW, CLI_CMD_LN_DD)
-        hosts.run_command(self.spm_host_name, config.HOSTS_USER,
-                          config.HOSTS_PW, CLI_CMD_TRIGGER_IO_ERR)
+        ll_hosts.run_command(
+            self.spm_host_name, config.HOSTS_USER, config.HOSTS_PW,
+            CLI_CMD_MV_DD
+        )
+        ll_hosts.run_command(
+            self.spm_host_name, config.HOSTS_USER, config.HOSTS_PW,
+            CLI_CMD_LN_DD
+        )
+        ll_hosts.run_command(
+            self.spm_host_name, config.HOSTS_USER, config.HOSTS_PW,
+            CLI_CMD_TRIGGER_IO_ERR
+        )
 
     def tearDown(self):
         # Uninstalling:
@@ -656,15 +684,23 @@ class TestCase11624(TestCase):
         # mv -f /usr/bin/dd.real /bin/dd
         # rm -f /usr/bin/dd.fake
         try:
-            output = hosts.run_command(self.spm_host_name, config.HOSTS_USER,
-                                       config.HOSTS_PW, CLI_CMD_DISABLE_IO_ERR)
+            output = ll_hosts.run_command(
+                self.spm_host_name, config.HOSTS_USER, config.HOSTS_PW,
+                CLI_CMD_DISABLE_IO_ERR
+            )
             if FILE_REMOVE_FAILURE not in output:
-                hosts.run_command(self.spm_host_name, config.HOSTS_USER,
-                                  config.HOSTS_PW, CLI_CMD_UNLINK_DD)
-                hosts.run_command(self.spm_host_name, config.HOSTS_USER,
-                                  config.HOSTS_PW, CLI_CMD_MV_REAL_DD_BACK)
-                hosts.run_command(self.spm_host_name, config.HOSTS_USER,
-                                  config.HOSTS_PW, CLI_CMD_RM_FAKE_DD)
+                ll_hosts.run_command(
+                    self.spm_host_name, config.HOSTS_USER, config.HOSTS_PW,
+                    CLI_CMD_UNLINK_DD
+                )
+                ll_hosts.run_command(
+                    self.spm_host_name, config.HOSTS_USER, config.HOSTS_PW,
+                    CLI_CMD_MV_REAL_DD_BACK
+                )
+                ll_hosts.run_command(
+                    self.spm_host_name, config.HOSTS_USER, config.HOSTS_PW,
+                    CLI_CMD_RM_FAKE_DD
+                )
 
         except RuntimeError, e:
             logger.error(e)
@@ -672,7 +708,7 @@ class TestCase11624(TestCase):
 
         logger.info("Restarting vdsmd")
         test_utils.restartVdsmd(self.spm_host_ip, config.HOSTS_PW)
-        if not hosts.waitForHostsStates(
+        if not ll_hosts.waitForHostsStates(
             True, [self.spm_host_name], ENUMS['host_state_connecting'],
         ):
             logger.error("Host %s didn't change to status 'connecting'",
@@ -680,13 +716,14 @@ class TestCase11624(TestCase):
             self.test_failed = True
 
         logger.info("Waiting for host %s to be back up", self.spm_host_name)
-        if not hosts.waitForHostsStates(True, [self.spm_host_name]):
+        if not ll_hosts.waitForHostsStates(True, [self.spm_host_name]):
             logger.error("Waiting for Host %s status 'up' failed",
                          self.spm_host_name)
             self.test_failed = True
 
-        if not hosts.waitForSPM(config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES,
-                                SLEEP_TIME):
+        if not ll_hosts.waitForSPM(
+            config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES, SLEEP_TIME
+        ):
             logger.error("Waiting for SPM host status 'up' failed")
             self.test_failed = True
 
@@ -708,15 +745,15 @@ class TestCase11624(TestCase):
             self.test_failed = True
 
         if self.test_failed:
-            raise errors.TestException("Test failed during tearDown")
+            raise exceptions.TestException("Test failed during tearDown")
 
     @classmethod
     def teardown_class(cls):
         """Make sure that the hosts are activated even if tearDown fails"""
         logger.info("Activating hosts back again")
         for host in config.HOSTS:
-            if not hosts.isHostUp(True, host):
-                hosts.activateHost(True, host, True)
+            if not ll_hosts.isHostUp(True, host):
+                ll_hosts.activateHost(True, host, True)
 
     @polarion("RHEVM3-11624")
     def test_io_error(self):
@@ -737,22 +774,23 @@ class TestCase11624(TestCase):
 
         # on the vm , run a dd command to make the the HD expend.
         # dd if=/dev/urandom of=sample1.txt bs=64M count=32
-        rc, out = ll_vms.run_cmd_on_vm(self.vm_name, CLI_CMD_GENERATE_BIG_FILE,
-                                       config.VMS_LINUX_USER,
-                                       config.VMS_LINUX_PW,
-                                       GENERATE_BIG_FILE_TIMEOUT)
+        rc, out = ll_vms.run_cmd_on_vm(
+            self.vm_name, CLI_CMD_GENERATE_BIG_FILE, config.VMS_LINUX_USER,
+            config.VMS_LINUX_PW, GENERATE_BIG_FILE_TIMEOUT
+        )
         logger.info("\n Generating a big file on vm, the output is %s \n", out)
 
         # parse /var/log/vdsm.log for making sure that an expand request
         for i in range(1, IO_ERROR_READ_RETRIES):
             regex_flag, rc = watch_logs(
-                files_to_watch=VDSM_LOG_FILE,
+                files_to_watch=config.VDSM_LOG,
                 regex=IO_ERROR_IN_VDSM_LOG_REGEX,
                 time_out=IO_ERROR_TIMEOUT,
                 ip_for_files=self.spm_host_ip,
                 username=config.HOSTS_USER,
                 password=config.HOSTS_PW
             )
-        self.assertTrue(regex_flag,
-                        "Couldn't find expend request for %s sec" %
-                        IO_ERROR_TIMEOUT)
+        self.assertTrue(
+            regex_flag, "Couldn't find expend request for %s sec" %
+                        IO_ERROR_TIMEOUT
+        )
