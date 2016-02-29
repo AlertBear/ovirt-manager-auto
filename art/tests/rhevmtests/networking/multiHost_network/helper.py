@@ -16,7 +16,7 @@ logger = logging.getLogger("MultiHost_Helper")
 
 
 def update_network_and_check_changes(
-    net, nic, hosts=None, vds_hosts=None, matches=1, **kwargs
+    net, nic=1, hosts=None, vds_hosts=None, matches=1, **kwargs
 ):
     """
     Update network and check that the updated network params are reflected
@@ -24,8 +24,8 @@ def update_network_and_check_changes(
 
     :param net: Network name
     :type net: str
-    :param nic: Host NIC name
-    :type nic: str
+    :param nic: Host NIC index
+    :type nic: int
     :param hosts: Hosts list to check the changes on
     :type hosts: list
     :param vds_hosts: VDS resources list to check the changes on
@@ -55,15 +55,18 @@ def update_network_and_check_changes(
     for host, vds_host in zip(hosts, vds_hosts):
         if mtu:
             check_mtu(
-                net=net, mtu=mtu, nic=nic, host=host, vds_host=vds_host
+                net=net, mtu=mtu, nic=vds_host.nics[nic], host=host,
+                vds_host=vds_host
             )
         if vlan_id:
             check_vlan(
-                net=net, vlan=vlan_id, nic=nic, host=host, vds_host=vds_host
+                net=net, vlan=vlan_id, nic=vds_host.nics[nic], host=host,
+                vds_host=vds_host
             )
         if bridge:
             check_bridge(
-                net=net, bridge=bridge, nic=nic, host=host, vds_host=vds_host
+                net=net, bridge=bridge, nic=vds_host.nics[nic], host=host,
+                vds_host=vds_host
             )
 
 

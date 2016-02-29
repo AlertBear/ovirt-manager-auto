@@ -42,7 +42,7 @@ class TestMultiHostTestCaseBase(NetworkTest):
         if cls.restore_mtu:
             try:
                 helper.update_network_and_check_changes(
-                    net=cls.net, nic=conf.HOST_0_NICS[1], mtu=cls.mtu_1500,
+                    net=cls.net, mtu=cls.mtu_1500,
                     hosts=conf.HOSTS_LIST, vds_hosts=conf.VDS_HOSTS_LIST
                 )
             except conf.NET_EXCEPTION as e:
@@ -100,10 +100,10 @@ class TestMultiHostCase01(TestMultiHostTestCaseBase):
         6) Check that the Host was updated as well
         """
         helper.update_network_and_check_changes(
-            net=self.net, vlan_id=self.vlan_1, nic=conf.HOST_0_NICS[1]
+            net=self.net, vlan_id=self.vlan_1
         )
         helper.update_network_and_check_changes(
-            net=self.net, vlan_id=self.vlan_2, nic=conf.HOST_0_NICS[1]
+            net=self.net, vlan_id=self.vlan_2
         )
 
 
@@ -141,10 +141,10 @@ class TestMultiHostCase02(TestMultiHostTestCaseBase):
         4) Check that the Host was updated with MTU 1500
         """
         helper.update_network_and_check_changes(
-            net=self.net, mtu=self.mtu_9000, nic=conf.HOST_0_NICS[1]
+            net=self.net, mtu=self.mtu_9000
         )
         helper.update_network_and_check_changes(
-            net=self.net, mtu=self.mtu_1500, nic=conf.HOST_0_NICS[1]
+            net=self.net, mtu=self.mtu_1500
         )
 
 
@@ -180,10 +180,10 @@ class TestMultiHostCase03(TestMultiHostTestCaseBase):
         4) Check that the Host was updated accordingly
         """
         helper.update_network_and_check_changes(
-            net=self.net, bridge=False, nic=conf.HOST_0_NICS[1]
+            net=self.net, bridge=False
         )
         helper.update_network_and_check_changes(
-            net=self.net, bridge=True, nic=conf.HOST_0_NICS[1]
+            net=self.net, bridge=True
         )
 
 
@@ -338,10 +338,10 @@ class TestMultiHostCase05(TestMultiHostTestCaseBase):
         non-running VM
         """
         helper.update_network_and_check_changes(
-            net=self.net, mtu=self.mtu_9000, nic=conf.HOST_0_NICS[1]
+            net=self.net, mtu=self.mtu_9000
         )
         helper.update_network_and_check_changes(
-            net=self.net, vlan_id=self.vlan, nic=conf.HOST_0_NICS[1]
+            net=self.net, vlan_id=self.vlan
         )
 
         if not ll_networks.updateNetwork(
@@ -431,10 +431,10 @@ class TestMultiHostCase06(TestMultiHostTestCaseBase):
             raise conf.NET_EXCEPTION()
 
         helper.update_network_and_check_changes(
-            net=self.net, mtu=self.mtu_9000, nic=conf.HOST_0_NICS[1]
+            net=self.net, mtu=self.mtu_9000
         )
         helper.update_network_and_check_changes(
-            net=self.net, vlan_id=self.vlan, nic=conf.HOST_0_NICS[1]
+            net=self.net, vlan_id=self.vlan
         )
 
     @classmethod
@@ -486,7 +486,7 @@ class TestMultiHostCase07(TestMultiHostTestCaseBase):
         4) Check that the both Hosts were updated with VLAN 162 and MTU 9000
         """
         helper.update_network_and_check_changes(
-            net=self.net, nic=conf.HOST_0_NICS[1], vlan_id=self.vlan,
+            net=self.net, vlan_id=self.vlan,
             mtu=self.mtu_9000, hosts=conf.HOSTS_LIST,
             vds_hosts=conf.VDS_HOSTS_LIST, matches=2
         )
@@ -584,7 +584,6 @@ class TestMultiHostCase08(TestMultiHostTestCaseBase):
         3) Update network with MTU 9000
         4) Check that the both Hosts were updated with VLAN 162 and MTU 9000
         """
-
         mtu_dict1 = {"mtu": conf.MTU[0]}
         sample1 = []
 
@@ -623,15 +622,14 @@ class TestMultiHostCase08(TestMultiHostTestCaseBase):
                 raise conf.NET_EXCEPTION("Couldn't get correct MTU on host")
 
         logger.info("Check that the MTU change is reflected to both Hosts")
-        for host, nic in zip(
-            conf.HOSTS_IP, (conf.HOST_0_NICS[1], conf.HOST_1_NICS[1])
-        ):
+        for vds_host in conf.VDS_HOSTS_LIST:
+            nic = vds_host.nics[1]
             logger.info(
                 "Checking logical layer of bridged network %s on host %s",
-                conf.VLAN_NETWORKS[0], host
+                conf.VLAN_NETWORKS[0], vds_host.fqdn
             )
             if not test_utils.check_mtu(
-                vds_resource=conf.VDS_HOST_0, mtu=conf.MTU[0],
+                vds_resource=vds_host, mtu=conf.MTU[0],
                 physical_layer=False, network=conf.VLAN_NETWORKS[0], nic=nic
             ):
                 raise conf.NET_EXCEPTION(
@@ -640,25 +638,24 @@ class TestMultiHostCase08(TestMultiHostTestCaseBase):
 
             logger.info(
                 "Checking physical layer of bridged network %s on host %s",
-                conf.NETWORKS[0], host
+                conf.NETWORKS[0], vds_host.fqdn
             )
             if not test_utils.check_mtu(
-                vds_resource=conf.VDS_HOST_0, mtu=conf.MTU[0], nic=nic
+                vds_resource=vds_host, mtu=conf.MTU[0], nic=nic
             ):
                 raise conf.NET_EXCEPTION(
                     "Physical layer: MTU should be %s" % conf.MTU[0]
                 )
 
-        logger.info("Check that the VLAN change is reflected to both Hosts")
-        for host, nic in zip(
-            conf.VDS_HOSTS, (conf.HOST_0_NICS[1], conf.HOST_1_NICS[1])
-        ):
+            logger.info(
+                "Check that the VLAN change is reflected to both Hosts"
+            )
             if not ll_networks.is_vlan_on_host_network(
-                vds_resource=host, interface=nic, vlan=conf.VLAN_ID[0]
+                vds_resource=vds_host, interface=nic, vlan=conf.VLAN_ID[0]
             ):
                 raise conf.NET_EXCEPTION(
                     "Host %s was not updated with correct VLAN %s" %
-                    (host, conf.VLAN_ID[0])
+                    (vds_host.fqdn, conf.VLAN_ID[0])
                 )
 
     @classmethod
