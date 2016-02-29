@@ -752,22 +752,22 @@ class TestNetCustPrCase08(TestNCPCaseBase):
     @polarion("RHEVM3-4188")
     def test_check_several_ethtool_opts_exist_nic(self):
         """
-        1) Update ethtool_opts with additional parameter (autoneg)
-        2) Verify ethtool_opts have updated value for tx_checksum and autoneg
+        1) Update ethtool_opts with additional parameter (rx checksum)
+        2) Verify ethtool_opts have updated value for tx and rx checksum
         3) Update ethtool_opts with the default value for both keys
         4) Verify ethtool_opts have updated default value
         """
         default_ethtool_opts = " ".join(
             [config.TX_CHECKSUM.format(
                 nic=HOST_NICS[1], state="on"
-            ), config.AUTONEG.format(
+            ), config.RX_CHECKSUM.format(
                 nic=HOST_NICS[1], state="on"
             )]
         )
         non_default_ethtool_opts = " ".join(
             [config.TX_CHECKSUM.format(
                 nic=HOST_NICS[1], state="off"
-            ), config.AUTONEG.format(
+            ), config.RX_CHECKSUM.format(
                 nic=HOST_NICS[1], state="off"
             )]
         )
@@ -782,19 +782,18 @@ class TestNetCustPrCase08(TestNCPCaseBase):
             }
         }
         logger.info(
-            "Update ethtool_opts with additional parameter for auto "
-            "negotiation"
+            "Update ethtool_opts with additional parameters"
         )
         if not hl_networks.update_network_host(
             config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
             **kwargs1
         ):
             raise config.NET_EXCEPTION(
-                "Couldn't update bridge_opts with additional autoneg parameter"
+                "Couldn't update bridge_opts with additional parameters"
             )
 
         logger.info("Check that ethtool_opts parameter has an updated value ")
-        for prop in ("Autonegotiate", "tx-checksumming"):
+        for prop in ("rx-checksumming", "tx-checksumming"):
             if not ll_networks.check_ethtool_opts(
                 config.VDS_HOSTS[0], HOST_NICS[1], prop, "off"
             ):
@@ -804,8 +803,8 @@ class TestNetCustPrCase08(TestNCPCaseBase):
                 )
 
         logger.info(
-            "Update ethtool_opts with the default parameters for both checksum"
-            " and autoneg values"
+            "Update ethtool_opts with the default parameters for both "
+            "rx and tx checksum values"
         )
         if not hl_networks.update_network_host(
             config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
@@ -818,9 +817,9 @@ class TestNetCustPrCase08(TestNCPCaseBase):
 
         logger.info(
             "Check that ethtool_opts parameters have an updated default value"
-            " for checksum and autoneg"
+            " for rx and tx checksum"
         )
-        for prop in ("Autonegotiate", "tx-checksumming"):
+        for prop in ("rx-checksumming", "tx-checksumming"):
             if not ll_networks.check_ethtool_opts(
                 config.VDS_HOSTS[0], HOST_NICS[1], prop, "on"
             ):
@@ -1282,11 +1281,11 @@ class TestNetCustPrCase12(TestNCPCaseBase):
         """
         default_ethtool_opts = " ".join(
             [config.TX_CHECKSUM.format(nic=HOST_NICS[1], state="on"),
-             config.AUTONEG.format(nic=HOST_NICS[1], state="on")]
+             config.RX_CHECKSUM.format(nic=HOST_NICS[1], state="on")]
         )
         non_default_ethtool_opts = " ".join(
             [config.TX_CHECKSUM.format(nic=HOST_NICS[1], state="off"),
-             config.AUTONEG.format(nic=HOST_NICS[1], state="off")]
+             config.RX_CHECKSUM.format(nic=HOST_NICS[1], state="off")]
         )
         default_bridge_opts = " ".join(
             [config.DEFAULT_PRIORITY, config.DEFAULT_MULT_QUERIER]
@@ -1307,19 +1306,19 @@ class TestNetCustPrCase12(TestNCPCaseBase):
             }
         }
         logger.info(
-            "Update ethtool_opts with non-default parameters for tx_checksup "
-            "and autoneg and priority and querier of bridge opts"
+            "Update ethtool_opts with non-default parameters for tx checksum "
+            "and rx checksum and priority and querier of bridge opts"
         )
         if not hl_networks.update_network_host(
             config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
             **kwargs1
         ):
             raise config.NET_EXCEPTION(
-                "Couldn't update bridge_opts with additional autoneg parameter"
+                "Couldn't update bridge_opts with additional parameter"
             )
 
         logger.info("Check that ethtool_opts parameter has an updated value ")
-        for prop in ("Autonegotiate", "tx-checksumming"):
+        for prop in ("rx-checksumming", "tx-checksumming"):
             if not ll_networks.check_ethtool_opts(
                 config.VDS_HOSTS[0], HOST_NICS[1], prop, "off"
             ):
@@ -1338,8 +1337,8 @@ class TestNetCustPrCase12(TestNCPCaseBase):
                 )
 
         logger.info(
-            "Update ethtool_opts with default parameters for tx_checksup and "
-            "autoneg and priority and querier of bridge opts"
+            "Update ethtool_opts with default parameters for tx checksum and "
+            "rx checksum and priority and querier of bridge opts"
         )
         if not hl_networks.update_network_host(
             config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
@@ -1352,9 +1351,9 @@ class TestNetCustPrCase12(TestNCPCaseBase):
 
         logger.info(
             "Check that ethtool_opts parameters have an updated default "
-            "value for checksum and autoneg"
+            "value for rx and tx checksum"
         )
-        for prop in ("Autonegotiate", "tx-checksumming"):
+        for prop in ("tx-checksumming", "rx-checksumming"):
             if not ll_networks.check_ethtool_opts(
                 config.VDS_HOSTS[0], HOST_NICS[1], prop, "on"
             ):
@@ -1362,6 +1361,7 @@ class TestNetCustPrCase12(TestNCPCaseBase):
                     "tx-checksum and autoneg values of ethtool_opts were not "
                     "updated correctly with default value"
                 )
+
         logger.info(
             "Check that bridge_opts parameter has an updated default value"
         )
@@ -1396,7 +1396,7 @@ class TestNetCustPrCase13(TestNCPCaseBase):
         """
         default_ethtool_opts = " ".join(
             [config.TX_CHECKSUM.format(nic=HOST_NICS[1], state="on"),
-             config.AUTONEG.format(nic=HOST_NICS[1], state="on")]
+             config.RX_CHECKSUM.format(nic=HOST_NICS[1], state="on")]
         )
         default_bridge_opts = " ".join(
             [config.DEFAULT_PRIORITY, config.DEFAULT_MULT_QUERIER]
@@ -1448,11 +1448,11 @@ class TestNetCustPrCase13(TestNCPCaseBase):
         """
         default_ethtool_opts = " ".join(
             [config.TX_CHECKSUM.format(nic=HOST_NICS[1], state="on"),
-             config.AUTONEG.format(nic=HOST_NICS[1], state="on")]
+             config.RX_CHECKSUM.format(nic=HOST_NICS[1], state="on")]
         )
         non_default_ethtool_opts = " ".join(
             [config.TX_CHECKSUM.format(nic=HOST_NICS[1], state="off"),
-             config.AUTONEG.format(nic=HOST_NICS[1], state="off")]
+             config.RX_CHECKSUM.format(nic=HOST_NICS[1], state="off")]
         )
         default_bridge_opts = " ".join(
             [config.DEFAULT_PRIORITY, config.DEFAULT_MULT_QUERIER]
@@ -1473,21 +1473,22 @@ class TestNetCustPrCase13(TestNCPCaseBase):
             }
         }
         logger.info(
-            "Update ethtool_opts with non-default parameters for tx_checksup "
-            "and autoneg and priority and querier of bridge opts"
+            "Update ethtool_opts with non-default parameters for tx, "
+            "rx checksum and priority and querier of bridge opts"
         )
         if not hl_networks.update_network_host(
             config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
             **kwargs1
         ):
             raise config.NET_EXCEPTION(
-                "Couldn't update bridge_opts with additional autoneg parameter"
+                "Couldn't update bridge_opts with additional rx checksum "
+                "parameter"
             )
 
         logger.info(
             "Check that ethtool_opts parameter has an updated value "
         )
-        for prop in ("Autonegotiate", "tx-checksumming"):
+        for prop in ("rx-checksumming", "tx-checksumming"):
             if not ll_networks.check_ethtool_opts(
                 config.VDS_HOSTS[0], HOST_NICS[1], prop, "off"
             ):
@@ -1508,8 +1509,8 @@ class TestNetCustPrCase13(TestNCPCaseBase):
                 )
 
         logger.info(
-            "Update ethtool_opts with default parameters for tx_checksum and "
-            "autoneg and priority and querier of bridge opts"
+            "Update ethtool_opts with default parameters for tx, rx checksum "
+            "and priority and querier of bridge opts"
         )
         if not hl_networks.update_network_host(
             config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
@@ -1522,14 +1523,14 @@ class TestNetCustPrCase13(TestNCPCaseBase):
 
         logger.info(
             "Check that ethtool_opts parameters have an updated default "
-            "value for checksum and autoneg"
+            "value for rx and tx checksum"
         )
-        for prop in ("Autonegotiate", "tx-checksumming"):
+        for prop in ("rx-checksumming", "tx-checksumming"):
             if not ll_networks.check_ethtool_opts(
                 config.VDS_HOSTS[0], HOST_NICS[1], prop, "on"
             ):
                 raise config.NET_EXCEPTION(
-                    "tx-checksum and autoneg values of ethtool_opts were not "
+                    "tx and rx checksum values of ethtool_opts were not "
                     "updated correctly with default value"
                 )
         logger.info(
@@ -1723,8 +1724,8 @@ class TestNetCustPrCase15(TestNCPCaseBase):
         """
         1) Update ethtool_opts with non-default parameter (tx_checksum)
         2) Verify ethtool_opts have updated value for tx_checksum
-        1) Update ethtool_opts with additional parameter (autoneg)
-        2) Verify ethtool_opts have updated value for tx_checksum and autoneg
+        1) Update ethtool_opts with additional parameter (rx_checksum)
+        2) Verify ethtool_opts have updated value for tx and rx checksum
         3) Update ethtool_opts with the default value for both keys
         4) Verify ethtool_opts have updated default value
         """
@@ -1764,11 +1765,11 @@ class TestNetCustPrCase15(TestNCPCaseBase):
 
         default_ethtool_opts = " ".join(
             [config.TX_CHECKSUM.format(nic="*", state="on"),
-             config.AUTONEG.format(nic="*", state="on")]
+             config.RX_CHECKSUM.format(nic="*", state="on")]
         )
         non_default_ethtool_opts = " ".join(
             [config.TX_CHECKSUM.format(nic="*", state="off"),
-             config.AUTONEG.format(nic="*", state="off")]
+             config.RX_CHECKSUM.format(nic="*", state="off")]
         )
         kwargs1 = {
             "properties": {
@@ -1781,21 +1782,20 @@ class TestNetCustPrCase15(TestNCPCaseBase):
             }
         }
         logger.info(
-            "Update ethtool_opts with additional parameter for auto "
-            "negotiation"
+            "Update ethtool_opts with additional parameter for rx checksum"
         )
         if not hl_networks.update_network_host(
             config.HOSTS[0], config.BOND[0], auto_nics=[HOST_NICS[0]],
             **kwargs1
         ):
             raise config.NET_EXCEPTION(
-                "Couldn't update bridge_opts with additional autoneg parameter"
+                "Couldn't update bridge_opts with additional parameter"
             )
         logger.info(
             "Check that ethtool_opts parameter has an updated value "
-            "for autonet and tx_checksumming for both slaves of the bond"
+            "for rx_checksum and tx_checksum for both slaves of the bond"
         )
-        for prop in ("Autonegotiate", "tx-checksumming"):
+        for prop in ("rx-checksumming", "tx-checksumming"):
             for interface in (HOST_NICS[2], HOST_NICS[3]):
                 if not ll_networks.check_ethtool_opts(
                     config.VDS_HOSTS[0], interface, prop, "off"
@@ -1807,7 +1807,7 @@ class TestNetCustPrCase15(TestNCPCaseBase):
 
         logger.info(
             "Update ethtool_opts with the default parameters for both "
-            "checksum and autoneg values for Bond "
+            "rx and tx checksum values for Bond "
         )
         if not hl_networks.update_network_host(
             config.HOSTS[0], config.BOND[0], auto_nics=[HOST_NICS[0]],
@@ -1820,15 +1820,15 @@ class TestNetCustPrCase15(TestNCPCaseBase):
 
         logger.info(
             "Check that ethtool_opts parameters have an updated default value "
-            "for checksum and autoneg"
+            "for rx and tx checksum"
         )
-        for prop in ("Autonegotiate", "tx-checksumming"):
+        for prop in ("rx-checksumming", "tx-checksumming"):
             for interface in (HOST_NICS[2], HOST_NICS[3]):
                 if not ll_networks.check_ethtool_opts(
                     config.VDS_HOSTS[0], interface, prop, "on"
                 ):
                     raise config.NET_EXCEPTION(
-                        "tx-checksum and autoneg values of ethtool_opts were "
+                        "tx and rx checksum and values of ethtool_opts were "
                         "not updated correctly with default value for "
                         "both slaves of the bond"
                     )

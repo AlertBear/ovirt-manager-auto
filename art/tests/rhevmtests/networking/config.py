@@ -45,7 +45,7 @@ DEFAULT_PRIORITY = "=".join([KEY1, BRIDGE_OPTS[KEY1][0]])
 MULT_QUERIER = "=".join([KEY2, BRIDGE_OPTS[KEY2][1]])
 DEFAULT_MULT_QUERIER = "=".join([KEY2, BRIDGE_OPTS[KEY2][0]])
 TX_CHECKSUM = "-K {nic} tx {state}"
-AUTONEG = "-A {nic} autoneg {state}"
+RX_CHECKSUM = "-K {nic} rx {state}"
 
 # MultiHost and multiple_gw parameters
 SUBNET = "5.5.5.0"

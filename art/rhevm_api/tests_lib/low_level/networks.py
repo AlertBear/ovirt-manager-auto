@@ -1095,10 +1095,8 @@ def check_ethtool_opts(vds_resource, nic, opts, value):
     :rtype: bool
     """
     cmd = []
-    if opts == "tx-checksumming":
+    if opts in ("tx-checksumming", "rx-checksumming"):
         cmd = [ETHTOOL_CMD, "-k", nic]
-    elif opts == "Autonegotiate":
-        cmd = [ETHTOOL_CMD, "-a", nic]
     else:
         logger.error("Not implemented for opts %s" % opts)
         return False
