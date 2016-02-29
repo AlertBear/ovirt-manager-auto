@@ -44,9 +44,6 @@ class BasicEnvironment(BaseTestCase):
     test_case = None
     glance_image = None
     vm_name = None
-    # TODO: Only rest works until bug
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1242214 is fixed
-    apis = set(['rest'])
 
     def setUp(self):
         """
