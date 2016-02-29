@@ -5424,3 +5424,52 @@ def get_vm_applications(vm_name):
             get_href=False,
         )
         ]
+
+
+def freeze_vm(positive, vm):
+    """
+    Freeze vm's filesystems from any write operations
+
+    __author__ = "cmestreg"
+    :param positive: True if the freeze action should succeed, False otherwise
+    :type positive: bool
+    :param vm: Name of vm
+    :type vm: str
+    :returns: Result of the freeze action
+    :rtype: bool
+    """
+
+    vmObj = VM_API.find(vm)
+    return VM_API.syncAction(vmObj, 'freezefilesystems', positive)
+
+
+def thaw_vm(positive, vm):
+    """
+    Thaw vm's filesystems (unfreeze the filesystems)
+
+    __author__ = "cmestreg"
+    :param positive: True if the freeze action should succeed, False otherwise
+    :type positive: bool
+    :param vm: Name of vm
+    :type vm: str
+    :returns: Result of the thaw action
+    :rtype: bool
+    """
+    vmObj = VM_API.find(vm)
+    return VM_API.syncAction(vmObj, 'thawfilesystems', positive)
+
+
+def reboot_vm(positive, vm):
+    """
+    Reboot vm
+
+    __author__ = "cmestreg"
+    :param positive: True if the reboot action should succeed, False otherwise
+    :type positive: bool
+    :param vm: Name of vm
+    :type vm: str
+    :returns: Result of the reboot action
+    :rtype: bool
+    """
+    vmObj = VM_API.find(vm)
+    return VM_API.syncAction(vmObj, 'reboot', positive)
