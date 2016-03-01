@@ -108,8 +108,7 @@ class GroupRecursion(TestCase):
     @classmethod
     def teardown_class(cls):
         common.loginAsAdmin()
-        for group in cls.GROUPS:
-            assert users.deleteGroup(True, group)
+        assert users.deleteGroup(True, config.IPA_GROUP_LOOP2)
         assert users.removeUser(True, cls.USER, cls.conf['authz_name'])
 
     @polarion('RHEVM3-12861')
