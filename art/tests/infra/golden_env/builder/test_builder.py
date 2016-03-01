@@ -579,6 +579,7 @@ class CreateDC(TestCase):
                 cluster=cluster,
                 name=export_template['name']
             )
+            self.copy_template_disks(export_template['name'], data_sds)
 
     def build_dc(self, dc_def, host_conf, storage_conf, ep_conf=None):
         datacenter_name = dc_def['name']
