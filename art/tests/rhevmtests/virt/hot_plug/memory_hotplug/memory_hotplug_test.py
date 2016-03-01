@@ -6,6 +6,7 @@ Memory hotplug tests
 """
 
 import logging
+import art.unittest_lib.common as common
 from art.unittest_lib.common import attr, VirtTest
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
@@ -21,6 +22,7 @@ logger = logging.getLogger("memory_hotplug_cases")
 
 
 @attr(tier=1)
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class TestMemoryHotplugBaseClass(VirtTest):
     """
     Memory hotplug base class

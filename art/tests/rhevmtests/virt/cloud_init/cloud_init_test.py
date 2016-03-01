@@ -6,18 +6,19 @@ Virt - Cloud init sanity Test
 Check basic cases with cloud init
 """
 import logging
+import config
+import helper
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import common
 import art.rhevm_api.data_struct.data_structures as data_struct
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import config
-import helper
 
 logger = logging.getLogger("cloud_init")
 
 
 @common.attr(tier=1)
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class CloudInitBase(common.VirtTest):
     """
     Base class for Cloud init Test
@@ -29,6 +30,7 @@ class CloudInitBase(common.VirtTest):
     """
     vm_name = config.CLOUD_INIT_VM_NAME
     initialization = None
+    __test__ = True
 
     @classmethod
     def setup_class(cls):
@@ -79,8 +81,6 @@ class TestCloudInitCase01(CloudInitBase):
     Run vm, and check configuration exists on VM
     """
 
-    __test__ = True
-
     @polarion("RHEVM3-14364")
     def test_new_vm_with_cloud_init(self):
         """
@@ -113,8 +113,6 @@ class TestCloudInitCase02(CloudInitBase):
     Cloud init case 2: Create new VM with cloud init parameters
     Run vm with run once with user root, and check configuration exists on VM
     """
-
-    __test__ = True
 
     @classmethod
     def setup_class(cls):
@@ -165,8 +163,6 @@ class TestCloudInitCase03(CloudInitBase):
     Cloud init case 3: Update VM cloud init configuration with run once
     And check configuration exists
     """
-
-    __test__ = True
 
     @classmethod
     def setup_class(cls):
@@ -239,8 +235,6 @@ class TestCloudInitCase04(CloudInitBase):
     Cloud init case 4: Check migration of VM with Cloud init configuration
     """
 
-    __test__ = True
-
     @classmethod
     def setup_class(cls):
         """
@@ -291,8 +285,6 @@ class TestCloudInitCase05(CloudInitBase):
     Cloud init case 5: Check authorized ssh keys setting, connecting
     to vm without password
     """
-
-    __test__ = True
 
     @classmethod
     def setup_class(cls):
