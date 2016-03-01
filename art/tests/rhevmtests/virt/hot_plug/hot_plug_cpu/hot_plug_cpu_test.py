@@ -10,6 +10,7 @@ Hot Plug CPU - Testing
 """
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import VirtTest as TestCase
+from art.unittest_lib import common
 from nose.plugins.attrib import attr
 from rhevmtests import helpers
 from rhevmtests.virt import config
@@ -121,6 +122,7 @@ class BaseCPUHotPlugClass(TestCase):
             logger.error("Failed to update VM %s" % config.VM_NAME[0])
 
 
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 @attr(tier=1)
 class TestAddCPUHotPlug(BaseCPUHotPlugClass):
     """
@@ -197,6 +199,7 @@ class TestAddCPUHotPlug(BaseCPUHotPlugClass):
         )
 
 
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 @attr(tier=1)
 class TestNegativeCpuPiningHotPlug(BaseCPUHotPlugClass):
     """
@@ -264,6 +267,7 @@ class TestNegativeCpuPiningHotPlug(BaseCPUHotPlugClass):
         super(TestNegativeCpuPiningHotPlug, cls).teardown_class()
 
 
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 @attr(tier=1)
 class TestHotPlugDuringMigration(BaseCPUHotPlugClass):
     """
@@ -313,6 +317,7 @@ class TestHotPlugDuringMigration(BaseCPUHotPlugClass):
         super(TestHotPlugDuringMigration, cls).teardown_class()
 
 
+@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 @attr(tier=1)
 class TestCpuThreadHotPlug(BaseCPUHotPlugClass):
     """
