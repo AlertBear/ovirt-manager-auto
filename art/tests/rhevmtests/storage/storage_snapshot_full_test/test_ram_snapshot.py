@@ -306,6 +306,9 @@ class TestCase5139(ReturnToSnapshot):
         """
         Undo preview snapshot
         """
+        if not ll_vms.stop_vms_safely([self.vm]):
+            logger.error("Failed to power off vm %s", self.vm)
+            TestCase.test_failed = True
         logger.info(
             'Undo preview snapshot %s on vm %s', self.memory_snapshot, self.vm
         )
