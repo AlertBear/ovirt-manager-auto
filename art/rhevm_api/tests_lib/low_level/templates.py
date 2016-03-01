@@ -258,13 +258,14 @@ def removeTemplate(
     status = TEMPLATE_API.delete(template_obj, positive)
     if status and positive and wait:
         sample = TimeoutingSampler(
-            timeout=timeout, sleep=sleepTime, func=check_template_existence,
-            template_name=template
+            timeout=timeout, sleep=sleepTime, func=validateTemplate,
+            positive=False, template=template
         )
-        res = sample.waitForFuncStatus(result=False)
+        res = sample.waitForFuncStatus(result=True)
         if not res:
             logger.error(log_error)
             return False
+        return True
 
     elif status and positive and not wait:
         return True
@@ -536,33 +537,36 @@ def removeTemplateFromExportDomain(
         sample = TimeoutingSampler(
             timeout=timeout, sleep=sleep,
             func=export_domain_template_exist, template=template,
-            export_domain=export_storagedomain
+            export_domain=export_storagedomain, positive=False
         )
-        return sample.waitForFuncStatus(result=False)
+        return sample.waitForFuncStatus(result=True)
     return True
 
 
 @is_action()
-def export_domain_template_exist(template, export_domain):
+def export_domain_template_exist(template, export_domain, positive=True):
     """
     Checks if a template exists in an export domain
 
-    :param template: Template name
-    :type template: str
-    :param export_domain: Export domain name
-    :type export_domain: str
-    :returns: True if template exists in export domain False otherwise
-    :rtype: bool
+    Args:
+        template (str): Template name
+        export_domain (str): Export domain name
+        positive (bool): Expected status
+
+    Returns:
+        bool: True if template exists in export domain False otherwise
     """
     export_domain_object = SD_API.find(export_domain)
     try:
         TEMPLATE_API.getElemFromElemColl(export_domain_object, template)
     except EntityNotFound:
-        TEMPLATE_API.logger.error(
-            "template %s cannot be found in export domain: %s",
-            template, export_domain
-        )
-        return False
+        if positive:
+            TEMPLATE_API.logger.error(
+                "template %s cannot be found in export domain: %s",
+                template, export_domain
+            )
+            return False
+        return True
     return True
 
 

@@ -3341,9 +3341,9 @@ def remove_vm_from_export_domain(
 
     sample = TimeoutingSampler(
         timeout=timeout, sleep=sleep, func=export_domain_vm_exist, vm=vm,
-        export_domain=export_storagedomain
+        export_domain=export_storagedomain, positive=False
     )
-    return sample.waitForFuncStatus(result=False)
+    return sample.waitForFuncStatus(result=True)
 
 
 @is_action()
@@ -5312,28 +5312,30 @@ def remove_numa_node_from_vm(vm_name, numa_node_index):
     return NUMA_NODE_API.delete(numa_node_obj, True)
 
 
-def export_domain_vm_exist(vm, export_domain):
+def export_domain_vm_exist(vm, export_domain, positive=True):
     """
     __Author__ = slitmano
 
     Checks if a vm exists in an export domain
 
-    :param vm: VM name
-    :type vm: str
-    :param export_domain: Export domain name
-    :type export_domain: str
-    :returns: True if template exists in export domain False otherwise
-    :rtype: bool
+    Args:
+        vm (str): VM name
+        export_domain (str): Export domain name
+        positive (bool): Expected status
+
+    Returns:
+        bool: True if template exists in export domain False otherwise
     """
     export_domain_object = STORAGE_DOMAIN_API.find(export_domain)
     try:
         VM_API.getElemFromElemColl(export_domain_object, vm)
     except EntityNotFound:
-        logger.error(
-            "VM %s cannot be found in export domain: %s",
-            vm, export_domain
-        )
-        return False
+        if positive:
+            logger.error(
+                "VM %s cannot be found in export domain: %s", vm, export_domain
+            )
+            return False
+        return True
     return True
 
 
