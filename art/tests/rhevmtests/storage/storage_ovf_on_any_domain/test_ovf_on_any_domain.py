@@ -816,7 +816,7 @@ class EnvironmentWithNewVm(BasicEnvironment):
             ll_templates.removeTemplate(True, TEMPLATE_NAME)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6247(BasicEnvironment):
     """
     Disk on master domain attached to VM
@@ -1345,7 +1345,7 @@ class TestCase6254(BasicEnvironment):
         self.validate_ovf_contents(vm_name=VM1_NAME, positive=False)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6255(EnvironmentWithNewVm):
     """
     Remove a VM
@@ -1551,7 +1551,7 @@ class TestCase6259(BasicEnvironment):
         # TODO: Add code once support for mounting OVF store exists
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6260(EnvironmentWithNewVm):
     """
     OVF of a template

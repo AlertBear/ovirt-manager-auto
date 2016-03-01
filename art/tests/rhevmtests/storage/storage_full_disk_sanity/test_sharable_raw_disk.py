@@ -52,6 +52,10 @@ class TestCase11513(TestCase):
                 )
         self.vm_1 = config.VM1_NAME % self.storage
         self.vm_2 = config.VM2_NAME % self.storage
+        if not ll_vms.waitForVmsStates(True, [self.vm_1, self.vm_2]):
+            raise exceptions.VMException(
+                "VMs %s are not in state 'OK'" % [self.vm_1, self.vm_2]
+            )
 
     @polarion("RHEVM3-11513")
     def test_shared(self):
