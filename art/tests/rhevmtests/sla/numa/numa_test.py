@@ -26,6 +26,30 @@ class BaseNumaClass(u_libs.SlaTest):
         "index": 1, "memory": 1024, "cores": [0], "pin_list": [0]
     }
 
+    @staticmethod
+    def __reinstall_numa_package(resource):
+        """
+        Reinstall numactl package on resource
+
+        :param resource: resource
+        :type resource: VDS
+        :raise: HostException
+        """
+        packager_methods = {
+            "install": resource.package_manager.install,
+            "remove": resource.package_manager.remove
+        }
+        for method_name, packager_method in packager_methods.iteritems():
+            logger.info(
+                "%s %s package on host %s",
+                method_name, conf.NUMACTL_PACKAGE, resource
+            )
+            if not packager_method(conf.NUMACTL_PACKAGE):
+                raise errors.HostException(
+                    "Failed to %s package %s on host %s" %
+                    (method_name, conf.NUMACTL_PACKAGE, resource)
+                )
+
     @classmethod
     def _get_numa_parameters_from_resource(cls, vds_resource):
         """
@@ -37,6 +61,11 @@ class BaseNumaClass(u_libs.SlaTest):
         :rtype: dict
         """
         param_dict = {}
+        rc, out, _ = vds_resource.run_command(command=[conf.NUMACTL, "-H"])
+        # TODO: W/A for bug https://bugzilla.redhat.com/show_bug.cgi?id=1315184
+        # remove it when the bug will be verified
+        if not out:
+            cls.__reinstall_numa_package(vds_resource)
         rc, out, _ = vds_resource.run_command(command=[conf.NUMACTL, "-H"])
         if rc:
             logger.error("Failed to get numa information from resource")
@@ -353,6 +382,7 @@ class UpdateVm(BaseNumaClass):
                 conf.VM_NAME[0]
             )
         ]
+        vm_numa_nodes_index.sort(reverse=True)
         logger.info("Remove all numa nodes from vm %s", conf.VM_NAME[0])
         for numa_node_index in vm_numa_nodes_index:
             logger.info("Remove numa node with index %s", numa_node_index)

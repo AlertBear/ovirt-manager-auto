@@ -275,32 +275,13 @@ class TestMigrateVmUnderHardPositiveAffinity(MigrateVm):
     positive = True
     hard = True
 
-    @classmethod
-    def setup_class(cls):
-        """
-        Change migration options of vm
-        """
-        for vm in config.VM_NAME[:2]:
-            logger.info(
-                "Update vm %s migration option to %s",
-                vm, config.VM_USER_MIGRATABLE
-            )
-            if not vm_api.updateVm(
-                positive=True, vm=vm,
-                placement_affinity=config.VM_USER_MIGRATABLE
-            ):
-                raise errors.VMException("Failed to update vm %s" % vm)
-        super(TestMigrateVmUnderHardPositiveAffinity, cls).setup_class()
-
     @polarion("RHEVM3-5557")
     def test_check_vm_migration(self):
         """
         Check if vm succeeds to migrate
         """
         logger.info("Migrate vm %s", config.VM_NAME[0])
-        if not vm_api.migrateVm(
-            positive=True, vm=config.VM_NAME[0], force=True
-        ):
+        if not vm_api.migrateVm(positive=True, vm=config.VM_NAME[0]):
             raise errors.VMException(
                 "Failed to migrate vm %s", config.VM_NAME[0]
             )
@@ -350,32 +331,13 @@ class TestMigrateVmUnderHardNegativeAffinity(MigrateVm):
     positive = False
     hard = True
 
-    @classmethod
-    def setup_class(cls):
-        """
-        Change migration options of vm
-        """
-        for vm in config.VM_NAME[:2]:
-            logger.info(
-                "Update vm %s migration option to %s",
-                vm, config.VM_USER_MIGRATABLE
-            )
-            if not vm_api.updateVm(
-                positive=True, vm=vm,
-                placement_affinity=config.VM_USER_MIGRATABLE
-            ):
-                raise errors.VMException("Failed to update vm %s" % vm)
-        super(TestMigrateVmUnderHardNegativeAffinity, cls).setup_class()
-
     @polarion("RHEVM3-5558")
     def test_check_vm_migration(self):
         """
         Check if vm succeeds to migrate
         """
         logger.info("Migrate vm %s", config.VM_NAME[0])
-        if not vm_api.migrateVm(
-            positive=True, vm=config.VM_NAME[0], force=True
-        ):
+        if not vm_api.migrateVm(positive=True, vm=config.VM_NAME[0]):
             raise errors.VMException(
                 "Failed to migrate vm %s" % config.VM_NAME[0]
             )
