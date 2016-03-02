@@ -296,11 +296,9 @@ def _restore_empty_dc(datacenter=config.DATACENTER_ISCSI_CONNECTIONS):
 
 class TestCase(StorageTest):
     storages = set([config.STORAGE_TYPE_ISCSI])
-    # TODO: enable cli after http://bugzilla.redhat.com/show_bug.cgi?id=1236718
-    # is fixed
-    # TODO: enable java after
-    # https://projects.engineering.redhat.com/browse/RHEVM-2234 is fixed
-    apis = StorageTest.apis - set(['cli', 'java'])
+    # Bugzilla history:
+    # 1236718: RSDL incorrectly documents storageconnection parameter
+    # set for iscsi (parameter is target not iqn)
 
     def get_all_new_connections(self):
         return _filter_storage_connections(
