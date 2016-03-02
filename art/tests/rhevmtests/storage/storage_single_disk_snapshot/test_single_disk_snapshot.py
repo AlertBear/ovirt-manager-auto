@@ -682,9 +682,11 @@ class TestCase6014(BasicEnvironment):
     Storage/3_4_Storage_Single_Snapshot
 
     """
-    # TODO: fix after https://bugzilla.redhat.com/show_bug.cgi?id=1119203
-    __test__ = False
+    __test__ = True
     polarion_test_case = '6014'
+    # Bugzills history:
+    # 1119203: Live snapshot creation reported as failed by engine but
+    # created successfully
 
     def setUp(self):
         """
@@ -716,9 +718,11 @@ class TestCase6006(BasicEnvironment):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_4_Storage_Single_Snapshot
     """
-    # TODO: fix after https://bugzilla.redhat.com/show_bug.cgi?id=1119203
-    __test__ = False
+    __test__ = True
     polarion_test_case = '6006'
+    # Bugzills history:
+    # 1119203: Live snapshot creation reported as failed by engine but
+    # created successfully
 
     def setUp(self):
         """
