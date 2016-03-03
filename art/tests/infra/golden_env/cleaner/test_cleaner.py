@@ -4,7 +4,7 @@ from art.unittest_lib import BaseTestCase
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.high_level.datacenters as hl_dc
 
-import infra.golden_env.config as config
+import golden_env.config as config
 
 
 LOGGER = logging.getLogger(__name__)

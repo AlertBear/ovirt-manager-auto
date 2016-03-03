@@ -21,7 +21,7 @@ from art.rhevm_api.resources import VDS, storage
 
 import art.test_handler.exceptions as errors
 
-import infra.golden_env.config as config
+import golden_env.config as config
 LOGGER = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
