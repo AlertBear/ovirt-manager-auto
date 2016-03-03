@@ -63,7 +63,7 @@ DEPS = [
     'winremote',  # required by windows tests
     'python-rrmngmnt',
     'python-otopi-mdp',
-    'paramiko'
+    'python-paramiko'
 ]
 if sys.version_info[0] == 2 and sys.version_info[1] < 7:
     DEPS.append('python-argparse')
