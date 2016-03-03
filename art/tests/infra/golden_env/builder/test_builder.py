@@ -493,6 +493,7 @@ class CreateDC(TestCase):
                         template, sd
                     )
                     templates.copyTemplateDisk(template, disk, sd)
+                templates.wait_for_template_disks_state(template)
 
     def _get_data_storage_domains(self, data_center):
         sds = ll_sd.getDCStorages(data_center, False)
