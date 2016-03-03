@@ -151,24 +151,27 @@ def loginAsAdmin():
 
 
 # -- Truststore utils --
-def generateCertificate(session, ssl_host, crt_dir, port='636'):
+def import_certificate_to_truststore(host, cert_path, truststore, password):
     '''
-    Create temp file with certificate of service runnning on @host at @port.
-    Parameters:
-     * session - ssh session
-     * ssl_host - host where service is running
-     * crt_dir - directory where certificate should be generated
-     * port - default port which is used when host doesn't contain port
-    return True if cert was successfully obtained, False otherwise
+    Import certificate from url into truststore.
+
+    :param host: host with truststore
+    :type host: resources.Host
+    :param cert_path: path to certificate
+    :type cert_path: str
+    :param truststore: trustore to store certificate
+    :type truststore: str
+    :param password: password of trustore
+    :type password: str
     '''
-    if ssl_host.find(':') == -1:
-        ssl_host += ':' + str(port)
-    crt_file = '%s/%s' % (crt_dir, ssl_host)
-    cmd = ['echo', '|', 'openssl', 's_client', '-connect', ssl_host, '2>&1',
-           '|', 'sed', '-ne', '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p',
-           '>', crt_file]
-    rc, _, _ = session.run_cmd(cmd)
-    return rc, crt_file
+    with host.executor().session() as session:
+        return session.run_cmd([
+            'keytool', '-import', '-noprompt',
+            '-storepass', password,
+            '-file', cert_path,
+            '-alias', cert_path,
+            '-keystore', truststore,
+        ])
 
 
 def importCertificateToTrustStore(session, filename, truststore, password):
@@ -197,28 +200,6 @@ def listTrustStore(session, truststore, password):
     cmd = ['keytool', '-list', '-storepass', password, '-keystore', truststore]
     rc, out, _ = session.run_cmd(cmd)
     return out
-
-
-def createTrustStore(hosts, truststore, password, temp_dir='/tmp'):
-    '''
-    Parameters:
-     * hosts - list of host:port strings where certs should be obtained
-     * truststore - full path of truststore
-     * password - truststore password
-     * temp_dir - directory where temporary cert are stored
-    '''
-    executor = config.ENGINE_HOST.executor()
-    with executor.session() as ss:
-        for ssl_host in hosts:
-            rc, crt_file = generateCertificate(ss, ssl_host, temp_dir)
-            if rc:
-                LOGGER.error('Cert for %s was not obtained.', ssl_host)
-                continue
-
-            importCertificateToTrustStore(ss, crt_file, truststore, password)
-
-        LOGGER.info('Truststore content is:\n%s',
-                    listTrustStore(ss, truststore, password))
 
 
 def removeTrustStore(truststore):

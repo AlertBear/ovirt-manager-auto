@@ -18,6 +18,7 @@ DEFAULT_CLUSTER_NAME = 'Default'
 USERROLE = ENUMS['role_name_user_role']
 EXTENSIONS = {}
 TRUSTSTORE = '/tmp/adw2k12r2.ts'
+CERT_NAME = 'w2k12r2.pem'
 TRUSTSTORE_PASSWORD = '123456'
 AAA_DIR = '/etc/ovirt-engine/aaa'
 TOOL = 'ovirt-engine-extensions-tool'

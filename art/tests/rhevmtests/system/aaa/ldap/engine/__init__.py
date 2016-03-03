@@ -21,8 +21,15 @@ def setup_package():
             clean=False,
             enable=False,
         )
-    common.createTrustStore(
-        config.ADW2K12_DOMAINS, config.TRUSTSTORE, config.TRUSTSTORE_PASSWORD
+    common.import_certificate_to_truststore(
+        host=config.ENGINE_HOST,
+        cert_path=os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            '../fixtures/certs',
+            config.CERT_NAME,
+        ),
+        truststore=config.TRUSTSTORE,
+        password=config.TRUSTSTORE_PASSWORD,
     )
     common.enableExtensions(config.OVIRT_SERVICE, config.ENGINE_HOST)
     common.loginAsAdmin()
