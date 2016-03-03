@@ -106,6 +106,11 @@ class TestCase11513(TestCase):
                 "Failed to power off and remove vms %s", [self.vm_1, self.vm_2]
             )
             TestCase.test_failed = True
+        if not ll_disks.deleteDisk(True, self.disk_name):
+            logger.error(
+                "Failed to delete disk %s", self.disk_name
+            )
+            TestCase.test_failed = True
         TestCase.teardown_exception()
 
 
