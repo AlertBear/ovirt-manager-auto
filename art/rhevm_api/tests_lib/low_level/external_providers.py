@@ -1,5 +1,6 @@
 import logging
 from art.core_api.apis_utils import getDS
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 from art.rhevm_api.utils.test_utils import get_api
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 
@@ -65,6 +66,12 @@ class OpenStackProvider(object):
 
         return self._is_connected
 
+    def set_osp_obj(self):
+        """
+        Set External Provider object
+        """
+        self.osp_obj = self.find(openstack_ep=self.name)
+
     def find(self, openstack_ep, key='name'):
         """
         Get openstack ep object from engine by name or id
@@ -110,7 +117,6 @@ class OpenStackProvider(object):
         return res
 
     def _init(self):
-
         self.osp_obj = self.open_stack_provider()
         self.osp_obj.set_name(self.name)
         self.osp_obj.set_url(self.url)
@@ -369,3 +375,183 @@ def remove_cinder_ep(cinder_ep, key='name'):
     """
     osvp = OpenStackVolumeProvider()
     return osvp.remove(cinder_ep, key)
+
+
+class ExternalNetworkProvider(OpenStackProvider):
+    """
+    External Network Provider
+    """
+    provider_api_element_name = "external_network_provider"
+
+    def __init__(
+        self, provider_api_element_name, name, url, requires_authentication,
+        username, password, authentication_url, tenant_name
+    ):
+        """
+        Class for OpenStackNetworkProvider
+
+        Args:
+            provider_api_element_name (str): API element name
+            name (str): Provider name
+            url (str): Provider URL
+            requires_authentication (bool): True if requires auth,
+                False otherwise
+            username (str): Provider username
+            password (str): Provider password
+            authentication_url (str): Provider authentication URL
+            tenant_name (str): Tenant name
+        """
+        super(ExternalNetworkProvider, self).__init__(
+            provider_api_element_name=provider_api_element_name,
+            name=name, url=url,
+            requires_authentication=requires_authentication,
+            username=username, password=password,
+            authentication_url=authentication_url, tenant_name=tenant_name
+        )
+
+    def get_all_networks(self):
+        """
+        Get all networks from external provider
+
+        Returns:
+            list: All networks objects
+        """
+        logger.info(
+            "Get all networks from External Network Provider %s",
+            self.osp_obj.name
+        )
+        return self._api.get(
+            "{href}/networks".format(
+                href=self.osp_obj.href
+            )
+        ).get_openstack_network()
+
+    def get_network(self, network):
+        """
+        Get network from external provider
+
+        Args:
+            network (str): Network name
+
+        Returns:
+            OpenStackNetwork: Network object
+        """
+        network_obj = [
+            net for net in self.get_all_networks() if net.name == network
+            ]
+        logger.info(
+            "Get network %s from External Network Provider %s",
+            network, self.osp_obj.name
+        )
+        if not network_obj:
+            logger.error(
+                "Network %s not found on External Network Provider %s",
+                network, self.osp_obj.name
+            )
+            return None
+        return network_obj[0]
+
+    def import_network(self, network, datacenter):
+        """
+        Import network from external provider
+
+        Args:
+            network (str): Network name
+            datacenter (str): Datacenter name to import the network into
+
+        Returns:
+            bool: True if network imported, False otherwise
+        """
+        network_obj = self.get_network(network=network)
+        if not network_obj:
+            return False
+
+        logger.info(
+            "Import network %s from External Network Provider %s",
+            network, self.osp_obj.name
+        )
+        datacenter_obj = ll_datacenters.get_data_center(dc_name=datacenter)
+        if not datacenter_obj:
+            logger.error("Datacenter %s not found", datacenter)
+            return False
+
+        if not self._api.syncAction(
+            network_obj, "import", True, data_center=datacenter_obj
+        ):
+            logger.error(
+                "Failed to import network %s from External Network Provider "
+                "%s", network, self.osp_obj.name
+            )
+            return False
+        return True
+
+
+class OpenStackNetworkProvider(ExternalNetworkProvider):
+    """
+    OpenStack Network Provider
+    """
+    provider_api_element_name = "openstack_network_provider"
+
+    def __init__(
+        self, name, url, requires_authentication, username,
+        password, authentication_url, tenant_name,
+        plugin_type, network_mapping, broker_type, agent_port,
+        agent_address, agent_user, agent_password
+    ):
+        """
+        Class for OpenStackNetworkProvider
+
+        Args:
+            name (str): Provider name
+            url (str): Provider URL
+            requires_authentication (bool): True if requires auth,
+                False otherwise
+            username (str): Provider username
+            password (str): Provider password
+            authentication_url (str): Provider authentication URL
+            tenant_name (str): Tenant name
+            plugin_type (str): Network plugin to work with
+            network_mapping (str): Network mapping. a comma separated string of
+                "label:interface
+            broker_type (str): Messaging broker type
+            agent_port (int): Agent port to connect to
+            agent_address (str): Agent address
+            agent_user (str): Agent username
+            agent_password (str): Agent password
+        """
+        self._plugin_type = plugin_type
+        self.network_mapping = network_mapping
+        self.broker_type = broker_type
+        self.agent_port = agent_port
+        self.agent_address = agent_address
+        self.agent_user = agent_user
+        self.agent_password = agent_password
+        self.message_broker_type = broker_type
+        self.agent_configuration = None
+        super(OpenStackNetworkProvider, self).__init__(
+            provider_api_element_name=self.provider_api_element_name,
+            name=name, url=url,
+            requires_authentication=requires_authentication,
+            username=username, password=password,
+            authentication_url=authentication_url, tenant_name=tenant_name,
+        )
+
+    def _prepare_agent_configuration(self):
+        agent_configuration_dict = {
+            "network_mappings": self.network_mapping,
+            "broker_type": self.broker_type,
+            "port": self.agent_port,
+            "address": self.agent_address,
+            "username": self.agent_user,
+            "password": self.agent_password
+        }
+        self.agent_configuration = ll_general.prepare_ds_object(
+            object_name="AgentConfiguration", **agent_configuration_dict
+        )
+
+    def _init(self):
+        super(OpenStackNetworkProvider, self)._init()
+        self.osp_obj.set_type("neutron")
+        self._prepare_agent_configuration()
+        self.osp_obj.set_plugin_type(self._plugin_type)
+        self.osp_obj.set_agent_configuration(self.agent_configuration)

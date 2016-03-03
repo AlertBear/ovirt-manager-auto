@@ -321,12 +321,14 @@ def checkSupportedVersions(name):
 def get_data_center(dc_name):
     """
     Get data center object by name
-    Author: ratamir
-    Parameters:
-        *dc_name - Data Center's name to get
 
-    Return: dc object, or raise EntityNotFound
+    Args:
+        dc_name (str): Data Center name
+
+    Returns:
+        DataCenter: Datacenter object
     """
+    logger.info("Get datacenter %s", dc_name)
     dc_obj = util.find(dc_name)
     return dc_obj
 
