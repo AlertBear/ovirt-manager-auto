@@ -1,4 +1,4 @@
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 
 from rhevmtests.system.aaa.ldap.setup import base
 
@@ -16,6 +16,7 @@ class OpenLdapUserFromGroup(base.BaseUserFromGroup):
     __test__ = True
     domain = 'openldap'
 
+    @bz({'1313516': {}})
     @polarion('RHEVM3-13057')
     def test_user_from_group(self):
         """ Authenticate as user from group """
@@ -27,6 +28,7 @@ class OpenLdapExpiredPassword(base.BaseExpiredPassword):
     __test__ = True
     domain = 'openldap'
 
+    @bz({'1313516': {}})
     @polarion('RHEVM3-13047')
     def test_expired_password(self):
         """ Login as user with expired password """
@@ -38,6 +40,7 @@ class OpenLdapDisabledAccount(base.BaseDisabledAccount):
     __test__ = True
     domain = 'openldap'
 
+    @bz({'1313516': {}})
     @polarion('RHEVM3-13056')
     def test_disabled_account(self):
         """ Login as user with disabled account """

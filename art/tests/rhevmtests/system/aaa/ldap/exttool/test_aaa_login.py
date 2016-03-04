@@ -142,6 +142,7 @@ class ExttoolAAALoginOpenLDAP(ExttoolAAALogin):
     __test__ = True
     profile = 'openldap'
     cert_url = 'http://brq-openldap.rhev.lab.eng.brq.redhat.com/cacert.pem'
+    bz = {'1313516': {}}
 
     @polarion('RHEVM3-14525')
     @common.extend(
