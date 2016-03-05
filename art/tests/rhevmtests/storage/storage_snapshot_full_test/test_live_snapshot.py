@@ -234,7 +234,7 @@ class TestCase11660(BasicEnvironmentSetUp):
             ll_vms.wait_for_vm_snapshots(
                 self.vm_name, [config.SNAPSHOT_OK]
             )
-            super(TestCase11660, self).tearDown()
+        super(TestCase11660, self).tearDown()
 
 
 @attr(tier=2)
