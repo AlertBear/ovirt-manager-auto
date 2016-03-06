@@ -64,10 +64,11 @@ TRAFFIC_TIMEOUT = 120
 VM_IP_LIST = []
 
 # Import/Export parameters
-IE_VM = "IE_VM"
-IE_TEMPLATE = "IE_TEMP"
-IMP_MORE_THAN_ONCE_VM = "MoreThanOnceVM"
-IMP_MORE_THAN_ONCE_TEMP = "MoreThanOnceTEMPLATE"
+NAME_INT = randint(1, 100)
+IE_VM = "IE_VM_%s" % NAME_INT
+IE_TEMPLATE = "IE_TEMP_%s" % NAME_INT
+IMP_MORE_THAN_ONCE_VM = "MoreThanOnceVM_%s" % NAME_INT
+IMP_MORE_THAN_ONCE_TEMP = "MoreThanOnceTEMPLATE_%s" % NAME_INT
 EXPORT_TYPE = ENUMS['storage_dom_type_export']
 
 # Topologies parameters
