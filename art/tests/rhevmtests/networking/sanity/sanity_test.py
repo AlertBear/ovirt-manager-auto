@@ -42,10 +42,10 @@ class TestSanityCaseBase(NetworkTest):
         """
         Remove all networks from the host NICs.
         """
-        logger.info("Removing all networks from %s", conf.HOST_NAME_0)
-        if not hl_host_network.clean_host_interfaces(conf.HOST_NAME_0):
+        logger.info("Removing all networks from %s", conf.HOST_0_NAME)
+        if not hl_host_network.clean_host_interfaces(conf.HOST_0_NAME):
             logger.error(
-                "Failed to remove all networks from %s", conf.HOST_NAME_0
+                "Failed to remove all networks from %s", conf.HOST_0_NAME
             )
 
 
@@ -70,11 +70,11 @@ class TestSanity01(TestSanityCaseBase):
         Create VLAN entity with name on the host
         """
         vlan_helper.add_vlans_to_host(
-            host_obj=conf.VDS_HOST_0, nic=1, vlan_id=[cls.vlan_id],
+            host_obj=conf.VDS_0_HOST, nic=1, vlan_id=[cls.vlan_id],
             vlan_name=[cls.vlan_name]
         )
         vlan_helper.add_bridge_on_host_and_virsh(
-            host_obj=conf.VDS_HOST_0, bridge=[cls.bridge_name],
+            host_obj=conf.VDS_0_HOST, bridge=[cls.bridge_name],
             network=[cls.vlan_name]
         )
 
@@ -87,10 +87,10 @@ class TestSanity01(TestSanityCaseBase):
         Check that the bridge is in getVdsCaps
         """
         vlan_helper.check_if_nic_in_host_nics(
-            nic=self.vlan_name, host=conf.HOST_NAME_0
+            nic=self.vlan_name, host=conf.HOST_0_NAME
         )
         network_helper.is_network_in_vds_caps(
-            host_resource=conf.VDS_HOST_0, network=self.bridge_name
+            host_resource=conf.VDS_0_HOST, network=self.bridge_name
         )
 
     @classmethod
@@ -715,7 +715,7 @@ class TestSanity09(TestSanityCaseBase):
     """
     __test__ = True
     net = conf.NETS[9][0]
-    dc = conf.DC_0_NAME
+    dc = conf.DC_0
 
     @classmethod
     def setup_class(cls):
@@ -748,17 +748,17 @@ class TestSanity09(TestSanityCaseBase):
 
         logger.info("Check if the Host is updated with the change")
         if not hl_networks.check_host_nic_params(
-            host=conf.HOST_NAME_0, nic=conf.HOST_0_NICS[1], **mtu_dict
+            host=conf.HOST_0_NAME, nic=conf.HOST_0_NICS[1], **mtu_dict
         ):
             raise conf.NET_EXCEPTION()
 
         logger.info("Check that the change is reflected to Host")
         logger.info(
             "Checking logical layer of bridged network %s on host %s",
-            self.net, conf.HOST_NAME_0
+            self.net, conf.HOST_0_NAME
         )
         if not test_utils.check_mtu(
-            vds_resource=conf.VDS_HOST_0, mtu=mtu, physical_layer=False,
+            vds_resource=conf.VDS_0_HOST, mtu=mtu, physical_layer=False,
             network=self.net, nic=conf.HOST_0_NICS[1]
         ):
             raise conf.NET_EXCEPTION(
@@ -766,10 +766,10 @@ class TestSanity09(TestSanityCaseBase):
             )
         logger.info(
             "Checking physical layer of bridged network %s on host %s",
-            self.net, conf.HOST_NAME_0
+            self.net, conf.HOST_0_NAME
         )
         if not test_utils.check_mtu(
-            vds_resource=conf.VDS_HOST_0, mtu=mtu, nic=conf.HOST_0_NICS[1]
+            vds_resource=conf.VDS_0_HOST, mtu=mtu, nic=conf.HOST_0_NICS[1]
         ):
             raise conf.NET_EXCEPTION(
                 "Physical layer: %s MTU should be %s" %
@@ -791,18 +791,18 @@ class TestSanity09(TestSanityCaseBase):
 
         logger.info("Check if the Host is updated with the change")
         if not hl_networks.check_host_nic_params(
-            host=conf.HOST_NAME_0, nic=conf.HOST_0_NICS[1], **vlan_dict
+            host=conf.HOST_0_NAME, nic=conf.HOST_0_NICS[1], **vlan_dict
         ):
             raise conf.NET_EXCEPTION()
 
         logger.info("Check that the change is reflected to Host")
         if not ll_networks.is_vlan_on_host_network(
-            vds_resource=conf.VDS_HOST_0, interface=conf.HOST_0_NICS[1],
+            vds_resource=conf.VDS_0_HOST, interface=conf.HOST_0_NICS[1],
             vlan=vlan_id
         ):
             raise conf.NET_EXCEPTION(
                 "%s on host %s was not updated with correct VLAN %s"
-                % (self.net, conf.HOST_NAME_0, vlan_id)
+                % (self.net, conf.HOST_0_NAME, vlan_id)
             )
 
     @polarion("RHEVM3-14517")
@@ -819,17 +819,17 @@ class TestSanity09(TestSanityCaseBase):
 
         logger.info("Check if the Host is updated with the change")
         if not hl_networks.check_host_nic_params(
-            host=conf.HOST_NAME_0, nic=conf.HOST_0_NICS[1], **bridge_dict
+            host=conf.HOST_0_NAME, nic=conf.HOST_0_NICS[1], **bridge_dict
         ):
             raise conf.NET_EXCEPTION()
 
         logger.info("Check that the change is reflected to Host")
         if ll_networks.is_host_network_is_vm(
-            vds_resource=conf.VDS_HOST_0, net_name=self.net
+            vds_resource=conf.VDS_0_HOST, net_name=self.net
         ):
             raise conf.NET_EXCEPTION(
                 "%s on host %s was not updated to be non-VM network"
-                % (self.net, conf.HOST_NAME_0)
+                % (self.net, conf.HOST_0_NAME)
             )
 
 
@@ -876,7 +876,7 @@ class TestSanity10(NetworkTest):
         Check correct configuration with ip rule function
         """
         if not ll_networks.check_ip_rule(
-            vds_resource=conf.VDS_HOST_0, subnet=self.subnet
+            vds_resource=conf.VDS_0_HOST, subnet=self.subnet
         ):
             raise conf.NET_EXCEPTION(
                 "Incorrect gateway configuration for %s" % self.net
@@ -904,7 +904,7 @@ class TestSanity11(NetworkTest):
     vm = conf.VM_0
     num_queues = conf.NUM_QUEUES[0]
     prop_queue = conf.PROP_QUEUES[0]
-    dc = conf.DC_0_NAME
+    dc = conf.DC_0
 
     @classmethod
     def setup_class(cls):
@@ -992,14 +992,14 @@ class TestSanity12(TestSanityCaseBase):
         }
         logger.info(
             "Attaching %s to %s on %s",
-            self.net, conf.HOST_0_NICS[1], conf.HOST_NAME_0
+            self.net, conf.HOST_0_NICS[1], conf.HOST_0_NAME
         )
         if not hl_host_network.setup_networks(
-            host_name=conf.HOST_NAME_0, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
             raise conf.NET_EXCEPTION(
                 "Failed to attach %s to %s on %s" % (
-                    self.net, conf.HOST_0_NICS[1], conf.HOST_NAME_0
+                    self.net, conf.HOST_0_NICS[1], conf.HOST_0_NAME
                 )
             )
 
@@ -1090,7 +1090,7 @@ class TestSanity14(TestSanityCaseBase):
         Create BOND
         Add lb_1 and lb_2 to VM and VLAN networks
         """
-        logger.info("Create %s on %s", cls.bond, conf.HOST_NAME_0)
+        logger.info("Create %s on %s", cls.bond, conf.HOST_0_NAME)
         network_host_api_dict = {
             "add": {
                 "1": {
@@ -1138,7 +1138,7 @@ class TestSanity14(TestSanityCaseBase):
         if not ll_networks.add_label(
             label=self.lb_1,
             host_nic_dict={
-                conf.HOST_NAME_0: [conf.HOST_0_NICS[1]]
+                conf.HOST_0_NAME: [conf.HOST_0_NICS[1]]
             }
         ):
             raise conf.NET_EXCEPTION(
@@ -1155,7 +1155,7 @@ class TestSanity14(TestSanityCaseBase):
                 conf.HOST_0_NICS[1]
             )
             if not ll_networks.check_network_on_nic(
-                network=net, host=conf.HOST_NAME_0, nic=host_nic
+                network=net, host=conf.HOST_0_NAME, nic=host_nic
             ):
                 raise conf.NET_EXCEPTION(
                     "Network %s is not attached to host NIC %s " %
@@ -1172,7 +1172,7 @@ class TestSanity14(TestSanityCaseBase):
         logger.info("Attach label %s to bond %s ", self.lb_2, self.bond)
         if not ll_networks.add_label(
             label=self.lb_2, host_nic_dict={
-                conf.HOST_NAME_0: [self.bond]
+                conf.HOST_0_NAME: [self.bond]
             }
         ):
             raise conf.NET_EXCEPTION(
@@ -1186,7 +1186,7 @@ class TestSanity14(TestSanityCaseBase):
                 vlan_bond if net == self.net_4_bond_vlan else self.bond
             )
             if not ll_networks.check_network_on_nic(
-                network=net, host=conf.HOST_NAME_0, nic=bond
+                network=net, host=conf.HOST_0_NAME, nic=bond
             ):
                 raise conf.NET_EXCEPTION(
                     "Network %s is not attached to bond %s " % (net, self.bond)
@@ -1203,7 +1203,7 @@ class TestSanity14(TestSanityCaseBase):
         try:
             if not ll_networks.remove_label(
                 host_nic_dict={
-                    conf.HOST_NAME_0: [cls.bond]
+                    conf.HOST_0_NAME: [cls.bond]
                 }
             ):
                 logger.error(err)
@@ -1228,7 +1228,7 @@ class TestSanity15(TestSanityCaseBase):
         Attach required network to host
         Set the network host NIC down
         """
-        required_network_helper.deactivate_hosts()
+        required_network_helper.deactivate_hosts(host=conf.HOST_0_NAME)
         network_host_api_dict = {
             "add": {
                 "1": {
@@ -1239,10 +1239,7 @@ class TestSanity15(TestSanityCaseBase):
         }
         helper.send_setup_networks(sn_dict=network_host_api_dict)
         logger.info("Set %s down", conf.HOST_0_NICS[1])
-        if not ll_hosts.ifdownNic(
-            host=conf.HOST_0_IP, root_password=conf.HOSTS_PW,
-            nic=conf.HOST_0_NICS[1]
-        ):
+        if not conf.VDS_0_HOST.network.if_down(nic=conf.HOST_0_NICS[1]):
             raise conf.NET_EXCEPTION(
                 "Failed to set down %s" % conf.HOST_0_NICS[1]
             )
@@ -1253,13 +1250,13 @@ class TestSanity15(TestSanityCaseBase):
         """
         Check that Host is non-operational
         """
-        logger.info("Check that %s is non-operational", conf.HOST_NAME_0)
+        logger.info("Check that %s is non-operational", conf.HOST_0_NAME)
         if not ll_hosts.waitForHostsStates(
-            positive=True, names=conf.HOST_NAME_0, states="non_operational",
+            positive=True, names=conf.HOST_0_NAME, states="non_operational",
             timeout=conf.TIMEOUT * 2
         ):
             raise conf.NET_EXCEPTION(
-                "%s status is not non-operational" % conf.HOST_NAME_0
+                "%s status is not non-operational" % conf.HOST_0_NAME
             )
 
     @classmethod
@@ -1268,10 +1265,10 @@ class TestSanity15(TestSanityCaseBase):
         Activate all hosts
         """
         if not hl_networks.remove_net_from_setup(
-            data_center=conf.DC_0_NAME, network=[cls.net], host=[]
+            data_center=conf.DC_0, network=[cls.net], host=[]
         ):
             logger.error(
-                "Failed to remove %s from %s", cls.net, conf.DC_0_NAME
+                "Failed to remove %s from %s", cls.net, conf.DC_0
             )
         required_network_helper.activate_hosts()
         super(TestSanity15, cls).teardown_class()
@@ -1284,7 +1281,7 @@ class TestSanity16(TestSanityCaseBase):
     """
     __test__ = True
     net = conf.NETS[16][0]
-    dc = conf.DC_0_NAME
+    dc = conf.DC_0
     vnic_profile = conf.VNIC_PROFILES[16][0]
     description = "vnic_profile_test"
 

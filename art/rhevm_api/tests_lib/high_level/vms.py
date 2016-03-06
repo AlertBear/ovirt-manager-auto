@@ -2,6 +2,7 @@
 High-level functions above virtual machines
 """
 
+from art.rhevm_api import resources
 import logging
 import shlex
 from concurrent.futures import ThreadPoolExecutor
@@ -277,8 +278,10 @@ def migrate_by_nic_down(
     """
     status = True
     LOGGER.info("Setting %s down on %s", nic, src_host)
-    if not hosts.setHostToNonOperational(
-        orig_host=src_host, host_password=password, nic=nic
+    host_ip = hosts.get_host_ip_from_engine(host=src_host)
+    vds_resource = resources.VDS(ip=host_ip, root_password=password)
+    if not hosts.set_host_non_operational_nic_down(
+        host_resource=vds_resource, nic=nic
     ):
         LOGGER.error(
             "Couldn't start migration by disconnecting the NIC with "
@@ -296,8 +299,7 @@ def migrate_by_nic_down(
     LOGGER.info(
         "Put the %s in the UP state and activate the %s", nic, src_host
     )
-    ip = hosts.getHostIP(src_host)
-    if not hosts.ifupNic(host=ip, root_password=password, nic=nic, wait=False):
+    if not vds_resource.network.if_up(nic=nic):
         LOGGER.error("Couldn't put NIC %s in up state on %s", nic, src_host)
         return False
 

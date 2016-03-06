@@ -161,10 +161,16 @@ def activate_host_if_not_up(host):
     """
     Activate the host if the host is not up
 
-    :param host: IP/FQDN of the host
-    :return: True if host was activated properly False otherwise
+    Args:
+        host (str): IP/FQDN of the host
+
+    Returns:
+        bool: True if host was activated properly False otherwise
     """
     if not ll_hosts.getHostState(host) == ENUMS["host_state_up"]:
+        logging.info(
+            "Host %s status is %s. activating", host, ENUMS["host_state_up"]
+        )
         if not ll_hosts.activateHost(True, host):
             logging.error("Failed to activate host %s", host)
             return False

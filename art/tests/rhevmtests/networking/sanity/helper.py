@@ -22,7 +22,7 @@ def run_vm_on_host():
     :raise: conf.NET_EXCEPTION
     """
     if not net_help.run_vm_once_specific_host(
-        vm=conf.VM_0, host=conf.HOST_NAME_0, wait_for_up_status=True
+        vm=conf.VM_0, host=conf.HOST_0_NAME, wait_for_up_status=True
     ):
         raise conf.NET_EXCEPTION()
 
@@ -77,5 +77,5 @@ def send_setup_networks(sn_dict):
     :type sn_dict: dict
     :raise: conf.NET_EXCEPTION
     """
-    if not hl_host_network.setup_networks(conf.HOST_NAME_0, **sn_dict):
+    if not hl_host_network.setup_networks(conf.HOST_0_NAME, **sn_dict):
         raise conf.NET_EXCEPTION()

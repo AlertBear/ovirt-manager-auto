@@ -216,7 +216,6 @@ def waitForHostsStates(
     Returns:
         bool: True if hosts are in states, False otherwise.
     """
-
     if isinstance(names, basestring):
         list_names = split(names)
     else:
@@ -252,7 +251,7 @@ def waitForHostsStates(
 
     except APITimeout:
         HOST_API.logger.error(
-            "Timeout waiting for all hosts in state %s", states
+            "Timeout waiting for hosts (%s) in state %s", names, states
         )
         return False
 
@@ -518,22 +517,31 @@ def removeHost(positive, host, deactivate=False):
 @is_action()
 def activateHost(positive, host, wait=True):
     """
-    Description: activate host (set status to UP)
-    Author: edolinin
-    Parameters:
-       * host - name of a host to be activated
-    Return: status (True if host was activated properly, False otherwise)
+    Activate host (set status to UP)
+
+    __author__: edolinin
+
+    Args:
+        positive (bool): Expected result
+        host (str): Name of a host to be activated
+        wait (bool): Wait for host to be up
+
+    Returns:
+        bool: True if host was activated properly, False otherwise
     """
-    hostObj = HOST_API.find(host)
+    host_obj = HOST_API.find(host)
     logger.info("Activate host %s", host)
-    status = bool(HOST_API.syncAction(hostObj, "activate", positive))
+    status = bool(HOST_API.syncAction(host_obj, "activate", positive))
 
     if status and wait and positive:
-        testHostStatus = HOST_API.waitForElemStatus(hostObj, "up", 200)
+        test_host_status = HOST_API.waitForElemStatus(host_obj, "up", 200)
     else:
-        testHostStatus = True
+        test_host_status = True
 
-    return status and testHostStatus
+    res = status and test_host_status
+    if not res:
+        logger.error("Failed to activate host %s", host)
+    return res
 
 
 def _sort_hosts_by_priority(hosts, reverse=True):
@@ -598,42 +606,48 @@ def isHostInMaintenance(positive, host):
 
 
 @is_action()
-def deactivateHost(positive, host,
-                   expected_status=ENUMS['host_state_maintenance'],
-                   timeout=300):
+def deactivateHost(
+    positive, host, expected_status=ENUMS['host_state_maintenance'],
+    timeout=300
+):
     """
-    Description: check host state for SPM role, for 'timeout' seconds, and
-    deactivate it if it is not contending to SPM.
+    Check host state for SPM role, for 'timeout' seconds, and deactivate it
+    if it is not contending to SPM. (set status to MAINTENANCE)
 
-    (set status to MAINTENANCE)
-    Author: jhenner
-    Parameters:
-       * host - the name of a host to be deactivated.
-       * host_state_maintenance - the state to expect the host to remain in.
-       * timeout - time interval for checking if the state is changed
-    Return: status (True if host was deactivated properly and positive,
-                    False otherwise)
+    __author__: jhenner
+
+    Args:
+        positive (bool): Expected result
+        host (str): The name of a host to be deactivated.
+        expected_status (str): The state to expect the host to remain in.
+        timeout (int): Time interval for checking if the state is changed
+
+    Returns:
+        bool: True if host was deactivated properly and positive,
+            False otherwise
     """
-    hostObj = HOST_API.find(host)
+    host_obj = HOST_API.find(host)
     sampler = TimeoutingSampler(
-        timeout, 1, lambda x: x.get_storage_manager().get_valueOf_(), hostObj)
+        timeout, 1, lambda x: x.get_storage_manager().get_valueOf_(), host_obj)
+
+    logger.info("Deactivate host %s", host)
     for sample in sampler:
         if not sample == ENUMS['spm_state_contending']:
-            if not HOST_API.syncAction(hostObj, "deactivate", positive):
+            if not HOST_API.syncAction(host_obj, "deactivate", positive):
                 return False
 
             # If state got changed, it may be transitional
             # state so we may want to wait
             # for the final one. If it didn't, we certainly can
             # return immediately.
-            hostState = hostObj.get_status().get_state()
-            getHostStateAgain = HOST_API.find(host).get_status().get_state()
-            state_changed = hostState != getHostStateAgain
+            host_state = host_obj.get_status().get_state()
+            get_host_state_again = HOST_API.find(host).get_status().get_state()
+            state_changed = host_state != get_host_state_again
             if state_changed:
-                testHostStatus = HOST_API.waitForElemStatus(hostObj,
-                                                            expected_status,
-                                                            180)
-                return testHostStatus and positive
+                test_host_status = HOST_API.waitForElemStatus(
+                    host_obj, expected_status, 180
+                )
+                return test_host_status and positive
             else:
                 return not positive
 
@@ -1629,54 +1643,6 @@ def waitForHostNicState(host, nic, state, interval=1, attempts=1):
 
 
 @is_action()
-def ifdownNic(host, root_password, nic, wait=True):
-    """
-    Turning remote machine interface down
-    :param host: ip or fqdn of name
-    :param root_password: to login remote machine
-    :param nic: interface name. make sure you're not trying to disable rhevm
-           network!
-    :param wait: Wait for NIC status down
-    :return True/False
-    """
-    # must always run as a root in order to run ifdown
-    host_obj = machine.Machine(getIpAddressByHostName(host), "root",
-                               root_password).util(machine.LINUX)
-    if not host_obj.ifdown(nic):
-        return False
-    if wait:
-        return wait_for_host_nic_status(
-            host=host, username="root", password=root_password, nic=nic,
-            status="down", interval=10, attempts=10
-        )
-
-    return True
-
-
-@is_action()
-def ifupNic(host, root_password, nic, wait=True):
-    """
-    Turning remote machine interface up
-    :param host: ip or fqdn
-    :param root_password: to login remote machine
-    :param nic: interface name.
-    :param wait: Wait for NIC status up
-    :return True/False
-    """
-    # must always run as a root in order to run ifup
-    host_obj = machine.Machine(getIpAddressByHostName(host), "root",
-                               root_password).util(machine.LINUX)
-    if not host_obj.ifup(nic):
-        return False
-    if wait:
-        return wait_for_host_nic_status(
-            host=host, username="root", password=root_password, nic=nic,
-            status="up", interval=10, attempts=10
-        )
-    return True
-
-
-@is_action()
 def getOsInfo(host, root_password=''):
     """
     Description: get OS info wrapper.
@@ -1945,20 +1911,28 @@ def killProcesses(hostObj, procName, **kwargs):
 
 
 @is_action()
-def select_host_as_spm(positive, host, datacenter,
-                       timeout=HOST_STATE_TIMEOUT, sleep=10, wait=True):
+def select_host_as_spm(
+    positive, host, datacenter, timeout=HOST_STATE_TIMEOUT, sleep=10,
+    wait=True
+):
     """
-    Description: Selects the host to be spm
-    Author: gickowic
-    Parameters:
-       * host - name of a host to be selected as spm
-       * wait - True to wait for spm election to be completed before returning
-       (only waits if positive and wait are both true)
-    Return: status (True if host was elected as spm properly, False otherwise)
+    Selects the host to be spm
+
+    Args:
+        positive (bool): Expected result
+        host (str): Name of a host to be selected as spm
+        datacenter (str): Datacenter name
+        timeout (int): Timeout to wait for the host to be SPM
+        sleep (int): Time to sleep between iterations
+        wait (bool): True to wait for spm election to be completed before
+            returning (only waits if positive and wait are both true)
+
+    Returns:
+        bool: True if host was elected as spm properly, False otherwise
     """
-    hostObj = HOST_API.find(host)
-    HOST_API.logger.info('Selecting host %s as spm', host)
-    response = HOST_API.syncAction(hostObj, "forceselectspm", positive)
+    host_obj = HOST_API.find(host)
+    HOST_API.logger.info('Selecting host %s as SPM', host)
+    response = HOST_API.syncAction(host_obj, "forceselectspm", positive)
 
     if response:
         # only wait for spm election if action is expected to succeed
@@ -1967,29 +1941,31 @@ def select_host_as_spm(positive, host, datacenter,
             return checkHostSpmStatus(True, host)
         else:
             return True
+    logger.error("Failed to select host %s as SPM", host)
     return False
 
 
-def setHostToNonOperational(orig_host, host_password, nic):
+def set_host_non_operational_nic_down(host_resource, nic):
     """
     Helper Function for check_vm_migration.
     It puts the NIC with required network down and causes the Host
     to become non-operational
-    **Author**: gcheresh
-        **Parameters**:
-            *  *orig_host* - host to make non-operational
-            *  *host_password* - password for the host machine
-            *  *nic* - NIC with required network.
-                Will start the migration when turned down
-        **Returns**: True if Host became non-operational by putting NIC down,
-                     otherwise False
+
+    Args:
+        host_resource (Host): Host resource
+        nic (str): NIC name with required network.
+
+    Returns:
+        bool: True if Host became non-operational by putting NIC down,
+            otherwise False
     """
-    ip = getHostIP(orig_host)
-    if not ifdownNic(host=ip, root_password=host_password, nic=nic):
+    host_name = get_host_name_from_engine(host_ip=host_resource.ip)
+    if not host_resource.network.if_down(nic=nic):
         return False
 
-    return waitForHostsStates(True, names=orig_host, states='non_operational',
-                              timeout=TIMEOUT * 2)
+    return waitForHostsStates(
+        True, names=host_name, states='non_operational', timeout=TIMEOUT * 2
+    )
 
 
 def start_vdsm(host, password, datacenter):
@@ -2141,52 +2117,56 @@ def wait_for_active_vms_on_host(
         return False
 
 
-def check_host_nic_status(host, username, password, nic, status):
+def check_host_nic_status(host_resource, nic, status):
     """
     Get NIC status from host
-    :param host: Host IP or FQDN
-    :param username: Host username
-    :param password: Host password
-    :param nic: NIC name
-    :param status: Status to check
-    :return: True/False
-    """
-    status = "yes" if status.lower() == "up" else "no"
-    host_obj = machine.Machine(host, username, password).util(machine.LINUX)
-    cmd = ["ethtool", nic]
-    rc, out = host_obj.runCmd(cmd)
 
+    Args:
+        host_resource (Host): Host resource
+        nic (str): Host NIC name
+        status (str): Status to check for
+
+    Returns:
+        bool: True/False
+    """
+    logger.info("Check if host NIC %s status is %s", nic, status)
+    status = "yes" if status.lower() == "up" else "no"
+    cmd = ["ethtool", nic]
+    rc, out, _ = host_resource.run_command(cmd)
     if not rc:
         return False
 
     cmd_out = out.rsplit("\r\n\t", 1)[1].split(":")[-1].strip()
-    if cmd_out.lower() == status:
+    nic_status = cmd_out.lower()
+    if nic_status == status:
+        logger.error(
+            "Host NIC %s status is %s. Should be %s", nic, nic_status, status
+        )
         return True
     return False
 
 
-def wait_for_host_nic_status(host, username, password, nic, status,
-                             interval=1, attempts=1):
+def wait_for_host_nic_status(
+    host_resource, nic, status, interval=1, attempts=1
+):
     """
     Wait for host NIC status
-    :param host: host IP or FQDN
-    :param username: Host Username
-    :param password: Host password
-    :param nic: NIC name
-    :param status: Status to check
-    :param interval: Sleep in seconds between attempts
-    :param attempts: Number of attempts
-    :return: True/False
+
+    Args:
+        host_resource (Host): Host resource
+        nic (str): Host NIC name
+        status (str): Status to check for
+        interval (int): Time to sleep between attempts
+        attempts (int): How many attempts before return False
+
+    Returns:
+        bool: True/False
     """
-    while attempts:
-        if check_host_nic_status(
-            host=host, username=username, password=password, nic=nic,
-            status=status
-        ):
-            return True
-        time.sleep(interval)
-        attempts -= 1
-    return False
+    sample = TimeoutingSampler(
+        timeout=attempts, sleep=interval, func=check_host_nic_status,
+        host_resource=host_resource, nic=nic, status=status
+    )
+    return sample.waitForFuncStatus(result=True)
 
 
 def get_host_name_from_engine(host_ip):

@@ -34,6 +34,14 @@ CL_0 = CLUSTER_NAME[0]
 PASSTHROUGH_INTERFACE = "pci_passthrough"
 VM_0 = VM_NAME[0]
 VM_1 = VM_NAME[1]
+HOST_0_NICS = None  # Filled in test
+VDS_0_HOST = None  # Filled in test
+HOST_0_NAME = None  # Filled in test
+HOST_0_IP = None  # Filled in test
+HOST_1_NICS = None  # Filled in test
+VDS_1_HOST = None  # Filled in test
+HOST_1_NAME = None  # Filled in test
+HOST_1_IP = None  # Filled in test
 
 # Network Custom Priority parameters
 BRIDGE_OPTS = OrderedDict({"priority": ["32768", "1"],

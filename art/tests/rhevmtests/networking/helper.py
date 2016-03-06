@@ -544,7 +544,7 @@ def remove_ifcfg_files(vms, exclude_nics=list()):
     return True
 
 
-def get_vm_interfaces_list(vm_resource, exclude_nics):
+def get_vm_interfaces_list(vm_resource, exclude_nics=list()):
     """
     Get VM interface list beside exclude_nics
 

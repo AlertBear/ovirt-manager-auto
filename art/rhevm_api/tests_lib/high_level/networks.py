@@ -25,6 +25,7 @@ import art.core_api.apis_exceptions as apis_exceptions
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.low_level.general as ll_general
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
@@ -105,12 +106,31 @@ def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
     return False, tag
 
 
-# FIXME: method is using only for checking status. need to change to a more
-# simple method
 @core_api.is_action()
-def validateNetwork(positive, cluster, network, tag, val):
+def validate_network_param(positive, cluster, network, tag, val):
+    """
+    Validate network param
+
+    Args:
+        positive (bool): Expected result
+        cluster (str): Cluster name where the network is
+        network (str): Network name
+        tag (str): Tag to get the value for
+        val (str): Value to check
+
+    Returns:
+        bool: True/False
+    """
+    log_info, log_error = ll_general.get_log_msg(
+        action="Validate", obj_type="network", obj_name=network,
+        positive=positive, tag=tag, val=val
+    )
+    logger.info(log_info)
     status, output = getNetworkConfig(positive, cluster, network, tag=tag)
-    return bool(status and str(output['value']).lower() == str(val).lower())
+    res = bool(status and str(output['value']).lower() == str(val).lower())
+    if not res:
+        logger.error(log_error)
+    return res
 
 
 @core_api.is_action()

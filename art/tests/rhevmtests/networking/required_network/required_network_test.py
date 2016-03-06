@@ -5,430 +5,202 @@
 Testing RequiredNetwork network feature.
 1 DC, 1 Cluster, 1 Hosts will be created for testing.
 """
+import helper
 import logging
-from rhevmtests.networking import config
-from art.unittest_lib import NetworkTest as TestCase, attr
+import config as conf
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.test_handler.exceptions import NetworkException
-from art.rhevm_api.tests_lib.high_level.hosts import activate_host_if_not_up
-from art.rhevm_api.tests_lib.high_level.networks import (
-    createAndAttachNetworkSN, validateNetwork, remove_all_networks
-)
-from art.rhevm_api.tests_lib.low_level.hosts import (
-    ifdownNic, waitForHostsStates, ifupNic, check_host_nic_status,
-)
-from art.rhevm_api.tests_lib.low_level.networks import (
-    isNetworkRequired, update_cluster_network
-)
+from art.unittest_lib import NetworkTest, attr
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 logger = logging.getLogger("Required_Network_Cases")
-HOST_NICS = None  # filled in setup module
-
-########################################################################
-
-########################################################################
-#                             Test Cases                               #
-########################################################################
-
-
-def setup_module():
-    """
-    obtain host NICs
-    """
-    global HOST_NICS
-    HOST_NICS = config.VDS_HOSTS[0].nics
-
-
-class TearDownRequiredNetwork(TestCase):
-    """
-    Teardown class for RequiredNetwork job
-    """
-    @classmethod
-    def teardown_class(cls):
-        logger.info("Set all host interfaces up")
-        for nic in HOST_NICS[1:]:
-            if not check_host_nic_status(
-                host=config.HOSTS[0], username=config.HOSTS_USER,
-                password=config.HOSTS_PW, nic=nic, status="up"
-            ):
-                logger.info("Set %s up", nic)
-                if not ifupNic(
-                    host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
-                    nic=nic, wait=False
-                ):
-                    logger.error("Failed to turn %s up", nic)
-
-        logger.info("Set %s status to UP if not up", config.HOSTS[0])
-        if not activate_host_if_not_up(config.HOSTS[0]):
-            logger.error("Failed to activate %s", config.HOSTS[0])
-
-        logger.info("Remove all networks from setup")
-        if not (remove_all_networks(
-            datacenter=config.DC_NAME[0], mgmt_network=config.MGMT_BRIDGE,
-            cluster=config.CLUSTER_NAME[0]) and createAndAttachNetworkSN(
-            host=config.VDS_HOSTS[0], network_dict={}, auto_nics=[0])
-                ):
-            logger.error("Cannot remove networks from setup")
 
 
 @attr(tier=2)
+class TearDownRequiredNetwork(NetworkTest):
+    """
+    Teardown class for RequiredNetwork job
+    """
+    net = None
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Set host NICs up if needed
+        Remove network from setup
+        """
+        for nic in conf.HOST_0_NICS[1:]:
+            if not ll_hosts.check_host_nic_status(
+                host_resource=conf.VDS_0_HOST, nic=nic,
+                status=conf.NIC_STATE_UP
+            ):
+                logger.info("Set %s up", nic)
+                if not conf.VDS_0_HOST.network.if_up(nic=nic):
+                    logger.error("Failed to set %s up", nic)
+
+        if cls.net:
+            hl_networks.remove_net_from_setup(
+                host=conf.HOST_0_NAME, data_center=conf.DC_0, network=[cls.net]
+            )
+
+        hl_hosts.activate_host_if_not_up(host=conf.HOST_0_NAME)
+
+
 class TestRequiredNetwork01(TearDownRequiredNetwork):
     """
-    VM Network
-    Check that MGMT network is required by default and try to set it to
-    non required.
+    Check that management network is required by default
+    Try to set it to non required.
     """
     __test__ = True
+    cluster = conf.CL_0
+    mgmt = conf.MGMT_BRIDGE
 
     @polarion("RHEVM3-3753")
     def test_mgmt(self):
         """
-        Check that MGMT network is required by default and try to set it to
-        non required.
+        Check that management network is required by default
+        Try to set it to non required.
         """
-        logger.info(
-            "Checking that %s is required by default", config.MGMT_BRIDGE
-        )
-        if not isNetworkRequired(
-            network=config.MGMT_BRIDGE, cluster=config.CLUSTER_NAME[0]
+        if not ll_networks.is_network_required(
+            network=self.mgmt, cluster=self.cluster
         ):
-            raise NetworkException(
-                "%s is not required by default" % config.MGMT_BRIDGE
-            )
+            raise conf.NET_EXCEPTION()
 
-        logger.info("Editing %s to be non-required", config.MGMT_BRIDGE)
-        if update_cluster_network(
-            positive=True, cluster=config.CLUSTER_NAME[0],
-            network=config.MGMT_BRIDGE, required="false"
+        if not ll_networks.update_cluster_network(
+            positive=False, cluster=self.cluster, network=self.mgmt,
+            required="false"
         ):
-            raise NetworkException(
-                "%s is set to non required" % config.MGMT_BRIDGE
-            )
-
-##############################################################################
+            raise conf.NET_EXCEPTION()
 
 
-@attr(tier=2)
 class TestRequiredNetwork02(TearDownRequiredNetwork):
     """
-    VM Network
-    Add sw1 as non-required, attach it to the host and check that sw1 status is
-    operational.
-    Check that host is operational after ifdown non-required network eth1
+    Attach required network to host
+    Set host NIC to down
+    Check that host status is non-operational
     """
     __test__ = True
+    net = conf.NETS[2][0]
 
     @classmethod
     def setup_class(cls):
         """
-        Create sw1 network as non-required and attach it to the host.
+        Attach required network to host
         """
         local_dict = {
-            config.NETWORKS[0]: {
-                "nic": 1, "required": "false"
+            cls.net: {
+                "nic": 1,
             }
         }
-        logger.info(
-            "Attach %s to DC/Cluster/Host(%s)", config.NETWORKS[0],
-            HOST_NICS[1]
-        )
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
+
+        if not hl_networks.createAndAttachNetworkSN(
+            host=conf.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
         ):
-            raise NetworkException(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
-
-    @polarion("RHEVM3-3757")
-    def test_1operational_network(self):
-        """
-        Validate that sw1 is operational.
-        """
-        logger.info("Check that %s status is operational", config.NETWORKS[0])
-        if not validateNetwork(
-            positive=True, cluster=config.CLUSTER_NAME[0],
-            network=config.NETWORKS[0], tag="status", val="operational"
-        ):
-            raise NetworkException(
-                "%s status is not operational" % config.NETWORKS[0]
-            )
-
-    @polarion("RHEVM3-3738")
-    def test_2nonrequired(self):
-        """
-        Turn down eth1 and check that Host is OPERATIONAL
-        """
-        logger.info("Turn %s down", HOST_NICS[1])
-        if not ifdownNic(
-            host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
-            nic=HOST_NICS[1]
-        ):
-            raise NetworkException(
-                "Failed to turn down %s" % HOST_NICS[1]
-            )
-
-        logger.info("Check that %s is UP", config.HOSTS[0])
-        if not waitForHostsStates(
-            positive=True, names=config.HOSTS[0], timeout=70
-        ):
-            raise NetworkException("%s status is not UP" % config.HOSTS[0])
-
-
-##############################################################################
-
-
-@attr(tier=2)
-class TestRequiredNetwork03(TearDownRequiredNetwork):
-    """
-    VM Network
-    Set sw1 as required, turn eth1 down and check that host status is
-    non-operational
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create sw1 as required and turn eth1 down
-        """
-        local_dict = {config.NETWORKS[0]: {
-            "nic": 1, "required": "true"}
-        }
-
-        logger.info(
-            "Attach %s to DC/Cluster/Host(%s)", config.NETWORKS[0],
-            HOST_NICS[1]
-        )
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
-        ):
-            raise NetworkException(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
-
-        logger.info("Turn %s down", HOST_NICS[1])
-        if not ifdownNic(
-            host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
-            nic=HOST_NICS[1]
-        ):
-            raise NetworkException("Failed to turn down %s" % HOST_NICS[1])
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-3750")
     def test_operational(self):
         """
-        Check that Host is non-operational
+        Set host NIC to down
+        Check that host status is non-operational
         """
-        logger.info("Check that %s is non-operational", config.HOSTS[0])
-        if not waitForHostsStates(
-            positive=True, names=config.HOSTS[0],
-            states="non_operational", timeout=100
-        ):
-            raise NetworkException(
-                "%s status is not non-operational" % config.HOSTS[0]
-            )
+        helper.set_nics_and_wait_for_host_status(
+            nics=[conf.HOST_0_NICS[1]], nic_status=conf.NIC_STATE_DOWN,
+            host_status=conf.HOST_NONOPERATIONAL
+        )
 
 
-##############################################################################
-
-
-@attr(tier=2)
-class TestRequiredNetwork04(TearDownRequiredNetwork):
+class TestRequiredNetwork03(TearDownRequiredNetwork):
     """
-    VLAN over BOND
-    Add sw162 as required, attach it to the host and check that sw162 status is
-    operational.
-    Check that host is non-operational after ifdown required networks eth2
-    and eth3
+    Attach required VLAN network over BOND.
+    Set BOND slaves down
+    Check that host is non-operational
+    Set BOND slaves up
+    Check that host is operational
     """
     __test__ = True
+    net = conf.NETS[3][0]
+    bond = "bond4"
+    vlan = conf.VLAN_IDS[0]
 
     @classmethod
     def setup_class(cls):
         """
-        Create sw162 network as required and attach it to the host bond.
+        Attach required network over BOND.
         """
-        logger.info(
-            "Create and attach %s over %s(%s,%s)", config.VLAN_NETWORKS[0],
-            config.BOND[0], HOST_NICS[2], HOST_NICS[3]
-        )
         local_dict = {
-            None: {"nic": config.BOND[0], "slaves": [2, 3]},
-            config.VLAN_NETWORKS[0]: {
-                "nic": config.BOND[0], "required": "true",
-                "vlan_id": config.VLAN_ID[0]
+            None: {
+                "nic": cls.bond,
+                "slaves": [2, 3]
+            },
+            cls.net: {
+                "nic": cls.bond,
+                "vlan_id": cls.vlan
             }
         }
 
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
+        if not hl_networks.createAndAttachNetworkSN(
+            host=conf.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
         ):
-            raise NetworkException(
-                "Cannot create and attach %s over %s" %
-                (config.VLAN_NETWORKS[0], config.BOND[0])
-            )
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-3752")
-    def test_1nonoperational_bond_down(self):
+    def test_1_nonoperational_bond_down(self):
         """
-        Check that host in non-operational after turn down both BOND slaves
+        Set bond SLAVES DOWN
+        Check that host is non-operational
         """
-        for nic in HOST_NICS[2:4]:
-            logger.info("Turn %s down", nic)
-            if not ifdownNic(
-                host=config.HOSTS_IP[0], root_password=config.HOSTS_PW, nic=nic
-            ):
-                raise NetworkException("Failed to turn down %s" % nic)
-
-        logger.info("Check that %s is non-operational", config.HOSTS[0])
-        if not waitForHostsStates(
-            positive=True, names=config.HOSTS[0],
-            states="non_operational", timeout=300
-        ):
-            raise NetworkException(
-                "%s status is not non-operational" % config.HOSTS[0]
-            )
+        helper.set_nics_and_wait_for_host_status(
+            nics=conf.HOST_0_NICS[2:4], nic_status=conf.NIC_STATE_DOWN,
+            host_status=conf.HOST_NONOPERATIONAL
+        )
 
     @polarion("RHEVM3-3745")
-    def test_2nonoperational_bond_down(self):
+    def test_2_nonoperational_bond_down(self):
         """
-        Check that host is operational after turn up one slave
+        Set BOND slaves up
+        Check that host is operational
         """
-        logger.info("Turn %s ip", HOST_NICS[2])
-        if not ifupNic(
-            host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
-            nic=HOST_NICS[2]
-        ):
-            raise NetworkException("Failed to turn up %s" % HOST_NICS[2])
-
-        logger.info("Check that %s is operational", config.HOSTS[0])
-        if not waitForHostsStates(
-            positive=True, names=config.HOSTS[0], timeout=300
-        ):
-            raise NetworkException(
-                "%s status is not operational" % config.HOSTS[0]
-            )
+        helper.set_nics_and_wait_for_host_status(
+            nics=conf.HOST_0_NICS[2:4], nic_status=conf.NIC_STATE_UP,
+        )
 
 
-##############################################################################
-
-
-@attr(tier=2)
-class TestRequiredNetwork05(TearDownRequiredNetwork):
+class TestRequiredNetwork04(TearDownRequiredNetwork):
     """
-    VLAN Network
-    Add sw162 as required, attach it to the host and check that sw1 status is
-    operational.
-    Check that host is non-operational after ifdown required network eth1
+    Attach required non-VM network to host
+    Set host NIC down
+    Check that host is non-operational
     """
     __test__ = True
+    net = conf.NETS[4][0]
+    networks = [net]
 
     @classmethod
     def setup_class(cls):
         """
-        Create sw162 network as required and attach it to the host.
+        Attach required non-VM network to host
         """
         local_dict = {
-            config.VLAN_NETWORKS[0]: {
-                "vlan_id": config.VLAN_ID[0],
+            cls.net: {
                 "nic": 1,
-                "required": "true"
             }
         }
-        logger.info(
-            "Attach %s network to DC/Cluster/Host(%s)",
-            config.VLAN_NETWORKS[0], HOST_NICS[1]
-        )
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0, 1]
+
+        if not hl_networks.createAndAttachNetworkSN(
+            host=conf.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
         ):
-            raise NetworkException(
-                "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
-            )
-
-    @polarion("RHEVM3-3752")
-    def test_nonoperational(self):
-        """
-        Check that host in non-operational after turn down eth1
-        """
-        logger.info("Turn %s down", HOST_NICS[1])
-        if not ifdownNic(
-            host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
-            nic=HOST_NICS[1]
-        ):
-            raise NetworkException(
-                "Failed to turn down %s" % HOST_NICS[1]
-            )
-
-        logger.info("Check that %s is non-operational", config.HOSTS[0])
-        if not waitForHostsStates(
-            positive=True, names=config.HOSTS[0],
-            states="non_operational", timeout=100
-        ):
-            raise NetworkException(
-                "%s status is not non-operational" % config.HOSTS[0]
-            )
-
-
-##############################################################################
-
-
-@attr(tier=2)
-class TestRequiredNetwork06(TearDownRequiredNetwork):
-    """
-    Non-VM Network
-    Add sw1 as required, attach it to the host.
-    Check that host is non-operational after ifdown required network eth1
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create sw1 network as non-required and attach it to the host.
-        """
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": 1, "usages": "", "required": "true"
-            }
-        }
-        logger.info(
-            "Attach %s network to DC/Cluster/Host(%s)", config.NETWORKS[0],
-            HOST_NICS[1]
-        )
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
-        ):
-            raise NetworkException("Cannot create and attach networks")
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-3744")
     def test_nonoperational(self):
         """
-        Check that host in non-operational after turn down eth1
+        Set host NIC down
+        Check that host is non-operational
         """
-        logger.info("Turn %s down", HOST_NICS[1])
-        if not ifdownNic(
-            host=config.HOSTS_IP[0], root_password=config.HOSTS_PW,
-            nic=HOST_NICS[1]
-        ):
-            raise NetworkException(
-                "Failed to turn down %s" % HOST_NICS[1]
-            )
-
-        logger.info("Check that %s is non-operational", config.HOSTS[0])
-        if not waitForHostsStates(
-            positive=True, names=config.HOSTS[0],
-            states="non_operational", timeout=100
-        ):
-            raise NetworkException(
-                "%s status is not non-operational" % config.HOSTS[0]
-            )
+        helper.set_nics_and_wait_for_host_status(
+            nics=[conf.HOST_0_NICS[1]], nic_status=conf.NIC_STATE_DOWN,
+            host_status=conf.HOST_NONOPERATIONAL
+        )

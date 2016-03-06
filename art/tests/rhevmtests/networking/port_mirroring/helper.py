@@ -6,8 +6,8 @@ Utilities used by port_mirroring_test
 """
 
 import logging
+import config as conf
 from rhevmtests import helpers
-import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as net_help
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
@@ -126,8 +126,7 @@ def check_traffic_during_icmp(
 
 
 def check_received_traffic(
-    src_ip, dst_ip, src_vm, listen_vm=conf.VM_NAME[0], nic=conf.VM_NICS[1],
-    positive=True
+    src_ip, dst_ip, src_vm, listen_vm=conf.VM_NAME[0], nic=1, positive=True
 ):
     """
     Check if ICMP traffic was received or not according to positive and raise
@@ -141,12 +140,13 @@ def check_received_traffic(
     :type src_vm: str
     :param listen_vm: VM that performs port mirroring
     :type listen_vm: str
-    :param nic: NIC on VM to perform port mirroring
-    :type nic: str
+    :param nic: NIC index
+    :type nic: int
     :param positive: True if traffic is expected, False otherwise
     :type positive: bool
     :raise: conf.NET_EXCEPTION
     """
+    nic = conf.VM_NICS_DICT[listen_vm][nic]
     exp_info = "Traffic is not received" if positive else "Traffic is received"
     logger.info(
         "Check the ICMP traffic on mirroring VM %s NIC %s", listen_vm, nic
@@ -199,7 +199,7 @@ def configure_ip_all_vms():
             vm_resource, exclude_nics=[conf.VM_NICS[0]]
         )
         if not interfaces:
-            raise conf.NET_EXCEPTION("Failed to get interface from %s" % vm)
+            raise conf.NET_EXCEPTION("Failed to get interfaces from %s" % vm)
 
         for inter, ip in zip(interfaces, [conf.NET1_IPS[i], conf.NET2_IPS[i]]):
             logger.info("Configure IPs on %s for %s", vm, inter)

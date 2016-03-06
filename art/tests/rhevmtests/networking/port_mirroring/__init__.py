@@ -7,8 +7,9 @@ Port Mirroring init.
 
 import helper
 import logging
+import config as conf
+from rhevmtests import helpers
 from rhevmtests import networking
-import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as net_help
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
@@ -41,6 +42,13 @@ def setup_package():
 
     helper.add_nics_to_vms()
     helper.configure_ip_all_vms()
+
+    for vm in conf.VM_NAME[:2]:
+        vm_resource = helpers.get_vm_resource(vm=vm)
+        interfaces = net_help.get_vm_interfaces_list(vm_resource)
+        if not interfaces:
+            raise conf.NET_EXCEPTION("Failed to get interfaces from %s" % vm)
+        conf.VM_NICS_DICT[vm] = interfaces
 
     logger.info("Stop iptables service on hosts")
     for host in conf.VDS_HOSTS[:2]:

@@ -160,7 +160,7 @@ class TestPortMirroringCase03(TestCase):
         )
 
         helper.check_received_traffic(
-            nic=conf.VM_NICS[0], src_ip=MGMT_IPS[3], dst_ip=MGMT_IPS[4],
+            nic=0, src_ip=MGMT_IPS[3], dst_ip=MGMT_IPS[4],
             src_vm=MGMT_IPS[3]
         )
 
@@ -192,7 +192,7 @@ class TestPortMirroringCase04(TestCase):
             "only VM1 gets this traffic."
         )
         helper.check_received_traffic(
-            nic=conf.VM_NICS[0], src_ip=MGMT_IPS[1], dst_ip=MGMT_IPS[2],
+            nic=0, src_ip=MGMT_IPS[1], dst_ip=MGMT_IPS[2],
             src_vm=MGMT_IPS[1]
         )
 
@@ -212,7 +212,7 @@ class TestPortMirroringCase04(TestCase):
 
         helper.check_received_traffic(
             src_ip=NET1_IPS[0], dst_ip=NET1_IPS[3],
-            src_vm=MGMT_IPS[0], nic=conf.VM_NICS[0], positive=False
+            src_vm=MGMT_IPS[0], nic=0, positive=False
         )
 
     @polarion("RHEVM3-4006")
@@ -320,21 +320,15 @@ class TestPortMirroringCase06(TestCase):
             "Setting down %s on %s", conf.VLAN_NETWORKS[1],
             conf.HOSTS[0]
         )
-        if not ll_hosts.ifdownNic(
-                host=conf.HOSTS_IP[0], root_password=conf.HOSTS_PW,
-                nic=conf.VLAN_NETWORKS[0]
-        ):
+        if not conf.VDS_HOSTS[0].network.if_down(nic=conf.VLAN_NETWORKS[0]):
             raise conf.NET_EXCEPTION(
                 "Failed to set down %s on %s" %
                 (conf.VLAN_NETWORKS[0], conf.HOSTS[0])
             )
 
-        if not ll_hosts.ifupNic(
-                host=conf.HOSTS_IP[0], root_password=conf.HOSTS_PW,
-                nic=conf.VLAN_NETWORKS[0]
-        ):
+        if not conf.VDS_HOSTS[0].network.if_up(nic=conf.VLAN_NETWORKS[0]):
             raise conf.NET_EXCEPTION(
-                "Failed to set down %s on %s" %
+                "Failed to set up %s on %s" %
                 (conf.VLAN_NETWORKS[0], conf.HOSTS[0])
             )
         vm_resource = global_helper.get_host_resource(

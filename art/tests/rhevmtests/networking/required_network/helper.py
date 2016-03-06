@@ -6,37 +6,64 @@ Helper for required network job
 """
 
 import logging
-import rhevmtests.networking.config as config
-import art.test_handler.exceptions as exceptions
+import config as conf
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 
 logger = logging.getLogger("Required_Network_Helper")
 
 
-def deactivate_hosts():
+def deactivate_hosts(host=None):
     """
-    Set config.HOSTS[0] as SPM
-    Deactivating all hosts in setup besides [config.VDS_HOSTS[0]
+    Set first host as SPM
+    Deactivating all other hosts in setup
+
+    Args:
+        host (str): Host name
     """
-    if not ll_hosts.checkHostSpmStatus(True, config.HOSTS[0]):
-        logger.info("Set %s as SPM", config.HOSTS[0])
+    host = host if host else conf.HOST_0_NAME
+    if not ll_hosts.checkHostSpmStatus(
+        positive=True, hostName=host
+    ):
         if not ll_hosts.select_host_as_spm(
-            True, config.HOSTS[0], config.DC_NAME[0]
+            positive=True, host=host, datacenter=conf.DC_0
         ):
-            raise exceptions.NetworkException(
-                "Failed to set %s as SPM" % config.HOSTS[0]
-            )
-    for host in config.HOSTS[1:]:
-        if not ll_hosts.deactivateHost(True, host):
-            raise exceptions.NetworkException(
-                "Couldn't put %s into maintenance" % host
-            )
+            raise conf.NET_EXCEPTION()
+
+    hosts = filter(lambda x: host != x, conf.HOSTS)
+    for host in hosts:
+        if not ll_hosts.deactivateHost(positive=True, host=host):
+            raise conf.NET_EXCEPTION()
 
 
 def activate_hosts():
     """
-    Activating all hosts in setup besides [config.VDS_HOSTS[0]
+    Activating all hosts in setup besides the first host
     """
-    for host in config.HOSTS[1:]:
-        if not ll_hosts.activateHost(True, host):
-            logger.error("Couldn't set %s up", host)
+    for host in conf.HOSTS[1:]:
+        ll_hosts.activateHost(positive=True, host=host)
+
+
+def set_nics_and_wait_for_host_status(nics, nic_status, host_status="up"):
+    """
+    Set host NICs state and check for host status
+
+    Args:
+        nics (list): host NICs list
+        nic_status (str): NIC status to set the NICs
+        host_status (str): Host status to wait for
+
+    Raises:
+        NetworkException: If operation failed
+    """
+    func = getattr(conf.VDS_0_HOST.network, "if_%s" % nic_status)
+    for nic in nics:
+        logger.info("Set %s %s", nic, nic_status)
+        if not func(nic=nic):
+            raise conf.NET_EXCEPTION(
+                "Failed to set %s %s" % (nic, nic_status)
+            )
+
+    if not ll_hosts.waitForHostsStates(
+        positive=True, names=conf.HOST_0_NAME, timeout=300, states=host_status
+    ):
+        raise conf.NET_EXCEPTION()

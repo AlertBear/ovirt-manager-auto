@@ -338,18 +338,23 @@ def removeNetworkFromCluster(positive, network, cluster):
 
 
 @is_action()
-def isNetworkRequired(network, cluster):
+def is_network_required(network, cluster):
     """
-    Description: Check if Network is required
-    Author: atal
-    Parameters:
-        * network - logical network name
-        * cluster = cluster name
-    return: True if network is required, False otherwise.
-    """
-    net_obj = get_cluster_network(cluster, network)
+    Check if Network is required
 
-    return net_obj.get_required()
+    Args:
+        network (str): Network name
+        cluster (str): cluster name
+
+    Returns:
+        bool: True if network is required, False otherwise.
+    """
+    logger.info("Check if network %s is required", network)
+    net_obj = get_cluster_network(cluster, network)
+    res = net_obj.get_required()
+    if not res:
+        logger.error("Network %s is not required", network)
+    return res
 
 
 def check_ip_rule(vds_resource, subnet):

@@ -14,7 +14,6 @@ from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest
 import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.sriov as ll_sriov
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
@@ -293,16 +292,10 @@ class TestSriov03(helper.TestSriovBase):
         """
         Check that putting link up and down doesn't change the number of VFs
         """
-        if not ll_hosts.ifdownNic(
-            host=conf.HOSTS_IP[0], root_password=conf.HOSTS_PW,
-            nic=self.nic_name
-        ):
+        if not conf.VDS_0_HOST.network.if_down(nic=self.nic_name):
             raise conf.NET_EXCEPTION()
 
-        if not ll_hosts.ifupNic(
-            host=conf.HOSTS_IP[0], root_password=conf.HOSTS_PW,
-            nic=self.nic_name
-        ):
+        if not conf.VDS_0_HOST.network.if_up(nic=self.nic_name):
             raise conf.NET_EXCEPTION()
 
 

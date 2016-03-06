@@ -8,15 +8,6 @@ config file for sanity test
 from rhevmtests.networking.config import *  # NOQA
 import rhevmtests.helpers as global_helper
 
-# Global
-HOST_0_NICS = None  # Filled in setup_package
-VDS_HOST_0 = None  # Filled in setup_package
-HOST_NAME_0 = None  # Filled in setup_package
-HOST_0_IP = None  # Filled in setup_package
-CLUSTER_0_NAME = CLUSTER_NAME[0]
-VM_0 = VM_NAME[0]
-DC_0_NAME = DC_NAME[0]
-
 # host network QoS
 QOS_NAME = global_helper.generate_object_names(
     num_of_cases=3, num_of_objects=1, prefix="QoS"
