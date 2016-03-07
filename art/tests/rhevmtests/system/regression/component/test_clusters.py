@@ -37,33 +37,13 @@ class TestCaseCluster(TestCase):
     def set_thresholds_to_default(self):
         """
         Set thresholds to default cluster
-        :return: True if update cluset succeeded False otherwise
+        :return: True if update cluster succeeded False otherwise
         :rtype: bool
         """
         return ll_cluster.updateCluster(
             positive=True, cluster=self.cluster_name,
             data_center=self.dc_name, scheduling_policy='none'
         )
-
-    def get_threshold_params(self):
-        """
-        Get the threshold params
-        :return: dictionary with threshold params
-        :rtype: dict
-        """
-        cluster = ll_cluster.get_cluster_object(self.cluster_name)
-        thresholds = cluster.get_scheduling_policy().get_thresholds()
-        thrhld_high = thresholds.get_high()
-        thrhld_low = thresholds.get_low()
-        thrhld_duration = thresholds.get_duration()
-        policy = thresholds.get_policy()
-        return {
-            'thrhld_high': thrhld_high,
-            'thrhld_low': thrhld_low,
-            'thrhld_duration': thrhld_duration,
-            'policy': policy,
-            'positive': True
-        }
 
     @attr(tier=2)
     def test_add_existing_cluster(self):
@@ -381,6 +361,7 @@ class TestCaseCluster(TestCase):
         update the cluster scheduling policy from evenly_distributed
         to power_saving
         """
+
         logger.info('Update cluster - scheduling policy')
         update_status = ll_cluster.updateCluster(
             positive=True, cluster=self.cluster_name,
@@ -394,8 +375,12 @@ class TestCaseCluster(TestCase):
             scheduling_policy=config.ENUMS['scheduling_policy_power_saving'],
             thrhld_low='20'
         )
+
         self.assertTrue(update_status, 'Update cluster - scheduling policy')
         self.assertTrue(check_status, 'Check cluster - scheduling policy')
+        self.assertTrue(
+            self.set_thresholds_to_default(), 'Restore - scheduling policy'
+        )
 
     @bz({'1315657': {'engine': ['cli']}})
     @attr(tier=2)
