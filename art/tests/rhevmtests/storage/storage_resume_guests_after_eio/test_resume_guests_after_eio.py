@@ -1,68 +1,92 @@
-from art.unittest_lib import StorageTest as TestCase
 import logging
 import time
 from multiprocessing import Process
-from art.unittest_lib import attr
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
-from art.rhevm_api.tests_lib.low_level import vms, storagedomains, disks, hosts
+
+from art.rhevm_api.tests_lib.low_level import (
+    disks as ll_disks,
+    hosts as ll_hosts,
+    storagedomains as ll_sd,
+    vms as ll_vms,
+)
 from art.rhevm_api.utils import storage_api
-from rhevmtests.storage.helpers import perform_dd_to_disk
+from art.test_handler import exceptions
 from art.test_handler.settings import opts
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.unittest_lib import attr, StorageTest as TestCase
+from rhevmtests.storage import helpers as storage_helpers
 
 import config
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 DC_TYPE = config.STORAGE_TYPE
 FILE_TO_WRITE = "/tmp/resume_guests_tests"
 
-GB = 1024 ** 3
-
-VM_USER = config.VMS_LINUX_USER
-VM_PASSWORD = config.VMS_LINUX_PW
 NFS = config.STORAGE_TYPE_NFS
 ISCSI = config.STORAGE_TYPE_ISCSI
 
 
 def _wait_for_vm_booted(
-        vm_name, os_type, user, password, timeout=300, interval=15):
-    return vms.checkVMConnectivity(
+        vm_name, os_type, user, password, timeout=300, interval=15
+):
+    return ll_vms.checkVMConnectivity(
         True, vm_name, os_type, timeout / interval, interval, user=user,
-        password=password, nic=config.NIC_NAME[0])
+        password=password, nic=config.NIC_NAME[0]
+    )
 
 
 class TestResumeGuests(TestCase):
     __test__ = False
-    vm = "%s_%s" % (config.VM_NAME, TestCase.storage)
     remove_file = False
 
     def setUp(self):
-        """ just start writing
         """
-        cmd = "dd of=%s if=/dev/urandom bs=128M oflag=direct &" % FILE_TO_WRITE
-        LOGGER.info("Starting writing process")
-        assert vms.run_cmd_on_vm(
-            self.vm, cmd, VM_USER, VM_PASSWORD)[0]
+        Perform dd command
+        """
+        self.vm = self.create_unique_object_name(config.OBJECT_TYPE_VM)
+        cmd = "dd if=/dev/urandom of=%s bs=128M oflag=direct &" % FILE_TO_WRITE
+        logger.info("Starting writing process")
+        if not ll_vms.run_cmd_on_vm(
+            self.vm, cmd, config.VMS_LINUX_USER, config.VMS_LINUX_PW
+        )[0]:
+            raise exceptions.DiskException(
+                "Failed to run dd command on %s" % self.vm
+            )
         self.remove_file = True
-        # give it time to really start writing
-        time.sleep(10)
+        if not storage_helpers.wait_for_dd_to_start(self.vm):
+            raise exceptions.DiskException(
+                "dd didn't start writing to disk on %s" % self.vm
+            )
 
     def tearDown(self):
-        """ restart the vm (so kill writing process) & remove created file
+        """
+        Restart the vm (so kill writing process) & remove created file
         """
         # restart vm - this way we will also kill dd
-        LOGGER.info("Stopping the VM")
-        assert vms.stopVm(True, self.vm)
-
-        LOGGER.info("Starting the VM")
-        assert vms.startVm(True, self.vm, config.VM_UP, True)
+        logger.info("Powering off the VM")
+        if not ll_vms.stopVm(True, self.vm):
+            logger.error("Failed to power off vm %s", self.vm)
+            TestResumeGuests.test_failed = True
+        logger.info("Powering on the VM")
+        if not ll_vms.startVm(True, self.vm, config.VM_UP, True):
+            logger.error("Failed to power on vm %s", self.vm)
+            TestResumeGuests.test_failed = True
 
         if self.remove_file:
             cmd = "rm -f %s" % FILE_TO_WRITE
-            LOGGER.info("Removing file %s we were writing to" % FILE_TO_WRITE)
-            # big timeout as rm may take a lot of time in case of big files
-            assert vms.run_cmd_on_vm(
-                self.vm, cmd, VM_USER, VM_PASSWORD, 3600)[0]
+            logger.info("Removing file %s we were writing to", FILE_TO_WRITE)
+            # long timeout is needed in case there are many large
+            # files to remove
+            rc, out = ll_vms.run_cmd_on_vm(
+                self.vm, cmd, config.VMS_LINUX_USER, config.VMS_LINUX_PW, 3600
+            )
+            if not rc:
+                logger.error(
+                    "Failed to remove file %s from VM %s, out: %s",
+                    FILE_TO_WRITE, self.vm, out
+                )
+                TestResumeGuests.test_failed = True
+        TestResumeGuests.teardown_exception()
 
     def break_storage(self):
         pass
@@ -71,30 +95,36 @@ class TestResumeGuests(TestCase):
         pass
 
     def check_vm_paused(self, vm_name):
-        assert vms.waitForVMState(
-            vm_name, config.ENUMS['vm_state_paused'], timeout=1200
-        )
+        if not ll_vms.waitForVMState(vm_name, config.VM_PAUSED):
+            raise exceptions.VMException(
+                "Waiting for VM %s status 'paused' failed" % self.vm_name
+            )
 
     def check_vm_unpaused(self, vm_name):
-        LOGGER.info("Waiting for VM being up")
-        assert vms.waitForVMState(
-            vm_name, config.ENUMS['vm_state_up'], timeout=1800)
-        LOGGER.info("VM is up, waiting for connectivity")
-        assert _wait_for_vm_booted(
-            self.vm, config.OS_TYPE, VM_USER,
-            VM_PASSWORD)
-        LOGGER.info("VM is accessible")
+        logger.info("Waiting for VM being up")
+        if not ll_vms.waitForVMState(vm_name, config.VM_UP):
+            raise exceptions.VMException(
+                "Waiting for VM %s status 'up' failed" % self.vm_name
+            )
+        logger.info("VM is up, waiting for connectivity")
+        if not _wait_for_vm_booted(
+            self.vm, config.OS_TYPE, config.VMS_LINUX_USER, config.VMS_LINUX_PW
+        ):
+            raise exceptions.VMException(
+                "Waiting for VM %s to booted failed" % self.vm_name
+            )
+        logger.info("VM is accessible")
 
     def run_flow(self):
-        LOGGER.info("Breaking storage")
+        logger.info("Breaking storage")
         self.break_storage()
-        LOGGER.info("Checking if VM %s is paused", self.vm)
+        logger.info("Checking if VM %s is paused", self.vm)
         self.check_vm_paused(self.vm)
-        LOGGER.info("Fixing storage")
+        logger.info("Fixing storage")
         self.fix_storage()
-        LOGGER.info("Checking if VM %s is unpaused", self.vm)
+        logger.info("Checking if VM %s is unpaused", self.vm)
         self.check_vm_unpaused(self.vm)
-        LOGGER.info("Test finished successfully")
+        logger.info("Test finished successfully")
 
 
 class TestCaseBlockedConnection(TestResumeGuests):
@@ -102,79 +132,114 @@ class TestCaseBlockedConnection(TestResumeGuests):
     sd = None
 
     def break_storage(self):
-        """ block connection from host to storage server
         """
-        rc, host = vms.getVmHost(self.vm)
-        assert rc
-        self.host_ip = hosts.getHostIP(host)
-        self.sd = vms.get_vms_disks_storage_domain_name(self.vm)
-        self.sd_ip = storagedomains.getDomainAddress(True, self.sd)
+        Block connection from host to storage server
+        """
+        rc, host = ll_vms.getVmHost(self.vm)
+        if not rc:
+            raise exceptions.HostException("host of %s not found" % self.vm)
+        self.host_ip = ll_hosts.getHostIP(host)
+        self.sd = ll_vms.get_vms_disks_storage_domain_name(self.vm)
+        self.sd_ip = ll_sd.getDomainAddress(True, self.sd)
 
-        LOGGER.info(
-            "Blocking outgoing connection from %s to %s", self.host, self.sd)
-        assert storage_api.blockOutgoingConnection(
-            self.host_ip, config.HOSTS_USER, config.HOSTS_PW, self.sd_ip)
+        logger.info(
+            "Blocking outgoing connection from %s to %s", self.host, self.sd
+        )
+        if not storage_api.blockOutgoingConnection(
+            self.host_ip, config.HOSTS_USER, config.HOSTS_PW, self.sd_ip
+        ):
+            raise exceptions.NetworkException(
+                "Failed to block outgoing connection between %s to %s" %
+                (self.host, self.sd)
+            )
 
     def fix_storage(self):
-        """ unblock connection from host to storage server
         """
-        LOGGER.info("Unblocking connection from %s to %s", self.host, self.sd)
-        assert storage_api.unblockOutgoingConnection(
-            self.host_ip, config.HOSTS_USER, config.HOSTS_PW, self.sd_ip)
+        Unblock connection from host to storage server
+        """
+        logger.info("Unblocking connection from %s to %s", self.host, self.sd)
+        if not storage_api.unblockOutgoingConnection(
+            self.host_ip, config.HOSTS_USER, config.HOSTS_PW, self.sd_ip
+        ):
+            raise exceptions.NetworkException(
+                "Failed to unblock connection between %s to %s" %
+                (self.host, self.sd)
+            )
         self.host = None
         self.sd = None
 
     def tearDown(self):
-        """ additional step in tearDown - unblock connection if it is blocked
+        """
+        Additional step in tearDown - unblock connection if it is blocked
         """
         # in case test failed between blocking and unblocking connection
         if self.host and self.sd:
-            LOGGER.info(
-                "Unblocking connection from %s to %s", self.host, self.sd)
-            assert storage_api.unblockOutgoingConnection(
-                self.host_ip, config.HOSTS_USER, config.HOSTS_PW, self.sd_ip)
+            logger.info(
+                "Unblocking connection from %s to %s", self.host, self.sd
+            )
+            if not storage_api.unblockOutgoingConnection(
+                self.host_ip, config.HOSTS_USER, config.HOSTS_PW, self.sd_ip
+            ):
+                logger.error(
+                    "Failed to unblocked outgoing connection for host %s",
+                    self.host_ip
+                )
+                TestCaseBlockedConnection.test_failed = True
         super(TestCaseBlockedConnection, self).tearDown()
 
 
 class TestNoSpaceLeftOnDevice(TestResumeGuests):
     big_disk_name = "big_disk_eio"
-    left_space = int(1.5 * GB)
+    left_space = int(1.5 * config.GB)
 
     def break_storage(self):
-        """ create a very big disk on the storage domain
         """
-        self.sd = vms.get_vms_disks_storage_domain_name(self.vm)
-        domain = storagedomains.util.find(self.sd)
-        LOGGER.info("Master domain: %s", self.sd)
+        Create a very big disk on the storage domain
+        """
+        self.sd = ll_vms.get_vms_disks_storage_domain_name(self.vm)
+        domain = ll_sd.util.find(self.sd)
+        logger.info("Master domain: %s", self.sd)
         sd_size = domain.available
-        LOGGER.info("Available space: %s", sd_size)
+        logger.info("Available space: %s", sd_size)
         disk_size = int(domain.available) - self.left_space
-        LOGGER.info("Disk size: %s", disk_size)
-        assert disks.addDisk(
+        logger.info("Disk size: %s", disk_size)
+        if not ll_disks.addDisk(
             True, alias=self.big_disk_name, size=disk_size,
-            storagedomain=self.sd, format=config.ENUMS['format_raw'],
-            interface=config.INTERFACE_VIRTIO, sparse=False)
+            storagedomain=self.sd, format=config.RAW_DISK,
+            interface=config.INTERFACE_VIRTIO, sparse=False
+        ):
+            raise exceptions.DiskException(
+                "Failed to create disk %s" % self.big_disk_name
+            )
 
-        disks.wait_for_disks_status(self.big_disk_name, timeout=3600)
+        ll_disks.wait_for_disks_status(self.big_disk_name, timeout=3600)
 
-        LOGGER.info("Big disk created")
+        logger.info("Big disk created")
 
     def fix_storage(self):
-        """ delete created big disk
         """
-        LOGGER.info("Delete big disk")
-        assert disks.deleteDisk(True, self.big_disk_name)
+        Delete created big disk
+        """
+        logger.info("Delete big disk")
+        if not ll_disks.deleteDisk(True, self.big_disk_name):
+            raise exceptions.DiskException(
+                "Failed to delete disk %s" % self.big_disk_name
+            )
 
     def tearDown(self):
-        """ additional step in tearDown - remove big disk
         """
-        LOGGER.info("Tear down - removing disk if needed")
+        Additional step in tearDown - remove big disk
+        """
+        logger.info("Tear down - removing disk if needed")
         disk_names = [
-            x.alias for x in disks.getStorageDomainDisks(self.sd, False)]
-        LOGGER.info("All disks: %s" % disk_names)
+            x.alias for x in ll_disks.getStorageDomainDisks(self.sd, False)
+            ]
+        logger.info("All disks: %s", disk_names)
         if self.big_disk_name in disk_names:
-            disks.deleteDisk(True, self.big_disk_name)
-        LOGGER.info("Upper tear down")
+            if not ll_disks.deleteDisk(True, self.big_disk_name):
+                logger.error("Failed to remove disk %s", self.big_disk_name)
+                TestResumeGuests.test_failed = True
+        logger.info("Upper tear down")
         super(TestNoSpaceLeftOnDevice, self).tearDown()
 
 
@@ -187,8 +252,9 @@ class TestCase5012(TestCaseBlockedConnection):
 
     @polarion("RHEVM3-5012")
     def test_nfs_blocked_connection(self):
-        """ checks if VM is paused after connection to sd is lost,
-            checks if VM is unpaused after connection is restored
+        """
+        Checks if VM is paused after connection to sd is lost,
+        Checks if VM is unpaused after connection is restored
         """
         self.run_flow()
 
@@ -196,16 +262,19 @@ class TestCase5012(TestCaseBlockedConnection):
 @attr(tier=2)
 class TestCase5013(TestNoSpaceLeftOnDevice):
     # TODO: Why is this not running glusterfs?
-    __test__ = (NFS in opts['storages'])
+    # TODO: this cases is disable due to ticket RHEVM-2524
+    # __test__ = (NFS in opts['storages'])
+    __test__ = False
     storages = set([NFS])
     polarion_test_case = '5013'
-    left_space = 10 * GB
+    left_space = 10 * config.GB
 
     @polarion("RHEVM3-5013")
     @bz({'1024353': {'engine': ['rest', 'sdk']}})
     def test_nfs_no_space_left_on_device(self):
-        """ checks if VM is paused after no-space-left error on sd,
-            checks if VM is unpaused after there is again free space on sd
+        """
+        Checks if VM is paused after no-space-left error on sd,
+        Checks if VM is unpaused after there is again free space on sd
         """
         self.run_flow()
 
@@ -218,15 +287,18 @@ class TestCase5014(TestCaseBlockedConnection):
 
     @polarion("RHEVM3-5014")
     def test_iscsi_blocked_connection(self):
-        """ checks if VM is paused after connection to sd is lost,
-            checks if VM is unpaused after connection is restored
+        """
+        Checks if VM is paused after connection to sd is lost,
+        Checks if VM is unpaused after connection is restored
         """
         self.run_flow()
 
 
 @attr(tier=2)
 class TestCase5015(TestNoSpaceLeftOnDevice):
-    __test__ = (ISCSI in opts['storages'])
+    # TODO: this cases is disable due to ticket RHEVM-2524
+    # __test__ = (ISCSI in opts['storages'])
+    __test__ = False
     storages = set([ISCSI])
     polarion_test_case = '5015'
     # The disk should be big enough so the operation to write data to the disk
@@ -236,19 +308,19 @@ class TestCase5015(TestNoSpaceLeftOnDevice):
 
     def setUp(self):
         self.process = None
-        self.sd = vms.get_vms_disks_storage_domain_name(self.vm)
+        self.sd = ll_vms.get_vms_disks_storage_domain_name(self.vm)
         self.disk_alias = "second_disk_%s" % self.polarion_test_case
-        LOGGER.info("Adding disk %s to vm %s", self.disk_alias, self.vm)
-        if not vms.addDisk(
+        logger.info("Adding disk %s to vm %s", self.disk_alias, self.vm)
+        if not ll_vms.addDisk(
             True, self.vm, self.disk_size, storagedomain=self.sd,
-            interface=config.VIRTIO, alias=self.disk_alias,
+            interface=config.VIRTIO, alias=self.disk_alias
         ):
-            LOGGER.error("Error adding disk %s", self.disk_alias)
-        disks.wait_for_disks_status(self.disk_alias)
+            logger.error("Error adding disk %s", self.disk_alias)
+        ll_disks.wait_for_disks_status(self.disk_alias)
 
         self.process = Process(
-            target=perform_dd_to_disk,
-            args=(self.vm, self.disk_alias, True, self.disk_size,),
+            target=storage_helpers.perform_dd_to_disk,
+            args=(self.vm, self.disk_alias, True, self.disk_size)
         )
         self.process.start()
         # Wait for the operation to start
@@ -257,24 +329,29 @@ class TestCase5015(TestNoSpaceLeftOnDevice):
 
     @polarion("RHEVM3-5015")
     def test_iscsi_no_space_left_on_device(self):
-        """ checks if VM is paused after no-space-left error on sd,
-            checks if VM is unpaused after there is again free space on sd
+        """
+        Checks if VM is paused after no-space-left error on sd,
+        Checks if VM is unpaused after there is again free space on sd
         """
         self.run_flow()
 
     def tearDown(self):
-        """Remove vm's disk"""
+        """
+        Remove vm's disk
+        """
         if self.process:
             self.process.terminate()
-        if not vms.deactivateVmDisk(True, self.vm, self.disk_alias):
-            LOGGER.error(
+        if not ll_vms.deactivateVmDisk(True, self.vm, self.disk_alias):
+            logger.error(
                 "Error deactivating disk %s from vm %s", self.disk_alias,
-                self.vm,
+                self.vm
             )
-        if not vms.removeDisk(True, self.vm, self.disk_alias):
-            LOGGER.error(
-                "Error removing disk %s from vm %s", self.disk_alias, self.vm,
+            TestCase5015.test_failed = True
+        if not ll_vms.removeDisk(True, self.vm, self.disk_alias):
+            logger.error(
+                "Error removing disk %s from vm %s", self.disk_alias, self.vm
             )
+            TestCase5015.test_failed = True
         super(TestCase5015, self).tearDown()
 
 
@@ -286,21 +363,25 @@ class TestCase5016(TestCaseBlockedConnection):
 
     @polarion("RHEVM3-5016")
     def test_fc_blocked_connection(self):
-        """ checks if VM is paused after connection to sd is lost,
-            checks if VM is unpaused after connection is restored
+        """
+        Checks if VM is paused after connection to sd is lost,
+        Checks if VM is unpaused after connection is restored
         """
         self.run_flow()
 
 
 @attr(tier=2)
 class TestCase5017(TestNoSpaceLeftOnDevice):
-    __test__ = ('fcp' in opts['storages'])
+    # TODO: this cases is disable due to ticket RHEVM-2524
+    # __test__ = ('fcp' in opts['storages'])
+    __test__ = False
     storages = set(['fcp'])
     polarion_test_case = '5017'
 
     @polarion("RHEVM3-5017")
     def test_fc_no_space_left_on_device(self):
-        """ checks if VM is paused after no-space-left error on sd,
-            checks if VM is unpaused after there is again free space on sd
+        """
+        Checks if VM is paused after no-space-left error on sd,
+        Checks if VM is unpaused after there is again free space on sd
         """
         self.run_flow()
