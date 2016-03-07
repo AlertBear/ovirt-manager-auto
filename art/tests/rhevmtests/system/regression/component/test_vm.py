@@ -39,7 +39,7 @@ class TestCaseVM(TestCase):
             positive=False, vm=self.vm_name, size=2147483648,
             storagedomain=self.storage_name,
             type=config.ENUMS['disk_type_system'],
-            format='bad_config', interface=config.ENUMS['interface_ide']
+            format='bad_config', interface=config.ENUMS['interface_virtio']
         )
         self.assertTrue(status, 'Add disk to vm - wrong format')
 
@@ -67,7 +67,7 @@ class TestCaseVM(TestCase):
         logger.info('Add disk to vm')
         status = ll_vm.addDisk(
             positive=True, vm=self.vm_name, size=2147483648,
-            alias='test_disk', interface=config.ENUMS['interface_ide'],
+            alias='test_disk', interface=config.ENUMS['interface_virtio'],
             storagedomain=self.storage_name,
             type=config.ENUMS['disk_type_system'],
             format=config.ENUMS['format_cow']
