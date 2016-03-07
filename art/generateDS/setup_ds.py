@@ -47,13 +47,13 @@ class GenerateDataStructures(object):
         """
 
     def __call__(self, conf):
-        self._download_xsd()
+        self._download_xsd(conf)
         self._generate_ds(conf)
 
-    def _download_xsd(self):
+    def _download_xsd(self, conf):
         from art.core_api.http import HTTPProxy
         proxy = HTTPProxy(self._opts)
-        res = proxy.GET('/api/?schema')
+        res = proxy.GET(conf['GENERATE_DS']['schema_url'])
         if res['status'] > 300:
             raise Exception("Failed to download schema: %s " % res['reason'])
 

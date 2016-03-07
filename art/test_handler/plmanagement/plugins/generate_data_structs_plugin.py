@@ -110,8 +110,10 @@ class GenerateDataStructures(Component):
                                 '.generate_data_structs_plugin']
 
     def config_spec(self, spec, val_funcs):
-        section_spec = spec.get(DS_GEN_OPTIONS, {})
+        section_spec = spec.setdefault(DS_GEN_OPTIONS, {})
         section_spec['enabled'] = 'boolean(default=%s)' % DEFAULT_STATE
         section_spec[VITAL] = 'boolean(default=%s)' % DEFAULT_VITAL
         section_spec['encoding'] = 'option("ascii", "utf-8", default="utf-8")'
-        spec[DS_GEN_OPTIONS] = section_spec
+        section_spec['schema_url'] = (
+            'string(default="/api?schema")'
+        )
