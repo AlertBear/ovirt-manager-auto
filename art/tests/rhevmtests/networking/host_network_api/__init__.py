@@ -3,6 +3,8 @@
 
 """
 Init for new host network API
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Network/3_6_Network_Host_Network_API
 """
 
 import logging
@@ -18,12 +20,13 @@ logger = logging.getLogger("Host_Network_API_Init")
 
 def setup_package():
     """
-    Prepare environment
+    Run network cleanup
+    Create dummy interfaces on host
+    Set ethtool support in engine
     """
     conf.HOST_0_NAME = conf.HOSTS[0]
     conf.VDS_0_HOST = conf.VDS_HOSTS[0]
     conf.HOST_0_NICS = conf.VDS_0_HOST.nics
-    logger.info("Running network cleanup")
     networking.network_cleanup()
     network_helper.prepare_dummies(
         host_resource=conf.VDS_0_HOST, num_dummy=conf.NUM_DUMMYS
@@ -43,9 +46,8 @@ def setup_package():
 
 def teardown_package():
     """
-    Cleans environment
+    Delete dummy interfaces
+    Activate host if needed
     """
     network_helper.delete_dummies(host_resource=conf.VDS_0_HOST)
-    logger.info("Activating %s", conf.HOST_0_NAME)
-    if not hl_hosts.activate_host_if_not_up(conf.HOST_0_NAME):
-        logger.error("Failed to activate %s", conf.HOST_0_NAME)
+    hl_hosts.activate_host_if_not_up(conf.HOST_0_NAME)

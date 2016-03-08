@@ -17,36 +17,23 @@ import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 logger = logging.getLogger("Host_Network_API_Helper")
 
 
-def attach_network_attachment(
-    network_dict, network, nic=None, positive=True
-):
+def attach_network_attachment(nic=None, positive=True, **network_dict):
     """
     Attach network attachment to host NIC via NIC or host href
 
     :param network_dict: Network dict
     :type network_dict: dict
-    :param network: Network name
-    :type network: str
     :param nic: NIC name
     :type nic: str
     :param positive: Expected status
     :type positive: bool
     :raise: NetworkException
     """
-    nic_log = nic if nic else network_dict.get("nic")
-    logger.info(
-        "Attaching %s to %s on %s", network, nic_log, conf.HOST_0_NAME
-    )
-    network_to_attach = network_dict.pop("network")
     res = hl_host_network.add_network_to_host(
-        host_name=conf.HOST_0_NAME, network=network_to_attach, nic_name=nic,
-        **network_dict
+        host_name=conf.HOST_0_NAME, nic_name=nic, **network_dict
     )
     if res != positive:
-        raise conf.NET_EXCEPTION(
-            "Failed to attach %s to %s on %s" %
-            (network, nic_log, conf.HOST_0_NAME)
-        )
+        raise conf.NET_EXCEPTION()
 
 
 def networks_unsync_reasons(net_sync_reason):
@@ -148,15 +135,10 @@ def remove_interface_ip(ip, interface):
     :type interface: str
     :raise: NET_EXCEPTION
     """
-    logger.info("Delete IP %s from %s", ip, interface)
     cmd = ["ip", "addr", "del", "%s" % ip, "dev", interface]
-    rc, out, err = conf.VDS_0_HOST.executor().run_cmd(cmd)
+    rc, _, _ = conf.VDS_0_HOST.run_command(cmd)
     if rc:
-        raise conf.NET_EXCEPTION(
-            "Failed to delete %s from %s. ERR: %s. %s" % (
-                ip, interface, err, out
-            )
-        )
+        raise conf.NET_EXCEPTION()
 
 
 def set_interface_ip(ip, netmask, interface):
@@ -171,10 +153,7 @@ def set_interface_ip(ip, netmask, interface):
     :type interface: str
     :raise: NET_EXCEPTION
     """
-    logger.info("Setting %s/%s on %s", ip, netmask, interface)
     if not test_utils.configure_temp_static_ip(
         vds_resource=conf.VDS_0_HOST, ip=ip, nic=interface, netmask=netmask
     ):
-        raise conf.NET_EXCEPTION(
-            "Failed to set %s/%s on %s" % (ip, netmask, interface)
-        )
+        raise conf.NET_EXCEPTION()

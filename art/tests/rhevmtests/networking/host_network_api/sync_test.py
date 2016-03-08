@@ -21,56 +21,34 @@ def setup_module():
     """
     Creates datacenter, cluster, and add networks
     """
-    logger.info("Creating %s and %s", conf.SYNC_DC, conf.SYNC_CL)
     if not hl_networks.create_basic_setup(
         datacenter=conf.SYNC_DC, storage_type=conf.STORAGE_TYPE,
         version=conf.COMP_VERSION, cluster=conf.SYNC_CL, cpu=conf.CPU_NAME
     ):
-        raise conf.NET_EXCEPTION(
-            "Failed to create extra setup %s and %s" %
-            (conf.SYNC_DC, conf.SYNC_CL)
-        )
-    logger.info(
-        "Add %s to %s/%s", conf.SYNC_DICT_1, conf.DC_NAME_1,
-        conf.CLUSTER_NAME_1
-    )
+        raise conf.NET_EXCEPTION()
+
     network_helper.prepare_networks_on_setup(
-        networks_dict=conf.SYNC_DICT_1, dc=conf.DC_NAME_1,
-        cluster=conf.CLUSTER_NAME_1
+        networks_dict=conf.SYNC_DICT_1, dc=conf.DC_0, cluster=conf.CL_0
     )
-    logger.info(
-        "Add %s to %s/%s", conf.SYNC_DICT_2, conf.SYNC_DC, conf.SYNC_CL
-    )
+
     network_helper.prepare_networks_on_setup(
         networks_dict=conf.SYNC_DICT_2, dc=conf.SYNC_DC, cluster=conf.SYNC_CL
     )
-    logger.info("Deactivate %s", conf.HOST_0_NAME)
-    if not ll_hosts.deactivateHost(True, conf.HOST_0_NAME):
-        raise conf.NET_EXCEPTION(
-            "Failed to set %s to maintenance" % conf.HOST_0_NAME
-        )
+    if not ll_hosts.deactivateHost(positive=True, host=conf.HOST_0_NAME):
+        raise conf.NET_EXCEPTION()
 
 
 def teardown_module():
     """
     Removes created datacenter, cluster and networks
     """
-    logger.info("Removing extra %s and %s", conf.SYNC_DC, conf.SYNC_CL)
-    if not hl_networks.remove_basic_setup(
+    hl_networks.remove_basic_setup(
         datacenter=conf.SYNC_DC, cluster=conf.SYNC_CL
-    ):
-        logger.error(
-            "Failed to remove %s and %s", conf.SYNC_DC, conf.SYNC_CL
-        )
-    if not hl_networks.remove_net_from_setup(
+    )
+    hl_networks.remove_net_from_setup(
         host=conf.HOST_0_NAME, all_net=True, mgmt_network=conf.MGMT_BRIDGE
-    ):
-        logger.error(
-            "Failed to remove %s from setup", conf.SYNC_DICT_1.keys()
-        )
-    logger.info("Activate %s", conf.HOST_0_NAME)
-    if not ll_hosts.activateHost(positive=True, host=conf.HOST_0_NAME):
-        logger.error("Failed to activate %s", conf.HOST_0_NAME)
+    )
+    ll_hosts.activateHost(positive=True, host=conf.HOST_0_NAME)
 
 
 class TestHostNetworkApiSyncBase(helper.TestHostNetworkApiTestCaseBase):
@@ -87,13 +65,11 @@ class TestHostNetworkApiSyncBase(helper.TestHostNetworkApiTestCaseBase):
         Attach networks to the host
         Move the host the another cluster
         """
-        logger.info("Attaching networks to %s", conf.HOST_0_NAME)
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **cls.network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach networks to %s" % conf.HOST_0_NAME
-            )
+            raise conf.NET_EXCEPTION()
+
         if cls.move_host:
             if not ll_hosts.updateHost(
                 positive=True, host=conf.HOST_0_NAME, cluster=conf.SYNC_CL
@@ -109,19 +85,15 @@ class TestHostNetworkApiSyncBase(helper.TestHostNetworkApiTestCaseBase):
         Clean the host interface
         Move the host back to the original cluster
         """
-        logger.info("Removing all networks from %s", conf.HOST_0_NAME)
-        if not hl_host_network.clean_host_interfaces(conf.HOST_0_NAME):
-            logger.error(
-                "Failed to remove all networks from %s", conf.HOST_0_NAME
-            )
+        hl_host_network.clean_host_interfaces(host_name=conf.HOST_0_NAME)
+
         if cls.move_host:
             if not ll_hosts.updateHost(
-                positive=True, host=conf.HOST_0_NAME,
-                cluster=conf.CLUSTER_NAME_1
+                positive=True, host=conf.HOST_0_NAME, cluster=conf.CL_0
             ):
                 logger.error(
                     "Failed to move %s to %s",
-                    conf.HOST_0_NAME, conf.CLUSTER_NAME_1
+                    conf.HOST_0_NAME, conf.CL_0
                 )
 
 
@@ -152,17 +124,17 @@ class TestHostNetworkApiSync01(TestHostNetworkApiSyncBase):
                 "1": {
                     "network": cls.net_case_1,
                     "nic": conf.HOST_0_NICS[1],
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 },
                 "2": {
                     "network": cls.net_case_2,
                     "nic": conf.HOST_0_NICS[2],
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 },
                 "3": {
                     "network": cls.net_case_3,
                     "nic": conf.HOST_0_NICS[3],
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 }
             }
         }
@@ -244,6 +216,9 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
     bond_1 = "bond21"
     bond_2 = "bond22"
     bond_3 = "bond23"
+    dummys_1 = conf.DUMMYS[:2]
+    dummys_2 = conf.DUMMYS[2:4]
+    dummys_3 = conf.DUMMYS[4:6]
 
     @classmethod
     def setup_class(cls):
@@ -255,30 +230,30 @@ class TestHostNetworkApiSync02(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "nic": cls.bond_1,
-                    "slaves": conf.DUMMYS[:2]
+                    "slaves": cls.dummys_1
                 },
                 "2": {
                     "nic": cls.bond_2,
-                    "slaves": conf.DUMMYS[2:4]
+                    "slaves": cls.dummys_2
                 },
                 "3": {
                     "nic": cls.bond_3,
-                    "slaves": conf.DUMMYS[4:6]
+                    "slaves": cls.dummys_3
                 },
                 "4": {
                     "network": cls.net_case_1,
                     "nic": cls.bond_1,
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 },
                 "5": {
                     "network": cls.net_case_2,
                     "nic": cls.bond_2,
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 },
                 "6": {
                     "network": cls.net_case_3,
                     "nic": cls.bond_3,
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 }
             }
         }
@@ -371,17 +346,17 @@ class TestHostNetworkApiSync03(TestHostNetworkApiSyncBase):
                 "1": {
                     "network": cls.net_case_1,
                     "nic": conf.HOST_0_NICS[1],
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 },
                 "2": {
                     "network": cls.net_case_2,
                     "nic": conf.HOST_0_NICS[2],
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 },
                 "3": {
                     "network": cls.net_case_3,
                     "nic": conf.HOST_0_NICS[3],
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 }
             }
         }
@@ -463,6 +438,9 @@ class TestHostNetworkApiSync04(TestHostNetworkApiSyncBase):
     bond_1 = "bond31"
     bond_2 = "bond32"
     bond_3 = "bond33"
+    dummys_1 = conf.DUMMYS[:2]
+    dummys_2 = conf.DUMMYS[2:4]
+    dummys_3 = conf.DUMMYS[4:6]
 
     @classmethod
     def setup_class(cls):
@@ -474,30 +452,30 @@ class TestHostNetworkApiSync04(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "nic": cls.bond_1,
-                    "slaves": conf.DUMMYS[:2]
+                    "slaves": cls.dummys_1
                 },
                 "2": {
                     "nic": cls.bond_2,
-                    "slaves": conf.DUMMYS[2:4]
+                    "slaves": cls.dummys_2
                 },
                 "3": {
                     "nic": cls.bond_3,
-                    "slaves": conf.DUMMYS[4:6]
+                    "slaves": cls.dummys_3
                 },
                 "4": {
                     "network": cls.net_case_1,
                     "nic": cls.bond_1,
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 },
                 "5": {
                     "network": cls.net_case_2,
                     "nic": cls.bond_2,
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 },
                 "6": {
                     "network": cls.net_case_3,
                     "nic": cls.bond_3,
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 }
             }
         }
@@ -588,12 +566,12 @@ class TestHostNetworkApiSync05(TestHostNetworkApiSyncBase):
                 "1": {
                     "network": cls.net_case_1,
                     "nic": conf.HOST_0_NICS[1],
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 },
                 "2": {
                     "network": cls.net_case_2,
                     "nic": conf.HOST_0_NICS[2],
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 }
             }
         }
@@ -652,6 +630,8 @@ class TestHostNetworkApiSync06(TestHostNetworkApiSyncBase):
     net_case_2_bridge_expected = "true"
     bond_1 = "bond61"
     bond_2 = "bond62"
+    dummys_1 = conf.DUMMYS[:2]
+    dummys_2 = conf.DUMMYS[2:4]
 
     @classmethod
     def setup_class(cls):
@@ -663,21 +643,21 @@ class TestHostNetworkApiSync06(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "nic": cls.bond_1,
-                    "slaves": conf.DUMMYS[:2]
+                    "slaves": cls.dummys_1
                 },
                 "2": {
                     "nic": cls.bond_2,
-                    "slaves": conf.DUMMYS[2:4]
+                    "slaves": cls.dummys_2
                 },
                 "3": {
                     "network": cls.net_case_1,
                     "nic": cls.bond_1,
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 },
                 "4": {
                     "network": cls.net_case_2,
                     "nic": cls.bond_2,
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 }
             }
         }
@@ -747,7 +727,7 @@ class TestHostNetworkApiSync07(TestHostNetworkApiSyncBase):
                 "1": {
                     "network": cls.net_case_1,
                     "nic": conf.HOST_0_NICS[1],
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 }
             }
         }
@@ -796,6 +776,7 @@ class TestHostNetworkApiSync08(TestHostNetworkApiSyncBase):
     net_case_1_mtu_expected = str(conf.MTU[1])
     net_case_1_bridge_expected = "true"
     bond_1 = "bond81"
+    dummys = conf.DUMMYS[:2]
 
     @classmethod
     def setup_class(cls):
@@ -807,12 +788,12 @@ class TestHostNetworkApiSync08(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "nic": cls.bond_1,
-                    "slaves": conf.DUMMYS[:2]
+                    "slaves": cls.dummys
                 },
                 "2": {
                     "network": cls.net_case_1,
                     "nic": cls.bond_1,
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 }
             }
         }
@@ -1021,6 +1002,7 @@ class TestHostNetworkApiSync12(TestHostNetworkApiSyncBase):
     net_case_1_ip_expected = ip_netmask
     net_case_1_ip_actual = "10.10.10.10"
     bond_1 = "bond121"
+    dummys = conf.DUMMYS[:2]
 
     @classmethod
     def setup_class(cls):
@@ -1033,7 +1015,7 @@ class TestHostNetworkApiSync12(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "nic": cls.bond_1,
-                    "slaves": conf.DUMMYS[:2]
+                    "slaves": cls.dummys
                 },
                 "2": {
                     "network": cls.net_case_1,
@@ -1079,6 +1061,7 @@ class TestHostNetworkApiSync13(TestHostNetworkApiSyncBase):
     net_case_1_netmask_actual = "255.255.255.255"
     bond_1 = "bond131"
     ip_netmask = conf.IPS[35]
+    dummys = conf.DUMMYS[:2]
 
     @classmethod
     def setup_class(cls):
@@ -1091,7 +1074,7 @@ class TestHostNetworkApiSync13(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "nic": cls.bond_1,
-                    "slaves": conf.DUMMYS[:2]
+                    "slaves": cls.dummys
                 },
                 "2": {
                     "network": cls.net_case_1,
@@ -1138,6 +1121,7 @@ class TestHostNetworkApiSync14(TestHostNetworkApiSyncBase):
     net_case_1_netmask_prefix_actual = "255.255.255.255"
     bond_1 = "bond141"
     ip_prefix = conf.IPS[40]
+    dummys = conf.DUMMYS[:2]
 
     @classmethod
     def setup_class(cls):
@@ -1150,7 +1134,7 @@ class TestHostNetworkApiSync14(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "nic": cls.bond_1,
-                    "slaves": conf.DUMMYS[:2]
+                    "slaves": cls.dummys
                 },
                 "2": {
                     "network": cls.net_case_1,
@@ -1249,6 +1233,7 @@ class TestHostNetworkApiSync16(TestHostNetworkApiSyncBase):
     net_case_1_boot_proto_expected = "NONE"
     net_case_1_boot_proto_actual = "STATIC_IP"
     bond_1 = "bond161"
+    dummys = conf.DUMMYS[:2]
 
     @classmethod
     def setup_class(cls):
@@ -1260,7 +1245,7 @@ class TestHostNetworkApiSync16(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "nic": cls.bond_1,
-                    "slaves": conf.DUMMYS[:2]
+                    "slaves": cls.dummys
                 },
                 "2": {
                     "network": cls.net_case_1,
@@ -1442,17 +1427,17 @@ class TestHostNetworkApiSync19(TestHostNetworkApiSyncBase):
                 "1": {
                     "network": cls.net_case_1,
                     "nic": conf.HOST_0_NICS[1],
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 },
                 "2": {
                     "network": cls.net_case_2,
                     "nic": conf.HOST_0_NICS[2],
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 },
                 "3": {
                     "network": cls.net_case_3,
                     "nic": conf.HOST_0_NICS[3],
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 }
             }
         }
@@ -1526,6 +1511,9 @@ class TestHostNetworkApiSync20(TestHostNetworkApiSyncBase):
     bond_1 = "bond201"
     bond_2 = "bond202"
     bond_3 = "bond203"
+    dummys_1 = conf.DUMMYS[:2]
+    dummys_2 = conf.DUMMYS[2:4]
+    dummys_3 = conf.DUMMYS[4:6]
     net_case_1 = conf.SYNC_NETS_DC_1[20][0]
     net_case_1_qos_expected = "20"
     net_case_1_qos_actual = "10"
@@ -1557,30 +1545,30 @@ class TestHostNetworkApiSync20(TestHostNetworkApiSyncBase):
             "add": {
                 "1": {
                     "nic": cls.bond_1,
-                    "slaves": conf.DUMMYS[:2]
+                    "slaves": cls.dummys_1
                 },
                 "2": {
                     "nic": cls.bond_2,
-                    "slaves": conf.DUMMYS[2:4]
+                    "slaves": cls.dummys_2
                 },
                 "3": {
                     "nic": cls.bond_3,
-                    "slaves": conf.DUMMYS[4:6],
+                    "slaves": cls.dummys_3,
                 },
                 "4": {
                     "network": cls.net_case_1,
                     "nic": cls.bond_1,
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 },
                 "5": {
                     "network": cls.net_case_2,
                     "nic": cls.bond_2,
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 },
                 "6": {
                     "network": cls.net_case_3,
                     "nic": cls.bond_3,
-                    "datacenter": conf.DC_NAME_1
+                    "datacenter": conf.DC_0
                 }
             }
         }

@@ -9,11 +9,6 @@ from rhevmtests.networking.config import *  # NOQA
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.helper as network_helper
 
-HOST_0_NICS = None  # Filled in setup_package
-HOST_0_NAME = None  # Filled in setup_package
-VDS_0_HOST = None  # Filled in setup_package
-DC_NAME_1 = DC_NAME[0]
-CLUSTER_NAME_1 = CLUSTER_NAME[0]
 SYNC_DC = "Sync_DC"
 SYNC_CL = "Sync_cluster"
 QOS_NAME = global_helper.generate_object_names(
@@ -554,7 +549,7 @@ SYNC_DICT_1 = {
     SYNC_NETS_DC_1[19][0]: {
         "required": "false",
         "qos": {
-            "datacenter": DC_NAME_1,
+            "datacenter": DC_0,
             "qos_name": QOS_NAME[19][0],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,
@@ -568,7 +563,7 @@ SYNC_DICT_1 = {
     SYNC_NETS_DC_1[19][2]: {
         "required": "false",
         "qos": {
-            "datacenter": DC_NAME_1,
+            "datacenter": DC_0,
             "qos_name": QOS_NAME[19][2],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,
@@ -580,7 +575,7 @@ SYNC_DICT_1 = {
     SYNC_NETS_DC_1[20][0]: {
         "required": "false",
         "qos": {
-            "datacenter": DC_NAME_1,
+            "datacenter": DC_0,
             "qos_name": QOS_NAME[20][0],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,
@@ -594,7 +589,7 @@ SYNC_DICT_1 = {
     SYNC_NETS_DC_1[20][2]: {
         "required": "false",
         "qos": {
-            "datacenter": DC_NAME_1,
+            "datacenter": DC_0,
             "qos_name": QOS_NAME[20][2],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,

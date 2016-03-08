@@ -618,6 +618,7 @@ def remove_basic_setup(datacenter, cluster=None, hosts=[]):
     Returns:
         bool: True if setup removal succeeded, otherwise False
     """
+    logger.info("Remove basic setup")
     if cluster:
         for host in hosts:
             logger.info("Remove host %s for cluster %s", host, cluster)

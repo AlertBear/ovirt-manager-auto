@@ -22,12 +22,8 @@ def setup_module():
     """
     Add networks
     """
-    logger.info(
-        "Add %s to %s/%s", conf.SN_DICT, conf.DC_NAME_1, conf.CLUSTER_NAME_1
-    )
     network_helper.prepare_networks_on_setup(
-        networks_dict=conf.SN_DICT, dc=conf.DC_NAME_1,
-        cluster=conf.CLUSTER_NAME_1
+        networks_dict=conf.SN_DICT, dc=conf.DC_0, cluster=conf.CL_0
     )
 
 
@@ -43,6 +39,7 @@ class TestHostNetworkApiSetupNetworks01(helper.TestHostNetworkApiTestCaseBase):
     Attach network to host NIC
     """
     __test__ = True
+    net = conf.SN_NETS[1][0]
 
     @polarion("RHEVM3-10470")
     def test_network_on_host_nic(self):
@@ -52,23 +49,15 @@ class TestHostNetworkApiSetupNetworks01(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": conf.SN_NETS[1][0],
+                    "network": self.net,
                     "nic": conf.HOST_0_NICS[1]
                 }
             }
         }
-        logger.info(
-            "Attaching %s to %s on %s",
-            conf.SN_NETS[1][0], conf.HOST_0_NICS[1], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s" % (
-                    conf.SN_NETS[1][0], conf.HOST_0_NICS[1], conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks02(helper.TestHostNetworkApiTestCaseBase):
@@ -76,6 +65,7 @@ class TestHostNetworkApiSetupNetworks02(helper.TestHostNetworkApiTestCaseBase):
     Attach VLAN network to host NIC
     """
     __test__ = True
+    net = conf.SN_NETS[2][0]
 
     @polarion("RHEVM3-10472")
     def test_vlan_network_on_host_nic(self):
@@ -85,23 +75,15 @@ class TestHostNetworkApiSetupNetworks02(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": conf.SN_NETS[2][0],
+                    "network": self.net,
                     "nic": conf.HOST_0_NICS[1]
                 }
             }
         }
-        logger.info(
-            "Attaching %s to %s on %s",
-            conf.SN_NETS[2][0], conf.HOST_0_NICS[1], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s" % (
-                    conf.SN_NETS[2][0], conf.HOST_0_NICS[1], conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks03(helper.TestHostNetworkApiTestCaseBase):
@@ -109,6 +91,7 @@ class TestHostNetworkApiSetupNetworks03(helper.TestHostNetworkApiTestCaseBase):
     Attach Non-VM network to host NIC
     """
     __test__ = True
+    net = conf.SN_NETS[3][0]
 
     @polarion("RHEVM3-10471")
     def test_non_vm_network_on_host_nic(self):
@@ -118,23 +101,15 @@ class TestHostNetworkApiSetupNetworks03(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": conf.SN_NETS[3][0],
+                    "network": self.net,
                     "nic": conf.HOST_0_NICS[1]
                 }
             }
         }
-        logger.info(
-            "Attaching %s to %s on %s",
-            conf.SN_NETS[3][0], conf.HOST_0_NICS[1], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s" % (
-                    conf.SN_NETS[3][0], conf.HOST_0_NICS[1], conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks04(helper.TestHostNetworkApiTestCaseBase):
@@ -145,6 +120,8 @@ class TestHostNetworkApiSetupNetworks04(helper.TestHostNetworkApiTestCaseBase):
     __test__ = True
     ip_netmask = conf.IPS[23]
     ip_prefix = conf.IPS[24]
+    net_1 = conf.SN_NETS[4][0]
+    net_2 = conf.SN_NETS[4][1]
 
     @polarion("RHEVM3-10474")
     def test_ip_network_on_host(self):
@@ -156,32 +133,21 @@ class TestHostNetworkApiSetupNetworks04(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": conf.SN_NETS[4][0],
+                    "network": self.net_1,
                     "nic": conf.HOST_0_NICS[1],
                     "ip": conf.BASIC_IP_DICT_NETMASK
                 },
                 "2": {
-                    "network": conf.SN_NETS[4][1],
+                    "network": self.net_2,
                     "nic": conf.HOST_0_NICS[2],
                     "ip": conf.BASIC_IP_DICT_PREFIX
                 }
             }
         }
-        logger.info(
-            "Attaching %s and %s to %s and %s on %s",
-            conf.SN_NETS[4][0], conf.SN_NETS[4][1], conf.HOST_0_NICS[1],
-            conf.HOST_0_NICS[2], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s and %s to %s and %s on %s" % (
-                    conf.SN_NETS[4][0], conf.SN_NETS[4][1],
-                    conf.HOST_0_NICS[1], conf.HOST_0_NICS[2],
-                    conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks05(helper.TestHostNetworkApiTestCaseBase):
@@ -192,6 +158,8 @@ class TestHostNetworkApiSetupNetworks05(helper.TestHostNetworkApiTestCaseBase):
     __test__ = True
     ip_netmask = conf.IPS[29]
     ip_prefix = conf.IPS[30]
+    net_1 = conf.SN_NETS[5][0]
+    net_2 = conf.SN_NETS[5][1]
 
     @polarion("RHEVM3-10475")
     def test_ip_vlan_network_on_host(self):
@@ -203,32 +171,21 @@ class TestHostNetworkApiSetupNetworks05(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": conf.SN_NETS[5][0],
+                    "network": self.net_1,
                     "nic": conf.HOST_0_NICS[1],
                     "ip": conf.BASIC_IP_DICT_NETMASK
                 },
                 "2": {
-                    "network": conf.SN_NETS[5][1],
+                    "network": self.net_2,
                     "nic": conf.HOST_0_NICS[2],
                     "ip": conf.BASIC_IP_DICT_PREFIX
                 }
             }
         }
-        logger.info(
-            "Attaching %s and %s to %s and %s on %s",
-            conf.SN_NETS[5][0], conf.SN_NETS[5][1], conf.HOST_0_NICS[1],
-            conf.HOST_0_NICS[2], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s and %s to %s and %s on %s" % (
-                    conf.SN_NETS[5][0], conf.SN_NETS[5][1],
-                    conf.HOST_0_NICS[1], conf.HOST_0_NICS[2],
-                    conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks06(helper.TestHostNetworkApiTestCaseBase):
@@ -239,6 +196,8 @@ class TestHostNetworkApiSetupNetworks06(helper.TestHostNetworkApiTestCaseBase):
     __test__ = True
     ip_netmask = conf.IPS[25]
     ip_prefix = conf.IPS[26]
+    net_1 = conf.SN_NETS[6][0]
+    net_2 = conf.SN_NETS[6][1]
 
     @polarion("RHEVM3-10476")
     def test_ip_non_vm_network_on_host(self):
@@ -250,32 +209,21 @@ class TestHostNetworkApiSetupNetworks06(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": conf.SN_NETS[6][0],
+                    "network": self.net_1,
                     "nic": conf.HOST_0_NICS[1],
                     "ip": conf.BASIC_IP_DICT_NETMASK
                 },
                 "2": {
-                    "network": conf.SN_NETS[6][1],
+                    "network": self.net_2,
                     "nic": conf.HOST_0_NICS[2],
                     "ip": conf.BASIC_IP_DICT_PREFIX
                 }
             }
         }
-        logger.info(
-            "Attaching %s and %s to %s and %s on %s",
-            conf.SN_NETS[6][0], conf.SN_NETS[6][1], conf.HOST_0_NICS[1],
-            conf.HOST_0_NICS[2], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s and %s to %s and %s on %s" % (
-                    conf.SN_NETS[6][0], conf.SN_NETS[6][1],
-                    conf.HOST_0_NICS[1], conf.HOST_0_NICS[2],
-                    conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks07(helper.TestHostNetworkApiTestCaseBase):
@@ -283,6 +231,7 @@ class TestHostNetworkApiSetupNetworks07(helper.TestHostNetworkApiTestCaseBase):
     Attach network with custom properties to host NIC
     """
     __test__ = True
+    net = conf.SN_NETS[7][0]
 
     @polarion("RHEVM3-10478")
     def test_network_custom_properties_on_host(self):
@@ -298,24 +247,16 @@ class TestHostNetworkApiSetupNetworks07(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": conf.SN_NETS[7][0],
+                    "network": self.net,
                     "nic": conf.HOST_0_NICS[1],
                     "properties": properties_dict
                 }
             }
         }
-        logger.info(
-            "Attaching %s to %s on %s",
-            conf.SN_NETS[7][0], conf.HOST_0_NICS[1], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s" % (
-                    conf.SN_NETS[7][0], conf.HOST_0_NICS[1], conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks08(helper.TestHostNetworkApiTestCaseBase):
@@ -324,6 +265,8 @@ class TestHostNetworkApiSetupNetworks08(helper.TestHostNetworkApiTestCaseBase):
     2.Try to attach VLAN network with 9000 MTU size to the same NIC
     """
     __test__ = True
+    net_1 = conf.SN_NETS[8][0]
+    net_2 = conf.SN_NETS[8][1]
 
     @polarion("RHEVM3-10513")
     def test_network_mtu_on_host(self):
@@ -334,29 +277,19 @@ class TestHostNetworkApiSetupNetworks08(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": conf.SN_NETS[8][0],
+                    "network": self.net_1,
                     "nic": conf.HOST_0_NICS[1]
                 },
                 "2": {
-                    "network": conf.SN_NETS[8][1],
+                    "network": self.net_2,
                     "nic": conf.HOST_0_NICS[1]
                 }
             }
         }
-        logger.info(
-            "Attaching %s(MTU5000) and %s(MTU9000) to %s on %s",
-            conf.SN_NETS[8][0], conf.SN_NETS[8][0], conf.HOST_0_NICS[1],
-            conf.HOST_0_NAME
-        )
         if hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "%s and %s is attached to %s on %s but shouldn't" % (
-                    conf.SN_NETS[8][0], conf.SN_NETS[8][1],
-                    conf.HOST_0_NICS[1], conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks09(helper.TestHostNetworkApiTestCaseBase):
@@ -364,6 +297,7 @@ class TestHostNetworkApiSetupNetworks09(helper.TestHostNetworkApiTestCaseBase):
     Remove network from host NIC
     """
     __test__ = True
+    net = conf.SN_NETS[9][0]
 
     @classmethod
     def setup_class(cls):
@@ -373,23 +307,15 @@ class TestHostNetworkApiSetupNetworks09(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": conf.SN_NETS[9][0],
+                    "network": cls.net,
                     "nic": conf.HOST_0_NICS[1]
                 }
             }
         }
-        logger.info(
-            "Attaching %s to %s on %s",
-            conf.SN_NETS[9][0], conf.HOST_0_NICS[1], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s" % (
-                    conf.SN_NETS[9][0], conf.HOST_0_NICS[1], conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-10514")
     def test_network_remove_from_host(self):
@@ -398,21 +324,13 @@ class TestHostNetworkApiSetupNetworks09(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "remove": {
-                "networks": [conf.SN_NETS[9][0]]
+                "networks": [self.net]
                 }
             }
-        logger.info(
-            "Removing %s from %s on %s",
-            conf.SN_NETS[9][0], conf.HOST_0_NICS[1], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to remove %s from %s on %s" % (
-                    conf.SN_NETS[9][0], conf.HOST_0_NICS[1], conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks10(helper.TestHostNetworkApiTestCaseBase):
@@ -424,6 +342,8 @@ class TestHostNetworkApiSetupNetworks10(helper.TestHostNetworkApiTestCaseBase):
     __test__ = True
     ip_netmask = conf.IPS[31]
     ip_prefix = conf.IPS[32]
+    net_1 = conf.SN_NETS[10][0]
+    net_2 = conf.SN_NETS[10][1]
 
     @classmethod
     def setup_class(cls):
@@ -433,26 +353,19 @@ class TestHostNetworkApiSetupNetworks10(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": conf.SN_NETS[10][0],
+                    "network": cls.net_1,
                     "nic": conf.HOST_0_NICS[1]
                 },
                 "2": {
-                    "network": conf.SN_NETS[10][1],
+                    "network": cls.net_2,
                     "nic": conf.HOST_0_NICS[2]
                 }
             }
         }
-        logger.info(
-            "Attaching %s to %s on %s",
-            conf.SN_NETS[10][0], conf.HOST_0_NICS[1], conf.HOST_0_NAME)
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s" % (
-                    conf.SN_NETS[10][0], conf.HOST_0_NICS[1], conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-10515")
     def test_update_network_with_ip_host_nic(self):
@@ -464,32 +377,21 @@ class TestHostNetworkApiSetupNetworks10(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": conf.SN_NETS[10][0],
+                    "network": self.net_1,
                     "nic": conf.HOST_0_NICS[1],
                     "ip": conf.BASIC_IP_DICT_NETMASK
                 },
                 "2": {
-                    "network": conf.SN_NETS[10][1],
+                    "network": self.net_2,
                     "nic": conf.HOST_0_NICS[2],
                     "ip": conf.BASIC_IP_DICT_PREFIX
                 }
             }
         }
-        logger.info(
-            "Updating %s and %s to have IP on %s and %s of %s",
-            conf.SN_NETS[10][0], conf.SN_NETS[10][1], conf.HOST_0_NICS[1],
-            conf.HOST_0_NICS[2], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to update %s and %s to have IP on %s and %s of %s" % (
-                    conf.SN_NETS[10][0], conf.SN_NETS[10][0],
-                    conf.HOST_0_NICS[1], conf.HOST_0_NICS[1],
-                    conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks11(helper.TestHostNetworkApiTestCaseBase):
@@ -498,6 +400,11 @@ class TestHostNetworkApiSetupNetworks11(helper.TestHostNetworkApiTestCaseBase):
     2.Attach network to BOND
     """
     __test__ = True
+    bond = "bond11"
+    dummys = conf.DUMMYS[:2]
+    net_1 = conf.SN_NETS[11][0]
+    net_2 = conf.SN_NETS[11][1]
+    net_3 = conf.SN_NETS[11][2]
 
     @classmethod
     def setup_class(cls):
@@ -507,18 +414,15 @@ class TestHostNetworkApiSetupNetworks11(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "nic": "bond11",
-                    "slaves": conf.DUMMYS[:2]
+                    "nic": cls.bond,
+                    "slaves": cls.dummys
                 }
             }
         }
-        logger.info("Creating bond11 on %s", conf.HOST_0_NAME)
         if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to create bond11 on %s" % conf.HOST_0_NAME
-            )
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-10516")
     def test_attach_networks_to_bond(self):
@@ -528,30 +432,23 @@ class TestHostNetworkApiSetupNetworks11(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": conf.SN_NETS[11][0],
-                    "nic": "bond11"
+                    "network": self.net_1,
+                    "nic": self.bond
                 },
                 "2": {
-                    "nic": "bond11",
-                    "network": conf.SN_NETS[11][1]
+                    "nic": self.bond,
+                    "network": self.net_2
                 },
                 "3": {
-                    "nic": "bond11",
-                    "network": conf.SN_NETS[11][2]
+                    "nic": self.bond,
+                    "network": self.net_3
                 }
             }
         }
-        logger.info(
-            "Attach %s to bond11 on %s", conf.SN_NETS[11][0], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to bond11 on %s" % (
-                    conf.SN_NETS[11][0], conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks12(helper.TestHostNetworkApiTestCaseBase):
@@ -564,6 +461,10 @@ class TestHostNetworkApiSetupNetworks12(helper.TestHostNetworkApiTestCaseBase):
     """
     __test__ = True
     ip_netmask = conf.IPS[22]
+    bond = "bond12"
+    dummys_1 = conf.DUMMYS[:2]
+    dummys_2 = conf.DUMMYS[:3]
+    net = conf.SN_NETS[12][0]
 
     @polarion("RHEVM3-9621")
     def test_01create_bond(self):
@@ -573,19 +474,16 @@ class TestHostNetworkApiSetupNetworks12(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "nic": "bond12",
-                    "slaves": conf.DUMMYS[:2],
+                    "nic": self.bond,
+                    "slaves": self.dummys_1,
                     "mode": 1
                 }
             }
         }
-        logger.info("Creating bond12 on %s", conf.HOST_0_NAME)
         if not hl_host_network.setup_networks(
             conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to create bond12 on %s" % conf.HOST_0_NAME
-            )
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-9622")
     def test_02update_bond_add_slave(self):
@@ -595,18 +493,15 @@ class TestHostNetworkApiSetupNetworks12(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "nic": "bond12",
-                    "slaves": conf.DUMMYS[:3]
+                    "nic": self.bond,
+                    "slaves": self.dummys_2
                 }
             }
         }
         if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to update bond12 to have 3 slaves on %s" %
-                conf.HOST_0_NAME
-            )
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-10520")
     def test_03update_bond_remove_slave(self):
@@ -616,18 +511,15 @@ class TestHostNetworkApiSetupNetworks12(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "nic": "bond12",
-                    "slaves": conf.DUMMYS[:2]
+                    "nic": self.bond,
+                    "slaves": self.dummys_1
                 }
             }
         }
         if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to update bond12 to have 2 slaves on %s" %
-                conf.HOST_0_NAME
-            )
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-9642")
     def test_04update_bond_mode(self):
@@ -637,19 +529,16 @@ class TestHostNetworkApiSetupNetworks12(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "nic": "bond12",
-                    "slaves": conf.DUMMYS[:2],
-                    "mode": "1"
+                    "nic": self.bond,
+                    "slaves": self.dummys_1,
+                    "mode": 1
                 }
             }
         }
         if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to update bond12 mode to mode 1 on %s" %
-                conf.HOST_0_NAME
-            )
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-10521")
     def test_05update_bond_with_ip(self):
@@ -660,19 +549,16 @@ class TestHostNetworkApiSetupNetworks12(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "nic": "bond12",
-                    "network": conf.SN_NETS[12][0],
+                    "nic": self.bond,
+                    "network": self.net,
                     "ip": conf.BASIC_IP_DICT_NETMASK
                 }
             }
         }
         if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s with IP to bond12 on %s" %
-                (conf.SN_NETS[14][0], conf.HOST_0_NAME)
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks13(helper.TestHostNetworkApiTestCaseBase):
@@ -680,6 +566,12 @@ class TestHostNetworkApiSetupNetworks13(helper.TestHostNetworkApiTestCaseBase):
     Create 3 BONDs
     """
     __test__ = True
+    bond_1 = "bond131"
+    bond_2 = "bond132"
+    bond_3 = "bond133"
+    dummys_1 = conf.DUMMYS[:2]
+    dummys_2 = conf.DUMMYS[2:4]
+    dummys_3 = conf.DUMMYS[4:6]
 
     @polarion("RHEVM3-10518")
     def test_create_bonds(self):
@@ -689,26 +581,23 @@ class TestHostNetworkApiSetupNetworks13(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "nic": "bond131",
-                    "slaves": conf.DUMMYS[:2]
+                    "nic": self.bond_1,
+                    "slaves": self.dummys_1
                 },
                 "2": {
-                    "nic": "bond132",
-                    "slaves": conf.DUMMYS[2:4]
+                    "nic": self.bond_2,
+                    "slaves": self.dummys_2
                 },
                 "3": {
-                    "nic": "bond133",
-                    "slaves": conf.DUMMYS[4:6]
+                    "nic": self.bond_3,
+                    "slaves": self.dummys_3
                 }
             }
         }
-        logger.info("Creating bond131/2/3 on %s", conf.HOST_0_NAME)
         if not hl_host_network.setup_networks(
             conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to create bond131/2/3 on %s" % conf.HOST_0_NAME
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks14(helper.TestHostNetworkApiTestCaseBase):
@@ -716,6 +605,8 @@ class TestHostNetworkApiSetupNetworks14(helper.TestHostNetworkApiTestCaseBase):
     Create BOND with 5 slaves
     """
     __test__ = True
+    bond = "bond14"
+    dummys = conf.DUMMYS[:5]
 
     @polarion("RHEVM3-10519")
     def test_create_bond_with_5_slaves(self):
@@ -725,18 +616,15 @@ class TestHostNetworkApiSetupNetworks14(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "nic": "bond14",
-                    "slaves": conf.DUMMYS[:5]
+                    "nic": self.bond,
+                    "slaves": self.dummys
                 }
             }
         }
-        logger.info("Creating bond14 on %s", conf.HOST_0_NAME)
         if not hl_host_network.setup_networks(
             conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to create bond14 on %s" % conf.HOST_0_NAME
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks15(helper.TestHostNetworkApiTestCaseBase):
@@ -745,6 +633,11 @@ class TestHostNetworkApiSetupNetworks15(helper.TestHostNetworkApiTestCaseBase):
     2.Remove networks from BOND
     """
     __test__ = True
+    bond = "bond15"
+    dummys = conf.DUMMYS[:2]
+    net_1 = conf.SN_NETS[15][0]
+    net_2 = conf.SN_NETS[15][1]
+    net_3 = conf.SN_NETS[15][2]
 
     @classmethod
     def setup_class(cls):
@@ -754,30 +647,27 @@ class TestHostNetworkApiSetupNetworks15(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "nic": "bond15",
-                    "slaves": conf.DUMMYS[:2]
+                    "nic": cls.bond,
+                    "slaves": cls.dummys
                 },
                 "2": {
-                    "network": conf.SN_NETS[15][0],
-                    "nic": "bond15"
+                    "network": cls.net_1,
+                    "nic": cls.bond
                 },
                 "3": {
-                    "nic": "bond15",
-                    "network": conf.SN_NETS[15][1]
+                    "nic": cls.bond,
+                    "network": cls.net_2
                 },
                 "4": {
-                    "nic": "bond15",
-                    "network": conf.SN_NETS[15][2]
+                    "nic": cls.bond,
+                    "network": cls.net_3
                 }
             }
         }
-        logger.info("Creating bond15 on %s", conf.HOST_0_NAME)
         if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to create bond15 on %s" % conf.HOST_0_NAME
-            )
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-10517")
     def test_remove_networks_from_bond_host(self):
@@ -786,21 +676,13 @@ class TestHostNetworkApiSetupNetworks15(helper.TestHostNetworkApiTestCaseBase):
         """
         network_host_api_dict = {
             "remove": {
-                "networks": [conf.SN_NETS[15][1], conf.SN_NETS[15][2]]
+                "networks": [self.net_2, self.net_3]
             }
         }
-        logger.info(
-            "Removing %s and %s from bond15 on %s",
-            conf.SN_NETS[15][1], conf.SN_NETS[15][2], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to remove %s and %s from bond15 on %s" % (
-                    conf.SN_NETS[15][1], conf.SN_NETS[15][2], conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks16(helper.TestHostNetworkApiTestCaseBase):
@@ -811,6 +693,8 @@ class TestHostNetworkApiSetupNetworks16(helper.TestHostNetworkApiTestCaseBase):
     """
     __test__ = True
     unmamanged_net = "unman_sn_16"
+    dummys = conf.DUMMYS[:2]
+    bond = "bond16"
 
     @classmethod
     def setup_class(cls):
@@ -822,48 +706,37 @@ class TestHostNetworkApiSetupNetworks16(helper.TestHostNetworkApiTestCaseBase):
                 "required": "false"
             }
         }
-        logger.info(
-            "Create and attach %s to %s/%s",
-            cls.unmamanged_net, conf.DC_NAME_1, conf.CLUSTER_NAME_1
-        )
         if not hl_networks.createAndAttachNetworkSN(
-            data_center=conf.DC_NAME_1, cluster=conf.CLUSTER_NAME_1,
-            network_dict=network_dict
+            data_center=conf.DC_0, cluster=conf.CL_0, network_dict=network_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to add network to %s/%s" %
-                (conf.DC_NAME_1, conf.CLUSTER_NAME_1)
-            )
+            raise conf.NET_EXCEPTION()
+
         sn_dict = {
             "add": {
                 "1": {
-                    "nic": "bond16",
-                    "slaves": conf.DUMMYS[:2]
+                    "nic": cls.bond,
+                    "slaves": cls.dummys
                 },
                 "2": {
-                    "nic": "bond16",
+                    "nic": cls.bond,
                     "network": cls.unmamanged_net
                 }
             }
         }
-        logger.info(
-            "Create bond16 with %s on %s", conf.HOST_0_NAME, cls.unmamanged_net
-        )
-        if not hl_host_network.setup_networks(conf.HOST_0_NAME, **sn_dict):
-            raise conf.NET_EXCEPTION(
-                "Failed to create bond16 with %s on %s" %
-                (cls.unmamanged_net, conf.HOST_0_NAME)
-            )
-        if not ll_networks.removeNetwork(
-            True, cls.unmamanged_net, conf.DC_NAME_1
+
+        if not hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **sn_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to delete %s from %s" %
-                (cls.unmamanged_net, conf.DC_NAME_1)
-            )
+            raise conf.NET_EXCEPTION()
+
+        if not ll_networks.removeNetwork(
+            positive=True, network=cls.unmamanged_net, data_center=conf.DC_0
+        ):
+            raise conf.NET_EXCEPTION()
+
         logger.info("Checking if %s is unmanaged network", cls.unmamanged_net)
         if not ll_host_network.get_host_unmanaged_networks(
-            conf.HOST_0_NAME, [cls.unmamanged_net]
+            host_name=conf.HOST_0_NAME, networks=[cls.unmamanged_net]
         ):
             raise conf.NET_EXCEPTION(
                 "%s should be unmanaged network but it is not" %
@@ -875,14 +748,8 @@ class TestHostNetworkApiSetupNetworks16(helper.TestHostNetworkApiTestCaseBase):
         """
         Remove the unmanaged network from host
         """
-        logger.info(
-            "Removing %s from %s", self.unmamanged_net, conf.HOST_0_NAME
-        )
         if not hl_host_network.clean_host_interfaces(conf.HOST_0_NAME):
-            raise conf.NET_EXCEPTION(
-                "Failed to remove %s from %s" %
-                (self.unmamanged_net, conf.HOST_0_NAME)
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks17(helper.TestHostNetworkApiTestCaseBase):
@@ -904,18 +771,11 @@ class TestHostNetworkApiSetupNetworks17(helper.TestHostNetworkApiTestCaseBase):
                 "required": "false"
             }
         }
-        logger.info(
-            "Create and attach %s to %s/%s",
-            cls.unmamanged_net, conf.DC_NAME_1, conf.CLUSTER_NAME_1
-        )
         if not hl_networks.createAndAttachNetworkSN(
-            data_center=conf.DC_NAME_1, cluster=conf.CLUSTER_NAME_1,
-            network_dict=network_dict
+            data_center=conf.DC_0, cluster=conf.CL_0, network_dict=network_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to add network to %s/%s" %
-                (conf.DC_NAME_1, conf.CLUSTER_NAME_1)
-            )
+            raise conf.NET_EXCEPTION()
+
         sn_dict = {
             "add": {
                 "1": {
@@ -924,24 +784,19 @@ class TestHostNetworkApiSetupNetworks17(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        logger.info(
-            "Create bond16 with %s on %s", conf.HOST_0_NAME, cls.unmamanged_net
-        )
-        if not hl_host_network.setup_networks(conf.HOST_0_NAME, **sn_dict):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s on %s" %
-                (cls.unmamanged_net, conf.HOST_0_NAME)
-            )
-        if not ll_networks.removeNetwork(
-            True, cls.unmamanged_net, conf.DC_NAME_1
+        if not hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **sn_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to delete %s from %s" %
-                (cls.unmamanged_net, conf.DC_NAME_1)
-            )
+            raise conf.NET_EXCEPTION()
+
+        if not ll_networks.removeNetwork(
+            positive=True, network=cls.unmamanged_net, data_center=conf.DC_0
+        ):
+            raise conf.NET_EXCEPTION()
+
         logger.info("Checking if %s is unmanaged network", cls.unmamanged_net)
         if not ll_host_network.get_host_unmanaged_networks(
-            conf.HOST_0_NAME, [cls.unmamanged_net]
+            host_name=conf.HOST_0_NAME, networks=[cls.unmamanged_net]
         ):
             raise conf.NET_EXCEPTION(
                 "%s should be unmanaged network but it is not" %
@@ -953,14 +808,8 @@ class TestHostNetworkApiSetupNetworks17(helper.TestHostNetworkApiTestCaseBase):
         """
         Remove the unmanaged network from host
         """
-        logger.info(
-            "Removing %s from %s", self.unmamanged_net, conf.HOST_0_NAME
-        )
         if not hl_host_network.clean_host_interfaces(conf.HOST_0_NAME):
-            raise conf.NET_EXCEPTION(
-                "Failed to remove %s from %s" %
-                (self.unmamanged_net, conf.HOST_0_NAME)
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks18(helper.TestHostNetworkApiTestCaseBase):
@@ -968,6 +817,9 @@ class TestHostNetworkApiSetupNetworks18(helper.TestHostNetworkApiTestCaseBase):
     Attach network with custom properties to BOND
     """
     __test__ = True
+    bond = "bond18"
+    dummys = conf.DUMMYS[:2]
+    net = conf.SN_NETS[18][0]
 
     @polarion("RHEVM3-11880")
     def test_network_custom_properties_on_bond_host(self):
@@ -983,28 +835,20 @@ class TestHostNetworkApiSetupNetworks18(helper.TestHostNetworkApiTestCaseBase):
         sn_dict = {
             "add": {
                 "1": {
-                    "nic": "bond18",
-                    "slaves": conf.DUMMYS[:2]
+                    "nic": self.bond,
+                    "slaves": self.dummys
                 },
                 "2": {
-                    "nic": "bond18",
-                    "network": conf.SN_NETS[18][0],
+                    "nic": self.bond,
+                    "network": self.net,
                     "properties": properties_dict
                 }
             }
         }
-        logger.info(
-            "Attaching %s to bond18 on %s",
-            conf.SN_NETS[18][0], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **sn_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to bond18 on %s" % (
-                    conf.SN_NETS[18][0], conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks19(helper.TestHostNetworkApiTestCaseBase):
@@ -1015,6 +859,8 @@ class TestHostNetworkApiSetupNetworks19(helper.TestHostNetworkApiTestCaseBase):
     __test__ = True
     ip_netmask = conf.IPS[27]
     ip_prefix = conf.IPS[28]
+    net_1 = conf.SN_NETS[19][0]
+    net_2 = conf.SN_NETS[19][1]
 
     @polarion("RHEVM3-10477")
     def test_ip_non_vm_vlan_network_on_host(self):
@@ -1026,32 +872,21 @@ class TestHostNetworkApiSetupNetworks19(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": conf.SN_NETS[19][0],
+                    "network": self.net_1,
                     "nic": conf.HOST_0_NICS[1],
                     "ip": conf.BASIC_IP_DICT_NETMASK
                 },
                 "2": {
-                    "network": conf.SN_NETS[19][1],
+                    "network": self.net_2,
                     "nic": conf.HOST_0_NICS[2],
                     "ip": conf.BASIC_IP_DICT_PREFIX
                 }
             }
         }
-        logger.info(
-            "Attaching %s and %s to %s and %s on %s",
-            conf.SN_NETS[19][0], conf.SN_NETS[19][1], conf.HOST_0_NICS[1],
-            conf.HOST_0_NICS[2], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s and %s to %s and %s on %s" % (
-                    conf.SN_NETS[19][0], conf.SN_NETS[19][1],
-                    conf.HOST_0_NICS[1], conf.HOST_0_NICS[2],
-                    conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks20(helper.TestHostNetworkApiTestCaseBase):
@@ -1059,6 +894,7 @@ class TestHostNetworkApiSetupNetworks20(helper.TestHostNetworkApiTestCaseBase):
     Attach Non-VM VLAN network to host NIC
     """
     __test__ = True
+    net = conf.SN_NETS[20][0]
 
     @polarion("RHEVM3-10473")
     def test_non_vm_vlan_network_on_host(self):
@@ -1068,23 +904,15 @@ class TestHostNetworkApiSetupNetworks20(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": conf.SN_NETS[20][0],
+                    "network": self.net,
                     "nic": conf.HOST_0_NICS[1]
                 }
             }
         }
-        logger.info(
-            "Attaching %s to %s on %s",
-            conf.SN_NETS[20][0], conf.HOST_0_NICS[1], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s" % (
-                    conf.SN_NETS[20][0], conf.HOST_0_NICS[1], conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks21(helper.TestHostNetworkApiTestCaseBase):
@@ -1092,6 +920,9 @@ class TestHostNetworkApiSetupNetworks21(helper.TestHostNetworkApiTestCaseBase):
     Create BOND with network
     """
     __test__ = True
+    bond = "bond21"
+    dummys = conf.DUMMYS[:2]
+    net = conf.SN_NETS[21][0]
 
     @polarion("RHEVM3-10438")
     def test_attach_networks_to_bond(self):
@@ -1101,26 +932,19 @@ class TestHostNetworkApiSetupNetworks21(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "nic": "bond21",
-                    "slaves": conf.DUMMYS[:2]
+                    "nic": self.bond,
+                    "slaves": self.dummys
                 },
                 "2": {
-                    "network": conf.SN_NETS[21][0],
-                    "nic": "bond21"
+                    "network": self.net,
+                    "nic": self.bond
                 }
             }
         }
-        logger.info(
-            "Attach %s to bond21 on %s", conf.SN_NETS[21][0], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to bond21 on %s" % (
-                    conf.SN_NETS[21][0], conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks22(helper.TestHostNetworkApiTestCaseBase):
@@ -1128,6 +952,9 @@ class TestHostNetworkApiSetupNetworks22(helper.TestHostNetworkApiTestCaseBase):
     Attach multiple VLANs to host NIC
     """
     __test__ = True
+    net_1 = conf.SN_NETS[22][0]
+    net_2 = conf.SN_NETS[22][1]
+    net_3 = conf.SN_NETS[22][2]
 
     @polarion("RHEVM3-9823")
     def test_remove_networks_from_bond_host(self):
@@ -1138,31 +965,22 @@ class TestHostNetworkApiSetupNetworks22(helper.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "nic": conf.HOST_0_NICS[1],
-                    "network": conf.SN_NETS[22][0]
+                    "network": self.net_1
                 },
                 "2": {
                     "nic": conf.HOST_0_NICS[1],
-                    "network": conf.SN_NETS[22][1]
+                    "network": self.net_2
                 },
                 "3": {
                     "nic": conf.HOST_0_NICS[1],
-                    "network": conf.SN_NETS[22][2]
+                    "network": self.net_3
                 }
             }
         }
-        logger.info(
-            "Attaching %s,%s and %s to %s on %s", conf.SN_NETS[22][0],
-            conf.SN_NETS[22][1], conf.SN_NETS[22][2], conf.HOST_0_NICS[1],
-            conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s, %s and %s to %s on %s" %
-                (conf.SN_NETS[22][0], conf.SN_NETS[22][1], conf.SN_NETS[22][2],
-                 conf.HOST_0_NICS[1], conf.HOST_0_NAME)
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks23(helper.TestHostNetworkApiTestCaseBase):
@@ -1170,6 +988,11 @@ class TestHostNetworkApiSetupNetworks23(helper.TestHostNetworkApiTestCaseBase):
     Attach multiple VLANs to BOND
     """
     __test__ = True
+    bond = "bond23"
+    dummys = conf.DUMMYS[:2]
+    net_1 = conf.SN_NETS[23][0]
+    net_2 = conf.SN_NETS[23][1]
+    net_3 = conf.SN_NETS[23][2]
 
     @polarion("RHEVM3-9824")
     def test_remove_networks_from_bond_host(self):
@@ -1179,35 +1002,27 @@ class TestHostNetworkApiSetupNetworks23(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "nic": "bond23",
-                    "network": conf.SN_NETS[23][0]
+                    "nic": self.bond,
+                    "network": self.net_1
                 },
                 "2": {
-                    "nic": "bond23",
-                    "network": conf.SN_NETS[23][1]
+                    "nic": self.bond,
+                    "network": self.net_2
                 },
                 "3": {
-                    "nic": "bond23",
-                    "network": conf.SN_NETS[23][2]
+                    "nic": self.bond,
+                    "network": self.net_3
                 },
                 "4": {
-                    "nic": "bond23",
-                    "slaves": conf.DUMMYS[:2]
+                    "nic": self.bond,
+                    "slaves": self.dummys
                 }
             }
         }
-        logger.info(
-            "Attaching %s,%s and %s to bond23 on %s", conf.SN_NETS[23][0],
-            conf.SN_NETS[23][1], conf.SN_NETS[23][2], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s, %s and %s to bond23 on %s" %
-                (conf.SN_NETS[23][0], conf.SN_NETS[23][1], conf.SN_NETS[23][2],
-                 conf.HOST_0_NAME)
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks24(helper.TestHostNetworkApiTestCaseBase):
@@ -1232,6 +1047,23 @@ class TestHostNetworkApiSetupNetworks24(helper.TestHostNetworkApiTestCaseBase):
     ip_netmask = conf.IPS[20]
     ip_prefix = conf.IPS[21]
     ip_prefix_2 = conf.IPS[39]
+    net_1 = conf.SN_NETS[24][0]
+    net_2 = conf.SN_NETS[24][1]
+    net_3 = conf.SN_NETS[24][2]
+    net_4 = conf.SN_NETS[24][3]
+    net_5 = conf.SN_NETS[24][4]
+    net_6 = conf.SN_NETS[24][5]
+    dummys_1 = conf.DUMMYS[:2]
+    dummys_2 = conf.DUMMYS[2:4]
+    dummys_3 = conf.DUMMYS[6:9]
+    dummys_4 = conf.DUMMYS[9:11]
+    dummys_5 = conf.DUMMYS[11]
+    dummys_6 = conf.DUMMYS[2:5]
+    dummys_7 = conf.DUMMYS[6:8]
+    bond_1 = "bond241"
+    bond_2 = "bond242"
+    bond_3 = "bond243"
+    bond_4 = "bond244"
 
     @polarion("RHEVM3-9850")
     def test_01_multiple_actions(self):
@@ -1252,53 +1084,50 @@ class TestHostNetworkApiSetupNetworks24(helper.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "nic": conf.HOST_0_NICS[1],
-                    "network": conf.SN_NETS[24][0]
+                    "network": self.net_1
                 },
                 "2": {
                     "nic": conf.HOST_0_NICS[1],
-                    "network": conf.SN_NETS[24][1],
+                    "network": self.net_2,
                 },
                 "3": {
                     "nic": conf.HOST_0_NICS[1],
-                    "network": conf.SN_NETS[24][2],
+                    "network": self.net_3,
                     "ip": conf.BASIC_IP_DICT_PREFIX,
                     "properties": properties_dict
                 },
                 "4": {
-                    "nic": "bond241",
-                    "slaves": conf.DUMMYS[:2]
+                    "nic": self.bond_1,
+                    "slaves": self.dummys_1
                 },
                 "5": {
-                    "nic": "bond241",
-                    "network": conf.SN_NETS[24][3],
+                    "nic": self.bond_1,
+                    "network": self.net_4,
                     "ip": conf.BASIC_IP_DICT_NETMASK
                 },
                 "6": {
-                    "nic": "bond241",
-                    "network": conf.SN_NETS[24][4],
+                    "nic": self.bond_1,
+                    "network": self.net_5,
                 },
                 "7": {
-                    "nic": "bond242",
-                    "slaves": conf.DUMMYS[2:4]
+                    "nic": self.bond_2,
+                    "slaves": self.dummys_2
                 },
                 "8": {
-                    "nic": "bond243",
-                    "slaves": conf.DUMMYS[6:9]
+                    "nic": self.bond_3,
+                    "slaves": self.dummys_3
                 },
                 "9": {
-                    "nic": "bond244",
-                    "slaves": conf.DUMMYS[9:11]
+                    "nic": self.bond_4,
+                    "slaves": self.dummys_4
                 }
 
             }
         }
-        logger.info("Perform SetupNetwork action on %s",  conf.HOST_0_NAME)
         if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "SetupNetwork action failed on %s" % conf.HOST_0_NAME
-            )
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-9851")
     def test_02_multiple_actions(self):
@@ -1315,47 +1144,42 @@ class TestHostNetworkApiSetupNetworks24(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "nic": "bond241",
-                    "network": conf.SN_NETS[24][1],
+                    "nic": self.bond_1,
+                    "network": self.net_2,
                 },
                 "2": {
-                    "nic": conf.DUMMYS[11],
-                    "network": conf.SN_NETS[24][2],
+                    "nic": self.dummys_5,
+                    "network": self.net_3,
                     "ip": conf.BASIC_IP_DICT_PREFIX
                 },
                 "3": {
-                    "nic": "bond242",
-                    "network": conf.SN_NETS[24][4],
+                    "nic": self.bond_2,
+                    "network": self.net_5,
                 },
                 "4": {
-                    "nic": "bond242",
-                    "slaves": conf.DUMMYS[2:5]
+                    "nic": self.bond_2,
+                    "slaves": self.dummys_6
                 },
                 "5": {
-                    "nic": "bond243",
-                    "slaves": conf.DUMMYS[6:8]
+                    "nic": self.bond_3,
+                    "slaves": self.dummys_7
                 },
             },
             "remove": {
-                "networks": [conf.SN_NETS[24][0], conf.SN_NETS[24][3]],
-                "bonds": ["bond244"]
+                "networks": [self.net_1, self.net_4],
+                "bonds": [self.bond_4]
             },
             "add": {
                 "1": {
-                    "nic": "bond243",
-                    "network": conf.SN_NETS[24][5]
+                    "nic": self.bond_3,
+                    "network": self.net_6
                 }
             }
         }
-        logger.info(
-            "Perform SetupNetwork update action on %s",  conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Update SetupNetwork action failed on %s" % conf.HOST_0_NAME
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks25(helper.TestHostNetworkApiTestCaseBase):
@@ -1389,11 +1213,10 @@ class TestHostNetworkApiSetupNetworks25(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        if not hl_host_network.setup_networks(conf.HOST_0_NAME, **sn_dict):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s and %s on %s" %
-                (cls.net_case_pre_vm, cls.net_case_pre_vlan, conf.HOST_0_NAME)
-            )
+        if not hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **sn_dict
+        ):
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-14016")
     def test_attach_vlan_to_host_nic_with_vm(self):
@@ -1408,17 +1231,10 @@ class TestHostNetworkApiSetupNetworks25(helper.TestHostNetworkApiTestCaseBase):
                 },
             }
         }
-        logger.info(
-            "Attaching %s to %s on %s", self.net_case_vlan,
-            conf.HOST_0_NICS[1], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s" %
-                (self.net_case_vlan, conf.HOST_0_NICS[1], conf.HOST_0_NAME)
-            )
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-14015")
     def test_attach_vm_to_host_nic_with_vlan(self):
@@ -1433,17 +1249,10 @@ class TestHostNetworkApiSetupNetworks25(helper.TestHostNetworkApiTestCaseBase):
                 },
             }
         }
-        logger.info(
-            "Attaching %s to %s on %s", self.net_case_vm,
-            conf.HOST_0_NICS[2], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s" %
-                (self.net_case_vm, conf.HOST_0_NICS[2], conf.HOST_0_NAME)
-            )
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-14017")
     def test_attach_vm_and_vlan_network_to_host_nic(self):
@@ -1462,20 +1271,10 @@ class TestHostNetworkApiSetupNetworks25(helper.TestHostNetworkApiTestCaseBase):
                 },
             }
         }
-        logger.info(
-            "Attaching %s and %s to %s on %s", self.net_case_new_vm,
-            self.net_case_new_vlan, conf.HOST_0_NICS[3], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s and %s to %s on %s" %
-                (
-                    self.net_case_new_vm, self.net_case_new_vlan,
-                    conf.HOST_0_NICS[3], conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks26(helper.TestHostNetworkApiTestCaseBase):
@@ -1494,6 +1293,9 @@ class TestHostNetworkApiSetupNetworks26(helper.TestHostNetworkApiTestCaseBase):
     bond_1 = "bond261"
     bond_2 = "bond262"
     bond_3 = "bond263"
+    dummys_1 = conf.DUMMYS[:2]
+    dummys_2 = conf.DUMMYS[2:4]
+    dummys_3 = conf.DUMMYS[4:6]
 
     @classmethod
     def setup_class(cls):
@@ -1506,15 +1308,15 @@ class TestHostNetworkApiSetupNetworks26(helper.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "nic": cls.bond_1,
-                    "slaves": conf.DUMMYS[:2]
+                    "slaves": cls.dummys_1
                 },
                 "2": {
                     "nic": cls.bond_2,
-                    "slaves": conf.DUMMYS[2:4]
+                    "slaves": cls.dummys_2
                 },
                 "3": {
                     "nic": cls.bond_3,
-                    "slaves": conf.DUMMYS[4:6]
+                    "slaves": cls.dummys_3
                 },
                 "4": {
                     "nic": cls.bond_1,
@@ -1526,11 +1328,10 @@ class TestHostNetworkApiSetupNetworks26(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        if not hl_host_network.setup_networks(conf.HOST_0_NAME, **sn_dict):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s and %s on %s" %
-                (cls.net_case_pre_vm, cls.net_case_pre_vlan, conf.HOST_0_NAME)
-            )
+        if not hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **sn_dict
+        ):
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-14019")
     def test_attach_vlan_to_bond_with_vm_net(self):
@@ -1545,17 +1346,10 @@ class TestHostNetworkApiSetupNetworks26(helper.TestHostNetworkApiTestCaseBase):
                 },
             }
         }
-        logger.info(
-            "Attaching %s to %s on %s", self.net_case_vlan,
-            self.bond_1, conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s" %
-                (self.net_case_vlan, self.bond_1, conf.HOST_0_NAME)
-            )
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-14018")
     def test_attach_vm_net_to_bond_with_vlan(self):
@@ -1570,17 +1364,10 @@ class TestHostNetworkApiSetupNetworks26(helper.TestHostNetworkApiTestCaseBase):
                 },
             }
         }
-        logger.info(
-            "Attaching %s to %s on %s", self.net_case_vm,
-            self.bond_2, conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s" %
-                (self.net_case_vm, self.bond_2, conf.HOST_0_NAME)
-            )
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-14020")
     def test_attach_vm_and_vlan_networks_to_bond(self):
@@ -1599,20 +1386,10 @@ class TestHostNetworkApiSetupNetworks26(helper.TestHostNetworkApiTestCaseBase):
                 },
             }
         }
-        logger.info(
-            "Attaching %s and %s to %s on %s", self.net_case_new_vm,
-            self.net_case_new_vlan, self.bond_3, conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s and %s to %s on %s" %
-                (
-                    self.net_case_new_vm, self.net_case_new_vlan,
-                    self.bond_3, conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks27(helper.TestHostNetworkApiTestCaseBase):
@@ -1620,6 +1397,7 @@ class TestHostNetworkApiSetupNetworks27(helper.TestHostNetworkApiTestCaseBase):
     Attach label to host NIC
     """
     __test__ = True
+    label = conf.LABEL_LIST[0]
 
     @polarion("RHEVM3-12411")
     def test_label_on_host_nic(self):
@@ -1629,23 +1407,15 @@ class TestHostNetworkApiSetupNetworks27(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "labels": [conf.LABEL_LIST[0]],
+                    "labels": [self.label],
                     "nic": conf.HOST_0_NICS[1]
                 }
             }
         }
-        logger.info(
-            "Attaching %s to %s on %s",
-            conf.LABEL_LIST[0], conf.HOST_0_NICS[1], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s" % (
-                    conf.LABEL_LIST[0], conf.HOST_0_NICS[1], conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 class TestHostNetworkApiSetupNetworks28(helper.TestHostNetworkApiTestCaseBase):
@@ -1654,6 +1424,8 @@ class TestHostNetworkApiSetupNetworks28(helper.TestHostNetworkApiTestCaseBase):
     """
     __test__ = True
     bond_1 = "bond281"
+    dummys = conf.DUMMYS[:2]
+    label = conf.LABEL_LIST[0]
 
     @classmethod
     def setup_class(cls):
@@ -1664,16 +1436,14 @@ class TestHostNetworkApiSetupNetworks28(helper.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "nic": cls.bond_1,
-                    "slaves": conf.DUMMYS[:2]
+                    "slaves": cls.dummys
                 }
             }
         }
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **sn_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to create %s on %s" % (cls.bond_1, conf.HOST_0_NAME)
-            )
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-12412")
     def test_label_on_bond(self):
@@ -1683,20 +1453,12 @@ class TestHostNetworkApiSetupNetworks28(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "labels": [conf.LABEL_LIST[0]],
+                    "labels": [self.label],
                     "nic": self.bond_1
                 }
             }
         }
-        logger.info(
-            "Attaching %s to %s on %s",
-            conf.LABEL_LIST[0], self.bond_1, conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s" % (
-                    conf.LABEL_LIST[0], self.bond_1, conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()

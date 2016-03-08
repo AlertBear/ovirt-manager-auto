@@ -160,7 +160,7 @@ def updateNetwork(positive, network, **kwargs):
     """
     net = find_network(network, kwargs.get("data_center"))
     log_info_txt, log_error_txt = ll.general.get_log_msg(
-        action="update", obj_type="network", obj_name=network,
+        action="Update", obj_type="network", obj_name=network,
         positive=positive, **kwargs
     )
     logger.info(log_info_txt)

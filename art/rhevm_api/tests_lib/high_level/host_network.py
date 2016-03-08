@@ -100,14 +100,12 @@ def remove_networks_from_host(host_name, networks, nic=None):
     return True
 
 
-def add_network_to_host(host_name, network, nic_name=None, **kwargs):
+def add_network_to_host(host_name, nic_name=None, **kwargs):
     """
     Attach network to host/host NIC
 
     :param host_name: Host name
     :type host_name: str
-    :param network: Network name
-    :type network: str
     :param nic_name: NIC name
     :type nic_name: str
     :param kwargs: Network attachment kwargs
@@ -115,30 +113,35 @@ def add_network_to_host(host_name, network, nic_name=None, **kwargs):
     :return: True/False
     :rtype: bool
     """
-    kwargs["network"] = network
+    nic_log = "to host NIC %s" if nic_name else ""
+    network = kwargs.get("network")
+    log_info, log_error = ll_general.get_log_msg(
+        action="Attach", obj_type="network", obj_name=network,
+        extra_txt=nic_log, **kwargs
+    )
     network_attachment_obj = ll_host_network.prepare_network_attachment_obj(
         host_name, **kwargs
     )
     attachments_href = ll_host_network.get_attachment_href(host_name, nic_name)
 
-    return ll_host_network.NETWORK_ATTACHMENT_API.create(
+    logger.info(log_info)
+    res = ll_host_network.NETWORK_ATTACHMENT_API.create(
         entity=network_attachment_obj,
         positive=True,
         collection=attachments_href,
         coll_elm_name=ll_host_network.NETWORK_ATTACHMENT
     )[1]
+    if not res:
+        logger.error(log_error)
+    return res
 
 
-def update_network_on_host(
-    host_name, network_name, nic_name=None, **kwargs
-):
+def update_network_on_host(host_name, nic_name=None, **kwargs):
     """
     Update network on host/host NIC
 
     :param host_name: Host name
     :type host_name: str
-    :param network_name: Network name
-    :type network_name: str
     :param nic_name: NIC name
     :type nic_name: str
     :param kwargs: Network attachment kwargs
@@ -146,6 +149,12 @@ def update_network_on_host(
     :return: True/False
     :rtype: bool
     """
+    network_name = kwargs.get("network")
+    nic_log = "to host NIC %s" if nic_name else ""
+    log_info, log_error = ll_general.get_log_msg(
+        action="Update", obj_type="network", obj_name=network_name,
+        extra_txt=nic_log, **kwargs
+    )
     orig_attachment_obj = ll_host_network.get_networks_attachments(
         host_name, [network_name], nic_name
     )
@@ -155,9 +164,13 @@ def update_network_on_host(
     network_attachment_obj = ll_host_network.prepare_network_attachment_obj(
         host_name, **kwargs
     )
-    return ll_host_network.NETWORK_ATTACHMENT_API.update(
+    logger.info(log_info)
+    res = ll_host_network.NETWORK_ATTACHMENT_API.update(
         orig_attachment_obj[0], network_attachment_obj, True
     )[1]
+    if not res:
+        logger.error(log_error)
+    return res
 
 
 def setup_networks(host_name, **kwargs):
