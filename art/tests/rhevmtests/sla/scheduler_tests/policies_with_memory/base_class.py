@@ -150,11 +150,14 @@ class BaseTestPolicyWithMemory(libs.SlaTest):
             "Check that no migration happen on or from host %s", host_name
         )
         return ll_hosts.wait_for_active_vms_on_host(
-            host_name=host_name, num_of_vms=expected_num_of_vms, negative=True
+            host_name=host_name,
+            num_of_vms=expected_num_of_vms,
+            negative=True,
+            timeout=conf.MIGRATION_TIMEOUT
         )
 
 
-class StartVmsClass(BaseTestPolicyWithMemory):
+class StartVms(BaseTestPolicyWithMemory):
     """
     Base class for tests, that need start vms first
     """
@@ -169,7 +172,7 @@ class StartVmsClass(BaseTestPolicyWithMemory):
             for vm_name, host_name in zip(conf.VM_NAME[:2], conf.HOSTS[:2])
         )
         ll_vms.run_vms_once(vms=conf.VM_NAME[:2], **vm_host_d)
-        super(StartVmsClass, cls).setup_class()
+        super(StartVms, cls).setup_class()
 
     @classmethod
     def teardown_class(cls):
@@ -177,4 +180,61 @@ class StartVmsClass(BaseTestPolicyWithMemory):
         Stop vms
         """
         ll_vms.stop_vms_safely(conf.VM_NAME[:2])
-        super(StartVmsClass, cls).teardown_class()
+        super(StartVms, cls).teardown_class()
+
+
+class StartAndMigrateVmBase(StartVms):
+    """
+    Base class for start and migrate vm test
+    """
+    update_vm_d = None
+
+    @classmethod
+    def setup_class(cls):
+        """
+        1) Update VM_NAME[0] memory to new value
+        2) Start VM on HOSTS[2]
+        3) Override load parameters
+        """
+        if cls.update_vm_d:
+            for vm_name, vm_params in cls.update_vm_d.iteritems():
+                logger.info(
+                    "Update vm %s with parameters: %s", vm_name, vm_params
+                )
+                if not ll_vms.updateVm(positive=True, vm=vm_name, **vm_params):
+                    raise errors.VMException(
+                        "Failed to update vm %s" % vm_name
+                    )
+        logger.info("Start vm %s on host %s", conf.VM_NAME[2], conf.HOSTS[2])
+        if not ll_vms.runVmOnce(
+            positive=True,
+            vm=conf.VM_NAME[2],
+            host=conf.HOSTS[2],
+            wait_for_state=conf.VM_UP
+        ):
+            raise errors.VMException("Failed to start vm %s" % conf.VM_NAME[2])
+        cls.load_cpu_d = {
+            conf.CPU_LOAD_50: {
+                conf.RESOURCE: conf.VDS_HOSTS[:2],
+                conf.HOST: conf.HOSTS[:2]
+            }
+        }
+        super(StartAndMigrateVmBase, cls).setup_class()
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        1) Stop VM on HOSTS[2]
+        2) Update VM_NAME[0] to have default parameters
+        """
+        logger.info("Stop vm %s", conf.VM_NAME[2])
+        if not ll_vms.stopVm(positive=True, vm=conf.VM_NAME[2]):
+            logger.error("Failed to stop vm %s", conf.VM_NAME[2])
+        super(StartAndMigrateVmBase, cls).teardown_class()
+        if cls.update_vm_d:
+            for vm_name in cls.update_vm_d.iterkeys():
+                logger.info("Update vm %s with default parameters", vm_name)
+                if not ll_vms.updateVm(
+                    positive=True, vm=vm_name, **conf.DEFAULT_VM_PARAMETERS
+                ):
+                    logger.error("Failed to update vm %s", vm_name)

@@ -2105,8 +2105,9 @@ def wait_for_active_vms_on_host(
     try:
         for sample in sampler:
             if (
-                sample.get_summary().get_active() == num_of_vms and
-                not negative
+                bool(
+                    sample.get_summary().get_active() == num_of_vms
+                ) == (not negative)
             ):
                 return True
     except APITimeout:
