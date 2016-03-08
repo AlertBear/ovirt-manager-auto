@@ -324,6 +324,7 @@ class TestCase5830(TestCase):
     __test__ = True
     polarion_test_case = '5830'
     original_spm_host = None
+    storages = config.NOT_APPLICABLE
 
     def setUp(self):
         logger.info("Waiting for SPM host to be elected on current Data "

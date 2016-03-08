@@ -31,6 +31,7 @@ def get_list(params, key):
 ENUMS = opts['elements_conf']['RHEVM Enums']
 PERMITS = opts['elements_conf']['RHEVM Permits']
 RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
+NOT_APPLICABLE = 'N/A'
 
 TEST_NAME = "Global"
 PREFIX = "net"
