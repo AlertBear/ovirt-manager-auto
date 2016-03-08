@@ -3173,17 +3173,29 @@ def getVmNicPortMirroring(positive, vm, nic='nic1'):
 
 
 @is_action()
-def getVmNicPlugged(vm, nic='nic1'):
-    '''
+def get_vm_nic_plugged(vm, nic='nic1', positive=True):
+    """
     Get nic plugged parameter value of the NIC
-    **Author**: gcheresh
-    **Parameters**:
-        *  *vm* - vm name
-        *  *nic* - nic name
-    **Returns**: True if NIC is plugged, otherwise False
-    '''
+
+    Args:
+        vm (str): VM name
+        nic (str): NIC name
+        positive (bool): Expected results
+
+    Returns:
+        bool: True if NIC is plugged, otherwise False
+    """
+    log_info, log_error = ll_general.get_log_msg(
+        action="Get", obj_type="NIC", obj_name=nic, positive=positive,
+        extra_txt="plug state"
+    )
     nic_obj = get_vm_nic(vm, nic)
-    return nic_obj.get_plugged()
+    logger.info(log_info)
+    res = nic_obj.get_plugged()
+    if res != positive:
+        logger.error(log_error)
+        return False
+    return True
 
 
 def get_vm_nic_linked(vm, nic='nic1', positive=True):
@@ -3191,20 +3203,22 @@ def get_vm_nic_linked(vm, nic='nic1', positive=True):
     Get nic linked parameter value of the NIC
 
     Args:
-        vm (str): vm name
-        nic (str): nic name
+        vm (str): VM name
+        nic (str): NIC name
         positive (bool): Expected results
 
     Returns:
         bool: True if NIC is linked, otherwise False
     """
-    log_txt_info = "linked" if positive else "not linked"
-    log_txt_error = "not linked" if positive else "linked"
+    log_info, log_error = ll_general.get_log_msg(
+        action="Get", obj_type="NIC", obj_name=nic, positive=positive,
+        extra_txt="link state"
+    )
     nic_obj = get_vm_nic(vm, nic)
-    logger.info("Check if %s vNIC is %s on VM %s", nic, log_txt_info, vm)
+    logger.info(log_info)
     res = nic_obj.get_linked()
     if res != positive:
-        logger.error("%s vNIC on VM %s is %s", nic, vm, log_txt_error)
+        logger.error(log_error)
         return False
     return True
 

@@ -529,7 +529,7 @@ class TestSanity06(TestSanityCaseBase):
             conf.NIC_NAME[1], conf.NIC_NAME[2], conf.NIC_NAME[5]
         ):
             logger.info("Check that plugged status on %s in True", nic_name)
-            if not ll_vms.getVmNicPlugged(vm=conf.VM_0, nic=nic_name):
+            if not ll_vms.get_vm_nic_plugged(vm=conf.VM_0, nic=nic_name):
                 raise conf.NET_EXCEPTION(
                     "NIC %s is not plugged but should be" % nic_name
                 )
@@ -541,7 +541,7 @@ class TestSanity06(TestSanityCaseBase):
                 )
         for nic_name in (conf.NIC_NAME[3], conf.NIC_NAME[4]):
             logger.info("Check that plugged status on %s in False", nic_name)
-            if ll_vms.getVmNicPlugged(vm=conf.VM_0, nic=nic_name):
+            if ll_vms.get_vm_nic_plugged(vm=conf.VM_0, nic=nic_name):
                 raise conf.NET_EXCEPTION(
                     "NIC %s is plugged but shouldn't be" % nic_name
                 )
