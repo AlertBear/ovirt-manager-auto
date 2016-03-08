@@ -2,12 +2,17 @@
 Export/import test cases
 """
 import config
-import logging
 from concurrent.futures import ThreadPoolExecutor
-from art.unittest_lib import StorageTest as TestCase, attr
+import logging
+from art.rhevm_api.tests_lib.low_level import (
+    jobs as ll_jobs,
+    storagedomains as ll_sd,
+    templates as ll_templates,
+    vms as ll_vms,
+)
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.rhevm_api.tests_lib.low_level import storagedomains, vms, templates
+from art.unittest_lib import attr, StorageTest as TestCase
 import rhevmtests.storage.helpers as helpers
 
 logger = logging.getLogger(__name__)
@@ -19,7 +24,7 @@ MAX_WORKERS = config.MAX_WORKERS
 class BaseExportImportTestCase(TestCase):
     """
     Base TestCase for export/import.
-    * Creates one vm
+    Creates one vm
     """
     __test__ = False
     polarion_test_case = ''
@@ -27,10 +32,10 @@ class BaseExportImportTestCase(TestCase):
 
     def setUp(self):
         """
-        * Creates a vm and shuts it down
+        Creates a vm and shuts it down
         """
-        self.vm_name = "original_vm_%s" % self.polarion_test_case
-        export_domains = storagedomains.findExportStorageDomains(
+        self.vm_name = self.create_unique_object_name(config.OBJECT_TYPE_VM)
+        export_domains = ll_sd.findExportStorageDomains(
             config.DATA_CENTER_NAME
         )
         if not export_domains:
@@ -39,9 +44,9 @@ class BaseExportImportTestCase(TestCase):
                 config.DATA_CENTER_NAME
             )
         self.export_domain = export_domains[0]
-        self.storage_domain = storagedomains.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage)[0]
-
+        self.storage_domain = ll_sd.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )[0]
         logger.info("Creating vm %s with type %s", self.vm_name, self.vm_type)
         vm_args = config.create_vm_args.copy()
         vm_args['storageDomainName'] = self.storage_domain
@@ -49,16 +54,19 @@ class BaseExportImportTestCase(TestCase):
         vm_args['type'] = self.vm_type
         vm_args['installation'] = False
         if not helpers.create_vm_or_clone(**vm_args):
-            raise exceptions.VMException('Unable to create vm %s for test' %
-                                         self.vm_name)
+            raise exceptions.VMException(
+                'Unable to create vm %s for test' % self.vm_name
+            )
 
     def tearDown(self):
         """
-        * Removes vm
+        Removes vm
         """
-        if not vms.safely_remove_vms([self.vm_name]):
-            raise exceptions.VMException('Unable to remove vm %s for test' %
-                                         self.vm_name)
+        if not ll_vms.safely_remove_vms([self.vm_name]):
+            logger.error("Failed to remove VM %s", self.vm_name)
+            BaseExportImportTestCase.test_failed = True
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_VM])
+        BaseExportImportTestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -73,117 +81,205 @@ class TestCase4665(BaseExportImportTestCase):
 
     def setUp(self):
         """
-        * Creates a template from the vm
+        Creates a template from the vm
         """
         super(TestCase4665, self).setUp()
-        self.template_name = "origial_template_%s" % self.polarion_test_case
-
-        assert templates.createTemplate(
-            True, vm=self.vm_name, name=self.template_name)
+        self.template_name = self.create_unique_object_name(
+            config.OBJECT_TYPE_TEMPLATE
+        )[:40]
+        if not ll_templates.createTemplate(
+            True, vm=self.vm_name, name=self.template_name
+        ):
+            raise exceptions.TemplateException(
+                "Failed to create template %s", self.template_name
+            )
 
     @polarion("RHEVM3-4665")
     def test_import_force_override(self):
         """
-        * export VM with force override enabled/disabled
-        * export template with force override enabled/disabled
+        Export VM with force override enabled/disabled
+        Export template with force override enabled/disabled
         """
-        logger.info("Exporting VM %s with force override enabled should "
-                    "succeed when there's not VM in the export domain",
-                    self.vm_name)
-        assert vms.exportVm(
-            True, self.vm_name, self.export_domain, exclusive='true')
+        logger.info(
+            "Exporting VM %s with force override enabled should "
+            "succeed when there's no VM in the export domain", self.vm_name
+        )
+        self.assertTrue(
+            ll_vms.exportVm(
+                True, self.vm_name, self.export_domain, exclusive='true'
+            ),
+            "Exporting VM %s with force override enabled failed" % self.vm_name
+        )
 
-        logger.info("Exporting VM %s with force override disabled should fail "
-                    "when there's a VM in the export domain", self.vm_name)
-        assert vms.exportVm(
-            False, self.vm_name, self.export_domain, exclusive='false')
+        logger.info(
+            "Exporting VM %s with force override disabled should fail "
+            "when there's a VM in the export domain", self.vm_name
+        )
+        self.assertTrue(
+            ll_vms.exportVm(
+                False, self.vm_name, self.export_domain, exclusive='false'
+            ),
+            "Exporting VM %s with force override disabled succeeded although "
+            "the VM already exists in the export domain" % self.vm_name
+        )
 
-        logger.info("Exporting VM %s with force override enabled should "
-                    "succeed when there's a VM in the export domain",
-                    self.vm_name)
-        assert vms.exportVm(
-            True, self.vm_name, self.export_domain, exclusive='true')
+        logger.info(
+            "Exporting VM %s with force override enabled should "
+            "succeed when there's a VM in the export domain", self.vm_name
+        )
+        self.assertTrue(
+            ll_vms.exportVm(
+                True, self.vm_name, self.export_domain, exclusive='true'
+            ),
+            "Exporting VM %s with force override enabled failed" % self.vm_name
+        )
 
-        logger.info("Exporting template %s with force override enabled "
-                    "should succeed when there's not a template in the "
-                    "export domain", self.template_name)
-        assert templates.exportTemplate(
-            True, self.template_name, self.export_domain, exclusive='true')
+        logger.info(
+            "Exporting template %s with force override enabled "
+            "should succeed when there's not a template in the "
+            "export domain", self.template_name
+        )
+        self.assertTrue(
+            ll_templates.exportTemplate(
+                True, self.template_name, self.export_domain, exclusive='true'
+            ), "Exporting template %s with force override failed" %
+               self.template_name
+        )
 
-        logger.info("Exporting template %s with force override disabled should"
-                    " fail because there's a template in the export domain",
-                    self.template_name)
-        assert templates.exportTemplate(
-            False, self.template_name, self.export_domain, exclusive='false')
+        logger.info(
+            "Exporting template %s with force override disabled should"
+            " fail because there's a template in the export domain",
+            self.template_name
+        )
+        self.assertTrue(
+            ll_templates.exportTemplate(
+                False, self.template_name, self.export_domain,
+                exclusive='false'
+            ), "Exporting template %s with force override disabled succeeded "
+               "although the template already exists in the export domain" %
+               self.template_name
+        )
 
-        logger.info("Exporting template %s with force override enabled should "
-                    "succeed when there's a template in the export domain",
-                    self.template_name)
-        assert templates.exportTemplate(
-            True, self.template_name, self.export_domain, exclusive='true')
+        logger.info(
+            "Exporting template %s with force override enabled should "
+            "succeed when there's a template in the export domain",
+            self.template_name
+        )
+        self.assertTrue(
+            ll_templates.exportTemplate(
+                True, self.template_name, self.export_domain, exclusive='true'
+            ), "Exporting template %s with force override enabled failed" %
+               self.template_name
+        )
 
     def tearDown(self):
         """
-        * Remove existing VM/templates and from the export domain
+        Remove existing VM/templates and from the export domain
         """
-        assert templates.removeTemplateFromExportDomain(
-            True, self.template_name, config.CLUSTER_NAME, self.export_domain)
-        assert vms.remove_vm_from_export_domain(
-            True, self.vm_name, config.CLUSTER_NAME, self.export_domain)
-        assert templates.removeTemplate(True, self.template_name)
+        if not ll_templates.removeTemplateFromExportDomain(
+            True, self.template_name, config.CLUSTER_NAME, self.export_domain
+        ):
+            logger.error(
+                "Failed to remove template %s from export domain",
+                self.template_name
+            )
+            BaseExportImportTestCase.test_failed = True
 
+        if not ll_vms.remove_vm_from_export_domain(
+            True, self.vm_name, config.CLUSTER_NAME, self.export_domain
+        ):
+            logger.error(
+                "Failed to remove VM %s from export domain", self.vm_name
+            )
+            BaseExportImportTestCase.test_failed = True
+
+        if not ll_templates.removeTemplate(True, self.template_name):
+            logger.error("Failed to remove template %s", self.template_name)
+            BaseExportImportTestCase.test_failed = True
+
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_TEMPLATE])
         super(TestCase4665, self).tearDown()
 
 
 @attr(tier=2)
 class TestCase4684(BaseExportImportTestCase):
     """
-    Test Case 4684 -  Collapse Snapshots
+    Collapse Snapshots
     """
     __test__ = True
     polarion_test_case = '4684'
-    imported_vm = 'imported_%s' % polarion_test_case
+    snap_desc = 'snap_%s' % polarion_test_case
 
     @polarion("RHEVM3-4684")
     def test_collapse_snapshots(self):
         """
         Test export/import with collapse snapshots option works
         """
-        logger.info("Exporting vm %s with collapse snapshots enabled",
-                    self.vm_name)
-        assert vms.exportVm(
-            True, self.vm_name, self.export_domain, discard_snapshots='true')
+        self.imported_vm = self.create_unique_object_name(
+            config.OBJECT_TYPE_VM
+        )
+        logger.info("Add snapshot to VM %s", self.vm_name)
+        self.assertTrue(
+            ll_vms.addSnapshot(True, self.vm_name, self.snap_desc),
+            "Failed to add snapshot to %s" % self.vm_name
+        )
+
+        logger.info(
+            "Exporting vm %s with collapse snapshots enabled", self.vm_name
+        )
+        self.assertTrue(
+            ll_vms.exportVm(
+                True, self.vm_name, self.export_domain,
+                discard_snapshots='true'
+            ), "Exporting vm %s with collapse snapshots enabled failed"
+               % self.vm_name
+        )
 
         logger.info("Importing vm with collapse snapshots enabled")
-        assert vms.importVm(
-            True, self.vm_name, self.export_domain, self.storage_domain,
-            config.CLUSTER_NAME, name=self.imported_vm)
+        self.assertTrue(
+            ll_vms.importVm(
+                True, self.vm_name, self.export_domain, self.storage_domain,
+                config.CLUSTER_NAME, name=self.imported_vm
+            ), "Importing vm with collapse snapshots enabled failed"
+        )
 
-        logger.info("Starting vm %s should work")
-        assert vms.startVm(True, self.imported_vm)
+        logger.info("Powering on VM %s should work")
+        self.assertTrue(
+            ll_vms.startVm(True, self.imported_vm),
+            "Failed to power on VM %s" % self.imported_vm
+        )
 
         logger.info("Template for vm %s should be Blank", self.imported_vm)
-        self.assertEqual(vms.getVmTemplateId(self.imported_vm),
-                         BLANK_TEMPLATE_ID)
+        self.assertEqual(
+            ll_vms.getVmTemplateId(self.imported_vm), BLANK_TEMPLATE_ID
+        )
 
         logger.info("Number of snapshots is only one")
-        vms._getVmSnapshots(self.imported_vm, False)
-        self.assertEqual(len(vms._getVmSnapshots(self.imported_vm, False)), 1)
+        self.assertEqual(
+            len(ll_vms._getVmSnapshots(self.imported_vm, False)), 1
+        )
 
     def tearDown(self):
         """
         Remove newly Vm imported
         """
+        if not ll_vms.safely_remove_vms([self.imported_vm]):
+            logger.error("Failed to remove VM %s", self.imported_vm)
+            BaseExportImportTestCase.test_failed = True
+        if not ll_vms.remove_vm_from_export_domain(
+            True, self.vm_name, config.CLUSTER_NAME, self.export_domain
+        ):
+            logger.error(
+                "Failed to remove VM %s from export domain", self.imported_vm
+            )
+            BaseExportImportTestCase.test_failed = True
         super(TestCase4684, self).tearDown()
-        assert vms.removeVm(True, self.imported_vm, stopVM="true")
-        assert vms.remove_vm_from_export_domain(
-            True, self.vm_name, config.CLUSTER_NAME, self.export_domain)
 
 
 @attr(tier=1)
 class TestCase11987(BaseExportImportTestCase):
     """
-    Test case 11987 - Export a VM sanity
+    Export a VM sanity
     Test import from Blank and from template
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/2_3_Storage_VM_Import_Export_Sanity
@@ -197,38 +293,52 @@ class TestCase11987(BaseExportImportTestCase):
 
     def setUp(self):
         """
-        * Create a new template where to clone a vm from
+        Create a new template where to clone a vm from
         """
         super(TestCase11987, self).setUp()
-        self.template_name = "original_template_%s" % self.polarion_test_case
+        self.template_name = self.create_unique_object_name(
+            config.OBJECT_TYPE_TEMPLATE
+        )[:40]
 
-        assert templates.createTemplate(
-            True, vm=self.vm_name, name=self.template_name)
+        if not ll_templates.createTemplate(
+            True, vm=self.vm_name, name=self.template_name
+        ):
+            raise exceptions.TemplateException(
+                "Failed to create template %s" % self.template_name
+            )
 
-        assert vms.cloneVmFromTemplate(
+        if not ll_vms.cloneVmFromTemplate(
             True, self.vm_from_template, self.template_name,
-            config.CLUSTER_NAME, vol_sparse=True,
-            vol_format=config.COW_DISK)
+            config.CLUSTER_NAME, vol_sparse=True, vol_format=config.COW_DISK
+        ):
+            raise exceptions.VMException(
+                "Failed to clone VM %s from template %s" %
+                (self.vm_from_template, self.template_name)
+            )
 
-        assert templates.removeTemplate(True, self.template_name)
+        if not ll_templates.removeTemplate(True, self.template_name):
+            raise exceptions.TemplateException(
+                "Failed to remove template %s" % self.template_name
+            )
 
     @polarion("RHEVM3-11987")
     def test_export_vm(self):
         """
-        * Sanity export from Blank
-        * Sanity export from another template
+        Sanity export from Blank
+        Sanity export from another template
         """
         vms_list = [self.vm_name, self.vm_from_template]
 
         def export_vm(vm):
             logger.info("Exporting vm %s", vm)
-            return vms.exportVm(True, vm, self.export_domain)
+            return ll_vms.exportVm(True, vm, self.export_domain)
 
         def import_vm(vm):
             logger.info("Verifying vm %s", vm)
-            return vms.importVm(
+            return ll_vms.importVm(
                 True, vm, self.export_domain, self.storage_domain,
-                config.CLUSTER_NAME, name="%s_%s" % (vm, self.prefix))
+                config.CLUSTER_NAME, name="%s_%s" % (vm, self.prefix)
+            )
 
         def exec_with_threads(fn):
             execution = []
@@ -238,37 +348,60 @@ class TestCase11987(BaseExportImportTestCase):
 
             for vm, res in execution:
                 if res.exception():
-                    raise Exception("Failed to execute %s for %s:  %s"
-                                    % (fn.__name__, vm, res.exception()))
+                    raise Exception(
+                        "Failed to execute %s for %s:  %s" %
+                        (fn.__name__, vm, res.exception())
+                    )
                 if not res.result():
-                    raise Exception("Failed to execute %s for %s"
-                                    % (fn.__name__, vm))
+                    raise Exception(
+                        "Failed to execute %s for %s" % (fn.__name__, vm)
+                    )
         exec_with_threads(export_vm)
         logger.info("Removing existing vm %s", self.vm_name)
-        assert vms.removeVm(True, self.vm_name, wait=True)
+        self.assertTrue(
+            ll_vms.removeVm(True, self.vm_name, wait=True),
+            "Failed to remove VM %s" % self.vm_name
+        )
         exec_with_threads(import_vm)
 
     def tearDown(self):
         """
-        * Remove import and exported vms
+        Remove import and exported vms
         """
-        assert vms.remove_vm_from_export_domain(
-            True, self.vm_name, config.CLUSTER_NAME, self.export_domain)
-        assert vms.remove_vm_from_export_domain(
+        if not ll_vms.remove_vm_from_export_domain(
+            True, self.vm_name, config.CLUSTER_NAME, self.export_domain
+        ):
+            logger.error(
+                "Failed to remove VM %s from export domain", self.vm_name
+            )
+            BaseExportImportTestCase.test_failed = True
+
+        if not ll_vms.remove_vm_from_export_domain(
             True, self.vm_from_template, config.CLUSTER_NAME,
-            self.export_domain)
+            self.export_domain
+        ):
+            logger.error(
+                "Failed to remove VM %s from export domain", self.imported_vm
+            )
+            BaseExportImportTestCase.test_failed = True
+
         vms_list = [
             "%s_%s" % (vm, self.prefix) for vm in [
                 self.vm_name, self.vm_from_template
             ]
         ] + [self.vm_from_template]
-        vms.safely_remove_vms(vms_list)
+        if not ll_vms.safely_remove_vms(vms_list):
+            logger.error(
+                "Failed to remove VM %s from export domain", ','.join(vms_list)
+            )
+            BaseExportImportTestCase.test_failed = True
+        BaseExportImportTestCase.teardown_exception()
 
 
 @attr(tier=1)
 class TestCase11986(BaseExportImportTestCase):
     """
-    Test case 11986 - Export a template sanity
+    Export a template sanity
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/2_3_Storage_VM_Import_Export_Sanity
     """
@@ -284,8 +417,12 @@ class TestCase11986(BaseExportImportTestCase):
         super(TestCase11986, self).setUp()
         self.template_name = "original_template_%s" % self.polarion_test_case
 
-        assert templates.createTemplate(
-            True, vm=self.vm_name, name=self.template_name)
+        if not ll_templates.createTemplate(
+            True, vm=self.vm_name, name=self.template_name
+        ):
+            raise exceptions.TemplateException(
+                "Failed to create template %s" % self.template_name
+            )
 
     @polarion("RHEVM3-11986")
     def test_export_template(self):
@@ -296,22 +433,30 @@ class TestCase11986(BaseExportImportTestCase):
             "Exporting template %s to export domain %s", self.template_name,
             self.export_domain
         )
-        assert templates.exportTemplate(
-            True, self.template_name, self.export_domain)
+        self.assertTrue(
+            ll_templates.exportTemplate(
+                True, self.template_name, self.export_domain
+            ), "Failed to export template %s to %s" %
+               (self.template_name, self.export_domain)
+        )
 
     def tearDown(self):
         """
-        * Remove exported template
+        Remove exported template
         """
-        if not templates.removeTemplateFromExportDomain(
+        if not ll_templates.removeTemplateFromExportDomain(
                 True, self.template_name, config.DATA_CENTER_NAME,
                 self.export_domain
         ):
             self.test_failed = True
-            logger.error("Failed to remove template %s from export domain",
-                         self.template_name)
+            logger.error(
+                "Failed to remove template %s from export domain",
+                self.template_name
+            )
 
-        if not templates.removeTemplate(True, self.template_name):
+        if not ll_templates.removeTemplate(True, self.template_name):
             self.test_failed = True
             logger.error("Failed to remove template %s", self.template_name)
+
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_TEMPLATE])
         super(TestCase11986, self).tearDown()

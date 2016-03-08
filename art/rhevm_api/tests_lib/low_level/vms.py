@@ -1740,28 +1740,33 @@ def _getVmSnapshot(vm, snap, all_content=False):
 
 
 @is_action()
-def addSnapshot(positive, vm, description, wait=True, persist_memory=None,
-                disks_lst=None):
-    '''
-    Description: add snapshot to vm
-    :param vm: vm where snapshot should be added
-    :type: str
-    :param description: snapshot name
-    :type: str
-    :param wait:wait until finish when True or exist without
-          waiting when False
-    :type:bool
-    :param persist_memory:True to save memory state snapshot, default is False
-    :type:bool
-    :param disks_lst:if not None, this list of disks names will be included in
-         snapshot's disks (Single disk snapshot)
-    :type: list
-    :param job_descriptions: if not none will send job description to
-         wait_for_jobs as list
-    :type:str
-    :return: status (True if snapshot was added properly, False otherwise)
-    :rtype:bool
-    '''
+def addSnapshot(
+    positive, vm, description, wait=True, persist_memory=None, disks_lst=None
+):
+    """
+    Description: Add snapshot to VM
+
+    __author__ = "ratamir"
+
+    :param positive: True if operation should succeed, False otherwise
+    :type positive: bool
+    :param vm: Name of the VM for which a snapshot will be created
+    :type vm: str
+    :param description: Snapshot name
+    :type description: str
+    :param wait: Specifies whether to wait until the snapshot
+    operation has been completed
+    waiting when False
+    :type wait: bool
+    :param persist_memory: True when memory state should be saved with the
+    snapshot, False when the memory state doesn't need to be saved with the
+    snapshot. The default is False
+    :param disks_lst: If not None, this list of disks names will be included in
+    snapshot's disks (Single disk snapshot)
+    :type disks_lst: list
+    :return: Status (True if snapshot was added properly, False otherwise)
+    :rtype: bool
+    """
 
     snapshot = data_st.Snapshot()
     snapshot.set_description(description)
