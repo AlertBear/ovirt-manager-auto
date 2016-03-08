@@ -16,12 +16,13 @@ from art.test_handler.plmanagement import (Component, implements, get_logger,
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.settings import opts
-from art.core_api.http import HTTPProxy
+import rrmngmnt
 
 
 logger = get_logger('ssl_plugin')
 
 RUN = 'RUN'
+PARAMETERS = 'PARAMETERS'
 SECURE = 'secure'
 DIR = '/var/tmp'
 CA_PATH = os.path.join(DIR, 'ca.crt')
@@ -30,6 +31,8 @@ CERT_PATH = os.path.join(DIR, 'ART.crt')
 KEY_STORE_PATH = os.path.join(DIR, 'server.truststore')
 DEFAULT_PASSWORD = "123456"
 PASSWORD = 'ssl_key_store_password'
+VDC_PASSWD = 'vdc_root_password'
+DEFAULT_ROOT_PASSWORD = 'qum5net'
 
 
 class SSL_Error(PluginError):
@@ -51,6 +54,10 @@ class RHEVM_SSL_Plugin(Component):
         if not self.is_enabled(params, conf):
             return
 
+        opts[VDC_PASSWD] = conf[PARAMETERS].get(
+            VDC_PASSWD, DEFAULT_ROOT_PASSWORD
+        )
+
         self.__download_ca_certificate()
         self.__generate_client_certificates()
         self.__generate_key_store_file()
@@ -65,12 +72,28 @@ class RHEVM_SSL_Plugin(Component):
 
     @classmethod
     def __download_ca_certificate(cls):
-        proxy = HTTPProxy(opts)
-        res = proxy.GET('/ca.crt')
-        # TODO: check for errors
-        # raise SSL_Error
+        _cmd = [
+            'openssl', 's_client', '-showcerts', '-connect', 'localhost:443',
+            '<', '/dev/null'
+        ]
+        vdc = rrmngmnt.Host(opts['host'])
+        vdc.users.append(rrmngmnt.User('root', opts[VDC_PASSWD]))
+        cert_text = '-----{0} CERTIFICATE-----'
+        start_cert = cert_text.format('BEGIN')
+        end_cert = cert_text.format('END')
+        with vdc.executor().session() as session:
+            rc, out, err = session.run_cmd(_cmd)
+
+        if rc:
+            raise SSL_Error(
+                "Failed to get certificate from host %s with ERR: %s, RC: %s" %
+                (opts['host'], err, rc)
+            )
+        certificate = out.split(start_cert)[-1].split(end_cert)[0]
         with open(CA_PATH, 'w') as ca_file:
-            ca_file.write(res['body'])
+            ca_file.write(start_cert)
+            ca_file.write(certificate)
+            ca_file.write(end_cert)
 
     @classmethod
     def __generate_key_store_file(cls):
@@ -120,6 +143,6 @@ class RHEVM_SSL_Plugin(Component):
         params['author_email'] = 'gleibovi@redhat.com'
         params['description'] = 'Sets up SSL connection to RHEVM'
         params['long_description'] = cls.__doc__
-        params['requires'] = ['pyOpenSSL']
+        params['requires'] = ['pyOpenSSL', 'openssl']
         params['py_modules'] = [
             'art.test_handler.plmanagement.plugins.ssl_plugin']

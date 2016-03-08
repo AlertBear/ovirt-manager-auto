@@ -100,7 +100,7 @@ def pytest_configure(config):
     )
     # Generate certificates
     if settings.ART_CONFIG['RUN'].as_bool('secure'):
-        ssl.configure()
+        ssl.configure(settings.ART_CONFIG)
 
     # Generate Data Structures
     rhevm_api.generate_ds(settings.ART_CONFIG)
