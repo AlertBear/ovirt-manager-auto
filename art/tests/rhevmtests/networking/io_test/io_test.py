@@ -443,3 +443,60 @@ class TestIOTest09(IOTestCaseBase):
             description="VM network again"
         ):
             raise conf.NET_EXCEPTION()
+
+
+class TestIOTest10(IOTestCaseBase):
+    """
+    Check network label limitation:
+    1) Negative case: Try to create a label which does not comply with the
+        pattern: numbers, digits, dash or underscore [0-9a-zA-Z_-].
+    2) Negative case: Try to assign more than one label to network
+    3) Positive case: Create label with length of 50 chars
+    4) Positive case: Assign many labels to interface (10)
+    """
+    __test__ = True
+    net_1 = conf.NETS[10][0]
+    net_2 = conf.NETS[10][1]
+    label_1 = conf.LABEL_NAME[10][0]
+    label_2 = conf.LABEL_NAME[10][1]
+
+    @polarion("RHEVM3-14806")
+    def test_label_restriction(self):
+        """
+        1) Negative case Try to attach label with incorrect format to the
+        network
+        2) Negative case: Try to assign additional label to the network with
+        attached label
+        """
+        special_char_labels = ["asd?f", "dfg/gd"]
+
+        for label in special_char_labels:
+            if ll_networks.add_label(label=label, networks=[self.net_2]):
+                raise conf.NET_EXCEPTION()
+
+        if ll_networks.add_label(
+            label=self.label_2, networks=[self.net_1]
+        ):
+            raise conf.NET_EXCEPTION()
+
+    @polarion("RHEVM3-14807")
+    def test_label_non_restrict(self):
+        """
+        1) Attach label with 50 characters to a network.
+        2) Attach 10 labels to the interface on the Host when one of those
+        networks is attached to the network and check that the network is
+        attached to the Host interface
+        """
+        long_label = "a" * 50
+
+        if not ll_networks.add_label(
+            label=long_label, networks=[self.net_1]
+        ):
+            raise conf.NET_EXCEPTION()
+
+        for label in conf.LABEL_NAME[10][1:]:
+            if not ll_networks.add_label(
+                label=label,
+                host_nic_dict={conf.HOST_0_NAME: [conf.HOST_0_NICS[1]]}
+            ):
+                raise conf.NET_EXCEPTION()

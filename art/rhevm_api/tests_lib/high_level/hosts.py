@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("art.hl_lib.hosts")
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
 
@@ -57,20 +57,20 @@ def move_host_to_another_cluster(host, cluster, activate=True):
     :return: True if succeed to move it False otherwise
     :rtype: bool
     """
-    logging.info("Set %s to maintenance", host)
+    LOGGER.info("Set %s to maintenance", host)
     if not ll_hosts.deactivateHost(True, host):
-        logging.error("Failed to set %s to maintenance", host)
+        LOGGER.error("Failed to set %s to maintenance", host)
         return False
 
-    logging.info("Moving %s to %s", host, cluster)
+    LOGGER.info("Moving %s to %s", host, cluster)
     if not ll_hosts.updateHost(positive=True, host=host, cluster=cluster):
-        logging.error("Failed to move %s to %s", host, cluster)
+        LOGGER.error("Failed to move %s to %s", host, cluster)
         return False
 
     if activate:
-        logging.info("Activate %s", host)
+        LOGGER.info("Activate %s", host)
         if not ll_hosts.activateHost(positive=True, host=host):
-            logging.error("Failed to activate %s", host)
+            LOGGER.error("Failed to activate %s", host)
             return False
     return True
 
@@ -78,15 +78,21 @@ def move_host_to_another_cluster(host, cluster, activate=True):
 @is_action()
 def deactivate_host_if_up(host):
     """
-    Description: Deactivate host if it's not in maintenance
-    Author: ratamir
-    Parameters:
-        * host - name of the host to deactivate
-    Return: status (True if host was deactivated properly and positive,
-                    False otherwise)
+    Deactivate host if it's not in maintenance
+
+    __author__: 'ratamir'
+
+    Args:
+        host (str): Name of the host to deactivate.
+
+    Returns:
+        bool: True if host was deactivated properly and positive,
+            False otherwise.
     """
+    LOGGER.info("Deactivate Host %s", host)
     if not ll_hosts.isHostInMaintenance(True, host):
         if not ll_hosts.deactivateHost(True, host):
+            LOGGER.error("Failed to deactivate Host %s")
             return False
     return True
 
@@ -105,7 +111,7 @@ def deactivate_hosts_if_up(hosts_list):
     else:
         _hosts_list = hosts_list[:]
     spm = ll_hosts.getSPMHost(_hosts_list)
-    logging.info("spm host - %s", spm)
+    LOGGER.info("spm host - %s", spm)
     sorted_hosts = ll_hosts._sort_hosts_by_priority(_hosts_list, False)
     sorted_hosts.remove(spm)
     sorted_hosts.append(spm)
@@ -145,17 +151,19 @@ def add_power_management(host_name, pm_agents, **kwargs):
         }
         add_power_management("test_host", [agent_d])
     """
+
     for agent in pm_agents:
         if not ll_hosts.add_fence_agent(host_name, **agent):
             return False
-    logging.info("Enable power management under host %s", host_name)
+    LOGGER.info("Enable power management under host %s", host_name)
+
     if not ll_hosts.updateHost(
         positive=True,
         host=host_name,
         pm=True,
         **kwargs
     ):
-        logging.error(
+        LOGGER.error(
             "Failed to enable power management under host %s", host_name
         )
         return False
@@ -172,15 +180,17 @@ def remove_power_management(host_name):
     Returns:
         bool: True, if remove succeed, otherwise False
     """
+
     agents = ll_hosts.get_fence_agents_list(host_name)
     for agent in agents:
         if not ll_hosts.remove_fence_agent(agent):
             return False
-    logging.info("Disable power management on host %s", host_name)
+    LOGGER.info("Disable power management on host %s", host_name)
+
     if not ll_hosts.updateHost(
         positive=True, host=host_name, pm=False
     ):
-        logging.error(
+        LOGGER.error(
             "Cannot disable power management on host: %s" % host_name
         )
         return False
@@ -198,11 +208,11 @@ def activate_host_if_not_up(host):
         bool: True if host was activated properly False otherwise
     """
     if not ll_hosts.getHostState(host) == ENUMS["host_state_up"]:
-        logging.info(
+        LOGGER.info(
             "Host %s status is %s. activating", host, ENUMS["host_state_up"]
         )
         if not ll_hosts.activateHost(True, host):
-            logging.error("Failed to activate host %s", host)
+            LOGGER.error("Failed to activate host %s", host)
             return False
     return True
 
@@ -223,22 +233,22 @@ def restart_services_under_maintenance_state(
     :raises: HostException
     """
     host_name = ll_hosts.get_host_name_from_engine(host_resource.ip)
-    logging.info("Put host %s to maintenance", host_name)
+    LOGGER.info("Put host %s to maintenance", host_name)
     if not ll_hosts.deactivateHost(True, host_name):
         raise errors.HostException(
             "Failed to put host %s to maintenance" % host_name
         )
-    logging.info("Restart services %s on %s ", services, host_name)
+    LOGGER.info("Restart services %s on %s ", services, host_name)
     for srv in services:
         if not host_resource.service(srv, timeout).restart():
-            logging.error(
+            LOGGER.error(
                 "Failed to restart %s, activating host %s", srv, host_name
             )
             ll_hosts.activateHost(True, host_name)
             raise errors.HostException(
                 "Failed to restart %s services on host %s" % (host_name, srv)
             )
-    logging.info("Activate host %s", host_name)
+    LOGGER.info("Activate host %s", host_name)
     if not ll_hosts.activateHost(True, host_name):
         raise errors.HostException(
             "Failed to activate host %s" % host_name

@@ -372,19 +372,30 @@ def update_cluster_network(positive, cluster, network, **kwargs):
 
 
 @is_action()
-def removeNetworkFromCluster(positive, network, cluster):
+def remove_network_from_cluster(positive, network, cluster):
     """
-    Description: detach network from cluster
-    Author: edolinin, atal
-    Parameters:
-       * network - name of a network that should be detached
-       * cluster - name of a cluster to detach from
-    Return: status (True if network was detached properly, False otherwise)
+    Remove network from cluster
+
+    __author__: 'edolinin', 'atal'
+    Args:
+        positive (bool): Expected results
+        network (str): Network name
+        cluster (str): Cluster name
+
+    Returns:
+        bool: True if remove network succeeded, False otherwise.
     """
 
-    net_obj = get_cluster_network(cluster, network)
-
-    return NET_API.delete(net_obj, positive)
+    log_info, log_error = ll.general.get_log_msg(
+        action="Remove", obj_type="network", obj_name=network,
+        positive=positive, extra_txt="from cluster %s" % cluster
+    )
+    net_obj = get_cluster_network(cluster=cluster, network=network)
+    logger.info(log_info)
+    status = NET_API.delete(net_obj, positive)
+    if not status:
+        log_error(log_error)
+    return status
 
 
 @is_action()
@@ -1025,43 +1036,58 @@ def add_label(**kwargs):
 
 def get_label_objects(**kwargs):
     """
-    Description: Get network labels from given networks list and given list
-    NICs of any number of Hosts
-    Example usage:
-    get_label_objects(host_nic_dict={'silver-vdsa.qa.lab.tlv.redhat.com':
-                                 [eth3', 'eth2']}, networks=['net1', 'net2'])
-    It will return the list of network labels objects for networks and
-    host_nic_dict provided
-    Author: gcheresh
-    Parameters:
-       *  *kwargs* - will include the following:
-       *  *networks* - list of networks with labels
-       *  *host_nic_dict - dictionary with hosts as keys and a list of host
-       interfaces as a value for that key
-       *  *datacenter* - for network parameter datacenter that networks
-       resides on
-       *  *cluster* - for cluster parameter cluster that the network resides on
-    **Return**: List of label objects
+    Get network labels from given networks list and given list NICs of any
+    number of Hosts.
+
+    __author__: 'gcheresh'
+
+    Args:
+        kwargs (dict): Parameters to get label objects.
+
+    Keyword Arguments:
+        networks (list): List of networks with labels.
+        host_nic_dict (dict): Dictionary with hosts as keys and a list of host
+            interfaces as a value for that key.
+        datacenter (str): For network parameter datacenter that networks
+            resides on.
+        cluster (str): For cluster parameter cluster that the network resides
+            on.
+
+    Examples:
+        get_label_objects(
+            host_nic_dict={
+                'silver-vdsa.qa.lab.tlv.redhat.com':[eth3', 'eth2']
+            },
+            networks=['net1', 'net2']
+        )
+
+    Returns:
+        list: List of labels objects.
+            It will return the list of network labels objects for networks and
+            host_nic_dict provided.
     """
     label_list = []
     networks = kwargs.get("networks")
     host_nic_dict = kwargs.get("host_nic_dict")
+    logger.info("Get label objects with kwargs %s", kwargs)
     try:
         if host_nic_dict:
             for host in host_nic_dict:
                 for nic in host_nic_dict.get(host):
                     entity_obj = ll.hosts.get_host_nic(host=host, nic=nic)
-                    label_obj = HOST_NICS_API.getElemFromLink(entity_obj,
-                                                              "labels",
-                                                              "label")
+                    label_obj = HOST_NICS_API.getElemFromLink(
+                        entity_obj, "labels", "label"
+                    )
                     label_list.extend(label_obj)
         if networks:
             for network in networks:
-                entity_obj = find_network(network,
-                                          data_center=kwargs.get("datacenter"),
-                                          cluster=kwargs.get("cluster"))
-                label_obj = NET_API.getElemFromLink(entity_obj, "labels",
-                                                    "label")
+                entity_obj = find_network(
+                    network,  data_center=kwargs.get("datacenter"),
+                    cluster=kwargs.get("cluster")
+                )
+                label_obj = NET_API.getElemFromLink(
+                    entity_obj, "labels", "label"
+                )
                 label_list.extend(label_obj)
 
         if not networks and not host_nic_dict:
@@ -1070,6 +1096,8 @@ def get_label_objects(**kwargs):
         logger.error(e)
         raise
 
+    if not label_list:
+        logger.error("Label objects doesn't exists")
     return label_list
 
 

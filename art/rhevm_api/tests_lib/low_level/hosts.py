@@ -21,25 +21,25 @@ import time
 import shlex
 import re
 import logging
-
 from utilities.utils import getIpAddressByHostName, getHostName
 from utilities import machine
-
 from art.core_api.apis_utils import TimeoutingSampler, data_st
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 from art.core_api.apis_utils import getDS
 from art.core_api import is_action
-
 from art.test_handler import settings
-
-from art.rhevm_api.utils.test_utils import get_api, split, getStat, \
-    searchElement, searchForObj, stopVdsmd, startVdsmd
-from art.rhevm_api.tests_lib.low_level.networks import get_cluster_network, \
-    create_properties
-from art.rhevm_api.tests_lib.low_level.datacenters import \
+from art.rhevm_api.utils.test_utils import (
+    get_api, split, getStat, searchElement, searchForObj, stopVdsmd, startVdsmd
+)
+from art.rhevm_api.tests_lib.low_level.networks import (
+    get_cluster_network, create_properties
+)
+from art.rhevm_api.tests_lib.low_level.datacenters import (
     waitForDataCenterState
-from art.rhevm_api.tests_lib.low_level.vms import stopVm, getVmHost, \
-    get_vm_state
+)
+from art.rhevm_api.tests_lib.low_level.vms import (
+    stopVm, getVmHost, get_vm_state
+)
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 
@@ -379,24 +379,36 @@ def updateHost(positive, host, **kwargs):
     """
     Update properties of existed host (provided in parameters)
 
-    :param host: name of a target host
-    :type host: str
-    :param name: host name to change to
-    :type name: str
-    :param address: host address to change to
-    :type address: str
-    :param root_password: host password to change to
-    :type root_password: str
-    :param cluster: host cluster to change to
-    :type cluster: str
-    :param pm: host power management to change to
-    :type pm: bool
-    :param pm_automatic: host automatic_pm_enabled flag
-    :type pm_automatic: bool
-    :return: status (True if host was updated properly, False otherwise)
-    :rtype: bool
+    Args:
+        positive (bool): Expected result for update host.
+        host (str): Name of a target host.
+        kwargs (dict): kwargs for update host.
+
+    Keyword Arguments:
+        name (str): Host name to change to.
+        address (str): Host address to change to.
+        root_password (str): Host password to change to.
+        cluster (str): Host cluster to change to.
+        pm (bool): Host power management to change to.
+        pm_type (str): Host pm type to change to.
+        pm_address (str): Host pm address to change to.
+        pm_username (str): Host pm username to change to.
+        pm_password (str): Host pm password to change to.
+        pm_port (int): Host pm port to change to.
+        pm_secure (bool): Host pm security to change to.
+        pm_automatic (bool): Host automatic_pm_enabled flag
+        agents (dict): if you have number of pm's, need to specify it
+            under agents.
+
+    Returns:
+        bool: True if host was updated properly, False otherwise.
     """
 
+    log_info, log_error = ll_general.get_log_msg(
+        action="Update", obj_type="host", obj_name=host,
+        positive=positive, **kwargs
+    )
+    logger.info(log_info)
     host_obj = HOST_API.find(host)
     host_upd = Host()
 
@@ -441,7 +453,8 @@ def updateHost(positive, host, **kwargs):
         # if this is not a negative case, continue raising exception upwards
         else:
             raise
-
+    if not status:
+        logger.error(log_error)
     return status
 
 

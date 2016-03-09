@@ -144,7 +144,7 @@ class PositiveNetworkPermissions231823(NetworkingPossitive):
         assert networks.add_network_to_cluster(
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
-        assert networks.removeNetworkFromCluster(
+        assert networks.remove_network_from_cluster(
             True, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
         )
         loginAsUser(userName=config.USER_NAME2, filter_=False)

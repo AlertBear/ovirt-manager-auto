@@ -196,7 +196,7 @@ class NegativeNetworkPermissions231917(NetworkingNegative):
         """ Attaching/Detaching network to/from Cluster """
         for user in [config.USER_NAME, config.USER_NAME2]:
             loginAsUser(userName=user, filter_=False)
-            assert networks.removeNetworkFromCluster(
+            assert networks.remove_network_from_cluster(
                 False, config.NETWORK_NAME1, config.CLUSTER_NAME[0]
             )
             assert networks.add_network_to_cluster(

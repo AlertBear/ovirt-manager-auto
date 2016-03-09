@@ -88,24 +88,39 @@ logger = logging.getLogger("art.ll_lib.dcs")
 @is_action()
 def addDataCenter(positive, **kwargs):
     """
-     Description: Add new data center
-     Parameters:
-        *  *name - name of a new data center
-        *  *storage_type - storage type data center will support
-        *  *version - data center supported version (2.2 or 3.0)
-        *  *local - True for localFS DC type, False for shared DC type
-     Return: status (True if data center was added properly, False otherwise)
+    Add new data center
+
+    Args:
+        positive (bool): Expected results.
+
+    Keyword Arguments:
+        name (str): Name of a new data center.
+        storage_type (str): Storage type data center will support.
+        version (str): Data center supported version (2.2 or 3.0).
+        local (bool): True for localFS DC type, False for shared DC type.
+
+    Returns:
+        bool: True if add datacenter succeeded, otherwise False.
      """
+    datacenter = kwargs.get("name")
+    log_info, log_error = ll_general.get_log_msg(
+        action="Add", obj_type="datacenter", obj_name=datacenter,
+        positive=positive, **kwargs
+    )
 
-    majorV, minorV = kwargs.pop('version').split(".")
-    dcVersion = Version(major=majorV, minor=minorV)
+    major_version, minor_version = kwargs.pop('version').split(".")
+    dc_version = Version(major=major_version, minor=minor_version)
 
-    dc = DataCenter(version=dcVersion, **kwargs)
-
+    dc = DataCenter(version=dc_version, **kwargs)
+    logger.info(log_info)
     dc, status = util.create(dc, positive)
+
     if positive:
         supported_versions_valid = checkSupportedVersions(kwargs.pop('name'))
         status = status and supported_versions_valid
+
+    if not status:
+        logger.error(log_error)
 
     return status
 
