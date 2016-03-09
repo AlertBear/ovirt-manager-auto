@@ -18,7 +18,9 @@ from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
@@ -678,7 +680,10 @@ class TestSanity08(TestSanityCaseBase):
         mgmt_net_helper.add_cluster(
             cl=self.cluster_1, dc=self.dc, management_network=self.net
         )
-        mgmt_net_helper.check_mgmt_net(cl=self.cluster_1, net=self.net)
+        if not hl_networks.is_management_network(
+            cluster_name=self.cluster_1, network=self.net
+        ):
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-14513")
     def test_create_dc_cluster_with_default_management_net(self):
@@ -689,20 +694,20 @@ class TestSanity08(TestSanityCaseBase):
         mgmt_net_helper.add_cluster(
             cl=self.cluster_2, dc=self.dc, management_network=conf.MGMT_BRIDGE
         )
-        mgmt_net_helper.check_mgmt_net(cl=self.cluster_2, net=conf.MGMT_BRIDGE)
+        if not hl_networks.is_management_network(
+            cluster_name=self.cluster_2, network=conf.MGMT_BRIDGE
+        ):
+            raise conf.NET_EXCEPTION()
 
     @classmethod
     def teardown_class(cls):
         """
         Remove the DC and clusters
         """
-        if not hl_networks.remove_net_from_setup(
-            data_center=cls.dc, network=[cls.net], host=[]
-        ):
-            logger.error("Failed to remove %s from %s", cls.net, cls.dc)
         for cl in (cls.cluster_1, cls.cluster_2):
-            mgmt_net_helper.remove_cl(cl=cl)
-        mac_pool_helper.remove_dc(dc_name=cls.dc)
+            ll_clusters.removeCluster(positive=True, cluster=cl)
+
+        ll_dc.removeDataCenter(positive=True, datacenter=cls.dc)
         super(TestSanity08, cls).teardown_class()
 
 

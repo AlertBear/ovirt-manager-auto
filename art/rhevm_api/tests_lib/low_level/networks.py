@@ -175,16 +175,27 @@ def updateNetwork(positive, network, **kwargs):
 @is_action()
 def removeNetwork(positive, network, data_center=None):
     """
-    Description: remove existing network
-    Author: edolinin, atal
-    Parameters:
-       * network - name of a network that should be removed
-       * data_center - In case more then one network with the same name exists.
-    Return: status (True if network was removed properly, False otherwise)
-    """
+    Remove network
 
+    Args:
+        positive (bool): Expected result
+        network (str): Name of a network that should be removed
+        data_center (str): Datacenter name (in case more then one network with
+            the same name exists)
+
+    Returns:
+        bool: True if network was removed properly, False otherwise
+    """
+    log_info, log_error = ll.general.get_log_msg(
+        action="Remove", obj_type="network", obj_name=network,
+        positive=positive
+    )
+    logger.info(log_info)
     net = find_network(network, data_center)
-    return NET_API.delete(net, positive)
+    res = NET_API.delete(net, positive)
+    if not res:
+        logger.error(log_error)
+    return res
 
 
 def find_network(network, data_center=None, cluster=None):
@@ -652,17 +663,20 @@ def get_networks_in_datacenter(datacenter):
 def get_network_in_datacenter(network, datacenter):
     """
     Find network under datacenter.
-    :param network: Network name to find
-    :type network: str
-    :param datacenter: datacenter name
-    :type datacenter: str
-    :return: net obj if network found, otherwise None.
-    :rtype: object
+
+    Args:
+        network (str): Network name to find
+        datacenter (str): Datacenter name
+
+    Returns:
+        Network: Network object if network was found in datacenter
     """
+    logger.info("Get network %s from datacenter %s", network, datacenter)
     for net in get_networks_in_datacenter(datacenter=datacenter):
         if net.get_name() == network:
             logger.info("Get %s from %s", network, datacenter)
             return net
+    logger.error("Network %s not found on datacenter %s", network, datacenter)
     return None
 
 
@@ -761,10 +775,14 @@ def is_host_network_is_vm(vds_resource, net_name):
     :rtype: bool
     """
     vm_file = os.path.join(test_utils.SYS_CLASS_NET_DIR, net_name)
-    logger.info("Check if %s exist on %s", vm_file, vds_resource.fqdn)
+    logger.info("Check if network %s is VM network on host %s", vm_file,
+                vds_resource.fqdn)
     res = vds_resource.fs.exists(path=vm_file)
     if not res:
-        logger.error("%s not exist on %s", net_name, vds_resource.fqdn)
+        logger.error(
+            "Network %s is not VM network on host %s",
+            net_name, vds_resource.fqdn
+        )
     return res
 
 
@@ -1289,19 +1307,23 @@ def get_management_network(cluster_name):
 
 def check_network_usage(cluster_name, network, *attrs):
     """
-    Check Usages attrs exist for specific network
-    :param cluster_name: Name of the Cluster
-    :type cluster_name: str
-    :param network: Name of the Network
-    :type network: str
-    :param attrs: list of attributes (display, migration, management)
-    :type attrs: list
-    :return: True/False
-    :rtype: bool
+    Check if usages attributes exist for specific network
+
+    Args:
+        cluster_name (str): Name of the Cluster
+        network (str): Name of the Network
+        attrs (list): list of attributes (display, migration, management)
+
+    Returns:
+        bool: If all attributes exist in network params, False otherwise
     """
-    net_obj = get_cluster_network(cluster_name, network)
+    net_obj = get_cluster_network(cluster=cluster_name, network=network)
+    logger.info("Check if %s are attributes of network %s", attrs, network)
     for attr in attrs:
         if attr not in net_obj.get_usages().get_usage():
+            logger.error(
+                "Attribute %s is not part of network %s", attr, network
+            )
             return False
     return True
 

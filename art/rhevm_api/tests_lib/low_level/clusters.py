@@ -23,11 +23,11 @@ from Queue import Queue
 
 from art.core_api import is_action
 from art.core_api.apis_utils import getDS
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.test_handler.exceptions as exceptions
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.utils.test_utils import get_api, split
-from art.rhevm_api.tests_lib.low_level.general import prepare_ds_object
+import art.rhevm_api.tests_lib.low_level.general as ll_general
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 from art.rhevm_api.tests_lib.low_level.hosts import(
     activateHost, deactivateHost, updateHost
 )
@@ -261,17 +261,26 @@ def updateCluster(positive, cluster, **kwargs):
 
 @is_action()
 def removeCluster(positive, cluster):
-    '''
-    Description: remove cluster
-    Author: edolinin
-    Parameters:
-       * cluster - name of a cluster that should be removed
-    Return: status (True if cluster was removed properly, False otherwise)
-    '''
+    """
+    Remove cluster
 
-    cl = util.find(cluster)
+    Args:
+        positive (bool): Expected result
+        cluster (str): Name of a cluster that should be removed
 
-    return util.delete(cl, positive)
+    Returns:
+        bool: True if cluster was removed properly, False otherwise
+    """
+    log_info, log_error = ll_general.get_log_msg(
+        action="Remove", obj_type="cluster", obj_name=cluster,
+        positive=positive
+    )
+    logger.info(log_info)
+    cluster_obj = util.find(cluster)
+    res = util.delete(cluster_obj, positive)
+    if not res:
+        logger.error(log_error)
+    return res
 
 
 def removeClusterAsynch(positive, tasksQ, resultsQ):
@@ -586,7 +595,7 @@ def _prepare_affinity_group_object(**kwargs):
                    enforcing: type=str
     :return: AffinityGroup instance or raise exception
     """
-    return prepare_ds_object('AffinityGroup', **kwargs)
+    return ll_general.prepare_ds_object('AffinityGroup', **kwargs)
 
 
 def get_affinity_group_obj(affinity_name, cluster_name):
@@ -731,7 +740,7 @@ def _prepare_cpu_profile_object(**kwargs):
                    qos: type=QoS Instance
     :return: CpuProfile object or raise exception
     """
-    return prepare_ds_object('CpuProfile', **kwargs)
+    return ll_general.prepare_ds_object('CpuProfile', **kwargs)
 
 
 def get_cpu_profile_obj(cluster_name, cpu_prof_name):

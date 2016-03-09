@@ -551,77 +551,92 @@ def check_host_nic_params(host, nic, **kwargs):
     return res
 
 
-def create_basic_setup(datacenter, storage_type, version, cluster=None,
-                       cpu=None, host=None, host_password=None):
+def create_basic_setup(
+    datacenter, storage_type, version, cluster=None, cpu=None, host=None,
+    host_password=None
+):
     """
-    Description: Create basic setup with datacenter and optional cluster and
-    hosts
+    Create basic setup with datacenter and optional cluster and hosts
 
-    Author: myakove
-    Parameters:
-       *  *datacenter* - Datacenter name
-       *  *storage_type* - Storage type for datacenter
-       *  *version* - Version of the datacenter/cluster
-       *  *cluster* - Cluster name
-       *  *cpu* - CPU type for cluster
-       *  *host* - Host name or a list of Host names
-       *  *host_password* - Password for the host
-    **Return**: True if setup creation succeeded, otherwise False
+    Args:
+        datacenter (str): Datacenter name
+        storage_type (str): Storage type for datacenter
+        version (str): Version of the datacenter/cluster
+        cluster (str): Cluster name
+        cpu (str): CPU type for cluster
+        host (str or list): Host name or a list of Host names
+        host_password (str): Password for the host
+
+    Returns:
+        bool: True if setup creation succeeded, otherwise False
     """
+    logger.info("Create dc %s", datacenter)
     if not ll_datacenters.addDataCenter(
         positive=True, name=datacenter, storage_type=storage_type,
         version=version
     ):
-        logger.error("Failed to add DC")
+        logger.error("Failed to create DC %s", datacenter)
         return False
 
     if cluster:
+        logger.info("Create cluster %s under DC %s", cluster, datacenter)
         if not ll_clusters.addCluster(
             positive=True, name=cluster, cpu=cpu, data_center=datacenter,
             version=version
         ):
-            logger.error("Failed to add Cluster")
+            logger.error(
+                "Failed to add Cluster %s under DC %s", cluster, datacenter
+            )
             return False
 
         if host:
             host_list = [host] if isinstance(host, basestring) else host
+            logger.info("Add host %s under cluster %s", host_list, cluster)
             try:
                 hl_hosts.add_hosts(
                     hosts_list=host_list, cluster=cluster,
                     passwords=[host_password] * len(host_list)
                 )
             except test_exceptions.HostException:
-                logger.error("Failed to add host")
+                logger.error(
+                    "Failed to add host %s under cluster %s",
+                    host_list, cluster
+                )
                 return False
     return True
 
 
 def remove_basic_setup(datacenter, cluster=None, hosts=[]):
     """
-    Description: Remove basic setup with datacenter and optional cluster and
-    hosts
+    Remove basic setup with datacenter and optional cluster and hosts
 
-    :param datacenter: Datacenter name
-    :param cluster: name
-    :param hosts: name or a list of Host names
-    :return: True if setup removal succeeded, otherwise False
+    Args:
+        datacenter (str): Datacenter name
+        cluster (str): Cluster name
+        hosts (list): List of host names
+
+    Returns:
+        bool: True if setup removal succeeded, otherwise False
     """
     if cluster:
         for host in hosts:
+            logger.info("Remove host %s for cluster %s", host, cluster)
             if not ll_hosts.removeHost(
                 positive=True, host=host, deactivate=True
             ):
                 logger.error("Failed to remove host %s ", host)
                 return False
 
+        logger.info("Remove cluster %s", cluster)
         if not ll_clusters.removeCluster(positive=True, cluster=cluster):
-            logger.error("Failed to remove Cluster")
+            logger.error("Failed to remove Cluster %s", cluster)
             return False
 
+    logger.info("Remove DC %s", datacenter)
     if not ll_datacenters.removeDataCenter(
         positive=True, datacenter=datacenter
     ):
-        logger.error("Failed to remove DC")
+        logger.error("Failed to remove DC %s", datacenter)
         return False
     return True
 
@@ -669,15 +684,19 @@ def update_network_host(host, nic, auto_nics, save_config=True, **kwargs):
 
 def is_management_network(cluster_name, network):
     """
-    Check if network is MGMT network
+    Check if network is management network
 
-    :param cluster_name: Name of the Cluster
-    :type cluster_name: str
-    :param network: network to check
-    :type: str
-    :return: network MGMT
-    :rtype: object
+    Args:
+        cluster_name (str): Name of the Cluster
+        network (str): Network to check
+
+    Returns:
+        bool: True if network is management network, otherwise False
     """
+    logger.info(
+        "Check if network %s is management network under cluster %s",
+        network, cluster_name
+    )
     mgmt_net_obj = ll_networks.get_management_network(cluster_name)
     cl_mgmt_net_obj = ll_clusters.get_cluster_management_network(cluster_name)
     if (
@@ -685,6 +704,10 @@ def is_management_network(cluster_name, network):
             mgmt_net_obj.get_id() == cl_mgmt_net_obj.get_id()
     ):
         return True
+    logger.error(
+        "Network %s is not management network under cluster %s",
+        network, cluster_name
+    )
     return False
 
 
