@@ -2097,9 +2097,8 @@ def wait_for_active_vms_on_host(
     try:
         for sample in sampler:
             if (
-                bool(
-                    sample.get_summary().get_active() == num_of_vms
-                ) == (not negative)
+                (sample.get_summary().get_active() == num_of_vms) ==
+                (not negative)
             ):
                 return True
     except APITimeout:
@@ -2598,6 +2597,7 @@ def get_fence_agents_list(host_name):
 
     Args:
         host_name (str): Host name
+
     Returns:
         list: Agent objects
     """
@@ -2612,6 +2612,7 @@ def get_fence_agents_link(host_name):
 
     Args:
         host_name (str): Host name
+
     Returns:
         str: Link to fence agents collection
     """
@@ -2769,6 +2770,7 @@ def remove_fence_agent(fence_agent_obj):
 
     Args:
         fence_agent_obj (Agent): instance of Agent
+
     Returns:
         bool: True, if remove succeed, otherwise False
     """

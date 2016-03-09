@@ -39,11 +39,8 @@ class BaseTestPolicyWithMemory(libs.SlaTest):
                     raise errors.HostException(
                         "Failed to load hosts %s CPU" % hosts_d[conf.RESOURCE]
                     )
-                expected_load = max(
-                    cls.cluster_policy[
-                        conf.CLUSTER_POLICY_PARAMS
-                    ][conf.LOW_UTILIZATION],
-                    load - 10
+                expected_load = min(
+                    conf.DEFAULT_PS_PARAMS[conf.HIGH_UTILIZATION], load
                 )
                 for host in hosts_d[conf.HOST]:
                     if not ll_hosts.wait_for_host_cpu_load(
@@ -111,48 +108,28 @@ class BaseTestPolicyWithMemory(libs.SlaTest):
                         )
 
     @staticmethod
-    def _check_migration(vm_name, host_name):
+    def _is_balancing_happen(host_name, expected_num_of_vms, negative=False):
         """
-        Check, if vm migrated on specific host
+        Check if balance module work correct
 
-        :param vm_name: vm name
-        :type vm_name: str
         :param host_name: host name
         :type host_name: str
-        :return: True, if vm migrated on given host, otherwise False
-        :rtype: bool
-        """
-        logger.info(
-            "Wait for vm %s migration to host %s", vm_name, host_name
-        )
-        if not ll_vms.is_vm_run_on_host(
-            vm_name=vm_name, host_name=host_name,
-            timeout=conf.MIGRATION_TIMEOUT
-        ):
-            logger.error("VM %s still run on host %s", vm_name, host_name)
-            return False
-        logger.info(
-            "Migration of vm %s to host %s succeeded", vm_name, host_name
-        )
-        return True
-
-    @staticmethod
-    def _is_migration_not_happen(host_name, expected_num_of_vms):
-        """
-        Check that no migration happen on host or from host
-
-        :param host_name: host name
         :param expected_num_of_vms: expected number of active vms on host
+        :type expected_num_of_vms: int
+        :param negative: negative or positive expectation
+        :type negative: bool
         :return: True, if host has expected number of vms, otherwise False
         :rtype: bool
         """
-        logger.info(
-            "Check that no migration happen on or from host %s", host_name
+        log_msg = (
+            conf.BALANCE_LOG_MSG_NEGATIVE
+            if negative else conf.BALANCE_LOG_MSG_POSITIVE
         )
+        logger.info(log_msg, host_name)
         return ll_hosts.wait_for_active_vms_on_host(
             host_name=host_name,
             num_of_vms=expected_num_of_vms,
-            negative=True,
+            negative=negative,
             timeout=conf.MIGRATION_TIMEOUT
         )
 
@@ -168,7 +145,7 @@ class StartVms(BaseTestPolicyWithMemory):
         Start one vm on each host
         """
         vm_host_d = dict(
-            (vm_name, {"host": host_name, "wait_for_state": conf.VM_UP})
+            (vm_name, {"host": host_name})
             for vm_name, host_name in zip(conf.VM_NAME[:2], conf.HOSTS[:2])
         )
         ll_vms.run_vms_once(vms=conf.VM_NAME[:2], **vm_host_d)
@@ -215,8 +192,8 @@ class StartAndMigrateVmBase(StartVms):
             raise errors.VMException("Failed to start vm %s" % conf.VM_NAME[2])
         cls.load_cpu_d = {
             conf.CPU_LOAD_50: {
-                conf.RESOURCE: conf.VDS_HOSTS[:2],
-                conf.HOST: conf.HOSTS[:2]
+                conf.RESOURCE: conf.VDS_HOSTS[:3],
+                conf.HOST: conf.HOSTS[:3]
             }
         }
         super(StartAndMigrateVmBase, cls).setup_class()

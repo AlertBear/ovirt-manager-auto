@@ -43,7 +43,11 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad1(BaseTestPSWithMemory):
         """
         Check if vm from Host_1 migrated on Host_2
         """
-        self.assertTrue(self._check_migration(conf.VM_NAME[0], conf.HOSTS[1]))
+        self.assertTrue(
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[1], expected_num_of_vms=2
+            )
+        )
 
 
 class TestPSBalanceModuleUnderMemoryAndCPULoad2(BaseTestPSWithMemory):
@@ -70,7 +74,11 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad2(BaseTestPSWithMemory):
         """
         Check if vm from Host_1 migrated on Host_2
         """
-        self.assertTrue(self._check_migration(conf.VM_NAME[0], conf.HOSTS[1]))
+        self.assertTrue(
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[1], expected_num_of_vms=2
+            )
+        )
 
 
 class TestPSBalanceModuleUnderMemoryAndCPULoad3(BaseTestPSWithMemory):
@@ -102,7 +110,11 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad3(BaseTestPSWithMemory):
         """
         Check if vm from Host_2 migrated on Host_1
         """
-        self.assertTrue(self._check_migration(conf.VM_NAME[1], conf.HOSTS[0]))
+        self.assertTrue(
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[0], expected_num_of_vms=2
+            )
+        )
 
 
 class TestPSBalanceModuleUnderMemoryAndCPULoad4(BaseTestPSWithMemory):
@@ -135,7 +147,11 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad4(BaseTestPSWithMemory):
         """
         Check if vm from Host_1 migrated on Host_2
         """
-        self.assertTrue(self._check_migration(conf.VM_NAME[0], conf.HOSTS[1]))
+        self.assertTrue(
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[1], expected_num_of_vms=2
+            )
+        )
 
 
 class TestPSBalanceModuleUnderMemoryAndCPULoad5(BaseTestPSWithMemory):
@@ -167,7 +183,11 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad5(BaseTestPSWithMemory):
         """
         Check if vm from Host_1 migrated on Host_2
         """
-        self.assertTrue(self._check_migration(conf.VM_NAME[0], conf.HOSTS[1]))
+        self.assertTrue(
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[1], expected_num_of_vms=2
+            )
+        )
 
 
 class TestPSBalanceModuleUnderMemoryAndCPULoad6(BaseTestPSWithMemory):
@@ -200,7 +220,11 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad6(BaseTestPSWithMemory):
         """
         Check if vm from Host_1 migrated on Host_2
         """
-        self.assertTrue(self._check_migration(conf.VM_NAME[0], conf.HOSTS[1]))
+        self.assertTrue(
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[1], expected_num_of_vms=2
+            )
+        )
 
 
 class TestPSBalanceModuleUnderMemoryAndCPULoad7(BaseTestPSWithMemory):
@@ -229,7 +253,11 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad7(BaseTestPSWithMemory):
         """
         Check if vm from Host_1 migrated on Host_2
         """
-        self.assertTrue(self._check_migration(conf.VM_NAME[0], conf.HOSTS[1]))
+        self.assertTrue(
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[1], expected_num_of_vms=2
+            )
+        )
 
 
 class TestPSBalanceModuleUnderMemoryAndCPULoad8(BaseTestPSWithMemory):
@@ -261,7 +289,11 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad8(BaseTestPSWithMemory):
         """
         Check if vm from Host_1 migrated on Host_2
         """
-        self.assertTrue(self._check_migration(conf.VM_NAME[0], conf.HOSTS[1]))
+        self.assertTrue(
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[1], expected_num_of_vms=2
+            )
+        )
 
 
 class TestPSBalanceModuleUnderMemoryAndCPULoad9(BaseTestPSWithMemory):
@@ -294,7 +326,11 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad9(BaseTestPSWithMemory):
         """
         Check if vm from Host_1 migrated on Host_2
         """
-        self.assertTrue(self._check_migration(conf.VM_NAME[0], conf.HOSTS[1]))
+        self.assertTrue(
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[1], expected_num_of_vms=2
+            )
+        )
 
 
 class TestPSBalanceModuleUnderMemoryAndCPULoad10(BaseTestPSWithMemory):
@@ -330,7 +366,11 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad10(BaseTestPSWithMemory):
         """
         Check if vm from Host_1 migrated on Host_2
         """
-        self.assertTrue(self._check_migration(conf.VM_NAME[0], conf.HOSTS[1]))
+        self.assertTrue(
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[1], expected_num_of_vms=2
+            )
+        )
 
 
 class TestPSBalanceModuleUnderMemoryAndCPULoad11(BaseTestPSWithMemory):
@@ -366,7 +406,11 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad11(BaseTestPSWithMemory):
         """
         Check if vm from Host_1 migrated on Host_2
         """
-        self.assertTrue(self._check_migration(conf.VM_NAME[0], conf.HOSTS[1]))
+        self.assertTrue(
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[1], expected_num_of_vms=2
+            )
+        )
 
 
 class TestPSBalanceModuleUnderMemoryAndCPULoad12(BaseTestPSWithMemory):
@@ -399,7 +443,11 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad12(BaseTestPSWithMemory):
         """
         Check if vm from Host_1 migrated on Host_2
         """
-        self.assertTrue(self._check_migration(conf.VM_NAME[0], conf.HOSTS[1]))
+        self.assertTrue(
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[1], expected_num_of_vms=2
+            )
+        )
 
 
 class TestPSBalanceModuleUnderMemoryAndCPULoad13(BaseTestPSWithMemory):
@@ -431,7 +479,11 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad13(BaseTestPSWithMemory):
         """
         Check if vm from Host_1 migrated on Host_2
         """
-        self.assertTrue(self._check_migration(conf.VM_NAME[0], conf.HOSTS[1]))
+        self.assertTrue(
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[1], expected_num_of_vms=2
+            )
+        )
 
 
 class TestPSBalanceModuleUnderMemoryAndCPULoad14(BaseTestPSWithMemory):
@@ -465,8 +517,8 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad14(BaseTestPSWithMemory):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_migration_not_happen(
-                host_name=conf.HOSTS[0], expected_num_of_vms=2
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
             )
         )
 
@@ -501,8 +553,8 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad15(BaseTestPSWithMemory):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_migration_not_happen(
-                host_name=conf.HOSTS[0], expected_num_of_vms=1
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
             )
         )
 
@@ -538,8 +590,8 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad16(BaseTestPSWithMemory):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_migration_not_happen(
-                host_name=conf.HOSTS[0], expected_num_of_vms=2
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
             )
         )
 
@@ -578,8 +630,8 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad17(BaseTestPSWithMemory):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_migration_not_happen(
-                host_name=conf.HOSTS[0], expected_num_of_vms=1
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
             )
         )
 
@@ -619,8 +671,8 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad18(BaseTestPSWithMemory):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_migration_not_happen(
-                host_name=conf.HOSTS[0], expected_num_of_vms=2
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
             )
         )
 
@@ -660,8 +712,8 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad19(BaseTestPSWithMemory):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_migration_not_happen(
-                host_name=conf.HOSTS[0], expected_num_of_vms=2
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
             )
         )
 
@@ -696,8 +748,8 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad20(BaseTestPSWithMemory):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_migration_not_happen(
-                host_name=conf.HOSTS[0], expected_num_of_vms=1
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
             )
         )
 
@@ -733,8 +785,8 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad21(BaseTestPSWithMemory):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_migration_not_happen(
-                host_name=conf.HOSTS[0], expected_num_of_vms=2
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
             )
         )
 
@@ -770,13 +822,16 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad22(BaseTestPSWithMemory):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_migration_not_happen(
-                host_name=conf.HOSTS[0], expected_num_of_vms=2
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
             )
         )
 
 
 class StartAndMigrateVmPSBase(base_c.StartAndMigrateVmBase):
+    """
+    Base class for start and migrate of VM under PS scheduler policy
+    """
     cluster_policy = {
         conf.CLUSTER_POLICY_NAME: conf.CLUSTER_POLICY_PS,
         conf.CLUSTER_POLICY_PARAMS: conf.DEFAULT_PS_PARAMS
@@ -791,7 +846,7 @@ class StartAndMigrateVmPSBase(base_c.StartAndMigrateVmBase):
 
 class TestStartVm(StartAndMigrateVmPSBase):
     """
-    Host_1 and Host_2 CPU normal utilized
+    Host_1, Host_2 and Host_3 CPU normal utilized
     Load additional one GB of memory on Host_1
     Start additional VM, VM must start on Host_1
     """
@@ -828,7 +883,7 @@ class TestStartVm(StartAndMigrateVmPSBase):
 
 class TestMigrateVm(StartAndMigrateVmPSBase):
     """
-    Host_1 and Host_2 CPU normal utilized
+    Host_1, Host_2 and Host_3 CPU normal utilized
     Load additional one GB of memory on Host_1
     Migrate VM from Host_3, VM must migrate to Host_1
     """
@@ -894,7 +949,7 @@ class TestTakeInAccountVmMemory(StartAndMigrateVmPSBase):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_migration_not_happen(
-                host_name=conf.HOSTS[0], expected_num_of_vms=1
+            self._is_balancing_happen(
+                host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
             )
         )

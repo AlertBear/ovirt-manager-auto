@@ -3,10 +3,12 @@ Scheduler - scheduler policies with memory test initialization
 """
 import logging
 import config as conf
+from art.rhevm_api.utils import test_utils
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +27,9 @@ def update_configuration_constants(host_name=None):
         conf.MIN_FREE_MEMORY
     ] = (half_host_memory + 2 * conf.GB) / conf.MB
     conf.DEFAULT_PS_PARAMS[
+        conf.MAX_FREE_MEMORY
+    ] = (half_host_memory - 2 * conf.GB) / conf.MB
+    conf.DEFAULT_ED_PARAMS[
         conf.MAX_FREE_MEMORY
     ] = (half_host_memory - 2 * conf.GB) / conf.MB
     overutilized_memory = (
@@ -52,8 +57,38 @@ def update_configuration_constants(host_name=None):
 
 def setup_package():
     """
-    Create memory load vms
+    1) Change LowUtilizationForEvenlyDistribute engine-config parameter
+    2) Wait until storage domains will be active after engine restart
+    3) Create memory load vms
     """
+    logger.info(
+        "Change engine-config parameter %s to %s",
+        conf.ENGINE_CONFIG_LOW_UTILIZATION,
+        conf.DEFAULT_PS_PARAMS[conf.LOW_UTILIZATION]
+    )
+    cmd = [
+        "{0}={1}".format(
+            conf.ENGINE_CONFIG_LOW_UTILIZATION,
+            conf.DEFAULT_PS_PARAMS[conf.LOW_UTILIZATION]
+        )
+    ]
+    if not test_utils.set_engine_properties(conf.ENGINE, cmd):
+        raise errors.UnkownConfigurationException(
+            "Failed to set %s option to %s" %
+            (
+                conf.ENGINE_CONFIG_LOW_UTILIZATION,
+                conf.DEFAULT_PS_PARAMS[conf.LOW_UTILIZATION]
+            )
+        )
+    if not ll_sd.waitForStorageDomainStatus(
+        positive=True,
+        dataCenterName=conf.DC_NAME[0],
+        storageDomainName=conf.STORAGE_NAME[0],
+        expectedStatus=conf.SD_ACTIVE
+    ):
+        raise errors.StorageDomainException(
+            "Storage domain %s not active" % conf.STORAGE_NAME[0]
+        )
     logger.info(
         "Update cluster %s overcommitment to %d",
         conf.CLUSTER_NAME[0], conf.CLUSTER_OVERCOMMITMENT_NONE
@@ -94,3 +129,18 @@ def teardown_package():
         mem_ovrcmt_prc=conf.CLUSTER_OVERCOMMITMENT_DESKTOP
     ):
         logger.error("Failed to update cluster %s" % conf.CLUSTER_NAME[0])
+    engine_default_value = 0
+    logger.info(
+        "Change engine-config parameter %s to %s",
+        conf.ENGINE_CONFIG_LOW_UTILIZATION, engine_default_value
+    )
+    cmd = [
+        "{0}={1}".format(
+            conf.ENGINE_CONFIG_LOW_UTILIZATION, engine_default_value
+        )
+    ]
+    if not test_utils.set_engine_properties(conf.ENGINE, cmd):
+        raise errors.UnkownConfigurationException(
+            "Failed to set %s option to %s" %
+            (conf.ENGINE_CONFIG_LOW_UTILIZATION, engine_default_value)
+        )
