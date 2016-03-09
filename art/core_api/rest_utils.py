@@ -82,9 +82,11 @@ class RestUtil(APIUtil):
 
         try:
             self.links = self.api.HEAD_for_links()
-        except APIException:
+        except APIException as ex:
             raise APIException(
-                "Failed to Build links matrix from HEAD request")
+                "Failed to Build links matrix from HEAD request. "
+                "Exception: %s" % ex
+            )
         else:
             if RestUtil._restInit is None:
                 RestUtil._restInit = self.api
