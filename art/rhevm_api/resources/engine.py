@@ -14,7 +14,7 @@ DATABASE_CONFIG = "/etc/ovirt-engine/engine.conf.d/10-setup-database.conf"
 class Engine(Service):
     def __init__(
         self, host, admin, schema='https', port=443,
-        entry_point='api', service_name='ovirt-engine',
+        entry_point='ovirt-engine/api', service_name='ovirt-engine',
     ):
         """
         :param: host: refer to machine where the Engine is hosted
