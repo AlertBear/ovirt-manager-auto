@@ -4,6 +4,7 @@
 """
 Helper functions for virt and network migration job
 """
+import os
 import shlex
 import time
 import logging
@@ -12,6 +13,8 @@ from art import test_handler
 from rhevmtests import helpers
 import art.core_api.apis_utils as utils
 from rhevmtests.networking import config
+import rhevmtests.virt.config as config_virt
+from art.unittest_lib import testflow
 from art.test_handler import exceptions
 from art.rhevm_api.utils import test_utils
 import art.rhevm_api.resources as resources
@@ -19,10 +22,10 @@ import art.unittest_lib.network as lib_network
 import rhevmtests.networking.helper as network_helper
 from art.rhevm_api.tests_lib.low_level import hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 
 logger = logging.getLogger("Virt_Helper")
 
@@ -32,6 +35,7 @@ LOAD_MEMORY_FILE = "tests/rhevmtests/virt/migration/memoryLoad.py"
 DESTINATION_PATH = "/tmp/memoryLoad.py"
 DELAY_FOR_SCRIPT = 120
 MEMORY_USAGE = 60
+DELAY_FOR_SNAPSHOT = 60
 RUN_SCRIPT_COMMAND = (
     'python /tmp/memoryLoad.py -s %s -r %s &> /tmp/OUT1 & echo $!'
 )
@@ -536,3 +540,218 @@ def load_vm_memory_with_load_tool(vm_name, load=500, time_to_run=60):
     ps_id = vm_resource.run_command(command=shlex.split(cmd))[1]
     time.sleep(5)
     return ps_id
+
+
+def create_base_vm(
+    vm_name,
+    cluster=config_virt.CLUSTER_NAME[0], memory=config.GB,
+    os_type=config_virt.VM_OS_TYPE, vm_type=config_virt.VM_TYPE,
+    display_type=config_virt.VM_DISPLAY_TYPE,
+    disk_type=config.DISK_TYPE_DATA, storage_domain=None,
+    add_disk=False, vm_parameters=None
+):
+    """
+    Create vm with disk or nic
+
+    :param vm_name: VM name
+    :type vm_name: str
+    :param cluster: cluster name
+    :type cluster: str
+    :param memory: memory size
+    :type memory: int
+    :param os_type: vm os type
+    :type os_type: str
+    :param vm_type: vm type
+    :type vm_type: str
+    :param display_type: display type
+    :type display_type: str
+    :param vm_parameters: vm parameter to update after creation
+    :type vm_parameters: dict
+    :param add_disk: If True add disk to VM after creation
+    :param disk_type: disk type, default set to data
+    :type disk_type: str
+    :param storage_domain: master storage domain
+    :type: storage_domain: str
+    :return True if all operations succeed Else False
+    :rtype: bool
+    """
+
+    if not ll_vms.addVm(
+        positive=True, name=vm_name,
+        cluster=cluster,
+        memory=memory,
+        os_type=os_type,
+        type=vm_type,
+        display_type=display_type
+
+    ):
+        return False
+    if add_disk:
+        logger.info("Add disk to vm %s", vm_name)
+        if not storage_domain:
+            storage_domain, _, _ = get_storage_domains()
+        if not ll_vms.addDisk(
+            True,
+            vm=vm_name,
+            size=config.GB,
+            storagedomain=storage_domain,
+            type=disk_type,
+            format=config.DISK_FORMAT_COW,
+            interface=config.INTERFACE_VIRTIO
+        ):
+            logger.error("Failed to add disk to vm %s" % vm_name)
+            return False
+    if vm_parameters:
+        if not ll_vms.updateVm(
+            positive=True, vm=vm_name, **vm_parameters
+        ):
+            return False
+    return True
+
+
+def create_vm_from_template(
+    vm_name,
+    cluster=config.CLUSTER_NAME[0],
+    template=config.TEMPLATE_NAME[0],
+    vm_parameters=None
+):
+    """
+    Create VM from given template, with optional parameters
+
+    :param vm_name: VM name
+    :type vm_name: str
+    :param cluster: cluster name
+    :type cluster: str
+    :param template: template name
+    :type template: str
+    :param vm_parameters: vm parameter to update after creation
+    :type vm_parameters: dict
+    :return: True if all operations succeed, Else False
+    :rtype: bool
+    """
+
+    if not ll_vms.addVm(
+        True,
+        name=vm_name,
+        cluster=cluster,
+        template=template,
+    ):
+        return False
+
+    if vm_parameters:
+        if not ll_vms.updateVm(
+            positive=True, vm=vm_name, **vm_parameters
+        ):
+            return False
+    return True
+
+
+def check_display_parameters(vm_name, display_type):
+    """
+    Check display parameters
+
+    :param vm_name: VM name
+    :type vm_name: str
+    :param display_type: display type on vm
+    :type display_type: str
+    :return: True if display port/address exists, else False
+    :rtype: bool
+    """
+
+    if display_type != config_virt.SPICE:
+        logger.info("Check if display port exist")
+        if not ll_vms.get_vm_display_port(vm_name):
+            logger.info("Vm %s display port does not exist", vm_name)
+            return False
+    logger.info("Check if display address exist")
+    if not ll_vms.get_vm_display_address(vm_name):
+        logger.info("Vm %s display address does not exist", vm_name)
+        return False
+    return True
+
+
+def create_file_in_vm(vm, vm_resource):
+    """
+    Create an empty file in vm using vm resource entity
+
+    :param vm: Vm name
+    :type vm: str
+    :param vm_resource: Resource for the vm
+    :type vm_resource: Host resource
+    :raises: VMException
+    """
+    logger.info("attempting to create an empty file in vm: %s", vm)
+    if not vm_resource.fs.touch(config_virt.FILE_NAME, config_virt.TEMP_PATH):
+        raise exceptions.VMException(
+            "Failed to create an empty file on vm: '%s'" % vm
+        )
+
+
+def check_if_file_exist(positive, vm, vm_resource):
+    """
+    Checks if file (name of file in config) exist or not in the vm using vm
+    resource entity
+
+    :param positive: Signifies the expected result
+    :type positive: bool
+    :param vm: Vm name
+    :type vm: str
+    :param vm_resource: Command executor for the vm
+    :type vm_resource: Host resource executor
+    :raises: VMException
+    """
+    testflow.step(
+        "checking if file: %s exists in vm: %s. expecting result: %s",
+        (config_virt.FILE_NAME, vm, positive)
+    )
+    full_path_to_file = os.path.join(
+        config_virt.TEMP_PATH, config_virt.FILE_NAME
+    )
+    file_exists = vm_resource.fs.exists(full_path_to_file)
+    if not (file_exists == positive):
+        raise exceptions.VMException("Error: file exists on vm: '%s'" % vm)
+
+
+def reboot_stateless_vm(vm_name):
+    """
+    Reboot stateless VM:
+    1. Stop VM
+    2. Wait until stateless snapshot removed
+    3. Start VM
+
+    :param vm_name: Vm name
+    :type vm_name: str
+    :return: True if VM successfully rebooted else False
+    :rtype: bool
+    """
+
+    logger.info("Reboot stateless VM, vm name: %s", vm_name)
+    if hl_vms.stop_stateless_vm(vm_name):
+        if ll_vms.startVm(positive=True, vm=vm_name, wait_for_ip=True):
+            return True
+    return False
+
+
+def get_storage_domains():
+    """
+    Returns the storage domains: master,export,non master
+
+    :return: returns storage domains
+    :rtype: tuple
+    """
+
+    master_domain = (
+        ll_sd.get_master_storage_domain_name(config.DC_NAME[0])
+    )
+    non_master_domains = (
+        ll_sd.findNonMasterStorageDomains(
+            True, config.DC_NAME[0]
+        )[1]
+    )
+    non_master_domain = (
+        non_master_domains['nonMasterDomains'][0]
+    )
+    export_domain = (
+        ll_sd.findExportStorageDomains(config.DC_NAME[0])[0]
+    )
+    return master_domain, export_domain, non_master_domain

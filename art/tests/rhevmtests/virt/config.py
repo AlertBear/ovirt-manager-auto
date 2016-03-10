@@ -55,3 +55,11 @@ MIGRATION_VM = VM_NAME[0] if PPC_ARCH else "migration_vm"
 CONNECTIVITY_CHECK = False if PPC_ARCH else True
 MIGRATION_IMAGE_VM = "vm_with_loadTool"
 OS_RHEL_7 = ENUMS['rhel7x64']
+
+# reg_vms
+SPICE = ENUMS['display_type_spice']
+VNC = ENUMS['display_type_vnc']
+
+FILE_NAME = 'test_file'
+TEMP_PATH = '/var/tmp/'
+ACTION_TIMEOUT = 30

@@ -8,6 +8,7 @@ vm pools.
 
 import config
 import logging
+
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
@@ -22,6 +23,7 @@ from rhevmtests.virt.vm_pools import (
     helpers
 )
 import rhevmtests.helpers as gen_helper
+import rhevmtests.virt.helper as helper
 
 logger = logging.getLogger("virt.vm_pools.sanity")
 
@@ -114,13 +116,13 @@ class TestAdminStartedVmNotStateless(base.VmPool):
         vm = base.ll_vmpools.get_vms_in_pool_by_name(self.pool_name)[0]
         self.assertTrue(ll_vms.startVm(True, vm))
         vm_resource = gen_helper.get_vm_resource(vm)
-        helpers.create_file_in_vm(vm, vm_resource)
-        helpers.check_if_file_exist(True, vm, vm_resource)
         self.assertTrue(helpers.flush_file_system_buffers(vm_resource))
+        helper.create_file_in_vm(vm, vm_resource)
+        helper.check_if_file_exist(True, vm, vm_resource)
         self.assertTrue(ll_vms.stop_vms_safely([vm]))
         self.assertTrue(ll_vms.startVm(True, vm, wait_for_status=config.VM_UP))
         vm_resource = gen_helper.get_vm_resource(vm)
-        helpers.check_if_file_exist(True, vm, vm_resource)
+        helper.check_if_file_exist(True, vm, vm_resource)
 
 
 class TestUserStartedVmIsStateless(base.VmPoolWithUser):
@@ -142,11 +144,11 @@ class TestUserStartedVmIsStateless(base.VmPoolWithUser):
         helpers.allocate_vms_as_user(True, self.pool_name, config.USER, 0, 1)
         vm = base.ll_vmpools.get_vms_in_pool_by_name(self.pool_name)[0]
         vm_resource = gen_helper.get_vm_resource(vm)
-        helpers.create_file_in_vm(vm, vm_resource)
-        helpers.check_if_file_exist(True, vm, vm_resource)
+        helper.create_file_in_vm(vm, vm_resource)
+        helper.check_if_file_exist(True, vm, vm_resource)
         hl_vms.stop_stateless_vm(vm)
         helpers.allocate_vms_as_user(
             True, self.pool_name, config.VDC_ADMIN_USER, 0, 1
         )
         vm_resource = gen_helper.get_vm_resource(vm)
-        helpers.check_if_file_exist(False, vm, vm_resource)
+        helper.check_if_file_exist(False, vm, vm_resource)

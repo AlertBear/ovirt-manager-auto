@@ -22,4 +22,3 @@ USER_PASSWORD = '123456'
 USER_ROLE = ENUMS['role_name_user_role']
 FILE_NAME = 'test_file'
 TEMP_PATH = '/var/tmp/'
-

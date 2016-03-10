@@ -113,6 +113,7 @@ NUMA_NODE_LINK = "numanodes"
 SAMPLER_TIMEOUT = 120
 SAMPLER_SLEEP = 5
 VM = "vm"
+MIGRATION_TIMEOUT = 300
 
 logger = logging.getLogger("art.ll_lib.vms")
 
@@ -210,6 +211,10 @@ def _prepareVmObject(**kwargs):
     :type cpu_shares: int
     :param serial_number: serial number to use
     :type serial_number: str
+    :param start_in_pause: start vm in pause
+    :type start_in_pause: bool
+    :param comment: vm comment
+    :type comment: str
     :returns: vm object
     :rtype: instance of VM
     """
@@ -461,7 +466,14 @@ def _prepareVmObject(**kwargs):
         sr.set_policy('custom')
         sr.set_value(serial_number)
         vm.set_serial_number(sr)
-
+    # start_in_pause
+    start_in_pause = kwargs.pop("start_in_pause", None)
+    if start_in_pause:
+        vm.set_start_paused(start_in_pause)
+    # comment
+    comment = kwargs.pop("comment", None)
+    if comment:
+        vm.set_comment(comment=comment)
     return vm
 
 
@@ -584,17 +596,25 @@ def addVm(positive, wait=True, **kwargs):
     :type cpu_shares:int
     :param serial_number: serial number to use
     :type serial_number: str
+    :param start_in_pause: start vm in pause mode
+    :type start_in_pause: bool
     :returns: True, if add vm success, otherwise False
     :rtype: bool
     """
     kwargs.update(add=True)
     vm_obj = _prepareVmObject(**kwargs)
     expected_vm = _prepareVmObject(**kwargs)
-
+    log_info, log_error = ll_general.get_log_msg(
+        action="add", obj_type="vm", obj_name=kwargs.get('name'),
+        positive=positive, **kwargs
+    )
+    logger.info(log_info)
     if False in [positive, wait]:
         vm_obj, status = VM_API.create(
             vm_obj, positive, expectedEntity=expected_vm
         )
+        if not status:
+            logging.error(log_error)
         return status
 
     disk_clone = kwargs.pop('disk_clone', None)
@@ -610,6 +630,8 @@ def addVm(positive, wait=True, **kwargs):
 
     if status:
         status = VM_API.waitForElemStatus(vm_obj, "DOWN", wait_timeout)
+    else:
+        logging.error(log_error)
 
     return status
 
@@ -694,6 +716,10 @@ def updateVm(positive, vm, **kwargs):
     :type initialization: Initialization
     :param cpu_shares: cpu shares
     :type cpu_shares: int
+    :param start_in_pause: start vm in pause mode
+    :type start_in_pause: bool
+    :param comment: vm comment
+    :type comment: str
     :returns: True, if update success, otherwise False
     :rtype: bool
     """
@@ -2015,21 +2041,29 @@ def runVmOnce(
 
 @is_action()
 def suspendVm(positive, vm, wait=True):
-    '''
-    Suspend VM.
+    """
+    Suspend VM:
+    Wait for status UP, then the suspend action is performed
+    and then it awaits status SUSPENDED, sampling every 10 seconds.
 
-    Wait for status UP, then the suspend action is performed and then it awaits
-    status SUSPENDED, sampling every 10 seconds.
+    __Author__: jhenner
 
-    Author: jhenner
-    Parameters:
-       * vm - name of vm
-       * wait - wait until and of action when positive equal to True
-    Return: status (True if vm suspended and test is positive, False otherwise)
-    '''
+     Args:
+        positive (bool): Expected status
+        vm (str): Name of vm
+        wait (bool) wait until and of action when positive equal to True
+    Returns:
+        bool: True if vm suspended and test is positive, False otherwise
+    """
+
+    log_info, log_error = ll_general.get_log_msg(
+        action="suspend", obj_type="vm", obj_name=vm, positive=positive,
+    )
     vmObj = VM_API.find(vm)
+    logger.info(log_info)
 
     if not VM_API.waitForElemStatus(vmObj, 'up', VM_ACTION_TIMEOUT):
+        logger.error(log_error)
         return False
 
     async = 'false'
@@ -2037,6 +2071,7 @@ def suspendVm(positive, vm, wait=True):
         async = 'true'
 
     if not VM_API.syncAction(vmObj, 'suspend', positive, async=async):
+        logger.error(log_error)
         return False
     if wait and positive:
         return VM_API.waitForElemStatus(
@@ -2061,7 +2096,14 @@ def shutdownVm(positive, vm, async='true'):
 
 
 @is_action()
-def migrateVm(positive, vm, host=None, wait=True, force=False):
+def migrateVm(
+        positive,
+        vm,
+        host=None,
+        wait=True,
+        force=False,
+        timeout=MIGRATION_TIMEOUT
+):
     """
     Migrate the VM.
 
@@ -2085,6 +2127,8 @@ def migrateVm(positive, vm, host=None, wait=True, force=False):
     :type wait: bool
     :param force: <Don't know what is force. please comment>
     :type force: bool
+    :param timeout: Timeout to check if vm is update after migration is done
+    :type timeout: int
     :return: True if vm was migrated and test is positive, False otherwise.
     :rtype: bool
     """
@@ -2116,7 +2160,7 @@ def migrateVm(positive, vm, host=None, wait=True, force=False):
 
     # Barak: change status to up from powering up, since all migrations ends in
     # up, but diskless VM skips the powering_up phase
-    if not VM_API.waitForElemStatus(vm_obj, "up", 300):
+    if not VM_API.waitForElemStatus(vm_obj, "up", timeout):
         return False
 
     # Check whether we tried to migrate vm to different cluster
@@ -3634,12 +3678,13 @@ def move_vm_disk(
     Moves disk of vm to another storage domain
 
     __author__ = "ratamir, libosvar"
+
     :param vm_name: The VM whose disk will be moved
     :type vm_name: str
     :param disk_name: Name of the disk to be moved
     :type disk_name: str
     :param target_sd: Name of the storage domain into
-    which the disk should be moved
+        which the disk should be moved
     :type target_sd: str
     :param wait: Specifies whether to wait until the disk has moved
     :type wait: bool
@@ -4640,18 +4685,18 @@ def live_migrate_vm(vm_name, timeout=VM_IMAGE_OPT_TIMEOUT*2, wait=True,
     :param vm_name: Name of the vm
     :type vm_name: str
     :param timeout: Specify how long before an exception should be
-    raised (in seconds)
+        raised (in seconds)
     :type timeout: int
     :param wait: Specifies whether to wait until migration has completed
     :type wait: bool
     :param ensure_on: Specify whether VM should be up before live storage
-    migration begins
+        migration begins
     :type ensure_on: bool
     :param same_type: If True, return only a storage domain of the same type,
-    False will result in a different domain type returned
+        False will result in a different domain type returned
     :type same_type: bool
     :param target_domain: Name of the target domain to migrate,
-    required param in case of specific domain requested
+        required param in case of specific domain requested
     :type target_domain: str
     :raises:
         * DiskException if something went wrong
@@ -4994,13 +5039,12 @@ def safely_remove_vms(vms):
     if vms:
         logger.debug("Removing vms %s", vms)
         existing_vms = filter(does_vm_exist, vms)
-        if not stop_vms_safely(existing_vms):
-            logger.error("Failed to stop %s", vms)
-            return False
-        for vm in existing_vms:
-            removeVm(True, vm, wait=False)
-
-        return waitForVmsGone(True, existing_vms)
+        if existing_vms:
+            if not stop_vms_safely(existing_vms):
+                return False
+            for vm in existing_vms:
+                removeVm(True, vm, wait=False)
+            return waitForVmsGone(True, existing_vms)
     logger.info("There are no vms to remove")
     return True
 

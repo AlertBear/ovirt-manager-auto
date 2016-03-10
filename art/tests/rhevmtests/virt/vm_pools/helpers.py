@@ -5,10 +5,11 @@
 __Author__ = slitmano
 This is a helpers module with helper functions dedicated for vm_pool_test.py
 """
-import config
 import logging
-import os
 from datetime import datetime
+
+import config
+import utilities.timeout as timeout_api
 from art.rhevm_api.tests_lib.high_level import (
     vmpools as hl_vmpools,
 )
@@ -20,8 +21,6 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
-import utilities.timeout as timeout_api
-
 
 logger = logging.getLogger("virt.vm_pools.helpers")
 
@@ -257,48 +256,6 @@ def verify_vms_have_no_permissions_for_user(vms, user_name, user_role):
                     user_name, vm.get_name()
                 )
             )
-
-
-def create_file_in_vm(vm, vm_resource):
-    """
-    Create an empty file in vm using vm resource entity
-
-    :param vm: Vm name
-    :type vm: str
-    :param vm_resource: Resource for the vm
-    :type vm_resource: Host resource
-    :raises: VMException
-    """
-    logger.info("attempting to create an empty file in vm: %s", vm)
-    if not vm_resource.fs.touch(config.FILE_NAME, config.TEMP_PATH):
-        raise exceptions.VMException(
-            "Failed to create an empty file on vm: '%s'" % vm
-        )
-
-
-def check_if_file_exist(positive, vm, vm_resource):
-    """
-    Checks if file (name of file in config) exist or not in the vm using vm
-    resource entity
-
-    :param positive: Signifies the expected result
-    :type positive: bool
-    :param vm: Vm name
-    :type vm: str
-    :param vm_resource: Command executor for the vm
-    :type vm_resource: Host resource executor
-    :raises: VMException
-    """
-    logger.info(
-        "checking if file: %s exists in vm: %s. expecting result: %s",
-        config.FILE_NAME, vm, positive
-    )
-    full_path_to_file = os.path.join(config.TEMP_PATH, config.FILE_NAME)
-    file_exists = vm_resource.fs.exists(full_path_to_file)
-    if file_exists and not positive:
-        raise exceptions.VMException("Error: file exists on vm: '%s'" % vm)
-    if not file_exists and positive:
-        raise exceptions.VMException("File doesn't exist on vm: %s" % vm)
 
 
 def wait_for_no_available_prestarted_vms(vmpool, prestarted_vms):

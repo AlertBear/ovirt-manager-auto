@@ -1,0 +1,143 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
+# Virt VMs: RHEVM3/wiki/Compute/3_5_VIRT_Edit_Running_VM
+
+import pytest
+import logging
+from art.unittest_lib import attr, VirtTest, testflow
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from rhevmtests.virt.reg_vms.fixtures import add_vm_fixture
+import config
+
+logger = logging.getLogger("update_vm_cases")
+
+
+@attr(tier=1)
+class UpdateRunningVm(VirtTest):
+    """
+    Update parameters of a running VM.
+    """
+    __test__ = True
+    vm_name = 'update_running_vm_test'
+    add_disk = False
+    affinity = config.ENUMS['vm_affinity_user_migratable']
+
+    def _check_vm_parameter(
+        self,
+        parameter_name,
+        actual_value,
+        expected_value
+    ):
+        """
+        Checking vm value parameters
+
+        :param parameter_name: parameter name
+        :type parameter_name: str
+        :param actual_value: actual value on vm
+        :type actual_value: str
+        :param expected_value: expected value
+        :type expected_value: str
+        :return: True expected value equals to actual value else False
+        :rtype: bool
+        """
+        logger.info(
+            "Checking vm value: %s, actual_value: %s, expected_value: %s",
+            parameter_name, actual_value, expected_value
+        )
+        self.assertEqual(
+            actual_value,
+            expected_value,
+            "parameter %s value is not as expected" % parameter_name
+        )
+
+    @polarion("RHEVM3-6295")
+    @pytest.mark.usefixtures(add_vm_fixture.__name__)
+    def test_update_fields_applied_immediately(self):
+        """
+        Expect the fields be applied immediately.
+        """
+        parameters = {
+            'description': 'new description',
+            'comment': 'update test',
+            'highly_available': 'true'
+        }
+        testflow.step("Update vm fields and check them without reboot")
+        self.assertTrue(
+            ll_vms.updateVm(positive=True, vm=self.vm_name, **parameters),
+            "Failed to update immediate fields"
+        )
+        vm_obj = ll_vms.get_vm_obj(self.vm_name, all_content=True)
+        logger.info("Checking vm after update")
+        self.assertTrue(
+            vm_obj.get_high_availability().get_enabled(),
+            "VM did not set to high availability"
+        )
+        self._check_vm_parameter(
+            'description',
+            vm_obj.get_description(),
+            parameters['description'],
+        )
+        self._check_vm_parameter(
+            'comment',
+            vm_obj.get_comment(),
+            parameters['comment'],
+        )
+
+    @polarion("RHEVM3-6295")
+    @pytest.mark.usefixtures(add_vm_fixture.__name__)
+    def test_update_field_applied_after_reboot_case_1(self):
+        """
+        Expect the fields be after next boot.
+        VM fields:
+        memory, memory_guaranteed, display_monitors,
+        placement_affinity, placement_host
+        """
+
+        parameters = {
+            'memory': config.TWO_GB,
+            'memory_guaranteed': config.TWO_GB,
+            'display_monitors': 2,
+            'placement_affinity': self.affinity,
+            'placement_host': config.HOSTS[0],
+        }
+        testflow.step("Update vm fields and check them after reboot")
+        host_id = ll_hosts.get_host_object(config.HOSTS[0]).get_id()
+        self.assertTrue(
+            ll_vms.updateVm(positive=True, vm=self.vm_name, compare=False,
+                            **parameters),
+            "Failed to update immediate fields"
+        )
+        logger.info("Finish update vm fields, reboot vm")
+        ll_vms.reboot_vms([self.vm_name])
+        vm_obj = ll_vms.get_vm_obj(self.vm_name, all_content=True)
+
+        logger.info("Checking vm fields after reboot")
+        self._check_vm_parameter(
+            'memory',
+            str(vm_obj.get_memory()),
+            str(parameters['memory']),
+        )
+        self._check_vm_parameter(
+            'memory_guaranteed',
+            str(vm_obj.get_memory_policy().get_guaranteed()),
+            str(parameters['memory_guaranteed'])
+        )
+        self._check_vm_parameter(
+            'placement_affinity',
+            vm_obj.get_placement_policy().get_affinity(),
+            parameters['placement_affinity']
+        )
+        self._check_vm_parameter(
+            'placement_host',
+            str(vm_obj.get_placement_policy().get_host().get_id()),
+            str(host_id)
+        )
+
+        self._check_vm_parameter(
+            'display_monitors',
+            str(vm_obj.get_display().get_monitors()),
+            str(parameters['display_monitors'])
+        )

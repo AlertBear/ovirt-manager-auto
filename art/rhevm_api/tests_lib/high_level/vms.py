@@ -12,11 +12,13 @@ import art.rhevm_api.tests_lib.low_level.vms as vms
 import art.rhevm_api.tests_lib.low_level.hosts as hosts
 import art.rhevm_api.tests_lib.low_level.disks as disks
 import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
+import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.rhevm_api.utils.test_utils import get_api, setPersistentNetwork
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 from art.rhevm_api.utils.test_utils import getStat
+
 
 from utilities.timeout import TimeoutingSampler
 
@@ -947,9 +949,15 @@ def stop_stateless_vm(vm):
     otherwise.
     :rtype: bool
     """
+    log_info, log_error = ll_general.get_log_msg(
+        action="stop", obj_type="VM", obj_name=vm,
+    )
+    logging.info(log_info)
     if not vms.stop_vms_safely([vm]):
+        logging.error(log_error)
         return False
     if not wait_for_restored_stateless_snapshot(vm):
+        logging.error(log_error)
         return False
     return True
 
