@@ -135,16 +135,7 @@ LUN_TARGET = get_list(PARAMETERS, 'lun_target')
 GLUSTER_ADDRESS = get_list(PARAMETERS, 'gluster_data_domain_address')
 GLUSTER_PATH = get_list(PARAMETERS, 'gluster_data_domain_path')
 VFS_TYPE = ENUMS['vfs_type_glusterfs']
-
-ADDRESS = get_list(PARAMETERS, 'data_domain_address')
-PATH = get_list(PARAMETERS, 'data_domain_path')
-LUNS = get_list(PARAMETERS, 'lun')
-LUN = LUNS
-LUN_ADDRESS = get_list(PARAMETERS, 'lun_address')
-LUN_TARGET = get_list(PARAMETERS, 'lun_target')
-GLUSTER_ADDRESS = get_list(PARAMETERS, 'gluster_data_domain_address')
-GLUSTER_PATH = get_list(PARAMETERS, 'gluster_data_domain_path')
-VFS_TYPE = ENUMS['vfs_type_glusterfs']
+SD_LIST = []
 
 if 'prepared_env' in ART_CONFIG:
     GOLDEN_ENV = ART_CONFIG['prepared_env']
@@ -231,7 +222,8 @@ if 'prepared_env' in ART_CONFIG:
         elif EPS[ep_to_add]['type'] == CINDER:
             provider_type = CINDER
         EXTERNAL_PROVIDERS[provider_type] = EPS[ep_to_add]['name']
-
+    GLANCE_DOMAIN = EXTERNAL_PROVIDERS[GLANCE]
+    SD_LIST.append(GLANCE_DOMAIN)
     GOLDEN_GLANCE_IMAGE = 'golden_env_mixed_virtio_0_Disk1'
 
     DATA_DOMAIN_ADDRESSES = get_list(PARAMETERS, 'data_domain_address')
@@ -303,13 +295,14 @@ else:
 
         PARAMETERS['vfs_type'] = VFS_TYPE
 
-GLANCE_DOMAIN = EXTERNAL_PROVIDERS[GLANCE]
 DEFAULT_ISO_DOMAIN = 'ISO_DOMAIN'
 ISO_DOMAIN_NAME_LIST = [ISO_DOMAIN_NAME] if ISO_DOMAIN_NAME else []
 
-SD_LIST = (
-    STORAGE_NAME + [EXPORT_DOMAIN_NAME] + ISO_DOMAIN_NAME_LIST +
-    [GLANCE_DOMAIN] + [DEFAULT_ISO_DOMAIN]
+SD_LIST += (
+    STORAGE_NAME +
+    [EXPORT_DOMAIN_NAME] +
+    ISO_DOMAIN_NAME_LIST +
+    [DEFAULT_ISO_DOMAIN]
 )
 
 UNUSED_DATA_DOMAIN_ADDRESSES = get_list(
@@ -401,8 +394,6 @@ DISK_LOCKED = ENUMS['disk_state_locked']
 MB = 1024 ** 2
 GB = 1024 ** 3
 DISK_SIZE = 5 * GB
-DISK_TYPE_SYSTEM = ENUMS['disk_type_system']
-DISK_INTERFACE = ENUMS['interface_virtio']
 
 # Storage Domain states     DISK_INTERFACE = ENUMS['interface_virtio']
 SD_ACTIVE = ENUMS['storage_domain_state_active']
