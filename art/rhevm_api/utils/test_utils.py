@@ -927,7 +927,7 @@ def get_running_tasks(vdc, vdc_pass, sp_id, db_name, db_user):
         * db_name - name of the rhevm database
         * db_user - name of the user of database
     """
-    query = "select task_id from " \
+    query = "select task_id, action_type, status, vdsm_task_id from " \
             "async_tasks where storage_pool_id = '%s'" % sp_id
     tasks = runSQLQueryOnSetup(vdc, vdc_pass, query, db_user, db_name)
     logger.debug("Query %s returned list: %s", query, tasks)
@@ -959,6 +959,24 @@ def wait_for_tasks(
         if not tasks:
             logger.info("All tasks are gone")
             return
+
+
+def wait_for_vds_tasks(vds_resource):
+    """
+    Wait for VDS tasks (vdsClient -s 0 getAllTasks)
+
+    Args:
+        vds_resource (VDS): VDS resource
+    """
+    sampler = TimeoutingSampler(
+        TASK_TIMEOUT, TASK_POLL, vds_resource.vds_client, "getAllTasks"
+    )
+    for tasks in sampler:
+        task = tasks["tasks"]
+        if not task:
+            logger.info("All VDSM tasks are gone")
+            return
+        logger.info(task)
 
 
 def getAllImages(vds, vds_username, vds_password, spool_id, domain_id,

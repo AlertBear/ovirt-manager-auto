@@ -28,7 +28,8 @@ from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 from art.core_api.apis_utils import getDS
 from art.test_handler import settings
 from art.rhevm_api.utils.test_utils import (
-    get_api, split, getStat, searchElement, searchForObj, stopVdsmd, startVdsmd
+    get_api, split, getStat, searchElement, searchForObj, stopVdsmd,
+    startVdsmd
 )
 from art.rhevm_api.tests_lib.low_level.networks import (
     get_cluster_network, create_properties
