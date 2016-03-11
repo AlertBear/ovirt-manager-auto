@@ -4,7 +4,6 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_3_Storage_Backup_API
 """
 import logging
-
 import helpers
 from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dc,
@@ -60,7 +59,7 @@ class BaseTestCase(TestCase):
             args = config.create_vm_args.copy()
             args['storageDomainName'] = self.storage_domain
             args['vmName'] = vm_name
-            args['clone_from_template'] = False
+            args['deep_copy'] = True
             if not storage_helpers.create_vm_or_clone(**args):
                 raise exceptions.VMException(
                     "Failed to create or clone VM '%s'" % vm_name

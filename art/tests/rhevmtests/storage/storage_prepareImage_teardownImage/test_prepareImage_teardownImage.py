@@ -81,6 +81,7 @@ CMD_ERROR_NO_SPACE_LEFT = "No space left on device"
 CMD_ERROR_VOLUME_DOES_NOT_EXIST = "Volume does not exist"
 ENUMS = config.ENUMS
 ISCSI = config.STORAGE_TYPE_ISCSI
+FCP = config.STORAGE_TYPE_FCP
 TIMEOUT_IMAGE_OPERATION = 120
 
 
@@ -399,8 +400,8 @@ class TestCase4581(BasicEnvironment):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
-    __test__ = (ISCSI in opts['storages'])
-    storages = set([ISCSI])
+    __test__ = (ISCSI in opts['storages'] or FCP in opts['storages'])
+    storages = set([ISCSI, FCP])
     polarion_test_case = '4581'
     disk_count = 2
 

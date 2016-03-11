@@ -778,7 +778,8 @@ class TestCase4564(IscsiNfsSD):
     * Create VM with 2 disks - on ISCSI domain and the other in NFS domain
     * Install OS and make file system on both disks
     """
-    __test__ = True
+    __test__ = ISCSI in opts['storages'] or NFS in opts['storages']
+    storages = set([ISCSI, NFS])
 
     polarion_test_case = '4564'
     vm_name = "vm_%s" % polarion_test_case

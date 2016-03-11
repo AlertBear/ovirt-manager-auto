@@ -261,36 +261,29 @@ class TestCase11586(TestCase):
     disk_size_before = 0
     disk_size_after = 0
 
-    @classmethod
-    def setup_class(cls):
-        cls.vm_name = '%s_%s_snap' % (config.VM_BASE_NAME, cls.storage)
-        cls.alias = "%s_Disk1" % cls.vm_name
+    def setUp(self):
+        self.vm_name = '%s_%s_snap' % (config.VM_BASE_NAME, self.storage)
         vm_description = '%s_%s_snap' % (
-            config.VM_BASE_NAME, cls.storage)
+            config.VM_BASE_NAME, self.storage)
         storage_domain = storagedomains.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, cls.storage)[0]
+            config.DATA_CENTER_NAME, self.storage)[0]
         vm_args = config.create_vm_args.copy()
-        vm_args['vmName'] = cls.vm_name
+        vm_args['vmName'] = self.vm_name
         vm_args['vmDescription'] = vm_description
         vm_args['storageDomainName'] = storage_domain
         vm_args['start'] = 'true'
         if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
-                "Creation of VM %s failed!" % cls.vm_name)
-        LOGGER.info("Waiting for vm %s state 'up'" % cls.vm_name)
-        if not vms.waitForVMState(cls.vm_name):
+                "Creation of VM %s failed" % self.vm_name)
+        LOGGER.info("Waiting for vm %s state 'up'" % self.vm_name)
+        if not vms.waitForVMState(self.vm_name):
             raise exceptions.VMException(
-                "Waiting for VM %s status 'up' failed" % cls.vm_name)
-        LOGGER.info("Getting IP of vm %s" % cls.vm_name)
-        status, vm_ip = vms.waitForIP(cls.vm_name)
-        if not status:
-            raise exceptions.VMException("Can't get IP of vm %s" % cls.vm_name)
-        cls.vms_ip_address = vm_ip['ip']
-        LOGGER.info("Stopping VM %s" % cls.vm_name)
-        vms.shutdownVm(True, cls.vm_name)
-        if not vms.waitForVMState(cls.vm_name, state=config.VM_DOWN):
-            vms.stopVm(True, cls.vm_name)
-        LOGGER.info("setup finished with success")
+                "Waiting for VM %s status 'up' failed" % self.vm_name)
+        LOGGER.info("Getting IP of vm %s" % self.vm_name)
+        self.vms_ip_address = storage_helpers.get_vm_ip(self.vm_name)
+        self.alias = vms.get_vm_bootable_disk(self.vm_name)
+
+        vms.stop_vms_safely([self.vm_name])
 
     def _make_snapshots(self):
         for snapshot in self.snapshots:
@@ -318,9 +311,10 @@ class TestCase11586(TestCase):
         """
         diskObj = disks.getVmDisk(self.vm_name, self.alias)
         self.disk_size_before = diskObj.get_actual_size()
-        LOGGER.info("Disk %s size - %s before snapshot creation",
-                    self.alias,
-                    self.disk_size_before)
+        LOGGER.info(
+            "Disk %s size - %s before snapshot creation",
+            self.alias, self.disk_size_before
+        )
 
         LOGGER.info("Make sure vm %s is up", self.vm_name)
         if vms.get_vm_state(self.vm_name) == config.VM_DOWN:
@@ -347,9 +341,11 @@ class TestCase11586(TestCase):
             self.disk_size_after - self.disk_size_before <= config.EXTENT_SIZE,
             "Failed to auto shrink qcow volumes on merge of block volumes")
 
-    @classmethod
-    def teardown_class(cls):
-        vms.removeVm(True, vm=cls.vm_name, stopVM='true')
+    def tearDown(self):
+        if not vms.safely_remove_vms([self.vm_name]):
+            LOGGER.error("Failed to power off and remove vm %s", self.vm_name)
+            TestCase.test_failed = True
+        TestCase.teardown_exception()
 
 
 @attr(tier=1)

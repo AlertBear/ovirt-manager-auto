@@ -158,7 +158,12 @@ def _prepareStorageDomainObject(positive, **kwargs):
         )
     elif storage_type == ENUMS['storage_type_fcp']:
         logical_unit = LogicalUnit(id=kwargs.pop('lun', None))
-        sd.set_storage(Storage(logical_unit=logical_unit))
+        sd.set_storage(
+            Storage(
+                type_=storage_type, logical_unit=[logical_unit],
+                override_luns=kwargs.pop('override_luns', None)
+            )
+        )
     elif (storage_type == ENUMS['storage_type_posixfs'] or
           storage_type == ENUMS['storage_type_gluster']):
         sd.set_storage(
@@ -169,7 +174,6 @@ def _prepareStorageDomainObject(positive, **kwargs):
                 mount_options=kwargs.pop('mount_options', None),
             )
         )
-
     return sd
 
 

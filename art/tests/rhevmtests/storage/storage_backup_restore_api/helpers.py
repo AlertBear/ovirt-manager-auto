@@ -16,7 +16,7 @@ COPY_DISK_TIMEOUT = 2000
 LOGGER = logging.getLogger(__name__)
 
 TRANSIENT_DIR_PATH = "/var/lib/vdsm/transient"
-DD_COMMAND = 'dd if=/dev/%s of=/dev/%s bs=1M oflag=direct'
+DD_COMMAND = 'dd if=/dev/%s of=/dev/%s bs=4096 conv=noerror,sync'
 
 
 def is_transient_directory_empty(host):

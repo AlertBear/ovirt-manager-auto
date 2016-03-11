@@ -337,9 +337,11 @@ UNUSED_LUNS = get_list(PARAMETERS, 'extra_lun')
 UNUSED_LUN_ADDRESSES = get_list(PARAMETERS, 'extra_lun_address')
 UNUSED_LUN_TARGETS = get_list(PARAMETERS, 'extra_lun_target')
 logger.info(
-    "Free iscsi shares: %s %s %s",
+    "Free iscsi LUNs: %s %s %s",
     UNUSED_LUNS, UNUSED_LUN_ADDRESSES, UNUSED_LUN_TARGETS
 )
+UNUSED_FC_LUNS = get_list(PARAMETERS, 'extra_fc_lun')
+logger.info("Free fibre channel LUNs: %s", UNUSED_FC_LUNS)
 
 LUN_PORT = 3260
 

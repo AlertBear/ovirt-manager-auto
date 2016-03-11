@@ -210,14 +210,10 @@ class TestCase11576Shared(BaseCaseIsoDomains):
     # The Posix ISO domain fails to Detach and can only be removed by using
     # the Destroy option (which the code doesn't do)
     # Gluster doesn't support being used as an ISO domain
-    __test__ = (
-        config.STORAGE_TYPE_NFS in opts['storages']
-        or config.STORAGE_TYPE_ISCSI in opts['storages']
-    )
-    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
+    __test__ = config.STORAGE_TYPE_NFS in opts['storages']
+    storages = set([config.STORAGE_TYPE_NFS])
     local = False
     vm_name = "TestCase11576Shared"
-    storagedomains = [config.ISCSI_DOMAIN]
     # Bugzilla history
     # 1225356: CLI: update cdrom is not ejecting the ISO image when the file-id
     # option is not provided

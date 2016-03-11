@@ -7,22 +7,19 @@ import logging
 
 import config
 import helpers
+from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     jobs as ll_jobs,
     storagedomains as ll_sd,
     vms as ll_vms,
 )
-from art.test_handler import exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, StorageTest as BaseTestCase
 from rhevmtests.storage import helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
-
-VM1_NAME = config.VM_NAME[0]
-VM2_NAME = config.VM_NAME[1]
 
 VM_INITIAL_DESCRIPTION = "disk_description_initial_state"
 VM_POWERED_ON_DESCRIPTION = "vm_powered_on_disk_description"
@@ -32,52 +29,10 @@ ALIAS = "alias"
 DESCRIPTION = "description"
 GLUSTERFS = config.STORAGE_TYPE_GLUSTER
 ISCSI = config.STORAGE_TYPE_ISCSI
+FCP = config.STORAGE_TYPE_FCP
 NFS = config.STORAGE_TYPE_NFS
 VMS_WITH_VIRTIO_SCSI_FALSE = list()
 DISK_STATUS_OK_TIMEOUT = 900
-
-
-def setup_module():
-    """
-    Create one VM for use with all tests, create a list of VMs with
-    VirtIO-SCSI disabled (and enable VirtIO-SCSI on these)
-    """
-    for vm_name in [VM1_NAME, VM2_NAME]:
-        if not ll_vms.does_vm_exist(vm_name):
-            raise exceptions.VMException(
-                "VM '%s' does not exist, aborting test" % vm_name
-            )
-
-    for vm_name in [VM1_NAME, VM2_NAME]:
-        logger.info(
-            "Return VM object for current VM which will be checked for "
-            "VirtIO-SCSI Enabled configuration"
-        )
-        vm = ll_vms.get_vm_obj(vm_name, all_content=True)
-        is_virtio_scsi_enabled = vm.get_virtio_scsi().get_enabled()
-        if not is_virtio_scsi_enabled:
-            # Update global list, appending VM that had its VirtIO-SCSI
-            # Enabled set to False, this will be reverted in the teardown
-            VMS_WITH_VIRTIO_SCSI_FALSE.append(vm_name)
-            ll_vms.updateVm(True, vm_name, virtio_scsi=True)
-
-
-def teardown_module():
-    """
-    Stop VM used by all tests, restore VirtIO-SCSI Enabled option where this
-    was updated
-    """
-    ll_vms.waitForVmsDisks(VM1_NAME)
-    logger.info("Stop VM '%s'", VM1_NAME)
-    ll_vms.stop_vms_safely([VM1_NAME])
-    ll_vms.waitForVMState(VM1_NAME, config.VM_DOWN)
-
-    logger.info(
-        "Restore configuration to any VM that had its VirtIO-SCSI Enabled "
-        "set to False before the start of the test run"
-    )
-    for vm_name in VMS_WITH_VIRTIO_SCSI_FALSE:
-        ll_vms.updateVm(True, vm_name, virtio_scsi=False)
 
 
 class BasicEnvironment(BaseTestCase):
@@ -86,6 +41,8 @@ class BasicEnvironment(BaseTestCase):
     """
     __test__ = False
     polarion_test_case = None
+    vm1_name = None
+    vm2_name = None
 
     def setup_with_disks(
             self, disk_interfaces=(config.VIRTIO, config.VIRTIO_SCSI)
@@ -98,6 +55,11 @@ class BasicEnvironment(BaseTestCase):
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )[0]
+        vm_names = hl_vms.get_vms_for_storage_type(
+            config.DATA_CENTER_NAME, config.CLUSTER_NAME, self.storage
+        )
+        self.vm1_name = vm_names[0]
+        self.vm2_name = vm_names[1]
         if config.PPC_ARCH:
             disk_interfaces += (config.INTERFACE_SPAPR_VSCSI,)
         self.disk_aliases = (
@@ -141,9 +103,9 @@ class BaseClassEditDescription(BasicEnvironment):
         for disk_alias in self.disk_aliases:
             disk_object = ll_disks.get_disk_obj(disk_alias)
             logger.info("Attaching disk '%s' to VM", disk_alias)
-            ll_disks.attachDisk(True, disk_alias, VM1_NAME)
+            ll_disks.attachDisk(True, disk_alias, self.vm1_name)
             assert helpers.verify_vm_disk_description(
-                VM1_NAME, disk_alias, disk_object.get_description()
+                self.vm1_name, disk_alias, disk_object.get_description()
             )
 
             self.original_descriptions.update(
@@ -155,37 +117,39 @@ class BaseClassEditDescription(BasicEnvironment):
             assert ll_disks.updateDisk(
                 True, alias=disk_alias,
                 description=self.updated_descriptions[disk_alias],
-                vmName=VM1_NAME
+                vmName=self.vm1_name
             )
             assert helpers.verify_vm_disk_description(
-                VM1_NAME, disk_alias, self.updated_descriptions[disk_alias]
+                self.vm1_name, disk_alias,
+                self.updated_descriptions[disk_alias]
             )
         logger.info("Starting VM")
-        assert ll_vms.startVm(True, VM1_NAME, config.VM_UP)
+        assert ll_vms.startVm(True, self.vm1_name, config.VM_UP)
         for disk_alias in self.disk_aliases:
             assert helpers.verify_vm_disk_description(
-                VM1_NAME, disk_alias, self.updated_descriptions[disk_alias]
+                self.vm1_name, disk_alias,
+                self.updated_descriptions[disk_alias]
             )
             assert ll_disks.updateDisk(
                 True, alias=disk_alias, description=VM_POWERED_ON_DESCRIPTION,
-                vmName=VM1_NAME
+                vmName=self.vm1_name
             )
             assert helpers.verify_vm_disk_description(
-                VM1_NAME, disk_alias, VM_POWERED_ON_DESCRIPTION
+                self.vm1_name, disk_alias, VM_POWERED_ON_DESCRIPTION
             )
         logger.info("Stopping VM safely")
-        ll_vms.stop_vms_safely([VM1_NAME])
-        ll_vms.waitForVMState(VM1_NAME, config.VM_DOWN)
+        ll_vms.stop_vms_safely([self.vm1_name])
+        ll_vms.waitForVMState(self.vm1_name, config.VM_DOWN)
         for disk_alias in self.disk_aliases:
             assert helpers.verify_vm_disk_description(
-                VM1_NAME, disk_alias, VM_POWERED_ON_DESCRIPTION
+                self.vm1_name, disk_alias, VM_POWERED_ON_DESCRIPTION
             )
             assert ll_disks.updateDisk(
                 True, alias=disk_alias,
                 description=self.original_descriptions.get(disk_alias),
-                vmName=VM1_NAME
+                vmName=self.vm1_name
             )
-            ll_disks.detachDisk(True, disk_alias, VM1_NAME)
+            ll_disks.detachDisk(True, disk_alias, self.vm1_name)
 
 
 @attr(tier=1)
@@ -195,8 +159,8 @@ class TestCase11500(BaseClassEditDescription):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Allow_Online_Vdisk_Editing
     """
-    __test__ = ISCSI in opts['storages']
-    storages = set([ISCSI])
+    __test__ = ISCSI in opts['storages'] or FCP in opts['storages']
+    storages = set([ISCSI, FCP])
     polarion_test_case = '11500'
     # Bugzilla history
     # 1211314: CLI auto complete option description is missing for add disk
@@ -261,8 +225,8 @@ class TestCase11503(BasicEnvironment):
     def tearDown(self):
         """ Remove disks and power off VM for this test case """
         super(TestCase11503, self).tearDown()
-        ll_vms.stop_vms_safely([VM2_NAME])
-        ll_vms.waitForVMState(VM2_NAME, config.VM_DOWN)
+        ll_vms.stop_vms_safely([self.vm2_name])
+        ll_vms.waitForVMState(self.vm2_name, config.VM_DOWN)
 
     @polarion("RHEVM3-11503")
     def test_verify_disk_description_edit_works_across_hot_plug(self):
@@ -281,50 +245,50 @@ class TestCase11503(BasicEnvironment):
                 disks_to_hotplug[disk_alias] = disk_object
 
         for disk_alias, disk_object in disks_to_hotplug.iteritems():
-            ll_disks.attachDisk(True, disk_alias, VM1_NAME)
+            ll_disks.attachDisk(True, disk_alias, self.vm1_name)
             assert helpers.verify_vm_disk_description(
-                VM1_NAME, disk_alias, disk_object.get_description()
+                self.vm1_name, disk_alias, disk_object.get_description()
             )
             self.original_descriptions.update(
                 {disk_alias: disk_object.get_description()}
             )
             assert ll_disks.updateDisk(
                 True, alias=disk_alias, description=VM_INITIAL_DESCRIPTION,
-                vmName=VM1_NAME
+                vmName=self.vm1_name
             )
 
-        ll_vms.startVm(True, VM1_NAME)
-        ll_vms.startVm(True, VM2_NAME)
-        assert ll_vms.waitForVmsStates(True, [VM1_NAME, VM2_NAME])
+        ll_vms.startVm(True, self.vm1_name)
+        ll_vms.startVm(True, self.vm2_name)
+        assert ll_vms.waitForVmsStates(True, [self.vm1_name, self.vm2_name])
 
         for disk_alias in disks_to_hotplug:
             assert helpers.verify_vm_disk_description(
-                VM1_NAME, disk_alias, VM_INITIAL_DESCRIPTION
+                self.vm1_name, disk_alias, VM_INITIAL_DESCRIPTION
             )
             assert ll_disks.updateDisk(
                 True, alias=disk_alias, description=VM_POWERED_ON_DESCRIPTION,
-                vmName=VM1_NAME
+                vmName=self.vm1_name
             )
             assert helpers.verify_vm_disk_description(
-                VM1_NAME, disk_alias, VM_POWERED_ON_DESCRIPTION
+                self.vm1_name, disk_alias, VM_POWERED_ON_DESCRIPTION
             )
-            ll_disks.detachDisk(True, disk_alias, VM1_NAME)
-            ll_disks.attachDisk(True, disk_alias, VM2_NAME)
+            ll_disks.detachDisk(True, disk_alias, self.vm1_name)
+            ll_disks.attachDisk(True, disk_alias, self.vm2_name)
             assert helpers.verify_vm_disk_description(
-                VM2_NAME, disk_alias, VM_POWERED_ON_DESCRIPTION
+                self.vm2_name, disk_alias, VM_POWERED_ON_DESCRIPTION
             )
 
         # Detach disk that was attached into the 2nd VM from the 1st
-        ll_vms.stop_vms_safely([VM1_NAME, VM2_NAME])
-        ll_vms.waitForVMState(VM1_NAME, config.VM_DOWN)
-        ll_vms.waitForVMState(VM2_NAME, config.VM_DOWN)
+        ll_vms.stop_vms_safely([self.vm1_name, self.vm2_name])
+        ll_vms.waitForVMState(self.vm1_name, config.VM_DOWN)
+        ll_vms.waitForVMState(self.vm2_name, config.VM_DOWN)
         for disk_alias in disks_to_hotplug:
             assert ll_disks.updateDisk(
                 True, alias=disk_alias,
                 description=self.original_descriptions.get(disk_alias),
-                vmName=VM2_NAME
+                vmName=self.vm2_name
             )
-            ll_disks.detachDisk(True, disk_alias, VM2_NAME)
+            ll_disks.detachDisk(True, disk_alias, self.vm2_name)
 
 
 @attr(tier=2)

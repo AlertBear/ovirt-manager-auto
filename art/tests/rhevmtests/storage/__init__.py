@@ -29,6 +29,11 @@ def setup_package():
         config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES,
         config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS,
     )
+    assign_storgage_params(
+        config.FC_DOMAINS_KWARGS,
+        ('fc_lun',),
+        config.UNUSED_FC_LUNS,
+    )
 
 
 def teardown_package():

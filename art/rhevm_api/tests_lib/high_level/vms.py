@@ -1,7 +1,6 @@
 """
 High-level functions above virtual machines
 """
-
 from art.rhevm_api import resources
 import logging
 import shlex
@@ -953,3 +952,29 @@ def stop_stateless_vm(vm):
     if not wait_for_restored_stateless_snapshot(vm):
         return False
     return True
+
+
+def get_vms_for_storage_type(datacenter_name, cluster_name, storage_type):
+    """
+    Returns a list of vm names with disks on storage domains of storage_type
+
+    IMPORTANT: This function will check only the first vm's disk
+
+    :param datacenter_name: Name of datacenter
+    :type datacenter_name: str
+    :param cluster_name: Name of cluster
+    :type cluster_name: str
+    :param storage_type: Type of storage (nfs, iscsi, glusterfs, fcp, ...)
+    :type storage_type: str
+    :return: List of vm names
+    :rtype: list
+    """
+    vms_in_cluster = vms.get_vms_from_cluster(cluster_name)
+    domains = storagedomains.getStorageDomainNamesForType(
+        datacenter_name, storage_type
+    )
+    return [
+        vm for vm in vms_in_cluster if (
+            vms.get_vms_disks_storage_domain_name(vm) in domains
+        )
+    ]

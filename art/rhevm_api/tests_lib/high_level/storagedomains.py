@@ -397,28 +397,35 @@ def addPosixfsDataDomain(
 
 
 @is_action()
-def addFCPDataDomain(host, storage, data_center, lun):
+def addFCPDataDomain(host, storage, data_center, lun, override_luns=None):
     """
-    positive flow for adding FCP storage including all the necessary steps
-    Author: kjachim
-    Parameters:
-        * host - name of host
-        * storage - name of storage domain that will be created in rhevm
-        * data_center - name of DC which will contain this SD
-        * lun - lun
-    return True if succeeded, False otherwise
+    Positive flow for adding FCP storage including all the necessary steps
+
+    :param host: Name of host
+    :type host: str
+    :param storage: Name of storage domain that will be created in rhevm
+    :type host: str
+    :param data_center: Name of DC which will contain this storage domain
+    :type host: str
+    :param lun: LUN ID
+    :type host: str
+    :param override_luns: True if the block device should be formatted
+    (when not empty), False if block device should be used as is
+    :type override_luns: bool
+    :return: True if succeeded, False otherwise
+    :rtype: bool
     """
     if not ll_sd.addStorageDomain(
-            True, host=host, name=storage, type=ENUMS['storage_dom_type_data'],
-            storage_type=ENUMS['storage_type_fcp'], lun=lun):
+        True, host=host, name=storage, type=ENUMS['storage_dom_type_data'],
+        storage_type=ENUMS['storage_type_fcp'], lun=lun,
+        override_luns=override_luns
+    ):
         logger.error('Failed to add fcp storage %s to %s' % (lun, storage))
         return False
 
-    if not ll_sd.activateStorageDomain(True, data_center, storage):
-        logger.error("Cannot activate storage domain %s" % storage)
-        return False
+    status = ll_sd.attachStorageDomain(True, data_center, storage, True)
 
-    return True
+    return status and ll_sd.activateStorageDomain(True, data_center, storage)
 
 
 def extend_storage_domain(storage_domain, type_, host, **kwargs):

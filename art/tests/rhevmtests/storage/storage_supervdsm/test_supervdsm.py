@@ -116,6 +116,7 @@ class TestCase6269(SuperVDSMTestBase):
     Storage/3_3_Storage_SuperVdsm
     """
     __test__ = True
+    storages = config.NOT_APPLICABLE
     polarion_test_case = '6269'
 
     @polarion("RHEVM3-6269")

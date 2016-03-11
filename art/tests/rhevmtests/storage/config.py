@@ -204,6 +204,24 @@ GLUSTER_DOMAINS_KWARGS = [
     },
 ]
 
+FC_DOMAINS_KWARGS = [
+    {
+        'type': ENUMS['storage_dom_type_data'],
+        'storage_type': ENUMS['storage_type_fcp'],
+        'fc_lun': None,  # Filled in setup_package
+    },
+    {
+        'type': ENUMS['storage_dom_type_data'],
+        'storage_type': ENUMS['storage_type_fcp'],
+        'fc_lun': None,  # Filled in setup_package
+    },
+    {
+        'type': ENUMS['storage_dom_type_data'],
+        'storage_type': ENUMS['storage_type_fcp'],
+        'fc_lun': None,  # Filled in setup_package
+    },
+]
+
 # addStorageDomain(True, name='my_name', **STORAGE_DOMAINS_KWARGS['nfs'][0])
 STORAGE_DOMAINS_KWARGS = {
     STORAGE_TYPE_NFS: NFS_DOMAINS_KWARGS,

@@ -29,6 +29,7 @@ REGEX_TEMPLATE = 'dd oflag=direct if=/dev/zero of=.*/%s'
 TASK_TIMEOUT = 120
 VM_NAMES = dict()
 ISCSI = config.STORAGE_TYPE_ISCSI
+FCP = config.STORAGE_TYPE_FCP
 
 
 def setup_module():
@@ -216,8 +217,8 @@ class TestCase5113(CommonUsage):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_6_Storage_Wipe_After_Delete
     """
-    __test__ = ISCSI in opts['storages']
-    storages = set([ISCSI])
+    __test__ = (ISCSI in opts['storages'] or FCP in opts['storages'])
+    storages = set([ISCSI, FCP])
     polarion_test_case = '5113'
 
     @polarion("RHEVM3-5113")

@@ -31,6 +31,8 @@ import rhevmtests.storage.helpers as storage_helpers
 logger = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
+ISCSI = config.STORAGE_TYPE_ISCSI
+FCP = config.STORAGE_TYPE_FCP
 NFS = config.STORAGE_TYPE_NFS
 GULSTERFS = config.STORAGE_TYPE_GLUSTER
 POSIX = config.STORAGE_TYPE_POSIX
@@ -53,12 +55,11 @@ def setup_module():
             "Could not find master storage domain for dc %s" %
             config.DATA_CENTER_NAME
         )
-
     for storage_type in config.STORAGE_SELECTOR:
         VM_NAMES[storage_type] = []
         spm = ll_hosts.getSPMHost(config.HOSTS)
         sd_name = config.TESTNAME
-        if storage_type in config.BLOCK_TYPES:
+        if storage_type == ISCSI:
             if not len(config.UNUSED_LUNS) >= 1:
                 raise exceptions.StorageDomainException(
                     "There are no unused LUNs, aborting test"
@@ -76,6 +77,23 @@ def setup_module():
             if not status_attach_and_activate:
                 raise exceptions.StorageDomainException(
                     "Creating iSCSI domain '%s' failed" % sd_name
+                )
+        elif storage_type == FCP:
+            if not len(config.UNUSED_FC_LUNS) >= 1:
+                raise exceptions.StorageDomainException(
+                    "There are no unused FC LUNs, aborting test"
+                )
+            sd_name = "{0}_{1}".format(config.TESTNAME, "FCP")
+            status_attach_and_activate = hl_sd.addFCPDataDomain(
+                spm,
+                sd_name,
+                config.DATA_CENTER_NAME,
+                config.UNUSED_FC_LUNS[0],
+                override_luns=True
+            )
+            if not status_attach_and_activate:
+                raise exceptions.StorageDomainException(
+                    "Creating FCP domain '%s' failed" % sd_name
                 )
         elif storage_type == NFS:
             sd_name = "{0}_{1}".format(config.TESTNAME, "NFS")

@@ -34,6 +34,7 @@ DISK_RESIZE_TIMEOUT = 1200
 WATCH_TIMOUT = 480
 NFS = config.STORAGE_TYPE_NFS
 ISCSI = config.STORAGE_TYPE_ISCSI
+FCP = config.STORAGE_TYPE_FCP
 
 
 class BaseClass(BaseTestCase):
@@ -423,8 +424,8 @@ class TestCase5062(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = ISCSI in opts['storages']
-    storages = set([ISCSI])
+    __test__ = (ISCSI in opts['storages'] or FCP in opts['storages'])
+    storages = set([ISCSI, FCP])
     polarion_test_case = '5062'
     test_disk_args = {
         'sparse': False,
@@ -449,8 +450,8 @@ class TestCase5063(BasicResize):
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_3_Storage_Virtual_Disk_Resize
     """
-    __test__ = ISCSI in opts['storages']
-    storages = set([ISCSI])
+    __test__ = (ISCSI in opts['storages'] or FCP in opts['storages'])
+    storages = set([ISCSI, FCP])
     polarion_test_case = '5063'
     test_disk_args = {
         'sparse': True,

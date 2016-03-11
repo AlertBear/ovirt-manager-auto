@@ -7,6 +7,7 @@ import config
 import logging
 import shlex
 
+from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import disks, jobs, storagedomains, vms
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
@@ -43,44 +44,6 @@ disk_kwargs = {
 }
 
 
-def setup_module():
-    """
-    Ensures at least 2 VMs exist in the default cluster. Queries the
-    VirtIO-SCSI Enabled state for each VM and saves the VM names for those
-    VMs that have VirtIO-SCSI disabled (this needs to be enabled in order to
-    attach disks with this format)
-    """
-    global VMS_WITH_VIRTIO_SCSI_FALSE
-    VMS_WITH_VIRTIO_SCSI_FALSE = list()
-    vms_in_cluster = vms.get_vms_from_cluster(config.CLUSTER_NAME)
-    if not len(vms_in_cluster) > 1:
-        raise exceptions.ClusterException(
-            "There are less than 2 VMs available in cluster '%s'" %
-            config.CLUSTER_NAME
-        )
-    for vm_name in vms_in_cluster:
-        logger.info("Return VM object for current VM which will be checked "
-                    "for VirtIO-SCSI Enabled configuration")
-        vm = vms.get_vm_obj(vm_name, all_content=True)
-        is_virtio_scsi_enabled = vm.get_virtio_scsi().get_enabled()
-        if not is_virtio_scsi_enabled:
-            # Update global list, appending VM that had its VirtIO-SCSI
-            # Enabled set to False, this will be reverted in the teardown
-            VMS_WITH_VIRTIO_SCSI_FALSE.append(vm_name)
-            vms.updateVm(True, vm_name, virtio_scsi=True)
-
-
-def teardown_module():
-    """
-    Restores the VirtIO-SCSI Enabled to False for any VMs updated as part of
-    the setup_module
-    """
-    logger.info("Restore configuration to any VM that had its VirtIO-SCSI "
-                "Enabled set to False before the start of the test run")
-    for vm_name in VMS_WITH_VIRTIO_SCSI_FALSE:
-        vms.updateVm(True, vm_name, virtio_scsi=False)
-
-
 class BasicEnvironment(BaseTestCase):
     """
     This class implements setup and teardown for the permutation of disks
@@ -104,9 +67,11 @@ class BasicEnvironment(BaseTestCase):
         )[0]
 
         self.disk_aliases = list()
-
-        self.vm_name = config.VM_NAME[0]
-        self.vm_name_2 = config.VM_NAME[1]
+        vm_names = hl_vms.get_vms_for_storage_type(
+            config.DATA_CENTER_NAME, config.CLUSTER_NAME, self.storage
+        )
+        self.vm_name = vm_names[0]
+        self.vm_name_2 = vm_names[1]
 
         # Create disk permutations for the relevant cases
         if self.create_disk_permutations:
