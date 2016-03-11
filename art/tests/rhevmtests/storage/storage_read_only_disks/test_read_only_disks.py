@@ -686,7 +686,6 @@ class TestCase4915(DefaultEnvironment):
 
 
 @attr(tier=2)
-@bz({'1309788': {}})
 class TestCase4917(DefaultEnvironment):
     """
     Import more than once VM with read-only disk, and verify that it's
@@ -703,6 +702,7 @@ class TestCase4917(DefaultEnvironment):
     # Same issue happens after the vm is imported
 
     @polarion("RHEVM3-4917")
+    @bz({'1309788': {}})
     def test_import_more_than_once_VM_with_RO_disk(self):
         """
         - VM with OS
