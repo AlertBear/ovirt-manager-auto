@@ -567,7 +567,7 @@ class TestCase11674(BaseTestCase):
         logger.info("Adding disk %s to vm %s", self.disk_name, self.vm_name)
         if not ll_vms.addDisk(
             True, vm=self.vm_name, size=3 * config.GB, wait=True,
-            storagedomain=self.storage_domain[0], type=config.DISK_TYPE_DATA,
+            storagedomain=self.storage_domains[0], type=config.DISK_TYPE_DATA,
             interface=config.VIRTIO, format=config.COW_DISK,
             sparse='true', alias=self.disk_name
         ):
@@ -638,7 +638,7 @@ class TestCase11684(BaseTestCase):
         if not ll_vms.addVm(
             True, name=self.vm_thin, description='',
             cluster=config.CLUSTER_NAME,
-            storagedomain=self.storage_domain[0], template=self.template_name
+            storagedomain=self.storage_domains[0], template=self.template_name
         ):
             raise exceptions.VMException(
                 "Failed to create new vm %s from template %s as thin copy" %
@@ -646,7 +646,7 @@ class TestCase11684(BaseTestCase):
             )
         if not ll_vms.addVm(
             True, name=self.vm_clone, description='',
-            cluster=config.CLUSTER_NAME, storagedomain=self.storage_domain[0],
+            cluster=config.CLUSTER_NAME, storagedomain=self.storage_domains[0],
             template=self.template_name, disk_clone='True'
         ):
             raise exceptions.VMException(
