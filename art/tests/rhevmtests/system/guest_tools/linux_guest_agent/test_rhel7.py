@@ -10,7 +10,7 @@ from rhevmtests.system.guest_tools.linux_guest_agent import common
 
 from art.rhevm_api.tests_lib.low_level import vms
 
-DISK_NAME = 'rhel7.1_x64_Disk1'
+DISK_NAME = 'rhel7_x64_Disk1'
 
 
 def setup_module():

@@ -34,7 +34,7 @@ TEST_IMAGES = {
         'id': None,
         'ip': None,
     },
-    'rhel7.1_x64_Disk1': {
+    'rhel7_x64_Disk1': {
         'image': None,
         'machine': None,
         'id': None,
