@@ -813,3 +813,32 @@ def get_disk_ids(disk_names):
     :rtype: list
     """
     return [get_disk_obj(disk_name).get_id() for disk_name in disk_names]
+
+
+def export_disk_to_glance(
+        positive, disk, target_domain, async=False, attr='id'
+):
+    """
+    Export a disk to glance repository
+
+    :param positive: Specifies whether the export image call should succeed
+    :type positive: bool
+    :param disk: Disk identifier according to attr parameter (id, name)
+    :type disk: str
+    :param target_domain: Name of the domain where to export the image to
+    :type target_domain: str
+    :param async: True if operation should be asynchronous
+    :type async: bool
+    :param attr: The key to use for finding disk object ('id', 'name')
+    :type attr: str
+    :return: Status of the operation's result dependent on positive value
+    :rtype: bool
+    """
+    storage_domain = STORAGE_DOMAIN_API.find(target_domain)
+    disk = DISKS_API.find(disk, attribute=attr)
+    if not DISKS_API.syncAction(
+        disk, 'export', storage_domain=storage_domain, positive=positive,
+        async=async
+    ):
+        return False
+    return True

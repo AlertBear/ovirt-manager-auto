@@ -368,9 +368,10 @@ def create_vm_or_clone(
         # Don't copy from glance for PPC_ARCH
         elif not config.PPC_ARCH and not clone_from_template and (
             config.GLANCE_DOMAIN in storage_domains and (
-                config.GOLDEN_GLANCE_IMAGE in (
+                config.GOLDEN_GLANCE_IMAGE in ([
+                    image.get_name() for image in
                     ll_sd.get_storage_domain_images(config.GLANCE_DOMAIN)
-                )
+                ])
             )
         ):
             kwargs['cluster'] = cluster
@@ -965,7 +966,7 @@ def is_dir_empty(host_name, dir_path=None, excluded_files=[]):
     :param excluded_files: List of files to ignore
     :type excluded_files: list
     :return: True if directory is empty, False otherwise
-    :rtype:bool
+    :rtype: bool
     """
     if dir_path is None:
         logger.error(

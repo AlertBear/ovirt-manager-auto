@@ -4,21 +4,22 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_4_Storage_Import_Template_Entities
 """
 import logging
-from art.rhevm_api.tests_lib.low_level import disks
-from art.rhevm_api.tests_lib.low_level import storagedomains
-from art.rhevm_api.tests_lib.low_level import templates
-from art.rhevm_api.tests_lib.low_level import vms as hi_vms
-from art.rhevm_api.tests_lib.high_level import vms
-import art.test_handler.exceptions as errors
-from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
+from art.rhevm_api.tests_lib.high_level import (
+    vms as hl_vms
+)
+from art.rhevm_api.tests_lib.low_level import (
+    disks as ll_disks,
+    jobs as ll_jobs,
+    storagedomains as ll_sd,
+    templates as ll_templates,
+    vms as ll_vms
+)
+from art.test_handler import exceptions as errors
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import attr
-from art.unittest_lib import StorageTest as BaseTestCase
-from rhevmtests.storage.helpers import perform_dd_to_disk
-from rhevmtests.storage.storage_glance_full_sanity import config
+from art.unittest_lib import attr, StorageTest as BaseTestCase
+from rhevmtests.storage import config, helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
-ENUMS = config.ENUMS
 POLL_PERIOD = 10
 
 # Clone a vm from a template with the correct parameters
@@ -52,18 +53,18 @@ class BasicEnvironment(BaseTestCase):
         # Disable glance tests for PPC architecture
         if config.PPC_ARCH:
             raise errors.SkipTest("Glance is not supported on PPC")
-        self.storage_domains = storagedomains.getStorageDomainNamesForType(
+        self.storage_domains = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )
         self.vms_to_remove = list()
         self.templates_to_remove = list()
         self.storage_domain = self.storage_domains[0]
-        self.new_disk_alias = config.DISK_ALIAS % (
-            self.storage, self.test_case
+        self.new_disk_alias = self.create_unique_object_name(
+            config.OBJECT_TYPE_DISK
         )
-        self.new_template_name = config.TEMPLATE_NAME % (
-            self.storage, self.test_case
-        )
+        self.new_template_name = self.create_unique_object_name(
+            config.OBJECT_TYPE_TEMPLATE
+        )[0:40]
         self.clone_vm_args = args_for_clone.copy()
 
     def tearDown(self):
@@ -75,7 +76,7 @@ class BasicEnvironment(BaseTestCase):
         self.teardown_exception()
 
     def teardown_remove_vms(self):
-        if not hi_vms.safely_remove_vms(self.vms_to_remove):
+        if not ll_vms.safely_remove_vms(self.vms_to_remove):
             self.test_failed = True
             logger.error(
                 "Failed to remove vms %s for test", self.vms_to_remove
@@ -83,16 +84,16 @@ class BasicEnvironment(BaseTestCase):
 
     def teardown_remove_templates(self):
         for template in self.templates_to_remove:
-            if templates.validateTemplate(True, template):
+            if ll_templates.validateTemplate(True, template):
                 logger.info("Removing template %s", template)
-                if not templates.removeTemplate(True, template):
+                if not ll_templates.removeTemplate(True, template):
                     self.test_failed = True
                     logger.error(
                         "Failed to remove template %s", template
                     )
 
     def add_nic_to_vm(self, vm_name):
-        if not hi_vms.addNic(
+        if not ll_vms.addNic(
                 True, vm=vm_name, name=config.NIC_NAME[0],
                 network=config.MGMT_BRIDGE, vnic_profile=config.MGMT_BRIDGE,
                 plugged='true', linked='true'
@@ -106,7 +107,7 @@ class BasicEnvironment(BaseTestCase):
         Choose the correct image from the glance repository based on the
         allocation policy
         """
-        storage_domains = storagedomains.get_storagedomain_names()
+        storage_domains = ll_sd.get_storagedomain_names()
         if config.GLANCE_DOMAIN in storage_domains:
             self.glance_image = config.GLANCE_IMAGE_COW
             if not sparse:
@@ -114,7 +115,7 @@ class BasicEnvironment(BaseTestCase):
 
     def basic_flow_import_image_as_disk(self, disk_alias, sparse, wait=True):
         self.set_glance_image(sparse)
-        if not storagedomains.import_glance_image(
+        if not ll_sd.import_glance_image(
             config.GLANCE_DOMAIN, self.glance_image,
             self.storage_domain, config.CLUSTER_NAME,
             new_disk_alias=disk_alias, async=(not wait)
@@ -123,7 +124,9 @@ class BasicEnvironment(BaseTestCase):
                 "Importing glance image from repository %s failed"
                 % config.GLANCE_DOMAIN
             )
-        wait_for_jobs([ENUMS['job_import_repo_image']], sleep=POLL_PERIOD)
+        ll_jobs.wait_for_jobs(
+            [config.JOB_IMPORT_IMAGE], sleep=POLL_PERIOD
+        )
 
     def basic_flow_import_image_as_template(
             self, template_name, sparse, storage_domain,
@@ -136,7 +139,7 @@ class BasicEnvironment(BaseTestCase):
         preallocated
         """
         self.set_glance_image(sparse)
-        if not storagedomains.import_glance_image(
+        if not ll_sd.import_glance_image(
             config.GLANCE_DOMAIN, self.glance_image,
             storage_domain, config.CLUSTER_NAME,
             new_disk_alias=new_disk_alias,
@@ -147,7 +150,9 @@ class BasicEnvironment(BaseTestCase):
                 "Importing glance image from repository %s failed"
                 % config.GLANCE_DOMAIN
             )
-        wait_for_jobs([ENUMS['job_import_repo_image']], sleep=POLL_PERIOD)
+        ll_jobs.wait_for_jobs(
+            [config.JOB_IMPORT_IMAGE], sleep=POLL_PERIOD
+        )
         self.templates_to_remove.append(template_name)
 
     def basic_flow_clone_vm_from_template(
@@ -160,15 +165,20 @@ class BasicEnvironment(BaseTestCase):
         self.clone_vm_args['template'] = template_name
         self.clone_vm_args['wait'] = wait
 
-        if not hi_vms.cloneVmFromTemplate(**self.clone_vm_args):
+        if not ll_vms.cloneVmFromTemplate(**self.clone_vm_args):
             raise errors.VMException(
                 'Unable to create vm %s for test' % self.vm_name
             )
-        wait_for_jobs([ENUMS['job_add_vm_from_template']])
+        ll_jobs.wait_for_jobs([config.JOB_ADD_VM_FROM_TEMPLATE])
         self.vms_to_remove.append(self.vm_name)
         if start_vm:
             self.add_nic_to_vm(self.vm_name)
-            assert hi_vms.startVm(True, self.vm_name, wait_for_ip=True)
+            self.assertTrue(
+                ll_vms.startVm(True, self.vm_name, wait_for_ip=True),
+                "Unable to start vm %s cloned from template %s" % (
+                    self.vm_name, template_name
+                )
+            )
 
 
 @attr(tier=1)
@@ -189,8 +199,11 @@ class TestCase5734(BasicEnvironment):
         self.basic_flow_import_image_as_template(
             self.new_template_name, True, self.storage_domain
         )
+        vm_name = self.create_unique_object_name(
+            config.OBJECT_TYPE_VM
+        )
         self.basic_flow_clone_vm_from_template(
-            config.VM_NAME % self.storage, self.new_template_name,
+            vm_name, self.new_template_name,
             self.storage_domain
         )
 
@@ -262,8 +275,12 @@ class TestCase5738(BasicEnvironment):
 
     def setUp(self):
         super(TestCase5738, self).setUp()
-        self.vm_name_from_template = config.VM_NAME % self.new_template_name
-        self.vm_name_from_disk = config.VM_NAME % self.new_disk_alias
+        self.vm_name_from_template = self.create_unique_object_name(
+            config.OBJECT_TYPE_VM
+        )
+        self.vm_name_from_disk = self.create_unique_object_name(
+            config.OBJECT_TYPE_VM
+        )
 
     @polarion("RHEVM3-5738")
     def test_import_image_as_template_and_disk(self):
@@ -276,7 +293,6 @@ class TestCase5738(BasicEnvironment):
         self.basic_flow_import_image_as_template(
             self.new_template_name, True, self.storage_domain
         )
-        self.vm_name_from_template = config.VM_NAME % self.new_template_name
         self.basic_flow_clone_vm_from_template(
             self.vm_name_from_template, self.new_template_name,
             self.storage_domain
@@ -287,14 +303,21 @@ class TestCase5738(BasicEnvironment):
         kwargs['vmName'] = self.vm_name_from_disk
         kwargs['vmDescription'] = self.vm_name_from_disk
         kwargs['storageDomainName'] = self.storage_domain
-        assert vms.create_vm_using_glance_image(
-            config.GLANCE_DOMAIN, self.glance_image, **kwargs
+        self.assertTrue(
+            hl_vms.create_vm_using_glance_image(
+                config.GLANCE_DOMAIN, self.glance_image, **kwargs
+            ), "Unable to create vm from glance image %s" % self.glance_image
         )
-        wait_for_jobs([ENUMS['job_add_vm_from_template']])
+        ll_jobs.wait_for_jobs([config.JOB_ADD_VM_FROM_TEMPLATE])
         self.vms_to_remove.append(self.vm_name_from_disk)
-        assert hi_vms.startVm(True, self.vm_name_from_disk, wait_for_ip=True)
+        self.assertTrue(
+            ll_vms.startVm(True, self.vm_name_from_disk, wait_for_ip=True),
+            "Unable to start vm %s created from glance image %s" % (
+                self.vm_name, self.glance_image
+            )
+        )
         disk_alias = "{0}_Disk_glance".format(self.vm_name_from_disk)
-        status, output = perform_dd_to_disk(
+        status, output = storage_helpers.perform_dd_to_disk(
             self.vm_name_from_disk, disk_alias)
         if not status:
             raise errors.DiskException(
@@ -358,7 +381,7 @@ class TestCase5741(BasicEnvironment):
                 vm_name, self.new_template_name, self.storage_domain,
                 wait=False
             )
-            if templates.get_template_state(self.new_template_name) \
+            if ll_templates.get_template_state(self.new_template_name) \
                     == config.TEMPLATE_LOCKED:
                 raise errors.TemplateException(
                     "Template %s should not be in locked state while "
@@ -385,11 +408,17 @@ class TestCase5743(BasicEnvironment):
             self.new_template_name, True, self.storage_domains[0],
             self.new_disk_alias
         )
-        assert disks.copy_disk(
-            disk_name=self.new_disk_alias,
-            target_domain=self.storage_domains[1]
+        self.assertTrue(
+            ll_disks.copy_disk(
+                disk_name=self.new_disk_alias,
+                target_domain=self.storage_domains[1]
+            ), "Unable to copy disk %s to target domain %s" % (
+                self.new_disk_alias, self.storage_domains[1]
+            )
         )
-        self.vm_name = config.VM_NAME % self.storage
+        self.vm_name = self.create_unique_object_name(
+            config.OBJECT_TYPE_VM
+        )
         self.basic_flow_clone_vm_from_template(
             self.vm_name, self.new_template_name, self.storage_domains[1]
         )
@@ -415,7 +444,9 @@ class TestCase5746(BasicEnvironment):
             self.new_template_name, True, self.storage_domain,
             self.new_disk_alias
         )
-        self.vm_name = config.VM_NAME % self.storage
+        self.vm_name = self.create_unique_object_name(
+            config.OBJECT_TYPE_VM
+        )
         self.clone_vm_args['storagedomain'] = self.storage_domain
         self.clone_vm_args['name'] = self.vm_name
         self.clone_vm_args['template'] = self.new_template_name
@@ -424,7 +455,89 @@ class TestCase5746(BasicEnvironment):
             self.vm_name, self.new_template_name, self.storage_domain,
             start_vm=False
         )
-        assert hi_vms.updateVmDisk(
-            True, self.vm_name, self.new_disk_alias,
-            interface=config.VIRTIO_SCSI
+        self.assertTrue(
+            ll_vms.updateVmDisk(
+                True, self.vm_name, self.new_disk_alias,
+                interface=config.VIRTIO_SCSI
+            ), "Unable to change vm %s interface to interface %s" % (
+                self.vm_name, config.VIRTIO_SCSI
+            )
         )
+
+
+@attr(tier=2)
+class TestCase5683(BaseTestCase):
+    """
+    Export a template disk to glance repository
+    """
+    __test__ = True
+
+    def setUp(self):
+        """
+        Create a template from a vm to export
+        """
+        # TODO: template name only allows 40 character length,
+        # implement a proper solution for all occurences
+        self.template_name = self.create_unique_object_name(
+            config.OBJECT_TYPE_TEMPLATE
+        )[0:40]
+        storage_domains = ll_sd.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage
+        )
+        # Use one of the already created vms and export it to the
+        # storage domain type of the test multiplier
+        if not ll_templates.createTemplate(
+            True, vm=config.VM_NAME[0], name=self.template_name,
+            storagedomain=storage_domains[0]
+        ):
+            raise errors.TemplateException(
+                "Unable to create template % from vm %s" %
+                (self.template_name, config.VM_NAME[0])
+
+            )
+        self.disk = ll_templates.getTemplateDisks(self.template_name)[0]
+
+    @polarion("RHEVM3-5683")
+    def test_export_template_disk(self):
+        """
+        Export template disk to glance domain
+        """
+        self.assertTrue(
+            ll_disks.export_disk_to_glance(
+                True, self.disk.get_id(), config.GLANCE_DOMAIN
+            ), "Unable to export disk %s to glance domain %s" %
+            (self.disk.get_id(), config.GLANCE_DOMAIN)
+        )
+
+    def tearDown(self):
+        """
+        Remove the template and glance image
+        """
+        ll_disks.wait_for_disks_status([self.disk.get_id], key='id')
+        if not ll_templates.removeTemplate(True, self.template_name):
+            BaseTestCase.test_failed = True
+            logger.error(
+                "Failed to remove template %s", self.vms_to_remove
+            )
+        image_found = False
+        for image in ll_sd.get_storage_domain_images(
+            config.GLANCE_DOMAIN
+        ):
+            if self.disk.get_alias() == image.get_name():
+                image_found = True
+                if not ll_sd.remove_glance_image(
+                    image.get_id(), config.GLANCE_HOSTNAME,
+                    config.HOSTS_USER, config.HOSTS_PW
+                ):
+                    BaseTestCase.test_failed = True
+                    logger.error(
+                        "Failed to remove glance image %s",
+                        self.disk.get_alias()
+                    )
+        if not image_found:
+            BaseTestCase.test_failed = True
+            logger.error(
+                "Failed to find image in glance image %s repository %s",
+                self.disk.get_alias(), self.glance_domain
+                )
+        BaseTestCase.teardown_exception()

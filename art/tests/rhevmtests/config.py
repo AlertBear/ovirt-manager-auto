@@ -10,6 +10,7 @@ import copy
 from art.test_handler.settings import ART_CONFIG, opts
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api import resources
+from urlparse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -223,6 +224,8 @@ if 'prepared_env' in ART_CONFIG:
             provider_type = CINDER
         EXTERNAL_PROVIDERS[provider_type] = EPS[ep_to_add]['name']
     GLANCE_DOMAIN = EXTERNAL_PROVIDERS[GLANCE]
+    if 'url' in EPS[GLANCE_DOMAIN].keys():
+        GLANCE_HOSTNAME = urlparse(EPS[GLANCE_DOMAIN]['url']).hostname
     SD_LIST.append(GLANCE_DOMAIN)
     GOLDEN_GLANCE_IMAGE = 'golden_env_mixed_virtio_0_Disk1'
 

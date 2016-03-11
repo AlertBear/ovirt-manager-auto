@@ -38,6 +38,8 @@ from art.rhevm_api.utils.test_utils import (
     getAllImages,
 )
 from art.rhevm_api.utils.xpath_utils import XPathMatch
+from rrmngmnt.host import Host as HostResource
+from rrmngmnt.user import User
 from utilities.utils import getIpAddressByHostName
 from art.core_api import is_action
 from art.test_handler.settings import opts
@@ -1910,27 +1912,29 @@ def get_storage_domain_images(storage_domain_name):
     :rtype: list
     """
     storage_domain_obj = get_storage_domain_obj(storage_domain_name)
-    all_images = util.getElemFromLink(
+    return util.getElemFromLink(
         storage_domain_obj,
         link_name='images',
         attr='image',
         get_href=False,
     )
-    return [image.get_name() for image in all_images]
 
 
 def verify_image_exists_in_storage_domain(storage_domain_name, image_name):
     """
     Verifies whether specified image exists in storage domain
 
-    :param storage_domain_name: storage domain name
+    :param storage_domain_name: Storage domain name
     :type storage_domain_name: str
     :param image_name: Image name to look for
     :type image_name: str
     :return: True if image exists in storage domain, False otherwise
     :rtype: bool
     """
-    return image_name in get_storage_domain_images(storage_domain_name)
+    return image_name in [
+        image.get_name() for image in
+        get_storage_domain_images(storage_domain_name)
+    ]
 
 
 class GlanceImage(object):
@@ -2175,3 +2179,36 @@ def wait_storage_domain_status_is_unchanged(
                 return False
     except APITimeout:
         return True
+
+
+# This is a W/A since ovirt doesn't support removal of glance images
+# RFE for ovirt: https://bugzilla.redhat.com/show_bug.cgi?id=1317833
+def remove_glance_image(image_id, glance_hostname, username, password):
+    """
+    Remove glance image
+
+    TODO: There's not support to remove a glance image from ovirt,
+    so it needs to connect to the server and remove it via glance cli
+
+    :param image_id: ID of the image to be removed
+    :type image_id: str
+    :param glane_hostanme: Hostname of the glance server
+    :type glance_hostname: str
+    :param username: Username to connect to the glance server
+    :type username: str
+    :param password: Password to connect to the glance server
+    :type password: str
+    :return: True if the image was removed properly, False otherwise
+    :rtype: bool
+    """
+    host = HostResource(ip=glance_hostname)
+    user = User(username, password)
+    host.users.append(user)
+    host_executor = host.executor(user)
+    cmd = "source keystonerc_admin && glance image-delete %s" % image_id
+    rc, out, error = host_executor.run_cmd(cmd.split())
+    if rc:
+        util.logger.error(
+            "Unable to remove image %s, error: %s", image_id, error
+        )
+    return not rc
