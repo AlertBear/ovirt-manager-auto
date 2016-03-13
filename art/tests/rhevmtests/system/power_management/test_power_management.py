@@ -15,11 +15,6 @@ import logging
 from art.test_handler.exceptions import HostException, VMException,\
     StorageDomainException
 from art.rhevm_api.utils import storage_api
-from art.core_api.apis_utils import getDS
-
-
-Options = getDS('Options')
-Option = getDS('Option')
 
 HOST_WITH_PM = None  # Filled in setup_module
 HOST_1 = None  # Filled in setup_module
@@ -124,10 +119,17 @@ def _unblock_connection_of_host_to_storage(host=None):
 
 
 def _add_power_management(host=None, **kwargs):
-    hosts.add_power_management(host=host, pm_type=config.PM1_TYPE,
-                               pm_address=config.PM1_ADDRESS,
-                               pm_user=config.PM1_USER,
-                               pm_password=config.PM1_PASS, **kwargs)
+    agent = {
+        "agent_type": config.PM1_TYPE,
+        "agent_address": config.PM1_ADDRESS,
+        "agent_username": config.PM1_USER,
+        "agent_password": config.PM1_PASS,
+        "concurrent": False,
+        "order": 1
+    }
+    return hosts.add_power_management(
+        host_name=host, pm_agents=[agent], **kwargs
+    )
 
 
 @attr(tier=3, extra_reqs={'mgmt': True})
@@ -145,7 +147,8 @@ class TestWithHighAvailableVm(TestCase):
     def setup_class(cls):
         _move_host_to_up(HOST_WITH_PM)
         _move_host_to_up(HOST_1)
-        _add_power_management(HOST_WITH_PM)
+        if not _add_power_management(HOST_WITH_PM):
+            raise HostException()
         logger.info("Creating a vm with high availability, disk and nic on"
                     " host: %s", HOST_WITH_PM)
         _create_vm(vm_name=cls.vm_ha_name, highly_available='true')
@@ -158,8 +161,7 @@ class TestWithHighAvailableVm(TestCase):
         _move_host_to_up(HOST_WITH_PM)
         _move_host_to_up(HOST_1)
         logger.info("Removing power management from host: %s", HOST_WITH_PM)
-        hosts.remove_power_management(host=HOST_WITH_PM,
-                                      pm_type=config.PM1_TYPE)
+        hosts.remove_power_management(host_name=HOST_WITH_PM)
         logger.info("Removing vms: %s, %s", cls.vm_ha_name, cls.vm2_name)
         if not vms.removeVm(True, vm=cls.vm_ha_name, stopVM='true'):
             raise VMException("cannot remove vm: %s" % cls.vm_ha_name)
@@ -169,19 +171,27 @@ class TestWithHighAvailableVm(TestCase):
 
 @attr(tier=3, extra_reqs={'mgmt': True})
 class TestPMWithBadParameters(TestCase):
-
-    __test__ = False
+    agent = {
+        "agent_type": config.PM1_TYPE,
+        "agent_address": config.PM1_ADDRESS,
+        "agent_username": config.PM1_USER,
+        "agent_password": config.PM1_PASS,
+        "concurrent": False,
+        "order": 1
+    }
+    t_agent = None
+    bad_parameter = None
 
     @classmethod
     def setup_class(cls):
+        cls.t_agent = dict(cls.agent)
+        for key, value in cls.bad_parameter.iteritems():
+            cls.t_agent[key] = value
         _move_host_to_up(HOST_WITH_PM)
 
     @classmethod
     def teardown_class(cls):
-        if not hosts.remove_power_management(host=HOST_WITH_PM,
-                                             pm_type=config.PM_TYPE_DEFAULT):
-            hosts.remove_power_management(host=HOST_WITH_PM,
-                                          pm_type=config.PM1_TYPE)
+        hosts.remove_power_management(host_name=HOST_WITH_PM)
         _move_host_to_up(HOST_WITH_PM)
 
 
@@ -196,7 +206,8 @@ class TestFenceOnHost(TestCase):
 
     @classmethod
     def setup_class(cls):
-        _add_power_management(HOST_WITH_PM)
+        if not _add_power_management(HOST_WITH_PM):
+            raise HostException()
         if cls.up:
             _move_host_to_up(HOST_WITH_PM)
         elif cls.maintenance:
@@ -206,8 +217,7 @@ class TestFenceOnHost(TestCase):
     def teardown_class(cls):
         _move_host_to_up(HOST_WITH_PM)
         logger.info("Removing power management from host: %s", HOST_WITH_PM)
-        hosts.remove_power_management(host=HOST_WITH_PM,
-                                      pm_type=config.PM1_TYPE)
+        hosts.remove_power_management(host_name=HOST_WITH_PM)
 
 
 @attr(tier=3, extra_reqs={'mgmt': True})
@@ -220,36 +230,61 @@ class TestFenceHostWithTwoPMAgents(TestCase):
 
     @classmethod
     def setup_class(cls):
-
-        pmOptions = Options()
-        op = Option(name='port', value=config.PM2_SLOT)
-        pmOptions.add_option(op)
         if config.COMP_VERSION >= '3.5':
             _move_host_to_up(HOST_WITH_PM)
-            logger.info("Set two power management agents on host: %s",
-                        HOST_WITH_PM)
-            if not ll_hosts.updateHost(True, host=HOST_WITH_PM, pm='true',
-                                       pm_proxies=['cluster', 'dc'],
-                                       agents=[(config.PM1_TYPE,
-                                                cls.pm1_address,
-                                                config.PM1_USER,
-                                                config.PM1_PASS,
-                                                None, False, 1),
-                                               (config.PM2_TYPE,
-                                                cls.pm2_address,
-                                                config.PM2_USER,
-                                                config.PM2_PASS,
-                                                pmOptions, False, 2)]):
-                raise HostException("adding two power management agents to "
-                                    "host %s failed" % HOST_WITH_PM)
+            logger.info(
+                "Set two power management agents on host: %s", HOST_WITH_PM
+            )
+            agent_1 = (
+                config.PM1_TYPE,
+                cls.pm1_address,
+                config.PM1_USER,
+                config.PM1_PASS,
+                None, False, 1
+            )
+            agent_2 = (
+                config.PM2_TYPE,
+                cls.pm2_address,
+                config.PM2_USER,
+                config.PM2_PASS,
+                {'port': config.PM2_SLOT},
+                False, 2
+            )
+            agents = []
+            for (
+                agent_type,
+                agent_address,
+                agent_user,
+                agent_password,
+                agent_options,
+                concurrent,
+                order
+            ) in (agent_1, agent_2):
+                agent_d = {
+                    "agent_type": agent_type,
+                    "agent_address": agent_address,
+                    "agent_username": agent_user,
+                    "agent_password": agent_password,
+                    "concurrent": concurrent,
+                    "order": order,
+                    "options": agent_options
+                }
+                agents.append(agent_d)
+
+            if not hosts.add_power_management(
+                host_name=HOST_WITH_PM,
+                pm_agents=agents,
+                pm_proxies=['cluster', 'dc']
+            ):
+                raise HostException(
+                    "adding two power management agents to host %s failed" %
+                    HOST_WITH_PM
+                )
 
     @classmethod
     def teardown_class(cls):
         if config.COMP_VERSION >= '3.5':
-            if not hosts.remove_power_management(host=HOST_WITH_PM,
-                                                 pm_type=config.PM2_TYPE):
-                hosts.remove_power_management(host=HOST_WITH_PM,
-                                              pm_type=config.PM1_TYPE)
+            hosts.remove_power_management(host_name=HOST_WITH_PM)
             _move_host_to_up(HOST_WITH_PM)
 
 
@@ -268,7 +303,8 @@ class TestFenceProxySelection(TestCase):
             HOST_2: config.HOST_STATE_UP,
         }
         _move_host_to_up(HOST_WITH_PM)
-        _add_power_management(HOST_WITH_PM, pm_proxies=cls.pm_proxies)
+        if not _add_power_management(HOST_WITH_PM, pm_proxies=cls.pm_proxies):
+            raise HostException()
         for host in cls.hosts_state:
             if cls.hosts_state[host] == config.HOST_STATE_UP:
                 _move_host_to_up(host)
@@ -285,58 +321,63 @@ class TestFenceProxySelection(TestCase):
             _move_host_to_up(host)
         _move_host_to_up(HOST_WITH_PM)
         logger.info("Removing power management from host: %s", HOST_WITH_PM)
-        hosts.remove_power_management(host=HOST_WITH_PM,
-                                      pm_type=config.PM1_TYPE)
+        hosts.remove_power_management(host_name=HOST_WITH_PM)
 
 
 class T01AddPMWithNoPassword(TestPMWithBadParameters):
 
     __test__ = True
+    bad_parameter = {'agent_password': ''}
 
     @polarion("RHEVM3-8919")
     def test_add_power_management_with_no_password(self):
-        self.assertRaises(HostException, hosts.add_power_management,
-                          host=HOST_WITH_PM, pm_type=config.PM1_TYPE,
-                          pm_address=config.PM1_ADDRESS,
-                          pm_user=config.PM1_USER, pm_password='')
+        self.assertFalse(
+            hosts.add_power_management(
+                host_name=HOST_WITH_PM, pm_agents=[self.t_agent]
+            )
+        )
 
 
 class T02AddPMWithNoUsername(TestPMWithBadParameters):
 
     __test__ = True
+    bad_parameter = {'agent_username': ''}
 
     @polarion("RHEVM3-8917")
     def test_add_power_management_with_no_username(self):
-        self.assertRaises(HostException, hosts.add_power_management,
-                          host=HOST_WITH_PM, pm_type=config.PM1_TYPE,
-                          pm_address=config.PM1_ADDRESS, pm_user='',
-                          pm_password=config.PM1_PASS)
+        self.assertFalse(
+            hosts.add_power_management(
+                host_name=HOST_WITH_PM, pm_agents=[self.t_agent]
+            )
+        )
 
 
 class T03AddPMWithNoAddress(TestPMWithBadParameters):
 
     __test__ = True
+    bad_parameter = {'agent_address': ''}
 
     @polarion("RHEVM3-8918")
     def test_add_power_management_with_no_address(self):
-        self.assertRaises(HostException, hosts.add_power_management,
-                          host=HOST_WITH_PM, pm_type=config.PM1_TYPE,
-                          pm_address='', pm_user=config.PM1_USER,
-                          pm_password=config.PM1_PASS)
+        self.assertFalse(
+            hosts.add_power_management(
+                host_name=HOST_WITH_PM, pm_agents=[self.t_agent]
+            )
+        )
 
 
 class T04AddPMWithInvalidType(TestPMWithBadParameters):
 
     __test__ = True
-
-    invalid_type = 'invalid_type'
+    bad_parameter = {'agent_type': 'invalid_type'}
 
     @polarion("RHEVM3-8916")
     def test_add_power_management_with_invalid_type(self):
-        self.assertRaises(HostException, hosts.add_power_management,
-                          host=HOST_WITH_PM, pm_type=self.invalid_type,
-                          pm_address=config.PM1_ADDRESS,
-                          pm_user=config.PM1_USER, pm_password=config.PM1_PASS)
+        self.assertFalse(
+            hosts.add_power_management(
+                host_name=HOST_WITH_PM, pm_agents=[self.t_agent]
+            )
+        )
 
 
 class T05FenceHostWithHighAvailableVm(TestWithHighAvailableVm):

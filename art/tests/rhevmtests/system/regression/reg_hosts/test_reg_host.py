@@ -76,14 +76,22 @@ class TestPowerManagement(TestCase):
 
     @classmethod
     def setup_class(cls):
-        hl_hosts.add_power_management(
-            host=HOST, pm_type=cls.pm_type, pm_address=cls.pm_address,
-            pm_user=cls.pm_user, pm_password=cls.pm_password
-        )
+        agent = {
+            "agent_type": cls.pm_type,
+            "agent_address": cls.pm_address,
+            "agent_username": cls.pm_user,
+            "agent_password": cls.pm_password,
+            "concurrent": False,
+            "order": 1
+        }
+        if not hl_hosts.add_power_management(
+            host_name=HOST, pm_agents=[agent]
+        ):
+            raise HostException()
 
     @classmethod
     def teardown_class(cls):
-        hl_hosts.remove_power_management(host=HOST, pm_type=PM1_TYPE)
+        hl_hosts.remove_power_management(host_name=HOST)
 
 
 class TestActiveHost(TestCase):
@@ -178,14 +186,22 @@ class TestAddRemovePowerManagement(TestCase):
 
     @polarion("RHEVM3-8840")
     def test_add_power_management(self):
-        hl_hosts.add_power_management(
-            host=HOST, pm_type=PM1_TYPE, pm_address=PM1_ADDRESS,
-            pm_user=PM1_USER, pm_password=PM1_PASS
-        )
+        agent = {
+            "agent_type": PM1_TYPE,
+            "agent_address": PM1_ADDRESS,
+            "agent_username": PM1_USER,
+            "agent_password": PM1_PASS,
+            "concurrent": False,
+            "order": 1
+        }
+        if not hl_hosts.add_power_management(
+            host_name=HOST, pm_agents=[agent]
+        ):
+            raise HostException()
 
     @polarion("RHEVM3-8843")
     def test_remove_power_management(self):
-        hl_hosts.remove_power_management(host=HOST, pm_type=PM1_TYPE)
+        hl_hosts.remove_power_management(host_name=HOST)
 
 
 @attr(tier=1, extra_reqs={'pm': PM1_TYPE})
@@ -203,10 +219,10 @@ class TestUpdatePowerManagementType(TestPowerManagement):
     def test_update_power_management_type(self):
         logger.info(
             "Update power management type to %s  on host: %s", PM2_TYPE, HOST)
-        if not ll_hosts.updateHost(
-                True, host=HOST, pm='true', pm_type=PM2_TYPE,
-                pm_address=self.pm_address, pm_username=self.pm_user,
-                pm_password=self.pm_password
+        if not ll_hosts.update_fence_agent(
+            host_name=HOST,
+            agent_address=self.pm_address,
+            agent_type=PM2_TYPE
         ):
             raise HostException(
                 "Cannot change power management type in host: %s" % HOST
@@ -231,10 +247,10 @@ class TestUpdatePowerManagementInvalidType(TestPowerManagement):
             "Update power management type to %s on host: %s",
             self.invalid_type, HOST
         )
-        if not ll_hosts.updateHost(
-                False, host=HOST, pm='true', pm_type=self.invalid_type,
-                pm_address=self.pm_address, pm_username=self.pm_user,
-                pm_password=self.pm_password
+        if not ll_hosts.update_fence_agent(
+            host_name=HOST,
+            agent_address=self.pm_address,
+            agent_type=self.invalid_type
         ):
             raise HostException(
                 "Power management type changed successfully "
@@ -504,14 +520,15 @@ class AddSecondaryPowerManagement(TestPowerManagement):
     @polarion("RHEVM3-8836")
     def test_add_secondary_power_management(self):
         logger.info("Set secondary power management to host: %s", HOST)
-        agents = [
-            (PM1_TYPE, PM1_ADDRESS, PM1_USER, PM1_PASS, None, False, 1),
-            (PM2_TYPE, PM2_ADDRESS, PM2_USER, PM2_PASS, None, False, 2),
-        ]
-        if not ll_hosts.updateHost(
-                True, host=HOST, pm='true', pm_proxies=['cluster', 'dc'],
-                agents=agents
-        ):
+        agent = {
+            "agent_type": PM2_TYPE,
+            "agent_address": PM2_ADDRESS,
+            "agent_username": PM2_USER,
+            "agent_password": PM2_PASS,
+            "concurrent": False,
+            "order": 2
+        }
+        if not ll_hosts.add_fence_agent(host_name=HOST, **agent):
             raise HostException(
                 "adding secondary power management to host s% failed" % HOST
             )

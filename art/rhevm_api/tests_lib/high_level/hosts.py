@@ -3,14 +3,14 @@ High-level functions above data-center
 """
 
 import logging
-from concurrent.futures import ThreadPoolExecutor
 from art.core_api import is_action
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.test_handler.exceptions as errors
 from art.test_handler.settings import opts
+import art.test_handler.exceptions as errors
+from concurrent.futures import ThreadPoolExecutor
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 
-LOGGER = logging.getLogger("art.hl_lib.hosts")
+LOGGER = logging.getLogger(__name__)
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
 
@@ -117,44 +117,74 @@ def deactivate_hosts_if_up(hosts_list):
     return True
 
 
-def add_power_management(host, pm_type, pm_address, pm_user, pm_password,
-                         pm_secure='false', **kwargs):
+def add_power_management(host_name, pm_agents, **kwargs):
     """
-    Description: Add power management to host
-    Author: slitmano
-    Parameters:
-    * host - Name of the host
-    * pm_type - Name of power management type (ipmilan, apc_snmp and so on)
-    * pm_address - Address of the power management agent
-    * pm_user - Username for the power management agent
-    * pm_password = Password for the power management agent
-    """
-    logging.info("Add power management type %s for host: %s", pm_type, host)
-    if not ll_hosts.updateHost(
-            True, host=host, pm='true', pm_type=pm_type,
-            pm_address=pm_address, pm_username=pm_user,
-            pm_password=pm_password, pm_secure=pm_secure, **kwargs
-    ):
-        raise errors.HostException(
-            "Cannot add power management to host: %s" % host)
+    Add fence agents and enable host power management
 
+    Args:
+        host_name (str): Host name
+        pm_agents (list): Power management agents
 
-def remove_power_management(host, pm_type):
+    Keyword Args:
+        pm_automatic(bool): Enable automatic shutdown of host
+            under power saving policy
+        pm_proxies (list): Power management proxies
+
+    Returns:
+        bool: True, if add succeed, otherwise False
+
+    Examples:
+        agent_d = {
+            "agent_type": "test_type",
+            "agent_address": "test_address",
+            "agent_username": "test_username",
+            "agent_password": "test_password",
+            "concurrent": False,
+            "order": 1,
+            "options": {"slot": 1}
+        }
+        add_power_management("test_host", [agent_d])
     """
-    Description: Add power management to host
-    Author: slitmano
-    Parameters:
-    * host - Name of the host
-    * pm_type - Name of power management type (ipmilan, apc_snmp and so on)
-    """
-    logging.info("disable power management for host: %s", host)
+    for agent in pm_agents:
+        if not ll_hosts.add_fence_agent(host_name, **agent):
+            return False
+    logging.info("Enable power management under host %s", host_name)
     if not ll_hosts.updateHost(
-            True, host=host, pm='false', pm_type=pm_type,
-            pm_password='', pm_address='', pm_username=''
+        positive=True,
+        host=host_name,
+        pm=True,
+        **kwargs
     ):
-        raise errors.HostException(
-            "Cannot remove power management from host: %s" % host
+        logging.error(
+            "Failed to enable power management under host %s", host_name
         )
+        return False
+    return True
+
+
+def remove_power_management(host_name):
+    """
+    Remove all fence agents from host and disable power management
+
+    Args:
+        host_name (str): Host name
+
+    Returns:
+        bool: True, if remove succeed, otherwise False
+    """
+    agents = ll_hosts.get_fence_agents_list(host_name)
+    for agent in agents:
+        if not ll_hosts.remove_fence_agent(agent):
+            return False
+    logging.info("Disable power management on host %s", host_name)
+    if not ll_hosts.updateHost(
+        positive=True, host=host_name, pm=False
+    ):
+        logging.error(
+            "Cannot disable power management on host: %s" % host_name
+        )
+        return False
+    return True
 
 
 def activate_host_if_not_up(host):

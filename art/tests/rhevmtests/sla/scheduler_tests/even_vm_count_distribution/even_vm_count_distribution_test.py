@@ -13,9 +13,10 @@ from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 from art.unittest_lib import SlaTest as TestCase
-import art.rhevm_api.tests_lib.low_level.vms as vm_api
-import art.rhevm_api.tests_lib.low_level.hosts as host_api
-from art.rhevm_api.tests_lib.low_level.clusters import updateCluster
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.low_level.clusters as ll_cluster
 
 
 logger = logging.getLogger(__name__)
@@ -52,11 +53,15 @@ class EvenVmCountDistribution(TestCase):
         Set cluster policies to Evenly Vm Count Distributed
         with default parameters
         """
-        if not updateCluster(True, config.CLUSTER_NAME[0],
-                             scheduling_policy=CLUSTER_POLICIES[0],
-                             properties=PROPERTIES):
-            raise errors.ClusterException("Update cluster %s failed" %
-                                          config.CLUSTER_NAME[0])
+        if not ll_cluster.updateCluster(
+            positive=True,
+            cluster=config.CLUSTER_NAME[0],
+            scheduling_policy=CLUSTER_POLICIES[0],
+            properties=PROPERTIES
+        ):
+            raise errors.ClusterException(
+                "Update cluster %s failed" % config.CLUSTER_NAME[0]
+            )
 
     @classmethod
     def teardown_class(cls):
@@ -64,9 +69,9 @@ class EvenVmCountDistribution(TestCase):
         Stop vms and change cluster policy to 'None'
         """
         logger.info("Stop all vms")
-        vm_api.stop_vms_safely(config.VM_NAME)
+        ll_vms.stop_vms_safely(config.VM_NAME)
         logger.info("Update cluster policy to none")
-        if not updateCluster(
+        if not ll_cluster.updateCluster(
             positive=True,
             cluster=config.CLUSTER_NAME[0],
             scheduling_policy=CLUSTER_POLICIES[1]
@@ -88,7 +93,7 @@ class EvenVmCountDistribution(TestCase):
                 test_host = config.HOSTS[0]
             else:
                 test_host = config.HOSTS[1]
-            if not vm_api.runVmOnce(True, config.VM_NAME[i], host=test_host):
+            if not ll_vms.runVmOnce(True, config.VM_NAME[i], host=test_host):
                 raise errors.VMException("Vm exception")
 
     def _check_migration(self, migration_host, num_of_vms):
@@ -100,7 +105,7 @@ class EvenVmCountDistribution(TestCase):
             num_of_vms, migration_host
         )
         self.assertTrue(
-            host_api.wait_for_active_vms_on_host(
+            ll_hosts.wait_for_active_vms_on_host(
                 migration_host, num_of_vms, WAIT_FOR_MIGRATION, SLEEP_TIME
             )
         )
@@ -118,7 +123,7 @@ class TwoHostsTests(EvenVmCountDistribution):
         Deactivate third host
         """
         logger.info("Deactivate host %s", config.HOSTS[2])
-        if not host_api.deactivateHost(True, config.HOSTS[2]):
+        if not ll_hosts.deactivateHost(True, config.HOSTS[2]):
             raise errors.HostException("Deactivation of host %s failed",
                                        config.HOSTS[2])
         super(TwoHostsTests, cls).setup_class()
@@ -130,7 +135,7 @@ class TwoHostsTests(EvenVmCountDistribution):
         """
         super(TwoHostsTests, cls).teardown_class()
         logger.info("Activate host %s", config.HOSTS[2])
-        if not host_api.activateHost(True, config.HOSTS[2]):
+        if not ll_hosts.activateHost(True, config.HOSTS[2]):
             logger.error("Activation of host %s failed", config.HOSTS[2])
 
 
@@ -209,7 +214,7 @@ class StartVmUnderClusterPolicy(TwoHostsTests):
         """
         test_vm = config.VM_NAME[NUM_OF_VM_NAME - 1]
         logger.info("Start vm %s", test_vm)
-        if not vm_api.startVm(True, test_vm):
+        if not ll_vms.startVm(True, test_vm):
             raise errors.VMException("Failed to start vm")
         self._check_migration(config.HOSTS[1], NUM_OF_VMS_ON_HOST)
 
@@ -236,10 +241,28 @@ class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
                 "Host %s with fqdn don't have power management" %
                 config.HOSTS[1], host_pm
             )
-        logger.info("Update host %s power management", config.HOSTS[1])
-        if not host_api.updateHost(True, config.HOSTS[1], pm=True, **host_pm):
-            raise errors.HostException("Can not update host %s"
-                                       % config.HOSTS[1])
+        agent_option = {
+            "slot": host_pm[config.PM_SLOT]
+        } if config.PM_SLOT in host_pm else None
+        agent = {
+            "agent_type": host_pm.get(config.PM_TYPE),
+            "agent_address": host_pm.get(config.PM_ADDRESS),
+            "agent_username": host_pm.get(config.PM_USERNAME),
+            "agent_password": host_pm.get(config.PM_PASSWORD),
+            "concurrent": False,
+            "order": 1,
+            "options": agent_option
+        }
+
+        if not hl_hosts.add_power_management(
+            host_name=config.HOSTS[1],
+            pm_automatic=True,
+            pm_agents=[agent],
+            **host_pm
+        ):
+            raise errors.HostException(
+                "Can not update host %s" % config.HOSTS[1]
+            )
         logger.info("Start part of vms on host %s and part on host %s",
                     config.HOSTS[0], config.HOSTS[1])
         for i in range(NUM_OF_VM_NAME):
@@ -248,11 +271,11 @@ class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
             else:
                 test_host = config.HOSTS[1]
                 logger.info("Enable HA option on vm %s", config.VM_NAME[i])
-                if not vm_api.updateVm(True, config.VM_NAME[i],
+                if not ll_vms.updateVm(True, config.VM_NAME[i],
                                        highly_available=True):
                     raise errors.VMException("Update of vm %s failed",
                                              config.VM_NAME[i])
-            if not vm_api.runVmOnce(True, config.VM_NAME[i], host=test_host):
+            if not ll_vms.runVmOnce(True, config.VM_NAME[i], host=test_host):
                 raise errors.VMException("Failed to run vm")
         super(HaVmStartOnHostAboveMaxLevel, cls).setup_class()
 
@@ -263,7 +286,7 @@ class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
         max vms count on host_1
         """
         logger.info("Stop network service on host %s", config.HOSTS[1])
-        if not host_api.runDelayedControlService(
+        if not ll_hosts.runDelayedControlService(
                 True, config.HOSTS[1], config.HOSTS_USER, config.HOSTS_PW,
                 service='network', command='stop'
         ):
@@ -272,7 +295,7 @@ class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
                                        config.HOSTS[1])
         logger.info("Wait until host %s in non responsive state",
                     config.HOSTS[1])
-        if not host_api.waitForHostsStates(True, config.HOSTS[1],
+        if not ll_hosts.waitForHostsStates(True, config.HOSTS[1],
                                            states=NON_RESPONSIVE):
             raise errors.HostException("Host %s not in non responsive state",
                                        config.HOSTS[1])
@@ -283,19 +306,19 @@ class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
         """
         Disable HA option on vms
         """
-        if not host_api.waitForHostsStates(True, config.HOSTS[1]):
+        if not ll_hosts.waitForHostsStates(True, config.HOSTS[1]):
             logger.error(
                 "Host %s not in up state", config.HOSTS[1]
             )
         super(HaVmStartOnHostAboveMaxLevel, cls).teardown_class()
         logger.info("Disable HA option on all vms")
         for vm in config.VM_NAME:
-            if not vm_api.updateVm(
+            if not ll_vms.updateVm(
                 positive=True, vm=vm, highly_available=False
             ):
                 logger.error("Update of vm %s failed", vm)
         logger.info("Disable power management on host %s", config.HOSTS[1])
-        if not host_api.updateHost(
+        if not ll_hosts.updateHost(
             positive=True, host=config.HOSTS[1], pm=False
         ):
             logger.error("Can not update host %s", config.HOSTS[1])
@@ -323,13 +346,13 @@ class PutHostToMaintenance(EvenVmCountDistribution):
         Put host_2 to maintenance and check, where migrate vms from host_2
         """
         logger.info("Deactivate host %s", config.HOSTS[1])
-        if not host_api.deactivateHost(True, config.HOSTS[1]):
+        if not ll_hosts.deactivateHost(True, config.HOSTS[1]):
             raise errors.HostException(
                 "Deactivate host %s failed" % config.HOSTS[1]
             )
         self._check_migration(config.HOSTS[2], NUM_OF_VMS_ON_HOST)
         logger.info("Activate host %s", config.HOSTS[1])
-        if not host_api.activateHost(True, config.HOSTS[1]):
+        if not ll_hosts.activateHost(True, config.HOSTS[1]):
             raise errors.HostException(
                 "Activation of host %s failed", config.HOSTS[1]
             )
@@ -350,7 +373,7 @@ class MigrateVmUnderPolicy(EvenVmCountDistribution):
         Run vms on specific hosts
         """
         cls._start_vms(NUM_OF_VM_NAME - 1, HOST_START_INDEX - 1)
-        if not vm_api.runVmOnce(True, config.VM_NAME[4], host=config.HOSTS[2]):
+        if not ll_vms.runVmOnce(True, config.VM_NAME[4], host=config.HOSTS[2]):
             raise errors.VMException("Failed to start vm")
         super(MigrateVmUnderPolicy, cls).setup_class()
 
@@ -359,6 +382,6 @@ class MigrateVmUnderPolicy(EvenVmCountDistribution):
         """
         Migrate vm from host_2 and check number of vms on host_3
         """
-        if not vm_api.migrateVm(True, config.VM_NAME[1]):
+        if not ll_vms.migrateVm(True, config.VM_NAME[1]):
             raise errors.VMException("Failed to migrate vm")
         self._check_migration(config.HOSTS[2], NUM_OF_VMS_ON_HOST - 1)

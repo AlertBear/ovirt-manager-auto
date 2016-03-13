@@ -43,31 +43,36 @@ from art.rhevm_api.tests_lib.low_level.vms import stopVm, getVmHost, \
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 
-ELEMENT = 'host'
-COLLECTION = 'hosts'
+ELEMENT = "host"
+COLLECTION = "hosts"
 HOST_API = get_api(ELEMENT, COLLECTION)
-CL_API = get_api('cluster', 'clusters')
-DC_API = get_api('data_center', 'datacenters')
-TAG_API = get_api('tag', 'tags')
-HOST_NICS_API = get_api('host_nic', 'host_nics')
-VM_API = get_api('vm', 'vms')
-CAP_API = get_api('version', 'capabilities')
-EVENT_API = get_api("event", "events")
-xpathMatch = is_action('xpathHosts',
-                       id_name='xpathMatch')(XPathMatch(HOST_API))
-xpathHostsLinks = is_action('xpathLinksHosts',
-                            id_name='xpathHostsLinks')(XPathLinks(HOST_API))
 
-Host = getDS('Host')
-Options = getDS('Options')
-Option = getDS('Option')
-PowerManagement = getDS('PowerManagement')
-PmProxyTypes = getDS('PmProxyTypes')
-PmProxy = getDS('PmProxy')
-PmProxies = getDS('PmProxies')
-Agent = getDS('Agent')
-Agents = getDS('Agents')
-Tag = getDS('Tag')
+VM_API = get_api("vm", "vms")
+TAG_API = get_api("tag", "tags")
+EVENT_API = get_api("event", "events")
+AGENT_API = get_api("agent", "agents")
+CL_API = get_api("cluster", "clusters")
+CAP_API = get_api("version", "capabilities")
+DC_API = get_api("data_center", "datacenters")
+HOST_NICS_API = get_api("host_nic", "host_nics")
+
+xpathMatch = is_action(
+    "xpathHosts", id_name="xpathMatch"
+)(XPathMatch(HOST_API))
+xpathHostsLinks = is_action(
+    "xpathLinksHosts", id_name="xpathHostsLinks"
+)(XPathLinks(HOST_API))
+
+Host = getDS("Host")
+Options = getDS("Options")
+Option = getDS("Option")
+PowerManagement = getDS("PowerManagement")
+PmProxyTypes = getDS("PmProxyTypes")
+PmProxy = getDS("PmProxy")
+PmProxies = getDS("PmProxies")
+Agent = getDS("Agent")
+Agents = getDS("Agents")
+Tag = getDS("Tag")
 
 SED = '/bin/sed'
 SERVICE = '/sbin/service'
@@ -89,6 +94,7 @@ MAC_SPOOF_LINES = [
     "<filterref filter='no-mac-spoofing'/>",
     "<filterref filter='no-arp-mac-spoofing'/>"
 ]
+FENCE_AGENT = "fence agent"
 logger = logging.getLogger("art.ll_lib.hosts")
 
 
@@ -385,22 +391,8 @@ def updateHost(positive, host, **kwargs):
     :type cluster: str
     :param pm: host power management to change to
     :type pm: bool
-    :param pm_type: host pm type to change to
-    :type pm_type: str
-    :param pm_address: host pm address to change to
-    :type pm_address: str
-    :param pm_username: host pm username to change to
-    :type pm_username: str
-    :param pm_password: host pm password to change to
-    :type pm_password: str
-    :param pm_port: host pm port to change to
-    :type pm_port: int
-    :param pm_secure: host pm security to change to
-    :type pm_secure: bool
     :param pm_automatic: host automatic_pm_enabled flag
     :type pm_automatic: bool
-    :param agents: if you have number of pm's, need to specify it under agents
-    :type agents: dict
     :return: status (True if host was updated properly, False otherwise)
     :rtype: bool
     """
@@ -423,61 +415,19 @@ def updateHost(positive, host, **kwargs):
         new_priority = kwargs.pop('storage_manager_priority')
         host_upd.set_spm(data_st.SPM(new_priority))
 
-    if 'pm' in kwargs:
-        pm_address = kwargs.get('pm_address')
-        pm_username = kwargs.get('pm_username')
-        pm_password = kwargs.get('pm_password')
-        pm_port = kwargs.get('pm_port')
-        pm_slot = kwargs.get('pm_slot')
-        pm_secure = kwargs.get('pm_secure')
+    pm_enabled = kwargs.get('pm')
+    if pm_enabled is not None:
         pm_automatic = kwargs.get('pm_automatic')
-
-        pm_options = None
-        if pm_port or pm_secure or pm_slot:
-            pm_options = Options()
-            if pm_port and pm_port.strip():
-                op = Option(name='port', value=pm_port)
-                pm_options.add_option(op)
-            if pm_secure:
-                op = Option(name='secure', value=pm_secure)
-                pm_options.add_option(op)
-            if pm_slot:
-                op = Option(name='slot', value=pm_slot)
-                pm_options.add_option(op)
-
-        pm_proxies = None
-        if kwargs.get('pm_proxies'):
-            pm_proxies_list = [PmProxy(type_=proxy) for proxy
-                               in kwargs.get('pm_proxies')]
+        pm_proxies = kwargs.get('pm_proxies')
+        if pm_proxies:
+            pm_proxies_list = [PmProxy(type_=proxy) for proxy in pm_proxies]
             pm_proxies = PmProxies(pm_proxy=pm_proxies_list)
 
-        if kwargs.get('agents'):
-            agents = None
-            agents_array = []
-            use_agents = kwargs.get('agents')
-            for pm_agent_type, pm_agent_addr, pm_agent_usr, pm_agent_passwd, \
-                pm_agent_opts, pm_agent_concurrent, pm_agent_order in \
-                    use_agents:
-                agent_obj = Agent(type_=pm_agent_type, address=pm_agent_addr,
-                                  username=pm_agent_usr,
-                                  password=pm_agent_passwd,
-                                  options=pm_agent_opts,
-                                  concurrent=pm_agent_concurrent,
-                                  order=pm_agent_order)
-                agents_array.append(agent_obj)
-                agents = Agents(agent=agents_array)
-        else:
-            agents = host_obj.get_power_management().get_agents()
-
-        host_pm = PowerManagement(type_=kwargs.get('pm_type'),
-                                  address=pm_address,
-                                  enabled=kwargs.get('pm'),
-                                  username=pm_username,
-                                  password=pm_password,
-                                  options=pm_options,
-                                  pm_proxies=pm_proxies,
-                                  automatic_pm_enabled=pm_automatic,
-                                  agents=agents)
+        host_pm = PowerManagement(
+            enabled=pm_enabled,
+            pm_proxies=pm_proxies,
+            automatic_pm_enabled=pm_automatic
+        )
 
         host_upd.set_power_management(host_pm)
 
@@ -2640,3 +2590,194 @@ def wait_for_host_cpu_load(
             host_name, expected_min_load, expected_max_load
         )
         return False
+
+
+def get_fence_agents_list(host_name):
+    """
+    Get host fence agents collection
+
+    Args:
+        host_name (str): Host name
+    Returns:
+        list: Agent objects
+    """
+    host_obj = get_host_object(host_name)
+    logger.info("Get host %s fence agents collection", host_name)
+    return HOST_API.getElemFromLink(host_obj, 'fenceagents', 'agent')
+
+
+def get_fence_agents_link(host_name):
+    """
+    Get host fence agents collection link
+
+    Args:
+        host_name (str): Host name
+    Returns:
+        str: Link to fence agents collection
+    """
+    host_obj = get_host_object(host_name)
+    logger.info("Get host %s fence agents link", host_name)
+    return HOST_API.getElemFromLink(host_obj, 'fenceagents', get_href=True)
+
+
+def get_fence_agent_by_address(host_name, agent_address):
+    """
+    Get fence agent by address
+
+    Args:
+        host_name (str): Host name
+        agent_address (str): Agent address
+
+    Returns:
+        Agent: Instance of Agent
+    """
+    agents = get_fence_agents_list(host_name=host_name)
+    logger.info("Search for fence agent with address %s", agent_address)
+    for agent in agents:
+        if agent.get_address() == agent_address:
+            return agent
+    logger.error(
+        "Failed to find fence agent with address % under host %s",
+        agent_address, host_name
+    )
+    return None
+
+
+def __prepare_fence_agent_object(**kwargs):
+    """
+    Prepare fence agent object
+
+    Keyword Arguments:
+        type_ (str): Agent type
+        address (str): Agent address
+        username (str): Agent user
+        password (str): Agent password
+        concurrent (bool): Agent concurrent use
+        order (int): Agent use order
+        port (int): Agent port
+        secure (bool): Secure connection to agent
+        options (dict): Agent options
+
+    Returns:
+        Agent: Instance of agent
+    """
+    options_obj = None
+    options = kwargs.pop("options", None)
+    if options:
+        options_obj = Options()
+        for name, value in options.iteritems():
+            option = Option(name=name, value=value)
+            options_obj.add_option(option)
+    agent_obj = ll_general.prepare_ds_object("Agent", **kwargs)
+    agent_obj.set_options(options_obj)
+    return agent_obj
+
+
+def add_fence_agent(
+    host_name,
+    agent_type,
+    agent_address,
+    agent_username,
+    agent_password,
+    concurrent=False,
+    order=1,
+    **kwargs
+):
+    """
+    Add fence agent to host
+
+    Args:
+        host_name (str): Host name
+        agent_type (str): Agent type
+        agent_address (str): Agent address
+        agent_username (str): Agent user
+        agent_password (str): Agent password
+        concurrent (bool): Agent concurrent use
+        order (int): Agent use order
+
+    Keyword Arguments:
+        port (int): Agent port
+        secure (bool): Secure connection to agent
+        options (dict): Agent options
+
+    Returns:
+        bool: True if add fence agent succeed, otherwise False
+    """
+    log_info, log_error = ll_general.get_log_msg(
+        action="Add", obj_type=FENCE_AGENT, obj_name=agent_address,
+        extra_txt="to host %s" % host_name
+    )
+    agent_obj = __prepare_fence_agent_object(
+        type_=agent_type,
+        address=agent_address,
+        username=agent_username,
+        password=agent_password,
+        concurrent=concurrent,
+        order=order,
+        **kwargs
+    )
+    agents_link = get_fence_agents_link(host_name=host_name)
+    logger.info(log_info)
+    status = AGENT_API.create(
+        entity=agent_obj, positive=True, collection=agents_link
+    )[1]
+    if not status:
+        logger.info(log_error)
+    return status
+
+
+def update_fence_agent(host_name, agent_address, **kwargs):
+    """
+    Update fence agent
+
+    Args:
+        host_name (str): Host name
+        agent_address (str): Update agent with address
+
+    Keyword Args:
+        agent_type (str): Agent type
+        agent_address (str): Agent address
+        agent_username (str): Agent user
+        agent_password (str): Agent password
+        concurrent (bool): Agent concurrent use
+        order (int): Agent use order
+        port (int): Agent port
+        secure (bool): Secure connection to agent
+        options (dict): Agent options
+
+    Returns:
+        bool: True, if fence agent update succeed, otherwise False
+    """
+    log_info, log_error = ll_general.get_log_msg(
+        action="Update", obj_type=FENCE_AGENT, obj_name=agent_address,
+        extra_txt="on host %s" % host_name
+    )
+    old_agent_obj = get_fence_agent_by_address(
+        host_name=host_name, agent_address=agent_address
+    )
+    new_agent_obj = __prepare_fence_agent_object(**kwargs)
+    logger.info(log_info)
+    status = AGENT_API.update(old_agent_obj, new_agent_obj, True)[1]
+    if not status:
+        logger.info(log_error)
+    return status
+
+
+def remove_fence_agent(fence_agent_obj):
+    """
+    Remove fence agent object
+
+    Args:
+        fence_agent_obj (Agent): instance of Agent
+    Returns:
+        bool: True, if remove succeed, otherwise False
+    """
+    agent_address = fence_agent_obj.get_address()
+    log_info, log_error = ll_general.get_log_msg(
+        action="Remove", obj_type=FENCE_AGENT, obj_name=agent_address
+    )
+    logger.info(log_info)
+    status = AGENT_API.delete(entity=fence_agent_obj, positive=True)
+    if not status:
+        logger.info(log_error)
+    return status

@@ -110,4 +110,5 @@ def teardown_package():
     helpers.get_unfinished_jobs_list()
 
     # Clean up all storage domains which are not in GE yaml
-    helpers.storage_cleanup()
+    if config.GOLDEN_ENV:
+        helpers.storage_cleanup()
