@@ -410,7 +410,7 @@ def monitor_vm_load_status(vm_name, memory_usage):
         timeout=DELAY_FOR_SCRIPT,
         sleep=5,
         func=check_vm_memory_load,
-        vm_ip=vm_name,
+        vm_name=vm_name,
         memory_usage=memory_usage
     )
     return sample.waitForFuncStatus(result=True)
