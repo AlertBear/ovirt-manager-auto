@@ -72,6 +72,10 @@ def _prepareVmPoolObject(**kwargs):
     if id:
         pool.set_id(id)
 
+    type_ = kwargs.pop('type_', None)
+    if type_:
+        pool.set_type(type_)
+
     prestarted_vms = kwargs.pop('prestarted_vms', None)
     if prestarted_vms is not None:
         pool.set_prestarted_vms(prestarted_vms)
@@ -324,6 +328,20 @@ def get_vm_pool_max_user_vms(vmpool):
     :raises EntityNotFound
     """
     return UTIL.find(vmpool).get_max_user_vms()
+
+
+def get_vm_pool_type(vmpool):
+    """
+    __Author__ = slitmano
+
+    function returns the pool type (manual or automatic)
+
+    :param vmpool: name of the vmpool
+    :type vmpool: str
+    :return: returns the pool type (manual or automatic)
+    :rtype: str
+    """
+    return UTIL.find(vmpool).get_type()
 
 
 def get_vms_in_pool_by_states(vmpool, states):

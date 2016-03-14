@@ -33,6 +33,7 @@ class BaseVmPool(TestCase):
 
     pool_name = None
     pool_size = 2
+    pool_type = None
     max_vms_per_user = None
     pool_params = {}
     version = config.COMP_VERSION
@@ -51,6 +52,7 @@ class BaseVmPool(TestCase):
             'template': config.TEMPLATE_NAME[0],
             'max_user_vms': cls.max_vms_per_user,
             'prestarted_vms': cls.prestarted_vms,
+            'type_': cls.pool_type,
         }
         cls.pool_params.update(updated_params)
 
@@ -100,6 +102,8 @@ class VmPoolWithUser(VmPool):
     __test__ = False
 
     user_name = '%s@%s' % (config.USER, config.USER_DOMAIN)
+    admin_user_name = '%s@%s' % (config.VDC_ADMIN_USER, config.USER_DOMAIN)
+    users = [config.USER]
 
     @classmethod
     def setup_class(cls):
@@ -107,26 +111,28 @@ class VmPoolWithUser(VmPool):
         Setup class -> create vm pool and add external user to engine.
         """
         super(VmPoolWithUser, cls).setup_class()
-        logger.info(
-            "Adding user: %s to engine", cls.user_name
-        )
-        if not ll_users.addExternalUser(
-            True, user_name=config.USER, domain=config.USER_DOMAIN
-        ):
-            raise exceptions.UserException(
-                "Failed to add user: %s to engine" % config.USER
+        for user in cls.users:
+            if user is not config.VDC_ADMIN_USER:
+                logger.info(
+                    "Adding user: %s to engine", cls.user_name
                 )
-        logger.info(
-            "Adding %s permissions for user: %s on pool: %s", config.USER_ROLE,
-            config.USER, cls.pool_name
-        )
-        if not ll_mla.addVmPoolPermissionToUser(
-            True, config.USER, cls.pool_name, config.USER_ROLE
-        ):
-            raise exceptions.VmPoolException(
-                "Failed to add permission: %s to user: %s on pool: %s" %
-                (config.USER_ROLE, config.USER, cls.pool_name)
+                if not ll_users.addExternalUser(
+                    True, user_name=config.USER, domain=config.USER_DOMAIN
+                ):
+                    raise exceptions.UserException(
+                        "Failed to add user: %s to engine" % config.USER
+                        )
+            logger.info(
+                "Adding %s permissions for user: %s on pool: %s",
+                config.USER_ROLE, config.USER, cls.pool_name
             )
+            if not ll_mla.addVmPoolPermissionToUser(
+                True, user, cls.pool_name, config.USER_ROLE
+            ):
+                raise exceptions.VmPoolException(
+                    "Failed to add permission: %s to user: %s on pool: %s" %
+                    (config.USER_ROLE, user, cls.pool_name)
+                )
 
     @classmethod
     def teardown_class(cls):
@@ -139,9 +145,13 @@ class VmPoolWithUser(VmPool):
             config.VDC_PASSWORD,
             False
         )
-        logger.info("Removing user %s from engine", cls.user_name)
-        if not ll_users.removeUser(True, config.USER, config.USER_DOMAIN):
-            raise exceptions.UserException(
-                "Failed to remove user: %s from engine" % config.USER
-            )
         super(VmPoolWithUser, cls).teardown_class()
+        for user in cls.users:
+            if user is not config.VDC_ADMIN_USER:
+                logger.info("Removing user %s from engine", cls.user_name)
+                if not ll_users.removeUser(
+                    True, config.USER, config.USER_DOMAIN
+                ):
+                    raise exceptions.UserException(
+                        "Failed to remove user: %s from engine" % config.USER
+                    )

@@ -65,6 +65,17 @@ def wait_for_vm_pool_removed(vmpool, timeout=60, interval=5):
     :param interval: Intervals between each sample of removeVmPool call
     :type interval: int
     """
+    pool_type = ll_vmpools.get_vm_pool_type(vmpool)
+    user_names = [
+        "%s@%s" % (user, config.USER_DOMAIN) for user in [
+            config.USER, config.VDC_ADMIN_USER
+        ]
+    ]
+    if pool_type == 'manual':
+        vms_in_pool = ll_vmpools.get_vms_in_pool_by_name(vmpool)
+        for vm in vms_in_pool:
+            if not ll_mla.removeUsersPermissionsFromVm(True, vm, user_names):
+                logger.error("Failed to remove permission from vm: %s", vm)
     logger.info("Stopping all vms in pool: %s", vmpool)
     if not hl_vmpools.stop_vm_pool(vmpool):
         logger.error(
@@ -206,9 +217,6 @@ def get_user_vms(pool_name, user_name, user_role, number_of_vms):
         ll_vmpools.get_vm_pool_object(pool_name)
     )
     user_vms = []
-    hl_vmpools.wait_for_vms_in_pool_to_start(
-        pool_name, number_of_vms=number_of_vms, wait_until_up=True
-    )
     for vm in pool_vms:
         if ll_mla.hasUserPermissionsOnObject(user_name, vm, user_role):
             logger.info(
@@ -216,6 +224,7 @@ def get_user_vms(pool_name, user_name, user_role, number_of_vms):
                 "for it", user_name, vm.get_name(), user_role
             )
             user_vms.append(vm)
+            ll_vms.wait_for_vm_states(vm.get_name())
     if len(user_vms) == number_of_vms:
         return [vm.get_name() for vm in user_vms]
     else:
@@ -389,3 +398,104 @@ def get_vm_pool_monitor_interval():
             "via engine-config"
         )
     return value
+
+
+def stop_vm_in_pool_as_user(positive, vm, user, manual=False):
+    """
+    Attempt to stop a vm from a pool as user with User Role on the pool.
+    If the pool type is manual permission for the user on the vm should persist
+    after vm is down, if pool is automatic permission is removed.
+
+    :param positive: True if stop action should succeed
+    :type positive: bool
+    :param vm: Name of the vm
+    :type vm: str
+    :param user: User name
+    :type user: str
+    :param manual: True if pool type is manual, False if automatic (default)
+    :return: True if action succeeded and permission was handled according to
+    the pool type, False otherwise
+    """
+    user_name = '%s@%s' % (user, config.USER_DOMAIN)
+    if user == config.USER:
+        ll_users.loginAsUser(
+            user, config.INTERNAL_DOMAIN, config.USER_PASSWORD, True
+        )
+    if not ll_vms.stopVm(positive, vm):
+        return False
+    if user == config.USER:
+        ll_users.loginAsUser(
+            config.VDC_ADMIN_USER, config.INTERNAL_DOMAIN,
+            config.VDC_PASSWORD, False
+        )
+    logger.info("Checking permissions of user: %s on vm: %s", user, vm)
+    user_has_permission = ll_mla.hasUserPermissionsOnObject(
+        user_name, ll_vms.get_vm(vm), config.USER_ROLE
+    )
+    if manual:
+        ll_vms.wait_for_vm_snapshots(
+            vm, config.ENUMS['snapshot_state_ok'],
+            config.ENUMS['snapshot_stateless_description']
+        )
+    if user_has_permission and not manual:
+        logger.error(
+            "User role persisted for vm: %s in automatic pool after "
+            "stopping the vm"
+        )
+        return False
+    if not user_has_permission and manual:
+        logger.error(
+            "User role for vm: %s in manual pool removed after stopping the vm"
+        )
+        return False
+    return True
+
+
+def start_vm_in_pool_as_user(
+    positive, vm, user, check_permission=False, manual=False
+):
+    """
+    Attempt to start a vm from a pool as user with User Role on the pool.
+
+    :param positive: True if stop action should succeed
+    :type positive: bool
+    :param vm: Name of the vm
+    :type vm: str
+    :param user: User name
+    :type user: str
+    :param check_permission: True if we like to check that the vm has
+    a permission set for user, False if we like to ignore this check
+    :type check_permission: bool
+    :param manual: True if pool type is manual, False if automatic (default)
+    :type manual: bool
+    :return: True if action succeeded and permission was handled according to
+    the pool type, False otherwise
+    """
+    user_name = '%s@%s' % (user, config.USER_DOMAIN)
+    if user == config.USER:
+        ll_users.loginAsUser(
+            user, config.INTERNAL_DOMAIN, config.USER_PASSWORD, True
+        )
+    if not ll_vms.startVm(positive, vm):
+        return False
+    if user == config.USER:
+        ll_users.loginAsUser(
+            config.VDC_ADMIN_USER, config.INTERNAL_DOMAIN,
+            config.VDC_PASSWORD, False
+        )
+    if manual:
+        ll_vms.wait_for_vm_snapshots(
+            vm, config.ENUMS['snapshot_state_ok'],
+            config.ENUMS['snapshot_stateless_description']
+        )
+    if check_permission:
+        logger.info("Checking permissions of user: %s on vm: %s", user, vm)
+        if not ll_mla.hasUserPermissionsOnObject(
+            user_name, ll_vms.get_vm(vm), config.USER_ROLE
+        ):
+            logger.error(
+                "User: %s does not have %s permission for vm: %s",
+                user_name, config.USER_ROLE, vm
+            )
+            return False
+    return True

@@ -31,7 +31,7 @@ class TestAdminStartVmAndPrestartedVms(base.VmPool):
     pool_name = 'Virt_admin_start_vm_and_prestarted_vms'
     pool_size = 3
     admin_started_vms = 1
-    prestarted_vms = 2
+    updated_prestarted = 2
 
     @polarion("RHEVM-9860")
     def test_add_vm_and_increase_prestarted_vms(self):
@@ -47,7 +47,7 @@ class TestAdminStartVmAndPrestartedVms(base.VmPool):
         first_vm = base.ll_vmpools.get_vms_in_pool_by_name(self.pool_name)[0]
         self.assertTrue(ll_vms.startVm(True, first_vm))
         helpers.update_prestarted_vms(
-            self.pool_name, self.prestarted_vms, self.admin_started_vms
+            self.pool_name, self.updated_prestarted, self.admin_started_vms
         )
 
 

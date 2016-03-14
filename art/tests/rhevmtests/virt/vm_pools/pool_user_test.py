@@ -11,7 +11,10 @@ from rhevmtests.virt.vm_pools import (
     helpers,
 )
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.high_level.vmpools as hl_vmpools
+from art.rhevm_api.tests_lib.high_level import (
+    vmpools as hl_vmpools,
+    vms as hl_vms,
+)
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 
@@ -65,30 +68,87 @@ class TestUserVmContinuity(base.VmPoolWithUser):
             )
 
 
-class TestTakeVmFromPoolAsUser(base.VmPoolWithUser):
+class TestTwoUsersTakeVmFromPool(base.VmPoolWithUser):
     """
-    Tests vm allocation from pool as user
+    Tests vm allocation from pool as user + allocating remaining vm with
+    another user:
+
+    1. Allocate a vm from the pool as user1.
+    2. Allocate the remaining vm in the pool as user2
+    2. Verify each user got permissions to one vm and vms are up.
+    3. Stop the vms.
+    4. After vms are down, verify that user's permissions were removed from it.
     """
     __test__ = True
 
     pool_name = "Virt_user_role_take_vm_from_pool"
 
-    @polarion("RHEVM-9892")
-    def test_take_vm_from_pool_as_user(self):
-        """
-        Tests vm allocation from pool as user:
-
-        1. Allocate a vm from the pool as user1.
-        2. Verify user1 gor permissions to the vm and vm is up.
-        3. Stop the vm.
-        4. After vm is down, verify that user permissions were removed from it.
-        """
+    @polarion("RHEVM-9891")
+    def test_two_users_take_vm_from_pool(self):
+        helpers.allocate_vms_as_user(True, self.pool_name, config.USER, 0, 1)
         helpers.allocate_vms_as_user(
-            True, self.pool_name, config.USER, 0, 1, False
+            True, self.pool_name, config.VDC_ADMIN_USER, 0, 1
         )
-        vms = helpers.get_user_vms(
-            self.pool_name, self.user_name, config.USER_ROLE, 1
-        )
-        self.assertTrue(ll_vms.stop_vms_safely(vms))
+        self.assertTrue(hl_vmpools.stop_vm_pool(self.pool_name))
+        vms = base.ll_vmpools.get_vms_in_pool_by_name(self.pool_name)
         helpers.verify_vms_have_no_permissions_for_user(
-            vms, self.user_name, config.USER_ROLE)
+            vms, self.user_name, config.USER_ROLE
+        )
+        helpers.verify_vms_have_no_permissions_for_user(
+            vms, self.admin_user_name, config.USER_ROLE
+        )
+
+
+class TestNoAvailableVmsForUser(base.VmPoolWithUser):
+    """
+    Negative case - user fails to allocate vm after admin started all vms in
+    the pool
+    """
+    __test__ = True
+
+    pool_name = "Virt_no_available_vms_for_user"
+
+    @polarion("RHEVM-9881")
+    def test_no_available_vms_for_user(self):
+        hl_vmpools.start_vm_pool(self.pool_name)
+        helpers.allocate_vms_as_user(False, self.pool_name, config.USER, 0, 1)
+
+
+class TestCannotStealVmFromOtherUser(base.VmPoolWithUser):
+    """
+    Negative case - user fails to allocate a vm from the pool after all vms
+    were allocated by another user
+    """
+    __test__ = True
+
+    pool_name = "Virt_cannot_steal_vm_from_another_user"
+    pool_size = 1
+
+    @polarion("RHEVM-9883")
+    def test_cannot_steal_vm_from_another_user(self):
+        helpers.allocate_vms_as_user(
+            True, self.pool_name, config.VDC_ADMIN_USER, 0, 1
+        )
+        helpers.allocate_vms_as_user(False, self.pool_name, config.USER, 0, 1)
+
+
+class TestVmReturnsToPoolAfterUse(base.VmPoolWithUser):
+    """
+    Basic test for Automatic Pools - allocate a vm from the pool with user1
+    stop the vm with user1, login with user2 and allocate a vm from the pool
+    with user2 (tested with 1 vm pool)
+    """
+    __test__ = True
+
+    pool_name = "Virt_vm_returns_to_pool_after_use"
+    pool_size = 1
+
+    @polarion("RHEVM-9882")
+    def test_vm_returns_to_pool_after_use(self):
+        helpers.allocate_vms_as_user(
+            True, self.pool_name, config.VDC_ADMIN_USER, 0, 1
+        )
+        hl_vms.stop_stateless_vm(
+            base.ll_vmpools.get_vms_in_pool_by_name(self.pool_name)[0]
+        )
+        helpers.allocate_vms_as_user(True, self.pool_name, config.USER, 0, 1)
