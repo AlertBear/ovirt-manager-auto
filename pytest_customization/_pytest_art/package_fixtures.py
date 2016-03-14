@@ -204,8 +204,41 @@ class SetupPackage(object):
         e.itrefs += 1
 
 
+class FixturesLoader(object):
+    """
+    This class deal with loading fixtures automatically,
+    after ART gets initialialized.
+    I can not happen before because we don't have DS ready yet.
+    """
+    def __init__(self):
+        super(FixturesLoader, self).__init__()
+        self.fixture_modules = []
+
+    def pytest_ignore_collect(self, path, config):
+        """
+        Collect all fixtures.py files to load them afterwards.
+        """
+        if path.basename == 'fixtures.py':
+            self.fixture_modules.append(path)
+            return True  # return True to skip file
+        return False
+
+    def pytest_collection_finish(self, session):
+        """
+        Load all fixtures.py and register them.
+        """
+        while self.fixture_modules:
+            path = self.fixture_modules.pop()
+            m = path.pyimport()
+            nodeid = path.dirpath().relto(session.config.rootdir)
+            if path.sep != "/":
+                nodeid = nodeid.replace(path.sep, "/")
+            session._fixturemanager.parsefactories(m, nodeid)
+
+
 def pytest_configure(config):
     """
     Register plugin.
     """
     config.pluginmanager.register(SetupPackage())
+    config.pluginmanager.register(FixturesLoader())
