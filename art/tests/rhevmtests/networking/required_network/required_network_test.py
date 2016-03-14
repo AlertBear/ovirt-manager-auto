@@ -77,17 +77,18 @@ class TestRequiredNetwork01(TearDownRequiredNetwork):
 
 class TestRequiredNetwork02(TearDownRequiredNetwork):
     """
-    Attach required network to host
-    Set host NIC to down
-    Check that host status is non-operational
+    Attach required non-VM network to host
+    Set host NIC down
+    Check that host is non-operational
     """
     __test__ = True
     net = conf.NETS[2][0]
+    networks = [net]
 
     @classmethod
     def setup_class(cls):
         """
-        Attach required network to host
+        Attach required non-VM network to host
         """
         local_dict = {
             cls.net: {
@@ -100,11 +101,11 @@ class TestRequiredNetwork02(TearDownRequiredNetwork):
         ):
             raise conf.NET_EXCEPTION()
 
-    @polarion("RHEVM3-3750")
-    def test_operational(self):
+    @polarion("RHEVM3-3744")
+    def test_nonoperational(self):
         """
-        Set host NIC to down
-        Check that host status is non-operational
+        Set host NIC down
+        Check that host is non-operational
         """
         helper.set_nics_and_wait_for_host_status(
             nics=[conf.HOST_0_NICS[1]], nic_status=conf.NIC_STATE_DOWN,
@@ -165,42 +166,4 @@ class TestRequiredNetwork03(TearDownRequiredNetwork):
         """
         helper.set_nics_and_wait_for_host_status(
             nics=conf.HOST_0_NICS[2:4], nic_status=conf.NIC_STATE_UP,
-        )
-
-
-class TestRequiredNetwork04(TearDownRequiredNetwork):
-    """
-    Attach required non-VM network to host
-    Set host NIC down
-    Check that host is non-operational
-    """
-    __test__ = True
-    net = conf.NETS[4][0]
-    networks = [net]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Attach required non-VM network to host
-        """
-        local_dict = {
-            cls.net: {
-                "nic": 1,
-            }
-        }
-
-        if not hl_networks.createAndAttachNetworkSN(
-            host=conf.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
-        ):
-            raise conf.NET_EXCEPTION()
-
-    @polarion("RHEVM3-3744")
-    def test_nonoperational(self):
-        """
-        Set host NIC down
-        Check that host is non-operational
-        """
-        helper.set_nics_and_wait_for_host_status(
-            nics=[conf.HOST_0_NICS[1]], nic_status=conf.NIC_STATE_DOWN,
-            host_status=conf.HOST_NONOPERATIONAL
         )

@@ -276,30 +276,6 @@ SN_DICT = {
         "required": "false",
         "vlan_id": VLAN_IDS[23]
     },
-    SN_NETS[24][0]: {
-        "required": "false",
-        "usages": ""
-    },
-    SN_NETS[24][1]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[24]
-    },
-    SN_NETS[24][2]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[25]
-    },
-    SN_NETS[24][3]: {
-        "required": "false",
-        "usages": ""
-    },
-    SN_NETS[24][4]: {
-        "required": "false",
-        "vlan_id": VLAN_IDS[26]
-    },
-    SN_NETS[24][5]: {
-        "required": "false",
-        "usages": ""
-    },
     SN_NETS[25][0]: {
         "required": "false",
     },

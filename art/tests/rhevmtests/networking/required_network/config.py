@@ -18,13 +18,10 @@ NETS = global_helper.generate_object_names(
 NETS_DICT = {
     NETS[2][0]: {
         "required": "true",
+        "usages": ""
     },
     NETS[3][0]: {
         "required": "true",
         "vlan_id": VLAN_IDS[0]
-    },
-    NETS[4][0]: {
-        "required": "true",
-        "usages": ""
     },
 }

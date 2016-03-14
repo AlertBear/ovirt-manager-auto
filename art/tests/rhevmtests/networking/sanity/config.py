@@ -43,6 +43,9 @@ BASIC_IP_DICT_PREFIX = {
 }
 
 SN_DICT = {
+    NETS[1][0]: {
+        "required": "false",
+    },
     NETS[2][0]: {
         "required": "false",
         "usages": ""
@@ -151,8 +154,5 @@ SN_DICT = {
     },
     NETS[15][0]: {
         "required": "true",
-    },
-    NETS[16][0]: {
-        "required": "false",
     },
 }

@@ -17,7 +17,6 @@ import art.test_handler.exceptions as exceptions
 from art.unittest_lib import NetworkTest as TestCase
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 NETMASK = config.NETMASK
 GATEWAY = config.MG_GATEWAY
@@ -42,71 +41,7 @@ def setup_module():
 
 
 @attr(tier=2)
-class TestGatewaysCase1(TestCase):
-    """
-    Verify you can configure additional network beside MGMT with gateway
-    Verify you can remove network configured with gateway
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical vm network on DC/Cluster/Hosts
-        Configure it with static IP configuration (including gateway)
-        """
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": 1, "required": False, "bootproto": "static",
-                "address": [config.IPS[0]], "netmask": [NETMASK],
-                "gateway": [GATEWAY]
-            }
-        }
-
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
-        ):
-            raise exceptions.NetworkException(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
-
-    @polarion("RHEVM3-3949")
-    def test_check_ip_rule(self):
-        """
-        Check correct configuration with ip rule function
-        """
-        if not ll_networks.check_ip_rule(
-            vds_resource=config.VDS_HOSTS[0], subnet=SUBNET
-        ):
-            raise exceptions.NetworkException(
-                "Incorrect gateway configuration for %s" % config.NETWORKS[0]
-            )
-
-    @polarion("RHEVM3-3965")
-    def test_detach_gw_net(self):
-        """
-        Remove network with gw configuration from setup
-        """
-        if not hl_host_network.clean_host_interfaces(
-            host_name=config.HOSTS[0]
-        ):
-            raise exceptions.NetworkException()
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from the setup.
-        """
-        logger.info("Remove network %s from DC/CLuster", config.NETWORKS[0])
-        if not ll_networks.removeNetwork(True, network=config.NETWORKS[0]):
-            logger.error(
-                "Cannot remove network %s from DC/Cluster", config.NETWORKS[0]
-            )
-
-
-@attr(tier=2)
-class TestGatewaysCase2(TestCase):
+class TestGatewaysCase01(TestCase):
     """
     Verify you can configure additional VLAN network with static IP and gateway
     """
@@ -163,7 +98,7 @@ class TestGatewaysCase2(TestCase):
 
 
 @attr(tier=2)
-class TestGatewaysCase3(TestCase):
+class TestGatewaysCase02(TestCase):
     """
     Verify you can configure additional bridgeless network with static IP.
     """
@@ -218,7 +153,7 @@ class TestGatewaysCase3(TestCase):
 
 
 @attr(tier=2)
-class TestGatewaysCase4(TestCase):
+class TestGatewaysCase03(TestCase):
     """
     Verify you can configure additional display network with static ip config.
     Mgmt network should be static
@@ -274,7 +209,7 @@ class TestGatewaysCase4(TestCase):
 
 
 @attr(tier=2)
-class TestGatewaysCase5(TestCase):
+class TestGatewaysCase04(TestCase):
     """
     Try to assign to vm network incorrect static IP and gw addresses
     """
@@ -362,7 +297,7 @@ class TestGatewaysCase5(TestCase):
 
 
 @attr(tier=2)
-class TestGatewaysCase6(TestCase):
+class TestGatewaysCase05(TestCase):
     """
     Verify you can configure additional network with gateway 0.0.0.0
     """
@@ -404,7 +339,7 @@ class TestGatewaysCase6(TestCase):
 
 
 @attr(tier=2)
-class TestGatewaysCase7(TestCase):
+class TestGatewaysCase06(TestCase):
     """
     Verify you can add additional NIC to the already created bond
     """
@@ -486,7 +421,7 @@ class TestGatewaysCase7(TestCase):
 
 
 @attr(tier=2)
-class TestGatewaysCase8(TestCase):
+class TestGatewaysCase07(TestCase):
     """
     Verify you can remove Nic from bond having network with gw configured on it
     """
@@ -571,7 +506,7 @@ class TestGatewaysCase8(TestCase):
 
 
 @attr(tier=2)
-class TestGatewaysCase9(TestCase):
+class TestGatewaysCase08(TestCase):
     """
     Verify you can configure additional network without gateway
     """

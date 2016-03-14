@@ -27,7 +27,6 @@ import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
 import rhevmtests.networking.management_as_role.helper as mgmt_net_helper
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import rhevmtests.networking.mac_pool_range_per_dc.helper as mac_pool_helper
-import rhevmtests.networking.arbitrary_vlan_device_name.helper as vlan_helper
 import rhevmtests.networking.required_network.helper as required_network_helper
 
 logger = logging.getLogger("Sanity_Cases")
@@ -44,63 +43,59 @@ class TestSanityCaseBase(NetworkTest):
         """
         Remove all networks from the host NICs.
         """
-        logger.info("Removing all networks from %s", conf.HOST_0_NAME)
-        if not hl_host_network.clean_host_interfaces(conf.HOST_0_NAME):
-            logger.error(
-                "Failed to remove all networks from %s", conf.HOST_0_NAME
-            )
+        hl_host_network.clean_host_interfaces(conf.HOST_0_NAME)
 
 
 class TestSanity01(TestSanityCaseBase):
-    """
-    1. Create VLAN entity with name on the host
-    2. Check that the VLAN network exists on host via engine
-    3. Attach the vlan to bridge
-    4. Add the bridge with VLAN to virsh
-    5. Remove the VLAN/bridge and clean host interfaces
-    """
 
+    """
+    Create new vNIC profile and make sure all its parameters exist in API
+    """
     __test__ = True
-    apis = set(["rest"])
-    vlan_id = conf.VLAN_IDS[0]
-    vlan_name = vlan_helper.VLAN_NAMES[0]
-    bridge_name = vlan_helper.BRIDGE_NAMES[0]
+    net = conf.NETS[1][0]
+    dc = conf.DC_0
+    vnic_profile = conf.VNIC_PROFILES[1][0]
+    description = "vnic_profile_test"
 
     @classmethod
     def setup_class(cls):
         """
-        Create VLAN entity with name on the host
+        Attach network to host
+        Create additional vNIC profile with description and port mirroring
         """
-        vlan_helper.add_vlans_to_host(
-            host_obj=conf.VDS_0_HOST, nic=1, vlan_id=[cls.vlan_id],
-            vlan_name=[cls.vlan_name]
-        )
-        vlan_helper.add_bridge_on_host_and_virsh(
-            host_obj=conf.VDS_0_HOST, bridge=[cls.bridge_name],
-            network=[cls.vlan_name]
-        )
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": cls.net,
+                    "nic": conf.HOST_0_NICS[1]
+                }
+            }
+        }
+        helper.send_setup_networks(sn_dict=network_host_api_dict)
+        if not ll_networks.add_vnic_profile(
+            positive=True, name=cls.vnic_profile, data_center=cls.dc,
+            network=cls.net, port_mirroring=True, description=cls.description
+        ):
+            raise conf.NET_EXCEPTION()
 
-    @polarion("RHEVM3-4170")
-    def test_vlan_on_nic(self):
+    @polarion("RHEVM3-3970")
+    def test_check_attr_vnic_profile(self):
         """
-        Check that the VLAN network exists on host via engine
-        Attach the vlan to bridge
-        Add the bridge with VLAN to virsh
-        Check that the bridge is in getVdsCaps
+        Check vNIC profile was created with description, port mirroring and
+        name
         """
-        vlan_helper.check_if_nic_in_host_nics(
-            nic=self.vlan_name, host=conf.HOST_0_NAME
+        attr_dict = ll_networks.get_vnic_profile_attr(
+            name=self.vnic_profile, network=self.net,
+            attr_list=["description", "port_mirroring", "name"]
         )
-        network_helper.is_network_in_vds_caps(
-            host_resource=conf.VDS_0_HOST, network=self.bridge_name
-        )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove the VLAN/bridge and clean host interfaces
-        """
-        vlan_helper.job_tear_down()
+        if (
+                attr_dict.get("description") != self.description or
+                attr_dict.get("port_mirroring") is not True or
+                attr_dict.get("name") != self.vnic_profile
+        ):
+            raise conf.NET_EXCEPTION(
+                "Attributes are not equal to what was set"
+            )
 
 
 class TestSanity02(TestSanityCaseBase):
@@ -140,7 +135,7 @@ class TestSanity02(TestSanityCaseBase):
                 nic=conf.HOST_0_NICS[2], state="off"
             )
         }
-        network_host_api_dict = {
+        sn_dict = {
             "add": {
                 "1": {
                     "nic": conf.HOST_0_NICS[1],
@@ -184,7 +179,8 @@ class TestSanity02(TestSanityCaseBase):
 
             }
         }
-        helper.send_setup_networks(sn_dict=network_host_api_dict)
+        if not hl_host_network.setup_networks(conf.HOST_0_NAME, **sn_dict):
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-9851")
     def test_02_multiple_actions(self):
@@ -197,7 +193,7 @@ class TestSanity02(TestSanityCaseBase):
         Remove network from BOND
         Remove BOND
         """
-        network_host_api_dict = {
+        sn_dict = {
             "update": {
                 "1": {
                     "nic": self.bond_1,
@@ -235,7 +231,8 @@ class TestSanity02(TestSanityCaseBase):
                 }
             }
         }
-        helper.send_setup_networks(sn_dict=network_host_api_dict)
+        if not hl_host_network.setup_networks(conf.HOST_0_NAME, **sn_dict):
+            raise conf.NET_EXCEPTION()
 
 
 class TestSanity03(TestSanityCaseBase):
@@ -503,16 +500,13 @@ class TestSanity06(TestSanityCaseBase):
                 network=cls.nets[i], plugged=plug_link_param_list[i][0],
                 linked=plug_link_param_list[i][1]
             ):
-                raise conf.NET_EXCEPTION(
-                    "Cannot add VNIC %s to %s" % (nic_name, conf.VM_0)
-                )
+                raise conf.NET_EXCEPTION()
+
         if not ll_vms.addNic(
             positive=True, vm=conf.VM_0, name=conf.NIC_NAME[5], network=None,
             plugged="true", linked="true"
         ):
-            raise conf.NET_EXCEPTION(
-                "Cannot add VNIC %s to %s" % (conf.NIC_NAME[5], conf.VM_0)
-            )
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-3829")
     def test_check_combination_plugged_linked_values(self):
@@ -522,31 +516,22 @@ class TestSanity06(TestSanityCaseBase):
         for nic_name in (
             conf.NIC_NAME[1], conf.NIC_NAME[3], conf.NIC_NAME[5]
         ):
-            logger.info("Check that linked status on %s in True", nic_name)
             if not ll_vms.get_vm_nic_linked(vm=conf.VM_0, nic=nic_name):
-                raise conf.NET_EXCEPTION(
-                    "NIC %s is not linked but should be" % nic_name
-                )
+                raise conf.NET_EXCEPTION()
+
         for nic_name in (
             conf.NIC_NAME[1], conf.NIC_NAME[2], conf.NIC_NAME[5]
         ):
-            logger.info("Check that plugged status on %s in True", nic_name)
             if not ll_vms.get_vm_nic_plugged(vm=conf.VM_0, nic=nic_name):
-                raise conf.NET_EXCEPTION(
-                    "NIC %s is not plugged but should be" % nic_name
-                )
+                raise conf.NET_EXCEPTION()
+
         for nic_name in (conf.NIC_NAME[2], conf.NIC_NAME[4]):
-            logger.info("Check that linked status on %s in False", nic_name)
             if ll_vms.get_vm_nic_linked(vm=conf.VM_0, nic=nic_name):
-                raise conf.NET_EXCEPTION(
-                    "NIC %s is linked but shouldn't be" % nic_name
-                )
+                raise conf.NET_EXCEPTION()
+
         for nic_name in (conf.NIC_NAME[3], conf.NIC_NAME[4]):
-            logger.info("Check that plugged status on %s in False", nic_name)
             if ll_vms.get_vm_nic_plugged(vm=conf.VM_0, nic=nic_name):
-                raise conf.NET_EXCEPTION(
-                    "NIC %s is plugged but shouldn't be" % nic_name
-                )
+                raise conf.NET_EXCEPTION()
 
     @classmethod
     def teardown_class(cls):
@@ -554,10 +539,9 @@ class TestSanity06(TestSanityCaseBase):
         Remove networks from the setup.
         """
         helper.stop_vm()
-        logger.info("Removing all the VNICs besides management network")
         for nic in conf.NIC_NAME[1:6]:
-            if not ll_vms.removeNic(positive=True, vm=conf.VM_0, nic=nic):
-                logger.error("Cannot remove nic %s from setup", nic)
+            ll_vms.removeNic(positive=True, vm=conf.VM_0, nic=nic)
+
         super(TestSanity06, cls).teardown_class()
 
 
@@ -600,7 +584,6 @@ class TestSanity07(NetworkTest):
         """
         Extend the default range values of Default MAC pool
         """
-        logger.info("Extend the default MAC pool range")
         mac_pool_helper.update_mac_pool_range_size(
             mac_pool_name=conf.DEFAULT_MAC_POOL, size=(2, 2)
         )
@@ -610,28 +593,22 @@ class TestSanity07(NetworkTest):
         """
         Add new ranges to the Default MAC pool
         """
-        logger.info("Add new ranges to the Default MAC pool")
         if not hl_mac_pool.add_ranges_to_mac_pool(
             mac_pool_name=conf.DEFAULT_MAC_POOL,
             range_list=conf.MAC_POOL_RANGE_LIST
         ):
-            raise conf.NET_EXCEPTION(
-                "Couldn't add ranges to the Default MAC Pool"
-            )
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-14511")
     def test_02_remove_new_added_range(self):
         """
         Remove added ranges from the Default MAC pool
         """
-        logger.info("Remove added ranges from the Default MAC pool")
         if not hl_mac_pool.remove_ranges_from_mac_pool(
             mac_pool_name=conf.DEFAULT_MAC_POOL,
             range_list=conf.MAC_POOL_RANGE_LIST
         ):
-            raise conf.NET_EXCEPTION(
-                "Couldn't remove the ranges from the Default MAC pool"
-            )
+            raise conf.NET_EXCEPTION()
 
     @classmethod
     def teardown_class(cls):
@@ -918,20 +895,14 @@ class TestSanity11(NetworkTest):
         (vNIC CustomProperties)
         Start VM
         """
-        logger.info(
-            "Update custom properties on %s to %s", conf.MGMT_BRIDGE,
-            cls.prop_queue
-        )
         if not ll_networks.update_vnic_profile(
             name=conf.MGMT_BRIDGE, network=conf.MGMT_BRIDGE,
             data_center=cls.dc, custom_properties=cls.prop_queue
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to set custom properties on %s" % conf.MGMT_BRIDGE
-            )
-        logger.info("Start %s", cls.vm)
+            raise conf.NET_EXCEPTION()
+
         if not ll_vms.startVm(positive=True, vm=cls.vm, wait_for_ip=True):
-            raise conf.NET_EXCEPTION("Failed to start %s" % cls.vm)
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-4309")
     def test_multiple_queue_nics(self):
@@ -941,13 +912,10 @@ class TestSanity11(NetworkTest):
         host_resource = global_helper.get_host_resource_of_running_vm(
             vm=self.vm
         )
-        logger.info("Check that qemu has %s queues", self.num_queues)
         if not network_helper.check_queues_from_qemu(
             vm=self.vm, host_obj=host_resource, num_queues=self.num_queues
         ):
-            raise conf.NET_EXCEPTION(
-                "qemu did not return the expected number of queues"
-            )
+            raise conf.NET_EXCEPTION()
 
     @classmethod
     def teardown_class(cls):
@@ -955,17 +923,11 @@ class TestSanity11(NetworkTest):
         Remove custom properties with queues from management vNIC profile
         Stop VM
         """
-        logger.info("Remove custom properties on %s", conf.MGMT_BRIDGE)
-        if not ll_networks.update_vnic_profile(
+        ll_networks.update_vnic_profile(
             name=conf.MGMT_BRIDGE, network=conf.MGMT_BRIDGE,
             data_center=cls.dc, custom_properties="clear"
-        ):
-            logger.error(
-                "Failed to remove custom properties from %s", conf.MGMT_BRIDGE
-            )
-        logger.info("Stop %s", cls.vm)
-        if not ll_vms.stopVm(positive=True, vm=cls.vm):
-            logger.error("Failed to stop %s", cls.cm)
+        )
+        ll_vms.stopVm(positive=True, vm=cls.vm)
 
 
 class TestSanity12(TestSanityCaseBase):
@@ -995,18 +957,10 @@ class TestSanity12(TestSanityCaseBase):
                 }
             }
         }
-        logger.info(
-            "Attaching %s to %s on %s",
-            self.net, conf.HOST_0_NICS[1], conf.HOST_0_NAME
-        )
         if not hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **network_host_api_dict
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s" % (
-                    self.net, conf.HOST_0_NICS[1], conf.HOST_0_NAME
-                )
-            )
+            raise conf.NET_EXCEPTION()
 
 
 @attr(tier=1)
@@ -1024,9 +978,8 @@ class TestSanity13(NetworkTest):
         Start VM
         Get host resource where VM is running
         """
-        logger.info("Start %s", cls.vm)
         if not ll_vms.startVm(positive=True, vm=cls.vm, wait_for_ip=True):
-            raise conf.NET_EXCEPTION("Failed to start %s" % cls.vm)
+            raise conf.NET_EXCEPTION()
 
         cls.host_resource = global_helper.get_host_resource_of_running_vm(
             vm=cls.vm
@@ -1037,43 +990,38 @@ class TestSanity13(NetworkTest):
         """
         Check that Network Filter is enabled by default on engine
         """
-        logger.info("Check that Network Filter is enabled on engine")
         if not test_utils.check_spoofing_filter_rule_by_ver(
             engine_resource=conf.ENGINE
         ):
-            raise conf.NET_EXCEPTION("Network Filter is disabled on engine")
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-3777")
     def test_check_filter_status_vdsm(self):
         """
         Check that Network Filter is enabled by default on VDSM
         """
-        logger.info("Check that Network Filter is enabled on VDSM")
         if not ll_hosts.check_network_filtering(
             positive=True, vds_resource=self.host_resource
         ):
-            raise conf.NET_EXCEPTION("Network Filter is disabled on VDSM")
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-3779")
     def test_check_filter_status_dump_xml(self):
         """
         Check that Network Filter is enabled by default via dumpxml
         """
-        logger.info("Check that Network Filter is enabled via dumpxml")
         if not ll_hosts.check_network_filtering_dumpxml(
             positive=True, vds_resource=self.host_resource, vm=self.vm,
             nics="1"
         ):
-            raise conf.NET_EXCEPTION("Network Filter is disabled via dumpxml")
+            raise conf.NET_EXCEPTION()
 
     @classmethod
     def teardown_class(cls):
         """
         Stop VM
         """
-        logger.info("Stop %s", cls.vm)
-        if not ll_vms.stopVm(positive=True, vm=cls.vm):
-            logger.error("Failed to stop %s", cls.vm)
+        ll_vms.stopVm(positive=True, vm=cls.vm)
 
 
 class TestSanity14(TestSanityCaseBase):
@@ -1095,8 +1043,7 @@ class TestSanity14(TestSanityCaseBase):
         Create BOND
         Add lb_1 and lb_2 to VM and VLAN networks
         """
-        logger.info("Create %s on %s", cls.bond, conf.HOST_0_NAME)
-        network_host_api_dict = {
+        sn_dict = {
             "add": {
                 "1": {
                     "slaves": conf.DUMMYS[:2],
@@ -1104,29 +1051,18 @@ class TestSanity14(TestSanityCaseBase):
                 }
             }
         }
-        helper.send_setup_networks(sn_dict=network_host_api_dict)
-        logger.info(
-            "Attach %s label to %s and %s",
-            cls.lb_1, cls.net_1_nic, cls.net_2_nic_vlan
-        )
+        if not hl_host_network.setup_networks(conf.HOST_0_NAME, **sn_dict):
+            raise conf.NET_EXCEPTION()
+
         if not ll_networks.add_label(
             label=cls.lb_1, networks=[cls.net_1_nic, cls.net_2_nic_vlan]
         ):
-            raise conf.NET_EXCEPTION(
-                "Couldn't attach label %s to network %s and %s" %
-                (cls.lb_1, cls.net_1_nic, cls.net_2_nic_vlan)
-            )
-        logger.info(
-            "Attach %s label to %s and %s",
-            cls.lb_2, cls.net_3_bond, cls.net_4_bond_vlan
-        )
+            raise conf.NET_EXCEPTION()
+
         if not ll_networks.add_label(
             label=cls.lb_2, networks=[cls.net_3_bond, cls.net_4_bond_vlan]
         ):
-            raise conf.NET_EXCEPTION(
-                "Couldn't attach label %s to network %s and %s" %
-                (cls.lb_2, cls.net_3_bond, cls.net_4_bond_vlan)
-            )
+            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-13511")
     def test_label_nic_vm_vlan(self):
@@ -1137,24 +1073,16 @@ class TestSanity14(TestSanityCaseBase):
         vlan_nic = lib_network.vlan_int_name(
             conf.HOST_0_NICS[1], conf.VLAN_IDS[12]
         )
-        logger.info(
-            "Attach label %s to host NIC %s ", self.lb_1, conf.HOST_0_NICS[1]
-        )
+
         if not ll_networks.add_label(
             label=self.lb_1,
             host_nic_dict={
                 conf.HOST_0_NAME: [conf.HOST_0_NICS[1]]
             }
         ):
-            raise conf.NET_EXCEPTION(
-                "Couldn't attach label %s to host NIC %s" %
-                (self.lb_1, conf.HOST_0_NICS[1])
-            )
+            raise conf.NET_EXCEPTION()
+
         for net in (self.net_1_nic, self.net_2_nic_vlan):
-            logger.info(
-                "Check that network %s is attached to host NIC %s",
-                net, conf.HOST_0_NICS[1]
-            )
             host_nic = (
                 vlan_nic if net == self.net_2_nic_vlan else
                 conf.HOST_0_NICS[1]
@@ -1162,10 +1090,7 @@ class TestSanity14(TestSanityCaseBase):
             if not ll_networks.check_network_on_nic(
                 network=net, host=conf.HOST_0_NAME, nic=host_nic
             ):
-                raise conf.NET_EXCEPTION(
-                    "Network %s is not attached to host NIC %s " %
-                    (net, conf.HOST_0_NICS[1])
-                )
+                raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-13894")
     def test_label_bond_vm_vlan(self):
@@ -1174,28 +1099,21 @@ class TestSanity14(TestSanityCaseBase):
         labels
         """
         vlan_bond = lib_network.vlan_int_name(self.bond, conf.VLAN_IDS[13])
-        logger.info("Attach label %s to bond %s ", self.lb_2, self.bond)
         if not ll_networks.add_label(
             label=self.lb_2, host_nic_dict={
                 conf.HOST_0_NAME: [self.bond]
             }
         ):
-            raise conf.NET_EXCEPTION(
-                "Couldn't attach label %s to bond %s" % (self.lb_2, self.bond)
-            )
+            raise conf.NET_EXCEPTION()
+
         for net in (self.net_3_bond, self.net_4_bond_vlan):
-            logger.info(
-                "Check that network %s is attached to bond %s", net, self.bond
-            )
             bond = (
                 vlan_bond if net == self.net_4_bond_vlan else self.bond
             )
             if not ll_networks.check_network_on_nic(
                 network=net, host=conf.HOST_0_NAME, nic=bond
             ):
-                raise conf.NET_EXCEPTION(
-                    "Network %s is not attached to bond %s " % (net, self.bond)
-                )
+                raise conf.NET_EXCEPTION()
 
     @classmethod
     def teardown_class(cls):
@@ -1203,17 +1121,15 @@ class TestSanity14(TestSanityCaseBase):
         Remove label from the bond.
         Call the parent teardown
         """
-        err = "Couldn't remove %s label from %s" % (cls.lb_2, cls.bond)
-        logger.info("Removing %s label from %s", cls.lb_2, cls.bond)
         try:
-            if not ll_networks.remove_label(
+            ll_networks.remove_label(
                 host_nic_dict={
                     conf.HOST_0_NAME: [cls.bond]
                 }
-            ):
-                logger.error(err)
+            )
         except apis_exceptions.EntityNotFound:
-            logger.error(err)
+            pass
+
         super(TestSanity14, cls).teardown_class()
 
 
@@ -1234,7 +1150,7 @@ class TestSanity15(TestSanityCaseBase):
         Set the network host NIC down
         """
         required_network_helper.deactivate_hosts(host=conf.HOST_0_NAME)
-        network_host_api_dict = {
+        sn_dict = {
             "add": {
                 "1": {
                     "network": cls.net,
@@ -1242,12 +1158,11 @@ class TestSanity15(TestSanityCaseBase):
                 }
             }
         }
-        helper.send_setup_networks(sn_dict=network_host_api_dict)
-        logger.info("Set %s down", conf.HOST_0_NICS[1])
+        if not hl_host_network.setup_networks(conf.HOST_0_NAME, **sn_dict):
+            raise conf.NET_EXCEPTION()
+
         if not conf.VDS_0_HOST.network.if_down(nic=conf.HOST_0_NICS[1]):
-            raise conf.NET_EXCEPTION(
-                "Failed to set down %s" % conf.HOST_0_NICS[1]
-            )
+            raise conf.NET_EXCEPTION()
 
     @bz({"1310417": {}})
     @polarion("RHEVM3-3750")
@@ -1255,80 +1170,19 @@ class TestSanity15(TestSanityCaseBase):
         """
         Check that Host is non-operational
         """
-        logger.info("Check that %s is non-operational", conf.HOST_0_NAME)
         if not ll_hosts.waitForHostsStates(
             positive=True, names=conf.HOST_0_NAME, states="non_operational",
             timeout=conf.TIMEOUT * 2
         ):
-            raise conf.NET_EXCEPTION(
-                "%s status is not non-operational" % conf.HOST_0_NAME
-            )
+            raise conf.NET_EXCEPTION()
 
     @classmethod
     def teardown_class(cls):
         """
         Activate all hosts
         """
-        if not hl_networks.remove_net_from_setup(
+        hl_networks.remove_net_from_setup(
             data_center=conf.DC_0, network=[cls.net], host=[]
-        ):
-            logger.error(
-                "Failed to remove %s from %s", cls.net, conf.DC_0
-            )
+        )
         required_network_helper.activate_hosts()
         super(TestSanity15, cls).teardown_class()
-
-
-class TestSanity16(TestSanityCaseBase):
-
-    """
-    Create new vNIC profile and make sure all its parameters exist in API
-    """
-    __test__ = True
-    net = conf.NETS[16][0]
-    dc = conf.DC_0
-    vnic_profile = conf.VNIC_PROFILES[16][0]
-    description = "vnic_profile_test"
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Attach network to host
-        Create additional vNIC profile with description and port mirroring
-        """
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "network": cls.net,
-                    "nic": conf.HOST_0_NICS[1]
-                }
-            }
-        }
-        helper.send_setup_networks(sn_dict=network_host_api_dict)
-        if not ll_networks.add_vnic_profile(
-            positive=True, name=cls.vnic_profile, data_center=cls.dc,
-            network=cls.net, port_mirroring=True, description=cls.description
-        ):
-            raise conf.NET_EXCEPTION(
-                "Couldn't create second VNIC profile %s for %s" %
-                (cls.vnic_profile, cls.net)
-            )
-
-    @polarion("RHEVM3-3970")
-    def test_check_attr_vnic_profile(self):
-        """
-        Check vNIC profile was created with description, port mirroring and
-        name
-        """
-        attr_dict = ll_networks.get_vnic_profile_attr(
-            name=self.vnic_profile, network=self.net,
-            attr_list=["description", "port_mirroring", "name"]
-        )
-        if (
-                attr_dict.get("description") != self.description or
-                attr_dict.get("port_mirroring") is not True or
-                attr_dict.get("name") != self.vnic_profile
-        ):
-            raise conf.NET_EXCEPTION(
-                "Attributes are not equal to what was set"
-            )

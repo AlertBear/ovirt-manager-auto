@@ -25,7 +25,7 @@ from art.rhevm_api.tests_lib.high_level.networks import(
 from art.rhevm_api.tests_lib.low_level.networks import(
     updateNetwork, update_vnic_profile, getNetworkVnicProfiles,
     get_vnic_profile_obj, add_vnic_profile, remove_vnic_profile,
-    findVnicProfile, get_vnic_profile_attr, removeNetwork
+    findVnicProfile, removeNetwork
 )
 from art.rhevm_api.tests_lib.low_level.vms import(
     addNic, updateNic, removeNic, createVm, checkVmNicProfile, removeVm
@@ -1320,70 +1320,6 @@ class TestVNICProfileCase14(TestCase):
         if not removeNic(True, config.VM_NAME[0], config.NIC_NAME[1]):
             logger.error("Cannot remove %s from setup", config.NIC_NAME[1])
 
-        logger.info("Remove network %s from setup", config.NETWORKS[0])
-        if not remove_net_from_setup(
-            host=config.HOSTS[0], network=[config.NETWORKS[0]]
-        ):
-            logger.error(
-                "Cannot remove network %s from setup", config.NETWORKS[0]
-            )
-
-
-@attr(tier=2)
-class TestVNICProfileCase15(TestCase):
-
-    """
-    Create new VNIC profile and make sure all its parameters exist in API
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical vm network on DC/Cluster
-        Create additional VNIC profile with Description, Port mirroring
-        """
-        local_dict = {config.NETWORKS[0]: {"required": "false"}}
-
-        logger.info(
-            "Creating network %s with default vnic profile %s",
-            config.NETWORKS[0], config.NETWORKS[0]
-        )
-        if not createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            network_dict=local_dict
-        ):
-            raise NetworkException("Cannot create and attach network")
-
-        logger.info(
-            "Creating additional profile %s for network %s",
-            config.NETWORKS[1], config.NETWORKS[0]
-        )
-        if not add_vnic_profile(
-            positive=True, name=config.NETWORKS[1],
-            data_center=config.DC_NAME[0], network=config.NETWORKS[0],
-            port_mirroring=True, description="vnic_p_desc"
-        ):
-            raise NetworkException("Couldn't create second VNIC profile")
-
-    @polarion("RHEVM3-3970")
-    def test_check_attr(self):
-        """
-        Check VNIC profile created with parameters has these parameters
-        """
-        attr_dict = get_vnic_profile_attr(
-            name=config.NETWORKS[1], network=config.NETWORKS[0],
-            attr_list=["description", "port_mirroring", "name"]
-        )
-        if (
-                attr_dict.get("description") != "vnic_p_desc" or
-                attr_dict.get("port_mirroring") is not True or
-                attr_dict.get("name") != config.NETWORKS[1]
-        ):
-            raise NetworkException("Attributes are not equal to what was set")
-
-    @classmethod
-    def teardown_class(cls):
         logger.info("Remove network %s from setup", config.NETWORKS[0])
         if not remove_net_from_setup(
             host=config.HOSTS[0], network=[config.NETWORKS[0]]

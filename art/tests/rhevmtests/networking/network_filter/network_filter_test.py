@@ -23,59 +23,6 @@ logger = logging.getLogger("Network_Filter_Cases")
 
 
 @attr(tier=2)
-class TestNetworkFilterCase01(TestCase):
-    """
-    Check that Network Filter is enabled by default
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        No need to run setup_class for this test
-        """
-        logger.info("No need to run setup_class for this test")
-
-    @polarion("RHEVM3-3775")
-    def test_check_filter_status_engine(self):
-        """
-        Check that Network Filter is enabled by default on engine
-        """
-        logger.info("Check that Network Filter is enabled on engine")
-        if not test_utils.check_spoofing_filter_rule_by_ver(
-            engine_resource=config.ENGINE
-        ):
-            raise config.NET_EXCEPTION("Network Filter is disabled on engine")
-
-    @polarion("RHEVM3-3777")
-    def test_check_filter_status_vdsm(self):
-        """
-        Check that Network Filter is enabled by default on VDSM
-        """
-        logger.info("Check that Network Filter is enabled on VDSM")
-        if not ll_hosts.check_network_filtering(
-                positive=True, vds_resource=config.VDS_HOSTS[0]
-        ):
-            raise config.NET_EXCEPTION("Network Filter is disabled on VDSM")
-
-    @polarion("RHEVM3-3779")
-    def test_check_filter_status_dump_xml(self):
-        """
-        Check that Network Filter is enabled by default via dumpxml
-        """
-        logger.info("Check that Network Filter is enabled via dumpxml")
-        if not ll_hosts.check_network_filtering_dumpxml(
-            positive=True, vds_resource=config.VDS_HOSTS[0],
-            vm=config.VM_NAME[0], nics="1"
-        ):
-            raise config.NET_EXCEPTION(
-                "Network Filter is disabled via dumpxml"
-            )
-
-##############################################################################
-
-
-@attr(tier=2)
 @common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
 class TestNetworkFilterCase02(TestCase):
     """

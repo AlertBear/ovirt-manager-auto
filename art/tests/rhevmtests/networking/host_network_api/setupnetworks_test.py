@@ -228,28 +228,21 @@ class TestHostNetworkApiSetupNetworks06(helper.TestHostNetworkApiTestCaseBase):
 
 class TestHostNetworkApiSetupNetworks07(helper.TestHostNetworkApiTestCaseBase):
     """
-    Attach network with custom properties to host NIC
+    Attach label to host NIC
     """
     __test__ = True
-    net = conf.SN_NETS[7][0]
+    label = conf.LABEL_LIST[0]
 
-    @polarion("RHEVM3-10478")
-    def test_network_custom_properties_on_host(self):
+    @polarion("RHEVM3-12411")
+    def test_label_on_host_nic(self):
         """
-        Attach network with custom properties to host NIC
+        Attach label to host NIC
         """
-        properties_dict = {
-            "bridge_opts": conf.PRIORITY,
-            "ethtool_opts": conf.TX_CHECKSUM.format(
-                nic=conf.HOST_0_NICS[1], state="off"
-            )
-        }
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "network": self.net,
-                    "nic": conf.HOST_0_NICS[1],
-                    "properties": properties_dict
+                    "labels": [self.label],
+                    "nic": conf.HOST_0_NICS[1]
                 }
             }
         }
@@ -1027,152 +1020,41 @@ class TestHostNetworkApiSetupNetworks23(helper.TestHostNetworkApiTestCaseBase):
 
 class TestHostNetworkApiSetupNetworks24(helper.TestHostNetworkApiTestCaseBase):
     """
-    Create:
-    Attach Non-VM + 2 VLAN networks (IP and custom properties) to NIC1
-    Create BOND and attach Non-VM + 1 VLAN network with IP to BOND
-    Create empty BOND
-
-    Update:
-    Move network from NIC to existing BOND
-    Change NIC for existing network
-    Add slave to existing BOND and Move network from another BOND to it
-    Create new BOND with network attached to it
-    Remove network from NIC
-    Remove network from BOND
-    Remove BOND
+    Attach label to BOND
     """
-
     __test__ = True
+    bond_1 = "bond281"
+    dummys = conf.DUMMYS[:2]
+    label = conf.LABEL_LIST[0]
 
-    ip_netmask = conf.IPS[20]
-    ip_prefix = conf.IPS[21]
-    ip_prefix_2 = conf.IPS[39]
-    net_1 = conf.SN_NETS[24][0]
-    net_2 = conf.SN_NETS[24][1]
-    net_3 = conf.SN_NETS[24][2]
-    net_4 = conf.SN_NETS[24][3]
-    net_5 = conf.SN_NETS[24][4]
-    net_6 = conf.SN_NETS[24][5]
-    dummys_1 = conf.DUMMYS[:2]
-    dummys_2 = conf.DUMMYS[2:4]
-    dummys_3 = conf.DUMMYS[6:9]
-    dummys_4 = conf.DUMMYS[9:11]
-    dummys_5 = conf.DUMMYS[11]
-    dummys_6 = conf.DUMMYS[2:5]
-    dummys_7 = conf.DUMMYS[6:8]
-    bond_1 = "bond241"
-    bond_2 = "bond242"
-    bond_3 = "bond243"
-    bond_4 = "bond244"
-
-    @polarion("RHEVM3-9850")
-    def test_01_multiple_actions(self):
+    @classmethod
+    def setup_class(cls):
         """
-        Attach Non-VM + 2 VLAN networks (IP and custom properties) to NIC1
-        Create BOND and attach Non-VM + 1 VLAN network with IP to BOND
-        Create empty BOND
+        Create BOND
         """
-        conf.BASIC_IP_DICT_PREFIX["ip"]["address"] = self.ip_prefix
-        conf.BASIC_IP_DICT_NETMASK["ip"]["address"] = self.ip_netmask
-        properties_dict = {
-            "bridge_opts": conf.PRIORITY,
-            "ethtool_opts": conf.TX_CHECKSUM.format(
-                nic=conf.HOST_0_NICS[2], state="off"
-            )
-        }
-        network_host_api_dict = {
+        sn_dict = {
             "add": {
                 "1": {
-                    "nic": conf.HOST_0_NICS[1],
-                    "network": self.net_1
-                },
-                "2": {
-                    "nic": conf.HOST_0_NICS[1],
-                    "network": self.net_2,
-                },
-                "3": {
-                    "nic": conf.HOST_0_NICS[1],
-                    "network": self.net_3,
-                    "ip": conf.BASIC_IP_DICT_PREFIX,
-                    "properties": properties_dict
-                },
-                "4": {
-                    "nic": self.bond_1,
-                    "slaves": self.dummys_1
-                },
-                "5": {
-                    "nic": self.bond_1,
-                    "network": self.net_4,
-                    "ip": conf.BASIC_IP_DICT_NETMASK
-                },
-                "6": {
-                    "nic": self.bond_1,
-                    "network": self.net_5,
-                },
-                "7": {
-                    "nic": self.bond_2,
-                    "slaves": self.dummys_2
-                },
-                "8": {
-                    "nic": self.bond_3,
-                    "slaves": self.dummys_3
-                },
-                "9": {
-                    "nic": self.bond_4,
-                    "slaves": self.dummys_4
+                    "nic": cls.bond_1,
+                    "slaves": cls.dummys
                 }
-
             }
         }
         if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
+            host_name=conf.HOST_0_NAME, **sn_dict
         ):
             raise conf.NET_EXCEPTION()
 
-    @polarion("RHEVM3-9851")
-    def test_02_multiple_actions(self):
+    @polarion("RHEVM3-12412")
+    def test_label_on_bond(self):
         """
-        Move network from NIC to existing BOND
-        Change NIC for existing network
-        Add slave to existing BOND and Move network from another BOND to it
-        Create new BOND with network attached to it
-        Remove network from NIC
-        Remove network from BOND
-        Remove BOND
+        Attach label to BOND
         """
-        conf.BASIC_IP_DICT_PREFIX["ip"]["address"] = self.ip_prefix_2
         network_host_api_dict = {
-            "update": {
-                "1": {
-                    "nic": self.bond_1,
-                    "network": self.net_2,
-                },
-                "2": {
-                    "nic": self.dummys_5,
-                    "network": self.net_3,
-                    "ip": conf.BASIC_IP_DICT_PREFIX
-                },
-                "3": {
-                    "nic": self.bond_2,
-                    "network": self.net_5,
-                },
-                "4": {
-                    "nic": self.bond_2,
-                    "slaves": self.dummys_6
-                },
-                "5": {
-                    "nic": self.bond_3,
-                    "slaves": self.dummys_7
-                },
-            },
-            "remove": {
-                "networks": [self.net_1, self.net_4],
-                "bonds": [self.bond_4]
-            },
             "add": {
                 "1": {
-                    "nic": self.bond_3,
-                    "network": self.net_6
+                    "labels": [self.label],
+                    "nic": self.bond_1
                 }
             }
         }
@@ -1384,78 +1266,6 @@ class TestHostNetworkApiSetupNetworks26(helper.TestHostNetworkApiTestCaseBase):
                     "nic": self.bond_3,
                     "network": self.net_case_new_vlan
                 },
-            }
-        }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
-
-
-class TestHostNetworkApiSetupNetworks27(helper.TestHostNetworkApiTestCaseBase):
-    """
-    Attach label to host NIC
-    """
-    __test__ = True
-    label = conf.LABEL_LIST[0]
-
-    @polarion("RHEVM3-12411")
-    def test_label_on_host_nic(self):
-        """
-        Attach label to host NIC
-        """
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "labels": [self.label],
-                    "nic": conf.HOST_0_NICS[1]
-                }
-            }
-        }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
-
-
-class TestHostNetworkApiSetupNetworks28(helper.TestHostNetworkApiTestCaseBase):
-    """
-    Attach label to BOND
-    """
-    __test__ = True
-    bond_1 = "bond281"
-    dummys = conf.DUMMYS[:2]
-    label = conf.LABEL_LIST[0]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create BOND
-        """
-        sn_dict = {
-            "add": {
-                "1": {
-                    "nic": cls.bond_1,
-                    "slaves": cls.dummys
-                }
-            }
-        }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **sn_dict
-        ):
-            raise conf.NET_EXCEPTION()
-
-    @polarion("RHEVM3-12412")
-    def test_label_on_bond(self):
-        """
-        Attach label to BOND
-        """
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "labels": [self.label],
-                    "nic": self.bond_1
-                }
             }
         }
         if not hl_host_network.setup_networks(

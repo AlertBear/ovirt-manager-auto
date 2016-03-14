@@ -44,56 +44,7 @@ class TestLinkedCasesBase(NetworkTest):
             ll_vms.removeNic(positive=True, vm=cls.vm, nic=nic)
 
 
-class TestLinkedCase1(TestLinkedCasesBase):
-    """
-    Create permutation for the Plugged/Linked option on VNIC
-    """
-    __test__ = True
-    vm = conf.VM_NAME[0]
-    nic2 = conf.NIC_NAME[1]
-    nic3 = conf.NIC_NAME[2]
-    nic4 = conf.NIC_NAME[3]
-    nic5 = conf.NIC_NAME[4]
-    nic6 = conf.NIC_NAME[5]
-    nic_list = conf.NIC_NAME[1: 6]
-    plug_values = [True, True, False, False, True]
-    link_values = [True, False, True, False, True]
-    net_list = conf.NETS[1] + [None]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create 5 VNICs on VM with different params for plugged/linked
-        """
-        logger.info("Create VNICs with different plugged/linked permutations")
-        for nic_name, plug_value, link_value, net in zip(
-            cls.nic_list, cls.plug_values, cls.link_values, cls.net_list
-        ):
-            if not ll_vms.addNic(
-                positive=True, vm=cls.vm, name=nic_name,
-                network=net, plugged=plug_value, linked=link_value
-            ):
-                raise conf.NET_EXCEPTION()
-
-    @polarion("RHEVM3-3829")
-    def test_check_combination_plugged_linked_values(self):
-        """
-        Check all permutation for the Plugged/Linked options on VNIC
-        """
-        for nic_name, status in zip(self.nic_list, self.link_values):
-            if not ll_vms.get_vm_nic_linked(
-                vm=self.vm, nic=nic_name, positive=status
-            ):
-                raise conf.NET_EXCEPTION()
-
-        for nic_name, status in zip(self.nic_list, self.plug_values):
-            if not ll_vms.get_vm_nic_plugged(
-                vm=self.vm, nic=nic_name, positive=status
-            ):
-                raise conf.NET_EXCEPTION()
-
-
-class TestLinkedCase2(TestLinkedCasesBase):
+class TestLinkedCase01(TestLinkedCasesBase):
     """
     Add a new network to VM with default plugged and linked states
     Check that plugged and linked are True by default
@@ -127,7 +78,7 @@ class TestLinkedCase2(TestLinkedCasesBase):
 
 
 @common.skip_class_if(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
-class TestLinkedCase3(TestLinkedCasesBase):
+class TestLinkedCase02(TestLinkedCasesBase):
     """
     Create permutation for the Plugged/Linked vNIC
     Use e1000 and rtl8139 drivers
@@ -200,7 +151,7 @@ class TestLinkedCase3(TestLinkedCasesBase):
                 raise conf.NET_EXCEPTION()
 
 
-class TestLinkedCase4(TestLinkedCasesBase):
+class TestLinkedCase03(TestLinkedCasesBase):
     """
     Try to run VM with network attached to Cluster but not to the host
     The test should fail as VM can't run when there is no network on
@@ -245,13 +196,13 @@ class TestLinkedCase4(TestLinkedCasesBase):
         """
         Remove vNICs from VM and network from the setup.
         """
-        super(TestLinkedCase4, cls).teardown_class()
+        super(TestLinkedCase03, cls).teardown_class()
         ll_networks.removeNetwork(
             positive=True, network=cls.net, data_center=conf.DC_0
         )
 
 
-class TestLinkedCase5(TestLinkedCasesBase):
+class TestLinkedCase04(TestLinkedCasesBase):
     """
     Editing plugged VNIC with port mirroring enabled on running VM
     """
@@ -301,13 +252,13 @@ class TestLinkedCase5(TestLinkedCasesBase):
         """
         Remove vNICs from VM and remove vNIC profile
         """
-        super(TestLinkedCase5, cls).teardown_class()
+        super(TestLinkedCase04, cls).teardown_class()
         ll_networks.remove_vnic_profile(
             positive=True, vnic_profile_name=cls.vprofile, network=cls.net
         )
 
 
-class TestLinkedCase6(TestLinkedCasesBase):
+class TestLinkedCase05(TestLinkedCasesBase):
     """
     Create VNICs with linked/unlinked states on running VM.
     Change network parameters for both VNICs:
@@ -384,7 +335,7 @@ class TestLinkedCase6(TestLinkedCasesBase):
 
 
 @common.skip_class_if(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
-class TestLinkedCase7(TestLinkedCasesBase):
+class TestLinkedCase06(TestLinkedCasesBase):
     """
     Changing several network parameters at once on non-running VM
     """
@@ -475,7 +426,7 @@ class TestLinkedCase7(TestLinkedCasesBase):
         Remove vNIC profile
         Stop VM
         """
-        super(TestLinkedCase7, cls).teardown_class()
+        super(TestLinkedCase06, cls).teardown_class()
         ll_networks.remove_vnic_profile(
             positive=True, vnic_profile_name=cls.vprofile, network=cls.net2
         )

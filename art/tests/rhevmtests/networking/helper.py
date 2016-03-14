@@ -244,9 +244,6 @@ def create_host_net_qos(
     :type qos_dict: dict
     :raises: NetworkException
     """
-    logger.info(
-        "Create new network host QoS profile with parameters %s", qos_dict
-    )
     result = ll_dc.add_qos_to_datacenter(
         datacenter=datacenter, qos_name=qos_name,
         qos_type=conf.HOST_NET_QOS_TYPE, **qos_dict

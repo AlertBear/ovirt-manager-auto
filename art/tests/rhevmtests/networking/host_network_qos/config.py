@@ -32,7 +32,16 @@ HOST_NET_QOS_TYPE = "hostnetwork"
 TEST_VALUE = 10
 
 NETS_DICT = {
+    NETS[1][0]: {
+        "vlan_id": VLAN_IDS[15],
+        "required": "false"
+    },
+    NETS[1][1]: {
+        "vlan_id": VLAN_IDS[16],
+        "required": "false"
+    },
     NETS[2][0]: {
+        "usages": "",
         "required": "false"
     },
     NETS[3][0]: {
@@ -69,18 +78,6 @@ NETS_DICT = {
     },
     NETS[11][1]: {
         "vlan_id": VLAN_IDS[14],
-        "required": "false"
-    },
-    NETS[12][0]: {
-        "vlan_id": VLAN_IDS[15],
-        "required": "false"
-    },
-    NETS[12][1]: {
-        "vlan_id": VLAN_IDS[16],
-        "required": "false"
-    },
-    NETS[13][0]: {
-        "usages": "",
         "required": "false"
     },
 }

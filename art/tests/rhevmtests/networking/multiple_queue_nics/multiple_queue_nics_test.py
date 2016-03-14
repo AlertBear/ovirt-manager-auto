@@ -37,6 +37,7 @@ def setup_module():
     HOST_NAME1 = get_host_name_from_engine(config.VDS_HOSTS[1].ip)
 
 
+@attr(tier=2)
 class TestMultipleQueueNicsTearDown(TestCase):
     """
     Teardown class for MultipleQueueNics
@@ -64,57 +65,7 @@ class TestMultipleQueueNicsTearDown(TestCase):
             logger.error("Failed to stop %s", config.VM_NAME[0])
 
 
-@attr(tier=2)
 class TestMultipleQueueNics01(TestMultipleQueueNicsTearDown):
-    """
-    Config queue on existing network
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Configure and update queue value on vNIC profile for exiting network
-        (vNIC CustomProperties) and start VM
-        """
-        logger.info(
-            "Update custom properties on %s to %s", config.MGMT_BRIDGE,
-            config.PROP_QUEUES[0]
-        )
-        if not update_vnic_profile(
-            name=config.MGMT_BRIDGE, network=config.MGMT_BRIDGE,
-            data_center=config.DC_NAME[0],
-            custom_properties=config.PROP_QUEUES[0]
-        ):
-            raise NetworkException(
-                "Failed to set custom properties on %s" % config.MGMT_BRIDGE
-            )
-        logger.info("Start %s", config.VM_NAME[0])
-        if not startVm(positive=True, vm=config.VM_NAME[0], wait_for_ip=True):
-            raise NetworkException("Failed to start %s" % config.VM_NAME[0])
-
-    @polarion("RHEVM3-4309")
-    def test_multiple_queue_nics(self):
-        """
-        Check that queue exist in qemu process, vdsm.log and engine.log
-        """
-        logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
-        # get IP of the host where VM runs
-        vm_host_ip = get_host_ip_from_engine(get_vm_host(config.VM_NAME[0]))
-        # find apropriate host object for the vm_host_ip in VDS_HOSTS
-        host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
-        if not net_help.check_queues_from_qemu(
-            vm=config.VM_NAME[0],
-            host_obj=host_obj,
-            num_queues=config.NUM_QUEUES[0]
-        ):
-            raise NetworkException(
-                "qemu did not return the expected number of queues"
-            )
-
-
-@attr(tier=2)
-class TestMultipleQueueNics02(TestMultipleQueueNicsTearDown):
     """
     1) Verify that number of queues is not updated on running VM
     2) Verify that number of queues is updated on new VM boot
@@ -213,8 +164,7 @@ class TestMultipleQueueNics02(TestMultipleQueueNicsTearDown):
             )
 
 
-@attr(tier=2)
-class TestMultipleQueueNics03(TestMultipleQueueNicsTearDown):
+class TestMultipleQueueNics02(TestMultipleQueueNicsTearDown):
     """
     Check that queue survive VM hibernate
     """
@@ -283,8 +233,7 @@ class TestMultipleQueueNics03(TestMultipleQueueNicsTearDown):
             )
 
 
-@attr(tier=2)
-class TestMultipleQueueNics04(TestMultipleQueueNicsTearDown):
+class TestMultipleQueueNics03(TestMultipleQueueNicsTearDown):
     """
     Check queue exists for VM from template
     """
@@ -404,11 +353,10 @@ class TestMultipleQueueNics04(TestMultipleQueueNicsTearDown):
         if not removeTemplate(positive=True, template="queues_template"):
             logger.error("Failed to remove queues_template")
 
-        super(TestMultipleQueueNics04, cls).teardown_class()
+        super(TestMultipleQueueNics03, cls).teardown_class()
 
 
-@attr(tier=2)
-class TestMultipleQueueNics05(TestMultipleQueueNicsTearDown):
+class TestMultipleQueueNics04(TestMultipleQueueNicsTearDown):
     """
     Check that queues survive VM migration
     """
