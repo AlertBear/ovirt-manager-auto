@@ -214,14 +214,23 @@ class FixturesLoader(object):
         super(FixturesLoader, self).__init__()
         self.fixture_modules = []
 
-    def pytest_ignore_collect(self, path, config):
+    def _add_fixture(self, path):
+        for p in self.fixture_modules:
+            if p.samefile(path):
+                break
+        else:
+            self.fixture_modules.append(path)
+
+    def pytest_collect_file(self, path, parent):
         """
         Collect all fixtures.py files to load them afterwards.
         """
         if path.basename == 'fixtures.py':
-            self.fixture_modules.append(path)
-            return True  # return True to skip file
-        return False
+            self._add_fixture(path)
+        else:
+            new_path = path.dirpath().join('fixtures.py')
+            if new_path.exists():
+                self._add_fixture(new_path)
 
     def pytest_collection_finish(self, session):
         """
