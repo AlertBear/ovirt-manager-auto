@@ -4348,7 +4348,7 @@ def get_vm_boot_sequence(vm_name):
     return [boot.get_dev() for boot in boots]
 
 
-def remove_all_vms_from_cluster(cluster_name, skip=None, wait=False):
+def remove_all_vms_from_cluster(cluster_name, skip=[], wait=False):
     """
     Stop if need and remove all exists vms from specific cluster
 
@@ -4362,9 +4362,10 @@ def remove_all_vms_from_cluster(cluster_name, skip=None, wait=False):
     :return: True, if all vms removed from cluster, False otherwise
     :rtype: bool
     """
-    logger.info("Remove VMs in cluster except %s", ', '.join(skip))
-    if skip is None:
-        skip = []
+    logger_message = "Remove VMs in cluster"
+    if skip:
+        logger_message += " except %s" % ", ".join(skip)
+    logger.info(logger_message)
     vms_in_cluster = []
     cluster_name_query = "name=%s" % cluster_name
     cluster_obj = CLUSTER_API.query(cluster_name_query)[0]
