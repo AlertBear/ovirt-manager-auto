@@ -255,9 +255,12 @@ def readTestRunOpts(path, redefs):
 
 
 def configure_provisioning(config):
+    logger = logging.getLogger("provisioning_tool")
     pconf = config['PROVISIONING_TOOLS']
     if not pconf.as_bool('enabled'):
         return
+    # Log message bellow is consumed by groovy post build script. Don't remove!
+    logger.info("Configuring provisioning tools.")
     provisioning_tool = pconf['provisioning_tool']
     opts['provisioning_tool'] = provisioning_tool
     provisioning_tool = provisioning_tool.upper()
