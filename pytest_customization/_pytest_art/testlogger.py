@@ -15,6 +15,12 @@ __all__ = [
 
 
 DELIMITER = "=" * 80
+BUGZILLA_SHOW_BUG_URL = "https://bugzilla.redhat.com/show_bug.cgi?id=%s"
+POLARION_WI_RHEVM_URL = (
+    "https://polarion.engineering.redhat.com/polarion/#"
+    "/project/RHEVM3/workitem?id=%s"
+)
+JIRA_SHOW_ISSUE_URL = "https://projects.engineering.redhat.com/browse/%s"
 logger = logging.getLogger('art.logging')
 flow_logger = logging.getLogger('art.flow')
 
@@ -145,11 +151,12 @@ class ARTLogging(object):
             value = getattr(item.parent.obj, attr, None)
             if value:
                 flow_logger.info("  %s: %s", attr.upper(), value.upper())
-        for mname in ('polarion-id', 'bugzilla', 'jira'):
-            m = item.get_marker(mname)
-            if m:
-                for value in m.args:
-                    flow_logger.info("  %s: %s", mname.upper(), value)
+        m = item.get_marker("polarion-id")
+        if m:
+            message = "  POLARION: %s"
+            for value in m.args:
+                url = POLARION_WI_RHEVM_URL % value
+                flow_logger.info(message, url)
 
     def pytest_report_teststatus(self, report):
         level = {
@@ -172,6 +179,24 @@ class ARTLogging(object):
         self.log_filter.toggle(True)
 
     def _log_footer(self, level, report):
+        if report.outcome == 'skipped':
+            # Report possible issues why the test-case was skipped.
+            for mname in ('bugzilla', 'jira'):
+                m = self.current_item.get_marker(mname)
+                if m:
+                    message = "  {0}: %s".format(mname.upper())
+                    for value in m.args:
+                        if mname == "bugzilla":
+                            if isinstance(value, dict):
+                                for key in value.keys():
+                                    url = BUGZILLA_SHOW_BUG_URL % key
+                                    flow_logger.info(message, url)
+                            else:
+                                flow_logger.info(message, value)
+                        elif mname == "jira":
+                            url = JIRA_SHOW_ISSUE_URL % value
+                            flow_logger.info(message, url)
+
         logger.log(level, "Status: %s", report.outcome)
         flow_logger.log(level, "Result: %s", report.outcome.upper())
         if report.outcome in ("failed", "error"):
