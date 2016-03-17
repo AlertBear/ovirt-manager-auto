@@ -171,7 +171,7 @@ def readTestRunOpts(path, redefs):
                         _inspec=True)
     validator = ARTConfigValidator(conf.load(), spec.load(), initPlmanager())
 
-    ART_CONFIG = validator()
+    ART_CONFIG.update(validator())
     config = ART_CONFIG
 
     opts['headers'] = config.get('HTTP_HEADERS', {})
