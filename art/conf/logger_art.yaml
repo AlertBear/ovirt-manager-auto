@@ -36,6 +36,6 @@ loggers:
     qualname: art.flow
     propagate: 0
   root:
-    level: INFO
+    level: DEBUG
     handlers:
       - fileHandler
