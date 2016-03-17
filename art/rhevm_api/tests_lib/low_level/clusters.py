@@ -881,3 +881,13 @@ def get_cluster_management_network(cluster_name):
     except IndexError:
         return None
     return cl_obj.get_management_network()
+
+
+def get_cluster_list():
+    """
+    Get list of cluster objects
+
+    :return: List of cluster objects
+    :rtype: list
+    """
+    return util.get(absLink=False)
