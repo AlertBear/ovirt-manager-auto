@@ -286,24 +286,31 @@ def addGlusterDomain(host, name, data_center, address, path, vfs_type,
 
 
 @is_action()
-def addNFSDomain(host, storage, data_center, address, path,
-                 sd_type=ENUMS['storage_dom_type_data'], storage_format=None,
-                 format=None, activate=True):
-    '''
-    positive flow for adding NFS Storage including all the necessary steps
-    Author: atal
-    Parameters:
-        * host - name of host
-        * storage - name of storage domain that will be created in rhevm
-        * data_center - name of DC which will contain this SD
-        * address - nfs server address
-        * path - path for nfs mount
-        * sd_type - type of storage domain: data, iso or export
-        * storage_format - storage format version (v1/v2/v3)
-        * format - when True it will remove the previous data
-        * activate - when True it will attach & activate domain
-    return True if succeeded, False otherwise
-    '''
+def addNFSDomain(
+    host, storage, data_center, address, path,
+    sd_type=ENUMS['storage_dom_type_data'], storage_format=None,
+    format=None, activate=True
+):
+    """
+    Add NFS Storage including all the necessary steps
+
+    Args:
+        host (str): name of host
+        storage (str): name of storage domain that will be created in rhevm
+        data_center (str): name of DC which will contain this SD
+        address (str): nfs server address
+        path (str): path for nfs mount
+        sd_type (str): type of storage domain: data, iso or export
+        storage_format (str): storage format version (v1/v2/v3)
+        format (bool): when True it will remove the previous data
+        activate (bool): when True it will attach & activate domain
+
+    Returns:
+        bool: True if succeeded, False otherwise
+    """
+    logger.info(
+        "Add NFS storage domain %s to datacenter %s", storage, data_center
+    )
     if not ll_sd.addStorageDomain(
             True, host=host, name=storage, type=sd_type,
             storage_type=ENUMS['storage_type_nfs'], address=address, path=path,

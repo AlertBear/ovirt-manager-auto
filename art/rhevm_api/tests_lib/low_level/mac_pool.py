@@ -45,11 +45,13 @@ def get_mac_pool_from_dc(dc_name):
     """
     Get MAC pool from the given DC
 
-    :param dc_name: name of the DC
-    :type dc_name: str
-    :return: MAC pool object for that DC
-    :rtype: MacPool object
+    Args:
+        dc_name (str): Name of the DC
+
+    Returns:
+        MacPool: MAC pool object for that DC
     """
+    logger.info("Get MAC pool from datacenter %s", dc_name)
     dc_obj = ll_dc.get_data_center(dc_name)
     return MACPOOL_API.find(dc_obj.get_mac_pool().get_id(), "id")
 
@@ -58,11 +60,13 @@ def get_mac_pool_ranges_list(mac_pool_obj):
     """
     Get MAC pool ranges list
 
-    :param mac_pool_obj: MAC pool object
-    :type mac_pool_obj: MacPool object
-    :return: MAC pool ranges list
-    :rtype: list
+    Args:
+        mac_pool_obj (MacPool): MAC pool object
+
+    Returns:
+        list: MAC pool ranges list
     """
+    logger.info("Get MAC poll %s MAC ranges", mac_pool_obj.name)
     return mac_pool_obj.get_ranges().get_range()
 
 
@@ -100,10 +104,12 @@ def get_all_mac_pools():
 def get_mac_range_values(mac_pool_obj):
     """
     Get MAC pool values for each range
-    :param mac_pool_obj: MAC pool object
-    :type mac_pool_obj: MacPool object
-    :return: MAC pool ranges list
-    :rtype: list
+
+    Args:
+        mac_pool_obj (MacPool): MAC pool object
+
+    Returns:
+        list: MAC pool ranges list
     """
     ranges = get_mac_pool_ranges_list(mac_pool_obj)
     return [(i.get_from(), i.get_to()) for i in ranges]
@@ -113,13 +119,18 @@ def remove_mac_pool(mac_pool_name):
     """
     Remove MAC pool
 
-    :param mac_pool_name: name of the MAC pool you want to remove
-    :type mac_pool_name: str
-    :return: True if remove of MAC pool succeeded, False otherwise
-    :rtype: bool
+    Args:
+        mac_pool_name (str): name of the MAC pool you want to remove
+
+    Returns:
+        bool: True if remove of MAC pool succeeded, False otherwise
     """
+    logger.info("Remove MAC pool %s", mac_pool_name)
     mac_pool_obj = get_mac_pool(mac_pool_name)
-    return MACPOOL_API.delete(mac_pool_obj, True)
+    res = MACPOOL_API.delete(mac_pool_obj, True)
+    if not res:
+        logger.error("Failed to remove MAC pool %s", mac_pool_name)
+    return res
 
 
 def prepare_macpool_obj(**kwargs):
@@ -189,7 +200,7 @@ def get_default_mac_pool():
     return filter(lambda x: x.get_default_pool(), mac_pool_list)[0]
 
 
-def create_mac_pool(name, ranges, **kwargs):
+def create_mac_pool(name, ranges, positive=True, **kwargs):
     """
     Creates new MAC Pool
 
@@ -197,19 +208,28 @@ def create_mac_pool(name, ranges, **kwargs):
         name (str): MAC pool name
         ranges (list): List of ranges when each element in the list is a
             tuple with (start_mac_address, end_mac_address)
+        positive (bool): Expected result
         kwargs (dict): MAC pool parameters
 
-    Keyword arguments:
+    Keyword Arguments:
         description (str): MAC pool description
         allow_duplicates (bool): Allow to use duplicate MACs from the pool
 
     Returns:
         bool: True if create MAC pool succeeded, False otherwise
     """
+    log_info, log_error = ll_general.get_log_msg(
+        action="Create", obj_name=name, obj_type="MAC pool", positive=positive,
+        **kwargs
+    )
     kwargs["name"] = name
     kwargs["ranges"] = ranges
+    logger.info(log_info)
     mac_pool_obj = prepare_macpool_obj(**kwargs)
-    return MACPOOL_API.create(mac_pool_obj, True)[1]
+    res = MACPOOL_API.create(mac_pool_obj, positive)[1]
+    if not res:
+        logger.error(log_error)
+    return res
 
 
 def update_mac_pool(mac_pool_name, **kwargs):

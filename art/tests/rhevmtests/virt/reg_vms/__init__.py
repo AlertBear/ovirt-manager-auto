@@ -66,7 +66,7 @@ def teardown_package():
         if not cluster_api.removeCluster(True, config.CLUSTER_NAME[2]):
             raise errors.ClusterException("Failed to remove cluster")
         logging.info("Remove additional datacenter %s", config.DC_NAME[1])
-        if not dc_api.removeDataCenter(True, config.DC_NAME[1]):
+        if not dc_api.remove_datacenter(True, config.DC_NAME[1]):
             raise errors.DataCenterException("Failed to remove datacenter" %
                                              config.DC_NAME[1])
         logging.info("Remove additional cluster %s from datacenter %s",

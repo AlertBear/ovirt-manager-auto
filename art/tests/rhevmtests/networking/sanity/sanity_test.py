@@ -615,7 +615,7 @@ class TestSanity07(NetworkTest):
         """
         Remove the DC
         """
-        mac_pool_helper.remove_dc()
+        ll_dc.remove_datacenter(positive=True, datacenter=conf.EXT_DC_1)
 
 
 @lib_common.skip_class_if(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
@@ -684,7 +684,7 @@ class TestSanity08(TestSanityCaseBase):
         for cl in (cls.cluster_1, cls.cluster_2):
             ll_clusters.removeCluster(positive=True, cluster=cl)
 
-        ll_dc.removeDataCenter(positive=True, datacenter=cls.dc)
+        ll_dc.remove_datacenter(positive=True, datacenter=cls.dc)
         super(TestSanity08, cls).teardown_class()
 
 

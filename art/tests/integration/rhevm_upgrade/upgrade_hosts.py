@@ -162,7 +162,7 @@ class UpgradeHosts(TestCase):
             "Failed to upgrade compatibility version of cluster"
         )
         self.assertTrue(
-            datacenters.updateDataCenter(
+            datacenters.update_datacenter(
                 True,
                 config.DC_NAME,
                 version=config.TO_VERSION

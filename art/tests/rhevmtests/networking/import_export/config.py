@@ -11,7 +11,6 @@ HOST_0_NAME = None  # Filled in setup_package
 SD_NAME = None  # Filled in setup_package
 VLAN_IDS = [str(i) for i in xrange(2, 5)]
 NETS = ["net_%s" % i for i in xrange(1, 4)]
-VM_DISK_SIZE = 1024
 
 local_dict = {
     NETS[0]: {

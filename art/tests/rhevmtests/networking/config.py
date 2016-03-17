@@ -43,6 +43,7 @@ HOST_1_NICS = None  # Filled in test
 VDS_1_HOST = None  # Filled in test
 HOST_1_NAME = None  # Filled in test
 HOST_1_IP = None  # Filled in test
+VM_DISK_SIZE = 1024
 
 # Network Custom Priority parameters
 BRIDGE_OPTS = OrderedDict({"priority": ["32768", "1"],

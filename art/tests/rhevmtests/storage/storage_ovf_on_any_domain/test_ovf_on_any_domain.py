@@ -1072,7 +1072,7 @@ class TestCase6249(EnvironmentWithNewVm):
             self.data_center_name, config.DC_TEST_VERSION
         )
         self.assertTrue(
-            ll_dc.updateDataCenter(
+            ll_dc.update_datacenter(
                 True, self.data_center_name, version=config.DC_TEST_VERSION
             ), "Data center '%s' was not updated" % self.data_center_name
         )

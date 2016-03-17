@@ -795,17 +795,24 @@ def remove_floating_disks(storage_domain):
 
 def deactivate_master_storage_domain(positive, datacenter):
     """
-    Description: deactivate storage domain in a datacenter
-    :param datacenter name
-    :type datacenter : str
-    :returns status True when successful
-    :rtype: bool
+    Deactivate storage domain in a datacenter
+
+    Args:
+        positive (bool): Expected result
+        datacenter (str): Datacenter name
+
+    Returns:
+        bool: True if succeeded, False otherwise
     """
 
     status, master = findMasterStorageDomain(positive, datacenter)
     master_storage_domain = master['masterDomain']
 
     if master_storage_domain:
+        util.logger.info(
+            "Deactivate master storage domain %s on datacenter %s",
+            master_storage_domain, datacenter
+        )
         if validateElementStatus(
                 positive, 'storagedomain', 'storagedomains',
                 master_storage_domain, 'active', datacenter

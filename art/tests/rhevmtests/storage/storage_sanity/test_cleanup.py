@@ -103,7 +103,7 @@ class TestCase11594(TestCase):
             True, config.DATA_CENTER_NAME, self.master_domain)
 
         logger.info("Removing datacenter and storage domain")
-        assert ll_datacenters.removeDataCenter(True, config.DATA_CENTER_NAME)
+        assert ll_datacenters.remove_datacenter(True, config.DATA_CENTER_NAME)
 
         assert ll_datacenters.searchForDataCenter(
             False, query_key='name', query_val=config.DATA_CENTER_NAME,

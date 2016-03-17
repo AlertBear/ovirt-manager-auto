@@ -1930,7 +1930,7 @@ class NetLabels14(TestLabelTestCaseBase):
         for dc, cl in (
             (cls.dc_name2, cls.cl_name2), (cls.uncomp_dc, cls.uncomp_cl)
         ):
-            if not ll_datacenters.removeDataCenter(
+            if not ll_datacenters.remove_datacenter(
                 positive=True, datacenter=dc
             ):
                 logger.error("Failed to remove datacenter %s", dc)
@@ -2124,7 +2124,7 @@ class NetLabels15(TestLabelTestCaseBase):
         for cl in cls.comp_cl_name:
             if not ll_clusters.removeCluster(positive=True, cluster=cl):
                 logger.error("Failed to remove cluster %s", cl)
-        if not ll_datacenters.removeDataCenter(
+        if not ll_datacenters.remove_datacenter(
             positive=True, datacenter=cls.dc_name2
         ):
             logger.error("Failed to remove datacenter %s", cls.dc_name2)

@@ -171,7 +171,7 @@ class LogCollectorMoreDCs(LogCollectorTestCaseBase):
     def tearDown(self):
         assert llclusters.removeCluster(
             True, unittest_conf.NEW_CLUSTER_NAME)
-        assert lldatacenters.removeDataCenter(
+        assert lldatacenters.remove_datacenter(
             True, unittest_conf.NEW_DC_NAME)
         super(LogCollectorMoreDCs, self).tearDown()
 

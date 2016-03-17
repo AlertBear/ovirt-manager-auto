@@ -41,6 +41,7 @@ from art.rhevm_api.tests_lib.low_level.datacenters import \
 from art.rhevm_api.tests_lib.low_level.vms import stopVm, getVmHost, \
     get_vm_state
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
+import art.rhevm_api.tests_lib.low_level.general as ll_general
 
 ELEMENT = 'host'
 COLLECTION = 'hosts'
@@ -769,20 +770,30 @@ def installOvirtHost(positive, host, user_name, password, vdc, port=443,
 
 
 @is_action()
-def commitNetConfig(positive, host):
+def commit_network_config(positive, host):
     """
-    Description: save host network configuration
-    Author: edolinin
-    Parameters:
-       * host - name of a host to be committed
-    Return: status (True if host network configuration was saved properly,
-     False otherwise)
-    """
+    Save host network configuration
 
-    hostObj = HOST_API.find(host)
-    return bool(
-        HOST_API.syncAction(hostObj, "commitnetconfig", positive)
+    Args:
+        positive (bool): Expected result
+        host (str): Name of a host to be committed
+
+    Returns:
+        bool: True if host network configuration was saved properly,
+            False otherwise
+    """
+    log_info, log_error = ll_general.get_log_msg(
+        action="Commit", obj_type="network config", obj_name="",
+        positive=positive, extra_txt="on host %s" % host
     )
+    logger.info(log_info)
+    host_obj = HOST_API.find(host)
+    res = bool(
+        HOST_API.syncAction(host_obj, "commitnetconfig", positive)
+    )
+    if not res:
+        logger.error(log_error)
+    return res
 
 
 @is_action()
@@ -1011,51 +1022,80 @@ def detachHostNic(positive, host, nic, network=None):
 
 
 @is_action()
-def genSNNic(nic, **kwargs):
+def generate_sn_nic(nic, **kwargs):
     """
-    generate a host_nic element of types regular or vlaned
-    Author: atal
-    params:
-        * host - host where nic should be updated
-        * nic - nic name that should be updated
-        * network - network name
-        * boot_protocol - static, none or dhcp
-        * address - ip address incase of static protocol
-        * netmask - netmask incase of static protocol
-        * gateway - gateway address incase of static protocol
-    return True, dict with host nic element.
+    generate a host_nic element of types regular or VLAN
+
+    Args:
+        nic (str): NIC name that should be generated
+
+    Keyword Args:
+        host (str): Host where nic should be generated
+        network (str): Network name
+        boot_protocol (str): Static, none or DHCP
+        address (str): IP address in case of static protocol
+        netmask (str): Netmask in case of static protocol
+        gateway (str): Gateway address in case of static protocol
+
+    Returns:
+        dict: Dict with host NIC element
     """
+    log_info, log_error = ll_general.get_log_msg(
+        action="Generate", obj_name=nic, obj_type="SetupNetwork NIC", **kwargs
+    )
+    logger.info(log_info)
     kwargs.update({'name': nic})
     nic_obj = _prepareHostNicObject(**kwargs)
+    if not nic_obj:
+        logger.error(log_error)
 
-    return True, {'host_nic': nic_obj}
+    return {'host_nic': nic_obj}
 
 
 @is_action()
-def sendSNRequest(positive, host, nics=[], auto_nics=[], **kwargs):
+def send_setup_networks(
+    positive, host, nics=list(), auto_nics=list(), **kwargs
+):
     """
-    Perform setupNetwork action on host with nic objects taken from 'nics' and
+    Perform SetupNetwork action on host with nic objects taken from 'nics' and
     'auto_nics' lists
-    Author: atal, tgeft
-    params:
-        * host - the name of the host
-        * nics - a list of nic objects to be added to the host by the
-                 setupNework action
-        * auto_nics - a list of nics to preserve from the current setup
-        * kwargs - a dictionary of supported options:
-            check_connectivity=boolean, connectivity_timeout=int, force=boolean
+
+    Args:
+        positive (bool): Expected result
+        host (str): Nhe name of the host
+        nics (list): List of nic objects to be added to the host by the
+            SetupNetworks action
+        auto_nics (list): List of nics to preserve from the current setup
+        kwargs (dict): SetupNetworks parameters
+
+    Keyword Args:
+        check_connectivity (bool): True to check host connectivity after
+            operation
+        connectivity_timeout (int): Check connectivity timeout
+        force (bool): Force operation
+
+    Returns:
+        bool: True if operation succeed False otherwise
     """
+    log_info, log_error = ll_general.get_log_msg(
+        action="Send", obj_type="SetupNetworks", obj_name="",
+        positive=positive, extra_txt="to host %s" % host, **kwargs
+    )
+    logger.info(log_info)
     current_nics_obj = HOST_API.get(href=getHostNics(host))
     new_nics_obj = nics + [get_host_nic(host, nic) for nic in auto_nics]
 
     host_nics = data_st.HostNics(host_nic=new_nics_obj)
 
-    return bool(
+    res = bool(
         HOST_NICS_API.syncAction(
             current_nics_obj, "setupnetworks", positive,
             host_nics=host_nics, **kwargs
         )
     )
+    if not res:
+        logger.error(log_error)
+    return res
 
 
 @is_action()

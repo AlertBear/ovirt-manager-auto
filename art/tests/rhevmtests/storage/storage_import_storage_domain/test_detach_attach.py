@@ -344,7 +344,7 @@ class BasicEnvironment(BaseTestCase):
             'Domain %s is inactive in datacenter %s', sd_name, dc_name
         )
 
-        if not ll_dc.removeDataCenter(True, dc_name):
+        if not ll_dc.remove_datacenter(True, dc_name):
             logger.error("Failed to remove dc %s" % dc_name)
             self.test_failed = True
 

@@ -767,7 +767,7 @@ class PositiveNetworkPermissions317269(NetworkingPossitive):
 
     def tearDown(self):
         super(PositiveNetworkPermissions317269, self).tearDown()
-        datacenters.removeDataCenter(True, self.dc_name)
+        datacenters.remove_datacenter(True, self.dc_name)
 
     @polarion("RHEVM3-4031")
     def test_automaticCreateionOfPermissions(self):
@@ -796,7 +796,7 @@ class PositiveNetworkPermissions317133(NetworkingPossitive):
 
     def tearDown(self):
         super(PositiveNetworkPermissions317133, self).tearDown()
-        datacenters.removeDataCenter(True, self.dc_name)
+        datacenters.remove_datacenter(True, self.dc_name)
 
     @polarion("RHEVM3-4030")
     @bz({'1214805': {}})

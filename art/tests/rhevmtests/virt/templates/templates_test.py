@@ -993,7 +993,7 @@ class NegativeTemplateCases(BaseTemplateClass):
         logging.info(
             "Remove additional datacenter %s", cls.additional_datacenter
         )
-        if not dcs.removeDataCenter(True, cls.additional_datacenter):
+        if not dcs.remove_datacenter(True, cls.additional_datacenter):
             raise errors.DataCenterException("Failed to remove datacenter")
         logging.info(
             "Remove additional cluster %s from datacenter %s",

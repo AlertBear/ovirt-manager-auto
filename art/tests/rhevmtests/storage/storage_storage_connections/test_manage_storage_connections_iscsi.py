@@ -121,7 +121,7 @@ def teardown_module():
             config.HOST_FOR_MOUNT, config.CLUSTER_NAME
         )
         test_failed = True
-    if not ll_dc.removeDataCenter(
+    if not ll_dc.remove_datacenter(
         True, config.DATACENTER_ISCSI_CONNECTIONS
     ):
         logger.error(
@@ -278,7 +278,7 @@ def _restore_empty_dc(datacenter=config.DATACENTER_ISCSI_CONNECTIONS):
             dcObj, link_name='clusters', attr='cluster',
             get_href=False
         )[0].name
-        assert ll_dc.removeDataCenter(True, datacenter)
+        assert ll_dc.remove_datacenter(True, datacenter)
         assert storagedomains.removeStorageDomain(
             True, master_sd, config.HOST_FOR_MOUNT, 'true'
         )

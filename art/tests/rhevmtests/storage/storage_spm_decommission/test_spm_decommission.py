@@ -258,7 +258,7 @@ class UpgradeBaseClass(StorageTest):
             "Uprading data center %s to version %s", self.data_center_name,
             config.DC_UPGRADE_VERSION
         )
-        assert ll_dc.updateDataCenter(
+        assert ll_dc.update_datacenter(
             True, self.data_center_name, version=config.DC_UPGRADE_VERSION
         )
         assert ll_sd.addStorageDomain(
@@ -298,7 +298,7 @@ class UpgradeBaseClass(StorageTest):
         wait_for_tasks(
             config.ENGINE, config.VDC_PASSWORD, self.data_center_name
         )
-        ll_dc.removeDataCenter(True, self.data_center_name)
+        ll_dc.remove_datacenter(True, self.data_center_name)
         ll_sd.removeStorageDomains(True, sds, self.host_1)
         hl_hosts.move_host_to_another_cluster(self.host_1, config.CLUSTER_NAME)
         hl_hosts.move_host_to_another_cluster(self.host_2, config.CLUSTER_NAME)

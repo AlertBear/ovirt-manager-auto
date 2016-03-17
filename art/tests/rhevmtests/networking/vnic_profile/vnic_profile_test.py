@@ -17,7 +17,7 @@ from art.test_handler.exceptions import(
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.tests_lib.low_level.datacenters import(
-    addDataCenter, removeDataCenter
+    addDataCenter, remove_datacenter
 )
 from art.rhevm_api.tests_lib.high_level.networks import(
     createAndAttachNetworkSN, remove_net_from_setup
@@ -90,7 +90,7 @@ class TestVNICProfileCase01(TestCase):
         Remove DC from the setup.
         """
         logger.info("Remove DC %s from setup", cls.dc_name2)
-        if not removeDataCenter(
+        if not remove_datacenter(
             True, datacenter=cls.dc_name2
         ):
             logger.error("Cannot remove DC %s from setup", cls.dc_name2)

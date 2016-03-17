@@ -267,7 +267,7 @@ def clean_datacenter(
             )
 
     LOGGER.info("Remove data center")
-    if not datacenters.removeDataCenter(positive, datacenter):
+    if not datacenters.remove_datacenter(positive, datacenter):
         LOGGER.error("Remove data center %s failed", datacenter)
         status = False
 

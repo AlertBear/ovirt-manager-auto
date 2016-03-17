@@ -145,7 +145,7 @@ def teardown_module():
         True,
         config.DELETE_TEMPLATE
     )
-    datacenters.removeDataCenter(
+    datacenters.remove_datacenter(
         True,
         config.DELETE_DC
     )
@@ -421,7 +421,7 @@ class CaseRoleActions(TestCase):
 
     @user_case(
         login_as=config.USER_SYSTEM,
-        cleanup_func=datacenters.removeDataCenter,
+        cleanup_func=datacenters.remove_datacenter,
         positive=True,
         datacenter=config.USER_SYSTEM
     )
@@ -734,7 +734,7 @@ class CaseRoleActions(TestCase):
     def test_edit_storage_pool_configuration(self):
         """ edit_storage_pool_configuration """
         self.assertTrue(
-            datacenters.updateDataCenter(
+            datacenters.update_datacenter(
                 self.positive,
                 config.DC_NAME[0],
                 description=str(uuid.uuid4())
@@ -919,7 +919,7 @@ class CaseRoleActions(TestCase):
     def test_delete_storage_pool(self):
         """ delete_storage_pool """
         self.assertTrue(
-            datacenters.removeDataCenter(
+            datacenters.remove_datacenter(
                 self.positive,
                 config.DELETE_DC
             )

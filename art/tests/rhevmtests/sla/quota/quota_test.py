@@ -406,7 +406,7 @@ class QuotaTestMode(BaseQuotaClass):
             "Update datacenter %s quota mode to %s",
             conf.DC_NAME_0, conf.QUOTA_MODES[cls.quota_mode]
         )
-        if not ll_datacenters.updateDataCenter(
+        if not ll_datacenters.update_datacenter(
             positive=True,
             datacenter=conf.DC_NAME_0,
             quota_mode=conf.QUOTA_MODES[cls.quota_mode]
@@ -502,7 +502,7 @@ class QuotaTestMode(BaseQuotaClass):
             "Update datacenter %s quota mode to %s",
             conf.DC_NAME_0, conf.QUOTA_MODES[conf.QUOTA_NONE_MODE]
         )
-        if not ll_datacenters.updateDataCenter(
+        if not ll_datacenters.update_datacenter(
             positive=True,
             datacenter=conf.DC_NAME_0,
             quota_mode=conf.QUOTA_MODES[conf.QUOTA_NONE_MODE]

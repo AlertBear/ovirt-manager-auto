@@ -213,7 +213,7 @@ def createAndAttachNetworkSN(
     for net, net_param in network_dict.items():
         if data_center and net:
             if not ll_networks.add_network(
-                True, name=net, data_center=data_center,
+                positive=True, name=net, data_center=data_center,
                 usages=net_param.get("usages", "vm"),
                 vlan_id=net_param.get("vlan_id"),
                 mtu=net_param.get("mtu"),
@@ -225,7 +225,7 @@ def createAndAttachNetworkSN(
 
         if cluster and net:
             if not ll_networks.add_network_to_cluster(
-                True, network=net, cluster=cluster,
+                positive=True, network=net, cluster=cluster,
                 required=net_param.get("required", "true"),
                 usages=net_param.get("cluster_usages", None),
                 data_center=data_center
@@ -284,8 +284,19 @@ def createAndAttachNetworkSN(
                     new_dict=setup_network_dict, old_dict=net_param, idx=idx,
                     nic=nic, network=net, slaves=slaves
                 )
+                if not network_dict:
+                    if not hl_host_network.clean_host_interfaces(
+                        host_name=host_name
+                    ):
+                        return False
+                else:
+                    if not hl_host_network.setup_networks(
+                        host_name=host_name, **sn_dict
+                    ):
+
+                        return False
             else:
-                rc, out = ll_hosts.genSNNic(
+                out = ll_hosts.generate_sn_nic(
                     nic=nic, network=net, slaves=slaves,
                     mode=net_param.get("mode", 4),
                     boot_protocol=net_param.get("bootproto", None),
@@ -294,41 +305,21 @@ def createAndAttachNetworkSN(
                     gateway=gateway_list.pop(0) if gateway_list else None,
                     properties=net_param.get("properties", None)
                 )
-                if not rc:
-                    logger.error("Cannot generate network object for %s", net)
-                    return False
                 net_obj.append(out["host_nic"])
 
-        if use_new_api:
-            if not network_dict:
-                if not hl_host_network.clean_host_interfaces(
-                    host_name=host_name
-                ):
-                    return False
-            else:
-                if not hl_host_network.setup_networks(
-                    host_name=host_name, **sn_dict
-                ):
-
-                    return False
         else:
-            logger.info("Sending SN request to host %s" % host_name)
-            if not ll_hosts.sendSNRequest(
-                True, host=host_name, nics=net_obj, auto_nics=host_auto_nics,
-                check_connectivity="true", connectivity_timeout=60,
-                force="false"
+            if not ll_hosts.send_setup_networks(
+                positive=True, host=host_name, nics=net_obj,
+                auto_nics=host_auto_nics, check_connectivity="true",
+                connectivity_timeout=60, force="false"
             ):
-                logger.error(
-                    "Failed to send SN request to host %s", host_name
-                )
                 return False
 
             if save_config:
-                logger.info(
-                    "Saving network configuration on host %s", host_name
-                )
-                if not ll_hosts.commitNetConfig(True, host=host_name):
-                    logger.error("Could not save network configuration")
+                if not ll_hosts.commit_network_config(
+                    positive=True, host=host_name
+                ):
+                    return False
     return True
 
 
@@ -634,7 +625,7 @@ def remove_basic_setup(datacenter, cluster=None, hosts=[]):
             return False
 
     logger.info("Remove DC %s", datacenter)
-    if not ll_datacenters.removeDataCenter(
+    if not ll_datacenters.remove_datacenter(
         positive=True, datacenter=datacenter
     ):
         logger.error("Failed to remove DC %s", datacenter)
@@ -644,41 +635,49 @@ def remove_basic_setup(datacenter, cluster=None, hosts=[]):
 
 def update_network_host(host, nic, auto_nics, save_config=True, **kwargs):
     """
-    Description: Updates network on Host NIC
+    Updates network on Host NIC
 
-    Author: gcheresh
-    Parameters:
-       *  *host* - Host name
-       *  *nic* - Interface with network to be updated
-       *  *auto_nics* - List of NICs, beside the NIC to be updated
-       *  *save_config* - Flag to save configuration after update
-       *  *kwargs* - dictionary of parameters to be updated on existing network
-           Example for kwargs:
-           {"address": "10.10.10.10", "netmask": "255.255.255.0",
-           "boot_protocol": "static",
-           "properties": {"bridge_opts": "Priority=7smax_age=1998",
-                       "ethtool_opts": "--offload eth2 rx on"}}
-    **Return**: True if update succeeded, otherwise False
+    Args:
+        host (str): Host name
+        nic (str): Interface with network to be updated
+        auto_nics (list): List of NICs, beside the NIC to be updated
+        save_config (bool): Flag to save configuration after update
+        kwargs (dict): dParameters to be updated on existing network
+
+    Keyword Args:
+        network (str): Network name
+        boot_protocol (str): Static, none or DHCP
+        address (str): IP address in case of static protocol
+        netmask (str): Netmask in case of static protocol
+        gateway (str): Gateway address in case of static protocol
+
+    Examples:
+       network_dict = {
+        "address": "10.10.10.10",
+        "netmask": "255.255.255.0",
+        "boot_protocol": "static",
+        "properties": {
+            "bridge_opts": "Priority=7smax_age=1998",
+            "ethtool_opts": "--offload eth2 rx on"
+            }
+        }
+        res = update_network_host(
+            host, nic, auto_nics, save_config=True, **network_dict
+            )
+    Returns:
+         bool: True if update succeeded, otherwise False
     """
     nic_obj = ll_hosts.get_host_nic(host=host, nic=nic)
     kwargs.update({'update': nic_obj})
-    rc, out = ll_hosts.genSNNic(nic=nic_obj, **kwargs)
-    if not rc:
-        logger.error("Cannot generate network object for nic")
-        return False
-
-    logger.info("Sending SN request to host %s", host)
-    if not ll_hosts.sendSNRequest(
+    out = ll_hosts.generate_sn_nic(nic=nic_obj, **kwargs)
+    if not ll_hosts.send_setup_networks(
         True, host=host, nics=[out['host_nic']], auto_nics=auto_nics,
         check_connectivity='true', connectivity_timeout=60, force='false'
     ):
-        logger.error("Failed to send SN request to host %s", host)
         return False
 
     if save_config:
-        logger.info("Saving network configuration on host %s" % host)
-        if not ll_hosts.commitNetConfig(True, host=host):
-            logger.error("Couldn't save network configuration")
+        if not ll_hosts.commit_network_config(True, host=host):
             return False
     return True
 

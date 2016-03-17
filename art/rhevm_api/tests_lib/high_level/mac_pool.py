@@ -33,15 +33,16 @@ def remove_ranges_from_mac_pool(mac_pool_name, range_list):
     """
     Remove ranges from the given MAC pool
 
-    :param mac_pool_name: name of the MAC pool you want to remove range from
-    :type mac_pool_name: str
-    :param range_list: list of tuples of (start, end) to remove from mac_pool
-    :type range_list: list
-    :return: True if remove of range succeeded, False otherwise
-    :rtype: bool
+    Args:
+        mac_pool_name (str): Name of the MAC pool you want to remove range from
+        range_list (list): List of tuples of (start, end) to remove from
+            mac_pool
+
+    Returns:
+        bool: True if remove of range succeeded, False otherwise
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="remove", obj_type="MAC pool range(s)", obj_name=mac_pool_name,
+        action="Remove", obj_type="MAC pool range(s)", obj_name=mac_pool_name,
         range_list=range_list
     )
     mac_pool_obj = ll_mac_pool.get_mac_pool(mac_pool_name)
@@ -49,6 +50,7 @@ def remove_ranges_from_mac_pool(mac_pool_name, range_list):
     for start, end in range_list:
         if ll_mac_pool.get_mac_pool_range_obj(mac_pool_obj, start, end):
             new_range_list.remove((start, end))
+
     new_mac_pool_obj = ll_mac_pool.prepare_macpool_obj(ranges=new_range_list)
     logger.info(log_info)
     res = ll_mac_pool.MACPOOL_API.update(
@@ -63,18 +65,18 @@ def add_ranges_to_mac_pool(mac_pool_name, range_list):
     """
     Add ranges to the given MAC pool
 
-    :param mac_pool_name: MAC pool name
-    :type mac_pool_name: str
-    :param range_list: list of tuples of (start, end) to add to mac_pool
-    :type range_list: list
-    :return: True if add of ranges succeeded, False otherwise
-    :rtype: bool
+    Args:
+        mac_pool_name (str): MAC pool name
+        range_list (list): List of tuples of (start, end) to add to mac_pool
+
+    Returns:
+        bool: True if add of ranges succeeded, False otherwise
     """
     mac_pool_obj = ll_mac_pool.get_mac_pool(mac_pool_name)
     exist_ranges = ll_mac_pool.get_mac_range_values(mac_pool_obj)
     exist_ranges.extend(range_list)
     log_info, log_error = ll_general.get_log_msg(
-        action="add", obj_type="MAC pool range(s)", obj_name=mac_pool_name,
+        action="Add", obj_type="MAC pool range(s)", obj_name=mac_pool_name,
         range_list=range_list
     )
     logger.info(log_info)

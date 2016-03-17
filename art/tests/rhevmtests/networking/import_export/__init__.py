@@ -82,12 +82,12 @@ def teardown_package():
     Remove networks from setup
     """
     ll_vms.remove_vm_from_export_domain(
-        positive=True, vm=conf.IE_VM,
+        positive=True, vm=conf.IE_VM, datacenter=conf.DC_0,
         export_storagedomain=conf.EXPORT_DOMAIN_NAME
     )
 
     ll_templates.removeTemplateFromExportDomain(
-        positive=True, template=conf.IE_TEMPLATE,
+        positive=True, template=conf.IE_TEMPLATE, datacenter=conf.DC_0,
         export_storagedomain=conf.EXPORT_DOMAIN_NAME
     )
 

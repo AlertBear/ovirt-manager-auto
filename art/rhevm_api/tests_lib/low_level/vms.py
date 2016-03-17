@@ -2616,7 +2616,7 @@ def checkVmStatistics(positive, vm):
 
 @is_action()
 def createVm(
-        positive, vmName, vmDescription, cluster='Default', nic=None,
+        positive, vmName, vmDescription=None, cluster='Default', nic=None,
         nicType=None, mac_address=None, storageDomainName=None, size=None,
         diskType=ENUMS['disk_type_data'], volumeType='true',
         volumeFormat=ENUMS['format_cow'], diskActive=True,
@@ -2741,6 +2741,9 @@ def createVm(
     :rtype: bool
     """
     ip = False
+    if not vmDescription:
+        vmDescription = vmName
+
     if not addVm(
         positive, name=vmName, description=vmDescription,
         cluster=cluster, template=template, templateUuid=templateUuid,

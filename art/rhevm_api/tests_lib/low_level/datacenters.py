@@ -111,63 +111,73 @@ def addDataCenter(positive, **kwargs):
 
 
 @is_action()
-def updateDataCenter(positive, datacenter, **kwargs):
+def update_datacenter(positive, datacenter, **kwargs):
     """
     Update Data Center parameters
 
-    :param positive: Expected result
-    :type positive: bool
-    :param datacenter: DataCenter name
-    :type datacenter: str
-    :param kwargs:
-            name: new DC name
-            description: new DC description
-            storage_type: new storage type
-            version: new DC version
-            mac_pool: new MAC pool for the DC
-            quota_mode: datacenter quota mode(disabled, audit, enabled)
-    :return: True if update succeeded, False otherwise
+    Args:
+        positive (bool): Expected result
+        datacenter (str): DataCenter name
+        kwargs (dict): Datacenter parameters
+
+    Keyword Args:
+        name (str): New DC name
+        description (str): New DC description
+        storage_type (str): New storage type
+        version (str): New DC version
+        mac_pool (str): New MAC pool for the DC
+        quota_mode (str): Datacenter quota mode(disabled, audit, enabled)
+
+    Returns:
+        bool: True if update succeeded, False otherwise
     """
-
+    log_info, log_error = ll_general.get_log_msg(
+        action="Update", obj_type="datacenter", obj_name=datacenter,
+        positive=positive, **kwargs
+    )
     dc = util.find(datacenter)
-    dcUpd = DataCenter()
+    logger.info(log_info)
+    version = kwargs.get("version")
+    if version:
+        major_version, minor_version = version.split(".")
+        dc_version = ll_general.prepare_ds_object(
+            object_name="Version", major=int(major_version),
+            minor=int(minor_version)
+        )
+        kwargs["version"] = dc_version
 
-    if 'name' in kwargs:
-        dcUpd.set_name(kwargs.pop('name'))
+    dc_update_obj = ll_general.prepare_ds_object(
+        object_name="DataCenter", **kwargs
+    )
 
-    if 'description' in kwargs:
-        dcUpd.set_description(kwargs.pop('description'))
-
-    if 'storage_type' in kwargs:
-        dcUpd.set_storage_type(kwargs.pop('storage_type'))
-
-    if 'version' in kwargs:
-        majorV, minorV = kwargs.pop('version').split(".")
-        dcVersion = Version(major=majorV, minor=minorV)
-        dcUpd.set_version(dcVersion)
-
-    if "mac_pool" in kwargs:
-        dcUpd.set_mac_pool(kwargs.pop("mac_pool"))
-    if "quota_mode" in kwargs:
-        dcUpd.set_quota_mode(kwargs.pop("quota_mode"))
-
-    dcUpd, status = util.update(dc, dcUpd, positive)
-
+    status = util.update(dc, dc_update_obj, positive)[1]
+    if not status:
+        logger.error(log_error)
     return status
 
 
 @is_action()
-def removeDataCenter(positive, datacenter):
-    '''
-     Description: Remove existed data center
-     Author: edolinin
-     Parameters:
-        * datacenter - name of a data center that should removed
-     Return: status (True if data center was removed properly, False otherwise)
-     '''
+def remove_datacenter(positive, datacenter):
+    """
+    Remove existed data center
 
+    Args:
+        positive (bool): Expected result
+        datacenter (str): Name of a data center that should removed
+
+    Returns:
+        bool: True if data center was removed properly, False otherwise
+    """
+    log_info, log_error = ll_general.get_log_msg(
+        action="Remove", obj_type="datacenter", obj_name=datacenter,
+        positive=positive
+    )
+    logger.info(log_info)
     dc = util.find(datacenter)
-    return util.delete(dc, positive)
+    res = util.delete(dc, positive)
+    if not res:
+        logger.error(log_error)
+    return res
 
 
 @is_action()
@@ -222,7 +232,7 @@ def removeDataCenters(positive, datacenters):
     resultsQ = Queue.Queue()
     datacentersList = split(datacenters)
     for dc in datacentersList:
-        resultsQ.put(removeDataCenter(positive, dc))
+        resultsQ.put(remove_datacenter(positive, dc))
     status = True
 
     while not resultsQ.empty():

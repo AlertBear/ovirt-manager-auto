@@ -478,7 +478,7 @@ class TestCase5257(TestCaseNFS):
         assert hosts.waitForHostsStates(True, self.host_cluster_map.keys())
         assert datacenters.waitForDataCenterState(config.DATA_CENTER_NAME)
         clusters.removeCluster(True, self.cluster)
-        datacenters.removeDataCenter(True, self.data_center)
+        datacenters.remove_datacenter(True, self.data_center)
         super(TestCase5257, self).tearDown()
 
 

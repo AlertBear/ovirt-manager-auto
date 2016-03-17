@@ -39,7 +39,7 @@ class TestCaseDataCenter(TestCase):
         )
         self.assertTrue(status, 'Create temporary Local data center')
         logger.info('Remove temporary data center')
-        status = ll_dc.removeDataCenter(
+        status = ll_dc.remove_datacenter(
             positive=True, datacenter='temp_data_center'
         )
         self.assertTrue(status, 'Remove temporary data center')
@@ -77,11 +77,11 @@ class TestCaseDataCenter(TestCase):
         """
         updated_name = self.dc_name + 'updated'
         logger.info('Update data center name and description')
-        update_status = ll_dc.updateDataCenter(
+        update_status = ll_dc.update_datacenter(
             positive=True, datacenter=self.dc_name,
             name=updated_name, description='Data Center Description'
         )
-        revert_status = ll_dc.updateDataCenter(
+        revert_status = ll_dc.update_datacenter(
             positive=True, datacenter=updated_name,
             name=self.dc_name, description=''
         )

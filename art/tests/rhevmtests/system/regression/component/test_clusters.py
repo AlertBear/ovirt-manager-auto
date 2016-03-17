@@ -208,7 +208,7 @@ class TestCaseCluster(TestCase):
             positive=False, cluster=self.cluster_name,
             data_center='test_data_center'
         )
-        remove_status = ll_dc.removeDataCenter(
+        remove_status = ll_dc.remove_datacenter(
             positive=True, datacenter='test_data_center'
         )
         self.assertTrue(remove_status, 'Remove data center')

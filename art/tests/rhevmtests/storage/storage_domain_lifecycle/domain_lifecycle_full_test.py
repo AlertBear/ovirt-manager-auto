@@ -714,7 +714,7 @@ class TestUpgrade(TestCase):
             "Upgrading Data Center %s from version %s to version %s ",
             self.dc_name, self.dc_version, self.dc_upgraded_version
         )
-        ll_dc.updateDataCenter(
+        ll_dc.update_datacenter(
             True, datacenter=self.dc_name, version=self.dc_upgraded_version
         )
         sds = ll_sd.getDCStorages(self.dc_name, get_href=False)
