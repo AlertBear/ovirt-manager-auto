@@ -66,6 +66,12 @@ VDSM_LOG = '/var/log/vdsm/vdsm.log'
 VDSMD_SERVICE = "vdsmd"
 LIBVIRTD_SERVICE = "libvirtd"
 
+# FOREMAN DETAILS
+FOREMAN_URL = PARAMETERS.get('foreman_url')
+FOREMAN_USER = PARAMETERS.get('foreman_user')
+FOREMAN_PASSWD = PARAMETERS.get('foreman_password')
+
+
 # DATABASE SECTION - TODO: make it configurable
 DB_ENGINE_HOST = VDC_HOST
 DB_ENGINE_NAME = "engine"

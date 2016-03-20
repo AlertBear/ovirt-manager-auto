@@ -15,6 +15,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as errors
 import art.unittest_lib as u_libs
 import config as conf
+import rhevmtests.helpers as rhevm_helper
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 
@@ -215,15 +216,10 @@ class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
         """
         Run vms on specific hosts
         """
-        host_pm = conf.pm_mapping.get(
-            conf.VDS_HOSTS[1].network.hostname
-        )
-        if host_pm is None:
-            raise SkipTest(
-                "Host %s with fqdn don't have power management" %
-                conf.HOSTS[1], host_pm
-            )
-
+        host_fqdn = conf.VDS_HOSTS[1].fqdn
+        host_pm = rhevm_helper.get_pm_details(host_fqdn).get(host_fqdn)
+        if not host_pm:
+            raise SkipTest("Host %s don't have power management" % host_fqdn)
         agent_option = {
             "slot": host_pm[conf.PM_SLOT]
         } if conf.PM_SLOT in host_pm else None

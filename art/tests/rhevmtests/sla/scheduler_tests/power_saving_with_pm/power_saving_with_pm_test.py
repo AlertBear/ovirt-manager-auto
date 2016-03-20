@@ -10,6 +10,7 @@ import logging
 
 import art.unittest_lib as u_lib
 import rhevmtests.sla.config as conf
+import rhevmtests.helpers as rhevm_helper
 
 from unittest2 import SkipTest
 from art.test_handler.tools import polarion  # pylint: disable=E0611
@@ -43,12 +44,6 @@ def setup_module(module):
     1) Select first host as SPM
     2) Configure power management on hosts
     """
-    for host_resource in conf.VDS_HOSTS[:3]:
-        host_fqdn = host_resource.fqdn
-        if not conf.pm_mapping.get(host_fqdn):
-            raise SkipTest(
-                "Host with fqdn %s does not have power management" % host_fqdn
-            )
     if not ll_hosts.select_host_as_spm(
         positive=True,
         host=conf.HOSTS[0],
@@ -58,7 +53,11 @@ def setup_module(module):
     hosts_resource = dict(zip(conf.HOSTS[:3], conf.VDS_HOSTS[:3]))
     for host_name, host_resource in hosts_resource.iteritems():
         host_fqdn = host_resource.fqdn
-        host_pm = conf.pm_mapping.get(host_fqdn)
+        host_pm = rhevm_helper.get_pm_details(host_fqdn).get(host_fqdn)
+        if not host_pm:
+            raise SkipTest(
+                "Host with fqdn %s does not have power management" % host_fqdn
+            )
         agent_option = {
             "slot": host_pm[conf.PM_SLOT]
         } if conf.PM_SLOT in host_pm else None

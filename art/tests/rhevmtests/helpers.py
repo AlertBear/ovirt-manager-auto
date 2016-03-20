@@ -22,7 +22,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.rhevm_api.utils import cpumodel
-
+from utilities.foremanApi import ForemanActions
 
 NFS = config.STORAGE_TYPE_NFS
 GULSTERFS = config.STORAGE_TYPE_GLUSTER
@@ -337,3 +337,29 @@ def determine_best_cpu_model(hosts, comp_version=None):
         )
     except cpumodel.CpuModelError as ex:
         logger.error("Can not determine the best cpu_model: %s", ex)
+
+
+def get_pm_details(host_name):
+    """
+    Get the power management details for specific host
+
+    :param host_name: host fqdn to retrieve its details
+    :type host_name: str
+    :return: dictionary of host details.
+             for example:
+             {
+                'cheetah01.scl.lab.tlv.redhat.com': {
+                   'pm_password': u'calvin',
+                   'pm_address': u'cheetah01-mgmt.scl.lab.tlv.redhat.com',
+                   'pm_username': u'root',
+                   'pm_type': u'ipmilan'
+                }
+             }
+    :rtype: dict
+    """
+    foreman_api = ForemanActions(
+        config.FOREMAN_URL, config.FOREMAN_USER, config.FOREMAN_PASSWD
+    )
+    pm_host_details = foreman_api.get_host_pm_details(host_name)
+    logger.debug("Power Management Details: %s", pm_host_details)
+    return pm_host_details
