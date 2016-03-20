@@ -1412,8 +1412,11 @@ def is_storage_domain_active(datacenter, domain):
     util.logger.info(
         'Checking if domain %s is active in dc %s', domain, datacenter
     )
-    sdObj = getDCStorage(datacenter, domain)
-    state = sdObj.get_status().get_state()
+    try:
+        sd_object = getDCStorage(datacenter, domain)
+    except EntityNotFound:
+        return False
+    state = sd_object.get_status().get_state()
     util.logger.info('Domain %s in dc %s is %s', domain, datacenter, state)
     return state == ACTIVE_DOMAIN
 
