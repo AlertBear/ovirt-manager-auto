@@ -1902,22 +1902,32 @@ def getStorageDomainNamesForType(datacenter_name, storage_type):
             validate_domain_storage_type(sdObj, storage_type)]
 
 
-def get_storage_domain_images(storage_domain_name):
+def get_storage_domain_images(storage_domain_name, key='name'):
     """
     Get all images in storage domain
 
     :param storage_domain_name: Storage domain to use in finding disk images
     :type storage_domain_name: str
+    :param key: Key for the return list content, it can be name or id or None.
+    In case of None, the list will contain objects
+    Important: If key='id', storage domain should be the storage domain's id
+    :type key: str
     :return: List of disk image names
     :rtype: list
     """
     storage_domain_obj = get_storage_domain_obj(storage_domain_name)
-    return util.getElemFromLink(
+    all_images = util.getElemFromLink(
         storage_domain_obj,
         link_name='images',
         attr='image',
         get_href=False,
     )
+    if key == 'name':
+        return [image.get_name() for image in all_images]
+    elif key == 'id':
+        return [image.get_id() for image in all_images]
+    else:
+        return all_images
 
 
 def verify_image_exists_in_storage_domain(storage_domain_name, image_name):
@@ -2006,7 +2016,7 @@ class GlanceImage(object):
     def import_image(
             self, destination_storage_domain, cluster_name,
             new_disk_alias=None, new_template_name=None,
-            import_as_template=False, async=False):
+            import_as_template=False, async=False, return_response_body=False):
         """
         Description: Import images from glance type storage domain
         :param destination_storage_domain: Name of storage domain to import to
@@ -2021,8 +2031,13 @@ class GlanceImage(object):
         :type import_as_template: bool.
         :param async: True when not waiting for response, False otherwise
         :type async: bool
-        :returns: status of creation of disk/template
-        :rtype: bool
+        :param return_response_body: False in case return type is bool, True
+        to return to response body of import request
+        :type return_response_body: bool
+        :returns: status of creation of disk/template in
+        case return_response_body=True, Response body (str) of import
+        request in case return_response_body=False
+        :rtype: bool or str
         """
         self._destination_storage_domain = destination_storage_domain
         self._is_imported_as_template = import_as_template
@@ -2059,12 +2074,10 @@ class GlanceImage(object):
             template=template_obj,
             disk=disk_obj,
             )
-
-        status = bool(
+        status = (
             util.syncAction(source_image_obj, 'import', True, **action_params)
         )
-
-        if not async and new_disk_alias:
+        if not async and new_disk_alias and not return_response_body:
             return self._is_import_success()
 
         if async or new_disk_alias is None:
@@ -2072,14 +2085,19 @@ class GlanceImage(object):
                 "Note that if async is True or disk name unknown, you are "
                 "responsible to check if the disk is added"
             )
-
+        # TODO syncAction returns only the response body (not a boolean
+        # code with the operation).
+        # This should be change in the future when the syncAction
+        # changes are in place (RHEVM-2549) to return a list of bool, response
+        if not return_response_body:
+            return bool(status)
         return status
 
 
 def import_glance_image(
         glance_repository, glance_image, target_storage_domain,
         target_cluster, new_disk_alias=None, new_template_name=None,
-        import_as_template=False, async=False
+        import_as_template=False, async=False, return_response_body=False
 ):
     """
     Import images from glance type storage domain
@@ -2102,6 +2120,9 @@ def import_glance_image(
     :type import_as_template: bool
     :param async: False don't wait for response, wait otherwise
     :type async: bool
+    :param return_response_body: False in case return type is bool, True to
+    return to response body of import request
+    :type return_response_body: bool
     :returns: status of creation of disk/template
     :rtype: bool
     """
@@ -2109,20 +2130,20 @@ def import_glance_image(
     glance = GlanceImage(
         glance_image, glance_repository
     )
-
     util.logger.info("Importing glance image from %s", glance_repository)
-    if not glance.import_image(
+    status = glance.import_image(
         destination_storage_domain=target_storage_domain,
         cluster_name=target_cluster,
         new_disk_alias=new_disk_alias, new_template_name=new_template_name,
-        import_as_template=import_as_template, async=async
-    ):
+        import_as_template=import_as_template, async=async,
+        return_response_body=return_response_body
+    )
+    if not status:
         util.logger.error(
             "Failed to import image %s from glance repository %s",
             glance_image, glance_repository
         )
-        return False
-    return True
+    return status
 
 
 def get_number_of_ovf_store_disks(storage_domain):

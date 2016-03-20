@@ -109,7 +109,7 @@ class BasicEnvironment(BaseTestCase):
         """
         storage_domains = ll_sd.get_storagedomain_names()
         if config.GLANCE_DOMAIN in storage_domains:
-            self.glance_image = config.GLANCE_IMAGE_COW
+            self.glance_image = config.GOLDEN_GLANCE_IMAGE
             if not sparse:
                 self.glance_image = config.GLANCE_IMAGE_RAW
 
@@ -134,9 +134,6 @@ class BasicEnvironment(BaseTestCase):
     ):
         """
         Basic flow: Covering importing a glance image as a template
-
-        Sparse determines whether the imported image will be sparse or
-        preallocated
         """
         self.set_glance_image(sparse)
         if not ll_sd.import_glance_image(
@@ -521,7 +518,7 @@ class TestCase5683(BaseTestCase):
             )
         image_found = False
         for image in ll_sd.get_storage_domain_images(
-            config.GLANCE_DOMAIN
+            config.GLANCE_DOMAIN, key=None
         ):
             if self.disk.get_alias() == image.get_name():
                 image_found = True
@@ -540,4 +537,73 @@ class TestCase5683(BaseTestCase):
                 "Failed to find image in glance image %s repository %s",
                 self.disk.get_alias(), self.glance_domain
                 )
+        BaseTestCase.teardown_exception()
+
+
+@attr(tier=2)
+class TestCase10696(BasicEnvironment):
+    """
+    Import a glance image as template
+    """
+    __test__ = True
+    test_case = '2'
+    template_name = 'glance_template_10696'
+    disk_alias = 'glance_image_10697'
+
+    @polarion("RHEVM3-10696")
+    def test_import_glance_image_as_template(self):
+        """
+        - Import an image from glance domain as a template
+        - Import the same image again
+        """
+        response_body = ll_sd.import_glance_image(
+            config.GLANCE_DOMAIN, config.GOLDEN_GLANCE_IMAGE,
+            self.storage_domain, config.CLUSTER_NAME,
+            new_disk_alias=self.disk_alias,
+            new_template_name=self.template_name,
+            import_as_template=True, async=False, return_response_body=True
+        )
+        ll_jobs.wait_for_jobs([config.JOB_IMPORT_IMAGE], sleep=POLL_PERIOD)
+        self.templates_to_remove.append(self.template_name)
+        disk_id = ll_disks.get_disk_obj(self.disk_alias).get_id()
+        self.assertTrue(
+            disk_id in response_body,
+            "Imported image's ID is not part of the import request "
+            "response's body"
+        )
+
+
+@attr(tier=2)
+class TestCase10697(BasicEnvironment):
+    """
+    Import a glance image as disk
+    """
+    __test__ = True
+    test_case = '10697'
+    disk_alias = 'glance_image_10697'
+    disk_id = None
+
+    @polarion("RHEVM3-10697")
+    def test_import_glance_image_as_disk(self):
+        """
+        - Import an image from glance domain as a disk
+        """
+        response_body = ll_sd.import_glance_image(
+            config.GLANCE_DOMAIN, config.GOLDEN_GLANCE_IMAGE,
+            self.storage_domain, config.CLUSTER_NAME,
+            new_disk_alias=self.disk_alias, async=False,
+            return_response_body=True
+        )
+        ll_jobs.wait_for_jobs([config.JOB_IMPORT_IMAGE], sleep=POLL_PERIOD)
+        self.disk_id = ll_disks.get_disk_obj(self.disk_alias).get_id()
+        self.assertTrue(
+            self.disk_id in response_body,
+            "Imported image's ID is not part of the import request "
+            "response's body"
+        )
+
+    def tearDown(self):
+        super(TestCase10697, self).tearDown()
+        if not ll_disks.deleteDisk(True, disk_id=self.disk_id):
+            BaseTestCase.test_failed = True
         BaseTestCase.teardown_exception()
