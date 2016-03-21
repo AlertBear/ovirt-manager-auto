@@ -15,8 +15,6 @@ from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sds,
     datacenters as hl_dcs,
 )
-from art.test_handler.tools import tcms
-
 from art.rhevm_api.utils.test_utils import get_api
 
 from art.test_handler import exceptions
@@ -125,7 +123,6 @@ class TestInstallVMWithDisplayType(BaseTestCase):
     __test__ = (VM_MIGRATION == 'false')
     tcms_test_case = common.tcms_case_id(['279579', '309549'])
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_install_vm_with_different_disk_type(self):
         """
         Testing install vm with spice or vnc display type
@@ -144,7 +141,6 @@ class TestSuspendVMWithDiskless(BaseTestCase):
     diskless = True
     installation = False
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_suspend_stop_start_vm_with_diskless(self):
         """
         Create a VM w/o disk
@@ -172,7 +168,6 @@ class TestSuspendStartVMWithDiskNoSystem(BaseTestCase):
     vm_name = 'vm_%s' % tcms_test_case
     installation = False
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_suspend_start_vm_with_disk_but_no_system(self):
         """
         Create a VM with disk but no system
@@ -261,7 +256,6 @@ class TestDisconnectHostFromStorageDomain(BaseTestCase):
         LOGGER.info("DC is %s", dc_obj.status.state)
         self.assertTrue(dc_obj.status.state == dc_state)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_disconnect_host_from_storage(self):
         """
         Create and start a VM
@@ -315,7 +309,6 @@ class TestKillVMWithMultipleSnapshots(BaseTestCase):
     tcms_test_case = common.tcms_case_id(['362877', '278065'])
     vm_name = 'vm_%s' % tcms_test_case
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_multiple_live_snapshots_on_vm(self):
         """
         Install and start a VM
@@ -357,7 +350,6 @@ class TestMigrateVMWithMultipleSnapshots(BaseTestCase):
         for snapshot in snapshots:
             self.assertTrue(snapshot.snapshot_status == self.snap_state)
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_live_migration_vm_with_multiple_snapshots(self):
         """
         Intall and start a VM
@@ -398,7 +390,6 @@ class TestMigrationWithInactiveISODomain(BaseTestCase):
     tcms_test_case = common.tcms_case_id(['279133', '279575'])
     vm_name = 'vm_%s' % tcms_test_case
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_migrating_vm_with_inactive_iso_domain(self):
         """
         Install a VM
@@ -463,7 +454,6 @@ class TestLiveStorageMigration(BaseTestCase):
     sd_type = config.SD_TYPE
     dc_type = config.DATA_CENTER_TYPE
 
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_live_storage_migration(self):
         """
         Install and start a VM

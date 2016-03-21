@@ -26,11 +26,6 @@ enabled = boolean(default=True)
 [GENERATE_DS]
 enabled = boolean(default=True)
 
-[TCMS]
-user = string(default="TCMS/jenkins.qa.lab.tlv.redhat.com")
-keytab_files_location = path_exists(default="/etc")
-generate_links = boolean(default=True)
-
 [VERSION_FETCHER]
 enabled = boolean(default=True)
 host = string_list(default=list())
