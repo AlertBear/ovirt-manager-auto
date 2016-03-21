@@ -10,8 +10,8 @@ Hot Plug CPU - Testing
 """
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import VirtTest as TestCase
+from art.unittest_lib.common import attr
 from art.unittest_lib import common
-from nose.plugins.attrib import attr
 from rhevmtests import helpers
 from rhevmtests.virt import config
 from rhevmtests.virt import helper

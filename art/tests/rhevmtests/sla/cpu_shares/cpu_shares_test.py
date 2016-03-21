@@ -2,11 +2,11 @@
 CPU SHARE TEST
 test cpu share low, medium, high and custom and their combinations
 """
-from art.unittest_lib import SlaTest as TestCase
+
+from art.unittest_lib import SlaTest as TestCase, attr
 from art.core_api import apis_utils
 from art.core_api import apis_exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from nose.plugins.attrib import attr
 from rhevmtests.sla import config
 from rhevmtests import helpers
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
