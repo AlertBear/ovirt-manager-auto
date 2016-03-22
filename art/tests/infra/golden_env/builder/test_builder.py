@@ -224,11 +224,15 @@ class CreateDC(TestCase):
             self.vds_objs.append(vds_obj)
             testflow.step("Add host %s", host_def['name'])
             if not hosts.addHost(
-                    True, host_def['name'], address=host_ip,
-                    root_password=host_pwd, wait=False, cluster=cluster_name,
-                    **{"comment": vds_fqdn}
-                    ):
-                raise errors.HostException("Cannot add host")
+                True, host_def['name'], address=host_ip,
+                root_password=host_pwd, wait=False, cluster=cluster_name,
+                comment=vds_fqdn,
+            ):
+                raise errors.HostException(
+                    "Cannot add host %s (%s/%s)" % (
+                        host_def['name'], host_ip, host_pwd,
+                    )
+                )
 
         if not hosts.waitForHostsStates(
                 True,
