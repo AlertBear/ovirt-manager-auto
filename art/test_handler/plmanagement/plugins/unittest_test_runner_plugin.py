@@ -64,7 +64,6 @@ from art.test_handler.plmanagement.interfaces.config_validator import\
     IConfigValidation
 from art.test_handler.test_runner import TestCase, TestSuite, TestGroup,\
     TestResult, TEST_CASES_SEPARATOR
-from art.test_handler.exceptions import SkipTest
 from art.test_handler import find_test_file, locate_file
 from art.test_handler.settings import opts
 import art
@@ -88,15 +87,9 @@ except ImportError as ex:
     DEPS_INSTALLED = ex
 
 try:
-    from unittest import SkipTest as USkipTest
-except ImportError as ex:  # py2.6 doesn't contain this class
-    USkipTest = None
-try:
-    from unittest2 import SkipTest as USkipTest2
-except ImportError as ex:
-    # it can work without it
-    logger.warning("unittest2 module is not installed")
-    USkipTest2 = None
+    from unittest import SkipTest
+except ImportError:
+    from unittest2 import SkipTest
 
 RUN_SEC = 'RUN'
 TESTS_FILE = 'tests_file'
@@ -178,7 +171,7 @@ class PythonExprAction(argparse.Action):
 
 
 class UTestCase(TestCase):
-    skip_exceptions = (USkipTest, USkipTest2, SkipTest)
+    skip_exceptions = (SkipTest,)
 
     def __init__(self, t, skip=False):
         super(UTestCase, self).__init__()

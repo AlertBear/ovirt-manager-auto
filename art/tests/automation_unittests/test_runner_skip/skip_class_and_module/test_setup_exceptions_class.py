@@ -9,8 +9,7 @@ import logging
 from nose.tools import istest
 from unittest2 import skipIf
 
-from art.test_handler.exceptions import SkipTest
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import BaseTestCase as TestCase, SkipTest
 
 logger = logging.getLogger(__name__)
 

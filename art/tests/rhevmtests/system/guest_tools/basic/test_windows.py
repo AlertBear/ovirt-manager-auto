@@ -9,9 +9,8 @@ import sys
 
 from art.rhevm_api.tests_lib.low_level import vms, disks, storagedomains
 from art.rhevm_api.utils import test_utils as utils
-from art.test_handler.exceptions import SkipTest
 from art.test_handler.tools import bz  # pylint: disable=E0611
-from art.unittest_lib import attr, CoreSystemTest as TestCase
+from art.unittest_lib import attr, CoreSystemTest as TestCase, SkipTest
 from art.unittest_lib.windows import WindowsGuest
 from functools import wraps
 from rhevmtests.system.guest_tools import config

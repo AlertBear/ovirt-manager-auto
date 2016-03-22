@@ -16,7 +16,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.test_handler import exceptions as errors
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import attr, StorageTest as BaseTestCase
+from art.unittest_lib import attr, StorageTest as BaseTestCase, SkipTest
 from rhevmtests.storage import config, helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class BasicEnvironment(BaseTestCase):
         """
         # Disable glance tests for PPC architecture
         if config.PPC_ARCH:
-            raise errors.SkipTest("Glance is not supported on PPC")
+            raise SkipTest("Glance is not supported on PPC")
         self.storage_domains = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )

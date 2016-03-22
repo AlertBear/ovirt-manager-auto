@@ -704,7 +704,7 @@ class TestHostWithVmLostConnection(GeneralSetupTeardownClass):
             self.second_host, self.engine_vm_host
         ):
             self.__class__.skip = True
-            raise errors.SkipTest("Host doesn't have power management")
+            raise test_libs.SkipTest("Host doesn't have power management")
         logger.info("Stop network on host %s", self.engine_vm_host)
         try:
             self.engine_vm_host.service("network").stop()
@@ -1317,7 +1317,7 @@ class StopServices(GeneralSetupTeardownClass):
         :type service_executor: Service
         """
         if service_executor.__class__.__name__ != conf.SYSTEMD:
-            raise errors.SkipTest(
+            raise test_libs.SkipTest(
                 "Can not mask service %s, because host %s do not have %s" %
                 (service_executor, cls.engine_vm_host, conf.SYSTEMD)
             )

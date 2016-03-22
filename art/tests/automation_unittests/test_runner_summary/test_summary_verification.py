@@ -8,9 +8,8 @@ import logging
 
 from nose.tools import istest
 
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import BaseTestCase as TestCase, SkipTest
 
-from art.test_handler.exceptions import SkipTest
 from automation_unittests.verify_results import VerifyUnittestResults
 
 logger = logging.getLogger(__name__)

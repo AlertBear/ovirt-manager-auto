@@ -5,7 +5,7 @@ import os
 import tempfile
 
 from functools import wraps
-from art.test_handler.exceptions import SkipTest
+from art.unittest_lib import SkipTest
 from art.core_api.apis_exceptions import APIException
 from rhevmtests.system.aaa.ldap import config
 from art.rhevm_api.tests_lib.low_level import users, mla, general

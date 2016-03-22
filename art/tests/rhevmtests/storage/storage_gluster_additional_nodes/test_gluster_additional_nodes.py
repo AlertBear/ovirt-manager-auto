@@ -18,7 +18,7 @@ from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import attr, StorageTest as BaseTestCase
+from art.unittest_lib import attr, StorageTest as BaseTestCase, SkipTest
 from art.rhevm_api.utils.log_listener import watch_logs
 from multiprocessing import Process, Queue
 from rhevmtests.storage import config
@@ -404,7 +404,7 @@ class Test12320(BaseGlusterMount):
         # products, 1303977
         # TODO: When pytest is enabled, use the bz attribute instead of raise
         # the SkipTest exception
-        raise exceptions.SkipTest(
+        raise SkipTest(
             "Skip test due to bug 1303977"
         )
         self.verify_add_storage_domain(positive=True)

@@ -38,10 +38,6 @@ class WrongIterableParams(CannotRunTests):
     pass
 
 
-class SkipTest(Exception):
-    pass
-
-
 class TestExceptionType(type):
     """
     Customized type of exceptions which privides auto-discovery these

@@ -9,8 +9,12 @@ import threading
 import copy
 from art.test_handler.settings import initPlmanager, opts
 from art.test_handler.exceptions import VitalTestFailed, \
-    Vital4GroupTestFailed, SkipTest, formatExcInfo
+    Vital4GroupTestFailed, formatExcInfo
 from utilities.jobs import JobsSet, Job
+try:
+    from unittest import SkipTest
+except ImportError:
+    from unittest2 import SkipTest
 # TODO: consider to use
 # http://docs.python.org/dev/library/concurrent.futures.html instead
 

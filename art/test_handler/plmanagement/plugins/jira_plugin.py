@@ -35,8 +35,11 @@ Issues DB syntax
 </issues>
 """
 
+try:
+    from unittest import SkipTest
+except ImportError:
+    from unittest2 import SkipTest
 from art.test_handler.settings import opts
-from art.test_handler.exceptions import SkipTest
 from art.test_handler.plmanagement import (
     Component, implements, get_logger, PluginError,
 )

@@ -16,7 +16,7 @@ import logging
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 
 from rhevmtests.sla.watchdog import config
-from art.unittest_lib import SlaTest as TestCase, attr
+from art.unittest_lib import SlaTest as TestCase, attr, SkipTest
 import rhevmtests.helpers as helpers
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
@@ -595,7 +595,7 @@ class WatchdogMigration(WatchdogActionTest):
         Test, that migration not trigger watchdog action
         """
         if (len(config.HOSTS)) < 2:
-            raise errors.SkipTest("Too few hosts")
+            raise SkipTest("Too few hosts")
 
         logger.info("Migrate VM %s", config.VM_NAME[1])
         self.assertTrue(

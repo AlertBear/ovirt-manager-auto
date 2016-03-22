@@ -61,8 +61,11 @@ import json
 from requests import ConnectionError
 from functools import wraps
 import bugzilla
+try:
+    from unittest import SkipTest
+except ImportError:
+    from unittest2 import SkipTest
 
-from art.test_handler.exceptions import SkipTest
 from art.test_handler.plmanagement import (
     Component,
     implements,

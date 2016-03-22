@@ -13,7 +13,7 @@ Tests covers:
         VM with memory set to max guaranteed memory, VM without guest
         agent, multiple VMs on one host with ballooning enabled
 """
-from art.unittest_lib import SlaTest as TestCase, attr
+from art.unittest_lib import SlaTest as TestCase, attr, SkipTest
 import logging
 import config
 from time import sleep
@@ -473,7 +473,7 @@ class KSM(MOM):
         Migrate VMs with KSM enabled
         """
         if (len(config.HOSTS)) < 2:
-            raise errors.SkipTest("Too few hosts.")
+            raise SkipTest("Too few hosts.")
         for vm in self.threshold_list:
             self.assertTrue(
                 vms.migrateVm(True, vm, force=True),
@@ -498,7 +498,7 @@ class KSM(MOM):
         Stop KSM by migrating to other host
         """
         if (len(config.HOSTS)) < 2:
-            raise errors.SkipTest("Too few hosts.")
+            raise SkipTest("Too few hosts.")
 
         for vm in self.threshold_list[:len(self.threshold_list) / 2]:
             self.assertTrue(

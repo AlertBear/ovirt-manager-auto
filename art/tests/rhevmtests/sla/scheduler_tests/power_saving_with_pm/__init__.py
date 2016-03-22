@@ -6,6 +6,7 @@ import os
 import time
 import logging
 from rhevmtests.sla import config
+from art.unittest_lib import SkipTest
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
 import art.rhevm_api.tests_lib.low_level.sla as sla_api
@@ -50,7 +51,7 @@ def setup_package():
         for host, host_resource in hosts_resource.iteritems():
             host_pm = config.pm_mapping.get(host_resource.network.hostname)
             if host_pm is None:
-                raise errors.SkipTest(
+                raise SkipTest(
                     "Host %s with fqdn don't have power management" % host
                 )
             if not host_api.updateHost(

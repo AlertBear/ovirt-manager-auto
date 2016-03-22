@@ -1,6 +1,6 @@
 import config
 import logging
-from art.unittest_lib import StorageTest, attr
+from art.unittest_lib import StorageTest, attr, SkipTest
 from concurrent.futures import ThreadPoolExecutor
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
@@ -53,7 +53,7 @@ def setup_module():
     if config.PPC_ARCH:
         # TODO: Enable for PPC when the targets are configured for the
         # environment and properly tested
-        raise errors.SkipTest("Additional iscsi targets not configured")
+        raise SkipTest("Additional iscsi targets not configured")
     global ISCSI_SDS
     # All of the storage connections need to be removed, and the host
     # should be logged out from all targets for these tests. This is due

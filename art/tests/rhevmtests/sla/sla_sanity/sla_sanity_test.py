@@ -715,7 +715,7 @@ class TestCPUPinCase1(BasicSlaClass):
         Set pinning to 0#0-3,^1
         """
         if (self.cores * self.sockets) < 4:
-            raise errors.SkipTest("Too few CPU cores")
+            raise u_lib.SkipTest("Too few CPU cores")
         vcpu_pinning = adapt_vcpu_pinning_to_cli([{"0": "0-3,^1"}])
         logger.info("Setting VCPU pinning to 0#0-3,^1")
         compare = conf.opts["engine"] != "cli"
@@ -733,7 +733,7 @@ class TestCPUPinCase1(BasicSlaClass):
         Set pinning to 0#0-3,^1,^2
         """
         if (self.cores * self.sockets) < 4:
-            raise errors.SkipTest("Too few CPU cores")
+            raise u_lib.SkipTest("Too few CPU cores")
         vcpu_pinning = adapt_vcpu_pinning_to_cli([{"0": "0-3,^1,^2"}])
         logger.info("Setting VCPU pinning to 0#0-3,^1,^2")
         compare = conf.opts["engine"] != "cli"
@@ -751,7 +751,7 @@ class TestCPUPinCase1(BasicSlaClass):
         Set pinning to 0#1,2,3
         """
         if (self.cores * self.sockets) < 4:
-            raise errors.SkipTest("Too few CPU cores")
+            raise u_lib.SkipTest("Too few CPU cores")
         vcpu_pinning = adapt_vcpu_pinning_to_cli([{"0": "1,2,3"}])
         logger.info("Setting VCPU pinning to 0#1,2,3")
         compare = conf.opts["engine"] != "cli"
@@ -770,7 +770,7 @@ class TestCPUPinCase1(BasicSlaClass):
         Negative: Set pinning to 0#0_0#1
         """
         if (self.cores * self.sockets) < 2:
-            raise errors.SkipTest("Too few CPU cores")
+            raise u_lib.SkipTest("Too few CPU cores")
         vcpu_pinning = adapt_vcpu_pinning_to_cli([{"0": "0"}, {"0": "1"}])
         logger.info("Setting VCPU pinning to 0#0_0#1")
         self.assertFalse(
@@ -1128,7 +1128,7 @@ class TestCPUPinCase7(BasicSlaClass):
         Set CPU pinning to random pCPU cores and check if pining holds
         """
         if self.total_cores < 1:
-            raise errors.SkipTest("Too few cores")
+            raise u_lib.SkipTest("Too few cores")
         host_online_cpu = str(
             ll_sla.get_list_of_online_cpus_on_resource(conf.VDS_HOSTS[0])[0]
         )
@@ -1219,7 +1219,7 @@ class TestPlacementPolicyCase1(BasicSlaClass):
         Migrate a migratable VM
         """
         if (len(conf.HOSTS)) < 2:
-            raise errors.SkipTest("Too few hosts")
+            raise u_lib.SkipTest("Too few hosts")
         logger.info("Attempting to migratable a migratable VM")
         self.assertTrue(
             ll_vms.migrateVm(True, self.vm_name, host=conf.HOSTS[1]),
@@ -1257,7 +1257,7 @@ class TestPlacementPolicyCase2(BasicSlaClass):
         Migrate a user-migratable VM
         """
         if (len(conf.HOSTS)) < 2:
-            raise errors.SkipTest("Too few hosts")
+            raise u_lib.SkipTest("Too few hosts")
         logger.info("Attempting to migratable a migratable VM")
         self.assertTrue(
             ll_vms.migrateVm(
@@ -1297,7 +1297,7 @@ class TestPlacementPolicyCase3(BasicSlaClass):
         Migrate a non-migratable VM
         """
         if (len(conf.HOSTS)) < 2:
-            raise errors.SkipTest("Too few hosts")
+            raise u_lib.SkipTest("Too few hosts")
         logger.info("Attempting to migratable a migratable VM")
         self.assertFalse(
             ll_vms.migrateVm(True, self.vm_name, host=conf.HOSTS[1]),

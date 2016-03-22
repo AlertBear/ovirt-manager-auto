@@ -15,8 +15,7 @@ import config
 import logging
 import helpers
 from art.test_handler import exceptions
-from art.unittest_lib import StorageTest as TestCase
-from art.unittest_lib import attr
+from art.unittest_lib import StorageTest as TestCase, attr, SkipTest
 from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 import art.rhevm_api.tests_lib.high_level.storagedomains as hl_sd
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
@@ -68,7 +67,7 @@ class BaseCaseIsoDomains(TestCase):
             # TODO: Re-write this case to use the already added NFS domain.
             # For POSIX, use a small ISO image so it can be uploaded
             # quickly to the remote server
-            raise exceptions.SkipTest("ISO not working on PPC")
+            raise SkipTest("ISO not working on PPC")
 
         cls.data_center_name = config.DATA_CENTER_NAME
 

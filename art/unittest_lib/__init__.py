@@ -10,6 +10,7 @@ from art.unittest_lib.common import (
     CoreSystemTest,
     IntegrationTest,
     attr,
+    SkipTest,
 )
 
 __all__ = [
@@ -21,4 +22,5 @@ __all__ = [
     'CoreSystemTest',
     'IntegrationTest',
     'attr',
+    'SkipTest',
 ]

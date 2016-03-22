@@ -8,7 +8,7 @@ import time
 import logging
 
 from rhevmtests.sla import config
-from art.unittest_lib import attr
+from art.unittest_lib import attr, SkipTest
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
@@ -232,7 +232,7 @@ class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
             config.VDS_HOSTS[1].network.hostname
         )
         if host_pm is None:
-            raise errors.SkipTest(
+            raise SkipTest(
                 "Host %s with fqdn don't have power management" %
                 config.HOSTS[1], host_pm
             )

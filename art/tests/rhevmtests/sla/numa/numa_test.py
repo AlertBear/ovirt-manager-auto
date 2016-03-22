@@ -547,7 +547,7 @@ class CheckNumaModes(StartVms):
             conf.VDS_HOSTS[0]
         )
         if not h_numa_nodes_params or len(h_numa_nodes_params.keys()) < 2:
-            raise errors.SkipTest(
+            raise u_libs.SkipTest(
                 "Number of NUMA nodes on host %s less than 2" %
                 conf.VDS_HOSTS[0].fqdn
             )
