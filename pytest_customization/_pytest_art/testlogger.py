@@ -170,11 +170,12 @@ class ARTLogging(object):
             self._log_header(self.current_item)
             flow_logger.error(" NOTE: Test failed on setup phase!")
             self._log_footer(level, report)
-        if report.when == "call":
-            self._log_footer(level, report)
         if report.outcome == "skipped":
             if report.when == "setup":
                 self._log_header(self.current_item)
+            if report.when != "call":
+                self._log_footer(level, report)
+        if report.when == "call":
             self._log_footer(level, report)
         self.log_filter.toggle(True)
 
