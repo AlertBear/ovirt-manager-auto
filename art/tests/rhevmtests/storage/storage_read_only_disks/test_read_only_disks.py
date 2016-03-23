@@ -1397,8 +1397,11 @@ class TestCase4930(DefaultEnvironment):
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=False)
         logger.info("Killing qemu process")
         self.host = ll_hosts.getVmHost(self.vm_name)[1]['vmHoster']
-        status = ll_hosts.kill_qemu_process(
-            self.vm_name, self.host, config.HOSTS_USER, config.HOSTS_PW
+        host_resource = rhevm_helpers.get_host_resource_by_name(
+            host_name=self.host
+        )
+        status = ll_hosts.kill_vm_process(
+            resource=host_resource, vm_name=self.vm_name
         )
         self.assertTrue(status, "Failed to kill qemu process")
         logger.info("qemu process killed")

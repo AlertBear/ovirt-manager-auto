@@ -12,11 +12,6 @@ PM_TYPE = 'pm_type'
 PM_SLOT = 'pm_slot'
 
 
-NUM_OF_DEVICES = int(STORAGE_CONF.get("%s_devices" % STORAGE_TYPE_NFS, 0))
-STORAGE_NAME = [
-    "_".join([STORAGE_TYPE_NFS, str(i)]) for i in xrange(NUM_OF_DEVICES)
-]
-
 # PPC constants
 VM_OS_TYPE = ENUMS['rhel7ppc64'] if PPC_ARCH else ENUMS['rhel6x64']
 VM_DISPLAY_TYPE = ENUMS[
@@ -26,22 +21,37 @@ VM_DISPLAY_TYPE = ENUMS[
 # VM parameters
 VM_MEMORY = "memory"
 VM_MEMORY_GUARANTEED = "memory_guaranteed"
+VM_PLACEMENT_AFFINITY = "placement_affinity"
+VM_PLACEMENT_HOST = "placement_host"
+VM_PLACEMENT_HOSTS = "placement_hosts"
+VM_HIGHLY_AVAILABLE = "highly_available"
+VM_CPU_PINNING = "vcpu_pinning"
+VM_CPU_SOCKET = "cpu_socket"
+VM_CPU_CORES = "cpu_cores"
+VM_CPU_MODE = "cpu_mode"
+VM_OS = "os_type"
+VM_TYPE = "type"
+VM_DISPLAY = "display_type"
+VM_CLUSTER = "cluster"
+VM_WATCHDOG_MODEL = "watchdog_model"
+VM_CPU_SHARES = "cpu_shares"
 
 DEFAULT_VM_PARAMETERS = {
     VM_MEMORY: GB,
     VM_MEMORY_GUARANTEED: GB,
-    'cpu_socket': 1,
-    'cpu_cores': 1,
-    'os_type': VM_OS_TYPE,
-    'type': VM_TYPE_DESKTOP,
-    'display_type': VM_DISPLAY_TYPE,
-    'placement_affinity': VM_MIGRATABLE,
-    'placement_host': VM_ANY_HOST,
-    'cluster': CLUSTER_NAME[0],
-    'watchdog_model': '',
-    'highly_available': False,
-    'vcpu_pinning': [],
-    'cpu_shares': 0
+    VM_CPU_SOCKET: 1,
+    VM_CPU_CORES: 1,
+    VM_OS: VM_OS_TYPE,
+    VM_TYPE: VM_TYPE_DESKTOP,
+    VM_DISPLAY: VM_DISPLAY_TYPE,
+    VM_PLACEMENT_AFFINITY: VM_MIGRATABLE,
+    VM_PLACEMENT_HOST: VM_ANY_HOST,
+    VM_CLUSTER: CLUSTER_NAME[0],
+    VM_WATCHDOG_MODEL: "",
+    VM_HIGHLY_AVAILABLE: False,
+    VM_CPU_PINNING: [],
+    VM_CPU_SHARES: 0,
+    VM_CPU_MODE: "none"
 }
 
 HOST = "host"
@@ -100,6 +110,12 @@ BALANCE_LOG_MSG_POSITIVE = (
     "Wait until balance module will migrate VM's on host %s"
 )
 BALANCE_LOG_MSG_NEGATIVE = "Check that no migration happen on or from host %s"
+
 ENGINE_CONFIG_LOW_UTILIZATION = "LowUtilizationForEvenlyDistribute"
 SERVICE_PUPPET = "puppet"
 SERVICE_GUEST_AGENT = "ovirt-guest-agent"
+
+CPU = "cpu"
+VCPU = "vcpu"
+CPU_AFFINITY = "cpu_affinity"
+CPU_MODEL_NAME = "model name"

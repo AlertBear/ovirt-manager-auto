@@ -1,7 +1,9 @@
 """
-Helper for sla tests
+Helper for SLA tests
 """
+
 import logging
+import re
 
 from concurrent.futures import ThreadPoolExecutor
 
@@ -297,3 +299,72 @@ def stop_all_ge_vms_and_update_to_default_params():
             executor.submit(
                 ll_vms.updateVm, True, vm, **conf.DEFAULT_VM_PARAMETERS
             )
+
+
+def get_pinning_information(host_resource, vm_name):
+    """
+    Get from virsh VM pinning information
+
+    Args:
+        host_resource (VDS): Host resource
+        vm_name (str): Vm name
+
+    Returns:
+        dict: Vm pinning information
+    """
+    vcpu_info_d = {}
+    vcpu_info = host_resource.run_command(
+        ["virsh", "-r", "vcpuinfo", vm_name]
+    )[1]
+    pattern = r"VCPU:\s*(\d+)\s*\nCPU:\s*(\d+).*CPU Affinity:\s*([y-]+)"
+    reg_exp_res = re.findall(pattern=pattern, string=vcpu_info, flags=re.S)
+    for key, value in zip(
+        (conf.VCPU, conf.CPU, conf.CPU_AFFINITY), reg_exp_res[0]
+    ):
+        vcpu_info_d[key] = value
+    return vcpu_info_d
+
+
+def check_vm_cpu_pinning(host_resource, vm_name, expected_pinning):
+    """
+    Check if VM pinning information equal to expected one
+
+    Args:
+        host_resource (VDS): Host resource
+        vm_name (str): Vm name
+        expected_pinning (dict): Expected VM pinning information
+
+    Returns:
+        bool: True, if real VM pinning information equal to expected one,
+            otherwise False
+    """
+    vcpu_info_d = get_pinning_information(
+        host_resource=host_resource, vm_name=vm_name
+    )
+    for key, value in expected_pinning.iteritems():
+        if str(vcpu_info_d[key]) != str(value):
+            return False
+    return True
+
+
+def get_cpu_info(resource):
+    """
+    Get CPU info from resource
+
+    Args:
+        resource (VDS): resource
+
+    Returns:
+        dict: Cpu info dictionary
+    """
+    cpu_d = {}
+    rc, out, _ = resource.run_command(['cat', '/proc/cpuinfo'])
+    if rc:
+        logger.error("Failed to get CPU info from %s", resource)
+        return cpu_d
+    for line in out.split('\n')[:-1]:
+        if line == "":
+            break
+        name, value = line.split(':')
+        cpu_d[name.strip()] = value.strip()
+    return cpu_d

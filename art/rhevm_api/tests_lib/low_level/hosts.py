@@ -1991,27 +1991,23 @@ def stop_vdsm(host, password):
     return stopVdsmd(vds=ip, password=password)
 
 
-def kill_qemu_process(vm_name, host, user, password):
+def kill_vm_process(resource, vm_name):
     """
-    Description: kill qemu process of a given vm
-    Parameters:
-        * vm_name - the vm name that wish to find its qemu proc
-        * host - name of the host
-        * user - username for  host
-        * password - password for host
-    Author: ratamir
-    Return:
-        pid, or raise EntityNotFound exception
-    """
-    linux_machine = get_linux_machine_obj(host, user, password)
-    cmd = FIND_QEMU % vm_name
-    status, output = linux_machine.runCmd(shlex.split(cmd))
-    if not status:
-        raise RuntimeError("Output: %s" % output)
-    qemu_pid = output.split()[1]
-    HOST_API.logger.info("QEMU pid: %s", qemu_pid)
+    Kill VM process of a given vm
 
-    return linux_machine.runCmd(['kill', '-9', qemu_pid])
+    Args:
+        resource (VDS): resource
+        vm_name (str): name of VM to kill
+
+    Returns:
+        bool: True, if function succeed to kill VM process, otherwise False
+    """
+    vm_pid = resource.get_vm_process_pid(vm_name=vm_name)
+    if not vm_pid:
+        logger.error("Failed to get VM pid from resource %s", resource)
+        return False
+    rc = resource.run_command(['kill', '-9', vm_pid])[0]
+    return not bool(rc)
 
 
 def get_host_object(host_name):
@@ -2718,3 +2714,63 @@ def get_host_processing_units_number(host_name):
         get_host_sockets(host_name) *
         get_host_threads(host_name)
     )
+
+
+def get_host_devices(host_name):
+    """
+    Get all host devices
+
+    Args:
+        host_name (str): Host name
+
+    Returns:
+        list: All host devices
+    """
+    host_obj = HOST_API.find(host_name)
+    logger.info("Get all devices from host %s", host_name)
+    return HOST_API.getElemFromLink(host_obj, "devices", "host_device")
+
+
+def get_host_device_by_name(host_name, device_name):
+    """
+    Get host device object by device name
+
+    Args:
+        host_name (str): Host name
+        device_name (str): Device name
+
+    Returns:
+        HostDevice: Instance of HostDevice
+    """
+    host_devices = get_host_devices(host_name=host_name)
+    logger.info(
+        "Get host device with name %s from host %s", device_name, host_name
+    )
+    host_devices = filter(
+        lambda host_device: host_device.get_name() == device_name, host_devices
+    )
+    if not host_devices:
+        logger.error(
+            "Failed to find host device with name %s under host %s",
+            device_name, host_name
+        )
+        return None
+    return host_devices[0]
+
+
+def get_host_device_id_by_name(host_name, device_name):
+    """
+    Get host device id by name
+
+    Args:
+        host_name (str): Host name
+        device_name (str): Device name
+
+    Returns:
+        str: Device id
+    """
+    host_device_obj = get_host_device_by_name(
+        host_name=host_name, device_name=device_name
+    )
+    if host_device_obj:
+        return host_device_obj.get_id()

@@ -256,17 +256,18 @@ def wait_for_jobs_deco(jobs):
     return deco
 
 
-def get_vm_resource(vm):
+def get_vm_resource(vm, start_vm=True):
     """
     Get VM resource
 
     Args:
         vm (str): VM name
+        start_vm (bool): Start VM before fetch IP
 
     Returns:
         Host: VM resource
     """
-    ip = hl_vms.get_vm_ip(vm_name=vm)
+    ip = hl_vms.get_vm_ip(vm_name=vm, start_vm=start_vm)
     return get_host_resource(ip, config.VMS_LINUX_PW)
 
 
@@ -439,3 +440,20 @@ def wait_for_vms_gets_to_full_consumption(expected_dict):
         if not result.result():
             raise errors.VMException("Cannot get vm %s consumption" % vm_name)
     return True
+
+
+def get_host_resource_by_name(host_name):
+    """
+    Get host resource by name
+
+    Args:
+        host_name (str): host name
+
+    Returns:
+        VDS: host resource
+    """
+    host_ip = ll_hosts.get_host_ip_from_engine(host_name)
+    for host_resource in config.VDS_HOSTS:
+        if host_resource.ip == host_ip:
+            return host_resource
+    return None

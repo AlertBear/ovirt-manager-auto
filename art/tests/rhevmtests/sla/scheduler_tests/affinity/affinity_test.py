@@ -5,19 +5,18 @@ or in the same affinities groups(soft/hard, positive/negative)
 """
 import logging
 
-from art.unittest_lib import attr
-import rhevmtests.sla.config as conf
-
-from art.rhevm_api.utils import test_utils
-from art.unittest_lib import SlaTest as TestCase
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
-from unittest2 import SkipTest
-import art.test_handler.exceptions as errors
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sds
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.test_handler.exceptions as errors
+import rhevmtests.helpers as rhevm_helpers
+import rhevmtests.sla.config as conf
+from art.rhevm_api.utils import test_utils
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.unittest_lib import SlaTest as TestCase, SkipTest
+from art.unittest_lib import attr
 
 
 logger = logging.getLogger(__name__)
@@ -880,9 +879,12 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(MigrateVm):
         Kill HA vm and check that vm failed to run because affinity policy
         """
         ha_host = ll_vms.get_vm_host(self.ha_vm)
+        host_resource = rhevm_helpers.get_host_resource_by_name(
+            host_name=ha_host
+        )
         logger.info("Kill HA vm")
-        if not ll_hosts.kill_qemu_process(
-            self.ha_vm, ha_host, conf.HOSTS_USER, conf.HOSTS_PW
+        if not ll_hosts.kill_vm_process(
+            resource=host_resource, vm_name=self.ha_vm
         ):
             raise errors.HostException("Failed to kill vm process")
         self.assertTrue(
@@ -936,16 +938,15 @@ class TestStartHAVmsUnderHardPositiveAffinity(StartVms):
         Kill qemu process of HA vms and check if vms started on the same host
         """
         vm_host = ll_vms.get_vm_host(conf.VM_NAME[0])
-        logger.info("Kill qemu process of vm %s", conf.VM_NAME[0])
-        if not ll_hosts.kill_qemu_process(
-            conf.VM_NAME[0], vm_host, conf.HOSTS_USER, conf.HOSTS_PW
-        ):
-            raise errors.HostException("Failed to kill vm process")
-        logger.info("Kill qemu process of vm %s", conf.VM_NAME[1])
-        if not ll_hosts.kill_qemu_process(
-            conf.VM_NAME[1], vm_host, conf.HOSTS_USER, conf.HOSTS_PW
-        ):
-            raise errors.HostException("Failed to kill vm process")
+        host_resource = rhevm_helpers.get_host_resource_by_name(
+            host_name=vm_host
+        )
+        for vm_name in conf.VM_NAME[:2]:
+            logger.info("Kill qemu process of vm %s", vm_name)
+            if not ll_hosts.kill_vm_process(
+                resource=host_resource, vm_name=vm_name
+            ):
+                raise errors.HostException("Failed to kill vm process")
         logger.info("Wait until both vms change status to UP")
         if not ll_vms.waitForVmsStates(True, conf.VM_NAME[:2]):
             raise errors.VMException("One of vms still down")

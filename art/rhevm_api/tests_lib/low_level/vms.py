@@ -15,16 +15,19 @@
 # License along with this software; if not, write to the Free
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-import shlex
-from concurrent.futures import ThreadPoolExecutor
 import logging
-from operator import and_
-from Queue import Queue
-import random
 import os
+import random
 import re
+import shlex
 import time
+from Queue import Queue
+from operator import and_
 from threading import Thread
+
+from concurrent.futures import ThreadPoolExecutor
+
+import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.core_api import is_action
 from art.core_api.apis_exceptions import (
     APITimeout, EntityNotFound, TestCaseError,
@@ -35,27 +38,23 @@ from art.rhevm_api.tests_lib.low_level.disks import (
     _prepareDiskObject, getVmDisk, getObjDisks, get_other_storage_domain,
     wait_for_disks_status, get_disk_storage_domain_name,
 )
-import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.networks import get_vnic_profile_obj
-
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
+from art.rhevm_api.utils.provisioning_utils import ProvisionProvider
+from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.test_utils import (
     searchForObj, getImageByOsType, convertMacToIpAddress,
     checkHostConnectivity, update_vm_status_in_database, get_api, split,
     waitUntilPingable, restoringRandomState, waitUntilGone,
 )
-from art.rhevm_api.utils.provisioning_utils import ProvisionProvider
-from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
-
-from art.test_handler.settings import opts
-from art.test_handler.exceptions import CanNotFindIP
 from art.test_handler import exceptions
+from art.test_handler.exceptions import CanNotFindIP
+from art.test_handler.settings import opts
 from utilities.jobs import Job, JobsSet
-from utilities.utils import pingToVms, makeVmList
 from utilities.machine import Machine, LINUX
-
+from utilities.utils import pingToVms, makeVmList
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
@@ -109,8 +108,11 @@ NETWORK_API = get_api('network', 'networks')
 WATCHDOG_API = get_api('watchdog', 'watchdogs')
 CAP_API = get_api('version', 'capabilities')
 NUMA_NODE_API = get_api("vm_numa_node", "vm_numa_nodes")
+HOST_DEVICE_API = get_api("host_device", "host_devices")
+
 Snapshots = getDS('Snapshots')
 NUMA_NODE_LINK = "numanodes"
+HOST_DEVICE_LINK = "hostdevices"
 SAMPLER_TIMEOUT = 120
 SAMPLER_SLEEP = 5
 VM = "vm"
@@ -175,6 +177,8 @@ def _prepareVmObject(**kwargs):
     :type placement_affinity: str
     :param placement_host: host that the affinity holds for
     :type placement_host: str
+    :param placement_hosts: multiple hosts for vm placement
+    :type placement_hosts: list
     :param availablity_priority: priority for high-availability
     (an integer in range 0-100 where 0 - Low, 50 - Medium, 100 - High priority)
     :type availablity_priority: int
@@ -369,7 +373,8 @@ def _prepareVmObject(**kwargs):
     # placement policy: placement_affinity & placement_host
     affinity = kwargs.pop("placement_affinity", None)
     placement_host = kwargs.pop("placement_host", None)
-    if placement_host or affinity:
+    placement_hosts = kwargs.pop("placement_hosts", None)
+    if placement_host or affinity or placement_hosts:
         placement_policy = data_st.VmPlacementPolicy()
         if affinity:
             placement_policy.set_affinity(affinity)
@@ -378,6 +383,12 @@ def _prepareVmObject(**kwargs):
         ]:
             aff_host = HOST_API.find(placement_host)
             placement_policy.set_host(data_st.Host(id=aff_host.id))
+        if placement_hosts:
+            hosts = [
+                data_st.Host(id=HOST_API.find(host).get_id())
+                for host in placement_hosts
+            ]
+            placement_policy.set_hosts(data_st.Hosts(host=hosts))
         vm.set_placement_policy(placement_policy)
 
     # storagedomain
@@ -550,6 +561,8 @@ def addVm(positive, wait=True, **kwargs):
     :type placement_affinity: str
     :param placement_host: host that the affinity holds for
     :type placement_host: str
+    :param placement_hosts: multiple hosts for vm placement
+    :type placement_hosts: list
     :param availablity_priority: priority for high-availability
     (an integer in range 0-100 where 0 - Low, 50 - Medium, 100 - High priority)
     :type availablity_priority: int
@@ -697,6 +710,8 @@ def updateVm(positive, vm, **kwargs):
     :type placement_affinity: str
     :param placement_host: host that the affinity holds for
     :type placement_host: str
+    :param placement_hosts: multiple hosts for vm placement
+    :type placement_hosts: list
     :param quota: vm quota id
     :type quota: str
     :param protected: true if vm is delete protected
@@ -2147,7 +2162,12 @@ def migrateVm(
     if force:
         action_params["force"] = True
 
+    log_info, log_error = ll_general.get_log_msg(
+        action="Migrate", obj_type=VM, obj_name=vm, positive=positive,
+    )
+    logger.info(log_info)
     if not VM_API.syncAction(vm_obj, "migrate", positive, **action_params):
+        logger.error(log_error)
         return False
 
     # Check the VM only if we do the positive test. We know the action status
@@ -2669,25 +2689,26 @@ def checkVmStatistics(positive, vm):
 
 @is_action()
 def createVm(
-        positive, vmName, vmDescription=None, cluster='Default', nic=None,
-        nicType=None, mac_address=None, storageDomainName=None, size=None,
-        diskType=ENUMS['disk_type_data'], volumeType='true',
-        volumeFormat=ENUMS['format_cow'], diskActive=True,
-        diskInterface=ENUMS['interface_virtio'], bootable='true',
-        wipe_after_delete='false', start='false', template='Blank',
-        templateUuid=None, type=None, os_type=None, memory=None,
-        cpu_socket=None, cpu_cores=None, cpu_mode=None, display_type=None,
-        installation=False, slim=False, user=None, password=None,
-        attempt=60, interval=60, cobblerAddress=None, cobblerUser=None,
-        cobblerPasswd=None, image=None, async=False, hostname=None,
-        network=None, vnic_profile=None, useAgent=False,
-        placement_affinity=None, placement_host=None, vcpu_pinning=None,
-        highly_available=None, availablity_priority=None, vm_quota=None,
-        disk_quota=None, plugged='true', linked='true', protected=None,
-        copy_permissions=False, custom_properties=None,
-        watchdog_model=None, watchdog_action=None, cpu_profile_id=None,
-        numa_mode=None, ballooning=None, memory_guaranteed=None,
-        initialization=None, cpu_shares=None, serial_number=None,
+    positive, vmName, vmDescription=None, cluster='Default', nic=None,
+    nicType=None, mac_address=None, storageDomainName=None, size=None,
+    diskType=ENUMS['disk_type_data'], volumeType='true',
+    volumeFormat=ENUMS['format_cow'], diskActive=True,
+    diskInterface=ENUMS['interface_virtio'], bootable='true',
+    wipe_after_delete='false', start='false', template='Blank',
+    templateUuid=None, type=None, os_type=None, memory=None,
+    cpu_socket=None, cpu_cores=None, cpu_mode=None, display_type=None,
+    installation=False, slim=False, user=None, password=None,
+    attempt=60, interval=60, cobblerAddress=None, cobblerUser=None,
+    cobblerPasswd=None, image=None, async=False, hostname=None,
+    network=None, vnic_profile=None, useAgent=False,
+    placement_affinity=None, placement_host=None, placement_hosts=None,
+    vcpu_pinning=None,
+    highly_available=None, availablity_priority=None, vm_quota=None,
+    disk_quota=None, plugged='true', linked='true', protected=None,
+    copy_permissions=False, custom_properties=None,
+    watchdog_model=None, watchdog_action=None, cpu_profile_id=None,
+    numa_mode=None, ballooning=None, memory_guaranteed=None,
+    initialization=None, cpu_shares=None, serial_number=None
 ):
     """
     Create new vm with nic, disk and OS
@@ -2741,6 +2762,8 @@ def createVm(
     :type placement_affinity: str
     :param placement_host: host that the affinity holds for
     :type placement_host: str
+    :param placement_hosts: multiple hosts for vm placement
+    :type placement_hosts: list
     :param vcpu_pinning: vcpu pinning affinity
     :type vcpu_pinning: dict
     :param vm_quota: quota id for vm
@@ -2796,7 +2819,6 @@ def createVm(
     ip = False
     if not vmDescription:
         vmDescription = vmName
-
     if not addVm(
         positive, name=vmName, description=vmDescription,
         cluster=cluster, template=template, templateUuid=templateUuid,
@@ -2813,7 +2835,7 @@ def createVm(
         cpu_profile_id=cpu_profile_id, numa_mode=numa_mode,
         ballooning=ballooning, memory_guaranteed=memory_guaranteed,
         initialization=initialization, cpu_shares=cpu_shares,
-        serial_number=serial_number,
+        serial_number=serial_number, placement_hosts=placement_hosts
     ):
         return False
 
@@ -5020,9 +5042,11 @@ def get_vm_host(vm_name):
     :returns: None if function fail, otherwise name of host.
     """
     try:
+        logger.info("Get VM %s host", vm_name)
         vm_obj = VM_API.find(vm_name)
         host_obj = HOST_API.find(vm_obj.host.id, 'id')
     except EntityNotFound:
+        logger.error("Failed to get VM %s host", vm_name)
         return None
     return host_obj.get_name()
 
@@ -5398,9 +5422,18 @@ def add_numa_node_to_vm(
     numa_nodes_link = VM_API.getElemFromLink(
         elm=vm_obj, link_name=NUMA_NODE_LINK, get_href=True
     )
-    return NUMA_NODE_API.create(
+    log_info, log_error = ll_general.get_log_msg(
+        action="Add", obj_type="numa node", obj_name=str(index),
+        extra_text="to VM %s" % vm_name,
+        **kwargs
+    )
+    logger.info(log_info)
+    status = NUMA_NODE_API.create(
         entity=numa_node_obj, positive=True, collection=numa_nodes_link
     )[1]
+    if not status:
+        logger.error(log_error)
+    return status
 
 
 def update_numa_node_on_vm(
@@ -5465,7 +5498,15 @@ def remove_numa_node_from_vm(vm_name, numa_node_index):
             numa_node_index, vm_name
         )
         return False
-    return NUMA_NODE_API.delete(numa_node_obj, True)
+    log_info, log_error = ll_general.get_log_msg(
+        action="Remove", obj_type="numa node", obj_name=str(numa_node_index),
+        extra_text="from VM %s" % vm_name
+    )
+    logger.info(log_info)
+    status = NUMA_NODE_API.delete(numa_node_obj, True)
+    if not status:
+        logger.error(log_error)
+    return status
 
 
 def export_domain_vm_exist(vm, export_domain, positive=True):
@@ -5642,3 +5683,145 @@ def get_cpu_profile_id(vm_name):
     """
     vm_obj = VM_API.find(vm_name)
     return vm_obj.get_cpu_profile().id
+
+
+def get_vm_host_devices_link(vm_name):
+    """
+    Get VM host devices link
+
+    Args:
+        vm_name (str): Vm name
+
+    Returns:
+        str: Link on host devices collection
+    """
+    logger.info("Get VM %s host devices link", vm_name)
+    vm_obj = get_vm_obj(vm_name=vm_name)
+    return VM_API.getElemFromLink(
+        elm=vm_obj, link_name=HOST_DEVICE_LINK, get_href=True
+    )
+
+
+def get_vm_host_devices(vm_name):
+    """
+    Get all VM host devices
+
+    Args:
+        vm_name (str): VM name
+
+    Returns:
+        list: All host devices
+    """
+    vm_obj = get_vm_obj(vm_name)
+    logger.info("Get all devices from VM %s", vm_name)
+    return VM_API.getElemFromLink(
+        elm=vm_obj, link_name=HOST_DEVICE_LINK, attr="host_device"
+    )
+
+
+def get_vm_host_device_by_name(vm_name, device_name):
+    """
+    Get VM host device object by device name
+
+    Args:
+        vm_name (str): VM name
+        device_name (str): Device name
+
+    Returns:
+        HostDevice: Instance of HostDevice
+    """
+    host_devices = get_vm_host_devices(vm_name=vm_name)
+    logger.info(
+        "Get host device with name %s from VM %s", device_name, vm_name
+    )
+    host_devices = filter(
+        lambda host_device: host_device.get_name() == device_name, host_devices
+    )
+    if not host_devices:
+        logger.error(
+            "Failed to find host device with name %s under VM %s",
+            device_name, vm_name
+        )
+        return None
+    return host_devices[0]
+
+
+def add_vm_host_device(vm_name, host_name, device_name):
+    """
+    Attach host device to VM
+
+    Args:
+        vm_name (str): VM name
+        host_name (str): Host name
+        device_name (str): Device name
+
+    Returns:
+        bool: True, if add host device succeed, otherwise False
+    """
+    # Local import to prevent import recursion loop
+    from art.rhevm_api.tests_lib.low_level.hosts import (
+        get_host_device_id_by_name
+    )
+    host_device_id = get_host_device_id_by_name(
+        host_name=host_name, device_name=device_name
+    )
+    host_device_obj = ll_general.prepare_ds_object(
+        "HostDevice", id=host_device_id
+    )
+    log_info, log_error = ll_general.get_log_msg(
+        action="Add", obj_type="host device", obj_name=device_name,
+        extra_txt="to VM %s" % vm_name
+    )
+    host_devices_link = get_vm_host_devices_link(vm_name=vm_name)
+    logger.info(log_info)
+    status = HOST_DEVICE_API.create(
+        entity=host_device_obj, positive=True, collection=host_devices_link
+    )[1]
+    if not status:
+        logger.error(log_error)
+    return status
+
+
+def remove_vm_host_device(vm_name, device_name):
+    """
+    Remove host device from VM
+
+    Args:
+        vm_name (str): VM name
+        device_name (str): VM name
+
+    Returns:
+        bool: True, if remove host device succeed, otherwise False
+    """
+    host_device_obj = get_vm_host_device_by_name(
+        vm_name=vm_name, device_name=device_name
+    )
+    log_info, log_error = ll_general.get_log_msg(
+        action="Remove", obj_type="host device", obj_name=device_name,
+        extra_txt="from VM %s" % vm_name
+    )
+    logger.info(log_info)
+    status = HOST_DEVICE_API.delete(host_device_obj, True)
+    if not status:
+        logger.error(log_error)
+    return status
+
+
+def get_vm_placement_hosts(vm_name):
+    """
+    Get VM placement hosts
+
+    Args:
+        vm_name (str): VM name
+
+    Returns:
+        list: Host names
+    """
+    vm_obj = get_vm_obj(vm_name=vm_name)
+    logger.info("Get VM %s pinned hosts", vm_name)
+    vm_hosts_obj = vm_obj.get_placement_policy().get_hosts()
+    hosts = [
+        HOST_API.find(vm_host_obj.id, 'id').get_name()
+        for vm_host_obj in vm_hosts_obj.get_host()
+    ]
+    return hosts
