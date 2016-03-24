@@ -1902,32 +1902,22 @@ def getStorageDomainNamesForType(datacenter_name, storage_type):
             validate_domain_storage_type(sdObj, storage_type)]
 
 
-def get_storage_domain_images(storage_domain_name, key='name'):
+def get_storage_domain_images(storage_domain_name):
     """
     Get all images in storage domain
 
     :param storage_domain_name: Storage domain to use in finding disk images
     :type storage_domain_name: str
-    :param key: Key for the return list content, it can be name or id or None.
-    In case of None, the list will contain objects
-    Important: If key='id', storage domain should be the storage domain's id
-    :type key: str
-    :return: List of disk image names
+    :return: List of disk image objects
     :rtype: list
     """
     storage_domain_obj = get_storage_domain_obj(storage_domain_name)
-    all_images = util.getElemFromLink(
+    return util.getElemFromLink(
         storage_domain_obj,
         link_name='images',
         attr='image',
         get_href=False,
     )
-    if key == 'name':
-        return [image.get_name() for image in all_images]
-    elif key == 'id':
-        return [image.get_id() for image in all_images]
-    else:
-        return all_images
 
 
 def verify_image_exists_in_storage_domain(storage_domain_name, image_name):

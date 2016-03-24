@@ -518,7 +518,7 @@ class TestCase5683(BaseTestCase):
             )
         image_found = False
         for image in ll_sd.get_storage_domain_images(
-            config.GLANCE_DOMAIN, key=None
+            config.GLANCE_DOMAIN
         ):
             if self.disk.get_alias() == image.get_name():
                 image_found = True
