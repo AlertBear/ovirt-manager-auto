@@ -74,6 +74,7 @@ class TestCase11588(TestCase):
         vm_args = config.create_vm_args.copy()
         vm_args['storageDomainName'] = self.storage_domain
         vm_args['vmName'] = self.vm_name
+        vm_args['deep_copy'] = True
 
         if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
