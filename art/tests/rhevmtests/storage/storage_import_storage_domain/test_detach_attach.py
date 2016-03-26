@@ -144,6 +144,7 @@ def setup_module():
         vm_args['storageDomainName'] = storage_domain
         vm_args['vmName'] = vm_name
         vm_args['vmDescription'] = vm_name
+        vm_args['deep_copy'] = True
 
         if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
