@@ -183,7 +183,8 @@ class NFSStorage(object):
     """
     __allowed = ("name", "address", "path", "sd_type",
                  "timeout_to_set", "retrans_to_set", "vers_to_set",
-                 "expected_timeout", "expected_retrans", "expected_vers")
+                 "mount_options_to_set", "expected_timeout",
+                 "expected_retrans", "expected_vers", "expected_mount_options")
 
     def __init__(self, **kwargs):
         self.sd_type = ENUMS['storage_dom_type_data']

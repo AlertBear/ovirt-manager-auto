@@ -345,6 +345,155 @@ class TestCase4821(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=2)
+class TestCase4815(helpers.TestCaseNFSOptions):
+    """
+    Ensure that incorrect and conflicting parameters for creating a storage
+    domain are blocked
+
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_NFS_Options
+    """
+    __test__ = NFS in opts['storages']
+    storages = set([NFS])
+    sd_name = 'storage_domain_%s'
+
+    polarion_test_case = '4815'
+
+    sds_params = list()
+    sds_params.append({
+        'nfs_version': 'v4',
+        'nfs_retrans': 6,
+        'nfs_timeout': 10,
+        'mount_options': 'vers=4',
+    })
+    sds_params.append({
+        'nfs_version': 'v4',
+        'nfs_retrans': 6,
+        'nfs_timeout': 10,
+        'mount_options': 'nfsvers=4',
+    })
+    sds_params.append({
+        'nfs_version': 'v4',
+        'nfs_retrans': 6,
+        'nfs_timeout': 10,
+        'mount_options': 'protocol_version=4',
+    })
+    sds_params.append({
+        'nfs_version': 'v4',
+        'nfs_retrans': 6,
+        'nfs_timeout': 10,
+        'mount_options': 'vfs_type=4',
+    })
+    sds_params.append({
+        'nfs_version': 'v4',
+        'nfs_retrans': 6,
+        'nfs_timeout': 10,
+        'mount_options': 'retrans=4',
+    })
+    sds_params.append({
+        'nfs_version': 'v4',
+        'nfs_retrans': 6,
+        'nfs_timeout': 10,
+        'mount_options': 'timeo=4',
+    })
+    sds_params.append({
+        'nfs_version': 'v4',
+        'nfs_retrans': 'A',
+        'nfs_timeout': 10,
+        'mount_options': None,
+    })
+
+    @polarion("RHEVM3-4815")
+    def test_create_sd_with_defined_values(self):
+        """
+        test check if bad and conflict parameters for creating storage
+        domain are blocked
+        """
+        for index, sd_params in enumerate(self.sds_params):
+            logger.info(
+                "creating storage domain with values: "
+                "retrans = %s, timeout = %d, vers = %s, mount_optiones = %s",
+                sd_params['nfs_retrans'], sd_params['nfs_timeout'],
+                sd_params['nfs_version'], sd_params['mount_options']
+            )
+            storage_domain_name = self.sd_name % index
+
+            storage = ll_sd.NFSStorage(
+                name=storage_domain_name,
+                address=config.NFS_ADDRESSES[0],
+                path=config.NFS_PATHS[0],
+                timeout_to_set=sd_params['nfs_timeout'],
+                retrans_to_set=sd_params['nfs_retrans'],
+                mount_options_to_set=sd_params['mount_options'],
+                vers_to_set=sd_params['nfs_version'],
+                expected_timeout=sd_params['nfs_timeout'],
+                expected_retrans=sd_params['nfs_retrans'],
+                expected_vers=sd_params['nfs_version'],
+                sd_type=config.TYPE_DATA
+            )
+            self.sds_for_cleanup.append(storage_domain_name)
+
+            logger.info(
+                "Attempt to create domain %s with wrong params ", storage.name
+            )
+            hl_sd.create_nfs_domain_with_options(
+                name=storage.name, sd_type=storage.sd_type,
+                host=self.host, address=storage.address,
+                path=storage.path, version=storage.vers_to_set,
+                retrans=storage.retrans_to_set, timeo=storage.timeout_to_set,
+                mount_options=storage.mount_options_to_set,
+                datacenter=config.DATA_CENTER_NAME, positive=False
+            )
+            self.sds_for_cleanup.remove(storage_domain_name)
+
+
+@attr(tier=2)
+class TestCase4817(helpers.TestCaseNFSOptions):
+    """
+    Test check if creating storage domains with defined values is working
+    properly
+
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+    Storage/3_1_Storage_NFS_Options
+    """
+    __test__ = NFS in opts['storages']
+    storages = set([NFS])
+    polarion_test_case = '4817'
+    nfs_retrans = 5
+    nfs_timeout = 10
+    nfs_version = 'v3'
+    mount_option = 'sync'
+
+    @polarion("RHEVM3-4817")
+    def test_create_sd_with_defined_values(self):
+        """
+        Check if creating an NFS storage domain with predefined values works
+        """
+        address = config.NFS_ADDRESSES[0]
+        path = config.NFS_PATHS[0]
+        self.name = 'test_%s_custom' % self.polarion_test_case
+        self.sds_for_cleanup.append(self.name)
+
+        logger.info("Creating NFS domain with custom options")
+        storage = helpers.NFSStorage(
+            name=self.name,
+            address=address,
+            path=path,
+            timeout_to_set=self.nfs_timeout,
+            retrans_to_set=self.nfs_retrans,
+            mount_options_to_set=self.mount_option,
+            vers_to_set=self.nfs_version,
+            expected_timeout=self.nfs_timeout,
+            expected_retrans=self.nfs_retrans,
+            expected_vers=self.nfs_version,
+            expected_mount_options=self.mount_option,
+            sd_type=config.TYPE_DATA
+        )
+        self.create_nfs_domain_and_verify_options([storage])
+        self.sds_for_cleanup.append(self.name)
+
+
+@attr(tier=2)
 class TestCase4818(helpers.TestCaseNFSOptions):
     """
     Test checks that removing and destroying NFS storage domain with custom
