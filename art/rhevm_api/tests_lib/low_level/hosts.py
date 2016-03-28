@@ -410,8 +410,8 @@ def updateHost(positive, host, **kwargs):
         cl = CL_API.find(kwargs.pop('cluster', 'Default'))
         host_upd.set_cluster(cl)
 
-    if 'storage_manager_priority' in kwargs:
-        new_priority = kwargs.pop('storage_manager_priority')
+    if 'spm_priority' in kwargs:
+        new_priority = kwargs.pop('spm_priority')
         host_upd.set_spm(data_st.Spm(new_priority))
 
     pm_enabled = kwargs.get('pm')
@@ -1109,11 +1109,7 @@ def checkHostSpmStatus(positive, hostName):
         "checkHostSpmStatus - SPM Status of host %s is: %s", hostName,
         spm_status
     )
-
-    # due to differences between the return types of java and python sdk
-    # checks for spmStatus in a set with different possible return values
-    # as a workaround
-    return (spm_status in ('true', True, 'True', 'spm')) == positive
+    return (spm_status == 'spm') == positive
 
 
 def returnSPMHost(hosts):
@@ -1128,11 +1124,7 @@ def returnSPMHost(hosts):
     hosts = [HOST_API.find(host) for host in hosts]
 
     for host in hosts:
-        # TODO: remove check against string and leave as boolean when ticket
-        # https://engineering.redhat.com/trac/automation/ticket/2142 is solved
-        host_value = host.get_storage_manager().get_valueOf_()
-        if (isinstance(host_value, str) and host_value == 'true') or (
-           isinstance(host_value, bool) and host_value):
+        if host.get_spm().get_status() == 'spm':
             return True, {'spmHost': host.get_name()}
     return False, {'spmHost': None}
 
@@ -1162,15 +1154,11 @@ def getAnyNonSPMHost(hosts, expected_states=None, cluster_name=None):
                              [host.get_name() for host in hosts])
 
     for host in hosts:
-        # TODO: remove check against string and leave as boolean when ticket
-        # https://engineering.redhat.com/trac/automation/ticket/2142 is solved
         if cluster_name and cluster_name != CL_API.find(
                 host.get_cluster().get_id(),  attribute='id').get_name():
             continue
 
-        host_value = host.get_storage_manager().get_valueOf_()
-        if (isinstance(host_value, str) and host_value == 'false') or (
-           isinstance(host_value, bool) and not host_value):
+        if host.get_spm().get_status() != 'spm':
             return True, {'hsmHost': host.get_name()}
     return False, {'hsmHost': None}
 
@@ -1184,7 +1172,7 @@ def getSPMPriority(hostName):
     Return: The SPM priority of the host.
     """
 
-    attribute = 'storage_manager'
+    attribute = 'spm'
     hostObj = HOST_API.find(hostName)
 
     if not hasattr(hostObj, attribute):
@@ -1192,7 +1180,7 @@ def getSPMPriority(hostName):
                               hostName, attribute)
         return False
 
-    spmPriority = hostObj.get_storage_manager().get_priority()
+    spmPriority = hostObj.get_spm().get_priority()
     HOST_API.logger.info("checkSPMPriority - SPM Value of host %s is %s",
                          hostName, spmPriority)
     return spmPriority
@@ -1224,7 +1212,7 @@ def setSPMPriority(positive, hostName, spmPriority):
             False in other case.
     """
 
-    attribute = 'storage_manager'
+    attribute = 'spm'
     hostObj = HOST_API.find(hostName)
 
     if not hasattr(hostObj, attribute):
@@ -1235,8 +1223,9 @@ def setSPMPriority(positive, hostName, spmPriority):
     # Update host
     HOST_API.logger.info("Updating Host %s priority to %s", hostName,
                          spmPriority)
-    updateStat = updateHost(positive=positive, host=hostName,
-                            storage_manager_priority=spmPriority)
+    updateStat = updateHost(
+        positive=positive, host=hostName, spm_priority=spmPriority
+    )
 
     # no need to continue checking what the new priority is in case of
     # negative test
@@ -1247,7 +1236,7 @@ def setSPMPriority(positive, hostName, spmPriority):
         return False
 
     hostObj = HOST_API.find(hostName)
-    new_priority = hostObj.get_storage_manager().get_priority()
+    new_priority = hostObj.get_spm().get_priority()
     HOST_API.logger.info("setSPMPriority - SPM Value of host %s is set to %s",
                          hostName, new_priority)
 

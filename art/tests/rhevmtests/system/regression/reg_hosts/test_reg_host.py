@@ -273,9 +273,7 @@ class SetSPMToLow(TestCase):
         if not ll_hosts.checkSPMPriority(
                 True, hostName=HOST, expectedPriority=5
         ):
-            if not ll_hosts.updateHost(
-                    True, host=HOST, storage_manager_priority=5
-            ):
+            if not ll_hosts.updateHost(True, host=HOST, spm_priority=5):
                 raise HostException(
                     "Cannot set SPM level on host:%s to normal" % HOST
                 )
@@ -283,9 +281,7 @@ class SetSPMToLow(TestCase):
     @polarion("RHEVM3-8432")
     def test_set_spm_to_low(self):
         logger.info("Set SPM priority on host: %s to low", HOST)
-        if not ll_hosts.updateHost(
-                True, host=HOST, storage_manager_priority=2
-        ):
+        if not ll_hosts.updateHost(True, host=HOST, spm_priority=2):
             raise HostException(
                 "Cannot set SPM level on host: %s to low" % HOST
             )
@@ -296,9 +292,7 @@ class SetSPMToLow(TestCase):
         Set SPM priority back to Normal
         """
         logger.info("Set SPM priority on host: %s back to normal", HOST)
-        if not ll_hosts.updateHost(
-                True, host=HOST, storage_manager_priority=5
-        ):
+        if not ll_hosts.updateHost(True, host=HOST, spm_priority=5):
             raise HostException(
                 "Cannot set SPM level on host: %s to normal" % HOST
             )
