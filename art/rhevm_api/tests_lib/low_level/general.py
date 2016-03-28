@@ -357,6 +357,9 @@ def get_log_msg(
     Returns:
         tuple: Log info and log error text
     """
+    if kwargs:
+        kwargs = prepare_kwargs_for_log(**kwargs)
+
     action = action.capitalize()
     with_kwargs = "with %s" % kwargs if kwargs else ""
     state = "Succeeded to" if not positive else "Failed to"
@@ -366,3 +369,22 @@ def get_log_msg(
     log_info_txt = info_text if positive else "Negative: %s" % info_text
     log_error_txt = ("%s %s" % (state, info_text))
     return log_info_txt, log_error_txt
+
+
+def prepare_kwargs_for_log(**kwargs):
+    """
+    Prepare kwargs for get_log_msg()
+
+    Args:
+        kwargs (dict): kwargs to prepare
+
+    Returns:
+        dict: kwargs after prepare
+    """
+    new_kwargs = dict()
+    for k, v in kwargs.iteritems():
+        try:
+            new_kwargs[k] = v.name
+        except AttributeError:
+            new_kwargs[k] = v
+    return new_kwargs

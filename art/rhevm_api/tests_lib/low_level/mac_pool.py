@@ -38,6 +38,7 @@ def get_mac_pool(pool_name):
     :return: MAC pool object
     :rtype: MacPool object
     """
+    logger.info("Get MAC pool %s", pool_name)
     return MACPOOL_API.find(pool_name)
 
 

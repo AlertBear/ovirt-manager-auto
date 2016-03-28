@@ -325,7 +325,7 @@ def add_network_to_cluster(positive, network, cluster, **kwargs):
 
     kwargs.update(net=find_network(network, kwargs.get("data_center")))
     log_info_txt, log_error_txt = ll.general.get_log_msg(
-        action="add", obj_type="network", obj_name=network,
+        action="Add", obj_type="network", obj_name=network,
         positive=positive, extra_txt="in cluster %s" % cluster, **kwargs
     )
     net = _prepareClusterNetworkObj(**kwargs)
@@ -484,21 +484,27 @@ def update_vnic_profile(name, network, **kwargs):
     return True
 
 
-def getNetworkVnicProfiles(network, cluster=None, data_center=None):
+def get_network_vnic_profiles(network, cluster=None, data_center=None):
     """
-    Returns all the VNIC profiles that belong to a certain network
-    **Author**: tgeft
-    **Parameters**:
-        *  *network* - Name of the network.
-        *  *cluster* - Name of the cluster in which the network is located.
-        *  *data_center* - Name of the data center in which the network is
-                           located.
-    **Return**: Returns a list of VNIC profile objects that belong to the
-                provided network.
+    Get all the VNIC profiles that belong to a certain network
+
+    Args:
+        network (str): Name of the network.
+        cluster (str): Name of the cluster in which the network is located.
+        data_center (str): Name of the data center in which the network is
+            located.
+
+    Returns:
+        list: List of VNIC profile objects that belong to the provided network
     """
-    netObj = find_network(network, data_center, cluster)
-    return NET_API.getElemFromLink(netObj, link_name='vnicprofiles',
-                                   attr='vnic_profile', get_href=False)
+    network_object = find_network(
+        network=network, data_center=data_center, cluster=cluster
+    )
+    logger.info("Get all vNICs profiles for network %s", network)
+    return NET_API.getElemFromLink(
+        network_object, link_name='vnicprofiles', attr='vnic_profile',
+        get_href=False
+    )
 
 
 def get_vnic_profile_obj(name, network, cluster=None, data_center=None):
@@ -520,7 +526,7 @@ def get_vnic_profile_obj(name, network, cluster=None, data_center=None):
     """
     logger.info("Get vNIC profile %s object", name)
     matching_profiles = filter(
-        lambda profile: profile.get_name() == name, getNetworkVnicProfiles(
+        lambda profile: profile.get_name() == name, get_network_vnic_profiles(
             network, cluster, data_center
         )
     )
@@ -640,20 +646,26 @@ def remove_vnic_profile(
     return True
 
 
-def findVnicProfile(vnic_profile_name):
+def is_vnic_profile_exist(vnic_profile_name):
     """
-    Description: Find specific VNIC profile on the setup
-    **Author**: gcheresh
-    **Parameters**:
-        *  *vnic_profile_name* -VNIC profile name
-    **Return**: True if action succeeded, otherwise False
+    Find specific VNIC profile on the setup
+
+    Args:
+        vnic_profile_name (str): VNIC profile name
+
+    Returns:
+        bool: True if action succeeded, otherwise False
     """
-    logger.info("Searching for Vnic profile %s among all the profile on setup",
-                vnic_profile_name)
+    logger.info(
+        "Searching for vNIC profile %s among all the profile on setup",
+        vnic_profile_name
+    )
     all_profiles = VNIC_PROFILE_API.get(absLink=False)
     for profile in all_profiles:
         if profile.get_name() == vnic_profile_name:
             return True
+
+    logger.error("vNIC profile %s was not found in setup", vnic_profile_name)
     return False
 
 

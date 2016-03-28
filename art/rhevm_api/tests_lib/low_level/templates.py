@@ -486,10 +486,11 @@ def removeTemplateNic(positive, template, nic):
     :rtype: bool
     """
     log_info_txt, log_error_txt = ll_general.get_log_msg(
-        action="remove", obj_type="nic", obj_name=nic, positive=positive
+        action="Remove", obj_type="NIC", obj_name=nic, positive=positive,
+        extra_txt="from template %s" % template
     )
     nic_obj = getTemplatesNic(template, nic)
-    logger.info("%s from %s", log_info_txt, template)
+    logger.info(log_info_txt)
     res = NIC_API.delete(nic_obj, positive)
     if not res:
         logger.error(log_error_txt)

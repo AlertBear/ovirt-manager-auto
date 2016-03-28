@@ -32,6 +32,8 @@ def setup_package():
 def teardown_package():
     """
     Activate all hosts
+    Remove all networks from setup
     """
     logger.info("Activating all hosts besides %s", conf.HOSTS[0])
     helper.activate_hosts()
+    networking_helper.remove_networks_from_setup()

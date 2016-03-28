@@ -1478,23 +1478,24 @@ def get_vm_nic(vm, nic):
 @is_action()
 def addNic(positive, vm, **kwargs):
     """
-    Add NIC to vm
+    Add NIC to VM
 
-    :param positive: Expected status
-    :type positive: bool
-    :param vm: VM name where nic should be added
-    :type vm: str
-    :param kwargs: kwargs for NIC properties
-        :name: NIC name (str)
-        :network: Network name (str)
-        :vnic_profile: The VNIC profile that will be selected for the NIC (str)
-        :interface: NIC type. (virtio, rtl8139, e1000 and passthrough) (str)
-        :mac_address: NIC mac address (str)
-        :plugged: Add the NIC with plugged/unplugged state (bool)
-        :linked: Add the NIC with linked/unlinked state (bool)
-    :type kwargs: dict
-    :return: Status (True if NIC was added properly, False otherwise)
-    :rtype: bool
+    Args:
+        positive (bool): Expected status
+        vm (str): VM name where nic should be added
+        kwargs (dict): Parameters for add NIC
+
+    Keyword Args:
+        name (str): NIC name
+        network (str): Network name
+        vnic_profile (str): The VNIC profile that will be selected for the NIC
+        interface (str): NIC type. (virtio, rtl8139, e1000 and passthrough)
+        mac_address (str): NIC mac address
+        plugged (bool): Add the NIC with plugged/unplugged state
+        linked (bool): Add the NIC with linked/unlinked state
+
+    Returns:
+        bool: True if NIC was added properly, False otherwise
     """
     nic_name = kwargs.get("name")
     vm_obj = VM_API.find(vm)
@@ -1503,8 +1504,8 @@ def addNic(positive, vm, **kwargs):
     nic_obj = _prepareNicObj(vm=vm, **kwargs)
     nics_coll = get_vm_nics(vm)
     log_info, log_error = ll_general.get_log_msg(
-        action="add", obj_type="nic", obj_name=nic_name, positive=positive,
-        **kwargs
+        action="Add", obj_type="vNIC", obj_name=nic_name, positive=positive,
+        extra_txt="to VM %s" % vm, **kwargs
     )
     logger.info(log_info)
     res, status = NIC_API.create(nic_obj, positive, collection=nics_coll)
@@ -1580,15 +1581,15 @@ def updateNic(positive, vm, nic, **kwargs):
     Returns:
         bool: status (True if NIC was updated properly, False otherwise)
     """
-    log_info_txt, log_error_txt = ll_general.get_log_msg(
+    log_info, log_error = ll_general.get_log_msg(
         action="update", obj_type="vNIC", obj_name=nic,
-        positive=positive, **kwargs
+        positive=positive, extra_txt="on VM %s" % vm,  **kwargs
     )
     nic_new = _prepareNicObj(vm=vm, **kwargs)
     nic_obj = get_vm_nic(vm, nic)
-    logger.info("%s on %s", log_info_txt, vm)
+    logger.info(log_info)
     if not NIC_API.update(nic_obj, nic_new, positive)[1]:
-        logger.error(log_error_txt)
+        logger.error(log_error)
         return False
     return True
 
@@ -1606,7 +1607,8 @@ def removeNic(positive, vm, nic):
         bool: True if nic was removed properly, False otherwise
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="remove", obj_type="nic", obj_name=nic, positive=positive
+        action="Remove", obj_type="NIC", obj_name=nic, positive=positive,
+        extra_txt="from VM %s" % vm
     )
     vm_obj = VM_API.find(vm)
     nic_obj = get_vm_nic(vm, nic)
@@ -3273,19 +3275,24 @@ def getVmNicNetwork(vm, nic='nic1'):
     return bool(nic_obj.get_network())
 
 
-def checkVmNicProfile(vm, vnic_profile_name, nic='nic1'):
-    '''
+def check_vm_nic_profile(vm, vnic_profile_name="", nic='nic1'):
+    """
     Check if VNIC profile 'vnic_profile_name' exist on the given VNIC
-    **Author**: gcheresh
-    **Parameters**:
-        *  *vm* - vm name
-        *  *vnic_profile_name - name of the vnic_profile to test
-        *  *nic* - nic name
-    **Returns**: True if vnic_profile_name exists on nic,
-                 False otherwise
-    '''
-    nic_obj = get_vm_nic(vm, nic)
-    if vnic_profile_name is None:
+
+    Args:
+        vm (str): VM name
+        vnic_profile_name (str): Name of the vnic_profile to test
+        nic (str): NIC name
+
+    Returns:
+        bool: True if vnic_profile_name exists on NIC, False otherwise
+    """
+    logger.info(
+        "Check if vNIC profile %s exist on VM %s NIC %s",
+        vnic_profile_name, vm, nic
+    )
+    nic_obj = get_vm_nic(vm=vm, nic=nic)
+    if not vnic_profile_name:
         if nic_obj.get_vnic_profile():
             return False
         return True
@@ -3294,6 +3301,12 @@ def checkVmNicProfile(vm, vnic_profile_name, nic='nic1'):
     for profile in all_profiles:
         if profile.get_name() == vnic_profile_name:
             return profile.get_id() == nic_obj.get_vnic_profile().get_id()
+
+    logger.error(
+        "vNIC profile %s not found on VM %s NIC %s", vnic_profile_name, vm,
+        nic
+    )
+    return False
 
 
 @is_action()

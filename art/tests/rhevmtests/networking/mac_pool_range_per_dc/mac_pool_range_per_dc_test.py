@@ -5,25 +5,31 @@
 MAC pool range per DC networking feature test
 """
 
-import config as conf
 import logging
 
-import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
-import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
-import art.rhevm_api.tests_lib.low_level.vms as ll_vm
 import helper
 from art.core_api import apis_exceptions
 from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
-from art.unittest_lib import NetworkTest as TestCase
+from art.unittest_lib import NetworkTest
 from art.unittest_lib import attr
+from fixtures import *  # flake8: noqa
+from rhevmtests import networking
 
 logger = logging.getLogger("MAC_Pool_Range_Per_DC_Cases")
 
 
+def setup_module():
+    """
+    Initialize params
+    Network cleanup
+    """
+    conf.HOST_0_NAME = conf.HOSTS[0]
+    conf.HOST_1_NAME = conf.HOSTS[1]
+    networking.network_cleanup()
+
+
 @attr(tier=2)
-class TestMacPoolRange01(TestCase):
+class TestMacPoolRange01(NetworkTest):
     """
     Try to use old configuration with engine-config
     Check that invalid engine commands are deprecated:
@@ -52,7 +58,7 @@ class TestMacPoolRange01(TestCase):
 
 
 @attr(tier=2)
-class TestMacPoolRange02(TestCase):
+class TestMacPoolRange02(NetworkTest):
     """
     1) Recreate DC with custom MAC pool and make sure it was
     recreated with the Default MAC pool
@@ -157,7 +163,7 @@ class TestMacPoolRange02(TestCase):
 
 
 @attr(tier=2)
-class TestMacPoolRange03(TestCase):
+class TestMacPoolRange03(NetworkTest):
     """
     1) Auto vs manual MAC assignment when allow duplicate is False
     2) Add and remove ranges to/from MAC pool
@@ -210,13 +216,13 @@ class TestMacPoolRange03(TestCase):
         Remove vNICs from VM
         """
         for nic in [self.vnic_1, self.vnic_2]:
-            if not ll_vm.addNic(positive=True, vm=self.vm, name=nic):
+            if not ll_vms.addNic(positive=True, vm=self.vm, name=nic):
                 raise conf.NET_EXCEPTION()
 
-        if not ll_vm.addNic(positive=False, vm=self.vm, name=self.vnic_3):
+        if not ll_vms.addNic(positive=False, vm=self.vm, name=self.vnic_3):
             raise conf.NET_EXCEPTION()
 
-        if not ll_vm.addNic(
+        if not ll_vms.addNic(
             positive=True, vm=self.vm, name=self.vnic_3,
             mac_address=self.mac_addr
         ):
@@ -262,7 +268,7 @@ class TestMacPoolRange03(TestCase):
         ):
             raise conf.NET_EXCEPTION()
 
-        if not ll_vm.addNic(positive=True, vm=self.vm, name=self.vnic_4):
+        if not ll_vms.addNic(positive=True, vm=self.vm, name=self.vnic_4):
             raise conf.NET_EXCEPTION()
 
         helper.check_mac_in_range(
@@ -270,7 +276,7 @@ class TestMacPoolRange03(TestCase):
         )
 
         for nic in [self.vnic_1, self.vnic_2, self.vnic_3, self.vnic_4]:
-            if not ll_vm.removeNic(True, vm=self.vm, nic=nic):
+            if not ll_vms.removeNic(True, vm=self.vm, nic=nic):
                 raise conf.NET_EXCEPTION()
 
         if not hl_mac_pool.remove_ranges_from_mac_pool(
@@ -362,7 +368,7 @@ class TestMacPoolRange03(TestCase):
 
 
 @attr(tier=2)
-class TestMacPoolRange04(TestCase):
+class TestMacPoolRange04(NetworkTest):
     """
     1) Shrink MAC pool range
     Check that you can add VNICs if you don't reach the limit of the
@@ -409,14 +415,14 @@ class TestMacPoolRange04(TestCase):
         Add one VNIC and succeed
         Try to add additional VNIC to VM and fail
         """
-        if not ll_vm.addNic(positive=True, vm=self.vm, name=self.vnic_1):
+        if not ll_vms.addNic(positive=True, vm=self.vm, name=self.vnic_1):
             raise conf.NET_EXCEPTION()
 
         helper.update_mac_pool_range_size(extend=False, size=(0, -1))
-        if not ll_vm.addNic(positive=True, vm=self.vm, name=self.vnic_2):
+        if not ll_vms.addNic(positive=True, vm=self.vm, name=self.vnic_2):
             raise conf.NET_EXCEPTION()
 
-        if not ll_vm.addNic(positive=False, vm=self.vm, name=self.vnic_3):
+        if not ll_vms.addNic(positive=False, vm=self.vm, name=self.vnic_3):
             raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-6447")
@@ -428,12 +434,12 @@ class TestMacPoolRange04(TestCase):
         """
         helper.update_mac_pool_range_size()
         for i in range(3, 5):
-            if not ll_vm.addNic(
+            if not ll_vms.addNic(
                 positive=True, vm=self.vm, name=conf.NIC_NAME[i]
             ):
                 raise conf.NET_EXCEPTION()
 
-        if not ll_vm.addNic(
+        if not ll_vms.addNic(
             positive=False, vm=self.vm, name=self.vnic_5
         ):
             raise conf.NET_EXCEPTION()
@@ -446,7 +452,7 @@ class TestMacPoolRange04(TestCase):
         Remove MAC pool
         """
         for nic in conf.NIC_NAME[1:5]:
-            ll_vm.removeNic(positive=True, vm=cls.vm, nic=nic)
+            ll_vms.removeNic(positive=True, vm=cls.vm, nic=nic)
 
         ll_dc.update_datacenter(
             positive=True, datacenter=cls.dc,
@@ -456,7 +462,7 @@ class TestMacPoolRange04(TestCase):
 
 
 @attr(tier=2)
-class TestMacPoolRange05(TestCase):
+class TestMacPoolRange05(NetworkTest):
     """
     Non-Continues ranges in MAC pool
     Check that you can add VNICs according to the number of MAC ranges when
@@ -496,7 +502,7 @@ class TestMacPoolRange05(TestCase):
             raise conf.NET_EXCEPTION()
 
         for i in range(3):
-            if not ll_vm.addNic(
+            if not ll_vms.addNic(
                 positive=True, vm=cls.vm, name=conf.NIC_NAME[i + 1]
             ):
                 raise conf.NET_EXCEPTION()
@@ -516,7 +522,7 @@ class TestMacPoolRange05(TestCase):
             raise conf.NET_EXCEPTION()
 
         for i in range(4, 6):
-            if not ll_vm.addNic(
+            if not ll_vms.addNic(
                 positive=True, vm=self.vm, name=conf.NIC_NAME[i]
             ):
                 raise conf.NET_EXCEPTION()
@@ -539,10 +545,10 @@ class TestMacPoolRange05(TestCase):
         ):
             raise conf.NET_EXCEPTION()
 
-        if not ll_vm.addNic(positive=True, vm=self.vm, name=self.nic7):
+        if not ll_vms.addNic(positive=True, vm=self.vm, name=self.nic7):
             raise conf.NET_EXCEPTION()
 
-        nic_mac = ll_vm.get_vm_nic_mac_address(vm=self.vm, nic=self.nic7)
+        nic_mac = ll_vms.get_vm_nic_mac_address(vm=self.vm, nic=self.nic7)
         if nic_mac != self.mac_pool_ranges[-1][0]:
             raise conf.NET_EXCEPTION()
 
@@ -554,7 +560,7 @@ class TestMacPoolRange05(TestCase):
         Remove MAC pool
         """
         for nic in conf.NIC_NAME[1:7]:
-            ll_vm.removeNic(positive=True, vm=cls.vm, nic=nic)
+            ll_vms.removeNic(positive=True, vm=cls.vm, nic=nic)
 
         ll_dc.update_datacenter(
             positive=True, datacenter=cls.dc,
@@ -564,7 +570,8 @@ class TestMacPoolRange05(TestCase):
 
 
 @attr(tier=2)
-class TestMacPoolRange06(TestCase):
+@pytest.mark.usefixtures("mac_pool_range_06_fixture")
+class TestMacPoolRange06(NetworkTest):
     """
     1) Assign same pool to multiple DC's -Disallow Duplicates
     Check that if "Allow duplicates" is False, it's impossible to add VNIC
@@ -587,31 +594,6 @@ class TestMacPoolRange06(TestCase):
     ext_dc = conf.EXT_DC_0
     def_mac_pool = conf.DEFAULT_MAC_POOL
 
-    @classmethod
-    def setup_class(cls):
-        """
-        Create a new MAC pool
-        Update 2 DCs with a new MAC pool
-        Add vNIC with auto assignment to VM
-        Create another MAC pool with allow_duplicates
-        """
-        if not ll_mac_pool.create_mac_pool(
-            name=cls.pool_0, ranges=[cls.range[0]]
-        ):
-            raise conf.NET_EXCEPTION()
-
-        for dc in (cls.dc, cls.ext_dc):
-            if not ll_dc.update_datacenter(
-                positive=True, datacenter=dc,
-                mac_pool=ll_mac_pool.get_mac_pool(pool_name=cls.pool_0)
-            ):
-                raise conf.NET_EXCEPTION()
-
-        if not ll_mac_pool.create_mac_pool(
-            name=cls.pool_1, ranges=[cls.range[0]], allow_duplicates=True
-        ):
-            raise conf.NET_EXCEPTION()
-
     @polarion("RHEVM3-6452")
     def test_01_auto_assigned_vs_manual(self):
         """
@@ -622,24 +604,26 @@ class TestMacPoolRange06(TestCase):
         Add NIC to VM on the second DC with auto assignment and succeed
         Remove vNIC from both VMs
         """
-        if not ll_vm.addNic(positive=True, vm=self.vm_0, name=self.nic1):
+        if not ll_vms.addNic(positive=True, vm=self.vm_0, name=self.nic1):
             raise conf.NET_EXCEPTION()
 
-        mac_address = ll_vm.get_vm_nic_mac_address(vm=self.vm_0, nic=self.nic1)
+        mac_address = ll_vms.get_vm_nic_mac_address(
+            vm=self.vm_0, nic=self.nic1
+        )
         if not mac_address:
             raise conf.NET_EXCEPTION()
 
-        if not ll_vm.addNic(positive=True, vm=self.mp_vm, name=self.nic1):
+        if not ll_vms.addNic(positive=True, vm=self.mp_vm, name=self.nic1):
             raise conf.NET_EXCEPTION()
 
         for vm in (self.vm_0, self.mp_vm):
-            if not ll_vm.addNic(
+            if not ll_vms.addNic(
                 positive=False, vm=vm, name=self.nic2, mac_address=mac_address
             ):
                 raise conf.NET_EXCEPTION()
 
         for vm in (self.vm_0, self.mp_vm):
-            ll_vm.removeNic(positive=True, vm=vm, nic=self.nic1)
+            ll_vms.removeNic(positive=True, vm=vm, nic=self.nic1)
 
     @polarion("RHEVM3-6453")
     def test_02_allow_duplicates(self):
@@ -660,67 +644,48 @@ class TestMacPoolRange06(TestCase):
             ):
                 raise conf.NET_EXCEPTION()
 
-        if not ll_vm.addNic(positive=True, vm=self.vm_0, name=self.nic1):
+        if not ll_vms.addNic(positive=True, vm=self.vm_0, name=self.nic1):
             raise conf.NET_EXCEPTION()
 
-        mac_address = ll_vm.get_vm_nic_mac_address(vm=self.vm_0, nic=self.nic1)
+        mac_address = ll_vms.get_vm_nic_mac_address(
+            vm=self.vm_0, nic=self.nic1
+        )
         if not mac_address:
             raise conf.NET_EXCEPTION()
 
-        if not ll_vm.addNic(
+        if not ll_vms.addNic(
             positive=True, vm=self.vm_0, name=self.nic2,
             mac_address=mac_address
         ):
             raise conf.NET_EXCEPTION()
 
-        if not ll_vm.addNic(
+        if not ll_vms.addNic(
             positive=True, vm=self.mp_vm, name=self.nic1,
             mac_address=mac_address
         ):
             raise conf.NET_EXCEPTION()
 
-        if not ll_vm.addNic(positive=True, vm=self.mp_vm, name=self.nic2):
+        if not ll_vms.addNic(positive=True, vm=self.mp_vm, name=self.nic2):
             raise conf.NET_EXCEPTION()
 
-        if not ll_vm.addNic(positive=False, vm=self.mp_vm, name=self.nic3):
+        if not ll_vms.addNic(positive=False, vm=self.mp_vm, name=self.nic3):
             raise conf.NET_EXCEPTION()
 
-        if not ll_vm.addNic(
+        if not ll_vms.addNic(
             positive=True, vm=self.mp_vm, name=self.nic3,
             mac_address=mac_address
         ):
             raise conf.NET_EXCEPTION()
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove VNIC from both VMs
-        Update DCs with the Default MAC pool
-        Remove MAC pool
-        """
-        for nic in (cls.nic1, cls.nic2, cls.nic3):
-            for vm in (cls.vm_0, cls.mp_vm):
-                if nic == cls.nic3 and vm == cls.vm_0:
-                    continue
-                ll_vm.removeNic(positive=True, vm=vm, nic=nic)
-
-        for dc in (cls.dc, cls.ext_dc):
-            ll_dc.update_datacenter(
-                positive=True, datacenter=dc,
-                mac_pool=ll_mac_pool.get_mac_pool(pool_name=cls.def_mac_pool)
-            )
-        for mac_pool in (cls.pool_0, cls.pool_1):
-            ll_mac_pool.remove_mac_pool(mac_pool_name=mac_pool)
-
 
 @attr(tier=2)
-class TestMacPoolRange07(TestCase):
+class NoTestMacPoolRange07(NetworkTest):
     """
     Combine MAC pool range of Unicast and multicast MAC's
-    Check that when having a combined range of multicast and unicast addresses
-    the new VNICs will be created with unicast addresses only
+    Check that when having a combined range of multicast and unicast
+    addresses the new VNICs will be created with unicast addresses only
     """
-    __test__ = True
+    __test__ = False
     mac_pool_ranges = [("00:ff:ff:ff:ff:ff", "02:00:00:00:00:01")]
     pool_0 = conf.MAC_POOL_NAME_0
     dc = conf.DC_0
@@ -749,19 +714,19 @@ class TestMacPoolRange07(TestCase):
 
     @polarion("RHEVM3-6454")
     @bz({"1219383": {"engine": ["rest", "sdk", "java"]}})
-    def test_multicast_unicast_mix(self):
+    def multicast_unicast_mix(self):
         """
         Add 2 VNICs to VM
         Negative: Try to add 3rd VNIC and fail as all the available MACs
         in the MAC pool are multicast MACs
         """
         for i in range(2):
-            if not ll_vm.addNic(
+            if not ll_vms.addNic(
                 positive=True, vm=self.vm, name=conf.NIC_NAME[i + 1]
             ):
                 raise conf.NET_EXCEPTION()
 
-        if not ll_vm.addNic(positive=False, vm=self.vm, name=self.nic_3):
+        if not ll_vms.addNic(positive=False, vm=self.vm, name=self.nic_3):
             raise conf.NET_EXCEPTION()
 
     @classmethod
@@ -772,7 +737,7 @@ class TestMacPoolRange07(TestCase):
         Remove MAC pool
         """
         for nic in (cls.nic_1, cls.nic_2):
-            ll_vm.removeNic(positive=True, vm=cls.vm, nic=nic)
+            ll_vms.removeNic(positive=True, vm=cls.vm, nic=nic)
 
         ll_dc.update_datacenter(
             positive=True, datacenter=cls.dc,
@@ -783,7 +748,8 @@ class TestMacPoolRange07(TestCase):
 
 
 @attr(tier=2)
-class TestMacPoolRange08(TestCase):
+@pytest.mark.usefixtures("mac_pool_range_08_fixture")
+class TestMacPoolRange08(NetworkTest):
     """
     Create VM from Template
     Check that VNIC created from template uses the correct MAC POOL value
@@ -795,44 +761,8 @@ class TestMacPoolRange08(TestCase):
     range_list = conf.MAC_POOL_RANGE_LIST
     template = conf.MP_TEMPLATE
     mp_vm = conf.MP_VM_NAMES[1]
-    pool_name_0 = conf.MAC_POOL_NAME_0
-    dc = conf.EXT_DC_0
     cluster = conf.MAC_POOL_CL
-    mgmt = conf.MGMT_BRIDGE
     nic_1 = conf.NIC_NAME[0]
-    def_mac_pool = conf.DEFAULT_MAC_POOL
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create a new MAC pool
-        Update DC with a new MAC pool
-        Create VM from template
-        Add 2 more NICs to template
-        """
-        if not ll_mac_pool.create_mac_pool(
-            name=cls.pool_name_0, ranges=[cls.range_list[0]]
-        ):
-            raise conf.NET_EXCEPTION()
-
-        if not ll_dc.update_datacenter(
-            positive=True, datacenter=cls.dc,
-            mac_pool=ll_mac_pool.get_mac_pool(pool_name=cls.pool_name_0)
-        ):
-            raise conf.NET_EXCEPTION()
-
-        for i in range(2):
-            if not ll_templates.addTemplateNic(
-                True, cls.template, name=conf.NIC_NAME[i],
-                data_center=cls.dc
-            ):
-                raise conf.NET_EXCEPTION()
-
-        if not ll_vm.createVm(
-            positive=True, vmName=cls.mp_vm, cluster=cls.cluster,
-            template=cls.template, network=cls.mgmt
-        ):
-            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-6455")
     def test_vm_from_template(self):
@@ -845,37 +775,15 @@ class TestMacPoolRange08(TestCase):
             vm=self.mp_vm, nic=self.nic_1, mac_range=self.range_list[0]
         )
 
-        if ll_vm.createVm(
-            positive=True, vmName="neg_vm", cluster=self.cluster,
+        if not ll_vms.createVm(
+            positive=False, vmName="neg_vm", cluster=self.cluster,
             template=self.template,
         ):
             raise conf.NET_EXCEPTION()
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove VM
-        Remove template
-        Update DC with the Default MAC pool
-        Remove MAC pool
-        """
-        ll_vm.removeVm(positive=True, vm=cls.mp_vm)
-
-        if not ll_templates.removeTemplate(
-            positive=True, template=cls.template
-        ):
-            raise conf.NET_EXCEPTION()
-
-        ll_dc.update_datacenter(
-            positive=True, datacenter=cls.dc,
-            mac_pool=ll_mac_pool.get_mac_pool(pool_name=cls.def_mac_pool)
-        )
-
-        ll_mac_pool.remove_mac_pool(mac_pool_name=cls.pool_name_0)
-
 
 @attr(tier=2)
-class TestMacPoolRange09(TestCase):
+class TestMacPoolRange09(NetworkTest):
     """
     Removal of DC with custom MAC pool when that MAC pool is assigned to 2 DCs
     """
@@ -936,7 +844,7 @@ class TestMacPoolRange09(TestCase):
 
 
 @attr(tier=2)
-class TestMacPoolRange10(TestCase):
+class TestMacPoolRange10(NetworkTest):
     """
     MAC pool support for DCs with versions less than 3.6
     """
@@ -981,50 +889,15 @@ class TestMacPoolRange10(TestCase):
 
 
 @attr(tier=2)
-class TestMacPoolRange11(TestCase):
+@pytest.mark.usefixtures("mac_pool_range_11_fixture")
+class TestMacPoolRange11(NetworkTest):
     """
      Assign MAC's for vNIC's from custom MAC pool range for DC with 3.5 version
     """
     __test__ = True
     vm = conf.VM_0
-    vm_mp = conf.MP_VM
-    dc = conf.DC_0
-    ext_dc = conf.EXT_DC_0
-    ver_35 = conf.VERSION[5]
-    range_list = conf.MAC_POOL_RANGE_LIST
-    pool_name_0 = conf.MAC_POOL_NAME_0
     nic_1 = conf.NIC_NAME_1
     nic_2 = conf.NIC_NAME_2
-    comp_ver = conf.COMP_VERSION
-    def_mac_pool = conf.DEFAULT_MAC_POOL
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Update additional DC to be 3.5
-        Create a new MAC pool
-        Update DCs with a new MAC pool
-        Add NIC to VM
-        """
-        if not ll_dc.update_datacenter(
-            positive=True, datacenter=cls.ext_dc, version=cls.ver_35
-        ):
-            raise conf.NET_EXCEPTION()
-
-        if not ll_mac_pool.create_mac_pool(
-            name=cls.pool_name_0, ranges=[cls.range_list[0]]
-        ):
-            raise conf.NET_EXCEPTION()
-
-        for dc in (cls.dc, cls.ext_dc):
-            if not ll_dc.update_datacenter(
-                positive=True, datacenter=dc,
-                mac_pool=ll_mac_pool.get_mac_pool(pool_name=cls.pool_name_0)
-            ):
-                raise conf.NET_EXCEPTION()
-
-        if not ll_vm.addNic(positive=True, vm=cls.vm_mp, name=cls.nic_1):
-            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-6464")
     def test_dif_ver_dcs(self):
@@ -1033,31 +906,8 @@ class TestMacPoolRange11(TestCase):
         Negative: Try to add 3rd VNIC and fail
         """
         helper.check_mac_in_range()
-        if not ll_vm.addNic(positive=True, vm=self.vm, name=self.nic_1):
+        if not ll_vms.addNic(positive=True, vm=self.vm, name=self.nic_1):
             raise conf.NET_EXCEPTION()
 
-        if not ll_vm.addNic(positive=False, vm=self.vm, name=self.nic_2):
+        if not ll_vms.addNic(positive=False, vm=self.vm, name=self.nic_2):
             raise conf.NET_EXCEPTION()
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Update additional DC to have 3.6 version
-        Remove VNICs from both VMs
-        Update DC with the Default MAC pool
-        Remove MAC pool
-        """
-        ll_dc.update_datacenter(
-            positive=True, datacenter=cls.ext_dc, version=cls.comp_ver
-        )
-
-        for vm in (cls.vm, cls.vm_mp):
-            ll_vm.removeNic(positive=True, vm=vm, nic=cls.nic_1)
-
-        for dc in (cls.dc, cls.ext_dc):
-            ll_dc.update_datacenter(
-                positive=True, datacenter=dc,
-                mac_pool=ll_mac_pool.get_mac_pool(pool_name=cls.def_mac_pool)
-            )
-
-        ll_mac_pool.remove_mac_pool(mac_pool_name=cls.pool_name_0)

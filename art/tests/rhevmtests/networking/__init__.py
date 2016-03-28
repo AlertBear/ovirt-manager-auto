@@ -4,18 +4,20 @@ network team init file
 """
 
 import logging
-from rhevmtests.networking import config
-from art.rhevm_api.utils.inventory import Inventory
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
-import art.rhevm_api.tests_lib.low_level.general as ll_general
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
+
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
+import art.rhevm_api.tests_lib.low_level.general as ll_general
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.templates as ll_templates
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.utils.inventory import Inventory
+from rhevmtests.networking import config
 
 logger = logging.getLogger("GE_Network_cleanup")
 
@@ -62,9 +64,12 @@ def network_cleanup():
     Remove all dummy interfaces from hosts
     Remove all QOS from setup
     Remove all non management bridges from hosts
+
+    Args:
+        funcs (list): Send specific functions to run
     """
-    logger.info("Running network cleanup")
     if config.GOLDEN_ENV:
+        logger.info("Running network cleanup")
         stop_all_vms()
         remove_unneeded_vms()
         remove_unneeded_vms_nics()
@@ -76,6 +81,8 @@ def network_cleanup():
         remove_unneeded_vnic_profiles()
         remove_unneeded_clusters()
         remove_unneeded_dcs()
+        set_default_mac_pool_for_dcs()
+        remove_unneeded_mac_pools()
         delete_dummy_interfaces_from_hosts()
         remove_qos_from_setup()
         remove_bridges_from_hosts()
@@ -132,8 +139,9 @@ def remove_unneeded_vms_nics():
                     nic.name, config.MGMT_BRIDGE, vm
                 )
                 if not ll_vms.updateNic(
-                    True, vm, nic.name, network=config.MGMT_BRIDGE,
-                    vnic_profile=config.MGMT_BRIDGE
+                    positive=True, vm=vm, nic=nic.name,
+                    network=config.MGMT_BRIDGE,
+                    vnic_profile=config.MGMT_BRIDGE, interface="virtio"
                 ):
                     logger.error(
                         "Failed to update %s to profile %s on %s",
@@ -240,8 +248,11 @@ def remove_unneeded_dcs():
             continue
 
         if dc.name not in config.DC_NAME:
-            if not ll_networks.DC_API.delete(dc, True):
-                logger.error("Failed to delete %s", dc.name)
+            logger.info("Remove DC %s", dc.name)
+            if not ll_datacenters.remove_datacenter(
+                positive=True, datacenter=dc.name, force=True
+            ):
+                logger.error("Failed to delete DC %s", dc.name)
 
 
 @ignore_exception
@@ -320,7 +331,34 @@ def remove_bridges_from_hosts():
                 host.network.delete_bridge(bridge=br_name)
 
 
+@ignore_exception
+def remove_unneeded_mac_pools():
+    """
+    Remove unneeded MAC pools from setup (non Default MAC pool)
+    """
+    all_macs = ll_mac_pool.get_all_mac_pools()
+    for mac in filter(lambda x: x.name != "Default", all_macs):
+        ll_mac_pool.remove_mac_pool(mac_pool_name=mac.name)
+
+
+@ignore_exception
+def set_default_mac_pool_for_dcs():
+    """
+    Set 'Default' MAC pool for DCs
+    """
+    for dc in config.DC_NAME:
+        mac_pool_name = ll_mac_pool.get_mac_pool_from_dc(dc).name
+        if mac_pool_name != "Default":
+            ll_datacenters.update_datacenter(
+                positive=True, datacenter=dc,
+                mac_pool=ll_mac_pool.get_mac_pool(pool_name="Default")
+            )
+
+
 def teardown_package():
+    """
+    Run inventory
+    """
     reporter = Inventory.get_instance()
     reporter.get_setup_inventory_report(
         print_report=True,

@@ -91,30 +91,29 @@ def addDataCenter(positive, **kwargs):
     Add new data center
 
     Args:
-        positive (bool): Expected results.
+        positive (bool): Expected result
 
-    Keyword Arguments:
-        name (str): Name of a new data center.
-        storage_type (str): Storage type data center will support.
-        version (str): Data center supported version (2.2 or 3.0).
-        local (bool): True for localFS DC type, False for shared DC type.
+    Keyword Args:
+        name (str): Name of a new data center
+        storage_type (str): Storage type data center will support
+        version (str): Datacenter supported version (2.2 or 3.0)
+        local (bool): True for localFS DC type, False for shared DC type
 
     Returns:
-        bool: True if add datacenter succeeded, otherwise False.
-     """
-    datacenter = kwargs.get("name")
+        bool: True if data center was added properly, False otherwise
+    """
+    dc_name = kwargs.get("name", "")
     log_info, log_error = ll_general.get_log_msg(
-        action="Add", obj_type="datacenter", obj_name=datacenter,
+        action="Add", obj_name=dc_name, obj_type="datacenter",
         positive=positive, **kwargs
     )
-
+    logger.info(log_info)
     major_version, minor_version = kwargs.pop('version').split(".")
     dc_version = Version(major=major_version, minor=minor_version)
 
     dc = DataCenter(version=dc_version, **kwargs)
-    logger.info(log_info)
-    dc, status = util.create(dc, positive)
 
+    dc, status = util.create(dc, positive)
     if positive:
         supported_versions_valid = checkSupportedVersions(kwargs.pop('name'))
         status = status and supported_versions_valid
@@ -172,24 +171,33 @@ def update_datacenter(positive, datacenter, **kwargs):
 
 
 @is_action()
-def remove_datacenter(positive, datacenter):
+def remove_datacenter(positive, datacenter, force=False):
     """
     Remove existed data center
 
     Args:
         positive (bool): Expected result
         datacenter (str): Name of a data center that should removed
+        force (bool): True to force remove the datacenter
 
     Returns:
         bool: True if data center was removed properly, False otherwise
     """
+    body = None
+    element_name = None
     log_info, log_error = ll_general.get_log_msg(
         action="Remove", obj_type="datacenter", obj_name=datacenter,
         positive=positive
     )
     logger.info(log_info)
     dc = util.find(datacenter)
-    res = util.delete(dc, positive)
+    if force:
+        action_obj = data_st.Action()
+        action_obj.set_force(True)
+        body = action_obj
+        element_name = "action"
+
+    res = util.delete(dc, positive, body=body, element_name=element_name)
     if not res:
         logger.error(log_error)
     return res
