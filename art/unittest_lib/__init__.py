@@ -11,6 +11,7 @@ from art.unittest_lib.common import (
     IntegrationTest,
     attr,
     SkipTest,
+    testflow,
 )
 
 __all__ = [
@@ -23,4 +24,5 @@ __all__ = [
     'IntegrationTest',
     'attr',
     'SkipTest',
+    'testflow',
 ]

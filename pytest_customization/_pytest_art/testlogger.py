@@ -33,6 +33,33 @@ def align_description(doc):
     return []
 
 
+class TestFlowInterface(object):
+    """
+    This class provide static interfaces to user in order to contribute on
+    CI console content per each test.
+    """
+
+    @staticmethod
+    def _get_logger():
+        return getattr(pytest.config, '_testlogger', None)
+
+    @staticmethod
+    def step(msg, *args, **kwargs):
+        """
+        This function add single step into console.
+
+        :param msg: step description
+        :type msg: str
+        :param args: arguments used to format message
+        :type args: tuple
+        :param kwargs: keywords used to format message
+        :type kwargs: dict
+        """
+        tl = TestFlowInterface._get_logger()
+        if tl:
+            tl.log_teststep(msg, *args, **kwargs)
+
+
 class RecordingFilter(logging.Filter):
     """
     It does not allow user to log messages outside of this module.
@@ -74,6 +101,7 @@ class ARTLogging(object):
         self.itnum = 0
         self.current_item = None
         self.last_test_class = None
+        self.step_id = 0
         flow_logger.addFilter(self.log_filter)
 
     @staticmethod
@@ -101,6 +129,7 @@ class ARTLogging(object):
         :type item: instance of pytest.Item
         """
         self.current_item = item
+        self.step_id = 0
         logger.info(DELIMITER)
         # Print the test class description only once and at beginning.
         if item.cls:
@@ -226,9 +255,23 @@ class ARTLogging(object):
     def pytest_unconfigure(self, config):
         flow_logger.removeFilter(self.log_filter)
 
+    def log_teststep(self, msg, *args, **kwargs):
+        """
+        User interface to add the Test Step into console.
+        """
+        self.step_id += 1
+        self.log_filter.toggle(False)
+        try:
+            msg = "   Step {0: 2}: {1}".format(self.step_id, msg)
+            # we may want to check length of message
+            flow_logger.info(msg, *args, **kwargs)
+        finally:
+            self.log_filter.toggle(True)
+
 
 def pytest_artconf_ready(config):
     """
     Load the logging plugin into pytest
     """
-    config.pluginmanager.register(ARTLogging())
+    config._testlogger = ARTLogging()
+    config.pluginmanager.register(config._testlogger)
