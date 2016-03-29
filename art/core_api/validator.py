@@ -180,7 +180,7 @@ def compareElements(expElm, actElm, logger, root, equal=True,
     '''
     ignore_list = [
         'status', 'role', 'active', 'total', 'required', 'permit',
-        'root_password'
+        'root_password', 'namespace',
     ]
     ignore_list.extend(ATTR_IGNORE_LIST)
 
