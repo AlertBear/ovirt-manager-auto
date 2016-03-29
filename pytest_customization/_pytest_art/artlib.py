@@ -98,12 +98,12 @@ def pytest_configure(config):
         config.getoption('art_conf'),
         config.getoption('art_define'),
     )
-    # Generate Data Structures
-    rhevm_api.generate_ds(settings.ART_CONFIG)
-
     # Generate certificates
     if settings.ART_CONFIG['RUN'].as_bool('secure'):
         ssl.configure()
+
+    # Generate Data Structures
+    rhevm_api.generate_ds(settings.ART_CONFIG)
 
     # Load GE config if relevant
     ge_path = settings.ART_CONFIG['RUN'].get('golden_environment', None)
