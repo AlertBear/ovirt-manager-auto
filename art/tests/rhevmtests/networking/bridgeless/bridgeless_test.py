@@ -1,3 +1,6 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Testing bridgeless (Non-VM) Network feature.
 1 DC, 1 Cluster, 1 Host will be created for testing.
@@ -9,17 +12,39 @@ import helper
 import logging
 import config as conf
 from art import unittest_lib
+import rhevmtests.networking as networking
 import rhevmtests.networking.helper as networking_helper
 
 
 logger = logging.getLogger("Bridgeless_Networks_Cases")
 
 
-########################################################################
+def setup_module():
+    """
+    running cleanup
+    Obtain host NICs for the first Network Host
+    Create dummy interfaces
+    Create networks
+    """
+    networking.network_cleanup()
+    conf.HOST_0_NAME = conf.HOSTS[0]
+    conf.HOST0_NICS = conf.VDS_HOSTS[0].nics
+    networking_helper.prepare_dummies(
+        host_resource=conf.VDS_HOSTS[0], num_dummy=conf.NUM_DUMMYS
+    )
+    networking_helper.prepare_networks_on_setup(
+        networks_dict=conf.NET_DICT, dc=conf.DC_NAME[0],
+        cluster=conf.CLUSTER_NAME[0]
+    )
 
-########################################################################
-#                             Test Cases                               #
-########################################################################
+
+def teardown_module():
+    """
+    Cleans the environment
+    """
+    networking_helper.remove_networks_from_setup(hosts=conf.HOST_0_NAME)
+    networking_helper.delete_dummies(host_resource=conf.VDS_HOSTS[0])
+
 
 @unittest_lib.attr(tier=2)
 class TestBridgelessTestCaseBase(unittest_lib.NetworkTest):

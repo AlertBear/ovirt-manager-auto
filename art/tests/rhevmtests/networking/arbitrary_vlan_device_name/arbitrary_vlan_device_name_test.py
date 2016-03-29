@@ -12,6 +12,7 @@ and the host
 import helper
 import logging
 from art.unittest_lib import attr
+import rhevmtests.networking as network
 from rhevmtests.networking import config
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import rhevmtests.networking.helper as net_helper
@@ -28,12 +29,27 @@ HOST_NICS = None  # Filled in setup_module
 
 def setup_module():
     """
-    setup_module
+    Setting passwordless ssh and then disabling sasl in libvirt
     """
     global HOST_NAME
     global HOST_NICS
     HOST_NICS = config.VDS_HOSTS[0].nics
     HOST_NAME = ll_hosts.get_host_name_from_engine(config.VDS_HOSTS[0].ip)
+    network.network_cleanup()
+    net_helper.set_libvirt_sasl_status(
+        engine_resource=network.config.ENGINE_HOST,
+        host_resource=network.config.VDS_HOSTS[0],
+    )
+
+
+def teardown_module():
+    """
+    Enabling sasl in libvirt
+    """
+    net_helper.set_libvirt_sasl_status(
+        engine_resource=network.config.ENGINE_HOST,
+        host_resource=network.config.VDS_HOSTS[0], sasl=True
+    )
 
 
 class TestArbitraryVlanDeviceNameTearDown(TestCase):

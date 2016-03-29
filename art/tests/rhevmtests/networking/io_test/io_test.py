@@ -1,3 +1,5 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
 
 """
 Testing Input/Output feature.
@@ -5,9 +7,11 @@ Testing Input/Output feature.
 Positive and negative cases for creating/editing networks
 with valid/invalid names, IPs, netmask, VLAN, usages.
 """
-import logging
+
 import helper
+import logging
 import config as conf
+from rhevmtests import networking
 from art.unittest_lib import attr, NetworkTest
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import rhevmtests.networking.helper as network_helper
@@ -19,12 +23,32 @@ import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 logger = logging.getLogger("IO_Test_Cases")
 
 
-@attr(tier=2)
-class TestIOTestCaseBase(NetworkTest):
+def setup_module():
     """
-    Base class which provides  teardown class method for each test case
+    Running cleanup
+    Prepare network on setup
     """
+    conf.VDS_0_HOST = conf.VDS_HOSTS[0]
+    conf.HOST_0_NAME = conf.HOSTS[0]
+    conf.HOST_0_NICS = conf.VDS_0_HOST.nics
+    networking.network_cleanup()
+    network_helper.prepare_networks_on_setup(
+        networks_dict=conf.NET_DICT, dc=conf.DC_0, cluster=conf.CL_0
+    )
 
+
+def teardown_module():
+    """
+    Remove networks from setup
+    """
+    network_helper.remove_networks_from_setup()
+
+
+@attr(tier=2)
+class IOTestCaseBase(NetworkTest):
+    """
+    Base class which provides teardown class method for each test case
+    """
     @classmethod
     def teardown_class(cls):
         """
@@ -33,7 +57,7 @@ class TestIOTestCaseBase(NetworkTest):
         network_helper.remove_networks_from_host()
 
 
-class TestIOTest01(TestIOTestCaseBase):
+class TestIOTest01(IOTestCaseBase):
     """
     Positive: Creating & adding networks with valid names to the cluster
     Negative: Trying to create networks with invalid names
@@ -85,7 +109,7 @@ class TestIOTest01(TestIOTestCaseBase):
                 raise conf.NET_EXCEPTION()
 
 
-class TestIOTest02(TestIOTestCaseBase):
+class TestIOTest02(IOTestCaseBase):
     """
     Negative: Trying to create networks with invalid IPs
     """
@@ -129,7 +153,7 @@ class TestIOTest02(TestIOTestCaseBase):
                 raise conf.NET_EXCEPTION()
 
 
-class TestIOTest03(TestIOTestCaseBase):
+class TestIOTest03(IOTestCaseBase):
     """
     Negative: Trying to create networks with invalid netmask
     """
@@ -171,7 +195,7 @@ class TestIOTest03(TestIOTestCaseBase):
                 raise conf.NET_EXCEPTION()
 
 
-class TestIOTest04(TestIOTestCaseBase):
+class TestIOTest04(IOTestCaseBase):
     """
     Negative: Trying to create a network with netmask but without an ip address
     """
@@ -206,7 +230,7 @@ class TestIOTest04(TestIOTestCaseBase):
             raise conf.NET_EXCEPTION()
 
 
-class TestIOTest05(TestIOTestCaseBase):
+class TestIOTest05(IOTestCaseBase):
     """
     Negative: Trying to create a network with static ip but without netmask
     """
@@ -240,7 +264,7 @@ class TestIOTest05(TestIOTestCaseBase):
             raise conf.NET_EXCEPTION()
 
 
-class TestIOTest06(TestIOTestCaseBase):
+class TestIOTest06(IOTestCaseBase):
     """
     Positive: Creating networks with valid MTU and adding them to data center.
     Negative: Trying to create a network with invalid MTUs.
@@ -255,7 +279,7 @@ class TestIOTest06(TestIOTestCaseBase):
         """
         valid_mtus = [68, 69, 9000, 65520, 2147483647]
 
-        helper.create_networks(positive=True, params=valid_mtus, type="mtu")
+        helper.create_networks(positive=True, params=valid_mtus, type_="mtu")
 
     @polarion("RHEVM3-14743")
     def test_check_invalid_mtu(self):
@@ -264,10 +288,12 @@ class TestIOTest06(TestIOTestCaseBase):
         """
         invalid_mtus = [-5, 67, 2147483648]
 
-        helper.create_networks(positive=False, params=invalid_mtus, type="mtu")
+        helper.create_networks(
+            positive=False, params=invalid_mtus, type_="mtu"
+        )
 
 
-class TestIOTest07(TestIOTestCaseBase):
+class TestIOTest07(IOTestCaseBase):
     """
     Negative: Trying to create a network with invalid usages value
     """
@@ -290,7 +316,7 @@ class TestIOTest07(TestIOTestCaseBase):
             raise conf.NET_EXCEPTION()
 
 
-class TestIOTest08(TestIOTestCaseBase):
+class TestIOTest08(IOTestCaseBase):
     """
     Positive: Creating networks with valid VLAN IDs & adding them to a DC.
     Negative: Trying to create networks with invalid VLAN IDs.
@@ -306,7 +332,7 @@ class TestIOTest08(TestIOTestCaseBase):
         valid_vlan_ids = [4094, 1111, 111, 11, 1, 0]
 
         helper.create_networks(
-            positive=True, params=valid_vlan_ids, type="vlan_id"
+            positive=True, params=valid_vlan_ids, type_="vlan_id"
         )
 
     @polarion("RHEVM3-14744")
@@ -317,11 +343,11 @@ class TestIOTest08(TestIOTestCaseBase):
         invalid_vlan_ids = [-10, 4095, 4096]
 
         helper.create_networks(
-            positive=False, params=invalid_vlan_ids, type="vlan_id"
+            positive=False, params=invalid_vlan_ids, type_="vlan_id"
         )
 
 
-class TestIOTest09(TestIOTestCaseBase):
+class TestIOTest09(IOTestCaseBase):
     """
     Positive: Create network and edit its name to valid name.
     Negative: Try to edit its name to invalid name.

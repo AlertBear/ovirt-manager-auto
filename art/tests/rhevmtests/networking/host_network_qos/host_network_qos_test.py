@@ -9,15 +9,53 @@ import logging
 import helper
 import config as conf
 from art.unittest_lib import attr
+from rhevmtests import networking
 import rhevmtests.networking.helper as net_helper
 from art.unittest_lib import NetworkTest as TestCase
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 
 logger = logging.getLogger("Network_Host_QoS_Tests")
 MB_CONVERTER = 1000000
+
+
+def setup_module():
+    """
+    Running cleanup
+    """
+    networking.network_cleanup()
+    conf.VDS_HOSTS_1 = conf.VDS_HOSTS[0]
+    conf.HOST_1_NICS = conf.VDS_HOSTS_1.nics
+    conf.HOST_1_IP = conf.HOSTS_IP[0]
+    conf.HOST_1 = conf.HOSTS[0]
+    logger.info(
+        "Add %s to %s/%s", conf.NETS_DICT, conf.DC_NAME, conf.CLUSTER_1
+    )
+    if not hl_networks.createAndAttachNetworkSN(
+        data_center=conf.DC_NAME, cluster=conf.CLUSTER_1,
+        network_dict=conf.NETS_DICT
+    ):
+        raise conf.NET_EXCEPTION(
+            "Failed to add networks to %s/%s" % (conf.DC_NAME, conf.CLUSTER_1)
+        )
+
+
+def teardown_module():
+    """
+    Removes networks from setup
+    """
+    logger.info("Remove networks from setup")
+    if not hl_networks.remove_net_from_setup(
+        host=conf.HOST_1, data_center=conf.DC_NAME,
+        all_net=True, mgmt_network=conf.MGMT_BRIDGE
+    ):
+        logger.error(
+            "Failed to remove %s from %s and %s",
+            conf.NETS_DICT, conf.DC_NAME, conf.HOST_1
+        )
 
 
 @attr(tier=2)

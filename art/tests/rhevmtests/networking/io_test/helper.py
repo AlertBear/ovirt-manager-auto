@@ -12,14 +12,14 @@ import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 logger = logging.getLogger("IO_Networks_Helper")
 
 
-def create_networks(positive, params, type):
+def create_networks(positive, params, type_):
     """
     Create network.
 
     Args:
         positive (bool): True if action should succeed, False otherwise.
         params (list): Network params.
-        type (str): The type of network params, for example 'vlan_id'.
+        type_ (str): The type of network params, for example 'vlan_id'.
 
     Returns:
         bool: True if create network succeeded, False otherwise.
@@ -27,8 +27,8 @@ def create_networks(positive, params, type):
 
     for index, param in enumerate(params):
         local_dict = {
-            "%s_%s" % (type, index): {
-                type: param
+            "%s_%s" % (type_, index): {
+                type_: param
             }
         }
 
