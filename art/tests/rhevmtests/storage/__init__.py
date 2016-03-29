@@ -3,9 +3,10 @@ from art.rhevm_api.utils.inventory import Inventory
 
 
 def assign_storgage_params(targets, keywords, *args):
-    for i, target in enumerate(targets):
-        for j, key in enumerate(keywords):
-            target[key] = args[j][i]
+    if len(args[0]) > 0:
+        for i, target in enumerate(targets):
+            for j, key in enumerate(keywords):
+                target[key] = args[j][i]
 
 
 def setup_package():
