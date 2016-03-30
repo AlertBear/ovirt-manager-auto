@@ -8,7 +8,7 @@ MNT_POINT2 = '/tmp/mnt_point2'
 
 
 def copy_posix_sd(
-        addr_from, path_from, addr_to, path_to, host, user, passwd, vfs_type
+    addr_from, path_from, addr_to, path_to, host, user, passwd, vfs_type
 ):
     machine = rhevm_helpers.get_host_resource(host, passwd, user)
     src_from = "%s:%s" % (addr_from, path_from)

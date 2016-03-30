@@ -171,3 +171,29 @@ def remove_all_storage_connections():
     for connection in connections:
         result = remove_storage_connection(connection.id) and result
     return result
+
+
+def get_all_storage_connections():
+    """
+    Return all storage connections
+
+    __author__ = "glazarov"
+    :return: List of all storage connections
+    :rtype: list
+    """
+    return api.get(absLink=False)
+
+
+def get_storage_connection_object(connection, attribute):
+    """
+    Retrieve the storage connectionReturn all storage connections
+
+    __author__ = "glazarov"
+    :param connection: The ID or name of the connection to retrieve
+    :type connection: ID or Name
+    :param attribute: The connection type to query ('id' or 'name')
+    :type attribute: str
+    :return: List of all storage connections
+    :rtype: list
+    """
+    return api.find(connection, attribute)

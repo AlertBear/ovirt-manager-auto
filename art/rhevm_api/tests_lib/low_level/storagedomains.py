@@ -1459,10 +1459,12 @@ def addConnectionToStorageDomain(storagedomain, conn_id):
     connObj = connUtil.find(conn_id, attribute='id')
     conn_objs = util.getElemFromLink(
         sdObj, link_name='storageconnections', attr='storage_connection',
-        get_href=True)
+        get_href=True
+    )
     _, status = connUtil.create(
-        connObj, True, collection=conn_objs, async=True)
-    return status
+        connObj, True, collection=conn_objs, async=True
+    )
+    return bool(status)
 
 
 @is_action()
