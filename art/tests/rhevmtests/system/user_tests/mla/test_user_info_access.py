@@ -24,7 +24,6 @@ from art.rhevm_api.tests_lib.high_level import (
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 from art.core_api.apis_exceptions import EntityNotFound
 
-TCMS_PLAN_ID = 6283
 LOGGER = logging.getLogger(__name__)
 ALT_HOST_ID = None
 

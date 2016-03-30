@@ -21,8 +21,6 @@ FLOPPY_IMAGE = PARAMETERS.get('floppy_image')
 
 INSTALLATION = True
 
-TCMS_PLAN_CUSTOM = 10054
-TCMS_PLAN_VNIC = 10167
 VER = COMP_VERSION
 CUSTOM_PROPERTY = "UserDefinedVMProperties='auto_custom_hook=^[0-9]+$'"
 CUSTOM_PROPERTY_VNIC = ("""CustomDeviceProperties='{type=interface;"""

@@ -22,7 +22,6 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 
 LOGGER = logging.getLogger(__name__)
-TCMS_PLAN_ID = 2602
 # Predefined role for creation of VM as non-admin user
 VM_PREDEFINED = role.UserVmManager
 # Predefined role for creation of Disk as non-admin user

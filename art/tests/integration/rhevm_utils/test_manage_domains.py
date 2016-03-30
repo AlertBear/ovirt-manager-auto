@@ -81,7 +81,8 @@ class ManageDomainsTestCaseBase(RHEVMUtilsTestCase):
 
 class ManageDomainsTestCaseAdd(ManageDomainsTestCaseBase):
     """
-    https://tcms.engineering.redhat.com/case/175847/?from_plan=4580
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+        workitem?id=RHEVM3-9162
     """
 
     @polarion("RHEVM3-9166")
@@ -137,7 +138,8 @@ class ManageDomainsTestCaseAdd(ManageDomainsTestCaseBase):
 
 class ManageDomainsTestCaseEdit(ManageDomainsTestCaseBase):
     """
-    https://tcms.engineering.redhat.com/case/175882/?from_plan=4580
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+        workitem?id=RHEVM3-9162
     """
 
     def setUp(self):
@@ -181,7 +183,8 @@ class ManageDomainsTestCaseEdit(ManageDomainsTestCaseBase):
 
 class ManageDomainsTestCaseList(ManageDomainsTestCaseBase):
     """
-    https://tcms.engineering.redhat.com/case/107969/?from_plan=4580
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+        workitem?id=RHEVM3-9162
     """
 
     def setUp(self):
@@ -204,7 +207,8 @@ class ManageDomainsTestCaseList(ManageDomainsTestCaseBase):
 
 class ManageDomainsTestCaseValidate(ManageDomainsTestCaseBase):
     """
-    https://tcms.engineering.redhat.com/case/334273/?from_plan=4580
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+        workitem?id=RHEVM3-9162
     """
 
     def setUp(self):
@@ -230,7 +234,8 @@ class ManageDomainsTestCaseValidate(ManageDomainsTestCaseBase):
 
 class ManageDomainsTestCaseDelete(ManageDomainsTestCaseBase):
     """
-    https://tcms.engineering.redhat.com/case/108231/?from_plan=4580
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+        workitem?id=RHEVM3-9162
     """
 
     def setUp(self):
@@ -249,7 +254,8 @@ class ManageDomainsTestCaseDelete(ManageDomainsTestCaseBase):
 
 class ManageDomainsTestCaseHelp(RHEVMUtilsTestCase):
     """
-    https://tcms.engineering.redhat.com/case/107969/?from_plan=4580
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+        workitem?id=RHEVM3-9162
     """
 
     utility = NAME
@@ -270,7 +276,8 @@ class ManageDomainsTestCaseHelp(RHEVMUtilsTestCase):
 
 class ManageDomainsTimeSkew(ManageDomainsTestCaseBase):
     """
-    https://tcms.engineering.redhat.com/case/110044/?from_plan=4580
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+        workitem?id=RHEVM3-9162
     """
 
     _multiprocess_can_split_ = False
@@ -302,7 +309,8 @@ class ManageDomainsTimeSkew(ManageDomainsTestCaseBase):
 
 class ManageDomainsUnpriviledgedUser(ManageDomainsTestCaseBase):
     """
-    https://tcms.engineering.redhat.com/case/127947/?from_plan=4580
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+        workitem?id=RHEVM3-9162
     """
 
     # doesn't matter what's here, but it has to be anything in order to not to
@@ -323,7 +331,8 @@ class ManageDomainsUnpriviledgedUser(ManageDomainsTestCaseBase):
 
 class ManageDomainsUppercaseLowercase(ManageDomainsTestCaseBase):
     """
-    https://tcms.engineering.redhat.com/case/107971/?from_plan=4580
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+        workitem?id=RHEVM3-9162
     """
 
     def mixedCase(self, name):
@@ -356,7 +365,8 @@ class ManageDomainsUppercaseLowercase(ManageDomainsTestCaseBase):
 
 class ManageDomainsMultipleProviders(RHEVMUtilsTestCase):
     """
-    https://tcms.engineering.redhat.com/case/109297/?from_plan=4580
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+        workitem?id=RHEVM3-9162
     """
 
     utility = NAME
@@ -412,7 +422,8 @@ class ManageDomainsMultipleProviders(RHEVMUtilsTestCase):
 
 class ManageDomainsTestCaseNegativeScenarios(ManageDomainsTestCaseBase):
     """
-    https://tcms.engineering.redhat.com/case/107972/?from_plan=4580
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+        workitem?id=RHEVM3-9162
     """
 
     @polarion("RHEVM3-9175")

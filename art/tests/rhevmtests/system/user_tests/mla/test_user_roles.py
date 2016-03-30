@@ -20,7 +20,6 @@ from art.rhevm_api.tests_lib.low_level import (
 LOGGER = logging.getLogger(__name__)
 
 INVALID_CHARS = '&^$%#*+/\\`~\"\':?!()[]}{=|><'
-TCMS_PLAN_ID = 2597
 
 
 def loginAsAdmin():

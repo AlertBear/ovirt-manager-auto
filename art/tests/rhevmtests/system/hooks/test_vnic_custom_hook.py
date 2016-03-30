@@ -31,7 +31,6 @@ PROFILE_B = 'profile_B'
 PROFILE_BAD_A = 'profile_bad_a'
 PROFILE_BAD_B = 'profile_bad_b'
 SCRIPT_TYPE = Enum(PYTHON='py', SHELL='sh')
-PLAN = config.TCMS_PLAN_VNIC
 SLEEP_TIME = 15
 UPDATE_NIC = 'update_nic'
 HOTUNPLUG_NIC = 'hotunplug_nic'

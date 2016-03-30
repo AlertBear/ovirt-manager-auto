@@ -14,7 +14,6 @@ from rhevmtests.system.user_tests.mla.roles import role
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import vms, users, templates, mla
 
-TCMS_PLAN_ID = '9798'
 LOGGER = logging.getLogger(__name__)
 
 USER1_VM_ROLES = [role.UserRole, role.PowerUserRole]

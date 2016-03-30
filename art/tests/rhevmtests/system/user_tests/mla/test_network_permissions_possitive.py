@@ -29,7 +29,6 @@ NIC_NAME2 = 'nic2'
 NIC_NAME3 = 'nic3'
 NIC_NAME4 = 'nic4'
 ROLE_NAME = '_NetworkCreator'
-TCMS_PLAN_ID_POS = 10639
 EVERYONE = 'Everyone'
 
 

@@ -24,7 +24,6 @@ from art.rhevm_api.utils import test_utils
 
 
 LOGGER = logging.getLogger(__name__)
-TCMS_PLAN_ID = 5767
 
 
 def loginAsAdmin():

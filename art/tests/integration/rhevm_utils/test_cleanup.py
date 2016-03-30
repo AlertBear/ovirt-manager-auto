@@ -13,7 +13,6 @@ from art.unittest_lib import attr
 logger = logging.getLogger(__name__)
 
 NAME = 'cleanup'
-TCMS_PLAN = 4657
 host = unittest_conf.VDC_HOST
 
 _multiprocess_can_split_ = True

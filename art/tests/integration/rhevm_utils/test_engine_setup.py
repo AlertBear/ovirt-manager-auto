@@ -14,7 +14,6 @@ from art.unittest_lib import attr
 logger = logging.getLogger(__name__)
 
 NAME = 'setup'
-TCMS_PLAN = 3749
 _multiprocess_can_split_ = True
 
 host = unittest_conf.VDC_HOST

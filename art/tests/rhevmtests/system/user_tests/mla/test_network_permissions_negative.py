@@ -23,7 +23,6 @@ TEMPLATE_NAME1 = config.TEMPLATE_NAME1
 NIC_NAME = 'nic1'
 NIC_NAME2 = 'nic2'
 NIC_NAME3 = 'nic3'
-TCMS_PLAN_ID_NEG = 10640
 
 
 def loginAsUser(userName, filter_=True):
