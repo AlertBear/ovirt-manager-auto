@@ -25,6 +25,7 @@ These are:
 """
 import time
 import yaml
+import signal
 from art import rhevm_api
 from art.core_api.external_api import TestRunnerWrapper
 import art.test_handler.settings as settings
@@ -116,6 +117,10 @@ def pytest_configure(config):
 
     # Give a change to other plugins to instrument resources
     config.hook.pytest_art_ensure_resources(config=config)
+
+    # Watch MainThread and report if it gets stucked.
+    settings.stuck_handler()
+    signal.signal(signal.SIGUSR1, settings.dump_stacks)
 
 
 def pytest_unconfigure(config):
