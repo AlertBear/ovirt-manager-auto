@@ -50,7 +50,7 @@ DEPS = [
     'python >= 2.6',
     'python-lxml',
     'python-lockfile',
-    'python-tpg',
+    'python-uri-templates',
     'python-dateutil',
     'art-utilities = %s' % VERSION,
     'python-configobj >= 4.7.2',
