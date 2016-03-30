@@ -718,7 +718,7 @@ class TestMigrationCase12(TestMigrationCaseBase):
         )
 
 
-@common.attr(tier=1)
+@common.attr(tier=2)
 class TestMigrationCase13(TestMigrationCaseBase):
     """
     Network sanity: check migration of one vm over nic
