@@ -5,15 +5,16 @@
 Test migration feature mix cases.
 """
 import logging
+import art.rhevm_api.tests_lib.high_level.vms as hl_vm
+import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
+import art.rhevm_api.tests_lib.low_level.vms as ll_vm
+import rhevmtests.virt.helper as virt_helper
 from art.test_handler import exceptions
-from art.unittest_lib import common
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-import art.rhevm_api.tests_lib.high_level.vms as hl_vm
-import art.rhevm_api.tests_lib.low_level.vms as ll_vm
-import art.rhevm_api.tests_lib.low_level.storagedomains as sd_api
+from art.unittest_lib import common
+import rhevmtests.networking.helper as network_helper
 from rhevmtests.virt import config
-import rhevmtests.virt.helper as virt_helper
 
 logger = logging.getLogger("virt_migration_mix_cases")
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -32,8 +33,7 @@ class TestMigrationMixCase1(common.VirtTest):
     """
     __test__ = True
 
-    @classmethod
-    def setup_class(cls):
+    def setUp(self):
         """
         Start all VM on both hosts
         """
@@ -58,8 +58,7 @@ class TestMigrationMixCase1(common.VirtTest):
                     config.VM_NAME[vm_index]
                 )
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
         Stop All VMs except of first VM
         """
@@ -92,60 +91,67 @@ class TestMigrationMixCase2(common.VirtTest):
     """
     __test__ = True
     vm_name = config.MIGRATION_VM
-    vm_default_mem = config.GB*2
+    vm_default_mem = config.GB * 2
     new_vm_memory = None
     percentage = 85
     load_of_2_gb = 2000
     time_to_run_load = 120
 
-    @classmethod
-    def setup_class(cls):
+    def setUp(self):
         """
-        Setup:
-        1. Stop VM (since migration VM up all test)
         1. Updates VM to 85% of host memory
         2. Start VM
         """
-        logger.info("Stop vm: %s", cls.vm_name)
-        if not ll_vm.stop_vms_safely([cls.vm_name]):
-            logger.error("Failed to stop vm: %s", cls.vm_name)
-        cls.hosts = [config.HOSTS[0], config.HOSTS[1]]
-        status, cls.host_index_max_mem = (
+        logger.info("Stop vm: %s", self.vm_name)
+        if not ll_vm.stop_vms_safely([self.vm_name]):
+            logger.error("Failed to stop vm: %s", self.vm_name)
+        self.hosts = [config.HOSTS[0], config.HOSTS[1]]
+        status, self.host_index_max_mem = (
             hl_vm.set_vms_with_host_memory_by_percentage(
-                test_hosts=cls.hosts,
-                test_vms=[cls.vm_name],
-                percentage=cls.percentage
+                test_hosts=self.hosts,
+                test_vms=[self.vm_name],
+                percentage=self.percentage
             )
         )
-        if not status and cls.host_index_max_mem != -1:
+        if not status and self.host_index_max_mem != -1:
             raise exceptions.VMException(
                 "Failed to update vm memory with hosts memory"
             )
-        if not ll_vm.startVm(True, cls.vm_name, wait_for_ip=True):
+        if not ll_vm.startVm(True, self.vm_name, wait_for_ip=True):
             raise exceptions.VMException(
                 "Failed to start vm %s" % config.VM_NAME[1])
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
-        tearDown:
         1. Stop VM
         2. Update VM back to configure memory
         3. Start VM
         """
-        logger.info("Stop vm: %s", cls.vm_name)
-        if not ll_vm.stop_vms_safely([cls.vm_name]):
-            logger.error("Failed to stop vm: %s", cls.vm_name)
-        logger.info(
-            "restore vm %s memory %s", cls.vm_name, cls.vm_default_mem
+        host_after_migration = ll_vm.get_vm_host(self.vm_name)
+        logger.info("Host after migration: %s", host_after_migration)
+        host_index = (
+            [
+                i for i, x in enumerate(config.HOSTS[:2])
+                if x != host_after_migration
+            ][0]
         )
-        if not hl_vm.update_vms_memory([cls.vm_name], cls.vm_default_mem):
+        logger.info("Stop vm: %s", self.vm_name)
+        if not ll_vm.stop_vms_safely([self.vm_name]):
+            logger.error("Failed to stop vm: %s", self.vm_name)
+        logger.info(
+            "restore vm %s memory %s", self.vm_name, self.vm_default_mem
+        )
+        if not hl_vm.update_vms_memory([self.vm_name], self.vm_default_mem):
             logger.error(
-                "Failed to update memory for vm %s", cls.vm_name
+                "Failed to update memory for vm %s", self.vm_name
             )
-        if not ll_vm.startVm(True, cls.vm_name, wait_for_ip=True):
+        logger.info("Rerun VM on host %s", config.HOSTS[host_index])
+        if not network_helper.run_vm_once_specific_host(
+            vm=self.vm_name, host=config.HOSTS[host_index],
+            wait_for_up_status=True
+        ):
             raise exceptions.VMException(
-                "Failed to start vm %s" % config.VM_NAME[1]
+                "Failed to start vm %s" % self.vm_name
             )
 
     @polarion("RHEVM3-14033")
@@ -177,55 +183,54 @@ class TestMigrationMixCase3(common.VirtTest):
     cow_disk = config.DISK_FORMAT_COW
     disk_interfaces = config.INTERFACE_VIRTIO
 
-    @classmethod
-    def setup_class(cls):
+    def setUp(self):
         """
         1. Add 2 disk to VM
         2. Start VM
         """
         master_domain = (
-            sd_api.get_master_storage_domain_name(config.DC_NAME[0])
+            ll_sd.get_master_storage_domain_name(config.DC_NAME[0])
         )
         if not ll_vm.createVm(
             positive=True,
-            vmName=cls.vm_name,
-            vmDescription=cls.vm_name,
+            vmName=self.vm_name,
+            vmDescription=self.vm_name,
             cluster=config.CLUSTER_NAME[0],
             template=config.TEMPLATE_NAME[0],
         ):
             raise exceptions.VMException(
-                "Cannot create vm %s from template" % cls.vm_name
+                "Cannot create vm %s from template" % self.vm_name
             )
         logger.info("Successfully created VM from template")
         ll_vm.updateVmDisk(
             positive=True,
-            vm=cls.vm_name,
+            vm=self.vm_name,
             disk=config.TEMPLATE_NAME[0],
             bootable=True
         )
-        if not ll_vm.startVm(positive=True, vm=cls.vm_name, wait_for_ip=True):
-            raise exceptions.VMException("Failed to start vm %s" % cls.vm_name)
-        logger.info("Add 2 disks to VM %s", cls.vm_name)
+        if not ll_vm.startVm(positive=True, vm=self.vm_name, wait_for_ip=True):
+            raise exceptions.VMException(
+                "Failed to start vm %s" % self.vm_name
+            )
+        logger.info("Add 2 disks to VM %s", self.vm_name)
         for x in xrange(0, 2):
             if not ll_vm.addDisk(
                 positive=True,
-                vm=cls.vm_name,
+                vm=self.vm_name,
                 size=config.GB,
                 storagedomain=master_domain,
-                interface=cls.disk_interfaces,
-                format=cls.cow_disk
+                interface=self.disk_interfaces,
+                format=self.cow_disk
             ):
                 raise exceptions.VMException("Failed to add disk")
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
-        tearDown:
         remove vm
         """
         logger.info("remove vm")
-        if not ll_vm.safely_remove_vms([cls.vm_name]):
-            logger.error("Failed to remove vm: %s", cls.vm_name)
+        if not ll_vm.safely_remove_vms([self.vm_name]):
+            logger.error("Failed to remove vm: %s", self.vm_name)
 
     @polarion("RHEVM3-5647")
     def test_migrate_vm_with_more_then_one_disk(self):
@@ -251,7 +256,7 @@ class TestMigrationMixCase4(common.VirtTest):
     If resources are released the after list should be equals to the before,
     which is empty.
     """
-    __test__ = False
+    __test__ = True
     sql = "select vds_name,pending_vmem_size,pending_vcpus_count from vds;"
     vm_name = config.MIGRATION_VM
 
