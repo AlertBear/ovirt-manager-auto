@@ -12,6 +12,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
 )
+from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
@@ -29,6 +30,7 @@ def setup_module():
     """
     # This should not be asserted becuase of the deactivate storage domain
     # issue
+    wait_for_tasks(config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
     hl_sd.detach_and_deactivate_domain(
         config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME
     )

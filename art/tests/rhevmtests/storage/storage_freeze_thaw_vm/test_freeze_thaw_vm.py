@@ -56,7 +56,10 @@ class BaseTestCase(TestCase):
                 'Unable to create vm %s for test' % self.vm_name
             )
 
-        ll_vms.startVm(True, self.vm_name, wait_for_ip=True)
+        ll_vms.startVm(
+            True, self.vm_name, wait_for_status=config.VM_UP,
+            wait_for_ip=True
+        )
         self.vm_ip = storage_helpers.get_vm_ip(self.vm_name)
         logger.info("Running tests on vm %s", self.vm_name)
 
@@ -368,6 +371,7 @@ class TestCase14715(BaseTestCase):
         ll_vms.waitForVMState(self.vm_name, config.VM_UP)
 
         ll_vms.shutdownVm(True, self.vm_name, async='false')
+        ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
         self.assertTrue(
             ll_vms.freeze_vm(False, self.vm_name),
             "Succeeded to freeze when vm %s is down" % self.vm_name
