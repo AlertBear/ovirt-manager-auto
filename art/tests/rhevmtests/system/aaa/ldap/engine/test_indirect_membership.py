@@ -53,10 +53,10 @@ class IndirectMembershipRecursive(IndirectMembership):
     """
     __test__ = True
     conf = config.SIMPLE_AD
-    GROUP = config.AD_GROUP32
-    USER = config.AD_GROUP_USER
+    GROUP = config.AD_GROUP41
+    USER = config.AD_GROUP41_USER
     PASSWORD = config.ADW2k12_USER_PASSWORD
-    NAMESPACE = config.AD_GROUP32_NS
+    NAMESPACE = config.AD_GROUP41_NS
 
     @polarion('RHEVM3-12862')
     @common.check(config.EXTENSIONS)
