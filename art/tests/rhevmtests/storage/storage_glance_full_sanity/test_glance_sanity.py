@@ -4,9 +4,6 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_4_Storage_Import_Template_Entities
 """
 import logging
-from art.rhevm_api.tests_lib.high_level import (
-    vms as hl_vms
-)
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     jobs as ll_jobs,
@@ -168,8 +165,8 @@ class BasicEnvironment(BaseTestCase):
             )
         ll_jobs.wait_for_jobs([config.JOB_ADD_VM_FROM_TEMPLATE])
         self.vms_to_remove.append(self.vm_name)
+        self.add_nic_to_vm(self.vm_name)
         if start_vm:
-            self.add_nic_to_vm(self.vm_name)
             self.assertTrue(
                 ll_vms.startVm(True, self.vm_name, wait_for_ip=True),
                 "Unable to start vm %s cloned from template %s" % (
@@ -272,12 +269,6 @@ class TestCase5738(BasicEnvironment):
 
     def setUp(self):
         super(TestCase5738, self).setUp()
-        self.vm_name_from_template = self.create_unique_object_name(
-            config.OBJECT_TYPE_VM
-        )
-        self.vm_name_from_disk = self.create_unique_object_name(
-            config.OBJECT_TYPE_VM
-        )
 
     @polarion("RHEVM3-5738")
     def test_import_image_as_template_and_disk(self):
@@ -290,39 +281,40 @@ class TestCase5738(BasicEnvironment):
         self.basic_flow_import_image_as_template(
             self.new_template_name, True, self.storage_domain
         )
+        self.vm_name_from_template = self.create_unique_object_name(
+            config.OBJECT_TYPE_VM
+        )
         self.basic_flow_clone_vm_from_template(
             self.vm_name_from_template, self.new_template_name,
-            self.storage_domain
+            self.storage_domain, start_vm=False
+        )
+        vm_disk = ll_vms.getVmDisks(self.vm_name_from_template)[0].get_alias()
+        ll_disks.updateDisk(
+            True, vmName=self.vm_name_from_template, alias=vm_disk,
+            bootable=True
         )
 
         self.basic_flow_import_image_as_disk(self.new_disk_alias, True)
-        kwargs = config.create_vm_args.copy()
-        kwargs['vmName'] = self.vm_name_from_disk
-        kwargs['vmDescription'] = self.vm_name_from_disk
-        kwargs['storageDomainName'] = self.storage_domain
-        self.assertTrue(
-            hl_vms.create_vm_using_glance_image(
-                config.GLANCE_DOMAIN, self.glance_image, **kwargs
-            ), "Unable to create vm from glance image %s" % self.glance_image
-        )
         ll_jobs.wait_for_jobs([config.JOB_ADD_VM_FROM_TEMPLATE])
-        self.vms_to_remove.append(self.vm_name_from_disk)
         self.assertTrue(
-            ll_vms.startVm(True, self.vm_name_from_disk, wait_for_ip=True),
-            "Unable to start vm %s created from glance image %s" % (
-                self.vm_name, self.glance_image
-            )
+            ll_disks.attachDisk(
+                True, self.new_disk_alias, self.vm_name_from_template
+            ), "Failed to attach disk %s to vm %s" %
+               (self.new_disk_alias, self.vm_name_from_template)
         )
-        disk_alias = "{0}_Disk_glance".format(self.vm_name_from_disk)
+        ll_vms.startVm(True, self.vm_name_from_template, config.VM_UP, True)
         status, output = storage_helpers.perform_dd_to_disk(
-            self.vm_name_from_disk, disk_alias)
+            self.vm_name_from_template, self.new_disk_alias
+        )
         if not status:
             raise errors.DiskException(
                 "Failed to write to imported image %s - %s" %
                 (self.new_disk_alias, output)
             )
-        logger.info("Write operation to imported image from glance "
-                    "repository succeeded")
+        logger.info(
+            "Write operation to imported image from glance "
+            "repository succeeded"
+        )
 
 
 @attr(tier=2)

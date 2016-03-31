@@ -46,6 +46,7 @@ class BaseTestCase(TestCase):
     Common class for all tests with some common methods
     """
     __test__ = False
+    deep_copy = False
 
     def setUp(self):
         global DISK_NAMES
@@ -57,6 +58,7 @@ class BaseTestCase(TestCase):
         vm_args = config.create_vm_args.copy()
         vm_args['storageDomainName'] = storage_domain
         vm_args['vmName'] = self.vm_name
+        vm_args['deep_copy'] = self.deep_copy
 
         if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
@@ -209,7 +211,7 @@ class TestCase4907(BaseTestCase):
     # not disk.storage_domains is provided
 
     @polarion("RHEVM3-4907")
-    @bz({'1194695': {'engine': ['rest', 'sdk']}})
+    @bz({'957788': {}})
     def test_attach_RO_direct_LUN_disk(self):
         """
         - VM with OS
@@ -700,6 +702,10 @@ class TestCase4917(DefaultEnvironment):
     export_domain = ''
     # BZ1270583: Vm nic unplugged after previewing/undoing a snapshot
     # Same issue happens after the vm is imported
+
+    def setUp(self):
+        self.deep_copy = True
+        super(TestCase4917, self).setUp()
 
     @polarion("RHEVM3-4917")
     @bz({'1309788': {}})

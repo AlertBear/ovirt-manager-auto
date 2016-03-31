@@ -14,6 +14,7 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
     vms as ll_vms,
 )
+from art.test_handler import exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, StorageTest as BaseTestCase
@@ -311,9 +312,14 @@ class TestCase11504(BasicEnvironment):
     def setUp(self):
         """ Setup disks for this test case """
         self.setup_with_disks()
-        storage_helpers.create_vm_or_clone(
-            True, self.vm_name, storageDomainName=self.storage_domain
-        )
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = self.storage_domain
+        vm_args['vmName'] = self.vm_name
+
+        logger.info('Creating vm and installing OS on it')
+        if not storage_helpers.create_vm_or_clone(**vm_args):
+            raise exceptions.VMException(
+                'Unable to create vm %s for test' % self.vm_name)
 
     @polarion("RHEVM3-11504")
     def test_ensure_disk_description_is_locked_during_lsm(self):
