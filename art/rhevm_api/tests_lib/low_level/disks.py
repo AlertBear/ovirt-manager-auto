@@ -523,17 +523,22 @@ def compareDisksCount(name, expected_count, is_template=False):
 
 
 @is_action()
-def checkDiskExists(positive, name):
+def checkDiskExists(positive, disk, attr='name'):
     """
-    Description: Checks that disk is in system
-    Author: jlibosva
-    Parameters:
-        * positive - whether disk should exist or not
-        * name - name of the disk
-    Return: True if disk is found, False otherwise
+    Checks that disk is in system
+
+    __author__ = 'jlibosva'
+    :param positive: Determines whether the disk should exist
+    :type positive: bool
+    :param disk: Name or ID of the disk
+    :type disk: str
+    :param attr: The attribute to use for finding disk object ('id', 'name')
+    :type attr: str
+    :return: True if the disk is found, False otherwise
+    :rtype: bool
     """
     try:
-        DISKS_API.find(name)
+        DISKS_API.find(disk, attr)
     except EntityNotFound:
         return not positive
     return positive

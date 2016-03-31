@@ -71,18 +71,22 @@ class CommonUsage(BaseTestCase):
     disk_id = None
 
     def setUp(self):
-        self.execution_passed = False
         self.vm_name = VM_NAMES[self.storage]
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[0]
 
     def tearDown(self):
-        if not self.execution_passed:
+        if ll_disks.checkDiskExists(True, self.disk_id, 'id'):
             ll_vms.stop_vms_safely([self.vm_name])
             ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
-            assert ll_vms.removeDisk(
+            if not ll_vms.removeDisk(
                 True, self.vm_name, disk_id=self.disk_id
-            )
+            ):
+                logger.error(
+                    "Failed to remove disk attached to vm %s", self.vm_name
+                )
+                BaseTestCase.test_failed = True
+        BaseTestCase.teardown_exception()
 
     def _perform_operation(self, update=True, wipe_after_delete=False):
         """
@@ -136,7 +140,6 @@ class CommonUsage(BaseTestCase):
             raise exceptions.DiskException(
                 "Wipe after delete functionality should not work"
             )
-        self.execution_passed = True
 
 
 @attr(tier=2)
@@ -178,7 +181,6 @@ class TestCase5116(CommonUsage):
             True, self.vm_name, config.DISK_ALIAS, disk_id=self.disk_id,
             wipe_after_delete=True
         )
-        self.execution_passed = True
 
 
 @attr(tier=2)
@@ -322,7 +324,6 @@ class TestCase11864(CommonUsage):
         ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
         if not status:
             raise exceptions.DiskException("Disk update should be blocked")
-        self.execution_passed = True
 
 
 @attr(tier=2)
