@@ -8,13 +8,14 @@ Bridgeless (Non-VM) Network will be tested for untagged, tagged,
 bond scenarios.
 """
 
-import helper
 import logging
+
 import config as conf
-from art import unittest_lib
+import helper
 import rhevmtests.networking as networking
 import rhevmtests.networking.helper as networking_helper
-
+from art.test_handler.tools import polarion
+from art.unittest_lib import attr, NetworkTest
 
 logger = logging.getLogger("Bridgeless_Networks_Cases")
 
@@ -46,9 +47,8 @@ def teardown_module():
     networking_helper.delete_dummies(host_resource=conf.VDS_HOSTS[0])
 
 
-@unittest_lib.attr(tier=2)
-class TestBridgelessTestCaseBase(unittest_lib.NetworkTest):
-
+@attr(tier=2)
+class BridgelessTestCaseBase(NetworkTest):
     """
     Base class which provides teardown class method for each test case
     """
@@ -61,12 +61,13 @@ class TestBridgelessTestCaseBase(unittest_lib.NetworkTest):
         networking_helper.remove_networks_from_host()
 
 
-class TestBridgelessCase1(TestBridgelessTestCaseBase):
+class BridgelessCase1(BridgelessTestCaseBase):
     """
     Attach Non-VM network to host NIC
     """
     __test__ = True
 
+    @polarion("RHEVM-14837")
     def test_bridgeless_network(self):
         """
          Attach Non-VM network to host NIC
@@ -76,12 +77,13 @@ class TestBridgelessCase1(TestBridgelessTestCaseBase):
         )
 
 
-class TestBridgelessCase2(TestBridgelessTestCaseBase):
+class BridgelessCase2(BridgelessTestCaseBase):
     """
     Attach Non-VM with VLAN network to host NIC
     """
     __test__ = True
 
+    @polarion("RHEVM-14838")
     def test_vlan_bridgeless_network(self):
         """
         Attach Non-VM with VLAN network to host NIC
@@ -91,7 +93,7 @@ class TestBridgelessCase2(TestBridgelessTestCaseBase):
         )
 
 
-class TestBridgelessCase3(TestBridgelessTestCaseBase):
+class BridgelessCase3(BridgelessTestCaseBase):
     """
     Create BOND
     Attach Non-VM network with VLAN over BOND
@@ -107,6 +109,7 @@ class TestBridgelessCase3(TestBridgelessTestCaseBase):
 
         helper.create_networks_on_host(nic=cls.bond, slaves=conf.DUMMYS[:2])
 
+    @polarion("RHEVM-14840")
     def test_bond_bridgeless_network(self):
         """
         Attach Non-VM network with VLAN over BOND
@@ -114,7 +117,7 @@ class TestBridgelessCase3(TestBridgelessTestCaseBase):
         helper.create_networks_on_host(net=conf.NETS[3][0], nic=self.bond)
 
 
-class TestBridgelessCase4(TestBridgelessTestCaseBase):
+class BridgelessCase4(BridgelessTestCaseBase):
     """
     Create BOND
     Attach Non-VM network over BOND
@@ -129,6 +132,7 @@ class TestBridgelessCase4(TestBridgelessTestCaseBase):
         """
         helper.create_networks_on_host(nic=cls.bond, slaves=conf.DUMMYS[2:4])
 
+    @polarion("RHEVM-14839")
     def test_bond_bridgeless_network(self):
         """
         Attach bridgeless network over BOND
