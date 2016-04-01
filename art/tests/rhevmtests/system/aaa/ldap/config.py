@@ -58,6 +58,14 @@ AD_GROUP41 = 'group41'
 AD_GROUP41_NS = 'DC=ad-w2k12r2,DC=rhev,DC=lab,DC=eng,DC=brq,DC=redhat,DC=com'
 AD_GROUP41_USER = 'user4@ad-w2k12r2.rhev.lab.eng.brq.redhat.com'
 
+AD_FOREIGN_GROUP = 'foreign_group'
+AD_FOREIGN_GROUP_NS = (
+    'DC=ad-w2k12r2p,DC=rhev,DC=lab,DC=eng,DC=brq,DC=redhat,DC=com'
+)
+AD_FOREIGN_GROUP_USER = (
+    'automation_user_foreign_group@ad-w2k12r2.rhev.lab.eng.brq.redhat.com'
+)
+
 SIMPLE_IPA = {
     'authz_file': 'ldap-authz-simple_ipa.properties',
     'authz_name': 'ldap-authz-simple_ipa',

@@ -146,3 +146,23 @@ class GroupRecursion(TestCase):
         )
         testflow.step("Testing connection with user %s", self.USER)
         assert common.connectionTest(), "%s can't login" % self.USER
+
+
+@attr(tier=2)
+class ForeignGroup(IndirectMembership):
+    """
+    Test user authentication with group membership in different AD domains
+    """
+    __test__ = True
+    conf = config.SIMPLE_AD
+    GROUP = config.AD_FOREIGN_GROUP
+    USER = config.AD_FOREIGN_GROUP_USER
+    PASSWORD = config.ADW2k12_USER_PASSWORD
+    NAMESPACE = config.AD_FOREIGN_GROUP_NS
+
+    @common.check(config.EXTENSIONS)
+    def test_ad_foreign_group_membership(self):
+        """
+        Test AD foreign group membership
+        """
+        self.indirect_group_membership()
