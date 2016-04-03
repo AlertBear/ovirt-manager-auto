@@ -1,11 +1,10 @@
 import logging
-
 import config
 import helpers
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
 
 logger = logging.getLogger(__name__)
@@ -70,6 +69,7 @@ class TestCase4831(helpers.TestCaseStandardOperations):
     **Author**: Katarzyna Jachim
     """
     __test__ = NFS in opts['storages']
+    storages = set([NFS])
     polarion_test_case = '4831'
     sd_1 = 'test_%s_1' % polarion_test_case
     sd_2 = 'test_%s_2' % polarion_test_case
@@ -91,6 +91,7 @@ class TestCase4831(helpers.TestCaseStandardOperations):
         super(TestCase4831, cls).setup_class()
 
     @polarion("RHEVM3-4831")
+    @bz({'1294511': {}})
     def test_functionality_with_custom_nfs_options(self):
         """ Tests basic data center functionality with storage domain with
         custom NFS options

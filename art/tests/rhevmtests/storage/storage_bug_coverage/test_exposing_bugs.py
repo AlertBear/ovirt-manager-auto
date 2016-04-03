@@ -474,6 +474,7 @@ class TestCase11956(EnvironmentWithTwoHosts):
     Storage/2_2_Storage_Hosts_Spm_General
     """
     __test__ = True
+    storages = config.NOT_APPLICABLE
     polarion_test_case = '11956'
     # Bugzilla history:
     # 1248035
@@ -483,9 +484,9 @@ class TestCase11956(EnvironmentWithTwoHosts):
         """
         create a VM on SPM
         """
-        self.storage_domain = ll_sds.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage
-        )[0]
+        self.storage_domain = ll_sds.get_master_storage_domain_name(
+            config.DATA_CENTER_NAME
+        )
         self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
         self.vm_name_base = self.create_unique_object_name(
             config.OBJECT_TYPE_VM
@@ -507,7 +508,10 @@ class TestCase11956(EnvironmentWithTwoHosts):
             * maintenance SPM
         """
         logger.info("Deactivating SPM host %s", self.spm_host)
-        ll_hosts.deactivateHost(True, self.spm_host)
+        self.assertTrue(
+            ll_hosts.deactivateHost(True, self.spm_host),
+            "Failed to deactivate SPM with running vm"
+        )
         ll_hosts.waitForHostsStates(
             True, self.spm_host, config.HOST_MAINTENANCE
         )
