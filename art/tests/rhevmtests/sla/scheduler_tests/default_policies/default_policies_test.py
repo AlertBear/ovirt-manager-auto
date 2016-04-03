@@ -36,6 +36,14 @@ CLUSTER_POLICIES = [
 ]
 
 
+def teardown_module(module):
+    """
+    1) Release all hosts CPU
+    """
+    logger.info("Free all host CPU's from loading")
+    sla_api.stop_cpu_loading_on_resources(config.VDS_HOSTS[:3])
+
+
 @attr(tier=2)
 class RhevmClusterPolicies(TestCase):
     __test__ = False

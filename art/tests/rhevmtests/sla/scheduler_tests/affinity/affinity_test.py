@@ -3,24 +3,80 @@ Scheduler - Affinity Test
 Check different cases for migration and starting of vms, when vms in different
 or in the same affinities groups(soft/hard, positive/negative)
 """
-
 import logging
 
 from art.unittest_lib import attr
-from rhevmtests.sla import config
+import rhevmtests.sla.config as conf
 
+from art.rhevm_api.utils import test_utils
 from art.unittest_lib import SlaTest as TestCase, SkipTest
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
-import art.rhevm_api.tests_lib.low_level.vms as vm_api
-import art.rhevm_api.tests_lib.high_level.vms as high_vm_api
-import art.rhevm_api.tests_lib.low_level.hosts as host_api
-import art.rhevm_api.tests_lib.low_level.clusters as cluster_api
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sds
 
 
 logger = logging.getLogger(__name__)
 
 TIMEOUT = 120
+AREM_OPTION = "AffinityRulesEnforcementManagerEnabled"
+
+
+def setup_module(module):
+    """
+    1) Disable AREM
+    2) Wait until storagedomains will have active state
+    """
+    logger.info("Disable AREM manager via engine-config")
+    cmd = ["{0}=false".format(AREM_OPTION)]
+    if not test_utils.set_engine_properties(conf.ENGINE, cmd):
+        raise errors.UnkownConfigurationException(
+            "Failed to set %s option to false" % AREM_OPTION
+        )
+    if not ll_sds.waitForStorageDomainStatus(
+        positive=True,
+        dataCenterName=conf.DC_NAME[0],
+        storageDomainName=conf.STORAGE_NAME[0],
+        expectedStatus=conf.SD_ACTIVE
+    ):
+        raise errors.StorageDomainException(
+            "Storage domain %s not active" % conf.STORAGE_NAME[0]
+        )
+
+
+def teardown_module(module):
+    """
+    1) Remove all redundant affinity groups
+    2) Enable AREM
+    3) Wait until storagedomains will have active state
+    """
+    affinity_groups = ll_clusters.get_affinity_groups_from_cluster(
+        cluster_name=conf.CLUSTER_NAME[0]
+    )
+    logger.info(
+        "Remove all affinity groups from cluster %s", conf.CLUSTER_NAME[0]
+    )
+    for affinity_group in affinity_groups:
+        ll_clusters.remove_affinity_group(
+            affinity_name=affinity_group.get_name(),
+            cluster_name=conf.CLUSTER_NAME[0]
+        )
+    logger.info("Enable AREM manager via engine-config")
+    cmd = ["{0}=true".format(AREM_OPTION)]
+    if not test_utils.set_engine_properties(conf.ENGINE, cmd):
+        logger.error("Failed to set %s option to false", AREM_OPTION)
+    if not ll_sds.waitForStorageDomainStatus(
+        positive=True,
+        dataCenterName=conf.DC_NAME[0],
+        storageDomainName=conf.STORAGE_NAME[0],
+        expectedStatus=conf.SD_ACTIVE
+    ):
+        logger.error(
+            "Storage domain %s not active", conf.STORAGE_NAME[0]
+        )
 
 
 class Affinity(TestCase):
@@ -48,9 +104,9 @@ class Affinity(TestCase):
         logger.info(
             "Populate affinity group %s with vms %s", group_name, vms
         )
-        return cluster_api.populate_affinity_with_vms(
+        return ll_clusters.populate_affinity_with_vms(
             affinity_name=group_name,
-            cluster_name=config.CLUSTER_NAME[0],
+            cluster_name=conf.CLUSTER_NAME[0],
             vms=vms
         )
 
@@ -62,8 +118,8 @@ class Affinity(TestCase):
         logger.info(
             "Create new affinity group %s", cls.affinity_group_name
         )
-        if not cluster_api.create_affinity_group(
-            cluster_name=config.CLUSTER_NAME[0],
+        if not ll_clusters.create_affinity_group(
+            cluster_name=conf.CLUSTER_NAME[0],
             name=cls.affinity_group_name,
             positive=cls.positive,
             enforcing=cls.hard
@@ -73,11 +129,11 @@ class Affinity(TestCase):
                 cls.affinity_group_name
             )
         if not cls._populate_affinity_group_with_vms(
-            group_name=cls.affinity_group_name, vms=config.VM_NAME[:2]
+            group_name=cls.affinity_group_name, vms=conf.VM_NAME[:2]
         ):
             raise errors.ClusterException(
                 "Failed to populate affinity group %s with vms %s" %
-                (cls.affinity_group_name, config.VM_NAME[:2])
+                (cls.affinity_group_name, conf.VM_NAME[:2])
             )
 
     @classmethod
@@ -86,8 +142,8 @@ class Affinity(TestCase):
         Remove affinity group
         """
         logger.info("Remove affinity group %s", cls.affinity_group_name)
-        if not cluster_api.remove_affinity_group(
-            cls.affinity_group_name, config.CLUSTER_NAME[0]
+        if not ll_clusters.remove_affinity_group(
+            cls.affinity_group_name, conf.CLUSTER_NAME[0]
         ):
             logger.error(
                 "Failed to remove affinity group %s", cls.affinity_group_name
@@ -107,9 +163,9 @@ class StartVms(Affinity):
         """
         super(StartVms, cls).setup_class()
         logger.info("Start all vms")
-        for vm in config.VM_NAME[:2]:
+        for vm in conf.VM_NAME[:2]:
             logger.info("Start vm %s", vm)
-            if not vm_api.startVm(True, vm, wait_for_status=config.VM_UP):
+            if not ll_vms.startVm(True, vm, wait_for_status=conf.VM_UP):
                 raise errors.VMException("Failed to start vms")
 
     @classmethod
@@ -117,8 +173,8 @@ class StartVms(Affinity):
         """
         Stop all vms
         """
-        logger.info("Stop vms %s", config.VM_NAME[:2])
-        vm_api.stop_vms_safely(config.VM_NAME[:2])
+        logger.info("Stop vms %s", conf.VM_NAME[:2])
+        ll_vms.stop_vms_safely(conf.VM_NAME[:2])
         super(StartVms, cls).teardown_class()
 
 
@@ -140,8 +196,8 @@ class TestStartVmsUnderHardPositiveAffinity(StartVms):
         Check where vms started
         """
         self.assertEqual(
-            vm_api.get_vm_host(config.VM_NAME[0]),
-            vm_api.get_vm_host(config.VM_NAME[1]),
+            ll_vms.get_vm_host(conf.VM_NAME[0]),
+            ll_vms.get_vm_host(conf.VM_NAME[1]),
             "vms not run on the same host"
         )
 
@@ -164,8 +220,8 @@ class TestStartVmsUnderSoftPositiveAffinity(StartVms):
         Check where vms started
         """
         self.assertEqual(
-            vm_api.get_vm_host(config.VM_NAME[0]),
-            vm_api.get_vm_host(config.VM_NAME[1]),
+            ll_vms.get_vm_host(conf.VM_NAME[0]),
+            ll_vms.get_vm_host(conf.VM_NAME[1]),
             "vms not run on the same host"
         )
 
@@ -188,8 +244,8 @@ class TestStartVmsUnderHardNegativeAffinity(StartVms):
         Check where vms started
         """
         self.assertNotEqual(
-            vm_api.get_vm_host(config.VM_NAME[0]),
-            vm_api.get_vm_host(config.VM_NAME[1]),
+            ll_vms.get_vm_host(conf.VM_NAME[0]),
+            ll_vms.get_vm_host(conf.VM_NAME[1]),
             "Vms runs on the same host"
         )
 
@@ -212,8 +268,8 @@ class TestStartVmsUnderSoftNegativeAffinity(StartVms):
         Check where vms started
         """
         self.assertNotEqual(
-            vm_api.get_vm_host(config.VM_NAME[0]),
-            vm_api.get_vm_host(config.VM_NAME[1]),
+            ll_vms.get_vm_host(conf.VM_NAME[0]),
+            ll_vms.get_vm_host(conf.VM_NAME[1]),
             "Vms runs on the same host"
         )
 
@@ -230,16 +286,16 @@ class MigrateVm(Affinity):
         """
         Start vms, and create new affinity group
         """
-        if len(config.HOSTS) >= 2:
+        if len(conf.HOSTS) >= 2:
             host_vm_dict = {
-                config.VM_NAME[0]: config.HOSTS[0],
-                config.VM_NAME[1]: config.HOSTS[1]
+                conf.VM_NAME[0]: conf.HOSTS[0],
+                conf.VM_NAME[1]: conf.HOSTS[1]
             }
         else:
             raise SkipTest("Not enough hosts to run this test")
         logger.info("Start vms on different hosts")
         for vm, host in host_vm_dict.iteritems():
-            if not vm_api.runVmOnce(True, vm, host=host):
+            if not ll_vms.runVmOnce(True, vm, host=host):
                 raise errors.VMException("Failed to start vms")
         super(MigrateVm, cls).setup_class()
 
@@ -248,16 +304,16 @@ class MigrateVm(Affinity):
         """
         Stop vms and remove affinity group
         """
-        logger.info("Stop vms %s", config.VM_NAME[:3])
-        vm_api.stop_vms_safely(config.VM_NAME[:3])
-        for vm in config.VM_NAME[:2]:
+        logger.info("Stop vms %s", conf.VM_NAME[:3])
+        ll_vms.stop_vms_safely(conf.VM_NAME[:3])
+        for vm in conf.VM_NAME[:2]:
             logger.info(
                 "Update vm %s migration option to %s",
-                vm, config.VM_MIGRATABLE
+                vm, conf.VM_MIGRATABLE
             )
-            if not vm_api.updateVm(
+            if not ll_vms.updateVm(
                 positive=True, vm=vm,
-                placement_affinity=config.VM_MIGRATABLE
+                placement_affinity=conf.VM_MIGRATABLE
             ):
                 logger.error("Failed to update vm %s" % vm)
         super(MigrateVm, cls).teardown_class()
@@ -280,14 +336,14 @@ class TestMigrateVmUnderHardPositiveAffinity(MigrateVm):
         """
         Check if vm succeeds to migrate
         """
-        logger.info("Migrate vm %s", config.VM_NAME[0])
-        if not vm_api.migrateVm(positive=True, vm=config.VM_NAME[0]):
+        logger.info("Migrate vm %s", conf.VM_NAME[0])
+        if not ll_vms.migrateVm(positive=True, vm=conf.VM_NAME[0]):
             raise errors.VMException(
-                "Failed to migrate vm %s", config.VM_NAME[0]
+                "Failed to migrate vm %s", conf.VM_NAME[0]
             )
         self.assertEqual(
-            vm_api.get_vm_host(config.VM_NAME[0]),
-            vm_api.get_vm_host(config.VM_NAME[1]),
+            ll_vms.get_vm_host(conf.VM_NAME[0]),
+            ll_vms.get_vm_host(conf.VM_NAME[1]),
             "vms don't run on the same host"
         )
 
@@ -309,12 +365,12 @@ class TestMigrateVmUnderSoftPositiveAffinity(MigrateVm):
         """
         Check if vm success to migrate
         """
-        logger.info("Migrate vm %s", config.VM_NAME[0])
-        if not vm_api.migrateVm(True, config.VM_NAME[0]):
+        logger.info("Migrate vm %s", conf.VM_NAME[0])
+        if not ll_vms.migrateVm(True, conf.VM_NAME[0]):
             raise errors.VMException("Failed to migrate vm")
         self.assertEqual(
-            vm_api.get_vm_host(config.VM_NAME[0]),
-            vm_api.get_vm_host(config.VM_NAME[1]),
+            ll_vms.get_vm_host(conf.VM_NAME[0]),
+            ll_vms.get_vm_host(conf.VM_NAME[1]),
             "vms not run on the same host"
         )
 
@@ -336,14 +392,14 @@ class TestMigrateVmUnderHardNegativeAffinity(MigrateVm):
         """
         Check if vm succeeds to migrate
         """
-        logger.info("Migrate vm %s", config.VM_NAME[0])
-        if not vm_api.migrateVm(positive=True, vm=config.VM_NAME[0]):
+        logger.info("Migrate vm %s", conf.VM_NAME[0])
+        if not ll_vms.migrateVm(positive=True, vm=conf.VM_NAME[0]):
             raise errors.VMException(
-                "Failed to migrate vm %s" % config.VM_NAME[0]
+                "Failed to migrate vm %s" % conf.VM_NAME[0]
             )
         self.assertNotEqual(
-            vm_api.get_vm_host(config.VM_NAME[0]),
-            vm_api.get_vm_host(config.VM_NAME[1]),
+            ll_vms.get_vm_host(conf.VM_NAME[0]),
+            ll_vms.get_vm_host(conf.VM_NAME[1]),
             "vms don't run on the same host"
         )
 
@@ -365,12 +421,12 @@ class TestMigrateVmUnderSoftNegativeAffinity(MigrateVm):
         """
         Check if vm success to migrate
         """
-        logger.info("Migrate vm %s", config.VM_NAME[0])
-        if not vm_api.migrateVm(True, config.VM_NAME[0]):
+        logger.info("Migrate vm %s", conf.VM_NAME[0])
+        if not ll_vms.migrateVm(True, conf.VM_NAME[0]):
             raise errors.VMException("Failed to migrate vm")
         self.assertNotEqual(
-            vm_api.get_vm_host(config.VM_NAME[0]),
-            vm_api.get_vm_host(config.VM_NAME[1]),
+            ll_vms.get_vm_host(conf.VM_NAME[0]),
+            ll_vms.get_vm_host(conf.VM_NAME[1]),
             "vms not run on the same host"
         )
 
@@ -392,7 +448,7 @@ class TestNegativeMigrateVmUnderHardPositiveAffinity(MigrateVm):
         Check if vm success to migrate
         """
         self.assertFalse(
-            vm_api.migrateVm(True, config.VM_NAME[0], config.HOSTS[2]),
+            ll_vms.migrateVm(True, conf.VM_NAME[0], conf.HOSTS[2]),
             "Vm migration success"
         )
 
@@ -414,7 +470,7 @@ class TestMigrateVmOppositeUnderSoftPositiveAffinity(MigrateVm):
         Check if vm success to migrate
         """
         self.assertTrue(
-            vm_api.migrateVm(True, config.VM_NAME[0], config.HOSTS[2]),
+            ll_vms.migrateVm(True, conf.VM_NAME[0], conf.HOSTS[2]),
             "Vm migration failed"
         )
 
@@ -437,7 +493,7 @@ class TestNegativeMigrateVmUnderHardNegativeAffinity(MigrateVm):
         Check if vm success to migrate
         """
         self.assertFalse(
-            vm_api.migrateVm(True, config.VM_NAME[0], config.HOSTS[1]),
+            ll_vms.migrateVm(True, conf.VM_NAME[0], conf.HOSTS[1]),
             "Vm migration success"
         )
 
@@ -459,7 +515,7 @@ class TestMigrateVmSameUnderSoftNegativeAffinity(MigrateVm):
         Check if vm success to migrate
         """
         self.assertTrue(
-            vm_api.migrateVm(True, config.VM_NAME[0], config.HOSTS[1]),
+            ll_vms.migrateVm(True, conf.VM_NAME[0], conf.HOSTS[1]),
             "Vm migration failed"
         )
 
@@ -484,15 +540,15 @@ class TestRemoveVmFromAffinityGroupOnClusterChange(Affinity):
         """
         super(TestRemoveVmFromAffinityGroupOnClusterChange, cls).setup_class()
         logger.info("Create new cluster for test")
-        comp_version = config.PARAMETERS['compatibility_version']
-        if not cluster_api.addCluster(
+        comp_version = conf.PARAMETERS['compatibility_version']
+        if not ll_clusters.addCluster(
             True, name=cls.additional_cluster_name,
-            cpu=config.PARAMETERS['cpu_name'],
-            data_center=config.DC_NAME[0],
+            cpu=conf.PARAMETERS['cpu_name'],
+            data_center=conf.DC_NAME[0],
             version=comp_version
         ):
             raise errors.ClusterException("Failed to create new cluster")
-        cpu_profile_obj = cluster_api.get_cpu_profile_obj(
+        cpu_profile_obj = ll_clusters.get_cpu_profile_obj(
             cls.additional_cluster_name, cls.additional_cluster_name
         )
         if not cpu_profile_obj:
@@ -502,10 +558,10 @@ class TestRemoveVmFromAffinityGroupOnClusterChange(Affinity):
             )
         logger.info(
             "Update vm %s cluster to %s",
-            config.VM_NAME[0], cls.additional_cluster_name
+            conf.VM_NAME[0], cls.additional_cluster_name
         )
-        if not vm_api.updateVm(
-            True, config.VM_NAME[0],
+        if not ll_vms.updateVm(
+            True, conf.VM_NAME[0],
             cluster=cls.additional_cluster_name,
             cpu_profile_id=cpu_profile_obj.get_id()
         ):
@@ -517,10 +573,10 @@ class TestRemoveVmFromAffinityGroupOnClusterChange(Affinity):
         Check if vm removed from affinity group
         """
         self.assertFalse(
-            cluster_api.check_vm_affinity_group(
+            ll_clusters.check_vm_affinity_group(
                 self.affinity_group_name,
-                config.CLUSTER_NAME[0],
-                config.VM_NAME[0]
+                conf.CLUSTER_NAME[0],
+                conf.VM_NAME[0]
             ),
             "Vm still exist under affinity group"
         )
@@ -532,14 +588,14 @@ class TestRemoveVmFromAffinityGroupOnClusterChange(Affinity):
         """
         logger.info(
             "Update vm %s cluster to %s",
-            config.VM_NAME[0], config.CLUSTER_NAME[0]
+            conf.VM_NAME[0], conf.CLUSTER_NAME[0]
         )
-        if not vm_api.updateVm(
-            True, config.VM_NAME[0], cluster=config.CLUSTER_NAME[0]
+        if not ll_vms.updateVm(
+            True, conf.VM_NAME[0], cluster=conf.CLUSTER_NAME[0]
         ):
-            logger.error("Failed update vm %s cluster", config.VM_NAME[0])
+            logger.error("Failed update vm %s cluster", conf.VM_NAME[0])
         logger.info("Remove cluster %s", cls.additional_cluster_name)
-        if not cluster_api.removeCluster(True, cls.additional_cluster_name):
+        if not ll_clusters.removeCluster(True, cls.additional_cluster_name):
             logger.error(
                 "Failed to remove cluster %s", cls.additional_cluster_name
             )
@@ -562,9 +618,9 @@ class PutHostToMaintenance(StartVms):
         Put host to maintenance
         """
         super(PutHostToMaintenance, cls).setup_class()
-        cls.host = vm_api.get_vm_host(config.VM_NAME[0])
+        cls.host = ll_vms.get_vm_host(conf.VM_NAME[0])
         logger.info("Deactivate host %s", cls.host)
-        if not host_api.deactivateHost(True, cls.host, timeout=TIMEOUT):
+        if not ll_hosts.deactivateHost(True, cls.host, timeout=TIMEOUT):
             raise errors.HostException("Failed to deactivate host.")
 
     @classmethod
@@ -574,7 +630,7 @@ class PutHostToMaintenance(StartVms):
         """
         if cls.host:
             logger.info("Activate host %s", cls.host)
-            if not host_api.activateHost(True, cls.host):
+            if not ll_hosts.activateHost(True, cls.host):
                 logger.error("Failed to activate host %s", cls.host)
         super(PutHostToMaintenance, cls).teardown_class()
 
@@ -596,14 +652,14 @@ class TestPutHostToMaintenanceUnderHardPositiveAffinity(StartVms):
         """
         Check that after deactivate hosts vms migrated on the same host
         """
-        vm_host = vm_api.get_vm_host(config.VM_NAME[0])
+        vm_host = ll_vms.get_vm_host(conf.VM_NAME[0])
         self.assertTrue(
-            host_api.deactivateHost(True, vm_host, timeout=TIMEOUT),
+            ll_hosts.deactivateHost(True, vm_host, timeout=TIMEOUT),
             "Success to deactivate host"
         )
         self.assertEqual(
-            vm_api.get_vm_host(config.VM_NAME[0]),
-            vm_api.get_vm_host(config.VM_NAME[1]),
+            ll_vms.get_vm_host(conf.VM_NAME[0]),
+            ll_vms.get_vm_host(conf.VM_NAME[1]),
             "Vm's migrated on different hosts"
         )
 
@@ -625,8 +681,8 @@ class TestPutHostToMaintenanceUnderHardNegativeAffinity(PutHostToMaintenance):
         Check that after deactivate hosts vms migrated on different hosts
         """
         self.assertNotEqual(
-            vm_api.get_vm_host(config.VM_NAME[0]),
-            vm_api.get_vm_host(config.VM_NAME[1]),
+            ll_vms.get_vm_host(conf.VM_NAME[0]),
+            ll_vms.get_vm_host(conf.VM_NAME[1]),
             "Vm's migrated on the same hosts"
         )
 
@@ -649,8 +705,8 @@ class AdditionalAffinityGroup(Affinity):
         logger.info(
             "Create new affinity group %s", cls.additional_name
         )
-        if not cluster_api.create_affinity_group(
-            cluster_name=config.CLUSTER_NAME[0],
+        if not ll_clusters.create_affinity_group(
+            cluster_name=conf.CLUSTER_NAME[0],
             name=cls.additional_name,
             positive=cls.additional_positive,
             enforcing=cls.additional_hard
@@ -665,8 +721,8 @@ class AdditionalAffinityGroup(Affinity):
         Remove all affinity groups
         """
         logger.info("Remove affinity group %s", cls.additional_name)
-        if not cluster_api.remove_affinity_group(
-            cls.additional_name, config.CLUSTER_NAME[0]
+        if not ll_clusters.remove_affinity_group(
+            cls.additional_name, conf.CLUSTER_NAME[0]
         ):
             logger.error(
                 "Failed to remove affinity group %s", cls.additional_name
@@ -698,10 +754,10 @@ class TestTwoDifferentAffinitiesScenario1(AdditionalAffinityGroup):
         """
         self.assertFalse(
             self._populate_affinity_group_with_vms(
-                group_name=self.additional_name, vms=config.VM_NAME[:2]
+                group_name=self.additional_name, vms=conf.VM_NAME[:2]
             ),
             "Succeed to populate affinity group %s with vms %s" %
-            (self.additional_name, config.VM_NAME[:2])
+            (self.additional_name, conf.VM_NAME[:2])
         )
 
 
@@ -729,10 +785,10 @@ class TestTwoDifferentAffinitiesScenario2(AdditionalAffinityGroup):
         """
         self.assertFalse(
             self._populate_affinity_group_with_vms(
-                group_name=self.additional_name, vms=config.VM_NAME[:2]
+                group_name=self.additional_name, vms=conf.VM_NAME[:2]
             ),
             "Succeed to populate affinity group %s with vms %s" %
-            (self.additional_name, config.VM_NAME[:2])
+            (self.additional_name, conf.VM_NAME[:2])
         )
 
 
@@ -760,10 +816,10 @@ class TestTwoDifferentAffinitiesScenario3(AdditionalAffinityGroup):
         """
         self.assertFalse(
             self._populate_affinity_group_with_vms(
-                group_name=self.additional_name, vms=config.VM_NAME[:2]
+                group_name=self.additional_name, vms=conf.VM_NAME[:2]
             ),
             "Succeed to populate affinity group %s with vms %s" %
-            (self.additional_name, config.VM_NAME[:2])
+            (self.additional_name, conf.VM_NAME[:2])
         )
 
 
@@ -784,24 +840,24 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(MigrateVm):
         """
         Create additional HA vm and deactivate one of hosts
         """
-        logger.info("Deactivate host %s", config.HOSTS[2])
-        if not host_api.deactivateHost(True, config.HOSTS[2]):
+        logger.info("Deactivate host %s", conf.HOSTS[2])
+        if not ll_hosts.deactivateHost(True, conf.HOSTS[2]):
             raise errors.HostException("Failed to deactivate host")
         logger.info("Create HA vm")
-        if not vm_api.createVm(
+        if not ll_vms.createVm(
             positive=True, vmName=cls.ha_vm,
             vmDescription='Affinity VM',
-            cluster=config.CLUSTER_NAME[0],
-            storageDomainName=config.STORAGE_NAME[0],
-            size=config.DISK_SIZE, nic=config.NIC_NAME[0],
-            display_type=config.VM_DISPLAY_TYPE,
-            type=config.VM_TYPE_SERVER,
-            network=config.MGMT_BRIDGE,
+            cluster=conf.CLUSTER_NAME[0],
+            storageDomainName=conf.STORAGE_NAME[0],
+            size=conf.DISK_SIZE, nic=conf.NIC_NAME[0],
+            display_type=conf.VM_DISPLAY_TYPE,
+            type=conf.VM_TYPE_SERVER,
+            network=conf.MGMT_BRIDGE,
             highly_available=True
         ):
             raise errors.VMException("Failed to create HA vm")
         logger.info("Start vm %s", cls.ha_vm)
-        if not vm_api.startVm(True, cls.ha_vm):
+        if not ll_vms.startVm(True, cls.ha_vm):
             raise errors.VMException("Failed to start vm")
         super(
             TestFailedToStartHAVmUnderHardNegativeAffinity, cls
@@ -810,8 +866,8 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(MigrateVm):
             "Add vm %s to affinity group %s",
             cls.ha_vm, cls.affinity_group_name
         )
-        if not cluster_api.populate_affinity_with_vms(
-            cls.affinity_group_name, config.CLUSTER_NAME[0], [cls.ha_vm]
+        if not ll_clusters.populate_affinity_with_vms(
+            cls.affinity_group_name, conf.CLUSTER_NAME[0], [cls.ha_vm]
         ):
             raise errors.ClusterException(
                 "Failed to add vm to affinity group"
@@ -822,16 +878,16 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(MigrateVm):
         """
         Kill HA vm and check that vm failed to run because affinity policy
         """
-        ha_host = vm_api.get_vm_host(self.ha_vm)
+        ha_host = ll_vms.get_vm_host(self.ha_vm)
         logger.info("Kill HA vm")
-        if not host_api.kill_qemu_process(
-            self.ha_vm, ha_host, config.HOSTS_USER, config.HOSTS_PW
+        if not ll_hosts.kill_qemu_process(
+            self.ha_vm, ha_host, conf.HOSTS_USER, conf.HOSTS_PW
         ):
             raise errors.HostException("Failed to kill vm process")
         self.assertTrue(
-            vm_api.waitForVMState(self.ha_vm, state=config.VM_DOWN)
+            ll_vms.waitForVMState(self.ha_vm, state=conf.VM_DOWN)
         )
-        self.assertFalse(vm_api.waitForVMState(self.ha_vm, timeout=TIMEOUT))
+        self.assertFalse(ll_vms.waitForVMState(self.ha_vm, timeout=TIMEOUT))
 
     @classmethod
     def teardown_class(cls):
@@ -842,13 +898,13 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(MigrateVm):
             TestFailedToStartHAVmUnderHardNegativeAffinity, cls
         ).teardown_class()
         logger.info("Stop vm %s", cls.ha_vm)
-        vm_api.stop_vms_safely([cls.ha_vm])
+        ll_vms.stop_vms_safely([cls.ha_vm])
         logger.info("Remove HA vm")
-        if not vm_api.removeVm(True, cls.ha_vm):
+        if not ll_vms.removeVm(True, cls.ha_vm):
             logger.error("Failed to remove vm %s", cls.ha_vm)
-        logger.info("Activate host %s", config.HOSTS[2])
-        if not host_api.activateHost(True, config.HOSTS[2]):
-            logger.error("Failed to activate host %s", config.HOSTS[2])
+        logger.info("Activate host %s", conf.HOSTS[2])
+        if not ll_hosts.activateHost(True, conf.HOSTS[2]):
+            logger.error("Failed to activate host %s", conf.HOSTS[2])
 
 
 @attr(tier=2)
@@ -867,9 +923,9 @@ class TestStartHAVmsUnderHardPositiveAffinity(StartVms):
         """
         Enable HA for test vms
         """
-        for vm in config.VM_NAME[:2]:
+        for vm in conf.VM_NAME[:2]:
             logger.info("Enable HA on vm %s", vm)
-            if not vm_api.updateVm(True, vm, highly_available=True):
+            if not ll_vms.updateVm(True, vm, highly_available=True):
                 raise errors.VMException("Failed to update vm")
         super(TestStartHAVmsUnderHardPositiveAffinity, cls).setup_class()
 
@@ -878,23 +934,23 @@ class TestStartHAVmsUnderHardPositiveAffinity(StartVms):
         """
         Kill qemu process of HA vms and check if vms started on the same host
         """
-        vm_host = vm_api.get_vm_host(config.VM_NAME[0])
-        logger.info("Kill qemu process of vm %s", config.VM_NAME[0])
-        if not host_api.kill_qemu_process(
-            config.VM_NAME[0], vm_host, config.HOSTS_USER, config.HOSTS_PW
+        vm_host = ll_vms.get_vm_host(conf.VM_NAME[0])
+        logger.info("Kill qemu process of vm %s", conf.VM_NAME[0])
+        if not ll_hosts.kill_qemu_process(
+            conf.VM_NAME[0], vm_host, conf.HOSTS_USER, conf.HOSTS_PW
         ):
             raise errors.HostException("Failed to kill vm process")
-        logger.info("Kill qemu process of vm %s", config.VM_NAME[1])
-        if not host_api.kill_qemu_process(
-            config.VM_NAME[1], vm_host, config.HOSTS_USER, config.HOSTS_PW
+        logger.info("Kill qemu process of vm %s", conf.VM_NAME[1])
+        if not ll_hosts.kill_qemu_process(
+            conf.VM_NAME[1], vm_host, conf.HOSTS_USER, conf.HOSTS_PW
         ):
             raise errors.HostException("Failed to kill vm process")
         logger.info("Wait until both vms change status to UP")
-        if not vm_api.waitForVmsStates(True, config.VM_NAME[:2]):
+        if not ll_vms.waitForVmsStates(True, conf.VM_NAME[:2]):
             raise errors.VMException("One of vms still down")
         self.assertEqual(
-            vm_api.get_vm_host(config.VM_NAME[0]),
-            vm_api.get_vm_host(config.VM_NAME[1]),
+            ll_vms.get_vm_host(conf.VM_NAME[0]),
+            ll_vms.get_vm_host(conf.VM_NAME[1]),
             "Vms started on different hosts"
         )
 
@@ -906,9 +962,9 @@ class TestStartHAVmsUnderHardPositiveAffinity(StartVms):
         super(
             TestStartHAVmsUnderHardPositiveAffinity, cls
         ).teardown_class()
-        for vm in config.VM_NAME[:2]:
+        for vm in conf.VM_NAME[:2]:
             logger.info("Disable HA on vm %s", vm)
-            if not vm_api.updateVm(True, vm, highly_available=False):
+            if not ll_vms.updateVm(True, vm, highly_available=False):
                 logger.error("Failed to update vm %s", vm)
 
 
@@ -930,19 +986,19 @@ class TestSoftPositiveAffinityVsMemoryFilter(StartVms):
         """
         logger.info(
             "Update cluster %s over commit to 100 percent",
-            config.CLUSTER_NAME[0]
+            conf.CLUSTER_NAME[0]
         )
-        if not cluster_api.updateCluster(
-            True, config.CLUSTER_NAME[0], mem_ovrcmt_prc=100
+        if not ll_clusters.updateCluster(
+            True, conf.CLUSTER_NAME[0], mem_ovrcmt_prc=100
         ):
             raise errors.ClusterException("Failed to update cluster")
-        host_list = config.HOSTS[:3]
-        memory = high_vm_api.calculate_memory_for_memory_filter(host_list)
-        for vm, vm_memory in zip(config.VM_NAME[:2], memory):
+        host_list = conf.HOSTS[:3]
+        memory = hl_vms.calculate_memory_for_memory_filter(host_list)
+        for vm, vm_memory in zip(conf.VM_NAME[:2], memory):
             logger.info("Update vm %s with memory %d", vm, vm_memory)
-            if not vm_api.updateVm(
+            if not ll_vms.updateVm(
                 positive=True, vm=vm, memory=vm_memory,
-                memory_guaranteed=vm_memory, os_type=config.VM_OS_TYPE
+                memory_guaranteed=vm_memory, os_type=conf.VM_OS_TYPE
             ):
                 raise errors.VMException("Failed to update vm")
         super(TestSoftPositiveAffinityVsMemoryFilter, cls).setup_class()
@@ -953,8 +1009,8 @@ class TestSoftPositiveAffinityVsMemoryFilter(StartVms):
         Check that affinity policy not prevent to start vms
         """
         self.assertNotEqual(
-            vm_api.get_vm_host(config.VM_NAME[0]),
-            vm_api.get_vm_host(config.VM_NAME[1]),
+            ll_vms.get_vm_host(conf.VM_NAME[0]),
+            ll_vms.get_vm_host(conf.VM_NAME[1]),
             "Vms started on the same host"
         )
 
@@ -966,19 +1022,19 @@ class TestSoftPositiveAffinityVsMemoryFilter(StartVms):
         super(TestSoftPositiveAffinityVsMemoryFilter, cls).teardown_class()
         logger.info(
             "Update cluster %s over commit to 200 percent",
-            config.CLUSTER_NAME[0]
+            conf.CLUSTER_NAME[0]
         )
-        if not cluster_api.updateCluster(
-            True, config.CLUSTER_NAME[0], mem_ovrcmt_prc=200
+        if not ll_clusters.updateCluster(
+            True, conf.CLUSTER_NAME[0], mem_ovrcmt_prc=200
         ):
             logger.error(
                 "Failed to update cluster %s over commit percent",
-                config.CLUSTER_NAME[0]
+                conf.CLUSTER_NAME[0]
             )
-        for vm in config.VM_NAME[:2]:
+        for vm in conf.VM_NAME[:2]:
             logger.info("Update vm %s", vm)
-            if not vm_api.updateVm(
-                positive=True, vm=vm, memory=config.GB,
-                memory_guaranteed=config.GB,
+            if not ll_vms.updateVm(
+                positive=True, vm=vm, memory=conf.GB,
+                memory_guaranteed=conf.GB,
             ):
                 logger.error("Failed to update vm %s", vm)

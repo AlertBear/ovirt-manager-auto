@@ -56,6 +56,9 @@ AFFINITY_API = get_api('affinity_group', 'affinity_groups')
 CPU_PROFILE_API = get_api('cpu_profile', 'cpu_profiles')
 VM_API = get_api('vm', 'vms')
 
+CLUSTER_NAME = "cluster"
+AFFINITY_GROUP_NAME = "affinity group"
+
 xpathMatch = is_action('xpathClusters', id_name='xpathMatch')(XPathMatch(util))
 logger = logging.getLogger(__name__)
 
@@ -215,47 +218,53 @@ def addCluster(positive, **kwargs):
 
 @is_action()
 def updateCluster(positive, cluster, **kwargs):
-    '''
-    Description: Update cluster
-    Author: edolinin
-    Parameters:
-       * cluster - name of a cluster
-       * name - change cluster name
-       * cpu - CPU name
-       * data_center - name of data center attached to cluster
-       * description - description of cluster
-       * version - supported version (2.2, 3)
-       * gluster_support - Gluster support (boolean)
-       * virt_support - virt support (boolean)
-       * mem_ovrcmt_prc - The percentage of host memory allowed
-                          Recommended values include 100 (None),
-                          150 (Server Load) and 200 (Desktop Load)
-       * thrhld_high - The highest CPU usage percentage the host can have
-                       before being considered overloaded
-       * thrhld_low - the lowest CPU usage percentage the host can have
-                       before being considered underutilized.
-       * duration - the number of seconds the host needs to be overloaded
-                    before the scheduler starts and moves the load to
-                    another host
-       * scheduling_policy - VM scheduling mode for hosts in the cluster
-                             (evenly_distributed, power_saving)
-       * properties - properties of scheduling policy
-       * transparent_hugepages - boolean, Defines the availability of
-                                Transparent Hugepages
-       * on_error - in case of non - operational
-                    (migrate, do_not_migrate, migrate_highly_available)
-       * threads - if True, will count threads as cores, otherwise counts
-                    only cores
-       * ballooning_enabled - if True, enables ballooning on cluster
-       * ksm_enabled - if True, enables KSM on cluster
-       * ha_reservation - if True, enables Ha Reservation on cluster
-    Return: status (True if cluster was removed properly, False otherwise)
-    '''
+    """
+    Update cluster
 
-    cl = util.find(cluster)
-    clUpd = _prepareClusterObject(**kwargs)
-    clUpd, status = util.update(cl, clUpd, positive)
+    Args:
+        positive (bool): Positive or negative condition
+        cluster (str): Cluster name
 
+    Keyword Args:
+        name (str): New cluster name
+        cpu (str): CPU name
+        data_center (str): Name of data center attached to cluster
+        description (str): Description of cluster
+        version (str): Supported version (2.2, 3)
+        gluster_support (bool): Gluster support
+        virt_support (bool): Virt support
+        mem_ovrcmt_prc (int): Cluster memory overcommitment
+        thrhld_high (int): The highest CPU usage percentage the host can have
+            before being considered overloaded
+        thrhld_low (int): The lowest CPU usage percentage the host can have
+            before being considered underutilized.
+        duration (int): The number of seconds the host needs to be overloaded
+            before the scheduler starts and moves the load to another host
+        scheduling_policy (str): Cluster scheduling policy
+        properties (dict): Scheduling policy properties
+        transparent_hugepages (booL): Defines the availability of
+            Transparent Hugepages
+        on_error (str): Migration behaviour for VM's on non-operational host
+        threads (bool): Count threads as cores
+        ballooning_enabled (bool): Enables ballooning on cluster
+        ksm_enabled (bool): Enables KSM on cluster
+        ha_reservation (bool): Enables HA Reservation on cluster
+
+    Returns:
+        bool: True, if update succeed, otherwise False
+    """
+    old_cluster_obj = util.find(cluster)
+    new_cluster_obj = _prepareClusterObject(**kwargs)
+    log_info, log_error = ll_general.get_log_msg(
+        action="Update", obj_type=CLUSTER_NAME, obj_name=cluster,
+        positive=positive, **kwargs
+    )
+    logger.info(log_info)
+    new_cluster_obj, status = util.update(
+        old_cluster_obj, new_cluster_obj, positive
+    )
+    if not status:
+        logger.error(log_error)
     return status
 
 
@@ -598,6 +607,23 @@ def _prepare_affinity_group_object(**kwargs):
     return ll_general.prepare_ds_object('AffinityGroup', **kwargs)
 
 
+def get_affinity_groups_from_cluster(cluster_name):
+    """
+    Get list of affinity groups objects from cluster
+
+    Args:
+        cluster_name (str): cluster name
+
+    Returns:
+        list: Affinity Groups
+    """
+    logger.info("Get all affinity groups from cluster %s", cluster_name)
+    cluster_obj = get_cluster_object(cluster_name=cluster_name)
+    return CLUSTER_API.getElemFromLink(
+        elm=cluster_obj, link_name="affinitygroups", attr="affinity_group"
+    )
+
+
 def get_affinity_group_obj(affinity_name, cluster_name):
     """
     Get affinity group object by name.
@@ -677,8 +703,16 @@ def remove_affinity_group(affinity_name, cluster_name):
     :type cluster_name: str
     :returns: True, if affinity group removed, otherwise False
     """
+    log_info, log_error = ll_general.get_log_msg(
+        action="Remove", obj_type=AFFINITY_GROUP_NAME, obj_name=affinity_name,
+        extra_txt="from cluster %s" % cluster_name
+    )
+    logger.info(log_info)
     affinity_group_obj = get_affinity_group_obj(affinity_name, cluster_name)
-    return AFFINITY_API.delete(affinity_group_obj, True)
+    status = AFFINITY_API.delete(affinity_group_obj, True)
+    if not status:
+        logger.error(log_error)
+    return status
 
 
 def populate_affinity_with_vms(affinity_name, cluster_name, vms):

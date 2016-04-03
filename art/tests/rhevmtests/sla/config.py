@@ -106,3 +106,17 @@ RESOURCE = "resource"
 # Cluster overcommitment constants
 CLUSTER_OVERCOMMITMENT_NONE = 100
 CLUSTER_OVERCOMMITMENT_DESKTOP = 200
+
+
+# Scheduling policies
+NONE_POLICY = "none"
+POWER_SAVING_POLICY = ENUMS["scheduling_policy_power_saving"]
+EVENLY_DISTRIBUTED_POLICY = ENUMS["scheduling_policy_evenly_distributed"]
+VM_EVENLY_DISTRIBUTED_POLICY = ENUMS["scheduling_policy_vm_evenly_distributed"]
+
+ENGINE_POLICIES = [
+    NONE_POLICY,
+    POWER_SAVING_POLICY,
+    EVENLY_DISTRIBUTED_POLICY,
+    VM_EVENLY_DISTRIBUTED_POLICY
+]

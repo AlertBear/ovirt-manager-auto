@@ -33,6 +33,18 @@ CLUSTER_POLICIES = [ENUMS['scheduling_policy_vm_evenly_distributed'], 'none']
 PROPERTIES = {'HighVmCount': 2, 'MigrationThreshold': 2, 'SpmVmGrace': 1}
 NON_RESPONSIVE = ENUMS['host_state_non_responsive']
 
+
+def setup_module(module):
+    """
+    1) Choose first host as SPM
+    """
+    if not ll_hosts.select_host_as_spm(
+        positive=True,
+        host=config.HOSTS[0],
+        data_center=config.DC_NAME[0]
+    ):
+        raise errors.HostException()
+
 # BUGS:
 # 1) Bug 1175824 - [JSON RPC] shutdown/reboot a host on state 'up'
 #    result in fault behaviour which is resolved only by engine restart

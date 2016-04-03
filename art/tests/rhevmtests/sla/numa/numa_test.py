@@ -17,6 +17,27 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 logger = logging.getLogger(__name__)
 
 
+def setup_module(module):
+    """
+    1) Install numactl package on hosts
+    """
+    host_numa_nodes_l = ll_hosts.get_numa_nodes_from_host(conf.HOSTS[0])
+    if len(host_numa_nodes_l) < 2:
+        raise u_libs.SkipTest(
+            "Number of NUMA nodes on host %s less than 2" %
+            conf.HOSTS[0]
+        )
+    logger.info(
+        "Install %s package on host %s",
+        conf.NUMACTL_PACKAGE, conf.VDS_HOSTS[0]
+    )
+    if not conf.VDS_HOSTS[0].package_manager.install(conf.NUMACTL_PACKAGE):
+        raise errors.HostException(
+            "Failed to install package %s on host %s" %
+            (conf.NUMACTL_PACKAGE, conf.VDS_HOSTS[0])
+        )
+
+
 @attr(tier=2)
 class BaseNumaClass(u_libs.SlaTest):
     """

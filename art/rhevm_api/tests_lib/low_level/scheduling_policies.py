@@ -16,9 +16,10 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 import logging
+from art.test_handler.settings import opts
 from art.core_api.apis_utils import data_st
 from art.rhevm_api.utils.test_utils import get_api
-from art.test_handler.settings import opts
+import art.rhevm_api.tests_lib.low_level.general as ll_general
 
 SCH_POL_API = get_api('scheduling_policy', 'schedulingpolicies')
 SCH_POL_UNITS_API = get_api('scheduling_policy_unit', 'schedulingpolicyunits')
@@ -50,7 +51,20 @@ UNIT_ATTR = {
     BALANCE_TYPE: 'balance'
 }
 
+SCHEDULING_POLICY = "scheduling policy"
+
 logger = logging.getLogger("art.ll_lib.scheduling_policies")
+
+
+def get_scheduling_policies():
+    """
+    Get all scheduling policies
+
+    Returns:
+        list: Scheduling policies objects
+    """
+    logger.info("Get all scheduling policies")
+    return SCH_POL_API.get(absLink=False)
 
 
 def _prepare_scheduling_policy_object(**kwargs):
@@ -131,8 +145,15 @@ def remove_scheduling_policy(policy_name):
     :returns: True, if policy deleted successfully, otherwise False
     :rtype: bool
     """
+    log_info, log_error = ll_general.get_log_msg(
+        action="Remove", obj_type=SCHEDULING_POLICY, obj_name=policy_name
+    )
+    logger.info(log_info)
     sch_pol_obj = SCH_POL_API.find(policy_name)
-    return SCH_POL_API.delete(sch_pol_obj, True)
+    status = SCH_POL_API.delete(sch_pol_obj, True)
+    if not status:
+        logger.error(log_error)
+    return status
 
 
 def _get_policy_unit(unit_name, unit_type):

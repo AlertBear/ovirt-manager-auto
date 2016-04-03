@@ -23,6 +23,42 @@ from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 logger = logging.getLogger(__name__)
 
 
+def setup_module(module):
+    """
+    1) Clean all events
+    2) Create datacenter quota
+    """
+    logger.info("Remove all events from engine")
+    sql = "DELETE FROM audit_log"
+    conf.ENGINE.db.psql(sql)
+    if not ll_datacenters.create_dc_quota(
+        dc_name=conf.DC_NAME_0, quota_name=conf.QUOTA_NAME
+    ):
+        raise errors.DataCenterException()
+
+
+def teardown_module(module):
+    """
+    1) Set datacenter quota mode to none
+    2) Delete datacenter quota
+    """
+    logger.info(
+        "Update datacenter %s quota mode to %s",
+        conf.DC_NAME_0, conf.QUOTA_MODES[conf.QUOTA_NONE_MODE]
+    )
+    if not ll_datacenters.update_datacenter(
+        positive=True,
+        datacenter=conf.DC_NAME_0,
+        quota_mode=conf.QUOTA_MODES[conf.QUOTA_NONE_MODE]
+    ):
+        logger.error(
+            "Failed to update datacenter %s quota mode", conf.DC_NAME_0
+        )
+    ll_datacenters.delete_dc_quota(
+        dc_name=conf.DC_NAME_0, quota_name=conf.QUOTA_NAME
+    )
+
+
 class BaseQuotaClass(TestCase):
     """
     Base Quota Class
@@ -1001,6 +1037,7 @@ class TestQuotaConsumptionTemplate(QuotaTestMode):
     __test__ = True
     quota_mode = conf.QUOTA_AUDIT_MODE
 
+    @bz({"1323595": {}})
     @polarion("RHEVM3-9394")
     def test_a_template_consumption(self):
         """

@@ -16,6 +16,7 @@ import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 
 
@@ -35,6 +36,69 @@ DURATION = 1
 CLUSTER_POLICY_NONE = 'none'
 CLUSTER_POLICY_PS = conf.ENUMS['scheduling_policy_power_saving']
 
+
+def setup_module(module):
+    """
+    1) Select first host as SPM
+    2) Configure power management on hosts
+    """
+    for host_resource in conf.VDS_HOSTS[:3]:
+        host_fqdn = host_resource.fqdn
+        if not conf.pm_mapping.get(host_fqdn):
+            raise u_lib.SkipTest(
+                "Host with fqdn %s does not have power management" % host_fqdn
+            )
+    if not ll_hosts.select_host_as_spm(
+        positive=True,
+        host=conf.HOSTS[0],
+        data_center=conf.DC_NAME[0]
+    ):
+        raise errors.HostException()
+    hosts_resource = dict(zip(conf.HOSTS[:3], conf.VDS_HOSTS[:3]))
+    for host_name, host_resource in hosts_resource.iteritems():
+        host_fqdn = host_resource.fqdn
+        host_pm = conf.pm_mapping.get(host_fqdn)
+        agent_option = {
+            "slot": host_pm[conf.PM_SLOT]
+        } if conf.PM_SLOT in host_pm else None
+        agent = {
+            "agent_type": host_pm.get(conf.PM_TYPE),
+            "agent_address": host_pm.get(conf.PM_ADDRESS),
+            "agent_username": host_pm.get(conf.PM_USERNAME),
+            "agent_password": host_pm.get(conf.PM_PASSWORD),
+            "concurrent": False,
+            "order": 1,
+            "options": agent_option
+        }
+
+        if not hl_hosts.add_power_management(
+            host_name=host_name,
+            pm_automatic=True,
+            pm_agents=[agent]
+        ):
+            raise errors.HostException("Can not update host %s" % host_name)
+
+
+def teardown_module(module):
+    """
+    1) Fence hosts, if needed
+    2) Release hosts CPU
+    """
+    for host_name in conf.HOSTS[:3]:
+        logger.info("Check if host %s has state down", host_name)
+        host_status = ll_hosts.getHostState(host_name) == conf.HOST_DOWN
+        if host_status:
+            logger.info(
+                "Wait %d seconds between fence operations",
+                conf.FENCE_TIMEOUT
+            )
+            time.sleep(conf.FENCE_TIMEOUT)
+            logger.info("Start host %s", host_name)
+            if not ll_hosts.fenceHost(True, host_name, 'start'):
+                logger.error("Failed to start host %s", host_name)
+        hl_hosts.remove_power_management(host_name=host_name)
+    logger.info("Free all host CPU's from loading")
+    ll_sla.stop_cpu_loading_on_resources(conf.VDS_HOSTS[:3])
 
 ########################################################################
 #                             Test Cases                               #
