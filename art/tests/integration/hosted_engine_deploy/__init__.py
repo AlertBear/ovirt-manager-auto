@@ -1,6 +1,7 @@
 """
 Init file for HE Deploy test
 """
+import os
 import logging
 import config as conf
 
@@ -20,8 +21,11 @@ def setup_package():
             "Download rhevm-appliance ova from url %s to host %s",
             conf.APPLIANCE_OVA_URL, conf.VDS_HOSTS[0].fqdn
         )
-        conf.APPLIANCE_PATH = conf.VDS_HOSTS[0].download_file(
-            url=conf.APPLIANCE_OVA_URL, f_dir=dir_to_download
+        file_path = os.path.join(dir_to_download, "rhevm-appliance.ova")
+        conf.APPLIANCE_PATH = conf.VDS_HOSTS[0].fs.wget(
+            url=conf.APPLIANCE_OVA_URL,
+            output_file=file_path,
+            progress_handler=lambda msg: logger.info(msg=msg)
         )
 
 

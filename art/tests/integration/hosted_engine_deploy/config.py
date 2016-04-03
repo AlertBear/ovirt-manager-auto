@@ -33,6 +33,7 @@ HOSTED_ENGINE_SETUP_PACKAGE = "ovirt-hosted-engine-setup"
 HOSTED_ENGINE_ENV_DEFAULT = "/etc/ovirt-hosted-engine-setup.env.d/rhevm_qe.env"
 
 # Services constants
+NETWORK_MANAGER = "NetworkManager"
 OVIRT_HA_AGENT_SERVICE = "ovirt-ha-agent"
 OVIRT_HA_BROKER_SERVICE = "ovirt-ha-broker"
 

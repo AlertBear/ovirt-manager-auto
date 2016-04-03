@@ -2,9 +2,8 @@
 Base classes for HE deployment
 """
 import copy
-import socket
 import logging
-import paramiko
+from rrmngmnt.power_manager import SSH_TYPE
 
 import config as conf
 import storage_helper
@@ -113,6 +112,7 @@ class BaseDeploy(test_libs.IntegrationTest):
         """
         1) Reprovision host
         2) Install HE packages on host
+        3) Stop NetworkManager
 
         :param vds_resource: vds resource
         :type vds_resource: VDS
@@ -138,6 +138,10 @@ class BaseDeploy(test_libs.IntegrationTest):
                     (package, vds_resource.fqdn)
                 )
         cls.otopi_parser.enable_machine_dialog(vds_resource)
+        logger.info(
+            "Stop %s service on %s", conf.NETWORK_MANAGER, vds_resource
+        )
+        vds_resource.service(conf.NETWORK_MANAGER).stop()
 
     @staticmethod
     def __clean_host_from_he_deployment(vds_resource):
@@ -150,48 +154,24 @@ class BaseDeploy(test_libs.IntegrationTest):
         :type vds_resource: VDS
 
         """
-        vds_fqdn = vds_resource.fqdn
         if not vds_resource.package_manager.remove(
             conf.HOSTED_ENGINE_HA_PACKAGE
         ):
             logger.error(
-                "Failed to remove HE packages from host %s", vds_fqdn
+                "Failed to remove HE packages from %s", vds_resource
             )
         if not vds_resource.fs.rmdir("/etc/ovirt-hosted-engine*"):
             logger.error(
-                "Failed to remove HE configuration directories from host %s",
-                vds_fqdn
+                "Failed to remove HE configuration directories from %s",
+                vds_resource
             )
-        # TODO: remove when
-        # https://github.com/rhevm-qe-automation/python-rrmngmnt/pull/16
-        # will be merged
-        logger.info("Reboot host %s", vds_fqdn)
-        try:
-            vds_resource.run_command(command=["reboot"])
-        except socket.timeout as e:
-            logger.debug("Socket timeout: %s", e)
-        except paramiko.SSHException as e:
-            logger.debug("SSH exception: %s", e)
-
-        sampler = utils.TimeoutingSampler(
-            conf.SAMPLER_HOST_REBOOT_TIMEOUT,
-            conf.SAMPLER_HOST_REBOOT_SLEEP,
-            vds_resource.is_connective, vds_resource
-        )
+        vds_resource.add_power_manager(pm_type=SSH_TYPE)
+        logger.info("Reboot %s", vds_resource)
+        vds_resource.get_power_manager().restart()
         for is_connective in (False, True):
-            logger_msg = "" if is_connective else "not"
-            try:
-                for sample in sampler:
-                    logger.info(
-                        "Check if host %s is %s connective via ssh",
-                        vds_fqdn, logger_msg
-                    )
-                    if sample == is_connective:
-                        break
-            except core_errors.APITimeout:
-                logger.error(
-                    "Host %s is %s connective via ssh", vds_fqdn, logger_msg
-                )
+            vds_resource.executor().wait_for_connectivity_state(
+                positive=is_connective
+            )
 
     @classmethod
     def __create_answer_file_on_resource(
