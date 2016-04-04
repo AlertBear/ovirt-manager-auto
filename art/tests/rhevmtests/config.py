@@ -407,6 +407,7 @@ SD_INACTIVE = ENUMS['storage_domain_state_inactive']
 
 # DC states
 DATA_CENTER_PROBLEMATIC = ENUMS['data_center_state_problematic']
+DATA_CENTER_UP = ENUMS['data_center_state_up']
 
 # VM states
 VM_PINNED = ENUMS['vm_affinity_pinned']
