@@ -25,3 +25,12 @@ INSTALL_VM_PARAMS = {
     'password': VMS_LINUX_PW
 }
 
+WATCHDOG_TIMER = 120  # default time of triggering watchdog * 2
+QEMU_CONF = '/etc/libvirt/qemu.conf'
+DUMP_PATH = '/var/lib/libvirt/qemu/dump'
+ENGINE_LOG = '/var/log/ovirt-engine/engine.log'
+WATCHDOG_PACKAGE = 'watchdog'
+LSHW_PACKAGE = 'lshw'
+LSPCI_PACKAGE = 'lspci'
+KILLALL_PACKAGE = 'psmisc'
+WATCHDOG_CONFIG_FILE = '/etc/watchdog.conf'

@@ -97,7 +97,9 @@ DEFAULT_VM_PARAMETERS = {
     'placement_host': VM_ANY_HOST,
     'cluster': CLUSTER_NAME[0],
     'watchdog_model': '',
-    'highly_available': False
+    'highly_available': False,
+    'vcpu_pinning': [],
+    'cpu_shares': 0
 }
 
 HOST = "host"

@@ -11,26 +11,103 @@ Tests covers:
 
 import logging
 from time import sleep
-
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import SlaTest as TestCase, attr
-
 import art.test_handler.exceptions as errors
-
 from rhevmtests.sla.ha_reservation import config
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
+import rhevmtests.sla as sla
 
 
 logger = logging.getLogger(__name__)
-TMP_LOG = '/tmp/HA_reservation.log'
-RESERVATION_TIMEOUT = 300
 
 ########################################################################
 #                             Base Class                               #
 ########################################################################
+
+
+def setup_module():
+    """
+    Prepare environment for  HA reservation test
+    """
+    config.GENERAL_VM_PARAMS['placement_host'] = config.HOSTS[0]
+    config.SPECIFIC_VMS_PARAMS[
+        config.VM_NAME[0]
+    ]['placement_host'] = config.HOSTS[0]
+    config.SPECIFIC_VMS_PARAMS[
+        config.VM_NAME[1]
+    ]['placement_host'] = config.HOSTS[0] if len(config.HOSTS) >= 2 else None
+
+    logger.info(
+        "Deactivate host %s on cluster %s", config.HOSTS[2],
+        config.CLUSTER_NAME[0]
+    )
+    if not ll_hosts.deactivateHost(True, config.HOSTS[2]):
+        raise errors.HostException(
+            "Failed to deactivate host %s" % config.HOSTS[2]
+        )
+    if not ll_sd.waitForStorageDomainStatus(
+        True, config.DC_NAME[0], config.STORAGE_NAME[0],
+        config.SD_ACTIVE,
+    ):
+        raise errors.StorageDomainException(
+            "Failed to activate Storage Domain %s"
+            % config.STORAGE_NAME[0]
+        )
+
+    logger.info(
+        "Update cluster %s memory over commitment to %d percent",
+        config.CLUSTER_NAME[0], config.CLUSTER_OVERCOMMITMENT_NONE
+    )
+    if not ll_clusters.updateCluster(
+        positive=True,
+        cluster=config.CLUSTER_NAME[0],
+        ha_reservation=True,
+        mem_ovrcmt_prc=config.CLUSTER_OVERCOMMITMENT_NONE
+    ):
+        raise errors.ClusterException(
+            "Failed to update cluster %s" % config.CLUSTER_NAME[0]
+        )
+    for vm_name, params in config.SPECIFIC_VMS_PARAMS.iteritems():
+        logger.info("Update vm %s with parameters: %s", vm_name, params)
+        if not ll_vms.updateVm(
+            positive=True, vm=vm_name, **params
+        ):
+            raise errors.VMException(
+                "Failed to update vm %s" % vm_name
+            )
+
+
+def teardown_module():
+    """
+    SLA teardown
+    """
+    logger.info("Teardown...")
+    logger.info(
+        "Update cluster %s memory over commitment to %d percent",
+        config.CLUSTER_NAME[0], config.CLUSTER_OVERCOMMITMENT_DESKTOP
+    )
+    if not ll_clusters.updateCluster(
+        positive=True,
+        cluster=config.CLUSTER_NAME[0],
+        ha_reservation=False,
+        mem_ovrcmt_prc=config.CLUSTER_OVERCOMMITMENT_DESKTOP
+    ):
+        logger.error(
+            "Failed to update cluster memory overcommitment %s",
+            config.CLUSTER_NAME[0]
+        )
+    logger.info(
+        "Activate host %s on cluster %s",
+        config.HOSTS[2], config.CLUSTER_NAME[0]
+    )
+    if not ll_hosts.activateHost(True, config.HOSTS[2]):
+        logger.error("Failed to activate host %s", config.HOSTS[0])
+    sla.sla_cleanup()
 
 
 @attr(tier=2)
@@ -78,10 +155,10 @@ class HAReservation(TestCase):
         :rtype: bool
         """
         engine_executor = config.ENGINE_HOST.executor()
-        cmd = ['cp', config.ENGINE_LOG, TMP_LOG]
+        cmd = ['cp', config.ENGINE_LOG, config.TMP_LOG]
         logger.info(
             "Make backup of engine log to %s on resource %s",
-            TMP_LOG, config.ENGINE_HOST
+            config.TMP_LOG, config.ENGINE_HOST
         )
         logger.info(
             "Run command '%s' on resource %s",
@@ -94,12 +171,13 @@ class HAReservation(TestCase):
         )
         logger.info(
             "Waiting %d seconds until engine will update log",
-            RESERVATION_TIMEOUT
+            config.RESERVATION_TIMEOUT
         )
-        sleep(RESERVATION_TIMEOUT)
+        sleep(config.RESERVATION_TIMEOUT)
         logger.info("Run diff between new and old engine log")
         cmd = [
-            'diff', config.ENGINE_LOG, TMP_LOG, '|', 'grep', 'reservation'
+            'diff', config.ENGINE_LOG, config.TMP_LOG,
+            '|', 'grep', 'reservation'
         ]
         logger.info(
             "Run command '%s' on resource %s",
@@ -116,9 +194,9 @@ class HAReservation(TestCase):
 
         logger.info(
             "Remove backup log %s from resource %s",
-            TMP_LOG, config.ENGINE_HOST
+            config.TMP_LOG, config.ENGINE_HOST
         )
-        cmd = ['rm', TMP_LOG]
+        cmd = ['rm', config.TMP_LOG]
         logger.info(
             "Run command '%s' on resource %s",
             " ".join(cmd), config.ENGINE_HOST

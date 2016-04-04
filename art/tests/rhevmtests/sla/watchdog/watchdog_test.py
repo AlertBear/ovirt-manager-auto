@@ -12,9 +12,8 @@ Tests covers:
 import re
 import time
 import logging
-
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-
+import rhevmtests.sla as sla
 from rhevmtests.sla.watchdog import config
 from art.unittest_lib import SlaTest as TestCase, attr, SkipTest
 import rhevmtests.helpers as helpers
@@ -24,24 +23,28 @@ import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 
 logger = logging.getLogger(__name__)
 
-
-MEMORY_SIZE = 2 * config.GB
-WATCHDOG_TIMEOUT = 600
-WATCHDOG_TIMER = 120  # default time of triggering watchdog * 2
-WATCHDOG_SAMPLING = 10  # sampling time of watchdog
-MIGRATION_TIME = 20  # time of migration
-QEMU_CONF = '/etc/libvirt/qemu.conf'
-DUMP_PATH = '/var/lib/libvirt/qemu/dump'
-ENGINE_LOG = '/var/log/ovirt-engine/engine.log'
-WATCHDOG_PACKAGE = 'watchdog'
-LSHW_PACKAGE = 'lshw'
-LSPCI_PACKAGE = 'lspci'
-KILLALL_PACKAGE = 'psmisc'
-WATCHDOG_CONFIG_FILE = '/etc/watchdog.conf'
-
 ########################################################################
 #                        Base classes                                  #
 ########################################################################
+
+
+def setup_module():
+    """
+    Prepare environment for Watchdog test
+    """
+    config.GENERAL_VM_PARAMS['placement_host'] = config.HOSTS[0]
+    params = dict(config.GENERAL_VM_PARAMS)
+    for vm in config.VM_NAME[:2]:
+        logger.info("Update vm %s with parameters: %s", vm, params)
+        if not ll_vms.updateVm(True, vm, **params):
+            raise errors.VMException("Failed to update vm %s" % vm)
+
+
+def teardown_module():
+    """
+    SLA teardown
+    """
+    sla.sla_cleanup()
 
 
 class WatchdogMixin(object):
@@ -91,7 +94,7 @@ class WatchdogMixin(object):
         )
 
     @classmethod
-    def kill_watchdog(cls, vm_name, sleep_time=WATCHDOG_TIMER):
+    def kill_watchdog(cls, vm_name, sleep_time=config.WATCHDOG_TIMER):
         """
         Kill watchdog process on given vm
 
@@ -102,7 +105,7 @@ class WatchdogMixin(object):
         """
 
         vm_resource = cls.get_vm_resource_by_name(vm_name)
-        if not vm_resource.package_manager.install(KILLALL_PACKAGE):
+        if not vm_resource.package_manager.install(config.KILLALL_PACKAGE):
             return False
         cmd = ['killall', '-9', 'watchdog']
         logger.info("Kill watchdog service on vm %s", vm_name)
@@ -123,9 +126,11 @@ class WatchdogMixin(object):
         :type vm_name: str
         """
         vm_resource = self.get_vm_resource_by_name(vm_name)
-        get_dev_package = LSHW_PACKAGE if config.PPC_ARCH else LSPCI_PACKAGE
-        if not vm_resource.package_manager.install(get_dev_package):
-            return False
+        get_dev_package = (config.LSHW_PACKAGE if config.PPC_ARCH
+                           else config.LSPCI_PACKAGE)
+        if config.PPC_ARCH:
+            if not vm_resource.package_manager.install(get_dev_package):
+                return False
 
         logger.info(
             "Check if vm %s have watchdog device %s",
@@ -190,18 +195,18 @@ class WatchdogMixin(object):
         :param vm_resource: vm resource
         :type vm_resource: Host
         """
-        if not vm_resource.package_manager.install(WATCHDOG_PACKAGE):
+        if not vm_resource.package_manager.install(config.WATCHDOG_PACKAGE):
             return False
 
         logger.info(
             "Enable watchdog in configuration file %s on resource %s",
-            WATCHDOG_CONFIG_FILE, vm_resource
+            config.WATCHDOG_CONFIG_FILE, vm_resource
         )
         cmd = [
             'sed',
             '-i',
             '\'s/#watchdog-device/watchdog-device/\'',
-            WATCHDOG_CONFIG_FILE
+            config.WATCHDOG_CONFIG_FILE
         ]
         if not cls.run_command_on_resource(vm_resource, cmd):
             return False
@@ -521,7 +526,7 @@ class WatchdogTestDump(WatchdogActionTest):
 
         """
         host_resource_executor = host_resource.executor()
-        cmd = ['grep', '^auto_dump_path', QEMU_CONF]
+        cmd = ['grep', '^auto_dump_path', config.QEMU_CONF]
         logger.info(
             "Run command '%s' on resource %s", " ".join(cmd), host_resource
         )
@@ -531,7 +536,7 @@ class WatchdogTestDump(WatchdogActionTest):
                 "Failed to run command '%s' on resource %s; out: %s; err: %s" %
                 (" ".join(cmd), host_resource, out, err)
             )
-            return DUMP_PATH
+            return config.DUMP_PATH
         else:
             regex = r"auto_dump_path=\"(.+)\""
             dump_path = re.search(regex, out).group(1)
@@ -606,7 +611,7 @@ class WatchdogMigration(WatchdogActionTest):
             ),
             "Migration of vm %s Failed" % config.VM_NAME[1]
         )
-        time.sleep(WATCHDOG_TIMER)
+        time.sleep(config.WATCHDOG_TIMER)
         logger.info("Check, that vm %s still up", config.VM_NAME[1])
         self.assertTrue(
             ll_vms.waitForVMState(config.VM_NAME[1]), "Watchdog was triggered"
@@ -696,7 +701,7 @@ class WatchdogEvents(WatchdogActionTest):
         Test if event is displayed in log file
         """
         logger.info("Backup engine log to %s", self.engine_backup_log)
-        cmd = ['cp', ENGINE_LOG, self.engine_backup_log]
+        cmd = ['cp', config.ENGINE_LOG, self.engine_backup_log]
         self.assertTrue(
             self.run_command_on_resource(config.ENGINE_HOST, cmd),
             "Failed to copy engine log to %s" % self.engine_backup_log
@@ -706,7 +711,7 @@ class WatchdogEvents(WatchdogActionTest):
         self.kill_watchdog(config.VM_NAME[1])
 
         cmd = [
-            'diff', ENGINE_LOG, self.engine_backup_log,
+            'diff', config.ENGINE_LOG, self.engine_backup_log,
             '|', 'grep', 'event',
             '|', 'grep', 'Watchdog'
         ]

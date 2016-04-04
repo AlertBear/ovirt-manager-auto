@@ -9,11 +9,43 @@ from art.core_api import apis_exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from rhevmtests.sla import config
 from rhevmtests import helpers
+import rhevmtests.sla as sla
+import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.test_handler.exceptions as errors
 import shlex
 logger = config.logging.getLogger(__name__)
+
+
+def setup_module():
+    """
+    Prepare environment for mom test
+    """
+    """
+    Update 4 vms to a specific core on a specific host
+    """
+    host_online_cpu = str(
+        ll_sla.get_list_of_online_cpus_on_resource(config.VDS_HOSTS[0])[0]
+    )
+    for vm_name in config.VM_NAME[:4]:
+        logger.info("Update VM %s cpu pinning", vm_name)
+        if not ll_vms.updateVm(
+            True, vm_name,
+            placement_affinity=config.VM_PINNED,
+            placement_host=config.HOSTS[0],
+            vcpu_pinning=([{"0": host_online_cpu}])
+        ):
+            raise errors.VMException(
+                "Failed to update VM %s cpu pinning" % vm_name
+            )
+
+
+def teardown_module():
+    """
+    CPU SHARE teardown
+    """
+    sla.sla_cleanup()
 
 
 @attr(tier=1)

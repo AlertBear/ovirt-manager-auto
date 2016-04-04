@@ -36,3 +36,6 @@ SPECIFIC_VMS_PARAMS = {
         'placement_affinity': VM_MIGRATABLE
     }
 }
+
+TMP_LOG = '/tmp/HA_reservation.log'
+RESERVATION_TIMEOUT = 300
