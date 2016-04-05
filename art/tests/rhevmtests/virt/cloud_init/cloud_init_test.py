@@ -93,7 +93,7 @@ class TestCloudInitCase01(CloudInitBase):
         self._create_vm(self.initialization)
         if not ll_vms.startVm(
             positive=True, vm=self.vm_name, wait_for_ip=True,
-            use_cloud_init=True
+            use_cloud_init=True, wait_for_status=config.VM_UP
         ):
             raise errors.VMException(
                 "Failed to start vm: %s" % self.vm_name
@@ -101,7 +101,7 @@ class TestCloudInitCase01(CloudInitBase):
         self.assertTrue(
             helper.check_cloud_init_parameters(
                 script_content=helper.SCRIPT_CONTENT,
-                time_zone=config.NEW_ZEALAND_TZ_VALUE,
+                time_zone=config.NEW_ZEALAND_TZ_LIST,
                 hostname=config.CLOUD_INIT_HOST_NAME
             ),
             "Failed checking VM, one or more of init parameter/s didn't set"
@@ -151,7 +151,7 @@ class TestCloudInitCase02(CloudInitBase):
         logger.info("Check VM with root user")
         self.assertTrue(
             helper.check_cloud_init_parameters(
-                time_zone=config.NEW_ZEALAND_TZ_VALUE,
+                time_zone=config.NEW_ZEALAND_TZ_LIST,
                 check_nic=False, script_content=helper.SCRIPT_CONTENT,
             ),
             "Failed checking VM, one or more of init parameter/s didn't set"
@@ -174,7 +174,7 @@ class TestCloudInitCase03(CloudInitBase):
         cls._create_vm(initialization=cls.initialization)
         logger.info("Start vm %s", cls.vm_name)
         if not ll_vms.startVm(
-            True, cls.vm_name, wait_for_ip=False, use_cloud_init=True
+            True, cls.vm_name, use_cloud_init=True
         ):
             raise errors.VMException(
                 "Failed to start vm: %s" % cls.vm_name
@@ -249,7 +249,7 @@ class TestCloudInitCase04(CloudInitBase):
         cls._create_vm(initialization=cls.initialization)
         if not ll_vms.startVm(
             positive=True, vm=cls.vm_name, wait_for_ip=True,
-            use_cloud_init=True
+            use_cloud_init=True, wait_for_status=config.VM_UP
         ):
             raise errors.VMException(
                 "Failed to start vm: %s" % cls.vm_name
@@ -273,7 +273,7 @@ class TestCloudInitCase04(CloudInitBase):
         self.assertTrue(
             helper.check_cloud_init_parameters(
                 script_content=helper.SCRIPT_CONTENT,
-                time_zone=config.NEW_ZEALAND_TZ_VALUE,
+                time_zone=config.NEW_ZEALAND_TZ_LIST,
                 hostname=config.CLOUD_INIT_HOST_NAME
             ),
             "Failed checking VM, one or more of parameter/s didn't set"
@@ -302,7 +302,7 @@ class TestCloudInitCase05(CloudInitBase):
         logger.info("Start vm %s", cls.vm_name)
         if not ll_vms.startVm(
             positive=True, vm=cls.vm_name, wait_for_ip=True,
-            use_cloud_init=True
+            use_cloud_init=True, wait_for_status=config.VM_UP
         ):
             raise errors.VMException(
                 "Failed to start vm: %s" % cls.vm_name
@@ -325,7 +325,7 @@ class TestCloudInitCase05(CloudInitBase):
         self.assertTrue(
             helper.check_cloud_init_parameters(
                 script_content=helper.SCRIPT_CONTENT,
-                time_zone=config.NEW_ZEALAND_TZ_VALUE,
+                time_zone=config.NEW_ZEALAND_TZ_LIST,
                 hostname=config.CLOUD_INIT_HOST_NAME
             ),
             "Failed checking VM, one or more of parameter/s didn't set"

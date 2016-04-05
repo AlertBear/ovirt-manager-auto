@@ -103,8 +103,8 @@ def check_cloud_init_parameters(
     :type dns_search: str
     :param dns_servers:  DNS server/s configured
     :type dns_servers: str
-    :param time_zone: time zone configured
-    :type time_zone: str
+    :param time_zone: list of possible time zones configured
+    :type time_zone: list
     :param script_content: file content configured by script
     :type script_content: str
     :param hostname: configured hostname
@@ -141,8 +141,9 @@ def check_general(time_zone=None, hostname=None):
     """
     Check general data on VM
 
-    :param time_zone: Expected Time zone on guest
-    :type time_zone: str
+    :param time_zone: list of possible Time zone on guest
+    (Daylight vs Standard) e.g. NZST and NZDT
+    :type time_zone: list
     :param hostname: configured hostname
     :type hostname: str
     :return: True if general parameters are as expected else False
@@ -150,12 +151,15 @@ def check_general(time_zone=None, hostname=None):
     """
     status = True
     if time_zone:
-        logger.info("Check time zone, expected: %s", time_zone)
-        if check_data_on_vm(config.CHECK_TIME_ZONE_IN_GUEST, time_zone):
-            logger.info("time zone check pass")
-        else:
-            logger.error("time zone check failed")
-            status = False
+        for tz in time_zone:
+            logger.info("Check time zone, expected: %s", tz)
+            if check_data_on_vm(config.CHECK_TIME_ZONE_IN_GUEST, tz):
+                logger.info("time zone check pass")
+                status = True
+                break
+            else:
+                logger.error("time zone check failed")
+                status = False
     if hostname:
         logger.info("Check hostname, expected: %s", hostname)
         if check_data_on_vm(config.CHECK_HOST_NAME, hostname):
