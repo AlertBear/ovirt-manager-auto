@@ -18,6 +18,7 @@ import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import jobs
 import config
 
+
 logger = logging.getLogger("memory_hotplug_cases")
 
 
@@ -48,10 +49,14 @@ class TestMemoryHotplugBaseClass(VirtTest):
         logger.info('Start vm %s', cls.vm_name)
         if not ll_vms.startVm(
             positive=True,
+            wait_for_status=config.VM_UP,
             vm=cls.vm_name,
             wait_for_ip=True
         ):
             raise errors.VMException('Failed to start vm %s' % cls.vm_name)
+        # vm must be up in order to hot plug memory
+        vm_ip = hl_vms.get_vm_ip(cls.vm_name)
+        logger.info("VM is up and ip is: %s", vm_ip)
 
     @classmethod
     def teardown_class(cls):
