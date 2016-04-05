@@ -198,66 +198,60 @@ class CreateDC(TestCase):
 
     def __init__(self, *args, **kwargs):
         super(CreateDC, self).__init__(*args, **kwargs)
-        self.vds_objs = list()
 
     def build_cluster(self, cl_def, dc_name, comp_version, host_conf):
+        vds_objs = list()
+        hosts_names = list()
         cluster_name = cl_def['name']
         cpu_name = config.CPU_NAME
 
-        if not clusters.addCluster(
-                True, name=cluster_name, cpu=cpu_name, data_center=dc_name,
-                version=comp_version):
-            raise errors.ClusterException(
-                "addCluster %s with cpu_type %s and version %s to datacenter"
-                " %s failed" %
-                (cluster_name, cpu_name, comp_version, dc_name))
-        LOGGER.info("Cluster %s was created successfully", cluster_name)
-
         hosts_def = cl_def['hosts']
-        if not hosts_def:
-            LOGGER.info("No hosts in cluster")
-            return
         for host_def in hosts_def:
             host_ip, host_pwd = host_conf.get_unused_host()
             vds_obj = VDS(host_ip, host_pwd)
-            vds_fqdn = vds_obj.fqdn
-            self.vds_objs.append(vds_obj)
-            testflow.step("Add host %s", host_def['name'])
-            if not hosts.addHost(
-                True, host_def['name'], address=host_ip,
-                root_password=host_pwd, wait=False, cluster=cluster_name,
-                comment=vds_fqdn,
-            ):
-                raise errors.HostException(
-                    "Cannot add host %s (%s/%s)" % (
-                        host_def['name'], host_ip, host_pwd,
-                    )
-                )
-
-        if not hosts.waitForHostsStates(
-                True,
-                ",".join([x['name'] for x in hosts_def])):
-            raise errors.HostException("Hosts are not up")
-
+            vds_objs.append(vds_obj)
+            hosts_names.append(host_def['name'])
         # Set the best cpu_model for hosts
         cpu_den = cpumodel.CpuModelDenominator()
         try:
             cpu_info = cpu_den.get_common_cpu_model(
-                self.vds_objs,
-                version=comp_version,
+                vds_objs, version=comp_version,
             )
         except cpumodel.CpuModelError as ex:
             LOGGER.error("Can not determine the best cpu_model: %s", ex)
         else:
             LOGGER.info("Cpu info %s for cluster: %s", cpu_info, cluster_name)
-            if not clusters.updateCluster(
-                True,
-                cluster_name,
-                cpu=cpu_info['cpu']
+            cpu_name = cpu_info['cpu']
+
+        msg = ("add Cluster %s with cpu_type %s and version %s to datacenter"
+               " %s" % (cluster_name, cpu_name, comp_version, dc_name))
+        if not clusters.addCluster(
+            True, name=cluster_name, cpu=cpu_name, data_center=dc_name,
+            version=comp_version
+        ):
+            raise errors.ClusterException("Failed to %s" % msg)
+        LOGGER.info("Succeed to %s", msg)
+
+        if not hosts_def:
+            LOGGER.info("No hosts in cluster")
+            return
+        for host_name, vds_obj in zip(hosts_names, vds_objs):
+            testflow.step("Add host %s", host_name)
+            if not hosts.addHost(
+                True, host_name, address=vds_obj.ip,
+                root_password=vds_obj.root_user.password, wait=False,
+                cluster=cluster_name, comment=vds_obj.fqdn,
             ):
-                LOGGER.error(
-                    "Can not update cluster cpu_model to: %s", cpu_info['cpu'],
+                raise errors.HostException(
+                    "Cannot add host %s (%s/%s)" % (
+                        host_name, host_ip, host_pwd,
+                    )
                 )
+
+        if not hosts.waitForHostsStates(
+            True, ",".join([host_name for host_name in hosts_names])
+        ):
+            raise errors.HostException("Hosts are not up")
 
     def add_sds(self, storages, host, datacenter_name, storage_conf, ep_conf):
         for sd in storages:
