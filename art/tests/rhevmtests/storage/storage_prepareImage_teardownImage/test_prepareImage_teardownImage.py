@@ -3,6 +3,8 @@
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
 """
+# TODO: All tests have been marked with tier=17 (which means they won't be
+# executed), because vdsClient isn't supported
 import config
 import logging
 from art.rhevm_api.tests_lib.low_level.datacenters import get_data_center
@@ -393,14 +395,14 @@ class BasicEnvironment(BaseTestCase):
                                 "part of the output" % error)
 
 
-@attr(tier=1)
+@attr(tier=17)
 class TestCase4581(BasicEnvironment):
     """
     Prepare image with all the correct parameters
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
-    __test__ = (ISCSI in opts['storages'] or FCP in opts['storages'])
+    __test__ = ISCSI in opts['storages'] or FCP in opts['storages']
     storages = set([ISCSI, FCP])
     polarion_test_case = '4581'
     disk_count = 2
@@ -423,14 +425,14 @@ class TestCase4581(BasicEnvironment):
                         "Failed to start VM '%s'" % self.vm_name)
 
 
-@attr(tier=2)
+@attr(tier=17)
 class TestCase4595(BasicEnvironment):
     """
     Prepare image with no parameters
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '4595'
     disk_count = 2
@@ -471,14 +473,14 @@ class TestCase4595(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=2)
+@attr(tier=17)
 class TestCase4596(BasicEnvironment):
     """
     Prepare image with optional flag unset
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '4596'
     disk_count = 2
@@ -520,14 +522,14 @@ class TestCase4596(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=2)
+@attr(tier=17)
 class TestCase4597(BasicEnvironment):
     """
     Prepare image with 1 erroneous flag value
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '4597'
     disk_count = 1
@@ -566,14 +568,14 @@ class TestCase4597(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=2)
+@attr(tier=17)
 class TestCase4598(BasicEnvironment):
     """
     Prepare image with several erroneous parameters
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '4598'
     disk_count = 2
@@ -606,14 +608,14 @@ class TestCase4598(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=2)
+@attr(tier=17)
 class TestCase4599(BasicEnvironment):
     """
     Prepare image on VM with multiple disks
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '4599'
     disk_count = 5
@@ -652,14 +654,14 @@ class TestCase4599(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=2)
+@attr(tier=17)
 class TestCase4600(BasicEnvironment):
     """
     Prepare image on VM with disks from different Storage Domains
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '4600'
     disk_count = 4
@@ -717,14 +719,14 @@ class TestCase4600(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=2)
+@attr(tier=17)
 class TestCase4601(BasicEnvironment):
     """
     Prepare image for Disks on a VM created from template
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '4601'
     disk_count = 3
@@ -778,14 +780,14 @@ class TestCase4601(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=2)
+@attr(tier=17)
 class TestCase4602(BasicEnvironment):
     """
     Prepare image with 1 disk missing/corrupted from VM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '4602'
     disk_count = 4
@@ -880,14 +882,14 @@ class TestCase4602(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=2)
+@attr(tier=17)
 class TestCase4605(BasicEnvironment):
     """
     Prepare image followed by Tear Down, then run Prepare image once more
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '4605'
     disk_count = 5
@@ -910,14 +912,14 @@ class TestCase4605(BasicEnvironment):
         self.basic_positive_flow_prepare_image_only()
 
 
-@attr(tier=2)
+@attr(tier=17)
 class TestCase4594(BasicEnvironment):
     """
     Prepare image followed by Tear down
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '4594'
     disk_count = 5
@@ -946,14 +948,14 @@ class TestCase4594(BasicEnvironment):
         self.basic_positive_flow_teardown_first(5)
 
 
-@attr(tier=2)
+@attr(tier=17)
 class TestCase4593(BasicEnvironment):
     """
     Tear down image with a powered off VM
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '4593'
     disk_count = 5
@@ -970,14 +972,14 @@ class TestCase4593(BasicEnvironment):
         self.basic_positive_flow_teardown_image_only()
 
 
-@attr(tier=2)
+@attr(tier=17)
 class TestCase4582(BasicEnvironment):
     """
     Tear down image with all flags set
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '4582'
     disk_count = 5
@@ -994,14 +996,14 @@ class TestCase4582(BasicEnvironment):
         self.basic_positive_flow()
 
 
-@attr(tier=2)
+@attr(tier=17)
 class TestCase4584(BasicEnvironment):
     """
     Tear down image with optional flags unset
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '4584'
     disk_count = 5
@@ -1022,14 +1024,14 @@ class TestCase4584(BasicEnvironment):
         self.basic_positive_flow_only_teardown_image_no_volume_id()
 
 
-@attr(tier=2)
+@attr(tier=17)
 class TestCase4585(BasicEnvironment):
     """
     Tear down image with 1 erroneous flag value
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '4585'
     disk_count = 1
@@ -1067,14 +1069,14 @@ class TestCase4585(BasicEnvironment):
                                    CMD_ERROR_INCORRECT_NUM_PARAMS_PART_3])
 
 
-@attr(tier=2)
+@attr(tier=17)
 class TestCase4586(BasicEnvironment):
     """
     Tear down image with several erroneous parameters
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
     Storage/3_5_Storage_Expose_PrepareImage_and_TeardownImage
     """
-    __test__ = (ISCSI in opts['storages'])
+    __test__ = ISCSI in opts['storages']
     storages = set([ISCSI])
     polarion_test_case = '4586'
     disk_count = 2
