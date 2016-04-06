@@ -3,6 +3,7 @@ Regression host test
 Checks host deployment, updating and authentication methods
 """
 
+from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.core_api.apis_exceptions import EntityNotFound
@@ -121,6 +122,9 @@ class TestHostInMaintenance(TestCase):
 
     @classmethod
     def setup_class(cls):
+        test_utils.wait_for_tasks(
+            config.VDC_HOST, config.VDC_ROOT_PASSWORD, config.DC_NAME[0]
+        )
         if ll_hosts.isHostUp(True, host=HOST):
             logger.info("setting host: %s to maintenance", HOST)
             if not ll_hosts.deactivateHost(True, host=HOST):
@@ -330,6 +334,9 @@ class SetActiveHostToMaintenanceForReinstallation(TestActiveHost):
 
     @polarion("RHEVM3-8420")
     def test_set_active_host_to_maintenance(self):
+        test_utils.wait_for_tasks(
+            config.VDC_HOST, config.VDC_ROOT_PASSWORD, config.DC_NAME[0]
+        )
         logger.info("setting host %s to maintenance", HOST)
         if not ll_hosts.deactivateHost(True, host=HOST):
             raise HostException("Could not set host: %s to maintenance" % HOST)
