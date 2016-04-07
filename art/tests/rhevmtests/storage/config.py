@@ -68,6 +68,8 @@ FIRST_HOST = None  # Filled in setup_package
 # TODO - move to test
 TYPE_DATA = ENUMS['storage_dom_type_data']
 TYPE_IMAGE = ENUMS['storage_dom_type_image']
+TYPE_ISO = ENUMS['storage_dom_type_iso']
+TYPE_EXPORT = ENUMS['storage_dom_type_export']
 
 TMP_CLUSTER_NAME = 'tmp_cluster'
 
