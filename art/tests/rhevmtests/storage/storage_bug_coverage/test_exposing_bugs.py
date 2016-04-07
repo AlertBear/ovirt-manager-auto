@@ -507,6 +507,9 @@ class TestCase11956(EnvironmentWithTwoHosts):
         """
             * maintenance SPM
         """
+        test_utils.wait_for_tasks(
+            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+        )
         logger.info("Deactivating SPM host %s", self.spm_host)
         self.assertTrue(
             ll_hosts.deactivateHost(True, self.spm_host),
