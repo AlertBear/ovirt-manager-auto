@@ -48,7 +48,7 @@ class TestCaseMixed(TestCase):
         status = ll_mla.checkSystemPermits(positive=True)
         self.assertTrue(status, 'Failed to check existing permissions')
 
-    @attr(tier=1)
+    @attr(tier=2)
     @bz({'1303346': {}})
     def test_check_xsd_schema_validations(self):
         """
