@@ -44,6 +44,7 @@ def loginAsAdmin():
 
 
 def setUpModule():
+    loginAsAdmin()
     common.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
     common.addUser(
         True, user_name=config.USER_NAME2, domain=config.USER_DOMAIN
