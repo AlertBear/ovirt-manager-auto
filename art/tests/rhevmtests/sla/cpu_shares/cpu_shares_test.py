@@ -130,8 +130,7 @@ class BaseCpuShares(TestCase):
                     (vm_name, cpu_share)
                 )
         logger.info("Start vms: %s", cls.vm_list)
-        if not ll_vms.startVms(cls.vm_list):
-            raise errors.VMException("Failed to start VMs")
+        ll_vms.start_vms(cls.vm_list)
         cls.load_vm_cpu(cls.vm_list)
 
     @classmethod
