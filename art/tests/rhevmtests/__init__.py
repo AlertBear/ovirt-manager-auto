@@ -93,6 +93,8 @@ def setup_package():
     if cpu_model:
         config.CPU_NAME = cpu_model
 
+    helpers.storage_cleanup()
+
     # setup inventory reporter
     reporter = Inventory.get_instance()
     reporter.get_setup_inventory_report(
