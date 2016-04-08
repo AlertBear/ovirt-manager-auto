@@ -6,17 +6,19 @@ Testing  Management network as a role feature
 Several DCs, several clusters with/without the host will be created
 """
 
-import helper
 import logging
+
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as conf
-from art.unittest_lib import common
+import helper
 from art.core_api import apis_exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest, attr
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+from art.unittest_lib import common
+from fixtures import *  # flake8: noqa
 
 logger = logging.getLogger("MGMT_Net_Role_Cases")
 
@@ -549,6 +551,7 @@ class TestMGMTNetRole07(NetworkTest):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures("prepare_setup_case_08")
 @common.skip_class_if(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
 class TestMGMTNetRole08(NetworkTest):
     """
@@ -571,61 +574,15 @@ class TestMGMTNetRole08(NetworkTest):
     cluster_2 = conf.EXTRA_CL[2]
     net_1 = conf.NET_1
     net_2 = conf.NET_2
-    dc = conf.EXT_DC_0
-    cluster_list = [cluster_1, cluster_2]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Move host to new DC/cluster with net1 as management network
-        Create network net2 on DC
-        Create 2 clusters
-        Attach both networks to each cluster
-        Final result should be:
-            cluster_0 with host and management network net_1
-            cluster_1 without host and management network net_1 and net_2
-                attached to the cluster
-            cluster_2 without host and management network net_2 and net_1
-                attached to the cluster
-        """
-        helper.install_host_new_mgmt()
-
-        cluster_nets_dict = {
-            cls.cluster_1: [cls.net_1, cls.net_2],
-            cls.cluster_2: [cls.net_2, cls.net_1]
-        }
-
-        local_dict = {
-            cls.net_2: {
-                "required": "true",
-            },
-        }
-
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=cls.dc,  network_dict=local_dict
-        ):
-            raise conf.NET_EXCEPTION()
-
-        for cl in cls.cluster_list:
-            mgmt_net = cluster_nets_dict[cl][0]
-            net = cluster_nets_dict[cl][1]
-            helper.add_cluster(
-                cl=cl, dc=cls.dc, management_network=mgmt_net
-            )
-
-            if not ll_networks.add_network_to_cluster(
-                positive=True, network=net, cluster=cl,
-            ):
-                raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-6470")
     def test_01_default_mgmt_net(self):
         """
         Check that the non-default management network exists on host
         """
-        if not conf.VDS_1_HOST.network.find_mgmt_interface() == conf.NET_1:
+        if not conf.VDS_1_HOST.network.find_mgmt_interface() == self.net_1:
             raise conf.NET_EXCEPTION(
-                "Host should have %s as its MGMT network" % conf.NET_1
+                "Host should have %s as its MGMT network" % self.net_1
             )
 
     @polarion("RHEVM3-6467")
@@ -676,16 +633,3 @@ class TestMGMTNetRole08(NetworkTest):
             cluster_name=self.cluster_1, network=self.net_2
         ):
             raise conf.NET_EXCEPTION()
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Move host back to its original cluster
-        Remove extra DC and clusters
-        """
-        helper.install_host_new_mgmt(
-            network=cls.net_1, dest_cl=conf.CL_0, new_setup=False,
-            remove_setup=True, maintenance=False
-        )
-        for cl in cls.cluster_list:
-            ll_clusters.removeCluster(positive=True, cluster=cl)

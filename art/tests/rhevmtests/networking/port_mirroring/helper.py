@@ -6,13 +6,14 @@ Utilities used by port_mirroring_test
 """
 
 import logging
-import config as conf
-from rhevmtests import helpers
-import rhevmtests.networking.helper as net_help
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import config as conf
+import rhevmtests.networking.helper as net_help
+from rhevmtests import helpers
 
 logger = logging.getLogger("Port_Mirroring_Helper")
 
@@ -76,14 +77,20 @@ def return_vms_to_original_host():
     """
     Returns all the VMs to original host they were on
     """
-    for vm in conf.VM_NAME[:conf.NUM_VMS]:
-        if ll_vms.getVmHost(vm)[1]["vmHoster"] == conf.HOSTS[1]:
-            if not ll_vms.migrateVm(True, vm, conf.HOSTS[0]):
-                logger.error("Failed to migrate vm %s", vm)
+    vms = filter(
+        lambda x: ll_vms.getVmHost(x)[1]["vmHoster"] == conf.HOSTS[1],
+        conf.VM_NAME[:conf.NUM_VMS]
+    )
+    hl_vms.migrate_vms(
+        vms_list=vms, src_host=conf.HOSTS[1],
+        vm_os_type="rhel", vm_user=conf.VMS_LINUX_USER,
+        vm_password=conf.VMS_LINUX_PW, dst_host=conf.HOSTS[0]
+    )
 
 
 def check_traffic_during_icmp(
-    src_ip, dst_ip, src_vm, listen_vm, nic
+    src_ip, dst_ip, src_vm, listen_vm=conf.VM_0, nic=conf.NIC_NAME[1],
+    positive=True
 ):
     """
     Check traffic while running icmp
@@ -97,17 +104,25 @@ def check_traffic_during_icmp(
     :param listen_vm: VM that performs port mirroring
     :type listen_vm: str
     :param nic: NIC on VM to perform port mirroring
-    :type nic: str
+    :type nic: int
+    :param positive: True if traffic is expected, False otherwise
+    :type positive: bool
     :return: True if traffic was received while sending ICMP
     :rtype: bool
     """
+    listen_inter = conf.VMS_NETWORKS_PARAMS[listen_vm][nic][0]
+    exp_info = "Traffic is not received" if positive else "Traffic is received"
+    logger.info(
+        "Check the ICMP traffic on mirroring VM %s NIC %s", listen_vm, nic
+    )
+
     listen_vm_obj = helpers.get_vm_resource(vm=listen_vm)
     src_vm_obj = helpers.get_host_resource(
         ip=src_vm, password=conf.VMS_LINUX_PW
     )
     tcpdump_kwargs = {
         "host_obj": listen_vm_obj,
-        "nic": nic,
+        "nic": listen_inter,
         "src": src_ip,
         "dst": dst_ip,
         "numPackets": 5,
@@ -119,42 +134,12 @@ def check_traffic_during_icmp(
         "count": "10",
     }
 
-    return net_help.check_traffic_during_func_operation(
+    res = net_help.check_traffic_during_func_operation(
         func=src_vm_obj.network.send_icmp, func_kwargs=icmp_kwargs,
         tcpdump_kwargs=tcpdump_kwargs
     )
 
-
-def check_received_traffic(
-    src_ip, dst_ip, src_vm, listen_vm=conf.VM_NAME[0], nic=1, positive=True
-):
-    """
-    Check if ICMP traffic was received or not according to positive and raise
-    exception if it's different than positive
-
-    :param src_ip: Source IP for ICMP traffic
-    :type src_ip: str
-    :param dst_ip: Destination IP for ICMP traffic
-    :type dst_ip: str
-    :param src_vm: MGMT of VM from where the ICMP starts
-    :type src_vm: str
-    :param listen_vm: VM that performs port mirroring
-    :type listen_vm: str
-    :param nic: NIC index
-    :type nic: int
-    :param positive: True if traffic is expected, False otherwise
-    :type positive: bool
-    :raise: conf.NET_EXCEPTION
-    """
-    nic = conf.VM_NICS_DICT[listen_vm][nic]
-    exp_info = "Traffic is not received" if positive else "Traffic is received"
-    logger.info(
-        "Check the ICMP traffic on mirroring VM %s NIC %s", listen_vm, nic
-    )
-    if not positive == check_traffic_during_icmp(
-        src_ip=src_ip, dst_ip=dst_ip, src_vm=src_vm, listen_vm=listen_vm,
-        nic=nic
-    ):
+    if not positive == res:
         raise conf.NET_EXCEPTION(exp_info)
 
 
@@ -164,20 +149,14 @@ def create_vnic_profiles_with_pm():
 
     :raise: conf.NET_EXCEPTION
     """
-    logger.info(
-        "Create vNIC profiles with port mirroring for %s network and %s",
-        conf.MGMT_BRIDGE, conf.VLAN_NETWORKS[0]
-    )
-    for i, network in enumerate((conf.MGMT_BRIDGE, conf.VLAN_NETWORKS[0])):
+    for vnic_profile, network in zip(
+        conf.PM_VNIC_PROFILE[:2], [conf.MGMT_BRIDGE, conf.VLAN_NETWORKS[0]]
+    ):
         if not ll_networks.add_vnic_profile(
-            positive=True, name=conf.PM_VNIC_PROFILE[i],
-            cluster=conf.CLUSTER_NAME[0],
+            positive=True, name=vnic_profile, cluster=conf.CL_0,
             network=network, port_mirroring=True
         ):
-            raise conf.NET_EXCEPTION(
-                "Failed to create VNIC profile %s with port mirroring." %
-                conf.PM_VNIC_PROFILE[i]
-            )
+            raise conf.NET_EXCEPTION()
 
 
 def configure_ip_all_vms():
@@ -187,59 +166,81 @@ def configure_ip_all_vms():
     :raise: conf.NET_EXCEPTION
     """
     logger.info("Configure IPs for each VM")
-    for i, vm in enumerate(conf.VM_NAME[:conf.NUM_VMS]):
+    for vm in conf.VM_NAME[:conf.NUM_VMS]:
         logger.info("Getting management network IP for %s.", vm)
         local_mgmt_ip = hl_vms.get_vm_ip(vm_name=vm, start_vm=False)
         logger.info("%s: %s", vm, local_mgmt_ip)
         conf.MGMT_IPS.append(local_mgmt_ip)
-        vm_resource = helpers.get_host_resource(
-            ip=local_mgmt_ip, password=conf.VMS_LINUX_PW
-        )
+        vm_resource = helpers.get_vm_resource(vm=vm)
         interfaces = net_help.get_vm_interfaces_list(
             vm_resource, exclude_nics=[conf.VM_NICS[0]]
         )
         if not interfaces:
             raise conf.NET_EXCEPTION("Failed to get interfaces from %s" % vm)
 
-        for inter, ip in zip(interfaces, [conf.NET1_IPS[i], conf.NET2_IPS[i]]):
+        for inter in interfaces:
+            mac_cmd = ["cat", "/sys/class/net/%s/address" % inter]
+            inter_mac = vm_resource.run_command(command=mac_cmd)[1].strip()
             logger.info("Configure IPs on %s for %s", vm, inter)
             params = {
-                "IPADDR": ip,
+                "IPADDR": conf.VMS_MACS_AND_IPS[vm][inter_mac][1],
                 "BOOTPROTO": "static",
                 "NETMASK": "255.255.0.0"
             }
             vm_resource.network.create_ifcfg_file(
                 nic=inter, params=params, ifcfg_path=net_help.IFCFG_PATH
             )
-        logger.info("Restarting network service on %s", vm)
-        if not vm_resource.service("network").restart():
-            raise conf.NET_EXCEPTION(
-                "Failed to restart network service on %s" % vm
-            )
+
+            if vm_resource.run_command(command=["ifup", inter])[0]:
+                raise conf.NET_EXCEPTION()
 
 
 def add_nics_to_vms():
     """
-    Add 2 additional vNICs to VM (besides NIC with MGMT)
+    Add 2 additional vNICs to VMs (besides NIC with MGMT)
 
     :raise: conf.NET_EXCEPTION
     """
-    for vmName in conf.VM_NAME[:conf.NUM_VMS]:
-        for i in (0, 1):
-            if vmName == conf.VM_NAME[0] and i == 0:
+    vms_list = conf.VM_NAME[:conf.NUM_VMS]
+    for vm_name in vms_list:
+        conf.VMS_MACS_AND_IPS[vm_name] = dict()
+        for nic, net in zip(conf.NIC_NAME[1:3], conf.VLAN_NETWORKS[:2]):
+            # Add vNIC with PM to first VM on second NIC
+            if vm_name == conf.VM_0 and nic == conf.NIC_NAME[1]:
                 vnic_profile = conf.PM_VNIC_PROFILE[1]
             else:
-                vnic_profile = conf.VLAN_NETWORKS[i]
-            logger.info("Adding %s to %s", conf.NIC_NAME[i + 1], vmName)
+                #  Add vNIC without PM
+                vnic_profile = net
+
             if not ll_vms.addNic(
-                True, vm=vmName, name=conf.NIC_NAME[i + 1],
-                interface=conf.NIC_TYPE_VIRTIO,
-                network=conf.VLAN_NETWORKS[i],
+                positive=True, vm=vm_name, name=nic,
+                interface=conf.NIC_TYPE_VIRTIO, network=net,
                 vnic_profile=vnic_profile
             ):
-                raise conf.NET_EXCEPTION(
-                    "Failed to add nic to %s" % vmName
+                raise conf.NET_EXCEPTION()
+
+
+def prepare_ips_for_vms():
+    """
+    Prepare IPs for VMs
+    """
+    vms_list = conf.VM_NAME[:conf.NUM_VMS]
+    for vm_name in vms_list:
+        conf.VMS_MACS_AND_IPS[vm_name] = dict()
+        for nic in conf.NIC_NAME[:3]:
+            vnic_mac = ll_vms.get_vm_nic_mac_address(
+                vm=vm_name, nic=nic
+            )
+            if nic == conf.NIC_NAME[0]:
+                nic_ip = hl_vms.get_vm_ip(vm_name=vm_name, start_vm=False)
+            else:
+                nic_ip = (
+                    conf.NET1_IPS[vms_list.index(vm_name)] if
+                    nic == conf.NIC_NAME[1]else
+                    conf.NET2_IPS[vms_list.index(vm_name)]
                 )
+            nic_and_ip = (nic, nic_ip)
+            conf.VMS_MACS_AND_IPS[vm_name][vnic_mac] = nic_and_ip
 
 
 def create_networks_pm():
@@ -252,7 +253,7 @@ def create_networks_pm():
         "Create %s, %s on %s/%s and attach them to %s",
         conf.VLAN_NETWORKS[0],
         ".".join([conf.BOND[0], conf.VLAN_NETWORKS[1]]),
-        conf.DC_NAME[0], conf.CLUSTER_NAME[0], conf.HOSTS[:2]
+        conf.DC_0, conf.CL_0, conf.HOSTS[:2]
     )
     network_params = {
         None: {
@@ -272,8 +273,24 @@ def create_networks_pm():
         }
     }
     if not hl_networks.createAndAttachNetworkSN(
-        data_center=conf.DC_NAME[0], cluster=conf.CLUSTER_NAME[0],
+        data_center=conf.DC_0, cluster=conf.CL_0,
         host=conf.VDS_HOSTS[:2], network_dict=network_params,
         auto_nics=[0, 1]
     ):
         raise conf.NET_EXCEPTION("Cannot create and attach networks")
+
+
+def vms_network_params():
+    """
+    Get all VMs network params
+    """
+    for vm in conf.VM_NAME[:conf.NUM_VMS]:
+        conf.VMS_NETWORKS_PARAMS[vm] = dict()
+        vm_resource = helpers.get_vm_resource(vm=vm)
+        vm_nics = ll_vms.get_vm_nics_obj(vm_name=vm)
+        for nic in vm_nics:
+            mac = nic.mac.address
+            ip = conf.VMS_MACS_AND_IPS[vm][mac][1]
+            nic_name = conf.VMS_MACS_AND_IPS[vm][mac][0]
+            inter = vm_resource.network.find_int_by_ip(ip=ip)
+            conf.VMS_NETWORKS_PARAMS[vm][nic_name] = (inter, ip)

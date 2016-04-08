@@ -6,13 +6,14 @@ Utilities used by MGMT network role feature
 """
 
 import logging
-import config as conf
-import art.core_api.apis_utils as utils
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.general as ll_general
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.general as ll_general
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import config as conf
+import rhevmtests.networking.helper as network_helper
 
 logger = logging.getLogger("MGMT_Net_Role_Helper")
 
@@ -90,10 +91,7 @@ def prepare_host_for_installation(
         create_setup(dc=dc, cl=cl)
         move_host_new_cl(host=host_name, cl=cl)
 
-    update_host_mgmt_bridge(
-        host_resource=host_resource, network=network, dc=dc,
-        nic=host_resource.nics[0]
-    )
+    update_host_mgmt_bridge(network=network, dc=dc)
 
     virsh_remove_network(vds_resource=conf.VDS_1_HOST, network=network)
 
@@ -150,41 +148,19 @@ def add_host_new_mgmt(
     add_host(host_resource=host_resource, host=host_name, cl=dest_cl)
 
 
-def update_host_mgmt_bridge(host_resource, network, dc, nic):
+def update_host_mgmt_bridge(network, dc):
     """
     Update Host MGMT bridge to be non-VM
 
-    :param host_resource: Host resource
-    :type host_resource: VDS instance
     :param network: Network name for the MGMT
     :type network: str
     :param dc: DC where the network is located
     :type dc: str
-    :param nic: NIC with the MGMT network
-    :type nic: str
-    :raises: Network exception
     """
-    host_name = ll_hosts.get_host_name_from_engine(host_resource.ip)
-    if not ll_networks.updateNetwork(
-        True, network=network, data_center=dc, usages=""
-    ):
-        raise conf.NET_EXCEPTION()
-
-    sample1 = utils.TimeoutingSampler(
-        timeout=conf.SAMPLER_TIMEOUT,
-        sleep=1,
-        func=hl_networks.check_host_nic_params,
-        host=host_name,
-        nic=nic,
-        **{"bridge": False}
+    network_helper.call_function_and_wait_for_sn(
+        func=ll_networks.updateNetwork, content=network, positive=True,
+        network=network, data_center=dc, usages=""
     )
-    if not sample1.waitForFuncStatus(result=True):
-        raise conf.NET_EXCEPTION()
-
-    if ll_networks.is_host_network_is_vm(
-        vds_resource=host_resource, net_name=network
-    ):
-        raise conf.NET_EXCEPTION()
 
 
 def add_host(host_resource, host, cl):

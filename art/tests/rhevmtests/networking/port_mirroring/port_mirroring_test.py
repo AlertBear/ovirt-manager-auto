@@ -6,18 +6,14 @@ Test Port mirroring.
 using 2 hosts and 5 VMs
 """
 
-import helper
-import logging
-from art.unittest_lib import attr
-from art.core_api import apis_utils
-import rhevmtests.helpers as global_helper
-import rhevmtests.networking.config as conf
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import NetworkTest as TestCase
-import rhevmtests.networking.helper as network_helper
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import rhevmtests.helpers as global_helper
+import rhevmtests.networking.helper as network_helper
+from art.core_api import apis_utils
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.unittest_lib import NetworkTest
+from art.unittest_lib import attr
+from fixtures import *  # flake8: noqa
 
 logger = logging.getLogger("Port_Mirroring_Cases")
 
@@ -27,8 +23,21 @@ NET2_IPS = conf.NET2_IPS
 VM_NAME = conf.VM_NAME
 
 
+def setup_module():
+    """
+    Prepare environment
+    """
+    networking.network_cleanup()
+
+
+@pytest.mark.usefixtures("port_mirroring_prepare_setup")
 @attr(tier=2, extra_reqs={'network_hosts': True})
-class TestPortMirroringCase01(TestCase):
+class Base(NetworkTest):
+    pass
+
+
+@pytest.mark.usefixtures("case01_fixture")
+class TestPortMirroringCase01(Base):
     """
     Check that mirroring still works after migration
     """
@@ -41,7 +50,7 @@ class TestPortMirroringCase01(TestCase):
         another host and back
         """
         for dst_vm in (2, 3):
-            helper.check_received_traffic(
+            helper.check_traffic_during_icmp(
                 src_ip=NET1_IPS[1], dst_ip=NET1_IPS[dst_vm], src_vm=MGMT_IPS[1]
             )
 
@@ -60,7 +69,7 @@ class TestPortMirroringCase01(TestCase):
                 )
 
         for dst_vm in (2, 3):
-            helper.check_received_traffic(
+            helper.check_traffic_during_icmp(
                 src_ip=NET1_IPS[1], dst_ip=NET1_IPS[dst_vm], src_vm=MGMT_IPS[1]
             )
 
@@ -71,7 +80,7 @@ class TestPortMirroringCase01(TestCase):
         another host
         """
         for dst_vm in (2, 3):
-            helper.check_received_traffic(
+            helper.check_traffic_during_icmp(
                 src_ip=NET1_IPS[1], dst_ip=NET1_IPS[dst_vm], src_vm=MGMT_IPS[1]
             )
 
@@ -91,22 +100,13 @@ class TestPortMirroringCase01(TestCase):
             )
 
         for dst_vm in (2, 3):
-            helper.check_received_traffic(
+            helper.check_traffic_during_icmp(
                 src_ip=NET1_IPS[1], dst_ip=NET1_IPS[dst_vm], src_vm=MGMT_IPS[1]
             )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Make sure that all the VM's are back on the original host in case
-        not all the migrations succeed
-        """
-        logger.info("Return (migrate) all vms to %s", conf.HOSTS[0])
-        helper.return_vms_to_original_host()
 
-
-@attr(tier=2, extra_reqs={'network_hosts': True})
-class TestPortMirroringCase02(TestCase):
+@pytest.mark.usefixtures("case02_fixture")
+class TestPortMirroringCase02(Base):
     """
     Replace network on the mirrored VM to a non-mirrored network
     """
@@ -119,7 +119,7 @@ class TestPortMirroringCase02(TestCase):
         Replace the network on a mirrored VM with a non-mirrored network and
         check that its traffic is not mirrored anymore.
         """
-        helper.check_received_traffic(
+        helper.check_traffic_during_icmp(
             src_ip=NET1_IPS[3], dst_ip=NET1_IPS[2], src_vm=MGMT_IPS[3]
         )
 
@@ -129,22 +129,13 @@ class TestPortMirroringCase02(TestCase):
                 disable_mirroring=True
             )
 
-        helper.check_received_traffic(
+        helper.check_traffic_during_icmp(
             src_ip=NET1_IPS[3], dst_ip=NET1_IPS[2], src_vm=MGMT_IPS[3],
             positive=False
         )
 
-    @classmethod
-    def teardown_class(cls):
-        for vm_name in VM_NAME[2:4]:
-            helper.set_port_mirroring(
-                vm_name, conf.NIC_NAME[1], conf.VLAN_NETWORKS[0],
-                disable_mirroring=True, teardown=True
-            )
 
-
-@attr(tier=2, extra_reqs={'network_hosts': True})
-class TestPortMirroringCase03(TestCase):
+class TestPortMirroringCase03(Base):
     """
     Check mirroring when listening on multiple networks on the same machine
     """
@@ -155,31 +146,22 @@ class TestPortMirroringCase03(TestCase):
         """
         Check that VM1 gets all traffic on both MGMT network and sw1
         """
-        helper.check_received_traffic(
+        helper.check_traffic_during_icmp(
             src_ip=NET1_IPS[1], dst_ip=NET1_IPS[2], src_vm=MGMT_IPS[1]
         )
 
-        helper.check_received_traffic(
-            nic=0, src_ip=MGMT_IPS[3], dst_ip=MGMT_IPS[4],
+        helper.check_traffic_during_icmp(
+            nic=conf.NIC_NAME[0], src_ip=MGMT_IPS[3], dst_ip=MGMT_IPS[4],
             src_vm=MGMT_IPS[3]
         )
 
 
-@attr(tier=2, extra_reqs={'network_hosts': True})
-class TestPortMirroringCase04(TestCase):
+@pytest.mark.usefixtures("case04_fixture")
+class TestPortMirroringCase04(Base):
     """
     Check port mirroring when it's enabled on multiple machines.
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Enable port mirroring on nic2 (connected to sw1) on VM2.
-        """
-        helper.set_port_mirroring(
-            conf.VM_NAME[1], conf.NIC_NAME[1], conf.VLAN_NETWORKS[0]
-        )
 
     @polarion("RHEVM3-4015")
     def test_a1_check_pm_two_machines_diff_networks(self):
@@ -191,12 +173,12 @@ class TestPortMirroringCase04(TestCase):
             "Sending traffic between VM2 and VM3 on MGMT network to make sure "
             "only VM1 gets this traffic."
         )
-        helper.check_received_traffic(
-            nic=0, src_ip=MGMT_IPS[1], dst_ip=MGMT_IPS[2],
+        helper.check_traffic_during_icmp(
+            nic=conf.NIC_NAME[0], src_ip=MGMT_IPS[1], dst_ip=MGMT_IPS[2],
             src_vm=MGMT_IPS[1]
         )
 
-        helper.check_received_traffic(
+        helper.check_traffic_during_icmp(
             src_ip=MGMT_IPS[1], dst_ip=MGMT_IPS[2],
             src_vm=MGMT_IPS[1], listen_vm=VM_NAME[1], positive=False
         )
@@ -205,14 +187,14 @@ class TestPortMirroringCase04(TestCase):
             "Sending traffic between VM1 and VM4 on sw1 to make sure only VM2 "
             "gets this traffic."
         )
-        helper.check_received_traffic(
+        helper.check_traffic_during_icmp(
             src_ip=NET1_IPS[0], dst_ip=NET1_IPS[3],
             src_vm=MGMT_IPS[0], listen_vm=VM_NAME[1]
         )
 
-        helper.check_received_traffic(
+        helper.check_traffic_during_icmp(
             src_ip=NET1_IPS[0], dst_ip=NET1_IPS[3],
-            src_vm=MGMT_IPS[0], nic=0, positive=False
+            src_vm=MGMT_IPS[0], nic=conf.NIC_NAME[0], positive=False
         )
 
     @polarion("RHEVM3-4006")
@@ -226,7 +208,7 @@ class TestPortMirroringCase04(TestCase):
             "VM1 and VM2 get the traffic."
         )
         for vm in conf.VM_NAME[:2]:
-            helper.check_received_traffic(
+            helper.check_traffic_during_icmp(
                 src_ip=NET1_IPS[2], dst_ip=NET1_IPS[3],
                 src_vm=MGMT_IPS[2], listen_vm=vm
             )
@@ -241,27 +223,13 @@ class TestPortMirroringCase04(TestCase):
         )
 
         for vm, expTraffic in zip(conf.VM_NAME[:2], (True, False)):
-            helper.check_received_traffic(
+            helper.check_traffic_during_icmp(
                 src_ip=NET1_IPS[2], dst_ip=NET1_IPS[3],
                 src_vm=MGMT_IPS[2], listen_vm=vm, positive=expTraffic
             )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Make sure port mirroring on nic2 (connected to sw1) on VM2 is disabled
-        """
-        if ll_vms.getVmNicPortMirroring(
-                True, conf.VM_NAME[1], conf.NIC_NAME[1]
-        ):
-            helper.set_port_mirroring(
-                conf.VM_NAME[1], conf.NIC_NAME[1],
-                conf.VLAN_NETWORKS[0], disable_mirroring=True, teardown=True
-            )
 
-
-@attr(tier=2, extra_reqs={'network_hosts': True})
-class TestPortMirroringCase05(TestCase):
+class TestPortMirroringCase05(Base):
     """
     Restart VDSM on host while mirroring is on
     """
@@ -272,7 +240,7 @@ class TestPortMirroringCase05(TestCase):
         """
         Check that mirroring still occurs after restarting VDSM on the host
         """
-        helper.check_received_traffic(
+        helper.check_traffic_during_icmp(
             src_ip=NET1_IPS[1], dst_ip=NET1_IPS[2], src_vm=MGMT_IPS[1],
         )
 
@@ -287,7 +255,7 @@ class TestPortMirroringCase05(TestCase):
                 "Failed to restart vdsmd service on %s" % conf.HOSTS[0]
             )
 
-        helper.check_received_traffic(
+        helper.check_traffic_during_icmp(
             src_ip=NET1_IPS[1], dst_ip=NET1_IPS[2], src_vm=MGMT_IPS[1],
         )
 
@@ -298,8 +266,7 @@ class TestPortMirroringCase05(TestCase):
             )
 
 
-@attr(tier=2, extra_reqs={'network_hosts': True})
-class TestPortMirroringCase06(TestCase):
+class TestPortMirroringCase06(Base):
     """
     Check that mirroring still occurs after down/UP listening bridge on the
     host
@@ -312,7 +279,7 @@ class TestPortMirroringCase06(TestCase):
         host
         """
         logger.info("Check port mirroring traffic before down/up bridge")
-        helper.check_received_traffic(
+        helper.check_traffic_during_icmp(
             src_ip=NET1_IPS[1], dst_ip=NET1_IPS[2], src_vm=MGMT_IPS[1],
         )
 
@@ -338,6 +305,6 @@ class TestPortMirroringCase06(TestCase):
             host_resource=vm_resource, dst=NET1_IPS[2]
         )
         logger.info("Check port mirroring traffic down/up bridge")
-        helper.check_received_traffic(
+        helper.check_traffic_during_icmp(
             src_ip=NET1_IPS[1], dst_ip=NET1_IPS[2], src_vm=MGMT_IPS[1],
         )
