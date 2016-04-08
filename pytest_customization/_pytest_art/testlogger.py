@@ -262,7 +262,7 @@ class ARTLogging(object):
         self.step_id += 1
         self.log_filter.toggle(False)
         try:
-            msg = "   Step {0: 2}: {1}".format(self.step_id, msg)
+            msg = "   Step {0:2}: {1}".format(self.step_id, msg)
             # we may want to check length of message
             flow_logger.info(msg, *args, **kwargs)
         finally:
