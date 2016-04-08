@@ -46,30 +46,39 @@ def add_new_disk(sd_name, size, block, shared=False, **kwargs):
     Add a new disk
     Parameters:
         * sd_name - disk wil added to this sd
+        * size - target device size (GB)
+        * block - set whether it is block device True/False
         * shared - True if the disk should e shared
         * kwargs:
             * interface - ENUMS['interface_virtio'] or
                           ENUMS['interface_virtio_scsi']
             * sparse - True if thin, False preallocated
-            * disk_format - 'cow' or 'raw'
+            * format - 'cow' or 'raw'
     """
-    disk_args = {
-        # Fixed arguments
-        'provisioned_size': size,
-        'wipe_after_delete': block,
-        'storagedomain': sd_name,
-        'bootable': False,
-        'shareable': shared,
-        'active': True,
-        'size': size,
-        # Custom arguments - change for each disk
-        'format': kwargs['format'],
-        'interface': kwargs['interface'],
-        'sparse': kwargs['sparse'],
-        'alias': "%s_%s_%s_disk" %
-                 (kwargs['interface'],
-                  kwargs['format'],
-                  kwargs['sparse'])}
+    # Custom arguments
+    disk_args = kwargs.copy()
+    disk_args.setdefault('format', 'cow')
+    disk_args.setdefault('interface', 'virtio')
+    disk_args.setdefault('sparse', True)
+    disk_args.setdefault(
+        'alias', "%s_%s_%s_disk" % (
+            disk_args['interface'],
+            disk_args['format'],
+            disk_args['sparse'],
+        )
+    )
+    disk_args.update(
+        {
+            # Fixed arguments
+            'provisioned_size': size,
+            'wipe_after_delete': block,
+            'storagedomain': sd_name,
+            'bootable': False,
+            'shareable': shared,
+            'active': True,
+            'size': size,
+        }
+    )
 
     assert addDisk(True, **disk_args)
     return disk_args['alias']
