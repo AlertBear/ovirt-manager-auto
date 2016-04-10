@@ -7,6 +7,7 @@ SR_IOV cases with import/export and templates
 
 import helper
 import logging
+import pytest
 import config as conf
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import rhevmtests.networking.helper as network_helper
@@ -35,6 +36,9 @@ def teardown_module():
     network_helper.remove_networks_from_setup()
 
 
+@pytest.mark.skipif(
+    conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
+)
 class TestSriovImportExport01(helper.TestSriovBase):
     """
     Cases for Import/Export with VM and VFs

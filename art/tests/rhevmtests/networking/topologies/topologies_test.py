@@ -8,7 +8,7 @@ Testing Topologies feature.
 
 import helper
 import logging
-import unittest2
+import pytest
 from art import unittest_lib
 from rhevmtests.networking import config
 from art.test_handler.tools import polarion  # pylint: disable=E0611
@@ -80,7 +80,7 @@ class TestTopologiesCase01(unittest_lib.NetworkTest):
             driver=config.NIC_TYPE_VIRTIO, vlan=True
         )
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12287")
     def test_vlan_network_02_e1000(self):
         """
@@ -94,7 +94,7 @@ class TestTopologiesCase01(unittest_lib.NetworkTest):
             driver=config.NIC_TYPE_E1000, vlan=True
         )
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12288")
     def test_vlan_network_03_rtl8139(self):
         """
@@ -140,7 +140,10 @@ class TestTopologiesCase01(unittest_lib.NetworkTest):
 ##############################################################################
 
 
-@unittest_lib.attr(tier=2, extra_reqs={'network_hosts': True})
+@unittest_lib.attr(tier=2)
+@pytest.mark.skipif(
+    config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
+)
 class TestTopologiesCase02(unittest_lib.NetworkTest):
     """
     Check connectivity to VM with VLAN over BOND mode 1 network
@@ -197,7 +200,7 @@ class TestTopologiesCase02(unittest_lib.NetworkTest):
             mode=config.BOND_MODES[1]
         )
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12291")
     def test_vlan_over_bond_network_02_e1000(self):
         """
@@ -211,7 +214,7 @@ class TestTopologiesCase02(unittest_lib.NetworkTest):
             mode=config.BOND_MODES[1]
         )
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12292")
     def test_vlan_over_bond_network_03_rtl8139(self):
         """
@@ -253,7 +256,10 @@ class TestTopologiesCase02(unittest_lib.NetworkTest):
 ##############################################################################
 
 
-@unittest_lib.attr(tier=2, extra_reqs={'network_hosts': True})
+@unittest_lib.attr(tier=2)
+@pytest.mark.skipif(
+    config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
+)
 class TestTopologiesCase03(unittest_lib.NetworkTest):
     """
     Check connectivity to VM with BOND mode 2 network
@@ -298,7 +304,7 @@ class TestTopologiesCase03(unittest_lib.NetworkTest):
             driver=config.NIC_TYPE_VIRTIO, mode=config.BOND_MODES[2]
         )
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12294")
     def test_bond_network_02_e1000(self):
         """
@@ -311,7 +317,7 @@ class TestTopologiesCase03(unittest_lib.NetworkTest):
             driver=config.NIC_TYPE_E1000, mode=config.BOND_MODES[2]
         )
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12295")
     def test_bond_network_03_rtl8139(self):
         """
@@ -353,7 +359,10 @@ class TestTopologiesCase03(unittest_lib.NetworkTest):
             )
 
 
-@unittest_lib.attr(tier=2, extra_reqs={'network_hosts': True})
+@unittest_lib.attr(tier=2)
+@pytest.mark.skipif(
+    config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
+)
 class TestTopologiesCase04(unittest_lib.NetworkTest):
     """
     Check connectivity to VM with BOND mode 4 network
@@ -395,7 +404,7 @@ class TestTopologiesCase04(unittest_lib.NetworkTest):
             driver=config.NIC_TYPE_VIRTIO, mode=config.BOND_MODES[4]
         )
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12300")
     def test_bond_network_02_e1000(self):
         """
@@ -408,7 +417,7 @@ class TestTopologiesCase04(unittest_lib.NetworkTest):
             driver=config.NIC_TYPE_E1000, mode=config.BOND_MODES[4]
         )
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12301")
     def test_bond_network_03_rtl8139(self):
         """
@@ -445,8 +454,11 @@ class TestTopologiesCase04(unittest_lib.NetworkTest):
             logger.error("Cannot remove network from setup")
 
 
-@unittest_lib.attr(tier=2, extra_reqs={'network_hosts': True})
-@unittest_lib.common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+@unittest_lib.attr(tier=2)
+@pytest.mark.skipif(
+    config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
+)
+@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class TestTopologiesCase05(unittest_lib.NetworkTest):
     """
     Check connectivity to BOND mode 3 network
@@ -488,8 +500,11 @@ class TestTopologiesCase05(unittest_lib.NetworkTest):
             logger.error("Cannot remove network from setup")
 
 
-@unittest_lib.attr(tier=2, extra_reqs={'network_hosts': True})
-@unittest_lib.common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+@unittest_lib.attr(tier=2)
+@pytest.mark.skipif(
+    config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
+)
+@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class TestTopologiesCase06(unittest_lib.NetworkTest):
     """
     Check connectivity to BOND mode 0 network
@@ -530,8 +545,11 @@ class TestTopologiesCase06(unittest_lib.NetworkTest):
             logger.error("Cannot remove network from setup")
 
 
-@unittest_lib.attr(tier=2, extra_reqs={'network_hosts': True})
-@unittest_lib.common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+@unittest_lib.attr(tier=2)
+@pytest.mark.skipif(
+    config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
+)
+@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class TestTopologiesCase07(unittest_lib.NetworkTest):
     """
     Check connectivity to BOND mode 5 network
@@ -572,8 +590,11 @@ class TestTopologiesCase07(unittest_lib.NetworkTest):
             logger.error("Cannot remove network from setup")
 
 
-@unittest_lib.attr(tier=2, extra_reqs={'network_hosts': True})
-@unittest_lib.common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+@unittest_lib.attr(tier=2)
+@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
+@pytest.mark.skipif(
+    config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
+)
 class TestTopologiesCase08(unittest_lib.NetworkTest):
     """
     Check connectivity to BOND mode 6 network

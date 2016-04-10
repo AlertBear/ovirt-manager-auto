@@ -31,7 +31,10 @@ def setup_module():
 
 
 @pytest.mark.usefixtures("port_mirroring_prepare_setup")
-@attr(tier=2, extra_reqs={'network_hosts': True})
+@attr(tier=2)
+@pytest.mark.skipif(
+    conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
+)
 class Base(NetworkTest):
     pass
 

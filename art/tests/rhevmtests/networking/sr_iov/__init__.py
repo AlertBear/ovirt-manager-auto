@@ -21,6 +21,12 @@ def setup_package():
     Prepare environment
     Add QoS to data-center
     """
+    # The setup package executed before pytest collection.
+    # This condition is to ensure not running the setup package when there
+    #  is no sriov support
+    if conf.NO_SEMI_SRIOV_SUPPORT:
+        return
+
     networking.network_cleanup()
     conf.HOST_0_NAME = conf.HOSTS[0]
     conf.HOST_1_NAME = conf.HOSTS[1]
@@ -57,6 +63,9 @@ def teardown_package():
     """
     Remove QoS from date-center
     """
+    if conf.NO_SEMI_SRIOV_SUPPORT:
+        return
+
     ll_datacenters.delete_qos_from_datacenter(
         datacenter=conf.DC_0, qos_name=conf.NETWORK_QOS
     )

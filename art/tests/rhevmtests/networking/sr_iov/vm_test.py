@@ -7,6 +7,7 @@ SR_IOV feature tests for VFs on VM
 
 import helper
 import logging
+import pytest
 import config as conf
 import rhevmtests.helpers as global_helper
 from art.test_handler.tools import polarion  # pylint: disable=E0611
@@ -36,6 +37,9 @@ def teardown_module():
     network_helper.remove_networks_from_setup(hosts=conf.HOSTS)
 
 
+@pytest.mark.skipif(
+    conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
+)
 class TestSriovVm01(helper.TestSriovBase):
     """
     Cases for VFs on VM
@@ -249,6 +253,9 @@ class TestSriovVm01(helper.TestSriovBase):
         super(TestSriovVm01, cls).teardown_class()
 
 
+@pytest.mark.skipif(
+    conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
+)
 class TestSriovVm02(helper.TestSriovBase):
     """
     Test run VM with VLAN
@@ -318,6 +325,9 @@ class TestSriovVm02(helper.TestSriovBase):
         super(TestSriovVm02, cls).teardown_class()
 
 
+@pytest.mark.skipif(
+    conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
+)
 class TestSriovVm03(helper.TestSriovBase):
     """
     Try to edit vNIC to be passthrough interface when it has regular profile
@@ -447,6 +457,9 @@ class TestSriovVm03(helper.TestSriovBase):
         super(TestSriovVm03, cls).teardown_class()
 
 
+@pytest.mark.skipif(
+    conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
+)
 class TestSriovVm04(helper.TestSriovBase):
     """
     Allowed networks and labels
@@ -580,6 +593,9 @@ class TestSriovVm04(helper.TestSriovBase):
             raise conf.NET_EXCEPTION()
 
 
+@pytest.mark.skipif(
+    conf.NO_FULL_SRIOV_SUPPORT, reason=conf.NO_FULL_SRIOV_SUPPORT_SKIP_MSG
+)
 class TestSriovVm05(helper.TestSriovBase):
     """
     Check connectivity between VMs using VF and bridge vNICs

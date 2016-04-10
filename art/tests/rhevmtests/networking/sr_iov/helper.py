@@ -23,7 +23,7 @@ def update_host_nics():
     conf.HOST_0_NICS = conf.VDS_0_HOST.nics
 
 
-@attr(tier=2, extra_reqs={"sriov": True})
+@attr(tier=2)
 class TestSriovBase(NetworkTest):
     """
     base class which provides teardown class method for each test case

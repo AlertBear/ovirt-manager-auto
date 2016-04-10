@@ -10,6 +10,7 @@ It will cover scenarios for VM/non-VM networks.
 
 import helper
 import logging
+import pytest
 import config as conf
 from rhevmtests import networking
 from art.rhevm_api.utils import test_utils
@@ -195,7 +196,10 @@ class TestJumboFramesCase02(TestJumboFramesTestCaseBase):
         )
 
 
-@attr(tier=2, extra_reqs={'network_hosts': True})
+@attr(tier=2)
+@pytest.mark.skipif(
+    conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
+)
 class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
     """
     Check connectivity between two hosts
@@ -329,7 +333,10 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
         super(TestJumboFramesCase03, cls).teardown_class()
 
 
-@attr(tier=2, extra_reqs={'network_hosts': True})
+@attr(tier=2)
+@pytest.mark.skipif(
+    conf.NOT_FOUR_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
+)
 class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
     """
     Attach 4 VLAN networks over BOND to two hosts
@@ -449,7 +456,10 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
         super(TestJumboFramesCase04, cls).teardown_class()
 
 
-@attr(tier=2, extra_reqs={'network_hosts': True})
+@attr(tier=2)
+@pytest.mark.skipif(
+    conf.NOT_FOUR_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
+)
 class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
     """
     Creates bridged VLAN network with 5000 MTU values
@@ -566,7 +576,10 @@ class TestJumboFramesCase06(TestJumboFramesTestCaseBase):
             raise conf.NET_EXCEPTION()
 
 
-@attr(tier=2, extra_reqs={'network_hosts': True})
+@attr(tier=2)
+@pytest.mark.skipif(
+    conf.NOT_FOUR_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
+)
 class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
     """
     Creates 2 bridged VLAN networks with different MTU and check traffic

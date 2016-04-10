@@ -8,6 +8,7 @@ Non-VM related cases
 
 import helper
 import logging
+import pytest
 import config as conf
 from art.unittest_lib import attr
 from art.test_handler.tools import polarion  # pylint: disable=E0611
@@ -38,6 +39,9 @@ def teardown_module():
 
 
 @attr(tier=2)
+@pytest.mark.skipif(
+    conf.NO_SEMI_SRIOV_SUPPORT, reason=conf.NO_SEMI_SRIOV_SUPPORT_SKIP_MSG
+)
 class TestSriov01(NetworkTest):
     """
     1. Create bond from 2 supported sr_iov NICs (PFs)
@@ -98,6 +102,9 @@ class TestSriov01(NetworkTest):
 
 
 @attr(tier=2)
+@pytest.mark.skipif(
+    conf.NO_SEMI_SRIOV_SUPPORT, reason=conf.NO_SEMI_SRIOV_SUPPORT_SKIP_MSG
+)
 class TestSriov02(NetworkTest):
     """
     Edit vNIC profile with passthrough property
@@ -253,6 +260,9 @@ class TestSriov02(NetworkTest):
             )
 
 
+@pytest.mark.skipif(
+    conf.NO_SEMI_SRIOV_SUPPORT, reason=conf.NO_SEMI_SRIOV_SUPPORT_SKIP_MSG
+)
 class TestSriov03(helper.TestSriovBase):
     """
     Create several VFs for PF and check
@@ -299,6 +309,9 @@ class TestSriov03(helper.TestSriovBase):
             raise conf.NET_EXCEPTION()
 
 
+@pytest.mark.skipif(
+    conf.NO_SEMI_SRIOV_SUPPORT, reason=conf.NO_SEMI_SRIOV_SUPPORT_SKIP_MSG
+)
 class TestSriov04(helper.TestSriovBase):
     """
     Negative: Try to configure number of VFs when:
@@ -339,6 +352,9 @@ class TestSriov04(helper.TestSriovBase):
             raise conf.NET_EXCEPTION()
 
 
+@pytest.mark.skipif(
+    conf.NO_SEMI_SRIOV_SUPPORT, reason=conf.NO_SEMI_SRIOV_SUPPORT_SKIP_MSG
+)
 class TestSriov05(helper.TestSriovBase):
     """
      Changing the number of VFs for a PF when PF contains non-free VFs
@@ -412,6 +428,9 @@ class TestSriov05(helper.TestSriovBase):
 
 
 @attr(tier=2)
+@pytest.mark.skipif(
+    conf.NO_SEMI_SRIOV_SUPPORT, reason=conf.NO_SEMI_SRIOV_SUPPORT_SKIP_MSG
+)
 class TestSriov06(NetworkTest):
     """
     Try to edit regular vNIC profile on VM to have passthrough property

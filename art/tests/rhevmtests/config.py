@@ -523,3 +523,11 @@ JOB_REMOVE_VM = ENUMS['job_remove_vm']
 
 # agent URL for guest tools testing
 AGENT_URL = 'http://10.34.63.72/cirunner/ci.php?action={action}&hostID={vm_id}'
+
+SKIP_MSG_PREFIX = "Hosts in env doesn't have %s"
+NOT_4_NICS_HOSTS = PARAMETERS.as_bool('not_4_nics_hosts')
+NOT_4_NICS_HOST_SKIP_MSG = SKIP_MSG_PREFIX % "4 nics"
+NO_FULL_SRIOV_SUPPORT = PARAMETERS.as_bool('no_full_sriov_support')
+NO_FULL_SRIOV_SUPPORT_SKIP_MSG = SKIP_MSG_PREFIX % "full SRIOV support"
+NO_SEMI_SRIOV_SUPPORT = PARAMETERS.as_bool('no_semi_sriov_support')
+NO_SEMI_SRIOV_SUPPORT_SKIP_MSG = SKIP_MSG_PREFIX % "semi SRIOV support"
