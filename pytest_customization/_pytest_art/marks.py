@@ -150,9 +150,9 @@ class JunitExtension(object):
     )
 
     global_properties = {
-        'Planned In': None,
-        'Automated': 'True',
-        'ARCH': None
+        'polarion-custom-plannedin': None,
+        'polarion-custom-isautomated': 'True',
+        'polarion-custom-arch': None,
     }
 
     def __init__(self, config):
@@ -196,11 +196,11 @@ class JunitExtension(object):
         self._add_attributes(item)
 
     def pytest_artconf_ready(self, config):
-        self.global_properties['Planned In'] = (
+        self.global_properties['polarion-custom-plannedin'] = (
             config.ART_CONFIG['DEFAULT']['PRODUCT'] +
             config.ART_CONFIG['DEFAULT']['VERSION']
         )
-        self.global_properties['ARCH'] = (
+        self.global_properties['polarion-custom-arch'] = (
             config.ART_CONFIG['PARAMETERS']['arch']
         )
 
