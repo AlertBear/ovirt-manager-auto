@@ -290,19 +290,22 @@ def set_libvirt_sasl_status(engine_resource, host_resource, sasl=False):
     :type host_resource: resources.VDS
     :param sasl: Set sasl on/off (True/False)
     :type sasl: bool
-    :raise: NetworkException
+    :return: True/False
+    :rtype: bool
     """
     if not sasl:
         if not helpers.set_passwordless_ssh(
             src_host=engine_resource, dst_host=host_resource
         ):
-            raise conf.NET_EXCEPTION()
+            return False
 
         if not set_libvirtd_sasl(host_obj=host_resource, sasl=sasl):
-            raise conf.NET_EXCEPTION()
+            return False
 
     else:
-        set_libvirtd_sasl(host_obj=host_resource, sasl=sasl)
+        if not set_libvirtd_sasl(host_obj=host_resource, sasl=sasl):
+            return False
+    return True
 
 
 def set_libvirtd_sasl(host_obj, sasl=True):
@@ -441,13 +444,15 @@ def is_network_in_vds_caps(host_resource, network):
     :type host_resource: resources.VDS
     :param network: Network name
     :type network: str
-    :raise: conf.NET_EXCEPTION
+    :return: True/False
+    :rtype: bool
     """
     logger.info("Get vdsCaps output")
     out = host_resource.vds_client("getVdsCapabilities")
     logger.info("Check if %s in vdsCaps output", network)
     if network not in out["info"]["networks"].keys():
-        raise conf.NET_EXCEPTION("%s not in vdsCaps output" % network)
+        return False
+    return True
 
 
 def check_traffic_during_func_operation(

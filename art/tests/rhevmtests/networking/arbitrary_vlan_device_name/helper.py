@@ -4,39 +4,36 @@
 """
 Helper for ArbitraryVlanDeviceName job
 """
-import libvirt
 import logging
 from random import randint
-from rhevmtests.networking import config
-from art.rhevm_api.tests_lib.low_level import events
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+
+import libvirt
+
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import rhevmtests.networking.config as conf
+from art.rhevm_api.tests_lib.low_level import events
 
 logger = logging.getLogger("ArbitraryVlanDeviceName_Helper")
-
-
-VLAN_NAMES = ["vlan10", "vlan20", "vlan30"]
-VLAN_IDS = ["10", "20", "30"]
-BRIDGE_NAMES = ["br_vlan10", "br_vlan20", "br_vlan30"]
 
 
 def job_tear_down():
     """
     tear_down for ArbitraryVlanDeviceName job
     """
-    host_obj = config.VDS_HOSTS[0]
+    host_obj = conf.VDS_HOSTS[0]
     host_name = ll_hosts.get_host_name_from_engine(host_obj.ip)
     vlans_to_remove = [
-        v for v in VLAN_NAMES if is_interface_on_host(
+        v for v in conf.VLAN_NAMES if is_interface_on_host(
             host_obj=host_obj, interface=v
         )
     ]
     remove_vlan_and_refresh_capabilities(
         host_obj=host_obj, vlan_name=vlans_to_remove
     )
-    virsh_delete_bridges(host_obj=host_obj, bridges=BRIDGE_NAMES)
+    virsh_delete_bridges(host_obj=host_obj, bridges=conf.BRIDGE_NAMES)
 
-    for bridge in BRIDGE_NAMES:
+    for bridge in conf.BRIDGE_NAMES:
         logger.info("Checking if %s exists on %s", bridge, host_name)
         if host_obj.network.get_bridge(bridge):
             logger.info("Delete BRIDGE: %s on %s", bridge, host_name)
@@ -48,13 +45,14 @@ def job_tear_down():
                 )
 
     logger.info("Cleaning host interfaces")
-    if not hl_host_network.clean_host_interfaces(host_name=config.HOSTS[0]):
+    if not hl_host_network.clean_host_interfaces(host_name=conf.HOSTS[0]):
         logger.error("Clean host interfaces failed")
 
 
 def host_add_vlan(host_obj, vlan_id, vlan_name, nic):
     """
     Create VLAN interface on hosts
+
     :param host_obj: resources.VDS object
     :type host_obj: VDS
     :param vlan_id: VLAN ID
@@ -84,6 +82,7 @@ def host_add_vlan(host_obj, vlan_id, vlan_name, nic):
 def host_delete_vlan(host_obj, vlan_name):
     """
     Delete VLAN from host
+
     :param host_obj: resources.VDS object
     :type host_obj: VDS
     :param vlan_name: VLAN name
@@ -105,6 +104,7 @@ def host_delete_vlan(host_obj, vlan_name):
 def virsh_add_bridge(host_obj, bridge):
     """
     Add bridge to virsh via xml file
+
     :param host_obj: resources.VDS object
     :type host_obj: VDS
     :param bridge: Bridge name
@@ -140,6 +140,7 @@ def virsh_add_bridge(host_obj, bridge):
 def virsh_delete_bridges(host_obj, bridges, undefine=False):
     """
     Delete bridge to virsh via xml file
+
     :param host_obj: resources.VDS object
     :type host_obj: VDS
     :param bridges: Bridge name
@@ -172,6 +173,7 @@ def get_libvirt_connection(host):
 def detach_nic_from_bridge(host_obj, bridge, nic):
     """
     Detach NIC from bridge
+
     :param host_obj: resources.VDS object
     :type host_obj: VDS
     :param bridge: Bridge name
@@ -196,49 +198,52 @@ def detach_nic_from_bridge(host_obj, bridge, nic):
 def check_if_nic_in_host_nics(nic, host):
     """
     Check if NIC is among the host NICs collection
+
     :param nic: NIC name
     :type nic: str
     :param host: Host name (in engine)
     :type host: str
-    :return: raise NetworkException on error
+    :return: True/False
+    :rtype: bool
     """
     logger.info("Check that %s exists on %s via engine", nic, host)
     host_nics = ll_hosts.get_host_nics_list(host=host)
     if nic not in [i.name for i in host_nics]:
-        raise config.NET_EXCEPTION(
-            "%s not found in %s nics" % (nic, host)
-        )
+        return False
+    return True
 
 
 def add_bridge_on_host_and_virsh(host_obj, bridge, network):
     """
     Create bridge on host and create the bridge on virsh as well
+
     :param host_obj: resources.VDS object
     :type host_obj: VDS
     :param bridge: Bridge name
     :type bridge: list
     :param network: Network name
     :type network: list
-    :return: raise NetworkException on error
+    :return: True/False
+    :rtype: bool
     """
     host_name = ll_hosts.get_host_name_from_engine(host_obj.ip)
     for br, net in zip(bridge, network):
         logger.info("Attaching %s to %s on %s", net, br, host_name)
         if not host_obj.network.add_bridge(bridge=br, network=net):
-            raise config.NET_EXCEPTION(
-                "Failed to add %s with %s" % (br, net)
-            )
+            return False
 
         logger.info("Adding %s to %s via virsh", br, host_name)
         if not virsh_add_bridge(host_obj=host_obj, bridge=br):
-            raise config.NET_EXCEPTION("Failed to add %s to virsh" % br)
+            return False
 
     refresh_capabilities(host=host_name)
+    return True
 
 
 def delete_bridge_on_host_and_virsh(host_obj, bridge):
     """
     Delete bridge on host and delete the bridge on virsh as well
+
     :param host_obj: resources.VDS object
     :type host_obj: VDS
     :param bridge: Bridge name
@@ -250,7 +255,7 @@ def delete_bridge_on_host_and_virsh(host_obj, bridge):
     virsh_delete_bridges(host_obj=host_obj, bridges=[bridge])
     logger.info("Delete %s on %s", bridge, host_name)
     if not host_obj.network.delete_bridge(bridge=bridge):
-        raise config.NET_EXCEPTION(
+        raise conf.NET_EXCEPTION(
             "Failed to delete %s on %s" % (bridge, host_name)
         )
 
@@ -258,6 +263,7 @@ def delete_bridge_on_host_and_virsh(host_obj, bridge):
 def add_vlans_to_host(host_obj, vlan_id, vlan_name, nic):
     """
     Add VLAN to host
+
     :param host_obj: resources.VDS object
     :type host_obj: VDS
     :param nic: Interface index (from host_obj.nics) or str (for bond nic)
@@ -266,7 +272,8 @@ def add_vlans_to_host(host_obj, vlan_id, vlan_name, nic):
     :type vlan_id: list
     :param vlan_name: VLAN name
     :type vlan_name: list
-    :return: raise NetworkException on error
+    :return: True/False
+    :rtype: bool
     """
     host_name = ll_hosts.get_host_name_from_engine(host_obj.ip)
     logger.info(
@@ -276,14 +283,14 @@ def add_vlans_to_host(host_obj, vlan_id, vlan_name, nic):
         if not host_add_vlan(
             host_obj=host_obj, vlan_id=vid, nic=nic, vlan_name=vname
         ):
-            raise config.NET_EXCEPTION(
-                "Failed to create %s on %s" % (vlan_name, host_name)
-            )
+            return False
+    return True
 
 
 def remove_vlan_and_refresh_capabilities(host_obj, vlan_name):
     """
     Add vlan to host and refresh host capabilities
+
     :param host_obj: resources.VDS object
     :type host_obj: VDS
     :param vlan_name: VLAN name
@@ -304,6 +311,7 @@ def remove_vlan_and_refresh_capabilities(host_obj, vlan_name):
 def refresh_capabilities(host):
     """
     Refresh host capabilities
+
     :param host: Host name (from engine)
     :type host: str
     :return: True/False
@@ -323,6 +331,7 @@ def refresh_capabilities(host):
 def is_interface_on_host(host_obj, interface):
     """
     Check if interface exists on host
+
     :param host_obj: resources.VDS object
     :type host_obj: VDS
     :param interface: Interface name
@@ -356,5 +365,5 @@ def get_bridge_from_virsh(host_obj, bridge):
     try:
         return [i for i in all_bridges if vdsm_bridge_name == i.name()][0]
     except IndexError:
-        logger.error("%s not found in virsh", bridge)
+        logger.warning("%s not found in virsh", bridge)
         return None

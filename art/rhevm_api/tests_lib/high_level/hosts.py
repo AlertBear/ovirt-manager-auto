@@ -233,7 +233,6 @@ def restart_services_under_maintenance_state(
     :raises: HostException
     """
     host_name = ll_hosts.get_host_name_from_engine(host_resource.ip)
-    LOGGER.info("Put host %s to maintenance", host_name)
     if not ll_hosts.deactivateHost(True, host_name):
         raise errors.HostException(
             "Failed to put host %s to maintenance" % host_name
@@ -248,11 +247,8 @@ def restart_services_under_maintenance_state(
             raise errors.HostException(
                 "Failed to restart %s services on host %s" % (host_name, srv)
             )
-    LOGGER.info("Activate host %s", host_name)
     if not ll_hosts.activateHost(True, host_name):
-        raise errors.HostException(
-            "Failed to activate host %s" % host_name
-        )
+        raise errors.HostException()
 
 
 def restart_vdsm_and_wait_for_activation(
