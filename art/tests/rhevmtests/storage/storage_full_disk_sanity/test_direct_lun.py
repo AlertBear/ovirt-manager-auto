@@ -499,20 +499,46 @@ class TestCase5924(DirectLunAttachTestCase):
     """
     polarion_test_case = "5924"
 
-    @polarion("RHEVM3-5924")
-    def test_remove_direct_lun(self):
+    def full_flow_direct_lun(self):
         """
         1) Create a direct LUN and attach it to the vm
         2) Detach the LUN from the vm and remove it
         """
         self.attach_disk_to_vm()
-        # TODO: Verify write operation to direct lun
-
+        self.assertTrue(
+            ll_vms.startVm(True, self.vm_name, config.VM_UP),
+            "Failed to start vm %s" % self.vm_name
+        )
+        # TODO: verify write operation to direct LUN when bug:
+        # https://bugzilla.redhat.com/show_bug.cgi?id=957788 will fix
+        ll_vms.stop_vms_safely([self.vm_name])
         logger.info("Detaching direct lun %s", self.disk_alias)
-        assert ll_disks.detachDisk(True, self.disk_alias, self.vm_name)
+        self.assertTrue(
+            ll_disks.detachDisk(True, self.disk_alias, self.vm_name),
+            "Failed to detach direct lun from vm %s" % self.vm_name
+        )
         logger.info("Removing direct lun %s", self.disk_alias)
-        assert ll_disks.deleteDisk(True, self.disk_alias)
+        self.assertTrue(
+            ll_disks.deleteDisk(True, self.disk_alias),
+            "Failed to delete direct lun"
+        )
         ll_jobs.wait_for_jobs([config.JOB_REMOVE_DISK])
+
+    @polarion("RHEVM3-5924")
+    def test_full_flow_direct_lun(self):
+        """
+        Execute full flow
+        """
+        self.full_flow_direct_lun()
+
+    @polarion("RHEVM3-5924")
+    def test_full_flow_direct_lun_passthrough(self):
+        """
+        Execute full flow
+        """
+        # Setting pass-through sgio = 'unfiltered'
+        self.lun_kwargs['sgio'] = 'unfiltered'
+        self.full_flow_direct_lun()
 
     def tearDown(self):
         if not ll_vms.safely_remove_vms([self.vm_name]):

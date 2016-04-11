@@ -294,6 +294,8 @@ def addDisk(positive, **kwargs):
         * storage_connection - in case of direct LUN - existing storage
                                connection to use instead of creating a new one
         * active - True or False whether disk should be automatically activated
+        * sgio - 'unfiltered' in case a direct LUN should be with pass-through
+        capabilities or 'filtered' or None if not
         You cannot set both storage_connection and lun_* in one call!
     Author: jlibosva
     Return: True - if positive and successfully added or not positive and not
