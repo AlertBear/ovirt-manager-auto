@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import copy
 import uuid
 import logging
 import random
@@ -191,6 +190,7 @@ def user_case(login_as=None, cleanup_func=None, **kwargs_glob):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             self.positive = func.__name__[5:] in self.perms
+            func.__dict__['role'] = kwargs_glob.get('role')
             LOGGER.info('Running %s %s action',
                         'positive' if self.positive else 'negative',
                         func.__name__)
@@ -224,50 +224,6 @@ class CaseRoleActions(TestCase):
     __test__ = False
     last_logged_in = ''
     cleanup_functions = []  # List of dictionaries of cleanup functions
-
-    def __init__(self, *args, **kwargs):
-        """ Assign bz to specific cases """
-        super(CaseRoleActions, self).__init__(*args, **kwargs)
-        bzs = {
-            '1209505': {
-                'DiskCreator': ['create_disk'],
-                'DiskOperator': ['create_disk'],
-                'InstanceCreator': ['create_disk'],
-                'PowerUserRole': ['create_disk', 'create_template'],
-                'TemplateCreator': ['create_template'],
-                'UserInstanceManager': ['create_disk'],
-                'UserVmManager': ['create_disk'],
-                'UserVmRunTimeManager': ['create_disk'],
-                'VmCreator': ['create_disk'],
-                'TemplateAdmin': ['create_template'],
-                'ClusterAdmin': [
-                    'create_vm_pool',
-                    'edit_vm_pool_configuration',
-                ],
-                'DataCenterAdmin': [
-                    'create_template',
-                    'create_vm_pool',
-                    'edit_vm_pool_configuration',
-                ],
-                'VmPoolAdmin': [
-                    'create_vm_pool',
-                    'edit_vm_pool_configuration',
-                ],
-            },
-        }
-        for bzid, role in bzs.iteritems():
-            for perm in role.get(self.role, ()):
-                method_name = 'test_%s' % perm
-                m = getattr(self, method_name)
-
-                @wraps(m)
-                def wrapper(*args, **kwargs):
-                    return m(*args, **kwargs)
-                wrapper.__dict__ = copy.copy(m.__dict__)
-                wrapper.__dict__['bz'] = {
-                    bzid: {},
-                }
-                setattr(self, method_name, wrapper)
 
     @classmethod
     def setup_class(cls):
