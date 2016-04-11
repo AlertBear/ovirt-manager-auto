@@ -499,3 +499,16 @@ def start_vm_in_pool_as_user(
             )
             return False
     return True
+
+
+def flush_file_system_buffers(vm_resource):
+    """
+    Calls sync to flush file system buffers. This call is invoked to makes sure
+    That the new file written will persist after vm reboot.
+
+    :param vm_resource: Host resource object of the vm.
+    :type vm_resource: Host resource.
+    :return: True if action sync succeeded, False otherwise.
+    :rtype: bool
+    """
+    return vm_resource.run_command(['sync'])[0] == 0

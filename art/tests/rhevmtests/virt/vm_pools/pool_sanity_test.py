@@ -116,6 +116,7 @@ class TestAdminStartedVmNotStateless(base.VmPool):
         vm_resource = gen_helper.get_vm_resource(vm)
         helpers.create_file_in_vm(vm, vm_resource)
         helpers.check_if_file_exist(True, vm, vm_resource)
+        self.assertTrue(helpers.flush_file_system_buffers(vm_resource))
         self.assertTrue(ll_vms.stop_vms_safely([vm]))
         self.assertTrue(ll_vms.startVm(True, vm, wait_for_status=config.VM_UP))
         vm_resource = gen_helper.get_vm_resource(vm)
