@@ -6,8 +6,9 @@ helper file for bridgeless
 """
 
 import logging
-import config as conf
+
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import rhevmtests.networking.config as conf
 
 logger = logging.getLogger("Bridgeless_Networks_Helper")
 
@@ -24,7 +25,6 @@ def create_networks_on_host(nic, net=None, slaves=list()):
     :type slaves: list
     :raise: NetworkException
     """
-
     local_dict = {
         "add": {
             "1": {
@@ -32,11 +32,14 @@ def create_networks_on_host(nic, net=None, slaves=list()):
             }
         }
     }
+    vlan_log = ""
     if slaves:
         local_dict["add"]["1"]["slaves"] = slaves
     if net:
         local_dict["add"]["1"]["network"] = net
-        vlan_log = "with VLAN" if conf.NET_DICT[net].get("vlan_id") else ""
+        vlan_log = "with VLAN" if conf.BRIDGELESS_NET_DICT[net].get(
+            "vlan_id"
+        ) else vlan_log
 
     log = (
         "Attach Non-VM %s network %s to" % (vlan_log, net) if net else "Create"

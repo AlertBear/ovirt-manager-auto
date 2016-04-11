@@ -2,12 +2,14 @@
 Consolidated network config module
 """
 
-__test__ = False
-
-from rhevmtests.config import *  # flake8: noqa
 from collections import OrderedDict
 from random import randint
+
 import art.test_handler.exceptions as exceptions
+import rhevmtests.helpers as global_helper
+from rhevmtests.config import *  # flake8: noqa
+
+__test__ = False
 
 # Global parameters
 STORAGE_TYPE = "nfs"
@@ -44,6 +46,8 @@ VDS_1_HOST = None  # Filled in test
 HOST_1_NAME = None  # Filled in test
 HOST_1_IP = None  # Filled in test
 VM_DISK_SIZE = 1024
+NUM_DUMMYS = 4
+DUMMYS = ["dummy_%s" % i for i in xrange(NUM_DUMMYS)]
 
 # Network Custom Priority parameters
 BRIDGE_OPTS = OrderedDict({"priority": ["32768", "1"],
@@ -137,3 +141,55 @@ EXT_DC_1 = EXTRA_DC[1]
 # Management network as role
 EXT_DC_0 = EXTRA_DC[0]
 EXTRA_CLUSTER_0 = EXTRA_CL[0]
+
+# bridgeless
+VLAN_IDS = [str(i) for i in xrange(2, 4)]
+NETS = global_helper.generate_object_names(num_of_cases=4, num_of_objects=3)
+
+BRIDGELESS_NET_DICT = {
+    NETS[1][0]: {
+        "required": "false",
+        "usages": ""
+    },
+    NETS[2][0]: {
+        "vlan_id": VLAN_IDS[0],
+        "required": "false",
+        "usages": ""
+    },
+    NETS[3][0]: {
+        "vlan_id": VLAN_IDS[1],
+        "required": "false",
+        "usages": ""
+    },
+    NETS[4][0]: {
+        "required": "false",
+        "usages": ""
+    }
+}
+
+# Arbitrary VLAN device name
+VLAN_NAMES = ["vlan10", "vlan20", "vlan30"]
+VLAN_IDS = ["10", "20", "30"]
+BRIDGE_NAMES = ["br_vlan10", "br_vlan20", "br_vlan30"]
+
+# cumulative_rx_tx_statistics
+HOST_IPS = None  # Filled in test
+VM_IPS = None  # Filled in test
+NIC_STAT = None  # Filled in test
+TOTAL_RX = None  # Filled in test
+TOTAL_TX = None  # Filled in test
+NETWORK_0 = NETWORKS[0]
+NETWORK_1 = NETWORKS[1]
+NETWORK_2 = NETWORKS[2]
+VM_NIC_1 = NIC_NAME[1]
+DC_3_5 = "tx_rx_stats_DC_3_5"
+CL_3_5 = "tx_rx_stats_Cl_3_5"
+STAT_KEYS = ["data.total.rx", "data.total.tx"]
+ETH0 = VM_NICS[0]
+BASIC_IP_DICT_NETMASK = {
+    "ip_prefix": {
+        "address": "",
+        "netmask": "255.255.0.0",
+        "boot_protocol": "static"
+    }
+}

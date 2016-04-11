@@ -10,58 +10,25 @@ bond scenarios.
 
 import logging
 
-import config as conf
-import helper
-import rhevmtests.networking as networking
-import rhevmtests.networking.helper as networking_helper
+import pytest
+
+import helper as bridgeless_helper
+import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
-from art.unittest_lib import attr, NetworkTest
+from art.unittest_lib import attr, NetworkTest, testflow
+from fixtures import (
+    all_classes_teardown, bridgeless_prepare_setup, case_03_fixture,
+    case_04_fixture
+)
 
 logger = logging.getLogger("Bridgeless_Networks_Cases")
 
 
-def setup_module():
-    """
-    running cleanup
-    Obtain host NICs for the first Network Host
-    Create dummy interfaces
-    Create networks
-    """
-    networking.network_cleanup()
-    conf.HOST_0_NAME = conf.HOSTS[0]
-    conf.HOST0_NICS = conf.VDS_HOSTS[0].nics
-    networking_helper.prepare_dummies(
-        host_resource=conf.VDS_HOSTS[0], num_dummy=conf.NUM_DUMMYS
-    )
-    networking_helper.prepare_networks_on_setup(
-        networks_dict=conf.NET_DICT, dc=conf.DC_NAME[0],
-        cluster=conf.CLUSTER_NAME[0]
-    )
-
-
-def teardown_module():
-    """
-    Cleans the environment
-    """
-    networking_helper.remove_networks_from_setup(hosts=conf.HOST_0_NAME)
-    networking_helper.delete_dummies(host_resource=conf.VDS_HOSTS[0])
-
-
 @attr(tier=2)
-class BridgelessTestCaseBase(NetworkTest):
-    """
-    Base class which provides teardown class method for each test case
-    """
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup.
-        """
-        networking_helper.remove_networks_from_host()
-
-
-class BridgelessCase1(BridgelessTestCaseBase):
+@pytest.mark.usefixtures(
+    all_classes_teardown.__name__, bridgeless_prepare_setup.__name__
+)
+class TestBridgelessCase1(NetworkTest):
     """
     Attach Non-VM network to host NIC
     """
@@ -70,14 +37,19 @@ class BridgelessCase1(BridgelessTestCaseBase):
     @polarion("RHEVM-14837")
     def test_bridgeless_network(self):
         """
-         Attach Non-VM network to host NIC
+        Attach Non-VM network to host NIC
         """
-        helper.create_networks_on_host(
-            nic=conf.HOST0_NICS[1], net=conf.NETS[1][0]
+        testflow.step("Attach non-VM network to host NIC")
+        bridgeless_helper.create_networks_on_host(
+            nic=conf.HOST_0_NICS[1], net=conf.NETS[1][0]
         )
 
 
-class BridgelessCase2(BridgelessTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    all_classes_teardown.__name__, bridgeless_prepare_setup.__name__
+)
+class TestBridgelessCase2(NetworkTest):
     """
     Attach Non-VM with VLAN network to host NIC
     """
@@ -88,53 +60,49 @@ class BridgelessCase2(BridgelessTestCaseBase):
         """
         Attach Non-VM with VLAN network to host NIC
         """
-        helper.create_networks_on_host(
-            nic=conf.HOST0_NICS[1], net=conf.NETS[2][0]
+        testflow.step("Attach non-VM network with VLAN to host NIC")
+        bridgeless_helper.create_networks_on_host(
+            nic=conf.HOST_0_NICS[1], net=conf.NETS[2][0]
         )
 
 
-class BridgelessCase3(BridgelessTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(case_03_fixture.__name__)
+class TestBridgelessCase3(NetworkTest):
     """
     Create BOND
     Attach Non-VM network with VLAN over BOND
     """
     __test__ = True
-    bond = "bond03"
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create BOND
-        """
-
-        helper.create_networks_on_host(nic=cls.bond, slaves=conf.DUMMYS[:2])
+    bond = conf.BOND[0]
 
     @polarion("RHEVM-14840")
     def test_bond_bridgeless_network(self):
         """
         Attach Non-VM network with VLAN over BOND
         """
-        helper.create_networks_on_host(net=conf.NETS[3][0], nic=self.bond)
+        testflow.step("Attach non-VM network with VLAN to BOND")
+        bridgeless_helper.create_networks_on_host(
+            net=conf.NETS[3][0], nic=self.bond
+        )
 
 
-class BridgelessCase4(BridgelessTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(case_04_fixture.__name__)
+class TestBridgelessCase4(NetworkTest):
     """
     Create BOND
     Attach Non-VM network over BOND
     """
     __test__ = True
-    bond = "bond04"
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create BOND
-        """
-        helper.create_networks_on_host(nic=cls.bond, slaves=conf.DUMMYS[2:4])
+    bond = conf.BOND[1]
 
     @polarion("RHEVM-14839")
     def test_bond_bridgeless_network(self):
         """
         Attach bridgeless network over BOND
         """
-        helper.create_networks_on_host(net=conf.NETS[4][0], nic=self.bond)
+        testflow.step("Attach non-VM network to BOND")
+        bridgeless_helper.create_networks_on_host(
+            net=conf.NETS[4][0], nic=self.bond
+        )
