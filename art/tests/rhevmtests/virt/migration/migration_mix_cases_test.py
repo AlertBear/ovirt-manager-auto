@@ -4,6 +4,7 @@
 """
 Test migration feature mix cases.
 """
+import time
 import logging
 import pytest
 import art.rhevm_api.tests_lib.high_level.vms as hl_vm
@@ -147,6 +148,11 @@ class TestMigrationMixCase2(common.VirtTest):
                 "Failed to update memory for vm %s", self.vm_name
             )
         logger.info("Rerun VM on host %s", config.HOSTS[host_index])
+        # workaround for BZ:1303994
+        # VM is already running on destination host
+        # wait 2 intervals of monitor to finish
+        logger.info("sleep 30 sec")
+        time.sleep(30)
         if not network_helper.run_vm_once_specific_host(
             vm=self.vm_name, host=config.HOSTS[host_index],
             wait_for_up_status=True
