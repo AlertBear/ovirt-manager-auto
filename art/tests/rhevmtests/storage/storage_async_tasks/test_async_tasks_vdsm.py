@@ -25,8 +25,7 @@ TIMEOUT = 300
 DATA_CENTER_INIT_TIMEOUT = 1200
 
 
-@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
-@attr(tier=4)
+@attr(tier=config.DO_NOT_RUN)
 class RestartVDSM(TestCase):
     __test__ = False
 

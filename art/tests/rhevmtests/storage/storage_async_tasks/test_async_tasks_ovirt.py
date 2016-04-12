@@ -22,8 +22,7 @@ TIMEOUT = 300
 OPERATION_FINISHED = False
 
 
-@attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
-@attr(tier=4)
+@attr(tier=config.DO_NOT_RUN)
 class RestartOvirt(TestCase):
     __test__ = False
 

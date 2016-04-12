@@ -531,3 +531,6 @@ NO_FULL_SRIOV_SUPPORT = PARAMETERS.as_bool('no_full_sriov_support')
 NO_FULL_SRIOV_SUPPORT_SKIP_MSG = SKIP_MSG_PREFIX % "full SRIOV support"
 NO_SEMI_SRIOV_SUPPORT = PARAMETERS.as_bool('no_semi_sriov_support')
 NO_SEMI_SRIOV_SUPPORT_SKIP_MSG = SKIP_MSG_PREFIX % "semi SRIOV support"
+
+# used for tests that are not adjusted to GE or tests that we don't want to run
+DO_NOT_RUN = 17

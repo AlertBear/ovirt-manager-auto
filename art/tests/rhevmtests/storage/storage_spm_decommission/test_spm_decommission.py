@@ -31,8 +31,7 @@ TIMEOUT_SD_OPERATION = 300
 
 
 # TODO: Enable once this test plan is stabilized
-@attr(**{'extra_reqs': {'convert_to_ge': True}})
-@attr(tier=2)
+@attr(tier=config.DO_NOT_RUN)
 class ActivateDeactivate(StorageTest):
     """
     Test for race condition while activating and deactivating storage domains
@@ -128,8 +127,7 @@ class ActivateDeactivateMixedStorageTypes(ActivateDeactivate):
 
 
 # TODO: Enable once this test plan is stabilized
-@attr(**{'extra_reqs': {'convert_to_ge': True}})
-@attr(tier=2)
+@attr(tier=config.DO_NOT_RUN)
 class UpgradeBaseClass(StorageTest):
     """
     Test behaviour of an upgraded data center

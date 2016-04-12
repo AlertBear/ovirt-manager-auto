@@ -29,7 +29,7 @@ DISK_SIZE = 3 * config.GB
 
 # TODO: If the test fails with error = low level Image copy failed, code = 261
 # re-open https://bugzilla.redhat.com/show_bug.cgi?id=1201268 and uncomment:
-# @attr(**{'extra_reqs': {'convert_to_ge': True}} if config.GOLDEN_ENV else {})
+# @attr(config.DO_NOT_RUN)
 class BaseTestCase(TestCase):
     """
     Base Test Case for clone snapshot
