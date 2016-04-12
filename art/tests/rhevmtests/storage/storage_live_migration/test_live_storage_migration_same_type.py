@@ -129,7 +129,7 @@ class TestCase5986(basePlan.TestCase5986):
 
 
 @attr(tier=2)
-class TestCase5955(basePlan.TestCase5955):
+class TestCase5995(basePlan.TestCase5995):
     """
     Images located on different domain
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
