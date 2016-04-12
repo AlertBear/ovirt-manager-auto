@@ -7,6 +7,7 @@ count threads as cores and placement policy
 import re
 import random
 import logging
+import pytest
 
 import art.unittest_lib as u_lib
 import rhevmtests.sla.config as conf
@@ -412,7 +413,7 @@ class TestCPUHostCase5(BasicSlaClass):
 ########################################################################
 
 
-@u_lib.common.skip_class_if(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
+@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 class TestCPUHostCase6(BasicSlaClass):
     """
     Check if VM with CPU host is running with correct QEMU values

@@ -4,6 +4,7 @@ Check creation of VNUMA on vm, run it on host with NUMA architecture and
 pining of VNUMA to host NUMA
 """
 import logging
+import pytest
 import config as conf
 import art.unittest_lib as u_libs
 from art.unittest_lib import attr
@@ -1275,7 +1276,7 @@ class TestPinVNUMAWithLessMemoryThanOnPNUMAInterleave(
         )
 
 
-@u_libs.common.skip_class_if(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
+@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 class TestHotplugCpuUnderNumaPinning(StartVms):
     """
     Run vm with numa pinning, hotplug cpu and check numa pinning

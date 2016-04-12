@@ -5,6 +5,7 @@
 Test migration feature mix cases.
 """
 import logging
+import pytest
 import art.rhevm_api.tests_lib.high_level.vms as hl_vm
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 import art.rhevm_api.tests_lib.low_level.vms as ll_vm
@@ -80,7 +81,7 @@ class TestMigrationMixCase1(common.VirtTest):
         )
 
 
-@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @common.attr(tier=2)
 class TestMigrationMixCase2(common.VirtTest):
     """
@@ -245,7 +246,7 @@ class TestMigrationMixCase3(common.VirtTest):
         )
 
 
-@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @common.attr(tier=2)
 class TestMigrationMixCase4(common.VirtTest):
     """

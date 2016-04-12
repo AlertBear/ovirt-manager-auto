@@ -3,8 +3,8 @@ Regression Vms Test - Basic tests to check vms functionality
 """
 from rhevmtests.virt import config
 import logging
-import unittest2
-import art.unittest_lib.common as common
+import pytest
+
 from art.unittest_lib import VirtTest as TestCase
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
@@ -215,7 +215,7 @@ class AddVm(TestCase):
             )
         )
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12362")
     def test_add_stateless_vm(self):
         """
@@ -309,7 +309,7 @@ class AddVm(TestCase):
             )
         )
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipifIf(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12518")
     def test_add_vm_with_rhel_os_type(self):
         """
@@ -326,7 +326,7 @@ class AddVm(TestCase):
             )
         )
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12520")
     def test_add_vm_with_windows_xp_os_type(self):
         """
@@ -367,7 +367,7 @@ class AddVm(TestCase):
             )
         )
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12519")
     def test_add_vm_with_specific_domain(self):
         """
@@ -493,7 +493,7 @@ class UpdateVm(BaseVm):
                 raise errors.VMException("Failed to add vm")
         super(UpdateVm, cls).setup_class()
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12563")
     def test_update_vm_os_type_from_rhel_to_windows_xp(self):
         """
@@ -508,7 +508,7 @@ class UpdateVm(BaseVm):
             )
         )
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12561")
     def test_update_vm_os_type_from_rhel_to_windows_7(self):
         """
@@ -523,7 +523,7 @@ class UpdateVm(BaseVm):
             )
         )
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12564")
     def test_update_vm_os_type_from_xp_to_rhel(self):
         """
@@ -538,7 +538,7 @@ class UpdateVm(BaseVm):
             )
         )
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12562")
     def test_update_vm_os_type_from_rhel_to_windows_7_neg(self):
         """
@@ -729,7 +729,7 @@ class UpdateVm(BaseVm):
         """
         self.assertTrue(vm_api.updateVm(True, self.vm_name, cpu_cores=2))
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12534")
     def test_update_vm_display_type_to_vnc(self):
         """
@@ -743,7 +743,7 @@ class UpdateVm(BaseVm):
             )
         )
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12526")
     def test_update_spice_vm_number_of_monitors(self):
         """
@@ -771,7 +771,7 @@ class UpdateVm(BaseVm):
             )
         )
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12567")
     def test_update_vnc_vm_number_of_monitors(self):
         """
@@ -1032,7 +1032,7 @@ class VmDisk(BaseVm):
         )
 
     @attr(tier=2)
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12568")
     def test_add_bootable_cow_ide_data_disk(self):
         """
@@ -1069,7 +1069,7 @@ class VmDisk(BaseVm):
         )
 
     @attr(tier=2)
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12571")
     def test_add_disks_with_different_interfaces_and_formats(self):
         """
@@ -1387,7 +1387,7 @@ class ImportExportVm(BaseVmWithDisk):
 
 
 @attr(tier=1)
-@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class VmDisplay(TestCase):
     """
     Create vms with different display types, run it and check

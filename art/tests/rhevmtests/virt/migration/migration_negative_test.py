@@ -6,6 +6,7 @@ Negative Migration Test - Tests to check vm migration
 """
 
 import logging
+import pytest
 
 from art.test_handler.exceptions import VMException
 from rhevmtests.virt import config
@@ -19,7 +20,6 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 from art.unittest_lib import attr
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 from art.rhevm_api.tests_lib.low_level import storagedomains
-import art.unittest_lib.common as common
 
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -133,7 +133,7 @@ class TestMigrateNegativeCase3(TestCase):
 
 
 @attr(tier=2)
-@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class TestMigrateNegativeCase4(TestCase):
     """
     Negative test:

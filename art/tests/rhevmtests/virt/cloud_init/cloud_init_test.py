@@ -6,6 +6,7 @@ Virt - Cloud init sanity Test
 Check basic cases with cloud init
 """
 import logging
+import pytest
 import config
 import helper
 from art.test_handler.tools import polarion  # pylint: disable=E0611
@@ -18,7 +19,7 @@ logger = logging.getLogger("cloud_init")
 
 
 @common.attr(tier=1)
-@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class CloudInitBase(common.VirtTest):
     """
     Base class for Cloud init Test
