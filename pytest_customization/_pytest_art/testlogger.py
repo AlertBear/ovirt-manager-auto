@@ -5,12 +5,15 @@ are used to see (:
 NOTE: this module will be removed once we ensure proper logging our tests
 independently on test runner.
 """
+import types
 import logging
 import pytest
 
 
 __all__ = [
+    "pytest_addoption",
     "pytest_artconf_ready",
+    "pytest_sessionstart",
 ]
 
 
@@ -275,3 +278,37 @@ def pytest_artconf_ready(config):
     """
     config._testlogger = ARTLogging()
     config.pluginmanager.register(config._testlogger)
+
+
+def pytest_sessionstart(session):
+    if not session.config.getoption("drop_summary"):
+        return
+
+    terminal_name = "terminalreporter"
+    try:  # there was change in interface of plugin management
+        terminal = session.config.pluginmanager.getplugin(terminal_name)
+    except AttributeError:
+        terminal = session.config.pluginmanager.get_plugin(terminal_name)
+
+    def fake_summary(self):
+        pass  # this function does nothing instead of printing summary
+
+    # Error summary
+    terminal.summary_errors = types.MethodType(
+        fake_summary, terminal, terminal.__class__
+    )
+
+    # Failure summary
+    terminal.summary_failures = types.MethodType(
+        fake_summary, terminal, terminal.__class__
+    )
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        '--drop-summary',
+        dest="drop_summary",
+        action="store_true",
+        default=False,
+        help="You can dissable print of summary at the end of session.",
+    )
