@@ -386,6 +386,8 @@ def create_vm_or_clone(
                     vmName, glance_image
                 )
                 return False
+        else:
+            return False
         if start == 'true':
             return ll_vms.startVm(
                 positive, vmName, wait_for_status=config.VM_UP

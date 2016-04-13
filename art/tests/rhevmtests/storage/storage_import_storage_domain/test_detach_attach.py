@@ -2,10 +2,15 @@
 3.5 - Import Storage Domain
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_5_Storage_ImportDomain_DetachAttach
+3.5 - Import Storage Domain Between Different Setups
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
+Storage/3_5_Storage_ImportDomain_Between_DifferentSetups
 """
 import logging
 
 import config
+from art.core_api.apis_utils import TimeoutingSampler
+from art.rhevm_api.resources import storage
 from art.rhevm_api.tests_lib.high_level import (
     datacenters as hl_dc,
     storagedomains as hl_sd,
@@ -27,6 +32,7 @@ from art.test_handler.settings import opts
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.unittest_lib import attr, StorageTest as BaseTestCase
 import rhevmtests.storage.helpers as storage_helpers
+import rhevmtests.helpers as rhevm_helpers
 
 logger = logging.getLogger(__name__)
 
@@ -34,186 +40,20 @@ ENUMS = config.ENUMS
 ISCSI = config.STORAGE_TYPE_ISCSI
 FCP = config.STORAGE_TYPE_FCP
 NFS = config.STORAGE_TYPE_NFS
-GULSTERFS = config.STORAGE_TYPE_GLUSTER
+GLUSTER = config.STORAGE_TYPE_GLUSTER
 POSIX = config.STORAGE_TYPE_POSIX
-UPDATE_OVF_INTERVAL_CMD = "OvfUpdateIntervalInMinutes=%(minutes)s"
-
-VM_NAMES = dict()
-IMPORT_DOMAIN = dict()
-
-
-def setup_module():
-    """
-    Prepares environment
-    """
-    global IMPORT_DOMAIN, VM_NAMES
-    rc, masterSD = ll_sd.findMasterStorageDomain(
-        True, config.DATA_CENTER_NAME
-    )
-    if not rc:
-        raise exceptions.StorageDomainException(
-            "Could not find master storage domain for dc %s" %
-            config.DATA_CENTER_NAME
-        )
-    for storage_type in config.STORAGE_SELECTOR:
-        VM_NAMES[storage_type] = []
-        spm = ll_hosts.getSPMHost(config.HOSTS)
-        sd_name = config.TESTNAME
-        if storage_type == ISCSI:
-            if not len(config.UNUSED_LUNS) >= 1:
-                raise exceptions.StorageDomainException(
-                    "There are no unused LUNs, aborting test"
-                )
-            sd_name = "{0}_{1}".format(config.TESTNAME, "iSCSI")
-            status_attach_and_activate = hl_sd.addISCSIDataDomain(
-                spm,
-                sd_name,
-                config.DATA_CENTER_NAME,
-                config.UNUSED_LUNS["lun_list"][0],
-                config.UNUSED_LUNS["lun_addresses"][0],
-                config.UNUSED_LUNS["lun_targets"][0],
-                override_luns=True
-            )
-            if not status_attach_and_activate:
-                raise exceptions.StorageDomainException(
-                    "Creating iSCSI domain '%s' failed" % sd_name
-                )
-        elif storage_type == FCP:
-            if not len(config.UNUSED_FC_LUNS) >= 1:
-                raise exceptions.StorageDomainException(
-                    "There are no unused FC LUNs, aborting test"
-                )
-            sd_name = "{0}_{1}".format(config.TESTNAME, "FCP")
-            status_attach_and_activate = hl_sd.addFCPDataDomain(
-                spm,
-                sd_name,
-                config.DATA_CENTER_NAME,
-                config.UNUSED_FC_LUNS[0],
-                override_luns=True
-            )
-            if not status_attach_and_activate:
-                raise exceptions.StorageDomainException(
-                    "Creating FCP domain '%s' failed" % sd_name
-                )
-        elif storage_type == NFS:
-            sd_name = "{0}_{1}".format(config.TESTNAME, "NFS")
-            nfs_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[0]
-            nfs_path = config.UNUSED_DATA_DOMAIN_PATHS[0]
-            status = hl_sd.addNFSDomain(
-                host=spm,
-                storage=sd_name,
-                data_center=config.DATA_CENTER_NAME,
-                address=nfs_address,
-                path=nfs_path,
-                format=True
-            )
-            if not status:
-                raise exceptions.StorageDomainException(
-                    "Creating NFS domain '%s' failed" % sd_name
-                )
-        elif storage_type == config.STORAGE_TYPE_GLUSTER:
-            sd_name = "{0}_{1}".format(config.TESTNAME, "Gluster")
-            gluster_address = (
-                config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0]
-            )
-            gluster_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0]
-            status = hl_sd.addGlusterDomain(
-                host=spm,
-                name=sd_name,
-                data_center=config.DATA_CENTER_NAME,
-                address=gluster_address,
-                path=gluster_path,
-                vfs_type=config.ENUMS['vfs_type_glusterfs']
-            )
-            if not status:
-                raise exceptions.StorageDomainException(
-                    "Creating Gluster domain '%s' failed" % sd_name
-                )
-        # This domain will be the domain to import during the whole run.
-        # Deactivate it before creating the vm for the job to make sure that
-        # the vm is not created on it.
-        IMPORT_DOMAIN[storage_type] = sd_name
-        ll_jobs.wait_for_jobs(
-            [
-                ENUMS['job_add_nfs_storage_domain'],
-                ENUMS['job_add_glusterfs_storage_domain'],
-                ENUMS['job_add_san_storage_domain']
-            ]
-        )
-        logger.info(
-            "Non-master domain to import into during test "
-            "run: %s for storage type %s",
-            IMPORT_DOMAIN[storage_type], storage_type
-        )
-
-        test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
-        )
-        hl_sd.detach_and_deactivate_domain(
-            config.DATA_CENTER_NAME, IMPORT_DOMAIN[storage_type]
-        )
-        ll_jobs.wait_for_jobs([ENUMS['job_detach_storage_domain']])
-
-        storage_domain = ll_sd.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, storage_type
-        )[0]
-        vm_name = config.VM_NAME % storage_type
-        vm_args = config.create_vm_args.copy()
-        vm_args['storageDomainName'] = storage_domain
-        vm_args['vmName'] = vm_name
-        vm_args['vmDescription'] = vm_name
-        vm_args['deep_copy'] = True
-
-        if not storage_helpers.create_vm_or_clone(**vm_args):
-            raise exceptions.VMException(
-                'Unable to create vm %s for test' % vm_name
-            )
-        VM_NAMES[storage_type].append(vm_name)
-        logger.info(
-            "Attaching storage domain %s", IMPORT_DOMAIN[storage_type]
-        )
-        hl_sd.attach_and_activate_domain(
-            config.DATA_CENTER_NAME, IMPORT_DOMAIN[storage_type]
-        )
-        ll_jobs.wait_for_jobs([ENUMS['job_activate_storage_domain']])
-
-    logger.info(
-        "Changing the ovirt-engine service with OvfUpdateIntervalInMinutes "
-        "to 1 minute, restarting engine"
-    )
-    if not test_utils.set_engine_properties(
-            config.ENGINE, [UPDATE_OVF_INTERVAL_CMD % {'minutes': 1}]
-    ):
-        raise exceptions.UnkownConfigurationException(
-            "Update OVF interval failed to execute on '%s'" % config.VDC
-        )
-
-    # TODO: As a workaround for bug
-    # https://bugzilla.redhat.com/show_bug.cgi?id=1300075
-    test_utils.wait_for_tasks(
-        config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
-    )
-    hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
+TIMEOUT_DEACTIVATE_DOMAIN = 90
 
 
 def teardown_module():
     """
     Clean datacenter
     """
-    exception_flag = False
-    host = ll_hosts.getSPMHost(config.HOSTS)
-
-    logger.info(
-        "Changing the ovirt-engine service with OvfUpdateIntervalInMinutes "
-        "to 60 minutes, restarting engine"
-    )
-    if not test_utils.set_engine_properties(
-            config.ENGINE, [UPDATE_OVF_INTERVAL_CMD % {'minutes': 60}]
-    ):
-        logger.error(
-            "Failed to restore Update OvfUpdateIntervalInMinutes to 60 minutes"
-        )
-        exception_flag = True
+    # TODO: Seems the imported vms will get assing a mac address and will get
+    # released after the engine is restarted. Restart the engine as a W/A
+    # until this issue is investigated and fixed:
+    # https://projects.engineering.redhat.com/browse/RHEVM-2610
+    test_utils.restart_engine(config.ENGINE, 10, 300)
 
     # TODO: As a workaround for bug
     # https://bugzilla.redhat.com/show_bug.cgi?id=1300075
@@ -221,31 +61,6 @@ def teardown_module():
         config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
     )
     hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
-
-    for vm_names in VM_NAMES.values():
-        ll_vms.safely_remove_vms(vm_names)
-
-    for storage_domain_name in IMPORT_DOMAIN.values():
-        test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
-        )
-        hl_sd.detach_and_deactivate_domain(
-            config.DATA_CENTER_NAME, storage_domain_name
-        )
-
-        if not ll_sd.removeStorageDomain(
-            True, storage_domain_name, host, format='true'
-        ):
-            logger.error(
-                'Failed to remove storage domain %s',
-                storage_domain_name
-            )
-            exception_flag = True
-
-    if exception_flag:
-        raise exceptions.TearDownException(
-            "Test failed while executing teardown_module"
-        )
 
 
 class BasicEnvironment(BaseTestCase):
@@ -264,7 +79,7 @@ class BasicEnvironment(BaseTestCase):
         Create disks for case
         """
         self.test_failed = False
-        self.vm_name = config.VM_NAME % self.storage
+        self.vm_name = None
         status, master_domain = ll_sd.findMasterStorageDomain(
             True, config.DATA_CENTER_NAME
         )
@@ -273,32 +88,94 @@ class BasicEnvironment(BaseTestCase):
                 "Unable to find master storage domain"
             )
 
-        self.non_master = IMPORT_DOMAIN[self.storage]
+        self.host = ll_hosts.getSPMHost(config.HOSTS)
+        self.non_master = self.create_unique_object_name(
+            config.OBJECT_TYPE_SD
+        )
+        self.add_storage(
+            self.non_master, config.DATA_CENTER_NAME, 0
+        )
 
-    def _secure_detach_storage_domain(self, datacenter_name, domain_name):
-        logger.info("Detaching storage domain %s", domain_name)
+    def create_vm(self, params={'deep_copy': True}):
+        self.vm_name = self.create_unique_object_name(
+            config.OBJECT_TYPE_VM
+        )
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = self.non_master
+        vm_args['vmName'] = self.vm_name
+        vm_args['vmDescription'] = self.vm_name
+        vm_args.update(params)
+        if not storage_helpers.create_vm_or_clone(**vm_args):
+            raise exceptions.VMException(
+                'Unable to create vm %s for test' % self.vm_name
+            )
+
+    def _secure_deactivate_detach_storage_domain(self, dc_name, sd_name):
+        logger.info("Detaching storage domain %s", sd_name)
+        return (
+            self._secure_deactivate_domain(dc_name, sd_name)
+            and
+            self._secure_detach_domain(dc_name, sd_name)
+        )
+
+    def _secure_deactivate_domain(self, dc_name, sd_name):
+        """
+        Deactivate storage domain. There's a chance the OVF update
+        task starts while the deactivation command is executed, try for
+        TIMEOUT_DEACTIVATE_DOMAIN executing wait_for_tasks
+        """
         test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, datacenter_name
+            config.VDC, config.VDC_PASSWORD, dc_name
         )
-        hl_sd.detach_and_deactivate_domain(datacenter_name, domain_name)
+        for status in TimeoutingSampler(
+            TIMEOUT_DEACTIVATE_DOMAIN, 10, ll_sd.deactivateStorageDomain,
+            True, dc_name,
+            sd_name
+        ):
+            if not ll_sd.is_storage_domain_active(dc_name, sd_name):
+                return True
+            logger.info(
+                "Storage domain %s wasn't deactivated, wait for tasks and "
+                "try again", sd_name
+            )
+            test_utils.wait_for_tasks(
+                config.VDC, config.VDC_PASSWORD, dc_name
+            )
+        return False
 
-    def _prepare_environment(self):
-        disk_sd_name = ll_disks.get_disk_storage_domain_name(
-            ll_vms.getVmDisks(self.vm_name)[0].get_alias()
+    def _secure_detach_domain(self, dc_name, sd_name):
+        """
+        Detach storage domain. There's a chance of other tasks running
+        while detaching the domain
+        """
+        test_utils.wait_for_tasks(
+            config.VDC, config.VDC_PASSWORD, dc_name
         )
-        if disk_sd_name != self.non_master:
-            for vm_disk in [
-                disk.get_alias() for disk in ll_vms.getVmDisks(self.vm_name)
-            ]:
-                ll_vms.move_vm_disk(self.vm_name, vm_disk, self.non_master)
+        for status in TimeoutingSampler(
+            TIMEOUT_DEACTIVATE_DOMAIN, 10, ll_sd.detachStorageDomain,
+            True, dc_name, sd_name
+        ):
+            domain_obj = ll_sd.get_storage_domain_obj(sd_name)
+            try:
+                if domain_obj.get_status().get_state() == config.SD_UNATTACHED:
+                    return True
+            except AttributeError:
+                logger.info(
+                    "Waiting for all tasks to end before trying to deactivate "
+                    "the storage domain again "
+                )
+                test_utils.wait_for_tasks(
+                    config.VDC, config.VDC_PASSWORD, dc_name
+                )
+        return False
 
-        ll_jobs.wait_for_jobs([ENUMS['job_move_or_copy_disk']])
-
-    def _create_environment(self, dc_name, cluster_name,
-                            comp_version=config.COMPATIBILITY_VERSION):
+    def _create_environment(
+        self, dc_name, cluster_name,
+        comp_version=config.COMPATIBILITY_VERSION
+    ):
         if not ll_dc.addDataCenter(
-                True, name=dc_name, storage_type=config.STORAGE_TYPE,
-                local=False, version=config.COMPATIBILITY_VERSION
+                True, name=dc_name, local=False,
+                version=comp_version
         ):
             raise exceptions.DataCenterException(
                 "Failed to create dc %s" % dc_name
@@ -308,86 +185,133 @@ class BasicEnvironment(BaseTestCase):
 
         if not ll_clusters.addCluster(
                 True, name=cluster_name, cpu=config.CPU_NAME,
-                data_center=dc_name, version=comp_version
+                data_center=dc_name, version=config.COMPATIBILITY_VERSION
         ):
             raise exceptions.ClusterException(
-                "addCluster %s with cpu %s and version %s "
-                "to datacenter %s failed"
-                % (cluster_name, config.CPU_NAME, comp_version, dc_name)
+                "addCluster %s with cpu %s and version %s to datacenter %s "
+                "failed" % (
+                    cluster_name, config.CPU_NAME,
+                    config.COMPATIBILITY_VERSION, dc_name
+                )
             )
         logger.info("Cluster %s was created successfully", cluster_name)
 
-        hsm = ll_hosts.getHSMHost(config.HOSTS)
-        if not ll_hosts.deactivateHost(True, hsm):
+        self.host = ll_hosts.getHSMHost(config.HOSTS)
+        if not ll_hosts.deactivateHost(True, self.host):
             raise exceptions.HostException(
-                "Failed to deactivate host %s" % hsm
+                "Failed to deactivate host %s" % self.host
             )
-        ll_hosts.waitForHostsStates(True, [hsm], config.HOST_MAINTENANCE)
+        ll_hosts.waitForHostsStates(True, [self.host], config.HOST_MAINTENANCE)
 
         if not ll_hosts.updateHost(
-                True, hsm, cluster=cluster_name
+                True, self.host, cluster=cluster_name
         ):
-            raise exceptions.HostException("Failed to update host %s" % hsm)
+            raise exceptions.HostException(
+                "Failed to update host %s" % self.host
+            )
 
-        if not ll_hosts.activateHost(True, hsm):
-            raise exceptions.HostException("Failed to activate host %s" % hsm)
-        ll_hosts.waitForHostsStates(True, [hsm], config.HOST_UP)
+        if not ll_hosts.activateHost(True, self.host):
+            raise exceptions.HostException(
+                "Failed to activate host %s" % self.host
+            )
 
-    def _clean_environment(self, dc_name, cluster_name, sd_name):
+    def add_storage(self, name, data_center, index):
+        if self.storage == ISCSI:
+            status = hl_sd.addISCSIDataDomain(
+                self.host,
+                name,
+                data_center,
+                config.UNUSED_LUNS["lun_list"][index],
+                config.UNUSED_LUNS["lun_addresses"][index],
+                config.UNUSED_LUNS["lun_targets"][index],
+                override_luns=True
+            )
+        elif self.storage == FCP:
+            status = hl_sd.addFCPDataDomain(
+                self.host,
+                name,
+                data_center,
+                config.UNUSED_FC_LUNS[index],
+                override_luns=True
+            )
+        elif self.storage == NFS:
+            nfs_address = config.UNUSED_DATA_DOMAIN_ADDRESSES[index]
+            nfs_path = config.UNUSED_DATA_DOMAIN_PATHS[index]
+            status = hl_sd.addNFSDomain(
+                host=self.host,
+                storage=name,
+                data_center=data_center,
+                address=nfs_address,
+                path=nfs_path,
+                format=True
+            )
+        elif self.storage == GLUSTER:
+            gluster_address = (
+                config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[index]
+            )
+            gluster_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[index]
+            status = hl_sd.addGlusterDomain(
+                host=self.host,
+                name=name,
+                data_center=data_center,
+                address=gluster_address,
+                path=gluster_path,
+                vfs_type=config.ENUMS['vfs_type_glusterfs']
+            )
+        if not status:
+            raise exceptions.StorageDomainException(
+                "Creating %s storage domain '%s' failed"
+                % (self.storage, name)
+            )
+        ll_jobs.wait_for_jobs([config.JOB_ADD_DOMAIN])
+        test_utils.wait_for_tasks(
+            config.VDC, config.VDC_PASSWORD, data_center
+        )
+
+    def _clean_environment(
+        self, dc_name, cluster_name, sd_name, remove_param={'format': 'true'}
+    ):
         """
         This function is used by tearDown
         """
-        spm = ll_hosts.getHost(True, dataCenter=dc_name)[1]['hostName']
         logger.info(
-            'Checking if domain %s is active in dc %s', sd_name, dc_name
+            "Checking if domain %s is active in dc %s", sd_name, dc_name
         )
         if ll_sd.is_storage_domain_active(dc_name, sd_name):
-            logger.info('Domain %s is active in dc %s', sd_name, dc_name)
+            logger.info("Domain %s is active in dc %s", sd_name, dc_name)
 
-            logger.info(
-                'Deactivating domain  %s in dc %s', sd_name, dc_name
-            )
-            logger.info(
-                "Waiting for tasks before deactivating Storage Domain"
-            )
-            test_utils.wait_for_tasks(
-                config.VDC, config.VDC_PASSWORD, dc_name
-            )
-            if not ll_sd.deactivateStorageDomain(True, dc_name, sd_name):
-                logger.error(
-                    'Unable to deactivate domain %s on dc %s',
-                    sd_name, dc_name
-                )
-                self.test_failed = True
+            self._secure_deactivate_domain(dc_name, sd_name)
         logger.info(
-            'Domain %s is inactive in datacenter %s', sd_name, dc_name
+            "Domain %s is inactive in datacenter %s", sd_name, dc_name
         )
 
         if not ll_dc.remove_datacenter(True, dc_name):
             logger.error("Failed to remove dc %s" % dc_name)
             self.test_failed = True
 
-        if not ll_hosts.deactivateHost(True, spm):
-            logger.error("Failed to deactivate host %s" % spm)
+        if not ll_hosts.deactivateHost(True, self.host):
+            logger.error("Failed to deactivate host %s" % self.host)
             self.test_failed = True
-        ll_hosts.waitForHostsStates(True, [spm], config.HOST_MAINTENANCE)
+        ll_hosts.waitForHostsStates(True, [self.host], config.HOST_MAINTENANCE)
 
         if not ll_hosts.updateHost(
-            True, spm, cluster=config.CLUSTER_NAME
+            True, self.host, cluster=config.CLUSTER_NAME
         ):
-            logger.error("Failed to update host %s" % spm)
+            logger.error("Failed to update host %s" % self.host)
             self.test_failed = True
 
-        if not ll_hosts.activateHost(True, spm):
-            logger.error("Failed to activate host %s" % spm)
+        if not ll_hosts.activateHost(True, self.host):
+            logger.error("Failed to activate host %s" % self.host)
             self.test_failed = True
-        ll_hosts.waitForHostsStates(True, [spm], config.HOST_UP)
+        ll_hosts.waitForHostsStates(True, [self.host], config.HOST_UP)
 
         if not ll_clusters.removeCluster(True, cluster_name):
             logger.error("Failed to remove cluster %s" % cluster_name)
             self.test_failed = True
 
-        if not ll_sd.removeStorageDomain(True, sd_name, spm, format='true'):
+        if not ll_sd.removeStorageDomain(
+            True, sd_name, self.host, **remove_param
+        ):
             logger.error("Failed to remove storage domain %s" % sd_name)
             self.test_failed = True
 
@@ -402,6 +326,30 @@ class BasicEnvironment(BaseTestCase):
             return status
         return False
 
+    def tearDown(self):
+        """
+        Remove the storage domain
+        """
+        if self.vm_name and ll_vms.does_vm_exist(self.vm_name):
+            if not ll_vms.safely_remove_vms([self.vm_name]):
+                logger.error(
+                    "Failed to remove vm %s", self.vm_name
+                )
+                self.test_failed = True
+        if not self._secure_deactivate_detach_storage_domain(
+            config.DATA_CENTER_NAME, self.non_master
+        ):
+            logger.error("Unable to detach %s", self.non_master)
+            self.test_failed = True
+        if not ll_sd.removeStorageDomain(
+                True, self.non_master, self.host, format='true'
+        ):
+            logger.error(
+                "Failed to remove storage domain %s", self.non_master
+            )
+            self.test_failed = True
+        BaseTestCase.teardown_exception()
+
 
 class CommonSetUp(BasicEnvironment):
     """
@@ -409,7 +357,7 @@ class CommonSetUp(BasicEnvironment):
     """
     def setUp(self):
         super(CommonSetUp, self).setUp()
-        self._secure_detach_storage_domain(
+        self._secure_deactivate_detach_storage_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
 
@@ -418,8 +366,8 @@ class CommonSetUp(BasicEnvironment):
 class TestCase11861(BasicEnvironment):
     """
     Detach/Attach a new Domain
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_5_Storage_ImportDomain_DetachAttach
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+    workitem?id=RHEVM3-11861
     """
     __test__ = True
     polarion_test_case = '11861'
@@ -429,7 +377,7 @@ class TestCase11861(BasicEnvironment):
         """
         - Detach a domain and then re-attach it
         """
-        self._secure_detach_storage_domain(
+        self._secure_deactivate_detach_storage_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
 
@@ -437,26 +385,28 @@ class TestCase11861(BasicEnvironment):
         hl_sd.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
+        ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
 
 
 @attr(tier=2)
-class TestCase5297(BasicEnvironment):
+class DomainImportWithTemplate(BasicEnvironment):
     """
-    create vm from imported domain's Template
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_5_Storage_ImportDomain_Between_DifferentSetups
+    Create vm from imported domain's Template
     """
-    __test__ = True
-    polarion_test_case = '5297'
     vm_from_template = 'vm_from_temp'
+    # TODO: Ensure this test is FCP ready when importBlockStorageDomain
+    # supports FCP
+    storages = set([ISCSI, NFS, GLUSTER, POSIX])
 
     def setUp(self):
+        """
+        Create a vm and a template in the domain to be imported
+        """
         self.vm_created = False
-        self.template_exists = False
         self.template_name = 'temp_%s' % self.polarion_test_case
-        super(TestCase5297, self).setUp()
-        ll_vms.stop_vms_safely([self.vm_name])
-        ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
+        super(DomainImportWithTemplate, self).setUp()
+        self.create_vm()
+        self.action_before_creating_template()
 
         if not ll_templates.createTemplate(
                 True, vm=self.vm_name, name=self.template_name,
@@ -467,24 +417,50 @@ class TestCase5297(BasicEnvironment):
                 % (self.template_name, self.vm_name)
             )
 
-        self._secure_detach_storage_domain(
+        self._secure_deactivate_detach_storage_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
+        if not ll_sd.removeStorageDomain(
+                True, self.non_master, self.host, format='false'
+        ):
+            raise exceptions.StorageDomainException(
+                "Failed to remove storage domain %s" % self.non_master
+            )
 
-    @polarion("RHEVM3-5297")
-    @bz({'1138142': {'engine': ['rest', 'sdk']}})
-    def test_new_vm_from_imported_domain_template(self):
+    def action_before_creating_template(self):
+        pass
+
+    def new_vm_from_imported_domain_template(self):
         """
         - import data domain
         - verify template's existence
         - create VM from template
         """
+        status = False
+        if self.storage == ISCSI:
+            # TODO: Implement and test importBlockStorageDomain for FCP
+            status = hl_sd.importBlockStorageDomain(
+                self.host, lun_address=config.UNUSED_LUNS["lun_addresses"][0],
+                lun_target=config.UNUSED_LUNS["lun_targets"][0]
+            )
+        elif self.storage == NFS:
+            status = ll_sd.importStorageDomain(
+                True, config.TYPE_DATA, NFS,
+                config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
+                config.UNUSED_DATA_DOMAIN_PATHS[0], self.host
+            )
+        elif self.storage == GLUSTER:
+            status = ll_sd.importStorageDomain(
+                True, config.TYPE_DATA, GLUSTER,
+                config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
+                config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0], self.host
+            )
+        self.assertTrue(status, "Failed to import storage domain")
         logger.info("Attaching storage domain %s", self.non_master)
         hl_sd.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
-        ll_jobs.wait_for_jobs([ENUMS['job_activate_storage_domain']])
-
+        ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
         unregistered_templates = ll_sd.get_unregistered_templates(
             self.non_master
         )
@@ -497,46 +473,45 @@ class TestCase5297(BasicEnvironment):
                 template.get_name() == self.template_name
             )
         ]
-
         self.template_exists = ll_sd.register_object(
-            template_to_register, cluster=config.CLUSTER_NAME
+            template_to_register[0], cluster=config.CLUSTER_NAME
         )
         self.assertTrue(self.template_exists, "Template registration failed")
-
-        self.vm_created = ll_vms.createVm(
-            True, self.vm_from_template, self.vm_from_template,
-            template=self.template_name, cluster=config.CLUSTER_NAME
+        self.assertTrue(
+            ll_vms.createVm(
+                True, self.vm_from_template, self.vm_from_template,
+                template=self.template_name, cluster=config.CLUSTER_NAME
+            ), "Unable to create vm %s from template %s" %
+            (self.vm_from_template, self.template_name)
         )
-        assert self.vm_created
-        ll_vms.waitForVMState(self.vm_from_template)
 
     def tearDown(self):
-        if self.template_exists:
-            if not ll_templates.removeTemplate(True, self.template_name):
-                logger.error(
-                    "Failed to remove template %s", self.template_name
-                )
-                self.test_failed = True
-        ll_jobs.wait_for_jobs([ENUMS['job_remove_vm_template']])
+        """
+        Remove template and vm
+        """
+        ll_templates.wait_for_template_disks_state(self.template_name)
+        if not ll_templates.removeTemplate(True, self.template_name):
+            logger.error(
+                "Failed to remove template %s", self.template_name
+            )
+            self.test_failed = True
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_TEMPLATE])
 
-        if self.vm_created:
-            if not ll_vms.removeVm(
-                True, self.vm_from_template, stopVM='true', wait='true'
-            ):
-                logger.error(
-                    "Failed to remove vm %s", self.vm_from_template
-                )
-                self.test_failed = True
-        ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
-        self.teardown_exception()
+        if not ll_vms.safely_remove_vms([self.vm_from_template]):
+            logger.error(
+                "Failed to remove vm %s", self.vm_from_template
+            )
+            self.test_failed = True
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_VM])
+        super(DomainImportWithTemplate, self).tearDown()
 
 
 @attr(tier=2)
 class TestCase5299(BasicEnvironment):
     """
     Register vm without disks
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_5_Storage_ImportDomain_Between_DifferentSetups
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+    workitem?id=RHEVM3-5299
     """
     __test__ = True
     polarion_test_case = '5299'
@@ -555,7 +530,7 @@ class TestCase5299(BasicEnvironment):
                 "Failed to create vm %s" % self.vm_no_disks
             )
 
-        self._secure_detach_storage_domain(
+        self._secure_deactivate_detach_storage_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
 
@@ -571,7 +546,7 @@ class TestCase5299(BasicEnvironment):
         hl_sd.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
-        ll_jobs.wait_for_jobs([ENUMS['job_activate_storage_domain']])
+        ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
 
         unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
         vm_to_import = [
@@ -589,37 +564,43 @@ class TestCase5299(BasicEnvironment):
         )
 
     def tearDown(self):
+        """
+        Remove vm
+        """
         if self.vm_created:
             if not ll_vms.removeVm(True, self.vm_no_disks, wait='true'):
                 logger.error("Failed to remove vm %s", self.vm_no_disks)
                 self.test_failed = True
-        self.teardown_exception()
+        super(TestCase5299, self).tearDown()
 
 
 @attr(tier=2)
 class TestCase5300(BasicEnvironment):
     """
-    import domain, preview snapshots and create vm from a snapshot
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_5_Storage_ImportDomain_Between_DifferentSetups
+    Import domain, preview snapshots and create vm from a snapshot
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+    workitem?id=RHEVM3-5300
     """
     __test__ = True
     polarion_test_case = '5300'
     cloned_vm = 'cloned_vm'
 
     def setUp(self):
+        """
+        Add snapshot to the vm
+        """
         self.snap_desc = 'snap_%s' % self.polarion_test_case
         self.previewed = False
         super(TestCase5300, self).setUp()
-        self._prepare_environment()
+        self.create_vm()
 
         if not ll_vms.addSnapshot(True, self.vm_name, self.snap_desc):
             exceptions.SnapshotException(
                 "Failed to create snapshot %s" % self.snap_desc
             )
-        ll_jobs.wait_for_jobs([ENUMS['job_create_snapshot']])
+        ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
 
-        self._secure_detach_storage_domain(
+        self._secure_deactivate_detach_storage_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
 
@@ -638,7 +619,7 @@ class TestCase5300(BasicEnvironment):
         hl_sd.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
-        ll_jobs.wait_for_jobs([ENUMS['job_activate_storage_domain']])
+        ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
 
         unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
         vm_names = [vm.get_name() for vm in unregistered_vms]
@@ -646,7 +627,7 @@ class TestCase5300(BasicEnvironment):
         assert ll_sd.register_object(
             unregistered_vms[0], cluster=config.CLUSTER_NAME
         )
-        ll_jobs.wait_for_jobs([ENUMS['job_register_disk']])
+        ll_jobs.wait_for_jobs([config.JOB_REGISTER_DISK])
 
         assert self.snap_desc in [
             snap.get_description() for snap in ll_vms.get_vm_snapshots(
@@ -662,7 +643,7 @@ class TestCase5300(BasicEnvironment):
         assert self.previewed
 
         ll_vms.undo_snapshot_preview(True, self.vm_name)
-        ll_jobs.wait_for_jobs([ENUMS['job_restore_vm_snapshot']])
+        ll_jobs.wait_for_jobs([config.JOB_RESTORE_SNAPSHOT])
         ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
         self.previewed = False
 
@@ -676,6 +657,9 @@ class TestCase5300(BasicEnvironment):
         )
 
     def tearDown(self):
+        """
+        Remove cloned vm
+        """
         if self.previewed:
             if not ll_vms.undo_snapshot_preview(True, self.vm_name):
                 logger.error("Failed to undo snapshot of vm")
@@ -686,28 +670,16 @@ class TestCase5300(BasicEnvironment):
         if not ll_vms.removeVm(True, self.cloned_vm, stopVM=True):
             logger.error("Failed to remove cloned vm %s", self.cloned_vm)
             self.test_failed = True
-        ll_jobs.wait_for_jobs([ENUMS['job_remove_vm']])
-        if not ll_vms.removeSnapshot(True, self.vm_name, self.snap_desc):
-            logger.error("Failed to remove snapshot %s", self.snap_desc)
-            self.test_failed = True
-        ll_jobs.wait_for_jobs([ENUMS['job_remove_snapshot']])
-        target_domain = ll_disks.get_other_storage_domain(
-            ll_vms.getVmDisks(self.vm_name)[0].get_alias(), self.vm_name
-        )
-        for vm_disk in [
-                disk.get_alias() for disk in ll_vms.getVmDisks(self.vm_name)
-        ]:
-                ll_vms.move_vm_disk(self.vm_name, vm_disk, target_domain)
-        ll_jobs.wait_for_jobs([ENUMS['job_move_or_copy_disk']])
-        self.teardown_exception()
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_VM])
+        super(TestCase5300, self).tearDown()
 
 
 @attr(tier=4)
 class TestCase5302(BasicEnvironment):
     """
     IP block during import domain
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_5_Storage_ImportDomain_Between_DifferentSetups
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+    workitem?id=RHEVM3-5302
     """
     __test__ = True
     polarion_test_case = '5302'
@@ -716,7 +688,7 @@ class TestCase5302(BasicEnvironment):
         self.imported = False
         super(TestCase5302, self).setUp()
 
-        self._secure_detach_storage_domain(
+        self._secure_deactivate_detach_storage_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
         self.host_ip = ll_hosts.getHostIP(config.HOSTS[0])
@@ -766,41 +738,15 @@ class TestCase5302(BasicEnvironment):
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW, config.VDC
         )
         ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME)
-        if self.imported:
-            logger.info(
-                'Activating domain %s on dc %s',
-                self.non_master, config.DATA_CENTER_NAME
-            )
-
-            if not ll_sd.activateStorageDomain(
-                    True, config.DATA_CENTER_NAME, self.non_master
-            ):
-                logger.error(
-                    'Unable to activate domain %s on dc %s'
-                    % (self.non_master, config.DATA_CENTER_NAME)
-                )
-                self.test_failed = True
-            logger.info('Domain %s is active' % self.non_master)
-
-        else:
-            logger.info("Attaching storage domain %s", self.non_master)
-            if not hl_sd.attach_and_activate_domain(
-                config.DATA_CENTER_NAME, self.non_master
-            ):
-                logger.error(
-                    'Unable to attach and activate domain %s on dc %s'
-                    % (self.non_master, config.DATA_CENTER_NAME)
-                )
-                self.test_failed = True
-        self.teardown_exception()
+        super(TestCase5302, self).tearDown()
 
 
 @attr(tier=2)
 class TestCase5193(BasicEnvironment):
     """
     test mounted meta-data files when attaching a file domain
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_5_Storage_ImportDomain_DetachAttach
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+    workitem?id=RHEVM3-5193
     """
     __test__ = NFS in opts['storages']
     storages = set([NFS])
@@ -808,11 +754,11 @@ class TestCase5193(BasicEnvironment):
 
     def setUp(self):
         super(TestCase5193, self).setUp()
-        self._prepare_environment()
-        self._secure_detach_storage_domain(
+        self.create_vm()
+        self._secure_deactivate_detach_storage_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
-        ll_jobs.wait_for_jobs([ENUMS['job_detach_storage_domain']])
+        ll_jobs.wait_for_jobs([config.JOB_DETACH_DOMAIN])
 
     @polarion("RHEVM3-5193")
     def test_attach_file_domain(self):
@@ -825,7 +771,7 @@ class TestCase5193(BasicEnvironment):
         hl_sd.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
-        ll_jobs.wait_for_jobs([ENUMS['job_activate_storage_domain']])
+        ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
 
         unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
         vm_names = [vm.get_name() for vm in unregistered_vms]
@@ -833,26 +779,26 @@ class TestCase5193(BasicEnvironment):
         assert ll_sd.register_object(
             unregistered_vms[0], cluster=config.CLUSTER_NAME
         )
-        ll_jobs.wait_for_jobs([ENUMS['job_register_disk']])
+        ll_jobs.wait_for_jobs([config.JOB_REGISTER_DISK])
 
 
 @attr(tier=2)
 class TestCase5194(BasicEnvironment):
     """
     test lv's existence when importing a block domain
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_5_Storage_ImportDomain_DetachAttach
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+    workitem?id=RHEVM3-5194
     """
     __test__ = BaseTestCase.storage in config.BLOCK_TYPES
     polarion_test_case = '5194'
 
     def setUp(self):
         super(TestCase5194, self).setUp()
-        self._prepare_environment()
-        self._secure_detach_storage_domain(
+        self.create_vm()
+        self._secure_deactivate_detach_storage_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
-        ll_jobs.wait_for_jobs([ENUMS['job_detach_storage_domain']])
+        ll_jobs.wait_for_jobs([config.JOB_DETACH_DOMAIN])
 
     @polarion("RHEVM3-5194")
     def test_lv_exists_after_import_block_domain(self):
@@ -865,7 +811,7 @@ class TestCase5194(BasicEnvironment):
         hl_sd.attach_and_activate_domain(
             config.DATA_CENTER_NAME, self.non_master
         )
-        ll_jobs.wait_for_jobs([ENUMS['job_activate_storage_domain']])
+        ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
 
         unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
         vm_names = [vm.get_name() for vm in unregistered_vms]
@@ -876,31 +822,30 @@ class TestCase5194(BasicEnvironment):
             ),
             "Failed to register vm %s" % unregistered_vms[0]
         )
-        ll_jobs.wait_for_jobs([ENUMS['job_register_disk']])
+        ll_jobs.wait_for_jobs([config.JOB_REGISTER_DISK])
 
         self.assertTrue(ll_vms.startVms(
             [self.vm_name], wait_for_status=config.VM_UP
         ), "VM %s failed to restart" % self.vm_name)
 
     def tearDown(self):
-        ll_vms.stop_vms_safely([self.vm_name])
-        ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
-        target_domain = ll_disks.get_other_storage_domain(
-            ll_vms.getVmDisks(self.vm_name)[0].get_alias(), self.vm_name
-        )
-        for vm_disk in [
-            disk.get_alias() for disk in ll_vms.getVmDisks(self.vm_name)
-        ]:
-            ll_vms.move_vm_disk(self.vm_name, vm_disk, target_domain)
-        ll_jobs.wait_for_jobs([ENUMS['job_move_or_copy_disk']])
+        """
+        Remove vm and storage domain
+        """
+        if not ll_vms.safely_remove_vms([self.vm_name]):
+            logger.error(
+                "Failed to remove vm %s", self.vm_name
+            )
+            self.test_failed = True
+        super(TestCase5194, self).tearDown()
 
 
 @attr(tier=4)
 class TestCase5205(CommonSetUp):
     """
     detach/attach domain during vdsm/engine restart
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_5_Storage_ImportDomain_DetachAttach
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+    workitem?id=RHEVM3-5205
     """
     __test__ = True
     polarion_test_case = '5205'
@@ -959,35 +904,13 @@ class TestCase5205(CommonSetUp):
             test_utils.restart_engine, config.ENGINE, 10, 300
         )
 
-    def tearDown(self):
-        if self.imported:
-            logger.info('Activating domain %s on dc %s'
-                        % (self.non_master, config.DATA_CENTER_NAME))
-
-            if not ll_sd.activateStorageDomain(
-                    True, config.DATA_CENTER_NAME, self.non_master
-            ):
-                logger.error(
-                    'Unable to activate domain %s on dc %s'
-                    % (self.non_master, config.DATA_CENTER_NAME)
-                )
-                self.test_failed = True
-            logger.info('Domain %s is active' % self.non_master)
-
-        else:
-            logger.info("Attaching storage domain %s", self.non_master)
-            hl_sd.attach_and_activate_domain(
-                config.DATA_CENTER_NAME, self.non_master
-            )
-        self.teardown_exception()
-
 
 @attr(tier=4)
 class TestCase5304(CommonSetUp):
     """
     Import domain during host reboot
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_5_Storage_ImportDomain_Between_DifferentSetups
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+    workitem?id=RHEVM3-5304
     """
     __test__ = True
     polarion_test_case = '5304'
@@ -1032,71 +955,98 @@ class TestCase5304(CommonSetUp):
             self.imported, "Storage domain %s was imported" % self.non_master
         )
 
-    def tearDown(self):
-        if self.imported:
-            logger.info('Activating domain %s on dc %s'
-                        % (self.non_master, config.DATA_CENTER_NAME))
-
-            if not ll_sd.activateStorageDomain(
-                    True, config.DATA_CENTER_NAME, self.non_master
-            ):
-                logger.error(
-                    'Unable to activate domain %s on dc %s'
-                    % (self.non_master, config.DATA_CENTER_NAME)
-                )
-                self.test_failed = True
-            logger.info('Domain %s is active' % self.non_master)
-
-        else:
-            logger.info("Attaching storage domain %s", self.non_master)
-            hl_sd.attach_and_activate_domain(
-                config.DATA_CENTER_NAME, self.non_master
-            )
-
-        self.register_vm(config.VM_NAME)
-        ll_jobs.wait_for_jobs([ENUMS['job_register_disk']])
-        self.teardown_exception()
-
 
 @attr(tier=2)
-class TestCase5201(BasicEnvironment):
+class BaseCaseInitializeDataCenter(BasicEnvironment):
     """
-    Initialize DC from an unattached imported domain
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_5_Storage_ImportDomain_DetachAttach
+    Base class for initializing a data center with an imported domain
     """
-    # TODO: false due to
-    # https://projects.engineering.redhat.com/browse/RHEVM-2141
-    # which is needed for importing block storage domain
-    __test__ = False
-    polarion_test_case = '5201'
-    dc_name = 'test_dc'
-    cluster_name = 'test_cluster'
+    remove_param = None
+    # TODO: Ensure this test is FCP ready when importBlockStorageDomain
+    # supports FCP
+    storages = set([ISCSI, NFS, GLUSTER, POSIX])
 
     def setUp(self):
-        self.test_vm = 'test_vm_%s' % self.polarion_test_case
-        super(TestCase5201, self).setUp()
-        self._add_storage()
+        """
+        Create a new data center with a vm on it
+        """
+        self.dc_name = self.create_unique_object_name(
+            config.OBJECT_TYPE_DC
+        )[0:40]
+        self.cluster_name = self.create_unique_object_name(
+            config.OBJECT_TYPE_CLUSTER
+        )[0:40]
+        super(BaseCaseInitializeDataCenter, self).setUp()
+        self.create_vm()
         self._create_environment(self.dc_name, self.cluster_name)
-        vm_args = config.create_vm_args.copy()
-        vm_args['storageDomainName'] = self.sd_name
-        vm_args['vmName'] = self.test_vm
-        vm_args['vmDescription'] = self.test_vm
-        vm_args['installation'] = False
-        self.vm_created = storage_helpers.create_vm_or_clone(**vm_args)
-
-        if not self.vm_created:
-            raise exceptions.VMException(
-                'Unable to create vm %s for test' % self.test_vm
-            )
-        self._secure_detach_storage_domain(
-            config.DATA_CENTER_NAME, self.sd_name
+        self._secure_deactivate_domain(
+            config.DATA_CENTER_NAME, self.non_master
         )
+        if self.detach:
+            if not ll_sd.detachStorageDomain(
+                True, config.DATA_CENTER_NAME, self.non_master
+            ):
+                raise exceptions.StorageDomainException(
+                    "Unable to detach domain %s on dc %s"
+                    % (config.DATA_CENTER_NAME, self.non_master)
+                )
+
         if not ll_sd.removeStorageDomain(
-                True, self.sd_name, self.spm, format='false'
+                True, self.non_master, self.host, **self.remove_param
         ):
             raise exceptions.StorageDomainException(
-                "Failed to remove storage domain" % self.sd_name)
+                "Failed to remove storage domain" % self.non_master
+            )
+
+    def execute_flow(self):
+        """
+        Import the data domain
+        """
+        status = False
+        if self.storage == ISCSI:
+            # TODO: Implement and test importBlockDomain for FCP
+            status = hl_sd.importBlockStorageDomain(
+                self.host, lun_address=config.UNUSED_LUNS["lun_addresses"][0],
+                lun_target=config.UNUSED_LUNS["lun_targets"][0]
+            )
+
+        elif self.storage == NFS:
+            status = ll_sd.importStorageDomain(
+                True, config.TYPE_DATA, NFS,
+                config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
+                config.UNUSED_DATA_DOMAIN_PATHS[0], self.host
+            )
+        elif self.storage == GLUSTER:
+            status = ll_sd.importStorageDomain(
+                True, config.TYPE_DATA, GLUSTER,
+                config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
+                config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0], self.host
+            )
+        self.assertTrue(status, "Failed to import storage domain")
+
+    def tearDown(self):
+        """
+        Remove data center
+        """
+        self._clean_environment(
+            self.dc_name, self.cluster_name, self.non_master
+        )
+        BaseTestCase.teardown_exception()
+
+
+class TestCase5201(BaseCaseInitializeDataCenter):
+    """
+    Initialize DC from an unattached imported domain
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+    workitem?id=RHEVM3-5201
+    """
+    __test__ = (
+        ISCSI in opts['storages'] or NFS in opts['storages'] or
+        GLUSTER in opts['storages'] or POSIX in opts['storages']
+    )
+    polarion_test_case = '5297'
+    remove_param = {'format': 'false'}
+    detach = True
 
     @polarion("RHEVM3-5201")
     def test_initialize_dc_with_imported_domain(self):
@@ -1110,139 +1060,97 @@ class TestCase5201(BasicEnvironment):
         - Attach the domain to DC2 as the first domain (initialize DC)
         - Import the VM to DC2
         """
-        status = False
-        if self.storage == config.STORAGE_TYPE_ISCSI:
-            status = hl_sd.importBlockStorageDomain(
-                self.spm, lun_address=config.UNUSED_LUNS["lun_addresses"][0],
-                lun_target=config.UNUSED_LUNS["lun_targets"][0]
-            )
+        self.execute_flow()
+        logger.info("Attaching storage domain %s", self.non_master)
+        hl_sd.attach_and_activate_domain(self.dc_name, self.non_master)
+        ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
 
-        elif self.storage == config.STORAGE_TYPE_NFS:
-            status = ll_sd.importStorageDomain(
-                True, config.TYPE_DATA, NFS,
-                config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
-                config.UNUSED_DATA_DOMAIN_PATHS[0], self.spm
-            )
-        elif self.storage == config.STORAGE_TYPE_GLUSTER:
-            status = ll_sd.importStorageDomain(
-                True, config.TYPE_DATA, config.STORAGE_TYPE_GLUSTER,
-                config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
-                config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0], self.spm
-            )
-        self.assertTrue(status, "Failed to import storage domain")
-        logger.info("Attaching storage domain %s", self.sd_name)
-        hl_sd.attach_and_activate_domain(self.dc_name, self.sd_name)
-        ll_jobs.wait_for_jobs([ENUMS['job_activate_storage_domain']])
-
-        unregistered_vms = ll_sd.get_unregistered_vms(self.sd_name)
+        unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
         vm_names = [vm.get_name() for vm in unregistered_vms]
         logger.info("Unregistered vms: %s", vm_names)
-        assert ll_sd.register_object(
-            unregistered_vms[0], cluster=self.cluster_name
+        self.assertTrue(
+            ll_sd.register_object(
+                unregistered_vms[0], cluster=self.cluster_name
+            ), "Unable to register vm %s in cluster %s" %
+            (vm_names[0], self.cluster_name)
         )
-        ll_jobs.wait_for_jobs([ENUMS['job_register_disk']])
+        ll_jobs.wait_for_jobs([config.JOB_REGISTER_DISK])
+        self.assertTrue(
+            ll_vms.startVm(
+                True, self.vm_name, wait_for_status=config.VM_UP
+            ), "VM %s failed to restart" % self.vm_name
+        )
 
     def tearDown(self):
-        self._clean_environment(
-            self.dc_name, self.cluster_name, self.storage_domain
-        )
-        self.teardown_exception()
+        """
+        Power off and remove vm
+        """
+        if not ll_vms.safely_remove_vms([self.vm_name]):
+            logger.error(
+                "Failed to remove vm %s", self.vm_name
+            )
+            self.test_failed = True
+        super(TestCase5201, self).tearDown()
 
 
 @attr(tier=2)
-class TestCase12207(BasicEnvironment):
+class TestCase12207(BaseCaseInitializeDataCenter):
     """
     Initialize DC from a destroyed domain
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
-    Storage/3_5_Storage_ImportDomain_DetachAttach
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+    workitem?id=RHEVM3-12207
     """
-    # TODO: false due to
-    # https://projects.engineering.redhat.com/browse/RHEVM-2141
-    # which is needed for importing block storage domain
-    __test__ = False
+    # TODO: Ensure this test is FCP ready when importBlockStorageDomain
+    # supports FCP
+    __test__ = (
+        ISCSI in opts['storages'] or NFS in opts['storages'] or
+        GLUSTER in opts['storages'] or POSIX in opts['storages']
+    )
     polarion_test_case = '12207'
-    dc_name = 'test_dc'
-    cluster_name = 'test_cluster'
+    remove_param = {'destroy': True}
+    detach = False
 
-    def setUp(self):
-        self.test_vm = 'test_vm_%s' % self.polarion_test_case
-        super(TestCase12207, self).setUp()
-        self._add_storage()
-        self._create_environment(self.dc_name, self.cluster_name)
-        vm_args = config.create_vm_args.copy()
-        vm_args['storageDomainName'] = self.sd_name
-        vm_args['vmName'] = self.test_vm
-        vm_args['vmDescription'] = self.test_vm
-        vm_args['installation'] = False
-        self.vm_created = storage_helpers.create_vm_or_clone(**vm_args)
-
-        if not self.vm_created:
-            raise exceptions.VMException(
-                'Unable to create vm %s for test' % self.test_vm
-            )
-        test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
-        )
-        logger.info(
-            'Deactivating domain  %s in dc %s', self.sd_name,
-            config.DATA_CENTER_NAME
-        )
-        if not ll_sd.deactivateStorageDomain(
-                True, config.DATA_CENTER_NAME, self.sd_name
-        ):
-            raise exceptions.StorageDomainException(
-                'Unable to deactivate domain %s on dc %s',
-                self.sd_name, config.DATA_CENTER_NAME
-            )
-        host_to_use = ll_hosts.getSPMHost(config.HOSTS)
-        if not ll_sd.removeStorageDomain(
-                True, self.sd_name, host_to_use, destroy=True
-        ):
-            raise exceptions.StorageDomainException(
-                "Failed to destroy storage domain" % self.sd_name)
-
+    @polarion("RHEVM3-12207")
     def test_initialize_dc_with_destroyed_domain(self):
         """
         - Configure 2 DCs: DC1 with 2 storage domains
           and DC2 without a storage domain
         - Create a VM with a disk on the non-master domain in DC1
-        - Destroy the domain which holds the disk from DC1
+        - Deactivate and Destroy the domain which holds the disk from DC1
         - Import it back again
         - Attach the domain to DC2 as the first domain (initialize DC)
         """
-        status = False
-        if self.storage == config.STORAGE_TYPE_ISCSI:
-            status = hl_sd.importBlockStorageDomain(
-                self.spm, lun_address=config.UNUSED_LUNS["lun_addresses"][0],
-                lun_target=config.UNUSED_LUNS["lun_targets"][0]
-            )
-
-        elif self.storage == config.STORAGE_TYPE_NFS:
-            status = ll_sd.importStorageDomain(
-                True, config.TYPE_DATA, NFS,
-                config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
-                config.UNUSED_DATA_DOMAIN_PATHS[0], self.spm
-            )
-        elif self.storage == config.STORAGE_TYPE_GLUSTER:
-            status = ll_sd.importStorageDomain(
-                True, config.TYPE_DATA, config.STORAGE_TYPE_GLUSTER,
-                config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
-                config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0], self.spm
-            )
-        self.assertTrue(status, "Failed to import storage domain")
-        logger.info("Attaching storage domain %s", self.sd_name)
+        self.execute_flow()
+        logger.info("Attaching storage domain %s", self.non_master)
         self.assertRaises(
             exceptions.StorageDomainException,
-            hl_sd.attach_and_activate_domain(
-                self.dc_name, self.sd_name
-            ), "Initialize data center with destroyed domain should fail"
+            hl_sd.attach_and_activate_domain, self.dc_name, self.non_master
         )
 
     def tearDown(self):
+        """
+        Wait for the domain to become active in case of a test failure
+        """
+        ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
+        # After a failure to activate the storage domain, this can only
+        # be removed by destroying it
         self._clean_environment(
-            self.dc_name, self.cluster_name, self.storage_domain
+            self.dc_name, self.cluster_name, self.non_master,
+            remove_param={'destroy': True}
         )
-        self.teardown_exception()
+        if self.storage == NFS or self.storage == POSIX:
+            storage.clean_mount_point(
+                self.host, config.UNUSED_DATA_DOMAIN_ADDRESSES[0],
+                config.UNUSED_DATA_DOMAIN_PATHS[0],
+                rhevm_helpers.NFS_MNT_OPTS
+            )
+        elif self.storage == GLUSTER:
+            storage.clean_mount_point(
+                self.host, config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[0],
+                config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[0],
+                rhevm_helpers.GLUSTER_MNT_OPTS
+            )
+        BaseTestCase.teardown_exception()
 
 
 @attr(tier=2)
@@ -1250,10 +1158,10 @@ class TestCase10951(BasicEnvironment):
     """
     Import an export domain to the system
 
-    https://polarion.engineering.redhat.com/polarion/#/project/
-    RHEVM3/workitem?id=RHEVM3-10951
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+    workitem?id=RHEVM3-10951
     """
-    __test__ = (POSIX in opts['storages'] or GULSTERFS in opts['storages'])
+    __test__ = POSIX in opts['storages'] or GLUSTER in opts['storages']
     polarion_test_case = "10951"
     datacenter = config.DATA_CENTER_NAME
     nfs_version = None
@@ -1263,11 +1171,12 @@ class TestCase10951(BasicEnvironment):
         """
         Creates storage domains which will be later imported
         """
+        super(TestCase10951, self).setUp()
         self.export_domain = 'test_%s_export_%s' % (
             self.polarion_test_case, self.storage
         )
         self.sd_type = ENUMS['storage_dom_type_export']
-        self._secure_detach_storage_domain(
+        self._secure_deactivate_detach_storage_domain(
             self.datacenter, config.EXPORT_DOMAIN_NAME
         )
         self.host = ll_hosts.getSPMHost(config.HOSTS)
@@ -1290,12 +1199,13 @@ class TestCase10951(BasicEnvironment):
                     "Creating POSIX domain '%s' failed" % self.export_domain
                 )
 
-        elif self.storage == GULSTERFS:
-            self.export_address = \
+        elif self.storage == GLUSTER:
+            self.export_address = (
                 config.UNUSED_GLUSTER_DATA_DOMAIN_ADDRESSES[1]
+            )
             self.export_path = config.UNUSED_GLUSTER_DATA_DOMAIN_PATHS[1]
             self.vfs_type = ENUMS['vfs_type_glusterfs']
-            self.storage_type = GULSTERFS
+            self.storage_type = GLUSTER
 
             status = hl_sd.addGlusterDomain(
                 self.host, self.export_domain, self.datacenter,
@@ -1317,27 +1227,216 @@ class TestCase10951(BasicEnvironment):
     @polarion("RHEVM3-10951")
     def test_import_existing_export_domain(self):
         """
-        Imports existing export storage domain
+        - Import existing export storage domain
+        - Attach it to the data center
         """
-        assert ll_sd.importStorageDomain(
-            True, self.sd_type, self.storage_type, self.export_address,
-            self.export_path, self.host, nfs_version=self.nfs_version,
-            vfs_type=self.vfs_type
+        self.assertTrue(
+            ll_sd.importStorageDomain(
+                True, self.sd_type, self.storage_type, self.export_address,
+                self.export_path, self.host, nfs_version=self.nfs_version,
+                vfs_type=self.vfs_type
+            ), "Unable to import export domain %s" % self.export_domain
         )
         logger.info("Attaching storage domain %s", self.export_domain)
-        assert hl_sd.attach_and_activate_domain(
-            config.DATA_CENTER_NAME, self.export_domain
+        self.assertTrue(
+            hl_sd.attach_and_activate_domain(
+                config.DATA_CENTER_NAME, self.export_domain
+            ), "Unable to attach export domain %s" % self.export_domain
         )
 
     def tearDown(self):
-        self._secure_detach_storage_domain(
+        """
+        Remove the attached export domain
+        """
+        ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
+        self._secure_deactivate_detach_storage_domain(
             self.datacenter, self.export_domain
         )
         hl_sd.attach_and_activate_domain(
             self.datacenter, config.EXPORT_DOMAIN_NAME
         )
-        ll_jobs.wait_for_jobs([ENUMS['job_activate_storage_domain']])
+        ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
         hl_sd.remove_storage_domain(
             self.export_domain, self.datacenter, self.host, True, config.VDC,
             config.VDC_PASSWORD
         )
+        super(TestCase10951, self).tearDown()
+
+
+@attr(tier=2)
+class BaseTestCase5192(BasicEnvironment):
+    """
+    Attach storage domain from older version into 3.5 data center
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+    workitem?id=RHEVM3-5192
+    """
+    dc_version = None
+
+    def setUp(self):
+        """
+        Create environment
+        """
+        self.dc_name = self.create_unique_object_name(
+            config.OBJECT_TYPE_DC
+        )[9:49]
+        self.cluster_name = self.create_unique_object_name(
+            config.OBJECT_TYPE_CLUSTER
+        )[9:49]
+        self._create_environment(
+            self.dc_name, self.cluster_name, self.dc_version
+        )
+        self.master_domain = self.create_unique_object_name(
+            config.OBJECT_TYPE_SD
+        )
+        self.add_storage(self.master_domain, self.dc_name, 0)
+        self.non_master = self.create_unique_object_name(
+            config.OBJECT_TYPE_SD
+        )
+        self.add_storage(self.non_master, self.dc_name, 1)
+        self.create_vm(
+            {
+                'clone_from_template': False,
+                'cluster': self.cluster_name
+            }
+        )
+        self._secure_deactivate_detach_storage_domain(
+            self.dc_name, self.non_master
+        )
+
+    def test_attach_from_older_version(self):
+        """
+        Configure two data centers, one dc_verion and other > 3.5
+        Detach dc_version storage domain and attach it to > 3.5 data center and
+        register the vms
+        """
+        hl_sd.attach_and_activate_domain(
+            config.DATA_CENTER_NAME, self.non_master
+        )
+        ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
+        unregistered_vms = ll_sd.get_unregistered_vms(self.non_master)
+        vm_names = [vm.get_name() for vm in unregistered_vms]
+        logger.info("Unregistered vms: %s", vm_names)
+        self.assertTrue(
+            ll_sd.register_object(
+                unregistered_vms[0], cluster=config.CLUSTER_NAME
+            ), "Unable to register vm %s in cluster %s" %
+            (vm_names[0], config.CLUSTER_NAME)
+        )
+
+    def tearDown(self):
+        """
+        Remove storage domain
+        """
+        ll_jobs.wait_for_jobs([config.JOB_REGISTER_DISK])
+        self._clean_environment(
+            self.dc_name, self.cluster_name, self.master_domain
+        )
+        super(BaseTestCase5192, self).tearDown()
+
+
+class TestCase5192_3_1(BaseTestCase5192):
+    """
+    Attach storage domain from 3.1 version into 3.5 data center
+    """
+    __test__ = True
+    dc_version = "3.1"
+
+
+class TestCase5192_3_2(BaseTestCase5192):
+    """
+    Attach storage domain from 3.2 version into 3.5 data center
+    """
+    __test__ = True
+    dc_version = "3.2"
+
+
+class TestCase5192_3_3(BaseTestCase5192):
+    """
+    Attach storage domain from 3.3 version into 3.5 data center
+    """
+    __test__ = True
+    dc_version = "3.3"
+
+
+# BZ1328071: Unexpected flow when importing a domain with a template with
+# multiple disks on different domains
+@bz({'1328071': {}})
+class TestCase5200(DomainImportWithTemplate):
+    """
+    Create vm from a template with two disks, one on a block domain
+    and the other on a file domain, from an imported data domain
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+    workitem?id=RHEVM3-5200
+    """
+    # TODO: Ensure this test is FCP ready when importBlockStorageDomain
+    # supports FCP
+    __test__ = ISCSI in opts['storages']
+    storages = set([ISCSI, NFS])
+    polarion_test_case = '5200'
+
+    def setUp(self):
+        """
+        Create template and add disk in a file domain
+        """
+        self.disk_alias = None
+        self.file_domain = ll_sd.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, NFS
+        )[0]
+        super(TestCase5200, self).setUp()
+        # Since the template contains a disk in file domain, the template
+        # is not removed by ovirt when the block domain is removed.
+        # Remove the template so after importing the block domain the template
+        # can be registered
+        if not ll_templates.removeTemplate(True, self.template_name):
+            raise exceptions.TemplateException(
+                "Failed to remove template %s" % self.template_name
+            )
+
+    def action_before_creating_template(self):
+        """
+        Add disk to file storage domain
+        """
+        self.disk_alias = self.create_unique_object_name(
+            config.OBJECT_TYPE_DISK
+        )
+        ll_disks.addDisk(
+            True, alias=self.disk_alias, provisioned_size=config.DISK_SIZE,
+            interface=config.VIRTIO, format=config.RAW_DISK, sparse=False,
+            active=True, storagedomain=self.file_domain
+        )
+        ll_disks.wait_for_disks_status(self.disk_alias)
+        storage_helpers.prepare_disks_for_vm(self.vm_name, [self.disk_alias])
+
+    def test_import_template_cross_domain(self):
+        """
+        - One data center with one block storage domain and one file domain
+          with a template that contains a VM with disks on both domains
+        - Detach the block domain and remove the template
+        - Re-attach the block domain and register the template
+        - Verify template's existence
+        """
+        self.new_vm_from_imported_domain_template()
+
+
+class TestCase5297(DomainImportWithTemplate):
+    """
+    Create vm from a template from an imported data domain
+    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
+    workitem?id=RHEVM3-5297
+    """
+    # TODO: Ensure this test is FCP ready when importBlockStorageDomain
+    # supports FCP
+    __test__ = (
+        ISCSI in opts['storages'] or NFS in opts['storages'] or
+        GLUSTER in opts['storages'] or POSIX in opts['storages']
+    )
+    polarion_test_case = '5297'
+
+    @polarion("RHEVM3-5297")
+    def test_new_vm_from_imported_domain_template(self):
+        """
+        - import data domain
+        - verify template's existence
+        - create VM from template
+        """
+        self.new_vm_from_imported_domain_template()
