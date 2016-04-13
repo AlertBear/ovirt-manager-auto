@@ -10,6 +10,7 @@ bond scenarios and for VM and non-VM networks
 
 import helper
 import logging
+import pytest
 import config as conf
 from art import unittest_lib
 from art.unittest_lib import attr
@@ -947,7 +948,7 @@ class TestNetLabels07(TestLabelTestCaseBase):
         super(TestNetLabels07, cls).teardown_class()
 
 
-@unittest_lib.common.skip_class_if(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
+@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 class TestNetLabels08(TestLabelTestCaseBase):
 
     """

@@ -9,9 +9,9 @@ It will cover scenarios for different states of VNIC on stopped/running VM.
 """
 
 import logging
+import pytest
 import config as conf
 from art.unittest_lib import attr
-import art.unittest_lib.common as common
 from art.unittest_lib import NetworkTest
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import rhevmtests.networking.helper as net_help
@@ -77,7 +77,7 @@ class TestLinkedCase01(TestLinkedCasesBase):
             raise conf.NET_EXCEPTION()
 
 
-@common.skip_class_if(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
+@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 class TestLinkedCase02(TestLinkedCasesBase):
     """
     Create permutation for the Plugged/Linked vNIC
@@ -334,7 +334,7 @@ class TestLinkedCase05(TestLinkedCasesBase):
                 raise conf.NET_EXCEPTION()
 
 
-@common.skip_class_if(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
+@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 class TestLinkedCase06(TestLinkedCasesBase):
     """
     Changing several network parameters at once on non-running VM

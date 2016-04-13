@@ -4,7 +4,7 @@ Testing NetworkFilter feature.
 """
 
 import logging
-from art.unittest_lib import common
+import pytest
 from rhevmtests.networking import config
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion  # pylint: disable=E0611
@@ -23,7 +23,7 @@ logger = logging.getLogger("Network_Filter_Cases")
 
 
 @attr(tier=2)
-@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class TestNetworkFilterCase02(TestCase):
     """
     Check that network filter is enabled for hot-plug  NIC to on VM
@@ -141,7 +141,7 @@ class TestNetworkFilterCase03(TestCase):
 
 
 @attr(tier=2)
-@common.skip_class_if(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class TestNetworkFilterCase04(TestCase):
     """
     Check that Network Filter is disabled via ebtables on after VNIC hot-plug

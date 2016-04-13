@@ -46,46 +46,6 @@ def is_bz_state(bz_id):
     return BZ_PLUGIN.is_state(bz_id)
 
 
-def skip_class_if(condition, reason, instance_func_l=None, class_func_l=None):
-    """
-    Skip run of test class, because of specific reason
-
-    :param condition: skip test condition
-    :type condition: bool
-    :param reason: skip reason
-    :type reason: str
-    :param instance_func_l: list of instance methods
-    to replace with fake method
-    :type instance_func_l: list
-    :param class_func_l: list of class methods
-    to replace with class method
-    :type class_func_l: list
-    :return: wrapped class
-    :rtype: class
-    """
-    if not class_func_l:
-        class_func_l = ['setup_class', 'teardown_class']
-    if not instance_func_l:
-        instance_func_l = ['setUp', 'tearDown']
-
-    def wrapper(cls):
-        if condition:
-            def fake_func_self(self):
-                raise SkipTest(reason)
-
-            def fake_func_cls(cls):
-                logger.warning(reason)
-
-            for func in instance_func_l:
-                setattr(cls, func, fake_func_self)
-
-            for func in class_func_l:
-                setattr(cls, func, classmethod(fake_func_cls))
-        return cls
-
-    return wrapper
-
-
 class BaseTestCase(TestCase):
     """
     Base test case class for unittest testing

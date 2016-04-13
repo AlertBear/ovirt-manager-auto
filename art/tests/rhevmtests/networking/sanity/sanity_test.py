@@ -7,12 +7,12 @@ Testing Sanity for the network features.
 
 import helper
 import logging
+import pytest
 import config as conf
 from art.core_api import apis_exceptions
 from art.rhevm_api.utils import test_utils
 import rhevmtests.helpers as global_helper
 import art.unittest_lib.network as lib_network
-import art.unittest_lib.common as lib_common
 from art.unittest_lib import attr, NetworkTest
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import rhevmtests.networking.helper as network_helper
@@ -618,7 +618,7 @@ class TestSanity07(NetworkTest):
         ll_dc.remove_datacenter(positive=True, datacenter=conf.EXT_DC_1)
 
 
-@lib_common.skip_class_if(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
+@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 class TestSanity08(TestSanityCaseBase):
     """
     Create new DC and cluster with non default management network

@@ -17,7 +17,6 @@ import helper
 from art.core_api import apis_exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest, attr
-from art.unittest_lib import common
 from fixtures import *  # flake8: noqa
 
 logger = logging.getLogger("MGMT_Net_Role_Cases")
@@ -552,7 +551,7 @@ class TestMGMTNetRole07(NetworkTest):
 
 @attr(tier=2)
 @pytest.mark.usefixtures("prepare_setup_case_08")
-@common.skip_class_if(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
+@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 class TestMGMTNetRole08(NetworkTest):
     """
     Create a new DC and cluster with non-default management network
