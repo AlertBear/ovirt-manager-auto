@@ -4,7 +4,7 @@ Check different cases for quota limitations in None, Audit and Enforce mode
 Include CRUD tests, different limitations of storage, memory and vcpu tests
 """
 import logging
-import unittest2
+import pytest
 
 import config as conf
 from art.unittest_lib import attr
@@ -709,7 +709,7 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
             audit_msg_type=conf.GRACE_TYPE
         )
 
-    @unittest2.skipIf(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-9438")
     def test_c_quota_vcpu_limit_over_grace(self):
         """
@@ -720,7 +720,7 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
             audit_msg_type=conf.EXCEED_TYPE
         )
 
-    @unittest2.skipIf(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12366")
     def test_d_quota_vcpu_hotplug_in_grace_vm_up(self):
         """
@@ -731,7 +731,7 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
             conf.VM_UP, conf.GRACE_TYPE, conf.NUM_OF_CPUS[conf.GRACE_TYPE]
         )
 
-    @unittest2.skipIf(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12367")
     def test_e_quota_vcpu_hotplug_in_exceed_vm_up(self):
         """
@@ -742,7 +742,7 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
             conf.VM_UP, conf.EXCEED_TYPE, conf.NUM_OF_CPUS[conf.EXCEED_TYPE]
         )
 
-    @unittest2.skipIf(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12364")
     @bz(
         {"1167081": {conf.BZ_ENGINE: None, conf.BZ_VERSION: [conf.VERSION_35]}}
@@ -758,7 +758,7 @@ class TestQuotaAuditModeCPU(TestQuotaCluster):
             conf.NUM_OF_CPUS[conf.GRACE_TYPE]
         )
 
-    @unittest2.skipIf(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12365")
     @bz(
         {"1167081": {conf.BZ_ENGINE: None, conf.BZ_VERSION: [conf.VERSION_35]}}
@@ -816,7 +816,7 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
             audit_msg_type=conf.EXCEED_TYPE
         )
 
-    @unittest2.skipIf(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12370")
     def test_d_quota_vcpu_hotplug_in_grace_vm_up(self):
         """
@@ -827,7 +827,7 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
             conf.VM_UP, conf.GRACE_TYPE, conf.NUM_OF_CPUS[conf.GRACE_TYPE]
         )
 
-    @unittest2.skipIf(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12371")
     def test_e_quota_vcpu_hotplug_in_exceed_vm_up(self):
         """
@@ -838,7 +838,7 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
             conf.VM_UP, conf.EXCEED_TYPE, conf.NUM_OF_CPUS[conf.EXCEED_TYPE]
         )
 
-    @unittest2.skipIf(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12368")
     @bz(
         {"1167081": {conf.BZ_ENGINE: None, conf.BZ_VERSION: [conf.VERSION_35]}}
@@ -854,7 +854,7 @@ class TestQuotaEnforcedModeCPU(TestQuotaCluster):
             conf.NUM_OF_CPUS[conf.GRACE_TYPE]
         )
 
-    @unittest2.skipIf(conf.PPC_ARCH, conf.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12369")
     @bz(
         {"1167081": {conf.BZ_ENGINE: None, conf.BZ_VERSION: [conf.VERSION_35]}}

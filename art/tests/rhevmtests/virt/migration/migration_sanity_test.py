@@ -5,7 +5,7 @@
 Virt sanity testing for migration feature.
 """
 
-import unittest2
+import pytest
 import logging
 import threading as thread
 import time
@@ -116,7 +116,7 @@ class TestMigrationVirtSanityCase2(common.VirtTest):
         )
 
 
-@unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @common.attr(tier=1)
 class TestMigrationVirtSanityCase3(common.VirtTest):
     """

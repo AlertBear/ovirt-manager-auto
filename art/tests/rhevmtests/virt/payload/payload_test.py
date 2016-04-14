@@ -5,7 +5,7 @@ check mount of different types of payloads, cdrom, floppy.
 """
 import os
 import logging
-import unittest2
+import pytest
 from art.unittest_lib import attr
 from art.unittest_lib import VirtTest as TestCase
 from art.test_handler.tools import polarion, bz   # pylint: disable=E0611
@@ -280,7 +280,7 @@ class TestCreateVmWithFloppyPayload(PayloadViaCreate):
     payload_content = PAYLOADS_CONTENT[2]
     payload_type = PAYLOADS_TYPE[1]
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-10070")
     @bz({'1198677': {'engine': ['cli']}})
     def test_check_existence_of_payload(self):
@@ -301,7 +301,7 @@ class TestUpdateVmWithFloppyPayload(PayloadViaUpdate):
     payload_content = PAYLOADS_CONTENT[3]
     payload_type = PAYLOADS_TYPE[1]
 
-    @unittest2.skipIf(config.PPC_ARCH, config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-10072")
     @bz({'1198677': {'engine': ['cli']}})
     def test_check_existence_of_payload(self):
