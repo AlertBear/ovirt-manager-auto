@@ -7,11 +7,12 @@ Cumulative Network Usage Statistics helper file
 
 import logging
 import operator
-import config as conf
+
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import rhevmtests.networking.config as conf
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.helper as network_helper
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 logger = logging.getLogger("Cumulative_RX_TX_Statistics_Helper")
 
@@ -55,15 +56,15 @@ def config_ip(vms_and_ips):
         )
         if not interface:
             raise conf.NET_EXCEPTION("Failed to get interface from %s" % vm)
+        interface = interface[0]
 
         ifcfg_params["IPADDR"] = ip
-        logger.info("Setting IP %s on %s for %s", ip, interface[0], vm)
+        logger.info("Setting IP %s on %s for %s", ip, interface, vm)
         vm_resource.network.create_ifcfg_file(
-            nic=interface[0], params=ifcfg_params
+            nic=interface, params=ifcfg_params
         )
-        logger.info("Restart network service on %s", vm)
-        if not vm_resource.service("network").restart():
-            raise conf.NET_EXCEPTION("Couldn't restart network service")
+        if vm_resource.run_command(command=["ifup", interface])[0]:
+            raise conf.NET_EXCEPTION()
 
 
 def send_icmp(device_and_ips):
@@ -113,22 +114,6 @@ def compare_nic_stats(
         comp_oper(nic_stat["data.total.tx"], total_tx)
     ):
 
-        raise conf.NET_EXCEPTION("Comparing NIC statistics failed")
-
-
-def plug_unplug_vnic(vm, plug=True):
-    """
-    Plug or unplug VNIC
-
-    :param vm: VM name
-    :type vm: str
-    :param plug: True for plug, False for unplug
-    :type plug: bool
-    :raise: Network exception
-    """
-    plugged = "plug" if plug else "unplugged"
-    logger.info("Hot %s %s from %s", plugged, conf.NIC_1, vm)
-    if not ll_vms.updateNic(True, vm, conf.NIC_1, plugged=plug):
-        raise conf.NET_EXCEPTION(
-            "Failed to hot %s %s from %s" % (plugged, conf.NIC_1, vm)
-        )
+        logger.error("Comparing NIC statistics failed")
+        return False
+    return True
