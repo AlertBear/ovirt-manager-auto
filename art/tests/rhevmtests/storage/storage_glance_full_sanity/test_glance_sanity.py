@@ -4,6 +4,7 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage/3_4_Storage_Import_Template_Entities
 """
 import logging
+from unittest2 import SkipTest
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     jobs as ll_jobs,
@@ -13,7 +14,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.test_handler import exceptions as errors
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import attr, StorageTest as BaseTestCase, SkipTest
+from art.unittest_lib import attr, StorageTest as BaseTestCase
 from rhevmtests.storage import config, helpers as storage_helpers
 
 logger = logging.getLogger(__name__)

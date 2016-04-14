@@ -6,8 +6,7 @@ this folder.
 from concurrent.futures import ThreadPoolExecutor
 import logging
 from nose.tools import istest
-from unittest import TestCase
-from unittest2 import skipIf
+from unittest2 import TestCase, skipIf
 
 from art.rhevm_api.utils.test_utils import get_api
 import art.test_handler.exceptions as exceptions

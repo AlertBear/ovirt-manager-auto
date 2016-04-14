@@ -14,6 +14,7 @@ import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+from unittest2 import SkipTest
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ def setup_module(module):
     """
     host_numa_nodes_l = ll_hosts.get_numa_nodes_from_host(conf.HOSTS[0])
     if len(host_numa_nodes_l) < 2:
-        raise u_libs.SkipTest(
+        raise SkipTest(
             "Number of NUMA nodes on host %s less than 2" %
             conf.HOSTS[0]
         )
@@ -569,7 +570,7 @@ class CheckNumaModes(StartVms):
             conf.VDS_HOSTS[0]
         )
         if not h_numa_nodes_params or len(h_numa_nodes_params.keys()) < 2:
-            raise u_libs.SkipTest(
+            raise SkipTest(
                 "Number of NUMA nodes on host %s less than 2" %
                 conf.VDS_HOSTS[0].fqdn
             )

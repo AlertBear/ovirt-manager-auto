@@ -7,8 +7,9 @@ is Vm_Evenly_Distribute
 import time
 import logging
 
+from unittest2 import SkipTest
 from rhevmtests.sla import config
-from art.unittest_lib import attr, SkipTest
+from art.unittest_lib import attr
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors

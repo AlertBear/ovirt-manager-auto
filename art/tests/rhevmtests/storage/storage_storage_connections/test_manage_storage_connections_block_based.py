@@ -1,6 +1,7 @@
 import config
 import logging
-from art.unittest_lib import StorageTest, attr, SkipTest
+from unittest2 import SkipTest
+from art.unittest_lib import StorageTest, attr
 from concurrent.futures import ThreadPoolExecutor
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import art.test_handler.exceptions as errors

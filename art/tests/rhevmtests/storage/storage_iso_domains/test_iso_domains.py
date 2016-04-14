@@ -14,8 +14,9 @@ Check with NFS, POSIXFS and local ISO domains
 import config
 import logging
 import helpers
+from unittest2 import SkipTest
 from art.test_handler import exceptions
-from art.unittest_lib import StorageTest as TestCase, attr, SkipTest
+from art.unittest_lib import StorageTest as TestCase, attr
 from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 import art.rhevm_api.tests_lib.high_level.storagedomains as hl_sd
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd

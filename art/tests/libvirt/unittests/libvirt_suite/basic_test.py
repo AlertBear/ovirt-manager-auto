@@ -5,7 +5,7 @@ Author: Alex Jia <ajia@redhat.com>, Bing Li <bili@redhat.com>
 
 import time
 import logging
-from unittest import TestCase
+from unittest2 import TestCase
 from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sds,
     datacenters as ll_dcs,

@@ -4,6 +4,7 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
 Storage_3_6/3_6_Storage_allow%20gluster%20mount%20with%20additional%20nodes
 """
 import logging
+from unittest2 import SkipTest
 from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api.tests_lib.high_level import (
     hosts as hl_hosts,
@@ -18,7 +19,7 @@ from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import attr, StorageTest as BaseTestCase, SkipTest
+from art.unittest_lib import attr, StorageTest as BaseTestCase
 from art.rhevm_api.utils.log_listener import watch_logs
 from multiprocessing import Process, Queue
 from rhevmtests.storage import config

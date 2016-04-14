@@ -11,6 +11,7 @@ import logging
 import art.unittest_lib as u_lib
 import rhevmtests.sla.config as conf
 
+from unittest2 import SkipTest
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
@@ -45,7 +46,7 @@ def setup_module(module):
     for host_resource in conf.VDS_HOSTS[:3]:
         host_fqdn = host_resource.fqdn
         if not conf.pm_mapping.get(host_fqdn):
-            raise u_lib.SkipTest(
+            raise SkipTest(
                 "Host with fqdn %s does not have power management" % host_fqdn
             )
     if not ll_hosts.select_host_as_spm(

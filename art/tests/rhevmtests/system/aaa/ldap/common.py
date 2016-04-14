@@ -1,11 +1,9 @@
-__test__ = False
-
 import logging
 import os
 import tempfile
+from unittest2 import SkipTest
 
 from functools import wraps
-from art.unittest_lib import SkipTest
 from art.core_api.apis_exceptions import APIException
 from rhevmtests.system.aaa.ldap import config
 from art.rhevm_api.tests_lib.low_level import users, mla, general
@@ -17,6 +15,8 @@ LOGGER = logging.getLogger(__name__)
 SKIP_MESSAGE = 'Configuration was not setup for this test. Skipping.'
 INTERVAL = 5
 ATTEMPTS = 25
+
+__test__ = False
 
 
 # Extensions utils

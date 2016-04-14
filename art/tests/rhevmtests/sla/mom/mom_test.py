@@ -13,7 +13,8 @@ Tests covers:
         VM with memory set to max guaranteed memory, VM without guest
         agent, multiple VMs on one host with ballooning enabled
 """
-from art.unittest_lib import SlaTest as TestCase, attr, SkipTest
+from art.unittest_lib import SlaTest as TestCase, attr
+from unittest2 import SkipTest
 from time import sleep
 import config
 import logging

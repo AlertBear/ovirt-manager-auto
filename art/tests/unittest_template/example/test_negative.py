@@ -5,7 +5,7 @@ this folder.
 
 import logging
 from nose.tools import istest
-from unittest import TestCase
+from unittest2 import TestCase
 
 import art.test_handler.exceptions as exceptions
 

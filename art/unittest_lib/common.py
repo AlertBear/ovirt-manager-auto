@@ -2,13 +2,9 @@ import datetime
 import logging
 from art.test_handler.exceptions import TearDownException
 from art.test_handler.settings import plmanager, opts, ART_CONFIG
-from unittest import TestCase
+from unittest2 import TestCase
 from _pytest_art.marks import attr
 from _pytest_art.testlogger import TestFlowInterface
-try:
-    from unittest import SkipTest
-except ImportError:
-    from unittest2 import SkipTest
 
 logger = logging.getLogger(__name__)
 testflow = TestFlowInterface
