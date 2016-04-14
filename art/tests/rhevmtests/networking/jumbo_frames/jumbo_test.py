@@ -335,7 +335,7 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
 
 @attr(tier=2)
 @pytest.mark.skipif(
-    conf.NOT_FOUR_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
+    conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
 )
 class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
     """
@@ -458,7 +458,7 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
 
 @attr(tier=2)
 @pytest.mark.skipif(
-    conf.NOT_FOUR_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
+    conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
 )
 class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
     """
@@ -578,7 +578,7 @@ class TestJumboFramesCase06(TestJumboFramesTestCaseBase):
 
 @attr(tier=2)
 @pytest.mark.skipif(
-    conf.NOT_FOUR_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
+    conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
 )
 class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
     """
