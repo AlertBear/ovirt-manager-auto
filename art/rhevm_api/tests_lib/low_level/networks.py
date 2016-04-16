@@ -744,46 +744,67 @@ def create_network_in_datacenter(positive, datacenter, **kwargs):
 
 def delete_network_in_datacenter(positive, network, datacenter):
     """
-    remove existing network from datacenter
-    :param positive: True if action should succeed, False otherwise
-    :type positive: bool
-    :param network: name of a network that should be removed
-    :type network: str
-    :param datacenter: datacenter where the network should be deleted from
-    :type datacenter: str
-    :return: True if result of action == positive, False otherwise
-    :rtype: bool
+    Delete existing network from datacenter
+
+    Args:
+        positive (bool): True if action should succeed, False otherwise
+        network (str): name of a network that should be removed
+        datacenter (str): datacenter where the network should be deleted from
+
+    Returns:
+        bool: True if result of action == positive, False otherwise
     """
+    log_info, log_error = ll.general.get_log_msg(
+        action="Delete", obj_type="network", obj_name=network,
+        positive=positive, extra_txt="in datacenter %s" % datacenter
+    )
     net_to_remove = get_network_in_datacenter(
         network=network, datacenter=datacenter
     )
     if net_to_remove:
-        return NET_API.delete(net_to_remove, positive)
+        logger.info(log_info)
+        res = NET_API.delete(net_to_remove, positive)
+        if not res:
+            logger.error(log_error)
+        return res
     return False
 
 
 def update_network_in_datacenter(positive, network, datacenter, **kwargs):
     """
-    update existing network in datacenter
-     :param positive: True if action should succeed, False otherwise
-     :param network: name of a network that should be updated
-     :param datacenter: datacenter name where the network should be updated
-     :param kwargs:
-        description: new network description (if relevant)
-        stp: new network support stp (if relevant). (true/false string)
-        vlan_id: new network vlan id (if relevant)
-        usages: a string contain list of comma-separated usages
-                'vm' or "" for Non-VM. should contain all usages every update.
-                a missing usage will be deleted!
-        mtu: and integer to overrule mtu on the related host nic..
-    :return: True if result of action == positive, False otherwise
-    :rtype: bool
+    Update existing network in datacenter
+
+    Args:
+        positive (bool): True if action should succeed, False otherwise
+        network(str): name of a network that should be updated
+        datacenter (str): datacenter name where the network should be updated
+        kwargs (dict): Network oarams
+
+    Keyword Args:
+        description (str): new network description (if relevant)
+        stp (str): new network support stp (if relevant). (true/false string)
+        vlan_id (int): new network vlan id (if relevant)
+        usages (str): a string contain list of comma-separated usages 'vm'
+            or "" for Non-VM. should contain all usages every update. a
+            missing usage will be deleted!
+        mtu (int): and integer to overrule mtu on the related host nic.
+
+    Returns:
+        bool: True if result of action == positive, False otherwise
     """
+    log_info, log_error = ll.general.get_log_msg(
+        action="Update", obj_type="network", obj_name=network,
+        positive=positive, extra_txt="in datacenter %s" % datacenter, **kwargs
+    )
+    logger.info(log_info)
     net = get_network_in_datacenter(
         network=network, datacenter=datacenter
     )
     net_update = _prepareNetworkObject(**kwargs)
-    return NET_API.update(net, net_update, positive)
+    res = NET_API.update(net, net_update, positive)
+    if not res:
+        logger.error(log_error)
+    return res
 
 
 def is_host_network_is_vm(vds_resource, net_name):
@@ -874,14 +895,14 @@ def create_networks_in_datacenter(datacenter, num_of_net, prefix):
 def delete_networks_in_datacenter(datacenter, mgmt_net, networks=list()):
     """
     Delete all networks under datacenter except mgmt_net.
-    :param datacenter: datacenter name
-    :type datacenter: str
-    :param mgmt_net: management network
-    :type mgmt_net: str
-    :param networks: List of networks to remove
-    :type networks: list
-    :return: True/False
-    :rtype: bool
+
+    Args:
+        datacenter (str): datacenter name
+        mgmt_net (str): management network
+        networks (list): List of networks to remove
+
+    Returns:
+        bool: True/False
     """
     dc_networks = (
         get_networks_in_datacenter(datacenter) if not networks else

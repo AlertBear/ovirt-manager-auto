@@ -136,15 +136,17 @@ MAC_POOL_RANGE_LIST = [
     ("00:00:00:20:10:10", "00:00:00:20:10:12"),
     ("00:00:00:30:10:10", "00:00:00:30:10:12")
 ]
-EXT_DC_1 = EXTRA_DC[1]
+EXT_DC_1 = "mac_pool_range_ext_dc_1"
 
 # Management network as role
-EXT_DC_0 = EXTRA_DC[0]
-EXTRA_CLUSTER_0 = EXTRA_CL[0]
+EXT_DC_0 = "mgmt_role_ext_dc"
+EXTRA_CLUSTER_0 = "mgmt_role_ext_cl"
 
 # bridgeless
 VLAN_IDS = [str(i) for i in xrange(2, 4)]
-NETS = global_helper.generate_object_names(num_of_cases=4, num_of_objects=3)
+NETS = global_helper.generate_object_names(
+    num_of_cases=4, num_of_objects=3, prefix="br"
+)
 
 BRIDGELESS_NET_DICT = {
     NETS[1][0]: {
@@ -178,9 +180,9 @@ VM_IPS = None  # Filled in test
 NIC_STAT = None  # Filled in test
 TOTAL_RX = None  # Filled in test
 TOTAL_TX = None  # Filled in test
-NETWORK_0 = NETWORKS[0]
-NETWORK_1 = NETWORKS[1]
-NETWORK_2 = NETWORKS[2]
+NETWORK_0 = "rx_tx_net_0"
+NETWORK_1 = "rx_tx_net_1"
+NETWORK_2 = "rx_tx_net_2"
 VM_NIC_1 = NIC_NAME[1]
 DC_3_5 = "tx_rx_stats_DC_3_5"
 CL_3_5 = "tx_rx_stats_Cl_3_5"
@@ -193,3 +195,18 @@ BASIC_IP_DICT_NETMASK = {
         "boot_protocol": "static"
     }
 }
+
+# Datacenter networks
+DATACENTER_NETWORKS_NET_DICT = {
+    "description": "New network",
+    "stp": True,
+    "vlan_id": 500,
+    "usages": [],
+    "mtu": 5555
+}
+DATACENTER_NETWORKS_VERIFY_NET_LIST = [
+    "description", "stp", "vlan_id", "usages", "mtu"
+]
+DATACENTER_NETWORKS_DC_NAMES = [DC_NAME[0], "DataCenter_Network_DC2"]
+DC_0_NET_LIST = None  # Filled in test
+DC_1_NET_LIST = None  # Filled in test
