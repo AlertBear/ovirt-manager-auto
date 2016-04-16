@@ -6,34 +6,33 @@ helper file for Host Network API
 """
 
 import logging
-import config as conf
-from art.unittest_lib import attr
-import art.unittest_lib as unit_lib
-import rhevmtests.networking.helper as network_helper
-import art.rhevm_api.utils.test_utils as test_utils
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.utils.test_utils as test_utils
+import rhevmtests.networking.config as conf
+import rhevmtests.networking.helper as network_helper
 
 logger = logging.getLogger("Host_Network_API_Helper")
 
 
-def attach_network_attachment(nic=None, positive=True, **network_dict):
+def attach_network_attachment(host_nic=None, positive=True, **network_dict):
     """
     Attach network attachment to host NIC via NIC or host href
 
     :param network_dict: Network dict
     :type network_dict: dict
-    :param nic: NIC name
-    :type nic: str
+    :param host_nic: NIC name
+    :type host_nic: str
     :param positive: Expected status
     :type positive: bool
-    :raise: NetworkException
+    :return: True/False
+    :rtype: bool
     """
     res = hl_host_network.add_network_to_host(
-        host_name=conf.HOST_0_NAME, nic_name=nic, **network_dict
+        host_name=conf.HOST_0_NAME, nic_name=host_nic, **network_dict
     )
-    if res != positive:
-        raise conf.NET_EXCEPTION()
+    return not res != positive
 
 
 def networks_unsync_reasons(net_sync_reason):
@@ -67,29 +66,20 @@ def get_networks_sync_status_and_unsync_reason(net_sync_reason):
 
     :param net_sync_reason: List of tuple of (network_name, unsync_reason)
     :type net_sync_reason: dict
-    :raise: conf.NET_EXCEPTION
+    :return: True/False
+    :rtype: bool
     """
     networks = [i for i in net_sync_reason]
     if network_helper.networks_sync_status(
         host=conf.HOST_0_NAME, networks=networks
     ):
-        raise conf.NET_EXCEPTION("%s are synced but shouldn't" % networks)
+        logger.error("%s are synced but shouldn't", networks)
+        return False
 
     if not networks_unsync_reasons(net_sync_reason):
-        raise conf.NET_EXCEPTION("%s unsync reason is incorrect" % networks)
-
-
-@attr(tier=2)
-class TestHostNetworkApiTestCaseBase(unit_lib.NetworkTest):
-    """
-    base class which provides teardown class method for each test case
-    """
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove all networks from the host NICs.
-        """
-        network_helper.remove_networks_from_host()
+        logger.error("%s unsync reason is incorrect", networks)
+        return False
+    return True
 
 
 def manage_ip_and_refresh_capabilities(

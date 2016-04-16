@@ -5,8 +5,8 @@
 Config for Host Network API job
 """
 
-from rhevmtests.networking.config import *  # NOQA
 import rhevmtests.helpers as global_helper
+import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 
 SYNC_DC = "Sync_DC"
@@ -18,9 +18,6 @@ NIC_NETS = global_helper.generate_object_names(num_of_cases=20, prefix="nic")
 HOST_NETS = global_helper.generate_object_names(num_of_cases=20, prefix="host")
 SYNC_NETS_DC_1 = global_helper.generate_object_names(
     num_of_cases=25, prefix="sync1_"
-)
-SYNC_NETS_DC_2 = global_helper.generate_object_names(
-    num_of_cases=25, prefix="sync2_"
 )
 SN_NETS = global_helper.generate_object_names(
     num_of_cases=35, num_of_objects=10, prefix="sn"
@@ -97,12 +94,12 @@ NIC_DICT = {
     NIC_NETS[8][0]: {
         "required": "false",
         "usages": "",
-        "mtu": MTU[1]
+        "mtu": conf.MTU[1]
     },
     NIC_NETS[8][1]: {
         "required": "false",
         "vlan_id": VLAN_IDS[3],
-        "mtu": MTU[0]
+        "mtu": conf.MTU[0]
     },
     NIC_NETS[9][0]: {
         "required": "false"
@@ -188,12 +185,12 @@ SN_DICT = {
     SN_NETS[8][0]: {
         "required": "false",
         "usages": "",
-        "mtu": MTU[1]
+        "mtu": conf.MTU[1]
     },
     SN_NETS[8][1]: {
         "required": "false",
         "vlan_id": VLAN_IDS[12],
-        "mtu": MTU[0]
+        "mtu": conf.MTU[0]
     },
     SN_NETS[9][0]: {
         "required": "false"
@@ -360,12 +357,12 @@ HOST_DICT = {
     HOST_NETS[8][0]: {
         "required": "false",
         "usages": "",
-        "mtu": MTU[1]
+        "mtu": conf.MTU[1]
     },
     HOST_NETS[8][1]: {
         "required": "false",
         "vlan_id": VLAN_IDS[30],
-        "mtu": MTU[0]
+        "mtu": conf.MTU[0]
     },
     HOST_NETS[9][0]: {
         "required": "false"
@@ -450,22 +447,22 @@ SYNC_DICT_1 = {
     },
     SYNC_NETS_DC_1[3][0]: {
         "required": "false",
-        "mtu": MTU[0]
+        "mtu": conf.MTU[0]
     },
     SYNC_NETS_DC_1[3][1]: {
         "required": "false",
-        "mtu": MTU[1]
+        "mtu": conf.MTU[1]
     },
     SYNC_NETS_DC_1[3][2]: {
         "required": "false",
     },
     SYNC_NETS_DC_1[4][0]: {
         "required": "false",
-        "mtu": MTU[0]
+        "mtu": conf.MTU[0]
     },
     SYNC_NETS_DC_1[4][1]: {
         "required": "false",
-        "mtu": MTU[1]
+        "mtu": conf.MTU[1]
     },
     SYNC_NETS_DC_1[4][2]: {
         "required": "false",
@@ -525,7 +522,7 @@ SYNC_DICT_1 = {
     SYNC_NETS_DC_1[19][0]: {
         "required": "false",
         "qos": {
-            "datacenter": DC_0,
+            "datacenter": conf.DC_0,
             "qos_name": QOS_NAME[19][0],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,
@@ -539,7 +536,7 @@ SYNC_DICT_1 = {
     SYNC_NETS_DC_1[19][2]: {
         "required": "false",
         "qos": {
-            "datacenter": DC_0,
+            "datacenter": conf.DC_0,
             "qos_name": QOS_NAME[19][2],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,
@@ -551,7 +548,7 @@ SYNC_DICT_1 = {
     SYNC_NETS_DC_1[20][0]: {
         "required": "false",
         "qos": {
-            "datacenter": DC_0,
+            "datacenter": conf.DC_0,
             "qos_name": QOS_NAME[20][0],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,
@@ -565,7 +562,7 @@ SYNC_DICT_1 = {
     SYNC_NETS_DC_1[20][2]: {
         "required": "false",
         "qos": {
-            "datacenter": DC_0,
+            "datacenter": conf.DC_0,
             "qos_name": QOS_NAME[20][2],
             "qos_type": "hostnetwork",
             "outbound_average_linkshare": 10,
@@ -601,25 +598,25 @@ SYNC_DICT_2 = {
     },
     SYNC_NETS_DC_1[3][0]: {
         "required": "false",
-        "mtu": MTU[1]
+        "mtu": conf.MTU[1]
     },
     SYNC_NETS_DC_1[3][1]: {
         "required": "false",
     },
     SYNC_NETS_DC_1[3][2]: {
         "required": "false",
-        "mtu": MTU[0]
+        "mtu": conf.MTU[0]
     },
     SYNC_NETS_DC_1[4][0]: {
         "required": "false",
-        "mtu": MTU[1]
+        "mtu": conf.MTU[1]
     },
     SYNC_NETS_DC_1[4][1]: {
         "required": "false",
     },
     SYNC_NETS_DC_1[4][2]: {
         "required": "false",
-        "mtu": MTU[0]
+        "mtu": conf.MTU[0]
     },
     SYNC_NETS_DC_1[5][0]: {
         "required": "false",
@@ -638,12 +635,12 @@ SYNC_DICT_2 = {
     SYNC_NETS_DC_1[7][0]: {
         "required": "false",
         "vlan_id": VLAN_IDS[54],
-        "mtu": MTU[1]
+        "mtu": conf.MTU[1]
     },
     SYNC_NETS_DC_1[8][0]: {
         "required": "false",
         "vlan_id": VLAN_IDS[55],
-        "mtu": MTU[1]
+        "mtu": conf.MTU[1]
     },
     SYNC_NETS_DC_1[19][0]: {
         "required": "false",

@@ -113,7 +113,7 @@ def add_network_to_host(host_name, nic_name=None, **kwargs):
     :return: True/False
     :rtype: bool
     """
-    nic_log = "to host NIC %s" if nic_name else ""
+    nic_log = "to host NIC %s" % nic_name if nic_name else ""
     network = kwargs.get("network")
     log_info, log_error = ll_general.get_log_msg(
         action="Attach", obj_type="network", obj_name=network,

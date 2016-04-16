@@ -186,7 +186,8 @@ def sync_networks(host, networks):
     :type host: str
     :param networks: List of networks to sync
     :type networks: list
-    :raise: NetworkException
+    :return: True/False
+    :rtype: bool
     """
     network_sync_dict = {
         "sync": {
@@ -195,13 +196,16 @@ def sync_networks(host, networks):
     }
     logger.info("syncing %s", networks)
     if not hl_host_network.setup_networks(host_name=host, **network_sync_dict):
-        raise conf.NET_EXCEPTION("Failed to sync %s" % networks)
+        logger.error("Failed to sync %s", networks)
+        return False
 
     if not networks_sync_status(host=host, networks=networks):
-        raise conf.NET_EXCEPTION(
+        logger.error(
             "At least one of the networks from %s is out of sync, should be "
-            "synced" % networks
+            "synced", networks
         )
+        return False
+    return True
 
 
 def remove_qos_from_dc(qos_name, datacenter=conf.DC_NAME[0], teardown=True):

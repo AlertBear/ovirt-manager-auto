@@ -5,36 +5,26 @@
 Job for new host network API via SetupNetworks
 """
 
-import helper
 import logging
-import config as conf
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-import rhevmtests.networking.helper as network_helper
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
+
+import pytest
+
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import config as conf
+import rhevmtests.networking.config as net_conf
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.unittest_lib import attr, NetworkTest, testflow
+from fixtures import (
+    teardown_all_cases_sn, sn_case_09, sn_case_10, sn_case_11, sn_case_15,
+    sn_case_16, sn_case_17, sn_case_24, sn_case_25, sn_case_26
+)
 
 logger = logging.getLogger("Host_Network_API_SN_Cases")
 
 
-def setup_module():
-    """
-    Add networks
-    """
-    network_helper.prepare_networks_on_setup(
-        networks_dict=conf.SN_DICT, dc=conf.DC_0, cluster=conf.CL_0
-    )
-
-
-def teardown_module():
-    """
-    Removes networks
-    """
-    network_helper.remove_networks_from_setup()
-
-
-class TestHostNetworkApiSetupNetworks01(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
+class TestHostNetworkApiSetupNetworks01(NetworkTest):
     """
     Attach network to host NIC
     """
@@ -50,17 +40,21 @@ class TestHostNetworkApiSetupNetworks01(helper.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "network": self.net,
-                    "nic": conf.HOST_0_NICS[1]
+                    "nic": net_conf.HOST_0_NICS[1]
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Attach network to host NIC")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks02(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
+class TestHostNetworkApiSetupNetworks02(NetworkTest):
     """
     Attach VLAN network to host NIC
     """
@@ -76,17 +70,21 @@ class TestHostNetworkApiSetupNetworks02(helper.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "network": self.net,
-                    "nic": conf.HOST_0_NICS[1]
+                    "nic": net_conf.HOST_0_NICS[1]
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Attach VLAN network to host NIC")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks03(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
+class TestHostNetworkApiSetupNetworks03(NetworkTest):
     """
     Attach Non-VM network to host NIC
     """
@@ -102,17 +100,21 @@ class TestHostNetworkApiSetupNetworks03(helper.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "network": self.net,
-                    "nic": conf.HOST_0_NICS[1]
+                    "nic": net_conf.HOST_0_NICS[1]
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Attach Non-VM network to host NIC")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks04(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
+class TestHostNetworkApiSetupNetworks04(NetworkTest):
     """
     Attach network with IP (netmask) to host NIC
     Attach network with IP (prefix) to host NIC
@@ -134,23 +136,29 @@ class TestHostNetworkApiSetupNetworks04(helper.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "network": self.net_1,
-                    "nic": conf.HOST_0_NICS[1],
+                    "nic": net_conf.HOST_0_NICS[1],
                     "ip": conf.BASIC_IP_DICT_NETMASK
                 },
                 "2": {
                     "network": self.net_2,
-                    "nic": conf.HOST_0_NICS[2],
+                    "nic": net_conf.HOST_0_NICS[2],
                     "ip": conf.BASIC_IP_DICT_PREFIX
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step(
+            "Attach network with IP (netmask and prefix) to host NIC"
+        )
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks05(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
+class TestHostNetworkApiSetupNetworks05(NetworkTest):
     """
     Attach VLAN network with IP (netmask) to host NIC
     Attach VLAN network with IP (prefix) to host NIC
@@ -172,23 +180,29 @@ class TestHostNetworkApiSetupNetworks05(helper.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "network": self.net_1,
-                    "nic": conf.HOST_0_NICS[1],
+                    "nic": net_conf.HOST_0_NICS[1],
                     "ip": conf.BASIC_IP_DICT_NETMASK
                 },
                 "2": {
                     "network": self.net_2,
-                    "nic": conf.HOST_0_NICS[2],
+                    "nic": net_conf.HOST_0_NICS[2],
                     "ip": conf.BASIC_IP_DICT_PREFIX
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step(
+            "Attach VLAN network with IP (netmask and prefix) to host NIC"
+        )
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks06(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
+class TestHostNetworkApiSetupNetworks06(NetworkTest):
     """
     Attach Non-VM network with IP (netmask) to host NIC
     Attach Non-VM network with IP (prefix) to host NIC
@@ -210,28 +224,34 @@ class TestHostNetworkApiSetupNetworks06(helper.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "network": self.net_1,
-                    "nic": conf.HOST_0_NICS[1],
+                    "nic": net_conf.HOST_0_NICS[1],
                     "ip": conf.BASIC_IP_DICT_NETMASK
                 },
                 "2": {
                     "network": self.net_2,
-                    "nic": conf.HOST_0_NICS[2],
+                    "nic": net_conf.HOST_0_NICS[2],
                     "ip": conf.BASIC_IP_DICT_PREFIX
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step(
+            "Attach Non-VM network with IP (netmask and prefix) to host NIC"
+        )
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks07(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
+class TestHostNetworkApiSetupNetworks07(NetworkTest):
     """
     Attach label to host NIC
     """
     __test__ = True
-    label = conf.LABEL_LIST[0]
+    label = net_conf.LABEL_LIST[0]
 
     @polarion("RHEVM3-12411")
     def test_label_on_host_nic(self):
@@ -242,17 +262,21 @@ class TestHostNetworkApiSetupNetworks07(helper.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "labels": [self.label],
-                    "nic": conf.HOST_0_NICS[1]
+                    "nic": net_conf.HOST_0_NICS[1]
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Attach label to host NIC")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks08(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
+class TestHostNetworkApiSetupNetworks08(NetworkTest):
     """
     1.Attach Non-VM network with 5000 MTU size to host NIC
     2.Try to attach VLAN network with 9000 MTU size to the same NIC
@@ -271,44 +295,33 @@ class TestHostNetworkApiSetupNetworks08(helper.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "network": self.net_1,
-                    "nic": conf.HOST_0_NICS[1]
+                    "nic": net_conf.HOST_0_NICS[1]
                 },
                 "2": {
                     "network": self.net_2,
-                    "nic": conf.HOST_0_NICS[1]
+                    "nic": net_conf.HOST_0_NICS[1]
                 }
             }
         }
-        if hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step(
+            "Attach Non-VM network with 5000 MTU size to host NIC and try to "
+            "attach VLAN network with 9000 MTU size to the same NIC"
+        )
+        self.assertFalse(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks09(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(sn_case_09.__name__)
+class TestHostNetworkApiSetupNetworks09(NetworkTest):
     """
     Remove network from host NIC
     """
     __test__ = True
     net = conf.SN_NETS[9][0]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create network on DC/Cluster
-        """
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "network": cls.net,
-                    "nic": conf.HOST_0_NICS[1]
-                }
-            }
-        }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-10514")
     def test_network_remove_from_host(self):
@@ -320,13 +333,17 @@ class TestHostNetworkApiSetupNetworks09(helper.TestHostNetworkApiTestCaseBase):
                 "networks": [self.net]
                 }
             }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Remove network from host NIC")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks10(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(sn_case_10.__name__)
+class TestHostNetworkApiSetupNetworks10(NetworkTest):
     """
     1.Attach networks to host NICs
     2.Update the network to have IP (netmask)
@@ -337,28 +354,6 @@ class TestHostNetworkApiSetupNetworks10(helper.TestHostNetworkApiTestCaseBase):
     ip_prefix = conf.IPS[32]
     net_1 = conf.SN_NETS[10][0]
     net_2 = conf.SN_NETS[10][1]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Attach networks to host NICs
-        """
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "network": cls.net_1,
-                    "nic": conf.HOST_0_NICS[1]
-                },
-                "2": {
-                    "network": cls.net_2,
-                    "nic": conf.HOST_0_NICS[2]
-                }
-            }
-        }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-10515")
     def test_update_network_with_ip_host_nic(self):
@@ -371,51 +366,36 @@ class TestHostNetworkApiSetupNetworks10(helper.TestHostNetworkApiTestCaseBase):
             "update": {
                 "1": {
                     "network": self.net_1,
-                    "nic": conf.HOST_0_NICS[1],
+                    "nic": net_conf.HOST_0_NICS[1],
                     "ip": conf.BASIC_IP_DICT_NETMASK
                 },
                 "2": {
                     "network": self.net_2,
-                    "nic": conf.HOST_0_NICS[2],
+                    "nic": net_conf.HOST_0_NICS[2],
                     "ip": conf.BASIC_IP_DICT_PREFIX
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Update the network to have IP (netmask and prefix)")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks11(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(sn_case_11.__name__)
+class TestHostNetworkApiSetupNetworks11(NetworkTest):
     """
     1.Create BOND
     2.Attach network to BOND
     """
     __test__ = True
     bond = "bond11"
-    dummys = conf.DUMMYS[:2]
     net_1 = conf.SN_NETS[11][0]
     net_2 = conf.SN_NETS[11][1]
     net_3 = conf.SN_NETS[11][2]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create BOND
-        """
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "nic": cls.bond,
-                    "slaves": cls.dummys
-                }
-            }
-        }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-10516")
     def test_attach_networks_to_bond(self):
@@ -438,13 +418,17 @@ class TestHostNetworkApiSetupNetworks11(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Attach network to BOND")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks12(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
+class TestHostNetworkApiSetupNetworks12(NetworkTest):
     """
     1. Create BOND
     2. Add slave to BOND
@@ -473,10 +457,12 @@ class TestHostNetworkApiSetupNetworks12(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Create BOND")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
     @polarion("RHEVM3-9622")
     def test_02update_bond_add_slave(self):
@@ -491,10 +477,12 @@ class TestHostNetworkApiSetupNetworks12(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Add slave to BOND")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
     @polarion("RHEVM3-10520")
     def test_03update_bond_remove_slave(self):
@@ -509,10 +497,12 @@ class TestHostNetworkApiSetupNetworks12(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Remove slave from BOND")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
     @polarion("RHEVM3-9642")
     def test_04update_bond_mode(self):
@@ -528,10 +518,12 @@ class TestHostNetworkApiSetupNetworks12(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Update BOND to mode 1")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
     @polarion("RHEVM3-10521")
     def test_05update_bond_with_ip(self):
@@ -548,13 +540,17 @@ class TestHostNetworkApiSetupNetworks12(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Attach network with IP to BOND")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks13(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
+class TestHostNetworkApiSetupNetworks13(NetworkTest):
     """
     Create 3 BONDs
     """
@@ -587,13 +583,17 @@ class TestHostNetworkApiSetupNetworks13(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Create 3 BONDs")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks14(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
+class TestHostNetworkApiSetupNetworks14(NetworkTest):
     """
     Create BOND with 5 slaves
     """
@@ -614,53 +614,24 @@ class TestHostNetworkApiSetupNetworks14(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Create BOND with 5 slaves")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks15(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(sn_case_15.__name__)
+class TestHostNetworkApiSetupNetworks15(NetworkTest):
     """
     1.Create BOND with 3 networks
     2.Remove networks from BOND
     """
     __test__ = True
-    bond = "bond15"
-    dummys = conf.DUMMYS[:2]
-    net_1 = conf.SN_NETS[15][0]
     net_2 = conf.SN_NETS[15][1]
     net_3 = conf.SN_NETS[15][2]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create BOND
-        """
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "nic": cls.bond,
-                    "slaves": cls.dummys
-                },
-                "2": {
-                    "network": cls.net_1,
-                    "nic": cls.bond
-                },
-                "3": {
-                    "nic": cls.bond,
-                    "network": cls.net_2
-                },
-                "4": {
-                    "nic": cls.bond,
-                    "network": cls.net_3
-                }
-            }
-        }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-10517")
     def test_remove_networks_from_bond_host(self):
@@ -672,140 +643,59 @@ class TestHostNetworkApiSetupNetworks15(helper.TestHostNetworkApiTestCaseBase):
                 "networks": [self.net_2, self.net_3]
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Remove network from BOND")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks16(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(sn_case_16.__name__)
+class TestHostNetworkApiSetupNetworks16(NetworkTest):
     """
     1. Create network on DC/Cluster/Host (BOND)
     2. Remove the network from DC
     3. Remove the unmanaged network from host
     """
     __test__ = True
-    unmamanged_net = "unman_sn_16"
-    dummys = conf.DUMMYS[:2]
-    bond = "bond16"
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Attach network to host NIC
-        """
-        network_dict = {
-            cls.unmamanged_net: {
-                "required": "false"
-            }
-        }
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=conf.DC_0, cluster=conf.CL_0, network_dict=network_dict
-        ):
-            raise conf.NET_EXCEPTION()
-
-        sn_dict = {
-            "add": {
-                "1": {
-                    "nic": cls.bond,
-                    "slaves": cls.dummys
-                },
-                "2": {
-                    "nic": cls.bond,
-                    "network": cls.unmamanged_net
-                }
-            }
-        }
-
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **sn_dict
-        ):
-            raise conf.NET_EXCEPTION()
-
-        if not ll_networks.removeNetwork(
-            positive=True, network=cls.unmamanged_net, data_center=conf.DC_0
-        ):
-            raise conf.NET_EXCEPTION()
-
-        logger.info("Checking if %s is unmanaged network", cls.unmamanged_net)
-        if not ll_host_network.get_host_unmanaged_networks(
-            host_name=conf.HOST_0_NAME, networks=[cls.unmamanged_net]
-        ):
-            raise conf.NET_EXCEPTION(
-                "%s should be unmanaged network but it is not" %
-                cls.unmamanged_net
-            )
 
     @polarion("RHEVM3-11432")
     def test_remove_unmanaged_network(self):
         """
         Remove the unmanaged network from host
         """
-        if not hl_host_network.clean_host_interfaces(conf.HOST_0_NAME):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Remove the unmanaged network from host")
+        self.assertTrue(
+            hl_host_network.clean_host_interfaces(net_conf.HOST_0_NAME)
+        )
 
 
-class TestHostNetworkApiSetupNetworks17(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(sn_case_17.__name__)
+class TestHostNetworkApiSetupNetworks17(NetworkTest):
     """
     1. Create network on DC/Cluster/Host
     2. Remove the network from DC
     3. Remove the unmanaged network from host
     """
     __test__ = True
-    unmamanged_net = "unman_sn_17"
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Attach network to host NIC
-        """
-        network_dict = {
-            cls.unmamanged_net: {
-                "required": "false"
-            }
-        }
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=conf.DC_0, cluster=conf.CL_0, network_dict=network_dict
-        ):
-            raise conf.NET_EXCEPTION()
-
-        sn_dict = {
-            "add": {
-                "1": {
-                    "nic": conf.HOST_0_NICS[1],
-                    "network": cls.unmamanged_net
-                }
-            }
-        }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **sn_dict
-        ):
-            raise conf.NET_EXCEPTION()
-
-        if not ll_networks.removeNetwork(
-            positive=True, network=cls.unmamanged_net, data_center=conf.DC_0
-        ):
-            raise conf.NET_EXCEPTION()
-
-        logger.info("Checking if %s is unmanaged network", cls.unmamanged_net)
-        if not ll_host_network.get_host_unmanaged_networks(
-            host_name=conf.HOST_0_NAME, networks=[cls.unmamanged_net]
-        ):
-            raise conf.NET_EXCEPTION(
-                "%s should be unmanaged network but it is not" %
-                cls.unmamanged_net
-            )
 
     @polarion("RHEVM3-12164")
     def test_remove_unmanaged_network(self):
         """
         Remove the unmanaged network from host
         """
-        if not hl_host_network.clean_host_interfaces(conf.HOST_0_NAME):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Remove the unmanaged network from host (BOND)")
+        self.assertTrue(
+            hl_host_network.clean_host_interfaces(net_conf.HOST_0_NAME)
+        )
 
 
-class TestHostNetworkApiSetupNetworks18(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
+class TestHostNetworkApiSetupNetworks18(NetworkTest):
     """
     Attach network with custom properties to BOND
     """
@@ -820,12 +710,12 @@ class TestHostNetworkApiSetupNetworks18(helper.TestHostNetworkApiTestCaseBase):
         Attach network with custom properties to BOND
         """
         properties_dict = {
-            "bridge_opts": conf.PRIORITY,
-            "ethtool_opts": conf.TX_CHECKSUM.format(
-                nic=conf.HOST_0_NICS[1], state="off"
+            "bridge_opts": net_conf.PRIORITY,
+            "ethtool_opts": net_conf.TX_CHECKSUM.format(
+                nic=net_conf.HOST_0_NICS[1], state="off"
             )
         }
-        sn_dict = {
+        network_host_api_dict = {
             "add": {
                 "1": {
                     "nic": self.bond,
@@ -838,13 +728,17 @@ class TestHostNetworkApiSetupNetworks18(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **sn_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Attach network with custom properties to BOND")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks19(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
+class TestHostNetworkApiSetupNetworks19(NetworkTest):
     """
     Attach Non-VM VLAN network with IP (netmask) to host NIC
     Attach Non-VM VLAN network with IP (prefix) to host NIC
@@ -866,23 +760,29 @@ class TestHostNetworkApiSetupNetworks19(helper.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "network": self.net_1,
-                    "nic": conf.HOST_0_NICS[1],
+                    "nic": net_conf.HOST_0_NICS[1],
                     "ip": conf.BASIC_IP_DICT_NETMASK
                 },
                 "2": {
                     "network": self.net_2,
-                    "nic": conf.HOST_0_NICS[2],
+                    "nic": net_conf.HOST_0_NICS[2],
                     "ip": conf.BASIC_IP_DICT_PREFIX
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step(
+            "Attach Non-VM VLAN network with IP (netmask) to host NIC"
+        )
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks20(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
+class TestHostNetworkApiSetupNetworks20(NetworkTest):
     """
     Attach Non-VM VLAN network to host NIC
     """
@@ -898,17 +798,21 @@ class TestHostNetworkApiSetupNetworks20(helper.TestHostNetworkApiTestCaseBase):
             "add": {
                 "1": {
                     "network": self.net,
-                    "nic": conf.HOST_0_NICS[1]
+                    "nic": net_conf.HOST_0_NICS[1]
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Attach Non-VM VLAN network to host NIC")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks21(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
+class TestHostNetworkApiSetupNetworks21(NetworkTest):
     """
     Create BOND with network
     """
@@ -934,13 +838,17 @@ class TestHostNetworkApiSetupNetworks21(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Create BOND with network")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks22(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
+class TestHostNetworkApiSetupNetworks22(NetworkTest):
     """
     Attach multiple VLANs to host NIC
     """
@@ -957,26 +865,30 @@ class TestHostNetworkApiSetupNetworks22(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "nic": conf.HOST_0_NICS[1],
+                    "nic": net_conf.HOST_0_NICS[1],
                     "network": self.net_1
                 },
                 "2": {
-                    "nic": conf.HOST_0_NICS[1],
+                    "nic": net_conf.HOST_0_NICS[1],
                     "network": self.net_2
                 },
                 "3": {
-                    "nic": conf.HOST_0_NICS[1],
+                    "nic": net_conf.HOST_0_NICS[1],
                     "network": self.net_3
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Attach multiple VLANs to host NIC")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks23(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
+class TestHostNetworkApiSetupNetworks23(NetworkTest):
     """
     Attach multiple VLANs to BOND
     """
@@ -1012,38 +924,23 @@ class TestHostNetworkApiSetupNetworks23(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Attach multiple VLANs to BOND")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks24(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(sn_case_24.__name__)
+class TestHostNetworkApiSetupNetworks24(NetworkTest):
     """
     Attach label to BOND
     """
     __test__ = True
     bond_1 = "bond281"
-    dummys = conf.DUMMYS[:2]
-    label = conf.LABEL_LIST[0]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create BOND
-        """
-        sn_dict = {
-            "add": {
-                "1": {
-                    "nic": cls.bond_1,
-                    "slaves": cls.dummys
-                }
-            }
-        }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **sn_dict
-        ):
-            raise conf.NET_EXCEPTION()
+    label = net_conf.LABEL_LIST[0]
 
     @polarion("RHEVM3-12412")
     def test_label_on_bond(self):
@@ -1058,47 +955,27 @@ class TestHostNetworkApiSetupNetworks24(helper.TestHostNetworkApiTestCaseBase):
                 }
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Attach label to BOND")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks25(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(sn_case_25.__name__)
+class TestHostNetworkApiSetupNetworks25(NetworkTest):
     """
     Attach VM network to host NIC that has VLAN network on it
     Attach VLAN network to host NIC that has VM network on it
     Attach VLAN network and VM network to same host NIC
     """
     __test__ = True
-    net_case_pre_vm = conf.SN_NETS[25][0]
-    net_case_pre_vlan = conf.SN_NETS[25][1]
     net_case_vlan = conf.SN_NETS[25][2]
     net_case_vm = conf.SN_NETS[25][3]
     net_case_new_vm = conf.SN_NETS[25][4]
     net_case_new_vlan = conf.SN_NETS[25][5]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Attach VM and VLAN network to host NICs
-        """
-        sn_dict = {
-            "add": {
-                "1": {
-                    "nic": conf.HOST_0_NICS[1],
-                    "network": cls.net_case_pre_vm
-                },
-                "2": {
-                    "nic": conf.HOST_0_NICS[2],
-                    "network": cls.net_case_pre_vlan
-                }
-            }
-        }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **sn_dict
-        ):
-            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-14016")
     def test_attach_vlan_to_host_nic_with_vm(self):
@@ -1108,15 +985,19 @@ class TestHostNetworkApiSetupNetworks25(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "nic": conf.HOST_0_NICS[1],
+                    "nic": net_conf.HOST_0_NICS[1],
                     "network": self.net_case_vlan
                 },
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step(
+            "Attach VLAN network to host NIC that has VM network on it"
+        )
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
     @polarion("RHEVM3-14015")
     def test_attach_vm_to_host_nic_with_vlan(self):
@@ -1126,15 +1007,19 @@ class TestHostNetworkApiSetupNetworks25(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "nic": conf.HOST_0_NICS[2],
+                    "nic": net_conf.HOST_0_NICS[2],
                     "network": self.net_case_vm
                 },
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step(
+            "Attach VM network to host NIC that has VLAN network on it"
+        )
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
     @polarion("RHEVM3-14017")
     def test_attach_vm_and_vlan_network_to_host_nic(self):
@@ -1144,30 +1029,34 @@ class TestHostNetworkApiSetupNetworks25(helper.TestHostNetworkApiTestCaseBase):
         network_host_api_dict = {
             "add": {
                 "1": {
-                    "nic": conf.HOST_0_NICS[3],
+                    "nic": net_conf.HOST_0_NICS[3],
                     "network": self.net_case_new_vm
                 },
                 "2": {
-                    "nic": conf.HOST_0_NICS[3],
+                    "nic": net_conf.HOST_0_NICS[3],
                     "network": self.net_case_new_vlan
                 },
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step(
+            "Attach VLAN network and VM network to same host NIC"
+        )
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
 
-class TestHostNetworkApiSetupNetworks26(helper.TestHostNetworkApiTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(sn_case_26.__name__)
+class TestHostNetworkApiSetupNetworks26(NetworkTest):
     """
     Attach VM network to BOND that has VLAN network on it
     Attach VLAN network to BOND that has VM network on it
     Attach VLAN network and VM network to same BOND
     """
     __test__ = True
-    net_case_pre_vm = conf.SN_NETS[26][0]
-    net_case_pre_vlan = conf.SN_NETS[26][1]
     net_case_vlan = conf.SN_NETS[26][2]
     net_case_vm = conf.SN_NETS[26][3]
     net_case_new_vm = conf.SN_NETS[26][4]
@@ -1178,42 +1067,6 @@ class TestHostNetworkApiSetupNetworks26(helper.TestHostNetworkApiTestCaseBase):
     dummys_1 = conf.DUMMYS[:2]
     dummys_2 = conf.DUMMYS[2:4]
     dummys_3 = conf.DUMMYS[4:6]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create 3 BONDs
-        Attach VM network to first BOND
-        Attach VLAN network to second BOND
-        """
-        sn_dict = {
-            "add": {
-                "1": {
-                    "nic": cls.bond_1,
-                    "slaves": cls.dummys_1
-                },
-                "2": {
-                    "nic": cls.bond_2,
-                    "slaves": cls.dummys_2
-                },
-                "3": {
-                    "nic": cls.bond_3,
-                    "slaves": cls.dummys_3
-                },
-                "4": {
-                    "nic": cls.bond_1,
-                    "network": cls.net_case_pre_vm
-                },
-                "5": {
-                    "nic": cls.bond_2,
-                    "network": cls.net_case_pre_vlan
-                }
-            }
-        }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **sn_dict
-        ):
-            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-14019")
     def test_attach_vlan_to_bond_with_vm_net(self):
@@ -1228,10 +1081,14 @@ class TestHostNetworkApiSetupNetworks26(helper.TestHostNetworkApiTestCaseBase):
                 },
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step(
+            "Attach VLAN network to BOND that has VM network on it"
+        )
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
     @polarion("RHEVM3-14018")
     def test_attach_vm_net_to_bond_with_vlan(self):
@@ -1246,10 +1103,14 @@ class TestHostNetworkApiSetupNetworks26(helper.TestHostNetworkApiTestCaseBase):
                 },
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step(
+            "Attach VM network to BOND that has VLAN network on it"
+        )
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
 
     @polarion("RHEVM3-14020")
     def test_attach_vm_and_vlan_networks_to_bond(self):
@@ -1268,7 +1129,9 @@ class TestHostNetworkApiSetupNetworks26(helper.TestHostNetworkApiTestCaseBase):
                 },
             }
         }
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Attach VLAN network and VM network to same BOND")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
+            )
+        )
