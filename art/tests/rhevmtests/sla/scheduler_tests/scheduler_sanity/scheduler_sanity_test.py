@@ -7,9 +7,10 @@ import logging
 
 import rhevmtests.sla.config as conf
 
+from unittest2 import SkipTest
 from art.unittest_lib import attr
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import SlaTest as TestCase, SkipTest
+from art.unittest_lib import SlaTest as TestCase
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
