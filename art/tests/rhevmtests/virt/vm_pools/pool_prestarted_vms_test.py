@@ -185,7 +185,7 @@ class TestUpdatePoolWithPrestartedVms(base.VmPool):
 
     pool_name = 'Virt_vmpool_update_prestarted'
     pool_size = 3
-    prestarted_vms = 2
+    update_prestarted_vms = 2
 
     @polarion("RHEVM3-9873")
     def test_update_vm_pool_with_prestarted_vms(self):
@@ -195,7 +195,9 @@ class TestUpdatePoolWithPrestartedVms(base.VmPool):
         1. Set number of prestarted vms to 2.
         2. Verify 2 vms from the pool were started after VmPoolMonitorInterval.
         """
-        helpers.update_prestarted_vms(self.pool_name, self.prestarted_vms)
+        helpers.update_prestarted_vms(
+            self.pool_name, self.update_prestarted_vms
+        )
 
 
 @attr(tier=2)
