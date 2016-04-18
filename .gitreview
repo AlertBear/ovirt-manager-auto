@@ -1,0 +1,4 @@
+[gerrit]
+host=code.engineering.redhat.com
+port=29418
+project=rhevm-qe-automation/rhevm-art
