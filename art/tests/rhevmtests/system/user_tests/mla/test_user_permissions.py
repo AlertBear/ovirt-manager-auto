@@ -3,9 +3,6 @@ Testing working with permissions.
 1 Host, 1 DC, 1 Cluster, 1 SD will be created.
 Tests if permissions are correctly inherited/viewed/assigned/removed.
 '''
-
-__test__ = True
-
 import logging
 import time
 
@@ -556,7 +553,8 @@ class PermissionsCase109086(TestCase):
 # create a StorageDomain with templates and VMs
 # grant permissions for user X to some VMs & templates on that SD
 # destroy the SD take a look in the user under permission tab
-@attr(tier=2, extra_reqs={'datacenters_count': 2})
+# extra_reqs={'datacenters_count': 2}
+@attr(tier=config.DO_NOT_RUN)
 class PermissionsCase111082(TestCase):
     """ Test if perms removed after object is removed """
     __test__ = True

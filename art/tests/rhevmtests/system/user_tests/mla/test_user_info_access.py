@@ -5,8 +5,6 @@ Tests if user can access object which he has permissions for and not see,
 if he has not permissions.
 '''
 
-__test__ = True
-
 import logging
 
 from rhevmtests.system.user_tests.mla import config, common
@@ -86,7 +84,8 @@ def loginAsAdmin():
     )
 
 
-@attr(tier=2, extra_reqs={'datacenters_count': 2})
+# extra_reqs={'datacenters_count': 2}
+@attr(tier=config.DO_NOT_RUN)
 class VmUserInfoTests(TestCase):
     """ Test if user can see correct events """
     __test__ = True
@@ -163,7 +162,8 @@ class VmUserInfoTests(TestCase):
                 assert host.get_id() != ALT_HOST_ID
 
 
-@attr(tier=2, extra_reqs={'datacenters_count': 2})
+# extra_reqs={'datacenters_count': 2}
+@attr(tier=config.DO_NOT_RUN)
 class VmUserInfoTests2(TestCase):
     """ Test if user can see correct objects """
     __test__ = True
@@ -402,7 +402,8 @@ class ViewviewChildrenInfoTests(TestCase):
             LOGGER.info("%s can see children", role_can)
 
 
-@attr(tier=2, extra_reqs={'clusters_count': 2})
+# extra_reqs={'clusters_count': 2}
+@attr(tier=config.DO_NOT_RUN)
 class VmCreatorClusterAdminInfoTests(TestCase):
     """ Test for VMcreator and cluster admin role """
     __test__ = True
@@ -582,7 +583,8 @@ class TemplateCreatorInfoTests(TestCase):
 # Create some templates in Datacenter2.
 # - Check /api/templates
 # Should see all templates in Datacenter1, but none in Datacenter2.
-@attr(tier=2, extra_reqs={'datacenters_count': 2})
+# extra_reqs={'datacenters_count': 2}
+@attr(tier=config.DO_NOT_RUN)
 class TemplateCreatorAndDCAdminInfoTest(TestCase):
     __test__ = True
 
@@ -632,7 +634,8 @@ class TemplateCreatorAndDCAdminInfoTest(TestCase):
         )
 
 
-@attr(tier=2, extra_reqs={'datacenters_count': 2})
+# extra_reqs={'datacenters_count': 2}
+@attr(tier=config.DO_NOT_RUN)
 class ComplexCombinationTest(TestCase):
     """ Test that user can see correct object regargin its permissions """
     __test__ = True
