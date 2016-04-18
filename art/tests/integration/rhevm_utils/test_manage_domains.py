@@ -5,14 +5,14 @@ from sys import modules
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.test_handler.settings import ART_CONFIG as config
-from art.unittest_lib import attr
 
 from utilities.rhevm_tools.manage_domains import ManageDomainsUtility
 from utilities.rhevm_tools import errors
 from utilities import sshConnection
 
-from rhevm_utils.base import RHEVMUtilsTestCase
-from rhevm_utils import unittest_conf
+from base import RHEVMUtilsTestCase
+
+import unittest_conf
 
 NAME = 'manage-domains'
 TABLE_NAME = 'vdc_options'
@@ -39,7 +39,6 @@ def _run_ssh_command(host, password, cmd):
     return out
 
 
-@attr(tier=3, extra_reqs={'utility': NAME})
 class ManageDomainsTestCaseBase(RHEVMUtilsTestCase):
     """
     rhevm-manage-domains testcase

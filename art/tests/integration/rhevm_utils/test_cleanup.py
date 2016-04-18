@@ -2,13 +2,12 @@
     rhevm cleanup module
 """
 
-from rhevm_utils.base import RHEVMUtilsTestCase
+from base import RHEVMUtilsTestCase
 from utilities.rhevm_tools.cleanup import CleanUpUtility
 import os
 import logging
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import unittest_conf
-from art.unittest_lib import attr
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +17,6 @@ host = unittest_conf.VDC_HOST
 _multiprocess_can_split_ = True
 
 
-@attr(extra_reqs={'utility': NAME})
 class CleanUpTestCaseBase(RHEVMUtilsTestCase):
     """
         rhevm cleanup test cases
@@ -37,7 +35,6 @@ class CleanUpTestCaseBase(RHEVMUtilsTestCase):
         logger.info("%s: clean engine with %s", host, params)
 
 
-@attr(tier=1, extra_reqs={'utility': NAME})
 class CleanUpTestCase(CleanUpTestCaseBase):
 
     __test__ = True

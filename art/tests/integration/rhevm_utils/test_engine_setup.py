@@ -5,11 +5,11 @@ import os
 import logging
 from pprint import pformat
 
-from rhevm_utils import base, unittest_conf
+import base
+import unittest_conf
 from utilities.rhevm_tools.setup import SetupUtility
 
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import attr
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,6 @@ _multiprocess_can_split_ = True
 host = unittest_conf.VDC_HOST
 
 
-@attr(extra_reqs={'utility': NAME})
 class SetupTestCase(base.RHEVMUtilsTestCase):
     """
         rhevm setup test cases
