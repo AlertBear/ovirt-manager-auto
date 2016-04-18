@@ -246,20 +246,25 @@ def create_host_net_qos(
     :type datacenter: str
     :param qos_dict: Dict of host network qos values to create QoS with
     :type qos_dict: dict
-    :raises: NetworkException
+    :return: True/False
+    :rtype: bool
     """
     result = ll_dc.add_qos_to_datacenter(
         datacenter=datacenter, qos_name=qos_name,
         qos_type=conf.HOST_NET_QOS_TYPE, **qos_dict
     )
     if not result and positive:
-        raise conf.NET_EXCEPTION(
+        logger.error(
             "Couldn't create Host Network QOS under DC when should"
         )
+        return False
+
     if result and not positive:
-        raise conf.NET_EXCEPTION(
+        logger.error(
             "Could create Host Network QOS under DC when shouldn't"
         )
+        return False
+    return True
 
 
 def update_host_net_qos(qos_name, datacenter=conf.DC_NAME[0], **qos_dict):

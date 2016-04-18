@@ -5,16 +5,9 @@
 Config for Host Network QoS job
 """
 
-from rhevmtests.networking.config import *  # NOQA
 import rhevmtests.helpers as global_helper
 
-HOST_1_NICS = None  # Filled in setup_package
-VDS_HOSTS_1 = None  # Filled in setup_package
-HOST_1_IP = None  # Filled in setup_package
-HOST_1 = None  # Filled in setup_package
-DC_NAME = DC_NAME[0]
-CLUSTER_1 = CLUSTER_NAME[0]
-CLUSTER_2 = CLUSTER_NAME[1]
+MB_CONVERTER = 1000000
 QOS_NAME = global_helper.generate_object_names(
     num_of_cases=20, num_of_objects=4, prefix="QoS"
 )

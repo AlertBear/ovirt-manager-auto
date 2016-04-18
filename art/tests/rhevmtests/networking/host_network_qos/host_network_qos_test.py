@@ -6,125 +6,35 @@ Testing network host QoS feature.
 Create, update and remove tests will be done for network host QoS feature
 """
 import logging
-import helper
-import config as conf
-from art.unittest_lib import attr
-from rhevmtests import networking
-import rhevmtests.networking.helper as net_helper
-from art.unittest_lib import NetworkTest as TestCase
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
+import pytest
+
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import config as conf
+import helper
+import rhevmtests.networking.config as net_conf
+import rhevmtests.networking.helper as net_helper
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.unittest_lib import NetworkTest, testflow, attr
+from fixtures import (
+    fixture_case_01, fixture_case_02, fixture_case_03, fixture_case_04,
+    fixture_case_05, fixture_case_06, fixture_case_07, fixture_case_08,
+    fixture_case_09, fixture_case_10, fixture_case_11
+)
 
 logger = logging.getLogger("Network_Host_QoS_Tests")
-MB_CONVERTER = 1000000
-
-
-def setup_module():
-    """
-    Running cleanup
-    """
-    networking.network_cleanup()
-    conf.VDS_HOSTS_1 = conf.VDS_HOSTS[0]
-    conf.HOST_1_NICS = conf.VDS_HOSTS_1.nics
-    conf.HOST_1_IP = conf.HOSTS_IP[0]
-    conf.HOST_1 = conf.HOSTS[0]
-    logger.info(
-        "Add %s to %s/%s", conf.NETS_DICT, conf.DC_NAME, conf.CLUSTER_1
-    )
-    if not hl_networks.createAndAttachNetworkSN(
-        data_center=conf.DC_NAME, cluster=conf.CLUSTER_1,
-        network_dict=conf.NETS_DICT
-    ):
-        raise conf.NET_EXCEPTION(
-            "Failed to add networks to %s/%s" % (conf.DC_NAME, conf.CLUSTER_1)
-        )
-
-
-def teardown_module():
-    """
-    Removes networks from setup
-    """
-    logger.info("Remove networks from setup")
-    if not hl_networks.remove_net_from_setup(
-        host=conf.HOST_1, data_center=conf.DC_NAME,
-        all_net=True, mgmt_network=conf.MGMT_BRIDGE
-    ):
-        logger.error(
-            "Failed to remove %s from %s and %s",
-            conf.NETS_DICT, conf.DC_NAME, conf.HOST_1
-        )
 
 
 @attr(tier=2)
-class TestHostNetworkQoSTestCaseBase(TestCase):
-    """
-    Base class which provides teardown class method for each test case
-    that inherits this class
-    """
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove all networks from the host NICs.
-        """
-        logger.info("Removing all networks from %s", conf.HOST_1)
-        if not hl_host_network.clean_host_interfaces(conf.HOST_1):
-            logger.error(
-                "Failed to remove all networks from %s", conf.HOST_1
-            )
-
-
-class TestHostNetQOSCase01(TestHostNetworkQoSTestCaseBase):
+@pytest.mark.usefixtures(fixture_case_01.__name__)
+class TestHostNetQOSCase01(NetworkTest):
     """
      Remove anonymous host network QoS when several networks with QoS are
      attached to the host
     """
     __test__ = True
     nets = conf.NETS[1][:2]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Attach 2 networks to the Host with anonymous QoS configured
-        """
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "network": cls.nets[0],
-                    "nic": conf.HOST_1_NICS[1],
-                    "qos": {
-                        "type_": conf.HOST_NET_QOS_TYPE,
-                        "outbound_average_linkshare": conf.TEST_VALUE,
-                        "outbound_average_realtime": conf.TEST_VALUE,
-                        "outbound_average_upperlimit": conf.TEST_VALUE
-                    }
-                },
-                "2": {
-                    "network": cls.nets[1],
-                    "nic": conf.HOST_1_NICS[1],
-                    "qos": {
-                        "type_": conf.HOST_NET_QOS_TYPE,
-                        "outbound_average_linkshare": conf.TEST_VALUE,
-                        "outbound_average_realtime": conf.TEST_VALUE,
-                        "outbound_average_upperlimit": conf.TEST_VALUE
-                    }
-                }
-            }
-        }
-        logger.info(
-            "Attaching %s to %s on %s",
-            cls.nets, conf.HOST_1_NICS[1], conf.HOST_1
-        )
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_1, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s" % (
-                    cls.nets, conf.HOST_1_NICS[1], conf.HOST_1
-                )
-            )
 
     @polarion("RHEVM3-14300")
     def test_01_remove_anonymous_qos_for_network_on_host_nic(self):
@@ -135,23 +45,21 @@ class TestHostNetQOSCase01(TestHostNetworkQoSTestCaseBase):
             "update": {
                 "1": {
                     "network": self.nets[0],
-                    "nic": conf.HOST_1_NICS[1],
+                    "nic": net_conf.HOST_0_NICS[1],
                     "qos": {"type_": conf.HOST_NET_QOS_TYPE}
                 }
             }
         }
 
-        logger.info(
+        testflow.step(
             "Negative: Try to remove QoS from %s on %s",
-            self.nets[0], conf.HOST_1_NICS[1]
+            self.nets[0], net_conf.HOST_0_NICS[1]
         )
-        if hl_host_network.setup_networks(
-            host_name=conf.HOST_1, **network_host_api_dict_1
-        ):
-            raise conf.NET_EXCEPTION(
-                "Succeeded to remove QoS from %s on %s when shouldn't" %
-                (self.nets[0], conf.HOST_1_NICS[1])
+        self.assertFalse(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict_1
             )
+        )
 
     @polarion("RHEVM3-14354")
     def test_02_remove_anonymous_qos_for_all_networks_on_host_nic(self):
@@ -162,27 +70,30 @@ class TestHostNetQOSCase01(TestHostNetworkQoSTestCaseBase):
             "update": {
                 "1": {
                     "network": self.nets[0],
-                    "nic": conf.HOST_1_NICS[1],
+                    "nic": net_conf.HOST_0_NICS[1],
                     "qos": {"type_": conf.HOST_NET_QOS_TYPE}
                 },
                 "2": {
                     "network": self.nets[1],
-                    "nic": conf.HOST_1_NICS[1],
+                    "nic": net_conf.HOST_0_NICS[1],
                     "qos": {"type_": conf.HOST_NET_QOS_TYPE}
                 }
             }
         }
 
-        logger.info("Positive: Remove QoS from both networks on the same NIC")
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_1, **network_host_api_dict_2
-        ):
-            raise conf.NET_EXCEPTION(
-                "Failed to remove QoS from %s" % self.nets
+        testflow.step(
+            "Positive: Remove QoS from both networks on the same NIC"
+        )
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict_2
             )
+        )
 
 
-class TestHostNetQOSCase02(TestHostNetworkQoSTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(fixture_case_02.__name__)
+class TestHostNetQOSCase02(NetworkTest):
     """
     1) Create network on DC/Cluster/Host without QoS
     2) Update network with QoS under DC
@@ -192,44 +103,10 @@ class TestHostNetQOSCase02(TestHostNetworkQoSTestCaseBase):
     net1 = conf.NETS[2][0]
     qos_name = conf.QOS_NAME[13][0]
     qos_dict = {
-        "rt": conf.TEST_VALUE * MB_CONVERTER,
-        "ul": conf.TEST_VALUE * MB_CONVERTER,
+        "rt": conf.TEST_VALUE * conf.MB_CONVERTER,
+        "ul": conf.TEST_VALUE * conf.MB_CONVERTER,
         "ls": conf.TEST_VALUE
     }
-
-    @classmethod
-    def setup_class(cls):
-        """
-        1) Create new Host Network QoS profile under DC
-        2) Attach network to the Host without QoS profile
-        """
-        logger.info("Create Network QoS profile %s under DC", cls.qos_name)
-        net_helper.create_host_net_qos(
-            qos_name=cls.qos_name,
-            outbound_average_linkshare=conf.TEST_VALUE,
-            outbound_average_upperlimit=conf.TEST_VALUE,
-            outbound_average_realtime=conf.TEST_VALUE
-        )
-
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "network": cls.net1,
-                    "nic": conf.HOST_1_NICS[1],
-                },
-            }
-        }
-        logger.info(
-            "Attach %s to %s on %s",
-            cls.net1, conf.HOST_1_NICS[1], conf.HOST_1
-        )
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_1, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s " %
-                (cls.net1, conf.HOST_1_NICS[1], conf.HOST_1)
-            )
 
     @polarion("RHEVM3-6540")
     def test_vds_caps_values(self):
@@ -237,34 +114,28 @@ class TestHostNetQOSCase02(TestHostNetworkQoSTestCaseBase):
         1) Update network under DC with host network QoS profile (named)
         2) Check on VDSCaps that the QoS values are correct
         """
-        logger.info("Update network %s with QoS %s", self.net1, self.qos_name)
-        if not ll_networks.update_network_in_datacenter(
-            positive=True, network=self.net1, datacenter=conf.DC_NAME,
-            qos_dict={
-                "qos_name": self.qos_name,
-                "datacenter": conf.DC_NAME
-            }
-        ):
-            raise conf.NET_EXCEPTION(
-                "Couldn't update %s to have Host Network QoS %s" %
-                (self.net1, self.qos_name)
+        testflow.step(
+            "Update network %s with QoS %s", self.net1, self.qos_name
+        )
+        self.assertTrue(
+            ll_networks.update_network_in_datacenter(
+                positive=True, network=self.net1, datacenter=net_conf.DC_0,
+                qos_dict={
+                    "qos_name": self.qos_name,
+                    "datacenter": net_conf.DC_0
+                }
             )
-
-        helper.cmp_qos_with_vdscaps(
-            net=self.net1, qos_dict=self.qos_dict
+        )
+        self.assertTrue(
+            helper.cmp_qos_with_vdscaps(
+                net=self.net1, qos_dict=self.qos_dict
+            )
         )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from the host
-        Remove Host Network QoS
-        """
-        net_helper.remove_qos_from_dc(qos_name=cls.qos_name)
-        super(TestHostNetQOSCase02, cls).teardown_class()
 
-
-class TestHostNetQOSCase03(TestHostNetworkQoSTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(fixture_case_03.__name__)
+class TestHostNetQOSCase03(NetworkTest):
     """
     Increase default Engine limitation for QoS and test that weighted share
     and rate configuration work well with new Engine configuration
@@ -273,42 +144,16 @@ class TestHostNetQOSCase03(TestHostNetworkQoSTestCaseBase):
     __test__ = True
     net = conf.NETS[3][0]
 
-    @classmethod
-    def setup_class(cls):
-        """
-        Attach network to Host NIC
-        """
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "network": cls.net,
-                    "nic": conf.HOST_1_NICS[1],
-                    }
-            }
-        }
-        logger.info(
-            "Attaching %s to %s on %s",
-            cls.net, conf.HOST_1_NICS[1], conf.HOST_1
-        )
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_1, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s" %
-                (cls.net, conf.HOST_1_NICS[1], conf.HOST_1)
-            )
-
     @polarion("RHEVM3-6527")
     def test_weight_share_rate_new_limit(self):
         """
         Update network on host NIC with QoS weighted share parameters
         """
-
         network_host_api_dict = {
             "update": {
                 "1": {
                     "network": self.net,
-                    "nic": conf.HOST_1_NICS[1],
+                    "nic": net_conf.HOST_0_NICS[1],
                     "qos": {
                         "type_": conf.HOST_NET_QOS_TYPE,
                         "outbound_average_linkshare": conf.DEFAULT_SHARE + 5,
@@ -319,98 +164,43 @@ class TestHostNetQOSCase03(TestHostNetworkQoSTestCaseBase):
             }
         }
 
-        logger.info(
+        testflow.step(
             "Configure weighted share and rate limit on Engine to the value "
             "of %s and %s appropriately",
             conf.UPDATED_SHARE, conf.UPDATED_SHARE
         )
         cmd1 = "=".join([conf.QOS_SHARE, conf.UPDATED_SHARE])
-        if not conf.test_utils.set_engine_properties(
-            conf.ENGINE, [cmd1], restart=False
-        ):
-            raise conf.NET_EXCEPTION(
-                "Couldn't update the weighted share to the value of %s" %
-                conf.UPDATED_SHARE
+        self.assertTrue(
+            net_conf.test_utils.set_engine_properties(
+                net_conf.ENGINE, [cmd1], restart=False
             )
+        )
 
         cmd2 = "=".join([conf.RATE_LIMIT, conf.UPDATED_RATE])
-        if not conf.test_utils.set_engine_properties(conf.ENGINE, [cmd2]):
-            raise conf.NET_EXCEPTION(
-                "Couldn't update the rate to the value of %s" %
-                conf.UPDATED_RATE
-            )
+        self.assertTrue(
+            net_conf.test_utils.set_engine_properties(net_conf.ENGINE, [cmd2])
+        )
 
-        logger.info(
+        testflow.step(
             "Configuring %s on %s to have weighted share and rate limit to be "
-            "above their original default values", self.net, conf.HOST_1
+            "above their original default values", self.net,
+            net_conf.HOST_0_NAME
         )
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_1, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "Failed to configure %s to have share and rate limit be above "
-                "original default values" % self.net
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
             )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from setup
-        Update engine to have default value for the weighted share
-        and rate limit
-        """
-        super(TestHostNetQOSCase03, cls).teardown_class()
-
-        logger.info(
-            "Update weighted share and rate limit to the default values "
-            "on engine"
         )
-        cmd1 = "=".join([conf.QOS_SHARE, str(conf.DEFAULT_SHARE)])
-        if not conf.test_utils.set_engine_properties(
-            conf.ENGINE, [cmd1], restart=False
-        ):
-            logger.error(
-                "Couldn't update the weighted share to the default value"
-            )
-        cmd2 = "=".join([conf.RATE_LIMIT, str(conf.DEFAULT_RATE)])
-        if not conf.test_utils.set_engine_properties(conf.ENGINE, [cmd2]):
-            logger.error(
-                "Couldn't update the rate to the default value"
-            )
 
 
-class TestHostNetQOSCase04(TestHostNetworkQoSTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(fixture_case_04.__name__)
+class TestHostNetQOSCase04(NetworkTest):
     """
     Test weighted share and rate limitation
     """
     __test__ = True
     net1 = conf.NETS[4][0]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        1) Attach network to the host
-        """
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "network": cls.net1,
-                    "nic": conf.HOST_1_NICS[1],
-                    },
-            }
-        }
-
-        logger.info(
-            "Attaching %s to %s on %s",
-            cls.net1, conf.HOST_1_NICS[1], conf.HOST_1
-        )
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_1, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s" %
-                (cls.net1, conf.HOST_1_NICS[1], conf.HOST_1)
-            )
 
     @polarion("RHEVM3-6528")
     @bz({"1271220": {}})
@@ -426,7 +216,7 @@ class TestHostNetQOSCase04(TestHostNetworkQoSTestCaseBase):
             "update": {
                 "1": {
                     "network": self.net1,
-                    "nic": conf.HOST_1_NICS[1],
+                    "nic": net_conf.HOST_0_NICS[1],
                     "qos": {
                         "type_": conf.HOST_NET_QOS_TYPE,
                         "outbound_average_linkshare": conf.TEST_VALUE,
@@ -440,7 +230,7 @@ class TestHostNetQOSCase04(TestHostNetworkQoSTestCaseBase):
             "update": {
                 "2": {
                     "network": self.net1,
-                    "nic": conf.HOST_1_NICS[1],
+                    "nic": net_conf.HOST_0_NICS[1],
                     "qos": {
                         "type_": conf.HOST_NET_QOS_TYPE,
                         "outbound_average_linkshare": conf.TEST_VALUE,
@@ -454,7 +244,7 @@ class TestHostNetQOSCase04(TestHostNetworkQoSTestCaseBase):
             "update": {
                 "3": {
                     "network": self.net1,
-                    "nic": conf.HOST_1_NICS[1],
+                    "nic": net_conf.HOST_0_NICS[1],
                     "qos": {
                         "type_": conf.HOST_NET_QOS_TYPE,
                         "outbound_average_linkshare": conf.DEFAULT_SHARE + 1,
@@ -466,19 +256,20 @@ class TestHostNetQOSCase04(TestHostNetworkQoSTestCaseBase):
         for net_dict in (
             host_qos_dict_1, host_qos_dict_2, host_qos_dict_3
         ):
-            logger.info(
+            testflow.step(
                 "Negative: Try updating %s on %s with %s ",
-                self.net1, conf.HOST_1, net_dict
+                self.net1, net_conf.HOST_0_NAME, net_dict
             )
-            if hl_host_network.setup_networks(
-                host_name=conf.HOST_1, **net_dict
-            ):
-                raise conf.NET_EXCEPTION(
-                    "Succeeded to update %s with %s" % (self.net1, net_dict)
+            self.assertFalse(
+                hl_host_network.setup_networks(
+                    host_name=net_conf.HOST_0_NAME, **net_dict
                 )
+            )
 
 
-class TestHostNetQOSCase05(TestCase):
+@attr(tier=2)
+@pytest.mark.usefixtures(fixture_case_05.__name__)
+class TestHostNetQOSCase05(NetworkTest):
     """
     Add new network QOS (named) with
     1) committed rate value higher than rate limit and fail
@@ -494,38 +285,37 @@ class TestHostNetQOSCase05(TestCase):
         2) Negative: Try to configure committed rate higher than rate limit
         3) Configure committed rate lower than rate limit
         """
-        logger.info(
+        testflow.step(
             "Negative: Try to create new Network QoS profile under DC"
             "with committed rate value higher than rate limit value"
         )
-        net_helper.create_host_net_qos(
-            qos_name=self.qos_name,
-            positive=False,
-            outbound_average_linkshare=conf.TEST_VALUE,
-            outbound_average_upperlimit=conf.TEST_VALUE,
-            outbound_average_realtime=conf.TEST_VALUE + 2
+        self.assertTrue(
+            net_helper.create_host_net_qos(
+                qos_name=self.qos_name,
+                positive=False,
+                outbound_average_linkshare=conf.TEST_VALUE,
+                outbound_average_upperlimit=conf.TEST_VALUE,
+                outbound_average_realtime=conf.TEST_VALUE + 2
+            )
         )
 
-        logger.info(
+        testflow.step(
             "Create new Network QoS profile under DC with committed rate "
             "value lower than rate limit value"
         )
-        net_helper.create_host_net_qos(
-            qos_name=self.qos_name,
-            outbound_average_linkshare=conf.TEST_VALUE,
-            outbound_average_upperlimit=conf.TEST_VALUE,
-            outbound_average_realtime=conf.TEST_VALUE - 2
+        self.assertTrue(
+            net_helper.create_host_net_qos(
+                qos_name=self.qos_name,
+                outbound_average_linkshare=conf.TEST_VALUE,
+                outbound_average_upperlimit=conf.TEST_VALUE,
+                outbound_average_realtime=conf.TEST_VALUE - 2
+            )
         )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove Host Network QoS
-        """
-        net_helper.remove_qos_from_dc(qos_name=cls.qos_name)
 
-
-class TestHostNetQOSCase06(TestHostNetworkQoSTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(fixture_case_06.__name__)
+class TestHostNetQOSCase06(NetworkTest):
     """
     1) Negative: Try to have network with and without QoS configured on the
     same NIC and fail
@@ -536,26 +326,6 @@ class TestHostNetQOSCase06(TestHostNetworkQoSTestCaseBase):
     net1 = conf.NETS[6][0]
     net2 = conf.NETS[6][1]
     qos_name = conf.QOS_NAME[6][0]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        1) Create new Host Network QoS profile under DC and attach this QoS
-        to the first network on DC (when second network is without QoS)
-        """
-
-        net_helper.create_host_net_qos(
-            qos_name=cls.qos_name,
-            outbound_average_linkshare=conf.TEST_VALUE,
-        )
-
-        ll_networks.update_network_in_datacenter(
-            positive=True, network=cls.net1, datacenter=conf.DC_NAME,
-            qos_dict={
-                "qos_name": cls.qos_name,
-                "datacenter": conf.DC_NAME
-            }
-        )
 
     @polarion("RHEVM3-6533")
     def test_add_network_qos(self):
@@ -568,112 +338,54 @@ class TestHostNetQOSCase06(TestHostNetworkQoSTestCaseBase):
             "add": {
                 "1": {
                     "network": self.net1,
-                    "nic": conf.HOST_1_NICS[1],
+                    "nic": net_conf.HOST_0_NICS[1],
                     },
                 "2": {
                     "network": self.net2,
-                    "nic": conf.HOST_1_NICS[1],
+                    "nic": net_conf.HOST_0_NICS[1],
                     },
                 }
         }
 
-        logger.info(
+        testflow.step(
             "Negative: Trying to attach %s and %s to %s on %s",
-            self.net1, self.net2, conf.HOST_1_NICS[1], conf.HOST_1
+            self.net1, self.net2, net_conf.HOST_0_NICS[1], net_conf.HOST_0_NAME
         )
-        if hl_host_network.setup_networks(
-            host_name=conf.HOST_1, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "Succeeded to attach %s and %s to %s on %s when shouldn't" %
-                (self.net1, self.net2, conf.HOST_1_NICS[1], conf.HOST_1)
+        self.assertFalse(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
             )
+        )
 
-        if not ll_networks.update_network_in_datacenter(
-            positive=True, network=self.net2, datacenter=conf.DC_NAME,
-            qos_dict={
-                "qos_name": self.qos_name,
-                "datacenter": conf.DC_NAME
-            }
-        ):
-            raise conf.NET_EXCEPTION(
-                "Couldn't update %s to have host Network QoS" % self.net2
+        self.assertTrue(
+            ll_networks.update_network_in_datacenter(
+                positive=True, network=self.net2, datacenter=net_conf.DC_0,
+                qos_dict={
+                    "qos_name": self.qos_name,
+                    "datacenter": net_conf.DC_0
+                }
             )
-        logger.info(
+        )
+        testflow.step(
             "Attach %s and %s to %s on %s",
-            self.net1, self.net2, conf.HOST_1_NICS[1], conf.HOST_1
+            self.net1, self.net2, net_conf.HOST_0_NICS[1], net_conf.HOST_0_NAME
         )
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_1, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s and %s to %s on %s when should" %
-                (self.net1, self.net2, conf.HOST_1_NICS[1], conf.HOST_1)
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
             )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the host
-        Remove Host Network QoS
-        """
-        super(TestHostNetQOSCase06, cls).teardown_class()
-        net_helper.remove_qos_from_dc(qos_name=cls.qos_name)
+        )
 
 
-class TestHostNetQOSCase07(TestHostNetworkQoSTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(fixture_case_07.__name__)
+class TestHostNetQOSCase07(NetworkTest):
     """
     Remove host network QoS that is attached to the Network on the Host
     """
     __test__ = True
     net1 = conf.NETS[7][0]
     qos_name = conf.QOS_NAME[7][0]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        1) Create new Host Network QoS profile under DC and attach this QoS
-        to the network on DC
-        2) Attach this network to the Host
-        """
-        logger.info(
-            "Create Network QoS profile under DC"
-        )
-        net_helper.create_host_net_qos(
-            qos_name=cls.qos_name,
-            positive=True, outbound_average_linkshare=conf.TEST_VALUE,
-        )
-
-        if not ll_networks.update_network_in_datacenter(
-            positive=True, network=cls.net1, datacenter=conf.DC_NAME,
-            qos_dict={
-                "qos_name": cls.qos_name,
-                "datacenter": conf.DC_NAME
-            }
-        ):
-            raise conf.NET_EXCEPTION(
-                "Couldn't update %s to have Host Network QoS" % cls.net1
-            )
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "network": cls.net1,
-                    "nic": conf.HOST_1_NICS[1],
-                    },
-                }
-        }
-
-        logger.info(
-            "Attach %s to %s on %s",
-            cls.net1, conf.HOST_1_NICS[1], conf.HOST_1
-        )
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_1, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s " %
-                (cls.net1, conf.HOST_1_NICS[1], conf.HOST_1)
-            )
 
     @polarion("RHEVM3-6537")
     def test_remove_network_qos(self):
@@ -683,19 +395,23 @@ class TestHostNetQOSCase07(TestHostNetworkQoSTestCaseBase):
         3) Sync the network
         """
         net_helper.remove_qos_from_dc(qos_name=self.qos_name)
-        logger.info("Check the network is unsynced")
-        if net_helper.networks_sync_status(
-            host=conf.HOST_1, networks=[self.net1]
-        ):
-            raise conf.NET_EXCEPTION(
-                "%s should be unsynced, but it's not" % self.net1
+        testflow.step("Check the network is unsynced")
+        self.assertFalse(
+            net_helper.networks_sync_status(
+                host=net_conf.HOST_0_NAME, networks=[self.net1]
             )
+        )
+        testflow.step("Sync the network")
+        self.assertTrue(
+            net_helper.sync_networks(
+                host=net_conf.HOST_0_NAME, networks=[self.net1]
+            )
+        )
 
-        logger.info("Sync the network")
-        net_helper.sync_networks(host=conf.HOST_1, networks=[self.net1])
 
-
-class TestHostNetQOSCase08(TestHostNetworkQoSTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(fixture_case_08.__name__)
+class TestHostNetQOSCase08(NetworkTest):
     """
     1) Create QoS while creating a new network
     2) Update another network with the QoS from previous step
@@ -710,47 +426,39 @@ class TestHostNetQOSCase08(TestHostNetworkQoSTestCaseBase):
         """
         Create QoS when creating a new network on the setup
         """
-        if not ll_networks.add_network(
-            True, name=self.net1, data_center=conf.DC_NAME,
-            qos_dict={
-                "datacenter": conf.DC_NAME,
-                "qos_name": self.qos_name,
-                "qos_type": conf.HOST_NET_QOS_TYPE,
-                "outbound_average_linkshare": conf.TEST_VALUE
-            }
-        ):
-            raise conf.NET_EXCEPTION(
-                "Couldn't add %s when creating QoS %s to %s" %
-                (self.net1, self.qos_name, conf.DC_NAME)
+        testflow.step("Create QoS when creating a new network on the setup")
+        self.assertTrue(
+            ll_networks.add_network(
+                positive=True, name=self.net1, data_center=net_conf.DC_0,
+                qos_dict={
+                    "datacenter": net_conf.DC_0,
+                    "qos_name": self.qos_name,
+                    "qos_type": conf.HOST_NET_QOS_TYPE,
+                    "outbound_average_linkshare": conf.TEST_VALUE
+                }
             )
+        )
 
     @polarion("RHEVM3-14276")
     def test_02_update_network_with_qos(self):
         """
         Update existing network on the setup with the QoS from test01
         """
-        logger.info("Update another network with the %s", self.qos_name)
-        if not ll_networks.update_network_in_datacenter(
-            positive=True, network=self.net2, datacenter=conf.DC_NAME,
-            qos_dict={
-                "qos_name": self.qos_name,
-                "datacenter": conf.DC_NAME
-            }
-        ):
-            raise conf.NET_EXCEPTION(
-                "Couldn't update %s to have host Network QoS" % self.net2
+        testflow.step("Update another network with the %s", self.qos_name)
+        self.assertTrue(
+            ll_networks.update_network_in_datacenter(
+                positive=True, network=self.net2, datacenter=net_conf.DC_0,
+                qos_dict={
+                    "qos_name": self.qos_name,
+                    "datacenter": net_conf.DC_0
+                }
             )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from the host
-        Remove Host Network QoS
-        """
-        net_helper.remove_qos_from_dc(qos_name=cls.qos_name)
+        )
 
 
-class TestHostNetQOSCase09(TestHostNetworkQoSTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(fixture_case_09.__name__)
+class TestHostNetQOSCase09(NetworkTest):
     """
     1) Create QoS while updating existing network
     2) Create another QoS when editing the same network
@@ -768,124 +476,86 @@ class TestHostNetQOSCase09(TestHostNetworkQoSTestCaseBase):
         2) Create another QoS when editing the same network
         3) Update the network with unlimited QoS
         """
-        logger.info(
+        testflow.step(
             "Create QoS %s when updating %s", self.qos_name1, self.net1
         )
-        if not ll_networks.update_network_in_datacenter(
-            positive=True, network=self.net1, datacenter=conf.DC_NAME,
-            qos_dict={
-                "datacenter": conf.DC_NAME,
-                "qos_name": self.qos_name1,
-                "qos_type": conf.HOST_NET_QOS_TYPE,
-                "outbound_average_linkshare": conf.TEST_VALUE
-            }
-        ):
-            raise conf.NET_EXCEPTION(
-                "Couldn't update %s when creating QoS %s on %s" %
-                (self.net1, self.qos_name1, conf.DC_NAME)
+        self.assertTrue(
+            ll_networks.update_network_in_datacenter(
+                positive=True, network=self.net1, datacenter=net_conf.DC_0,
+                qos_dict={
+                    "datacenter": net_conf.DC_0,
+                    "qos_name": self.qos_name1,
+                    "qos_type": conf.HOST_NET_QOS_TYPE,
+                    "outbound_average_linkshare": conf.TEST_VALUE
+                }
             )
+        )
 
     @polarion("RHEVM3-14272")
     def test_02_create_qos_when_update_network_with_qos(self):
         """
         Create another QoS when editing the same network
         """
-        logger.info(
+        testflow.step(
             "Create QoS %s when updating %s", self.qos_name2, self.net1
         )
-        if not ll_networks.update_network_in_datacenter(
-            positive=True, network=self.net1, datacenter=conf.DC_NAME,
-            qos_dict={
-                "datacenter": conf.DC_NAME,
-                "qos_name": self.qos_name2,
-                "qos_type": conf.HOST_NET_QOS_TYPE,
-                "outbound_average_linkshare": conf.TEST_VALUE
-            }
-        ):
-            raise conf.NET_EXCEPTION(
-                "Couldn't update %s when creating QoS %s on %s" %
-                (self.net1, self.qos_name2, conf.DC_NAME)
+        self.assertTrue(
+            ll_networks.update_network_in_datacenter(
+                positive=True, network=self.net1, datacenter=net_conf.DC_0,
+                qos_dict={
+                    "datacenter": net_conf.DC_0,
+                    "qos_name": self.qos_name2,
+                    "qos_type": conf.HOST_NET_QOS_TYPE,
+                    "outbound_average_linkshare": conf.TEST_VALUE
+                }
             )
+        )
 
     @polarion("RHEVM3-14273")
     def test_03_unlimited_qos_when_update_network(self):
         """
         Update the network with unlimited QoS
         """
-        logger.info("Update network not to have QoS (unlimited)")
-        if not ll_networks.update_network_in_datacenter(
-            positive=True, network=self.net1, datacenter=conf.DC_NAME,
-            qos_dict={}
-        ):
-            raise conf.NET_EXCEPTION(
-                "Couldn't update %s to have unlimited QoS" % self.net1
+        testflow.step("Update network not to have QoS (unlimited)")
+        self.assertTrue(
+            ll_networks.update_network_in_datacenter(
+                positive=True, network=self.net1, datacenter=net_conf.DC_0,
+                qos_dict={}
             )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from the host
-        Remove Host Network QoS
-        """
-        for qos in (cls.qos_name1, cls.qos_name2):
-            net_helper.remove_qos_from_dc(qos_name=qos)
+        )
 
 
-class TestHostNetQOSCase10(TestHostNetworkQoSTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(fixture_case_10.__name__)
+class TestHostNetQOSCase10(NetworkTest):
     """
     Attach network with QoS to host NIC
     """
     __test__ = True
-    net = conf.NETS[10][0]
     qos_dict = {
-        "rt": (conf.TEST_VALUE - 1) * MB_CONVERTER,
-        "ul": (conf.TEST_VALUE + 1) * MB_CONVERTER,
+        "rt": (conf.TEST_VALUE - 1) * conf.MB_CONVERTER,
+        "ul": (conf.TEST_VALUE + 1) * conf.MB_CONVERTER,
         "ls": conf.TEST_VALUE
     }
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Attach network to host NIC with QoS parameters (Anonymous' QoS)
-        """
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "network": cls.net,
-                    "nic": conf.HOST_1_NICS[1],
-                    "qos": {
-                        "type_": conf.HOST_NET_QOS_TYPE,
-                        "outbound_average_linkshare": conf.TEST_VALUE,
-                        "outbound_average_realtime": conf.TEST_VALUE - 1,
-                        "outbound_average_upperlimit": conf.TEST_VALUE + 1
-                    }
-                }
-            }
-        }
-        logger.info(
-            "Attaching %s to %s on %s",
-            cls.net, conf.HOST_1_NICS[1], conf.HOST_1
-        )
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_1, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s" % (
-                    cls.net, conf.HOST_1_NICS[1], conf.HOST_1
-                )
-            )
 
     @polarion("RHEVM3-6534")
     def test_qos_for_network_on_host_nic(self):
         """
         Attach network to host NIC with QoS parameters (Anonymous' QoS)
         """
-        helper.cmp_qos_with_vdscaps(
-            net=conf.NETS[10][0], qos_dict=self.qos_dict
+        testflow.step(
+            "Attach network to host NIC with QoS parameters (Anonymous' QoS)"
+        )
+        self.assertTrue(
+            helper.cmp_qos_with_vdscaps(
+                net=conf.NETS[10][0], qos_dict=self.qos_dict
+            )
         )
 
 
-class TestHostNetQOSCase11(TestHostNetworkQoSTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(fixture_case_11.__name__)
+class TestHostNetQOSCase11(NetworkTest):
     """
      Remove host network QoS when several networks with QoS are attached
      to the host (named)
@@ -893,56 +563,6 @@ class TestHostNetQOSCase11(TestHostNetworkQoSTestCaseBase):
     __test__ = True
     nets = conf.NETS[11][:2]
     qos_names = conf.QOS_NAME[11][:2]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        1) Create 2 Host Network QoS profiles under DC and attach this QoS
-        to the appropriate networks on DC
-        2) Attach those networks to the Host
-        """
-        logger.info("Create host network QoS profiles under %s", conf.DC_NAME)
-        for qos_name in cls.qos_names:
-            net_helper.create_host_net_qos(
-                qos_name=qos_name, outbound_average_linkshare=conf.TEST_VALUE,
-            )
-
-        for net, qos_name in zip(cls.nets, cls.qos_names):
-            if not ll_networks.update_network_in_datacenter(
-                positive=True, network=net, datacenter=conf.DC_NAME,
-                qos_dict={
-                    "qos_name": qos_name,
-                    "datacenter": conf.DC_NAME
-                }
-            ):
-                raise conf.NET_EXCEPTION(
-                    "Couldn't update %s to have Host Network QoS %s" %
-                    (net, qos_name)
-                )
-
-        network_host_api_dict = {
-            "add": {
-                "1": {
-                    "network": cls.nets[0],
-                    "nic": conf.HOST_1_NICS[1],
-                    },
-                "2": {
-                    "network": cls.nets[1],
-                    "nic": conf.HOST_1_NICS[1],
-                    },
-                }
-        }
-
-        logger.info(
-            "Attach %s to %s on %s", cls.nets, conf.HOST_1_NICS[1], conf.HOST_1
-        )
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_1, **network_host_api_dict
-        ):
-            raise conf.NET_EXCEPTION(
-                "Failed to attach %s to %s on %s " %
-                (cls.nets, conf.HOST_1_NICS[1], conf.HOST_1)
-            )
 
     @polarion("RHEVM3-6538")
     def test_remove_network_qos(self):
@@ -957,13 +577,15 @@ class TestHostNetQOSCase11(TestHostNetworkQoSTestCaseBase):
         """
         for qos_name, net in zip(self.qos_names, self.nets):
             net_helper.remove_qos_from_dc(qos_name=qos_name)
-            logger.info("Check the network %s is unsynced", net)
-            if net_helper.networks_sync_status(
-                host=conf.HOST_1, networks=[net]
-            ):
-                raise conf.NET_EXCEPTION(
-                    "%s should be unsynced, but it's not" % net
+            testflow.step("Check the network %s is unsynced", net)
+            self.assertFalse(
+                net_helper.networks_sync_status(
+                    host=net_conf.HOST_0_NAME, networks=[net]
                 )
-
-        logger.info("Sync both networks")
-        net_helper.sync_networks(host=conf.HOST_1, networks=self.nets)
+            )
+        testflow.step("Sync both networks")
+        self.assertTrue(
+            net_helper.sync_networks(
+                host=net_conf.HOST_0_NAME, networks=self.nets
+            )
+        )

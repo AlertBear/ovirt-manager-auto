@@ -5,7 +5,8 @@
 Helper functions for host network QoS job
 """
 import logging
-import config as conf
+
+import rhevmtests.networking.config as net_conf
 from art.core_api import apis_utils
 
 logger = logging.getLogger("Network_Host_QoS_Helper")
@@ -21,20 +22,22 @@ def cmp_qos_with_vdscaps(net, qos_dict, host=None):
     :type qos_dict: dict
     :param host: Host resource network resides on
     :type host: Resource.VDS
-    :raise: Network exception
+    :return: True/False
+    :rtype: bool
     """
     if host is None:
-        host = conf.VDS_HOSTS[0]
+        host = net_conf.VDS_HOSTS[0]
+
     logger.info("Compare vdsClient QoS values with %s", qos_dict)
     vds_caps_qos_dict = {}
     sample = apis_utils.TimeoutingSampler(
-        timeout=conf.SAMPLER_TIMEOUT, sleep=1, func=check_net_on_vdscaps,
+        timeout=net_conf.SAMPLER_TIMEOUT, sleep=1, func=check_net_on_vdscaps,
         net=net
     )
     if not sample.waitForFuncStatus(result=True):
-        raise conf.NET_EXCEPTION(
-            "Network %s doesn't exist in vdsCaps" % net
-        )
+        logger.error("Network %s doesn't exist in vdsCaps", net)
+        return False
+
     vds_caps_out = host.vds_client("getVdsCapabilities")
     qos = vds_caps_out["info"]["networks"][net]["hostQos"]["out"]
     for key in ("rt", "ul", "ls"):
@@ -42,10 +45,12 @@ def cmp_qos_with_vdscaps(net, qos_dict, host=None):
 
     logger.info("Compare provided host QoS values with VDSCaps values")
     if cmp(vds_caps_qos_dict, qos_dict):
-        raise conf.NET_EXCEPTION(
-            "Values in VdsCaps are %s, should be %s" %
-            (qos_dict, vds_caps_qos_dict)
+        logger.error(
+            "Values in VdsCaps are %s, should be %s", qos_dict,
+            vds_caps_qos_dict
         )
+        return False
+    return True
 
 
 def check_net_on_vdscaps(net, host=None):
@@ -60,7 +65,7 @@ def check_net_on_vdscaps(net, host=None):
     :rtype: bool
     """
     if host is None:
-        host = conf.VDS_HOSTS[0]
+        host = net_conf.VDS_HOSTS[0]
     vds_caps_out = host.vds_client("getVdsCapabilities")
     logger.info("%s", vds_caps_out["info"]["networks"])
     net_dict = vds_caps_out["info"]["networks"].get(net)
