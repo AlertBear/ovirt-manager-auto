@@ -605,7 +605,7 @@ class TestCase4554(BaseCaseDCMixed):
     * Move disk (offline movement) between domains (NFS to Gluster and
     Gluster to NFS)
     """
-    __test__ = (NFS in opts['storages'] or GLUSTERFS in opts['storages'])
+    __test__ = NFS in opts['storages'] and GLUSTERFS in opts['storages']
     polarion_test_case = '4554'
     storages = set([NFS, GLUSTERFS])
     storagedomains = [config.NFS_DOMAIN, config.GLUSTER_DOMAIN]
