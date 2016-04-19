@@ -20,7 +20,7 @@ from art.rhevm_api.utils.test_utils import (
     restartVdsmd, restart_engine,
 )
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, StorageTest as BaseTestCase
 from rhevmtests.storage import helpers as storage_helpers
 from socket import timeout as TimeoutError
@@ -592,7 +592,6 @@ class TestCase6058(BasicEnvironment):
     # 1302215: Live merge operation fails noting Failed child command status
     # for step 'DESTROY_IMAGE_CHECK'
 
-    @bz({'1275836': {}})
     @polarion("RHEVM3-6058")
     def test_live_merge_with_stop_vm(self):
         self.basic_flow()
@@ -615,6 +614,9 @@ class TestCase6058(BasicEnvironment):
         )
         assert ll_vms.stopVm(True, self.vm_name)
         assert ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
+        ll_vms.wait_for_vm_snapshots(
+            self.vm_name, [config.SNAPSHOT_OK]
+        )
         assert ll_vms.startVm(True, self.vm_name, wait_for_ip=True)
         snapshot = ll_vms._getVmSnapshot(self.vm_name, self.snapshot_list[1])
         if snapshot is None:
