@@ -218,11 +218,8 @@ class BasicEnvironment(BaseTestCase):
         self.current_storage_devices = dict()
         self.create_and_attach_disk_to_vms(is_disk_shared, vm_names)
 
-        self.assertTrue(
-            vms.start_vms(
-                vm_names, wait_for_status=config.VM_UP),
-            "At least one VM from list '%s' failed to start" % vm_names
-        )
+        vms.start_vms(
+            vm_names, wait_for_status=config.VM_UP)
 
         for vm_name in vm_names:
             # TODO: This is a workaround for bug
