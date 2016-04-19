@@ -4,6 +4,7 @@ High-level functions above data-center
 
 import logging
 from art.core_api import is_action
+from art.core_api import apis_exceptions
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 from concurrent.futures import ThreadPoolExecutor
@@ -97,29 +98,36 @@ def deactivate_host_if_up(host):
     return True
 
 
-@is_action()
 def deactivate_hosts_if_up(hosts_list):
     """
-    Description: Deactivate hosts that are in status up
-    Author: ratamir
-    Parameters:
-    * hosts_list - List or string of hosts to be deactivated
-    Returns: True (success) / False (failure)
+    Deactivate hosts that are in status up
+
+    __author__ = "ratamir"
+    :param hosts_list: List or string of hosts to be deactivated
+    :type hosts_list: list
+    :returns: True if operation succeded, False otherwise
+    :rtype: bool
     """
     if isinstance(hosts_list, str):
         _hosts_list = hosts_list.split(',')
     else:
         _hosts_list = hosts_list[:]
-    spm = ll_hosts.getSPMHost(_hosts_list)
-    LOGGER.info("spm host - %s", spm)
+
+    spm = None
+    try:
+        spm = ll_hosts.getSPMHost(_hosts_list)
+        LOGGER.info("spm host - %s", spm)
+    except apis_exceptions.EntityNotFound:
+        LOGGER.warning("No SPM host was found from the input hosts_list")
+
     sorted_hosts = ll_hosts._sort_hosts_by_priority(_hosts_list, False)
-    sorted_hosts.remove(spm)
-    sorted_hosts.append(spm)
+    if spm:
+        sorted_hosts.remove(spm)
+        sorted_hosts.append(spm)
 
     for host in sorted_hosts:
-        status = deactivate_host_if_up(host)
-        if not status:
-            return status
+        if not deactivate_host_if_up(host):
+            return False
     return True
 
 

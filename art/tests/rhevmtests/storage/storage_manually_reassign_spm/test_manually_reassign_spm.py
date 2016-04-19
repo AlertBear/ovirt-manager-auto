@@ -280,7 +280,7 @@ class TestCase5823(BasicEnvironment):
         Expected result: HSM host becomes SPM
         """
         self.assertTrue(
-            ll_hosts.deactivateHosts(True, self.spm_host),
+            ll_hosts.deactivateHost(True, self.spm_host),
             "Unable to deactivate host %s " % self.spm_host
         )
 

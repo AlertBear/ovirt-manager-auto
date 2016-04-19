@@ -530,29 +530,6 @@ def _sort_hosts_by_priority(hosts, reverse=True):
     return sorted_list
 
 
-@is_action()
-def activateHosts(positive, hosts):
-    """
-    Description: activates the set of hosts. If host activation is not
-                 successful, waits 30 seconds before the second attempt
-                 - due to possible contending for SPM
-    Author: alukiano
-    Parameters:
-    * hosts - hosts to be activated
-    Returns: True (success) / False (failure)
-    """
-    sorted_hosts = _sort_hosts_by_priority(hosts)
-
-    for host in sorted_hosts:
-        status = activateHost(True, host)
-        if not status:
-            time.sleep(30)
-            status = activateHost(True, host)
-            if not status:
-                return status
-    return positive
-
-
 def isHostInMaintenance(positive, host):
     """
     Description: Checks if host is in maintenance state
