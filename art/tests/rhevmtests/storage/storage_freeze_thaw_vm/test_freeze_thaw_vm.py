@@ -315,8 +315,11 @@ class TestCase14715(BaseTestCase):
             ll_vms.thaw_vm(False, self.vm_name),
             "Succeeded to thaw suspended vm %s" % self.vm_name
         )
-
         ll_vms.startVm(True, self.vm_name, wait_for_ip=True)
+        self.run_cmd(
+            WRITE_TO_FILE_CMD % self.file_path, positive=True,
+            timeout=5
+        )
         self.assertTrue(
             ll_vms.freeze_vm(True, self.vm_name),
             "Failed to freeze vm filesystems %s" % self.vm_name
@@ -336,15 +339,26 @@ class TestCase14715(BaseTestCase):
             "Failed to thaw vm %s with filesystems that are not frozen" %
             self.vm_name
         )
+        self.run_cmd(
+            WRITE_TO_FILE_CMD % self.file_path, positive=True,
+            timeout=5
+        )
 
         self.run_cmd(OVIRT_GUEST_AGENT_STOP_CMD)
         self.assertTrue(
             ll_vms.freeze_vm(True, self.vm_name),
-            "Succeded to freeze already frozen vm %s" % self.vm_name
+            "Failed to freeze a vm %s when ovirt guest agent "
+            "is stopped" % self.vm_name
         )
+        self.assert_fail_write_to_filesystem_with_timeout()
         self.assertTrue(
             ll_vms.thaw_vm(True, self.vm_name),
-            "Failed to thaw vm %s filesystems" % self.vm_name
+            "Failed to thaw vm %s filesystems when ovirt guest agent "
+            " is stopped" % self.vm_name
+        )
+        self.run_cmd(
+            WRITE_TO_FILE_CMD % self.file_path, positive=True,
+            timeout=5
         )
 
         self.run_cmd(QEMU_GUEST_AGENT_STOP_CMD)
@@ -353,6 +367,10 @@ class TestCase14715(BaseTestCase):
             "Succeeded to freeze vm %s when qemu-guest-agent is not running" %
             self.vm_name
         )
+        self.run_cmd(
+            WRITE_TO_FILE_CMD % self.file_path, positive=True,
+            timeout=5
+        )
         self.assertTrue(
             ll_vms.thaw_vm(False, self.vm_name),
             "Succeeded to thaw vm %s when qemu-guest-agent is not running" %
@@ -360,6 +378,7 @@ class TestCase14715(BaseTestCase):
         )
 
         ll_vms.reboot_vm(True, self.vm_name)
+        ll_vms.waitForVMState(self.vm_name, config.VM_REBOOT)
         self.assertTrue(
             ll_vms.freeze_vm(False, self.vm_name),
             "Succeeded to freeze vm %s that is in reboot status" % self.vm_name
@@ -369,9 +388,18 @@ class TestCase14715(BaseTestCase):
             "Succeeded to thaw vm %s that is in reboot status" % self.vm_name
         )
         ll_vms.waitForVMState(self.vm_name, config.VM_UP)
+        ll_vms.waitForIP(self.vm_name, timeout=60)
+        self.run_cmd(
+            WRITE_TO_FILE_CMD % self.file_path, positive=True,
+            timeout=5
+        )
 
-        ll_vms.shutdownVm(True, self.vm_name, async='false')
-        ll_vms.waitForVMState(self.vm_name, config.VM_DOWN)
+        ll_vms.stopVm(True, self.vm_name, async='false')
+        self.assertTrue(
+            ll_vms.waitForVMState(self.vm_name, config.VM_DOWN),
+            "VM %s is not in status down" % self.vm_name
+        )
+
         self.assertTrue(
             ll_vms.freeze_vm(False, self.vm_name),
             "Succeeded to freeze when vm %s is down" % self.vm_name
