@@ -6,9 +6,11 @@ helper file for import_export networks feature
 """
 
 import logging
-import config as conf
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import config as ie_ex_conf
+import rhevmtests.networking.config as conf
 
 logger = logging.getLogger("Import_Export_Networks_Helper")
 
@@ -42,7 +44,8 @@ def check_imported_vm_or_templates(net1, net2, vm=None, template=None):
     :type vm: str
     :param template: Name to check for VNIC profile name on
     :type template: str
-    :raise: NetworkException
+    :return: True/False
+    :rtype: bool
     """
     log = (
         "more than once" if vm is not conf.IE_VM and
@@ -57,14 +60,15 @@ def check_imported_vm_or_templates(net1, net2, vm=None, template=None):
         (conf.NIC_NAME[0], conf.MGMT_BRIDGE),
         (conf.NIC_NAME[1], net1),
         (conf.NIC_NAME[2], net2),
-        (conf.NIC_NAME[3], conf.NETS[2])
+        (conf.NIC_NAME[3], ie_ex_conf.NETS[2])
     ):
         if vm:
             if not ll_vms.check_vnic_on_vm_nic(vm=vm, nic=nic, vnic=vnic):
-                raise conf.NET_EXCEPTION()
+                return False
 
         if template:
             if not ll_templates.check_vnic_on_template_nic(
                 template=template, nic=nic, vnic=vnic
             ):
-                raise conf.NET_EXCEPTION()
+                return False
+    return True
