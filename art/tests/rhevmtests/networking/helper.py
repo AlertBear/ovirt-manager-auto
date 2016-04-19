@@ -5,25 +5,27 @@
 Helper for networking jobs
 """
 
-import re
 import logging
-import config as conf
+import re
 from random import randint
-from utilities import jobs
-from rhevmtests import helpers
-from art.core_api import apis_utils
-from art.test_handler import settings
-from art.test_handler import exceptions
-from art.rhevm_api.utils import test_utils
-import rhevmtests.helpers as global_helper
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
-import art.rhevm_api.tests_lib.low_level.events as ll_events
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
+
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
+import art.rhevm_api.tests_lib.low_level.events as ll_events
+import art.rhevm_api.tests_lib.low_level.host_network as ll_host_network
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import config as conf
+import rhevmtests.helpers as global_helper
+from art.core_api import apis_utils
+from art.rhevm_api.tests_lib.low_level import events
+from art.rhevm_api.utils import test_utils
+from art.test_handler import exceptions
+from art.test_handler import settings
+from rhevmtests import helpers
+from utilities import jobs
 
 logger = logging.getLogger("Global_Network_Helper")
 
@@ -381,10 +383,12 @@ def prepare_dummies(host_resource, num_dummy=2):
         raise conf.NET_EXCEPTION(
             "Failed to create dummy interfaces on %s" % host_name
         )
-    logger.info("Refresh host capabilities")
-    host_obj = ll_hosts.HOST_API.find(host_name)
-    refresh_href = "{0};force".format(host_obj.get_href())
-    ll_hosts.HOST_API.get(href=refresh_href)
+    last_event = events.get_max_event_id(query="")
+    logger.info("Refresh capabilities for %s", host_name)
+    if not ll_hosts.refresh_host_capabilities(
+        host=host_name, start_event_id=last_event
+    ):
+        raise conf.NET_EXCEPTION()
 
     logger.info("Check if %s exist on host via engine", conf.DUMMY_0)
     sample = apis_utils.TimeoutingSampler(
@@ -428,10 +432,11 @@ def delete_dummies(host_resource):
     if not hl_networks.delete_dummy_interfaces(host=host_resource):
         logger.error("Failed to delete dummy interfaces")
 
-    logger.info("Refresh host capabilities")
-    host_obj = ll_hosts.HOST_API.find(host_name)
-    refresh_href = "{0};force".format(host_obj.get_href())
-    ll_hosts.HOST_API.get(href=refresh_href)
+    last_event = events.get_max_event_id(query="")
+    logger.info("Refresh capabilities for %s", host_name)
+    ll_hosts.refresh_host_capabilities(
+        host=host_name, start_event_id=last_event
+    )
 
     logger.info(
         "Check that %s does not exist on host via engine", conf.DUMMY_0

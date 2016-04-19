@@ -2139,18 +2139,18 @@ def get_host_ip_from_engine(host):
 def refresh_host_capabilities(host, start_event_id):
     """
     Refresh Host Capabilities
-    :param host: Host name
-    :type host: str
-    :param start_event_id: Event id to search from
-    :type start_event_id: str
-    :return: True/False
-    :rtype: bool
+
+    Args:
+        host (str): Host name
+        start_event_id (str): Event id to search from
+
+    Returns:
+        bool: True/False
     """
     host_obj = HOST_API.find(host)
     code = [606, 607]
     query = "type={0} OR type={1}".format(code[0], code[1])
-    refresh_href = "{0};force".format(host_obj.get_href())
-    HOST_API.get(href=refresh_href)
+    HOST_API.syncAction(entity=host_obj, action="refresh", positive=True)
 
     for event in EVENT_API.query(query):
         if int(event.get_id()) < int(start_event_id):
