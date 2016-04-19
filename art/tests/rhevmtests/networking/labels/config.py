@@ -4,7 +4,6 @@
 """
 config file for labels test
 """
-from rhevmtests.networking.config import *  # NOQA
 import rhevmtests.helpers as global_helper
 
 NUM_DUMMYS = 8
@@ -79,45 +78,59 @@ NET_DICT = {
     NETS[6][0]: {
         "required": "false"
     },
+    NETS[8][0]: {
+        "required": "false"
+    },
+    NETS[8][1]: {
+        "required": "false"
+    },
+    NETS[8][2]: {
+        "usages": "",
+        "required": "false"
+    },
+    NETS[8][3]: {
+        "usages": "",
+        "required": "false"
+    },
+    NETS[8][4]: {
+        "required": "false"
+    },
+    NETS[8][5]: {
+        "usages": "",
+        "required": "false"
+    },
     NETS[9][0]: {
         "required": "false"
     },
-    NETS[10][0]: {
-        "required": "false"
-    },
-    NETS[10][1]: {
-        "required": "false"
-    },
-    NETS[10][2]: {
-        "usages": "",
-        "required": "false"
-    },
-    NETS[10][3]: {
-        "usages": "",
-        "required": "false"
-    },
-    NETS[10][4]: {
-        "required": "false"
-    },
-    NETS[10][5]: {
-        "usages": "",
-        "required": "false"
-    },
-    NETS[11][0]: {
-        "required": "false"
-    },
-    NETS[11][1]: {
+    NETS[9][1]: {
         "required": "false",
         "usages": ""
     },
-    NETS[11][2]: {
+    NETS[9][2]: {
         "required": "false"
     },
-    NETS[11][3]: {
+    NETS[9][3]: {
         "required": "false",
         "usages": ""
     },
-    NETS[12][0]: {
+}
+
+
+local_dict = {
+    NETS[7][0]: {
         "required": "false"
+    },
+    NETS[7][1]: {
+        "required": "false",
+        "usages": ""
+    },
+    NETS[7][2]: {
+        "vlan_id": VLAN_IDS[9],
+        "required": "false"
+    },
+    NETS[7][3]: {
+        "vlan_id": VLAN_IDS[10],
+        "required": "false",
+        "usages": ""
     },
 }

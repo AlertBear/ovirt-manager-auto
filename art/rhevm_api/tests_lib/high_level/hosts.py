@@ -55,10 +55,11 @@ def move_host_to_another_cluster(host, cluster, activate=True):
     :return: True if succeed to move it False otherwise
     :rtype: bool
     """
-    LOGGER.info("Set %s to maintenance", host)
-    if not ll_hosts.deactivateHost(True, host):
-        LOGGER.error("Failed to set %s to maintenance", host)
-        return False
+    if not ll_hosts.isHostInMaintenance(positive=True, host=host):
+        LOGGER.info("Set %s to maintenance", host)
+        if not ll_hosts.deactivateHost(positive=True, host=host):
+            LOGGER.error("Failed to set %s to maintenance", host)
+            return False
 
     LOGGER.info("Moving %s to %s", host, cluster)
     if not ll_hosts.updateHost(positive=True, host=host, cluster=cluster):

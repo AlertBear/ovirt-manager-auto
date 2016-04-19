@@ -6,7 +6,7 @@ helper file for label feature
 """
 
 import logging
-import config as conf
+
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 
@@ -36,8 +36,8 @@ def add_label_and_check_network_on_nic(
         attach_to__host: True if need to attach NIC to host,
             False if NIC already attached to host.
 
-    Raises:
-        NetworkException: if action wasn't succeeded.
+    Returns:
+        bool: True if action was succeeded, False otherwise.
     """
 
     lb_net = networks if add_net_to_label else list()
@@ -46,7 +46,7 @@ def add_label_and_check_network_on_nic(
         label=label, networks=lb_net, host_nic_dict=nic_host
     )
     if res != positive:
-        raise conf.NET_EXCEPTION()
+        return False
 
     for host in host_nic_dict.iterkeys():
         for i, network in enumerate(networks):
@@ -55,4 +55,5 @@ def add_label_and_check_network_on_nic(
                 network=network, host=host, nic=nic
             )
             if res != network_on_nic:
-                raise conf.NET_EXCEPTION()
+                return False
+    return True

@@ -376,6 +376,7 @@ UNCOMP_DC_NAME = PARAMETERS.get("dc_name", "%s_DC30" % TEST_NAME)
 UNCOMP_CL_NAME = ["".join([CLUSTER_NAME[0], "CL3", str(i)]) for i in range(2)]
 
 VERSION = ["3.0", "3.1", "3.2", "3.3", "3.4", "3.5"]
+COMP_VERSION_4_0 = ["3.6", "4.0"]
 
 SAMPLER_SLEEP = 10
 SAMPLER_TIMEOUT = 210
