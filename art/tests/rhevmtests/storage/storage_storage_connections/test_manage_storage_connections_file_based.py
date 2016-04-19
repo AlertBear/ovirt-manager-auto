@@ -1,4 +1,5 @@
 import logging
+import pytest
 import config
 import helpers
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
@@ -27,10 +28,24 @@ HOST_CLUSTER = None
 # glusterfs domains
 
 
-def setup_module():
+@pytest.fixture(scope='module')
+def initializer_module(request):
     """
     Removes one host
     """
+    def finalizer_module():
+        """
+        Add back host to the environment
+        """
+        if not ll_hosts.addHost(
+            True, name=config.HOST_FOR_MOUNT, cluster=HOST_CLUSTER,
+            root_password=config.HOSTS_PW, address=config.HOST_FOR_MOUNT_IP
+        ):
+            raise exceptions.HostException(
+                "Failed to add host %s back to GE environment"
+                % config.HOST_FOR_MOUNT
+            )
+    request.addfinalizer(finalizer_module)
     # Remove the host, this is needed to copy the data between
     # storage domains
     global HOST_CLUSTER
@@ -45,20 +60,6 @@ def setup_module():
         )
 
 
-def teardown_module():
-    """
-    Add back host to the environment
-    """
-    if not ll_hosts.addHost(
-        True, name=config.HOST_FOR_MOUNT, cluster=HOST_CLUSTER,
-        root_password=config.HOSTS_PW, address=config.HOST_FOR_MOUNT_IP
-    ):
-        raise exceptions.HostException(
-            "Failed to add host %s back to GE environment"
-            % config.HOST_FOR_MOUNT
-        )
-
-
 class TestCasePosix(TestCase):
     conn = None
     host = None
@@ -68,7 +69,7 @@ class TestCasePosix(TestCase):
     vfs_type = None
     unused_domains = []
 
-    def setUp(self):
+    def initializer_TestCasePosix(self):
         """
         Add new storage domain
         """
@@ -76,7 +77,6 @@ class TestCasePosix(TestCase):
         self.path = config.UNUSED_RESOURCE_PATH[self.storage][0]
         ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME)
         self.host = ll_hosts.getSPMHost(config.HOSTS_FOR_TEST)
-
         if not ll_sd.addStorageDomain(
             True, address=self.address, path=self.path,
             storage_type=self.storage_type, host=self.host,
@@ -109,7 +109,7 @@ class TestCasePosix(TestCase):
             )
         self.conn = conns[0].id
 
-    def tearDown(self):
+    def finalizer_TestCasePosix(self):
         """
         Removing the storage domain created for test
         """
@@ -190,13 +190,20 @@ class TestCaseNFSAndGlusterFS(TestCasePosix):
     """
     Base class for NFS storage connections
     """
-    def setUp(self):
+    @pytest.fixture(scope='function')
+    def initializer_TestCaseNFSAndGlusterFS(
+        self, request, initializer_module
+    ):
         """
         Initialize parameters and executes setup
         """
+        def finalizer_TestCaseNFSAndGlusterFS():
+            self.finalizer_TestCasePosix()
+
+        request.addfinalizer(finalizer_TestCaseNFSAndGlusterFS)
         self.storage_type = self.storage
         self.additional_params = {'vfs_type': self.storage}
-        super(TestCaseNFSAndGlusterFS, self).setUp()
+        self.initializer_TestCasePosix()
 
     def default_update(self):
         logger.debug(
@@ -212,13 +219,18 @@ class TestCaseNFSAndGlusterFS(TestCasePosix):
 
 
 class TestCasePosixFS(TestCasePosix):
-    def setUp(self):
+    @pytest.fixture(scope='function')
+    def initializer_TestCasePosixFS(self, request, initializer_module):
         """
         Initialize parameters and executes setup
         """
+        def finalizer_TestCasePosixFS():
+            self.finalizer_TestCasePosix()
+
+        request.addfinalizer(finalizer_TestCasePosixFS)
         self.storage_type = POSIXFS
         self.additional_params = {'vfs_type': self.storage}
-        super(TestCasePosixFS, self).setUp()
+        self.initializer_TestCasePosix()
 
     def default_update(self):
         logger.debug(
@@ -238,10 +250,24 @@ class TestCaseExport(TestCasePosix):
     """
     Base class for NFS storage connections
     """
-    def setUp(self):
+    @pytest.fixture(scope='function')
+    def initializer_TestCaseExport(self, request, initializer_module):
         """
         Initialize parameters and detach export domain
         """
+        def finalizer_TestCaseExport():
+            """
+            Attach the export domain back to the environment
+            """
+            self.finalizer_TestCasePosix()
+            if not hl_sd.attach_and_activate_domain(
+                config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME
+            ):
+                logger.error("Failed to attach export domain back")
+                TestCase.test_failed = True
+            TestCase.teardown_exception()
+
+        request.addfinalizer(finalizer_TestCaseExport)
         self.storage_type = NFS
         self.additional_params = {}
         self.storage_domain_type = config.TYPE_EXPORT
@@ -251,19 +277,7 @@ class TestCaseExport(TestCasePosix):
             raise exceptions.StorageDomainException(
                 "Failed to deactivate and detach export domain"
             )
-        super(TestCaseExport, self).setUp()
-
-    def tearDown(self):
-        """
-        Attach the export domain back to the environment
-        """
-        super(TestCaseExport, self).tearDown()
-        if not hl_sd.attach_and_activate_domain(
-            config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME
-        ):
-            logger.error("Failed to attache export domain back")
-            TestCase.test_failed = True
-        TestCase.teardown_exception()
+        self.initializer_TestCasePosix()
 
     def default_update(self):
         logger.debug(
@@ -282,14 +296,19 @@ class TestCaseISO(TestCasePosix):
     """
     Base class for ISO storage connections
     """
-    def setUp(self):
+    @pytest.fixture(scope='function')
+    def initializer_TestCaseISO(self, request, initializer_module):
         """
         Initialize parameters and executes setup
         """
+        def finalizer_TestCaseISO():
+            self.finalizer_TestCasePosix()
+
+        request.addfinalizer(finalizer_TestCaseISO)
         self.storage_type = NFS
         self.additional_params = {}
         self.storage_domain_type = config.TYPE_ISO
-        super(TestCaseISO, self).setUp()
+        self.initializer_TestCasePosix()
 
     def default_update(self):
         logger.debug(
@@ -316,6 +335,7 @@ class TestCase5250(TestCaseNFSAndGlusterFS):
     sd_name = "sd_%s" % polarion_test_case
 
     @polarion("RHEVM3-5250")
+    @pytest.mark.usefixtures("initializer_TestCaseNFSAndGlusterFS")
     def test_change_nfs_and_gluster_connection(self):
         """
         Tries to change an nfs and glusterfs connection
@@ -324,6 +344,7 @@ class TestCase5250(TestCaseNFSAndGlusterFS):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures("initializer_TestCasePosixFS")
 class TestCase5251(TestCasePosixFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -343,6 +364,7 @@ class TestCase5251(TestCasePosixFS):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures("initializer_TestCaseISO")
 class TestCase10650(TestCaseISO):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -362,6 +384,7 @@ class TestCase10650(TestCaseISO):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures("initializer_TestCaseExport")
 class TestCase10651(TestCaseExport):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -381,6 +404,7 @@ class TestCase10651(TestCaseExport):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures("initializer_TestCasePosixFS")
 class TestCase5255(TestCasePosixFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -402,6 +426,7 @@ class TestCase5255(TestCasePosixFS):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures("initializer_TestCaseNFSAndGlusterFS")
 class TestCase5254(TestCaseNFSAndGlusterFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -423,6 +448,7 @@ class TestCase5254(TestCaseNFSAndGlusterFS):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures("initializer_TestCaseNFSAndGlusterFS")
 class TestCase5253(TestCaseNFSAndGlusterFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
