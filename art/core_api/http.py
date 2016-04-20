@@ -30,7 +30,7 @@ import logging
 logger = logging.getLogger('http')
 
 
-class HTTPProxy():
+class HTTPProxy(object):
     '''
     Establish connection with rest api and run rest methods
     '''
@@ -84,8 +84,9 @@ class HTTPProxy():
         if not conn:
             conn = self.default_conn
 
-        response = self.__do_request("HEAD", self.opts['uri'],
-                        get_header='Set-Cookie', conn=conn)
+        response = self.__do_request(
+            "HEAD", self.opts['uri'], get_header='Set-Cookie', conn=conn,
+        )
         self.cookie = response['Set-Cookie']
         self.last_active_user = self.__get_user()
 
@@ -118,7 +119,7 @@ class HTTPProxy():
             charset = encoding_from_headers(resp) or 'utf-8'
 
             resp_body = resp.read().decode(charset)
-            #Workaround lxml issue with unicode strings having declarations
+            # Workaround lxml issue with unicode strings having declarations
             resp_body = re.sub(r'^\s*<\?xml\s+.*?\?>', '', resp_body)
 
             ret = {'status': resp.status, 'body': resp_body}
@@ -235,7 +236,9 @@ class HTTPProxy():
         if self.opts.get('standalone', True):
             return {}
 
-        response = self.__do_request("HEAD", self.opts['uri'], get_header='link')
+        response = self.__do_request(
+            "HEAD", self.opts['uri'], get_header='link',
+        )
         links = {}
         if response['status'] >= 300:
             MSG = "Bad HTTP response status: {0}, {1}"
