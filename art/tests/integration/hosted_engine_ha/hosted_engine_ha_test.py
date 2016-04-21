@@ -2,17 +2,19 @@
 Hosted Engine - HA Test
 Check behaviour of ovirt-ha-agent under different conditions
 """
+import logging
 import re
 import socket
-import logging
 
+import pytest
+
+import art.core_api.apis_exceptions as core_errors
+import art.core_api.apis_utils as utils
+import art.rhevm_api.tests_lib.low_level.sla as ll_sla
+import art.test_handler.exceptions as errors
+import art.unittest_lib as test_libs
 import config as conf
 from art.test_handler import tools
-import art.unittest_lib as test_libs
-import art.core_api.apis_utils as utils
-import art.test_handler.exceptions as errors
-import art.core_api.apis_exceptions as core_errors
-import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 
 logger = logging.getLogger(__name__)
 
@@ -704,7 +706,9 @@ class TestHostWithVmLostConnection(GeneralSetupTeardownClass):
             self.second_host, self.engine_vm_host
         ):
             self.__class__.skip = True
-            raise test_libs.SkipTest("Host doesn't have power management")
+            pytest.skip(
+                "Host %s doesn't have power management" % self.engine_vm_host
+            )
         logger.info("Stop network on host %s", self.engine_vm_host)
         try:
             self.engine_vm_host.service("network").stop()
@@ -1106,7 +1110,7 @@ class TestHostCpuLoadProblem(GeneralSetupTeardownClass):
         """
         super(TestHostCpuLoadProblem, cls).setup_class()
         logger.info("Load host %s cpu up to 100 percent", cls.engine_vm_host)
-        ll_sla.start_cpu_loading_on_resources([cls.engine_vm_host], 100)
+        ll_sla.load_resources_cpu([cls.engine_vm_host], 100)
 
     @tools.polarion("RHEVM3-5525")
     def test_check_host_score_and_he_vm_migration(self):
@@ -1137,7 +1141,7 @@ class TestHostCpuLoadProblem(GeneralSetupTeardownClass):
         Release host cpu
         """
         logger.info("Release host %s cpu from loading", cls.engine_vm_host)
-        ll_sla.stop_cpu_loading_on_resources([cls.engine_vm_host])
+        ll_sla.stop_cpu_load_on_resources([cls.engine_vm_host])
         if not cls._wait_for_host_score(
             cls.second_host_executor, cls.engine_vm_host,
             conf.MAX_SCORE, timeout=conf.CPU_SCORE_TIMEOUT
