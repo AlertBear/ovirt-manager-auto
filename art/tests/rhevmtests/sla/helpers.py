@@ -1,0 +1,299 @@
+"""
+Helper for sla tests
+"""
+import logging
+
+from concurrent.futures import ThreadPoolExecutor
+
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.sla as ll_sla
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.test_handler.exceptions as errors
+import config as conf
+from art.core_api.apis_exceptions import APITimeout
+from art.core_api.apis_utils import TimeoutingSampler
+
+logger = logging.getLogger(__name__)
+
+
+def _wait_for_host_cpu_load(
+    host_name, expected_min_load=0,
+    expected_max_load=100, timeout=180, sleep=10
+):
+    """
+    Wait until host will reach cpu load between minimal and maximal values
+
+    Args:
+        host_name (str): hosts names
+        expected_min_load (int): wait for host cpu load greater
+            than expected minimum value
+        expected_max_load (int): wait for host cpu load smaller
+            than expected maximum value
+        timeout (int): sampler timeout
+        sleep (int): sampler sleep
+
+    Returns:
+        bool: True, if host reach cpu load between expected minimal and
+            maximal values before timeout, otherwise False
+    """
+    sampler = TimeoutingSampler(
+        timeout, sleep, ll_hosts.get_host_cpu_load, host_name
+    )
+    logger.info(
+        "Wait until host %s will have cpu load between %d and %d",
+        host_name, expected_min_load, expected_max_load
+    )
+    try:
+        for sample in sampler:
+            logger.info(
+                "Host %s cpu load equal to %d", host_name, sample
+            )
+            if expected_max_load >= sample >= expected_min_load:
+                return True
+    except APITimeout:
+        logger.error(
+            "Host %s cpu load not between expected values %d and %d",
+            host_name, expected_min_load, expected_max_load
+        )
+        return False
+
+
+def wait_for_hosts_cpu_load(
+    hosts,
+    expected_min_load=0,
+    expected_max_load=100,
+    timeout=180,
+    sleep=10
+):
+    """
+    Wait until hosts will reach cpu load between minimal and maximal values
+
+    Args:
+        hosts (list): hosts names
+        expected_min_load (int): wait for host cpu load greater
+            than expected minimum value
+        expected_max_load (int): wait for host cpu load smaller
+            than expected maximum value
+        timeout (int): sampler timeout
+        sleep (int): sampler sleep
+
+    Returns:
+        bool: True, if all hosts reach cpu load between expected minimal and
+            maximal values before timeout, otherwise False
+    """
+    results = []
+    with ThreadPoolExecutor(max_workers=len(hosts)) as executor:
+        for host in hosts:
+            results.append(
+                executor.submit(
+                    _wait_for_host_cpu_load,
+                    host, expected_min_load, expected_max_load, timeout, sleep
+                )
+            )
+    for result in results:
+        if not result.result():
+            return False
+    return True
+
+
+def _start_and_wait_for_cpu_load_on_resources(load, hosts_d):
+    """
+    1) Start specific load on resources and
+    2) Wait until CPU load on resource will reach given values
+
+    Args:
+        load (int): CPU load
+        hosts_d (dict): host and resource dictionary
+
+    Raises:
+        HostException: if one of internal functions failed
+    """
+    if not ll_sla.load_resources_cpu(
+        hosts_d[conf.RESOURCE], load
+    ):
+        raise errors.HostException()
+    if not wait_for_hosts_cpu_load(
+        hosts=hosts_d[conf.HOST],
+        expected_min_load=load - 5
+    ):
+        raise errors.HostException()
+
+
+def start_and_wait_for_cpu_load_on_resources(load_to_host_d):
+    """
+    1) Start specific loads on resources
+    2) Wait until CPU loads on resources will reach given values
+
+    Args:
+        load_to_host_d (dict): load to host and resource mapping
+
+    Raises:
+        HostException: if one of internal functions failed
+    """
+    results = []
+    with ThreadPoolExecutor(
+        max_workers=len(load_to_host_d.keys())
+    ) as executor:
+        for load, hosts_d in load_to_host_d.iteritems():
+            results.append(
+                executor.submit(
+                    _start_and_wait_for_cpu_load_on_resources, load, hosts_d
+                )
+            )
+    for result in results:
+        if result.exception():
+            raise result.exception()
+
+
+def stop_load_on_resources(hosts_and_resources_l):
+    """
+    Stop CPU load on resources
+
+    Args:
+        hosts_and_resources_l (list): list of hosts and resources dictionaries
+    """
+    hosts = []
+    resources = []
+    for host_and_resource in hosts_and_resources_l:
+        hosts += host_and_resource[conf.HOST]
+        resources += host_and_resource[conf.RESOURCE]
+    ll_sla.stop_cpu_load_on_resources(resources)
+    wait_for_hosts_cpu_load(
+        hosts=hosts, expected_max_load=10
+    )
+
+
+def wait_for_hosts_state_in_cluster(
+    num_of_hosts,
+    timeout,
+    sleep,
+    cluster_name,
+    state=conf.HOST_UP,
+    negative=False
+):
+    """
+    Wait until number of hosts in given cluster will have specific state
+
+    Args:
+        num_of_hosts (int): Expected number of hosts with given state
+        timeout (int): Sampler timeout
+        sleep (int): Sampler sleep time
+        cluster_name (str): Cluster name
+        state (str): Expected hosts state
+        negative (bool): Negative or positive flow
+
+    Returns:
+        bool: True, if engine have given number of hosts in given state,
+            otherwise False
+    """
+    cluster_obj = ll_clusters.get_cluster_object(cluster_name=cluster_name)
+    log_msg = "not equal" if negative else "equal"
+    sampler = TimeoutingSampler(
+        timeout=timeout,
+        sleep=sleep,
+        func=ll_hosts.HOST_API.get,
+        absLink=False
+    )
+    try:
+        for sample in sampler:
+            count = 0
+            for host in sample:
+                if host.get_cluster().get_id() == cluster_obj.get_id():
+                    if host.get_status().get_state().lower() == state:
+                        count += 1
+            if (count == num_of_hosts) == (not negative):
+                return True
+    except APITimeout:
+        logger.error(
+            "Timeout when waiting for hosts with state %s, will be %s to %d",
+            state, log_msg, num_of_hosts
+        )
+        return False
+
+
+def wait_for_active_vms_on_host(
+    host_name,
+    expected_num_of_vms,
+    sampler_timeout=300,
+    sampler_sleep=10,
+    negative=False
+):
+    """
+    Wait for specific number of active vms on host
+
+    Args:
+        host_name (str): Host name
+        expected_num_of_vms (int): Expected number of VM's on host
+        negative (bool): Wait for positive or negative status
+        sampler_timeout (int): Sampler timeout
+        sampler_sleep (int): Sampler sleep
+
+    Returns:
+        bool: True, if host has expected number of vms, otherwise False
+    """
+    sampler = TimeoutingSampler(
+        sampler_timeout, sampler_sleep, ll_hosts.HOST_API.find, val=host_name
+    )
+    try:
+        for sample in sampler:
+            if (
+                (sample.get_summary().get_active() == expected_num_of_vms) ==
+                (not negative)
+            ):
+                return True
+    except APITimeout:
+        logger.error(
+            "Timeout when waiting for number of vms %d on host %s",
+            expected_num_of_vms, host_name
+        )
+        return False
+
+
+def wait_for_active_vms_on_hosts(
+    hosts,
+    expected_num_of_vms,
+    sampler_timeout=300,
+    sampler_sleep=10,
+    negative=False
+):
+    """
+    Wait for specific number of active vms on hosts
+
+    Args:
+        hosts (list): Hosts names
+        expected_num_of_vms (int): Expected number of VM's on host
+        negative (bool): Wait for positive or negative status
+        sampler_timeout (int): Sampler timeout
+        sampler_sleep (int): Sampler sleep
+
+    Returns:
+        bool: True, if all hosts has expected number of vms, otherwise False
+    """
+    results = []
+    with ThreadPoolExecutor(max_workers=len(hosts)) as executor:
+        for host in hosts:
+            results.append(
+                executor.submit(
+                    wait_for_active_vms_on_host,
+                    host, expected_num_of_vms,
+                    sampler_timeout, sampler_sleep, negative
+                )
+            )
+    for result in results:
+        if not result.result():
+            return False
+    return True
+
+
+def stop_all_ge_vms_and_update_to_default_params():
+    """
+    1) Stop all GE VM's
+    2) Update all GE VM's to default parameters
+    """
+    ll_vms.stop_vms_safely(vms_list=conf.VM_NAME)
+    with ThreadPoolExecutor(max_workers=len(conf.VM_NAME)) as executor:
+        for vm in conf.VM_NAME:
+            executor.submit(
+                ll_vms.updateVm, True, vm, **conf.DEFAULT_VM_PARAMETERS
+            )

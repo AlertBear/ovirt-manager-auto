@@ -85,9 +85,12 @@ VM_DISPLAY_TYPE = ENUMS[
 ] if PPC_ARCH else ENUMS['display_type_spice']
 
 # VM parameters
+VM_MEMORY = "memory"
+VM_MEMORY_GUARANTEED = "memory_guaranteed"
+
 DEFAULT_VM_PARAMETERS = {
-    'memory': GB,
-    'memory_guaranteed': GB,
+    VM_MEMORY: GB,
+    VM_MEMORY_GUARANTEED: GB,
     'cpu_socket': 1,
     'cpu_cores': 1,
     'os_type': VM_OS_TYPE,
@@ -109,16 +112,54 @@ RESOURCE = "resource"
 CLUSTER_OVERCOMMITMENT_NONE = 100
 CLUSTER_OVERCOMMITMENT_DESKTOP = 200
 
+# Scheduler policies
+POLICY_NONE = "none"
+POLICY_POWER_SAVING = ENUMS['scheduling_policy_power_saving']
+POLICY_EVEN_DISTRIBUTION = ENUMS['scheduling_policy_evenly_distributed']
+POLICY_EVEN_VM_DISTRIBUTION = ENUMS['scheduling_policy_vm_evenly_distributed']
 
-# Scheduling policies
-NONE_POLICY = "none"
-POWER_SAVING_POLICY = ENUMS["scheduling_policy_power_saving"]
-EVENLY_DISTRIBUTED_POLICY = ENUMS["scheduling_policy_evenly_distributed"]
-VM_EVENLY_DISTRIBUTED_POLICY = ENUMS["scheduling_policy_vm_evenly_distributed"]
+# Scheduling policies constants
+OVER_COMMITMENT_DURATION = "CpuOverCommitDurationMinutes"
+HIGH_UTILIZATION = "HighUtilization"
+LOW_UTILIZATION = "LowUtilization"
+MAX_FREE_MEMORY = "MaxFreeMemoryForOverUtilized"
+MIN_FREE_MEMORY = "MinFreeMemoryForUnderUtilized"
+
+CPU_LOAD_0 = 0
+CPU_LOAD_25 = 25
+CPU_LOAD_50 = 50
+CPU_LOAD_100 = 100
+
+HIGH_UTILIZATION_VALUE = 75
+LOW_UTILIZATION_VALUE = 35
+OVER_COMMITMENT_DURATION_VALUE = 1
+
+CLUSTER_POLICY_NAME = "name"
+CLUSTER_POLICY_PARAMS = "params"
+
+DEFAULT_PS_PARAMS = {
+    OVER_COMMITMENT_DURATION: OVER_COMMITMENT_DURATION_VALUE,
+    HIGH_UTILIZATION: HIGH_UTILIZATION_VALUE,
+    LOW_UTILIZATION: LOW_UTILIZATION_VALUE,
+}
+DEFAULT_ED_PARAMS = {
+    OVER_COMMITMENT_DURATION: OVER_COMMITMENT_DURATION_VALUE,
+    HIGH_UTILIZATION: HIGH_UTILIZATION_VALUE
+}
+
+LONG_BALANCE_TIMEOUT = 600
+SHORT_BALANCE_TIMEOUT = 180
 
 ENGINE_POLICIES = [
-    NONE_POLICY,
-    POWER_SAVING_POLICY,
-    EVENLY_DISTRIBUTED_POLICY,
-    VM_EVENLY_DISTRIBUTED_POLICY
+    POLICY_NONE,
+    POLICY_POWER_SAVING,
+    POLICY_EVEN_DISTRIBUTION,
+    POLICY_EVEN_VM_DISTRIBUTION
 ]
+
+BALANCE_LOG_MSG_POSITIVE = (
+    "Wait until balance module will migrate VM's on host %s"
+)
+BALANCE_LOG_MSG_NEGATIVE = "Check that no migration happen on or from host %s"
+
+ENGINE_CONFIG_LOW_UTILIZATION = "LowUtilizationForEvenlyDistribute"

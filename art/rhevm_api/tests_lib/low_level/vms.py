@@ -112,6 +112,7 @@ Snapshots = getDS('Snapshots')
 NUMA_NODE_LINK = "numanodes"
 SAMPLER_TIMEOUT = 120
 SAMPLER_SLEEP = 5
+VM = "vm"
 
 logger = logging.getLogger("art.ll_lib.vms")
 
@@ -696,10 +697,14 @@ def updateVm(positive, vm, **kwargs):
     :returns: True, if update success, otherwise False
     :rtype: bool
     """
-
+    log_info, log_error = ll_general.get_log_msg(
+        action="update", obj_type=VM, obj_name=vm, positive=positive,
+        **kwargs
+    )
     vm_obj = VM_API.find(vm)
     vm_new_obj = _prepareVmObject(**kwargs)
     compare = kwargs.get("compare", True)
+    logger.info(log_info)
     vm_new_obj, status = VM_API.update(
         vm_obj, vm_new_obj, positive, compare=compare
     )
@@ -709,7 +714,8 @@ def updateVm(positive, vm, **kwargs):
 
     if status and watchdog_model is not None:
         status = updateWatchdog(vm, watchdog_model, watchdog_action)
-
+    if not status:
+        logger.error(log_error)
     return status
 
 
@@ -985,7 +991,7 @@ def startVm(
     if use_cloud_init:
         action_params['use_cloud_init'] = 'true'
     log_info, log_error = ll_general.get_log_msg(
-        action="start", obj_type="vm", obj_name=vm, positive=positive,
+        action="start", obj_type=VM, obj_name=vm, positive=positive,
         **action_params
     )
     logger.info(log_info)
@@ -1056,7 +1062,7 @@ def stopVm(positive, vm, async='false'):
     :rtype: bool
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="stop", obj_type="vm", obj_name=vm, positive=positive
+        action="stop", obj_type=VM, obj_name=vm, positive=positive
     )
     logger.info(log_info)
     if not changeVMStatus(positive, vm, 'stop', 'DOWN', async):
@@ -1130,7 +1136,7 @@ def detachVm(positive, vm):
     '''
     vmObj = VM_API.find(vm)
     log_info, log_error = ll_general.get_log_msg(
-        action="detach", obj_type="vm", obj_name=vm, positive=positive
+        action="detach", obj_type=VM, obj_name=vm, positive=positive
     )
     expectedStatus = vmObj.get_status().get_state()
 
@@ -4119,85 +4125,6 @@ def is_vm_run_on_host(vm_name, host_name, **kwargs):
     """
     query = "name={0} and host={1}".format(vm_name, host_name.lower().strip())
     return VM_API.waitForQuery(query, **kwargs)
-
-
-def check_vm_migration(vm, host, time_to_wait):
-    """
-    Check if vm migrated on given host in defined time
-    **Author**: alukiano
-
-    **Parameters**:
-        * *vm* - vm for migration name
-        * *host* - destination host name
-        * *time_to_wait - migration waiting time
-    **Returns**: True, migration_duration if event passed,
-     otherwise False, migration_duration
-    """
-    start_time = time.time()
-    logger.info("Wait until vm %s will migrate on host %s", vm, host)
-    result = is_vm_run_on_host(vm, host, timeout=time_to_wait)
-    migration_duration = time.time() - start_time
-    if not result:
-        logger.error("Process of migration failed")
-        return False, None
-    logger.info("Process of migration takes %f seconds",
-                migration_duration)
-    return True, migration_duration
-
-
-def no_vm_migration(vm, host, time_to_wait):
-    """
-    Check that no migration happened
-    **Author**: alukiano
-
-    **Parameters**:
-        * *vm* - vm for migration name
-        * *host* - source host name
-        * *time_to_wait - migration waiting time
-    **Returns**: True, host if no migration occurred,
-     otherwise False, host
-    """
-    logger.info("Wait %f seconds", time_to_wait)
-    time.sleep(time_to_wait)
-    logger.info("Check if vm %s still on old host %s", vm, host)
-    result, vm_host = getVmHost(vm)
-    if not result:
-        logger.error("Failed to get vm %s host", vm)
-        return False
-    if vm_host.get("vmHoster") != host:
-        logger.error("Vm %s migrated on host %s",
-                     vm, vm_host.get("vmHoster"))
-        return False
-    logger.info("After %s seconds, vm %s still on old host %s",
-                time_to_wait, vm, host)
-    return True
-
-
-def maintenance_vm_migration(vm, src_host, dst_host):
-    """
-    Put source host to maintenance, and check if host migrated to
-    destination host
-    **Author**: alukiano
-
-    **Parameters**:
-        * *vm* - vm for migration name
-        * *src_host* - source host name
-        * *dst_host - destination host
-    **Returns**: True if vm migrated on destination host,
-     otherwise False
-    """
-    import hosts
-    logger.info("Put host %s to maintenance mode", src_host)
-    if not hosts.deactivateHost(True, src_host):
-        logger.error("Deactivation of host %s failed", src_host)
-        return False
-    logger.info("Check to which host vm %s was migrated", vm)
-    result, vm_host = getVmHost(vm)
-    if vm_host.get("vmHoster") != dst_host:
-        logger.error("Vm %s migrated on host %s and not on host %s",
-                     vm, vm_host.get("vmHoster"), dst_host)
-        return False
-    return True
 
 
 def get_snapshot_disks(vm, snapshot):

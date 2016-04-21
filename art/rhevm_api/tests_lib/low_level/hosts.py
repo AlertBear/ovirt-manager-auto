@@ -2086,42 +2086,6 @@ def run_command(host, user, password, cmd):
     return out
 
 
-def wait_for_active_vms_on_host(
-    host_name, num_of_vms, timeout=300, sleep=10, negative=False
-):
-    """
-    Wait for specific number of active vms on host
-
-    :param host_name: host name
-    :type host_name: str
-    :param num_of_vms: expected number of active vms on host
-    :type num_of_vms: int
-    :param timeout: timeout in seconds
-    :type timeout: int
-    :param sleep: time between samples in seconds
-    :type sleep: int
-    :param negative: wait for number of active vms
-    different from expected value
-    :type negative: bool
-    :returns: True, if host have expected number of active vms, otherwise False
-    :rtype: bool
-    """
-    sampler = TimeoutingSampler(timeout, sleep, HOST_API.find, val=host_name)
-    try:
-        for sample in sampler:
-            if (
-                (sample.get_summary().get_active() == num_of_vms) ==
-                (not negative)
-            ):
-                return True
-    except APITimeout:
-        HOST_API.logger.error(
-            "Timeout when waiting for number of vms %d on host %s",
-            num_of_vms, host_name
-        )
-        return False
-
-
 def check_host_nic_status(host_resource, nic, status):
     """
     Get NIC status from host
@@ -2279,45 +2243,6 @@ def get_host_max_scheduling_memory(host_name):
     """
     host_obj = get_host_object(host_name)
     return host_obj.get_max_scheduling_memory()
-
-
-def wait_until_num_of_hosts_in_state(num_of_hosts, timeout,
-                                     sleep, cluster_name,
-                                     state=ENUMS['host_state_up']):
-    """
-    Wait until number of hosts will have specific state
-
-    :param num_of_hosts: Wait until number of hosts will have some state
-    :type num_of_hosts: int
-    :param timeout: Timeout in seconds
-    :type timeout: int
-    :param sleep: Time between samples in seconds
-    :type sleep: int
-    :param cluster_name: hosts on this cluster
-    :type cluster_name: str
-    :param state: Expected state of hosts
-    :type state: str
-    :return: True, if engine have given number of hosts in given state,
-     otherwise False
-    :rtype: bool
-    """
-    cluster_obj = CL_API.find(cluster_name)
-    sampler = TimeoutingSampler(timeout, sleep, HOST_API.get, absLink=False)
-    try:
-        for sample in sampler:
-            count = 0
-            for host in sample:
-                if host.get_cluster().get_id() == cluster_obj.get_id():
-                    if host.get_status().get_state().lower() == state:
-                        count += 1
-            if count == num_of_hosts:
-                return True
-    except APITimeout:
-        HOST_API.logger.error(
-            "Timeout when waiting for number of hosts %d in state %s",
-            num_of_hosts, state
-        )
-        return False
 
 
 def get_host_free_memory(host_name):
@@ -2557,51 +2482,6 @@ def get_host_cpu_load(host_name):
     """
     stats = getStat(host_name, ELEMENT, COLLECTION, ["cpu.current.user"])
     return stats["cpu.current.user"]
-
-
-def wait_for_host_cpu_load(
-    host_name, expected_min_load=0,
-    expected_max_load=100, timeout=180, sleep=10
-):
-    """
-    Wait until host reach cpu load between minimal and maximal values
-
-    :param host_name: host name
-    :type host_name: str
-    :param expected_min_load: wait for host cpu load greater
-    than expected minimum value
-    :type expected_min_load: int
-    :param expected_max_load: wait for host cpu load smaller
-    than expected maximum value
-    :type expected_max_load: int
-    :param timeout: sampler timeout
-    :type timeout: int
-    :param sleep: sampler sleep
-    :type sleep: int
-    :return: True, if host reach cpu load between expected minimal and
-    maximal values before timeout, otherwise False
-    :rtype: bool
-    """
-    sampler = TimeoutingSampler(
-        timeout, sleep, get_host_cpu_load, host_name
-    )
-    HOST_API.logger.info(
-        "Wait until host %s will have cpu load between %d and %d",
-        host_name, expected_min_load, expected_max_load
-    )
-    try:
-        for sample in sampler:
-            HOST_API.logger.info(
-                "Host %s cpu load equal to %d", host_name, sample
-            )
-            if expected_max_load >= sample >= expected_min_load:
-                return True
-    except APITimeout:
-        HOST_API.logger.error(
-            "Host %s cpu load not between expected values %d and %d",
-            host_name, expected_min_load, expected_max_load
-        )
-        return False
 
 
 def get_fence_agents_list(host_name):
