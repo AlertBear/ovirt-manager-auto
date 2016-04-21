@@ -1,5 +1,5 @@
 import logging
-
+import pytest
 import config
 import helpers
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
@@ -35,7 +35,10 @@ class TestCase4816(helpers.TestCaseNFSOptions):
     export_address = config.NFS_ADDRESSES[0]
     export_path = config.NFS_PATHS[0]
 
-    def setUp(self):
+    @pytest.fixture(scope='function')
+    def initializer_TestCase4816(
+        self, request, initializer_TestCaseNFSOptions
+    ):
         """ Creates storage domains which will be later imported
 
         Don't change to setup_class, as in case setup_class fails,
@@ -53,6 +56,7 @@ class TestCase4816(helpers.TestCaseNFSOptions):
         self.sds_for_cleanup.append(self.export_domain)
 
     @polarion("RHEVM3-4816")
+    @pytest.mark.usefixtures("initializer_TestCase4816")
     def test_import_existing_export_domain(self):
         """ Imports existing export storage domain with custom NFS options
         """
@@ -90,10 +94,23 @@ class TestCase4829(helpers.TestCaseNFSOptions):
     nfs_address = config.NFS_ADDRESSES[0]
     nfs_path = config.NFS_PATHS[0]
 
-    def setUp(self):
+    @pytest.fixture(scope='function')
+    def initializer_TestCase4829(
+        self, request, initializer_TestCaseNFSOptions
+    ):
+        def finalizer_TestCase4829():
+            storage_domains = helpers.STORAGE_DOMAIN_API.get(absLink=False)
+            if self.name in [x.name for x in storage_domains]:
+                hl_sd.remove_storage_domain(
+                    self.name, None, self.host, True, config.VDC,
+                    config.VDC_PASSWORD
+                )
+
+        request.addfinalizer(finalizer_TestCase4829)
         self.name = None
 
     @polarion("RHEVM3-4829")
+    @pytest.mark.usefixtures("initializer_TestCase4829")
     def test_create_nfs_storage_with_out_of_range_retransmissions(self):
         """ Tries to create an NFS storage domain with an out of range
         retransmission number
@@ -110,6 +127,7 @@ class TestCase4829(helpers.TestCaseNFSOptions):
         )
 
     @polarion("RHEVM3-4829")
+    @pytest.mark.usefixtures("initializer_TestCase4829")
     def test_create_nfs_storage_with_out_of_range_timeout(self):
         """ Tries to create an NFS storage domain with an out of range
         NFS timeout
@@ -126,6 +144,7 @@ class TestCase4829(helpers.TestCaseNFSOptions):
         )
 
     @polarion("RHEVM3-4829")
+    @pytest.mark.usefixtures("initializer_TestCase4829")
     def test_create_nfs_storage_with_incorrect_nfs_version(self):
         """ Tries to create an NFS storage domain with a random string
         passed as an NFS version
@@ -141,16 +160,9 @@ class TestCase4829(helpers.TestCaseNFSOptions):
             version=nfs_version, timeo=nfs_timeout, positive=False
         )
 
-    def tearDown(self):
-        storage_domains = helpers.STORAGE_DOMAIN_API.get(absLink=False)
-        if self.name in [x.name for x in storage_domains]:
-            hl_sd.remove_storage_domain(
-                self.name, None, self.host, True, config.VDC,
-                config.VDC_PASSWORD
-            )
-
 
 @attr(tier=1)
+@pytest.mark.usefixtures("initializer_TestCaseNFSOptions")
 class TestCase4826(helpers.TestCaseNFSOptions):
     """
     Creates NFS data storage domain without specifying advanced NFS options and
@@ -201,6 +213,13 @@ class TestCase4830(helpers.TestCaseNFSOptions):
     nfs_timeout = 740
     nfs_version = 'v3'
 
+    @pytest.fixture(scope='function')
+    def initializer_TestCase4830(self, request):
+        def finalizer_TestCase4830():
+            self.cleanup_class()
+        request.addfinalizer(finalizer_TestCase4830)
+        self.initialize_parameters()
+
     def _create_and_check(self, sd_type, suffix, idx):
         """ Creates NFS storage domain of specified type. Suffix - suffix of
         domain name.
@@ -217,6 +236,7 @@ class TestCase4830(helpers.TestCaseNFSOptions):
         self.create_nfs_domain_and_verify_options([storage])
 
     @polarion("RHEVM3-4830")
+    @pytest.mark.usefixtures("initializer_TestCase4830")
     def test_create_change_nfs_options_export(self):
         """ Creates export storage domain with advanced NFS options and checks
         that they were really used.
@@ -224,6 +244,7 @@ class TestCase4830(helpers.TestCaseNFSOptions):
         self._create_and_check(EXPORT, 'export', 0)
 
     @polarion("RHEVM3-4830")
+    @pytest.mark.usefixtures("initializer_TestCase4830")
     def test_create_change_nfs_options_iso(self):
         """ Creates ISO storage domain with advanced NFS options and checks
         that they were really used.
@@ -232,6 +253,7 @@ class TestCase4830(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures("initializer_TestCaseNFSOptions")
 class TestCase4822(helpers.TestCaseNFSOptions):
     """
     Creates multiple storage domains with different custom advanced NFS options
@@ -275,6 +297,7 @@ class TestCase4822(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures("initializer_TestCaseNFSOptions")
 class TestCase4821(helpers.TestCaseNFSOptions):
     """
     Test steps:
@@ -345,6 +368,7 @@ class TestCase4821(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures("initializer_TestCaseNFSOptions")
 class TestCase4815(helpers.TestCaseNFSOptions):
     """
     Ensure that incorrect and conflicting parameters for creating a storage
@@ -448,6 +472,7 @@ class TestCase4815(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures("initializer_TestCaseNFSOptions")
 class TestCase4817(helpers.TestCaseNFSOptions):
     """
     Test check if creating storage domains with defined values is working
@@ -494,6 +519,7 @@ class TestCase4817(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=2)
+@pytest.mark.usefixtures("initializer_TestCaseNFSOptions")
 class TestCase4818(helpers.TestCaseNFSOptions):
     """
     Test checks that removing and destroying NFS storage domain with custom
