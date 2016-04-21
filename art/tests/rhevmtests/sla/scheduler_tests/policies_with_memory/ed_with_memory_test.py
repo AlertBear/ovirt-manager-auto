@@ -3,10 +3,12 @@ Test even distribution scheduler policy
 under different cpu and memory conditions
 """
 import logging
-import config as conf
-import base_class as base_c
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import base_class as base_c
+import config as conf
+import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +18,7 @@ class BaseTestEDWithMemory(base_c.StartVms):
     Base class for ED scheduler tests with memory load
     """
     cluster_policy = {
-        conf.CLUSTER_POLICY_NAME: conf.CLUSTER_POLICY_ED,
+        conf.CLUSTER_POLICY_NAME: conf.POLICY_EVEN_DISTRIBUTION,
         conf.CLUSTER_POLICY_PARAMS: conf.DEFAULT_ED_PARAMS
     }
 
@@ -35,7 +37,7 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad1(BaseTestEDWithMemory):
         Check if all VMS stay on old hosts
         """
         self.assertFalse(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
             )
         )
@@ -71,7 +73,7 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad2(BaseTestEDWithMemory):
         Check if vm from Host_1 migrated on Host_2
         """
         self.assertTrue(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[1], expected_num_of_vms=2
             )
         )
@@ -104,7 +106,7 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad3(BaseTestEDWithMemory):
         Check if vm from Host_1 migrated on Host_2
         """
         self.assertTrue(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[1], expected_num_of_vms=2
             )
         )
@@ -140,7 +142,7 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad4(BaseTestEDWithMemory):
         Check if vm from Host_1 migrated on Host_2
         """
         self.assertTrue(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[1], expected_num_of_vms=2
             )
         )
@@ -176,7 +178,7 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad5(BaseTestEDWithMemory):
         Check if all VMS stay on old hosts
         """
         self.assertFalse(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
             )
         )
@@ -213,7 +215,7 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad6(BaseTestEDWithMemory):
         Check if all VMS stay on old hosts
         """
         self.assertFalse(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
             )
         )
@@ -249,7 +251,7 @@ class TestEDBalanceModuleUnderMemoryAndCPULoad7(BaseTestEDWithMemory):
         Check if all VMS stay on old hosts
         """
         self.assertFalse(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
             )
         )
@@ -260,13 +262,13 @@ class StartAndMigrateVmEDBase(base_c.StartAndMigrateVmBase):
     Base class for start and migrate of VM under ED scheduler policy
     """
     cluster_policy = {
-        conf.CLUSTER_POLICY_NAME: conf.CLUSTER_POLICY_ED,
+        conf.CLUSTER_POLICY_NAME: conf.POLICY_EVEN_DISTRIBUTION,
         conf.CLUSTER_POLICY_PARAMS: conf.DEFAULT_ED_PARAMS
     }
     update_vm_d = {
         conf.VM_NAME[0]: {
-            "memory": 256 * conf.MB,
-            "memory_guaranteed": 256 * conf.MB
+            conf.VM_MEMORY: 256 * conf.MB,
+            conf.VM_MEMORY_GUARANTEED: 256 * conf.MB
         }
     }
 
@@ -352,12 +354,12 @@ class TestTakeInAccountVmMemory(StartAndMigrateVmEDBase):
         """
         cls.update_vm_d = {
             conf.VM_NAME[2]: {
-                "memory": (
+                conf.VM_MEMORY: (
                     conf.DEFAULT_PS_PARAMS[
                         conf.MIN_FREE_MEMORY
                     ] * conf.MB - conf.GB / 2
                 ),
-                "memory_guaranteed": (
+                conf.VM_MEMORY_GUARANTEED: (
                     conf.DEFAULT_PS_PARAMS[
                         conf.MIN_FREE_MEMORY
                     ] * conf.MB - conf.GB / 2
@@ -375,7 +377,7 @@ class TestTakeInAccountVmMemory(StartAndMigrateVmEDBase):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[2], expected_num_of_vms=1, negative=True
             )
         )

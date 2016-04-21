@@ -2,10 +2,12 @@
 Test power saving scheduler policy under different cpu and memory conditions
 """
 import logging
-import config as conf
-import base_class as base_c
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import base_class as base_c
+import config as conf
+import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +17,7 @@ class BaseTestPSWithMemory(base_c.StartVms):
     Base class for scheduler tests with memory load
     """
     cluster_policy = {
-        conf.CLUSTER_POLICY_NAME: conf.CLUSTER_POLICY_PS,
+        conf.CLUSTER_POLICY_NAME: conf.POLICY_POWER_SAVING,
         conf.CLUSTER_POLICY_PARAMS: conf.DEFAULT_PS_PARAMS
     }
 
@@ -44,7 +46,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad1(BaseTestPSWithMemory):
         Check if vm from Host_1 migrated on Host_2
         """
         self.assertTrue(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[1], expected_num_of_vms=2
             )
         )
@@ -75,7 +77,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad2(BaseTestPSWithMemory):
         Check if vm from Host_1 migrated on Host_2
         """
         self.assertTrue(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[1], expected_num_of_vms=2
             )
         )
@@ -111,7 +113,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad3(BaseTestPSWithMemory):
         Check if vm from Host_2 migrated on Host_1
         """
         self.assertTrue(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[0], expected_num_of_vms=2
             )
         )
@@ -148,7 +150,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad4(BaseTestPSWithMemory):
         Check if vm from Host_1 migrated on Host_2
         """
         self.assertTrue(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[1], expected_num_of_vms=2
             )
         )
@@ -184,7 +186,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad5(BaseTestPSWithMemory):
         Check if vm from Host_1 migrated on Host_2
         """
         self.assertTrue(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[1], expected_num_of_vms=2
             )
         )
@@ -221,7 +223,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad6(BaseTestPSWithMemory):
         Check if vm from Host_1 migrated on Host_2
         """
         self.assertTrue(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[1], expected_num_of_vms=2
             )
         )
@@ -254,7 +256,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad7(BaseTestPSWithMemory):
         Check if vm from Host_1 migrated on Host_2
         """
         self.assertTrue(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[1], expected_num_of_vms=2
             )
         )
@@ -290,7 +292,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad8(BaseTestPSWithMemory):
         Check if vm from Host_1 migrated on Host_2
         """
         self.assertTrue(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[1], expected_num_of_vms=2
             )
         )
@@ -327,7 +329,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad9(BaseTestPSWithMemory):
         Check if vm from Host_1 migrated on Host_2
         """
         self.assertTrue(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[1], expected_num_of_vms=2
             )
         )
@@ -367,7 +369,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad10(BaseTestPSWithMemory):
         Check if vm from Host_1 migrated on Host_2
         """
         self.assertTrue(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[1], expected_num_of_vms=2
             )
         )
@@ -407,7 +409,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad11(BaseTestPSWithMemory):
         Check if vm from Host_1 migrated on Host_2
         """
         self.assertTrue(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[1], expected_num_of_vms=2
             )
         )
@@ -444,7 +446,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad12(BaseTestPSWithMemory):
         Check if vm from Host_1 migrated on Host_2
         """
         self.assertTrue(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[1], expected_num_of_vms=2
             )
         )
@@ -480,7 +482,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad13(BaseTestPSWithMemory):
         Check if vm from Host_1 migrated on Host_2
         """
         self.assertTrue(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[1], expected_num_of_vms=2
             )
         )
@@ -517,7 +519,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad14(BaseTestPSWithMemory):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
             )
         )
@@ -553,7 +555,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad15(BaseTestPSWithMemory):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
             )
         )
@@ -590,7 +592,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad16(BaseTestPSWithMemory):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
             )
         )
@@ -630,7 +632,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad17(BaseTestPSWithMemory):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
             )
         )
@@ -671,7 +673,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad18(BaseTestPSWithMemory):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
             )
         )
@@ -712,7 +714,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad19(BaseTestPSWithMemory):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
             )
         )
@@ -748,7 +750,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad20(BaseTestPSWithMemory):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
             )
         )
@@ -785,7 +787,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad21(BaseTestPSWithMemory):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
             )
         )
@@ -822,7 +824,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad22(BaseTestPSWithMemory):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[0], expected_num_of_vms=2, negative=True
             )
         )
@@ -833,13 +835,13 @@ class StartAndMigrateVmPSBase(base_c.StartAndMigrateVmBase):
     Base class for start and migrate of VM under PS scheduler policy
     """
     cluster_policy = {
-        conf.CLUSTER_POLICY_NAME: conf.CLUSTER_POLICY_PS,
+        conf.CLUSTER_POLICY_NAME: conf.POLICY_POWER_SAVING,
         conf.CLUSTER_POLICY_PARAMS: conf.DEFAULT_PS_PARAMS
     }
     update_vm_d = {
         conf.VM_NAME[0]: {
-            "memory": 2 * conf.GB,
-            "memory_guaranteed": 2 * conf.GB
+            conf.VM_MEMORY: 2 * conf.GB,
+            conf.VM_MEMORY_GUARANTEED: 2 * conf.GB
         }
     }
 
@@ -926,12 +928,12 @@ class TestTakeInAccountVmMemory(StartAndMigrateVmPSBase):
         """
         cls.update_vm_d = {
             conf.VM_NAME[0]: {
-                "memory": (
+                conf.VM_MEMORY: (
                     conf.DEFAULT_PS_PARAMS[
                         conf.MIN_FREE_MEMORY
                     ] * conf.MB - conf.GB / 2
                 ),
-                "memory_guaranteed": (
+                conf.VM_MEMORY_GUARANTEED: (
                     conf.DEFAULT_PS_PARAMS[
                         conf.MIN_FREE_MEMORY
                     ] * conf.MB - conf.GB / 2
@@ -949,7 +951,7 @@ class TestTakeInAccountVmMemory(StartAndMigrateVmPSBase):
         Check if all vms stay on old hosts
         """
         self.assertFalse(
-            self._is_balancing_happen(
+            sch_helpers.is_balancing_happen(
                 host_name=conf.HOSTS[0], expected_num_of_vms=1, negative=True
             )
         )
