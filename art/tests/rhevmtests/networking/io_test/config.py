@@ -4,7 +4,6 @@
 """
 Config file for io networks test
 """
-from rhevmtests.networking.config import *  # NOQA
 import rhevmtests.helpers as global_helper
 
 NETS = global_helper.generate_object_names(num_of_cases=11, num_of_objects=6)

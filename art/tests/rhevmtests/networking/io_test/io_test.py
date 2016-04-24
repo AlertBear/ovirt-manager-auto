@@ -8,56 +8,29 @@ Positive and negative cases for creating/editing networks
 with valid/invalid names, IPs, netmask, VLAN, usages.
 """
 
-import helper
 import logging
-import config as conf
-from rhevmtests import networking
-from art.unittest_lib import attr, NetworkTest
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-import rhevmtests.networking.helper as network_helper
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
+import pytest
+
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import config as io_conf
+import helper
+import rhevmtests.networking.config as conf
+import rhevmtests.networking.helper as network_helper
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.unittest_lib import NetworkTest, attr, testflow
+from fixtures import(
+    case_09_fixture, all_classes_teardown
+)
 
 logger = logging.getLogger("IO_Test_Cases")
 
 
-def setup_module():
-    """
-    Running cleanup
-    Prepare network on setup
-    """
-    conf.VDS_0_HOST = conf.VDS_HOSTS[0]
-    conf.HOST_0_NAME = conf.HOSTS[0]
-    conf.HOST_0_NICS = conf.VDS_0_HOST.nics
-    networking.network_cleanup()
-    network_helper.prepare_networks_on_setup(
-        networks_dict=conf.NET_DICT, dc=conf.DC_0, cluster=conf.CL_0
-    )
-
-
-def teardown_module():
-    """
-    Remove networks from setup
-    """
-    network_helper.remove_networks_from_setup()
-
-
 @attr(tier=2)
-class IOTestCaseBase(NetworkTest):
-    """
-    Base class which provides teardown class method for each test case
-    """
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the host
-        """
-        network_helper.remove_networks_from_host()
-
-
-class TestIOTest01(IOTestCaseBase):
+@pytest.mark.usefixtures(all_classes_teardown.__name__)
+class TestIOTest01(NetworkTest):
     """
     Positive: Creating & adding networks with valid names to the cluster
     Negative: Trying to create networks with invalid names
@@ -82,12 +55,17 @@ class TestIOTest01(IOTestCaseBase):
             local_dict = {
                 network_name: {}
             }
-
-            if not hl_networks.createAndAttachNetworkSN(
-                data_center=conf.DC_0, cluster=conf.CL_0,
-                network_dict=local_dict
-            ):
-                raise conf.NET_EXCEPTION()
+            testflow.step(
+                "Create and attache network with valid name %s to "
+                "datacenter %s and to cluster %s", network_name, conf.DC_0,
+                conf.CL_0
+            )
+            self.assertTrue(
+                hl_networks.createAndAttachNetworkSN(
+                    data_center=conf.DC_0, cluster=conf.CL_0,
+                    network_dict=local_dict
+                )
+            )
 
     @polarion("RHEVM3-14742")
     def test_check_invalid_network_names(self):
@@ -103,13 +81,21 @@ class TestIOTest01(IOTestCaseBase):
         ]
 
         for network_name in invalid_names:
-            if not ll_networks.add_network(
-                positive=False, name=network_name, data_center=conf.DC_0,
-            ):
-                raise conf.NET_EXCEPTION()
+            testflow.step(
+                "Try to create and attache network with invalid name %s to "
+                "datacenter %s and to cluster %s", network_name, conf.DC_0,
+                conf.CL_0
+            )
+            self.assertTrue(
+                ll_networks.add_network(
+                    positive=False, name=network_name, data_center=conf.DC_0,
+                )
+            )
 
 
-class TestIOTest02(IOTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(all_classes_teardown.__name__)
+class TestIOTest02(NetworkTest):
     """
     Negative: Trying to create networks with invalid IPs
     """
@@ -146,14 +132,20 @@ class TestIOTest02(IOTestCaseBase):
                     }
                 }
             }
+            testflow.step(
+                "Try to create network with invalid IP %s",
+                invalid_ip
+            )
+            self.assertFalse(
+                hl_host_network.setup_networks(
+                    host_name=conf.HOST_0_NAME, **local_dict
+                )
+            )
 
-            if hl_host_network.setup_networks(
-                host_name=conf.HOST_0_NAME, **local_dict
-            ):
-                raise conf.NET_EXCEPTION()
 
-
-class TestIOTest03(IOTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(all_classes_teardown.__name__)
+class TestIOTest03(NetworkTest):
     """
     Negative: Trying to create networks with invalid netmask
     """
@@ -189,19 +181,26 @@ class TestIOTest03(IOTestCaseBase):
                     }
                 }
             }
-            if hl_host_network.setup_networks(
-                host_name=conf.HOST_0_NAME, **local_dict
-            ):
-                raise conf.NET_EXCEPTION()
+            testflow.step(
+                "Try to create network with invalid netmask %s",
+                invalid_netmask
+            )
+            self.assertFalse(
+                hl_host_network.setup_networks(
+                    host_name=conf.HOST_0_NAME, **local_dict
+                )
+            )
 
 
-class TestIOTest04(IOTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(all_classes_teardown.__name__)
+class TestIOTest04(NetworkTest):
     """
     Negative: Trying to create a network with netmask but without an ip address
     """
     __test__ = True
     netmask = ["255.255.255.0"]
-    net = conf.NETS[4][0]
+    net = io_conf.NETS[4][0]
 
     @polarion("RHEVM3-4378")
     def test_check_netmask_without_ip(self):
@@ -223,20 +222,26 @@ class TestIOTest04(IOTestCaseBase):
                 }
             }
         }
+        testflow.step(
+            "Try to create a network %s with netmask %s but "
+            "without an IP address", self.net, self.netmask
+        )
+        self.assertFalse(
+            hl_host_network.setup_networks(
+                host_name=conf.HOST_0_NAME, **local_dict
+            )
+        )
 
-        if hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **local_dict
-        ):
-            raise conf.NET_EXCEPTION()
 
-
-class TestIOTest05(IOTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(all_classes_teardown.__name__)
+class TestIOTest05(NetworkTest):
     """
     Negative: Trying to create a network with static ip but without netmask
     """
     __test__ = True
     static_ip = network_helper.create_random_ips(num_of_ips=1)
-    net = conf.NETS[5][0]
+    net = io_conf.NETS[5][0]
 
     @polarion("RHEVM3-4371")
     def test_check_static_ip_without_netmask(self):
@@ -257,14 +262,20 @@ class TestIOTest05(IOTestCaseBase):
                 }
             }
         }
+        testflow.step(
+            "Try to create a network %s with static IP %s but without netmask",
+            self.net, self.static_ip
+        )
+        self.assertFalse(
+            hl_host_network.setup_networks(
+                host_name=conf.HOST_0_NAME, **local_dict
+            )
+        )
 
-        if hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **local_dict
-        ):
-            raise conf.NET_EXCEPTION()
 
-
-class TestIOTest06(IOTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(all_classes_teardown.__name__)
+class TestIOTest06(NetworkTest):
     """
     Positive: Creating networks with valid MTU and adding them to data center.
     Negative: Trying to create a network with invalid MTUs.
@@ -278,8 +289,15 @@ class TestIOTest06(IOTestCaseBase):
         data center.
         """
         valid_mtus = [68, 69, 9000, 65520, 2147483647]
-
-        helper.create_networks(positive=True, params=valid_mtus, type_="mtu")
+        testflow.step(
+            "Creating networks with valid MTUs %s and adding "
+            "them to a data center %s", valid_mtus, conf.DC_0
+        )
+        self.assertTrue(
+            helper.create_networks(
+                positive=True, params=valid_mtus, type_="mtu"
+            )
+        )
 
     @polarion("RHEVM3-14743")
     def test_check_invalid_mtu(self):
@@ -288,12 +306,19 @@ class TestIOTest06(IOTestCaseBase):
         """
         invalid_mtus = [-5, 67, 2147483648]
 
-        helper.create_networks(
-            positive=False, params=invalid_mtus, type_="mtu"
+        testflow.step(
+            "Try to create a network with invalid MTUs %s", invalid_mtus
+        )
+        self.assertTrue(
+            helper.create_networks(
+                positive=False, params=invalid_mtus, type_="mtu"
+            )
         )
 
 
-class TestIOTest07(IOTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(all_classes_teardown.__name__)
+class TestIOTest07(NetworkTest):
     """
     Negative: Trying to create a network with invalid usages value
     """
@@ -309,14 +334,19 @@ class TestIOTest07(IOTestCaseBase):
                 "usages": "Unknown"
             }
         }
+        testflow.step(
+            "Try to create a network with invalid usages value"
+        )
+        self.assertFalse(
+            hl_networks.createAndAttachNetworkSN(
+                data_center=conf.DC_0, network_dict=local_dict
+            )
+        )
 
-        if hl_networks.createAndAttachNetworkSN(
-            data_center=conf.DC_0, network_dict=local_dict
-        ):
-            raise conf.NET_EXCEPTION()
 
-
-class TestIOTest08(IOTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(all_classes_teardown.__name__)
+class TestIOTest08(NetworkTest):
     """
     Positive: Creating networks with valid VLAN IDs & adding them to a DC.
     Negative: Trying to create networks with invalid VLAN IDs.
@@ -331,8 +361,14 @@ class TestIOTest08(IOTestCaseBase):
         """
         valid_vlan_ids = [4094, 1111, 111, 11, 1, 0]
 
-        helper.create_networks(
-            positive=True, params=valid_vlan_ids, type_="vlan_id"
+        testflow.step(
+            "Create networks with valid VLAN IDs %s and adding "
+            "them to a DC %s", valid_vlan_ids, conf.DC_0
+        )
+        self.assertTrue(
+            helper.create_networks(
+                positive=True, params=valid_vlan_ids, type_="vlan_id"
+            )
         )
 
     @polarion("RHEVM3-14744")
@@ -342,12 +378,19 @@ class TestIOTest08(IOTestCaseBase):
         """
         invalid_vlan_ids = [-10, 4095, 4096]
 
-        helper.create_networks(
-            positive=False, params=invalid_vlan_ids, type_="vlan_id"
+        testflow.step(
+            "Try to create networks with invalid VLAN IDs %s", invalid_vlan_ids
+        )
+        self.assertTrue(
+            helper.create_networks(
+                positive=False, params=invalid_vlan_ids, type_="vlan_id"
+            )
         )
 
 
-class TestIOTest09(IOTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(case_09_fixture.__name__)
+class TestIOTest09(NetworkTest):
     """
     Positive: Create network and edit its name to valid name.
     Negative: Try to edit its name to invalid name.
@@ -360,20 +403,6 @@ class TestIOTest09(IOTestCaseBase):
 
     __test__ = True
 
-    @classmethod
-    def setup_class(cls, initial_name=initial_name):
-        """
-        Create network in data center with valid name
-        """
-        local_dict = {
-            initial_name: {}
-        }
-
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=conf.DC_0, network_dict=local_dict
-        ):
-            raise conf.NET_EXCEPTION()
-
     @polarion("RHEVM3-4374")
     def test_edit_network_name(self, initial_name=initial_name):
         """
@@ -381,10 +410,15 @@ class TestIOTest09(IOTestCaseBase):
         """
         valid_name = "NET_changed"
 
-        if not ll_networks.updateNetwork(
-            positive=True, network=initial_name, name=valid_name
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step(
+            "Create network %s and edit its name to valid name %s",
+            initial_name, valid_name
+        )
+        self.assertTrue(
+            ll_networks.updateNetwork(
+                positive=True, network=initial_name, name=valid_name
+            )
+        )
 
     @polarion("RHEVM3-14745")
     def test_edit_network_name_to_invalid_name(self):
@@ -394,10 +428,15 @@ class TestIOTest09(IOTestCaseBase):
         valid_name = "NET_changed"
         invalid_name = "inv@lidName"
 
-        if not ll_networks.updateNetwork(
-            positive=False, network=valid_name, name=invalid_name
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step(
+            "Try to edit valid network name %s to invalid name %s",
+            valid_name, invalid_name
+        )
+        self.assertTrue(
+            ll_networks.updateNetwork(
+                positive=False, network=valid_name, name=invalid_name
+            )
+        )
 
     @polarion("RHEVM3-4373")
     def test_check_valid_vlan_tag(self, default_name=initial_name):
@@ -406,11 +445,16 @@ class TestIOTest09(IOTestCaseBase):
         """
         valid_tags = [2, 3, 15, 444, 4093]
 
+        testflow.step(
+            "Change network %s VLAN tag to valid VLAN tag %s",
+            default_name, valid_tags
+        )
         for valid_tag in valid_tags:
-            if not ll_networks.updateNetwork(
-                positive=True, network=default_name, vlan_id=valid_tag
-            ):
-                raise conf.NET_EXCEPTION()
+            self.assertTrue(
+                ll_networks.updateNetwork(
+                    positive=True, network=default_name, vlan_id=valid_tag
+                )
+            )
 
     @polarion("RHEVM3-14746")
     def test_check_invalid_vlan_tag(self, default_name=initial_name):
@@ -419,11 +463,16 @@ class TestIOTest09(IOTestCaseBase):
         """
         invalid_tags = [-1, 4099]
 
+        testflow.step(
+            "Try to edit network %s with invalid VLAN tags %s",
+            default_name, invalid_tags
+        )
         for invalid_tag in invalid_tags:
-            if not ll_networks.updateNetwork(
-                positive=False, network=default_name, vlan_id=invalid_tag
-            ):
-                raise conf.NET_EXCEPTION()
+            self.assertTrue(
+                ll_networks.updateNetwork(
+                    positive=False, network=default_name, vlan_id=invalid_tag
+                )
+            )
 
     @polarion("RHEVM3-4372")
     def test_edit_vm_network(self):
@@ -432,20 +481,30 @@ class TestIOTest09(IOTestCaseBase):
         """
         valid_name = "NET_changed"
 
-        if not ll_networks.updateNetwork(
-            positive=True, network=valid_name, usages="",
-            description="nonVM network"
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step(
+            "Change VM network %s to be non-VM network", valid_name
+        )
+        self.assertTrue(
+            ll_networks.updateNetwork(
+                positive=True, network=valid_name, usages="",
+                description="nonVM network"
+            )
+        )
 
-        if not ll_networks.updateNetwork(
-            positive=True, network=valid_name, usages="vm",
-            description="VM network again"
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step(
+            "Change non-VM network %s to be VM network", valid_name
+        )
+        self.assertTrue(
+            ll_networks.updateNetwork(
+                positive=True, network=valid_name, usages="vm",
+                description="VM network again"
+            )
+        )
 
 
-class TestIOTest10(IOTestCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(all_classes_teardown.__name__)
+class TestIOTest10(NetworkTest):
     """
     Check network label limitation:
     1) Negative case: Try to create a label which does not comply with the
@@ -455,10 +514,10 @@ class TestIOTest10(IOTestCaseBase):
     4) Positive case: Assign many labels to interface (10)
     """
     __test__ = True
-    net_1 = conf.NETS[10][0]
-    net_2 = conf.NETS[10][1]
-    label_1 = conf.LABEL_NAME[10][0]
-    label_2 = conf.LABEL_NAME[10][1]
+    net_1 = io_conf.NETS[10][0]
+    net_2 = io_conf.NETS[10][1]
+    label_1 = io_conf.LABEL_NAME[10][0]
+    label_2 = io_conf.LABEL_NAME[10][1]
 
     @polarion("RHEVM3-14806")
     def test_label_restriction(self):
@@ -470,14 +529,24 @@ class TestIOTest10(IOTestCaseBase):
         """
         special_char_labels = ["asd?f", "dfg/gd"]
 
+        testflow.step(
+            "Try to attach label with incorrect format %s to the network %s",
+            special_char_labels, self.net_2
+        )
         for label in special_char_labels:
-            if ll_networks.add_label(label=label, networks=[self.net_2]):
-                raise conf.NET_EXCEPTION()
+            self.assertFalse(
+                ll_networks.add_label(label=label, networks=[self.net_2])
+            )
 
-        if ll_networks.add_label(
-            label=self.label_2, networks=[self.net_1]
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step(
+            "Try to assign additional label %s to the network %s"
+            " with attached label %s", self.label_2, self.net_1, self.label_1
+        )
+        self.assertFalse(
+            ll_networks.add_label(
+                label=self.label_2, networks=[self.net_1]
+            )
+        )
 
     @polarion("RHEVM3-14807")
     def test_label_non_restrict(self):
@@ -489,14 +558,27 @@ class TestIOTest10(IOTestCaseBase):
         """
         long_label = "a" * 50
 
-        if not ll_networks.add_label(
-            label=long_label, networks=[self.net_1]
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step(
+            "Attach label with 50 characters to a network %s", self.net_1
+        )
+        self.assertTrue(
+            ll_networks.add_label(
+                label=long_label, networks=[self.net_1]
+            )
+        )
 
-        for label in conf.LABEL_NAME[10][1:]:
-            if not ll_networks.add_label(
-                label=label,
-                host_nic_dict={conf.HOST_0_NAME: [conf.HOST_0_NICS[1]]}
-            ):
-                raise conf.NET_EXCEPTION()
+        testflow.step(
+            "Attach 10 labels %s to the interface on the Host %s when one of "
+            "those networks is attached to the network and check that "
+            "the network is attached to the Host interface %s",
+            io_conf.LABEL_NAME[10][1:], conf.HOST_0_NAME, conf.HOST_0_NICS[1]
+        )
+        for label in io_conf.LABEL_NAME[10][1:]:
+            self.assertTrue(
+                ll_networks.add_label(
+                    label=label,
+                    host_nic_dict={
+                        conf.HOST_0_NAME: [conf.HOST_0_NICS[1]]
+                    }
+                )
+            )

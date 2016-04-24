@@ -6,7 +6,7 @@ helper file for IO_test
 """
 
 import logging
-import config as conf
+import rhevmtests.networking.config as conf
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 logger = logging.getLogger("IO_Networks_Helper")
@@ -35,5 +35,4 @@ def create_networks(positive, params, type_):
         res = hl_networks.createAndAttachNetworkSN(
             data_center=conf.DC_0, network_dict=local_dict
         )
-        if res != positive:
-            raise conf.NET_EXCEPTION()
+        return res == positive
