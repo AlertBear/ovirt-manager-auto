@@ -618,17 +618,6 @@ class TestCase6058(BasicEnvironment):
             self.vm_name, [config.SNAPSHOT_OK]
         )
         assert ll_vms.startVm(True, self.vm_name, wait_for_ip=True)
-        snapshot = ll_vms._getVmSnapshot(self.vm_name, self.snapshot_list[1])
-        if snapshot is None:
-            raise exceptions.SnapshotException("Live merge was expected to "
-                                               "fail")
-        self.verify_snapshot_files(
-            self.snapshot_list[1], [TEST_FILE_TEMPLATE % i for i in xrange(2)]
-        )
-        self.verify_snapshot_files(
-            self.snapshot_list[2], [TEST_FILE_TEMPLATE % i for i in xrange(3)]
-        )
-        self.check_files_existence([TEST_FILE_TEMPLATE % i for i in xrange(4)])
 
 
 @attr(tier=2)
