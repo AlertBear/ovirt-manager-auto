@@ -610,7 +610,8 @@ def send_icmp_sampler(
     :type timeout: int
     :param sleep: Time to sleep between each try
     :type sleep: int
-    :raise: NetworkException
+    :return: True/False
+    :rtype: bool
     """
     logger.info("Check ICMP traffic from %s to %s", host_resource.ip, dst)
     sample = test_utils.TimeoutingSampler(
@@ -618,9 +619,11 @@ def send_icmp_sampler(
         dst=dst, count=count, size=size, extra_args=extra_args
     )
     if not sample.waitForFuncStatus(result=True):
-        raise conf.NET_EXCEPTION("Couldn't ping %s " % dst)
+        logger.error("Couldn't ping %s ", dst)
+        return False
 
     logger.info("Traffic from %s to %s succeed", host_resource.ip, dst)
+    return True
 
 
 def wait_for_sn(content, last_event, matches=1):

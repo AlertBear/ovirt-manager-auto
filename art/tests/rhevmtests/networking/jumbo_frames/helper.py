@@ -6,12 +6,13 @@ Helper for jumbo_frames job
 """
 
 import logging
-import config as conf
-import rhevmtests.helpers as global_helper
-from art.rhevm_api.utils import test_utils
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import config as jumbo_conf
+import rhevmtests.helpers as global_helper
+import rhevmtests.networking.config as conf
+from art.rhevm_api.utils import test_utils
 
 logger = logging.getLogger("Jumbo_Frame_Helper")
 
@@ -46,10 +47,12 @@ def check_logical_physical_layer(
     :type logical: bool
     :param physical: True to check physical layer
     :type physical: bool
-    :raise: NetworkException
+    :return: True/False
+    :rtype: bool
     """
     if host is None:
-        host = conf.VDS_HOSTS[0]
+        host = conf.VDS_0_HOST
+
     br_log = "" if bridge else "bridgeless"
     vlan_log = "with VLAN %s" % vlan if vlan else ""
     net_log = "network %s" % network if network else ""
@@ -64,11 +67,11 @@ def check_logical_physical_layer(
             vds_resource=host, mtu=mtu, bond=bond, physical_layer=False,
             network=network, nic=nic, vlan=vlan, bridged=bridge
         ):
-            raise conf.NET_EXCEPTION(
-                "(logical) MTU on host %s should be %s and it is not" % (
-                    host.ip, mtu,
-                )
+            logger.error(
+                "(logical) MTU on host %s should be %s and it is not",
+                host.ip, mtu
             )
+            return False
 
     if physical:
         logger.info("Checking physical layer %s %s", bond_log, nic_log)
@@ -76,11 +79,12 @@ def check_logical_physical_layer(
             vds_resource=host, mtu=mtu, nic=nic, bond=bond,
             bond_nic1=bond_nic1, bond_nic2=bond_nic2
         ):
-            raise conf.NET_EXCEPTION(
-                "(physical) MTU on host %s should be %s and it is not" % (
-                    host.ip, mtu,
-                )
+            logger.error(
+                "(physical) MTU on host %s should be %s and it is not",
+                host.ip, mtu
             )
+            return False
+    return True
 
 
 def add_vnics_to_vms(
@@ -99,7 +103,8 @@ def add_vnics_to_vms(
     :type nic_name: str
     :param set_ip: Set IP on the NIC
     :type set_ip: bool
-    :raise: NetworkException
+    :return: True/False
+    :rtype: bool
     """
     mtu = str(mtu)
     for vm_name, ip in zip(conf.VM_NAME[:2], ips):
@@ -107,26 +112,28 @@ def add_vnics_to_vms(
         if not ll_vms.addNic(
             positive=True, vm=vm_name, name=nic_name, network=network
         ):
-            raise conf.NET_EXCEPTION()
+            return False
 
         if set_ip:
             logger.info("Get %s NICs", vm_name)
             vm_nics = vm_resource.network.all_interfaces()
             if not vm_nics:
-                raise conf.NET_EXCEPTION("Failed to get %s NICs" % vm_name)
+                logger.error("Failed to get %s NICs", vm_name)
+                return False
 
             if not test_utils.configure_temp_mtu(
                 vds_resource=vm_resource, mtu=mtu, nic=vm_nics[1]
             ):
-                raise conf.NET_EXCEPTION()
+                return False
 
             if not test_utils.configure_temp_static_ip(
                 vds_resource=vm_resource, ip=ip, nic=vm_nics[1]
             ):
-                raise conf.NET_EXCEPTION()
+                return False
 
             if not vm_resource.network.if_up(nic=vm_nics[1]):
-                raise conf.NET_EXCEPTION()
+                return False
+    return True
 
 
 def remove_vnics_from_vms(nic_name=conf.NIC_NAME[1]):
@@ -150,15 +157,15 @@ def restore_mtu_and_clean_interfaces():
     """
     network_dict = {
         "1": {
-            "network": conf.NETS[35][0],
+            "network": jumbo_conf.NETS[35][0],
             "nic": None
         },
         "2": {
-            "network": conf.NETS[35][1],
+            "network": jumbo_conf.NETS[35][1],
             "nic": None
         },
         "3": {
-            "network": conf.NETS[35][2],
+            "network": jumbo_conf.NETS[35][2],
             "nic": None
         }
     }

@@ -136,6 +136,7 @@ def get_vm_ip(vm_name, start_vm=True):
 
     Args:
         vm_name (str): vm name
+        start_vm (bool): Start the VM before get IP
 
     Returns:
         str: VM IP

@@ -8,86 +8,26 @@ jumbo frames will be tested for untagged, tagged, bond scenarios.
 It will cover scenarios for VM/non-VM networks.
 """
 
-import helper
 import logging
+
 import pytest
-import config as conf
-from rhevmtests import networking
-from art.rhevm_api.utils import test_utils
-import rhevmtests.helpers as global_helper
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import NetworkTest, attr
-import rhevmtests.networking.helper as network_helper
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import config as jumbo_conf
+import helper
+import rhevmtests.helpers as global_helper
+import rhevmtests.networking.config as conf
+import rhevmtests.networking.helper as network_helper
+from art.rhevm_api.utils import test_utils
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.unittest_lib import NetworkTest, attr, testflow
+from fixtures import (
+    fixture_case_01, fixture_case_02, fixture_case_03, fixture_case_04,
+    fixture_case_05, fixture_case_07, fixture_case_08, fixture_case_09,
+    teardown_all_cases
+)
 
 logger = logging.getLogger("Jumbo_Frames_Cases")
-
-
-def setup_module():
-    """
-    Start two VMs on separated hosts
-    Get VMs IPs
-    """
-    conf.HOST_0_NAME = conf.HOSTS[0]
-    conf.HOST_1_NAME = conf.HOSTS[1]
-    conf.VDS_0_HOST = conf.VDS_HOSTS[0]
-    conf.VDS_1_HOST = conf.VDS_HOSTS[1]
-    conf.HOST_0_NICS = conf.VDS_0_HOST.nics
-    conf.HOST_1_NICS = conf.VDS_1_HOST.nics
-    vms_list = [conf.VM_0, conf.VM_1]
-    hosts_list = [conf.HOST_0_NAME, conf.HOST_1_NAME]
-    networking.network_cleanup()
-
-    network_helper.prepare_networks_on_setup(
-        networks_dict=conf.NETS_DICT, dc=conf.DC_0, cluster=conf.CL_0
-    )
-    for vm, host in zip(vms_list, hosts_list):
-        if not network_helper.run_vm_once_specific_host(
-            vm=vm, host=host, wait_for_up_status=True
-        ):
-            raise conf.NET_EXCEPTION()
-
-
-def teardown_module():
-    """
-    Set all hosts interfaces with MTU 1500
-    Clean hosts interfaces
-    Stop VMs
-    Remove networks from engine
-    """
-    network_dict = {
-        "1": {
-            "network": "clear_net_1",
-            "nic": None
-        },
-        "2": {
-            "network": "clear_net_1",
-            "nic": None
-        },
-        "3": {
-            "network": "clear_net_1",
-            "nic": None
-        }
-    }
-
-    for host, nics in zip(
-        [conf.HOST_0_NAME, conf.HOST_1_NAME],
-        [conf.HOST_0_NICS, conf.HOST_1_NICS]
-    ):
-        network_dict["1"]["nic"] = nics[1]
-        network_dict["2"]["nic"] = nics[2]
-        network_dict["3"]["nic"] = nics[3]
-        hl_host_network.setup_networks(host_name=host, **network_dict)
-        hl_host_network.clean_host_interfaces(host_name=host)
-
-    ll_vms.stopVms(vms=[conf.VM_0, conf.VM_1])
-    hl_networks.remove_net_from_setup(
-        host=conf.HOSTS[:2], data_center=conf.DC_0,
-        mgmt_network=conf.MGMT_BRIDGE, all_net=True
-    )
 
 
 @attr(tier=2)
@@ -101,53 +41,34 @@ class TestJumboFramesTestCaseBase(NetworkTest):
     """
     Base class which provides teardown class method for each test case
     """
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup and update MTU to be default on all
-        Hosts NICs
-        """
-        helper.restore_mtu_and_clean_interfaces()
+    pass
 
 
+@pytest.mark.usefixtures(fixture_case_01.__name__)
 class TestJumboFramesCase01(TestJumboFramesTestCaseBase):
     """
     Test VM network with MTU 5000
     """
     __test__ = True
-    net = conf.NETS[1][0]
+    net = jumbo_conf.NETS[1][0]
     mtu_5000 = conf.MTU[1]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Attach VM network with MTU 5000 to host
-        """
-        network_dict = {
-            "add": {
-                "1": {
-                    "network": cls.net,
-                    "nic": conf.HOST_0_NICS[1]
-                }
-            }
-        }
-
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_dict
-        ):
-            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-3718")
     def test_check_mtu(self):
         """
         Check physical and logical levels for network with Jumbo frames
         """
-        helper.check_logical_physical_layer(
-            nic=conf.HOST_0_NICS[1], network=self.net, mtu=self.mtu_5000
+        testflow.step(
+            "Check physical and logical levels for network with Jumbo frames"
+        )
+        self.assertTrue(
+            helper.check_logical_physical_layer(
+                nic=conf.HOST_0_NICS[1], network=self.net, mtu=self.mtu_5000
+            )
         )
 
 
+@pytest.mark.usefixtures(fixture_case_02.__name__)
 class TestJumboFramesCase02(TestJumboFramesTestCaseBase):
     """
     Attach two non-VM VLAN networks with Jumbo Frames
@@ -155,35 +76,12 @@ class TestJumboFramesCase02(TestJumboFramesTestCaseBase):
     Check the correct values for the MTU in files
     """
     __test__ = True
-    net_1 = conf.NETS[2][0]
-    net_2 = conf.NETS[2][1]
-    vlan_1 = conf.VLAN_IDS[0]
-    vlan_2 = conf.VLAN_IDS[1]
+    net_1 = jumbo_conf.NETS[2][0]
+    net_2 = jumbo_conf.NETS[2][1]
+    vlan_1 = jumbo_conf.VLAN_IDS[0]
+    vlan_2 = jumbo_conf.VLAN_IDS[1]
     mtu_5000 = conf.MTU[1]
     mtu_9000 = conf.MTU[0]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Attach two non-VM VLAN networks with Jumbo Frames
-        """
-        network_dict = {
-            "add": {
-                "1": {
-                    "network": cls.net_1,
-                    "nic": conf.HOST_0_NICS[1]
-                },
-                "2": {
-                    "network": cls.net_2,
-                    "nic": conf.HOST_0_NICS[1]
-                }
-            }
-        }
-
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_dict
-        ):
-            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-3721")
     def test_check_mtu_after_network_removal(self):
@@ -191,17 +89,24 @@ class TestJumboFramesCase02(TestJumboFramesTestCaseBase):
         Remove one network from host
         Check physical and logical levels for networks with Jumbo frames
         """
-        if not hl_host_network.remove_networks_from_host(
-            host_name=conf.HOST_0_NAME, networks=[self.net_2]
-        ):
-            raise conf.NET_EXCEPTION()
-
-        helper.check_logical_physical_layer(
-            nic=conf.HOST_0_NICS[1], network=self.net_1, mtu=self.mtu_5000,
-            vlan=self.vlan_1, bridge=False
+        testflow.step("Remove one network from host")
+        self.assertTrue(
+            hl_host_network.remove_networks_from_host(
+                host_name=conf.HOST_0_NAME, networks=[self.net_2]
+            )
+        )
+        testflow.step(
+            "Check physical and logical levels for networks with Jumbo frames"
+        )
+        self.assertTrue(
+            helper.check_logical_physical_layer(
+                nic=conf.HOST_0_NICS[1], network=self.net_1, mtu=self.mtu_5000,
+                vlan=self.vlan_1, bridge=False
+            )
         )
 
 
+@pytest.mark.usefixtures(fixture_case_03.__name__)
 class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
     """
     Check connectivity between two hosts
@@ -210,59 +115,23 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
     Check connectivity between two VMs
     """
     __test__ = True
-    net = conf.NETS[3][0]
+    net = jumbo_conf.NETS[3][0]
     mtu_5000 = conf.MTU[1]
     mtu_4500 = str(conf.SEND_MTU[0])
     bond = "bond3"
-    ips = network_helper.create_random_ips(num_of_ips=4, mask=24)
     vm = conf.VM_0
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Attach bridged network with MTU over bond to two hosts
-        """
-        network_dict = {
-            "add": {
-                "1": {
-                    "network": cls.net,
-                    "nic": cls.bond,
-                    "slaves": None,
-                    "ip": {
-                        "1": {
-                            "address": None,
-                            "netmask": "24",
-                            "boot_protocol": "static"
-                        }
-                    }
-                },
-            }
-        }
-
-        for host, nics, ip in zip(
-            [conf.HOST_0_NAME, conf.HOST_1_NAME],
-            [conf.HOST_0_NICS, conf.HOST_1_NICS],
-            cls.ips[2:]
-        ):
-            network_dict["add"]["1"]["slaves"] = nics[2:4]
-            network_dict["add"]["1"]["ip"]["1"]["address"] = ip
-            if not hl_host_network.setup_networks(
-                host_name=host, **network_dict
-            ):
-                raise conf.NET_EXCEPTION()
-
-        helper.add_vnics_to_vms(
-            ips=cls.ips[:2], network=cls.net, mtu=cls.mtu_5000
-        )
 
     @polarion("RHEVM3-3732")
     def test_check_configurations_and_traffic(self):
         """
         Pass traffic between the hosts with configured MTU.
         """
-        network_helper.send_icmp_sampler(
-            host_resource=conf.VDS_0_HOST, dst=self.ips[3],
-            size=self.mtu_4500
+        testflow.step("Pass traffic between the hosts with configured MTU.")
+        self.assertTrue(
+            network_helper.send_icmp_sampler(
+                host_resource=conf.VDS_0_HOST, dst=jumbo_conf.CASE_3_IPS[3],
+                size=self.mtu_4500
+            )
         )
 
     @polarion("RHEVM3-3713")
@@ -279,16 +148,20 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
                 },
             }
         }
-
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_dict
-        ):
-            raise conf.NET_EXCEPTION()
-
-        helper.check_logical_physical_layer(
-            network=self.net,
-            mtu=self.mtu_5000, bond=self.bond, bond_nic1=conf.HOST_0_NICS[2],
-            bond_nic2=conf.HOST_0_NICS[3]
+        testflow.step("Change BOND mode")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=conf.HOST_0_NAME, **network_dict
+            )
+        )
+        testflow.step(
+            "Check physical and logical levels for networks with Jumbo frames"
+        )
+        self.assertTrue(
+            helper.check_logical_physical_layer(
+                network=self.net, mtu=self.mtu_5000, bond=self.bond,
+                bond_nic1=conf.HOST_0_NICS[2], bond_nic2=conf.HOST_0_NICS[3]
+            )
         )
 
     @polarion("RHEVM3-3716")
@@ -305,15 +178,20 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
                 }
             }
         }
-
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_dict
-        ):
-            raise conf.NET_EXCEPTION()
-
-        helper.check_logical_physical_layer(
-            bond=self.bond, network=self.net, mtu=self.mtu_5000,
-            bond_nic1=conf.HOST_0_NICS[2], bond_nic2=conf.HOST_0_NICS[3]
+        testflow.step("Add slave to BOND")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=conf.HOST_0_NAME, **network_dict
+            )
+        )
+        testflow.step(
+            "Check physical and logical levels for networks with Jumbo frames"
+        )
+        self.assertTrue(
+            helper.check_logical_physical_layer(
+                bond=self.bond, network=self.net, mtu=self.mtu_5000,
+                bond_nic1=conf.HOST_0_NICS[2], bond_nic2=conf.HOST_0_NICS[3]
+            )
         )
 
     @polarion("RHEVM3-3722")
@@ -322,19 +200,16 @@ class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
         Send ping with MTU 4500 between the two VMS
         """
         vm_resource = global_helper.get_vm_resource(vm=self.vm)
-        network_helper.send_icmp_sampler(
-            host_resource=vm_resource, dst=self.ips[1], size=self.mtu_4500
+        testflow.step("Send ping with MTU 4500 between the two VMS")
+        self.assertTrue(
+            network_helper.send_icmp_sampler(
+                host_resource=vm_resource, dst=jumbo_conf.CASE_3_IPS[1],
+                size=self.mtu_4500
+            )
         )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove vNICs from VMs
-        """
-        helper.remove_vnics_from_vms()
-        super(TestJumboFramesCase03, cls).teardown_class()
 
-
+@pytest.mark.usefixtures(fixture_case_04.__name__)
 class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
     """
     Attach 4 VLAN networks over BOND to two hosts
@@ -342,70 +217,16 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
     Check connectivity between the hosts
     """
     __test__ = True
-    ips = network_helper.create_random_ips(mask=24)
     bond = "bond12"
-    net_1 = conf.NETS[4][0]
-    net_2 = conf.NETS[4][1]
-    net_3 = conf.NETS[4][2]
-    net_4 = conf.NETS[4][3]
+    net_1 = jumbo_conf.NETS[4][0]
+    net_2 = jumbo_conf.NETS[4][1]
+    net_3 = jumbo_conf.NETS[4][2]
+    net_4 = jumbo_conf.NETS[4][3]
     vnic = conf.NIC_NAME[2]
     mtu_8500 = str(conf.SEND_MTU[1])
     mtu_9000 = conf.MTU[0]
     mtu_5000 = str(conf.MTU[1])
     vm = conf.VM_0
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Attach 4 VLAN networks over BOND to two hosts
-        """
-        network_dict = {
-            "add": {
-                "1": {
-                    "network": cls.net_1,
-                    "nic": cls.bond,
-                    "slaves": None,
-                },
-                "2": {
-                    "network": cls.net_2,
-                    "nic": cls.bond,
-                    "ip": {
-                        "1": {
-                            "address": None,
-                            "netmask": "24",
-                            "boot_protocol": "static"
-                        }
-                    }
-                },
-                "3": {
-                    "network": cls.net_3,
-                    "nic": cls.bond,
-                },
-                "4": {
-                    "network": cls.net_4,
-                    "nic": cls.bond,
-                },
-            }
-        }
-        for host, nics, ip in zip(
-            [conf.HOST_0_NAME, conf.HOST_1_NAME],
-            [conf.HOST_0_NICS, conf.HOST_1_NICS],
-            cls.ips
-        ):
-            network_dict["add"]["1"]["slaves"] = nics[2:4]
-            network_dict["add"]["2"]["ip"]["1"]["address"] = ip
-            if not hl_host_network.setup_networks(
-                host_name=host, **network_dict
-            ):
-                raise conf.NET_EXCEPTION()
-
-        helper.add_vnics_to_vms(
-            ips=cls.ips, mtu=str(cls.mtu_9000), network=cls.net_2
-        )
-        helper.add_vnics_to_vms(
-            ips=cls.ips, mtu=cls.mtu_5000, nic_name=cls.vnic,
-            network=cls.net_1, set_ip=False
-        )
 
     @polarion("RHEVM3-3736")
     def test_check_traffic_on_hosts_when_there_are_many_networks(self):
@@ -416,21 +237,28 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
         list_check_networks = [
             conf.HOST_0_NICS[2], conf.HOST_0_NICS[3], self.bond
         ]
+        testflow.step("Check that MTU is configured on the hosts")
         for element in list_check_networks:
-            if not test_utils.check_configured_mtu(
-                vds_resource=conf.VDS_0_HOST, mtu=str(self.mtu_9000),
-                inter_or_net=element
-            ):
-                raise conf.NET_EXCEPTION()
+            self.assertTrue(
+                test_utils.check_configured_mtu(
+                    vds_resource=conf.VDS_0_HOST, mtu=str(self.mtu_9000),
+                    inter_or_net=element
+                )
+            )
 
-        helper.check_logical_physical_layer(
-            mtu=self.mtu_9000, bond=self.bond,
-            bond_nic1=conf.HOST_0_NICS[2], bond_nic2=conf.HOST_0_NICS[3],
-            logical=False
+        self.assertTrue(
+            helper.check_logical_physical_layer(
+                mtu=self.mtu_9000, bond=self.bond,
+                bond_nic1=conf.HOST_0_NICS[2], bond_nic2=conf.HOST_0_NICS[3],
+                logical=False
+            )
         )
-        network_helper.send_icmp_sampler(
-            host_resource=conf.VDS_0_HOST, dst=self.ips[1],
-            size=self.mtu_8500
+        testflow.step("Check connectivity between the hosts")
+        self.assertTrue(
+            network_helper.send_icmp_sampler(
+                host_resource=conf.VDS_0_HOST, dst=jumbo_conf.CASE_4_IPS[1],
+                size=self.mtu_8500
+            )
         )
 
     @polarion("RHEVM3-3731")
@@ -438,22 +266,17 @@ class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
         """
         Send ping with MTU 8500 between the two VMs
         """
+        testflow.step("Send ping with MTU 8500 between the two VMs")
         vm_resource = global_helper.get_vm_resource(vm=self.vm)
-        network_helper.send_icmp_sampler(
-            host_resource=vm_resource, dst=self.ips[1],
-            size=self.mtu_8500
+        self.assertTrue(
+            network_helper.send_icmp_sampler(
+                host_resource=vm_resource, dst=jumbo_conf.CASE_4_IPS[1],
+                size=self.mtu_8500
+            )
         )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup
-        """
-        helper.remove_vnics_from_vms()
-        helper.remove_vnics_from_vms(nic_name=cls.vnic)
-        super(TestJumboFramesCase04, cls).teardown_class()
 
-
+@pytest.mark.usefixtures(fixture_case_05.__name__)
 class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
     """
     Creates bridged VLAN network with 5000 MTU values
@@ -461,54 +284,10 @@ class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
     between them
     """
     __test__ = True
-    ips = network_helper.create_random_ips(num_of_ips=4, mask=24)
-    net = conf.NETS[5][0]
+    net = jumbo_conf.NETS[5][0]
     mtu_5000 = str(conf.MTU[1])
     mtu_4500 = str(conf.SEND_MTU[0])
     vm = conf.VM_0
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Update network to have display role
-        Attach VLAN network (display role) to host NIC
-        """
-        if not ll_networks.update_cluster_network(
-            positive=True, cluster=conf.CL_0, network=cls.net,
-            usages='display,vm'
-        ):
-            raise conf.NET_EXCEPTION()
-
-        network_dict = {
-            "add": {
-                "1": {
-                    "network": cls.net,
-                    "nic": None,
-                    "ip": {
-                        "1": {
-                            "address": None,
-                            "netmask": "24",
-                            "boot_protocol": "static"
-                        }
-                    }
-                }
-            }
-        }
-        for host, nics, ip in zip(
-            [conf.HOST_0_NAME, conf.HOST_1_NAME],
-            [conf.HOST_0_NICS, conf.HOST_1_NICS],
-            cls.ips[2:]
-        ):
-            network_dict["add"]["1"]["ip"]["1"]["address"] = ip
-            network_dict["add"]["1"]["nic"] = nics[1]
-            if not hl_host_network.setup_networks(
-                host_name=host, **network_dict
-            ):
-                raise conf.NET_EXCEPTION()
-
-        helper.add_vnics_to_vms(
-            ips=cls.ips[:2], mtu=cls.mtu_5000, network=cls.net
-        )
 
     @polarion("RHEVM3-3724")
     def test_check_traffic_on_vm_when_network_is_display(self):
@@ -516,32 +295,24 @@ class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
         Send ping between 2 VMS
         """
         vm_resource = global_helper.get_vm_resource(vm=self.vm)
-        network_helper.send_icmp_sampler(
-            host_resource=vm_resource, dst=self.ips[1], size=self.mtu_4500
+        testflow.step("Send ping between 2 VMS")
+        self.assertTrue(
+            network_helper.send_icmp_sampler(
+                host_resource=vm_resource, dst=jumbo_conf.CASE_5_IPS[1],
+                size=self.mtu_4500
+            )
         )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove vNICs from VMs
-        Update ovirtmgmt to be display network
-        """
-        helper.remove_vnics_from_vms()
-        ll_networks.update_cluster_network(
-            positive=True, cluster=conf.CL_0, network=conf.MGMT_BRIDGE,
-            usages="display,vm,migration,management"
-        )
-        super(TestJumboFramesCase05, cls).teardown_class()
 
-
+@pytest.mark.usefixtures(teardown_all_cases.__name__)
 class TestJumboFramesCase06(TestJumboFramesTestCaseBase):
     """
     Try to attach VM VLAN network and non-VM network with different MTU to the
     same BOND
     """
     __test__ = True
-    net_1 = conf.NETS[6][0]
-    net_2 = conf.NETS[6][1]
+    net_1 = jumbo_conf.NETS[6][0]
+    net_2 = jumbo_conf.NETS[6][1]
     bond = "bond6"
 
     @polarion("RHEVM3-3719")
@@ -570,6 +341,7 @@ class TestJumboFramesCase06(TestJumboFramesTestCaseBase):
             raise conf.NET_EXCEPTION()
 
 
+@pytest.mark.usefixtures(fixture_case_07.__name__)
 class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
     """
     Creates 2 bridged VLAN networks with different MTU and check traffic
@@ -577,62 +349,34 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
     between VMs over those networks
     """
     __test__ = True
-    net_1 = conf.NETS[7][0]
-    net_2 = conf.NETS[7][1]
-    vlan_1 = conf.REAL_VLANS[0]
-    vlan_2 = conf.REAL_VLANS[1]
+    net_1 = jumbo_conf.NETS[7][0]
+    net_2 = jumbo_conf.NETS[7][1]
+    vlan_1 = jumbo_conf.REAL_VLANS[0]
+    vlan_2 = jumbo_conf.REAL_VLANS[1]
     mtu_5000 = conf.MTU[1]
     mtu_9000 = conf.MTU[0]
     mtu_4500 = str(conf.SEND_MTU[0])
     vm_0 = conf.VM_0
-    ips = network_helper.create_random_ips(mask=24)
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Attach two VLAN networks to host NIC with different MTU on two hosts
-        Add vNICs to VM and configure IPs
-        """
-        network_dict = {
-            "add": {
-                "1": {
-                    "network": cls.net_1,
-                    "nic": None,
-                },
-                "2": {
-                    "network": cls.net_2,
-                    "nic": None
-                }
-            }
-        }
-
-        for host, nics in zip(
-            [conf.HOST_0_NAME, conf.HOST_1_NAME],
-            [conf.HOST_0_NICS, conf.HOST_1_NICS]
-        ):
-            network_dict["add"]["1"]["nic"] = nics[1]
-            network_dict["add"]["2"]["nic"] = nics[1]
-            if not hl_host_network.setup_networks(
-                host_name=host, **network_dict
-            ):
-                raise conf.NET_EXCEPTION()
-
-        helper.add_vnics_to_vms(
-            ips=cls.ips, network=cls.net_1, mtu=cls.mtu_5000
-        )
 
     @polarion("RHEVM3-3717")
     def test_check_mtu_values_in_files(self):
         """
         Check physical and logical levels for bridged VLAN networks
         """
-        helper.check_logical_physical_layer(
-            nic=conf.HOST_0_NICS[1], network=self.net_1, mtu=self.mtu_5000,
-            vlan=self.vlan_1, physical=False
+        testflow.step(
+            "Check physical and logical levels for bridged VLAN networks"
         )
-        helper.check_logical_physical_layer(
-            nic=conf.HOST_0_NICS[1], network=self.net_2, mtu=self.mtu_9000,
-            vlan=self.vlan_2
+        self.assertTrue(
+            helper.check_logical_physical_layer(
+                nic=conf.HOST_0_NICS[1], network=self.net_1, mtu=self.mtu_5000,
+                vlan=self.vlan_1, physical=False
+            )
+        )
+        self.assertTrue(
+            helper.check_logical_physical_layer(
+                nic=conf.HOST_0_NICS[1], network=self.net_2, mtu=self.mtu_9000,
+                vlan=self.vlan_2
+            )
         )
 
     @polarion("RHEVM3-3720")
@@ -641,31 +385,30 @@ class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
         Send ping between 2 VMs
         """
         vm_resource = global_helper.get_vm_resource(vm=self.vm_0)
-        network_helper.send_icmp_sampler(
-            host_resource=vm_resource, dst=self.ips[1],
-            size=self.mtu_4500
+        testflow.step("Send ping between 2 VMs")
+        self.assertTrue(
+            network_helper.send_icmp_sampler(
+                host_resource=vm_resource, dst=jumbo_conf.CASE_7_IPS[1],
+                size=self.mtu_4500
+            )
         )
 
         for host_name in conf.HOST_0_NAME, conf.HOST_1_NAME:
-            hl_host_network.remove_networks_from_host(
-                host_name=host_name, networks=[self.net_2]
+            self.assertTrue(
+                hl_host_network.remove_networks_from_host(
+                    host_name=host_name, networks=[self.net_2]
+                )
             )
 
-        network_helper.send_icmp_sampler(
-            host_resource=vm_resource, dst=self.ips[1],
-            size=self.mtu_4500
+        self.assertTrue(
+            network_helper.send_icmp_sampler(
+                host_resource=vm_resource, dst=jumbo_conf.CASE_7_IPS[1],
+                size=self.mtu_4500
+            )
         )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove vNICs from VMs
-        Remove networks from the setup
-        """
-        helper.remove_vnics_from_vms()
-        super(TestJumboFramesCase07, cls).teardown_class()
 
-
+@pytest.mark.usefixtures(fixture_case_08.__name__)
 class TestJumboFramesCase08(TestJumboFramesTestCaseBase):
     """
     Attach bridged VLAN network over BOND on Host with MTU 5000
@@ -674,33 +417,13 @@ class TestJumboFramesCase08(TestJumboFramesTestCaseBase):
     physical layers.
     """
     __test__ = True
-    net_1 = conf.NETS[8][0]
-    net_2 = conf.NETS[8][1]
-    vlan_1 = conf.VLAN_IDS[6]
-    vlan_2 = conf.VLAN_IDS[7]
+    net_1 = jumbo_conf.NETS[8][0]
+    net_2 = jumbo_conf.NETS[8][1]
+    vlan_1 = jumbo_conf.VLAN_IDS[6]
+    vlan_2 = jumbo_conf.VLAN_IDS[7]
     mtu_5000 = conf.MTU[1]
     mtu_1500 = conf.MTU[3]
     bond = "bond8"
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Attach bridged VLAN network over BOND on Host with MTU 5000
-        """
-        network_dict = {
-            "add": {
-                "1": {
-                    "network": cls.net_1,
-                    "nic": cls.bond,
-                    "slaves": conf.HOST_0_NICS[2:4]
-                }
-            }
-        }
-
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_dict
-        ):
-            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-3716")
     def test_check_mtu_with_two_different_mtu_networks(self):
@@ -716,22 +439,30 @@ class TestJumboFramesCase08(TestJumboFramesTestCaseBase):
                 }
             }
         }
-
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_dict
-        ):
-            raise conf.NET_EXCEPTION()
-
-        helper.check_logical_physical_layer(
-            bond=self.bond, network=self.net_1, mtu=self.mtu_5000,
-            bond_nic1=conf.HOST_0_NICS[2], bond_nic2=conf.HOST_0_NICS[3]
+        testflow.step("Add another network with MTU 1500 to the BOND")
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=conf.HOST_0_NAME, **network_dict
+            )
         )
-        helper.check_logical_physical_layer(
-            bond=self.bond, network=self.net_2, mtu=self.mtu_1500,
-            physical=False
+        testflow.step(
+            "Check physical and logical levels for networks with Jumbo frames"
+        )
+        self.assertTrue(
+            helper.check_logical_physical_layer(
+                bond=self.bond, network=self.net_1, mtu=self.mtu_5000,
+                bond_nic1=conf.HOST_0_NICS[2], bond_nic2=conf.HOST_0_NICS[3]
+            )
+        )
+        self.assertTrue(
+            helper.check_logical_physical_layer(
+                bond=self.bond, network=self.net_2, mtu=self.mtu_1500,
+                physical=False
+            )
         )
 
 
+@pytest.mark.usefixtures(fixture_case_09.__name__)
 class TestJumboFramesCase09(TestJumboFramesTestCaseBase):
     """
     Configure MTU 2000 on host NIC (via ssh)
@@ -739,43 +470,17 @@ class TestJumboFramesCase09(TestJumboFramesTestCaseBase):
     Check that host NIC MTU is changed to 1500
     """
     __test__ = True
-    mtu_2000 = str(conf.MTU[2])
     mtu_1500 = str(conf.MTU[3])
-    net = conf.NETS[9][0]
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Configure MTU 2000 on host NIC (via ssh)
-        Attach network to the same host NIC without MTU
-        """
-        if not test_utils.configure_temp_mtu(
-            vds_resource=conf.VDS_0_HOST, mtu=cls.mtu_2000,
-            nic=conf.HOST_0_NICS[1]
-        ):
-            raise conf.NET_EXCEPTION()
-
-        network_dict = {
-            "add": {
-                "1": {
-                    "network": cls.net,
-                    "nic": conf.HOST_0_NICS[1],
-                }
-            }
-        }
-
-        if not hl_host_network.setup_networks(
-            host_name=conf.HOST_0_NAME, **network_dict
-        ):
-            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-3734")
     def test_check_mtu_pre_configured(self):
         """
         Check that host NIC MTU is changed to 1500
         """
-        if not test_utils.check_configured_mtu(
-            vds_resource=conf.VDS_0_HOST, mtu=self.mtu_1500,
-            inter_or_net=conf.HOST_0_NICS[1]
-        ):
-            raise conf.NET_EXCEPTION()
+        testflow.step("Check that host NIC MTU is changed to 1500")
+        self.assertTrue(
+            test_utils.check_configured_mtu(
+                vds_resource=conf.VDS_0_HOST, mtu=self.mtu_1500,
+                inter_or_net=conf.HOST_0_NICS[1]
+            )
+        )
