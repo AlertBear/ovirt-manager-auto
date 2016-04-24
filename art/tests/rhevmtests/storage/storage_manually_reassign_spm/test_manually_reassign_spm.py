@@ -17,6 +17,7 @@ import art.rhevm_api.utils.storage_api as st_api
 from art.test_handler import exceptions
 from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, StorageTest as BaseTestCase
+from rhevm_api.utils.test_utils import wait_for_tasks
 from rhevmtests.storage import helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
@@ -175,6 +176,9 @@ class ReassignSPMWithStorageBlocked(BasicEnvironment):
 
         self.blocked_domain = self.origin_host_address
 
+        wait_for_tasks(
+            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+        )
         logger.info('Setting host %s to be new SPM', self.hsm_hosts[0])
         status = ll_hosts.select_host_as_spm(
             True, self.hsm_hosts[0], config.DATA_CENTER_NAME,
@@ -251,6 +255,9 @@ class TestCase5815(BasicEnvironment):
         * Select HSM to be SPM
         Expected result: HSM host should become the SPM
         """
+        wait_for_tasks(
+            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+        )
         self.assertTrue(
             ll_hosts.select_host_as_spm(
                 True, self.hsm_hosts[0], config.DATA_CENTER_NAME
@@ -476,7 +483,9 @@ class TestCase14812(BasicEnvironment):
         * Power off the VM and add a floating disk
         """
         logger.info("Set '%s' to be the SPM", self.vm_host)
-
+        wait_for_tasks(
+            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME
+        )
         self.assertTrue(
             ll_hosts.select_host_as_spm(
                 True, self.vm_host, config.DATA_CENTER_NAME,
