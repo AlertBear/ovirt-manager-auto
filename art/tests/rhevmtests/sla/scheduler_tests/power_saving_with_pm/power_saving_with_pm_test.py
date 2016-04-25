@@ -4,39 +4,24 @@ Check different cases for power on and shutdown hosts when cluster policy
 is Power Saving with power management enable
 """
 
-import time
-import socket
 import logging
+import socket
+import time
 
-import art.unittest_lib as u_lib
-import rhevmtests.sla.config as conf
-import rhevmtests.helpers as rhevm_helper
+import pytest
 
-from unittest2 import SkipTest
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-import art.test_handler.exceptions as errors
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.low_level.sla as ll_sla
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
-
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.test_handler.exceptions as errors
+import art.unittest_lib as u_lib
+import rhevmtests.helpers as rhevm_helper
+import rhevmtests.sla.config as conf
+import rhevmtests.sla.helpers as sla_helpers
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 
 logger = logging.getLogger(__name__)
-
-# Load parameters
-AVERAGE_CPU_LOAD = 50
-# Timeout and sleep parameters
-UPDATE_STATS = 30
-WAIT_FOR_MIGRATION = 600
-SAMPLE_TIME = 10
-SLEEP_TIME = 300
-# Cluster policy parameters
-HIGH_UTILIZATION = 80
-LOW_UTILIZATION = 20
-DURATION = 1
-CLUSTER_POLICY_NONE = 'none'
-CLUSTER_POLICY_PS = conf.ENUMS['scheduling_policy_power_saving']
 
 
 def setup_module(module):
@@ -44,20 +29,17 @@ def setup_module(module):
     1) Select first host as SPM
     2) Configure power management on hosts
     """
-    if not ll_hosts.select_host_as_spm(
+    assert ll_hosts.select_host_as_spm(
         positive=True,
         host=conf.HOSTS[0],
         data_center=conf.DC_NAME[0]
-    ):
-        raise errors.HostException()
+    )
     hosts_resource = dict(zip(conf.HOSTS[:3], conf.VDS_HOSTS[:3]))
     for host_name, host_resource in hosts_resource.iteritems():
         host_fqdn = host_resource.fqdn
         host_pm = rhevm_helper.get_pm_details(host_fqdn).get(host_fqdn)
         if not host_pm:
-            raise SkipTest(
-                "Host with fqdn %s does not have power management" % host_fqdn
-            )
+            pytest.skip("Host %s does not have PM" % host_name)
         agent_option = {
             "slot": host_pm[conf.PM_SLOT]
         } if conf.PM_SLOT in host_pm else None
@@ -70,13 +52,11 @@ def setup_module(module):
             "order": 1,
             "options": agent_option
         }
-
-        if not hl_hosts.add_power_management(
+        assert hl_hosts.add_power_management(
             host_name=host_name,
             pm_automatic=True,
             pm_agents=[agent]
-        ):
-            raise errors.HostException("Can not update host %s" % host_name)
+        )
 
 
 def teardown_module(module):
@@ -98,7 +78,11 @@ def teardown_module(module):
                 logger.error("Failed to start host %s", host_name)
         hl_hosts.remove_power_management(host_name=host_name)
     logger.info("Free all host CPU's from loading")
-    ll_sla.stop_cpu_loading_on_resources(conf.VDS_HOSTS[:3])
+    sla_helpers.stop_load_on_resources(
+        hosts_and_resources_l=[
+            {conf.RESOURCE: conf.VDS_HOSTS[:3], conf.HOST: conf.HOSTS[:3]}
+        ]
+    )
 
 ########################################################################
 #                             Test Cases                               #
@@ -122,17 +106,14 @@ class PowerSavingWithPM(u_lib.SlaTest):
         with default parameters and load host CPU
         """
         cls.vm_host_d = dict(
-            (vm_name, {"host": host_name, "wait_for_state": conf.VM_UP})
+            (vm_name, {"host": host_name})
             for vm_name, host_name in zip(conf.VM_NAME[:3], conf.HOSTS[:3])
         )
         ll_vms.run_vms_once(vms=cls.vms_to_start, **cls.vm_host_d)
         if cls.hosts_to_load:
-            if not ll_sla.start_cpu_loading_on_resources(
-                cls.hosts_to_load, AVERAGE_CPU_LOAD
-            ):
-                raise errors.HostException(
-                    "Failed to load CPU on hosts %s" % cls.hosts_to_load
-                )
+            sla_helpers.start_and_wait_for_cpu_load_on_resources(
+                load_to_host_d={conf.CPU_LOAD_50: cls.hosts_to_load}
+            )
         cls._update_hosts_in_reserve(1)
 
     @classmethod
@@ -141,18 +122,15 @@ class PowerSavingWithPM(u_lib.SlaTest):
         Stop vms and update cluster policy to None
         """
         if cls.hosts_to_load:
-            ll_sla.stop_cpu_loading_on_resources(cls.hosts_to_load)
-        logger.info("Stopping vms")
-        ll_vms.stop_vms_safely(cls.vms_to_start)
-        logger.info("Update cluster policy to none")
-        if not ll_clusters.updateCluster(
-            True,
-            conf.CLUSTER_NAME[0],
-            scheduling_policy=CLUSTER_POLICY_NONE
-        ):
-            logger.error(
-                "Update cluster %s failed", conf.CLUSTER_NAME[0]
+            sla_helpers.stop_load_on_resources(
+                hosts_and_resources_l=[cls.hosts_to_load]
             )
+        ll_vms.stop_vms_safely(vms_list=cls.vms_to_start)
+        ll_clusters.updateCluster(
+            positive=True,
+            cluster=conf.CLUSTER_NAME[0],
+            scheduling_policy=conf.POLICY_NONE
+        )
         if cls.host_down:
             logger.info(
                 "Wait %d seconds between fence operations",
@@ -160,11 +138,19 @@ class PowerSavingWithPM(u_lib.SlaTest):
             )
             time.sleep(conf.FENCE_TIMEOUT)
             logger.info("Start host %s", cls.host_down)
-            if not ll_hosts.fenceHost(True, cls.host_down, 'start'):
+            if not ll_hosts.fenceHost(
+                positive=True, host=cls.host_down, fence_type="start"
+            ):
                 logger.error("Failed to start host %s", cls.host_down)
 
     @classmethod
-    def _check_hosts_num_with_status(cls, num_of_hosts, hosts_state):
+    def _check_hosts_num_with_status(
+        cls,
+        num_of_hosts,
+        hosts_state,
+        timeout=conf.LONG_BALANCE_TIMEOUT,
+        negative=False
+    ):
         """
         Check that given number of hosts are in given state
 
@@ -172,17 +158,19 @@ class PowerSavingWithPM(u_lib.SlaTest):
         :type num_of_hosts: int
         :param hosts_state: hosts state
         :type hosts_state: str
+        :param timeout: sampler timeout
+        :type timeout: int
         :returns: True, if given number of hosts has correct state,
         otherwise False
         :rtype: bool
         """
-        cluster = conf.CLUSTER_NAME[0]
-        return ll_hosts.wait_until_num_of_hosts_in_state(
-            num_of_hosts,
-            WAIT_FOR_MIGRATION,
-            SAMPLE_TIME,
-            cluster,
-            state=hosts_state
+        return sla_helpers.wait_for_hosts_state_in_cluster(
+            num_of_hosts=num_of_hosts,
+            timeout=timeout,
+            sleep=conf.SAMPLER_SLEEP,
+            cluster_name=conf.CLUSTER_NAME[0],
+            state=hosts_state,
+            negative=negative
         )
 
     @classmethod
@@ -211,7 +199,10 @@ class PowerSavingWithPM(u_lib.SlaTest):
         """
         logger.info("Set host %s policy control flag to %s", host_name, flag)
         if not ll_hosts.updateHost(
-            positive=True, host=host_name, pm=True, pm_automatic=flag
+            positive=True,
+            host=host_name,
+            pm=True,
+            pm_automatic=flag
         ):
             logger.error("Failed to update host %s", host_name)
 
@@ -221,17 +212,17 @@ class PowerSavingWithPM(u_lib.SlaTest):
         Update cluster policy hosts in reserve parameter
         """
         properties = {
-            'HighUtilization': HIGH_UTILIZATION,
-            'LowUtilization': LOW_UTILIZATION,
-            'CpuOverCommitDurationMinutes': DURATION,
+            conf.HIGH_UTILIZATION: conf.HIGH_UTILIZATION_VALUE,
+            conf.LOW_UTILIZATION: conf.LOW_UTILIZATION_VALUE,
+            conf.OVER_COMMITMENT_DURATION: conf.OVER_COMMITMENT_DURATION_VALUE,
             'HostsInReserve': hosts_in_reserve,
             'EnableAutomaticHostPowerManagement': 'true'
         }
         logger.info("Update cluster policy hosts in reserve")
         if not ll_clusters.updateCluster(
-            True,
-            conf.CLUSTER_NAME[0],
-            scheduling_policy=CLUSTER_POLICY_PS,
+            positive=True,
+            cluster=conf.CLUSTER_NAME[0],
+            scheduling_policy=conf.POLICY_POWER_SAVING,
             properties=properties
         ):
             logger.error(
@@ -248,7 +239,10 @@ class TestSPMHostNotKilledByPolicy(PowerSavingWithPM):
     @classmethod
     def setup_class(cls):
         cls.vms_to_start = conf.VM_NAME[1:3]
-        cls.hosts_to_load = [conf.VDS_HOSTS[1]]
+        cls.hosts_to_load = {
+            conf.RESOURCE: [conf.VDS_HOSTS[1]],
+            conf.HOST: [conf.HOSTS[1]]
+        }
         cls.host_down = conf.HOSTS[2]
         super(TestSPMHostNotKilledByPolicy, cls).setup_class()
 
@@ -274,7 +268,10 @@ class TestHostWithoutCPULoadingShutdownByPolicy(PowerSavingWithPM):
     @classmethod
     def setup_class(cls):
         cls.vms_to_start = conf.VM_NAME[1:3]
-        cls.hosts_to_load = [conf.VDS_HOSTS[1]]
+        cls.hosts_to_load = {
+            conf.RESOURCE: [conf.VDS_HOSTS[1]],
+            conf.HOST: [conf.HOSTS[1]]
+        }
         cls.host_down = conf.HOSTS[2]
         super(TestHostWithoutCPULoadingShutdownByPolicy, cls).setup_class()
 
@@ -302,7 +299,10 @@ class TestHostStartedByPowerManagement(PowerSavingWithPM):
     @classmethod
     def setup_class(cls):
         cls.vms_to_start = conf.VM_NAME[:2]
-        cls.hosts_to_load = [conf.VDS_HOSTS[1]]
+        cls.hosts_to_load = {
+            conf.RESOURCE: [conf.VDS_HOSTS[1]],
+            conf.HOST: [conf.HOSTS[1]]
+        }
         super(TestHostStartedByPowerManagement, cls).setup_class()
 
     @polarion("RHEVM3-5577")
@@ -416,8 +416,14 @@ class TestNoExcessHosts(PowerSavingWithPM):
         engine not power off host without vm, because it must have one host in
         reserve.
         """
-        time.sleep(SLEEP_TIME)
-        self.assertTrue(self._check_hosts_num_with_status(3, conf.HOST_UP))
+        self.assertFalse(
+            self._check_hosts_num_with_status(
+                num_of_hosts=3,
+                hosts_state=conf.HOST_UP,
+                negative=True,
+                timeout=conf.SHORT_BALANCE_TIMEOUT
+            )
+        )
 
 
 class TestHostStoppedUnexpectedly(PowerSavingWithPM):
@@ -499,8 +505,12 @@ class TestHostStoppedByUser(PowerSavingWithPM):
         if not ll_hosts.deactivateHost(True, conf.HOSTS[1]):
             raise errors.HostException("Fail to deactivate host")
         logger.info("Stop host %s via power management", conf.HOSTS[1])
-        if not ll_hosts.fenceHost(True, conf.HOSTS[1], 'stop'):
-            raise errors.HostException("Fail to stop host")
+        if not ll_hosts.fenceHost(
+            positive=True, host=conf.HOSTS[1], fence_type="stop"
+        ):
+            raise errors.HostException(
+                "Failed to stop host %s" % conf.HOSTS[1]
+            )
 
     @polarion("RHEVM3-5574")
     def test_host_stopped_by_user(self):
@@ -508,8 +518,11 @@ class TestHostStoppedByUser(PowerSavingWithPM):
         Positive: User manually stop host, and this host must not be started
         by engine, also when no reserve hosts.
         """
-        logger.info("Wait %s seconds", SLEEP_TIME)
-        time.sleep(SLEEP_TIME)
-        self.assertTrue(
-            self._check_host_status(conf.HOSTS[1], conf.HOST_DOWN)
+        self.assertFalse(
+            self._check_hosts_num_with_status(
+                num_of_hosts=1,
+                hosts_state=conf.HOST_DOWN,
+                negative=True,
+                timeout=conf.SHORT_BALANCE_TIMEOUT
+            )
         )
