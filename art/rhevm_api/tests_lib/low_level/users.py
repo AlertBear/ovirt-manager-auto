@@ -21,6 +21,7 @@ from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.validator import compareElements, compareCollectionSize
 from art.test_handler.settings import opts  # noqa
+import art.rhevm_api.tests_lib.low_level.general as ll_general
 
 ELEMENT = 'user'
 COLLECTION = 'users'
@@ -95,9 +96,14 @@ def addExternalUser(
         namespace=namespace,
         principal=principal,
     )
+    log_info, log_error = ll_general.get_log_msg("create", "user", user_name)
+    logger.info(log_info)
     # https://bugzilla.redhat.com/show_bug.cgi?id=1147900
     _, status = util.create(user, positive, compare=False)
-    return status
+    if status:
+        return True
+    logger.error(log_error)
+    return False
 
 
 def addRoleToUser(positive, user, role):
@@ -140,7 +146,12 @@ def removeUser(positive, user, domain=None, namespace=None):
             userObj = users[0]
     else:
         userObj = util.find(user)
-    return util.delete(userObj, positive)
+    log_info, log_error = ll_general.get_log_msg("delete", "user", user)
+    logger.info(log_info)
+    if util.delete(userObj, positive):
+        return True
+    logger.error(log_error)
+    return False
 
 
 def addTagToUser(positive, user, tag):

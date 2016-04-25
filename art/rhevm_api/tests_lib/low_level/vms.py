@@ -24,7 +24,6 @@ from Queue import Queue
 from threading import Thread
 
 from concurrent.futures import ThreadPoolExecutor
-
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.core_api.apis_exceptions import (APITimeout, EntityNotFound)
 from art.core_api.apis_utils import data_st, TimeoutingSampler, getDS
@@ -140,7 +139,7 @@ def _prepareVmObject(**kwargs):
     :type cpu_socket: int
     :param cpu_cores: number of cpu cores
     :type cpu_cores: int
-    :param cpu_threads: number of cpu threads
+    :param cpu_threads: number of threads per core
     :type cpu_threads: int
     :param cpu_mode: mode of cpu
     :type cpu_mode: str
@@ -152,8 +151,8 @@ def _prepareVmObject(**kwargs):
     :type template: str
     :param type: vm type (SERVER or DESKTOP)
     :type type: str
-    :param display_monitors: number of display monitors
-    :type display_monitors: int
+    :param monitors: number of display monitors
+    :type monitors: int
     :param display_type: type of vm display (VNC or SPICE)
     :type display_type: str
     :param kernel: kernel path
@@ -199,8 +198,6 @@ def _prepareVmObject(**kwargs):
     :type domainName: str
     :param snapshot: description of snapshot to use. Causes error if not unique
     :type snapshot: str
-    :param copy_permissions: True if perms should be copied from template
-    :type : bool
     :param cpu_profile_id: cpu profile id
     :type cpu_profile_id: str
     :param numa_mode: numa mode for vm(strict, preferred, interleave)
@@ -213,6 +210,34 @@ def _prepareVmObject(**kwargs):
     :type start_in_pause: bool
     :param comment: vm comment
     :type comment: str
+    :param usb_type: usb type to use (can work only with spice display type)
+    :type usb_type: str
+    :param custom_emulated_machine: add custom emulated machine value for vm
+    :type custom_emulated_machine: str
+    :param custom_cpu_model: overried cluster cpu model and set any cpu type
+    :type custom_cpu_model: str
+    :param disconnect_action: disconnect action for display console
+    :type disconnect_action: str
+    :param soundcard_enabled: enable sound card for display console
+    :type soundcard_enabled: bool
+    :param virtio_scsi: enable virtIO scsi
+    :type virtio_scsi: bool
+    :param migration_downtime: migration_downtime allowed (in miliseconds)
+    :type migration_downtime: int
+    :param io_threads: number of io threads
+    :type io_threads: int
+    :param boot_menu: enable boot menu on vm startup
+    :type boot_menu: bool
+    :param start_paused: enable start in pause mode
+    :type start_paused: bool
+    :param file_transfer_enabled: enable file transfer via spice
+    :type file_transfer_enabled: bool
+    :param time_zone: set specific time zone for vm
+    :type time_zone: str
+    :param time_zone_offset: time zone offset (from GMT)
+    :type time_zone_offset: str
+    :param template_version: template version of the specified template
+    :type template_version: int
     :returns: vm object
     :rtype: instance of VM
     """
@@ -242,12 +267,19 @@ def _prepareVmObject(**kwargs):
     # template
     template_name = kwargs.pop("template", "Blank" if add else None)
     template_id = kwargs.pop("templateUuid", None)
-    search_by = NAME_ATTR
+    #  WA until https://bugzilla.redhat.com/show_bug.cgi?id=1365908 is fixed
+    template_version = kwargs.pop(
+        "template_version", 0 if template_name == 'Blank' else 1
+    )
+    template = None
     if template_id:
-        template_name = template_id
-        search_by = ID_ATTR
-    if template_name:
-        template = TEMPLATE_API.find(template_name, search_by)
+        template = TEMPLATE_API.find(template_id, ID_ATTR)
+    elif template_name:
+        from art.rhevm_api.tests_lib.low_level.templates import (
+            get_template_obj
+        )
+        template = get_template_obj(template_name, version=template_version)
+    if template:
         vm.set_template(data_st.Template(id=template.id))
 
     # cluster
@@ -271,9 +303,8 @@ def _prepareVmObject(**kwargs):
     vcpu_pinning = kwargs.pop("vcpu_pinning", None)
     cpu_mode = kwargs.pop("cpu_mode", None)
     if (
-            cpu_socket or cpu_cores or cpu_threads or
-            vcpu_pinning is not None or
-            cpu_mode is not None
+        cpu_socket or cpu_cores or cpu_threads or vcpu_pinning is not None or
+        cpu_mode is not None
     ):
         cpu = data_st.Cpu()
         if cpu_socket or cpu_cores or cpu_threads:
@@ -338,11 +369,15 @@ def _prepareVmObject(**kwargs):
 
     # display monitors and type
     display_type = kwargs.pop("display_type", None)
-    display_monitors = kwargs.pop("display_monitors", None)
-    if display_monitors or display_type:
+    monitors = kwargs.pop("monitors", None)
+    disconnect_action = kwargs.pop("disconnect_action", None)
+    file_transfer_enabled = kwargs.pop("file_transfer_enabled", None)
+    if monitors or display_type or disconnect_action:
         vm.set_display(
             data_st.Display(
-                type_=display_type, monitors=display_monitors
+                type_=display_type, monitors=monitors,
+                disconnect_action=disconnect_action,
+                file_transfer_enabled=file_transfer_enabled
             )
         )
 
@@ -473,6 +508,7 @@ def _prepareVmObject(**kwargs):
         sr.set_policy('custom')
         sr.set_value(serial_number)
         vm.set_serial_number(sr)
+
     # start_in_pause
     start_in_pause = kwargs.pop("start_in_pause", None)
     if start_in_pause:
@@ -481,6 +517,55 @@ def _prepareVmObject(**kwargs):
     comment = kwargs.pop("comment", None)
     if comment:
         vm.set_comment(comment=comment)
+
+    # usb_type
+    usb_type = kwargs.pop("usb_type", None)
+    if usb_type:
+        usb = data_st.Usb()
+        usb.set_enabled(True)
+        usb.set_type(usb_type)
+        vm.set_usb(usb)
+
+    # custom emulated machine
+    custom_emulated_machine = kwargs.pop("custom_emulated_machine", None)
+    if custom_emulated_machine:
+        vm.set_custom_emulated_machine(custom_emulated_machine)
+
+    # custom cpu model
+    custom_cpu_model = kwargs.pop("custom_cpu_model", None)
+    if custom_cpu_model:
+        vm.set_custom_cpu_model(custom_cpu_model)
+
+    # soundcard enabled
+    soundcard_enabled = kwargs.pop("soundcard_enabled", None)
+    if soundcard_enabled:
+        vm.set_soundcard_enabled(soundcard_enabled)
+
+    # migration_downtime
+    migration_downtime = kwargs.pop("migration_downtime", None)
+    if migration_downtime:
+        vm.set_migration_downtime(migration_downtime)
+
+    # io_threads
+    io_threads = kwargs.pop("io_threads", None)
+    if io_threads:
+        io = data_st.Io()
+        io.set_threads(io_threads)
+        vm.set_io(io)
+
+    # boot_menu
+    boot_menu = kwargs.pop("boot_menu", None)
+    if boot_menu:
+        bios = data_st.Bios()
+        boot = data_st.BootMenu(enabled=boot_menu)
+        bios.set_boot_menu(boot)
+        vm.set_bios(bios)
+
+    # start_paused
+    start_paused = kwargs.pop("start_paused", None)
+    if start_paused:
+        vm.set_start_paused(start_paused)
+
     return vm
 
 
@@ -515,6 +600,8 @@ def addVm(positive, wait=True, **kwargs):
     """
     Description: add new vm (without starting it)
 
+    :param positive: True if action is positive, Flase if negative
+    :type positive: bool
     :param name: vm name
     :type name: str
     :param description: new vm description
@@ -539,8 +626,8 @@ def addVm(positive, wait=True, **kwargs):
     :type template: str
     :param type: vm type (SERVER or DESKTOP)
     :type type: str
-    :param display_monitors: number of display monitors
-    :type display_monitors: int
+    :param monitors: number of display monitors
+    :type monitors: int
     :param display_type: type of vm display (VNC or SPICE)
     :type display_type: str
     :param kernel: kernel path
@@ -608,6 +695,8 @@ def addVm(positive, wait=True, **kwargs):
     :type serial_number: str
     :param start_in_pause: start vm in pause mode
     :type start_in_pause: bool
+    :param template_version: template version of the specified template
+    :type template_version: int
     :returns: True, if add vm success, otherwise False
     :rtype: bool
     """
@@ -634,7 +723,7 @@ def addVm(positive, wait=True, **kwargs):
             vm_obj, positive, expectedEntity=expected_vm, operations=operations
         )
         if not status:
-            logging.error(log_error)
+            logger.error(log_error)
         return status
 
     disk_clone = kwargs.pop('disk_clone', None)
@@ -645,14 +734,13 @@ def addVm(positive, wait=True, **kwargs):
         wait_timeout = VM_DISK_CLONE_TIMEOUT
 
     vm_obj, status = VM_API.create(
-        vm_obj, positive, expectedEntity=expected_vm
+        vm_obj, positive, expectedEntity=expected_vm, operations=operations
     )
 
     if status:
         status = VM_API.waitForElemStatus(vm_obj, "DOWN", wait_timeout)
     else:
-        logging.error(log_error)
-
+        logger.error(log_error)
     return status
 
 
@@ -688,8 +776,8 @@ def updateVm(positive, vm, **kwargs):
     :type template: str
     :param type: vm type (SERVER or DESKTOP)
     :type type: str
-    :param display_monitors: number of display monitors
-    :type display_monitors: int
+    :param monitors: number of display monitors
+    :type monitors: int
     :param display_type: type of vm display (VNC or SPICE)
     :type display_type: str
     :param kernel: kernel path
@@ -755,6 +843,9 @@ def updateVm(positive, vm, **kwargs):
     vm_obj = VM_API.find(vm)
     vm_new_obj = _prepareVmObject(**kwargs)
     compare = kwargs.get("compare", True)
+    log_info, log_error = ll_general.get_log_msg(
+        'update', 'vm', vm, **kwargs
+    )
     logger.info(log_info)
     vm_new_obj, status = VM_API.update(
         vm_obj, vm_new_obj, positive, compare=compare

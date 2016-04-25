@@ -39,6 +39,8 @@ DS_CLASS_MAPPER = {
     'jobstep': 'Step',
     'hostniclabels': 'Labels',
     'datacenternetwork': 'Network',
+    'vmpermissions': 'Permissions',
+    'templatepermissions': 'Permissions',
 }
 
 primitive = (int, bool, float, long, basestring)
@@ -165,24 +167,28 @@ def getClassName(elmClass):
 
 
 def compareElements(expElm, actElm, logger, root, equal=True,
-                    java_sdk_mode=False):
-    '''
-    Recursive function for elements comparison,
-    elements are compared vis DS scheme
-    Parameters:
-    * expElm - expected element
-    * actElm - actual element
-    * logger - logger instance
-    * root - name of the root node
-    * equal - elements are equal or not till this point
-    * java_sdk_mode - run with java sdk backend
-    Returns: True is elements are equal, False otherwise
-    '''
+                    java_sdk_mode=False, ignore=[]):
+    """
+    Recursive function for elements comparison, elements are compared vis DS
+    scheme
+
+    Args:
+        expElm (object): expected element
+        actElm (object): actual element
+        logger (logger): logger instance
+        root (str): name of the root node
+        equal (bool: elements are equal or not till this point
+        java_sdk_mode (bool: run with java sdk backend
+        ignore (list): Add attributes to ignore in validaion
+    Returns:
+        bool: True if elements are equal, False otherwise
+    """
     ignore_list = [
         'status', 'role', 'active', 'total', 'required', 'permit',
         'root_password', 'namespace',
     ]
     ignore_list.extend(ATTR_IGNORE_LIST)
+    ignore_list.extend(ignore)
 
     if not actElm:
         logger.debug(

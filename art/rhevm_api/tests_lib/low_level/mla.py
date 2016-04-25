@@ -17,6 +17,7 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
+import logging
 from art.core_api.apis_utils import getDS
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.utils.test_utils import get_api, split
@@ -25,6 +26,7 @@ from art.rhevm_api.tests_lib.low_level.networks import (
     find_network,
     get_vnic_profile_obj
 )
+import art.rhevm_api.tests_lib.low_level.general as ll_general
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 CONF_PERMITS = opts['elements_conf']['RHEVM Permits']
@@ -50,6 +52,8 @@ domUtil = get_api('domain', 'domains')
 groupUtil = get_api('group', 'groups')
 permisUtil = get_api('permission', 'permissions')
 diskUtil = get_api('disk', 'disks')
+
+logger = logging.getLogger("art.ll_lib.mla")
 
 
 def getPermits():
@@ -205,7 +209,29 @@ def removeRole(positive, role):
 
 
 def addPermitsToUser(positive, user, domain, role, obj, attr):
+    """
+    Add permissions to user for a specific object
 
+    Args:
+        positive (bool): True if create action is expected to succeed, False
+            otherwise.
+        user (str): Name of user which we add permission for.
+        domain (str): Domain name where user is from.
+        role (str): Name of role we want to give to the user
+        obj (BaseResources): Object of the specific entity that the user gets
+            it's permission on.
+        attr (str): Name of the attribute of the object (e.g. 'vm')
+
+    Returns:
+        bool: True if result of creation is as expected, False otherwise.
+    """
+    extra_log_text = "to user %s for %s: %s" % (
+        user, obj.__class__.__name__, obj.get_name()
+    )
+    log_info, log_error = ll_general.get_log_msg(
+        "create", "permission", role, positive, extra_log_text
+    )
+    logger.info(log_info)
     if domain is not None:
         user_name = '%s@%s' % (user, domain)
         userObj = userUtil.query('{0}={1}'.format('usrname', user_name))[0]
@@ -217,9 +243,11 @@ def addPermitsToUser(positive, user, domain, role, obj, attr):
     permit.set_role(roleObj)
     getattr(permit, 'set_' + attr)(obj)
     userPermits = permisUtil.getElemFromLink(userObj, get_href=True)
-    permit, status = permisUtil.create(permit, positive,
-                                       collection=userPermits)
-
+    _, status = permisUtil.create(
+        permit, positive, collection=userPermits
+    )
+    if not status:
+        logger.error(log_error)
     return status
 
 
@@ -326,7 +354,13 @@ def addClusterPermissionsToGroup(positive, group, cluster,
 
 
 def addUserPermitsForObj(positive, user, role, obj, group=False):
-
+    extra_log_text = "for user %s on %s: %s" % (
+        user, obj.__class__.__name__, obj.get_name()
+    )
+    log_info, log_error = ll_general.get_log_msg(
+        "create", "permission", role, positive, extra_log_text
+    )
+    logger.info(log_info)
     userObj = groupUtil.find(user) if group else userUtil.find(user)
     roleObj = util.find(role)
 
@@ -334,8 +368,9 @@ def addUserPermitsForObj(positive, user, role, obj, group=False):
     permit.set_role(roleObj)
     permit.set_group(userObj) if group else permit.set_user(userObj)
     objPermits = permisUtil.getElemFromLink(obj, get_href=True)
-    permit, status = permisUtil.create(permit, positive, collection=objPermits)
-
+    _, status = permisUtil.create(permit, positive, collection=objPermits)
+    if not status:
+        logger.error(log_error)
     return status
 
 
@@ -522,6 +557,13 @@ def removeUserRoleFromObject(positive, obj, user_name, role_name):
       * user_name - user name
       * role_name - role which should be removed
     '''
+    extra_log_text = "for user/group %s on %s: %s" % (
+        user_name, obj.__class__.__name__, obj.get_name()
+    )
+    log_info, log_error = ll_general.get_log_msg(
+        "remove", "permission", role_name, extra_txt=extra_log_text
+    )
+    logger.info(log_info)
     status = True
     role_id = util.find(role_name).get_id()
     permits = permisUtil.getElemFromLink(obj, get_href=False)
@@ -532,12 +574,12 @@ def removeUserRoleFromObject(positive, obj, user_name, role_name):
     user = user.get_id()
     for perm in permits:
         if (
-            perm.get_user() and perm.get_user().get_id() == user
-            and perm.get_role().get_id() == role_id
-            and not permisUtil.delete(perm, positive)
+            perm.get_user() and perm.get_user().get_id() == user and
+            perm.get_role().get_id() == role_id
         ):
-            status = False
-
+            if not permisUtil.delete(perm, positive):
+                logger.error(log_error)
+                status = False
     return status
 
 
@@ -829,7 +871,13 @@ def checkDomainsId():
 def hasUserOrGroupPermissionsOnObject(name, obj, role, group=False):
     def getGroupOrUser(perm):
         return perm.get_group() if group else perm.get_user()
-
+    extra_log_text = "for user/group %s on %s: %s" % (
+        name, obj.__class__.__name__, obj.get_name()
+    )
+    log_info, log_error = ll_general.get_log_msg(
+        "find", "permission", role, extra_txt=extra_log_text
+    )
+    logger.info(log_info)
     objPermits = permisUtil.getElemFromLink(obj, get_href=False)
     roleNAid = util.find(role).get_id()
     if group:
@@ -838,6 +886,7 @@ def hasUserOrGroupPermissionsOnObject(name, obj, role, group=False):
         user = findUserByUserName(name)
 
     if user is None:
+        logger.error(log_error)
         return False
 
     perms = []
@@ -845,8 +894,10 @@ def hasUserOrGroupPermissionsOnObject(name, obj, role, group=False):
         mlaObj = getGroupOrUser(perm)
         if mlaObj is not None:
             perms.append((mlaObj.get_id(), perm.get_role().get_id()))
-
-    return (user.get_id(), roleNAid) in perms
+    if not (user.get_id(), roleNAid) in perms:
+        logger.error(log_error)
+        return False
+    return True
 
 
 def hasGroupPermissionsOnObject(group_name, obj, role):

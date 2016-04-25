@@ -212,8 +212,7 @@ class TestCase11588(TestCase):
 
         if self.initial_template_exported:
             if not ll_templates.removeTemplateFromExportDomain(
-                True, self.template_name, config.DATA_CENTER_NAME,
-                self.export_domain
+                True, self.template_name, self.export_domain
             ):
                 TestCase.test_failed = True
                 logger.error(

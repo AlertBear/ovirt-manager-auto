@@ -179,7 +179,7 @@ class TestCase4665(BaseExportImportTestCase):
         Remove existing VM/templates and from the export domain
         """
         if not ll_templates.removeTemplateFromExportDomain(
-            True, self.template_name, config.CLUSTER_NAME, self.export_domain
+            True, self.template_name, self.export_domain
         ):
             logger.error(
                 "Failed to remove template %s from export domain",
@@ -437,8 +437,7 @@ class TestCase11986(BaseExportImportTestCase):
         Remove exported template
         """
         if not ll_templates.removeTemplateFromExportDomain(
-                True, self.template_name, config.DATA_CENTER_NAME,
-                self.export_domain
+                True, self.template_name, self.export_domain
         ):
             self.test_failed = True
             logger.error(

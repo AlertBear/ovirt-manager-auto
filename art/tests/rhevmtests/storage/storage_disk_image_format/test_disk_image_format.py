@@ -569,8 +569,7 @@ class TestCasesImportVmLinked(BaseTestDiskImage):
             TestCase.test_failed = True
         if self.remove_exported_template:
             if not ll_templates.removeTemplateFromExportDomain(
-                True, self.template_name, config.DATA_CENTER_NAME,
-                self.export_domain,
+                True, self.template_name, self.export_domain,
             ):
                 logger.error(
                     "Failed to remove Template '%s' from export domain",

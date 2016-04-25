@@ -236,6 +236,7 @@ if 'prepared_env' in ART_CONFIG:
 
     CPU_CORES = 1
     CPU_SOCKET = 1
+    CPU_THREADS = 1
 
     # External Provider types
     GLANCE = 'OpenStackImageProvider'

@@ -70,7 +70,6 @@ def import_export_prepare_setup(request):
         """
         ll_templates.removeTemplateFromExportDomain(
             positive=True, template=import_export.ie_template,
-            datacenter=import_export.dc_0,
             export_storagedomain=import_export.export_domain
         )
     request.addfinalizer(fin2)

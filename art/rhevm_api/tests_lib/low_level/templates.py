@@ -18,14 +18,15 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import logging
-import time
 
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS, data_st, TimeoutingSampler
-import art.rhevm_api.tests_lib.low_level.jobs as ll_jobs
+from art.rhevm_api.tests_lib.low_level import (
+    jobs as ll_jobs,
+    general as ll_general,
+    disks as ll_disks,
+)
 from art.rhevm_api.utils.test_utils import get_api, split, waitUntilGone
-from art.rhevm_api.tests_lib.low_level import disks as ll_disks
-import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.rhevm_api.tests_lib.low_level.networks import (
     get_vnic_profile_obj, VNIC_PROFILE_API,
 )
@@ -60,6 +61,7 @@ StorageDomain = getDS('StorageDomain')
 VM = getDS('Vm')
 SAMPLER_TIMEOUT = 120
 SAMPLER_SLEEP = 5
+BASE_TEMPLATE_VERSION = 1
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
@@ -78,7 +80,7 @@ def _prepareTemplateObject(**kwargs):
     if description:
         templ.set_description(description)
 
-    memory = kwargs.pop('name', None)
+    memory = kwargs.pop('memory', None)
     if memory:
         templ.set_memory(memory)
 
@@ -118,12 +120,6 @@ def _prepareTemplateObject(**kwargs):
     if protected is not None:
         templ.set_delete_protected(protected)
 
-    copy_permissions = kwargs.pop('copy_permissions', None)
-    if copy_permissions:
-        perms = data_st.Permissions()
-        perms.set_clone(True)
-        templ.set_permissions(perms)
-
     custom_prop = kwargs.pop("custom_properties", None)
     if custom_prop:
         templ.set_custom_properties(createCustomPropertiesFromArg(custom_prop))
@@ -132,6 +128,143 @@ def _prepareTemplateObject(**kwargs):
     if virtio_scsi is not None:
         virtio_scsi_obj = data_st.VirtioScsi(enabled=virtio_scsi)
         templ.set_virtio_scsi(virtio_scsi_obj)
+
+    # template version
+    version = kwargs.pop('version', None)
+    if version is not None:
+        templ.set_version(version)
+
+    # stateless
+    templ.set_stateless(kwargs.pop("stateless", None))
+
+    # start_paused
+    start_paused = kwargs.pop("start_paused", None)
+    if start_paused:
+        templ.set_start_paused(start_paused)
+
+    # display monitors and type
+    display_type = kwargs.pop("display_type", None)
+    monitors = kwargs.pop("monitors", None)
+    disconnect_action = kwargs.pop("disconnect_action", None)
+    file_transfer_enabled = kwargs.pop("file_transfer_enabled", None)
+    if monitors or display_type or disconnect_action:
+        templ.set_display(
+            data_st.Display(
+                type_=display_type, monitors=monitors,
+                disconnect_action=disconnect_action,
+                file_transfer_enabled=file_transfer_enabled
+            )
+        )
+
+    os_type = kwargs.pop("os_type", None)
+    boot_seq = kwargs.pop("boot", None)
+    if os_type is not None:
+        os_type = data_st.OperatingSystem(type_=os_type)
+        if boot_seq:
+            if isinstance(boot_seq, basestring):
+                boot_seq = boot_seq.split()
+            os_type.set_boot(
+                [data_st.Boot(dev=boot_dev) for boot_dev in boot_seq]
+                )
+        templ.set_os(os_type)
+
+    # serial number
+    serial_number = kwargs.pop("serial_number", None)
+    if serial_number is not None:
+        sr = data_st.SerialNumber()
+        sr.set_policy('custom')
+        sr.set_value(serial_number)
+        templ.set_serial_number(sr)
+
+    # usb_type
+    usb_type = kwargs.pop("usb_type", None)
+    if usb_type:
+        usb = data_st.Usb()
+        usb.set_enabled(True)
+        usb.set_type(usb_type)
+        templ.set_usb(usb)
+
+    # custom emulated machine
+    custom_emulated_machine = kwargs.pop("custom_emulated_machine", None)
+    if custom_emulated_machine:
+        templ.set_custom_emulated_machine(custom_emulated_machine)
+
+    # custom cpu model
+    custom_cpu_model = kwargs.pop("custom_cpu_model", None)
+    if custom_cpu_model:
+        templ.set_custom_cpu_model(custom_cpu_model)
+
+    # soundcard enabled
+    soundcard_enabled = kwargs.pop("soundcard_enabled", None)
+    if soundcard_enabled:
+        templ.set_soundcard_enabled(soundcard_enabled)
+
+    # migration_downtime
+    migration_downtime = kwargs.pop("migration_downtime", None)
+    if migration_downtime:
+        templ.set_migration_downtime(migration_downtime)
+
+    # io_threads
+    io_threads = kwargs.pop("io_threads", None)
+    if io_threads:
+        io = data_st.Io()
+        io.set_threads(io_threads)
+        templ.set_io(io)
+
+    # boot_menu
+    boot_menu = kwargs.pop("boot_menu", None)
+    if boot_menu:
+        bios = data_st.Bios()
+        boot = data_st.BootMenu(enabled=boot_menu)
+        bios.set_boot_menu(boot)
+        templ.set_bios(bios)
+
+    # cpu shares
+    cpu_shares = kwargs.pop("cpu_shares", None)
+    if cpu_shares is not None:
+        templ.set_cpu_shares(cpu_shares)
+
+    # cpu topology & cpu pinning
+    cpu_socket = kwargs.pop("cpu_socket", None)
+    cpu_cores = kwargs.pop("cpu_cores", None)
+    cpu_threads = kwargs.pop("cpu_threads", None)
+    if cpu_socket or cpu_cores or cpu_threads:
+        cpu = data_st.Cpu()
+        cpu.set_topology(
+            topology=data_st.CpuTopology(
+                sockets=cpu_socket, cores=cpu_cores, threads=cpu_threads
+            )
+        )
+        templ.set_cpu(cpu)
+
+    # timezone
+    time_zone = kwargs.pop("time_zone", None)
+    time_zone_offset = kwargs.pop("time_zone_offset", None)
+    if time_zone is not None or time_zone_offset is not None:
+        templ.set_time_zone(data_st.TimeZone(
+            name=time_zone, utc_offset=time_zone_offset)
+        )
+
+    # memory policy memory_guaranteed and ballooning
+    guaranteed = kwargs.pop("memory_guaranteed", None)
+    ballooning = kwargs.pop('ballooning', None)
+    if ballooning or guaranteed:
+        templ.set_memory_policy(
+            data_st.MemoryPolicy(
+                guaranteed=guaranteed,
+                ballooning=ballooning,
+            )
+        )
+
+    # high availablity
+    ha = kwargs.pop("highly_available", None)
+    ha_priority = kwargs.pop("availablity_priority", None)
+    if ha is not None or ha_priority:
+        templ.set_high_availability(
+            data_st.HighAvailability(
+                enabled=ha, priority=ha_priority
+            )
+        )
 
     return templ
 
@@ -162,19 +295,36 @@ def createTemplate(
         storagedomain (str): Name of storage domain
         protected (str): If template is delete protected
         copy_permissions (bool): True if permissions from vm to template
-            should be copied
+        should be copied
+        new_version (bool): If True create as a new template version of an
+        existing template, otherwise create a new template normally.
+        version_name (str): A specific name for the template version
 
     Returns:
         bool: True if template was added properly, False otherwise
     """
     name = kwargs.get("name")
+    copy_permissions = kwargs.get("copy_permissions")
     log_info, log_error = ll_general.get_log_msg(
         action="Create", obj_type="template", obj_name=name, positive=positive,
         **kwargs
     )
+    new_version = kwargs.get("new_version", False)
+    version_name = kwargs.get("version_name", None)
+    if new_version and validateTemplate(True, name):
+        template_version_params = {
+            'base_template': get_template_obj(name),
+            'version_name': version_name,
+        }
+        kwargs['version'] = data_st.TemplateVersion(**template_version_params)
     template = _prepareTemplateObject(**kwargs)
     logger.info(log_info)
-    template, status = TEMPLATE_API.create(template, positive)
+    operations = []
+    if copy_permissions:
+        operations.append("clone_permissions")
+    template, status = TEMPLATE_API.create(
+        template, positive, operations=operations
+    )
     if wait and status and positive:
         status = TEMPLATE_API.waitForElemStatus(template, 'OK', timeout)
 
@@ -183,40 +333,48 @@ def createTemplate(
     return status
 
 
-def updateTemplate(positive, template, **kwargs):
-    '''
-    Description: update existed template
+def updateTemplate(positive, template, version_number=1, **kwargs):
+    """
+    Update existed template
+
     Author: edolinin
-    Parameters:
-       * template - name of template that should be updated
-       * name - new template name
-       * description - new template description
-       * cluster - new template cluster
-       * memory - new template memory size
-       * cpu_socket - new number of cpu sockets
-       * cpu_cores - new number of cpu cores
-       * boot - new template boot device
-       * type - new template type
-       * protected - if template is delete protected
-       * watchdog_model - model of watchdog card
-       * watchdog_action - action to perform when watchdog is triggered
-       * custom_properties - custom properties set to the template
-       * virtio_scsi - Enables attaching disks using VirtIO-SCSI interface
-    Return: status (True if template was updated properly, False otherwise)
-    '''
 
-    templObj = TEMPLATE_API.find(template)
-    templNew = _prepareTemplateObject(**kwargs)
-    templObj, status = TEMPLATE_API.update(templObj, templNew, positive)
+    Args:
+        positive (bool): True if update is expected to succeed, False otherwise
+        template (str): Name of template that should be updated
+        version_number (int): Template version number
 
-    # FIXME: check if polling instead of sleep
-    time.sleep(40)
+    Keyword arguments:
+        name (str): New template name
+        description (str): New template description
+        cluster (str): New template cluster
+        memory (int): New template memory size
+        cpu_socket (int): New number of cpu sockets
+        cpu_cores (int): New number of cpu cores
+        boot (str): New template boot device
+        type (str): New template type
+        protected (bool): If template is delete protected
+        watchdog_model (str): Model of watchdog card
+        watchdog_action (str): Action to perform when watchdog is triggered
+        custom_properties (str): Custom properties set to the template
+        virtio_scsi (bool): Enables attaching disks using VirtIO-SCSI interface
+
+    Returns
+        bool: True if template was updated properly, False otherwise
+    """
+    template_obj = get_template_obj(template, version=version_number)
+    if not template_obj:
+        return False
+    template_new = _prepareTemplateObject(**kwargs)
+    template_object, status = TEMPLATE_API.update(
+        template_obj, template_new, positive
+    )
 
     return status
 
 
 def removeTemplate(
-    positive, template, wait=True, sleepTime=SAMPLER_SLEEP,
+    positive, template, version_number=1, wait=True, sleepTime=SAMPLER_SLEEP,
     timeout=SAMPLER_TIMEOUT
 ):
     """
@@ -227,6 +385,7 @@ def removeTemplate(
     Args:
         positive (bool): Expected status
         template (str): Name of template that should be removed
+        version_number (int): Template version number
         wait (str): Wait until end of action if true, else return without wait
         sleepTime (int): Sleep between sampler iterations
         timeout (int): Timeout to wait for template removal
@@ -238,13 +397,15 @@ def removeTemplate(
         action="Remove", obj_type="template", obj_name=template,
         positive=positive
     )
-    template_obj = TEMPLATE_API.find(template)
+    template_obj = get_template_obj(template, version=version_number)
+    if not template_obj:
+        return False
     logger.info(log_info)
     status = TEMPLATE_API.delete(template_obj, positive)
     if status and positive and wait:
         sample = TimeoutingSampler(
             timeout=timeout, sleep=sleepTime, func=validateTemplate,
-            positive=False, template=template
+            positive=False, template=template, version=version_number
         )
         res = sample.waitForFuncStatus(result=True)
         if not res:
@@ -336,45 +497,73 @@ def _prepareNicObj(**kwargs):
     return nic_obj
 
 
-def getTemplatesNics(template):
+def getTemplatesNics(template, version=BASE_TEMPLATE_VERSION):
+    """
+    Gets all the nics for a specific template
 
-    templ_obj = TEMPLATE_API.find(template)
-    return TEMPLATE_API.getElemFromLink(templ_obj, link_name='nics',
+    Args:
+        template (str): Name of the template.
+        version (int): Template version number.
+
+    Returns:
+        list: Nics collection of the given template .
+    """
+    template_obj = get_template_obj(template, version=version)
+    if not template_obj:
+        return None
+    return TEMPLATE_API.getElemFromLink(template_obj, link_name='nics',
                                         attr='nic', get_href=True)
 
 
-def getTemplatesNic(template, nic):
+def getTemplatesNic(template, nic, version=BASE_TEMPLATE_VERSION):
+    """
+    Get a specific nic from a specific template
 
-    templ_obj = TEMPLATE_API.find(template)
-    return TEMPLATE_API.getElemFromElemColl(templ_obj, nic, 'nics', 'nic')
+    Args:
+        template (str): Name of the template.
+        nic (str): Name of the nic.
+        version (int): Template version number.
+
+    Returns:
+        Nic: If found returns the specific nic element, otherwise None.
+    """
+    template_obj = get_template_obj(template, version=version)
+    if not template_obj:
+        return None
+    return TEMPLATE_API.getElemFromElemColl(template_obj, nic, 'nics', 'nic')
 
 
-def addTemplateNic(positive, template, **kwargs):
+def addTemplateNic(
+    positive, template, version=BASE_TEMPLATE_VERSION, **kwargs
+):
     """
     Add nic to template
 
-    :param positive: Expected status
-    :type positive: bool
-    :param template: Name of template to add the NIC to
-    :type template: str
-    :param kwargs: NIC kwargs
+    Args:
+        positive (bool): Expected status
+        template (str): Name of template to add the NIC to
+        version (int): Template version number
+
+    keyword arguments:
         name (str): Name of NIC
         network (str): Network that should reside in NIC
         interface (str): NIC type. (virtio, rtl8139, e1000 and passthrough)
-    :type kwargs: dict
-    :return: Status (True if nic was added properly, False otherwise)
-    :rtype: bool
+
+    Returns:
+        bool: True if nic was added properly, False otherwise
     """
     nic_name = kwargs.get("name")
+    template_obj = get_template_obj(template, version=version)
+    if not template_obj:
+        return False
     log_info_txt, log_error_txt = ll_general.get_log_msg(
         action="add", obj_type="nic", obj_name=nic_name, positive=positive,
-        **kwargs
+        extra_txt="template version: %s" % version, **kwargs
     )
-    templ_obj = TEMPLATE_API.find(template)
-    kwargs.update([("cluster", templ_obj.cluster.id)])
+    kwargs.update([("cluster", template_obj.cluster.id)])
 
     nic_obj = _prepareNicObj(**kwargs)
-    nics_coll = getTemplatesNics(template)
+    nics_coll = getTemplatesNics(template, version)
 
     logger.info("%s to %s", log_info_txt, template)
     status = NIC_API.create(nic_obj, positive, collection=nics_coll)[1]
@@ -384,17 +573,22 @@ def addTemplateNic(positive, template, **kwargs):
     return True
 
 
-def get_watchdog_collection(template_name):
+def get_watchdog_collection(template_name, version=BASE_TEMPLATE_VERSION):
     """
     Get template watchdog collection
 
     Args:
-        template_name: Template name
+        template_name (str): Template name
+        version (int): template version
 
     Returns:
         list: List of watchdog objects
     """
-    template_obj = get_template_obj(template_name=template_name)
+    template_obj = get_template_obj(
+        template_name=template_name, version=version
+    )
+    if not template_obj:
+        return None
     logger.info("Get template %s watchdog collection", template_name)
     watchdog_collection = VM_API.getElemFromLink(
         template_obj, link_name="watchdogs", attr="watchdog", get_href=False
@@ -406,7 +600,7 @@ def get_watchdog_collection(template_name):
     return watchdog_collection
 
 
-def add_watchdog(template_name, model, action):
+def add_watchdog(template_name, model, action, version=BASE_TEMPLATE_VERSION):
     """
     Add watchdog card to template
 
@@ -414,11 +608,16 @@ def add_watchdog(template_name, model, action):
         template_name (str): Template name
         model (str): Watchdog card model
         action (str): Watchdog action
+        version (int): Template version
 
     Returns:
         bool: True, if add watchdog card action succeed, otherwise False
     """
-    template_obj = get_template_obj(template_name=template_name)
+    template_obj = get_template_obj(
+        template_name=template_name, version=version
+    )
+    if not template_obj:
+        return False
     log_info, log_error = ll_general.get_log_msg(
         action="Add",
         obj_type="watchdog",
@@ -498,23 +697,34 @@ def delete_watchdog(template_name):
     return status
 
 
-def updateTemplateNic(positive, template, nic, **kwargs):
-    '''
-    Description: update an existing nic
-    Author: atal
-    Parameters:
-       * template - name of template that we update the nic
-       * nic - nic name that should be updated
-       * name - new nic name
-       * network - network that nic depends on
-       * interface - nic type. available types: virtio, rtl8139 and e1000
-                    (for 2.2 also rtl8139_virtio)
-    Return: status (True if nic was updated properly, False otherwise)
-    '''
-    templ_obj = TEMPLATE_API.find(template)
-    kwargs.update([('cluster', templ_obj.cluster.id)])
+def updateTemplateNic(
+    positive, template, nic, version=BASE_TEMPLATE_VERSION, **kwargs
+):
+    """
+    Update an existing template nic
 
-    nic_obj = getTemplatesNic(template, nic)
+    Args:
+        positive (bool): True if update is expected to succeed, False otherwise
+        template (str): Name of template that we update the nic
+        nic (str): Nic name that should be updated
+        version (int): Template version number
+
+    Keyword arguments:
+        name (str): New nic name
+        network (str): Network that nic depends on
+        interface (str): Nic type. Available types: virtio, rtl8139 and e1000
+            (for 2.2 also rtl8139_virtio)
+        active (bool): Attribute which present nic hostplug state
+
+    Returns:
+        bool: True if nic was updated properly, False otherwise
+    """
+    template_obj = get_template_obj(template, version=version)
+    if not template_obj:
+        return False
+    kwargs.update([('cluster', template_obj.cluster.id)])
+
+    nic_obj = getTemplatesNic(template, nic, version)
     nic_new = _prepareNicObj(**kwargs)
 
     res, status = NIC_API.update(nic_obj, nic_new, positive)
@@ -522,24 +732,24 @@ def updateTemplateNic(positive, template, nic, **kwargs):
     return status
 
 
-def removeTemplateNic(positive, template, nic):
+def removeTemplateNic(positive, template, nic, version=BASE_TEMPLATE_VERSION):
     """
-    Remove nic from template
+    Remove an existing template nic
 
-    :param positive: Expected status
-    :type positive: bool
-    :param template: Template where nic should be removed
-    :type template: str
-    :param nic: NIC name that should be removed
-    :type nic: str
-    :return: status (True if nic was removed properly, False otherwise)
-    :rtype: bool
+    Args:
+        positive (bool): True if update is expected to succeed, False otherwise
+        template (str): Name of template that we update the nic
+        nic (str): Nic name that should be updated
+        version (int): Template version number
+
+    Returns:
+        bool: True if nic was removed properly, False otherwise
     """
     log_info_txt, log_error_txt = ll_general.get_log_msg(
         action="Remove", obj_type="NIC", obj_name=nic, positive=positive,
-        extra_txt="from template %s" % template
+        extra_txt="from template %s, version: %s" % (template, version)
     )
-    nic_obj = getTemplatesNic(template, nic)
+    nic_obj = getTemplatesNic(template, nic, version)
     logger.info(log_info_txt)
     res = NIC_API.delete(nic_obj, positive)
     if not res:
@@ -549,7 +759,7 @@ def removeTemplateNic(positive, template, nic):
 
 
 def removeTemplateFromExportDomain(
-    positive, template, datacenter, export_storagedomain,
+    positive, template, export_storagedomain, version=BASE_TEMPLATE_VERSION,
     timeout=SAMPLER_TIMEOUT, sleep=SAMPLER_SLEEP
 ):
     """
@@ -560,8 +770,8 @@ def removeTemplateFromExportDomain(
     Args:
         positive (bool): Expected status
         template (str): Template name
-        datacenter (str): Name of data center
         export_storagedomain (str): Storage domain where to remove vm from
+        version (int): Template version number
         timeout (int): Timeout to wait for template removal
         sleep (int): Sleep between sampler iterations
 
@@ -571,12 +781,15 @@ def removeTemplateFromExportDomain(
     log_info, log_error = ll_general.get_log_msg(
         action="Remove", obj_type="template", obj_name=template,
         positive=positive,
-        extra_txt="from export domain %s" % export_storagedomain
+        extra_txt="from export domain %s" % export_storagedomain,
+        template_version=version
     )
     export_storage_domain_obj = SD_API.find(export_storagedomain)
-    template_obj = TEMPLATE_API.getElemFromElemColl(
-        export_storage_domain_obj, template
+    template_obj = get_template_obj_from_export_domain(
+        export_storage_domain_obj, template, version
     )
+    if not template_obj:
+        return False
     logger.info(log_info)
     status = TEMPLATE_API.delete(template_obj, positive)
     if not status:
@@ -593,42 +806,54 @@ def removeTemplateFromExportDomain(
     return True
 
 
-def export_domain_template_exist(template, export_domain, positive=True):
+def export_domain_template_exist(
+    template, export_domain, version=BASE_TEMPLATE_VERSION, positive=True
+):
     """
     Checks if a template exists in an export domain
 
     Args:
         template (str): Template name
         export_domain (str): Export domain name
+        version (int): Template version number
         positive (bool): Expected status
 
     Returns:
-        bool: True if template exists in export domain False otherwise
+        bool: True if got expected result, False otherwise
     """
     export_domain_object = SD_API.find(export_domain)
-    try:
-        TEMPLATE_API.getElemFromElemColl(export_domain_object, template)
-    except EntityNotFound:
-        if positive:
-            TEMPLATE_API.logger.error(
-                "template %s cannot be found in export domain: %s",
-                template, export_domain
-            )
-            return False
-        return True
+    template_obj = get_template_obj_from_export_domain(
+        export_domain_object, template, version
+    )
+    if bool(template_obj) != positive:
+        logger.error(
+            "Try to find template %s, version: %s in export domain: %s %."
+            "Expected: %s, got: %s",
+            template, version, export_domain, positive, bool(template_obj)
+        )
+        return False
     return True
 
 
-def validateTemplate(positive, template):
-    '''
-    Description: Validate template if exist
-    Author: egerman
-    Parameters:
-       * template - template name
-    Return: status (True if template exist, False otherwise)
-    '''
-    templates = TEMPLATE_API.get(absLink=False)
-    templates = filter(lambda x: x.name.lower() == template.lower(), templates)
+def validateTemplate(positive, template, version=BASE_TEMPLATE_VERSION):
+    """
+    Validate template if exist
+
+    Args:
+        positive (bool): True if template is expected to exist, False otherwise
+        template (str): Template name
+        version (int): Template version number
+    Returns:
+        bool: True if template exist, False otherwise
+    """
+    templates = get_all_template_objects()
+    #  WA until https://bugzilla.redhat.com/show_bug.cgi?id=1365908 is fixed
+    version = 0 if template == 'Blank' else version
+    templates = filter(
+        lambda x: (x.name == template) and (
+            x.version.version_number == version
+        ), templates
+    )
     return bool(templates) == positive
 
 
@@ -648,7 +873,8 @@ def getTemplateId(positive, template):
 
 
 def exportTemplate(
-    positive, template, storagedomain, exclusive='false', wait=False
+    positive, template, storagedomain, version=BASE_TEMPLATE_VERSION,
+    exclusive='false', wait=False
 ):
     """
     Export template
@@ -661,6 +887,7 @@ def exportTemplate(
         storagedomain (str): Name of export storage domain where to export to
         exclusive (str): 'true' if overwrite already existed templates with the
             same name, 'false' otherwise ('false' by default)
+        version (int): Template version number
         wait (bool): Waits until template is exported
 
     Returns:
@@ -668,9 +895,15 @@ def exportTemplate(
     """
     log_info, log_error = ll_general.get_log_msg(
         action="Export", obj_type="template", obj_name=template,
-        positive=positive, extra_txt="to export domain %s" % storagedomain
+        positive=positive,
+        extra_txt="to export domain %s. override: %s" % (
+            storagedomain, exclusive
+        )
     )
-    template_obj = TEMPLATE_API.find(template)
+    template_obj = get_template_obj(template, version=version)
+    if not template_obj:
+        return False
+
     sd = StorageDomain(name=storagedomain)
     action_params = dict(storage_domain=sd, exclusive=exclusive)
     logger.info(log_info)
@@ -689,7 +922,7 @@ def exportTemplate(
 
 def import_template(
     positive, template, source_storage_domain, destination_storage_domain,
-    cluster, name=None, async=False
+    cluster, version=BASE_TEMPLATE_VERSION, name=None, async=False
 ):
     """
     Import template from export_domain
@@ -702,6 +935,7 @@ def import_template(
         source_storage_domain (str): from which to export the template
         destination_storage_domain (str): which to import the template
         cluster (str): cluster into which template will be imported
+        version (int): Template version number
         name (str): new name for the imported template
         async (bool): True wait for response, False otherwise
 
@@ -714,11 +948,11 @@ def import_template(
         extra_txt="from export domain %s" % source_storage_domain
     )
     export_storage_domain_obj = SD_API.find(source_storage_domain)
-    template_obj = TEMPLATE_API.getElemFromElemColl(
-        export_storage_domain_obj,
-        template
+    template_obj = get_template_obj_from_export_domain(
+        export_storage_domain_obj, template, version
     )
-
+    if not template_obj:
+        return False
     sd = StorageDomain(name=destination_storage_domain)
     cl = Cluster(name=cluster)
 
@@ -924,7 +1158,7 @@ def check_template_existence(template_name):
     try:
         template_obj = TEMPLATE_API.query(name_query, all_content=True)[0]
     except IndexError:
-        logger.error('Entity %s not found!' % template_name)
+        logger.warning('Entity %s not found!' % template_name)
         return False
     if not template_obj:
         return False
@@ -1027,30 +1261,88 @@ def wait_for_export_domain_template_state(
     return True
 
 
-def get_template_obj(template_name, all_content=False):
+def get_templates_obj(template_name, all_content=False):
     """
-    Get Template object by using the Template name
+    Get Template objects by using the Template name
 
-    __author__ = "glazarov"
     :param template_name: The Template name from which the Template object
     should be retrieved
     :type template_name: str
     :param all_content: Specifies whether the entire content for the Template
     should be retrieved, False is the default
     :type all_content: bool
-    :returns: The Template object for the input template_name or None in case
-    the template is not found
-    :rtype: Template object or None
+    :returns: A list of Template objects for the input template_name
+    :rtype: list
     """
     template_name_query = "name=%s" % template_name
     # Retrieve the entire object content only in the case where this is
     # requested
-    query_args = {}
     if all_content:
-        query_args = {'all_content': all_content}
-    response = TEMPLATE_API.query(
-        template_name_query, **query_args
+        return TEMPLATE_API.query(template_name_query,
+                                  all_content=all_content)
+    return TEMPLATE_API.query(template_name_query)
+
+
+def get_template_obj(
+    template_name, all_content=False, version=BASE_TEMPLATE_VERSION
+):
+    """
+    Gets template object by name and specific template version
+
+    Args:
+        template_name (str): Name of the template.
+        all_content (bool): True if we want to apply all_content header, False
+        otherwise.
+        version (int): Template version number.
+
+    Returns:
+         Template: If found returns the template object, otherwise None
+    """
+    log_info, log_error = ll_general.get_log_msg(
+        action="get", obj_type="template", obj_name=template_name,
+        all_content=all_content, template_version=version
     )
-    if len(response) > 0:
-        return response[0]
+    logger.info(log_info)
+    #  WA until https://bugzilla.redhat.com/show_bug.cgi?id=1365908 is fixed
+    version = 0 if template_name == 'Blank' else version
+    templates_list = get_templates_obj(template_name, all_content)
+    for template in templates_list:
+        if template.get_version().get_version_number() == version:
+            return template
+    logger.error(log_error)
+    return None
+
+
+def get_template_obj_from_export_domain(
+    export_domain_object, template_name, version=BASE_TEMPLATE_VERSION
+):
+    """
+    Gets template object by name and specific template version from export
+    domain
+
+    Args:
+        export_domain_object (ExportDomain): Export domain object
+        template_name (str): Name of the template
+        version (int): Template version number
+
+    Returns:
+         object: If found returns the template object, otherwise None
+    """
+    log_info, log_error = ll_general.get_log_msg(
+        action="get", obj_type="template", obj_name=template_name,
+        extra_txt="from export domain: %s" % export_domain_object.get_name(),
+        template_version=version
+    )
+    try:
+        templates_list = TEMPLATE_API.getElemFromLink(export_domain_object)
+    except EntityNotFound:
+        logger.error(log_error)
+        return None
+    #  WA until https://bugzilla.redhat.com/show_bug.cgi?id=1365908 is fixed
+    version = 0 if template_name == 'Blank' else version
+    logger.info(log_info)
+    for template_object in templates_list:
+        if template_object.get_version().get_version_number() == version:
+            return template_object
+    logger.error(log_error)
     return None
