@@ -2,10 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-Config for Linking job
+Config for Linking tests
 """
 
-from rhevmtests.networking.config import *  # NOQA
 import rhevmtests.helpers as global_helper
 
 NETS = global_helper.generate_object_names(num_of_cases=1, num_of_objects=4)
