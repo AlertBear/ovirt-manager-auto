@@ -128,8 +128,7 @@ class HotplugHookTest(TestCase):
     use_disks = []
     action = [lambda a, b, c, wait: True]
 
-    @pytest.fixture(scope='function')
-    def initializer_hotplug_hook(self, request, initializer_module):
+    def initializer(self):
         """
         perform actions:
             * Clear all hooks
@@ -137,14 +136,6 @@ class HotplugHookTest(TestCase):
             * Put disks in correct state
             * Install new hook(s)
         """
-        def finalizer_hotplug_hook():
-            """ Clear hooks and removes hook results """
-            logger.info("Teardown function")
-            self.run_cmd(['rm', '-f', FILE_WITH_RESULTS])
-            self.clear_hooks()
-            ll_vms.stop_vms_safely([self.vm_name])
-
-        request.addfinalizer(finalizer_hotplug_hook)
         logger.info("setup function")
         self.use_disks = DISKS_TO_PLUG[self.storage]
         self.vm_name = config.VM_NAME % self.storage
@@ -175,6 +166,18 @@ class HotplugHookTest(TestCase):
 
         logger.info("Installing hooks")
         self.install_required_hooks()
+
+    def finalizer(self):
+        """ Clear hooks and removes hook results """
+        logger.info("Teardown function")
+        self.run_cmd(['rm', '-f', FILE_WITH_RESULTS])
+        self.clear_hooks()
+        ll_vms.stop_vms_safely([self.vm_name])
+
+    @pytest.fixture(scope='function')
+    def initializer_hotplug_hook(self, request, initializer_module):
+        request.addfinalizer(self.finalizer)
+        self.initializer()
 
     def run_cmd(self, cmd):
         rc, out = self.machine.runCmd(cmd)
@@ -420,7 +423,6 @@ class TestCase5038(HotplugHookTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures("initializer_hotplug_hook")
 class TestCase5039(HotplugHookTest):
     """
     Check if before_disk_hotplug is called when attaching & activating
@@ -433,6 +435,17 @@ class TestCase5039(HotplugHookTest):
     active_disk = False
     action = [ll_vms.activateVmDisk]
     hooks = {'before_disk_hotplug': [config.HOOKFILENAME]}
+
+    @pytest.fixture(scope='function')
+    def initializer_TestCase5039(self, request, initializer_module):
+        def finalizer_TestCase5039():
+            self.finalizer()
+            vm_disks = ll_vms.getVmDisks(self.vm_name)
+            disk_names = [disk.get_name() for disk in vm_disks]
+            if self.use_disks[0] in disk_names:
+                ll_disks.detachDisk(True, self.use_disks[0], self.vm_name)
+        request.addfinalizer(finalizer_TestCase5039)
+        self.initializer()
 
     def perform_action(self):
         if ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME):
@@ -450,17 +463,11 @@ class TestCase5039(HotplugHookTest):
         pass
 
     @polarion("RHEVM3-5039")
+    @pytest.mark.usefixtures("initializer_TestCase5039")
     def test_before_disk_hotplug_attaching_new_disk(self):
         """ Check if after_disk_hotunplug is called """
         self.use_disks = UNATTACHED_DISK[self.storage]
         self.perform_action_and_verify_hook_called()
-
-    def tearDown(self):
-        super(TestCase5039, self).tearDown()
-        vm_disks = ll_vms.getVmDisks(self.vm_name)
-        disk_names = [disk.get_name() for disk in vm_disks]
-        if self.use_disks[0] in disk_names:
-            ll_disks.detachDisk(True, self.use_disks[0], self.vm_name)
 
 
 @attr(tier=2)
@@ -591,7 +598,6 @@ class TestCase5040(HotplugHookTest):
 
 
 @attr(tier=4)
-@pytest.mark.usefixtures("initializer_hotplug_hook")
 class TestCase5042(HotplugHookTest):
     """
     Restart vdsm during before_disk_hotplug, action should fail
@@ -604,6 +610,17 @@ class TestCase5042(HotplugHookTest):
     active_disk = False
     action = None
     hooks = {'before_disk_hotplug': [config.HOOKWITHSLEEPFILENAME]}
+
+    @pytest.fixture(scope='function')
+    def initializer_TestCase5042(self, request, initializer_module):
+        def finalizer_TestCase5042():
+            """
+            Give VDSM time to restart and clean the environment
+            """
+            ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME)
+            ll_hosts.waitForHostsStates(True, [self.host_name])
+            self.finalizer()
+        request.addfinalizer(finalizer_TestCase5042)
 
     def perform_action(self):
         def func():
@@ -623,16 +640,11 @@ class TestCase5042(HotplugHookTest):
         assert not self.get_hooks_result_file()
 
     @polarion("RHEVM3-5042")
+    @pytest.mark.usefixtures("initializer_TestCase5042")
     def test_multiple_hooks(self):
         """ Restart VDSM during before_disk_hotplug, action should fail """
         self.use_disks = DISKS_TO_PLUG[self.storage][7:8]
         self.perform_action_and_verify_hook_called()
-
-    def tearDown(self):
-        """Give VDSM time to restart and clean the environment"""
-        ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME)
-        ll_hosts.waitForHostsStates(True, [self.host_name])
-        super(TestCase5042, self).tearDown()
 
 
 class BasePlugDiskTest(TestCase):
