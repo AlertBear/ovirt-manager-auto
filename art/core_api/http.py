@@ -40,20 +40,21 @@ class HTTPProxy(object):
         self.cookie = None
         self.last_active_user = None
         self.type = opts['media_type']
+        self.connections_pool = []
         self.headers = self.opts['headers']
 
-        self.conn = self.create_connection()
+        self.default_conn = self.add_connection()
 
     def __del__(self):
         '''
         Close the http connections
         '''
-        if self.conn is not None:
-            self.conn.close()
+        for conn in self.connections_pool:
+            conn.close()
 
-    def create_connection(self):
+    def add_connection(self):
         '''
-        Create a connection.
+        Create a connection and pull it to the pool
         '''
         if self.opts['scheme'] == 'https':
             try:
@@ -68,21 +69,28 @@ class HTTPProxy(object):
         else:
             conn = httplib.HTTPConnection(self.opts['host'], self.opts['port'])
 
+        self.connections_pool.append(conn)
+
         return conn
 
-    def connect(self):
+    def connect(self, conn=None):
         '''
         Run the HEAD request for connection establishing
         and set cookie if available
+        Parameters:
+        * conn - connection to work with (if not provided - default is used)
         '''
 
+        if not conn:
+            conn = self.default_conn
+
         response = self.__do_request(
-            "HEAD", self.opts['uri'], get_header='Set-Cookie'
+            "HEAD", self.opts['uri'], get_header='Set-Cookie', conn=conn,
         )
         self.cookie = response['Set-Cookie']
         self.last_active_user = self.__get_user()
 
-    def __do_request(self, method, url, body=None, get_header=None,
+    def __do_request(self, method, url, body=None, get_header=None, conn=None,
                      retry_counter=2):
         '''
         Run HTTP request
@@ -91,7 +99,11 @@ class HTTPProxy(object):
         * url - request url
         * body - request body
         * get_header - name of the header to return with the response
+        * conn - connection to work with (if not provided - default is used)
         '''
+
+        if not conn:
+            conn = self.default_conn
 
         try:
             headers = self.basic_headers()
@@ -100,9 +112,9 @@ class HTTPProxy(object):
                 headers['Content-type'] = self.type
 
             # run http request
-            self.conn.request(method, url, body, headers=headers)
+            conn.request(method, url, body, headers=headers)
             # get response
-            resp = self.conn.getresponse()
+            resp = conn.getresponse()
 
             charset = encoding_from_headers(resp) or 'utf-8'
 
@@ -130,14 +142,11 @@ class HTTPProxy(object):
 
         except (httplib.CannotSendRequest, httplib.BadStatusLine), ex:
             if retry_counter:
-                if self.conn is not None:
-                    self.conn.close()
-                    self.conn = None
-                self.conn = self.create_connection()
-                self.connect()
+                add_conn = self.add_connection()
+                self.connect(add_conn)
                 retry_counter -= retry_counter
                 return self.__do_request(method, url, body=body,
-                                         get_header=get_header,
+                                         get_header=get_header, conn=add_conn,
                                          retry_counter=retry_counter)
             logger.exception("HTTP connection problem: %s", ex)
             raise
