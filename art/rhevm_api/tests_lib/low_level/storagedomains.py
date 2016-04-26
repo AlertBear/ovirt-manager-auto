@@ -18,6 +18,10 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 import re
 
+from rrmngmnt.host import Host as HostResource
+from rrmngmnt.user import User
+
+from art.core_api import is_action
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 from art.core_api.apis_utils import getDS, TimeoutingSampler
 from art.core_api.validator import compareCollectionSize
@@ -38,13 +42,10 @@ from art.rhevm_api.utils.test_utils import (
     getAllImages,
 )
 from art.rhevm_api.utils.xpath_utils import XPathMatch
-from rrmngmnt.host import Host as HostResource
-from rrmngmnt.user import User
-from utilities.utils import getIpAddressByHostName
-from art.core_api import is_action
-from art.test_handler.settings import opts
 from art.test_handler import exceptions
+from art.test_handler.settings import opts
 from utilities import sshConnection, machine
+from utilities.utils import getIpAddressByHostName
 
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -779,21 +780,24 @@ def remove_floating_disks(storage_domain):
     )
 
     if floating_disks:
-        floating_disks_list = [disk.get_alias() for disk in floating_disks]
-        for disk in floating_disks_list:
-            util.logger.info('Removing floating disk %s', disk)
-            if not deleteDisk(True, alias=disk, async=False):
+        floating_disks_ids = [disk.get_id() for disk in floating_disks]
+        floating_disks_aliases = [disk.get_alias() for disk in floating_disks]
+        for disk_id, alias in zip(floating_disks_ids, floating_disks_aliases):
+            util.logger.info(
+                'Removing floating disk alias:%s id:%s', alias, disk_id
+            )
+            if not deleteDisk(True, async=False, disk_id=disk_id):
                 return False
         util.logger.info('Ensuring all disks are removed')
         if not waitForDisksGone(
                 True,
-                ','.join(floating_disks_list),
+                ','.join(floating_disks_aliases),
                 sleep=10
         ):
                 return False
         util.logger.info(
             'All floating disks: %s removed successfully',
-            floating_disks_list
+            floating_disks_aliases
         )
 
 
