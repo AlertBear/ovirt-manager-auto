@@ -17,12 +17,17 @@ import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_storagedomains
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import config as conf
+import rhevmtests.networking.config as conf
+import helper
+import config as mac_pool_conf
 from art.rhevm_api.utils import test_utils
 from rhevmtests import networking
+from rhevmtests.networking.fixtures import (
+    NetworkFixtures, network_cleanup_fixture
+)  # flake8: noqa
 
 
-class MacPoolPrepareSetup(object):
+class MacPool(NetworkFixtures):
     """
     Prepare setup
     """
@@ -30,22 +35,20 @@ class MacPoolPrepareSetup(object):
         """
         Initialize params
         """
-        self.nic0 = conf.NIC_NAME_0
-        self.nic1 = conf.NIC_NAME_1
-        self.nic2 = conf.NIC_NAME_2
-        self.nic3 = conf.NIC_NAME_3
-        self.pool_0 = conf.MAC_POOL_NAME_0
-        self.pool_1 = conf.MAC_POOL_NAME_1
-        self.vm_0 = conf.VM_0
-        self.mp_vm = conf.MP_VM
-        self.mp_vm_1 = conf.MP_VM_NAMES[1]
-        self.mp_template = conf.MP_TEMPLATE
-        self.dc_0 = conf.DC_0
+        super(MacPool, self).__init__()
+        self.nic0 = mac_pool_conf.NIC_NAME_0
+        self.nic1 = mac_pool_conf.NIC_NAME_1
+        self.nic2 = mac_pool_conf.NIC_NAME_2
+        self.nic3 = mac_pool_conf.NIC_NAME_3
+        self.pool_0 = mac_pool_conf.MAC_POOL_NAME_0
+        self.pool_1 = mac_pool_conf.MAC_POOL_NAME_1
+        self.mp_vm = mac_pool_conf.MP_VM
+        self.mp_vm_1 = mac_pool_conf.MP_VM_NAMES[1]
+        self.mp_template = mac_pool_conf.MP_TEMPLATE
         self.ext_dc = conf.EXT_DC_0
         self.def_mac_pool = conf.DEFAULT_MAC_POOL
-        self.mac_pool_cl = conf.MAC_POOL_CL
+        self.mac_pool_cl = mac_pool_conf.MAC_POOL_CL
         self.range_list = conf.MAC_POOL_RANGE_LIST
-        self.mgmt = conf.MGMT_BRIDGE
         self.ver_35 = conf.VERSION[5]
         self.comp_ver = conf.COMP_VERSION
 
@@ -53,52 +56,47 @@ class MacPoolPrepareSetup(object):
         """
         Create basic setup (DC/Cluster)
         """
-        if not hl_networks.create_basic_setup(
+        assert hl_networks.create_basic_setup(
             datacenter=self.ext_dc, storage_type=conf.STORAGE_TYPE,
             version=self.comp_ver, cluster=self.mac_pool_cl,
             cpu=conf.CPU_NAME
-        ):
-            raise conf.NET_EXCEPTION()
+        )
 
     def move_host_to_new_cluster(self):
         """
         Move host to new cluster
         """
-        if not hl_hosts.move_host_to_another_cluster(
+        assert hl_hosts.move_host_to_another_cluster(
             host=conf.HOST_1_NAME, cluster=self.mac_pool_cl
-        ):
-            raise conf.NET_EXCEPTION()
+        )
 
     def add_storage(self):
         """
         Add storage
         """
-        if not hl_storagedomains.addNFSDomain(
-            host=conf.HOST_1_NAME, storage=conf.MP_STORAGE,
+        assert hl_storagedomains.addNFSDomain(
+            host=conf.HOST_1_NAME, storage=mac_pool_conf.MP_STORAGE,
             data_center=self.ext_dc, path=conf.UNUSED_DATA_DOMAIN_PATHS[0],
             address=conf.UNUSED_DATA_DOMAIN_ADDRESSES[0]
-        ):
-            raise conf.NET_EXCEPTION()
+        )
 
     def create_vm(self):
         """
         Create VM
         """
-        if not ll_vms.createVm(
+        assert ll_vms.createVm(
             positive=True, vmName=self.mp_vm, cluster=self.mac_pool_cl,
-            storageDomainName=conf.MP_STORAGE, size=conf.VM_DISK_SIZE
-        ):
-            raise conf.NET_EXCEPTION()
+            storageDomainName=mac_pool_conf.MP_STORAGE, size=conf.VM_DISK_SIZE
+        )
 
     def create_template(self):
         """
         Create template
         """
-        if not ll_templates.createTemplate(
+        assert ll_templates.createTemplate(
             positive=True, vm=self.mp_vm, cluster=self.mac_pool_cl,
             name=self.mp_template
-        ):
-            raise conf.NET_EXCEPTION()
+        )
 
     def remove_vm(self, vm=None):
         """
@@ -133,7 +131,8 @@ class MacPoolPrepareSetup(object):
         Remove storage
         """
         hl_storagedomains.remove_storage_domain(
-            name=conf.MP_STORAGE, datacenter=None, host=conf.HOST_1_NAME
+            name=mac_pool_conf.MP_STORAGE, datacenter=None,
+            host=conf.HOST_1_NAME
         )
 
     def move_host_to_original_cluster(self):
@@ -157,7 +156,7 @@ class MacPoolPrepareSetup(object):
         curr_mac_pool_values = ll_mac_pool.get_mac_range_values(
             ll_mac_pool.get_mac_pool(pool_name=self.def_mac_pool)
         )
-        if not curr_mac_pool_values == conf.DEFAULT_MAC_POOL_VALUES:
+        if not curr_mac_pool_values == mac_pool_conf.DEFAULT_MAC_POOL_VALUES:
             hl_mac_pool.update_default_mac_pool()
 
     def update_dc_mac_pool_default(self):
@@ -183,10 +182,9 @@ class MacPoolPrepareSetup(object):
             pools (list): List of tuple of pools names and allow_duplicates
         """
         for pool, dup in pools:
-            if not ll_mac_pool.create_mac_pool(
+            assert ll_mac_pool.create_mac_pool(
                 name=pool, ranges=[self.range_list[0]], allow_duplicates=dup
-            ):
-                raise conf.NET_EXCEPTION()
+            )
 
     def update_dcs_mac_pools(self, dcs):
         """
@@ -196,23 +194,16 @@ class MacPoolPrepareSetup(object):
             dcs (list): List of tuple [(DC, pool)] to update
         """
         for dc, pool in dcs:
-            if not ll_dc.update_datacenter(
+            assert ll_dc.update_datacenter(
                 positive=True, datacenter=dc,
                 mac_pool=ll_mac_pool.get_mac_pool(pool_name=pool)
-            ):
-                raise conf.NET_EXCEPTION()
+            )
 
 
-class Case06Fixture(MacPoolPrepareSetup):
+class Case06Fixture(MacPool):
     """
     Fixture functions for TestMacPoolRange06 case
     """
-    def __init__(self):
-        """
-        Call base class __init__
-        """
-        super(Case06Fixture, self).__init__()
-
     def create_mac_pools_case_06(self):
         """
         Create MAC pools
@@ -247,10 +238,10 @@ class Case06Fixture(MacPoolPrepareSetup):
         self.update_dcs_mac_pools(dcs=dcs)
 
 
-class Case08Fixture(MacPoolPrepareSetup):
-    def __init__(self):
-        super(Case08Fixture, self).__init__()
-
+class Case08Fixture(MacPool):
+    """
+    Fixture functions for TestMacPoolRange08 case
+    """
     def create_mac_pool_case_08(self):
         """
         Create MAC pool
@@ -270,30 +261,27 @@ class Case08Fixture(MacPoolPrepareSetup):
         Update template NICs
         """
         for nic in [self.nic0, self.nic1]:
-            if not ll_templates.addTemplateNic(
+            assert ll_templates.addTemplateNic(
                 positive=True, template=self.mp_template, name=nic,
                 data_center=self.ext_dc
-            ):
-                raise conf.NET_EXCEPTION()
+            )
 
     def create_vm_from_template(self):
         """
         Create VM
         """
-        if not ll_vms.createVm(
+        assert ll_vms.createVm(
             positive=True, vmName=self.mp_vm_1, cluster=self.mac_pool_cl,
-            template=self.mp_template, network=self.mgmt
-        ):
-            raise conf.NET_EXCEPTION()
+            template=self.mp_template, network=self.mgmt_bridge
+        )
 
     def remove_template(self):
         """
         Remove template
         """
-        if not ll_templates.removeTemplate(
+        assert ll_templates.removeTemplate(
             positive=True, template=self.mp_template
-        ):
-            raise conf.NET_EXCEPTION()
+        )
 
     def update_mac_pool_dcs_to_default_case_08(self):
         """
@@ -309,18 +297,17 @@ class Case08Fixture(MacPoolPrepareSetup):
         self.remove_vm(vm=self.mp_vm_1)
 
 
-class Case11Fixture(MacPoolPrepareSetup):
-    def __init__(self):
-        super(Case11Fixture, self).__init__()
-
+class Case11Fixture(MacPool):
+    """
+    Fixture functions for TestMacPoolRange11 case
+    """
     def update_dc_version(self, version):
         """
         Update DC version
         """
-        if not ll_dc.update_datacenter(
+        assert ll_dc.update_datacenter(
             positive=True, datacenter=self.ext_dc, version=version
-        ):
-            raise conf.NET_EXCEPTION()
+        )
 
     def update_dc_version_35(self):
         """
@@ -332,10 +319,9 @@ class Case11Fixture(MacPoolPrepareSetup):
         """
         Update MAC poll range
         """
-        if not ll_mac_pool.create_mac_pool(
+        assert ll_mac_pool.create_mac_pool(
             name=self.pool_0, ranges=[self.range_list[0]]
-        ):
-            raise conf.NET_EXCEPTION()
+        )
 
     def update_dcs_mac_pools_case_11(self):
         """
@@ -348,8 +334,7 @@ class Case11Fixture(MacPoolPrepareSetup):
         """
         Add NIC to VM
         """
-        if not ll_vms.addNic(positive=True, vm=self.mp_vm, name=self.nic1):
-            raise conf.NET_EXCEPTION()
+        assert ll_vms.addNic(positive=True, vm=self.mp_vm, name=self.nic1)
 
     def update_dc_version_original(self):
         """
@@ -375,7 +360,7 @@ class Case11Fixture(MacPoolPrepareSetup):
 
 
 @pytest.fixture(scope="module")
-def mac_pool_prepare_setup(request):
+def mac_pool_prepare_setup(request, network_cleanup_fixture):
     """
     Prepare setup for MAC pool per DC tests
 
@@ -389,7 +374,7 @@ def mac_pool_prepare_setup(request):
               -> Remove VM
     Create template -> Update default MAC pool for DC
     """
-    ps = MacPoolPrepareSetup()
+    ps = MacPool()
 
     @networking.ignore_exception
     def fin8():
@@ -585,3 +570,266 @@ def mac_pool_range_11_fixture(request, mac_pool_prepare_setup):
     ps.update_mac_pool_range()
     ps.update_dcs_mac_pools_case_11()
     ps.add_nic_to_vm()
+
+
+@pytest.fixture(scope="class")
+def fixture_mac_pool_range_case_02(request, mac_pool_prepare_setup):
+    """
+    Create MAC pool
+    Create a new DC with MAC pool
+    Remove a created DC
+    """
+    ps = MacPool()
+    mac_pool = request.node.cls.mac_pool
+    range_ = request.node.cls.range
+    ext_dc = request.node.cls.ext_dc
+
+    def fin2():
+        """
+        Remove MAC pool
+        """
+        ll_mac_pool.remove_mac_pool(mac_pool_name=mac_pool)
+    request.addfinalizer(fin2)
+
+    def fin1():
+        """
+        Remove DC
+        """
+        ll_dc.remove_datacenter(positive=True, datacenter=ext_dc)
+    request.addfinalizer(fin1)
+
+    assert ll_mac_pool.create_mac_pool(name=mac_pool, ranges=[range_])
+    helper.create_dc()
+    assert ll_dc.remove_datacenter(positive=True, datacenter=ext_dc)
+
+
+@pytest.fixture(scope="class")
+def fixture_mac_pool_range_case_03(request, mac_pool_prepare_setup):
+    """
+    Create 1 MAC pool
+    Update DC with 1 of created MAC pool
+    """
+    ps = MacPool()
+    pool_name_0 = request.node.cls.pool_name_0
+    pool_name_1 = request.node.cls.pool_name_1
+    pool_name_2 = request.node.cls.pool_name_2
+    range_list = request.node.cls.range_list
+
+    @networking.ignore_exception
+    def fin2():
+        """
+        Remove MAC pools
+        """
+        for mac_pool in (pool_name_0, pool_name_1, pool_name_2):
+            ll_mac_pool.remove_mac_pool(mac_pool_name=mac_pool)
+    request.addfinalizer(fin2)
+
+    def fin1():
+        """
+        Update MAC pool in DC
+        """
+        ll_dc.update_datacenter(
+            positive=True, datacenter=ps.dc_0,
+            mac_pool=ll_mac_pool.get_mac_pool(pool_name=ps.def_mac_pool)
+        )
+    request.addfinalizer(fin1)
+
+    assert ll_mac_pool.create_mac_pool(
+        name=pool_name_0, ranges=[range_list[0]]
+    )
+    assert ll_dc.update_datacenter(
+        positive=True, datacenter=ps.dc_0,
+        mac_pool=ll_mac_pool.get_mac_pool(pool_name=pool_name_0)
+    )
+
+
+@pytest.fixture(scope="class")
+def fixture_mac_pool_range_case_04(request, mac_pool_prepare_setup):
+    """
+    Create a new MAC pool
+    Update DC with this MAC pool
+    """
+    ps = MacPool()
+    vm = request.node.cls.vm
+    pool_name = request.node.cls.pool_name
+    range_list = request.node.cls.range_list
+
+    def fin3():
+        """
+        Remove MAC pool
+        """
+        ll_mac_pool.remove_mac_pool(mac_pool_name=pool_name)
+    request.addfinalizer(fin3)
+
+    def fin2():
+        """
+        Update MACpoll in DC
+        """
+        ll_dc.update_datacenter(
+            positive=True, datacenter=ps.dc_0,
+            mac_pool=ll_mac_pool.get_mac_pool(pool_name=ps.def_mac_pool)
+        )
+    request.addfinalizer(fin2)
+
+    def fin1():
+        """
+        Remove vNICs from VM
+        """
+        for nic in conf.NIC_NAME[1:5]:
+            ll_vms.removeNic(positive=True, vm=vm, nic=nic)
+    request.addfinalizer(fin1)
+
+    assert ll_mac_pool.create_mac_pool(name=pool_name, ranges=[range_list[1]])
+    assert ll_dc.update_datacenter(
+        positive=True, datacenter=ps.dc_0,
+        mac_pool=ll_mac_pool.get_mac_pool(pool_name)
+    )
+
+
+@pytest.fixture(scope="class")
+def fixture_mac_pool_range_case_05(request, mac_pool_prepare_setup):
+    """
+    Create a new MAC pool
+    Update DC with this MAC pool
+    """
+    ps = MacPool()
+    vm = request.node.cls.vm
+    pool_name = request.node.cls.pool_name
+    mac_pool_ranges = request.node.cls.mac_pool_ranges
+
+    def fin3():
+        """
+        Remove MAC pool
+        """
+        ll_mac_pool.remove_mac_pool(mac_pool_name=pool_name)
+    request.addfinalizer(fin3)
+
+    def fin2():
+        """
+        Update MAC pool in DC
+        """
+        ll_dc.update_datacenter(
+            positive=True, datacenter=ps.dc_0,
+            mac_pool=ll_mac_pool.get_mac_pool(pool_name=ps.def_mac_pool)
+        )
+    request.addfinalizer(fin2)
+
+    def fin1():
+        """
+        Remove vNICs from VM
+        """
+        for nic in conf.NIC_NAME[1:7]:
+            ll_vms.removeNic(positive=True, vm=vm, nic=nic)
+    request.addfinalizer(fin1)
+
+    assert ll_mac_pool.create_mac_pool(
+        name=pool_name, ranges=mac_pool_ranges[:3]
+    )
+    assert ll_dc.update_datacenter(
+        positive=True, datacenter=conf.DC_0,
+        mac_pool=ll_mac_pool.get_mac_pool(pool_name=pool_name)
+    )
+    for i in range(3):
+        assert ll_vms.addNic(
+            positive=True, vm=vm, name=conf.NIC_NAME[i + 1]
+        )
+
+
+@pytest.fixture(scope="class")
+def fixture_mac_pool_range_case_07(request, mac_pool_prepare_setup):
+    """
+    Create a new MAC pool with range having multicast and unicast MACs
+    Update DC with a new MAC pool
+    """
+    ps = MacPool()
+    vm = request.node.cls.vm
+    nic_1 = request.node.cls.nic_1
+    nic_2 = request.node.cls.nic_2
+    pool_0 = request.node.cls.pool_0
+    mac_pool_ranges = request.node.cls.mac_pool_ranges
+
+    def fin3():
+        """
+        Remove MAC pool
+        """
+        ll_mac_pool.remove_mac_pool(mac_pool_name=pool_0)
+    request.addfinalizer(fin3)
+
+    def fin2():
+        """
+        Update MACpool in DC
+        """
+        ll_dc.update_datacenter(
+            positive=True, datacenter=ps.dc_0,
+            mac_pool=ll_mac_pool.get_mac_pool(pool_name=ps.def_mac_pool)
+        )
+    request.addfinalizer(fin2)
+
+    def fin1():
+        """
+        Remove vNICs from VM
+        """
+        for nic in (nic_1, nic_2):
+            ll_vms.removeNic(positive=True, vm=vm, nic=nic)
+    request.addfinalizer(fin1)
+
+    assert ll_mac_pool.create_mac_pool(name=pool_0, ranges=mac_pool_ranges)
+    assert ll_dc.update_datacenter(
+        positive=True, datacenter=ps.dc_0,
+        mac_pool=ll_mac_pool.get_mac_pool(pool_name=pool_0)
+    )
+
+
+@pytest.fixture(scope="class")
+def fixture_mac_pool_range_case_09(request, mac_pool_prepare_setup):
+    """
+     Create MAC pool
+    Create 2 new DCs with MAC pool
+    """
+    ps = MacPool()
+    ext_dc_1 = request.node.cls.ext_dc_1
+    ext_dc_2 = request.node.cls.ext_dc_2
+    pool_name_0 = request.node.cls.pool_name_0
+    range_list = request.node.cls.range_list
+
+    def fin():
+        """
+        Remove MAC pool
+        """
+        ll_mac_pool.remove_mac_pool(mac_pool_name=pool_name_0)
+    request.addfinalizer(fin)
+
+    assert ll_mac_pool.create_mac_pool(
+        name=pool_name_0, ranges=[range_list[0]]
+    )
+    for dc in [ext_dc_1, ext_dc_2]:
+        helper.create_dc(dc_name=dc)
+
+
+@pytest.fixture(scope="class")
+def fixture_mac_pool_range_case_10(request, mac_pool_prepare_setup):
+    """
+    Create MAC pool
+    """
+    ps = MacPool()
+    pool_name_0 = request.node.cls.pool_name_0
+    range_list = request.node.cls.range_list
+
+    def fin2():
+        """
+        Remove MAC pool
+        """
+        ll_mac_pool.remove_mac_pool(mac_pool_name=pool_name_0)
+    request.addfinalizer(fin2)
+
+    def fin1():
+        """
+        Remove DCs
+        """
+        for i in range(1, 6):
+            ll_dc.remove_datacenter(positive=True, datacenter=conf.EXTRA_DC[i])
+    request.addfinalizer(fin1)
+
+    assert ll_mac_pool.create_mac_pool(
+        name=pool_name_0, ranges=[range_list[0]]
+    )
