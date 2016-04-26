@@ -1,10 +1,20 @@
 import datetime
 import logging
+
+from unittest2 import TestCase
+
+from _pytest_art.marks import attr
+from _pytest_art.marks import (
+    network,
+    sla,
+    storage,
+    coresystem,
+    virt,
+    integration,
+)
+from _pytest_art.testlogger import TestFlowInterface
 from art.test_handler.exceptions import TearDownException
 from art.test_handler.settings import plmanager, opts, ART_CONFIG
-from unittest2 import TestCase
-from _pytest_art.marks import attr
-from _pytest_art.testlogger import TestFlowInterface
 
 logger = logging.getLogger(__name__)
 testflow = TestFlowInterface
@@ -63,6 +73,7 @@ class BaseTestCase(TestCase):
     storage = None
 
 
+@storage
 @attr(team="storage")
 class StorageTest(BaseTestCase):
     """
@@ -98,6 +109,7 @@ class StorageTest(BaseTestCase):
         )
 
 
+@network
 @attr(team="network")
 class NetworkTest(BaseTestCase):
     """
@@ -108,6 +120,7 @@ class NetworkTest(BaseTestCase):
     apis = set(["rest", "java", "sdk"])
 
 
+@virt
 @attr(team="virt")
 class VirtTest(BaseTestCase):
     """
@@ -116,6 +129,7 @@ class VirtTest(BaseTestCase):
     __test__ = False
 
 
+@sla
 @attr(team="sla")
 class SlaTest(BaseTestCase):
     """
@@ -124,6 +138,7 @@ class SlaTest(BaseTestCase):
     __test__ = False
 
 
+@coresystem
 @attr(team="coresystem")
 class CoreSystemTest(BaseTestCase):
     """
@@ -132,6 +147,7 @@ class CoreSystemTest(BaseTestCase):
     __test__ = False
 
 
+@integration
 @attr(team="integration")
 class IntegrationTest(BaseTestCase):
     """

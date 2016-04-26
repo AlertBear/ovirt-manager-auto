@@ -9,8 +9,10 @@ to refactor our tests and keep @attr() decorator.
 See https://pytest.org/latest/mark.html
 """
 import ast
-import pytest
+
 from pkg_resources import parse_version
+
+import pytest
 
 __all__ = [
     "attr",
@@ -36,6 +38,18 @@ jira = pytest.mark.jira
 
 # Attrib decorator, same as nose has
 attr = pytest.mark.attr
+
+network = pytest.mark.network
+sla = pytest.mark.sla
+storage = pytest.mark.storage
+coresystem = pytest.mark.coresystem
+virt = pytest.mark.virt
+do_not_run = pytest.mark.do_not_run
+integration = pytest.mark.integration
+tier1 = pytest.mark.tier1
+tier2 = pytest.mark.tier2
+tier3 = pytest.mark.tier3
+tier4 = pytest.mark.tier4
 
 
 def pytest_addoption(parser):
