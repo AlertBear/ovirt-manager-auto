@@ -266,20 +266,22 @@ class AddVm(VirtTest):
     @polarion("RHEVM3-14953")
     @pytest.mark.usefixtures(basic_teardown_fixture.__name__)
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-    def test_add_win_vm_name_long(self):
+    def test_add_and_remove_win_vm_name_long(self):
         """
-        Positive: Add vm with windows os and nome long the 15 characters
+        Positive: Add vm with windows os and nome long the 40 characters
         """
         testflow.step(
-            "Positive: Add vm with windows os and nome long the 15 characters"
+            "Positive: Add vm with windows os and nome long the 40 characters"
         )
-        vm_name = 'a' * 15
+        vm_name = 'a' * 40
         vm_parameters = self.vm_parameters.copy()
         vm_parameters['name'] = vm_name
         vm_parameters['os_type'] = config.WIN_7
         self.assertTrue(
             ll_vms.addVm(True, **vm_parameters)
         )
+        testflow.step("Remove vm with long name")
+        self.assertTrue(ll_vms.safely_remove_vms([vm_name]))
 
     @polarion("RHEVM3-14953")
     @pytest.mark.usefixtures(basic_teardown_fixture.__name__)
