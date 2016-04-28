@@ -6,18 +6,21 @@ Network test cases that do not fit to any feature plan
 """
 
 import logging
-from rhevmtests.networking import config
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import attr
-from art.unittest_lib import NetworkTest as TestCase
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+from _pytest_art.marks import tier2
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.unittest_lib import NetworkTest as TestCase
+from art.unittest_lib import attr
+from rhevmtests.networking import config
 
 logger = logging.getLogger("Misc_Cases")
 
 DC_0 = config.DC_NAME[0]
 
 
+@tier2
 @attr(tier=2)
 class TestMisc01(TestCase):
     """

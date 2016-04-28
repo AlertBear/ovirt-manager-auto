@@ -5,19 +5,22 @@
 Testing RequiredNetwork network feature.
 1 DC, 1 Cluster, 1 Hosts will be created for testing.
 """
-import helper
 import logging
+
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as conf
+import helper
+from _pytest_art.marks import tier2
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest, attr
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 logger = logging.getLogger("Required_Network_Cases")
 
 
+@tier2
 @attr(tier=2)
 class TearDownRequiredNetwork(NetworkTest):
     """

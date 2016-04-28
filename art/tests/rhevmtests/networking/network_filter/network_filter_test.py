@@ -4,14 +4,16 @@ Testing NetworkFilter feature.
 """
 
 import logging
+
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import pytest
-from rhevmtests.networking import config
+import rhevmtests.networking.helper as net_help
+from _pytest_art.marks import tier2
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion  # pylint: disable=E0611
-import rhevmtests.networking.helper as net_help
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 from art.unittest_lib import NetworkTest as TestCase, attr
+from rhevmtests.networking import config
 
 logger = logging.getLogger("Network_Filter_Cases")
 
@@ -22,6 +24,7 @@ logger = logging.getLogger("Network_Filter_Cases")
 ########################################################################
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class TestNetworkFilterCase02(TestCase):
@@ -82,6 +85,7 @@ class TestNetworkFilterCase02(TestCase):
 ##############################################################################
 
 
+@tier2
 @attr(tier=2)
 class TestNetworkFilterCase03(TestCase):
     """
@@ -140,6 +144,7 @@ class TestNetworkFilterCase03(TestCase):
 ##############################################################################
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class TestNetworkFilterCase04(TestCase):
@@ -219,6 +224,7 @@ class TestNetworkFilterCase04(TestCase):
 ##############################################################################
 
 
+@tier2
 @attr(tier=2)
 class TestNetworkFilterCase05(TestCase):
     """

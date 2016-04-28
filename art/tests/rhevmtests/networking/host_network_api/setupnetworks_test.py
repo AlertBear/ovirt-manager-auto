@@ -18,10 +18,12 @@ from fixtures import (
     teardown_all_cases_sn, sn_case_09, sn_case_10, sn_case_11, sn_case_15,
     sn_case_16, sn_case_17, sn_case_24, sn_case_25, sn_case_26
 )
+from _pytest_art.marks import tier2
 
 logger = logging.getLogger("Host_Network_API_SN_Cases")
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
 class TestHostNetworkApiSetupNetworks01(NetworkTest):
@@ -52,6 +54,7 @@ class TestHostNetworkApiSetupNetworks01(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
 class TestHostNetworkApiSetupNetworks02(NetworkTest):
@@ -82,6 +85,7 @@ class TestHostNetworkApiSetupNetworks02(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
 class TestHostNetworkApiSetupNetworks03(NetworkTest):
@@ -112,6 +116,7 @@ class TestHostNetworkApiSetupNetworks03(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
 class TestHostNetworkApiSetupNetworks04(NetworkTest):
@@ -156,6 +161,7 @@ class TestHostNetworkApiSetupNetworks04(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
 class TestHostNetworkApiSetupNetworks05(NetworkTest):
@@ -200,6 +206,7 @@ class TestHostNetworkApiSetupNetworks05(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
 class TestHostNetworkApiSetupNetworks06(NetworkTest):
@@ -244,6 +251,7 @@ class TestHostNetworkApiSetupNetworks06(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
 class TestHostNetworkApiSetupNetworks07(NetworkTest):
@@ -274,6 +282,7 @@ class TestHostNetworkApiSetupNetworks07(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
 class TestHostNetworkApiSetupNetworks08(NetworkTest):
@@ -314,6 +323,7 @@ class TestHostNetworkApiSetupNetworks08(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sn_case_09.__name__)
 class TestHostNetworkApiSetupNetworks09(NetworkTest):
@@ -341,6 +351,7 @@ class TestHostNetworkApiSetupNetworks09(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sn_case_10.__name__)
 class TestHostNetworkApiSetupNetworks10(NetworkTest):
@@ -384,6 +395,7 @@ class TestHostNetworkApiSetupNetworks10(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sn_case_11.__name__)
 class TestHostNetworkApiSetupNetworks11(NetworkTest):
@@ -426,6 +438,7 @@ class TestHostNetworkApiSetupNetworks11(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
 class TestHostNetworkApiSetupNetworks12(NetworkTest):
@@ -548,6 +561,7 @@ class TestHostNetworkApiSetupNetworks12(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
 class TestHostNetworkApiSetupNetworks13(NetworkTest):
@@ -591,6 +605,7 @@ class TestHostNetworkApiSetupNetworks13(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
 class TestHostNetworkApiSetupNetworks14(NetworkTest):
@@ -622,6 +637,7 @@ class TestHostNetworkApiSetupNetworks14(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sn_case_15.__name__)
 class TestHostNetworkApiSetupNetworks15(NetworkTest):
@@ -651,6 +667,7 @@ class TestHostNetworkApiSetupNetworks15(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sn_case_16.__name__)
 class TestHostNetworkApiSetupNetworks16(NetworkTest):
@@ -672,6 +689,7 @@ class TestHostNetworkApiSetupNetworks16(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sn_case_17.__name__)
 class TestHostNetworkApiSetupNetworks17(NetworkTest):
@@ -693,6 +711,7 @@ class TestHostNetworkApiSetupNetworks17(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
 class TestHostNetworkApiSetupNetworks18(NetworkTest):
@@ -736,6 +755,7 @@ class TestHostNetworkApiSetupNetworks18(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
 class TestHostNetworkApiSetupNetworks19(NetworkTest):
@@ -780,6 +800,7 @@ class TestHostNetworkApiSetupNetworks19(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
 class TestHostNetworkApiSetupNetworks20(NetworkTest):
@@ -810,6 +831,7 @@ class TestHostNetworkApiSetupNetworks20(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
 class TestHostNetworkApiSetupNetworks21(NetworkTest):
@@ -846,6 +868,7 @@ class TestHostNetworkApiSetupNetworks21(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
 class TestHostNetworkApiSetupNetworks22(NetworkTest):
@@ -886,6 +909,7 @@ class TestHostNetworkApiSetupNetworks22(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_sn.__name__)
 class TestHostNetworkApiSetupNetworks23(NetworkTest):
@@ -932,6 +956,7 @@ class TestHostNetworkApiSetupNetworks23(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sn_case_24.__name__)
 class TestHostNetworkApiSetupNetworks24(NetworkTest):
@@ -963,6 +988,7 @@ class TestHostNetworkApiSetupNetworks24(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sn_case_25.__name__)
 class TestHostNetworkApiSetupNetworks25(NetworkTest):
@@ -1048,6 +1074,7 @@ class TestHostNetworkApiSetupNetworks25(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sn_case_26.__name__)
 class TestHostNetworkApiSetupNetworks26(NetworkTest):

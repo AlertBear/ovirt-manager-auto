@@ -5,33 +5,36 @@
 Testing Sanity for the network features.
 """
 
-import helper
 import logging
-import pytest
+
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.unittest_lib.network as lib_network
 import config as conf
+import helper
+import pytest
+import rhevmtests.helpers as global_helper
+import rhevmtests.networking.helper as network_helper
+import rhevmtests.networking.mac_pool_range_per_dc.helper as mac_pool_helper
+import rhevmtests.networking.management_as_role.helper as mgmt_net_helper
+import rhevmtests.networking.required_network.helper as required_network_helper
+from _pytest_art.marks import tier1
 from art.core_api import apis_exceptions
 from art.rhevm_api.utils import test_utils
-import rhevmtests.helpers as global_helper
-import art.unittest_lib.network as lib_network
-from art.unittest_lib import attr, NetworkTest
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
-import rhevmtests.networking.helper as network_helper
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
-import art.rhevm_api.tests_lib.low_level.mac_pool as ll_mac_pool
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.high_level.mac_pool as hl_mac_pool
-import rhevmtests.networking.management_as_role.helper as mgmt_net_helper
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import rhevmtests.networking.mac_pool_range_per_dc.helper as mac_pool_helper
-import rhevmtests.networking.required_network.helper as required_network_helper
+from art.unittest_lib import attr, NetworkTest
 
 logger = logging.getLogger("Sanity_Cases")
 
 
+@tier1
 @attr(tier=1)
 class TestSanityCaseBase(NetworkTest):
     """
@@ -545,6 +548,7 @@ class TestSanity06(TestSanityCaseBase):
         super(TestSanity06, cls).teardown_class()
 
 
+@tier1
 @attr(tier=1)
 class TestSanity07(NetworkTest):
     """
@@ -815,6 +819,7 @@ class TestSanity09(TestSanityCaseBase):
             )
 
 
+@tier1
 @attr(tier=1)
 class TestSanity10(NetworkTest):
     """
@@ -877,6 +882,7 @@ class TestSanity10(NetworkTest):
         helper.send_setup_networks(sn_dict=network_host_api_dict)
 
 
+@tier1
 @attr(tier=1)
 class TestSanity11(NetworkTest):
     """
@@ -963,6 +969,7 @@ class TestSanity12(TestSanityCaseBase):
             raise conf.NET_EXCEPTION()
 
 
+@tier1
 @attr(tier=1)
 class TestSanity13(NetworkTest):
     """

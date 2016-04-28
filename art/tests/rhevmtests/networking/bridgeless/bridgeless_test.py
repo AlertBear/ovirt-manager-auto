@@ -10,10 +10,10 @@ bond scenarios.
 
 import logging
 
-import pytest
-
 import helper as bridgeless_helper
+import pytest
 import rhevmtests.networking.config as conf
+from _pytest_art.marks import tier2
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
@@ -24,6 +24,7 @@ from fixtures import (
 logger = logging.getLogger("Bridgeless_Networks_Cases")
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(
     all_classes_teardown.__name__, bridgeless_prepare_setup.__name__
@@ -45,6 +46,7 @@ class TestBridgelessCase1(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(
     all_classes_teardown.__name__, bridgeless_prepare_setup.__name__
@@ -66,6 +68,7 @@ class TestBridgelessCase2(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(case_03_fixture.__name__)
 class TestBridgelessCase3(NetworkTest):
@@ -87,6 +90,7 @@ class TestBridgelessCase3(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(case_04_fixture.__name__)
 class TestBridgelessCase4(NetworkTest):

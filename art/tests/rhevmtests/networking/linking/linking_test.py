@@ -9,19 +9,22 @@ It will cover scenarios for different states of VNIC on stopped/running VM.
 """
 
 import logging
-import pytest
-import config as conf
-from art.unittest_lib import attr
-from art.unittest_lib import NetworkTest
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-import rhevmtests.networking.helper as net_help
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import config as conf
+import pytest
+import rhevmtests.networking.helper as net_help
+from _pytest_art.marks import tier2
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.unittest_lib import NetworkTest
+from art.unittest_lib import attr
 
 logger = logging.getLogger("Linking_Cases")
 
 
+@tier2
 @attr(tier=2)
 class TestLinkedCasesBase(NetworkTest):
     """

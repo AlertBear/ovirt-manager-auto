@@ -7,12 +7,12 @@ Sync tests from host network API
 
 import logging
 
-import pytest
-
 import config as conf
 import helper
+import pytest
 import rhevmtests.networking.config as net_conf
 import rhevmtests.networking.helper as network_helper
+from _pytest_art.marks import tier2
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
@@ -25,6 +25,7 @@ from fixtures import (
 logger = logging.getLogger("Host_Network_API_Sync_Cases")
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_01.__name__)
 class TestHostNetworkApiSync01(NetworkTest):
@@ -128,6 +129,7 @@ class TestHostNetworkApiSync01(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_02.__name__)
 class TestHostNetworkApiSync02(NetworkTest):
@@ -240,6 +242,7 @@ class TestHostNetworkApiSync02(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_03.__name__)
 class TestHostNetworkApiSync03(NetworkTest):
@@ -344,6 +347,7 @@ class TestHostNetworkApiSync03(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_04.__name__)
 class TestHostNetworkApiSync04(NetworkTest):
@@ -457,6 +461,7 @@ class TestHostNetworkApiSync04(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_05.__name__)
 class TestHostNetworkApiSync05(NetworkTest):
@@ -530,6 +535,7 @@ class TestHostNetworkApiSync05(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_06.__name__)
 class TestHostNetworkApiSync06(NetworkTest):
@@ -607,6 +613,7 @@ class TestHostNetworkApiSync06(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_07.__name__)
 class TestHostNetworkApiSync07(NetworkTest):
@@ -662,6 +669,7 @@ class TestHostNetworkApiSync07(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_08.__name__)
 class TestHostNetworkApiSync08(NetworkTest):
@@ -719,6 +727,7 @@ class TestHostNetworkApiSync08(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_09.__name__)
 class TestHostNetworkApiSync09(NetworkTest):
@@ -762,6 +771,7 @@ class TestHostNetworkApiSync09(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_10.__name__)
 class TestHostNetworkApiSync10(NetworkTest):
@@ -806,6 +816,7 @@ class TestHostNetworkApiSync10(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_11.__name__)
 class TestHostNetworkApiSync11(NetworkTest):
@@ -850,6 +861,7 @@ class TestHostNetworkApiSync11(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_12.__name__)
 class TestHostNetworkApiSync12(NetworkTest):
@@ -895,6 +907,7 @@ class TestHostNetworkApiSync12(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_13.__name__)
 class TestHostNetworkApiSync13(NetworkTest):
@@ -941,6 +954,7 @@ class TestHostNetworkApiSync13(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_14.__name__)
 class TestHostNetworkApiSync14(NetworkTest):
@@ -987,6 +1001,7 @@ class TestHostNetworkApiSync14(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_15.__name__)
 class TestHostNetworkApiSync15(NetworkTest):
@@ -1029,6 +1044,7 @@ class TestHostNetworkApiSync15(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_16.__name__)
 class TestHostNetworkApiSync16(NetworkTest):
@@ -1073,6 +1089,7 @@ class TestHostNetworkApiSync16(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_17.__name__)
 class TestHostNetworkApiSync17(NetworkTest):
@@ -1115,6 +1132,7 @@ class TestHostNetworkApiSync17(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_18.__name__)
 class TestHostNetworkApiSync18(NetworkTest):
@@ -1157,6 +1175,7 @@ class TestHostNetworkApiSync18(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_19.__name__)
 class TestHostNetworkApiSync19(NetworkTest):
@@ -1277,6 +1296,7 @@ class TestHostNetworkApiSync19(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(sync_case_20.__name__)
 class TestHostNetworkApiSync20(NetworkTest):

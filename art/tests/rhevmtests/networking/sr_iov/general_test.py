@@ -6,18 +6,20 @@ SR_IOV feature tests
 Non-VM related cases
 """
 
-import helper
 import logging
-import pytest
+
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.sriov as ll_sriov
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as conf
-from art.unittest_lib import attr
+import helper
+import pytest
+import rhevmtests.networking.helper as network_helper
+from _pytest_art.marks import tier2
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest
-import rhevmtests.networking.helper as network_helper
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.low_level.sriov as ll_sriov
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+from art.unittest_lib import attr
 
 logger = logging.getLogger("SR_IOV_Cases")
 
@@ -38,6 +40,7 @@ def teardown_module():
     network_helper.remove_networks_from_setup()
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.skipif(
     conf.NO_SEMI_SRIOV_SUPPORT, reason=conf.NO_SEMI_SRIOV_SUPPORT_SKIP_MSG
@@ -101,6 +104,7 @@ class TestSriov01(NetworkTest):
         hl_host_network.clean_host_interfaces(host_name=conf.HOST_0_NAME)
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.skipif(
     conf.NO_SEMI_SRIOV_SUPPORT, reason=conf.NO_SEMI_SRIOV_SUPPORT_SKIP_MSG
@@ -427,6 +431,7 @@ class TestSriov05(helper.TestSriovBase):
         super(TestSriov05, cls).teardown_class()
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.skipif(
     conf.NO_SEMI_SRIOV_SUPPORT, reason=conf.NO_SEMI_SRIOV_SUPPORT_SKIP_MSG

@@ -11,10 +11,10 @@ This test will create/delete/update and list networks under /api/datacenter.
 
 import logging
 
-import pytest
-
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import pytest
 import rhevmtests.networking.config as conf
+from _pytest_art.marks import tier2
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import fixture_case_01, fixture_case_02, fixture_case_03
@@ -22,6 +22,7 @@ from fixtures import fixture_case_01, fixture_case_02, fixture_case_03
 logger = logging.getLogger("DC_Networks_Cases")
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(fixture_case_01.__name__)
 class TestDataCenterNetworksCase1(NetworkTest):
@@ -56,6 +57,7 @@ class TestDataCenterNetworksCase1(NetworkTest):
             )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(fixture_case_02.__name__)
 class TestDataCenterNetworksCase2(NetworkTest):
@@ -103,6 +105,7 @@ class TestDataCenterNetworksCase2(NetworkTest):
         )
 
 
+@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(fixture_case_03.__name__)
 class TestDataCenterNetworksCase3(NetworkTest):
