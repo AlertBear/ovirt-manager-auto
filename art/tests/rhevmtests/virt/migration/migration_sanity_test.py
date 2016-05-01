@@ -52,6 +52,13 @@ class TestMigrationVirtSanityCase1(common.VirtTest):
 
     __test__ = True
 
+    @classmethod
+    def teardown_class(cls):
+        """
+        Stop vm
+        """
+        assert ll_vms.stop_vms_safely([config.MIGRATION_VM])
+
     @polarion("RHEVM3-3847")
     def test_migration(self):
         """
@@ -128,6 +135,9 @@ class TestMigrationVirtSanityCase3(common.VirtTest):
     @classmethod
     def setup_class(cls):
         cls.cancel_vm_migrate = False
+        assert ll_vms.startVm(
+            True, config.MIGRATION_VM, wait_for_status=config.VM_UP
+        )
 
     @classmethod
     def teardown_class(cls):
