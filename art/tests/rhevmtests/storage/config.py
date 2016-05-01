@@ -123,13 +123,13 @@ HOST_NONRESPONSIVE = ENUMS["search_host_state_non_responsive"]
 VM_PINNED = ENUMS['vm_affinity_pinned']
 VM_ANY_HOST = ENUMS['vm_affinity_migratable']
 
-OBJECT_TYPE_CLUSTER = "cluster"
+OBJECT_TYPE_CLUSTER = "cl"
 OBJECT_TYPE_DC = "dc"
 OBJECT_TYPE_DISK = "disk"
 OBJECT_TYPE_POOL = "pool"
 OBJECT_TYPE_SD = "sd"
-OBJECT_TYPE_SNAPSHOT = "snapshot"
-OBJECT_TYPE_TEMPLATE = "template"
+OBJECT_TYPE_SNAPSHOT = "snap"
+OBJECT_TYPE_TEMPLATE = "templ"
 OBJECT_TYPE_VM = "vm"
 
 # These lists of keywords are useful for low_level addStorageDomain:

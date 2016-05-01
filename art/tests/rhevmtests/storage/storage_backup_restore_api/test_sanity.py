@@ -70,7 +70,7 @@ class BaseTestCase(TestCase):
         # Templates are limited to only 40 characters
         self.template_name = self.create_unique_object_name(
             config.OBJECT_TYPE_TEMPLATE
-        )[:40]
+        )
         self.first_snapshot_description = self.create_unique_object_name(
             config.OBJECT_TYPE_SNAPSHOT
         )

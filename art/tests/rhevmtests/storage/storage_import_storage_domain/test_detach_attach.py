@@ -1278,10 +1278,10 @@ class BaseTestCase5192(BasicEnvironment):
         """
         self.dc_name = self.create_unique_object_name(
             config.OBJECT_TYPE_DC
-        )[9:49]
+        )
         self.cluster_name = self.create_unique_object_name(
             config.OBJECT_TYPE_CLUSTER
-        )[9:49]
+        )
         self._create_environment(
             self.dc_name, self.cluster_name, self.dc_version
         )

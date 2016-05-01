@@ -102,10 +102,10 @@ class StorageTest(BaseTestCase):
         :rtype: str
         """
         current_date_time = (
-            datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            datetime.datetime.now().strftime("%d%H%M%S")
         )
         return "{0}_{1}_{2}".format(
-            object_type, self.__class__.__name__, current_date_time
+            object_type, self.__class__.__name__[:25], current_date_time
         )
 
 

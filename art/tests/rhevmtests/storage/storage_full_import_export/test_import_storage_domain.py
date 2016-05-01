@@ -61,7 +61,7 @@ class BaseTestCase(TestCase):
         """
         self.export_domain_name = self.create_unique_object_name(
             config.OBJECT_TYPE_SD
-        )[:50]
+        )
         self.imported_vm = self.create_unique_object_name(
             config.OBJECT_TYPE_VM
         )

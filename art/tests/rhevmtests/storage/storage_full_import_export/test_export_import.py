@@ -86,7 +86,7 @@ class TestCase4665(BaseExportImportTestCase):
         super(TestCase4665, self).setUp()
         self.template_name = self.create_unique_object_name(
             config.OBJECT_TYPE_TEMPLATE
-        )[:40]
+        )
         if not ll_templates.createTemplate(
             True, vm=self.vm_name, name=self.template_name
         ):
@@ -298,7 +298,7 @@ class TestCase11987(BaseExportImportTestCase):
         super(TestCase11987, self).setUp()
         self.template_name = self.create_unique_object_name(
             config.OBJECT_TYPE_TEMPLATE
-        )[:40]
+        )
 
         if not ll_templates.createTemplate(
             True, vm=self.vm_name, name=self.template_name
