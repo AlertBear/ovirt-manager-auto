@@ -88,6 +88,7 @@ class UpdateRunningVm(VirtTest):
 
     @polarion("RHEVM3-6295")
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     def test_update_field_applied_after_reboot_case_1(self):
         """
         Expect the fields be after next boot.

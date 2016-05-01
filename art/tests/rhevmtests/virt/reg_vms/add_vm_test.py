@@ -265,6 +265,7 @@ class AddVm(VirtTest):
 
     @polarion("RHEVM3-14953")
     @pytest.mark.usefixtures(basic_teardown_fixture.__name__)
+    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     def test_add_win_vm_name_long(self):
         """
         Positive: Add vm with windows os and nome long the 15 characters
