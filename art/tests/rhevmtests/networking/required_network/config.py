@@ -5,7 +5,6 @@
 config file for required_network test
 """
 
-from rhevmtests.networking.config import *  # NOQA
 import rhevmtests.helpers as global_helper
 
 NIC_STATE_DOWN = "down"
