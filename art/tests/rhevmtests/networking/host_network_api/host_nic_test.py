@@ -7,12 +7,12 @@ Job for new host network API via host NIC href
 
 import logging
 
+import pytest
+
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import config as conf
 import helper
-import pytest
 import rhevmtests.networking.config as net_conf
-from _pytest_art.marks import tier2
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
@@ -23,7 +23,6 @@ from fixtures import (
 logger = logging.getLogger("Host_Network_API_Host_NIC_Cases")
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_host_nic.__name__)
 class TestHostNetworkApiHostNic01(NetworkTest):
@@ -49,7 +48,6 @@ class TestHostNetworkApiHostNic01(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_host_nic.__name__)
 class TestHostNetworkApiHostNic02(NetworkTest):
@@ -75,7 +73,6 @@ class TestHostNetworkApiHostNic02(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_host_nic.__name__)
 class TestHostNetworkApiHostNic03(NetworkTest):
@@ -101,7 +98,6 @@ class TestHostNetworkApiHostNic03(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_host_nic.__name__)
 class TestHostNetworkApiHostNic04(NetworkTest):
@@ -150,7 +146,6 @@ class TestHostNetworkApiHostNic04(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_host_nic.__name__)
 class TestHostNetworkApiHostNic05(NetworkTest):
@@ -198,7 +193,6 @@ class TestHostNetworkApiHostNic05(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_host_nic.__name__)
 class TestHostNetworkApiHostNic06(NetworkTest):
@@ -246,7 +240,6 @@ class TestHostNetworkApiHostNic06(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_host_nic.__name__)
 class TestHostNetworkApiHostNic07(NetworkTest):
@@ -279,7 +272,6 @@ class TestHostNetworkApiHostNic07(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(host_nic_case_08.__name__)
 class TestHostNetworkApiHostNic08(NetworkTest):
@@ -309,7 +301,6 @@ class TestHostNetworkApiHostNic08(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(host_nic_case_09.__name__)
 class TestHostNetworkApiHostNic09(NetworkTest):
@@ -333,7 +324,6 @@ class TestHostNetworkApiHostNic09(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(host_nic_case_10.__name__)
 class TestHostNetworkApiHostNic10(NetworkTest):
@@ -384,7 +374,6 @@ class TestHostNetworkApiHostNic10(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(host_nic_case_11.__name__)
 class TestHostNetworkApiHostNic11(NetworkTest):
@@ -411,7 +400,6 @@ class TestHostNetworkApiHostNic11(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(host_nic_case_12.__name__)
 class TestHostNetworkApiHostNic12(NetworkTest):
@@ -437,7 +425,6 @@ class TestHostNetworkApiHostNic12(NetworkTest):
             )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_host_nic.__name__)
 class TestHostNetworkApiHostNic13(NetworkTest):
@@ -463,7 +450,6 @@ class TestHostNetworkApiHostNic13(NetworkTest):
             )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(teardown_all_cases_host_nic.__name__)
 class TestHostNetworkApiHostNic14(NetworkTest):
@@ -516,7 +502,6 @@ class TestHostNetworkApiHostNic14(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(host_nic_case_15.__name__)
 class TestHostNetworkApiHostNic15(NetworkTest):

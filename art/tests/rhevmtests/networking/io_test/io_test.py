@@ -8,18 +8,17 @@ Positive and negative cases for creating/editing networks
 with valid/invalid names, IPs, netmask, VLAN, usages.
 """
 
-import logging
-
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import config as conf
 import helper
-import rhevmtests.networking.helper as network_helper
-from _pytest_art.marks import tier2
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import attr, NetworkTest
+import logging
+import config as conf
 from rhevmtests import networking
+from art.unittest_lib import attr, NetworkTest
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+import rhevmtests.networking.helper as network_helper
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+
 
 logger = logging.getLogger("IO_Test_Cases")
 
@@ -45,7 +44,6 @@ def teardown_module():
     network_helper.remove_networks_from_setup()
 
 
-@tier2
 @attr(tier=2)
 class IOTestCaseBase(NetworkTest):
     """

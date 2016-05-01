@@ -6,13 +6,11 @@ It will cover scenarios for VM/non-VM networks.
 """
 
 import logging
-
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-from _pytest_art.marks import tier2
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import NetworkTest, attr
+from art import unittest_lib
 from rhevmtests.networking import config
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 logger = logging.getLogger("Network_Custom_Properties_Cases")
 HOST_NICS = None  # filled in setup module
@@ -32,9 +30,8 @@ def setup_module():
     HOST_NICS = config.VDS_HOSTS[0].nics
 
 
-@tier2
-@attr(tier=2)
-class TestNCPCaseBase(NetworkTest):
+@unittest_lib.attr(tier=2)
+class TestNCPCaseBase(unittest_lib.NetworkTest):
     """
     base class which provides teardown class method for each test case
     """

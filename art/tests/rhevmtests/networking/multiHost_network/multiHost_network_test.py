@@ -5,28 +5,25 @@ MultiHost will be tested for untagged, tagged, MTU, VM/non-VM and bond
 scenarios.
 """
 
-import logging
 import time
-
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import config as conf
 import helper
-from _pytest_art.marks import tier2
+import logging
+import config as conf
 from art.core_api import apis_utils
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, NetworkTest
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.templates as ll_templates
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 logger = logging.getLogger("MultiHost_Cases")
 
 
-@tier2
 @attr(tier=2)
 class TestMultiHostTestCaseBase(NetworkTest):
     """

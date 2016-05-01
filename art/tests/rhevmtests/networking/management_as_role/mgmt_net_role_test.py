@@ -18,12 +18,10 @@ from art.core_api import apis_exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest, attr
 from fixtures import *  # flake8: noqa
-from _pytest_art.marks import tier2
 
 logger = logging.getLogger("MGMT_Net_Role_Cases")
 
 
-@tier2
 @attr(tier=2)
 class TestMGMTNetRole01(NetworkTest):
     """
@@ -67,7 +65,6 @@ class TestMGMTNetRole01(NetworkTest):
         hl_networks.remove_basic_setup(datacenter=cls.dc, cluster=cls.cluster)
 
 
-@tier2
 @attr(tier=2)
 class TestMGMTNetRole02(NetworkTest):
     """
@@ -143,7 +140,6 @@ class TestMGMTNetRole02(NetworkTest):
         hl_networks.remove_all_networks(datacenter=cls.dc)
 
 
-@tier2
 @attr(tier=2)
 class TestMGMTNetRole03(NetworkTest):
     """
@@ -223,7 +219,6 @@ class TestMGMTNetRole03(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 class TestMGMTNetRole04(NetworkTest):
     """
@@ -304,7 +299,6 @@ class TestMGMTNetRole04(NetworkTest):
         helper.remove_net(dc=cls.dc)
 
 
-@tier2
 @attr(tier=2)
 class TestMGMTNetRole05(NetworkTest):
     """
@@ -377,7 +371,6 @@ class TestMGMTNetRole05(NetworkTest):
         helper.remove_net(dc=cls.dc)
 
 
-@tier2
 @attr(tier=2)
 class TestMGMTNetRole06(NetworkTest):
     """
@@ -492,7 +485,6 @@ class TestMGMTNetRole06(NetworkTest):
         hl_networks.remove_basic_setup(datacenter=cls.dc_ext)
 
 
-@tier2
 @attr(tier=2)
 class TestMGMTNetRole07(NetworkTest):
     """
@@ -557,7 +549,6 @@ class TestMGMTNetRole07(NetworkTest):
         hl_networks.remove_basic_setup(datacenter=cls.dc)
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures("prepare_setup_case_08")
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)

@@ -8,22 +8,20 @@ jumbo frames will be tested for untagged, tagged, bond scenarios.
 It will cover scenarios for VM/non-VM networks.
 """
 
-import logging
-
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import config as conf
 import helper
+import logging
 import pytest
-import rhevmtests.helpers as global_helper
-import rhevmtests.networking.helper as network_helper
-from _pytest_art.marks import tier2
+import config as conf
+from rhevmtests import networking
 from art.rhevm_api.utils import test_utils
+import rhevmtests.helpers as global_helper
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest, attr
-from rhevmtests import networking
+import rhevmtests.networking.helper as network_helper
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 logger = logging.getLogger("Jumbo_Frames_Cases")
 
@@ -92,7 +90,6 @@ def teardown_module():
     )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.skipif(
     conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG

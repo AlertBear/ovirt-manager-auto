@@ -7,11 +7,11 @@ Cumulative Network Usage Statistics for VM
 
 import logging
 
+import pytest
+
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import helper
-import pytest
 import rhevmtests.networking.config as conf
-from _pytest_art.marks import tier2
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import rx_tx_stat_vm_case01
@@ -19,7 +19,6 @@ from fixtures import rx_tx_stat_vm_case01
 logger = logging.getLogger("Cumulative_RX_TX_Statistics_Cases")
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(rx_tx_stat_vm_case01.__name__)
 class CumulativeNetworkUsageVmStatisticsCase1(NetworkTest):

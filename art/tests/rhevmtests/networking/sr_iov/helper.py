@@ -6,12 +6,10 @@ Utilities used by SR_IOV feature
 """
 
 import logging
-from xml.etree import ElementTree
-
 import config as conf
-from _pytest_art.marks import tier2
-from art.unittest_lib import NetworkTest
+from xml.etree import ElementTree
 from art.unittest_lib import attr
+from art.unittest_lib import NetworkTest
 
 logger = logging.getLogger("SR_IOV_Helper")
 
@@ -25,7 +23,6 @@ def update_host_nics():
     conf.HOST_0_NICS = conf.VDS_0_HOST.nics
 
 
-@tier2
 @attr(tier=2)
 class TestSriovBase(NetworkTest):
     """

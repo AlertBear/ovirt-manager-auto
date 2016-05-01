@@ -8,26 +8,24 @@ Network Labels feature will be tested for untagged, tagged,
 bond scenarios and for VM and non-VM networks
 """
 
+import helper
 import logging
-
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.tests_lib.high_level.hosts as hl_host
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
+import pytest
+import config as conf
+from art import unittest_lib
+from art.unittest_lib import attr
+from art.core_api import apis_utils
+import rhevmtests.networking as networking
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+import art.unittest_lib.network as ul_network
+import rhevmtests.networking.helper as networking_helper
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.unittest_lib.network as ul_network
-import config as conf
-import helper
-import pytest
-import rhevmtests.networking as networking
-import rhevmtests.networking.helper as networking_helper
-from _pytest_art.marks import tier2
-from art import unittest_lib
-from art.core_api import apis_utils
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import attr
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
+import art.rhevm_api.tests_lib.high_level.hosts as hl_host
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 logger = logging.getLogger("Labels_Cases")
 
@@ -66,7 +64,6 @@ def teardown_module():
         networking_helper.delete_dummies(host_resource=vds_host)
 
 
-@tier2
 @attr(tier=2)
 class TestLabelTestCaseBase(unittest_lib.NetworkTest):
 

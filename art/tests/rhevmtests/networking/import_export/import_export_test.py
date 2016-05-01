@@ -8,12 +8,12 @@ created for testing.
 """
 import logging
 
+import pytest
+
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as conf
 import helper
-import pytest
 import rhevmtests.networking.config as net_conf
-from _pytest_art.marks import tier2
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import fixture_case_01, fixture_case_02, fixture_case_03
@@ -21,7 +21,6 @@ from fixtures import fixture_case_01, fixture_case_02, fixture_case_03
 logger = logging.getLogger("Import_Export_Cases")
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(fixture_case_01.__name__)
 class TestIECase01(NetworkTest):
@@ -62,7 +61,6 @@ class TestIECase01(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(fixture_case_02.__name__)
 class TestIECase02(NetworkTest):
@@ -107,7 +105,6 @@ class TestIECase02(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(fixture_case_03.__name__)
 class TestIECase03(NetworkTest):

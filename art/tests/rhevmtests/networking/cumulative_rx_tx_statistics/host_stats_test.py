@@ -8,12 +8,12 @@ Cumulative Network Usage Statistics for Host
 import logging
 import time
 
+import pytest
+
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import helper
-import pytest
 import rhevmtests.networking.config as conf
-from _pytest_art.marks import tier2
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
@@ -24,7 +24,6 @@ from fixtures import (
 logger = logging.getLogger("Cumulative_RX_TX_Statistics_Cases")
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(rx_tx_stat_host_setup_class.__name__)
 class CumulativeNetworkUsageHostStatisticsCase1(NetworkTest):
@@ -57,7 +56,6 @@ class CumulativeNetworkUsageHostStatisticsCase1(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(rx_tx_stat_host_case02.__name__)
 class CumulativeNetworkUsageHostStatisticsCase2(NetworkTest):
@@ -85,7 +83,6 @@ class CumulativeNetworkUsageHostStatisticsCase2(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(rx_tx_stat_host_case03.__name__)
 class CumulativeNetworkUsageHostStatisticsCase3(NetworkTest):

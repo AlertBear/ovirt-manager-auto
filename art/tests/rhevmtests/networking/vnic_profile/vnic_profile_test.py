@@ -8,15 +8,15 @@ Testing VNIC profile feature.
 
 import logging
 
+import pytest
+
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_networks
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as conf
-import pytest
 import rhevmtests.networking.helper as network_helper
-from _pytest_art.marks import tier2
 from art.core_api import apis_utils
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest
@@ -100,7 +100,6 @@ def vnic_profile_prepare_setup(request):
     ps.run_vm()
 
 
-@tier2
 @attr(tier=2)
 class TestVNICProfileCase01(NetworkTest):
     """
@@ -143,7 +142,6 @@ class TestVNICProfileCase01(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures("vnic_profile_prepare_setup")
 class TestVNICProfileCase02(NetworkTest):
@@ -634,7 +632,6 @@ class TestVNICProfileCase02(NetworkTest):
             raise conf.NET_EXCEPTION()
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures("vnic_profile_prepare_setup")
 class TestVNICProfileCase03(NetworkTest):

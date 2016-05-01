@@ -7,18 +7,16 @@ Testing network VM QoS feature.
 Create, update, remove and migration tests will be done for Network QoS feature
 """
 
-import logging
-
-import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import config
 import helper
+import config
+import logging
 import pytest
-from _pytest_art.marks import tier2
+from art.unittest_lib import attr
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest as TestCase
-from art.unittest_lib import attr
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 
 logger = logging.getLogger("Network_VNIC_QoS_Tests")
 
@@ -30,7 +28,6 @@ logger = logging.getLogger("Network_VNIC_QoS_Tests")
 ########################################################################
 
 
-@tier2
 @attr(tier=2)
 class TestNetQOSCase01(TestCase):
     """
@@ -134,7 +131,6 @@ class TestNetQOSCase01(TestCase):
             )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class TestNetQOSCase02(TestCase):
@@ -320,7 +316,6 @@ class TestNetQOSCase02(TestCase):
             )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class TestNetQOSCase03(TestCase):
@@ -486,7 +481,6 @@ class TestNetQOSCase03(TestCase):
             )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class TestNetQOSCase04(TestCase):
@@ -667,7 +661,6 @@ class TestNetQOSCase04(TestCase):
                 )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class TestNetQOSCase05(TestCase):

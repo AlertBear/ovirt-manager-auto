@@ -5,16 +5,14 @@
 Predictable vNIC order feature test cases
 """
 
-import logging
-
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.unittest_lib as unittest_lib
-import config as conf
 import helper
-import rhevmtests.networking.helper as net_help
-from _pytest_art.marks import tier2
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+import logging
+import config as conf
 from art.unittest_lib import attr
+import art.unittest_lib as unittest_lib
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+import rhevmtests.networking.helper as net_help
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 
 logger = logging.getLogger("Predictable_vNIC_Order_Cases")
 
@@ -75,7 +73,6 @@ class TestPredictableVnicOrderBase(unittest_lib.NetworkTest):
         helper.seal_vm_and_remove_vnics()
 
 
-@tier2
 @attr(tier=2)
 class TestPredictableVnicOrder01(TestPredictableVnicOrderBase):
     """

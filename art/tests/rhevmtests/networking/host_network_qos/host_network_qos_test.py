@@ -7,14 +7,14 @@ Create, update and remove tests will be done for network host QoS feature
 """
 import logging
 
+import pytest
+
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as conf
 import helper
-import pytest
 import rhevmtests.networking.config as net_conf
 import rhevmtests.networking.helper as net_helper
-from _pytest_art.marks import tier2
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest, testflow, attr
 from fixtures import (
@@ -26,7 +26,6 @@ from fixtures import (
 logger = logging.getLogger("Network_Host_QoS_Tests")
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(fixture_case_01.__name__)
 class TestHostNetQOSCase01(NetworkTest):
@@ -92,7 +91,6 @@ class TestHostNetQOSCase01(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(fixture_case_02.__name__)
 class TestHostNetQOSCase02(NetworkTest):
@@ -135,7 +133,6 @@ class TestHostNetQOSCase02(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(fixture_case_03.__name__)
 class TestHostNetQOSCase03(NetworkTest):
@@ -196,7 +193,6 @@ class TestHostNetQOSCase03(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(fixture_case_04.__name__)
 class TestHostNetQOSCase04(NetworkTest):
@@ -271,7 +267,6 @@ class TestHostNetQOSCase04(NetworkTest):
             )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(fixture_case_05.__name__)
 class TestHostNetQOSCase05(NetworkTest):
@@ -318,7 +313,6 @@ class TestHostNetQOSCase05(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(fixture_case_06.__name__)
 class TestHostNetQOSCase06(NetworkTest):
@@ -383,7 +377,6 @@ class TestHostNetQOSCase06(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(fixture_case_07.__name__)
 class TestHostNetQOSCase07(NetworkTest):
@@ -416,7 +409,6 @@ class TestHostNetQOSCase07(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(fixture_case_08.__name__)
 class TestHostNetQOSCase08(NetworkTest):
@@ -464,7 +456,6 @@ class TestHostNetQOSCase08(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(fixture_case_09.__name__)
 class TestHostNetQOSCase09(NetworkTest):
@@ -534,7 +525,6 @@ class TestHostNetQOSCase09(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(fixture_case_10.__name__)
 class TestHostNetQOSCase10(NetworkTest):
@@ -563,7 +553,6 @@ class TestHostNetQOSCase10(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(fixture_case_11.__name__)
 class TestHostNetQOSCase11(NetworkTest):

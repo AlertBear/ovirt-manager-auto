@@ -8,7 +8,6 @@ MAC pool range per DC networking feature test
 import logging
 
 import helper
-from _pytest_art.marks import tier2
 from art.core_api import apis_exceptions
 from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest
@@ -29,7 +28,6 @@ def setup_module():
     networking.network_cleanup()
 
 
-@tier2
 @attr(tier=2)
 class TestMacPoolRange01(NetworkTest):
     """
@@ -59,7 +57,6 @@ class TestMacPoolRange01(NetworkTest):
                 raise conf.NET_EXCEPTION()
 
 
-@tier2
 @attr(tier=2)
 class TestMacPoolRange02(NetworkTest):
     """
@@ -165,7 +162,6 @@ class TestMacPoolRange02(NetworkTest):
         ll_mac_pool.remove_mac_pool(mac_pool_name=cls.mac_pool)
 
 
-@tier2
 @attr(tier=2)
 class TestMacPoolRange03(NetworkTest):
     """
@@ -371,7 +367,6 @@ class TestMacPoolRange03(NetworkTest):
                 pass
 
 
-@tier2
 @attr(tier=2)
 class TestMacPoolRange04(NetworkTest):
     """
@@ -466,7 +461,6 @@ class TestMacPoolRange04(NetworkTest):
         ll_mac_pool.remove_mac_pool(mac_pool_name=cls.pool_name)
 
 
-@tier2
 @attr(tier=2)
 class TestMacPoolRange05(NetworkTest):
     """
@@ -575,7 +569,6 @@ class TestMacPoolRange05(NetworkTest):
         ll_mac_pool.remove_mac_pool(mac_pool_name=cls.pool_name)
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures("mac_pool_range_06_fixture")
 class TestMacPoolRange06(NetworkTest):
@@ -685,7 +678,6 @@ class TestMacPoolRange06(NetworkTest):
             raise conf.NET_EXCEPTION()
 
 
-@tier2
 @attr(tier=2)
 class NoTestMacPoolRange07(NetworkTest):
     """
@@ -755,7 +747,6 @@ class NoTestMacPoolRange07(NetworkTest):
         ll_mac_pool.remove_mac_pool(mac_pool_name=cls.pool_0)
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures("mac_pool_range_08_fixture")
 class TestMacPoolRange08(NetworkTest):
@@ -791,7 +782,6 @@ class TestMacPoolRange08(NetworkTest):
             raise conf.NET_EXCEPTION()
 
 
-@tier2
 @attr(tier=2)
 class TestMacPoolRange09(NetworkTest):
     """
@@ -853,7 +843,6 @@ class TestMacPoolRange09(NetworkTest):
         ll_mac_pool.remove_mac_pool(mac_pool_name=cls.pool_name_0)
 
 
-@tier2
 @attr(tier=2)
 class TestMacPoolRange10(NetworkTest):
     """
@@ -899,7 +888,6 @@ class TestMacPoolRange10(NetworkTest):
         ll_mac_pool.remove_mac_pool(mac_pool_name=cls.pool_name_0)
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures("mac_pool_range_11_fixture")
 class TestMacPoolRange11(NetworkTest):

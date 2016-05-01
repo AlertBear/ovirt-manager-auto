@@ -11,11 +11,11 @@ and the host
 
 import logging
 
-import helper
 import pytest
+
+import helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
-from _pytest_art.marks import tier2
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import (
@@ -26,7 +26,6 @@ from fixtures import (
 logger = logging.getLogger("ArbitraryVlanDeviceName_Cases")
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(case_01_fixture.__name__)
 class TestArbitraryVlanDeviceName01(NetworkTest):
@@ -65,7 +64,6 @@ class TestArbitraryVlanDeviceName01(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(case_02_fixture.__name__)
 class TestArbitraryVlanDeviceName02(NetworkTest):
@@ -105,7 +103,6 @@ class TestArbitraryVlanDeviceName02(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(case_03_fixture.__name__)
 class TestArbitraryVlanDeviceName03(NetworkTest):
@@ -147,7 +144,6 @@ class TestArbitraryVlanDeviceName03(NetworkTest):
             )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(case_04_fixture.__name__)
 class TestArbitraryVlanDeviceName04(NetworkTest):
@@ -190,7 +186,6 @@ class TestArbitraryVlanDeviceName04(NetworkTest):
             )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(case_05_fixture.__name__)
 class TestArbitraryVlanDeviceName05(NetworkTest):
@@ -230,7 +225,6 @@ class TestArbitraryVlanDeviceName05(NetworkTest):
         )
 
 
-@tier2
 @attr(tier=2)
 @pytest.mark.usefixtures(case_06_fixture.__name__)
 class TestArbitraryVlanDeviceName06(NetworkTest):

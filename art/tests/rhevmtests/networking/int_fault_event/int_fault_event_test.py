@@ -6,18 +6,17 @@ Testing Display of NIC Slave/Bond fault on RHEV-M Event Log
 1 DC, 1 Cluster, 1 Host will be created for testing.
 """
 
-import logging
-
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import config as conf
 import helper
-from _pytest_art.marks import tier2
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import NetworkTest
+import logging
+import config as conf
 from art.unittest_lib import attr
+
+from art.unittest_lib import NetworkTest
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 logger = logging.getLogger("Int_Fault_Event_Cases")
 
@@ -29,7 +28,6 @@ STATE_UP = conf.STATE_UP
 STATE_DOWN = conf.STATE_DOWN
 
 
-@tier2
 @attr(tier=2)
 class TestNicFaultTestCaseBase(NetworkTest):
     """

@@ -6,26 +6,23 @@ Testing Topologies feature.
 1 DC, 1 Cluster, 1 Hosts and 1 VM will be created for testing.
 """
 
-import logging
-
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import helper
+import logging
 import pytest
-import rhevmtests.networking.helper as network_helper
-from _pytest_art.marks import tier2
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import NetworkTest, attr
+from art import unittest_lib
 from rhevmtests.networking import config
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+import rhevmtests.networking.helper as network_helper
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 logger = logging.getLogger("Topologies_Cases")
 
 TEST_VLAN = "1000" if config.PPC_ARCH else config.VLAN_ID[0]
 
 
-@tier2
-@attr(tier=2)
-class TestTopologiesCase01(NetworkTest):
+@unittest_lib.attr(tier=2)
+class TestTopologiesCase01(unittest_lib.NetworkTest):
     """
     Check connectivity to VM with VLAN network
     Check virtIO, e1000 and rtl8139 drivers
@@ -143,12 +140,11 @@ class TestTopologiesCase01(NetworkTest):
 ##############################################################################
 
 
-@tier2
-@attr(tier=2)
+@unittest_lib.attr(tier=2)
 @pytest.mark.skipif(
     config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
 )
-class TestTopologiesCase02(NetworkTest):
+class TestTopologiesCase02(unittest_lib.NetworkTest):
     """
     Check connectivity to VM with VLAN over BOND mode 1 network
     Check virtIO, e1000 and rtl8139 drivers
@@ -260,12 +256,11 @@ class TestTopologiesCase02(NetworkTest):
 ##############################################################################
 
 
-@tier2
-@attr(tier=2)
+@unittest_lib.attr(tier=2)
 @pytest.mark.skipif(
     config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
 )
-class TestTopologiesCase03(NetworkTest):
+class TestTopologiesCase03(unittest_lib.NetworkTest):
     """
     Check connectivity to VM with BOND mode 2 network
     Check virtIO, e1000 and rtl8139 drivers
@@ -364,12 +359,11 @@ class TestTopologiesCase03(NetworkTest):
             )
 
 
-@tier2
-@attr(tier=2)
+@unittest_lib.attr(tier=2)
 @pytest.mark.skipif(
     config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
 )
-class TestTopologiesCase04(NetworkTest):
+class TestTopologiesCase04(unittest_lib.NetworkTest):
     """
     Check connectivity to VM with BOND mode 4 network
     Check virtIO, e1000 and rtl8139 drivers
@@ -460,13 +454,12 @@ class TestTopologiesCase04(NetworkTest):
             logger.error("Cannot remove network from setup")
 
 
-@tier2
-@attr(tier=2)
+@unittest_lib.attr(tier=2)
 @pytest.mark.skipif(
     config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
 )
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-class TestTopologiesCase05(NetworkTest):
+class TestTopologiesCase05(unittest_lib.NetworkTest):
     """
     Check connectivity to BOND mode 3 network
     This is non-VM network test, we check connectivity from host to the IP:
@@ -507,13 +500,12 @@ class TestTopologiesCase05(NetworkTest):
             logger.error("Cannot remove network from setup")
 
 
-@tier2
-@attr(tier=2)
+@unittest_lib.attr(tier=2)
 @pytest.mark.skipif(
     config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
 )
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-class TestTopologiesCase06(NetworkTest):
+class TestTopologiesCase06(unittest_lib.NetworkTest):
     """
     Check connectivity to BOND mode 0 network
     This is non-VM network test, we check connectivity from host to to the IP:
@@ -553,13 +545,12 @@ class TestTopologiesCase06(NetworkTest):
             logger.error("Cannot remove network from setup")
 
 
-@tier2
-@attr(tier=2)
+@unittest_lib.attr(tier=2)
 @pytest.mark.skipif(
     config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
 )
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-class TestTopologiesCase07(NetworkTest):
+class TestTopologiesCase07(unittest_lib.NetworkTest):
     """
     Check connectivity to BOND mode 5 network
     This is non-VM network test, we check connectivity from host to to the IP:
@@ -599,13 +590,12 @@ class TestTopologiesCase07(NetworkTest):
             logger.error("Cannot remove network from setup")
 
 
-@tier2
-@attr(tier=2)
+@unittest_lib.attr(tier=2)
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.skipif(
     config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
 )
-class TestTopologiesCase08(NetworkTest):
+class TestTopologiesCase08(unittest_lib.NetworkTest):
     """
     Check connectivity to BOND mode 6 network
     This is non-VM network test, we check connectivity from host to to the IP:

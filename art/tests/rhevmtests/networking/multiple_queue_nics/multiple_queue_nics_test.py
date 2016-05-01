@@ -3,9 +3,6 @@ multiple_queue_nics
 """
 
 import logging
-
-import rhevmtests.networking.helper as net_help
-from _pytest_art.marks import tier2
 from art.rhevm_api.tests_lib.low_level.hosts import(
     get_host_ip_from_engine, get_host_name_from_engine
 )
@@ -17,12 +14,13 @@ from art.rhevm_api.tests_lib.low_level.vms import(
     stopVm, suspendVm, createVm, removeVm, waitForIP, migrateVm, startVm,
     get_vm_host
 )
+import rhevmtests.networking.helper as net_help
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from art.test_handler.exceptions import NetworkException
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import NetworkTest as TestCase
 from art.unittest_lib import attr
+from art.unittest_lib import NetworkTest as TestCase
 from rhevmtests.networking import config
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 
 logger = logging.getLogger("Multiple_Queues_Nics_Cases")
 HOST_NAME0 = None  # Fill in setup_module
@@ -39,7 +37,6 @@ def setup_module():
     HOST_NAME1 = get_host_name_from_engine(config.VDS_HOSTS[1].ip)
 
 
-@tier2
 @attr(tier=2)
 class TestMultipleQueueNicsTearDown(TestCase):
     """

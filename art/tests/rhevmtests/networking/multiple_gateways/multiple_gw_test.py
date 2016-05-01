@@ -9,16 +9,14 @@ It will cover scenarios for VM/non-VM networks.
 Only static IP configuration is tested.
 """
 
-import logging
-
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.test_handler.exceptions as exceptions
 import config
-from _pytest_art.marks import tier2
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-from art.unittest_lib import NetworkTest as TestCase
+import logging
 from art.unittest_lib import attr
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+import art.test_handler.exceptions as exceptions
+from art.unittest_lib import NetworkTest as TestCase
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
 NETMASK = config.NETMASK
 GATEWAY = config.MG_GATEWAY
@@ -42,7 +40,6 @@ def setup_module():
     HOST_NICS = config.VDS_HOSTS[0].nics
 
 
-@tier2
 @attr(tier=2)
 class TestGatewaysCase01(TestCase):
     """
@@ -100,7 +97,6 @@ class TestGatewaysCase01(TestCase):
             )
 
 
-@tier2
 @attr(tier=2)
 class TestGatewaysCase02(TestCase):
     """
@@ -156,7 +152,6 @@ class TestGatewaysCase02(TestCase):
             )
 
 
-@tier2
 @attr(tier=2)
 class TestGatewaysCase03(TestCase):
     """
@@ -213,7 +208,6 @@ class TestGatewaysCase03(TestCase):
             )
 
 
-@tier2
 @attr(tier=2)
 class TestGatewaysCase04(TestCase):
     """
@@ -302,7 +296,6 @@ class TestGatewaysCase04(TestCase):
             )
 
 
-@tier2
 @attr(tier=2)
 class TestGatewaysCase05(TestCase):
     """
@@ -345,7 +338,6 @@ class TestGatewaysCase05(TestCase):
             )
 
 
-@tier2
 @attr(tier=2)
 class TestGatewaysCase06(TestCase):
     """
@@ -428,7 +420,6 @@ class TestGatewaysCase06(TestCase):
             )
 
 
-@tier2
 @attr(tier=2)
 class TestGatewaysCase07(TestCase):
     """
@@ -514,7 +505,6 @@ class TestGatewaysCase07(TestCase):
             )
 
 
-@tier2
 @attr(tier=2)
 class TestGatewaysCase08(TestCase):
     """

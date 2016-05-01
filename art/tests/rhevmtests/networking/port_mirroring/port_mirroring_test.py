@@ -9,7 +9,6 @@ using 2 hosts and 5 VMs
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.helper as network_helper
-from _pytest_art.marks import tier2
 from art.core_api import apis_utils
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest
@@ -32,7 +31,6 @@ def setup_module():
 
 
 @pytest.mark.usefixtures("port_mirroring_prepare_setup")
-@tier2
 @attr(tier=2)
 @pytest.mark.skipif(
     conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
