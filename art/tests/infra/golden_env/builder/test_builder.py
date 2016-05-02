@@ -211,17 +211,20 @@ class CreateDC(TestCase):
             vds_obj = VDS(host_ip, host_pwd)
             vds_objs.append(vds_obj)
             hosts_names.append(host_def['name'])
-        # Set the best cpu_model for hosts
-        cpu_den = cpumodel.CpuModelDenominator()
-        try:
-            cpu_info = cpu_den.get_common_cpu_model(
-                vds_objs, version=comp_version,
-            )
-        except cpumodel.CpuModelError as ex:
-            LOGGER.error("Can not determine the best cpu_model: %s", ex)
-        else:
-            LOGGER.info("Cpu info %s for cluster: %s", cpu_info, cluster_name)
-            cpu_name = cpu_info['cpu']
+        if vds_objs:
+            # Set the best cpu_model for hosts
+            cpu_den = cpumodel.CpuModelDenominator()
+            try:
+                cpu_info = cpu_den.get_common_cpu_model(
+                    vds_objs, version=comp_version,
+                )
+            except cpumodel.CpuModelError as ex:
+                LOGGER.error("Can not determine the best cpu_model: %s", ex)
+            else:
+                LOGGER.info(
+                    "Cpu info %s for cluster: %s", cpu_info, cluster_name
+                )
+                cpu_name = cpu_info['cpu']
 
         msg = ("add Cluster %s with cpu_type %s and version %s to datacenter"
                " %s" % (cluster_name, cpu_name, comp_version, dc_name))
