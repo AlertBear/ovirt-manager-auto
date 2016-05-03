@@ -863,6 +863,7 @@ def get_all_disks():
     """
     return DISKS_API.get(absLink=False)
 
+
 def prepare_disk_attachment_object(disk_id, **kwargs):
     """
     Creates a disk attachment object

@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 import logging
 from unittest2 import SkipTest
 import config
+import helpers
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.high_level import (
     datacenters as hl_dc,
@@ -25,7 +26,6 @@ from art.test_handler.tools import bz, polarion
 from art.test_handler import exceptions
 from art.unittest_lib import attr, StorageTest
 import rhevmtests.storage.helpers as storage_helpers
-from utilities.machine import Machine
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ def setup_module():
                 config.HOST_FOR_MOUNT, config.CLUSTER_ISCSI_CONNECTIONS
             )
         )
-    _logout_from_all_iscsi_targets()
+    helpers.logout_from_all_iscsi_targets()
 
 
 def teardown_module():
@@ -135,7 +135,7 @@ def teardown_module():
             config.HOST_FOR_MOUNT, config.CLUSTER_NAME
         )
         test_failed = True
-    _logout_from_all_iscsi_targets()
+    helpers.logout_from_all_iscsi_targets()
 
     # TODO: WA for bug https://bugzilla.redhat.com/show_bug.cgi?id=1302780
     # Add iSCSI domains back
@@ -218,23 +218,6 @@ def teardown_module():
 
 def _compare_connections(conn_1, conn_2):
     return conn_1.__dict__ == conn_2.__dict__
-
-
-def _logout_from_all_iscsi_targets():
-    """
-    Logout from all the targets used in the test
-    """
-    machine = Machine(
-        host=config.HOST_FOR_MOUNT_IP, user=config.HOSTS_USER,
-        password=config.HOSTS_PW
-    ).util('linux')
-    addresses, targets = hl_sd.discover_addresses_and_targets(
-        config.HOSTS[0], config.UNUSED_LUN_ADDRESSES[0]
-    )
-    for address, target in zip(addresses, targets):
-        machine.logoutTargets(
-            mode='node', targetName=target, portalIp=address
-        )
 
 
 def _filter_storage_connections(connection_list1, connection_list2):
@@ -376,7 +359,7 @@ class TestCase5243(TestCase):
             )
         if self.conn:
             ll_storageconnections.remove_storage_connection(self.conn.id)
-        _logout_from_all_iscsi_targets()
+        helpers.logout_from_all_iscsi_targets()
 
 
 @attr(tier=2)
@@ -735,7 +718,7 @@ class TestCase5246(TestCase):
                 ll_sd.addConnectionToStorageDomain(self.sd_name_1, conn_1.id)
                 ll_sd.addConnectionToStorageDomain(self.sd_name_2, conn_1.id)
         _restore_empty_dc()
-        _logout_from_all_iscsi_targets()
+        helpers.logout_from_all_iscsi_targets()
 
 
 @attr(tier=2)
@@ -1059,7 +1042,7 @@ class TestCase5242(TestCase):
         for storage_connection in self.storage_connections:
             ll_storageconnections.remove_storage_connection(storage_connection)
         _restore_empty_dc()
-        _logout_from_all_iscsi_targets()
+        helpers.logout_from_all_iscsi_targets()
 
 
 @attr(tier=2)
@@ -1201,7 +1184,7 @@ class TestCase5245(TestCase):
         Remove added storage domains
         """
         _restore_empty_dc()
-        _logout_from_all_iscsi_targets()
+        helpers.logout_from_all_iscsi_targets()
 
 
 @attr(tier=2)
@@ -1340,7 +1323,7 @@ class TestCase5244(TestCase):
 
     def tearDown(self):
         _restore_empty_dc()
-        _logout_from_all_iscsi_targets()
+        helpers.logout_from_all_iscsi_targets()
 
 
 @attr(tier=2)
@@ -1523,7 +1506,7 @@ class TestCase5241(TestCase):
             )
             TestCase.test_failed = True
         _restore_empty_dc()
-        _logout_from_all_iscsi_targets()
+        helpers.logout_from_all_iscsi_targets()
         TestCase.teardown_exception()
 
 
@@ -1622,4 +1605,4 @@ class TestCase5249(TestCase):
             ll_storageconnections.get_all_storage_connections()
         ]:
             ll_storageconnections.remove_storage_connection(self.conn.id)
-        _logout_from_all_iscsi_targets()
+        helpers.logout_from_all_iscsi_targets()
