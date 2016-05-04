@@ -15,6 +15,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 import rhevmtests.helpers as gen_helper
+import rhevmtests.virt.helper as virt_helper
 from art.test_handler import exceptions
 
 logger = logging.getLogger(__name__)
@@ -84,8 +85,9 @@ class TestManualPoolRememberUser(base.VmPoolWithUser):
             )[0]
             ll_vms.wait_for_vm_states(vms[user])
             vm_resource = gen_helper.get_vm_resource(vms[user])
-            helpers.create_file_in_vm(vms[user], vm_resource)
-            helpers.check_if_file_exist(True, vms[user], vm_resource)
+            virt_helper.create_file_in_vm(vms[user], vm_resource)
+            virt_helper.check_if_file_exist(True, vms[user], vm_resource)
+            self.assertTrue(helpers.flush_file_system_buffers(vm_resource))
         for user in self.users:
             helpers.stop_vm_in_pool_as_user(
                 positive=True, vm=vms[user], user=user, manual=True
@@ -96,7 +98,7 @@ class TestManualPoolRememberUser(base.VmPoolWithUser):
                 check_permission=True, manual=True
             )
             vm_resource = gen_helper.get_vm_resource(vms[user])
-            helpers.check_if_file_exist(True, vms[user], vm_resource)
+            virt_helper.check_if_file_exist(True, vms[user], vm_resource)
 
 
 class TestManualPoolRecycleVm(base.VmPoolWithUser):
