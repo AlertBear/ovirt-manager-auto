@@ -1698,21 +1698,37 @@ def hotPlugNic(positive, vm, nic):
 
 @is_action()
 def hotUnplugNic(positive, vm, nic):
-    '''
-    Description: implement hotUnplug nic.
-    Author: atal
-    Parameters:
-        * vm - vm name
-        * nic - nic name to plug.
-    Return: True in case of succeed, False otherwise
-    '''
+    """
+    Implement hotUnplug nic.
+
+    __author__: 'atal'
+
+    Args:
+        positive (bool): Expected status.
+        vm (str): VM name.
+        nic (str): NIC name to unplug.
+
+    Returns:
+        bool: True if un-plug was succeed, False otherwise.
+    """
+    log_info, log_error = ll_general.get_log_msg(
+        action="un-plug", obj_type="NIC", obj_name=nic, positive=positive,
+        extra_txt="from VM %s" % vm
+    )
+
     try:
         nic_obj = get_vm_nic(vm, nic)
     except EntityNotFound:
         logger.error('Entity %s not found!' % nic)
         return not positive
 
-    return bool(NIC_API.syncAction(nic_obj, "deactivate", positive))
+    logger.info(log_info)
+    status = bool(NIC_API.syncAction(nic_obj, "deactivate", positive))
+
+    if not status:
+        logger.error(log_error)
+
+    return status
 
 
 @is_action()
@@ -2955,7 +2971,18 @@ def waitForIP(vm, timeout=600, sleep=DEF_SLEEP, get_all_ips=False):
 
 @is_action()
 def getVmMacAddress(positive, vm, nic='nic1'):
-    '''Function return mac address of vm with specific nic'''
+    """
+    Function return mac address of vm with specific nic
+
+    Args:
+        positive (bool): Expected status.
+        vm (str): VM name.
+        nic (str): NIC name.
+
+    Returns:
+        tuple: True, mac address in dict or False,None
+    """
+    logger.info("Get VM %s MAC address", vm)
     try:
         nicObj = get_vm_nic(vm, nic)
     except EntityNotFound:

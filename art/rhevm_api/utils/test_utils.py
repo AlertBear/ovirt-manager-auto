@@ -1054,21 +1054,23 @@ def set_network_filter_status(enable, engine_resource):
     """
     Disabling or enabling network filtering.
 
-    :param enable: True for enabling, False for disabling
-    :typr enable: bool
-    :param engine_resource: Engine resource
-    :type engine_resource: resources.Engine
-    :return: True if operation succeeded, False otherwise
-    :rtype: bool
+    Args:
+        enable (bool): True for enabling, False for disabling.
+        engine_resource (resources.Engine): Engine resource.
+
+    Returns:
+        bool: True if operation succeeded, False otherwise
     """
-    executor = engine_resource.host.executor()
+    log = "Enabling" if enable else "Disabling"
+    logger.info("%s network filter on engine", log)
+
     cmd = [
         "engine-config", "-s",
         "EnableMACAntiSpoofingFilterRules=%s" % str(enable).lower()
     ]
-    rc, out, err = executor.run_cmd(cmd)
+
+    rc, out, err = engine_resource.host.run_command(cmd)
     if rc:
-        logger.error("Failed to run %s. ERR: %s. OUT: %s", cmd, err, out)
         return False
 
     try:

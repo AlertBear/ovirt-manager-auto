@@ -4,145 +4,92 @@ Testing NetworkFilter feature.
 """
 
 import logging
+
 import pytest
-from rhevmtests.networking import config
-from art.rhevm_api.utils import test_utils
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-import rhevmtests.networking.helper as net_help
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-from art.unittest_lib import NetworkTest as TestCase, attr
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import rhevmtests.networking.config as conf
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.unittest_lib import NetworkTest, testflow, attr
+from fixtures import (
+    case_01_fixture, case_02_fixture, case_04_fixture,
+    network_filter_prepare_setup
+)
+
 
 logger = logging.getLogger("Network_Filter_Cases")
 
-########################################################################
-
-########################################################################
-#                             Test Cases                               #
-########################################################################
-
 
 @attr(tier=2)
-@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-class TestNetworkFilterCase02(TestCase):
+@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
+@pytest.mark.usefixtures(case_01_fixture.__name__)
+class TestNetworkFilterCase01(NetworkTest):
     """
     Check that network filter is enabled for hot-plug  NIC to on VM
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Adding nic2 to VM
-        """
-        logger.info("Adding %s to VM", config.NIC_NAME[1])
-        if not ll_vms.addNic(
-                positive=True, vm=config.VM_NAME[0], name=config.NIC_NAME[1],
-                interface=config.NIC_TYPE_RTL8139, network=config.MGMT_BRIDGE
-        ):
-            raise config.NET_EXCEPTION(
-                "Failed to add NIC %s to VM" % config.NIC_NAME[1]
-            )
 
     @polarion("RHEVM3-3780")
     def test_check_network_filter_on_nic(self):
         """
         Check that the new NIC has network filter
         """
-        logger.info(
+        testflow.step(
             "Check that Network Filter is enabled for %s via dumpxml",
-            config.NIC_NAME[1]
+            conf.NIC_NAME[1]
         )
-        if not ll_hosts.check_network_filtering_dumpxml(
-            positive=True, vds_resource=config.VDS_HOSTS[0],
-            vm=config.VM_NAME[0], nics="2"
-        ):
-            raise config.NET_EXCEPTION(
-                "Network Filter is disabled for %s via dumpxml" %
-                config.NIC_NAME[1]
+        self.assertTrue(
+            ll_hosts.check_network_filtering_dumpxml(
+                positive=True, vds_resource=conf.VDS_0_HOST,
+                vm=conf.VM_NAME[0], nics="2"
             )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Un-plug and remove nic2 from VM
-        """
-        logger.info("un-plug %s", config.NIC_NAME[1])
-        if not ll_vms.hotUnplugNic(
-            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[1]
-        ):
-            logger.error("Failed to unplug %s from VM", config.NIC_NAME[1])
-
-        logger.info("Removing %s from VM", config.NIC_NAME[1])
-        if not ll_vms.removeNic(
-            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[1]
-        ):
-            logger.error("Failed to remove %s", config.NIC_NAME[1])
-
-##############################################################################
+        )
 
 
 @attr(tier=2)
-class TestNetworkFilterCase03(TestCase):
+@pytest.mark.usefixtures(case_02_fixture.__name__)
+class TestNetworkFilterCase02(NetworkTest):
     """
     Check that Network Filter is enabled via ebtables on running VM and
     disabled on stopped VM
     """
     __test__ = True
 
-    @classmethod
-    def setup_class(cls):
-        """
-        No need to run setup_class for this test
-        """
-        logger.info("No need to run setup_class for this test")
-
     @polarion("RHEVM3-3783")
     def test_check_network_filter_via_ebtables(self):
         """
         Check that VM NIC has network filter via ebtables
         """
-        vm_macs = get_vm_macs(vm=config.VM_NAME[0], nics=[config.NIC_NAME[0]])
-        logger.info("Check ebtables rules for running VM")
-        if not ll_hosts.check_network_filtering_ebtables(
-            host_obj=config.VDS_HOSTS[0], vm_macs=vm_macs
-        ):
-            raise config.NET_EXCEPTION(
-                "Network filter is not enabled via ebtables on the VM NICs"
+        vm_macs = hl_vms.get_vm_macs(
+            vm=conf.VM_NAME[0], nics=[conf.NIC_NAME[0]]
+        )
+
+        testflow.step("Check ebtables rules for running VM")
+        self.assertTrue(
+            ll_hosts.check_network_filtering_ebtables(
+                host_obj=conf.VDS_0_HOST, vm_macs=vm_macs
             )
+        )
 
-        logger.info("Stopping the VM")
-        if not ll_vms.stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise config.NET_EXCEPTION("fail to stop the VM")
+        testflow.step("Stopping the VM %s", conf.VM_NAME[0])
+        self.assertTrue(ll_vms.stopVm(positive=True, vm=conf.VM_NAME[0]))
 
-        logger.info("Check ebtables rules for stopped VM")
-        if ll_hosts.check_network_filtering_ebtables(
-            host_obj=config.VDS_HOSTS[0], vm_macs=vm_macs
-        ):
-            raise config.NET_EXCEPTION(
-                "Network filter is enabled via ebtables on the VM NICs "
+        testflow.step(
+            "Check ebtables rules for stopped VM %s", conf.VM_NAME[0]
+        )
+        self.assertFalse(
+            ll_hosts.check_network_filtering_ebtables(
+                host_obj=conf.VDS_0_HOST, vm_macs=vm_macs
             )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Start the VM
-        """
-        logger.info("Starting the VM and wait till it's up")
-        if not net_help.run_vm_once_specific_host(
-            vm=config.VM_NAME[0], host=config.HOSTS[0], wait_for_up_status=True
-        ):
-            logger.error(
-                "Cannot start VM %s on host %s",
-                config.VM_NAME[0], config.HOSTS[0]
-            )
-
-##############################################################################
+        )
 
 
 @attr(tier=2)
-@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-class TestNetworkFilterCase04(TestCase):
+@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
+@pytest.mark.usefixtures(network_filter_prepare_setup.__name__)
+class TestNetworkFilterCase03(NetworkTest):
     """
     Check that Network Filter is disabled via ebtables on after VNIC hot-plug
     and still active after hot-unplug for remaining NICs
@@ -154,151 +101,93 @@ class TestNetworkFilterCase04(TestCase):
         """
         Check that VM NICs has network filter via ebtables
         """
-        vm_nic1_mac = get_vm_macs(
-            vm=config.VM_NAME[0], nics=[config.NIC_NAME[0]]
+        vm_nic1_mac = hl_vms.get_vm_macs(
+            vm=conf.VM_NAME[0], nics=[conf.NIC_NAME[0]]
         )
 
-        logger.info("Check ebtables rules for %s", config.NIC_NAME[0])
-        if not ll_hosts.check_network_filtering_ebtables(
-            host_obj=config.VDS_HOSTS[0], vm_macs=vm_nic1_mac
-        ):
-            raise config.NET_EXCEPTION(
-                "Network filter is not enabled via ebtables for %s" %
-                config.NIC_NAME[0]
+        testflow.step("Check ebtables rules for %s", conf.NIC_NAME[0])
+        self.assertTrue(
+            ll_hosts.check_network_filtering_ebtables(
+                host_obj=conf.VDS_0_HOST, vm_macs=vm_nic1_mac
             )
-
-        logger.info("Adding new NIC to VM")
-        if not ll_vms.addNic(
-                positive=True, vm=config.VM_NAME[0], name=config.NIC_NAME[1],
-                interface=config.NIC_TYPE_RTL8139, network=config.MGMT_BRIDGE
-        ):
-            raise config.NET_EXCEPTION(
-                "Failed to add NIC %s to VM" % config.NIC_NAME[1]
-            )
-
-        vm_nic2_mac = get_vm_macs(
-            vm=config.VM_NAME[0],  nics=[config.NIC_NAME[1]]
         )
-        logger.info("Check ebtables rules for %s", config.NIC_NAME[1])
-        if not ll_hosts.check_network_filtering_ebtables(
-            host_obj=config.VDS_HOSTS[0], vm_macs=vm_nic2_mac
-        ):
-            raise config.NET_EXCEPTION(
-                "Network filter is not enabled via ebtables for %s" %
-                config.NIC_NAME[1]
-            )
 
-        logger.info("hot-unplug %s from the VM", config.NIC_NAME[1])
-        if not ll_vms.updateNic(
-                positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[1],
+        testflow.step(
+            "Adding new NIC %s to VM %s", conf.NIC_NAME[1], conf.VM_NAME[0]
+        )
+        self.assertTrue(
+            ll_vms.addNic(
+                positive=True, vm=conf.VM_NAME[0], name=conf.NIC_NAME[1],
+                interface=conf.NIC_TYPE_RTL8139, network=conf.MGMT_BRIDGE
+            )
+        )
+
+        vm_nic2_mac = hl_vms.get_vm_macs(
+            vm=conf.VM_NAME[0],  nics=[conf.NIC_NAME[1]]
+        )
+
+        testflow.step("Check ebtables rules for %s", conf.NIC_NAME[1])
+        self.assertTrue(
+            ll_hosts.check_network_filtering_ebtables(
+                host_obj=conf.VDS_0_HOST, vm_macs=vm_nic2_mac
+            )
+        )
+
+        testflow.step(
+            "hot-unplug %s from the VM %s", conf.NIC_NAME[1], conf.VM_NAME[0]
+        )
+        self.assertTrue(
+            ll_vms.updateNic(
+                positive=True, vm=conf.VM_NAME[0], nic=conf.NIC_NAME[1],
                 plugged="false"
-        ):
-            raise config.NET_EXCEPTION(
-                "Failed to update %s to un-plugged" % config.NIC_NAME[1]
             )
-
-        if not ll_vms.removeNic(
-            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[1]
-        ):
-            raise config.NET_EXCEPTION(
-                "Failed to remove %s" % config.NIC_NAME[1]
-            )
-
-        vm_nic1_1_mac = get_vm_macs(
-            vm=config.VM_NAME[0], nics=[config.NIC_NAME[0]]
         )
-        logger.info("Check ebtables rules for %s", config.NIC_NAME[0])
-        if not ll_hosts.check_network_filtering_ebtables(
-            host_obj=config.VDS_HOSTS[0], vm_macs=vm_nic1_1_mac
-        ):
-            raise config.NET_EXCEPTION(
-                "Network filter is not enabled via ebtables for %s",
-                config.NIC_NAME[0]
-            )
 
-##############################################################################
+        self.assertTrue(
+            ll_vms.removeNic(
+                positive=True, vm=conf.VM_NAME[0], nic=conf.NIC_NAME[1]
+            )
+        )
+
+        vm_nic1_1_mac = hl_vms.get_vm_macs(
+            vm=conf.VM_NAME[0], nics=[conf.NIC_NAME[0]]
+        )
+
+        testflow.step("Check ebtables rules for %s", conf.NIC_NAME[0])
+        self.assertTrue(
+            ll_hosts.check_network_filtering_ebtables(
+                host_obj=conf.VDS_0_HOST, vm_macs=vm_nic1_1_mac
+            )
+        )
 
 
 @attr(tier=2)
-class TestNetworkFilterCase05(TestCase):
+@pytest.mark.usefixtures(case_04_fixture.__name__)
+class TestNetworkFilterCase04(NetworkTest):
     """
     Disabling network filter then check that VM run without network filter.
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Disabling network filter on engine and start the VM
-        """
-        logger.info("Stopping the VM")
-        if not ll_vms.stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise config.NET_EXCEPTION("fail to stop the VM")
-
-        logger.info("Disabling network filter on engine")
-        if not test_utils.set_network_filter_status(
-                enable=False, engine_resource=config.ENGINE
-        ):
-            raise config.NET_EXCEPTION("Failed to disable network filter")
-
-        logger.info("Starting the VM")
-        if not ll_vms.startVm(
-                positive=True, vm=config.VM_NAME[0], wait_for_status="up"
-        ):
-            raise config.NET_EXCEPTION("failed to start the VM")
 
     @polarion("RHEVM3-3785")
     def test_check_network_filter_on_nic(self):
         """
         Check that VM run without network filter.
         """
-        logger.info("Check that Network Filter is enabled via dumpxml")
-        if not ll_hosts.check_network_filtering_dumpxml(
-            positive=False, vds_resource=config.VDS_HOSTS[0],
-            vm=config.VM_NAME[0], nics="1"
-        ):
-            raise config.NET_EXCEPTION("Network Filter is enabled via dumpxml")
-
-        vm_nic1_mac = get_vm_macs(
-            vm=config.VM_NAME[0], nics=[config.NIC_NAME[0]]
-        )
-        logger.info("Check ebtables rules for %s", config.NIC_NAME[0])
-        if ll_hosts.check_network_filtering_ebtables(
-            host_obj=config.VDS_HOSTS[0], vm_macs=vm_nic1_mac
-        ):
-            raise config.NET_EXCEPTION(
-                "Network filter is enabled via ebtables for %s" %
-                config.NIC_NAME[0]
+        testflow.step("Check that Network Filter is enabled via dumpxml")
+        self.assertTrue(
+            ll_hosts.check_network_filtering_dumpxml(
+                positive=False, vds_resource=conf.VDS_0_HOST,
+                vm=conf.VM_NAME[0], nics="1"
             )
+        )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Enabling network filter on engine
-        """
-        logger.info("Enabling network filter on engine")
-        if not test_utils.set_network_filter_status(
-                enable=True, engine_resource=config.ENGINE
-        ):
-            logger.error("Failed to enable network filter")
-
-##############################################################################
-
-
-def get_vm_macs(vm, nics):
-    """
-    Description: Get MACs from VM
-    :param vm: VM name.
-    :param nics: List of NICs to get the MACs for
-    :return List of VM MACs
-    """
-    vm_macs = []
-    logger.info("Get MAC address for VM NICs")
-    for nic in nics:
-        vm_mac = ll_vms.getVmMacAddress(positive=True, vm=vm, nic=nic)
-        vm_macs.append(vm_mac[1]["macAddress"])
-
-    if len(vm_macs) != len(nics):
-        logging.error("Fail to get MAC from VM")
-        return False
-    return vm_macs
+        vm_nic1_mac = hl_vms.get_vm_macs(
+            vm=conf.VM_NAME[0], nics=[conf.NIC_NAME[0]]
+        )
+        testflow.step("Check ebtables rules for %s", conf.NIC_NAME[0])
+        self.assertFalse(
+            ll_hosts.check_network_filtering_ebtables(
+                host_obj=conf.VDS_0_HOST, vm_macs=vm_nic1_mac
+            )
+        )

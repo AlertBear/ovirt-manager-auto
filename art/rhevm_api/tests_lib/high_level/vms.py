@@ -1017,3 +1017,22 @@ def get_vms_for_storage_type(datacenter_name, cluster_name, storage_type):
             vms.get_vms_disks_storage_domain_name(vm) in domains
         )
     ]
+
+
+def get_vm_macs(vm, nics):
+    """
+    Get MACs from VM.
+
+    Args:
+        vm (str): VM name.
+        nics (List):  List of NICs to get the MACs for.
+
+    Returns:
+        List: VM MACs.
+    """
+    vm_macs = []
+    for nic in nics:
+        vm_mac = vms.getVmMacAddress(positive=True, vm=vm, nic=nic)
+        vm_macs.append(vm_mac[1]["macAddress"])
+
+    return vm_macs
