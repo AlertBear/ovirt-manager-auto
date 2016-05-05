@@ -255,7 +255,7 @@ class TestSanity03(TestSanityCaseBase):
         )
 
     @polarion("RHEVM3-6526")
-    @bz({'1271220': {}})
+    @bz({"1329224": {}})
     def test_qos_for_network_on_host_nic(self):
         """
         Attach network to host NIC with QoS parameters (Anonymous' QoS)
@@ -715,6 +715,7 @@ class TestSanity09(TestSanityCaseBase):
         helper.send_setup_networks(sn_dict=network_host_api_dict)
 
     @polarion("RHEVM3-14515")
+    @bz({"1329979": {}})
     def test_01_change_mtu(self):
         """
         Change the network MTU
@@ -758,6 +759,7 @@ class TestSanity09(TestSanityCaseBase):
                 (conf.HOST_0_NICS[1], mtu)
             )
 
+    @bz({"1329979": {}})
     @polarion("RHEVM3-14516")
     def test_02_change_vlan(self):
         """
@@ -787,6 +789,7 @@ class TestSanity09(TestSanityCaseBase):
                 % (self.net, conf.HOST_0_NAME, vlan_id)
             )
 
+    @bz({"1329979": {}})
     @polarion("RHEVM3-14517")
     def test_03_change_to_non_vm(self):
         """
