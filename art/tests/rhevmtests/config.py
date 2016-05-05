@@ -1,7 +1,6 @@
 """
 Consolidated config module
 """
-
 __test__ = False
 
 import logging
@@ -160,6 +159,10 @@ if 'prepared_env' in ART_CONFIG:
     CLUSTER_NAME = [x['name'] for x in CLUSTERS]
 
     VMS = []
+    NFS_VMS = []
+    ISCSI_VMS = []
+    GLUSTER_VMS = []
+    FCP_VMS = []
     for cluster in CLUSTERS:
         for vm in cluster['vms']:
             if 'number_of_vms' in vm:
@@ -169,11 +172,18 @@ if 'prepared_env' in ART_CONFIG:
                 while suffix_n < int(num_of_vms):
                     another_vm = copy.deepcopy(vm)
                     another_vm['name'] = vm_name + str(suffix_n)
+                    if STORAGE_TYPE_NFS in vm['storage_domain']:
+                        NFS_VMS.append(another_vm['name'])
+                    if STORAGE_TYPE_ISCSI in vm['storage_domain']:
+                        ISCSI_VMS.append(another_vm['name'])
+                    if STORAGE_TYPE_GLUSTER in vm['storage_domain']:
+                        GLUSTER_VMS.append(another_vm['name'])
+                    if STORAGE_TYPE_FCP in vm['storage_domain']:
+                        FCP_VMS.append(another_vm['name'])
                     suffix_n += 1
                     VMS.append(another_vm)
             else:
                 VMS.append(vm)
-
     VM_NAME = [x['name'] for x in VMS]
 
     logger.info(

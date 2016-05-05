@@ -24,7 +24,6 @@ from art.test_handler.settings import opts
 from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
 from art.test_handler import exceptions
 from art.unittest_lib import attr, StorageTest
-import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.storage.helpers as storage_helpers
 from utilities.machine import Machine
 
@@ -70,7 +69,6 @@ def setup_module():
         )
         # We want to destroy the domains so we will be able to restore the
         # data on them
-
         # TODO: WA for bug https://bugzilla.redhat.com/show_bug.cgi?id=1302780
         # 1) We are formatting the domain (format='false' => format='true')
         #    Change back to 'false' when bug is fixed
@@ -192,15 +190,6 @@ def teardown_module():
     # Copying template disk to the new iSCSI domains and create 2 vms
     # Delete this block when fix
 
-    for vm in [config.VM_NAME[2], config.VM_NAME[3]]:
-        ll_vms.cloneVmFromTemplate(
-            True,
-            vm,
-            rhevm_helpers.get_golden_template_name(config.CLUSTER_NAME),
-            config.CLUSTER_NAME,
-            wait=True,
-            storagedomain=iscsi_sds[0]
-        )
     template_name = config.TEMPLATE_NAME[0]
     disk = ll_templates.getTemplateDisks(template_name)[0].get_alias()
     for sd in iscsi_sds:
@@ -212,6 +201,15 @@ def teardown_module():
                 "Failed to copy template disk to imported iSCSI domain %s", sd
             )
         ll_templates.wait_for_template_disks_state(template_name)
+
+    for vm in config.ISCSI_VMS:
+        vm_args = config.create_vm_args.copy()
+        vm_args['storageDomainName'] = iscsi_sds[0]
+        vm_args['vmName'] = vm
+        if not storage_helpers.create_vm_or_clone(**vm_args):
+            raise exceptions.VMException(
+                'Unable to create vm %s for test' % vm
+            )
     # TODO END - Delete this block when fixed
 
     if test_failed:
