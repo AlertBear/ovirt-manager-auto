@@ -4,16 +4,17 @@ Init for sla tests package
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.utils.inventory import Inventory
 from rhevmtests.sla import config
+from rhevmtests import networking
 import logging
 logger = logging.getLogger(__name__)
 
 
+@networking.ignore_exception
 def sla_cleanup():
     """
     1. Stop all VMs
     2. Update all VMs to default parameters
     3. Remove all redundant VMs
-    :return:
     """
     logger.info("SLA cleanup")
     ll_vms.stop_vms_safely(ll_vms.VM_API.get(absLink=False))
