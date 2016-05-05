@@ -339,7 +339,7 @@ def load_vm_memory(
     if not copy_file_to_vm(vm_ip, LOAD_MEMORY_FILE, DESTINATION_PATH):
         raise exceptions.VMException(
             'Failed to copy script %s to VM:%s dst path %s' %
-            vm_name, DESTINATION_PATH
+            LOAD_MEMORY_FILE, vm_name, DESTINATION_PATH
         )
     logger.info('Running script')
     run_command(vm_name, command)
