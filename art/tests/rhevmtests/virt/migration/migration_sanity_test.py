@@ -7,7 +7,6 @@ Virt sanity testing for migration feature.
 
 import pytest
 import logging
-import threading as thread
 from art.unittest_lib import common
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
@@ -146,15 +145,18 @@ class TestMigrationVirtSanityCase3(common.VirtTest):
         """
 
         logger.info("Start migration for VM: %s ", config.MIGRATION_VM)
-        migration_thread = thread.Thread(
-            name='migration_thread', target=ll_vms.migrateVm, args=(
-                False, config.MIGRATION_VM, False, False)
+        self.assertTrue(
+            ll_vms.migrateVm(True, config.MIGRATION_VM, wait=False)
         )
-        migration_thread.run()
-        logger.info("Cancel migration for VM: %s ", config.MIGRATION_VM)
+        ll_vms.wait_for_vm_states(
+            config.MIGRATION_VM, states=[
+                config.ENUMS['vm_state_migrating'],
+                config.ENUMS['vm_state_migrating_from'],
+                config.ENUMS['vm_state_migrating_to']
+            ]
+        )
         self.cancel_vm_migrate = hl_vms.cancel_vm_migrate(
             vm=config.MIGRATION_VM,
-            wait=True
         )
         self.assertTrue(
             self.cancel_vm_migrate,
