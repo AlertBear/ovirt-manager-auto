@@ -6,6 +6,7 @@ from art.core_api import apis_exceptions
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.tests_lib.high_level import (
     storagedomains as hl_sd,
+    vms as hl_vms
 )
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
@@ -261,8 +262,7 @@ class TestCase4831(helpers.TestCaseNFSOptions):
                                     template, export_std, datacenter):
         """
         Performs standard operations:
-            * moves disk of a vm to another storage domain
-            * moves vm to another storage domain
+            * moves disks of a vm to another storage domain
             * migrates vm to another host
             * exports template
             * changes SPM host
@@ -282,14 +282,8 @@ class TestCase4831(helpers.TestCaseNFSOptions):
         **Returns**: nothing, fails the test in case of any error
         """
         self.master_domain = None
-        logger.info("Moving disk %s to %s", disk, another_std)
-        ll_vms.move_vm_disk(vm_with_disk, disk, another_std)
-
-        logger.info("Moving vm %s to sd %s", vm, another_std)
-        if not ll_vms.moveVm(True, vm, another_std):
-            self.fail(
-                "Cannot move vm %s to storage domain %s", vm, another_std
-            )
+        logger.info("Moving disks of vm %s to %s", vm_with_disk, another_std)
+        hl_vms.move_vm_disks(vm_with_disk, another_std)
         logger.info("Starting vm %s", vm)
         ll_vms.startVm(True, vm)
         status, host_with_vm = ll_vms.getVmHost(vm)

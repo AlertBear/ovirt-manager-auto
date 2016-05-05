@@ -2195,3 +2195,15 @@ def remove_glance_image(image_id, glance_hostname, username, password):
             "Unable to remove image %s, error: %s", image_id, error
         )
     return not rc
+
+
+def get_storage_domain_storage_type(storage_domain):
+    """
+    Gets the storage domain type e.g. iscsi, nfs...
+
+    :param storage_domain: name of storage domain
+    :type storage_domain: str
+    :return: the name of the storage domain type
+    :type: str
+    """
+    return get_storage_domain_obj(storage_domain).get_storage().get_type()

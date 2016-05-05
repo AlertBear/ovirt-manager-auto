@@ -149,7 +149,7 @@ def test_snapshot_and_import_export_fixture(request):
 
     request.addfinalizer(fin2)
 
-    assert virt_helper.create_vm_from_template(vm_name=vm_name)
+    assert virt_helper.create_base_vm(vm_name=vm_name, add_disk=True)
 
 
 @pytest.fixture()

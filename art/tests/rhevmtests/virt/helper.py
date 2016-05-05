@@ -745,12 +745,20 @@ def get_storage_domains():
     non_master_domains = (
         ll_sd.findNonMasterStorageDomains(
             True, config.DC_NAME[0]
-        )[1]
-    )
-    non_master_domain = (
-        non_master_domains['nonMasterDomains'][0]
+        )[1]['nonMasterDomains']
     )
     export_domain = (
         ll_sd.findExportStorageDomains(config.DC_NAME[0])[0]
     )
+    master_domain_type = ll_sd.get_storage_domain_storage_type(master_domain)
+    non_master_domain = None
+    for domain in non_master_domains:
+        if ll_sd.get_storage_domain_storage_type(domain) == master_domain_type:
+            non_master_domain = domain
+            break
+    if non_master_domain is None:
+        logger.error(
+            "No storage domain with the same type of master domain (%s)"
+            "exists in the system", master_domain_type
+        )
     return master_domain, export_domain, non_master_domain

@@ -1033,3 +1033,33 @@ def get_vm_macs(vm, nics):
         vm_macs.append(vm_mac[1]["macAddress"])
 
     return vm_macs
+
+
+def move_vm_disks(vm_name, target_storage_domain):
+    """
+    Moves all disks of vm to another storage domain
+
+    __author__ = "slitmano"
+
+    :param vm_name: The VM whose disk will be moved
+    :type vm_name: str
+    :param target_storage_domain: Name of the storage domain into
+    which the disk should be moved
+    :type target_storage_domain: str
+    :raise VMException
+    """
+    vm_disks_ids = [
+        disk.get_id() for disk in vms.getVmDisks(vm_name) if
+        disk.get_storage_type() == ENUMS['storage_dom_type_image']
+        ]
+    for disk_id in vm_disks_ids:
+        disks.move_disk(
+            disk_id=disk_id, target_domain=target_storage_domain,
+            wait=False
+        )
+    for disk_id in vm_disks_ids:
+        disks.wait_for_disk_storage_domain(disk_id, target_storage_domain)
+    if not vms.waitForVmsDisks(vm_name):
+        raise errors.VMException(
+            "The disks of vm: %s failed to move to state 'ok'" % vm_name
+        )

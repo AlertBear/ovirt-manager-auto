@@ -2371,34 +2371,6 @@ def importVm(
     return status
 
 
-def moveVm(positive, vm, storagedomain, wait=True):
-    '''
-    Description: move vm to another storage domain
-    Author: edolinin
-    Parameters:
-       * vm - name of vm
-       * storagedomain - name of storage domain to move vm to
-    Return: status (True if vm was moved properly, False otherwise)
-    '''
-    vmObj = VM_API.find(vm)
-    expectedStatus = vmObj.get_status()
-    storageDomainId = STORAGE_DOMAIN_API.find(storagedomain).id
-    sd = data_st.StorageDomain(id=storageDomainId)
-
-    async = 'false'
-    if not wait:
-        async = 'true'
-    status = bool(
-        VM_API.syncAction(
-            vmObj, "move", positive, storage_domain=sd, async=async
-        )
-    )
-    if positive and status and wait:
-        return VM_API.waitForElemStatus(
-            vmObj, expectedStatus, VM_IMAGE_OPT_TIMEOUT)
-    return status
-
-
 def changeCDWhileRunning(vm_name, cdrom_image):
     '''
     Description: Change cdrom image while vm is running
@@ -3562,17 +3534,14 @@ def waitForVmsDisks(vm, disks_status=ENUMS['disk_state_ok'], timeout=600,
     """
     vm = VM_API.find(vm)
 
-    start_time = time.time()
-    disks_to_wait = [disk for disk in
-                     DISKS_API.getElemFromLink(vm, get_href=False)
-                     if disk.get_status() != disks_status]
-    while disks_to_wait and time.time() - start_time < timeout:
-        time.sleep(sleep)
-        disks_to_wait = [disk for disk in
-                         DISKS_API.getElemFromLink(vm, get_href=False)
-                         if disk.get_status() != disks_status]
-
-    return False if disks_to_wait else True
+    def all_disks_status():
+        disks = [
+            d for d in getVmDisks(vm) if
+            d.get_storage_type() != ENUMS['storage_type_lun']
+        ]
+        return all([d.get_status() == disks_status for d in disks])
+    sampler = TimeoutingSampler(timeout, sleep, all_disks_status)
+    return sampler.waitForFuncStatus(result=True)
 
 
 def getVmPayloads(positive, vm, **kwargs):

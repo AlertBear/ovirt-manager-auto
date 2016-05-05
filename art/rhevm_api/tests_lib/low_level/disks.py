@@ -879,3 +879,30 @@ def prepare_disk_attachment_object(disk_id, **kwargs):
     """
     disk_obj = prepare_ds_object("Disk", id=disk_id)
     return prepare_ds_object("DiskAttachment", disk=disk_obj, **kwargs)
+
+
+def wait_for_disk_storage_domain(
+    disk, storage_domain, key='id', timeout=600, interval=5
+):
+    """
+    Samples a disk and waits until disk is found in the specific storage
+    domain or until timeout is reached
+
+    :param disk: name or id of the disk to be checked
+    :type disk: str
+    :param storage_domain: name of the storage domain in which we expect the
+    disk to exist
+    :type storage_domain: str
+    :param key: Determines whether disk should be a name or an id of a disk
+    :type key: str
+    :param timeout: time to wait until stopping to sample SD
+    :type timeout: int
+    :param interval: inter between each sample of SD
+    :type interval: int
+    """
+    disk_name = get_disk_obj(disk, key).get_name() if key == 'id' else disk
+    for sample in TimeoutingSampler(
+        timeout, interval, get_disk_storage_domain_name, disk_name
+    ):
+        if sample == storage_domain:
+            return

@@ -15,6 +15,7 @@ from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates,
     vms as ll_vms,
 )
+from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage import helpers as storage_helpers
 from art.test_handler import exceptions
@@ -481,8 +482,7 @@ class TestCase5940(DirectLunAttachTestCase):
         self.assertTrue(
             self.target_sd, "Target SD %s wasn't found" % self.target_sd
         )
-        self.vm_moved = ll_vms.moveVm(True, self.vm_name, self.target_sd)
-        self.assertTrue(self.vm_moved, "Failed to move vm %s" % self.vm_name)
+        hl_vms.move_vm_disks(self.vm_name, self.target_sd)
 
     def tearDown(self):
         """

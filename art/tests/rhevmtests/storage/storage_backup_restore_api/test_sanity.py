@@ -15,6 +15,7 @@ from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates,
     vms as ll_vms,
 )
+from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.utils import test_utils as utils
 from art.test_handler import exceptions
@@ -591,14 +592,7 @@ class TestCase6168(BaseTestCase):
 
         ll_vms.stop_vms_safely([self.vm_names[1]])
         logger.info("Succeeded to stop vm %s", self.vm_names[1])
-
-        if not ll_vms.moveVm(True, self.vm_names[1], self.storage_domains[1]):
-            raise exceptions.VMException(
-                "Failed to move vm %s to storage domain %s" % (
-                    self.vm_names[1], self.storage_domains[1]
-                )
-            )
-
+        hl_vms.move_vm_disks(self.vm_names[1], self.storage_domains[1])
         ll_vms.attach_backup_disk_to_vm(
             self.vm_names[0], self.vm_names[1], self.first_snapshot_description
         )
