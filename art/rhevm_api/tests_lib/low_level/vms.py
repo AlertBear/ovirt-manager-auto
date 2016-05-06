@@ -305,7 +305,10 @@ def _prepareVmObject(**kwargs):
     apply_os = False
     os_type = kwargs.pop("os_type", None)
     if os_type is not None:
-        os_type = ENUMS.get(os_type.lower(), os_type.lower())
+        if os_type.startswith("windows_"):
+            os_type = ENUMS.get(os_type, os_type)
+        else:
+            os_type = ENUMS.get(os_type.lower(), os_type.lower())
         apply_os = True
     os_type = data_st.OperatingSystem(type_=os_type)
     for opt_name in "kernel", "initrd", "cmdline":
@@ -1931,7 +1934,8 @@ def runVmOnce(
     cdrom_image=None, floppy_image=None, boot_dev=None, host=None,
     domainName=None, user_name=None, password=None,
     wait_for_state=ENUMS['vm_state_powering_up'],
-    use_cloud_init=False, initialization=None
+    use_cloud_init=False, initialization=None,
+    use_sysprep=False,
 ):
     """
     Run once vm with specific parameters
@@ -1966,6 +1970,8 @@ def runVmOnce(
     :type use_cloud_init: bool
     :param initialization: Initialization obj for cloud init
     :type initialization: initialization
+    :param use_sysprep: True if sysprep should be used, False otherwise
+    :type use_sysprep: boolean
     :return: True, if positive and action succeed
     or negative and action failed, otherwise False
     :rtype: bool
@@ -2016,9 +2022,10 @@ def runVmOnce(
             domain.set_user(
                 data_st.User(user_name=user_name, password=password)
             )
-
         vm_for_action.set_domain(domain)
+
     action_params["vm"] = vm_for_action
+    action_params['use_sysprep'] = use_sysprep
     if pause and pause.lower() == 'true':
         wait_for_state = ENUMS['vm_state_paused']
         action_params["pause"] = pause
