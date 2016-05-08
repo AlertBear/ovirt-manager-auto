@@ -27,18 +27,6 @@ class HostNetworkApi(NetworkFixtures):
     """
     Fixture for host_network_api
     """
-    def set_ethtool_on_engine(self):
-        """
-        Set ethtool via engine-config
-        """
-        cmd = [
-            "UserDefinedNetworkCustomProperties=ethtool_opts=.*",
-            "--cver=%s" % conf.COMP_VERSION
-        ]
-        assert test_utils.set_engine_properties(
-            engine_obj=conf.ENGINE, param=cmd
-        )
-
     def attach_net_to_host_nic(self, network):
         """
         Attach network to host NIC
@@ -93,7 +81,6 @@ def host_network_api_prepare_setup(request, network_cleanup_fixture):
     hna.prepare_dummies(
         host_resource=hna.vds_0_host, num_dummy=hna_conf.NUM_DUMMYS
     )
-    hna.set_ethtool_on_engine()
 
 
 #  Prepare setup for host_nic_test module

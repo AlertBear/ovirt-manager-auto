@@ -53,20 +53,6 @@ def engine_config_set_ethtool_and_queues():
         raise conf.NET_EXCEPTION(
             "Failed to set ethtool via engine-config"
         )
-    logger.info(
-        "Configuring engine to support queues for %s version",
-        conf.COMP_VERSION
-    )
-    param = [
-        "CustomDeviceProperties='{type=interface;prop={queues=[1-9][0-9]*}}'",
-        "'--cver=%s'" % conf.COMP_VERSION
-    ]
-    if not test_utils.set_engine_properties(
-        engine_obj=conf.ENGINE, param=param
-    ):
-        raise conf.NET_EXCEPTION(
-            "Failed to enable queue via engine-config"
-        )
 
 
 def send_setup_networks(sn_dict):
