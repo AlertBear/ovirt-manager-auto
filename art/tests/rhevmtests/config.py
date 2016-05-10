@@ -150,6 +150,10 @@ GLUSTER_PATH = get_list(PARAMETERS, 'gluster_data_domain_path')
 VFS_TYPE = ENUMS['vfs_type_glusterfs']
 SD_LIST = []
 
+# Hosted engine constants
+HE_VM = "HostedEngine"
+HE_STORAGE_DOMAIN = "hosted_storage"
+
 if 'prepared_env' in ART_CONFIG:
     GOLDEN_ENV = ART_CONFIG['prepared_env']
 

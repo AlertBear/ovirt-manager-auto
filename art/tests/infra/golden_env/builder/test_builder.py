@@ -206,6 +206,7 @@ class CreateDC(TestCase):
 
     def __init__(self, *args, **kwargs):
         super(CreateDC, self).__init__(*args, **kwargs)
+        self.hosted_engine_builder = self._is_he_builder()
 
     def build_cluster(self, cl_def, dc_name, comp_version, host_conf):
         vds_objs = list()
@@ -234,33 +235,41 @@ class CreateDC(TestCase):
                 )
                 cpu_name = cpu_info['cpu']
 
-        msg = ("add Cluster %s with cpu_type %s and version %s to datacenter"
-               " %s" % (cluster_name, cpu_name, comp_version, dc_name))
-        if not clusters.addCluster(
-            True, name=cluster_name, cpu=cpu_name, data_center=dc_name,
-            version=comp_version
+        # in case its not already created as part of HE builder task
+        if not (
+            self.hosted_engine_builder and
+            cluster_name == config.HOSTED_ENGINE_CLUSTER
         ):
-            raise errors.ClusterException("Failed to %s" % msg)
-        LOGGER.info("Succeed to %s", msg)
+            msg = (
+                "add Cluster %s with cpu_type %s and version %s to datacenter"
+                " %s" % (cluster_name, cpu_name, comp_version, dc_name)
+            )
+            testflow.step("Add cluster %s", cluster_name)
+            if not clusters.addCluster(
+                True, name=cluster_name, cpu=cpu_name, data_center=dc_name,
+                version=comp_version
+            ):
+                raise errors.ClusterException("Failed to %s" % msg)
+            LOGGER.info("Succeed to %s", msg)
 
         if not hosts_def:
             LOGGER.info("No hosts in cluster")
             return
-        for host_name, vds_obj in zip(hosts_names, vds_objs):
-            testflow.step("Add host %s", host_name)
-            if not hosts.addHost(
-                True, host_name, address=vds_obj.fqdn,
-                root_password=vds_obj.root_user.password, wait=False,
-                cluster=cluster_name, comment=vds_obj.ip,
-            ):
-                raise errors.HostException(
-                    "Cannot add host %s (%s/%s)" % (
-                        host_name, host_ip, host_pwd,
-                    )
-                )
 
+        for host_name, vds_obj in zip(hosts_names, vds_objs):
+            if not hosts.is_host_exist(host_name):
+                testflow.step("Add host %s", host_name)
+                if not hosts.addHost(
+                    True, host_name, address=vds_obj.fqdn,
+                    root_password=vds_obj.root_user.password, wait=False,
+                    cluster=cluster_name, comment=vds_obj.ip,
+                ):
+                    raise errors.HostException(
+                        "Cannot add host %s (%s/%s)" %
+                        (host_name, vds_obj.ip, vds_obj.root_user.password)
+                    )
         if not hosts.waitForHostsStates(
-            True, ",".join([host_name for host_name in hosts_names])
+                True, ",".join([host_name for host_name in hosts_names])
         ):
             raise errors.HostException("Hosts are not up")
 
@@ -324,6 +333,13 @@ class CreateDC(TestCase):
                 )
             else:
                 LOGGER.warning("unknown type: %s", storage_type)
+
+    @staticmethod
+    def _is_he_builder():
+        for host_name in hosts.get_host_names_list():
+            if hosts.is_hosted_engine_configured(host_name=host_name):
+                return True
+        return False
 
     def _create_vm(self, vm, dc_name, cl_name):
         vm_name = vm['name']
@@ -513,7 +529,7 @@ class CreateDC(TestCase):
         disk_sd = disks.get_disk_storage_domain_name(
             template_disk, template_name=template)
         for sd in all_sds:
-            if disk_sd != sd:
+            if sd not in (disk_sd, config.HOSTED_ENGINE_SD_NAME):
                 for disk in template_disks:
                     templates.wait_for_template_disks_state(template)
                     LOGGER.info(
@@ -623,19 +639,23 @@ class CreateDC(TestCase):
         datacenter_name = dc_def['name']
         local = bool(dc_def['local'])
         comp_version = dc_def['compatibility_version']
-        testflow.step("Add datacenter %s", datacenter_name)
-        if not ll_dc.addDataCenter(
-                True, name=datacenter_name, local=local, version=comp_version):
-            raise errors.DataCenterException(
-                "addDataCenter %s with local %s and version %s failed."
-                % (datacenter_name, local, comp_version))
+        if not self.hosted_engine_builder:
+            testflow.step("Add datacenter %s", datacenter_name)
+            if not ll_dc.addDataCenter(
+                positive=True,
+                name=datacenter_name,
+                local=local,
+                version=comp_version
+            ):
+                raise errors.DataCenterException(
+                    "addDataCenter %s with local %s and version %s failed."
+                    % (datacenter_name, local, comp_version))
 
         clusters = dc_def['clusters']
         for cluster in clusters:
-            testflow.step("Add cluster %s", cluster['name'])
             self.build_cluster(
-                cluster, datacenter_name, comp_version, host_conf)
-            LOGGER.info("Cluster %s added", cluster['name'])
+                cluster, datacenter_name, comp_version, host_conf
+            )
         LOGGER.info("Added all clusters")
 
         if clusters[0]['hosts']:

@@ -433,7 +433,7 @@ class CreateHostWithWrongIPAddress(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        if ll_hosts.validateHostExist(True, host=cls.name):
+        if ll_hosts.is_host_exist(host_name=cls.name):
             if not ll_hosts.removeHost(True, host=cls.name):
                 raise HostException("unable to remove host: %s" % cls.name)
 
@@ -457,7 +457,7 @@ class CreateHostWithEmptyRootPassword(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        if ll_hosts.validateHostExist(True, host=cls.name):
+        if ll_hosts.is_host_exist(host_name=cls.name):
             if not ll_hosts.removeHost(True, host=cls.name):
                 raise HostException("unable to remove host: %s" % cls.name)
 

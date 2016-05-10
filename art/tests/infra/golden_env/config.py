@@ -99,3 +99,7 @@ IBM_POWER_8 = 'IBM POWER8'
 IBM_POWER_8E = 'IBM POWER8E'
 PPC_CPUS = [IBM_POWER_8, IBM_POWER_8E]
 PPC_ARCH = True if CPU_NAME in PPC_CPUS else False
+
+# Hosted engine constants
+HOSTED_ENGINE_SD_NAME = "hosted_storage"
+HOSTED_ENGINE_CLUSTER = "golden_env_mixed_1"

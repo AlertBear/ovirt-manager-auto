@@ -91,8 +91,23 @@ logger = logging.getLogger("art.ll_lib.hosts")
 
 
 def get_host_list():
-    hostUtil = get_api('host', 'hosts')
-    return hostUtil.get(absLink=False)
+    '''
+    Return list of all hosts
+
+    Returns:
+        list: list of host objects
+    '''
+    return HOST_API.get(absLink=False)
+
+
+def get_host_names_list():
+    '''
+    Return list of all host names
+
+    Returns:
+        list: list of host names(string)
+    '''
+    return [host.get_name() for host in get_host_list()]
 
 
 def get_host_status(host):
@@ -1488,22 +1503,17 @@ def getHostNicAttr(host, nic, attr):
     return True, {'attrValue': nic_obj}
 
 
-# FIXME: remove this function - not being used at all, even not in actions.conf
-def validateHostExist(positive, host):
+def is_host_exist(host_name):
     """
-    Description: Validate host if exists in the setup
-    Author: egerman
-    Parameters:
-       * host - host name
-    Return:
-        1) When positive equals True and given host exists in the setup -
-           return true,otherwise return false
-        2) When positive equals False and given host does not exists in
-           the setup  - return true,otherwise return false
+    Check if host exists under engine
+
+    Args:
+        host_name (str): Host name
+
+    Returns:
+        bool: True, if host exists under the engine, otherwise False
     """
-    hosts = HOST_API.get(absLink=False)
-    hosts = filter(lambda x: x.get_name().lower() == host.lower(), hosts)
-    return bool(hosts) == positive
+    return host_name in get_host_names_list()
 
 
 def getHostCompatibilityVersion(host):
@@ -2727,3 +2737,36 @@ def get_supported_rng_sources_from_host(host_name):
     host_obj = get_host_object(host_name)
     hw_info = host_obj.get_hardware_information()
     return hw_info.get_supported_rng_sources().get_supported_rng_source()
+
+
+def get_hosted_engine_obj(host_name):
+    """
+    Get host hosted-engine object
+
+    Args:
+        host_name (str): Host name
+
+    Returns:
+        HostedEngine: HostedEngine instance
+    """
+    name_query = "name=%s" % host_name
+    hosts_obj = HOST_API.query(name_query, all_content=True)
+    if hosts_obj:
+        return hosts_obj[0].get_hosted_engine()
+    return None
+
+
+def is_hosted_engine_configured(host_name):
+    """
+    Check if host configure as HostedEngine host
+
+    Args:
+        host_name (str): Host name
+
+    Returns:
+        bool: True, if host configured as HostedEngine, otherwise False
+    """
+    hosted_engine_obj = get_hosted_engine_obj(host_name=host_name)
+    if hosted_engine_obj:
+        return hosted_engine_obj.get_configured()
+    return False
