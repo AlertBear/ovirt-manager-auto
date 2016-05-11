@@ -211,7 +211,7 @@ class JunitExtension(object):
 
     def pytest_artconf_ready(self, config):
         self.global_properties['polarion-custom-plannedin'] = (
-            config.ART_CONFIG['DEFAULT']['PRODUCT'] +
+            'rhevm' +
             config.ART_CONFIG['DEFAULT']['VERSION']
         )
         self.global_properties['polarion-custom-arch'] = (
