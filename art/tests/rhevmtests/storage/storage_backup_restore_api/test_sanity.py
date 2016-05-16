@@ -52,7 +52,8 @@ class BaseTestCase(TestCase):
         )[0]
         self.vm_names = []
         for idx in range(VM_COUNT):
-            vm_name = self.create_unique_object_name(config.OBJECT_TYPE_VM)
+            vm_name = storage_helpers.create_unique_object_name(
+                self.__class__.__name__, config.OBJECT_TYPE_VM)
             logger.info(
                 "Creating vm %s on storage domain %s",
                 vm_name, self.storage_domain
@@ -67,12 +68,13 @@ class BaseTestCase(TestCase):
                 )
             self.vm_names.append(vm_name)
 
-        # Templates are limited to only 40 characters
-        self.template_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_TEMPLATE
+        self.template_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
         )
-        self.first_snapshot_description = self.create_unique_object_name(
-            config.OBJECT_TYPE_SNAPSHOT
+        self.first_snapshot_description = (
+            storage_helpers.create_unique_object_name(
+                self.__class__.__name__, config.OBJECT_TYPE_SNAPSHOT
+            )
         )
         # Create snapshot for the first vm only
         if not ll_vms.addSnapshot(
@@ -677,8 +679,8 @@ class TestCase6169(BaseTestCase):
         self.storage_domains = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )
-        self.restored_vm = self.create_unique_object_name(
-            config.OBJECT_TYPE_VM
+        self.restored_vm = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
         )
 
     @polarion("RHEVM3-6169")
@@ -823,8 +825,10 @@ class TestCase6170(BaseTestCase):
                 "Failed to add disk to vm %s" % self.vm_names[0]
             )
 
-        self.second_snapshot_description = self.create_unique_object_name(
-            config.OBJECT_TYPE_SNAPSHOT
+        self.second_snapshot_description = (
+            storage_helpers.create_unique_object_name(
+                self.__class__.__name__, config.OBJECT_TYPE_SNAPSHOT
+            )
         )
         self.assertTrue(
             ll_vms.addSnapshot(

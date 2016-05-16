@@ -320,8 +320,8 @@ class TestCase5818(BasicEnvironment):
         *  Attempt to reassign the SPM during the async task execution
         Expected result: HSM host shouldn't become SPM
         """
-        self.disk_alias = self.create_unique_object_name(
-            config.OBJECT_TYPE_DISK
+        self.disk_alias = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
         domain_name = (
             ll_sd.get_master_storage_domain_name(config.DATA_CENTER_NAME)
@@ -450,9 +450,11 @@ class TestCase14812(BasicEnvironment):
         self.storage_domain = (
             ll_sd.get_master_storage_domain_name(config.DATA_CENTER_NAME)
         )
-        self.vm_name = self.create_unique_object_name(config.OBJECT_TYPE_VM)
-        self.disk_alias = self.create_unique_object_name(
-            config.OBJECT_TYPE_DISK
+        self.vm_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
+        )
+        self.disk_alias = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
         logger.info(
             "Creating vm %s on storage domain %s",

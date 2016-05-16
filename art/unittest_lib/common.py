@@ -1,4 +1,3 @@
-import datetime
 import logging
 
 from unittest2 import TestCase
@@ -86,27 +85,6 @@ class StorageTest(BaseTestCase):
     # STORAGE_TYPE value sets type of storage when running
     # without the --with-multiplier flag
     storage = STORAGE_TYPE if STORAGE_TYPE != "none" else ISCSI
-
-    def create_unique_object_name(self, object_type):
-        """
-        Creates a unique object name by using the calling class name and the
-        current date/time string. This can be used for any objects such as
-        VMs, disks, clusters etc.
-
-        __author__ = 'glazarov'
-        :param object_type: The type of object for which the unique name
-        will be created. For example: vm, disk, sd
-        :type object_type: str
-        :return: Returns a unique name utilizing the object_type and the
-        current class name, plus the current formatted date/time stamp
-        :rtype: str
-        """
-        current_date_time = (
-            datetime.datetime.now().strftime("%d%H%M%S")
-        )
-        return "{0}_{1}_{2}".format(
-            object_type, self.__class__.__name__[:25], current_date_time
-        )
 
 
 @network

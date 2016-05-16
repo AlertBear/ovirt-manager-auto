@@ -1,6 +1,7 @@
 """
 Storage helper functions
 """
+import datetime
 import logging
 import os
 import re
@@ -166,11 +167,12 @@ def create_disks_from_requested_permutations(
 
     logger.info("Create disks for all permutations generated previously")
     for disk_permutation in disk_permutations:
-        disk_alias = "%s_Disk_%s_%s_sparse-%s_alias" % (
+        disk_alias = "%s_%s" % (
             test_name,
-            disk_permutation['interface'],
-            disk_permutation['format'],
-            disk_permutation['sparse']
+            create_unique_object_name(
+                disk_permutation['interface'] + disk_permutation['format'],
+                config.OBJECT_TYPE_DISK
+            )
         )
         disk_description = disk_alias.replace("_alias", "_description")
         disk_aliases.append(disk_alias)
@@ -400,6 +402,31 @@ def create_vm_or_clone(
     else:
         return ll_vms.createVm(
             positive, vmName, vmDescription, cluster, **kwargs
+        )
+
+
+def create_unique_object_name(object_description, object_type):
+        """
+        Creates a unique object name by using the object_description
+        and object_type, as well as the current date/time string.
+        This can be used for any objects such as VMs, disks, clusters etc.
+
+        __author__ = 'glazarov'
+        :param object_description: The user provided object description,
+        to be used in generating the unique object name
+        :type object_description: str
+        :param object_type: The type of object for which the unique name
+        will be created. For example: vm, disk, sd
+        :type object_type: str
+        :return: Returns a unique name utilizing the object_description,
+        the object_type and the current formatted date/time stamp
+        :rtype: str
+        """
+        current_date_time = (
+            datetime.datetime.now().strftime("%d%H%M%S")
+        )
+        return "{0}_{1}_{2}".format(
+            object_type, object_description[:25], current_date_time
         )
 
 
@@ -633,9 +660,9 @@ def add_new_disk(
     if 'alias' in permutation:
         alias = permutation['alias']
     else:
-        alias = "%s_%s_%s_%s_disk" % (
-            permutation['interface'], permutation['format'],
-            permutation['sparse'], sd_type
+        alias = create_unique_object_name(
+            permutation['interface'] + permutation['format'],
+            config.OBJECT_TYPE_DISK
         )
 
     new_disk_args = {

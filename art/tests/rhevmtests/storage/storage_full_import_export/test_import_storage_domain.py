@@ -20,6 +20,7 @@ from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest as TestCase
 from rhevmtests.storage import config
 from rhevmtests import helpers as rhevm_helpers
+import rhevmtests.storage.helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
 
@@ -59,11 +60,11 @@ class BaseTestCase(TestCase):
         """
         Create an export domain and export a vm
         """
-        self.export_domain_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_SD
+        self.export_domain_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_SD
         )
-        self.imported_vm = self.create_unique_object_name(
-            config.OBJECT_TYPE_VM
+        self.imported_vm = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
         )
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage

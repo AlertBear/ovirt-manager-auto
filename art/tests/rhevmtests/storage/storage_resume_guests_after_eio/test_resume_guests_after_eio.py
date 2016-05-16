@@ -43,7 +43,9 @@ class TestResumeGuests(TestCase):
         """
         Perform dd command
         """
-        self.vm = self.create_unique_object_name(config.OBJECT_TYPE_VM)
+        self.vm = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
+        )
         cmd = "dd if=/dev/urandom of=%s bs=128M oflag=direct &" % FILE_TO_WRITE
         logger.info("Starting writing process")
         if not ll_vms.run_cmd_on_vm(

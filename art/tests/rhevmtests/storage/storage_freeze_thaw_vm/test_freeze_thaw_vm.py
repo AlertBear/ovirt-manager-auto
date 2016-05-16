@@ -42,7 +42,9 @@ class BaseTestCase(TestCase):
         """
         Create and start a vm
         """
-        self.vm_name = self.create_unique_object_name(config.OBJECT_TYPE_VM)
+        self.vm_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
+        )
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )[0]
@@ -219,8 +221,8 @@ class TestCase14713(BaseTestCase):
         Attach a disk and create a filesystem on it
         """
         super(TestCase14713, self).setUp()
-        self.disk_alias = self.create_unique_object_name(
-            config.OBJECT_TYPE_DISK
+        self.disk_alias = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
         if not ll_disks.addDisk(
             True, alias=self.disk_alias,

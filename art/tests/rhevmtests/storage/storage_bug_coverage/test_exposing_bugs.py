@@ -122,8 +122,10 @@ class TestCase11909(TestCase):
         self.storage_domain = ll_sds.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage,
         )[0]
-        self.vm_name = self.vm_name_base = self.create_unique_object_name(
-            config.OBJECT_TYPE_VM
+        self.vm_name = self.vm_name_base = (
+            storage_helpers.create_unique_object_name(
+                self.__class__.__name__, config.OBJECT_TYPE_VM
+            )
         )
         vm_args = config.create_vm_args.copy()
         vm_args['storageDomainName'] = self.storage_domain
@@ -355,15 +357,16 @@ class TestCase11907(TestCase):
     def setUp(self):
         """Create vm for test"""
         self.test_failed = False
-        # Templates are limited to only 40 characters
-        self.template_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_TEMPLATE
+        self.template_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
         )
         self.storage_domain = ll_sds.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage,
         )[0]
-        self.vm_name = self.vm_name_base = self.create_unique_object_name(
-            config.OBJECT_TYPE_VM
+        self.vm_name = self.vm_name_base = (
+            storage_helpers.create_unique_object_name(
+                self.__class__.__name__, config.OBJECT_TYPE_VM
+            )
         )
         vm_args = config.create_vm_args.copy()
         vm_args['vmName'] = self.vm_name
@@ -488,8 +491,8 @@ class TestCase11956(EnvironmentWithTwoHosts):
             config.DATA_CENTER_NAME
         )
         self.spm_host = ll_hosts.getSPMHost(config.HOSTS)
-        self.vm_name_base = self.create_unique_object_name(
-            config.OBJECT_TYPE_VM
+        self.vm_name_base = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
         )
         vm_args = config.create_vm_args.copy()
         vm_args['vmName'] = self.vm_name_base
@@ -575,8 +578,10 @@ class TestCase11625(TestCase):
         assert ll_hosts.waitForSPM(
             config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES, SLEEP_TIME,
         )
-        self.vm_name = self.vm_name_base = self.create_unique_object_name(
-            config.OBJECT_TYPE_VM
+        self.vm_name = self.vm_name_base = (
+            storage_helpers.create_unique_object_name(
+                self.__class__.__name__, config.OBJECT_TYPE_VM
+            )
         )
         vm_args = config.create_vm_args.copy()
         vm_args['vmName'] = self.vm_name
@@ -643,8 +648,10 @@ class TestCase11624(TestCase):
             if host != self.spm_host_name and ll_hosts.isHostUp(True, host):
                 ll_hosts.deactivateHost(True, host)
         ll_hosts.waitForHostsStates(True, [self.spm_host_name])
-        self.vm_name = self.vm_name_base = self.create_unique_object_name(
-            config.OBJECT_TYPE_VM
+        self.vm_name = self.vm_name_base = (
+            storage_helpers.create_unique_object_name(
+                self.__class__.__name__, config.OBJECT_TYPE_VM
+            )
         )
         # create a vm with 1 thin provision disk
         vm_args = config.create_vm_args.copy()

@@ -106,9 +106,11 @@ class BaseTestCase(StorageTest):
         """
         Get all the storage domains from a specific domain type
         """
-        self.vm_name = self.create_unique_object_name(config.OBJECT_TYPE_VM)
-        self.snapshot_desc = self.create_unique_object_name(
-            config.OBJECT_TYPE_SNAPSHOT
+        self.vm_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
+        )
+        self.snapshot_desc = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_SNAPSHOT
         )
         self.storage_domains = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
@@ -128,8 +130,8 @@ class BaseTestCase(StorageTest):
         # execution. This is faster than removing snapshots
         assert storage_helpers.create_vm_or_clone(**vm_args_copy)
         disk_obj = ll_vms.getVmDisks(self.vm_name)[0]
-        self.vm_disk_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_DISK
+        self.vm_disk_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
         ll_disks.updateDisk(
             True, vmName=self.vm_name, id=disk_obj.get_id(),
@@ -189,8 +191,8 @@ class AllPermutationsDisks(BaseTestCase):
             storage_helpers.create_disks_from_requested_permutations(
                 domain_to_use=self.disk_sd, size=config.DISK_SIZE,
                 shared=self.shared,
-                test_name=self.create_unique_object_name(
-                    config.OBJECT_TYPE_DISK
+                test_name=storage_helpers.create_unique_object_name(
+                    self.__class__.__name__, config.OBJECT_TYPE_DISK
                 )
             )
         )
@@ -415,22 +417,26 @@ class TestCase5993(BaseTestCase):
         """
         self.test_templates = [
             "{0}_{1}".format(
-                self.create_unique_object_name(config.OBJECT_TYPE_TEMPLATE),
-                "single"
+                storage_helpers.create_unique_object_name(
+                    self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
+                ), "single"
             ),
             "{0}_{1}".format(
-                self.create_unique_object_name(config.OBJECT_TYPE_TEMPLATE),
-                "both"
+                storage_helpers.create_unique_object_name(
+                    self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
+                ), "both"
             )
         ]
         self.vm_names = [
             "{0}_{1}".format(
-                self.create_unique_object_name(config.OBJECT_TYPE_VM),
-                "from_both"
+                storage_helpers.create_unique_object_name(
+                    self.__class__.__name__, config.OBJECT_TYPE_VM
+                ), "from_both"
             ),
             "{0}_{1}".format(
-                self.create_unique_object_name(config.OBJECT_TYPE_VM),
-                "from_single"
+                storage_helpers.create_unique_object_name(
+                    self.__class__.__name__, config.OBJECT_TYPE_VM
+                ), "from_single"
             )
         ]
 
@@ -615,11 +621,11 @@ class TestCase5991(BaseTestCase):
         Prepare environment with shared disk
         """
         super(TestCase5991, self).setUp()
-        self.test_vm_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_VM
+        self.test_vm_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
         )
-        self.disk_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_DISK
+        self.disk_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
         self._prepare_shared_disk_environment()
 
@@ -813,8 +819,8 @@ class TestCase5986(BaseTestCase):
         """
         Prepares a floating disk
         """
-        self.disk_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_DISK
+        self.disk_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
         super(TestCase5986, self).setUp()
         helpers.add_new_disk_for_test(
@@ -914,8 +920,8 @@ class TestCase5996(BaseTestCase):
         Prepares a floating disk
         """
         super(TestCase5996, self).setUp()
-        self.disk_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_DISK
+        self.disk_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
         ll_vms.startVm(True, self.vm_name, config.VM_UP)
         helpers.add_new_disk_for_test(
@@ -987,8 +993,8 @@ class TestCase6003(BaseTestCase):
         """
         Prepares a floating disk
         """
-        self.disk_alias = self.create_unique_object_name(
-            config.OBJECT_TYPE_DISK
+        self.disk_alias = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
         super(TestCase6003, self).setUp()
         ll_vms.startVm(True, self.vm_name, config.VM_UP)
@@ -1044,8 +1050,8 @@ class TestCase6001(BaseTestCase):
         """
         Prepares one domain in maintenance
         """
-        self.disk_alias = self.create_unique_object_name(
-            config.OBJECT_TYPE_DISK
+        self.disk_alias = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
         super(TestCase6001, self).setUp()
         ll_vms.startVm(True, self.vm_name, config.VM_UP)
@@ -1126,8 +1132,10 @@ class TestCase5972(BaseTestCase):
             disk_params['sparse'] = False
 
             for index in range(self.disk_count):
-                disk_params['alias'] = self.create_unique_object_name(
-                    config.OBJECT_TYPE_DISK
+                disk_params['alias'] = (
+                    storage_helpers.create_unique_object_name(
+                        self.__class__.__name__, config.OBJECT_TYPE_DISK
+                    )
                 )
                 disk_params['storagedomain'] = self.storage_domains[index]
                 if not ll_disks.addDisk(True, **disk_params):
@@ -1172,8 +1180,8 @@ class TestCase5970(BaseTestCase):
         """
         Prepares disk with wipe_after_delete=True for VM
         """
-        self.disk_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_DISK
+        self.disk_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
         super(TestCase5970, self).setUp()
         helpers.add_new_disk_for_test(
@@ -1530,8 +1538,8 @@ class TestCase5979(BaseTestCase):
         # If any LSM snapshot exists --> remove them to be able to check if
         # the disk movement in this case is cold move and not live storage
         # migration
-        self.disk_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_DISK
+        self.disk_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
         super(TestCase5979, self).setUp()
         ll_vms.remove_all_vm_lsm_snapshots(self.vm_name)
@@ -1588,8 +1596,8 @@ class TestCase5976(BaseTestCase):
         """
         Prepares disk with wipe_after_delete=True for VM
         """
-        self.disk_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_DISK
+        self.disk_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
         super(TestCase5976, self).setUp()
         helpers.add_new_disk_for_test(
@@ -1729,13 +1737,13 @@ class TestCase5975(BaseTestCase):
         Set the args with luns
         """
         self.sd_src = "{0}_{1}".format(
-            "source_domain_", self.create_unique_object_name(
-                config.OBJECT_TYPE_SD
+            "source_domain_", storage_helpers.create_unique_object_name(
+                self.__class__.__name__, config.OBJECT_TYPE_SD
             )
         )
         self.sd_target = "{0}_{1}".format(
-            "target_domain_", self.create_unique_object_name(
-                config.OBJECT_TYPE_SD
+            "target_domain_", storage_helpers.create_unique_object_name(
+                self.__class__.__name__, config.OBJECT_TYPE_SD
             )
         )
         for index, sd_name in [self.sd_src, self.sd_target]:
@@ -2159,8 +2167,8 @@ class TestCase5985(BaseTestCase):
         Expected Results:
             - migration or create disk should fail nicely.
         """
-        self.disk_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_DISK
+        self.disk_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
         ll_vms.startVm(True, self.vm_name, config.VM_UP)
         vm_disk = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
@@ -2220,8 +2228,8 @@ class TestCase5971(BaseTestCase):
         disk_params['provisioned_size'] = 1 * config.GB
 
         for index in range(self.disk_count):
-            disk_params['alias'] = self.create_unique_object_name(
-                config.OBJECT_TYPE_DISK
+            disk_params['alias'] = storage_helpers.create_unique_object_name(
+                self.__class__.__name__, config.OBJECT_TYPE_DISK
             )
             disk_params['storagedomain'] = self.storage_domains[index]
             if index == 2:
@@ -2334,8 +2342,8 @@ class TestCase5980(BaseTestCase):
         """
         Prepares disk with wipe_after_delete=True for VM
         """
-        self.disk_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_DISK
+        self.disk_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
         super(TestCase5980, self).setUp()
         helpers.add_new_disk_for_test(
@@ -2540,8 +2548,8 @@ class TestCase5983(BaseTestCase):
         self.vm_args['installation'] = False
         for index in range(self.vm_count):
             self.vm_args['storageDomainName'] = self.storage_domains[0]
-            self.vm_args['vmName'] = self.create_unique_object_name(
-                config.OBJECT_TYPE_VM
+            self.vm_args['vmName'] = storage_helpers.create_unique_object_name(
+                self.__class__.__name__, config.OBJECT_TYPE_VM
             )
             self.vm_args['vmDescription'] = (
                 "{0}_{1}".format(self.vm_args['vmName'], "description")

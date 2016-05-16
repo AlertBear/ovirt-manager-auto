@@ -57,12 +57,12 @@ class BasicEnvironment(BaseTestCase):
         self.vms_to_remove = list()
         self.templates_to_remove = list()
         self.storage_domain = self.storage_domains[0]
-        self.new_disk_alias = self.create_unique_object_name(
-            config.OBJECT_TYPE_DISK
+        self.new_disk_alias = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
-        self.new_template_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_TEMPLATE
-        )[0:40]
+        self.new_template_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
+        )
         self.clone_vm_args = args_for_clone.copy()
 
     def tearDown(self):
@@ -194,8 +194,8 @@ class TestCase5734(BasicEnvironment):
         self.basic_flow_import_image_as_template(
             self.new_template_name, True, self.storage_domain
         )
-        vm_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_VM
+        vm_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
         )
         self.basic_flow_clone_vm_from_template(
             vm_name, self.new_template_name,
@@ -282,8 +282,8 @@ class TestCase5738(BasicEnvironment):
         self.basic_flow_import_image_as_template(
             self.new_template_name, True, self.storage_domain
         )
-        self.vm_name_from_template = self.create_unique_object_name(
-            config.OBJECT_TYPE_VM
+        self.vm_name_from_template = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
         )
         self.basic_flow_clone_vm_from_template(
             self.vm_name_from_template, self.new_template_name,
@@ -406,8 +406,8 @@ class TestCase5743(BasicEnvironment):
                 self.new_disk_alias, self.storage_domains[1]
             )
         )
-        self.vm_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_VM
+        self.vm_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
         )
         self.basic_flow_clone_vm_from_template(
             self.vm_name, self.new_template_name, self.storage_domains[1]
@@ -434,8 +434,8 @@ class TestCase5746(BasicEnvironment):
             self.new_template_name, True, self.storage_domain,
             self.new_disk_alias
         )
-        self.vm_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_VM
+        self.vm_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
         )
         self.clone_vm_args['storagedomain'] = self.storage_domain
         self.clone_vm_args['name'] = self.vm_name
@@ -468,9 +468,9 @@ class TestCase5683(BaseTestCase):
         """
         # TODO: template name only allows 40 character length,
         # implement a proper solution for all occurences
-        self.template_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_TEMPLATE
-        )[0:40]
+        self.template_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
+        )
         storage_domains = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )

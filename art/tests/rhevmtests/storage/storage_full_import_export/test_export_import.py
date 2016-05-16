@@ -13,7 +13,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, StorageTest as TestCase
-import rhevmtests.storage.helpers as helpers
+import rhevmtests.storage.helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
@@ -34,7 +34,9 @@ class BaseExportImportTestCase(TestCase):
         """
         Creates a vm and shuts it down
         """
-        self.vm_name = self.create_unique_object_name(config.OBJECT_TYPE_VM)
+        self.vm_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
+        )
         export_domains = ll_sd.findExportStorageDomains(
             config.DATA_CENTER_NAME
         )
@@ -53,7 +55,7 @@ class BaseExportImportTestCase(TestCase):
         vm_args['vmName'] = self.vm_name
         vm_args['type'] = self.vm_type
         vm_args['installation'] = False
-        if not helpers.create_vm_or_clone(**vm_args):
+        if not storage_helpers.create_vm_or_clone(**vm_args):
             raise exceptions.VMException(
                 'Unable to create vm %s for test' % self.vm_name
             )
@@ -84,8 +86,8 @@ class TestCase4665(BaseExportImportTestCase):
         Creates a template from the vm
         """
         super(TestCase4665, self).setUp()
-        self.template_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_TEMPLATE
+        self.template_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
         )
         if not ll_templates.createTemplate(
             True, vm=self.vm_name, name=self.template_name
@@ -215,8 +217,8 @@ class TestCase4684(BaseExportImportTestCase):
         """
         Test export/import with collapse snapshots option works
         """
-        self.imported_vm = self.create_unique_object_name(
-            config.OBJECT_TYPE_VM
+        self.imported_vm = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
         )
         logger.info("Add snapshot to VM %s", self.vm_name)
         self.assertTrue(
@@ -296,8 +298,8 @@ class TestCase11987(BaseExportImportTestCase):
         Create a new template where to clone a vm from
         """
         super(TestCase11987, self).setUp()
-        self.template_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_TEMPLATE
+        self.template_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_TEMPLATE
         )
 
         if not ll_templates.createTemplate(

@@ -458,8 +458,8 @@ class TestCase11581(TestCase):
         self.disk_count = 0
         logger.info("Creating vm and installing OS on it")
         create_vm_args = config.create_vm_args.copy()
-        self.vm_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_VM
+        self.vm_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
         )
         create_vm_args['vmName'] = self.vm_name
         create_vm_args['vmDescription'] = self.vm_name

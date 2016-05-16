@@ -89,16 +89,16 @@ class BasicEnvironment(BaseTestCase):
             )
 
         self.host = ll_hosts.getSPMHost(config.HOSTS)
-        self.non_master = self.create_unique_object_name(
-            config.OBJECT_TYPE_SD
+        self.non_master = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_SD
         )
         self.add_storage(
             self.non_master, config.DATA_CENTER_NAME, 0
         )
 
     def create_vm(self, params={'deep_copy': True}):
-        self.vm_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_VM
+        self.vm_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
         )
         vm_args = config.create_vm_args.copy()
         vm_args['storageDomainName'] = self.non_master
@@ -970,12 +970,12 @@ class BaseCaseInitializeDataCenter(BasicEnvironment):
         """
         Create a new data center with a vm on it
         """
-        self.dc_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_DC
-        )[0:40]
-        self.cluster_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_CLUSTER
-        )[0:40]
+        self.dc_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DC
+        )
+        self.cluster_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_CLUSTER
+        )
         super(BaseCaseInitializeDataCenter, self).setUp()
         self.create_vm()
         self._create_environment(self.dc_name, self.cluster_name)
@@ -1276,21 +1276,21 @@ class BaseTestCase5192(BasicEnvironment):
         """
         Create environment
         """
-        self.dc_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_DC
+        self.dc_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DC
         )
-        self.cluster_name = self.create_unique_object_name(
-            config.OBJECT_TYPE_CLUSTER
+        self.cluster_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_CLUSTER
         )
         self._create_environment(
             self.dc_name, self.cluster_name, self.dc_version
         )
-        self.master_domain = self.create_unique_object_name(
-            config.OBJECT_TYPE_SD
+        self.master_domain = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_SD
         )
         self.add_storage(self.master_domain, self.dc_name, 0)
-        self.non_master = self.create_unique_object_name(
-            config.OBJECT_TYPE_SD
+        self.non_master = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_SD
         )
         self.add_storage(self.non_master, self.dc_name, 1)
         self.create_vm(
@@ -1396,8 +1396,8 @@ class TestCase5200(DomainImportWithTemplate):
         """
         Add disk to file storage domain
         """
-        self.disk_alias = self.create_unique_object_name(
-            config.OBJECT_TYPE_DISK
+        self.disk_alias = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
         )
         ll_disks.addDisk(
             True, alias=self.disk_alias, provisioned_size=config.DISK_SIZE,

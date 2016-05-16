@@ -819,8 +819,10 @@ class TestCase6243(BasePlugDiskTest):
                     disk_params['format'] = config.DISK_FORMAT_RAW
                     disk_params['sparse'] = False
                 disk_params['storagedomain'] = self.storage_domain
-                disk_params['alias'] = self.create_unique_object_name(
-                    config.OBJECT_TYPE_DISK
+                disk_params['alias'] = (
+                    storage_helpers.create_unique_object_name(
+                        self.__class__.__name__, config.OBJECT_TYPE_DISK
+                    )
                 )
                 if not ll_disks.addDisk(True, **disk_params):
                     raise exceptions.DiskException(

@@ -300,7 +300,9 @@ class TestUpgrade(TestCase):
                 config.CLUSTER_NAME
             )
         self.host = hsm_host['hsmHost']
-        self.vm_name = self.create_unique_object_name(config.OBJECT_TYPE_VM)
+        self.vm_name = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_VM
+        )
         if self.storage == NFS:
             self.sd_path = config.LIFECYCLE_PATH[0]
             self.sd_address = config.LIFECYCLE_ADDRESS[0]
