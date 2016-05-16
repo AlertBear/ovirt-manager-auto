@@ -15,7 +15,7 @@ import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.config as conf
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
-from art.unittest_lib import SlaTest as TestCase, SkipTest
+from art.unittest_lib import SlaTest as TestCase
 from art.unittest_lib import attr
 
 
@@ -286,13 +286,10 @@ class MigrateVm(Affinity):
         """
         Start vms, and create new affinity group
         """
-        if len(conf.HOSTS) >= 2:
-            host_vm_dict = {
-                conf.VM_NAME[0]: conf.HOSTS[0],
-                conf.VM_NAME[1]: conf.HOSTS[1]
-            }
-        else:
-            raise SkipTest("Not enough hosts to run this test")
+        host_vm_dict = {
+            conf.VM_NAME[0]: conf.HOSTS[0],
+            conf.VM_NAME[1]: conf.HOSTS[1]
+        }
         logger.info("Start vms on different hosts")
         for vm, host in host_vm_dict.iteritems():
             if not ll_vms.runVmOnce(True, vm, host=host):
