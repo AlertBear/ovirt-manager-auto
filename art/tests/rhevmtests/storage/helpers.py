@@ -58,6 +58,10 @@ REGEX_DEVICE_NAME = '[sv]d[a-z]'
 CREATE_DISK_LABEL_CMD = '/sbin/parted %s --script -- mklabel gpt'
 CREATE_DISK_PARTITION_CMD = \
     '/sbin/parted %s --script -- mkpart primary 0 100%%'
+NFS = config.STORAGE_TYPE_NFS
+ISCSI = config.STORAGE_TYPE_ISCSI
+FCP = config.STORAGE_TYPE_FCP
+GLUSTER = config.STORAGE_TYPE_GLUSTER
 
 
 def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
@@ -985,3 +989,24 @@ def is_dir_empty(host_name, dir_path=None, excluded_files=[]):
             logger.error("Directory %s is not empty", dir_path)
             return False
     return True
+
+
+def get_vms_for_storage(storage_type):
+    """
+    Returns a list of vm names with disks on storage domains of storage_type
+
+    :param storage_type: Type of storage (nfs, iscsi, glusterfs, fcp, ...)
+    :type storage_type: str
+    :return: List of vm names
+    :rtype: list
+    """
+    if storage_type == ISCSI:
+        return config.ISCSI_VMS
+    elif storage_type == NFS:
+        return config.NFS_VMS
+    elif storage_type == GLUSTER:
+        return config.GLUSTER_VMS
+    elif storage_type == FCP:
+        return config.FCP_VMS
+    else:
+        return None

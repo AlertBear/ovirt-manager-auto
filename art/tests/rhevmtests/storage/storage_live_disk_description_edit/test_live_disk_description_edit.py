@@ -7,7 +7,6 @@ import logging
 
 import config
 import helpers
-from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     jobs as ll_jobs,
@@ -56,9 +55,7 @@ class BasicEnvironment(BaseTestCase):
         self.storage_domain = ll_sd.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage
         )[0]
-        vm_names = hl_vms.get_vms_for_storage_type(
-            config.DATA_CENTER_NAME, config.CLUSTER_NAME, self.storage
-        )
+        vm_names = storage_helpers.get_vms_for_storage(self.storage)
         self.vm1_name = vm_names[0]
         self.vm2_name = vm_names[1]
         if config.PPC_ARCH:

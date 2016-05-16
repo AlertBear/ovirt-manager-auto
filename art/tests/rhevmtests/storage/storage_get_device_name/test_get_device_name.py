@@ -7,7 +7,6 @@ import config
 import logging
 import shlex
 
-from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import disks, jobs, storagedomains, vms
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
@@ -15,6 +14,7 @@ from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, StorageTest as BaseTestCase
 from rhevmtests.storage import helpers
 from utilities.machine import LINUX, Machine
+import rhevmtests.storage.helpers as storage_helpers
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
@@ -67,9 +67,7 @@ class BasicEnvironment(BaseTestCase):
         )[0]
 
         self.disk_aliases = list()
-        vm_names = hl_vms.get_vms_for_storage_type(
-            config.DATA_CENTER_NAME, config.CLUSTER_NAME, self.storage
-        )
+        vm_names = storage_helpers.get_vms_for_storage(self.storage)
         self.vm_name = vm_names[0]
         self.vm_name_2 = vm_names[1]
 
