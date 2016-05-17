@@ -140,10 +140,6 @@ def formatExcInfo():
     return ''.join(einfo)
 
 
-class UnkownConfigurationException(RHEVMEntityException):
-    pass
-
-
 class ResourceError(RHEVMEntityException):
     """
     Base class for plugin- or other exceptions that must be caught inside ART
@@ -185,4 +181,8 @@ class HostedEngineException(RHEVMEntityException):
 
 
 class SriovException(RHEVMEntityException):
+    pass
+
+
+class ExternalProviderException(RHEVMEntityException):
     pass

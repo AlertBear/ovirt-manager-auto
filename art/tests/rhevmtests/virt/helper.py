@@ -506,12 +506,11 @@ def create_vm_from_glance_image(image_name, vm_name):
         datacenter_name=config.DC_NAME[0],
         storage_type=config.STORAGE_TYPE
     )[0]
-    glance_name = config.EXTERNAL_PROVIDERS[config.GLANCE]
     if not hl_vms.create_vm_using_glance_image(
         vmName=vm_name, vmDescription=vm_name,
         cluster=config.CLUSTER_NAME[0], nic=config.NIC_NAME[0],
         storageDomainName=sd_name, network=config.MGMT_BRIDGE,
-        glance_storage_domain_name=glance_name,
+        glance_storage_domain_name=config.GLANCE_DOMAIN,
         glance_image=image_name
 
     ):

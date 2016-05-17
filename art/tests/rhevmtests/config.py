@@ -238,11 +238,18 @@ if 'prepared_env' in ART_CONFIG:
             provider_type = GLANCE
         elif EPS[ep_to_add]['type'] == CINDER:
             provider_type = CINDER
-        EXTERNAL_PROVIDERS[provider_type] = EPS[ep_to_add]['name']
-    GLANCE_DOMAIN = EXTERNAL_PROVIDERS[GLANCE]
-    if 'url' in EPS[GLANCE_DOMAIN].keys():
-        GLANCE_HOSTNAME = urlparse(EPS[GLANCE_DOMAIN]['url']).hostname
-    SD_LIST.append(GLANCE_DOMAIN)
+        if not EXTERNAL_PROVIDERS.get(provider_type):
+            EXTERNAL_PROVIDERS[provider_type] = list()
+        EXTERNAL_PROVIDERS[provider_type].append(EPS[ep_to_add]['name'])
+    GLANCE_EPS = EXTERNAL_PROVIDERS.get(GLANCE)
+    if GLANCE_EPS:
+        # we assume that our glance is the first one in the list
+        GLANCE_DOMAIN = GLANCE_EPS[0]
+        GLANCE_URL = EPS[GLANCE_DOMAIN].get('url')
+        if GLANCE_URL:
+            GLANCE_HOSTNAME = urlparse(GLANCE_URL).hostname
+        for glance_ep in GLANCE_EPS:
+            SD_LIST.append(glance_ep)
     GOLDEN_GLANCE_IMAGE = 'golden_env_mixed_virtio_0_Disk1'
 
     DATA_DOMAIN_ADDRESSES = get_list(PARAMETERS, 'data_domain_address')

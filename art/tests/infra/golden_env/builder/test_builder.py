@@ -789,10 +789,20 @@ class CreateDC(TestCase):
 
         GOLDEN_ENV = config.ART_CONFIG['prepared_env']
         eps = None
+        engine_sd_objs = ll_sd.get_storage_domains()
+        # Glance EP: ovirt-image-repository is added autmatically. If we don't
+        # want it in GE we need remove it if it's not defined in config.
+        for sd in engine_sd_objs:
+            if sd.get_storage().get_type() == 'glance' and (
+                sd.get_name() not in config.EPS['ep_to_add']
+            ):
+                ll_ep.remove_glance_ep(sd.get_name())
+
         if GOLDEN_ENV['external_providers']:
             eps = EPConfiguration(config.EPS)
             for glance in eps.glance_providers:
-                self.connect_openstack_ep(glance)
+                if glance.name not in [sd.get_name() for sd in engine_sd_objs]:
+                    self.connect_openstack_ep(glance)
 
         dcs = GOLDEN_ENV['dcs']
 
