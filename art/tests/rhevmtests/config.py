@@ -539,6 +539,7 @@ JOB_IMPORT_TEMPLATE = ENUMS['job_import_vm_template']
 JOB_REMOVE_TEMPLATE = ENUMS['job_remove_vm_template']
 # VM section
 JOB_ADD_VM = ENUMS['job_add_vm']
+JOB_EXPORT_VM = ENUMS['job_export_vm']
 JOB_IMPORT_VM = ENUMS['job_import_vm']
 JOB_MIGRATE_VM = ENUMS['job_migrate_vm']
 JOB_REMOVE_VM = ENUMS['job_remove_vm']
