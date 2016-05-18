@@ -383,7 +383,7 @@ section `test_conf_specs` and submit the paths to your spec files. For
 example::
 
     [PARAMETERS]
-    test_conf_specs = conf/specs/rhevm_params.spec, conf/specs/enabling_plugins.spec
+    test_conf_specs = conf/specs/rhevm_params.spec,
 
 Example of definition of spec file in plugin::
 
@@ -851,5 +851,3 @@ RHEVM Lib
 
     art.rhevm_api.tests_lib.high_level
     art.rhevm_api.tests_lib.low_level
-
-.. include:: plugins.rst

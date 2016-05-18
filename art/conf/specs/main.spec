@@ -56,3 +56,8 @@ password = string(default=None)
 api = string(default=None)
 user = string(default=None)
 password = string(default=None)
+
+[GENERATE_DS]
+enabled = boolean(default=True)
+encoding = option("ascii", "utf-8", default="utf-8")
+schema_url = string(default="/api?schema")
