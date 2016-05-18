@@ -17,95 +17,83 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-import httplib
 import base64
-import re
 import cgi
 import copy
-import ssl
-from art.core_api.apis_exceptions import APIException
-from socket import error as SocketError
+import httplib
 import logging
+import re
+import ssl
+from contextlib import contextmanager
+
+from art.core_api.apis_exceptions import APIException
 
 logger = logging.getLogger('http')
 
 
 class HTTPProxy(object):
-    '''
-    Establish connection with rest api and run rest methods
-    '''
+    """
+    Establish connection with the REST API and run REST methods
+    """
 
     def __init__(self, opts):
         self.opts = opts
         self.cookie = None
         self.last_active_user = None
         self.type = opts['media_type']
-        self.connections_pool = []
         self.headers = self.opts['headers']
 
-        self.default_conn = self.add_connection()
-
-    def __del__(self):
-        '''
-        Close the http connections
-        '''
-        for conn in self.connections_pool:
-            conn.close()
-
-    def add_connection(self):
-        '''
-        Create a connection and pull it to the pool
-        '''
-        if self.opts['scheme'] == 'https':
-            try:
+    @contextmanager
+    def create_connection(self):
+        """
+        Create new HTTP or HTTPS connection.
+        """
+        conn = None
+        try:
+            if self.opts['scheme'] == 'https':  # Create HTTPS Connection
+                context = None
+                # https://www.python.org/dev/peps/pep-0476/
+                if hasattr(ssl, "_create_unverified_context"):
+                    context = ssl._create_unverified_context()
                 conn = httplib.HTTPSConnection(
                     self.opts['host'], self.opts['port'],
-                    context=ssl._create_unverified_context()
+                    context=context
                 )
-            except AttributeError:
-                conn = httplib.HTTPSConnection(
+            else:  # Create HTTP Connection
+                conn = httplib.HTTPConnection(
                     self.opts['host'], self.opts['port']
                 )
-        else:
-            conn = httplib.HTTPConnection(self.opts['host'], self.opts['port'])
 
-        self.connections_pool.append(conn)
+            yield conn
+        finally:
+            if conn:
+                conn.close()
 
-        return conn
-
-    def connect(self, conn=None):
-        '''
+    def connect(self):
+        """
         Run the HEAD request for connection establishing
         and set cookie if available
-        Parameters:
-        * conn - connection to work with (if not provided - default is used)
-        '''
-
-        if not conn:
-            conn = self.default_conn
-
+        """
         response = self.__do_request(
-            "HEAD", self.opts['uri'], get_header='Set-Cookie', conn=conn,
+            "HEAD", self.opts['uri'], get_header='Set-Cookie', repeat=False
         )
         self.cookie = response['Set-Cookie']
         self.last_active_user = self.__get_user()
 
-    def __do_request(self, method, url, body=None, get_header=None, conn=None,
-                     retry_counter=2):
-        '''
+    def __do_request(
+        self, method, url, body=None, get_header=None, repeat=True
+    ):
+        """
         Run HTTP request
-        Parameters:
-        * method - request method
-        * url - request url
-        * body - request body
-        * get_header - name of the header to return with the response
-        * conn - connection to work with (if not provided - default is used)
-        '''
 
-        if not conn:
-            conn = self.default_conn
-
-        try:
+        Args:
+            method (str): Request method(GET, POST, PUT, DELETE)
+            url (str): Request url
+            body (str): Request body
+            get_header (str): Name of the header to return with the response
+            repeat (bool): Repeat request in case of authorization error
+        """
+        with self.create_connection() as conn:
             headers = self.basic_headers()
 
             if body:
@@ -119,7 +107,7 @@ class HTTPProxy(object):
             charset = encoding_from_headers(resp) or 'utf-8'
 
             resp_body = resp.read().decode(charset)
-            # Workaround lxml issue with unicode strings having declarations
+            # W/A lxml issue with unicode strings having declarations
             resp_body = re.sub(r'^\s*<\?xml\s+.*?\?>', '', resp_body)
 
             ret = {'status': resp.status, 'body': resp_body}
@@ -129,8 +117,15 @@ class HTTPProxy(object):
                 self.last_active_user = self.__get_user()
 
             if resp.status == 401 and self.cookie:
-                self.cookie = None
-                raise httplib.CannotSendRequest
+                if repeat:  # Update cookie and send request again
+                    self.connect()
+                    return self.__do_request(
+                        method=method,
+                        url=url,
+                        body=body,
+                        get_header=get_header,
+                        repeat=False
+                    )
 
             if resp.status >= 300:
                 ret['reason'] = resp.reason
@@ -139,21 +134,6 @@ class HTTPProxy(object):
                 ret[get_header] = resp.getheader(get_header)
 
             return ret
-
-        except (httplib.CannotSendRequest, httplib.BadStatusLine), ex:
-            if retry_counter:
-                add_conn = self.add_connection()
-                self.connect(add_conn)
-                retry_counter -= retry_counter
-                return self.__do_request(method, url, body=body,
-                                         get_header=get_header, conn=add_conn,
-                                         retry_counter=retry_counter)
-            logger.exception("HTTP connection problem: %s", ex)
-            raise
-
-        except SocketError:
-            logger.exception("Socket connection problem for %s", url)
-            raise
 
     def GET(self, url):
         '''
