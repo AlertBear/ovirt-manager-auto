@@ -4,7 +4,6 @@ High-level functions above data-center
 
 import logging
 
-from art.core_api import is_action
 
 import art.rhevm_api.tests_lib.low_level.clusters as clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as datacenters
@@ -164,7 +163,6 @@ def get_clusters_connected_to_datacenter(dc_id):
     )
 
 
-@is_action()
 def clean_datacenter(
         positive,
         datacenter,

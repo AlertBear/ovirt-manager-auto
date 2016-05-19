@@ -1,6 +1,5 @@
 import os
 import logging
-from art.core_api import ActionSet
 from art.generateDS.setup_ds import GenerateDataStructures
 from art.test_handler.settings import opts
 import art
@@ -23,10 +22,5 @@ class GenerateGlusterDataStructures(GenerateDataStructures):
         self._xsd_path = xsd_path
         opts['api_xsd'] = xsd_path
 
+
 generate_ds = GenerateGlusterDataStructures(opts)
-
-
-class GlusterActionSet(ActionSet):
-    MODULES = [
-            'art.gluster_api.tests_lib.volumes',
-            ]

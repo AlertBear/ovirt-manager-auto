@@ -19,7 +19,6 @@
 import logging
 import time
 import art.core_api.apis_utils as api_utils
-from art.core_api import is_action
 import art.core_api.validator as validator
 import art.rhevm_api.utils.test_utils as test_utils
 import art.rhevm_api.tests_lib.low_level.general as ll_general
@@ -87,7 +86,6 @@ def _prepareVmPoolObject(**kwargs):
     return pool
 
 
-@is_action()
 def addVmPool(positive, wait=True, **kwargs):
     """
     Description: create vm pool
@@ -145,7 +143,6 @@ def addVmPool(positive, wait=True, **kwargs):
     return status is positive
 
 
-@is_action()
 def updateVmPool(positive, vmpool, **kwargs):
     """
     Description: update vm pool.
@@ -226,7 +223,6 @@ def get_vms_in_pool_by_name(vm_pool):
     return [vm_obj.get_name() for vm_obj in vms_object_list]
 
 
-@is_action()
 def removeVmPool(positive, vmpool):
     """
     Description: remove vm pool

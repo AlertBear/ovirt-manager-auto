@@ -2,14 +2,12 @@ import os
 import shlex
 import logging
 from utilities.machine import Machine
-from art.core_api import is_action
 from art.rhevm_api.utils.test_utils import cleanupData
 from art.rhevm_api.utils.name2ip import name2ip, LookUpVMIpByName
 
 logger = logging.getLogger('test_utils')
 
 
-@is_action('runMachineCommand', id_name='runMachineCommand')
 @name2ip("ip", "vmName")
 def runMachineCommand(positive, ip=None, user=None, password=None,
                       type='linux', cmd='', **kwargs):
@@ -32,7 +30,6 @@ def runMachineCommand(positive, ip=None, user=None, password=None,
     return False, {'out': None}
 
 
-@is_action('copyDataToVm', id_name='copyDataToVm')
 @LookUpVMIpByName("ip", "vmName")
 def copyDataToVm(ip, user, password, osType, src, dest):
     '''
@@ -57,7 +54,6 @@ def copyDataToVm(ip, user, password, osType, src, dest):
     return False
 
 
-@is_action('verifyDataOnVm', id_name='verifyDataOnVm')
 @LookUpVMIpByName("ip", "vmName")
 def verifyDataOnVm(positive, ip, user, password, osType, dest, destToCompare):
     '''

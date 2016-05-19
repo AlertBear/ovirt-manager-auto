@@ -48,7 +48,6 @@ from art.core_api.apis_exceptions import (
 from utilities.tools import (
     GuestToolsMachine,
 )
-from art.core_api import is_action
 from art.rhevm_api.resources import Host, RootUser
 
 logger = logging.getLogger('test_utils')
@@ -168,7 +167,6 @@ def split(s):
     return s.replace(',', ' ').split()
 
 
-@is_action()
 def sleep(seconds):
     """
         Suspend execution for the given number of seconds.
@@ -206,7 +204,6 @@ def getStat(name, elm_name, collection_name, stat_types):
     return values
 
 
-@is_action('validateEntityStatus')
 def validateElementStatus(positive, element, collection, elementName,
                           expectedStatus, dcName=None):
     '''
@@ -278,7 +275,6 @@ def validateElementStatus(positive, element, collection, elementName,
     return result
 
 
-@is_action()
 def startVdsmd(vds, password):
     '''
     Start vdsmd on the given host
@@ -290,7 +286,7 @@ def startVdsmd(vds, password):
     machine = Machine(vds, 'root', password).util(LINUX)
     return machine.startService('vdsmd')
 
-@is_action()
+
 def restartVdsmd(vds, password, supervdsm=False):
     '''
     **Description**:Restart vdsmd on the given host
@@ -309,7 +305,7 @@ def restartVdsmd(vds, password, supervdsm=False):
 
     return machine.restartService('vdsmd')
 
-@is_action()
+
 def stopVdsmd(vds, password):
     '''
     Stop vdsmd on the given host
@@ -322,7 +318,6 @@ def stopVdsmd(vds, password):
     return machine.stopService('vdsmd')
 
 
-@is_action()
 def update_vm_status_in_database(vm_name, status, vdc, vdc_pass,
                                  psql_username=RHEVM_UTILS_ENUMS[
                                      'RHEVM_DB_USER'],
@@ -353,7 +348,6 @@ def update_vm_status_in_database(vm_name, status, vdc, vdc_pass,
     return setup.psql(query, psql_db=psql_db)
 
 
-@is_action()
 def setSELinuxEnforce(address, password, enforce):
     '''
     Disables SELinux on the machine
@@ -369,7 +363,6 @@ def setSELinuxEnforce(address, password, enforce):
     return machine.setSELinuxEnforce(enforce)
 
 
-@is_action()
 def yum(address, password, package, action):
     """
     Description: wraper for yum functionality
@@ -384,20 +377,17 @@ def yum(address, password, package, action):
     return machine.yum(package, action)
 
 
-@is_action()
 def cleanupData(path):
     if path and os.path.exists(path):
         shutil.rmtree(path, ignore_errors=True)
     return True
 
 
-@is_action()
 def removeTools(positive, machine, timeout=500, packs='desktop'):
     ''''Wrapper for removeToolsFromGuest'''
     return machine.removeToolsFromGuest(timeout, packs)
 
 
-@is_action()
 def createMachine(positive, host, ip, os, platf, **kwargs):
     '''
     'Wrapper for GuestToolsMachine
@@ -405,7 +395,6 @@ def createMachine(positive, host, ip, os, platf, **kwargs):
     return GuestToolsMachine(host, ip, os, platf, **kwargs)
 
 
-@is_action()
 def isGtMachineReady(positive, machine, timeout=300, interval=10):
     '''
     'Wrapper for waitForMachineReady
@@ -413,7 +402,6 @@ def isGtMachineReady(positive, machine, timeout=300, interval=10):
     return machine.waitForMachineReady(timeout, interval)
 
 
-@is_action()
 def areToolsAreCorrectlyInstalled(positive, machine):
     '''
     'Wrapper for areToolsAreCorrectlyInstalled
@@ -421,7 +409,6 @@ def areToolsAreCorrectlyInstalled(positive, machine):
     return machine.areToolsAreCorrectlyInstalled()
 
 
-@is_action()
 def installAPT(positive, machine, toollist, wait=True, timeout=300):
     '''
     wrapper for installAutoUpgraderCD
@@ -429,7 +416,6 @@ def installAPT(positive, machine, toollist, wait=True, timeout=300):
     return machine.installAutoUpgraderCD(toollist, wait, timeout)
 
 
-@is_action()
 def prepareDataForVm(root_dir='/tmp', root_name_prefix='', dir_cnt=1,
                      file_cnt=1):
     '''
@@ -471,7 +457,6 @@ def restoringRandomState(seed=None):
             random.setstate(randState)
 
 
-@is_action()
 def waitUntilPingable(IPs, timeout=180):
     startTime = time.time()
     while True:
@@ -489,7 +474,6 @@ def waitUntilPingable(IPs, timeout=180):
     logger.info("All IP's are pingable now.")
 
 
-@is_action()
 def rebootMachine(positive, ip, user, password, osType):
     '''
     Desciption: wrapper function reboot host.
@@ -507,7 +491,6 @@ def rebootMachine(positive, ip, user, password, osType):
         return False
 
 
-@is_action()
 def convertOsNameToOsTypeElement(positive, osName):
     '''
     function convert Os Name from ATOM to OS Type Element compatible with
@@ -527,7 +510,6 @@ def convertOsNameToOsTypeElement(positive, osName):
         return False, {'osTypeElement': None}
 
 
-@is_action()
 def getImageByOsType(positive, osType, slim=False):
     '''
     Function get osTypeElement and return image from action.conf file.
@@ -554,7 +536,6 @@ def getImageByOsType(positive, osType, slim=False):
                       'floppy': supportedOs['floppy_image']}
 
 
-@is_action()
 def toggleServiceOnHost(positive, host, user, password, service, action,
                         force="false"):
     """
@@ -615,7 +596,6 @@ def isVdsmdRunning(host, user, password):
     return isServiceRunning(True, host, user, password, VDSMD)
 
 
-@is_action()
 def convertMacToIpAddress(positive, mac, subnetClassB='10.35', vlan=0):
     """Wrapper for convertMacToIp"""
     ip = convertMacToIp(mac, subnetClassB, vlan)
@@ -625,7 +605,6 @@ def convertMacToIpAddress(positive, mac, subnetClassB='10.35', vlan=0):
     return False, {'ip': None}
 
 
-@is_action()
 def searchElement(positive, element, collection, keyName, searchValue):
     '''
     The function searchElement search specific element by key name and value.
@@ -655,7 +634,6 @@ def searchElement(positive, element, collection, keyName, searchValue):
     return False, None
 
 
-@is_action()
 def checkHostConnectivity(positive, ip, user, password, osType, attempt=1,
                           interval=1, remoteAgent=None):
     '''
@@ -682,7 +660,6 @@ def checkHostConnectivity(positive, ip, user, password, osType, attempt=1,
         return False, {'elapsedTime': -1}
 
 
-@is_action()
 def removeFileOnHost(positive, ip, filename, user='root',
                      password='qum5net', osType=LINUX):
     '''
@@ -703,9 +680,9 @@ def removeFileOnHost(positive, ip, filename, user='root',
     return machine.removeFile(filename)
 
 
-@is_action()
-def removeDirOnHost(positive, ip, dirname, user='root',
-                     password='qum5net', osType=LINUX):
+def removeDirOnHost(
+    positive, ip, dirname, user='root', password='qum5net', osType=LINUX,
+):
     """
     Description: Removes file on remote machine
     Author: imeerovi
@@ -727,9 +704,10 @@ def removeDirOnHost(positive, ip, dirname, user='root',
         return machine.removeDir(dirname)
 
 
-def searchForObj(util, query_key, query_val, key_name,
-                        max= -1, case_sensitive=True,
-                        expected_count=None):
+def searchForObj(
+    util, query_key, query_val, key_name, max=-1, case_sensitive=True,
+    expected_count=None
+):
     '''
     Description: search for an object by desired property
     Parameters:
@@ -758,10 +736,13 @@ def searchForObj(util, query_key, query_val, key_name,
         for obj in objs:
             objProperty = getattr(obj, key_name)
             if objProperty is None:
-                msg = "searchForObj: '{0}.{1}' returns '{2}', "\
-                    "It can happen if you are passing wrong property '{1}' to"\
-                    " '{0}' or it is a bug in product".format(obj, key_name,
-                                                              objProperty)
+                msg = (
+                    "searchForObj: '{0}.{1}' returns '{2}', "
+                    "It can happen if you are passing wrong property '{1}' to"
+                    " '{0}' or it is a bug in product".format(
+                        obj, key_name, objProperty,
+                    )
+                )
                 raise TestCaseError(msg)
 
             if re.match(pattern, objProperty):
@@ -809,9 +790,10 @@ def getImageAndVolumeID(vds, vds_username, vds_password, spool_id, domain_id,
         root_elem = etree.parse(ovf_hnd).getroot()
         ovf_hnd.close()
 
-    disks_elements = root_elem.xpath('Section[@xsi:type="ovf:DiskSection_Type"]/Disk',
-                                 namespaces=namespace_dict)
-
+    disks_elements = root_elem.xpath(
+        'Section[@xsi:type="ovf:DiskSection_Type"]/Disk',
+        namespaces=namespace_dict,
+    )
 
     attrib = '{' + namespace_dict['ovf'] + '}fileRef'
     try:
@@ -822,7 +804,6 @@ def getImageAndVolumeID(vds, vds_username, vds_password, spool_id, domain_id,
     return tuple(image_and_volume)
 
 
-@is_action()
 def setPersistentNetwork(host, password):
     """
     Ensure that Network configurations are persistent
@@ -896,7 +877,6 @@ def setPersistentNetwork(host, password):
     return True
 
 
-@is_action()
 def getSetupHostname(vdc):
     """
     Description: Gets the hostname of setup based on vdc, if vdc is not
@@ -945,7 +925,6 @@ def get_running_tasks(vdc, vdc_pass, sp_id, db_name, db_user):
     return tasks
 
 
-@is_action("waitForTasks")
 def wait_for_tasks(
         vdc, vdc_password, datacenter,
         db_name=RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
@@ -1011,7 +990,6 @@ def getAllImages(vds, vds_username, vds_password, spool_id, domain_id,
     return [disk.attrib[attrib].split('/', 1)[0] for disk in disks_elements]
 
 
-@is_action()
 def check_spoofing_filter_rule_by_ver(engine_resource, target_version='3.2'):
     """
     Check if NetworkFilter (nwfilter) rule is enabled/disabled for a requested
@@ -1049,7 +1027,6 @@ def check_spoofing_filter_rule_by_ver(engine_resource, target_version='3.2'):
     return True
 
 
-@is_action()
 def set_network_filter_status(enable, engine_resource):
     """
     Disabling or enabling network filtering.
@@ -1099,7 +1076,6 @@ def restart_engine(engine, interval, timeout):
             break
 
 
-@is_action()
 def configure_temp_static_ip(
     vds_resource, ip, nic="eth1", netmask="255.255.255.0"
 ):
@@ -1179,7 +1155,6 @@ def build_list_files_mtu(
     return ifcfg_script_list, sys_class_net_list
 
 
-@is_action()
 def check_configured_mtu(vds_resource, mtu, inter_or_net):
     """
     Checks if the configured MTU on an interface or network match
@@ -1209,7 +1184,6 @@ def check_configured_mtu(vds_resource, mtu, inter_or_net):
     return True
 
 
-@is_action()
 def check_mtu(
     vds_resource, mtu, physical_layer=True, network=None, nic=None,
     vlan=None, bond=None, bond_nic1='eth3', bond_nic2='eth2', bridged=True
@@ -1295,7 +1269,6 @@ def test_mtu_in_script_list(vds_resource, script_list, mtu, flag_for_ifcfg=0):
     return True
 
 
-@is_action()
 def configure_temp_mtu(vds_resource, mtu, nic="eth1"):
     """
     Configure MTU temporarily on specific host interface

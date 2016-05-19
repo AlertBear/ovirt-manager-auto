@@ -10,7 +10,6 @@ import utilities.VDS4 as vds4
 from utilities import machine
 import utilities.storage_utils as st_util
 from utilities.host_utils import VdsLinuxMachine
-from art.core_api import is_action
 
 log = logging.getLogger("storage_api")
 
@@ -25,7 +24,6 @@ def setupIptables(source, userName, password, dest, command, chain,
                                  protocol, persistently, *ports)
 
 
-@is_action('blockConnection')
 def blockOutgoingConnection(source, userName, password, dest, port=None):
     '''
     Description: Blocks outgoing connection to an address
@@ -45,7 +43,6 @@ def blockOutgoingConnection(source, userName, password, dest, port=None):
                              'OUTPUT', 'DROP', 'all', False, port)
 
 
-@is_action('unblockConnection')
 def unblockOutgoingConnection(source, userName, password, dest, port=None):
     '''
     Description: Unblocks outgoing connection to an address
@@ -83,7 +80,6 @@ def flushIptables(host, userName, password, chain='', persistently=False):
     return hostObj.flushIptables(chain, persistently)
 
 
-@is_action()
 def sendTargets(initiator, user, password, portal, targetName, login=True):
     """
         SCSI send targets discovery. Login is optional.
@@ -106,7 +102,6 @@ def sendTargets(initiator, user, password, portal, targetName, login=True):
     return False
 
 
-@is_action()
 def logoutTargets(initiator, user, password):
     """
         Logout SCSI targets.
@@ -134,7 +129,6 @@ def sleep(seconds):
     return True
 
 
-@is_action()
 def getDeviceList(vds_name, user, passwd):
     """
         Retrieve list of storage devices.
@@ -151,7 +145,6 @@ def getDeviceList(vds_name, user, passwd):
     return bool(devices_list), {'devices_list': devices_list}
 
 
-@is_action()
 def getStorageDomainsList(vds_name, user, passwd):
     """
         Retrieve list of storage domains.
@@ -168,7 +161,6 @@ def getStorageDomainsList(vds_name, user, passwd):
     return bool(sd_uuids_list), {'sd_uuids_list': sd_uuids_list}
 
 
-@is_action()
 def getStorageDomainInfo(vds_name, user, passwd, sp_uuid, option='none'):
     """
         Retrieve storage domain info.
@@ -185,7 +177,6 @@ def getStorageDomainInfo(vds_name, user, passwd, sp_uuid, option='none'):
     return bool(sd_info), {'sd_info': sd_info}
 
 
-@is_action()
 def generateSDMetadataCorruption(vds_name, username, passwd, sd_name,
                                  md_backup_path=None, md_tag="MDT_TYPE",
                                  md_tag_bad_value=st_util.CORRUPTION_STRING,
@@ -232,7 +223,6 @@ def generateSDMetadataCorruption(vds_name, username, passwd, sd_name,
     return True, {'sd_obj': sd_obj}
 
 
-@is_action()
 def restoreSDOriginalMetadata(sd_obj):
     """
         Restore the original metadata of storage domain.
@@ -245,7 +235,6 @@ def restoreSDOriginalMetadata(sd_obj):
     return sd_obj.restoreMetadata()
 
 
-@is_action()
 def getVolumeInfo(vds_name, user, passwd, dc_uuid, sd_uuid, image_uuid,
                   volume_uuid):
     """
@@ -271,7 +260,6 @@ def getVolumeInfo(vds_name, user, passwd, dc_uuid, sd_uuid, image_uuid,
     return {}
 
 
-@is_action()
 def getImagesList(vds_name, user, passwd, sd_uuid):
     """
         Retrieve images list.
@@ -287,7 +275,6 @@ def getImagesList(vds_name, user, passwd, sd_uuid):
     return vds_obj.getImagesList(sd_uuid)
 
 
-@is_action()
 def getVmsInfo(vds_name, user, passwd, dc_uuid, sd_uuid):
     """
         Retrieve VMs info.
@@ -304,7 +291,6 @@ def getVmsInfo(vds_name, user, passwd, dc_uuid, sd_uuid):
     return vds_obj.getVmsInfo(dc_uuid, sd_uuid)
 
 
-@is_action()
 def spmStart(positive, vds_name, user, passwd, sp_uuid, prev_id=-1,
              prev_lver=-1, recovery_mode=0, scsi_fencing='False',
              max_host_id=0, version=2):
@@ -348,7 +334,6 @@ def getVolumesList(vds_name, user, passwd, dc_uuid, sd_uuid, images):
     return vds.getVolumesList(sd_uuid, dc_uuid, images)
 
 
-@is_action()
 def checkZerosOnDevice(positive, lun_id, host, username, password,
                        size=1024 * 1024, timeout=FILE_HANDLER_TIMEOUT):
     """

@@ -24,7 +24,6 @@ from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS, data_st, TimeoutingSampler
 import art.rhevm_api.tests_lib.low_level.jobs as ll_jobs
 from art.rhevm_api.utils.test_utils import get_api, split, waitUntilGone
-from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.rhevm_api.tests_lib.low_level.disks import getObjDisks
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.rhevm_api.tests_lib.low_level.networks import (
@@ -39,7 +38,6 @@ from art.rhevm_api.tests_lib.low_level.vms import (
 from art.test_handler.settings import opts
 from utilities.jobs import Job, JobsSet
 from art.rhevm_api.utils.test_utils import searchForObj
-from art.core_api import is_action
 import art.test_handler.exceptions as errors
 from art.test_handler import exceptions
 
@@ -65,9 +63,6 @@ SAMPLER_TIMEOUT = 120
 SAMPLER_SLEEP = 5
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
-
-xpathMatch = is_action('xpathTemplates',
-                       id_name='xpathMatch')(XPathMatch(TEMPLATE_API))
 
 logger = logging.getLogger("art.ll_lib.templates")
 
@@ -140,7 +135,6 @@ def _prepareTemplateObject(**kwargs):
     return templ
 
 
-@is_action()
 def createTemplate(
     positive, wait=True, timeout=CREATE_TEMPLATE_TIMEOUT, **kwargs
 ):
@@ -188,7 +182,6 @@ def createTemplate(
     return status
 
 
-@is_action()
 def updateTemplate(positive, template, **kwargs):
     '''
     Description: update existed template
@@ -229,7 +222,6 @@ def updateTemplate(positive, template, **kwargs):
     return status
 
 
-@is_action()
 def removeTemplate(
     positive, template, wait=True, sleepTime=SAMPLER_SLEEP,
     timeout=SAMPLER_TIMEOUT
@@ -277,7 +269,6 @@ def removeTemplate(
     return False
 
 
-@is_action()
 def removeTemplates(positive, templates):
     """
     Remove multiple templates
@@ -309,7 +300,6 @@ def removeTemplates(positive, templates):
     return status
 
 
-@is_action()
 def searchForTemplate(positive, query_key, query_val, key_name, **kwargs):
     """
     Description: search for a template by desired property
@@ -369,7 +359,6 @@ def getTemplatesNic(template, nic):
     return TEMPLATE_API.getElemFromElemColl(templ_obj, nic, 'nics', 'nic')
 
 
-@is_action()
 def addTemplateNic(positive, template, **kwargs):
     """
     Add nic to template
@@ -405,7 +394,6 @@ def addTemplateNic(positive, template, **kwargs):
     return True
 
 
-@is_action()
 def updateTemplateWatchdog(template, watchdog_model, watchdog_action):
     """
     Description: Add watchdog card to Template
@@ -445,7 +433,6 @@ def updateTemplateWatchdog(template, watchdog_model, watchdog_action):
     return True
 
 
-@is_action()
 def updateTemplateNic(positive, template, nic, **kwargs):
     '''
     Description: update an existing nic
@@ -471,7 +458,6 @@ def updateTemplateNic(positive, template, nic, **kwargs):
     return status
 
 
-@is_action()
 def removeTemplateNic(positive, template, nic):
     """
     Remove nic from template
@@ -498,7 +484,6 @@ def removeTemplateNic(positive, template, nic):
     return True
 
 
-@is_action()
 def removeTemplateFromExportDomain(
     positive, template, datacenter, export_storagedomain,
     timeout=SAMPLER_TIMEOUT, sleep=SAMPLER_SLEEP
@@ -544,7 +529,6 @@ def removeTemplateFromExportDomain(
     return True
 
 
-@is_action()
 def export_domain_template_exist(template, export_domain, positive=True):
     """
     Checks if a template exists in an export domain
@@ -571,7 +555,6 @@ def export_domain_template_exist(template, export_domain, positive=True):
     return True
 
 
-@is_action()
 def validateTemplate(positive, template):
     '''
     Description: Validate template if exist
@@ -585,7 +568,6 @@ def validateTemplate(positive, template):
     return bool(templates) == positive
 
 
-@is_action()
 def getTemplateId(positive, template):
     '''
     Description: Get template id
@@ -601,7 +583,6 @@ def getTemplateId(positive, template):
     return True, {'templateId': templObj.get_id()}
 
 
-@is_action()
 def exportTemplate(
     positive, template, storagedomain, exclusive='false', wait=False
 ):
@@ -642,7 +623,6 @@ def exportTemplate(
     return result
 
 
-@is_action()
 def import_template(
     positive, template, source_storage_domain, destination_storage_domain,
     cluster, name=None, async=False
@@ -732,7 +712,6 @@ def _getTemplateFirstDiskByName(template, diskName, idx=0):
     return found[idx]
 
 
-@is_action()
 def copyTemplateDisk(template, disk_name, target_sd):
     """
     Description: Copy disk of template to another storage domain
@@ -769,7 +748,6 @@ def get_template_state(template_name):
     return template.get_status().get_state()
 
 
-@is_action()
 def waitForTemplatesStates(names, state=ENUMS['template_state_ok'],
                            timeout=CREATE_TEMPLATE_TIMEOUT, sleep=10):
     """
@@ -801,7 +779,6 @@ def waitForTemplatesStates(names, state=ENUMS['template_state_ok'],
         (bad_templates, state, timeout))
 
 
-@is_action('waitForTemplateDisksState')
 def wait_for_template_disks_state(template, state=ENUMS['disk_state_ok'],
                                   timeout=CREATE_TEMPLATE_TIMEOUT):
     """
@@ -883,7 +860,6 @@ def check_template_existence(template_name):
     return True
 
 
-@is_action('copyTemplateDisks')
 def copy_template_disks(positive, template, disks, storagedomain, async=True):
     """
     Description: Copies disks of given template to target storage domain

@@ -19,7 +19,6 @@
 
 import time
 import logging
-from art.core_api import is_action
 from art.core_api import apis_utils
 from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.apis_exceptions import APITimeout
@@ -53,7 +52,6 @@ def get_max_event_id(query):
     return max(int(event.get_id()) for event in events)
 
 
-@is_action()
 def searchForRecentEvent(positive, win_start_query, query, expected_count=1):
     """
     Checks the count of events specified by query, sentineled by
@@ -91,7 +89,6 @@ def searchForRecentEvent(positive, win_start_query, query, expected_count=1):
     return positive == status
 
 
-@is_action()
 def wait_for_event(query, start_id=None, win_start_query=None,
                    timeout=DEF_TIMEOUT, sleep=DEF_SLEEP):
     """

@@ -24,7 +24,6 @@ import art.rhevm_api.tests_lib.low_level as ll
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
 from art.core_api import apis_exceptions
 from art.core_api import apis_utils
-from art.core_api import is_action
 from art.rhevm_api.utils import test_utils
 
 NET_API = test_utils.get_api("network", "networks")
@@ -90,7 +89,6 @@ def _prepareNetworkObject(**kwargs):
     return net
 
 
-@is_action()
 def add_network(positive, **kwargs):
     """
     Add network to a data center
@@ -132,7 +130,6 @@ def add_network(positive, **kwargs):
     return status
 
 
-@is_action()
 def updateNetwork(positive, network, **kwargs):
     """
     Update network
@@ -172,7 +169,6 @@ def updateNetwork(positive, network, **kwargs):
     return True
 
 
-@is_action()
 def removeNetwork(positive, network, data_center=None):
     """
     Remove network
@@ -301,7 +297,6 @@ def get_cluster_networks(cluster, href=True):
     )
 
 
-@is_action()
 def add_network_to_cluster(positive, network, cluster, **kwargs):
     """
     Attach network to cluster
@@ -339,7 +334,6 @@ def add_network_to_cluster(positive, network, cluster, **kwargs):
     return status
 
 
-@is_action()
 def update_cluster_network(positive, cluster, network, **kwargs):
     """
     Update network on cluster
@@ -371,7 +365,6 @@ def update_cluster_network(positive, cluster, network, **kwargs):
     return status
 
 
-@is_action()
 def remove_network_from_cluster(positive, network, cluster):
     """
     Remove network from cluster
@@ -398,7 +391,6 @@ def remove_network_from_cluster(positive, network, cluster):
     return status
 
 
-@is_action()
 def is_network_required(network, cluster):
     """
     Check if Network is required
@@ -576,7 +568,6 @@ def get_vnic_profile_attr(
 
 
 # noinspection PyUnusedLocal
-@is_action()
 def add_vnic_profile(positive, name, **kwargs):
     """
     Add new vnic profile to network in cluster with cluster_name
@@ -612,7 +603,6 @@ def add_vnic_profile(positive, name, **kwargs):
     return True
 
 
-@is_action()
 def remove_vnic_profile(
     positive, vnic_profile_name, network, cluster=None, data_center=None
 ):

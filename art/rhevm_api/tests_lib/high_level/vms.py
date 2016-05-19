@@ -7,7 +7,6 @@ import shlex
 import urllib
 
 from concurrent.futures import ThreadPoolExecutor
-from art.core_api import is_action
 import art.rhevm_api.tests_lib.low_level.vms as vms
 import art.rhevm_api.tests_lib.low_level.hosts as hosts
 import art.rhevm_api.tests_lib.low_level.disks as disks
@@ -42,7 +41,6 @@ CHECK_MEMORY_COMMAND = "grep 'MemTotal' /proc/meminfo | awk '{ print $2 }'"
 ProvisionContext = vms.ProvisionContext
 
 
-@is_action()
 def add_disk_to_machine(vm_name, interface, format_, sparse, storage_domain,
                         **kwargs):
     """
@@ -77,7 +75,6 @@ def add_disk_to_machine(vm_name, interface, format_, sparse, storage_domain,
         raise errors.VMException("startVm of vm %s failed" % vm_name)
 
 
-@is_action()
 def shutdown_vm_if_up(vm_name):
     """
     Description: Shutdowns vm if it's in up status

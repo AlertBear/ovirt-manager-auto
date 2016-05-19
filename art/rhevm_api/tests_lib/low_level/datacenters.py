@@ -25,7 +25,6 @@ from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS, data_st
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.rhevm_api.utils.test_utils import searchForObj
-from art.core_api import is_action
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as exceptions
 import art.rhevm_api.tests_lib.low_level.general as ll_general
@@ -85,7 +84,6 @@ QUOTA_LIMITS = {
 logger = logging.getLogger("art.ll_lib.dcs")
 
 
-@is_action()
 def addDataCenter(positive, **kwargs):
     """
     Add new data center
@@ -124,7 +122,6 @@ def addDataCenter(positive, **kwargs):
     return status
 
 
-@is_action()
 def update_datacenter(positive, datacenter, **kwargs):
     """
     Update Data Center parameters
@@ -170,7 +167,6 @@ def update_datacenter(positive, datacenter, **kwargs):
     return status
 
 
-@is_action()
 def remove_datacenter(positive, datacenter, force=False):
     """
     Remove existed data center
@@ -203,7 +199,6 @@ def remove_datacenter(positive, datacenter, force=False):
     return res
 
 
-@is_action()
 def searchForDataCenter(positive, query_key, query_val, key_name, **kwargs):
     '''
     Description: search for a data center by desired property
@@ -241,7 +236,6 @@ def removeDataCenterAsynch(positive, datacenter, queue):
     queue.put(status)
 
 
-@is_action()
 def removeDataCenters(positive, datacenters):
     '''
      Description: Remove several data centers, using threading
@@ -266,7 +260,6 @@ def removeDataCenters(positive, datacenters):
     return status
 
 
-@is_action()
 def waitForDataCenterState(name, state=ENUMS['data_center_state_up'],
                            timeout=DATA_CENTER_INIT_TIMEOUT, sleep=10):
     """
@@ -282,7 +275,6 @@ def waitForDataCenterState(name, state=ENUMS['data_center_state_up'],
     return util.waitForQuery(query, timeout=timeout, sleep=sleep)
 
 
-@is_action("waitForDataCenterStateApi")
 def wait_for_datacenter_state_api(name, state=ENUMS['data_center_state_up'],
                                   timeout=DATA_CENTER_INIT_TIMEOUT, sleep=10):
     """

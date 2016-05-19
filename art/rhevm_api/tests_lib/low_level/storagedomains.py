@@ -21,7 +21,6 @@ import re
 from rrmngmnt.host import Host as HostResource
 from rrmngmnt.user import User
 
-from art.core_api import is_action
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 from art.core_api.apis_utils import getDS, TimeoutingSampler
 from art.core_api.validator import compareCollectionSize
@@ -41,11 +40,10 @@ from art.rhevm_api.utils.test_utils import (
     validateElementStatus, get_api, searchForObj, getImageAndVolumeID,
     getAllImages,
 )
-from art.rhevm_api.utils.xpath_utils import XPathMatch
-from art.test_handler import exceptions
-from art.test_handler.settings import opts
-from utilities import sshConnection, machine
 from utilities.utils import getIpAddressByHostName
+from art.test_handler.settings import opts
+from art.test_handler import exceptions
+from utilities import sshConnection, machine
 
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -75,9 +73,6 @@ clUtil = get_api('cluster', 'clusters')
 fileUtil = get_api('file', 'files')
 diskUtil = get_api('disk', 'disks')
 connUtil = get_api('storage_connection', 'storageconnections')
-
-xpathMatch = is_action(
-    'xpathStoragedomains', id_name='xpathMatch')(XPathMatch(util))
 
 OVF_STORE_DISK_NAME = "OVF_STORE"
 
@@ -178,7 +173,6 @@ def _prepareStorageDomainObject(positive, **kwargs):
     return sd
 
 
-@is_action()
 def addStorageDomain(positive, wait=True, **kwargs):
     '''
     Description: add new storage domain
@@ -217,7 +211,6 @@ def addStorageDomain(positive, wait=True, **kwargs):
     return status
 
 
-@is_action()
 def updateStorageDomain(positive, storagedomain, **kwargs):
     '''
     Description: update existed storage domain
@@ -236,7 +229,6 @@ def updateStorageDomain(positive, storagedomain, **kwargs):
     return status
 
 
-@is_action()
 def extendStorageDomain(positive, storagedomain, **kwargs):
     """
     Extend an existing iSCSI or FCP storage domain
@@ -273,7 +265,6 @@ def extendStorageDomain(positive, storagedomain, **kwargs):
     return status
 
 
-@is_action()
 def searchForStorageDomain(positive, query_key, query_val, key_name, **kwargs):
     '''
     Description: search for storage domains by desired property
@@ -301,7 +292,6 @@ def getDCStorage(datacenter, storagedomain):
     return util.getElemFromElemColl(dcObj, storagedomain)
 
 
-@is_action()
 def attachStorageDomain(positive, datacenter, storagedomain, wait=True,
                         compare=True):
     """
@@ -337,7 +327,6 @@ def attachStorageDomain(positive, datacenter, storagedomain, wait=True,
     return status
 
 
-@is_action()
 def detachStorageDomain(positive, datacenter, storagedomain):
     '''
     Description: detach storage domain from data center
@@ -388,7 +377,6 @@ def wait_for_storage_domain_available_size(
     return False
 
 
-@is_action()
 def activateStorageDomain(positive, datacenter, storagedomain, wait=True):
     '''
     Description: activate storage domain
@@ -422,7 +410,6 @@ def activateStorageDomain(positive, datacenter, storagedomain, wait=True):
     return status
 
 
-@is_action()
 def deactivateStorageDomain(positive, datacenter, storagedomain, wait=True):
     '''
     Description: deactivate storage domain
@@ -452,7 +439,6 @@ def deactivateStorageDomain(positive, datacenter, storagedomain, wait=True):
     return status
 
 
-@is_action()
 def iscsiDiscover(positive, host, address):
     '''
     run iscsi discovery
@@ -475,7 +461,6 @@ def iscsiDiscover(positive, host, address):
     return hostUtil.extract_attribute(response, 'iscsi_target')
 
 
-@is_action()
 def iscsiLogin(
         positive, host, addresses, targets, username=None, password=None
 ):
@@ -518,7 +503,6 @@ def iscsiLogin(
     return True
 
 
-@is_action()
 def teardownStorageDomain(positive, storagedomain, host):
     '''
     Description: tear down storage domain before removing
@@ -538,7 +522,6 @@ def teardownStorageDomain(positive, storagedomain, host):
     )
 
 
-@is_action()
 def removeStorageDomain(positive, storagedomain, host, format='false',
                         destroy=False):
     """
@@ -596,7 +579,6 @@ def cleanExportDomainMetadata(address, path):
         return machineObj.runCmd(clean_cmd)
 
 
-@is_action()
 def importStorageDomain(positive, type, storage_type, address, path, host,
                         nfs_version=None, nfs_retrans=None, nfs_timeo=None,
                         vfs_type=None, storage_format=None,
@@ -638,7 +620,6 @@ def importStorageDomain(positive, type, storage_type, address, path, host,
     return status
 
 
-@is_action()
 def removeStorageDomains(positive, storagedomains, host, format='true'):
     '''
     Description: remove storage domains
@@ -688,7 +669,6 @@ def removeStorageDomains(positive, storagedomains, host, format='true'):
     return status
 
 
-@is_action()
 def waitForStorageDomainStatus(
         positive, dataCenterName, storageDomainName, expectedStatus,
         timeOut=900, sleepTime=10
@@ -733,7 +713,6 @@ def waitForStorageDomainStatus(
     return not positive
 
 
-@is_action()
 def isStorageDomainMaster(positive, dataCenterName, storageDomainName):
     '''
     The function isStorageDomainMaster checking if storage domain is a master
@@ -876,7 +855,6 @@ def remove_storage_domains(
     return True
 
 
-@is_action()
 def execOnNonMasterDomains(positive, datacenter, operation, type):
     '''
     Description: Run operation on all storage domains that match type in
@@ -922,7 +900,6 @@ def execOnNonMasterDomains(positive, datacenter, operation, type):
     return status
 
 
-@is_action()
 def getDomainAddress(positive, storageDomain):
     '''
     Description: find the address of a storage domain
@@ -948,7 +925,6 @@ def getDomainAddress(positive, storageDomain):
         return not positive, {'address': ''}
 
 
-@is_action()
 def findNonMasterStorageDomains(positive, datacenter):
     """
     Find all non-master data storage domains
@@ -976,7 +952,6 @@ def findNonMasterStorageDomains(positive, datacenter):
     return not positive, {'nonMasterDomains': ''}
 
 
-@is_action()
 def findIsoStorageDomains(datacenter=None):
     '''
     Description: find all iso storage domains, if datacenter is specified
@@ -997,7 +972,6 @@ def findIsoStorageDomains(datacenter=None):
     return isoDomains
 
 
-@is_action()
 def findExportStorageDomains(datacenter=None):
     """
     Description: find all export storage domains
@@ -1017,7 +991,6 @@ def findExportStorageDomains(datacenter=None):
     return exportDomains
 
 
-@is_action()
 def findMasterStorageDomain(positive, datacenter):
     '''
     Description: find the master storage domain.
@@ -1042,7 +1015,6 @@ def findMasterStorageDomain(positive, datacenter):
     return False, {'masterDomain': ' '}
 
 
-@is_action()
 def getStorageDomainFiles(positive, storagedomain, files_count):
     '''
      Description: fetch files in iso storage domain and compare to expected
@@ -1059,7 +1031,6 @@ def getStorageDomainFiles(positive, storagedomain, files_count):
     return compareCollectionSize(storFiles, files_count, util.logger)
 
 
-@is_action()
 def getStorageDomainFile(positive, storagedomain, file):
     '''
      Description: fetch file in iso storage domain by name
@@ -1083,7 +1054,6 @@ def getStorageDomainFile(positive, storagedomain, file):
         return not positive
 
 
-@is_action()
 def getTemplateImageId(positive, vdsName, username, passwd, dataCenter,
                        storageDomain):
     '''
@@ -1141,7 +1111,6 @@ def getTemplateImageId(positive, vdsName, username, passwd, dataCenter,
     return False
 
 
-@is_action()
 def checkTemplateOnHost(positive, vdsName, username, passwd, dataCenter,
                         storageDomain, template, fake, noImages):
     """
@@ -1211,7 +1180,6 @@ def checkTemplateOnHost(positive, vdsName, username, passwd, dataCenter,
     return True
 
 
-@is_action()
 def checkIfStorageDomainExist(positive, storagedomain):
     '''
     Description: Check if storagedomain exist.
@@ -1229,7 +1197,6 @@ def checkIfStorageDomainExist(positive, storagedomain):
     return (len(sdObj) == 1) == positive
 
 
-@is_action()
 def checkStorageDomainParameters(positive, storagedomain, **kwargs):
     """
     Description: Checks whether given xpath is True
@@ -1252,7 +1219,6 @@ def checkStorageDomainParameters(positive, storagedomain, **kwargs):
     return positive
 
 
-@is_action()
 def checkStorageFormatVersion(positive, storagedomain, version):
     """
     Description: Checks storage format version on given storage domain
@@ -1267,7 +1233,6 @@ def checkStorageFormatVersion(positive, storagedomain, version):
     return (domainObj.storage_format == version) == positive
 
 
-@is_action()
 def checkVmVolume(positive, vdsName, username, passwd, dataCenter,
                   storageDomain, vm, fake, noImages, exists=True):
     """
@@ -1293,7 +1258,6 @@ def checkVmVolume(positive, vdsName, username, passwd, dataCenter,
                        storageDomain, vm, fake, noImages, exists)
 
 
-@is_action()
 def checkTemplateVolume(positive, vdsName, username, passwd, dataCenter,
                         storageDomain, template, fake, noImages, exists=True):
     """
@@ -1410,7 +1374,6 @@ def checkVolume(positive, vdsName, username, passwd, dataCenter, storageDomain,
     return positive
 
 
-@is_action("isStorageDomainActive")
 def is_storage_domain_active(datacenter, domain):
     """
     Checks if the storage domain is active in the given datacenter
@@ -1436,7 +1399,6 @@ def is_storage_domain_active(datacenter, domain):
     return state == ACTIVE_DOMAIN
 
 
-@is_action()
 def getConnectionsForStorageDomain(storagedomain):
     """
     Description: Returns all connections added to a storage domain
@@ -1449,7 +1411,6 @@ def getConnectionsForStorageDomain(storagedomain):
     return connUtil.getElemFromLink(sdObj)
 
 
-@is_action()
 def addConnectionToStorageDomain(storagedomain, conn_id):
     """
     Description: Adds a connection to a storage domain
@@ -1471,7 +1432,6 @@ def addConnectionToStorageDomain(storagedomain, conn_id):
     return bool(status)
 
 
-@is_action()
 def detachConnectionFromStorageDomain(storagedomain, conn_id):
     """
     Description: Detach a connection from a storage domain
@@ -1492,7 +1452,6 @@ def detachConnectionFromStorageDomain(storagedomain, conn_id):
     return False
 
 
-@is_action()
 def get_allocated_size(storagedomain):
     """
     Description: Get the allocated space for vms in the storage domain
@@ -1507,7 +1466,6 @@ def get_allocated_size(storagedomain):
     return sdObj.get_committed()
 
 
-@is_action()
 def get_total_size(storagedomain):
     """
     Description: Gets the total size of the storage domain (available + used)
@@ -1520,7 +1478,6 @@ def get_total_size(storagedomain):
     return sdObj.get_available() + sdObj.get_used()
 
 
-@is_action()
 def get_free_space(storagedomain):
     """
     Description: Gets the free space of the storage domain
@@ -1533,7 +1490,6 @@ def get_free_space(storagedomain):
     return sdObj.get_available()
 
 
-@is_action()
 def get_unregistered_vms(storage_domain):
     """
     Get unregistered vms on storage domain
@@ -1553,7 +1509,6 @@ def get_unregistered_vms(storage_domain):
     return unregistered_vms.get_vm()
 
 
-@is_action()
 def get_unregistered_templates(storage_domain):
     """
     Get unregistered templates on storagedomain
@@ -1573,7 +1528,6 @@ def get_unregistered_templates(storage_domain):
     return unregistered_templates.get_template()
 
 
-@is_action()
 def register_object(obj, cluster):
     """
     Register unregistered vms or templates from storage domain
@@ -1597,7 +1551,6 @@ def register_object(obj, cluster):
     )
 
 
-@is_action()
 def get_used_size(storagedomain):
     """
     Description: Gets the used size
@@ -1610,7 +1563,6 @@ def get_used_size(storagedomain):
     return sdObj.get_used()
 
 
-@is_action()
 def _parse_mount_output_line(line):
     """
     Parses one line of mount output
@@ -1673,7 +1625,6 @@ def _parse_mount_output_line(line):
             'sync' in nfs_options.keys())
 
 
-@is_action()
 def _parse_mount_output(output):
     """
     Parses mount output
@@ -1694,7 +1645,6 @@ def _parse_mount_output(output):
     return result
 
 
-@is_action()
 def get_options_of_resource(host, password, address, path):
     """
     Calls mount on given host and returns options of given nfs resource
@@ -1714,7 +1664,6 @@ def get_options_of_resource(host, password, address, path):
     return nfs_mounts.get((address, path), None)
 
 
-@is_action()
 def get_mounted_nfs_resources(host, password):
     """
     Gets info about all NFS resource mounted on specified host
@@ -1741,14 +1690,12 @@ def get_mounted_nfs_resources(host, password):
     return result
 
 
-@is_action()
 def _verify_one_option(real, expected):
     """ helper function for verification of one option
     """
     return expected is None or expected == real
 
 
-@is_action()
 def verify_nfs_options(
         expected_timeout, expected_retrans, expected_nfsvers,
         expected_mount_options, real_timeo, real_retrans, real_nfsvers,
@@ -1800,7 +1747,6 @@ def get_storagedomain_names():
     return [sd.get_name() for sd in get_storage_domains()]
 
 
-@is_action()
 class NFSStorage(object):
     """ Helper class - one object represents one NFS storage domain.
 

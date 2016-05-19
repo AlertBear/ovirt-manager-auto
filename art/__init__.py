@@ -1,1 +1,1 @@
-package='art'
+package = 'art'

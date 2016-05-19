@@ -23,14 +23,12 @@ import logging
 import art.test_handler.exceptions as errors
 from art.rhevm_api.utils.test_utils import get_api
 from utilities.machine import Machine
-from art.core_api import is_action
 
 logger = logging.getLogger("art.ll_lib.hooks")
 
 CHMOD = "/bin/chmod"
 
 
-@is_action()
 def checkForFileExistenceAndContent(positive, ip, password, filename,
                                     content=None, user='root'):
     '''
@@ -65,7 +63,6 @@ def checkForFileExistenceAndContent(positive, ip, password, filename,
     return positive
 
 
-@is_action()
 def checkForFileExistenceAndContentOnVm(vmName, password, filename,
                                         content=None, user='root'):
     '''
@@ -94,7 +91,6 @@ def checkForFileExistenceAndContentOnVm(vmName, password, filename,
                                            filename, content, user)
 
 
-@is_action()
 def createOneLineShellScript(ip, password, scriptName, command,
                              arguments, target, user='root', osType='linux'):
     '''
@@ -127,7 +123,6 @@ def createOneLineShellScript(ip, password, scriptName, command,
     return True
 
 
-@is_action()
 def createPythonScriptToVerifyCustomHook(ip, password, scriptName, customHook,
                                          target, outputFile, user='root',
                                          osType='linux'):

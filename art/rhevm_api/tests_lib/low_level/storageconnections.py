@@ -22,7 +22,6 @@ from art.rhevm_api.utils import test_utils
 from art.core_api import apis_utils
 from utilities import utils
 from art.test_handler.settings import opts
-from art.core_api import is_action
 
 StorageConnection = apis_utils.getDS('StorageConnection')
 Host = apis_utils.getDS('Host')
@@ -73,7 +72,6 @@ def _prepare_connection_object(**kwargs):
     return conn
 
 
-@is_action('addConnection')
 def add_connection(wait=True, **kwargs):
     """
     Description: add new storage connection
@@ -103,7 +101,6 @@ def add_connection(wait=True, **kwargs):
     return api.create(conn, True, async=(not wait))
 
 
-@is_action('updateConnection')
 def update_connection(conn_id, **kwargs):
     """
     Description: update a storage connection
@@ -136,7 +133,6 @@ def update_connection(conn_id, **kwargs):
     return result
 
 
-@is_action('removeStorageConnection')
 def remove_storage_connection(conn_id, host=None):
     """
     Remove a storage connection
@@ -159,7 +155,6 @@ def remove_storage_connection(conn_id, host=None):
     return api.delete(conn_obj, True, body=body, element_name='action')
 
 
-@is_action('removeAllStorageConnections')
 def remove_all_storage_connections():
     """
     Description: removes all storage connections

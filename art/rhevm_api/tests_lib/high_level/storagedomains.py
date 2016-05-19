@@ -25,7 +25,6 @@ from art.rhevm_api import resources
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.high_level import datastructures
-from art.core_api import is_action
 
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
@@ -105,7 +104,6 @@ def discover_addresses_and_targets(host, server_address):
     return list(addresses), list(targets)
 
 
-@is_action()
 def importBlockStorageDomain(host, lun_address, lun_target):
     """
     Import an iscsi storage domain
@@ -154,7 +152,6 @@ def importBlockStorageDomain(host, lun_address, lun_target):
     return False not in sds_status
 
 
-@is_action()
 def addISCSIDataDomain(host, storage, data_center, lun, lun_address,
                        lun_target, lun_port=3260, storage_format=None,
                        override_luns=None, login_all=False):
@@ -202,7 +199,6 @@ def addISCSIDataDomain(host, storage, data_center, lun, lun_address,
     return status and ll_sd.activateStorageDomain(True, data_center, storage)
 
 
-@is_action()
 def extendISCSIDomain(
         storage_domain, host, extend_lun, extend_lun_address,
         extend_lun_target, extend_lun_port=3260, override_luns=None):
@@ -240,7 +236,6 @@ def extendISCSIDomain(
         override_luns=override_luns)
 
 
-@is_action()
 def extendFCPDomain(storage_domain, host, lun):
     """
     Description: extends fcp storage domain with given lun
@@ -256,7 +251,6 @@ def extendFCPDomain(storage_domain, host, lun):
         storage_type=ENUMS['storage_type_fcp'])
 
 
-@is_action()
 def addGlusterDomain(host, name, data_center, address, path, vfs_type,
                      sd_type=ENUMS['storage_dom_type_data'],
                      storage_format=None):
@@ -285,7 +279,6 @@ def addGlusterDomain(host, name, data_center, address, path, vfs_type,
     return status and ll_sd.activateStorageDomain(True, data_center, name)
 
 
-@is_action()
 def addNFSDomain(
     host, storage, data_center, address, path,
     sd_type=ENUMS['storage_dom_type_data'], storage_format=None,
@@ -326,7 +319,6 @@ def addNFSDomain(
     return True
 
 
-@is_action()
 def addLocalDataDomain(host, storage, data_center, path):
     """
     positive flow for adding local storage including all the necessary steps
@@ -351,7 +343,6 @@ def addLocalDataDomain(host, storage, data_center, path):
     return True
 
 
-@is_action()
 def addPosixfsDataDomain(
         host, storage, data_center, address, path,
         sd_type=ENUMS['storage_dom_type_data'],
@@ -396,7 +387,6 @@ def addPosixfsDataDomain(
     return True
 
 
-@is_action()
 def addFCPDataDomain(host, storage, data_center, lun, override_luns=None):
     """
     Positive flow for adding FCP storage including all the necessary steps
@@ -734,7 +724,6 @@ def create_storages(storage, type_, host, datacenter,
     return storage_adder.add_storages()
 
 
-@is_action()
 def remove_storage_domain(name, datacenter, host, format_disk=False, vdc=None,
                           vdc_password=None):
     """ Deactivates, detaches and removes storage domain.
@@ -757,7 +746,6 @@ def remove_storage_domain(name, datacenter, host, format_disk=False, vdc=None,
     return True
 
 
-@is_action()
 def create_nfs_domain_with_options(
         name, sd_type, host, address, path, version=None, retrans=None,
         timeo=None, mount_options=None, datacenter=None, positive=True):
@@ -803,7 +791,6 @@ def create_nfs_domain_with_options(
                 "Cannot attach %s to %s" % (name, datacenter))
 
 
-@is_action('attachAndActivateDomain')
 def attach_and_activate_domain(datacenter, domain):
     """
     Description: Attaches (if necessary) and activates a domain
@@ -837,7 +824,6 @@ def attach_and_activate_domain(datacenter, domain):
     return True
 
 
-@is_action('createNfsDomainAndVerifyOptions')
 def create_nfs_domain_and_verify_options(domain_list, host=None,
                                          password=None, datacenter=None):
     """
@@ -885,7 +871,6 @@ def create_nfs_domain_and_verify_options(domain_list, host=None,
                 "Wrong NFS options! Expected %s: %s, real: %s" % result)
 
 
-@is_action('detachAndDeactivateDomain')
 def detach_and_deactivate_domain(datacenter, domain):
     """
     Deactivates and detaches a storage domain
