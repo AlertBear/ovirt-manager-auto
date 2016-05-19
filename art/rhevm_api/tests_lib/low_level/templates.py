@@ -31,8 +31,7 @@ from art.rhevm_api.tests_lib.low_level.networks import (
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
     DiskNotFound,
-    _prepareWatchdogObj,
-    getWatchdogModels,
+    prepare_watchdog_obj,
     createCustomPropertiesFromArg,
 )
 from art.test_handler.settings import opts
@@ -211,14 +210,6 @@ def updateTemplate(positive, template, **kwargs):
     # FIXME: check if polling instead of sleep
     time.sleep(40)
 
-    watchdog_model = kwargs.pop('watchdog_model', None)
-    watchdog_action = kwargs.pop('watchdog_action', None)
-
-    if status and watchdog_model is not None:
-        status = updateTemplateWatchdog(template,
-                                        watchdog_model,
-                                        watchdog_action)
-
     return status
 
 
@@ -394,43 +385,118 @@ def addTemplateNic(positive, template, **kwargs):
     return True
 
 
-def updateTemplateWatchdog(template, watchdog_model, watchdog_action):
+def get_watchdog_collection(template_name):
     """
-    Description: Add watchdog card to Template
-    Parameters:
-        * template - Name of the watchdog's template
-        * watchdog_model - model of watchdog card-ib6300esb or empty string
-        * watchdog_action - action of watchdog card
-    Return: status (True if watchdog card added successfully. False otherwise)
+    Get template watchdog collection
+
+    Args:
+        template_name: Template name
+
+    Returns:
+        list: List of watchdog objects
     """
-    templateObj = TEMPLATE_API.find(template)
-    templateWatchdog = VM_API.getElemFromLink(templateObj,
-                                              link_name='watchdogs',
-                                              attr='watchdog',
-                                              get_href=False)
-    status, models = getWatchdogModels(template, False)
+    template_obj = get_template_obj(template_name=template_name)
+    logger.info("Get template %s watchdog collection", template_name)
+    watchdog_collection = VM_API.getElemFromLink(
+        template_obj, link_name="watchdogs", attr="watchdog", get_href=False
+    )
+    if not watchdog_collection:
+        logging.error(
+            "Template %s watchdog collection is empty", template_name
+        )
+    return watchdog_collection
+
+
+def add_watchdog(template_name, model, action):
+    """
+    Add watchdog card to template
+
+    Args:
+        template_name (str): Template name
+        model (str): Watchdog card model
+        action (str): Watchdog action
+
+    Returns:
+        bool: True, if add watchdog card action succeed, otherwise False
+    """
+    template_obj = get_template_obj(template_name=template_name)
+    log_info, log_error = ll_general.get_log_msg(
+        action="Add",
+        obj_type="watchdog",
+        obj_name=model,
+        extra_txt="to template %s with action %s" % (template_name, action),
+    )
+    vm_watchdog_link = VM_API.getElemFromLink(
+        elm=template_obj, link_name="watchdogs", get_href=True
+    )
+    watchdog_obj = prepare_watchdog_obj(model=model, action=action)
+
+    logger.info(log_info)
+    status = WATCHDOG_API.create(
+        watchdog_obj, True, collection=vm_watchdog_link
+    )[1]
     if not status:
+        logger.error(log_error)
+    return status
+
+
+def update_watchdog(template_name, **kwargs):
+    """
+    Update template watchdog card
+
+    Args:
+        template_name (str): Template name
+
+    Keyword Args:
+        model (str): Watchdog card model
+        action (str): Watchdog action
+
+    Returns:
+        bool: True, if update watchdog card action succeed, otherwise False
+    """
+    watchdog_collection = get_watchdog_collection(template_name=template_name)
+    if not watchdog_collection:
         return False
+    old_watchdog_obj = watchdog_collection[0]
+    log_info, log_error = ll_general.get_log_msg(
+        action="Update",
+        obj_type="watchdog",
+        obj_name=old_watchdog_obj.get_model(),
+        extra_txt="with parameters %s on template %s" % (template_name, kwargs)
+    )
+    new_watchdog_obj = prepare_watchdog_obj(**kwargs)
+    logger.info(log_info)
+    status = WATCHDOG_API.update(old_watchdog_obj, new_watchdog_obj, True)[1]
+    if not status:
+        logger.error(log_error)
+    return status
 
-    if watchdog_model in models['watchdog_models']:
-        watchdogObj = _prepareWatchdogObj(watchdog_model, watchdog_action)
-        if not templateWatchdog:
-            if not (watchdog_action and watchdog_model):
-                return False
-            vmWatchdog = TEMPLATE_API.getElemFromLink(
-                templateObj,
-                link_name='watchdogs',
-                get_href=True)
 
-            return WATCHDOG_API.create(watchdogObj, True,
-                                       collection=vmWatchdog)[1]
+def delete_watchdog(template_name):
+    """
+    Delete watchdog card from template
 
-        return WATCHDOG_API.update(templateWatchdog[0],
-                                   watchdogObj,
-                                   True)[1]
-    if templateWatchdog:
-        return TEMPLATE_API.delete(templateWatchdog[0], True)
-    return True
+    Args:
+        template_name (str): Template name
+
+    Returns:
+        bool: True, if delete watchdog card action succeed, otherwise False
+    """
+    watchdog_collection = get_watchdog_collection(template_name=template_name)
+    if not watchdog_collection:
+        return False
+    watchdog_obj = watchdog_collection[0]
+    log_info, log_error = ll_general.get_log_msg(
+        action="Delete",
+        obj_type="watchdog",
+        obj_name=watchdog_obj.get_model(),
+        extra_txt="from template %s" % template_name
+    )
+    logger.info(log_info)
+    status = WATCHDOG_API.delete(watchdog_obj, True)
+    if not status:
+        logger.error(log_error)
+    return status
 
 
 def updateTemplateNic(positive, template, nic, **kwargs):

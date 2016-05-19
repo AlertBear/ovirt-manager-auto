@@ -24,7 +24,10 @@ import time
 from Queue import Queue
 from operator import and_
 from threading import Thread
+
 from concurrent.futures import ThreadPoolExecutor
+
+import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.core_api.apis_exceptions import (
     APITimeout, EntityNotFound, TestCaseError,
 )
@@ -34,20 +37,19 @@ from art.rhevm_api.tests_lib.low_level.disks import (
     _prepareDiskObject, getVmDisk, getObjDisks, get_other_storage_domain,
     wait_for_disks_status, get_disk_storage_domain_name,
 )
-import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.networks import get_vnic_profile_obj
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
+from art.rhevm_api.utils.provisioning_utils import ProvisionProvider
+from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.test_utils import (
     searchForObj, getImageByOsType, convertMacToIpAddress,
     checkHostConnectivity, update_vm_status_in_database, get_api, split,
     waitUntilPingable, restoringRandomState, waitUntilGone,
 )
-from art.rhevm_api.utils.provisioning_utils import ProvisionProvider
-from art.rhevm_api.utils.resource_utils import runMachineCommand
-from art.test_handler.settings import opts
-from art.test_handler.exceptions import CanNotFindIP
 from art.test_handler import exceptions
+from art.test_handler.exceptions import CanNotFindIP
+from art.test_handler.settings import opts
 from utilities.jobs import Job, JobsSet
 from utilities.machine import Machine, LINUX
 from utilities.utils import pingToVms, makeVmList
@@ -738,12 +740,6 @@ def updateVm(positive, vm, **kwargs):
     vm_new_obj, status = VM_API.update(
         vm_obj, vm_new_obj, positive, compare=compare
     )
-
-    watchdog_model = kwargs.pop("watchdog_model", None)
-    watchdog_action = kwargs.pop("watchdog_action", None)
-
-    if status and watchdog_model is not None:
-        status = updateWatchdog(vm, watchdog_model, watchdog_action)
     if not status:
         logger.error(log_error)
     return status
@@ -2825,7 +2821,11 @@ def createVm(
             return False
 
     if watchdog_action and watchdog_model:
-        if not addWatchdog(vmName, watchdog_model, watchdog_action):
+        if not add_watchdog(
+            vm_name=vmName,
+            watchdog_model=watchdog_model,
+            watchdog_action=watchdog_action
+        ):
             return False
 
     if installation:
@@ -4430,104 +4430,130 @@ def remove_vm_disks(vm_name, disk_name=None):
     return delete_disks(vm_disks)
 
 
-def _prepareWatchdogObj(watchdog_model, watchdog_action):
-
-    watchdogObj = data_st.WatchDog()
-
-    watchdogObj.set_action(watchdog_action)
-    watchdogObj.set_model(watchdog_model)
-
-    return watchdogObj
-
-
-def getWatchdogModels(name, vm_flag):
-    '''
-    Description: get all available watchdog models
-    Author: lsvaty
-    Parameters:
-      * name -  name of vm or template
-      * vm_flag - True  if first parameter contains the name of vm
-                  False if first parameter contains the name of template
-    Return: List of available  models in current version of cluster
-    '''
-    models = list()
-    obj = None
-    if vm_flag:
-        obj = VM_API.find(name)
-    else:
-        obj = TEMPLATE_API.find(name)
-
-    clust_version = obj.get_cluster().get_version()
-    cap = CAP_API.get(absLink=False)
-
-    # default for 3.3DC (first watchdog)
-    mn, mj = 3, 3
-
-    if clust_version:
-        mn = clust_version.get_minor()
-        mj = clust_version.get_version().get_major()
-
-    versions = [v for v in cap if v.get_major() == mj and v.get_minor() == mn]
-    for watchdog_model in versions[0].get_watchdog_models().get_model():
-        models.append(watchdog_model)
-    if models:
-        return True, {'watchdog_models': models}
-    else:
-        return False, {'watchdog_models': None}
-
-
-def addWatchdog(vm, watchdog_model, watchdog_action):
+def prepare_watchdog_obj(**kwargs):
     """
-    Description: Add watchdog card to VM
-    Parameters:
-        * vm_name - Name of the watchdog's vm
-        * watchdog_model - model of watchdog card
-        * watchdog_action - action of watchdog card
-    Return: status (True if watchdog card added successfully. False otherwise)
+    Prepare watchdog object for future use
+
+    Keyword Args:
+        model (str): Watchdog card model
+        action (str): Watchdog action
+
+    Returns:
+        WatchDog: New WatchDog instance
     """
-    vmObj = VM_API.find(vm)
-    status = False
+    return ll_general.prepare_ds_object("WatchDog", **kwargs)
 
-    if watchdog_action and watchdog_model:
-        vmWatchdog = VM_API.getElemFromLink(vmObj, link_name='watchdogs',
-                                            get_href=True)
 
-        watchdogObj = _prepareWatchdogObj(watchdog_model, watchdog_action)
-        watchdogObj, status = WATCHDOG_API.create(watchdogObj, True,
-                                                  collection=vmWatchdog)
+def get_watchdog_collection(vm_name):
+    """
+    Get VM watchdog collection
 
+    Args:
+        vm_name: VM name
+
+    Returns:
+        list: List of watchdog objects
+    """
+    vm_obj = get_vm_obj(vm_name=vm_name)
+    logger.info("Get VM %s watchdog collection", vm_name)
+    watchdog_collection = VM_API.getElemFromLink(
+        vm_obj, link_name="watchdogs", attr="watchdog", get_href=False
+    )
+    if not watchdog_collection:
+        logging.error("VM %s watchdog collection is empty", vm_name)
+    return watchdog_collection
+
+
+def add_watchdog(vm_name, model, action):
+    """
+    Add watchdog card to VM
+
+    Args:
+        vm_name (str): VM name
+        model (str): Watchdog card model
+        action (str): Watchdog action
+
+    Returns:
+        bool: True, if add watchdog card action succeed, otherwise False
+    """
+    vm_obj = get_vm_obj(vm_name=vm_name)
+    log_info, log_error = ll_general.get_log_msg(
+        action="Add",
+        obj_type="watchdog",
+        obj_name=model,
+        extra_txt="to VM %s with action %s" % (vm_name, action),
+    )
+    vm_watchdog_link = VM_API.getElemFromLink(
+        elm=vm_obj, link_name="watchdogs", get_href=True
+    )
+    watchdog_obj = prepare_watchdog_obj(model=model, action=action)
+
+    logger.info(log_info)
+    status = WATCHDOG_API.create(
+        watchdog_obj, True, collection=vm_watchdog_link
+    )[1]
+    if not status:
+        logger.error(log_error)
     return status
 
 
-def updateWatchdog(vm, watchdog_model, watchdog_action):
+def update_watchdog(vm_name, **kwargs):
     """
-    Description: Add watchdog card to VM
-    Parameters:
-        * vm_name - Name of the watchdog's vm
-        * watchdog_model - model of watchdog card
-        * watchdog_action - action of watchdog card
-    Return: status (True if watchdog card added successfully. False otherwise)
-    """
-    vmObj = VM_API.find(vm)
-    vmWatchdog = VM_API.getElemFromLink(vmObj, link_name='watchdogs',
-                                        attr='watchdog', get_href=False)
+    Update watchdog card on VM
 
-    status, models = getWatchdogModels(vm, True)
-    if not status:
+    Args:
+        vm_name (str): VM name
+
+    Keyword Args:
+        model (str): Watchdog card model
+        action (str): Watchdog action
+
+    Returns:
+        bool: True, if update watchdog card action succeed, otherwise False
+    """
+    watchdog_collection = get_watchdog_collection(vm_name=vm_name)
+    if not watchdog_collection:
         return False
+    old_watchdog_obj = watchdog_collection[0]
+    log_info, log_error = ll_general.get_log_msg(
+        action="Update",
+        obj_type="watchdog",
+        obj_name=old_watchdog_obj.get_model(),
+        extra_txt="with parameters %s on VM %s" % (kwargs, vm_name)
+    )
+    new_watchdog_obj = prepare_watchdog_obj(**kwargs)
+    logger.info(log_info)
+    status = WATCHDOG_API.update(old_watchdog_obj, new_watchdog_obj, True)[1]
+    if not status:
+        logger.error(log_error)
+    return status
 
-    if watchdog_model in models['watchdog_models']:
-        if not vmWatchdog:
-            return addWatchdog(vm, watchdog_model, watchdog_action)
-        else:
-            watchdogObj = _prepareWatchdogObj(watchdog_model,
-                                              watchdog_action)
-            return WATCHDOG_API.update(vmWatchdog[0],
-                                       watchdogObj,
-                                       True)[1]
-    if vmWatchdog:
-        return VM_API.delete(vmWatchdog[0], True)
-    return True
+
+def delete_watchdog(vm_name):
+    """
+    Delete watchdog card from VM
+
+    Args:
+        vm_name (str): VM name
+
+    Returns:
+        bool: True, if delete watchdog card action succeed, otherwise False
+    """
+    watchdog_collection = get_watchdog_collection(vm_name=vm_name)
+    if not watchdog_collection:
+        return False
+    watchdog_obj = watchdog_collection[0]
+    log_info, log_error = ll_general.get_log_msg(
+        action="Delete",
+        obj_type="watchdog",
+        obj_name=watchdog_obj.get_model(),
+        extra_txt="from VM %s" % vm_name
+    )
+    logger.info(log_info)
+    status = WATCHDOG_API.delete(watchdog_obj, True)
+    if not status:
+        logger.error(log_error)
+    return status
 
 
 def get_vm_machine(vm_name, user, password):
@@ -5369,8 +5395,10 @@ def add_numa_node_to_vm(
         elm=vm_obj, link_name=NUMA_NODE_LINK, get_href=True
     )
     log_info, log_error = ll_general.get_log_msg(
-        action="Add", obj_type="numa node", obj_name=str(index),
-        extra_text="to VM %s" % vm_name,
+        action="Add",
+        obj_type="numa node",
+        obj_name=str(index),
+        extra_txt="to VM %s" % vm_name,
         **kwargs
     )
     logger.info(log_info)
@@ -5445,8 +5473,10 @@ def remove_numa_node_from_vm(vm_name, numa_node_index):
         )
         return False
     log_info, log_error = ll_general.get_log_msg(
-        action="Remove", obj_type="numa node", obj_name=str(numa_node_index),
-        extra_text="from VM %s" % vm_name
+        action="Remove",
+        obj_type="numa node",
+        obj_name=str(numa_node_index),
+        extra_txt="from VM %s" % vm_name
     )
     logger.info(log_info)
     status = NUMA_NODE_API.delete(numa_node_obj, True)
