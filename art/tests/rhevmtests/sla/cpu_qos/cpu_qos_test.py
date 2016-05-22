@@ -2,12 +2,9 @@
 CPU QoS TEST
 """
 import pytest
-from art.unittest_lib import SlaTest as TestCase, attr
-from art.test_handler.tools import polarion  # pylint: disable=E0611
-from rhevmtests.sla.cpu_qos import config
-from rhevmtests import helpers
-import art.test_handler.exceptions as errors
+
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
+import art.test_handler.exceptions as errors
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     hosts as ll_hosts,
@@ -16,6 +13,10 @@ from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_datacenter,
     templates as ll_templates
 )
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.unittest_lib import SlaTest as TestCase, attr
+from rhevmtests import helpers
+from rhevmtests.sla.cpu_qos import config
 
 logger = config.logging.getLogger(__name__)
 
@@ -274,6 +275,7 @@ class QOS(TestCase):
             vm_cpu_profile_id, config.DEFAULT_CPU_PROFILE_ID_CLUSTER_1
         )
 
+    @bz({'1337145': {}})
     @polarion("RHEVM3-14688")
     def test_h_sanity(self):
         """
@@ -292,6 +294,7 @@ class QOS(TestCase):
             self.load_vm_and_check_the_load(load_dict, expected_dict)
         )
 
+    @bz({'1337145': {}})
     @polarion("RHEVM3-14697")
     def test_i_migration(self):
         """
@@ -311,6 +314,7 @@ class QOS(TestCase):
             self.load_vm_and_check_the_load(load_dict, expected_dict)
         )
 
+    @bz({'1337145': {}})
     @polarion("RHEVM3-14696")
     @pytest.mark.usefixtures("clean")
     def test_j_cpu_qos_while_hot_plug(self):
@@ -334,6 +338,7 @@ class QOS(TestCase):
         self.assertTrue(self.load_vm_and_check_the_load(load_dict))
         return True
 
+    @bz({'1337145': {}})
     @polarion("RHEVM3-14727")
     @pytest.mark.usefixtures("clean")
     def test_k_different_QoS_values(self):
@@ -355,6 +360,7 @@ class QOS(TestCase):
                 )
         self.assertTrue(self.load_vm_and_check_the_load(load_dict))
 
+    @bz({'1337145': {}})
     @polarion("RHEVM3-14729")
     def test_l_no_guest_agent(self):
         """
