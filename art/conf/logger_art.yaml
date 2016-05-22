@@ -18,7 +18,7 @@ handlers:
     1filename: "%(logfile)s"
     2mode: w
     3maxBytes: 31457280
-    4backupCount: 10
+    4backupCount: 20
   devnull:
     class: utilities.logger_utils.NullHandler
     level: DEBUG
