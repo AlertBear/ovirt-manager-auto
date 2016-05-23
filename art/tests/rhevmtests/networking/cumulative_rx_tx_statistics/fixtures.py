@@ -31,11 +31,10 @@ class CumulativeRxTxStatistics(NetworkFixtures):
         """
         Create networks on setup
         """
-        if not hl_networks.createAndAttachNetworkSN(
+        assert hl_networks.createAndAttachNetworkSN(
             data_center=self.dc_0, cluster=self.cluster_0,
             network_dict=networks_dict
-        ):
-            raise conf.NET_EXCEPTION()
+        )
 
 
 class CumulativeRxTxStatisticsHost(CumulativeRxTxStatistics):
@@ -45,8 +44,6 @@ class CumulativeRxTxStatisticsHost(CumulativeRxTxStatistics):
     def __init__(self):
         super(CumulativeRxTxStatisticsHost, self).__init__()
         self.net_0 = conf.NETWORK_0
-        self.dc_3_5 = conf.DC_3_5
-        self.cl_3_5 = conf.CL_3_5
         self.stat_keys = conf.STAT_KEYS
         self.host_ips = None
 
@@ -84,10 +81,9 @@ class CumulativeRxTxStatisticsHost(CumulativeRxTxStatistics):
         for i in range(2):
             sn_dict["add"]["1"]["nic"] = conf.VDS_HOSTS[i].nics[1]
             self.ip_dict["ip_prefix"]["address"] = self.host_ips[i]
-            if not hl_host_network.setup_networks(
+            assert hl_host_network.setup_networks(
                 host_name=conf.HOSTS[i], **sn_dict
-            ):
-                raise conf.NET_EXCEPTION()
+            )
 
 
 class CumulativeRxTxStatisticsVm(CumulativeRxTxStatistics):
@@ -143,21 +139,19 @@ class CumulativeRxTxStatisticsVm(CumulativeRxTxStatistics):
         for i in range(2):
             sn_net_1_dict["add"]["1"]["nic"] = conf.VDS_HOSTS[i].nics[1]
             sn_net_1_dict["add"]["2"]["nic"] = conf.VDS_HOSTS[i].nics[1]
-            if not hl_host_network.setup_networks(
+            assert hl_host_network.setup_networks(
                 host_name=conf.HOSTS[i], **sn_net_1_dict
-            ):
-                raise conf.NET_EXCEPTION()
+            )
 
     def add_vnic_to_vms(self):
         """
         Add vNIC to VMs
         """
         for vm in [self.vm_0, self.vm_1]:
-            if not ll_vms.addNic(
+            assert ll_vms.addNic(
                 positive=True, vm=vm, name=self.vm_nic_1,
                 network=self.net_1, vnic_profile=self.net_1
-            ):
-                raise conf.NET_EXCEPTION()
+            )
 
     def run_vms(self):
         """
@@ -166,10 +160,9 @@ class CumulativeRxTxStatisticsVm(CumulativeRxTxStatistics):
         for host, vm in zip(
             [self.host_0_name, self.host_1_name], [self.vm_0, self.vm_1]
         ):
-            if not network_helper.run_vm_once_specific_host(
+            assert network_helper.run_vm_once_specific_host(
                 vm=vm, host=host, wait_for_up_status=True
-            ):
-                raise conf.NET_EXCEPTION()
+            )
 
     def set_ips_on_vms_nic(self):
         """
@@ -229,11 +222,6 @@ def rx_tx_stat_host_setup_class(request, rx_tx_stat_host_prepare_setup):
     conf.TOTAL_RX = conf.NIC_STAT["data.total.rx"]
     conf.TOTAL_TX = conf.NIC_STAT["data.total.tx"]
 
-    if request.cls.move_host:
-        hl_hosts.move_host_to_another_cluster(
-            host=rx_tx_stat_host.host_0_name, cluster=rx_tx_stat_host.cluster_0
-        )
-
 
 @pytest.fixture(scope="class")
 def rx_tx_stat_host_case02(request, rx_tx_stat_host_setup_class):
@@ -241,44 +229,19 @@ def rx_tx_stat_host_case02(request, rx_tx_stat_host_setup_class):
     Fixture for CumulativeNetworkUsageHostStatisticsCase2
     """
     rx_tx_stat_host = CumulativeRxTxStatisticsHost()
-    hl_hosts.move_host_to_another_cluster(
-        host=rx_tx_stat_host.host_0_name, cluster=rx_tx_stat_host.cluster_0
-    )
-
-
-@pytest.fixture(scope="class")
-def rx_tx_stat_host_case03(request, rx_tx_stat_host_setup_class):
-    """
-    Fixture for CumulativeNetworkUsageHostStatisticsCase3
-    """
-    rx_tx_stat_host = CumulativeRxTxStatisticsHost()
 
     def fin():
         """
-        Finalizer for remove basic setup
+        Move host back to original cluster
         """
-        hl_networks.remove_basic_setup(
-            datacenter=rx_tx_stat_host.dc_3_5, cluster=rx_tx_stat_host.cl_3_5
+        hl_hosts.move_host_to_another_cluster(
+            host=rx_tx_stat_host.host_0_name, cluster=rx_tx_stat_host.cluster_0
         )
     request.addfinalizer(fin)
 
-    add_net_dict = {
-        rx_tx_stat_host.net_0: {
-            "required": "false"
-        }
-    }
-    if not hl_networks.create_basic_setup(
-        datacenter=rx_tx_stat_host.dc_3_5, cpu=conf.CPU_NAME,
-        storage_type=conf.STORAGE_TYPE, version=conf.VERSION[5],
-        cluster=rx_tx_stat_host.cl_3_5
-    ):
-        raise conf.NET_EXCEPTION()
-
-    if not hl_networks.createAndAttachNetworkSN(
-        data_center=rx_tx_stat_host.dc_3_5, cluster=rx_tx_stat_host.cl_3_5,
-        network_dict=add_net_dict
-    ):
-        raise conf.NET_EXCEPTION()
+    hl_hosts.move_host_to_another_cluster(
+        host=rx_tx_stat_host.host_0_name, cluster=rx_tx_stat_host.cluster_1
+    )
 
 
 @pytest.fixture(scope="module")
@@ -334,13 +297,13 @@ def rx_tx_stat_vm_case01(request, rx_tx_stat_vm_prepare_setup):
     """
     rx_tx_stat_vm = CumulativeRxTxStatisticsVm()
     conf.NIC_STAT = hl_networks.get_nic_statistics(
-        nic=rx_tx_stat_vm.vm_nic_1, vm=conf.VM_1, keys=conf.STAT_KEYS
+        nic=rx_tx_stat_vm.vm_nic_1, vm=rx_tx_stat_vm.vm_1, keys=conf.STAT_KEYS
     )
-    if not conf.NIC_STAT:
-        raise conf.NET_EXCEPTION(
-            "Failed to get %s statistics on %s" %
-            (conf.VM_NIC_1, conf.VM_1)
-        )
+    err_msg = "Failed to get %s statistics on %s" % (
+        rx_tx_stat_vm.vm_nic_1, rx_tx_stat_vm.vm_1
+    )
+    assert conf.NIC_STAT, err_msg
+
     vms_ips = [
         (helper.get_vm_resource(rx_tx_stat_vm.vm_0), conf.VM_IPS[0]),
         (helper.get_vm_resource(rx_tx_stat_vm.vm_1), conf.VM_IPS[1])
@@ -355,10 +318,7 @@ def rx_tx_stat_vm_case01(request, rx_tx_stat_vm_prepare_setup):
             nic=rx_tx_stat_vm.vm_nic_1, vm=rx_tx_stat_vm.vm_1,
             keys=conf.STAT_KEYS
         )
-        if not conf.NIC_STAT:
-            raise conf.NET_EXCEPTION(
-                "Failed to get %s statistics on %s" %
-                (rx_tx_stat_vm.vm_nic_1, rx_tx_stat_vm.vm_1)
-            )
+        assert conf.NIC_STAT, err_msg
+
     conf.TOTAL_RX = conf.NIC_STAT["data.total.rx"]
     conf.TOTAL_TX = conf.NIC_STAT["data.total.tx"]

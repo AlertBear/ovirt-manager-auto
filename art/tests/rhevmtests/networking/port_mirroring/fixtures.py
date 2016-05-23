@@ -141,7 +141,7 @@ class PrepareSetup(object):
         Remove all networks from setup
         """
         hl_networks.remove_net_from_setup(
-            host=conf.HOSTS[0], data_center=conf.DC_0, all_net=True
+            host=conf.HOSTS[:2], data_center=conf.DC_0, all_net=True
         )
 
 
@@ -173,7 +173,7 @@ def port_mirroring_prepare_setup(request):
         """
         Finalizer for remove vNICs from VMs
         """
-        ps.remove_vnics_from_vms()
+        networking.remove_unneeded_vms_nics()
     request.addfinalizer(fin3)
 
     @networking.ignore_exception
@@ -192,6 +192,7 @@ def port_mirroring_prepare_setup(request):
         ps.remove_ifcfg_files_from_vms()
     request.addfinalizer(fin1)
 
+    networking.network_cleanup()
     ps.create_pm_networks()
     ps.create_vnic_profiles_with_pm()
     ps.set_pm_on_vm_mgmt_net()
@@ -246,6 +247,9 @@ def case04_fixture(request, port_mirroring_prepare_setup):
     )
 
     def fin():
+        """
+        Disable port mirroring on VM NIC
+        """
         if ll_vms.getVmNicPortMirroring(
             positive=True, vm=conf.VM_NAME[1], nic=conf.NIC_NAME[1]
         ):

@@ -6,14 +6,25 @@ Test Port mirroring.
 using 2 hosts and 5 VMs
 """
 
+import logging
+
+import pytest
+
+import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import helper
 import rhevmtests.helpers as global_helper
+import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 from art.core_api import apis_utils
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest
 from art.unittest_lib import attr
-from fixtures import *  # flake8: noqa
+from fixtures import (
+    port_mirroring_prepare_setup, case01_fixture, case02_fixture,
+    case04_fixture
+)
 
 logger = logging.getLogger("Port_Mirroring_Cases")
 
@@ -23,15 +34,9 @@ NET2_IPS = conf.NET2_IPS
 VM_NAME = conf.VM_NAME
 
 
-def setup_module():
-    """
-    Prepare environment
-    """
-    networking.network_cleanup()
-
-
-@pytest.mark.usefixtures("port_mirroring_prepare_setup")
 @attr(tier=2)
+@bz({"1342054": {}})
+@pytest.mark.usefixtures(port_mirroring_prepare_setup.__name__)
 @pytest.mark.skipif(
     conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
 )
@@ -39,7 +44,7 @@ class Base(NetworkTest):
     pass
 
 
-@pytest.mark.usefixtures("case01_fixture")
+@pytest.mark.usefixtures(case01_fixture.__name__)
 class TestPortMirroringCase01(Base):
     """
     Check that mirroring still works after migration
@@ -108,7 +113,7 @@ class TestPortMirroringCase01(Base):
             )
 
 
-@pytest.mark.usefixtures("case02_fixture")
+@pytest.mark.usefixtures(case02_fixture.__name__)
 class TestPortMirroringCase02(Base):
     """
     Replace network on the mirrored VM to a non-mirrored network
@@ -159,7 +164,7 @@ class TestPortMirroringCase03(Base):
         )
 
 
-@pytest.mark.usefixtures("case04_fixture")
+@pytest.mark.usefixtures(case04_fixture.__name__)
 class TestPortMirroringCase04(Base):
     """
     Check port mirroring when it's enabled on multiple machines.

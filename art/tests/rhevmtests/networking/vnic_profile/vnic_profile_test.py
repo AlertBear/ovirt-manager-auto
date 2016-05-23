@@ -18,7 +18,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as conf
 import rhevmtests.networking.helper as network_helper
 from art.core_api import apis_utils
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest
 from art.unittest_lib import attr
 from rhevmtests import networking
@@ -280,16 +280,16 @@ class TestVNICProfileCase02(NetworkTest):
             raise conf.NET_EXCEPTION()
 
         if ll_networks.get_network_vnic_profiles(
+            network=self.net_7, data_center=self.dc
+        ):
+            raise conf.NET_EXCEPTION()
+
+        if ll_networks.get_network_vnic_profiles(
             network=self.net_8, data_center=self.dc
         ):
             raise conf.NET_EXCEPTION(
                 "VNIC profiles exists for non-VM network %s" % self.net_8
             )
-
-        if ll_networks.get_network_vnic_profiles(
-            network=self.net_7, data_center=self.dc
-        ):
-            raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-3995")
     def test_06_check_profile(self):
@@ -448,7 +448,7 @@ class TestVNICProfileCase02(NetworkTest):
             raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-3975")
-    def test_09_create_new_profiles(self):
+    def test_09_update_profiles(self):
         """
         Try to update network for existing profile
         """
@@ -459,6 +459,7 @@ class TestVNICProfileCase02(NetworkTest):
             raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-3987")
+    @bz({"1342054": {}})
     def test_10_hotplug_link_unlink(self):
         """
         Hotplug VNIC profile to the VMs nic2
@@ -499,6 +500,7 @@ class TestVNICProfileCase02(NetworkTest):
             raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-3985")
+    @bz({"1342054": {}})
     def test_11_remove_used_profile(self):
         """
         Try to remove VNIC profile while VM is using it (negative case)
@@ -524,6 +526,7 @@ class TestVNICProfileCase02(NetworkTest):
             raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-3986")
+    @bz({"1342054": {}})
     def test_12_update_network_plugged_nic(self):
         """
         Update VNIC profile on nic2 with profile from different network

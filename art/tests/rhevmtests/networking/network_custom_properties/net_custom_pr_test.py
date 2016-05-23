@@ -7,8 +7,9 @@ It will cover scenarios for VM/non-VM networks.
 
 import logging
 from art import unittest_lib
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 from rhevmtests.networking import config
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 
@@ -225,11 +226,6 @@ class TestNetCustPrCase03(TestNCPCaseBase):
         2) Update bridge_opts with the default value
         3) Verify bridge_opts have updated default value for priority opts
         """
-        kwargs = {
-            "properties": {
-                "bridge_opts": config.DEFAULT_PRIORITY
-            }
-        }
         logger.info(
             "Check that bridge_opts parameter for priority  have an updated "
             "non-default value "
@@ -245,14 +241,22 @@ class TestNetCustPrCase03(TestNCPCaseBase):
         logger.info(
             "Update bridge_opts for priority with the default parameter "
         )
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
-            **kwargs
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update bridge_opts with default parameters for "
-                "priority bridge_opts"
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "bridge_opts": config.DEFAULT_PRIORITY
+                    }
+                }
+            }
+        }
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info(
             "Check that bridge_opts parameter has an updated default value "
@@ -321,28 +325,27 @@ class TestNetCustPrCase04(TestNCPCaseBase):
         non_default_bridge_opts = " ".join(
             [config.PRIORITY, config.MULT_QUERIER]
         )
-        kwargs1 = {
-            "properties": {
-                "bridge_opts": non_default_bridge_opts
-            }
-        }
-        kwargs2 = {
-            "properties": {
-                "bridge_opts": default_bridge_opts
-            }
-        }
+
         logger.info(
             "Update bridge_opts with additional parameter for multicast_"
             "querier"
         )
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
-            **kwargs1
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update bridge_opts with additional key:value "
-                "parameters"
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "bridge_opts": non_default_bridge_opts
+                    }
+                }
+            }
+        }
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info("Check that bridge_opts parameter has an updated value ")
         for key, value in config.BRIDGE_OPTS.iteritems():
@@ -354,15 +357,21 @@ class TestNetCustPrCase04(TestNCPCaseBase):
                     "with value %s" % (key, value[1])
                 )
 
-        logger.info("Update bridge_opts with the default parameter ")
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
-            **kwargs2
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update bridge_opts with default parameters for "
-                "both values"
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "bridge_opts": default_bridge_opts
+                    }
+                }
+            }
+        }
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info(
             "Check that bridge_opts parameter has an updated default value"
@@ -432,29 +441,27 @@ class TestNetCustPrCase05(TestNCPCaseBase):
         non_default_bridge_opts = " ".join(
             [config.PRIORITY, config.MULT_QUERIER]
         )
-        kwargs1 = {
-            "properties": {
-                "bridge_opts": non_default_bridge_opts
-            }
-        }
-        kwargs2 = {
-            "properties": {
-                "bridge_opts": default_bridge_opts
-            }
-        }
 
         logger.info(
             "Update bridge_opts with additional parameter for multicast_"
             "querier"
         )
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], config.BOND[0], auto_nics=[HOST_NICS[0]],
-            **kwargs1
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update bridge_opts with additional key:value "
-                "parameters"
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "bridge_opts": non_default_bridge_opts
+                    }
+                }
+            }
+        }
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info("Check that bridge_opts parameter has an updated value ")
         for key, value in config.BRIDGE_OPTS.iteritems():
@@ -466,15 +473,21 @@ class TestNetCustPrCase05(TestNCPCaseBase):
                     "with value %s" % (key, value[1])
                 )
 
-        logger.info("Update bridge_opts with the default parameters for keys ")
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], config.BOND[0], auto_nics=[HOST_NICS[0]],
-            **kwargs2
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update bridge_opts with default parameters for "
-                "both keys"
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "bridge_opts": default_bridge_opts
+                    }
+                }
+            }
+        }
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info(
             "Check that bridge_opts parameter has an updated default value"
@@ -658,14 +671,6 @@ class TestNetCustPrCase07(TestNCPCaseBase):
         2) Update ethtool_opts with the default value
         3) Verify ethtool_opts have updated default value for tx_checksum opts
         """
-        kwargs = {
-            "properties": {
-                "ethtool_opts": config.TX_CHECKSUM.format(
-                    nic=HOST_NICS[1], state="on"
-                )
-            }
-        }
-
         logger.info(
             "Check that ethtool_opts parameter for tx_checksum have "
             "an updated non-default value"
@@ -681,14 +686,24 @@ class TestNetCustPrCase07(TestNCPCaseBase):
         logger.info(
             "Update ethtool_opts for tx_checksum with the default parameter"
         )
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], ".".join([HOST_NICS[1], config.VLAN_ID[0]]),
-            auto_nics=HOST_NICS[:2], **kwargs
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update ethtool_opts with default parameters for "
-                "tx_checksum_opts"
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.VLAN_NETWORKS[0],
+                    "properties": {
+                        "ethtool_opts": config.TX_CHECKSUM.format(
+                            nic=HOST_NICS[1], state="on"
+                        )
+                    }
+                }
+            }
+        }
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info(
             "Check that ethtool_opts parameter has an updated default value"
@@ -768,26 +783,26 @@ class TestNetCustPrCase08(TestNCPCaseBase):
                 nic=HOST_NICS[1], state="off"
             )]
         )
-        kwargs1 = {
-            "properties": {
-                "ethtool_opts": non_default_ethtool_opts
-            }
-        }
-        kwargs2 = {
-            "properties": {
-                "ethtool_opts": default_ethtool_opts
-            }
-        }
+
         logger.info(
             "Update ethtool_opts with additional parameters"
         )
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
-            **kwargs1
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update bridge_opts with additional parameters"
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "ethtool_opts": non_default_ethtool_opts
+                    }
+                }
+            }
+        }
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info("Check that ethtool_opts parameter has an updated value ")
         for prop in ("rx-checksumming", "tx-checksumming"):
@@ -803,14 +818,22 @@ class TestNetCustPrCase08(TestNCPCaseBase):
             "Update ethtool_opts with the default parameters for both "
             "rx and tx checksum values"
         )
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
-            **kwargs2
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update ethtool_opts with default parameters for "
-                "both values"
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "ethtool_opts": default_ethtool_opts
+                    }
+                }
+            }
+        }
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info(
             "Check that ethtool_opts parameters have an updated default value"
@@ -947,23 +970,25 @@ class TestNetCustPrCase09(TestNCPCaseBase):
         def_ethtool_opts = config.TX_CHECKSUM.format(
             nic=HOST_NICS[1], state="on"
         )
-        kwargs2 = {
-            "properties": {
-                "ethtool_opts": def_ethtool_opts
-            }
-        }
 
         logger.info(
             "Update ethtool_opts with the default parameters for checksum "
             "value "
         )
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
-            **kwargs2
-        ):
-            logger.error(
-                "Couldn't update ethtool_opts with default parameter"
-            )
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "ethtool_opts": def_ethtool_opts
+                    }
+                }
+            }
+        }
+        hl_host_network.setup_networks(
+            host_name=config.HOSTS[0], **network_host_api_dict
+        )
 
         logger.info(
             "Check that ethtool_opts parameters have an updated default value"
@@ -1060,21 +1085,25 @@ class TestNetCustPrCase10(TestNCPCaseBase):
             "Update ethtool_opts for tx_checksum and bridge_opts for "
             "priority with the default parameters "
         )
-        kwargs = {
-            "properties": {
-                "ethtool_opts": config.TX_CHECKSUM.format(
-                    nic=HOST_NICS[1], state="on"
-                ),
-                "bridge_opts": config.DEFAULT_PRIORITY
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "ethtool_opts": config.TX_CHECKSUM.format(
+                            nic=HOST_NICS[1], state="on"
+                        ),
+                        "bridge_opts": config.DEFAULT_PRIORITY
+                    }
+                }
             }
         }
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]], **kwargs
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update ethtool and bridge_opts with default "
-                "parameters for tx_checksum and priority opts"
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info(
             "Check that ethtool_opts parameter has an updated default value"
@@ -1149,21 +1178,26 @@ class TestNetCustPrCase11(TestNCPCaseBase):
             "Update ethtool and bridge opts for tx_checksum and priority "
             "appropriately with the default parameters"
         )
-        kwargs = {
-            "properties": {
-                "ethtool_opts": config.TX_CHECKSUM.format(
-                    nic=HOST_NICS[1], state="off"
-                ),
-                "bridge_opts": config.PRIORITY
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "ethtool_opts": config.TX_CHECKSUM.format(
+                            nic=HOST_NICS[1], state="off"
+                        ),
+                        "bridge_opts": config.PRIORITY
+                    }
+                }
             }
         }
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]], **kwargs
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update ethtool and bridge opts with non default "
-                "parameters for tx_checksum and priority opts"
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
+
         logger.info(
             "Check that ethtool_opts parameter for tx_checksum have an "
             "updated non-default value "
@@ -1193,21 +1227,25 @@ class TestNetCustPrCase11(TestNCPCaseBase):
             "Update ethtool and bridge opts for tx_checksum and priority "
             "appropriately with the default parameters"
         )
-        kwargs = {
-            "properties": {
-                "ethtool_opts": config.TX_CHECKSUM.format(
-                    nic=HOST_NICS[1], state="on"
-                ),
-                "bridge_opts": config.DEFAULT_PRIORITY
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "ethtool_opts": config.TX_CHECKSUM.format(
+                            nic=HOST_NICS[1], state="on"
+                        ),
+                        "bridge_opts": config.DEFAULT_PRIORITY
+                    }
+                }
             }
         }
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]], **kwargs
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update ethtool and bridge_opts with default "
-                "parameters for tx_checksum and priority opts accordingly"
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info(
             "Check that ethtool_opts parameter has an updated default value"
@@ -1290,29 +1328,28 @@ class TestNetCustPrCase12(TestNCPCaseBase):
         non_default_bridge_opts = " ".join(
             [config.PRIORITY, config.MULT_QUERIER]
         )
-        kwargs1 = {
-            "properties": {
-                "ethtool_opts": non_default_ethtool_opts,
-                "bridge_opts": non_default_bridge_opts
-            }
-        }
-        kwargs2 = {
-            "properties": {
-                "ethtool_opts": default_ethtool_opts,
-                "bridge_opts": default_bridge_opts
-            }
-        }
+
         logger.info(
             "Update ethtool_opts with non-default parameters for tx checksum "
             "and rx checksum and priority and querier of bridge opts"
         )
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
-            **kwargs1
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update bridge_opts with additional parameter"
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "ethtool_opts": non_default_ethtool_opts,
+                        "bridge_opts": non_default_bridge_opts
+                    }
+                }
+            }
+        }
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info("Check that ethtool_opts parameter has an updated value ")
         for prop in ("rx-checksumming", "tx-checksumming"):
@@ -1337,14 +1374,23 @@ class TestNetCustPrCase12(TestNCPCaseBase):
             "Update ethtool_opts with default parameters for tx checksum and "
             "rx checksum and priority and querier of bridge opts"
         )
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
-            **kwargs2
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update ethtool_opts with default parameters for "
-                "both values"
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "ethtool_opts": default_ethtool_opts,
+                        "bridge_opts": default_bridge_opts
+                    }
+                }
+            }
+        }
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info(
             "Check that ethtool_opts parameters have an updated default "
@@ -1456,30 +1502,28 @@ class TestNetCustPrCase13(TestNCPCaseBase):
         non_default_bridge_opts = " ".join(
             [config.PRIORITY, config.MULT_QUERIER]
         )
-        kwargs1 = {
-            "properties": {
-                "ethtool_opts": non_default_ethtool_opts,
-                "bridge_opts": non_default_bridge_opts
-            }
-        }
-        kwargs2 = {
-            "properties": {
-                "ethtool_opts": default_ethtool_opts,
-                "bridge_opts": default_bridge_opts
-            }
-        }
+
         logger.info(
             "Update ethtool_opts with non-default parameters for tx, "
             "rx checksum and priority and querier of bridge opts"
         )
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
-            **kwargs1
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update bridge_opts with additional rx checksum "
-                "parameter"
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "ethtool_opts": non_default_ethtool_opts,
+                        "bridge_opts": non_default_bridge_opts
+                    }
+                }
+            }
+        }
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info(
             "Check that ethtool_opts parameter has an updated value "
@@ -1508,14 +1552,23 @@ class TestNetCustPrCase13(TestNCPCaseBase):
             "Update ethtool_opts with default parameters for tx, rx checksum "
             "and priority and querier of bridge opts"
         )
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
-            **kwargs2
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update ethtool_opts with default parameters for "
-                "both values"
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "ethtool_opts": default_ethtool_opts,
+                        "bridge_opts": default_bridge_opts
+                    }
+                }
+            }
+        }
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info(
             "Check that ethtool_opts parameters have an updated default "
@@ -1545,20 +1598,27 @@ class TestNetCustPrCase13(TestNCPCaseBase):
         """
         Removing custom properties from host NIC
         """
-        kwargs = {
-            "properties": {
-                "ethtool_opts": None,
-                "bridge_opts": None
+        logger.info("Update ethtool_opts and bridge_opts to None (clear)")
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "ethtool_opts": None,
+                        "bridge_opts": None
+                    }
+                }
             }
         }
-        logger.info("Update ethtool_opts and bridge_opts to None (clear)")
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]], **kwargs
-        ):
-            logger.error("Couldn't clear ethtool_optsbridge_opts")
+        hl_host_network.setup_networks(
+            host_name=config.HOSTS[0], **network_host_api_dict
+        )
+
         super(TestNetCustPrCase13, self).tearDown()
 
 
+@bz({"1340454": {}})
 class TestNetCustPrCase14(TestNCPCaseBase):
     """
     Configure ethtool with non-default value over bond
@@ -1607,33 +1667,28 @@ class TestNetCustPrCase14(TestNCPCaseBase):
         3) Verify ethtool_opts have updated default value for tx_checksum
         opts for each slave of the bond
         """
-        kwargs1 = {
-            "properties": {
-                "ethtool_opts": config.TX_CHECKSUM.format(
-                    nic="*", state="off"
-                )
-            }
-        }
-        kwargs2 = {
-            "properties": {
-                "ethtool_opts": config.TX_CHECKSUM.format(
-                    nic="*", state="on"
-                )
-            }
-        }
-
         logger.info(
             "Update ethtool_opts for tx_checksum with the non-default "
             "parameter "
         )
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], config.BOND[0], auto_nics=[HOST_NICS[0]],
-            **kwargs1
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update ethtool_opts with default parameters for "
-                "tx_checksum_opts"
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "ethtool_opts": config.TX_CHECKSUM.format(
+                            nic="*", state="off"
+                        )
+                    }
+                }
+            }
+        }
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info(
             "Check that ethtool_opts parameter for tx_checksum have an "
@@ -1651,14 +1706,24 @@ class TestNetCustPrCase14(TestNCPCaseBase):
         logger.info(
             "Update ethtool_opts for tx_checksum with the default parameter"
         )
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], config.BOND[0], auto_nics=[HOST_NICS[0]],
-            **kwargs2
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update ethtool_opts with default parameters for "
-                "tx_checksum_opts"
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "ethtool_opts": config.TX_CHECKSUM.format(
+                            nic="*", state="on"
+                        )
+                    }
+                }
+            }
+        }
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info(
             "Check that ethtool_opts parameter has an updated default "
@@ -1674,6 +1739,7 @@ class TestNetCustPrCase14(TestNCPCaseBase):
                 )
 
 
+@bz({"1340454": {}})
 class TestNetCustPrCase15(TestNCPCaseBase):
     """
     Configure ethtool_opts with non-default value
@@ -1723,26 +1789,28 @@ class TestNetCustPrCase15(TestNCPCaseBase):
         3) Update ethtool_opts with the default value for both keys
         4) Verify ethtool_opts have updated default value
         """
-        kwargs = {
-            "properties": {
-                "ethtool_opts": config.TX_CHECKSUM.format(
-                    nic="*", state="off"
-                )
-            }
-        }
-
         logger.info(
             "Update ethtool_opts for tx_checksum with the non-default "
             "parameter "
         )
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], config.BOND[0], auto_nics=[HOST_NICS[0]],
-            **kwargs
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update ethtool_opts with default parameters for "
-                "tx_checksum_opts"
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "ethtool_opts": config.TX_CHECKSUM.format(
+                            nic="*", state="off"
+                        )
+                    }
+                }
+            }
+        }
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info(
             "Check that ethtool_opts parameter for tx_checksum have an "
@@ -1765,26 +1833,27 @@ class TestNetCustPrCase15(TestNCPCaseBase):
             [config.TX_CHECKSUM.format(nic="*", state="off"),
              config.RX_CHECKSUM.format(nic="*", state="off")]
         )
-        kwargs1 = {
-            "properties": {
-                "ethtool_opts": non_default_ethtool_opts
-            }
-        }
-        kwargs2 = {
-            "properties": {
-                "ethtool_opts": default_ethtool_opts
-            }
-        }
+
         logger.info(
             "Update ethtool_opts with additional parameter for rx checksum"
         )
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], config.BOND[0], auto_nics=[HOST_NICS[0]],
-            **kwargs1
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update bridge_opts with additional parameter"
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "ethtool_opts": non_default_ethtool_opts
+                    }
+                }
+            }
+        }
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
+
         logger.info(
             "Check that ethtool_opts parameter has an updated value "
             "for rx_checksum and tx_checksum for both slaves of the bond"
@@ -1803,14 +1872,22 @@ class TestNetCustPrCase15(TestNCPCaseBase):
             "Update ethtool_opts with the default parameters for both "
             "rx and tx checksum values for Bond "
         )
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], config.BOND[0], auto_nics=[HOST_NICS[0]],
-            **kwargs2
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update ethtool_opts with default parameters for "
-                "both values"
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "ethtool_opts": default_ethtool_opts
+                    }
+                }
+            }
+        }
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info(
             "Check that ethtool_opts parameters have an updated default value "
@@ -1828,6 +1905,7 @@ class TestNetCustPrCase15(TestNCPCaseBase):
                     )
 
 
+@bz({"1340454": {}})
 class TestNetCustPrCase16(TestNCPCaseBase):
     """
     Configure ethtool and bridge opts with non-default value over Bond
@@ -1912,22 +1990,25 @@ class TestNetCustPrCase16(TestNCPCaseBase):
         logger.info(
             "Update ethtool_opts for tx_checksum and bridge_opts for "
             "priority with the default parameters ")
-        kwargs = {
-            "properties": {
-                "ethtool_opts": config.TX_CHECKSUM.format(
-                    nic="*", state="on"
-                ),
-                "bridge_opts": config.DEFAULT_PRIORITY
+
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": config.NETWORKS[0],
+                    "properties": {
+                        "ethtool_opts": config.TX_CHECKSUM.format(
+                            nic="*", state="on"
+                        ),
+                        "bridge_opts": config.DEFAULT_PRIORITY
+                    }
+                }
             }
         }
-        if not hl_networks.update_network_host(
-            config.HOSTS[0], config.BOND[0], auto_nics=[HOST_NICS[0]],
-            **kwargs
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update ethtool and bridge_opts with default "
-                "parameters for tx_checksum and priority opts"
+        self.assertTrue(
+            hl_host_network.setup_networks(
+                host_name=config.HOSTS[0], **network_host_api_dict
             )
+        )
 
         logger.info(
             "Check that ethtool_opts parameter has an updated default value "

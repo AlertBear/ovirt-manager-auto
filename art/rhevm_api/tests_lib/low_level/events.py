@@ -156,7 +156,7 @@ def find_event(
     found_events = list()
     last_event_id = int(last_event.get_id())
     logger.info("Last event ID: %s", last_event_id)
-    while matches:
+    while matches > 0:
         if timeout < time.time() - start_time:
             logger.error("Not all events with code %s are found", event_code)
             return False

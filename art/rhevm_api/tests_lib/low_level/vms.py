@@ -5526,13 +5526,18 @@ def reorder_vm_mac_address(vm_name):
     """
     Reorder VM mac addresses
 
-    :param vm_name: VM name
-    :type vm_name: str
-    :return: True/False
-    :rtype: bool
+    Args:
+        vm_name (str): VM name
+
+    Returns:
+        bool: True if reorder MACs on VM succeeded, False otherwise
     """
     vm_obj = VM_API.find(vm_name)
-    return VM_API.syncAction(vm_obj, "reordermacaddresses", True, "true")
+    logger.info("Reorder VM %s vNICs", vm_name)
+    res = VM_API.syncAction(vm_obj, "reordermacaddresses", True, "true")
+    if not res:
+        logger.error("Failed to reorder MACs on VM %s", vm_name)
+    return res
 
 
 def is_disk_attached_to_vm(vm_name, disk_alias):

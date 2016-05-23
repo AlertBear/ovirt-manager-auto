@@ -12,11 +12,12 @@ Only static IP configuration is tested.
 import config
 import logging
 from art.unittest_lib import attr
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import art.test_handler.exceptions as exceptions
 from art.unittest_lib import NetworkTest as TestCase
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 
 NETMASK = config.NETMASK
 GATEWAY = config.MG_GATEWAY
@@ -41,6 +42,7 @@ def setup_module():
 
 
 @attr(tier=2)
+@bz({"1338751": {}})
 class TestGatewaysCase01(TestCase):
     """
     Verify you can configure additional VLAN network with static IP and gateway
@@ -98,6 +100,7 @@ class TestGatewaysCase01(TestCase):
 
 
 @attr(tier=2)
+@bz({"1338751": {}})
 class TestGatewaysCase02(TestCase):
     """
     Verify you can configure additional bridgeless network with static IP.
@@ -153,6 +156,7 @@ class TestGatewaysCase02(TestCase):
 
 
 @attr(tier=2)
+@bz({"1338751": {}})
 class TestGatewaysCase03(TestCase):
     """
     Verify you can configure additional display network with static ip config.
@@ -209,6 +213,7 @@ class TestGatewaysCase03(TestCase):
 
 
 @attr(tier=2)
+@bz({"1338751": {}})
 class TestGatewaysCase04(TestCase):
     """
     Try to assign to vm network incorrect static IP and gw addresses
@@ -297,6 +302,7 @@ class TestGatewaysCase04(TestCase):
 
 
 @attr(tier=2)
+@bz({"1338751": {}})
 class TestGatewaysCase05(TestCase):
     """
     Verify you can configure additional network with gateway 0.0.0.0
@@ -339,6 +345,7 @@ class TestGatewaysCase05(TestCase):
 
 
 @attr(tier=2)
+@bz({"1338751": {}})
 class TestGatewaysCase06(TestCase):
     """
     Verify you can add additional NIC to the already created bond
@@ -379,22 +386,16 @@ class TestGatewaysCase06(TestCase):
             raise exceptions.NetworkException(
                 "Incorrect gateway configuration for %s" % config.NETWORKS[0]
             )
-
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": config.BOND[0],
-                "slaves": [-3, -2, -1],
-                "bootproto": "static",
-                "address": [config.IPS[6]],
-                "netmask": [NETMASK],
-                "gateway": [GATEWAY],
-                "required": "false",
-            },
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "nic": config.BOND[0],
+                    "slaves": [config.VDS_HOSTS[0].nics[-3]]
+                }
+            }
         }
-
-        if not hl_networks.createAndAttachNetworkSN(
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
+        if not hl_host_network.setup_networks(
+            host_name=config.HOSTS[0], **network_host_api_dict
         ):
             raise exceptions.NetworkException()
 
@@ -421,6 +422,7 @@ class TestGatewaysCase06(TestCase):
 
 
 @attr(tier=2)
+@bz({"1338751": {}})
 class TestGatewaysCase07(TestCase):
     """
     Verify you can remove Nic from bond having network with gw configured on it
@@ -464,22 +466,16 @@ class TestGatewaysCase07(TestCase):
             raise exceptions.NetworkException(
                 "Incorrect gateway configuration for %s" % config.NETWORKS[0]
             )
-
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": config.BOND[0],
-                "slaves": [-2, -1],
-                "bootproto": "static",
-                "address": [config.IPS[7]],
-                "netmask": [NETMASK],
-                "gateway": [GATEWAY],
-                "required": "false",
-            },
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "nic": config.BOND[0],
+                    "slaves": [config.VDS_HOSTS[0].nics[-3]]
+                }
+            }
         }
-
-        if not hl_networks.createAndAttachNetworkSN(
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
+        if not hl_host_network.setup_networks(
+            host_name=config.HOSTS[0], **network_host_api_dict
         ):
             raise exceptions.NetworkException()
 
@@ -506,6 +502,7 @@ class TestGatewaysCase07(TestCase):
 
 
 @attr(tier=2)
+@bz({"1338751": {}})
 class TestGatewaysCase08(TestCase):
     """
     Verify you can configure additional network without gateway

@@ -374,6 +374,8 @@ def prepare_kwargs_for_log(**kwargs):
     """
     new_kwargs = dict()
     for k, v in kwargs.iteritems():
+        if v is None:
+            continue
         try:
             new_kwargs[k] = v.name
         except AttributeError:

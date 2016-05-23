@@ -11,7 +11,7 @@ import logging
 import pytest
 from art import unittest_lib
 from rhevmtests.networking import config
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
@@ -21,6 +21,7 @@ logger = logging.getLogger("Topologies_Cases")
 TEST_VLAN = "1000" if config.PPC_ARCH else config.VLAN_ID[0]
 
 
+@bz({"1342054": {}})
 @unittest_lib.attr(tier=2)
 class TestTopologiesCase01(unittest_lib.NetworkTest):
     """
@@ -137,9 +138,7 @@ class TestTopologiesCase01(unittest_lib.NetworkTest):
             )
 
 
-##############################################################################
-
-
+@bz({"1342054": {}})
 @unittest_lib.attr(tier=2)
 @pytest.mark.skipif(
     config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
@@ -253,9 +252,7 @@ class TestTopologiesCase02(unittest_lib.NetworkTest):
             logger.error("Cannot remove network from setup")
 
 
-##############################################################################
-
-
+@bz({"1342054": {}})
 @unittest_lib.attr(tier=2)
 @pytest.mark.skipif(
     config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
@@ -359,6 +356,7 @@ class TestTopologiesCase03(unittest_lib.NetworkTest):
             )
 
 
+@bz({"1342054": {}})
 @unittest_lib.attr(tier=2)
 @pytest.mark.skipif(
     config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
@@ -454,6 +452,7 @@ class TestTopologiesCase04(unittest_lib.NetworkTest):
             logger.error("Cannot remove network from setup")
 
 
+@bz({"1342054": {}})
 @unittest_lib.attr(tier=2)
 @pytest.mark.skipif(
     config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
@@ -504,6 +503,7 @@ class TestTopologiesCase05(unittest_lib.NetworkTest):
             logger.error("Cannot remove network from setup")
 
 
+@bz({"1342054": {}})
 @unittest_lib.attr(tier=2)
 @pytest.mark.skipif(
     config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
@@ -553,6 +553,7 @@ class TestTopologiesCase06(unittest_lib.NetworkTest):
             logger.error("Cannot remove network from setup")
 
 
+@bz({"1342054": {}})
 @unittest_lib.attr(tier=2)
 @pytest.mark.skipif(
     config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
@@ -602,6 +603,7 @@ class TestTopologiesCase07(unittest_lib.NetworkTest):
             logger.error("Cannot remove network from setup")
 
 
+@bz({"1342054": {}})
 @unittest_lib.attr(tier=2)
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.skipif(

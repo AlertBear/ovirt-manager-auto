@@ -278,11 +278,10 @@ def prepare_bond_attachment_obj(host_name, **kwargs):
             slaves.add_host_nic(data_st.HostNIC(name=nic.strip()))
         bond_obj.set_slaves(slaves)
 
-    if kwargs.get(MODE):
-        options.add_option(data_st.Option(
-            name=MODE, value=kwargs.get(MODE))
-        )
-        bond_obj.set_options(options)
+    value = kwargs.get(MODE) if kwargs.get(MODE) else "4"
+    options.add_option(data_st.Option(name=MODE, value=value))
+    bond_obj.set_options(options)
+
     if kwargs.get(MIIMON):
         options.add_option(
             data_st.Option(name=MIIMON, value=kwargs.get(MIIMON)

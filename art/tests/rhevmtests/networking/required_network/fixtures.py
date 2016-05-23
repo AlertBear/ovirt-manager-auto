@@ -87,6 +87,9 @@ def all_classes_teardown(request, requird_network_prepare_setup):
         Set host NICs up if needed
         """
         for nic in required_network.host_0_nics[1:]:
+            if "dummy" in nic:
+                continue
+
             if not ll_hosts.check_host_nic_status(
                 host_resource=conf.VDS_0_HOST, nic=nic,
                 status=required_conf.NIC_STATE_UP

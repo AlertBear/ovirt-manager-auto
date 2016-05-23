@@ -35,6 +35,7 @@ class NetworkFixtures(object):
         self.host_1_nics = conf.HOST_1_NICS
         self.dc_0 = conf.DC_0
         self.cluster_0 = conf.CL_0
+        self.cluster_1 = conf.CL_1
         self.bond_0 = conf.BOND[0]
         self.bond_1 = conf.BOND[1]
         self.vm_0 = conf.VM_0

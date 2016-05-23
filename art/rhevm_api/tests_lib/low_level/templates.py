@@ -603,7 +603,7 @@ def exportTemplate(
         bool: True if template was exported properly, False otherwise
     """
     log_info, log_error = ll_general.get_log_msg(
-        action="Create", obj_type="template", obj_name=template,
+        action="Export", obj_type="template", obj_name=template,
         positive=positive, extra_txt="to export domain %s" % storagedomain
     )
     template_obj = TEMPLATE_API.find(template)

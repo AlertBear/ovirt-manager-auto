@@ -22,8 +22,7 @@ from fixtures import (
     fixture_mac_pool_range_case_02, fixture_mac_pool_range_case_03,
     fixture_mac_pool_range_case_04, fixture_mac_pool_range_case_05,
     fixture_mac_pool_range_case_07, fixture_mac_pool_range_case_09,
-    fixture_mac_pool_range_case_10, mac_pool_range_06_fixture,
-    mac_pool_range_08_fixture, mac_pool_range_11_fixture,
+    mac_pool_range_06_fixture, mac_pool_range_08_fixture
 )
 
 logger = logging.getLogger("MAC_Pool_Range_Per_DC_Cases")
@@ -754,55 +753,3 @@ class TestMacPoolRange09(NetworkTest):
                 )
                 mac_on_dc = ll_mac_pool.get_mac_pool_from_dc(self.ext_dc_2)
                 self.assertEqual(mac_on_dc.name, mac_pool_obj.name)
-
-
-@attr(tier=2)
-@pytest.mark.usefixtures(fixture_mac_pool_range_case_10.__name__)
-class TestMacPoolRange10(NetworkTest):
-    """
-    MAC pool support for DCs with versions less than 3.6
-    """
-    __test__ = True
-    dc_ver_name = ["_".join(["MAC_POOL_DC", str(i)]) for i in range(1, 6)]
-    pool_name_0 = mac_pool_conf.MAC_POOL_NAME_0
-    range_list = conf.MAC_POOL_RANGE_LIST
-
-    @polarion("RHEVM3-6463")
-    def test_create_dc_all_ver(self):
-        """
-        Create DCs with version 3.1 and up with non-Default MAC pool
-        """
-        testflow.step(
-            "Create DCs with versions 3.1 and up with %s MAC pool",
-            self.pool_name_0
-        )
-        for i in range(1, 6):
-            helper.create_dc(dc_name=conf.EXTRA_DC[i], version=conf.VERSION[i])
-
-
-@attr(tier=2)
-@pytest.mark.usefixtures(mac_pool_range_11_fixture.__name__)
-class TestMacPoolRange11(NetworkTest):
-    """
-     Assign MAC's for vNIC's from custom MAC pool range for DC with 3.5 version
-    """
-    __test__ = True
-    vm = conf.VM_0
-    nic_1 = mac_pool_conf.NIC_NAME_1
-    nic_2 = mac_pool_conf.NIC_NAME_2
-
-    @polarion("RHEVM3-6464")
-    def test_dif_ver_dcs(self):
-        """
-        Add additional VNIC to VM and succeed
-        Negative: Try to add 3rd VNIC and fail
-        """
-        self.assertTrue(helper.check_mac_in_range())
-        testflow.step("Add additional VNIC to VM and succeed")
-        self.assertTrue(
-            ll_vms.addNic(positive=True, vm=self.vm, name=self.nic_1)
-        )
-        testflow.step("Negative: Try to add 3rd VNIC and fail")
-        self.assertTrue(
-            ll_vms.addNic(positive=False, vm=self.vm, name=self.nic_2)
-        )

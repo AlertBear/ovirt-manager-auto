@@ -840,16 +840,22 @@ def _prepareHostNicObject(**kwargs):
 
 
 def get_host_nic(host, nic, all_content=False):
+    """
+    Get host NIC
+
+    Args:
+        host (str): Host name
+        nic (str): NIC name
+        all_content (bool): Get all content in NIC object
+
+    Returns:
+        HostNic: Host NIC object
+
+    """
     host_obj = HOST_API.find(host)
     return HOST_API.getElemFromElemColl(
         host_obj, nic, 'nics', 'host_nic', all_content=all_content
     )
-
-
-def getHostNics(host):
-    host_obj = HOST_API.find(host)
-    return HOST_API.getElemFromLink(host_obj, 'nics', 'host_nic',
-                                    get_href=True)
 
 
 def get_host_nics_list(host, all_content=False):
@@ -966,51 +972,6 @@ def generate_sn_nic(nic, **kwargs):
         logger.error(log_error)
 
     return {'host_nic': nic_obj}
-
-
-def send_setup_networks(
-    positive, host, nics=list(), auto_nics=list(), **kwargs
-):
-    """
-    Perform SetupNetwork action on host with nic objects taken from 'nics' and
-    'auto_nics' lists
-
-    Args:
-        positive (bool): Expected result
-        host (str): Nhe name of the host
-        nics (list): List of nic objects to be added to the host by the
-            SetupNetworks action
-        auto_nics (list): List of nics to preserve from the current setup
-        kwargs (dict): SetupNetworks parameters
-
-    Keyword Args:
-        check_connectivity (bool): True to check host connectivity after
-            operation
-        connectivity_timeout (int): Check connectivity timeout
-        force (bool): Force operation
-
-    Returns:
-        bool: True if operation succeed False otherwise
-    """
-    log_info, log_error = ll_general.get_log_msg(
-        action="Send", obj_type="SetupNetworks", obj_name="",
-        positive=positive, extra_txt="to host %s" % host, **kwargs
-    )
-    logger.info(log_info)
-    current_nics_obj = HOST_API.get(href=getHostNics(host))
-    new_nics_obj = nics + [get_host_nic(host, nic) for nic in auto_nics]
-
-    host_nics = data_st.HostNics(host_nic=new_nics_obj)
-
-    res = bool(
-        HOST_NICS_API.syncAction(
-            current_nics_obj, "setupnetworks", positive,
-            host_nics=host_nics, **kwargs
-        )
-    )
-    if not res:
-        logger.error(log_error)
-    return res
 
 
 def searchForHost(positive, query_key, query_val, key_name=None, **kwargs):

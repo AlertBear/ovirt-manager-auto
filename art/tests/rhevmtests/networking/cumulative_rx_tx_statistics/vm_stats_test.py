@@ -20,6 +20,7 @@ logger = logging.getLogger("Cumulative_RX_TX_Statistics_Cases")
 
 
 @attr(tier=2)
+@pytest.mark.incremental
 @pytest.mark.usefixtures(rx_tx_stat_vm_case01.__name__)
 class CumulativeNetworkUsageVmStatisticsCase1(NetworkTest):
     """
