@@ -48,6 +48,7 @@ HOST_1_IP = None  # Filled in test
 VM_DISK_SIZE = 1024
 NUM_DUMMYS = 4
 DUMMYS = ["dummy_%s" % i for i in xrange(NUM_DUMMYS)]
+DEFAULT_MGMT_QOS = "Default-Mgmt-Net-QoS"
 
 # Network Custom Priority parameters
 BRIDGE_OPTS = OrderedDict({"priority": ["32768", "1"],
