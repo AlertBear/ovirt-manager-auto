@@ -961,6 +961,7 @@ def stop_stateless_vm(vm):
     if not wait_for_restored_stateless_snapshot(vm):
         logging.error(log_error)
         return False
+    return True
 
 
 def get_vm_cluster(vm_name):
