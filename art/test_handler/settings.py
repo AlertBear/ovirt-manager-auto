@@ -337,12 +337,11 @@ def stuck_handler():
 
 
 def stuck_check(main_thread):
-    t1 = None
-    t2 = None
+    t = [None for i in range(5)]
     logger = logging.getLogger("stuck_handler")
     while True:
         time.sleep(240)
-        t2 = t1
+        t.pop(0)
         try:
             tmp = sys._current_frames()[main_thread]
         except Exception as ex:
@@ -350,10 +349,10 @@ def stuck_check(main_thread):
                 "sys._current_frames failed with exception: %s\n", ex
             )
             break
-        t1 = traceback.format_stack(f=tmp)
-        if t1 == t2:
+        t.append(traceback.format_stack(f=tmp))
+        if not [x for x in t if t[0] != x]:
             logger.warn(
                 "There is possiblity that MainThread is stucked. "
                 "Check debug log to see traceback where it is stucked on."
             )
-            logger.debug(''.join(t1))
+            logger.debug(''.join(t[-1]))
