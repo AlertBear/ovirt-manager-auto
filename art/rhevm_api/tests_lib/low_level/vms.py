@@ -4695,6 +4695,9 @@ def live_migrate_vm_disk(
                 break
         wait_for_disks_status([disk_name], timeout=timeout)
         wait_for_jobs([ENUMS['job_live_migrate_disk']])
+        # Wait for live merge after LSM
+        wait_for_jobs([ENUMS['job_remove_snapshot']])
+        wait_for_vm_snapshots(vm_name, ENUMS['snapshot_state_ok'])
 
 
 @is_action('liveMigrateVm')
