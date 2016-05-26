@@ -119,3 +119,5 @@ CPU = "cpu"
 VCPU = "vcpu"
 CPU_AFFINITY = "cpu_affinity"
 CPU_MODEL_NAME = "model name"
+
+NUMA_AWARE_KSM_FILE = "/sys/kernel/mm/ksm/merge_across_nodes"

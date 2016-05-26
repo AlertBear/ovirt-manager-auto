@@ -154,7 +154,15 @@ def _prepareClusterObject(**kwargs):
         cl.set_threads_as_cores(threads)
 
     if 'ksm_enabled' in kwargs:
-        cl.set_ksm(KSM(enabled=kwargs.pop('ksm_enabled')))
+        ksm_merge_across_nodes = kwargs.pop(
+            'ksm_merge_across_nodes', None
+        )
+        cl.set_ksm(
+            KSM(
+                enabled=kwargs.pop('ksm_enabled'),
+                merge_across_nodes=ksm_merge_across_nodes
+            )
+        )
 
     if 'ha_reservation' in kwargs:
         cl.set_ha_reservation(kwargs.pop('ha_reservation'))
@@ -199,6 +207,7 @@ def addCluster(positive, **kwargs):
             only cores
         ballooning_enabled (bool): If True, enables ballooning on cluster
         ksm_enabled (bool): If True, enables KSM on cluster
+        ksm_merge_across_nodes (bool): Merge KSM pages across NUMA nodes
 
     Returns:
         bool: True if cluster was created properly, False otherwise
@@ -244,6 +253,7 @@ def updateCluster(positive, cluster, **kwargs):
         ballooning_enabled (bool): Enables ballooning on cluster
         ksm_enabled (bool): Enables KSM on cluster
         ha_reservation (bool): Enables HA Reservation on cluster
+        ksm_merge_across_nodes (bool): Merge KSM pages across NUMA nodes
 
     Returns:
         bool: True, if update succeed, otherwise False

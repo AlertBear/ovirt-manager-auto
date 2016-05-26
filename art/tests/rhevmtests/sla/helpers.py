@@ -368,3 +368,48 @@ def get_cpu_info(resource):
         name, value = line.split(':')
         cpu_d[name.strip()] = value.strip()
     return cpu_d
+
+
+def get_numa_aware_ksm_status(resource):
+    """
+    Get status if KSM merge pages across NUMA node
+
+    Args:
+        resource (VDS): VDS resource
+
+    Returns:
+        bool: True, if KSM merge pages across NUMA nodes, otherwise False
+    """
+    cmd = ["cat", conf.NUMA_AWARE_KSM_FILE]
+    return bool(int(resource.run_command(command=cmd)[1]))
+
+
+def wait_for_numa_aware_ksm_status(
+    resource, expected_value, sampler_timeout=60, sampler_sleep=5
+):
+    """
+    Wait for host NUMA aware KSM state
+
+    Args:
+        resource (VDS): VDS resource
+        expected_value (bool): Expected value
+        sampler_timeout (int): Sampler timeout
+        sampler_sleep (int): Sampler sleep
+
+    Returns:
+        bool: True, if host NUMA aware KSM state equal to expected value,
+            otherwise False
+    """
+    sampler = TimeoutingSampler(
+        sampler_timeout, sampler_sleep, get_numa_aware_ksm_status, resource
+    )
+    try:
+        for sample in sampler:
+            if sample == expected_value:
+                return True
+    except APITimeout:
+        logger.error(
+            "%s still does not have expected NUMA aware KSM state %s",
+            resource, expected_value
+        )
+        return False
