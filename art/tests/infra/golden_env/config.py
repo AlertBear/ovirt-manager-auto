@@ -87,6 +87,8 @@ STORAGE['data_domain_path'] = PARAMETERS.as_list('data_domain_path')
 EPS = ART_CONFIG['EPS']
 CLEAN_EXPORT_DOMAIN = PARAMETERS.as_bool('clean_export_domain')
 
+ANSWER_FILE = PARAMETERS.get('answer_file', None)
+
 ENGINE_HOST = resources.Host(VDC)
 ENGINE_HOST.users.append(
     resources.RootUser(VDC_PASSWORD)

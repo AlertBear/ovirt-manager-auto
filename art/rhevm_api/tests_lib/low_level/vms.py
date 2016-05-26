@@ -5825,3 +5825,13 @@ def get_vm_placement_hosts(vm_name):
         for vm_host_obj in vm_hosts_obj.get_host()
     ]
     return hosts
+
+
+def get_all_vms():
+    """
+    Get list of VM objects from API
+
+    Returns:
+        list: VM objects
+    """
+    return VM_API.get(absLink=False)
