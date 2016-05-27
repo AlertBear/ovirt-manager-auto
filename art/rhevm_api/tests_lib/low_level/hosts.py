@@ -1807,13 +1807,16 @@ def check_network_filtering_ebtables(host_obj, vm_macs):
     """
     Check that network filtering is enabled via ebtables
 
-    :param host_obj: Host object
-    :type host_obj: resources.VDS object
-    :param vm_macs: list of vm_macs
-    :type vm_macs: list
-    :return: True if network filtering is enabled, False otherwise
-    :rtype: bool
+    Args:
+        host_obj (resources.VDS): Host object.
+        vm_macs (list): list of vm_macs.
+
+    Returns:
+        bool: True if network filtering is enabled, False otherwise.
     """
+    logger.info(
+        "Check ebtables rules on host %s for VM MACs %s", host_obj, vm_macs
+    )
     cmd = "ebtables -t nat -L"
     rc, output, err = host_obj.run_command(shlex.split(cmd))
     if rc:

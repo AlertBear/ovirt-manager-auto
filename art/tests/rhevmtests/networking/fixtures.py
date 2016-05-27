@@ -6,7 +6,7 @@ Networking fixtures
 """
 
 import pytest
-
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.config as conf
 from rhevmtests import networking
 from rhevmtests.networking import helper as network_helper
@@ -90,6 +90,29 @@ class NetworkFixtures(object):
             hosts (list or str): Host name or hosts list
         """
         network_helper.remove_networks_from_setup(hosts=hosts)
+
+    def run_vm_once_specific_host(self, vm, host, wait_for_up_status):
+        """
+        Run VM once on specific host
+
+        Args:
+            vm (str): VM name.
+            host (str): Host name.
+            wait_for_up_status (bool): Wait for VM to be up
+        """
+        network_helper.run_vm_once_specific_host(
+            vm=vm, host=host, wait_for_up_status=wait_for_up_status
+        )
+
+    def stop_vm(self, positive, vm):
+        """
+        Stop VM
+
+        Args:
+            positive (bool): Expected status.
+            vm (str): Name of vm.
+        """
+        ll_vms.stopVm(positive=positive, vm=vm)
 
 
 @pytest.fixture(scope="module")
