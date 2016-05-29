@@ -2275,7 +2275,7 @@ def removeTagFromVm(positive, vm, tag):
 @is_action()
 def exportVm(
     positive, vm, storagedomain, exclusive='false',
-    discard_snapshots='false', timeout=VM_ACTION_TIMEOUT
+    discard_snapshots='false', timeout=VM_ACTION_TIMEOUT, async=False
 ):
     """
     Export vm to export storage domain
@@ -2292,6 +2292,7 @@ def exportVm(
         discard_snapshots (str): Do not include vm snapshots with the
             exported vm ('false' by default)
         timeout (int): Timeout for the export operation
+        async (bool): Specifies whether the operation should be asynchronous
 
     Returns:
         bool: True if vm was exported properly, False otherwise
@@ -2304,7 +2305,7 @@ def exportVm(
         discard_snapshots=discard_snapshots
     )
     status = bool(
-        VM_API.syncAction(vm_obj, "export", positive, **action_params)
+        VM_API.syncAction(vm_obj, "export", positive, async, **action_params)
     )
     logger.info("Export VM %s to export domain %s", vm, storagedomain)
     if status and positive:

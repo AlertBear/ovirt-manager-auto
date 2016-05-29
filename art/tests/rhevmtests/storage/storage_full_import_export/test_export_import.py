@@ -1,9 +1,8 @@
 """
 Export/import test cases
 """
-import config
-from concurrent.futures import ThreadPoolExecutor
 import logging
+import config
 from art.rhevm_api.tests_lib.low_level import (
     jobs as ll_jobs,
     storagedomains as ll_sd,
@@ -333,38 +332,27 @@ class TestCase11987(BaseExportImportTestCase):
 
         def export_vm(vm):
             logger.info("Exporting vm %s", vm)
-            return ll_vms.exportVm(True, vm, self.export_domain)
+            return ll_vms.exportVm(True, vm, self.export_domain, async=True)
 
         def import_vm(vm):
             logger.info("Verifying vm %s", vm)
             return ll_vms.importVm(
                 True, vm, self.export_domain, self.storage_domain,
-                config.CLUSTER_NAME, name="%s_%s" % (vm, self.prefix)
+                config.CLUSTER_NAME, name="%s_%s" % (vm, self.prefix),
+                async=True
             )
 
-        def exec_with_threads(fn):
-            execution = []
-            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                for vm in vms_list:
-                    execution.append((vm, executor.submit(fn, vm)))
-
-            for vm, res in execution:
-                if res.exception():
-                    raise Exception(
-                        "Failed to execute %s for %s:  %s" %
-                        (fn.__name__, vm, res.exception())
-                    )
-                if not res.result():
-                    raise Exception(
-                        "Failed to execute %s for %s" % (fn.__name__, vm)
-                    )
-        exec_with_threads(export_vm)
+        for vm in vms_list:
+            export_vm(vm)
+        ll_jobs.wait_for_jobs([config.JOB_EXPORT_VM])
         logger.info("Removing existing vm %s", self.vm_name)
         self.assertTrue(
             ll_vms.removeVm(True, self.vm_name, wait=True),
             "Failed to remove VM %s" % self.vm_name
         )
-        exec_with_threads(import_vm)
+        for vm in vms_list:
+            import_vm(vm)
+        ll_jobs.wait_for_jobs([config.JOB_IMPORT_VM])
 
     def tearDown(self):
         """
