@@ -145,9 +145,18 @@ class BasicEnvironment(BaseTestCase):
                 "Importing glance image from repository %s failed"
                 % config.GLANCE_DOMAIN
             )
-        ll_jobs.wait_for_jobs(
-            [config.JOB_IMPORT_IMAGE], sleep=POLL_PERIOD
-        )
+        if wait:
+            ll_jobs.wait_for_jobs(
+                [config.JOB_IMPORT_IMAGE], sleep=POLL_PERIOD
+            )
+            if new_disk_alias is not None:
+                ll_disks.wait_for_disks_status(
+                    [new_disk_alias]
+                )
+            if not ll_templates.check_template_existence(template_name):
+                raise errors.TemplateException(
+                    "Failed to import image from glance as template"
+                )
         self.templates_to_remove.append(template_name)
 
     def basic_flow_clone_vm_from_template(
@@ -192,7 +201,8 @@ class TestCase5734(BasicEnvironment):
         - Create a VM from the template as cloned
         """
         self.basic_flow_import_image_as_template(
-            self.new_template_name, True, self.storage_domain
+            self.new_template_name, True, self.storage_domain,
+            self.new_disk_alias
         )
         vm_name = storage_helpers.create_unique_object_name(
             self.__class__.__name__, config.OBJECT_TYPE_VM
@@ -231,7 +241,8 @@ class TestCase5735(BasicEnvironment):
                 self.templates, [True, False]
         ):
             self.basic_flow_import_image_as_template(
-                template_name, allocation_policy, self.storage_domain
+                template_name, allocation_policy, self.storage_domain,
+                self.new_disk_alias
             )
         for template_name, vm_name in zip(self.templates, self.vm_names):
             self.basic_flow_clone_vm_from_template(
@@ -246,7 +257,20 @@ class TestCase5736(BasicEnvironment):
     """
     __test__ = True
     test_case = '5736'
-    templates = ["first_template", "second_template"]
+
+    def setUp(self):
+        super(TestCase5736, self).setUp()
+        self.templates = [
+            storage_helpers.create_unique_object_name(
+                self.__class__.__name__ + "first", config.OBJECT_TYPE_TEMPLATE
+            ),
+            storage_helpers.create_unique_object_name(
+                self.__class__.__name__ + "second", config.OBJECT_TYPE_TEMPLATE
+            )
+        ]
+        self.second_disk_alias = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
+        )
 
     @polarion("RHEVM3-5736")
     def test_import_glance_image_more_than_once(self):
@@ -254,9 +278,11 @@ class TestCase5736(BasicEnvironment):
         - Import an image from glance domain as a template
         - Import the same image again
         """
-        for template_name in self.templates:
+        for template_name, disk_alias in zip(
+            self.templates, [self.new_disk_alias, self.second_disk_alias]
+        ):
             self.basic_flow_import_image_as_template(
-                template_name, True, self.storage_domain
+                template_name, True, self.storage_domain, disk_alias
             )
 
 
@@ -270,6 +296,9 @@ class TestCase5738(BasicEnvironment):
 
     def setUp(self):
         super(TestCase5738, self).setUp()
+        self.template_disk_alias = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
+        )
 
     @polarion("RHEVM3-5738")
     def test_import_image_as_template_and_disk(self):
@@ -280,7 +309,8 @@ class TestCase5738(BasicEnvironment):
         - Attach the imported disk to a VM
         """
         self.basic_flow_import_image_as_template(
-            self.new_template_name, True, self.storage_domain
+            self.new_template_name, True, self.storage_domain,
+            self.template_disk_alias
         )
         self.vm_name_from_template = storage_helpers.create_unique_object_name(
             self.__class__.__name__, config.OBJECT_TYPE_VM
@@ -295,6 +325,9 @@ class TestCase5738(BasicEnvironment):
             bootable=True
         )
 
+        self.new_disk_alias = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
+        )
         self.basic_flow_import_image_as_disk(self.new_disk_alias, True)
         ll_jobs.wait_for_jobs([config.JOB_ADD_VM_FROM_TEMPLATE])
         self.assertTrue(
@@ -328,17 +361,24 @@ class TestCase5739(BasicEnvironment):
     test_case = '5739'
     templates = ["template_sparse", "template_pre_allocated"]
 
+    def setUp(self):
+        super(TestCase5739, self).setUp()
+        self.second_disk_alias = storage_helpers.create_unique_object_name(
+            self.__class__.__name__, config.OBJECT_TYPE_DISK
+        )
+
     @polarion("RHEVM3-5739")
     def test_import_multiple_images_to_different_storages(self):
         """
         - Import multiple images from glance domain to different
         storage domains
         """
-        for template_name, storage in zip(
-                self.templates, self.storage_domains[:2]
+        for template_name, storage, new_disk_alias in zip(
+                self.templates, self.storage_domains[:2],
+                [self.new_disk_alias, self.second_disk_alias]
         ):
             self.basic_flow_import_image_as_template(
-                template_name, True, storage
+                template_name, True, storage, new_disk_alias
             )
 
 
@@ -364,7 +404,8 @@ class TestCase5741(BasicEnvironment):
         template
         """
         self.basic_flow_import_image_as_template(
-            self.new_template_name, True, self.storage_domain
+            self.new_template_name, True, self.storage_domain,
+            self.new_disk_alias
         )
         for vm_name in self.vm_names:
             self.basic_flow_clone_vm_from_template(
