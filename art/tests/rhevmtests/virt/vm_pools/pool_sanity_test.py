@@ -17,7 +17,7 @@ from art.rhevm_api.tests_lib.high_level import (
     vms as hl_vms,
 )
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 from rhevmtests.virt.vm_pools import (
     vm_pool_base as base,
     helpers
@@ -135,6 +135,7 @@ class TestUserStartedVmIsStateless(base.VmPoolWithUser):
     pool_name = "Virt_pool_user_started_vm_is_stateless"
     pool_size = 1
 
+    @bz({'1342795': {}})
     @polarion("RHEVM-9878")
     def test_user_started_vm_is_stateless(self):
         """

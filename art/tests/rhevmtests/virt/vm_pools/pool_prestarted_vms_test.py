@@ -14,7 +14,7 @@ from rhevmtests.virt.vm_pools import (
 from art.rhevm_api.tests_lib.high_level import vmpools as hl_vmpools
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr
 
 logger = logging.getLogger("virt.vm_pools.prestarted_vms")
@@ -66,6 +66,7 @@ class TestPoolSizeMoreThanPrestartedUserTakeVms(base.VmPoolWithUser):
     prestarted_vms = 2
     user_vms = 2
 
+    @bz({'1342795': {}})
     @polarion("RHEVM-9861")
     def test_pool_size_more_than_prestarted_user_take_vms(self):
         """
@@ -104,6 +105,7 @@ class TestPoolSizeMoreThanPrestartedUserAndAdminTakeVms(base.VmPoolWithUser):
     user_vms = 2
     admin_vms = 1
 
+    @bz({'1342795': {}})
     @polarion("RHEVM-9862")
     def test_pool_size_more_than_prestarted_user_and_admin_take_vms(self):
         """
@@ -151,6 +153,7 @@ class TestUserTakeAllPrestartedVmsFromPool(base.VmPoolWithUser):
     prestarted_vms = 2
     user_vms = 2
 
+    @bz({'1342795': {}})
     @polarion("RHEVM-9871")
     def test_user_take_all_prestarted_vms_from_pool(self):
         """

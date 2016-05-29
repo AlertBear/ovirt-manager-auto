@@ -16,7 +16,7 @@ from art.rhevm_api.tests_lib.high_level import (
     vms as hl_vms,
 )
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 
 
 class TestUserVmContinuity(base.VmPoolWithUser):
@@ -31,6 +31,7 @@ class TestUserVmContinuity(base.VmPoolWithUser):
     pool_size = 1
     prestarted_vms = 1
 
+    @bz({'1342795': {}})
     @polarion("RHEVM-9859")
     def test_user_vm_continuity(self):
         """
@@ -83,6 +84,7 @@ class TestTwoUsersTakeVmFromPool(base.VmPoolWithUser):
 
     pool_name = "Virt_user_role_take_vm_from_pool"
 
+    @bz({'1342795': {}})
     @polarion("RHEVM-9891")
     def test_two_users_take_vm_from_pool(self):
         helpers.allocate_vms_as_user(True, self.pool_name, config.USER, 0, 1)
@@ -124,6 +126,7 @@ class TestCannotStealVmFromOtherUser(base.VmPoolWithUser):
     pool_name = "Virt_cannot_steal_vm_from_another_user"
     pool_size = 1
 
+    @bz({'1342795': {}})
     @polarion("RHEVM-9883")
     def test_cannot_steal_vm_from_another_user(self):
         helpers.allocate_vms_as_user(
@@ -143,6 +146,7 @@ class TestVmReturnsToPoolAfterUse(base.VmPoolWithUser):
     pool_name = "Virt_vm_returns_to_pool_after_use"
     pool_size = 1
 
+    @bz({'1342795': {}})
     @polarion("RHEVM-9882")
     def test_vm_returns_to_pool_after_use(self):
         helpers.allocate_vms_as_user(
