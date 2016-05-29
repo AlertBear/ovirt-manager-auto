@@ -92,7 +92,7 @@ def pytest_artconf_ready(config):
             hosts.append(h)
         if hosts:
             debug = str(
-                settings.ART_CONFIG[CONF_SECTION].get(WAIT_INT, "False")
+                settings.ART_CONFIG[CONF_SECTION].get(DEBUG, "False")
             )
             debug = debug.lower() in ('1', 'yes', 'true')
             config.pluginmanager.register(
