@@ -36,7 +36,7 @@ INTERVAL = 2
 SLEEP_TIME = 30
 MIGRATION_TIMEOUT = 300
 WGT_INSTALL_TIMEOUT = 600
-CHECK_MEMORY_COMMAND = "grep 'MemTotal' /proc/meminfo | awk '{ print $2 }'"
+CHECK_MEMORY_COMMAND = "free -m | grep Mem | awk '{ print $2 }'"
 
 ProvisionContext = vms.ProvisionContext
 
@@ -741,13 +741,10 @@ def check_vm_memory(vm_resource, expected_mem_size):
     rc, out, _ = vm_resource.run_command(shlex.split(CHECK_MEMORY_COMMAND))
     if rc:
         return False
-    actual_memory = shlex.split(out)[1]
+    actual_memory = int(shlex.split(out)[1]) * KB
     LOGGER.info("Expected memory(kb): %s", expected_memory)
     LOGGER.info("Actual memory(kb): %s", actual_memory)
-    if (
-            expected_memory * 0.98 < int(actual_memory) or
-            expected_memory * 0.98 > int(actual_memory)
-    ):
+    if expected_memory * 0.90 <= actual_memory <= expected_memory:
         return True
     else:
         LOGGER.error("memory check failed")
