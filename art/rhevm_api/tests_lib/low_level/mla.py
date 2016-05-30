@@ -20,7 +20,6 @@
 from art.core_api.apis_utils import getDS
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.utils.test_utils import get_api, split
-from art.core_api import is_action
 from art.test_handler.settings import opts
 from art.rhevm_api.tests_lib.low_level.networks import (
     find_network,
@@ -69,7 +68,6 @@ def getPermits():
     return versionCaps.get_permits().get_permit()
 
 
-@is_action()
 def checkSystemPermits(positive):
     '''
     Description: check existed system permissions
@@ -124,7 +122,6 @@ def _prepareRoleObject(**kwargs):
     return role
 
 
-@is_action()
 def addRole(positive, administrative="false", **kwargs):
     '''
     Description: add new role
@@ -141,7 +138,6 @@ def addRole(positive, administrative="false", **kwargs):
     return status
 
 
-@is_action()
 def updateRole(positive, role, **kwargs):
     '''
     Description: update existed role
@@ -159,7 +155,6 @@ def updateRole(positive, role, **kwargs):
     return status
 
 
-@is_action()
 def addRolePermissions(positive, role, permit):
     '''
     Description: add permission to role
@@ -181,7 +176,6 @@ def addRolePermissions(positive, role, permit):
     return status
 
 
-@is_action()
 def removeRolePermissions(positive, role, permit):
     '''
     Description: remove permission from role
@@ -197,7 +191,6 @@ def removeRolePermissions(positive, role, permit):
     return util.delete(permitObj, positive)
 
 
-@is_action()
 def removeRole(positive, role):
     '''
     Description: remove role
@@ -245,7 +238,6 @@ def addPermitsToGroup(positive, group, role, obj, attr):
     return status
 
 
-@is_action()
 def addVMPermissionsToUser(
         positive, user, vm, role=ENUMS['role_name_user_vm_manager'],
         domain=None):
@@ -264,7 +256,6 @@ def addVMPermissionsToUser(
     return addPermitsToUser(positive, user, domain, role, vmObj, 'vm')
 
 
-@is_action()
 def addHostPermissionsToUser(positive, user, host, role="HostAdmin",
                              domain=None):
     '''
@@ -282,7 +273,6 @@ def addHostPermissionsToUser(positive, user, host, role="HostAdmin",
     return addPermitsToUser(positive, user, domain, role, hostObj, 'host')
 
 
-@is_action()
 def addStoragePermissionsToUser(positive, user, storage, role="StorageAdmin",
                                 domain=None):
     '''
@@ -301,7 +291,6 @@ def addStoragePermissionsToUser(positive, user, storage, role="StorageAdmin",
         positive, user, domain, role, sdObj, 'storage_domain')
 
 
-@is_action()
 def addClusterPermissionsToUser(positive, user, cluster, role="ClusterAdmin",
                                 domain=None):
     '''
@@ -319,7 +308,6 @@ def addClusterPermissionsToUser(positive, user, cluster, role="ClusterAdmin",
     return addPermitsToUser(positive, user, domain, role, clObj, 'cluster')
 
 
-@is_action()
 def addClusterPermissionsToGroup(positive, group, cluster,
                                  role="ClusterAdmin"):
     '''
@@ -351,7 +339,6 @@ def addUserPermitsForObj(positive, user, role, obj, group=False):
     return status
 
 
-@is_action()
 def addPermissionsForVnicProfile(positive, user, vnicprofile, network,
                                  data_center, role='VnicProfileUser'):
     '''
@@ -371,7 +358,6 @@ def addPermissionsForVnicProfile(positive, user, vnicprofile, network,
     return addUserPermitsForObj(positive, user, role, vnicObj)
 
 
-@is_action()
 def addPermissionsForNetwork(positive, user, network, data_center,
                              role="NetworkAdmin"):
     '''
@@ -388,7 +374,6 @@ def addPermissionsForNetwork(positive, user, network, data_center,
     return addUserPermitsForObj(positive, user, role, netObj)
 
 
-@is_action()
 def addPermissionsForDisk(positive, user, disk, role="DiskOperator"):
     '''
     Description: add disk permissios to user
@@ -403,7 +388,6 @@ def addPermissionsForDisk(positive, user, disk, role="DiskOperator"):
     return addUserPermitsForObj(positive, user, role, diskObj)
 
 
-@is_action()
 def addPermissionsForTemplate(positive, user, template, role="TemplateAdmin"):
     '''
     Description: add template permissios to user
@@ -419,7 +403,6 @@ def addPermissionsForTemplate(positive, user, template, role="TemplateAdmin"):
     return addUserPermitsForObj(positive, user, role, templObj)
 
 
-@is_action()
 def addVnicProfilePermissionsToGroup(positive, group, vnicprofile, network,
                                      data_center, role='VnicProfileUser'):
     '''
@@ -436,7 +419,6 @@ def addVnicProfilePermissionsToGroup(positive, group, vnicprofile, network,
     return addUserPermitsForObj(positive, group, role, vnicObj, True)
 
 
-@is_action()
 def addTemplatePermissionsToGroup(positive, group, template,
                                   role="TemplateAdmin"):
     '''
@@ -453,7 +435,6 @@ def addTemplatePermissionsToGroup(positive, group, template,
     return addUserPermitsForObj(positive, group, role, templObj, True)
 
 
-@is_action()
 def addPermissionsForTemplateToGroup(positive, group, template,
                                      role="TemplateAdmin"):
     '''
@@ -469,7 +450,6 @@ def addPermissionsForTemplateToGroup(positive, group, template,
     return addPermitsToGroup(positive, group, role, templateObj, 'template')
 
 
-@is_action()
 def addPermissionsForDataCenter(positive, user, data_center,
                                 role="TemplateAdmin"):
     '''
@@ -486,7 +466,6 @@ def addPermissionsForDataCenter(positive, user, data_center,
     return addUserPermitsForObj(positive, user, role, dcObj)
 
 
-@is_action()
 def removeAllPermissionsFromUser(positive, user):
     '''
     Description: remove all permissions from user
@@ -507,7 +486,6 @@ def removeAllPermissionsFromUser(positive, user):
     return status
 
 
-@is_action()
 def addVmPoolPermissionToUser(positive, user, vmpool, role, domain=None):
     '''
     Description: add permission to the user for specified vm pool object
@@ -587,7 +565,6 @@ def removeUsersPermissionsFromObject(positive, obj, user_names):
     return status
 
 
-@is_action()
 def removeUsersPermissionsFromVnicProfile(positive, vnicprofile, network,
                                           data_center, user_names):
     '''
@@ -606,7 +583,6 @@ def removeUsersPermissionsFromVnicProfile(positive, vnicprofile, network,
     return removeUsersPermissionsFromObject(positive, vnicObj, user_names)
 
 
-@is_action()
 def removeUserPermissionsFromVnicProfile(positive, vnicprofile, network,
                                          data_center, user_name):
     '''
@@ -623,7 +599,6 @@ def removeUserPermissionsFromVnicProfile(positive, vnicprofile, network,
                                              data_center, [user_name])
 
 
-@is_action()
 def removeUsersPermissionsFromNetwork(positive, network, data_center,
                                       user_names):
     '''
@@ -639,7 +614,6 @@ def removeUsersPermissionsFromNetwork(positive, network, data_center,
     return removeUsersPermissionsFromObject(positive, netObj, user_names)
 
 
-@is_action()
 def removeUserPermissionsFromNetwork(positive, network, data_center,
                                      user_name):
     '''
@@ -655,7 +629,6 @@ def removeUserPermissionsFromNetwork(positive, network, data_center,
         positive, network, data_center, [user_name])
 
 
-@is_action()
 def removeUsersPermissionsFromDatacenter(positive, data_center, user_names):
     '''
     Description: remove all permissions on datacenter of specified users
@@ -669,7 +642,6 @@ def removeUsersPermissionsFromDatacenter(positive, data_center, user_names):
     return removeUsersPermissionsFromObject(positive, dcObj, user_names)
 
 
-@is_action()
 def removeUserPermissionsFromDatacenter(positive, data_center, user_name):
     '''
     Description: remove all permissions on datacenter of specified user
@@ -683,7 +655,6 @@ def removeUserPermissionsFromDatacenter(positive, data_center, user_name):
         positive, data_center, [user_name])
 
 
-@is_action()
 def removeUsersPermissionsFromCluster(positive, cluster, user_names):
     '''
     Description: remove all permissions on cluster of specified users
@@ -697,7 +668,6 @@ def removeUsersPermissionsFromCluster(positive, cluster, user_names):
     return removeUsersPermissionsFromObject(positive, clusterObj, user_names)
 
 
-@is_action()
 def removeUserPermissionsFromCluster(positive, cluster, user_name):
     '''
     Description: remove all permissions on cluster of specified user
@@ -710,7 +680,6 @@ def removeUserPermissionsFromCluster(positive, cluster, user_name):
     return removeUsersPermissionsFromCluster(positive, cluster, [user_name])
 
 
-@is_action()
 def removeUsersPermissionsFromVm(positive, vm, user_names):
     '''
     Description: remove all permissions on vm of specified users
@@ -724,7 +693,6 @@ def removeUsersPermissionsFromVm(positive, vm, user_names):
     return removeUsersPermissionsFromObject(positive, vmObj, user_names)
 
 
-@is_action()
 def removeUserPermissionsFromVm(positive, vm, user_name):
     '''
     Description: remove all permissions on vm of specified user
@@ -737,7 +705,6 @@ def removeUserPermissionsFromVm(positive, vm, user_name):
     return removeUsersPermissionsFromVm(positive, vm, [user_name])
 
 
-@is_action()
 def removeUsersPermissionsFromTemplate(positive, template, user_names):
     '''
     Description: remove all permissions on template of specified users
@@ -751,7 +718,6 @@ def removeUsersPermissionsFromTemplate(positive, template, user_names):
     return removeUsersPermissionsFromObject(positive, tmpObj, user_names)
 
 
-@is_action()
 def removeUserPermissionsFromTemplate(positive, template, user_name):
     '''
     Description: remove all permissions on template of specified user
@@ -764,7 +730,6 @@ def removeUserPermissionsFromTemplate(positive, template, user_name):
     return removeUsersPermissionsFromTemplate(positive, template, [user_name])
 
 
-@is_action()
 def removeUserPermissionsFromDisk(positive, disk, user_name):
     '''
     Description: remove all permissions on disk of specified user
@@ -778,7 +743,6 @@ def removeUserPermissionsFromDisk(positive, disk, user_name):
     return removeUsersPermissionsFromObject(positive, diskObj, [user_name])
 
 
-@is_action()
 def removeUserRoleFromDataCenter(positive, datacenter, user_name, role_name):
     '''
     Description: remove specific user's role from datacenter
@@ -805,7 +769,6 @@ def removeUsersPermissionsFromSD(positive, storage_domain, user_names):
     return removeUsersPermissionsFromObject(positive, sdObj, user_names)
 
 
-@is_action()
 def removeUserPermissionsFromSD(positive, storage_domain, user_name):
     '''
     Description: remove all permissions on template of specified user
@@ -818,7 +781,6 @@ def removeUserPermissionsFromSD(positive, storage_domain, user_name):
     return removeUsersPermissionsFromSD(positive, storage_domain, [user_name])
 
 
-@is_action()
 def removeUserRoleFromVm(positive, vm, user_name, role_name):
     '''
     Description: remove specific user's role from vm
@@ -832,7 +794,6 @@ def removeUserRoleFromVm(positive, vm, user_name, role_name):
     return removeUserRoleFromObject(positive, vmObj, user_name, role_name)
 
 
-@is_action()
 def checkDomainsId():
     '''
     Check whether domain resource in domains collection is displayed

@@ -24,8 +24,6 @@ from art.core_api.apis_utils import data_st, TimeoutingSampler
 from art.rhevm_api.data_struct.data_structures import Disk, Fault
 from art.rhevm_api.tests_lib.low_level.datacenters import get_sd_datacenter
 from art.rhevm_api.utils.test_utils import get_api, waitUntilGone, split
-from art.rhevm_api.utils.xpath_utils import XPathMatch
-from art.core_api import is_action
 from art.test_handler.settings import opts
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -48,7 +46,6 @@ CDROM_API = get_api('cdrom', 'cdroms')
 CONN_API = get_api('storage_connection', 'storageconnections')
 
 logger = logging.getLogger("art.ll_lib.disks")
-xpathMatch = is_action('xpathMatch')(XPathMatch(VM_API))
 BLOCK_DEVICES = [ENUMS['storage_type_iscsi'], ENUMS['storage_type_fcp']]
 
 FORMAT_COW = ENUMS['format_cow']
@@ -268,7 +265,6 @@ def _prepareDiskObject(**kwargs):
     return disk
 
 
-@is_action()
 def addDisk(positive, **kwargs):
     """
     Description: Adds disk to setup
@@ -308,7 +304,6 @@ def addDisk(positive, **kwargs):
         disk, Fault)) else None}
 
 
-@is_action()
 def updateDisk(positive, **kwargs):
     """
     Description: Update already existing disk
@@ -354,7 +349,6 @@ def updateDisk(positive, **kwargs):
     return status
 
 
-@is_action()
 def deleteDisk(positive, alias=None, async=True, disk_id=None):
     """
     Removes disk from system
@@ -378,7 +372,6 @@ def deleteDisk(positive, alias=None, async=True, disk_id=None):
     return status
 
 
-@is_action('attachDiskToVm')
 def attachDisk(
         positive, alias, vm_name, active=True, read_only=False, disk_id=None
 ):
@@ -412,7 +405,6 @@ def attachDisk(
     return DISKS_API.create(updated_disk, positive, collection=vm_disks)[1]
 
 
-@is_action('detachDiskFromVm')
 def detachDisk(positive, alias, vmName, detach=True):
     """
     Description: Detach disk from VM
@@ -430,7 +422,6 @@ def detachDisk(positive, alias, vmName, detach=True):
         diskObj, positive, body=body, element_name='action')
 
 
-@is_action()
 def wait_for_disks_status(disks, key='name', status=ENUMS['disk_state_ok'],
                           timeout=DEFAULT_DISK_TIMEOUT, sleep=DEFAULT_SLEEP):
     """ Description: Waits until all disks reached the requested status
@@ -493,7 +484,6 @@ def wait_for_disks_status(disks, key='name', status=ENUMS['disk_state_ok'],
     return False
 
 
-@is_action()
 def waitForDisksGone(positive, disksNames, timeout=DEFAULT_DISK_TIMEOUT,
                      sleep=DEFAULT_SLEEP):
     """
@@ -510,7 +500,6 @@ def waitForDisksGone(positive, disksNames, timeout=DEFAULT_DISK_TIMEOUT,
     )
 
 
-@is_action()
 def compareDisksCount(name, expected_count, is_template=False):
     """
     Description: Compares counts of disks attached to given VM/template
@@ -524,7 +513,6 @@ def compareDisksCount(name, expected_count, is_template=False):
     return len(disks) == expected_count
 
 
-@is_action()
 def checkDiskExists(positive, disk, attr='name'):
     """
     Checks that disk is in system
@@ -546,7 +534,6 @@ def checkDiskExists(positive, disk, attr='name'):
     return positive
 
 
-@is_action()
 def copy_disk(**kwargs):
     """
     Description: Copy a disk to a target_domain
@@ -554,7 +541,6 @@ def copy_disk(**kwargs):
     return do_disk_action('copy', **kwargs)
 
 
-@is_action()
 def move_disk(**kwargs):
     """
     Description: Moves a disk to a target_domain
@@ -562,7 +548,6 @@ def move_disk(**kwargs):
     return do_disk_action('move', **kwargs)
 
 
-@is_action()
 def do_disk_action(
         action, disk_name=None, target_domain=None, disk_id=None, wait=True,
         timeout=DEFAULT_DISK_TIMEOUT, sleep=10, positive=True,
@@ -708,7 +693,6 @@ def check_disk_visibility(disk, disks_list):
     return is_visible
 
 
-@is_action('getImproperStorageDomain')
 def get_other_storage_domain(
     disk, vm_name=None, storage_type=None, force_type=True,
     ignore_type=[], key='name'

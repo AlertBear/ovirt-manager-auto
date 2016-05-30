@@ -1,6 +1,5 @@
 import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.tests_lib.low_level import hosts
-from art.core_api import is_action
 from art.test_handler.settings import opts
 import logging
 
@@ -17,7 +16,6 @@ HOST_NONRESPONSIVE = ENUMS["host_state_non_responsive"]
 HOST_UP = ENUMS['search_host_state_up']
 
 
-@is_action('perform_iptable_action')
 def _perform_iptables_action_and_wait(action, source,
                                       s_user, s_pass,
                                       destination, wait_for_entity,
@@ -60,7 +58,6 @@ def _perform_iptables_action_and_wait(action, source,
     return response
 
 
-@is_action('block_and_wait')
 def block_and_wait(source, s_user, s_pass, destination,
                    wait_for_entity,
                    expected_state=HOST_NONOPERATIONAL):
@@ -83,7 +80,6 @@ def block_and_wait(source, s_user, s_pass, destination,
         destination, wait_for_entity, expected_state)
 
 
-@is_action('unblock_and_wait')
 def unblock_and_wait(source, s_user, s_pass, destination,
                      wait_for_entity,
                      expected_state=HOST_UP):

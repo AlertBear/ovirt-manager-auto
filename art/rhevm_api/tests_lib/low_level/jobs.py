@@ -1,5 +1,4 @@
 import re
-from art.core_api import is_action
 from art.core_api.apis_utils import data_st, TimeoutingSampler
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.settings import opts
@@ -15,7 +14,6 @@ JOB_TIMEOUT = 1200
 TASK_POLL = 5
 
 
-@is_action()
 def check_recent_job(positive, description, last_jobs_num=None,
                      job_status=ENUMS['job_finished']):
     """
@@ -46,7 +44,6 @@ def check_recent_job(positive, description, last_jobs_num=None,
         return False, None
 
 
-@is_action()
 def get_active_jobs(job_descriptions=None):
     """
     Check if all/requested jobs have been completed
@@ -84,7 +81,6 @@ def get_active_jobs(job_descriptions=None):
     return jobs
 
 
-@is_action("waitForJobs")
 def wait_for_jobs(job_descriptions=None, timeout=JOB_TIMEOUT, sleep=TASK_POLL):
     """
     Waits until all/requested jobs in data-center have completed
@@ -108,7 +104,6 @@ def wait_for_jobs(job_descriptions=None, timeout=JOB_TIMEOUT, sleep=TASK_POLL):
             return
 
 
-@is_action()
 def add_job(job_description, auto_cleared=True):
     '''
     Description: Add new job with given description
@@ -128,7 +123,6 @@ def add_job(job_description, auto_cleared=True):
     return True
 
 
-@is_action()
 def add_step(job_description, step_description,
              step_type, step_state, parent_step_description=None):
     """
@@ -197,7 +191,6 @@ def step_by_description(job, step_description):
     return None
 
 
-@is_action()
 def end_job(job_description, job_status, end_status):
     """
     Description: End job with given description
@@ -222,7 +215,6 @@ def end_job(job_description, job_status, end_status):
     return True
 
 
-@is_action()
 def end_step(job_description, job_status, step_description, end_status):
     """
     Description: End step with given description
@@ -248,7 +240,6 @@ def end_step(job_description, job_status, step_description, end_status):
     return True
 
 
-@is_action()
 def clear_job(job_description, job_status):
     job_obj = check_recent_job(True, job_description, job_status=job_status)[1]
     if not job_obj:

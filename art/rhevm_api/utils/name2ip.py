@@ -2,10 +2,9 @@
 import re
 import time
 import logging
-from functools import wraps
-from art.core_api import is_action
 from art.rhevm_api.utils.threads import ThreadSafeDict
-from art.rhevm_api.utils.test_utils import get_api # need to solve this cyclic deps
+# need to solve this cyclic deps
+from art.rhevm_api.utils.test_utils import get_api
 from art.rhevm_api.utils.test_utils import convertMacToIp
 from art.core_api.apis_exceptions import APIException, EntityNotFound
 
@@ -106,10 +105,10 @@ class LookUpIpByEntityName(object):
         raise NotImplementedError()
 
 
-@is_action()
 def resetName2IpCache(entity='.+', entityName='.+'):
     """
-    Description: Removes all/specific record (entityName -> ip-address) from cache
+    Description: Removes all/specific record (entityName -> ip-address)
+    from cache.
     Parameters:
      * entity - type of entity (e.g.: vms), you can use regexpr
      * entityName - name of entity, you can use regexpr
@@ -126,7 +125,9 @@ class LookUpVMIpByName(LookUpIpByEntityName):
     entity = 'vms'
 
     def __init__(self, target_var, source_var, cache_exp=60*10, nic=0):
-        super(LookUpVMIpByName, self).__init__(target_var, source_var, cache_exp)
+        super(LookUpVMIpByName, self).__init__(
+            target_var, source_var, cache_exp,
+        )
         self.nic = nic
 
     def get_ip(self, src_val):
@@ -196,14 +197,11 @@ class name2ip(LookUpIpByEntityName):
         assert False, "should't be used in this class"
 
 
-## EXAMPLE OF USAGE
+# # EXAMPLE OF USAGE
 #
-#@is_action()
-#@LookUpVMIpByName('vm_ip', 'name_vm')
-#def pingVm(vm_ip, attempts):
-#    pass # lets do ping
+# @LookUpVMIpByName('vm_ip', 'name_vm')
+# def pingVm(vm_ip, attempts):
+#     pass # lets do ping
 #
-#if __name__ == '__main__':
-#    pingVm(vm_name='my_vm')
-
-
+# if __name__ == '__main__':
+#     pingVm(vm_name='my_vm')

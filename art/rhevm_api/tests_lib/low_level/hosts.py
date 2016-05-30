@@ -26,7 +26,6 @@ from utilities import machine
 from art.core_api.apis_utils import TimeoutingSampler, data_st
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 from art.core_api.apis_utils import getDS
-from art.core_api import is_action
 from art.test_handler import settings
 from art.rhevm_api.utils.test_utils import (
     get_api, split, getStat, searchElement, searchForObj, stopVdsmd, startVdsmd
@@ -40,7 +39,6 @@ from art.rhevm_api.tests_lib.low_level.datacenters import (
 from art.rhevm_api.tests_lib.low_level.vms import (
     stopVm, getVmHost, get_vm_state
 )
-from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 
 ELEMENT = "host"
@@ -55,13 +53,6 @@ CL_API = get_api("cluster", "clusters")
 CAP_API = get_api("version", "capabilities")
 DC_API = get_api("data_center", "datacenters")
 HOST_NICS_API = get_api("host_nic", "host_nics")
-
-xpathMatch = is_action(
-    "xpathHosts", id_name="xpathMatch"
-)(XPathMatch(HOST_API))
-xpathHostsLinks = is_action(
-    "xpathLinksHosts", id_name="xpathHostsLinks"
-)(XPathLinks(HOST_API))
 
 Host = getDS("Host")
 Options = getDS("Options")
@@ -184,7 +175,6 @@ def isHostUp(positive, host):
     return (host_status == ENUMS['host_state_up']) == positive
 
 
-@is_action()
 def waitForOvirtAppearance(positive, host, attempts=10, interval=3):
     """
     Wait till ovirt host appears in rhevm.
@@ -283,7 +273,6 @@ def _check_hypervisor(positive, host, cluster):
     return False
 
 
-@is_action()
 def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
             reboot=True, **kwargs):
     """
@@ -374,7 +363,6 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
     return approveHost(positive, name, cluster)
 
 
-@is_action()
 def updateHost(positive, host, **kwargs):
     """
     Update properties of existed host (provided in parameters)
@@ -458,7 +446,6 @@ def updateHost(positive, host, **kwargs):
     return status
 
 
-@is_action()
 def removeHost(positive, host, deactivate=False):
     """
     Description: remove existed host
@@ -478,7 +465,6 @@ def removeHost(positive, host, deactivate=False):
     return HOST_API.delete(hostObj, positive)
 
 
-@is_action()
 def activateHost(positive, host, wait=True):
     """
     Activate host (set status to UP)
@@ -546,7 +532,6 @@ def isHostInMaintenance(positive, host):
     return (host_status == ENUMS['host_state_maintenance']) == positive
 
 
-@is_action()
 def deactivateHost(
     positive, host, expected_status=ENUMS['host_state_maintenance'],
     timeout=300
@@ -593,7 +578,6 @@ def deactivateHost(
                 return not positive
 
 
-@is_action()
 def installHost(positive, host, root_password, iso_image=None,
                 override_iptables='true'):
     """
@@ -622,7 +606,6 @@ def installHost(positive, host, root_password, iso_image=None,
     return HOST_API.waitForElemStatus(hostObj, state_maintenance, 800)
 
 
-@is_action()
 def approveHost(positive, host, cluster='Default'):
     """
     Description: approve host (for ovirt hosts)
@@ -646,7 +629,6 @@ def approveHost(positive, host, cluster='Default'):
 
 
 # FIXME: need to rewrite this def because new ovirt approval has been changed
-@is_action()
 def installOvirtHost(positive, host, user_name, password, vdc, port=443,
                      timeout=60):
     """
@@ -709,7 +691,6 @@ def installOvirtHost(positive, host, user_name, password, vdc, port=443,
     return True
 
 
-@is_action()
 def commit_network_config(positive, host):
     """
     Save host network configuration
@@ -736,7 +717,6 @@ def commit_network_config(positive, host):
     return res
 
 
-@is_action()
 def fenceHost(positive, host, fence_type, timeout=500):
     """
     Description: host fencing
@@ -890,7 +870,6 @@ def get_host_nics_list(host, all_content=False):
     )
 
 
-@is_action()
 def attachHostNic(positive, host, nic, network):
     """
     Description: attach network interface card to host
@@ -913,7 +892,6 @@ def attachHostNic(positive, host, nic, network):
     )
 
 
-@is_action()
 def updateHostNic(positive, host, nic, **kwargs):
     """
     Description: update nic of host
@@ -942,7 +920,6 @@ def updateHostNic(positive, host, nic, **kwargs):
 
 
 # FIXME: network param is deprecated.
-@is_action()
 def detachHostNic(positive, host, nic, network=None):
     """
     Description: detach network interface card from host
@@ -961,7 +938,6 @@ def detachHostNic(positive, host, nic, network=None):
     )
 
 
-@is_action()
 def generate_sn_nic(nic, **kwargs):
     """
     generate a host_nic element of types regular or VLAN
@@ -992,7 +968,6 @@ def generate_sn_nic(nic, **kwargs):
     return {'host_nic': nic_obj}
 
 
-@is_action()
 def send_setup_networks(
     positive, host, nics=list(), auto_nics=list(), **kwargs
 ):
@@ -1038,7 +1013,6 @@ def send_setup_networks(
     return res
 
 
-@is_action()
 def searchForHost(positive, query_key, query_val, key_name=None, **kwargs):
     """
     Description: search for a host by desired property
@@ -1054,7 +1028,6 @@ def searchForHost(positive, query_key, query_val, key_name=None, **kwargs):
     return searchForObj(HOST_API, query_key, query_val, key_name, **kwargs)
 
 
-@is_action()
 def rebootHost(positive, host, username, password):
     """
     Rebooting host via ssh session
@@ -1080,7 +1053,6 @@ def rebootHost(positive, host, username, password):
     )
 
 
-@is_action()
 def runDelayedControlService(positive, host, host_user, host_passwd, service,
                              command='restart', delay=0):
     """
@@ -1109,7 +1081,6 @@ def runDelayedControlService(positive, host, host_user, host_passwd, service,
     return output[0] == positive
 
 
-@is_action()
 def addTagToHost(positive, host, tag):
     """
     Description: add tag to a host
@@ -1128,7 +1099,6 @@ def addTagToHost(positive, host, tag):
     return status
 
 
-@is_action()
 def removeTagFromHost(positive, host, tag):
     """
     Description: remove tag from a host
@@ -1149,7 +1119,6 @@ def removeTagFromHost(positive, host, tag):
         return False
 
 
-@is_action()
 def checkHostSpmStatus(positive, hostName):
     """
     Description: The function checkHostSpmStatus checking Storage Pool Manager
@@ -1179,7 +1148,6 @@ def checkHostSpmStatus(positive, hostName):
     return (spmStatus in ('true', True, 'True')) == positive
 
 
-@is_action()
 def returnSPMHost(hosts):
     """
     Description: get SPM host from the list of hosts
@@ -1201,7 +1169,6 @@ def returnSPMHost(hosts):
     return False, {'spmHost': None}
 
 
-@is_action()
 def getAnyNonSPMHost(hosts, expected_states=None, cluster_name=None):
     """
     Description: get any not SPM host from the list of hosts in the expected
@@ -1240,7 +1207,6 @@ def getAnyNonSPMHost(hosts, expected_states=None, cluster_name=None):
     return False, {'hsmHost': None}
 
 
-@is_action()
 def getSPMPriority(hostName):
     """
     Description: Get SPM priority of host
@@ -1264,7 +1230,6 @@ def getSPMPriority(hostName):
     return spmPriority
 
 
-@is_action()
 def checkSPMPriority(positive, hostName, expectedPriority):
     """
     Description: check SPM priority of host
@@ -1280,7 +1245,6 @@ def checkSPMPriority(positive, hostName, expectedPriority):
     return (str(spmPriority) == expectedPriority)
 
 
-@is_action()
 def setSPMPriority(positive, hostName, spmPriority):
     """
     Description: set SPM priority on host
@@ -1323,7 +1287,6 @@ def setSPMPriority(positive, hostName, spmPriority):
 
 
 # noinspection PyBroadException
-@is_action()
 def set_spm_priority_in_db(host_name, spm_priority, engine):
     """
     Description: set SPM priority for host in DB
@@ -1344,7 +1307,6 @@ def set_spm_priority_in_db(host_name, spm_priority, engine):
     return True
 
 
-@is_action()
 def checkHostsForSPM(positive, hosts, expected_spm_host):
     """
     Description: checks whether SPM is expected host or not
@@ -1360,7 +1322,6 @@ def checkHostsForSPM(positive, hosts, expected_spm_host):
     return not positive
 
 
-@is_action()
 def checkSPMPresence(positive, hosts):
     """
     Description: checks whether SPM is set within the set of hosts
@@ -1397,7 +1358,6 @@ def _getSPMHostname(hosts):
                              % (str(hosts),))
 
 
-@is_action()
 def deactivateHosts(positive, hosts):
     """
     Description: deactivates the set of hosts. If host deactivation is not
@@ -1420,7 +1380,6 @@ def deactivateHosts(positive, hosts):
     return True == positive
 
 
-@is_action()
 def reactivateHost(positive, host):
     """
     Description: reactivates host (puts it to 'Maintenance' state first,
@@ -1436,7 +1395,6 @@ def reactivateHost(positive, host):
     return status == positive
 
 
-@is_action()
 def getSPMHost(hosts):
     """
     Description: get SPM host from the list of hosts
@@ -1453,7 +1411,6 @@ def getSPMHost(hosts):
                              % (str(hosts),))
 
 
-@is_action()
 def getHSMHost(hosts):
     """
     Description: get HSM host from the list of hosts
@@ -1470,7 +1427,6 @@ def getHSMHost(hosts):
                              % hosts)
 
 
-@is_action()
 def getHost(positive, dataCenter='Default', spm=True, hostName=None):
     """
     Locate and return SPM or HSM host from specific data center (given by name)
@@ -1508,7 +1464,6 @@ def getHost(positive, dataCenter='Default', spm=True, hostName=None):
     return False, {'hostName': None}
 
 
-@is_action()
 def waitForSPM(datacenter, timeout, sleep):
     """
     Description: waits until SPM gets elected in DataCenter
@@ -1529,7 +1484,6 @@ def waitForSPM(datacenter, timeout, sleep):
             return True
 
 
-@is_action()
 def getHostNicAttr(host, nic, attr):
     """
     get host's nic attribute value
@@ -1574,7 +1528,6 @@ def validateHostExist(positive, host):
     return bool(hosts) == positive
 
 
-@is_action()
 def getHostCompatibilityVersion(host):
     """
     Description: Get Host compatibility version
@@ -1599,7 +1552,6 @@ def getHostCompatibilityVersion(host):
     return getClusterCompatibilityVersion(cluster)
 
 
-@is_action()
 def waitForHostNicState(host, nic, state, interval=1, attempts=1):
     """
     Waiting for Host's nic state
@@ -1622,7 +1574,6 @@ def waitForHostNicState(host, nic, state, interval=1, attempts=1):
     return False
 
 
-@is_action()
 def getOsInfo(host, root_password=''):
     """
     Description: get OS info wrapper.
@@ -1662,7 +1613,6 @@ def getClusterCompatibilityVersion(cluster):
     return clVersion
 
 
-@is_action()
 def waitForHostPmOperation(host, engine):
     """
     Wait for next PM operation availability
@@ -1711,7 +1661,6 @@ def waitForHostPmOperation(host, engine):
     return returnVal
 
 
-@is_action()
 def check_network_filtering(positive, vds_resource):
     """
     Check that network filtering is enabled via VDSM
@@ -1771,7 +1720,6 @@ def check_nwfilter_virsh(vds_resource):
     return True
 
 
-@is_action()
 def check_network_filtering_dumpxml(positive, vds_resource, vm, nics):
     """
     Check that network filtering is enabled via dumpxml
@@ -1802,7 +1750,6 @@ def check_network_filtering_dumpxml(positive, vds_resource, vm, nics):
     return positive
 
 
-@is_action()
 def check_network_filtering_ebtables(host_obj, vm_macs):
     """
     Check that network filtering is enabled via ebtables

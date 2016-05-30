@@ -16,12 +16,10 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 from collections import namedtuple
-from art.core_api import is_action
 from art.core_api import validator
 from art.core_api.apis_utils import getDS
 import art.test_handler.exceptions as exceptions
 from art.rhevm_api.utils.test_utils import get_api
-from art.rhevm_api.utils.xpath_utils import XPathMatch
 
 util = get_api('', '')
 vmUtil = get_api('vm', 'vms')
@@ -37,7 +35,6 @@ except KeyError:
     util.logger.warn("Can't get list of permissions from capabilities")
     pass
 
-xpathMatch = is_action('xpathGeneral', id_name='xpathMatch')(XPathMatch(util))
 
 VM = getDS('VM')
 
@@ -62,7 +59,6 @@ def getSystemVersion():
     return ProductVersion(*fields)
 
 
-@is_action()
 def checkSystemVersionTag(positive):
     '''
     Checks whether there are attributes named:
@@ -146,7 +142,6 @@ def convToInt(num, attr):
     return True
 
 
-@is_action()
 def checkSummary(positive, domain):
     '''
     Description: validate system summary statistics values
@@ -231,7 +226,6 @@ def checkSummary(positive, domain):
     return status
 
 
-@is_action()
 def removeNonExistingVm(positive, entity_id='non_existing_object_id'):
     '''
     Description: Tries to remove non-existing object
@@ -244,7 +238,6 @@ def removeNonExistingVm(positive, entity_id='non_existing_object_id'):
     return vmUtil.delete(vm, False)
 
 
-@is_action()
 def checkResponsesAreXsdValid():
     '''
     Checks for validations errors found out by restutils
@@ -268,7 +261,6 @@ def checkResponsesAreXsdValid():
     return ret
 
 
-@is_action()
 def getProductName():
     '''
     Get product name
@@ -283,7 +275,6 @@ def getProductName():
     return True, {'product_name': product_name}
 
 
-@is_action()
 def checkProductName(name):
     '''
     Checks whether the product's name is the same as name parameter.

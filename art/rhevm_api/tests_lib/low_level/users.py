@@ -20,8 +20,7 @@ import logging
 from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.validator import compareElements, compareCollectionSize
-from art.core_api import is_action
-from art.test_handler.settings import opts
+from art.test_handler.settings import opts  # noqa
 
 ELEMENT = 'user'
 COLLECTION = 'users'
@@ -44,7 +43,6 @@ Permission = getDS('Permission')
 logger = logging.getLogger("art.ll_lib.users")
 
 
-@is_action()
 def addUser(positive, **kwargs):
     '''
     Description: create new user
@@ -102,7 +100,6 @@ def addExternalUser(
     return status
 
 
-@is_action()
 def addRoleToUser(positive, user, role):
     '''
     Description: add role to user
@@ -122,7 +119,6 @@ def addRoleToUser(positive, user, role):
     return status
 
 
-@is_action()
 def removeUser(positive, user, domain=None, namespace=None):
     '''
     Description: remove existed user
@@ -147,7 +143,6 @@ def removeUser(positive, user, domain=None, namespace=None):
     return util.delete(userObj, positive)
 
 
-@is_action()
 def addTagToUser(positive, user, tag):
     '''
     Description: add tag to a user
@@ -166,7 +161,6 @@ def addTagToUser(positive, user, tag):
     return status
 
 
-@is_action('verifyUser')
 def verifyADUserProperties(positive, domain, user, expected_username=None,
                            expected_department=None):
     '''
@@ -216,7 +210,6 @@ def search_user(authz, key, value):
     return None
 
 
-@is_action()
 def searchForUserInAD(positive, query_key, query_val, key_name, domain):
     '''
     Description: search for users by desired property in active directory
@@ -251,7 +244,6 @@ def searchForUserInAD(positive, query_key, query_val, key_name, domain):
     return compareCollectionSize(query_users, len(matches), util.logger)
 
 
-@is_action()
 def groupExists(positive, group_name):
     '''
     Description: checks whether groups exists or not
@@ -264,7 +256,6 @@ def groupExists(positive, group_name):
     return True
 
 
-@is_action()
 def addGroup(positive, group_name, domain=None, namespace=None):
     '''
     Description: create new domain group
@@ -280,7 +271,6 @@ def addGroup(positive, group_name, domain=None, namespace=None):
     return status
 
 
-@is_action()
 def deleteGroup(positive, group_name):
     '''
     Description: Delete group with the given name

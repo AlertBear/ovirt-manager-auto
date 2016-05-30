@@ -180,7 +180,6 @@ Develop the tests
         COLLECTION = 'tests_objects'
         util = get_api(ELEMENT, COLLECTION)
 
-        @is_action()
         def addObject(positive, **kwargs):
         '''
         Creating some object
@@ -806,19 +805,6 @@ Add element to an element sub-collection
         parentObjColl = getObjCollection(parent_obj_name, collection_name, collection_elem_name)
         addObj = my_api.find(add_object_name)
         obj, status = my_api.create(addObj, positive, collection=parentObjColl)
-    return status
-
-Setting function to be an action
---------------------------------
-
-Action means being able to call this function from your test files. It
-can be done by decorating your function. ::
-
-    @is_action()
-    def addObj(positive, **kwargs):
-        new_obj = _prepareObject(**kwargs)
-        res, status = OBJ_API.create(new_obj, positive)
-
     return status
 
 

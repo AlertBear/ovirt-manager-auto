@@ -21,7 +21,6 @@ import time
 import logging
 from Queue import Queue
 
-from art.core_api import is_action
 from art.core_api.apis_utils import getDS
 import art.test_handler.exceptions as exceptions
 from art.core_api.apis_exceptions import EntityNotFound
@@ -31,7 +30,6 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 from art.rhevm_api.tests_lib.low_level.hosts import(
     activateHost, deactivateHost,
 )
-from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.rhevm_api.utils.test_utils import searchForObj
 
 
@@ -59,7 +57,6 @@ VM_API = get_api('vm', 'vms')
 CLUSTER_NAME = "cluster"
 AFFINITY_GROUP_NAME = "affinity group"
 
-xpathMatch = is_action('xpathClusters', id_name='xpathMatch')(XPathMatch(util))
 logger = logging.getLogger(__name__)
 
 
@@ -165,7 +162,6 @@ def _prepareClusterObject(**kwargs):
     return cl
 
 
-@is_action()
 def addCluster(positive, **kwargs):
     """
     Add cluster
@@ -216,7 +212,6 @@ def addCluster(positive, **kwargs):
     return status
 
 
-@is_action()
 def updateCluster(positive, cluster, **kwargs):
     """
     Update cluster
@@ -268,7 +263,6 @@ def updateCluster(positive, cluster, **kwargs):
     return status
 
 
-@is_action()
 def removeCluster(positive, cluster):
     """
     Remove cluster
@@ -347,7 +341,6 @@ def waitForClustersGone(positive, clusters, timeout=30, samplingPeriod=5):
     return not positive
 
 
-@is_action()
 def removeClusters(positive, clusters):
     '''
     Removes the clusters specified by `clusters` commas separated list of
@@ -374,7 +367,6 @@ def removeClusters(positive, clusters):
     return status and waitForClustersGone(positive, clusters)
 
 
-@is_action()
 def searchForCluster(positive, query_key, query_val, key_name, **kwargs):
     '''
     Description: search for clusters by desired property
@@ -408,7 +400,6 @@ def isHostAttachedToCluster(positive, host, cluster):
     return hostObj.get_cluster().get_id() == clId
 
 
-@is_action()
 def connectClusterToDataCenter(positive, cluster, datacenter):
     """
     Function connects cluster to dataCenter
@@ -469,7 +460,6 @@ def connectClusterToDataCenter(positive, cluster, datacenter):
     return True
 
 
-@is_action()
 def checkClusterParams(positive, cluster, thrhld_low=None, thrhld_high=None,
                        duration=None, scheduling_policy=None,
                        mem_ovrcmt_prc=None, mem_trnspt_hp=None,
@@ -544,7 +534,6 @@ def checkClusterParams(positive, cluster, thrhld_low=None, thrhld_high=None,
     return status == positive
 
 
-@is_action()
 def get_cluster_object(cluster_name):
     """
     Description: get cluster object by name

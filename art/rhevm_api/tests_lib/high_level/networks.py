@@ -18,7 +18,6 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import logging
-import art.core_api as core_api
 import art.test_handler.settings as test_settings
 import art.test_handler.exceptions as test_exceptions
 import art.core_api.apis_exceptions as apis_exceptions
@@ -55,7 +54,6 @@ MODPROBE_CMD = "/sbin/modprobe"
 
 
 # FIXME: need to check if this function is being used else just remove.
-@core_api.is_action()
 def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
     """
      Validate Datacenter/Cluster network configurations/existence.
@@ -106,7 +104,6 @@ def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
     return False, tag
 
 
-@core_api.is_action()
 def validate_network_param(positive, cluster, network, tag, val):
     """
     Validate network param
@@ -133,7 +130,6 @@ def validate_network_param(positive, cluster, network, tag, val):
     return res
 
 
-@core_api.is_action()
 def remove_networks(positive, networks, data_center=None):
     """
     Remove networks

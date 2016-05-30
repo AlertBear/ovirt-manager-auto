@@ -3,7 +3,6 @@ High-level functions above data-center
 """
 
 import logging
-from art.core_api import is_action
 from art.core_api import apis_exceptions
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
@@ -15,7 +14,6 @@ LOGGER = logging.getLogger("art.hl_lib.hosts")
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
 
-@is_action()
 def add_hosts(hosts_list, passwords, cluster):
     """
     Description: Adds all hosts from config
@@ -44,7 +42,6 @@ def add_hosts(hosts_list, passwords, cluster):
         raise errors.HostException("Some of hosts didn't come to up status")
 
 
-@is_action()
 def move_host_to_another_cluster(host, cluster, activate=True):
     """
     Switch host to different cluster
@@ -76,7 +73,6 @@ def move_host_to_another_cluster(host, cluster, activate=True):
     return True
 
 
-@is_action()
 def deactivate_host_if_up(host):
     """
     Deactivate host if it's not in maintenance

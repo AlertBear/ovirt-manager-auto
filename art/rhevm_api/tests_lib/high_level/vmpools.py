@@ -20,7 +20,6 @@
 High-level functions above VM pools
 """
 import logging
-from art.core_api import is_action
 import art.rhevm_api.utils.test_utils as test_utils
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
@@ -111,7 +110,6 @@ def _control_vms_in_pool(
     return True
 
 
-@is_action()
 def start_vm_pool(vm_pool, positive=True):
     """
     Wrapper for starting all VMs in a pool.
@@ -128,7 +126,6 @@ def start_vm_pool(vm_pool, positive=True):
     )
 
 
-@is_action()
 def stop_vm_pool(vm_pool, positive=True):
     """
     Wrapper for stopping all VMs in a pool.
@@ -145,7 +142,6 @@ def stop_vm_pool(vm_pool, positive=True):
     )
 
 
-@is_action()
 def detach_vms_from_pool(vm_pool, positive=True):
     """
     Wrapper for detaching all VMs in a pool.
