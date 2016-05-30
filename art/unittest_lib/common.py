@@ -62,8 +62,11 @@ class BaseTestCase(TestCase):
 
     @classmethod
     def teardown_exception(cls):
-        if cls.test_failed:
-            raise TearDownException("TearDown failed with errors")
+        try:
+            if cls.test_failed:
+                raise TearDownException("TearDown failed with errors")
+        finally:
+            cls.test_failed = False
     # All storage types available that test can run with
     storages = NOT_APPLICABLE
     # current API on run time
