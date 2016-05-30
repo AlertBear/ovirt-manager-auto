@@ -9,7 +9,7 @@ import logging
 import pytest
 
 from art.unittest_lib.common import attr, VirtTest
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
 import rhevmtests.helpers as global_helper
 from art.rhevm_api.utils.test_utils import getStat
@@ -285,6 +285,7 @@ class TestMemoryHotplugCase04(TestMemoryHotplugBaseClass):
             )
         super(TestMemoryHotplugCase04, cls).teardown_class()
 
+    @bz({"1337145": {}})
     @polarion("RHEVM3-14611")
     def test_expand_vm_memory_over_host_memory(self):
         """
