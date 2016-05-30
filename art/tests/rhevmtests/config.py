@@ -550,12 +550,18 @@ AGENT_URL = 'http://10.34.63.72/cirunner/ci.php?action={action}&hostID={vm_id}'
 SKIP_MSG_PREFIX = "Hosts in env doesn't have %s"
 NOT_4_NICS_HOSTS = PARAMETERS.as_bool('not_4_nics_hosts')
 NOT_4_NICS_HOST_SKIP_MSG = SKIP_MSG_PREFIX % "4 nics"
+NOT_6_NICS_HOSTS = PARAMETERS.as_bool('not_6_nics_hosts')
+NOT_6_NICS_HOST_SKIP_MSG = SKIP_MSG_PREFIX % "6 nics"
 NO_FULL_SRIOV_SUPPORT = PARAMETERS.as_bool('no_full_sriov_support')
 NO_FULL_SRIOV_SUPPORT_SKIP_MSG = SKIP_MSG_PREFIX % "full SRIOV support"
 NO_SEMI_SRIOV_SUPPORT = PARAMETERS.as_bool('no_semi_sriov_support')
 NO_SEMI_SRIOV_SUPPORT_SKIP_MSG = SKIP_MSG_PREFIX % "semi SRIOV support"
 NO_JUMBO_FRAME_SUPPORT = PARAMETERS.as_bool('no_jumbo_frame_support')
 NO_JUMBO_FRAME_SUPPORT_SKIP_MSG = SKIP_MSG_PREFIX % "jumbo frame support"
+NO_EXTRA_BOND_MODE_SUPPORT = PARAMETERS.as_bool('no_extra_bond_mode_support')
+NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG = SKIP_MSG_PREFIX % (
+    "extra bond mode support"
+)
 
 # used for tests that are not adjusted to GE or tests that we don't want to run
 DO_NOT_RUN = 17

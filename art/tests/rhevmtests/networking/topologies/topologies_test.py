@@ -458,6 +458,10 @@ class TestTopologiesCase04(unittest_lib.NetworkTest):
 @pytest.mark.skipif(
     config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
 )
+@pytest.mark.skipif(
+    config.NO_EXTRA_BOND_MODE_SUPPORT,
+    reason=config.NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG
+)
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class TestTopologiesCase05(unittest_lib.NetworkTest):
     """
@@ -504,6 +508,10 @@ class TestTopologiesCase05(unittest_lib.NetworkTest):
 @pytest.mark.skipif(
     config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
 )
+@pytest.mark.skipif(
+    config.NO_EXTRA_BOND_MODE_SUPPORT,
+    reason=config.NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG
+)
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class TestTopologiesCase06(unittest_lib.NetworkTest):
     """
@@ -548,6 +556,10 @@ class TestTopologiesCase06(unittest_lib.NetworkTest):
 @unittest_lib.attr(tier=2)
 @pytest.mark.skipif(
     config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
+)
+@pytest.mark.skipif(
+    config.NO_EXTRA_BOND_MODE_SUPPORT,
+    reason=config.NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG
 )
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 class TestTopologiesCase07(unittest_lib.NetworkTest):
@@ -594,6 +606,10 @@ class TestTopologiesCase07(unittest_lib.NetworkTest):
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.skipif(
     config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
+)
+@pytest.mark.skipif(
+    config.NO_EXTRA_BOND_MODE_SUPPORT,
+    reason=config.NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG
 )
 class TestTopologiesCase08(unittest_lib.NetworkTest):
     """
