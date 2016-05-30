@@ -176,7 +176,9 @@ if 'prepared_env' in ART_CONFIG:
                         NFS_VMS.append(another_vm['name'])
                     if STORAGE_TYPE_ISCSI in vm['storage_domain']:
                         ISCSI_VMS.append(another_vm['name'])
-                    if STORAGE_TYPE_GLUSTER in vm['storage_domain']:
+                    # 'glusterfs'[:-2] -> 'gluster' which is a substring of
+                    # GE's gluster storage domain name 'test_gluster_X'
+                    if STORAGE_TYPE_GLUSTER[:-2] in vm['storage_domain']:
                         GLUSTER_VMS.append(another_vm['name'])
                     if STORAGE_TYPE_FCP in vm['storage_domain']:
                         FCP_VMS.append(another_vm['name'])
