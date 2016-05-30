@@ -200,21 +200,23 @@ def start_vms_on_specific_host(
     return vms.start_vms(vm_list, max_workers, wait_for_status, wait_for_ip)
 
 
-def calculate_memory_for_memory_filter(hosts_list):
+def calculate_memory_for_memory_filter(hosts_list, difference=10):
     """
-    Calculate memory for vms to prevent run more than one vm on each host
+    Calculate memory for VM's to prevent run more than one VM on each host
 
-    :param hosts_list: list of host names
-    :type hosts_list: list
-    :returns: list of memory values for vms ordered from big to small
-    :rtype: list
+    Args:
+        hosts_list (list): Hosts names
+        difference (int): Leave some free memory on host
+
+    Returns:
+        list: Memory values for VM's ordered from big to small
     """
     mem_hosts = map(
-        lambda host: hosts.get_host_free_memory(host), hosts_list
+        lambda host: hosts.get_host_max_scheduling_memory(host), hosts_list
     )
     host_memory_l = []
     for host_memory in mem_hosts:
-        host_memory -= host_memory / 10
+        host_memory -= host_memory / difference
         host_memory -= host_memory % MB
         host_memory_l.append(host_memory)
     return sorted(host_memory_l, reverse=True)

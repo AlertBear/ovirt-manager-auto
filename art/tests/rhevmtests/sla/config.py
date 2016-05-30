@@ -121,3 +121,10 @@ CPU_AFFINITY = "cpu_affinity"
 CPU_MODEL_NAME = "model name"
 
 NUMA_AWARE_KSM_FILE = "/sys/kernel/mm/ksm/merge_across_nodes"
+
+# VM run once constants
+VM_RUN_ONCE_HOST = "host"
+VM_RUN_ONCE_WAIT_FOR_STATE = "wait_for_state"
+
+UPDATE_SCHEDULER_MEMORY_TIMEOUT = 30
+AREM_BALANCE_TIMEOUT = 120

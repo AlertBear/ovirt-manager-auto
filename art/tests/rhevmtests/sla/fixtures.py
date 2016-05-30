@@ -3,14 +3,31 @@ SLA fixtures
 """
 import pytest
 
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as sla_config
 
 
 @pytest.fixture(scope="class")
+def start_vms(request):
+    """
+    1) Start VMS
+    """
+    vms_to_start = request.node.cls.vms_to_start
+
+    def fin():
+        """
+        1) Stop VM's
+        """
+        ll_vms.stop_vms_safely(vms_list=vms_to_start)
+    request.addfinalizer(fin)
+
+    ll_vms.start_vms(vm_list=vms_to_start)
+
+
+@pytest.fixture(scope="class")
 def stop_vms(request):
-    vms_to_stop = getattr(request.node.cls, "vms_to_stop", None)
+    vms_to_stop = request.node.cls.vms_to_stop
 
     def fin():
         """
@@ -18,6 +35,29 @@ def stop_vms(request):
         """
         ll_vms.stop_vms_safely(vms_list=vms_to_stop)
     request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="class")
+def run_once_vms(request):
+    """
+    Run once VM's
+    """
+    vms_to_run = request.node.cls.vms_to_run
+
+    def fin():
+        """
+        1) Stop VM's
+        """
+        ll_vms.stop_vms_safely(vms_list=vms_to_run.keys())
+    request.addfinalizer(fin)
+
+    for vm_name, run_once_params in vms_to_run.iteritems():
+        host = run_once_params.get(sla_config.VM_RUN_ONCE_HOST)
+        if host is not None:
+            run_once_params[
+                sla_config.VM_RUN_ONCE_HOST
+            ] = sla_config.HOSTS[host]
+    ll_vms.run_vms_once(vms=vms_to_run.keys(), **vms_to_run)
 
 
 @pytest.fixture(scope="class")
@@ -54,7 +94,7 @@ def update_vms(request):
 
 @pytest.fixture(scope="class")
 def activate_hosts(request):
-    hosts_to_activate_indexes = request.node.cls.hosts_to_activate
+    hosts_to_activate_indexes = request.node.cls.hosts_to_activate_indexes
 
     def fin():
         """
