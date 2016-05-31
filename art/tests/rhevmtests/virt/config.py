@@ -48,7 +48,6 @@ RHEL_OS_TYPE_FOR_MIGRATION = "rhel"
 
 # glance
 RHEL_IMAGE_GLANCE_IMAGE = 'latest-rhel-guest-image-7.2'
-GLANCE_DOMAIN = 'rhevm-qe-infra-glance'
 
 # migration
 MIGRATION_VM = VM_NAME[0] if PPC_ARCH else "migration_vm"

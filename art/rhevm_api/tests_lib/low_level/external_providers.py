@@ -1,8 +1,11 @@
+import logging
 from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils.test_utils import get_api
+import art.rhevm_api.tests_lib.low_level.general as ll_general
 
 CEPH = 'ceph'
 AUTH_KEY = 'authenticationkey'
+logger = logging.getLogger(__name__)
 
 
 class OpenStackProvider(object):
@@ -43,10 +46,10 @@ class OpenStackProvider(object):
 
         # provider_name will be generated from child class name, it should be
         # same as in generated DS for specific provider
-        provider_name = self.__class__.__name__
-        self.open_stack_provider = getDS(provider_name)
+        self.provider_name = self.__class__.__name__
+        self.open_stack_provider = getDS(self.provider_name)
         self._api = get_api(
-            provider_api_element_name, provider_name.lower() + 's'
+            provider_api_element_name, self.provider_name.lower() + 's'
         )
         self.osp_obj = None
         self._is_connected = False
@@ -61,6 +64,42 @@ class OpenStackProvider(object):
             self._api.logger.warning("Unable to add %s", self.name)
 
         return self._is_connected
+
+    def find(self, openstack_ep, key='name'):
+        """
+        Get openstack ep object from engine by name or id
+
+        :param openstack_ep: the openstack ep name/id
+        :type openstack_ep: str
+        :param key: key to look for ep, it can be name or id
+        :type key: str
+        :return: openstack ep object
+        :raise: EntityNotFound
+        """
+        return self._api.find(openstack_ep, attribute=key)
+
+    def remove(self, openstack_ep, key='name'):
+        """
+        Remove openstack ep object from engine by name or id
+
+        :param openstack_ep: the openstack ep name/id
+        :type openstack_ep: str
+        :param key: key to look for ep, it can be name or id
+        :type key: str
+        :return: True if ep was removed properly, False otherwise
+        :rtype: bool
+        :raise: EntityNotFound
+        """
+        log_info, log_error = ll_general.get_log_msg(
+            action="Remove", obj_type=self.provider_name,
+            obj_name=openstack_ep
+        )
+        logger.info(log_info)
+        ep_obj = self.find(openstack_ep)
+        res = self._api.delete(ep_obj, True)
+        if not res:
+            logger.error(log_error)
+        return res
 
     def _init(self):
 
@@ -240,3 +279,34 @@ class OpenStackVolumeProvider(OpenStackProvider):
             if self.key_uuid and self.key_value:
                 self.add_ceph_auth_key(self.key_uuid, self.key_value)
         return self._is_connected
+
+
+def get_glance_ep_obj(glance_ep, key='name'):
+    """
+    Get glance ep object from engine by name or id
+
+    :param glance_ep: the openstack ep name/id
+    :type glance_ep: str
+    :param key: key to look for ep, it can be name or id
+    :type key: str
+    :return: glance ep object
+    :raise: EntityNotFound
+    """
+    osip = OpenStackImageProvider()
+    return osip.find(glance_ep, key)
+
+
+def remove_glance_ep(glance_ep, key='name'):
+    """
+    Remove glance ep object from engine by name or id
+
+    :param glance_ep: the glance ep name/id
+    :type glance_ep: str
+    :param key: key to look for glance ep, it can be name or id
+    :type key: str
+    :return: True if glance ep was removed properly, False otherwise
+    :rtype: bool
+    :raise: EntityNotFound
+    """
+    osip = OpenStackImageProvider()
+    return osip.remove(glance_ep, key)
