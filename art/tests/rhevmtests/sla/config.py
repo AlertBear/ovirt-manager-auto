@@ -51,7 +51,7 @@ DEFAULT_VM_PARAMETERS = {
     VM_HIGHLY_AVAILABLE: False,
     VM_CPU_PINNING: [],
     VM_CPU_SHARES: 0,
-    VM_CPU_MODE: "none"
+    VM_CPU_MODE: "custom"  # W/A for 1337181
 }
 
 HOST = "host"
