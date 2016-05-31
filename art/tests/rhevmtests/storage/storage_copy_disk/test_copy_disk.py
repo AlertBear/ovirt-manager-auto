@@ -7,7 +7,7 @@ import config
 import logging
 import os
 from art.unittest_lib import attr, StorageTest as BaseTestCase
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     jobs as ll_jobs,
@@ -462,6 +462,7 @@ class CopyDiskClonedFromTemplate(CopyDiskWithContent):
 
 
 @attr(tier=1)
+@bz({'1340648': {}})
 class TestCaseCopyAttachedDisk(CopyDiskWithContent):
     """
     Copy disk - basic flow
