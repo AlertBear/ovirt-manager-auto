@@ -13,7 +13,7 @@ from rhevmtests.sla.scheduler_tests.fixtures import *  # flake8: noqa
 logger = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def setup_default_policies(request):
     """
     1) Change engine-config LowUtilizationForEvenlyDistribute to 35
@@ -38,6 +38,7 @@ def setup_default_policies(request):
     "load_hosts_cpu", [{conf.CPU_LOAD_50: [1]}], indirect=True
 )
 @pytest.mark.usefixtures(
+    "setup_default_policies",
     "start_vms_on_three_hosts",
     "load_hosts_cpu",
     "update_cluster_policy_to_power_saving"
@@ -57,6 +58,7 @@ def test_power_saving_balance_module_1():
     "load_hosts_cpu", [{conf.CPU_LOAD_100: [1]}], indirect=True
 )
 @pytest.mark.usefixtures(
+    "setup_default_policies",
     "start_vms_on_three_hosts",
     "load_hosts_cpu",
     "update_cluster_policy_to_power_saving"
@@ -79,6 +81,7 @@ def test_power_saving_balance_module_2():
     indirect=True
 )
 @pytest.mark.usefixtures(
+    "setup_default_policies",
     "start_vms_on_three_hosts",
     "load_hosts_cpu",
     "update_cluster_policy_to_power_saving"
@@ -99,6 +102,7 @@ def test_power_saving_balance_module_3():
     "load_hosts_cpu", [{conf.CPU_LOAD_50: range(2)}], indirect=True
 )
 @pytest.mark.usefixtures(
+    "setup_default_policies",
     "start_vms_on_three_hosts",
     "load_hosts_cpu",
     "update_cluster_policy_to_power_saving",
@@ -122,6 +126,7 @@ def test_power_saving_weight_module_1():
     "load_hosts_cpu", [{conf.CPU_LOAD_100: range(2)}], indirect=True
 )
 @pytest.mark.usefixtures(
+    "setup_default_policies",
     "start_vms_on_three_hosts",
     "load_hosts_cpu",
     "update_cluster_policy_to_even_distributed"
@@ -141,6 +146,7 @@ def test_even_distributed_balance_module_1():
     "load_hosts_cpu", [{conf.CPU_LOAD_100: range(3)}], indirect=True
 )
 @pytest.mark.usefixtures(
+    "setup_default_policies",
     "start_vms_on_three_hosts",
     "load_hosts_cpu",
     "update_cluster_policy_to_even_distributed"
@@ -161,6 +167,7 @@ def test_even_distributed_balance_module_2():
     "load_hosts_cpu", [{conf.CPU_LOAD_100: [2]}], indirect=True
 )
 @pytest.mark.usefixtures(
+    "setup_default_policies",
     "start_vms_on_three_hosts",
     "load_hosts_cpu",
     "update_cluster_policy_to_even_distributed",
