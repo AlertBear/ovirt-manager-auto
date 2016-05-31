@@ -1528,6 +1528,7 @@ class TestCase5241(TestCase):
 
 
 @attr(tier=1)
+@bz({'1340164': {}})
 class TestCase5249(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/

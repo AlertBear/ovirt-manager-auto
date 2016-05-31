@@ -363,6 +363,7 @@ class CommonSetUp(BasicEnvironment):
 
 
 @attr(tier=1)
+@bz({'1340164': {}})
 class TestCase11861(BasicEnvironment):
     """
     Detach/Attach a new Domain

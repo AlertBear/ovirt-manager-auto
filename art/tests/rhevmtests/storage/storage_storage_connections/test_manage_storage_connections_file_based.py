@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, StorageTest as TestCase
 from rhevmtests import helpers as rhevm_helpers
 
@@ -324,6 +324,7 @@ class TestCaseISO(TestCasePosix):
 
 
 @attr(tier=1)
+@bz({'1340164': {}})
 class TestCase5250(TestCaseNFSAndGlusterFS):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/

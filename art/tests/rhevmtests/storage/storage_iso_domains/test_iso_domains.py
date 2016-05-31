@@ -24,7 +24,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost
 from art.rhevm_api.utils.test_utils import wait_for_tasks
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
 import rhevmtests.storage.helpers as storage_helpers
 from utilities import machine
 from utilities.rhevm_tools.base import Utility, Setup
@@ -201,6 +201,7 @@ class BaseCaseIsoDomains(TestCase):
 
 
 @attr(tier=1)
+@bz({'1340164': {}})
 class TestCase11576Shared(BaseCaseIsoDomains):
     """
     Test detaching iso domains when an iso image is inserted in a vm under a
