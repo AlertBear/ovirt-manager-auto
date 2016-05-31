@@ -76,7 +76,6 @@ class BaseUserFromGroup(AuthBaseCase):
     def tearDown(self):
         common.loginAsAdmin()
         users.deleteGroup(True, group_name=self.group)
-        users.removeUser(True, self.user)
 
 
 class BaseExpiredAccount(AuthBaseCase):

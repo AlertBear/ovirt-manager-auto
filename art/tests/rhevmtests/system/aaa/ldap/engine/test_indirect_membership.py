@@ -37,7 +37,6 @@ class IndirectMembership(TestCase):
     def teardown_class(cls):
         common.loginAsAdmin()
         assert users.deleteGroup(True, cls.GROUP)
-        assert users.removeUser(True, cls.USER, cls.conf['authz_name'])
 
     def indirect_group_membership(self):
         user = self.USER
@@ -109,7 +108,6 @@ class GroupRecursion(TestCase):
     def teardown_class(cls):
         common.loginAsAdmin()
         assert users.deleteGroup(True, config.IPA_GROUP_LOOP2)
-        assert users.removeUser(True, cls.USER, cls.conf['authz_name'])
 
     @polarion('RHEVM3-12861')
     def test_group_recursion(self):
