@@ -100,7 +100,11 @@ class BaseCPUHotPlugClass(TestCase):
                 "Failed to update VM %s" % config.VM_NAME[0]
             )
         logger.info("Start VM %s", config.VM_NAME[0])
-        if not ll_vms.startVm(True, config.VM_NAME[0], wait_for_ip=True):
+        if not ll_vms.startVm(
+            True, config.VM_NAME[0],
+            wait_for_ip=True,
+            wait_for_status=config.VM_UP
+        ):
             raise errors.VMException(
                 "Failed to start VM %s" % config.VM_NAME[0]
             )
