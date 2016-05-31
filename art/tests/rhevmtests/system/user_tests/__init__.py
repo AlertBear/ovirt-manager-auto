@@ -1,6 +1,7 @@
 from art.rhevm_api.utils.enginecli import EngineCLI
 from art.rhevm_api.tests_lib.low_level import mla as ll_mla
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
+from art.test_handler.tools import bz  # pylint: disable=E0611
 from rhevmtests.system.user_tests import (
     config,
     test_user,
@@ -29,6 +30,18 @@ def get_action_groups(role_name):
         perms = role_actions
 """
 allActions = get_action_groups('SuperUser')
+bzs = {
+    '1209505': {
+        'PowerUserRole': ['create_disk', 'create_template'],
+        'TemplateCreator': ['create_template'],
+        'TemplateAdmin': ['create_template'],
+        'VmPoolAdmin': [
+            'create_vm_pool',
+            'edit_vm_pool_configuration',
+        ],
+    },
+}
+
 for role in ll_mla.util.get(absLink=False):
     role_name = role.get_name()
     filter_ = not role.get_administrative()
@@ -51,6 +64,15 @@ for role in ll_mla.util.get(absLink=False):
 
     module = test_user if filter_ else test_admin
     setattr(module, '%s_%s' % (role_name, case_name), role_case)
+    """ Assign bz to specific cases """
+    for bz_id, roles in bzs.iteritems():
+        if role_name in roles:
+            for perm in roles[role_name]:
+                method_name = 'test_%s' % perm
+                c = getattr(module, '%s_%s' % (role_name, case_name))
+                m = getattr(c, method_name)
+                bz({bz_id: {}})(m.__func__)
+
     role_case = None  # Need set to None, else it will be case of this module
 
 
