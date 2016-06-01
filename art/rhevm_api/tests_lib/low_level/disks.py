@@ -853,3 +853,13 @@ def export_disk_to_glance(
     ):
         return False
     return True
+
+
+def get_all_disks():
+    """
+    Get list of disk objects from API
+
+    Returns:
+        list: List objects
+    """
+    return DISKS_API.get(absLink=False)

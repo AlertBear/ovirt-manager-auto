@@ -7,12 +7,12 @@ rhevmtests helper functions
 import functools
 import logging
 import os
-
 from rrmngmnt import ssh
 from rhevmtests import config
 from art.rhevm_api.resources import User, Host, storage
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
+    disks as ll_disks,
     vms as ll_vms,
     jobs as ll_jobs,
     hosts as ll_hosts,
@@ -297,8 +297,19 @@ def cleanup_file_resources(storage_types=(GULSTERFS, NFS)):
 
 def storage_cleanup():
     """
-    Clean up all storage domains which are not in GE yaml
+    Clean up all storage domains which are not in GE yaml and direct LUNs
     """
+    direct_luns = [disk for disk in ll_disks.get_all_disks() if (
+        disk.storage_type == config.DISK_TYPE_LUN
+    )]
+    for direct_lun in direct_luns:
+        logger.error(
+            "DIRECT LUN DISK LEFTOVER FOUND: NAME: %s ,ID: %s",
+            direct_lun.get_alias(), direct_lun.get_id()
+        )
+        if not ll_disks.deleteDisk(True, disk_id=direct_lun.get_id()):
+            logger.error("Failed to delete direct lun with ID: %s", direct_lun)
+
     logger.info("Retrieve all Storage domains")
     engine_sds_objs = ll_sd.get_storage_domains()
     logger.info(
@@ -319,7 +330,6 @@ def storage_cleanup():
                     sd_name, sd_obj.id, sd_obj.storage.get_type()
                 )
                 hl_sd.destroy_storage_domain(sd_name, dc_name, host_name=spm)
-
     cleanup_file_resources(config.opts['storages'])
 
 
