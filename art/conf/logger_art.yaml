@@ -22,6 +22,14 @@ handlers:
   devnull:
     class: utilities.logger_utils.NullHandler
     level: DEBUG
+  duplicateFileHandler:
+    class: utilities.logger_utils.DuplicateFileHandler
+    level: DEBUG
+    formatter: fileFormatter
+    1filename: "%(logfile)s"
+    2mode: w
+    3maxBytes: 31457280
+    4backupCount: 20
 loggers:
   requests:
     level: DEBUG
@@ -38,4 +46,4 @@ loggers:
   root:
     level: DEBUG
     handlers:
-      - fileHandler
+      - duplicateFileHandler
