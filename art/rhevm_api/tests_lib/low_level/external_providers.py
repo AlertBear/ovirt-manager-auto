@@ -78,6 +78,14 @@ class OpenStackProvider(object):
         """
         return self._api.find(openstack_ep, attribute=key)
 
+    def get_openstack_ep_objects(self):
+        """
+        Get openstack ep objects from engine.
+
+        :return: list of openstack ep objects
+        """
+        return self._api.get(absLink=False)
+
     def remove(self, openstack_ep, key='name'):
         """
         Remove openstack ep object from engine by name or id
@@ -296,6 +304,16 @@ def get_glance_ep_obj(glance_ep, key='name'):
     return osip.find(glance_ep, key)
 
 
+def get_glance_ep_objs():
+    """
+    Get glance ep objects from engine.
+
+    :return: list of glance ep objects
+    """
+    osip = OpenStackImageProvider()
+    return osip.get_openstack_ep_objects()
+
+
 def remove_glance_ep(glance_ep, key='name'):
     """
     Remove glance ep object from engine by name or id
@@ -310,3 +328,44 @@ def remove_glance_ep(glance_ep, key='name'):
     """
     osip = OpenStackImageProvider()
     return osip.remove(glance_ep, key)
+
+
+def get_cinder_ep_obj(cinder_ep, key='name'):
+    """
+    Get cinder ep object from engine by name or id
+
+    :param cinder_ep: the openstack ep name/id
+    :type cinder_ep: str
+    :param key: key to look for ep, it can be name or id
+    :type key: str
+    :return: cinder ep object
+    :raise: EntityNotFound
+    """
+    osvp = OpenStackVolumeProvider()
+    return osvp.find(cinder_ep, key)
+
+
+def get_cinder_ep_objs():
+    """
+    Get cinder ep objects from engine.
+
+    :return: list of cinder ep objects
+    """
+    osvp = OpenStackVolumeProvider()
+    return osvp.get_openstack_ep_objects()
+
+
+def remove_cinder_ep(cinder_ep, key='name'):
+    """
+    Remove cinder ep object from engine by name or id
+
+    :param cinder_ep: the cinder ep name/id
+    :type cinder_ep: str
+    :param key: key to look for cinder ep, it can be name or id
+    :type key: str
+    :return: True if cinder ep was removed properly, False otherwise
+    :rtype: bool
+    :raise: EntityNotFound
+    """
+    osvp = OpenStackVolumeProvider()
+    return osvp.remove(cinder_ep, key)
