@@ -1,6 +1,6 @@
 import logging
 
-from art.unittest_lib import BaseTestCase
+from art.unittest_lib import BaseTestCase, testflow
 
 from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dc,
@@ -32,6 +32,7 @@ class CleanGoldenEnv(BaseTestCase):
         will also be removed.
         """
         for dc in ll_dc.get_datacenters_list():
+            testflow.step("Clean datacenter: %s", dc.get_name())
             hl_dc.clean_datacenter(
                 True,
                 dc.name,
@@ -45,11 +46,24 @@ class CleanGoldenEnv(BaseTestCase):
                 )
             )
             for host in hosts_to_remove:
+                testflow.step(
+                    "Remove host: %s from cluster: %s", host.get_name(),
+                    cluster.get_name()
+                )
                 ll_hosts.removeHost(
                     positive=True, host=host.get_name(), deactivate=True
                 )
+            testflow.step("Remove cluster: %s", cluster.get_name())
             ll_clusters.removeCluster(True, cluster.get_name())
         for glance_ep in ll_ep.get_glance_ep_objs():
+            testflow.step(
+                "Remove glance image external provider: %s",
+                glance_ep.get_name()
+            )
             ll_ep.remove_glance_ep(glance_ep.get_name())
         for cinder_ep in ll_ep.get_cinder_ep_objs():
+            testflow.step(
+                "Remove cinder volume external provider: %s",
+                cinder_ep.get_name()
+            )
             ll_ep.remove_cinder_ep(cinder_ep.get_name())
