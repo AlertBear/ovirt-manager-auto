@@ -78,25 +78,27 @@ class VDS(Host):
         Run given command on host with vdsClient
         All commands can be found in /usr/share/vdsm/rpc/bindingxmlrpc.py
 
-        :param cmd: command to execute
-        :type: cmd: str
-        :param args: command parameters optional
-        :type: list
-        :return: command output
-        :rtype: dict
-        :example: stop VM
-                  out = config.VDS_HOSTS[0].vds_client("list")
-                  vm_id = out['vmList'][0]['vmId']
-                  config.VDS_HOSTS[0].vds_client("destroy", [vm_id])
+        Args:
+            cmd (str): command to execute
+            args (list): command parameters optional
 
-                  getVdsCaps
-                  out = config.VDS_HOSTS[0].vds_client("getVdsCapabilities")
+        Returns:
+            dict: command output
 
+        Examples:
+            stop VM
+            out = config.VDS_HOSTS[0].vds_client("list")
+            vm_id = out['vmList'][0]['vmId']
+            config.VDS_HOSTS[0].vds_client("destroy", [vm_id])
+
+            getVdsCaps
+            out = config.VDS_HOSTS[0].vds_client("getVdsCapabilities")
         """
         cmd_args = " ".join(args)
+        args_txt = "'{0}'".format(cmd_args) if cmd_args else ""
         command = (
-            "python -c 'from vdsm import vdscli;"
-            "print vdscli.connect().{0}({1})'".format(cmd, cmd_args)
+            'python -c "from vdsm import vdscli;'
+            'print vdscli.connect().{0}({1})"'.format(cmd, args_txt)
         )
         rc, out, err = self.executor().run_cmd(shlex.split(command))
         if rc:

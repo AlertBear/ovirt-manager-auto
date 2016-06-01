@@ -21,6 +21,7 @@ import random
 import re
 import shlex
 import time
+from art.rhevm_api import resources
 from Queue import Queue
 from operator import and_
 from threading import Thread
@@ -115,6 +116,7 @@ SAMPLER_TIMEOUT = 120
 SAMPLER_SLEEP = 5
 VM = "vm"
 MIGRATION_TIMEOUT = 300
+VM_PASSWORD = "qum5net"
 
 logger = logging.getLogger("art.ll_lib.vms")
 
@@ -2877,33 +2879,50 @@ def createVm(
         return True
 
 
-def waitForIP(vm, timeout=600, sleep=DEF_SLEEP, get_all_ips=False):
+def waitForIP(
+    vm, timeout=600, sleep=DEF_SLEEP, get_all_ips=False,
+    vm_password=VM_PASSWORD
+):
     """
-    Description: Waits until agent starts reporting IP address
+    Waits until agent starts reporting IP address
 
-    __author__ = "jlibsova"
-    :param vm: name of the virtual machine
-    :type vm: str
-    :param timeout: how long to wait
-    :type timeout: int
-    :param sleep: polling interval
-    :type sleep: int
-    :param get_all_ips: Get all VM ips
-    :type get_all_ips: bool
-    :return: True/False whether it obtained the IP, IP if fetched or None
-    :rtype: tuple
+    Args:
+        vm (str): name of the virtual machine
+        timeout (int): how long to wait
+        sleep (int): polling interval
+        get_all_ips (bool): Get all VM ips
+        vm_password (str): VM root password
+
+    Returns:
+        tuple: True/False whether it obtained the IP, IP if fetched or None
     """
+    #  import is done here to avoid loop
+    import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+
     def _get_ip(vm):
+        """
+        Get VM IP using vdsClient command on VDSM
+
+        Args:
+            vm (str): VM name
+
+        Returns:
+            str or list: IP or list of IPs depend on get_all_ips param
+        """
+        vm_host = get_vm_host(vm_name=vm)
+        if not vm_host:
+            return None
+
+        host_ip = ll_hosts.get_host_ip_from_engine(host=vm_host)
+        vds_resource = resources.VDS(ip=host_ip, root_password=vm_password)
+        out = vds_resource.vds_client("list")
+        vm_id = out['vmList'][0]['vmId']
+        vm_out = vds_resource.vds_client('getVmStats', [vm_id])
         try:
-            ips = VM_API.find(vm).get_guest_info().get_ips().get_ip()
-            if not ips:
-                return False
-            if get_all_ips:
-                ip = [x.address for x in ips]
-            else:
-                ip = ips[0].get_address()
-        except AttributeError:
-            return False
+            vm_ips = vm_out['statsList'][0]['netIfaces'][0]['inet']
+            ip = vm_ips if get_all_ips else vm_ips[0]
+        except KeyError:
+            return None
         VM_API.logger.debug("Got IP %s for %s", ip, vm)
         return ip
 
@@ -2912,9 +2931,7 @@ def waitForIP(vm, timeout=600, sleep=DEF_SLEEP, get_all_ips=False):
             if ip:
                 return True, {'ip': ip}
     except APITimeout:
-            logger.error(
-                "%s: rhevm-guest-agent wasn't installed or it is stopped", vm
-            )
+            logger.error("Failed to get IP for VM %s", vm)
     return False, {'ip': None}
 
 
@@ -5009,16 +5026,22 @@ def get_vm_host(vm_name):
     """
     Return name of host, where vm run
 
-    :param vm_name: name of vm.
-    :type vm_name: str.
-    :returns: None if function fail, otherwise name of host.
+    Args:
+        vm_name (str): Name of vm.
+
+    Returns:
+        str: Host name if found otherwise None
     """
     try:
         logger.info("Get VM %s host", vm_name)
         vm_obj = VM_API.find(vm_name)
         host_obj = HOST_API.find(vm_obj.host.id, 'id')
     except EntityNotFound:
-        logger.error("Failed to get VM %s host", vm_name)
+        logger.error("VM %s not found", vm_name)
+        return None
+
+    except AttributeError:
+        logger.error("VM %s is not running on any host", vm_name)
         return None
     return host_obj.get_name()
 
