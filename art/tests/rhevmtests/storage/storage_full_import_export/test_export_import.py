@@ -10,7 +10,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
 )
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, StorageTest as TestCase
 import rhevmtests.storage.helpers as storage_helpers
 
@@ -278,6 +278,7 @@ class TestCase4684(BaseExportImportTestCase):
 
 
 @attr(tier=1)
+@bz({'1339673': {}})
 class TestCase11987(BaseExportImportTestCase):
     """
     Export a VM sanity

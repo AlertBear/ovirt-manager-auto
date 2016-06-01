@@ -5,7 +5,7 @@ import helpers
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
 from art.unittest_lib import attr
 
 logger = logging.getLogger(__name__)
@@ -162,6 +162,7 @@ class TestCase4829(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=1)
+@bz({'1340164': {}})
 @pytest.mark.usefixtures("initializer_TestCaseNFSOptions")
 class TestCase4826(helpers.TestCaseNFSOptions):
     """

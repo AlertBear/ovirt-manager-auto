@@ -462,7 +462,6 @@ class CopyDiskClonedFromTemplate(CopyDiskWithContent):
 
 
 @attr(tier=1)
-@bz({'1340648': {}})
 class TestCaseCopyAttachedDisk(CopyDiskWithContent):
     """
     Copy disk - basic flow
@@ -470,6 +469,7 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
     __test__ = True
 
     @polarion("RHEVM3-11246")
+    @bz({'1340648': {}})
     def test_same_domain_same_alias(self):
         """
         Copy existing disk to the same storage domain with the same alias
@@ -519,6 +519,7 @@ class TestCaseCopyFloatingDisk(CopyDiskWithoutContent):
     __test__ = True
 
     @polarion("RHEVM3-11252")
+    @bz({'1340648': {}})
     def test_same_domain_same_alias(self):
         """
         Copy existing disk to the same storage domain with the same alias

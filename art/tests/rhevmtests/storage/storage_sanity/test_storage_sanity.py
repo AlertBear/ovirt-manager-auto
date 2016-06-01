@@ -10,7 +10,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
 from art.test_handler.settings import opts
 from art.unittest_lib import attr, StorageTest as TestCase
 import rhevmtests.helpers as rhevm_helpers
@@ -35,6 +35,7 @@ def setup_module():
 
 
 @attr(tier=1)
+@bz({'1340164': {}})
 class TestCase11591(TestCase):
     """
     storage sanity test, create and extend a Data domain
