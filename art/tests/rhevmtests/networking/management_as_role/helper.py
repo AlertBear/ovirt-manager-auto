@@ -47,7 +47,7 @@ def install_host_new_mgmt(
     if host_resource is None:
         host_resource = conf.VDS_1_HOST
 
-    host_name = ll_hosts.get_host_name_from_engine(host_resource.ip)
+    host_name = ll_hosts.get_host_name_from_engine(host_resource)
     prepare_host_for_installation(
         host_resource=host_resource, network=network,
         dc=dc, cl=cl, new_setup=new_setup, host_name=host_name,

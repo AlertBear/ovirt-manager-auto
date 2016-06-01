@@ -241,9 +241,9 @@ class CreateDC(TestCase):
         for host_name, vds_obj in zip(hosts_names, vds_objs):
             testflow.step("Add host %s", host_name)
             if not hosts.addHost(
-                True, host_name, address=vds_obj.ip,
+                True, host_name, address=vds_obj.fqdn,
                 root_password=vds_obj.root_user.password, wait=False,
-                cluster=cluster_name, comment=vds_obj.fqdn,
+                cluster=cluster_name, comment=vds_obj.ip,
             ):
                 raise errors.HostException(
                     "Cannot add host %s (%s/%s)" % (

@@ -228,10 +228,7 @@ def createAndAttachNetworkSN(
                 return False
 
     for host in host_list:
-        host_name = ll_hosts.get_host_name_from_engine(host.ip)
-        if not host_name:
-            host_name = ll_hosts.get_host_name_from_engine(host.fqdn)
-
+        host_name = ll_hosts.get_host_name_from_engine(host)
         logger.info("Found host name: %s", host_name)
 
         host_auto_nics = []

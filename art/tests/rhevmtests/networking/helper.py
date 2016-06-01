@@ -373,7 +373,7 @@ def prepare_dummies(host_resource, num_dummy=2):
     :type num_dummy: int
     :raise: NetworkException
     """
-    host_name = ll_hosts.get_host_name_from_engine(host_resource.ip)
+    host_name = ll_hosts.get_host_name_from_engine(host_resource)
     logger.info(
         "Creating %s dummy interfaces on %s", num_dummy, host_name
     )
@@ -427,7 +427,7 @@ def delete_dummies(host_resource):
     :param host_resource: Host resource object
     :type host_resource: resources.VDS
     """
-    host_name = ll_hosts.get_host_name_from_engine(host_resource.ip)
+    host_name = ll_hosts.get_host_name_from_engine(host_resource)
     logger.info("Delete all dummy interfaces")
     if not hl_networks.delete_dummy_interfaces(host=host_resource):
         logger.error("Failed to delete dummy interfaces")

@@ -22,7 +22,7 @@ def job_tear_down():
     tear_down for ArbitraryVlanDeviceName job
     """
     host_obj = conf.VDS_HOSTS[0]
-    host_name = ll_hosts.get_host_name_from_engine(host_obj.ip)
+    host_name = ll_hosts.get_host_name_from_engine(host_obj)
     vlans_to_remove = [
         v for v in conf.VLAN_NAMES if is_interface_on_host(
             host_obj=host_obj, interface=v
@@ -226,7 +226,7 @@ def add_bridge_on_host_and_virsh(host_obj, bridge, network):
     :return: True/False
     :rtype: bool
     """
-    host_name = ll_hosts.get_host_name_from_engine(host_obj.ip)
+    host_name = ll_hosts.get_host_name_from_engine(host_obj)
     for br, net in zip(bridge, network):
         logger.info("Attaching %s to %s on %s", net, br, host_name)
         if not host_obj.network.add_bridge(bridge=br, network=net):
@@ -250,7 +250,7 @@ def delete_bridge_on_host_and_virsh(host_obj, bridge):
     :type bridge: str
     :return: raise NetworkException on error
     """
-    host_name = ll_hosts.get_host_name_from_engine(host_obj.ip)
+    host_name = ll_hosts.get_host_name_from_engine(host_obj)
     logger.info("Delete %s on %s", bridge, host_name)
     virsh_delete_bridges(host_obj=host_obj, bridges=[bridge])
     logger.info("Delete %s on %s", bridge, host_name)
@@ -275,7 +275,7 @@ def add_vlans_to_host(host_obj, vlan_id, vlan_name, nic):
     :return: True/False
     :rtype: bool
     """
-    host_name = ll_hosts.get_host_name_from_engine(host_obj.ip)
+    host_name = ll_hosts.get_host_name_from_engine(host_obj)
     logger.info(
         "Adding VLAN ID: %s. Name: %s. to %s", vlan_id, vlan_name, host_name
     )
@@ -298,7 +298,7 @@ def remove_vlan_and_refresh_capabilities(host_obj, vlan_name):
     :return: True/False
     :rtype: bool
     """
-    host_name = ll_hosts.get_host_name_from_engine(host_obj.ip)
+    host_name = ll_hosts.get_host_name_from_engine(host_obj)
     for vlan in vlan_name:
         logger.info("Removing %s from %s", vlan, host_name)
         if not host_delete_vlan(host_obj=host_obj, vlan_name=vlan):

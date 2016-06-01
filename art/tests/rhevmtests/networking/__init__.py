@@ -316,7 +316,7 @@ def remove_bridges_from_hosts():
     Remove all bridges except management bridge from hosts
     """
     for host in config.VDS_HOSTS:
-        host_name = ll_hosts.get_host_name_from_engine(host_ip=host.ip)
+        host_name = ll_hosts.get_host_name_from_engine(vds_resource=host)
         host_obj = ll_hosts.get_host_object(host_name=host_name)
         host_cluster = ll_general.get_object_name_by_id(
             object_api=ll_clusters.CLUSTER_API,

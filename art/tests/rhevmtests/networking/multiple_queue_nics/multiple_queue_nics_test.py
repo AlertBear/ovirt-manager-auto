@@ -29,8 +29,8 @@ def setup_module():
     """
     global HOST_NAME0
     global HOST_NAME1
-    HOST_NAME0 = get_host_name_from_engine(config.VDS_HOSTS[0].ip)
-    HOST_NAME1 = get_host_name_from_engine(config.VDS_HOSTS[1].ip)
+    HOST_NAME0 = get_host_name_from_engine(config.VDS_HOSTS[0])
+    HOST_NAME1 = get_host_name_from_engine(config.VDS_HOSTS[1])
 
 
 @attr(tier=2)

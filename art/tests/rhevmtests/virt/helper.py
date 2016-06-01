@@ -76,7 +76,7 @@ def get_dst_host(orig_host_obj):
     dst_host_obj = filter(
         lambda x: x.ip != orig_host_obj.ip, config.VDS_HOSTS[:2]
     )[0]
-    dst_host = hosts.get_host_name_from_engine(dst_host_obj.ip)
+    dst_host = hosts.get_host_name_from_engine(dst_host_obj)
     return dst_host_obj, dst_host
 
 
