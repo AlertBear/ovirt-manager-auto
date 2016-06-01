@@ -473,7 +473,7 @@ class PermissionsCase54420(TestCase):
             common.addUser(
                 True, user_name=config.USER_NAME, domain=config.USER_DOMAIN
             )
-        if b:
+        if not b:
             raise AssertionError
 
 

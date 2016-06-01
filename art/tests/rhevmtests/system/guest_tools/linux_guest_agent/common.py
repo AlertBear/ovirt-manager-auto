@@ -34,7 +34,7 @@ def wait_for_connective(machine, timeout=200, sleep=10):
     for sample in TimeoutingSampler(
         timeout=timeout,
         sleep=sleep,
-        func=machine.is_connective,
+        func=machine.executor().is_connective,
     ):
         if sample:
             break

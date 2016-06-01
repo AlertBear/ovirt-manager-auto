@@ -26,7 +26,7 @@ WIN10_DISK_64b = 'win10_Disk1'
 
 NIC_NAME = 'nic1'
 
-CD_WITH_TOOLS = 'RHEV-toolsSetup_3.6.iso'
+CD_WITH_TOOLS = 'RHEV-toolsSetup_3.6_6.iso'
 SUBNET_CLASS = '10'
 
 if GOLDEN_ENV:
@@ -35,7 +35,7 @@ if GOLDEN_ENV:
 else:
     EXPORT_STORAGE_DOMAIN = PARAMETERS.get('export_name', None)
     ISO_STORAGE_DOMAIN = PARAMETERS.get('iso_name', None)
-    ISO_DOMAIN_PATH = PARAMETERS.get('iso_path' ,None)
+    ISO_DOMAIN_PATH = PARAMETERS.get('iso_path', None)
     ISO_DOMAIN_ADDRESS = PARAMETERS.get('iso_address', None)
     EXPORT_DOMAIN_PATH = PARAMETERS.get('export_path', None)
     EXPORT_DOMAIN_ADDRESS = PARAMETERS.get('export_address', None)
