@@ -16,6 +16,7 @@ DC_NAME = config.DATA_CENTER_NAME
 
 
 @attr(tier=2)
+@bz({'1340164': {}})
 class TestCase4816(helpers.TestCaseNFSOptions):
     """
     Imports existing storage domain with custom advanced NFS options.
@@ -80,6 +81,7 @@ class TestCase4816(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=2)
+@bz({'1340164': {}})
 class TestCase4829(helpers.TestCaseNFSOptions):
     """
     Negative test - tests if passed values are correctly validated.
@@ -198,6 +200,7 @@ class TestCase4826(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=2)
+@bz({'1340164': {}})
 class TestCase4830(helpers.TestCaseNFSOptions):
     """
     Creates ISO and export storage domains with custom advanced NFS options
@@ -254,6 +257,7 @@ class TestCase4830(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=2)
+@bz({'1340164': {}})
 @pytest.mark.usefixtures("initializer_TestCaseNFSOptions")
 class TestCase4822(helpers.TestCaseNFSOptions):
     """
@@ -298,6 +302,7 @@ class TestCase4822(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=2)
+@bz({'1340164': {}})
 @pytest.mark.usefixtures("initializer_TestCaseNFSOptions")
 class TestCase4821(helpers.TestCaseNFSOptions):
     """
@@ -369,6 +374,7 @@ class TestCase4821(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=2)
+@bz({'1340164': {}})
 @pytest.mark.usefixtures("initializer_TestCaseNFSOptions")
 class TestCase4815(helpers.TestCaseNFSOptions):
     """
@@ -473,6 +479,7 @@ class TestCase4815(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=2)
+@bz({'1340164': {}})
 @pytest.mark.usefixtures("initializer_TestCaseNFSOptions")
 class TestCase4817(helpers.TestCaseNFSOptions):
     """
@@ -520,6 +527,7 @@ class TestCase4817(helpers.TestCaseNFSOptions):
 
 
 @attr(tier=2)
+@bz({'1340164': {}})
 @pytest.mark.usefixtures("initializer_TestCaseNFSOptions")
 class TestCase4818(helpers.TestCaseNFSOptions):
     """
