@@ -69,7 +69,7 @@ class RHEL532bGATest(RHEL5GATest):
                 vm_host=cls.machine,
                 repo_name=config.GA_REPO_NAME,
                 baseurl=config.GA_REPO_URL % (
-                    config.PRODUCT_BUILD, cls.disk_name[2:5]
+                    config.PRODUCT_BUILD[:7], cls.disk_name[2:5]
                 ),
             )
 
