@@ -345,6 +345,10 @@ class TestCPUHostCase4(BasicSlaClass):
 
     @classmethod
     def setup_class(cls):
+        if conf.PPC_ARCH:
+            pytest.skip(
+                "PPC host does not support host-passthrough function"
+            )
         cls.vm_basic_parameters['placement_host'] = conf.HOSTS[0]
         super(TestCPUHostCase4, cls).setup_class()
 
@@ -389,6 +393,10 @@ class TestCPUHostCase5(BasicSlaClass):
 
     @classmethod
     def setup_class(cls):
+        if conf.PPC_ARCH:
+            pytest.skip(
+                "PPC host does not support host-passthrough function"
+            )
         cls.vm_basic_parameters['placement_host'] = conf.HOSTS[0]
         super(TestCPUHostCase5, cls).setup_class()
 
