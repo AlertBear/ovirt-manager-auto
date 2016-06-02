@@ -7,7 +7,7 @@ import config
 import logging
 import os
 from art.unittest_lib import attr, StorageTest as BaseTestCase
-from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     jobs as ll_jobs,
@@ -469,7 +469,6 @@ class TestCaseCopyAttachedDisk(CopyDiskWithContent):
     __test__ = True
 
     @polarion("RHEVM3-11246")
-    @bz({'1340648': {}})
     def test_same_domain_same_alias(self):
         """
         Copy existing disk to the same storage domain with the same alias
@@ -519,7 +518,6 @@ class TestCaseCopyFloatingDisk(CopyDiskWithoutContent):
     __test__ = True
 
     @polarion("RHEVM3-11252")
-    @bz({'1340648': {}})
     def test_same_domain_same_alias(self):
         """
         Copy existing disk to the same storage domain with the same alias
