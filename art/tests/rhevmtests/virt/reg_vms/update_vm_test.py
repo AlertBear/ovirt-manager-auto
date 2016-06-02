@@ -32,10 +32,10 @@ class UpdateVm(VirtTest):
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     def test_update_1_vm_os_type_from_rhel_to_windows_2008(self):
         """
-        Negative: Update vm OS type from rhel to Windows 2008
+        Positive: Update vm OS type from rhel to Windows 2008
         """
-        testflow.step("Negative: Update vm OS type from rhel to Windows 2008")
-        self.assertFalse(
+        testflow.step("Positive: Update vm OS type from rhel to Windows 2008")
+        self.assertTrue(
             ll_vms.updateVm(
                 positive=True,
                 vm=self.vm_name,
