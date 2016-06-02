@@ -801,16 +801,18 @@ def is_host_network_is_vm(vds_resource, net_name):
     """
     Check if network that resides on Host is VM or non-VM
 
-    :param vds_resource: VDS resource object
-    :type vds_resource: resources.VDS
-    :param net_name: name of the network we test for being bridged
-    :type net_name: str
-    :return: True if net_name is VM, False otherwise
-    :rtype: bool
+    Args:
+        vds_resource (resources.VDS): VDS resource object
+        net_name (str): name of the network we test for being bridged
+
+    Returns:
+        bool: True if net_name is VM, False otherwise
     """
     vm_file = os.path.join(test_utils.SYS_CLASS_NET_DIR, net_name)
-    logger.info("Check if network %s is VM network on host %s", vm_file,
-                vds_resource.fqdn)
+    logger.info(
+        "Check if network %s is VM network on host %s", vm_file,
+        vds_resource.fqdn
+    )
     res = vds_resource.fs.exists(path=vm_file)
     if not res:
         logger.error(
