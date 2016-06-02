@@ -415,20 +415,20 @@ def delete_dummy_interfaces(host):
 def remove_all_networks(datacenter=None, cluster=None, mgmt_network=None):
     """
     Remove all networks from DC/CL or from entire setup
+
     If cluster is specified - remove all network from specified cluster
     Elif datacenter is specified - remove all networks from specified DC
     If no datacenter or cluster are specified remove all networks from all DCs
     In all cases we don't remove the management network
 
-    :param datacenter: name of the datacenter
-    :type datacenter: str
-    :param cluster: name of the cluster
-    :type cluster: str
-    :param mgmt_netowrk: name of management network (to be excluded from
-        removal)
-    :type mgmt_network: str
-    :return: True if removing networks succeeded, otherwise False
-    :rtype: bool
+    Args:
+        datacenter (str): name of the datacenter.
+        cluster (str): name of the cluster.
+        mgmt_netowrk (str): name of management network (to be excluded from
+            removal)
+
+    Returns:
+        bool: True if removing networks succeeded, otherwise False
     """
     networks_to_remove = []
     cluster_obj = (
@@ -462,7 +462,18 @@ def remove_all_networks(datacenter=None, cluster=None, mgmt_network=None):
         logger.info("There are no networks to remove")
         return True
 
-    return remove_networks(True, networks_to_remove, datacenter)
+    log = (
+        "from %s, %s" % (datacenter, cluster) if datacenter or cluster
+        else "from engine"
+    )
+    logger.info("Removing all networks %s", log)
+
+    status = remove_networks(True, networks_to_remove, datacenter)
+
+    if not status:
+        logger.info("Failed to remove all networks %s", log)
+
+    return status
 
 
 def getIpOnHostNic(host, nic):
