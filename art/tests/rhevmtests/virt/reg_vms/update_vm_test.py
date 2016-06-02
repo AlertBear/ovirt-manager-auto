@@ -145,8 +145,8 @@ class UpdateVm(VirtTest):
         Positive: Update vm affinity to migratable with host
         """
 
-        affinity = config.ENUMS['vm_affinity_migraable']
-        testflow.step("Update vm affinity to migratable with host")
+        affinity = config.ENUMS['vm_affinity_migratable']
+        testflow.step("Update vm affinity to vm_affinity_migratable with host")
         self.assertTrue(
             ll_vms.updateVm(
                 positive=True,
