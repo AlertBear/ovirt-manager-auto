@@ -6,6 +6,7 @@ from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dc,
     hosts as ll_hosts,
     clusters as ll_clusters,
+    external_providers as ll_ep,
 )
 from art.rhevm_api.tests_lib.high_level import (
     datacenters as hl_dc,
@@ -48,3 +49,7 @@ class CleanGoldenEnv(BaseTestCase):
                     positive=True, host=host.get_name(), deactivate=True
                 )
             ll_clusters.removeCluster(True, cluster.get_name())
+        for glance_ep in ll_ep.get_glance_ep_objs():
+            ll_ep.remove_glance_ep(glance_ep.get_name())
+        for cinder_ep in ll_ep.get_cinder_ep_objs():
+            ll_ep.remove_cinder_ep(cinder_ep.get_name())
