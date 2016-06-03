@@ -232,13 +232,13 @@ def _prepareDiskObject(**kwargs):
             direct_lun.set_username(lun_creds[0])
             direct_lun.set_password(lun_creds[1])
 
-    logical_units = data_st.LogicalUnits(logical_unit=[direct_lun])
-    disk.set_lun_storage(
-        data_st.HostStorage(
-            logical_unit=logical_units,
-            type_=type_
+        logical_units = data_st.LogicalUnits(logical_unit=[direct_lun])
+        disk.set_lun_storage(
+            data_st.HostStorage(
+                logical_unit=logical_units,
+                type_=type_
+            )
         )
-    )
 
     # id
     disk_id = kwargs.pop('id', None)
