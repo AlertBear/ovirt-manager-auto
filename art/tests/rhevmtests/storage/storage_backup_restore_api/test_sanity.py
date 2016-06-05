@@ -18,7 +18,7 @@ from art.rhevm_api.tests_lib.low_level import (
 import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.utils import test_utils as utils
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
 from art.unittest_lib import attr, StorageTest as TestCase
 from rhevmtests import helpers as rhevm_helpers
 from rhevmtests.storage import config
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 VM_COUNT = 2
 TASK_TIMEOUT = 1500
 BACKUP_DISK_SIZE = 10 * config.GB
-MOVING_DISK_TIMEOUT = 600
+LIVE_MIGRATE_DISK_TIMEOUT = 1800
 
 
 class BaseTestCase(TestCase):
@@ -393,6 +393,7 @@ class TestCase6176(BaseTestCase):
 
 
 @attr(tier=2)
+@bz({'1342783': {}})
 class TestCase6174(BaseTestCase):
     """
     Create source VM snapshot, attach snapshot to backup VM
@@ -889,7 +890,7 @@ class TestCase6171(BaseTestCase):
         status = ll_vms.attach_backup_disk_to_vm(
             self.vm_names[0], self.vm_names[1], self.first_snapshot_description
         )
-
+        ll_disks.wait_for_disks_status(disks=self.vm_disks[0].get_alias())
         self.assertFalse(
             status, "Succeeded to attach backup snapshot disk to backup vm "
                     "while a migrate disk operation was in progress"
@@ -972,7 +973,9 @@ class TestCase6173(BaseTestCase):
             self.vm_names[0], self.vm_names[1], self.first_snapshot_description
         )
         ll_vms.wait_for_vm_snapshots(self.vm_names[0], config.SNAPSHOT_OK)
-        ll_disks.wait_for_disks_status([snapshot_disk_name])
+        ll_disks.wait_for_disks_status(
+            [snapshot_disk_name], timeout=LIVE_MIGRATE_DISK_TIMEOUT
+        )
         self.assertFalse(
             status, "Succeeded to attach backup snapshot disk to backup vm"
         )
