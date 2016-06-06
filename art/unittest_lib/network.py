@@ -53,7 +53,7 @@ def find_ip(vm, host_list, nic_index, vlan=None, bond=None):
     src_host, dst_host, dst_name_engine = None, None, None
     orig_host = get_host(vm)
     for host in host_list:
-        host_name_engine = ll_hosts.get_host_name_from_engine(host.ip)
+        host_name_engine = ll_hosts.get_host_name_from_engine(host)
         if host_name_engine == orig_host:
             src_host = host
         else:

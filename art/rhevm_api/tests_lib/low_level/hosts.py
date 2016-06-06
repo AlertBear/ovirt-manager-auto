@@ -1852,7 +1852,7 @@ def set_host_non_operational_nic_down(host_resource, nic):
         bool: True if Host became non-operational by putting NIC down,
             otherwise False
     """
-    host_name = get_host_name_from_engine(host_ip=host_resource.ip)
+    host_name = get_host_name_from_engine(vds_resource=host_resource)
     if not host_resource.network.if_down(nic=nic):
         return False
 
@@ -2022,16 +2022,23 @@ def wait_for_host_nic_status(
     return sample.waitForFuncStatus(result=True)
 
 
-def get_host_name_from_engine(host_ip):
+def get_host_name_from_engine(vds_resource):
     """
     Get host name from engine by host IP
-    :param host_ip: resources.VDS object
-    :return: host.name or None
+
+    Args:
+        vds_resource (VDS): resources.VDS object
+
+    Returns:
+        str: Host name or None
     """
 
     engine_hosts = HOST_API.get(absLink=False)
     for host in engine_hosts:
-        if host.get_address() == host_ip or host.name == host_ip:
+        if (
+            host.get_address() == vds_resource.fqdn or host.get_address() ==
+            vds_resource.ip or host.name == vds_resource.fqdn
+        ):
             return host.name
     return None
 

@@ -228,15 +228,16 @@ def restart_services_under_maintenance_state(
     Put host to maintenance, restart given services then activate host.
     The services will be restarted by the list order.
 
-    :param services: List of services to restart
-    :type services: list
-    :param host_resource: host resource
-    :type host_resource: instance of VDS
-    :param timeout: Timeout for restart service operation
-    :type timeout: int
-    :raises: HostException
+    Args:
+        services (list): List of services to restart
+        host_resource (VDS): host resource
+        timeout (int): Timeout for restart service operation
+
+    Raises:
+        HostException: If one of the steps fail
     """
-    host_name = ll_hosts.get_host_name_from_engine(host_resource.ip)
+    host_name = ll_hosts.get_host_name_from_engine(host_resource)
+
     if not ll_hosts.deactivateHost(True, host_name):
         raise errors.HostException(
             "Failed to put host %s to maintenance" % host_name
@@ -271,13 +272,13 @@ def restart_vdsm_and_wait_for_activation(
     """
 
     for host in hosts_resource:
-        host_name = ll_hosts.get_host_name_from_engine(host.ip)
+        host_name = ll_hosts.get_host_name_from_engine(host)
         restart_services_under_maintenance_state(['vdsmd'], host)
         ll_hosts.waitForHostsStates(True, host_name)
     ll_hosts.waitForSPM(dc_name, 200, 5)
 
     for host in hosts_resource:
-        host_name = ll_hosts.get_host_name_from_engine(host.ip)
+        host_name = ll_hosts.get_host_name_from_engine(host)
         if ll_hosts.checkHostSpmStatus(True, host_name):
             if not ll_sd.waitForStorageDomainStatus(
                 True, dc_name, storage_domain_name,
