@@ -856,6 +856,7 @@ class TestSanity10(NetworkTest):
         helper.send_setup_networks(sn_dict=network_host_api_dict)
 
     @polarion("RHEVM3-3949")
+    @bz({"1338751": {}})
     def test_check_ip_rule(self):
         """
         Check correct configuration with ip rule function
@@ -868,6 +869,7 @@ class TestSanity10(NetworkTest):
             )
 
     @polarion("RHEVM3-3965")
+    @bz({"1338751": {}})
     def test_detach_gw_net(self):
         """
         Remove network with gw configuration from setup
@@ -1009,6 +1011,7 @@ class TestSanity13(NetworkTest):
             raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-3779")
+    @bz({"1336401": {}})
     def test_check_filter_status_dump_xml(self):
         """
         Check that Network Filter is enabled by default via dumpxml
@@ -1068,6 +1071,7 @@ class TestSanity14(TestSanityCaseBase):
             raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-13511")
+    @bz({"1338522": {}})
     def test_label_nic_vm_vlan(self):
         """
         Check that untagged VM and VLAN networks are attached to the Host NIC
@@ -1096,6 +1100,7 @@ class TestSanity14(TestSanityCaseBase):
                 raise conf.NET_EXCEPTION()
 
     @polarion("RHEVM3-13894")
+    @bz({"1338522": {}})
     def test_label_bond_vm_vlan(self):
         """
         Check that the untagged VM and VLAN networks are attached to BOND via

@@ -21,6 +21,9 @@ from fixtures import (
 
 logger = logging.getLogger("Network_Filter_Cases")
 
+# TODO: All tests are set to __test__ = False since this feature changed in
+# 4.0 and we don't have API for it yet
+
 
 @attr(tier=2)
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
@@ -29,7 +32,7 @@ class TestNetworkFilterCase01(NetworkTest):
     """
     Check that network filter is enabled for hot-plug  NIC to on VM
     """
-    __test__ = True
+    __test__ = False
 
     @polarion("RHEVM3-3780")
     def test_check_network_filter_on_nic(self):
@@ -55,7 +58,7 @@ class TestNetworkFilterCase02(NetworkTest):
     Check that Network Filter is enabled via ebtables on running VM and
     disabled on stopped VM
     """
-    __test__ = True
+    __test__ = False
 
     @polarion("RHEVM3-3783")
     def test_check_network_filter_via_ebtables(self):
@@ -94,7 +97,7 @@ class TestNetworkFilterCase03(NetworkTest):
     Check that Network Filter is disabled via ebtables on after VNIC hot-plug
     and still active after hot-unplug for remaining NICs
     """
-    __test__ = True
+    __test__ = False
 
     @polarion("RHEVM3-3784")
     def test_check_network_filter_via_ebtables(self):
@@ -167,7 +170,7 @@ class TestNetworkFilterCase04(NetworkTest):
     """
     Disabling network filter then check that VM run without network filter.
     """
-    __test__ = True
+    __test__ = False
 
     @polarion("RHEVM3-3785")
     def test_check_network_filter_on_nic(self):

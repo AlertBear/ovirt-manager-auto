@@ -51,6 +51,7 @@ VM_DISK_SIZE = 1024
 NUM_DUMMYS = 4
 DUMMYS = ["dummy_%s" % i for i in xrange(NUM_DUMMYS)]
 DEFAULT_MGMT_QOS = "Default-Mgmt-Net-QoS"
+LAST_VM = VM_NAME[-1]
 
 # Network Custom Priority parameters
 BRIDGE_OPTS = OrderedDict({"priority": ["32768", "1"],
@@ -187,8 +188,6 @@ NETWORK_0 = "rx_tx_net_0"
 NETWORK_1 = "rx_tx_net_1"
 NETWORK_2 = "rx_tx_net_2"
 VM_NIC_1 = NIC_NAME[1]
-DC_3_5 = "tx_rx_stats_DC_3_5"
-CL_3_5 = "tx_rx_stats_Cl_3_5"
 STAT_KEYS = ["data.total.rx", "data.total.tx"]
 ETH0 = VM_NICS[0]
 BASIC_IP_DICT_NETMASK = {
@@ -210,6 +209,6 @@ DATACENTER_NETWORKS_NET_DICT = {
 DATACENTER_NETWORKS_VERIFY_NET_LIST = [
     "description", "stp", "vlan_id", "usages", "mtu"
 ]
-DATACENTER_NETWORKS_DC_NAMES = [DC_NAME[0], "DataCenter_Network_DC2"]
+DATACENTER_NETWORKS_DC_NAMES = [DC_0, "DataCenter_Network_DC2"]
 DC_0_NET_LIST = None  # Filled in test
 DC_1_NET_LIST = None  # Filled in test

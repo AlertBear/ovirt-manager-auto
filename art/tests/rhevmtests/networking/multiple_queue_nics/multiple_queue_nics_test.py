@@ -7,15 +7,11 @@ from art.rhevm_api.tests_lib.low_level.hosts import(
     get_host_ip_from_engine, get_host_name_from_engine
 )
 from art.rhevm_api.tests_lib.low_level.networks import update_vnic_profile
-from art.rhevm_api.tests_lib.low_level.templates import(
-    createTemplate, removeTemplate
-)
 from art.rhevm_api.tests_lib.low_level.vms import(
-    stopVm, suspendVm, createVm, removeVm, waitForIP, migrateVm, startVm,
+    stopVm, suspendVm, createVm, removeVm, migrateVm, startVm,
     get_vm_host
 )
 import rhevmtests.networking.helper as net_help
-from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from art.test_handler.exceptions import NetworkException
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
@@ -91,11 +87,11 @@ class TestMultipleQueueNics01(TestMultipleQueueNicsTearDown):
                 "Failed to set custom properties on %s" % config.MGMT_BRIDGE
             )
         logger.info("Start %s", config.VM_NAME[0])
-        if not startVm(positive=True, vm=config.VM_NAME[0], wait_for_ip=True):
+        if not startVm(positive=True, vm=config.VM_NAME[0]):
             raise NetworkException("Failed to start %s" % config.VM_NAME[0])
         # get IP of the host where VM runs
         vm_host_ip = get_host_ip_from_engine(get_vm_host(config.VM_NAME[0]))
-        # find apropriate host object for the vm_host_ip in VDS_HOSTS
+        # find appropriate host object for the vm_host_ip in VDS_HOSTS
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
         logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
         if not net_help.check_queues_from_qemu(
@@ -130,7 +126,7 @@ class TestMultipleQueueNics01(TestMultipleQueueNicsTearDown):
 
         # get IP of the host where VM runs
         vm_host_ip = get_host_ip_from_engine(get_vm_host(config.VM_NAME[0]))
-        # find apropriate host object for the vm_host_ip in VDS_HOSTS
+        # find appropriate host object for the vm_host_ip in VDS_HOSTS
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
 
         logger.info("Check that qemu still has %s queues after properties "
@@ -147,11 +143,11 @@ class TestMultipleQueueNics01(TestMultipleQueueNicsTearDown):
         stopVm(positive=True, vm=config.VM_NAME[0])
 
         logger.info("Start %s", config.VM_NAME[0])
-        if not startVm(positive=True, vm=config.VM_NAME[0], wait_for_ip=True):
+        if not startVm(positive=True, vm=config.VM_NAME[0]):
             raise NetworkException("Failed to start %s" % config.VM_NAME[0])
         # get IP of the host where VM runs
         vm_host_ip = get_host_ip_from_engine(get_vm_host(config.VM_NAME[0]))
-        # find apropriate host object for the vm_host_ip in VDS_HOSTS
+        # find appropriate host object for the vm_host_ip in VDS_HOSTS
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
         logger.info("Check that qemu has %s queues", config.NUM_QUEUES[1])
         if not net_help.check_queues_from_qemu(
@@ -189,11 +185,11 @@ class TestMultipleQueueNics02(TestMultipleQueueNicsTearDown):
                 "Failed to set custom properties on %s" % config.MGMT_BRIDGE
             )
         logger.info("Start %s", config.VM_NAME[0])
-        if not startVm(positive=True, vm=config.VM_NAME[0], wait_for_ip=True):
+        if not startVm(positive=True, vm=config.VM_NAME[0]):
             raise NetworkException("Failed to start %s" % config.VM_NAME[0])
         # get IP of the host where VM runs
         vm_host_ip = get_host_ip_from_engine(get_vm_host(config.VM_NAME[0]))
-        # find apropriate host object for the vm_host_ip in VDS_HOSTS
+        # find appropriate host object for the vm_host_ip in VDS_HOSTS
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
         logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
         if not net_help.check_queues_from_qemu(
@@ -213,14 +209,13 @@ class TestMultipleQueueNics02(TestMultipleQueueNicsTearDown):
         logger.info("Suspend %s", config.VM_NAME[0])
         if not suspendVm(positive=True, vm=config.VM_NAME[0]):
             raise NetworkException("Failed to suspend %s" % config.VM_NAME[0])
-        # TODO: take care of cases when resume of the VM fails (now it resta
 
         logger.info("Start %s", config.VM_NAME[0])
-        if not startVm(positive=True, vm=config.VM_NAME[0], wait_for_ip=True):
+        if not startVm(positive=True, vm=config.VM_NAME[0]):
             raise NetworkException("Failed to start %s" % config.VM_NAME[0])
         # get IP of the host where VM runs
         vm_host_ip = get_host_ip_from_engine(get_vm_host(config.VM_NAME[0]))
-        # find apropriate host object for the vm_host_ip in VDS_HOSTS
+        # find appropriate host object for the vm_host_ip in VDS_HOSTS
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
         logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
         if not net_help.check_queues_from_qemu(
@@ -260,58 +255,17 @@ class TestMultipleQueueNics03(TestMultipleQueueNicsTearDown):
             raise NetworkException(
                 "Failed to set custom properties on %s" % config.MGMT_BRIDGE
             )
-        logger.info("Start %s", config.VM_NAME[0])
-        if not startVm(positive=True, vm=config.VM_NAME[0], wait_for_ip=True):
-            raise NetworkException("Failed to start %s" % config.VM_NAME[0])
-        # get IP of the host where VM runs
-        vm_host_ip = get_host_ip_from_engine(get_vm_host(config.VM_NAME[0]))
-        # find apropriate host object for the vm_host_ip in VDS_HOSTS
-        host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
-        logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
-        if not net_help.check_queues_from_qemu(
-            vm=config.VM_NAME[0],
-            host_obj=host_obj,
-            num_queues=config.NUM_QUEUES[0]
-        ):
-            raise NetworkException(
-                "qemu did not return the expected number of queues"
-            )
 
-        logger.info("Waiting for IP from %s", config.VM_NAME[0])
-        rc, out = waitForIP(vm=config.VM_NAME[0], timeout=180, sleep=10)
-        if not rc:
-            raise NetworkException('Failed to get VM IP on mgmt network')
-
-        ip = out['ip']
-        logger.info("Running setPersistentNetwork on %s", config.VM_NAME[0])
-        if not setPersistentNetwork(ip, config.VMS_LINUX_PW):
-            raise NetworkException("Failed to seal %s" % config.VM_NAME[0])
-
-        logger.info("Stop %s", config.VM_NAME[0])
-        if not stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Failed to stop %s" % config.VM_NAME[0])
-
-        logger.info("Create queues_template from %s", config.VM_NAME[0])
-        if not createTemplate(
-            positive=True, vm=config.VM_NAME[0], name="queues_template"
-        ):
-            raise NetworkException(
-                "Failed to create queues_template from %s" % config.VM_NAME[0]
-            )
-
-        logger.info("Create VM from queues_template")
+        logger.info("Create VM from template")
         if not createVm(
             positive=True, vmName=config.VM_FROM_TEMPLATE,
             cluster=config.CLUSTER_NAME[0], vmDescription="from_template",
-            template="queues_template"
+            template=config.TEMPLATE_NAME[0]
         ):
             raise NetworkException("Failed to create VM from queues_template")
 
         logger.info("Start %s", config.VM_FROM_TEMPLATE)
-        if not startVm(
-                positive=True, vm=config.VM_FROM_TEMPLATE,
-                wait_for_ip=True
-        ):
+        if not startVm(positive=True, vm=config.VM_FROM_TEMPLATE):
             raise NetworkException(
                 "Failed to start %s", config.VM_FROM_TEMPLATE
             )
@@ -324,7 +278,7 @@ class TestMultipleQueueNics03(TestMultipleQueueNicsTearDown):
         # get IP of the host where VM runs
         vm_host_ip = get_host_ip_from_engine(
             get_vm_host(config.VM_FROM_TEMPLATE))
-        # find apropriate host object for the vm_host_ip in VDS_HOSTS
+        # find appropriate host object for the vm_host_ip in VDS_HOSTS
         host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
         logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
         if not net_help.check_queues_from_qemu(
@@ -349,10 +303,6 @@ class TestMultipleQueueNics03(TestMultipleQueueNicsTearDown):
         ):
             logger.error(
                 "Failed to stop and remove %s", config.VM_FROM_TEMPLATE)
-        logger.info("Remove queues_template")
-        if not removeTemplate(positive=True, template="queues_template"):
-            logger.error("Failed to remove queues_template")
-
         super(TestMultipleQueueNics03, cls).teardown_class()
 
 

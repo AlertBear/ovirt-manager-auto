@@ -154,7 +154,6 @@ def remove_networks(positive, networks, data_center=None):
 def createAndAttachNetworkSN(
     data_center=None, cluster=None, host=list(), auto_nics=list(),
     save_config=False, network_dict=None, vlan_auto_nics=None,
-    use_new_api=False
 ):
     """
     Function that creates and attach the network to the:
@@ -170,7 +169,6 @@ def createAndAttachNetworkSN(
         save_config (bool): Flag for saving configuration.
         network_dict (dict): Dictionary of dictionaries.
         vlan_auto_nics (dict): Dictionary for auto_nics with vlan.
-        use_new_api (bool): Run with new host network API.
 
     vlan_auto_nics example: {162: 0} where 162 is the vlan ID and
     0 is the host_nic index. (all int)
@@ -204,6 +202,7 @@ def createAndAttachNetworkSN(
             to DC/Cluster and Host with all the parameters.
     """
     # Makes sure host_list is always a list
+    sn_dict = dict()
     host_list = [host] if not isinstance(host, list) else host
 
     for net, net_param in network_dict.items():
@@ -245,7 +244,6 @@ def createAndAttachNetworkSN(
                 host_vlan_int = ".".join([host_int, str(key)])
                 host_auto_nics.append(host_vlan_int)
 
-        net_obj = []
         idx = 0
         setup_network_dict = {"add": {}}
         for net, net_param in network_dict.items():
@@ -268,54 +266,24 @@ def createAndAttachNetworkSN(
             if "vlan_id" in net_param:
                 vlan_interface = "{0}.{1}".format(nic, param_vlan)
 
-            address_list = net_param.get("address", [])
-            netmask_list = net_param.get("netmask", [])
-            gateway_list = net_param.get("gateway", [])
-
             nic = (
                 vlan_interface if "vlan_id" in net_param else nic
             )
-            if use_new_api:
-                sn_dict = convert_old_sn_dict_to_new_api_dict(
-                    new_dict=setup_network_dict, old_dict=net_param, idx=idx,
-                    nic=nic, network=net, slaves=slaves
-                )
-                if not network_dict:
-                    if not hl_host_network.clean_host_interfaces(
-                        host_name=host_name
-                    ):
-                        return False
-                else:
-                    if not hl_host_network.setup_networks(
-                        host_name=host_name, **sn_dict
-                    ):
+            sn_dict = convert_old_sn_dict_to_new_api_dict(
+                new_dict=setup_network_dict, old_dict=net_param, idx=idx,
+                nic=nic, network=net, slaves=slaves
+            )
 
-                        return False
-            else:
-                out = ll_hosts.generate_sn_nic(
-                    nic=nic, network=net, slaves=slaves,
-                    mode=net_param.get("mode", 4),
-                    boot_protocol=net_param.get("bootproto", None),
-                    address=address_list.pop(0) if address_list else None,
-                    netmask=netmask_list.pop(0) if netmask_list else None,
-                    gateway=gateway_list.pop(0) if gateway_list else None,
-                    properties=net_param.get("properties", None)
-                )
-                net_obj.append(out["host_nic"])
-
-        else:
-            if not ll_hosts.send_setup_networks(
-                positive=True, host=host_name, nics=net_obj,
-                auto_nics=host_auto_nics, check_connectivity="true",
-                connectivity_timeout=60, force="false"
+        if not network_dict:
+            if not hl_host_network.clean_host_interfaces(
+                host_name=host_name
             ):
                 return False
-
-            if save_config:
-                if not ll_hosts.commit_network_config(
-                    positive=True, host=host_name
-                ):
-                    return False
+        else:
+            if not hl_host_network.setup_networks(
+                host_name=host_name, **sn_dict
+            ):
+                return False
     return True
 
 
@@ -640,56 +608,6 @@ def remove_basic_setup(datacenter, cluster=None, hosts=[]):
     return True
 
 
-def update_network_host(host, nic, auto_nics, save_config=True, **kwargs):
-    """
-    Updates network on Host NIC
-
-    Args:
-        host (str): Host name
-        nic (str): Interface with network to be updated
-        auto_nics (list): List of NICs, beside the NIC to be updated
-        save_config (bool): Flag to save configuration after update
-        kwargs (dict): dParameters to be updated on existing network
-
-    Keyword Args:
-        network (str): Network name
-        boot_protocol (str): Static, none or DHCP
-        address (str): IP address in case of static protocol
-        netmask (str): Netmask in case of static protocol
-        gateway (str): Gateway address in case of static protocol
-
-    Examples:
-       network_dict = {
-        "address": "10.10.10.10",
-        "netmask": "255.255.255.0",
-        "boot_protocol": "static",
-        "properties": {
-            "bridge_opts": "Priority=7smax_age=1998",
-            "ethtool_opts": "--offload eth2 rx on"
-            }
-        }
-        res = update_network_host(
-            host, nic, auto_nics, save_config=True, **network_dict
-            )
-
-    Returns:
-         bool: True if update succeeded, otherwise False
-    """
-    nic_obj = ll_hosts.get_host_nic(host=host, nic=nic)
-    kwargs.update({'update': nic_obj})
-    out = ll_hosts.generate_sn_nic(nic=nic_obj, **kwargs)
-    if not ll_hosts.send_setup_networks(
-        True, host=host, nics=[out['host_nic']], auto_nics=auto_nics,
-        check_connectivity='true', connectivity_timeout=60, force='false'
-    ):
-        return False
-
-    if save_config:
-        if not ll_hosts.commit_network_config(True, host=host):
-            return False
-    return True
-
-
 def is_management_network(cluster_name, network):
     """
     Check if network is management network
@@ -776,23 +694,30 @@ def convert_old_sn_dict_to_new_api_dict(
     :return: New dict for new API function (setup_networks())
     :rtype: dict
     """
+    ip_dict = None
+    properties = old_dict.get("properties")
     address = old_dict.get("address")
     netmask = old_dict.get("netmask")
     gateway = old_dict.get("gateway")
+    boot_protocol = old_dict.get("bootproto")
+    if address and boot_protocol:
+        ip_dict = {
+            "ip_1": {
+                "address": address[0],
+                "netmask": netmask[0] if netmask else None,
+                "gateway": gateway[0] if gateway else None,
+                "boot_protocol": boot_protocol,
+            }
+        }
+
     new_dict["add"][str(idx)] = {
         "nic": nic.rsplit(".")[0],
         "slaves": slaves,
         "network": network,
-        "properties": old_dict.get("properties", None),
-        "ip": {
-            "ip_1": {
-                "address": address.pop(0) if address else None,
-                "netmask": netmask.pop(0) if netmask else None,
-                "gateway": gateway.pop(0) if gateway else None,
-                "boot_protocol": old_dict.get("bootproto", None),
-            }
-        }
+        "properties": properties,
     }
+    if ip_dict:
+        new_dict["add"][str(idx)]["ip"] = ip_dict
     return new_dict
 
 

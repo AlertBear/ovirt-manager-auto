@@ -177,10 +177,10 @@ def add_host(host_resource, host, cl):
     """
     if not ll_hosts.addHost(
         positive=True, name=host, root_password=conf.HOSTS_PW, cluster=cl,
-        address=host_resource.ip, comment=host_resource.fqdn
+        address=host_resource.fqdn, comment=host_resource.ip
     ):
         raise conf.NET_EXCEPTION(
-            "Couldn't add %s to %s" % (host_resource.ip, cl)
+            "Couldn't add %s to %s" % (host_resource.fqdn, cl)
         )
 
 

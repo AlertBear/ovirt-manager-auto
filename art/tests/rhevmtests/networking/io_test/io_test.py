@@ -19,7 +19,7 @@ import config as io_conf
 import helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import(
     case_09_fixture, all_classes_teardown
@@ -457,6 +457,7 @@ class TestIOTest09(NetworkTest):
             )
 
     @polarion("RHEVM3-14746")
+    @bz({"1339907": {}})
     def test_check_invalid_vlan_tag(self, default_name=initial_name):
         """
         Negative: Should fail to edit networks with invalid VLAN tags
@@ -503,6 +504,7 @@ class TestIOTest09(NetworkTest):
 
 
 @attr(tier=2)
+@bz({"1338522": {}})
 @pytest.mark.usefixtures(all_classes_teardown.__name__)
 class TestIOTest10(NetworkTest):
     """

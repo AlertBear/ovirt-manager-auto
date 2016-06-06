@@ -526,53 +526,6 @@ def mac_pool_range_08_fixture(request, mac_pool_prepare_setup):
 
 
 @pytest.fixture(scope="class")
-def mac_pool_range_11_fixture(request, mac_pool_prepare_setup):
-    """
-    Setup and teardown for TestMacPoolRange11
-
-    Update DC version to 3.5 -> Update DC version to original version
-    Update MAC pool range
-    Update DCs MAC pool -> Update DCs MAC pool to default
-    Add NIC to VM -> Remove NIC from VM
-    -> Remove non-default pools
-    """
-    ps = Case11Fixture()
-
-    def fin4():
-        """
-        Finalizer for remove non default MAC pools
-        """
-        ps.remove_non_default_mac_pool()
-    request.addfinalizer(fin4)
-
-    def fin3():
-        """
-        Finalizer for set default MAC pools for DCs
-        """
-        ps.update_mac_pool_dcs_to_default_case_11()
-    request.addfinalizer(fin3)
-
-    def fin2():
-        """
-        Finalizer for remove NICs from VM
-        """
-        ps.remove_nics_from_vm()
-    request.addfinalizer(fin2)
-
-    def fin1():
-        """
-        Finalizer for update DC version
-        """
-        ps.update_dc_version_original()
-    request.addfinalizer(fin1)
-
-    ps.update_dc_version_35()
-    ps.update_mac_pool_range()
-    ps.update_dcs_mac_pools_case_11()
-    ps.add_nic_to_vm()
-
-
-@pytest.fixture(scope="class")
 def fixture_mac_pool_range_case_02(request, mac_pool_prepare_setup):
     """
     Create MAC pool
@@ -804,32 +757,3 @@ def fixture_mac_pool_range_case_09(request, mac_pool_prepare_setup):
     )
     for dc in [ext_dc_1, ext_dc_2]:
         helper.create_dc(dc_name=dc)
-
-
-@pytest.fixture(scope="class")
-def fixture_mac_pool_range_case_10(request, mac_pool_prepare_setup):
-    """
-    Create MAC pool
-    """
-    ps = MacPool()
-    pool_name_0 = request.node.cls.pool_name_0
-    range_list = request.node.cls.range_list
-
-    def fin2():
-        """
-        Remove MAC pool
-        """
-        ll_mac_pool.remove_mac_pool(mac_pool_name=pool_name_0)
-    request.addfinalizer(fin2)
-
-    def fin1():
-        """
-        Remove DCs
-        """
-        for i in range(1, 6):
-            ll_dc.remove_datacenter(positive=True, datacenter=conf.EXTRA_DC[i])
-    request.addfinalizer(fin1)
-
-    assert ll_mac_pool.create_mac_pool(
-        name=pool_name_0, ranges=[range_list[0]]
-    )

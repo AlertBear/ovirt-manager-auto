@@ -37,6 +37,7 @@ class TestHostNetQOSCase01(NetworkTest):
     nets = conf.NETS[1][:2]
 
     @polarion("RHEVM3-14300")
+    @bz({"1329224": {}})
     def test_01_remove_anonymous_qos_for_network_on_host_nic(self):
         """
         Negative: Remove QoS from the first network
@@ -62,6 +63,7 @@ class TestHostNetQOSCase01(NetworkTest):
         )
 
     @polarion("RHEVM3-14354")
+    @bz({"1329224": {}})
     def test_02_remove_anonymous_qos_for_all_networks_on_host_nic(self):
         """
         Remove QoS from both networks
@@ -145,6 +147,7 @@ class TestHostNetQOSCase03(NetworkTest):
     net = conf.NETS[3][0]
 
     @polarion("RHEVM3-6527")
+    @bz({"1329224": {}})
     def test_weight_share_rate_new_limit(self):
         """
         Update network on host NIC with QoS weighted share parameters
@@ -317,10 +320,8 @@ class TestHostNetQOSCase05(NetworkTest):
 @pytest.mark.usefixtures(fixture_case_06.__name__)
 class TestHostNetQOSCase06(NetworkTest):
     """
-    1) Negative: Try to have network with and without QoS configured on the
-    same NIC and fail
-    2) Positive: Update network without QoS with QoS and succeed to have both
-    networks on the same NIC with setupNetwork command
+    1) Try to have network with and without QoS configured on the
+    same NIC
     """
     __test__ = True
     net1 = conf.NETS[6][0]
@@ -328,11 +329,9 @@ class TestHostNetQOSCase06(NetworkTest):
     qos_name = conf.QOS_NAME[6][0]
 
     @polarion("RHEVM3-6533")
-    def test_add_network_qos(self):
+    def test_add_networks_qos_mixed_same_nic(self):
         """
-        1) Negative: Try to attach both networks to the Host
-        2) Attach QoS to the second network and succeed to attach both
-        networks to the Host
+        1) Try to attach both networks to the Host
         """
         network_host_api_dict = {
             "add": {
@@ -348,26 +347,8 @@ class TestHostNetQOSCase06(NetworkTest):
         }
 
         testflow.step(
-            "Negative: Trying to attach %s and %s to %s on %s",
-            self.net1, self.net2, net_conf.HOST_0_NICS[1], net_conf.HOST_0_NAME
-        )
-        self.assertFalse(
-            hl_host_network.setup_networks(
-                host_name=net_conf.HOST_0_NAME, **network_host_api_dict
-            )
-        )
-
-        self.assertTrue(
-            ll_networks.update_network_in_datacenter(
-                positive=True, network=self.net2, datacenter=net_conf.DC_0,
-                qos_dict={
-                    "qos_name": self.qos_name,
-                    "datacenter": net_conf.DC_0
-                }
-            )
-        )
-        testflow.step(
-            "Attach %s and %s to %s on %s",
+            "Attach network %s (with QOS) and network %s (without QOS) to %s "
+            "on %s",
             self.net1, self.net2, net_conf.HOST_0_NICS[1], net_conf.HOST_0_NAME
         )
         self.assertTrue(
@@ -539,6 +520,7 @@ class TestHostNetQOSCase10(NetworkTest):
     }
 
     @polarion("RHEVM3-6534")
+    @bz({"1329224": {}})
     def test_qos_for_network_on_host_nic(self):
         """
         Attach network to host NIC with QoS parameters (Anonymous' QoS)

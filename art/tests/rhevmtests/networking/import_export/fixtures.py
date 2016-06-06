@@ -16,6 +16,7 @@ import config as im_ex_conf
 import helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as networking_helper
+from rhevmtests import networking
 from rhevmtests.networking.fixtures import (
     NetworkFixtures, network_cleanup_fixture
 )  # flake8: noqa
@@ -44,12 +45,22 @@ def import_export_prepare_setup(request, network_cleanup_fixture):
     """
     ieex = ImportExport()
 
+    def fin4():
+        """
+        Remove templates
+        """
+        networking.remove_unneeded_templates()
+    request.addfinalizer(fin4)
+
+    @networking.ignore_exception
     def fin3():
         """
         Finalizer for remove networks from setup
         """
         ieex.remove_networks_from_setup(hosts=ieex.host_0_name)
+    request.addfinalizer(fin3)
 
+    @networking.ignore_exception
     def fin2():
         """
         Finalizer for remove template from export domain
@@ -58,7 +69,9 @@ def import_export_prepare_setup(request, network_cleanup_fixture):
             positive=True, template=ieex.ie_template, datacenter=ieex.dc_0,
             export_storagedomain=ieex.export_domain
         )
+    request.addfinalizer(fin2)
 
+    @networking.ignore_exception
     def fin1():
         """
         Finalizer for remove VM from export domain
@@ -67,6 +80,7 @@ def import_export_prepare_setup(request, network_cleanup_fixture):
             positive=True, vm=ieex.ie_vm, datacenter=ieex.dc_0,
             export_storagedomain=ieex.export_domain
         )
+    request.addfinalizer(fin1)
 
     assert ll_vms.createVm(
         positive=True, vmName=ieex.ie_vm, vmDescription="",
@@ -109,8 +123,6 @@ def fixture_case_01(request, import_export_prepare_setup):
     """
     ieex = ImportExport()
     vms_list = [ieex.ie_vm, ieex.more_then_once_vm]
-    net1 = im_ex_conf.NETS[0]
-    net2 = im_ex_conf.NETS[1]
 
     def fin():
         """
