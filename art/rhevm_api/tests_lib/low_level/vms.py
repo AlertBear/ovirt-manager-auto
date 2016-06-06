@@ -4239,6 +4239,66 @@ def get_snapshot_disks(vm, snapshot):
     return disks
 
 
+def delete_snapshot_disks(vm, snapshot, disk_id=None, wait=True):
+    """
+    In order to remove a disk that is part of a snapshot, you must
+    remove the disk from the snapshot's disk collection using this
+    function, and only then remove the disk itself
+
+    __author__ = 'ratamir'
+    :param vm: The vm containing the snapshot whose disks are to be deleted
+    :type vm: str
+    :param snapshot: The snapshot whose disks are to be deleted
+    :type snapshot: str
+    :param disk_id: The ID of a specific disk to delete in case of deleting
+    a specific disk
+    :type disk_id: str
+    :returns: True in case all relevant disks were deleted, False otherwise
+    :rtype: bool
+    """
+    # Local import to prevent import recursion loop
+    from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
+    disks = get_snapshot_disks(vm, snapshot)
+    snapshot_disk_ids = [disk.get_id() for disk in disks]
+    storage_domain_name = get_disk_storage_domain_name(
+        disks[0].get_alias(), vm
+    )
+    storage_domain_obj = ll_sd.get_storage_domain_obj(
+        storage_domain_name
+    )
+    snapshot_disks = ll_sd.util.getElemFromLink(
+        storage_domain_obj,
+        link_name='disksnapshots',
+        attr='disk_snapshot',
+        get_href=False,
+    )
+    if disk_id:
+        snapshot_disks = [
+            disk for disk in snapshot_disks if (
+                disk.get_disk().get_id() == disk_id
+            )
+        ]
+    else:
+        snapshot_disks = [
+            disk for disk in snapshot_disks if (
+                disk.get_disk().get_id() in snapshot_disk_ids
+            )
+        ]
+    results = []
+    for disk_obj in snapshot_disks:
+        status = DISKS_API.delete(disk_obj, True)
+        if not status:
+            logger.error(
+                "Failed to delete snapshot's disk %s", disk_obj.get_alias()
+            )
+        results.append(status)
+    if wait:
+        wait_for_disks_status(
+            [disk.get_disk().get_id() for disk in snapshot_disks], 'id'
+        )
+    return all(results)
+
+
 def get_vm_snapshot_ovf_obj(vm, snapshot):
     """
     Description: Return ovf file of vm

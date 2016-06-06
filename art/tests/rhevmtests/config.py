@@ -539,6 +539,7 @@ JOB_CREATE_SNAPSHOT = ENUMS['job_create_snapshot']
 JOB_PREVIEW_SNAPSHOT = ENUMS['job_preview_snapshot']
 JOB_REMOVE_SNAPSHOT = ENUMS['job_remove_snapshot']
 JOB_RESTORE_SNAPSHOT = ENUMS['job_restore_vm_snapshot']
+JOB_REMOVE_SNAPSHOTS_DISK = ENUMS['job_remove_snapshots_disk']
 # Storage Domain section
 JOB_ACTIVATE_DOMAIN = ENUMS['job_activate_storage_domain']
 JOB_ADD_DOMAIN = ENUMS['job_add_storage_domain']
