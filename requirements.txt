@@ -1,0 +1,32 @@
+libvirt-python
+pexpect
+pyliblzma
+pyOpenSSL
+pysnmp >= 4.2.3
+bugzilla >= 0.8.0
+configobj >= 4.7.2
+pycrypto >= 2.6
+python-dateutil
+python-foreman
+futures
+jira
+kerberos
+lockfile
+lxml
+netaddr
+paramiko >= 1.15.2
+repoze.lru >= 0.6
+python-rrmngmnt
+python-otopi-mdp
+setuptools
+unittest2
+pywinrm
+PyYAML
+winremote
+pytest >= 2.8.7
+pytest-xdist
+pytest-html
+pytest-ordering
+pytest-catchlog
+pytest-marker-bugzilla
+uritemplate
