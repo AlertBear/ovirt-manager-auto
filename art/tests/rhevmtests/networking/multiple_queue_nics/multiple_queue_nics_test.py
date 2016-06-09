@@ -1,375 +1,137 @@
 """
 multiple_queue_nics
 """
-
 import logging
-from art.rhevm_api.tests_lib.low_level.hosts import(
-    get_host_ip_from_engine, get_host_name_from_engine
-)
-from art.rhevm_api.tests_lib.low_level.networks import update_vnic_profile
-from art.rhevm_api.tests_lib.low_level.vms import(
-    stopVm, suspendVm, createVm, removeVm, migrateVm, startVm,
-    get_vm_host
-)
-import rhevmtests.networking.helper as net_help
-from art.test_handler.exceptions import NetworkException
-from art.unittest_lib import attr
-from art.unittest_lib import NetworkTest as TestCase
-from rhevmtests.networking import config
-from art.test_handler.tools import polarion
+
+import pytest
+
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import rhevmtests.networking.config as conf
+import rhevmtests.networking.helper as network_helper
+from art.test_handler.tools import polarion, bz
+from art.unittest_lib import NetworkTest, testflow, attr
+from fixtures import update_vnic_profile, run_vm, create_vm
 
 logger = logging.getLogger("Multiple_Queues_Nics_Cases")
-HOST_NAME0 = None  # Fill in setup_module
-HOST_NAME1 = None  # Fill in setup_module
-
-
-def setup_module():
-    """
-    Get host names from engine
-    """
-    global HOST_NAME0
-    global HOST_NAME1
-    HOST_NAME0 = get_host_name_from_engine(config.VDS_HOSTS[0])
-    HOST_NAME1 = get_host_name_from_engine(config.VDS_HOSTS[1])
 
 
 @attr(tier=2)
-class TestMultipleQueueNicsTearDown(TestCase):
+@pytest.mark.usefixtures(update_vnic_profile.__name__, run_vm.__name__)
+class TestMultipleQueueNics01(NetworkTest):
     """
-    Teardown class for MultipleQueueNics
-    """
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Teardown class for MultipleQueueNics
-        Remove queues from MGMT vNIC profile and stop the VM
-        """
-        logger.info(
-            "Remove custom properties on %s", config.MGMT_BRIDGE
-        )
-        if not update_vnic_profile(
-            name=config.MGMT_BRIDGE, network=config.MGMT_BRIDGE,
-            data_center=config.DC_NAME[0], custom_properties="clear"
-        ):
-            logger.error(
-                "Failed to remove custom properties from %s",
-                config.MGMT_BRIDGE
-            )
-        logger.info("Stop %s", config.VM_NAME[0])
-        if not stopVm(positive=True, vm=config.VM_NAME[0]):
-            logger.error("Failed to stop %s", config.VM_NAME[0])
-
-
-class TestMultipleQueueNics01(TestMultipleQueueNicsTearDown):
-    """
-    1) Verify that number of queues is not updated on running VM
-    2) Verify that number of queues is updated on new VM boot
+    1) Verify that number of queues is not updated on running VM and check
+        that number of queues is updated on new VM boot.
+    2) Check that queue survive VM hibernate
+    3) Check that queues survive VM migration
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Config and update queue value on vNIC profile for exiting network
-        (vNIC CustomProperties) and start VM
-        """
-        logger.info(
-            "Update custom properties on %s to %s", config.MGMT_BRIDGE,
-            config.PROP_QUEUES[0]
-        )
-        if not update_vnic_profile(
-            name=config.MGMT_BRIDGE, network=config.MGMT_BRIDGE,
-            data_center=config.DC_NAME[0],
-            custom_properties=config.PROP_QUEUES[0]
-        ):
-            raise NetworkException(
-                "Failed to set custom properties on %s" % config.MGMT_BRIDGE
-            )
-        logger.info("Start %s", config.VM_NAME[0])
-        if not startVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Failed to start %s" % config.VM_NAME[0])
-        # get IP of the host where VM runs
-        vm_host_ip = get_host_ip_from_engine(get_vm_host(config.VM_NAME[0]))
-        # find appropriate host object for the vm_host_ip in VDS_HOSTS
-        host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
-        logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
-        if not net_help.check_queues_from_qemu(
-            vm=config.VM_NAME[0],
-            host_obj=host_obj,
-            num_queues=config.NUM_QUEUES[0]
-        ):
-            raise NetworkException(
-                "qemu did not return the expected number of queues"
-            )
+    vm_name = conf.VM_0
+    num_queues_0 = conf.NUM_QUEUES[0]
+    num_queues_1 = conf.NUM_QUEUES[1]
+    prop_queues = conf.PROP_QUEUES[1]
 
     @polarion("RHEVM3-4310")
     def test_multiple_queue_nics_update(self):
         """
-        Make sure that number of queues does not change on running VM
-        stop VM
-        start VM
-        make sure number of queues changed on new boot
+        Update queues while VM is running.
+        Make sure that number of queues does not change on running VM.
+        stop VM.
+        start VM.
+        make sure number of queues changed on new boot.
         """
-        logger.info(
-            "Update custom properties on %s to %s", config.MGMT_BRIDGE,
-            config.PROP_QUEUES[1]
+        testflow.step(
+            "Update custom properties on %s to %s", conf.MGMT_BRIDGE,
+            self.prop_queues
         )
-        if not update_vnic_profile(
-            name=config.MGMT_BRIDGE, network=config.MGMT_BRIDGE,
-            data_center=config.DC_NAME[0],
-            custom_properties=config.PROP_QUEUES[1]
-        ):
-            raise NetworkException(
-                "Failed to set custom properties on %s" % config.MGMT_BRIDGE
-            )
 
-        # get IP of the host where VM runs
-        vm_host_ip = get_host_ip_from_engine(get_vm_host(config.VM_NAME[0]))
-        # find appropriate host object for the vm_host_ip in VDS_HOSTS
-        host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
-
-        logger.info("Check that qemu still has %s queues after properties "
-                    "update", config.NUM_QUEUES[0])
-        if not net_help.check_queues_from_qemu(
-            vm=config.VM_NAME[0],
-            host_obj=host_obj, num_queues=config.NUM_QUEUES[0]
-        ):
-            raise NetworkException(
-                "qemu did not return the expected %s queues",
-                config.NUM_QUEUES[0]
-            )
-        logger.info("Stopping VM %s", config.VM_NAME[0])
-        stopVm(positive=True, vm=config.VM_NAME[0])
-
-        logger.info("Start %s", config.VM_NAME[0])
-        if not startVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Failed to start %s" % config.VM_NAME[0])
-        # get IP of the host where VM runs
-        vm_host_ip = get_host_ip_from_engine(get_vm_host(config.VM_NAME[0]))
-        # find appropriate host object for the vm_host_ip in VDS_HOSTS
-        host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
-        logger.info("Check that qemu has %s queues", config.NUM_QUEUES[1])
-        if not net_help.check_queues_from_qemu(
-            vm=config.VM_NAME[0],
-            host_obj=host_obj,
-            num_queues=config.NUM_QUEUES[1]
-        ):
-            raise NetworkException(
-                "qemu did not return the expected number of queues"
-            )
-
-
-class TestMultipleQueueNics02(TestMultipleQueueNicsTearDown):
-    """
-    Check that queue survive VM hibernate
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Config and update queue value on vNIC profile for exiting network
-        (vNIC CustomProperties) and start VM
-        """
-        logger.info(
-            "Update custom properties on %s to %s", config.MGMT_BRIDGE,
-            config.PROP_QUEUES[0]
+        assert ll_networks.update_vnic_profile(
+            name=conf.MGMT_BRIDGE, network=conf.MGMT_BRIDGE,
+            data_center=conf.DC_0, custom_properties=self.prop_queues
         )
-        if not update_vnic_profile(
-            name=config.MGMT_BRIDGE, network=config.MGMT_BRIDGE,
-            data_center=config.DC_NAME[0],
-            custom_properties=config.PROP_QUEUES[0]
-        ):
-            raise NetworkException(
-                "Failed to set custom properties on %s" % config.MGMT_BRIDGE
-            )
-        logger.info("Start %s", config.VM_NAME[0])
-        if not startVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Failed to start %s" % config.VM_NAME[0])
-        # get IP of the host where VM runs
-        vm_host_ip = get_host_ip_from_engine(get_vm_host(config.VM_NAME[0]))
-        # find appropriate host object for the vm_host_ip in VDS_HOSTS
-        host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
-        logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
-        if not net_help.check_queues_from_qemu(
-            vm=config.VM_NAME[0],
-            host_obj=host_obj,
-            num_queues=config.NUM_QUEUES[0]
-        ):
-            raise NetworkException(
-                "qemu did not return the expected number of queues"
-            )
+
+        testflow.step(
+            "Check that qemu still has %s queues after properties update",
+            self.num_queues_0
+        )
+
+        assert network_helper.check_queues_from_qemu(
+            vm=self.vm_name, host_obj=conf.VDS_0_HOST,
+            num_queues=self.num_queues_0
+        )
+        testflow.step("Restart VM %s", self.vm_name)
+        assert ll_vms.restartVm(
+            vm=self.vm_name, placement_host=conf.HOST_0_NAME
+        )
+
+        testflow.step("Check that qemu has %s queues", self.num_queues_1)
+        assert network_helper.check_queues_from_qemu(
+            vm=self.vm_name, host_obj=conf.VDS_0_HOST,
+            num_queues=self.num_queues_1
+        )
 
     @polarion("RHEVM3-4312")
     def test_multiple_queue_nics(self):
         """
-        hibernate the VM and check the queue still configured on qemu
+        hibernate the VM and check the queue still confured on qemu
         """
-        logger.info("Suspend %s", config.VM_NAME[0])
-        if not suspendVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Failed to suspend %s" % config.VM_NAME[0])
+        testflow.step("Suspend %s", self.vm_name)
+        assert ll_vms.suspendVm(positive=True, vm=self.vm_name)
 
-        logger.info("Start %s", config.VM_NAME[0])
-        if not startVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Failed to start %s" % config.VM_NAME[0])
-        # get IP of the host where VM runs
-        vm_host_ip = get_host_ip_from_engine(get_vm_host(config.VM_NAME[0]))
-        # find appropriate host object for the vm_host_ip in VDS_HOSTS
-        host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
-        logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
-        if not net_help.check_queues_from_qemu(
-            vm=config.VM_NAME[0],
-            host_obj=host_obj,
-            num_queues=config.NUM_QUEUES[0]
-        ):
-            raise NetworkException(
-                "qemu did not return the expected number of queues"
-            )
+        testflow.step("Start %s", self.vm_name)
+        assert ll_vms.startVm(
+            positive=True, vm=self.vm_name, placement_host=conf.HOST_0_NAME
+        )
+
+        testflow.step("Check that qemu has %s queues", self.num_queues_0)
+        assert network_helper.check_queues_from_qemu(
+            vm=self.vm_name, host_obj=conf.VDS_0_HOST,
+            num_queues=self.num_queues_0
+        )
+
+    @bz({"1349461": {}})
+    @polarion("RHEVM3-4311")
+    def test_multiple_queue_nics_vm_migration(self):
+        """
+        Check number of queues after VM migration
+        """
+        testflow.step(
+            "Migrate Vm %s from host %s to destination host %s",
+            self.vm_name, conf.HOST_0_NAME, conf.HOST_1_NAME
+        )
+        assert ll_vms.migrateVm(
+            positive=True, vm=self.vm_name, host=conf.HOST_1_NAME
+        )
+        testflow.step(
+            "Check that qemu has %s queues after VM migration",
+            self.num_queues_0
+        )
+        assert network_helper.check_queues_from_qemu(
+            vm=self.vm_name, host_obj=conf.VDS_1_HOST,
+            num_queues=self.num_queues_0
+        )
 
 
-class TestMultipleQueueNics03(TestMultipleQueueNicsTearDown):
+@attr(tier=2)
+@pytest.mark.usefixtures(
+    update_vnic_profile.__name__, create_vm.__name__, run_vm.__name__
+)
+class TestMultipleQueueNics02(NetworkTest):
     """
     Check queue exists for VM from template
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Config and update queue value on vNIC profile for existing network
-        (vNIC CustomProperties)
-        Create template from the VM
-        Create VM from the template
-        Start the new VM created from the template
-        """
-        logger.info(
-            "Update custom properties on %s to %s", config.MGMT_BRIDGE,
-            config.PROP_QUEUES[0]
-        )
-        if not update_vnic_profile(
-            name=config.MGMT_BRIDGE, network=config.MGMT_BRIDGE,
-            data_center=config.DC_NAME[0],
-            custom_properties=config.PROP_QUEUES[0]
-        ):
-            raise NetworkException(
-                "Failed to set custom properties on %s" % config.MGMT_BRIDGE
-            )
-
-        logger.info("Create VM from template")
-        if not createVm(
-            positive=True, vmName=config.VM_FROM_TEMPLATE,
-            cluster=config.CLUSTER_NAME[0], vmDescription="from_template",
-            template=config.TEMPLATE_NAME[0]
-        ):
-            raise NetworkException("Failed to create VM from queues_template")
-
-        logger.info("Start %s", config.VM_FROM_TEMPLATE)
-        if not startVm(positive=True, vm=config.VM_FROM_TEMPLATE):
-            raise NetworkException(
-                "Failed to start %s", config.VM_FROM_TEMPLATE
-            )
+    vm_name = conf.VM_FROM_TEMPLATE
+    num_queues_0 = conf.NUM_QUEUES[0]
 
     @polarion("RHEVM3-4313")
     def test_multiple_queue_nics(self):
         """
         Check that queue exist on VM from template
         """
-        # get IP of the host where VM runs
-        vm_host_ip = get_host_ip_from_engine(
-            get_vm_host(config.VM_FROM_TEMPLATE))
-        # find appropriate host object for the vm_host_ip in VDS_HOSTS
-        host_obj = config.VDS_HOSTS[0].get(vm_host_ip)
-        logger.info("Check that qemu has %s queues", config.NUM_QUEUES[0])
-        if not net_help.check_queues_from_qemu(
-            vm=config.VM_FROM_TEMPLATE,
-            host_obj=host_obj,
-            num_queues=config.NUM_QUEUES[0]
-        ):
-            raise NetworkException(
-                "qemu did not return the expected number of queues"
-            )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Stop and remove VM
-        Remove template
-        """
-        logger.info("Stop and remove %s", config.VM_FROM_TEMPLATE)
-        if not removeVm(
-                positive=True, vm=config.VM_FROM_TEMPLATE, stopVM="True",
-                wait=True
-        ):
-            logger.error(
-                "Failed to stop and remove %s", config.VM_FROM_TEMPLATE)
-        super(TestMultipleQueueNics03, cls).teardown_class()
-
-
-class TestMultipleQueueNics04(TestMultipleQueueNicsTearDown):
-    """
-    Check that queues survive VM migration
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Config and update queue value on vNIC profile for exiting network
-        (vNIC CustomProperties)
-        Start VM
-        Check number of queues
-        Migrate VM
-        Check number of queues
-        """
-        logger.info(
-            "Update custom properties on %s to %s", config.MGMT_BRIDGE,
-            config.PROP_QUEUES[0]
+        testflow.step("Check that qemu has %s queues", self.num_queues_0)
+        assert network_helper.check_queues_from_qemu(
+            vm=self.vm_name, host_obj=conf.VDS_0_HOST,
+            num_queues=self.num_queues_0
         )
-        if not update_vnic_profile(
-            name=config.MGMT_BRIDGE, network=config.MGMT_BRIDGE,
-            data_center=config.DC_NAME[0],
-            custom_properties=config.PROP_QUEUES[0]
-        ):
-            raise NetworkException(
-                "Failed to set custom properties on %s" % config.MGMT_BRIDGE
-            )
-        logger.info("Start %s", config.VM_NAME[0])
-        if not net_help.run_vm_once_specific_host(
-            vm=config.VM_NAME[0], host=HOST_NAME0, wait_for_up_status=True
-        ):
-            raise NetworkException("Failed to start %s" % config.VM_NAME[0])
-
-        logger.info(
-            "Check that qemu has %s queues", config.NUM_QUEUES[0])
-        if not net_help.check_queues_from_qemu(
-            vm=config.VM_NAME[0],
-            host_obj=config.VDS_HOSTS[0],
-            num_queues=config.NUM_QUEUES[0]
-        ):
-            raise NetworkException(
-                "qemu did not return the expected number of queues"
-            )
-        if not migrateVm(
-                positive=True, vm=config.VM_NAME[0], host=HOST_NAME1
-        ):
-            raise NetworkException(
-                "Failed to migrate %s from %s to %s" %
-                (config.VM_NAME[0], HOST_NAME0, HOST_NAME1)
-            )
-
-    @polarion("RHEVM3-4311")
-    def test_multiple_queue_nics(self):
-        """
-        Check number of queues after VM migration
-        """
-        logger.info(
-            "Check that qemu has %s queues", config.NUM_QUEUES[0])
-        if not net_help.check_queues_from_qemu(
-            vm=config.VM_NAME[0],
-            host_obj=config.VDS_HOSTS[1],
-            num_queues=config.NUM_QUEUES[0]
-        ):
-            raise NetworkException(
-                "qemu did not return the expected number of queues"
-            )
