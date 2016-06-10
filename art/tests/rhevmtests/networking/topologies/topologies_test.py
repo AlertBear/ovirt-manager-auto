@@ -6,258 +6,141 @@ Testing Topologies feature.
 1 DC, 1 Cluster, 1 Hosts and 1 VM will be created for testing.
 """
 
-import helper
 import logging
+
 import pytest
-from art import unittest_lib
-from rhevmtests.networking import config
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
-import rhevmtests.networking.helper as network_helper
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+
+import config as topologies_conf
+import helper
+import rhevmtests.networking.config as conf
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.unittest_lib import attr, NetworkTest, testflow
+from fixtures import attach_network_and_update_vnic, attach_bond
 
 logger = logging.getLogger("Topologies_Cases")
 
-TEST_VLAN = "1000" if config.PPC_ARCH else config.VLAN_ID[0]
 
-
-@bz({"1342054": {}})
-@unittest_lib.attr(tier=2)
-class TestTopologiesCase01(unittest_lib.NetworkTest):
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_network_and_update_vnic.__name__)
+class TestTopologiesCase01(NetworkTest):
     """
     Check connectivity to VM with VLAN network
     Check virtIO, e1000 and rtl8139 drivers
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create and attach VLAN network to host and VM
-        """
-        logger.info(
-            "Create and attach VLAN network %s", config.VLAN_NETWORKS[0]
-        )
-        local_dict = {
-            config.VLAN_NETWORKS[0]: {
-                "vlan_id": TEST_VLAN,
-                "nic": 1, "required": False
-            }
-        }
-
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0, 1]
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
-            )
-
-        logger.info("Update vNIC to VLAN network on VM %s", config.VM_NAME[0])
-        if not ll_vms.updateNic(
-            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
-            network=config.VLAN_NETWORKS[0],
-            vnic_profile=config.VLAN_NETWORKS[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Fail to update vNIC to VLAN network on VM %s" %
-                config.VM_NAME[0]
-            )
-
-        if not network_helper.run_vm_once_specific_host(
-            vm=config.VM_NAME[0], host=config.HOSTS[0], wait_for_up_status=True
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot start VM %s on host %s" %
-                (config.VM_NAME[0], config.HOSTS[0])
-            )
+    net = topologies_conf.NETS[1][0]
+    bond = None
+    mode = None
 
     @polarion("RHEVM3-12286")
     def test_vlan_network_01_virtio(self):
         """
-        Check connectivity to VLAN network with virtIO driver
+        Check connectivity to VLAN network with VirtIO driver
         """
-        helper.check_vm_connect_and_log(
-            driver=config.NIC_TYPE_VIRTIO, vlan=True
+        testflow.step("Check connectivity to VLAN network with VirtIO driver")
+        assert helper.check_vm_connect_and_log(
+            driver=conf.NIC_TYPE_VIRTIO, vlan=True
         )
 
-    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12287")
     def test_vlan_network_02_e1000(self):
         """
         Check connectivity to VLAN network with e1000 driver
         """
-        logger.info("Updating vNIC driver to e1000")
-        if not helper.update_vnic_driver(driver=config.NIC_TYPE_E1000):
-            raise config.NET_EXCEPTION("Fail to update vNIC to e1000")
-
-        helper.check_vm_connect_and_log(
-            driver=config.NIC_TYPE_E1000, vlan=True
+        assert helper.update_vnic_driver(
+            driver=conf.NIC_TYPE_E1000, vnic_profile=self.net
+        )
+        testflow.step("Check connectivity to VLAN network with e1000 driver")
+        assert helper.check_vm_connect_and_log(
+            driver=conf.NIC_TYPE_E1000, vlan=True
         )
 
-    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12288")
     def test_vlan_network_03_rtl8139(self):
         """
         Check connectivity to VLAN network with rtl8139 driver
         """
-        logger.info("Updating vNIC driver to rtl8139")
-        if not helper.update_vnic_driver(driver=config.NIC_TYPE_RTL8139):
-            raise config.NET_EXCEPTION("Fail to update vNIC to rtl8139")
-
-        helper.check_vm_connect_and_log(
-            driver=config.NIC_TYPE_RTL8139, vlan=True
+        assert helper.update_vnic_driver(
+            driver=conf.NIC_TYPE_RTL8139, vnic_profile=self.net
+        )
+        testflow.step("Check connectivity to VLAN network with rtl8139 driver")
+        assert helper.check_vm_connect_and_log(
+            driver=conf.NIC_TYPE_RTL8139, vlan=True
         )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from setup
-        """
-        logger.info("Stop VM %s", config.VM_NAME[0])
-        if not ll_vms.stopVm(positive=True, vm=config.VM_NAME[0]):
-            logger.error("Fail to stop VM %s", config.VM_NAME[0])
 
-        logger.info("Update vNIC to RHEVM network on VM %s", config.VM_NAME[0])
-        if not ll_vms.updateNic(
-            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
-            network=config.MGMT_BRIDGE, interface=config.NIC_TYPE_VIRTIO,
-            vnic_profile=config.MGMT_BRIDGE
-        ):
-            logger.error(
-                "Fail to update vNIC to RHEVM network on VM %s",
-                config.VM_NAME[0]
-            )
-
-        logger.info("Remove network %s from setup", config.VLAN_NETWORKS[0])
-        if not hl_networks.remove_net_from_setup(
-            host=config.HOSTS[0], network=[config.VLAN_NETWORKS[0]]
-        ):
-            logger.error(
-                "Cannot remove network %s from setup", config.VLAN_NETWORKS[0]
-            )
-
-
-@bz({"1342054": {}})
-@unittest_lib.attr(tier=2)
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_network_and_update_vnic.__name__)
 @pytest.mark.skipif(
-    config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
+    conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
 )
-class TestTopologiesCase02(unittest_lib.NetworkTest):
+class TestTopologiesCase02(NetworkTest):
     """
     Check connectivity to VM with VLAN over BOND mode 1 network
     Check virtIO, e1000 and rtl8139 drivers
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create and attach VLAN over BOND mode 1 network to host and VM
-        """
-        logger.info("Create and attach VLAN over BOND mode 1 network")
-        local_dict = {
-            None: {
-                "nic": config.BOND[0], "mode": config.BOND_MODES[1],
-                "slaves": [2, 3]
-            },
-            config.VLAN_NETWORKS[0]: {
-                "nic": config.BOND[0], "vlan_id": TEST_VLAN, "required": False
-            }
-        }
-
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
-        ):
-            raise config.NET_EXCEPTION("Cannot create and attach network")
-
-        logger.info("Update vNIC to VLAN over BOND mode 1 network on VM")
-        if not ll_vms.updateNic(
-            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
-            network=config.VLAN_NETWORKS[0],
-            vnic_profile=config.VLAN_NETWORKS[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Fail to update vNIC to VLAN over BOND mode 1 network on VM"
-            )
-        if not network_helper.run_vm_once_specific_host(
-            vm=config.VM_NAME[0], host=config.HOSTS[0], wait_for_up_status=True
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot start VM %s on host %s" %
-                (config.VM_NAME[0], config.HOSTS[0])
-            )
+    net = topologies_conf.NETS[2][0]
+    bond = conf.BOND[0]
+    mode = conf.BOND_MODES[1]
 
     @polarion("RHEVM3-12290")
     def test_vlan_over_bond_network_01_virtio(self):
         """
         Check connectivity to VLAN over BOND mode 1 network with virtIO driver
         """
-        helper.check_vm_connect_and_log(
-            driver=config.NIC_TYPE_VIRTIO, vlan=True,
-            mode=config.BOND_MODES[1]
+        testflow.step(
+            "Check connectivity to VLAN over BOND mode 1 network with virtIO "
+            "driver"
+        )
+        assert helper.check_vm_connect_and_log(
+            driver=conf.NIC_TYPE_VIRTIO, vlan=True, mode=self.mode
         )
 
-    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12291")
     def test_vlan_over_bond_network_02_e1000(self):
         """
         Check connectivity to VLAN over BOND mode 1 network with e1000 driver
         """
-        if not helper.update_vnic_driver(driver=config.NIC_TYPE_E1000):
-            raise config.NET_EXCEPTION("Fail to update vNIC to e1000")
-
-        helper.check_vm_connect_and_log(
-            driver=config.NIC_TYPE_E1000, vlan=True,
-            mode=config.BOND_MODES[1]
+        assert helper.update_vnic_driver(
+            driver=conf.NIC_TYPE_E1000, vnic_profile=self.net
+        )
+        testflow.step(
+            "Check connectivity to VLAN over BOND mode 1 network with e1000 "
+            "driver"
+        )
+        assert helper.check_vm_connect_and_log(
+            driver=conf.NIC_TYPE_E1000, vlan=True, mode=self.mode
         )
 
-    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12292")
     def test_vlan_over_bond_network_03_rtl8139(self):
         """
         Check connectivity to VLAN over BOND mode 1 network with rtl8139
         driver
         """
-        if not helper.update_vnic_driver(driver=config.NIC_TYPE_RTL8139):
-            raise config.NET_EXCEPTION("Fail to update vNIC to rtl8139")
-
-        helper.check_vm_connect_and_log(
-            driver=config.NIC_TYPE_RTL8139, vlan=True,
-            mode=config.BOND_MODES[1]
+        assert helper.update_vnic_driver(
+            driver=conf.NIC_TYPE_RTL8139, vnic_profile=self.net
+        )
+        testflow.step(
+            "Check connectivity to VLAN over BOND mode 1 network with "
+            "rtl8139 driver"
+        )
+        assert helper.check_vm_connect_and_log(
+            driver=conf.NIC_TYPE_RTL8139, vlan=True, mode=self.mode
         )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from setup
-        """
-        logger.info("Stop VM %s", config.VM_NAME[0])
-        if not ll_vms.stopVm(positive=True, vm=config.VM_NAME[0]):
-            logger.error("Failed to stop VM %s", config.VM_NAME[0])
 
-        logger.info("Update vNIC to RHEVM network on VM")
-        if not ll_vms.updateNic(
-            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
-            network=config.MGMT_BRIDGE, interface=config.NIC_TYPE_VIRTIO,
-            vnic_profile=config.MGMT_BRIDGE
-        ):
-            logger.error("Fail to update vNIC to RHEVM network on VM")
-
-        logger.info("Remove network from setup")
-        if not hl_networks.remove_net_from_setup(
-            host=config.HOSTS[0], network=[config.VLAN_NETWORKS[0]]
-        ):
-            logger.error("Cannot remove network from setup")
-
-
-@bz({"1342054": {}})
-@unittest_lib.attr(tier=2)
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_network_and_update_vnic.__name__)
 @pytest.mark.skipif(
-    config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
+    conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
 )
-class TestTopologiesCase03(unittest_lib.NetworkTest):
+class TestTopologiesCase03(NetworkTest):
     """
     Check connectivity to VM with BOND mode 2 network
     Check virtIO, e1000 and rtl8139 drivers
@@ -265,204 +148,126 @@ class TestTopologiesCase03(unittest_lib.NetworkTest):
     # bond mode 2 requires switch side configuration to work properly ! ! !
 
     __test__ = False  # disabled until we deal with NIC plugin for 6 NICs hosts
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create and attach BOND mode 2 network to host and VM
-        """
-        logger.info("Create and attach BOND mode 2 network")
-        if not helper.create_and_attach_bond(config.BOND_MODES[2]):
-            raise config.NET_EXCEPTION("Cannot create and attach network")
-
-        logger.info("Update vNIC to BOND mode 2 network on VM")
-        if not ll_vms.updateNic(
-            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
-            network=config.NETWORKS[0], vnic_profile=config.NETWORKS[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Fail to update vNIC to BOND mode 2 network on VM"
-            )
-
-        if not network_helper.run_vm_once_specific_host(
-            vm=config.VM_NAME[0], host=config.HOSTS[0], wait_for_up_status=True
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot start VM %s on host %s" %
-                (config.VM_NAME[0], config.HOSTS[0])
-            )
+    net = topologies_conf.NETS[3][0]
+    bond = conf.BOND[1]
+    mode = conf.BOND_MODES[2]
 
     @polarion("RHEVM3-12293")
     def test_bond_network_01_virtio(self):
         """
         Check connectivity to BOND mode 2 network with virtIO driver
         """
-        helper.check_vm_connect_and_log(
-            driver=config.NIC_TYPE_VIRTIO, mode=config.BOND_MODES[2]
+        testflow.step(
+            "Check connectivity to BOND mode 2 network with virtIO driver"
+        )
+        assert helper.check_vm_connect_and_log(
+            driver=conf.NIC_TYPE_VIRTIO, mode=self.mode
         )
 
-    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12294")
     def test_bond_network_02_e1000(self):
         """
         Check connectivity to BOND mode 2 network with e1000 driver
         """
-        if not helper.update_vnic_driver(driver=config.NIC_TYPE_E1000):
-            raise config.NET_EXCEPTION("Fail to update vNIC to e1000")
-
-        helper.check_vm_connect_and_log(
-            driver=config.NIC_TYPE_E1000, mode=config.BOND_MODES[2]
+        assert helper.update_vnic_driver(
+            driver=conf.NIC_TYPE_E1000, vnic_profile=self.net
+        )
+        testflow.step(
+            "Check connectivity to BOND mode 2 network with e1000 driver"
+        )
+        assert helper.check_vm_connect_and_log(
+            driver=conf.NIC_TYPE_E1000, mode=self.mode
         )
 
-    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12295")
     def test_bond_network_03_rtl8139(self):
         """
         Check connectivity to BOND mode 2 network with rtl8139 driver
         """
-        if not helper.update_vnic_driver(driver=config.NIC_TYPE_RTL8139):
-            raise config.NET_EXCEPTION("Fail to update vNIC to rtl8139")
-
+        assert helper.update_vnic_driver(
+            driver=conf.NIC_TYPE_RTL8139, vnic_profile=self.net
+        )
+        testflow.step(
+            "Check connectivity to BOND mode 2 network with rtl8139 driver"
+        )
         helper.check_vm_connect_and_log(
-            driver=config.NIC_TYPE_RTL8139, mode=config.BOND_MODES[2]
+            driver=conf.NIC_TYPE_RTL8139, mode=self.mode
         )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from setup
-        """
-        logger.info("Stop VM %s", config.VM_NAME[0])
-        if not ll_vms.stopVm(positive=True, vm=config.VM_NAME[0]):
-            logger.error("Fail to stop VM %s", config.VM_NAME[0])
 
-        logger.info("Update vNIC to RHEVM network on VM %s", config.VM_NAME[0])
-        if not ll_vms.updateNic(
-            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
-            network=config.MGMT_BRIDGE, interface=config.NIC_TYPE_VIRTIO,
-            vnic_profile=config.MGMT_BRIDGE
-        ):
-            logger.error(
-                "Fail to update vNIC to RHEVM network on VM %s",
-                config.VM_NAME[0]
-            )
-
-        logger.info("Remove network %s from setup", config.NETWORKS[0])
-        if not hl_networks.remove_net_from_setup(
-            host=config.HOSTS[0], network=[config.NETWORKS[0]]
-        ):
-            logger.error(
-                "Cannot remove network %s from setup", config.NETWORKS[0]
-            )
-
-
-@bz({"1342054": {}})
-@unittest_lib.attr(tier=2)
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_network_and_update_vnic.__name__)
 @pytest.mark.skipif(
-    config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
+    conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
 )
-class TestTopologiesCase04(unittest_lib.NetworkTest):
+class TestTopologiesCase04(NetworkTest):
     """
     Check connectivity to VM with BOND mode 4 network
     Check virtIO, e1000 and rtl8139 drivers
-    TODO: bond mode 4 requires switch side configuration disabling case until
-     we have swith side support on all hosts including GE
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create and attach BOND mode 4 network to host and VM
-        """
-        logger.info("Create and attach BOND mode 4 network")
-        if not helper.create_and_attach_bond(config.BOND_MODES[4]):
-            raise config.NET_EXCEPTION("Cannot create and attach network")
-
-        logger.info("Update vNIC to BOND network on VM")
-        if not ll_vms.updateNic(
-            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
-            network=config.NETWORKS[0], vnic_profile=config.NETWORKS[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Fail to update vNIC to BOND network on VM"
-            )
-        logger.info("Start VM %s", config.VM_NAME[0])
-        if not ll_vms.startVm(positive=True, vm=config.VM_NAME[0]):
-            raise config.NET_EXCEPTION(
-                "Fail to start VM %s" % config.VM_NAME[0]
-            )
+    net = topologies_conf.NETS[4][0]
+    bond = conf.BOND[2]
+    mode = conf.BOND_MODES[4]
 
     @polarion("RHEVM3-12299")
     def test_bond_network_01_virtio(self):
         """
         Check connectivity to BOND mode 4 network with virtIO driver
         """
-        helper.check_vm_connect_and_log(
-            driver=config.NIC_TYPE_VIRTIO, mode=config.BOND_MODES[4]
+        testflow.step(
+            "Check connectivity to BOND mode 4 network with virtIO driver"
+        )
+        assert helper.check_vm_connect_and_log(
+            driver=conf.NIC_TYPE_VIRTIO, mode=self.mode
         )
 
-    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12300")
     def test_bond_network_02_e1000(self):
         """
         Check connectivity to BOND mode 4 network with e1000 driver
         """
-        if not helper.update_vnic_driver(driver=config.NIC_TYPE_E1000):
-            raise config.NET_EXCEPTION("Fail to update vNIC to e1000")
-
-        helper.check_vm_connect_and_log(
-            driver=config.NIC_TYPE_E1000, mode=config.BOND_MODES[4]
+        assert helper.update_vnic_driver(
+            driver=conf.NIC_TYPE_E1000, vnic_profile=self.net
+        )
+        testflow.step(
+            "Check connectivity to BOND mode 4 network with e1000 driver"
+        )
+        assert helper.check_vm_connect_and_log(
+            driver=conf.NIC_TYPE_E1000, mode=self.mode
         )
 
-    @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
+    @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-12301")
     def test_bond_network_03_rtl8139(self):
         """
         Check connectivity to BOND mode 4 network with rtl8139 driver
         """
-        if not helper.update_vnic_driver(driver=config.NIC_TYPE_RTL8139):
-            raise config.NET_EXCEPTION("Fail to update vNIC to rtl8139")
-
-        helper.check_vm_connect_and_log(
-            driver=config.NIC_TYPE_RTL8139, mode=config.BOND_MODES[4]
+        assert helper.update_vnic_driver(
+            driver=conf.NIC_TYPE_RTL8139, vnic_profile=self.net
+        )
+        testflow.step(
+            "Check connectivity to BOND mode 4 network with rtl8139 driver"
+        )
+        assert helper.check_vm_connect_and_log(
+            driver=conf.NIC_TYPE_RTL8139, mode=self.mode
         )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from setup
-        """
-        logger.info("Stop VM %s", config.VM_NAME[0])
-        if not ll_vms.stopVm(positive=True, vm=config.VM_NAME[0]):
-            logger.error("Failed to stop VM %s", config.VM_NAME[0])
 
-        logger.info("Update vNIC to RHEVM network on VM")
-        if not ll_vms.updateNic(
-            positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
-            network=config.MGMT_BRIDGE, interface=config.NIC_TYPE_VIRTIO,
-            vnic_profile=config.MGMT_BRIDGE
-        ):
-            logger.error("Fail to update vNIC to RHEVM network on VM")
-
-        logger.info("Remove network from setup")
-        if not hl_networks.remove_net_from_setup(
-            host=config.HOSTS[0], network=[config.NETWORKS[0]]
-        ):
-            logger.error("Cannot remove network from setup")
-
-
-@bz({"1342054": {}})
-@unittest_lib.attr(tier=2)
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_bond.__name__)
 @pytest.mark.skipif(
-    config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
+    conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
 )
 @pytest.mark.skipif(
-    config.NO_EXTRA_BOND_MODE_SUPPORT,
-    reason=config.NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG
+    conf.NO_EXTRA_BOND_MODE_SUPPORT,
+    reason=conf.NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG
 )
-@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-class TestTopologiesCase05(unittest_lib.NetworkTest):
+@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
+class TestTopologiesCase05(NetworkTest):
     """
     Check connectivity to BOND mode 3 network
     This is non-VM network test, we check connectivity from host to the IP:
@@ -470,184 +275,112 @@ class TestTopologiesCase05(unittest_lib.NetworkTest):
     !!! NOTE: bond mode 3 is officially not supported with VM networks!!!
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create and attach BOND mode 3 network to host
-        """
-        logger.info(
-            "Create and attach BOND mode %s network", config.BOND_MODES[3]
-        )
-        if not helper.create_and_attach_bond(config.BOND_MODES[3]):
-            raise config.NET_EXCEPTION("Cannot create and attach network")
+    net = topologies_conf.NETS[5][0]
+    bond = conf.BOND[3]
+    mode = conf.BOND_MODES[3]
 
     @polarion("RHEVM3-12289")
     def test_bond_non_vm_network(self):
         """
         Check connectivity to BOND mode 3 network
         """
-        helper.check_vm_connect_and_log(
-            mode=config.BOND_MODES[3], vm=False, flags=["-r"]
+        testflow.step("Check connectivity to BOND mode 3 network")
+        assert helper.check_vm_connect_and_log(
+            mode=self.mode, vm=False, flags=["-r"]
         )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from setup
-        """
-        logger.info("Remove network from setup")
-        if not hl_networks.remove_net_from_setup(
-            host=config.HOSTS[0], network=[config.NETWORKS[0]]
-        ):
-            logger.error("Cannot remove network from setup")
 
-
-@bz({"1342054": {}})
-@unittest_lib.attr(tier=2)
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_bond.__name__)
 @pytest.mark.skipif(
-    config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
+    conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
 )
 @pytest.mark.skipif(
-    config.NO_EXTRA_BOND_MODE_SUPPORT,
-    reason=config.NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG
+    conf.NO_EXTRA_BOND_MODE_SUPPORT,
+    reason=conf.NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG
 )
-@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-class TestTopologiesCase06(unittest_lib.NetworkTest):
+@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
+class TestTopologiesCase06(NetworkTest):
     """
     Check connectivity to BOND mode 0 network
     This is non-VM network test, we check connectivity from host to to the IP:
     10.35.147.62 configured on switch
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create and attach BOND mode 0 network to host
-        """
-        logger.info(
-            "Create and attach BOND mode %s network", config.BOND_MODES[0]
-        )
-        if not helper.create_and_attach_bond(config.BOND_MODES[0]):
-            raise config.NET_EXCEPTION("Cannot create and attach network")
+    net = topologies_conf.NETS[6][0]
+    bond = conf.BOND[4]
+    mode = conf.BOND_MODES[0]
 
     @polarion("RHEVM3-12289")
     def test_bond_non_vm_network(self):
         """
         Check connectivity to BOND mode 0 network
         """
-        helper.check_vm_connect_and_log(
-            mode=config.BOND_MODES[0], vm=False, flags=["-r"]
+        testflow.step("Check connectivity to BOND mode 0 network")
+        assert helper.check_vm_connect_and_log(
+            mode=self.mode, vm=False, flags=["-r"]
         )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from setup
-        """
-        logger.info("Remove network from setup")
-        if not hl_networks.remove_net_from_setup(
-            host=config.HOSTS[0], network=[config.NETWORKS[0]]
-        ):
-            logger.error("Cannot remove network from setup")
 
-
-@bz({"1342054": {}})
-@unittest_lib.attr(tier=2)
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_bond.__name__)
 @pytest.mark.skipif(
-    config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
+    conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
 )
 @pytest.mark.skipif(
-    config.NO_EXTRA_BOND_MODE_SUPPORT,
-    reason=config.NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG
+    conf.NO_EXTRA_BOND_MODE_SUPPORT,
+    reason=conf.NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG
 )
-@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-class TestTopologiesCase07(unittest_lib.NetworkTest):
+@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
+class TestTopologiesCase07(NetworkTest):
     """
     Check connectivity to BOND mode 5 network
     This is non-VM network test, we check connectivity from host to to the IP:
     10.35.147.62 configured on switch
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create and attach BOND mode 5 network to host
-        """
-        logger.info(
-            "Create and attach BOND mode %s network", config.BOND_MODES[5]
-        )
-        if not helper.create_and_attach_bond(config.BOND_MODES[5]):
-            raise config.NET_EXCEPTION("Cannot create and attach network")
+    net = topologies_conf.NETS[7][0]
+    bond = conf.BOND[5]
+    mode = conf.BOND_MODES[5]
 
     @polarion("RHEVM3-12302")
     def test_bond_non_vm_network(self):
         """
         Check connectivity to BOND mode 5 network
         """
-        helper.check_vm_connect_and_log(
-            mode=config.BOND_MODES[5], vm=False, flags=["-r"]
+        testflow.step("Check connectivity to BOND mode 5 network")
+        assert helper.check_vm_connect_and_log(
+            mode=self.mode, vm=False, flags=["-r"]
         )
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from setup
-        """
-        logger.info("Remove network from setup")
-        if not hl_networks.remove_net_from_setup(
-            host=config.HOSTS[0], network=[config.NETWORKS[0]]
-        ):
-            logger.error("Cannot remove network from setup")
 
-
-@bz({"1342054": {}})
-@unittest_lib.attr(tier=2)
-@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_bond.__name__)
+@pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 @pytest.mark.skipif(
-    config.NOT_4_NICS_HOSTS, reason=config.NOT_4_NICS_HOST_SKIP_MSG
+    conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG
 )
 @pytest.mark.skipif(
-    config.NO_EXTRA_BOND_MODE_SUPPORT,
-    reason=config.NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG
+    conf.NO_EXTRA_BOND_MODE_SUPPORT,
+    reason=conf.NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG
 )
-class TestTopologiesCase08(unittest_lib.NetworkTest):
+class TestTopologiesCase08(NetworkTest):
     """
     Check connectivity to BOND mode 6 network
     This is non-VM network test, we check connectivity from host to to the IP:
     10.35.147.62 configured on switch
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create and attach BOND mode 6 network to host
-        """
-        logger.info(
-            "Create and attach BOND mode %s network", config.BOND_MODES[6]
-        )
-        if not helper.create_and_attach_bond(config.BOND_MODES[6]):
-            raise config.NET_EXCEPTION("Cannot create and attach network")
+    net = topologies_conf.NETS[8][0]
+    bond = conf.BOND[6]
+    mode = conf.BOND_MODES[6]
 
     @polarion("RHEVM3-12303")
     def test_bond_non_vm_network(self):
         """
         Check connectivity to BOND mode 6 network
         """
-        helper.check_vm_connect_and_log(
-            mode=config.BOND_MODES[6], vm=False, flags=["-r"]
+        testflow.step("Check connectivity to BOND mode 6 network")
+        assert helper.check_vm_connect_and_log(
+            mode=self.mode, vm=False, flags=["-r"]
         )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from setup
-        """
-        logger.info("Remove network from setup")
-        if not hl_networks.remove_net_from_setup(
-            host=config.HOSTS[0], network=[config.NETWORKS[0]]
-        ):
-            logger.error("Cannot remove network from setup")

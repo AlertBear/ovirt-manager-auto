@@ -6,46 +6,48 @@ Helper for topologies job
 """
 
 import logging
-from rhevmtests.networking import config
-import rhevmtests.networking.helper as network_helper
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import rhevmtests.networking.helper as network_helper
+from rhevmtests.networking import config
 
 logger = logging.getLogger("topologies_helper")
 
 TIMEOUT = 300
 
 
-def update_vnic_driver(driver):
+def update_vnic_driver(driver, vnic_profile):
     """
     Update vNIC driver for VM
+
     :param driver: driver to update the vNIC (virtio, e1000, rtl8139)
     :type driver: str
+    :param vnic_profile: vnic_profile name
+    :type vnic_profile: str
     :return: True in case of success/False otherwise
     :rtype: bool
     """
-    logger.info("Unplug vNIC")
     if not ll_vms.updateNic(
-        positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
-        plugged=False
+        positive=True, vm=config.VM_0, nic=config.VM_NIC_0,
+        plugged=False, vnic_profile=vnic_profile, network=vnic_profile
     ):
         return False
 
-    logger.info("Updating vNIC to %s driver and plug it", driver)
     if not ll_vms.updateNic(
-        positive=True, vm=config.VM_NAME[0], nic=config.NIC_NAME[0],
-        interface=driver, plugged=True
+        positive=True, vm=config.VM_0, nic=config.VM_NIC_0,
+        interface=driver, plugged=True, vnic_profile=vnic_profile,
+        network=vnic_profile
     ):
         return False
     return True
 
 
-def check_connectivity(vlan=False, vm=True, flags=list()):
+def check_connectivity(vm=True, flags=list()):
     """
     Check connectivity for VM and non-VM networks
-    :param vlan: ping from host if True else ping from engine
-    :type vlan: bool
+
     :param vm: Check connectivity to VM network if True, False for non-VM
     :type vm: bool
     :param flags: extra flags for ping command (for example -I eth1)
@@ -53,24 +55,19 @@ def check_connectivity(vlan=False, vm=True, flags=list()):
     :return: True in case of success/False otherwise
     :rtype: bool
     """
-    vm_ip = None
     if vm:
-        ip = ll_vms.waitForIP(vm=config.VM_NAME[0], timeout=TIMEOUT)
-        if not ip[0]:
-            return False
-        vm_ip = ip[1]["ip"]
-        host = config.ENGINE_HOST if not vlan else config.VDS_HOSTS[0]
-    else:
-        host = config.VDS_HOSTS[0]
+        ip = ll_vms.waitForIP(vm=config.VM_0, timeout=TIMEOUT)
+        return ip[0]
 
-    dst_ip = vm_ip if vm_ip is not None else config.DST_HOST_IP
-
-    return network_helper.send_icmp_sampler(host_resource=host, dst=dst_ip)
+    return network_helper.send_icmp_sampler(
+        host_resource=config.VDS_0_HOST, dst=config.DST_HOST_IP
+    )
 
 
 def create_and_attach_bond(mode):
     """
     Create and attach BOND.
+
     :param mode: Bond mode
     :type mode: str
     :return: True in case of success/False otherwise
@@ -96,7 +93,7 @@ def create_and_attach_bond(mode):
     }
 
     if not hl_networks.createAndAttachNetworkSN(
-        data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+        data_center=config.DC_0, cluster=config.CL_0,
         host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
     ):
         return False
@@ -109,16 +106,15 @@ def create_and_attach_bond(mode):
 
 
 def check_connectivity_log(
-        driver=None, mode=None, info=False, error=False, vlan=False
+        driver=None, mode=None, error=False, vlan=False
 ):
     """
     Generate string for info/errors.
+
     :param driver: driver of the interface
     :type driver: str
     :param mode: Bond mode
     :type mode: int
-    :param info: info string is True
-    :type info: bool
     :param error: error string is True
     :type error: bool
     :param vlan: vlan network in string is True
@@ -127,22 +123,12 @@ def check_connectivity_log(
     :rtype: str
 
     """
-    output = "info or error not sent, nothing to do"
     interface = "BOND mode %s" % mode if mode else ""
     vlan_info = "VLAN over" if vlan else ""
     driver_info = "with %s driver" % driver if driver else ""
-    if info:
-        output = (
-            "Check connectivity to %s %s network %s"
-            % (vlan_info, interface, driver_info)
-        )
-
-    if error:
-        output = (
-            "Connectivity failed to %s %s network %s"
-            % (vlan_info, interface, driver_info)
-        )
-
+    output = "Check connectivity %s to %s %s network %s" % (
+        "failed" if error else "", vlan_info, interface, driver_info
+    )
     return output
 
 
@@ -151,6 +137,7 @@ def check_vm_connect_and_log(
 ):
     """
     Check VM connectivity with logger info and raise error if fails
+
     :param driver: driver of the interface
     :type driver: str
     :param mode: Bond mode
@@ -166,15 +153,14 @@ def check_vm_connect_and_log(
     """
     logger.info(
         check_connectivity_log(
-            mode=mode, driver=driver, info=True, vlan=vlan
+            mode=mode, driver=driver, vlan=vlan
         )
     )
-    try:
-        check_connectivity(vlan=vlan, vm=vm, flags=flags)
-    except Exception:
-        raise config.NET_EXCEPTION(
+    if not check_connectivity(vm=vm, flags=flags):
+        logger.error(
             check_connectivity_log(
                 mode=mode, driver=driver, error=True, vlan=vlan
             )
         )
+        return False
     return True

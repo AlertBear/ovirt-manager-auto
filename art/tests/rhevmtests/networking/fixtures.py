@@ -100,8 +100,11 @@ class NetworkFixtures(object):
             vm (str): VM name.
             host (str): Host name.
             wait_for_up_status (bool): Wait for VM to be up
+
+        Returns:
+            bool: True if action succeeded, False otherwise
         """
-        network_helper.run_vm_once_specific_host(
+        return network_helper.run_vm_once_specific_host(
             vm=vm, host=host, wait_for_up_status=wait_for_up_status
         )
 
