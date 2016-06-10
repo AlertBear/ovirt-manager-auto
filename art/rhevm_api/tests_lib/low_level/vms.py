@@ -2898,40 +2898,50 @@ def waitForIP(
     """
     #  import is done here to avoid loop
     import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+    vm_host = get_vm_host(vm_name=vm)
+    if not vm_host:
+        return False, {'ip': None}
 
-    def _get_ip(vm):
+    host_ip = ll_hosts.get_host_ip_from_engine(host=vm_host)
+    vds_resource = resources.VDS(ip=host_ip, root_password=vm_password)
+    out = vds_resource.vds_client("list")
+    vm_id = out['vmList'][0]['vmId']
+
+    def _get_ip(vm, vds_resource, vm_id):
         """
         Get VM IP using vdsClient command on VDSM
 
         Args:
             vm (str): VM name
+            vds_resource (VDS): VDSM resource
+            vm_id (str): VM id in VDSM
 
         Returns:
             str or list: IP or list of IPs depend on get_all_ips param
         """
-        vm_host = get_vm_host(vm_name=vm)
-        if not vm_host:
-            return None
-
-        host_ip = ll_hosts.get_host_ip_from_engine(host=vm_host)
-        vds_resource = resources.VDS(ip=host_ip, root_password=vm_password)
-        out = vds_resource.vds_client("list")
-        vm_id = out['vmList'][0]['vmId']
         vm_out = vds_resource.vds_client('getVmStats', [vm_id])
         try:
             vm_ips = vm_out['statsList'][0]['netIfaces'][0]['inet']
             ip = vm_ips if get_all_ips else vm_ips[0]
-        except KeyError:
+            ping_ip = ip[0] if isinstance(ip, list) else ip
+            logger.info("Send ICMP to %s", ping_ip)
+            if not vds_resource.network.send_icmp(dst=ping_ip):
+                return None
+
+        except (KeyError, IndexError):
             return None
+
         VM_API.logger.debug("Got IP %s for %s", ip, vm)
         return ip
 
     try:
-        for ip in TimeoutingSampler(timeout, sleep, _get_ip, vm):
+        for ip in TimeoutingSampler(
+            timeout, sleep, _get_ip, vm, vds_resource, vm_id
+        ):
             if ip:
                 return True, {'ip': ip}
     except APITimeout:
-            logger.error("Failed to get IP for VM %s", vm)
+        logger.error("Failed to get IP for VM %s", vm)
     return False, {'ip': None}
 
 
