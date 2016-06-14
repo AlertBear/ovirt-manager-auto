@@ -17,30 +17,31 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-import time
-import shlex
-import re
 import logging
-from utilities.utils import getIpAddressByHostName, getHostName
-from utilities import machine
-from art.core_api.apis_utils import TimeoutingSampler, data_st
+import re
+import shlex
+import time
+
+import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
+from art.core_api.apis_utils import TimeoutingSampler, data_st
 from art.core_api.apis_utils import getDS
-from art.test_handler import settings
-from art.rhevm_api.utils.test_utils import (
-    get_api, split, getStat, searchElement, searchForObj, stopVdsmd,
-    startVdsmd
+from art.rhevm_api.tests_lib.low_level.datacenters import (
+    waitForDataCenterState
 )
 from art.rhevm_api.tests_lib.low_level.networks import (
     get_cluster_network, create_properties
 )
-from art.rhevm_api.tests_lib.low_level.datacenters import (
-    waitForDataCenterState
-)
 from art.rhevm_api.tests_lib.low_level.vms import (
     stopVm, getVmHost, get_vm_state
 )
-import art.rhevm_api.tests_lib.low_level.general as ll_general
+from art.rhevm_api.utils.test_utils import (
+    get_api, split, getStat, searchElement, searchForObj, stopVdsmd,
+    startVdsmd
+)
+from art.test_handler import settings
+from utilities import machine
+from utilities.utils import getIpAddressByHostName, getHostName
 
 ELEMENT = "host"
 COLLECTION = "hosts"
@@ -2770,3 +2771,49 @@ def is_hosted_engine_configured(host_name):
     if hosted_engine_obj:
         return hosted_engine_obj.get_configured()
     return False
+
+
+def add_affinity_label(host_name, affinity_label_name):
+    """
+    Add affinity label to the host
+
+    Args:
+        host_name (str): Host name
+        affinity_label_name (str): Affinity label name
+
+    Returns:
+        bool: True, if add action succeed, otherwise False
+    """
+    from art.rhevm_api.tests_lib.low_level.affinitylabels import (
+        add_affinity_label_to_element
+    )
+    host_obj = get_host_object(host_name=host_name)
+    return add_affinity_label_to_element(
+        element_obj=host_obj,
+        element_api=HOST_API,
+        element_type="host",
+        affinity_label_name=affinity_label_name
+    )
+
+
+def remove_affinity_label(host_name, affinity_label_name):
+    """
+    Remove affinity label from the host
+
+    Args:
+        host_name (str): Host name
+        affinity_label_name (str): Affinity label name
+
+    Returns:
+        bool: True, if remove action succeed, otherwise False
+    """
+    from art.rhevm_api.tests_lib.low_level.affinitylabels import (
+        remove_affinity_label_from_element
+    )
+    host_obj = get_host_object(host_name=host_name)
+    return remove_affinity_label_from_element(
+        element_obj=host_obj,
+        element_api=HOST_API,
+        element_type="host",
+        affinity_label_name=affinity_label_name
+    )

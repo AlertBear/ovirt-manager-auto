@@ -19,14 +19,13 @@ import logging
 import os
 import re
 import shlex
-from art.rhevm_api import resources
 from Queue import Queue
 from threading import Thread
 
-from concurrent.futures import ThreadPoolExecutor
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.core_api.apis_exceptions import (APITimeout, EntityNotFound)
 from art.core_api.apis_utils import data_st, TimeoutingSampler, getDS
+from art.rhevm_api import resources
 from art.rhevm_api.tests_lib.high_level.disks import delete_disks
 from art.rhevm_api.tests_lib.low_level.disks import (
     _prepareDiskObject, getVmDisk, getObjDisks, get_other_storage_domain,
@@ -47,6 +46,7 @@ from art.rhevm_api.utils.test_utils import (
 from art.test_handler import exceptions
 from art.test_handler.exceptions import CanNotFindIP
 from art.test_handler.settings import opts
+from concurrent.futures import ThreadPoolExecutor
 from utilities.jobs import Job, JobsSet
 from utilities.machine import Machine, LINUX
 
@@ -303,7 +303,10 @@ def _prepareVmObject(**kwargs):
     vcpu_pinning = kwargs.pop("vcpu_pinning", None)
     cpu_mode = kwargs.pop("cpu_mode", None)
     if (
-        cpu_socket or cpu_cores or cpu_threads or vcpu_pinning is not None or
+        cpu_socket or
+        cpu_cores or
+        cpu_threads or
+        vcpu_pinning is not None or
         cpu_mode is not None
     ):
         cpu = data_st.Cpu()
@@ -6065,3 +6068,49 @@ def create_vms(vms_params, max_workers=None):
         if result.exception() or not result.result():
             return False
     return True
+
+
+def add_affinity_label(vm_name, affinity_label_name):
+    """
+    Add affinity label to the VM
+
+    Args:
+        vm_name (str): VM name
+        affinity_label_name (str): Affinity label name
+
+    Returns:
+        bool: True, if add action succeed, otherwise False
+    """
+    from art.rhevm_api.tests_lib.low_level.affinitylabels import (
+        add_affinity_label_to_element
+    )
+    vm_obj = get_vm_obj(vm_name=vm_name)
+    return add_affinity_label_to_element(
+        element_obj=vm_obj,
+        element_api=VM_API,
+        element_type="VM",
+        affinity_label_name=affinity_label_name
+    )
+
+
+def remove_affinity_label(vm_name, affinity_label_name):
+    """
+    Remove affinity label from the VM
+
+    Args:
+        vm_name (str): VM name
+        affinity_label_name (str): Affinity label name
+
+    Returns:
+        bool: True, if remove action succeed, otherwise False
+    """
+    from art.rhevm_api.tests_lib.low_level.affinitylabels import (
+        remove_affinity_label_from_element
+    )
+    vm_obj = get_vm_obj(vm_name=vm_name)
+    return remove_affinity_label_from_element(
+        element_obj=vm_obj,
+        element_api=VM_API,
+        element_type="VM",
+        affinity_label_name=affinity_label_name
+    )
