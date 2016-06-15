@@ -701,7 +701,7 @@ def check_if_file_exist(positive, vm, vm_resource):
     """
     testflow.step(
         "checking if file: %s exists in vm: %s. expecting result: %s",
-        (config_virt.FILE_NAME, vm, positive)
+        config_virt.FILE_NAME, vm, positive
     )
     full_path_to_file = os.path.join(
         config_virt.TEMP_PATH, config_virt.FILE_NAME
