@@ -570,7 +570,7 @@ class TestRemoveVmFromAffinityGroupOnClusterChange(Affinity):
         Check if vm removed from affinity group
         """
         self.assertFalse(
-            ll_clusters.check_vm_affinity_group(
+            ll_clusters.vm_exists_under_affinity_group(
                 self.affinity_group_name,
                 conf.CLUSTER_NAME[0],
                 conf.VM_NAME[0]

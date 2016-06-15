@@ -180,27 +180,28 @@ def sleep(seconds):
 
 
 def getStat(name, elm_name, collection_name, stat_types):
-    '''
-    Description: gets the given statistic from a host
-    Parameters:
-      * name - name of a host or vm
-      * obj_type - "hosts" or "vms"
-      * stat_type - a list of any stat that REST API gives back,
-        for example 'memory.used', 'swap.total', etc.
-    Return: a dictionary with the requested and found stats
-    '''
+    """
+    Get statistic data from given element
+
+    Args:
+        name (str): Object name
+        elm_name (str): Element name
+        collection_name: Collection name
+        stat_types: Statistics types(for example memory.used)
+
+    Returns:
+        dict: Statistic data
+    """
     util = get_api(elm_name, collection_name)
     elm_obj = util.find(name)
-    statistics = util.getElemFromLink(elm_obj, link_name='statistics', attr='statistic')
+    statistics = util.getElemFromLink(
+        elm_obj, link_name='statistics', attr='statistic'
+    )
     values = {}
     for stat in statistics:
         if stat.get_name() in stat_types:
             datum = stat.get_values().get_value()[0].get_datum()
-            if stat.get_values().get_type() == "INTEGER":
-                values[stat.get_name()] = int(float(datum))
-                #return int(stat.values.value.datum)
-            elif stat.get_values().get_type() == "DECIMAL":
-                values[stat.get_name()] = float(datum)
+            values[stat.get_name()] = float(datum)
     return values
 
 

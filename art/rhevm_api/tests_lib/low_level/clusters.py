@@ -17,21 +17,23 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-import time
 import logging
+import time
 from Queue import Queue
 
-from art.core_api.apis_utils import getDS
-import art.test_handler.exceptions as exceptions
-from art.core_api.apis_exceptions import EntityNotFound
-from art.rhevm_api.utils.test_utils import get_api, split
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.test_handler.exceptions as exceptions
+from art.core_api.apis_exceptions import EntityNotFound
+from art.core_api.apis_utils import getDS
 from art.rhevm_api.tests_lib.low_level.hosts import(
     activateHost, deactivateHost,
 )
+from art.rhevm_api.tests_lib.low_level.scheduling_policies import (
+    get_scheduling_policy_id
+)
+from art.rhevm_api.utils.test_utils import get_api, split
 from art.rhevm_api.utils.test_utils import searchForObj
-
 
 ELEMENT = 'cluster'
 COLLECTION = 'clusters'
@@ -113,7 +115,11 @@ def _prepareClusterObject(**kwargs):
 
         cl.set_memory_policy(memoryPolicy)
 
-    if 'scheduling_policy' in kwargs:
+    scheduling_policy = kwargs.pop('scheduling_policy', None)
+    if scheduling_policy:
+        scheduling_policy_id = get_scheduling_policy_id(
+            scheduling_policy_name=scheduling_policy
+        )
         properties = None
         thresholds = None
         threshold_low = kwargs.get('thrhld_low')
@@ -133,7 +139,7 @@ def _prepareClusterObject(**kwargs):
             )
 
         scheduling_policy = SchedulingPolicy(
-            name=kwargs.pop('scheduling_policy'),
+            id=scheduling_policy_id,
             thresholds=thresholds,
             properties=properties
         )
@@ -560,10 +566,14 @@ def _prepare_affinity_group_object(**kwargs):
     """
     Prepare affinity group data structure object
 
-    :param kwargs: name: type=str
-                   positive: type=str
-                   enforcing: type=str
-    :return: AffinityGroup instance or raise exception
+    Keyword Args:
+        name (str): Affinity group name
+        description (str): Affinity group description
+        positive (bool): Affinity group positive behaviour
+        enforcing (bool): Affinity group enforcing behaviour
+
+    Returns:
+        AffinityGroup: AffinityGroup instance
     """
     return ll_general.prepare_ds_object('AffinityGroup', **kwargs)
 
@@ -573,7 +583,7 @@ def get_affinity_groups_from_cluster(cluster_name):
     Get list of affinity groups objects from cluster
 
     Args:
-        cluster_name (str): cluster name
+        cluster_name (str): Cluster name
 
     Returns:
         list: Affinity Groups
@@ -589,11 +599,12 @@ def get_affinity_group_obj(affinity_name, cluster_name):
     """
     Get affinity group object by name.
 
-    :param affinity_name: name of affinity group
-    :type affinity_name: str
-    :param cluster_name: cluster name
-    :type cluster_name: str
-    :returns: affinity group object if exist, otherwise None
+    Args:
+        affinity_name (str): Affinity group name
+        cluster_name (str): Cluster name
+
+    Returns:
+        AffinityGroup: Affinity group object if exist, otherwise None
     """
     cluster_obj = get_cluster_object(cluster_name)
     affinity_groups = CLUSTER_API.getElemFromLink(
@@ -607,42 +618,66 @@ def get_affinity_group_obj(affinity_name, cluster_name):
 
 def create_affinity_group(cluster_name, **kwargs):
     """
-    Create new affinity group under given cluster.
+    Create new affinity group under given cluster
 
-    :param cluster_name: name of cluster where to create affinity group
-    :type cluster_name: str
-    :param kwargs: name: type=str
-                   description: type=str
-                   positive: type=str
-                   enforcing: type=str
-    :return: True, if affinity creation success, else False
+    Args:
+        cluster_name (str): Cluster name
+
+    Keyword Args:
+        name (str): Affinity group name
+        description (str): Affinity group description
+        positive (bool): Affinity group positive behaviour
+        enforcing (bool): Affinity group enforcing behaviour
+
+    Returns:
+        bool: True, if add new affinity group action succeed, otherwise False
     """
     link_name = 'affinitygroups'
     cluster_obj = get_cluster_object(cluster_name)
+    affinity_name = kwargs.get("name")
     affinity_groups_obj = CLUSTER_API.getElemFromLink(
         cluster_obj, link_name=link_name, get_href=True
+    )
+    log_info, log_error = ll_general.get_log_msg(
+        action="Create", obj_type=AFFINITY_GROUP_NAME, obj_name=affinity_name,
+        extra_txt="on cluster %s with parameters: %s" % (cluster_name, kwargs)
     )
     try:
         affinity_group_obj = _prepare_affinity_group_object(**kwargs)
     except exceptions.RHEVMEntityException:
         return False
-    return AFFINITY_API.create(
-        affinity_group_obj, True, collection=affinity_groups_obj)[1]
+
+    logger.info(log_info)
+    status = AFFINITY_API.create(
+        affinity_group_obj, True, collection=affinity_groups_obj
+    )[1]
+    if not status:
+        logger.error(log_error)
+    return status
 
 
 def update_affinity_group(cluster_name, affinity_name, **kwargs):
     """
     Update affinity group
 
-    :param cluster_name: name of cluster where affinity group
-    :param affinity_name: name of affinity group
-    :param kwargs: name: type=str
-                   description: type=str
-                   positive: type=str
-                   enforcing: type=str
-    :return: True, if affinity group update success, else False
+    Args:
+        cluster_name (str): Cluster name
+        affinity_name (str): Affinity group name
+
+    Keyword Args:
+        name (str): Affinity group name
+        description (str): Affinity group description
+        positive (bool): Affinity group positive behaviour
+        enforcing (bool): Affinity group enforcing behaviour
+
+    Returns:
+        bool: True, if update affinity group action succeed, otherwise False
     """
     old_aff_group_obj = get_affinity_group_obj(cluster_name, affinity_name)
+    log_info, log_error = ll_general.get_log_msg(
+        action="Update", obj_type=AFFINITY_GROUP_NAME, obj_name=affinity_name,
+        extra_txt="on cluster %s" % cluster_name, **kwargs
+    )
     if not old_aff_group_obj:
         return False
     try:
@@ -650,19 +685,24 @@ def update_affinity_group(cluster_name, affinity_name, **kwargs):
     except exceptions.RHEVMEntityException:
         return False
 
-    return AFFINITY_API.update(
-        old_aff_group_obj, new_aff_group_obj, True)[1]
+    logger.info(log_info)
+    status = AFFINITY_API.update(
+        old_aff_group_obj, new_aff_group_obj, True
+    )[1]
+    if not status:
+        logger.error(log_error)
 
 
 def remove_affinity_group(affinity_name, cluster_name):
     """
-    Remove affinity group under given cluster.
+    Remove affinity group under given cluster
 
-    :param affinity_name: name of affinity group
-    :type affinity_name: str
-    :param cluster_name: cluster name
-    :type cluster_name: str
-    :returns: True, if affinity group removed, otherwise False
+    Args:
+        cluster_name (str): Cluster name
+        affinity_name (str): Affinity group name
+
+    Returns:
+        bool: True, if remove affinity group action succeed, otherwise False
     """
     log_info, log_error = ll_general.get_log_msg(
         action="Remove", obj_type=AFFINITY_GROUP_NAME, obj_name=affinity_name,
@@ -678,15 +718,15 @@ def remove_affinity_group(affinity_name, cluster_name):
 
 def populate_affinity_with_vms(affinity_name, cluster_name, vms):
     """
-    Populate affinity group with vms under given cluster.
+    Populate affinity group with VM's
 
-    :param affinity_name: name of affinity group
-    :type affinity_name: str
-    :param cluster_name: cluster name
-    :type cluster_name: str
-    :param vms: name of vms to insert into affinity group
-    :type vms: list
-    :returns: True, if affinity group populated successfully, otherwise False
+    Args:
+        affinity_name (str): Affinity group name
+        cluster_name (str): Cluster name
+        vms (list): VM's to insert into affinity group
+
+    Returns:
+        bool: True, if affinity group populated successfully, otherwise False
     """
     affinity_group_obj = get_affinity_group_obj(affinity_name, cluster_name)
     affinity_vms_obj = AFFINITY_API.getElemFromLink(
@@ -695,25 +735,29 @@ def populate_affinity_with_vms(affinity_name, cluster_name, vms):
     for vm in vms:
         vm_id = VM_API.find(vm).get_id()
         vm_id_obj = getDS('VM')(id=vm_id)
+        logger.info("Add VM %s to affinity group %s", vm, affinity_name)
         out, status = VM_API.create(
             vm_id_obj, True, async=True, collection=affinity_vms_obj
         )
         if not status:
+            logger.error(
+                "Failed to add VM %s to affinity group %s", vm, affinity_name
+            )
             return False
     return True
 
 
-def check_vm_affinity_group(affinity_name, cluster_name, vm_name):
+def vm_exists_under_affinity_group(affinity_name, cluster_name, vm_name):
     """
-    Check if vm in specific affinity group.
+    Check if VM exist under affinity group
 
-    :param affinity_name: name of affinity group
-    :type affinity_name: str
-    :param cluster_name: cluster name
-    :type cluster_name: str
-    :param vm_name: name of vm
-    :type vm_name: str
-    :returns: True, if vm in specific affinity group, otherwise False
+    Args:
+        affinity_name (str): Affinity group name
+        cluster_name (str): Cluster name
+        vm_name (str): VM name
+
+    Returns:
+        bool: True, if VM exist under affinity group, otherwise False
     """
     vm_id = VM_API.find(vm_name).get_id()
     affinity_group_obj = get_affinity_group_obj(affinity_name, cluster_name)

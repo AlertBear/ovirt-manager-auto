@@ -279,3 +279,21 @@ def remove_scheduling_policy_unit(policy_name, unit_name, unit_type):
 
     logger.error("No policy unit %s under policy %s", unit_name, policy_name)
     return False
+
+
+def get_scheduling_policy_id(scheduling_policy_name):
+    """
+    Get scheduling policy ID by name
+
+    Args:
+        scheduling_policy_name (str): Scheduling policy name
+
+    Returns:
+        str: Scheduling policy ID
+    """
+    scheduling_policies = get_scheduling_policies()
+
+    for scheduling_policy in scheduling_policies:
+        if scheduling_policy.get_name() == scheduling_policy_name:
+            return scheduling_policy.get_id()
+    return ""
