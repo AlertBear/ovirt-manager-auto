@@ -117,14 +117,15 @@ def importBlockStorageDomain(host, lun_address, lun_target):
     :type lun_target: str
     :return: True if the import succeeded or False otherwise
     """
-    if not _ISCSIdiscoverAndLogin(host, lun_address, lun_target):
+    if not _ISCSIdiscoverAndLogin(host, lun_address, lun_target, True):
         return False
     host_obj = ll_sd.hostUtil.find(host)
     host_obj_id = ll_sd.Host(id=host_obj.get_id())
     iscsi = ll_sd.IscsiDetails(address=lun_address)
+    iscsi_targets = ll_sd.iscsi_targetsType(iscsi_target=[lun_target])
     response = ll_sd.hostUtil.syncAction(
         host_obj, "unregisteredstoragedomainsdiscover", True, iscsi=iscsi,
-        iscsi_target=[lun_target]
+        iscsi_targets=iscsi_targets
     )
     if not response:
         ll_sd.util.logger.error('Failed to find storage domains to import')

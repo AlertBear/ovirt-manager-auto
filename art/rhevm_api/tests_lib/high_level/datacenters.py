@@ -296,17 +296,17 @@ def clean_datacenter(
     return status
 
 
-def ensure_data_center_and_sd_are_active(datacenter):
+def ensure_data_center_and_sd_are_active(
+    datacenter, exclude_states=[ENUMS['storage_domain_state_maintenance']]
+):
     """
     Wait for the Data center to become active, for an SPM host selection and
     for all storage domains to become active
 
-    ** This is a workaround for bug:
-    https://bugzilla.redhat.com/show_bug.cgi?id=1300075
-    where storage domains are coming up in Unknown state after engine restart
-
     :param datacenter: Datacenter Name
     :type datacenter: str
+    :param exclude_states: List of storage domains statuses that can be ignored
+    :type exclude_states: list
     """
     LOGGER.info("Wait for the Data center to become active")
     if not datacenters.waitForDataCenterState(datacenter):
@@ -321,6 +321,8 @@ def ensure_data_center_and_sd_are_active(datacenter):
             "SPM host was not elected within 5 minutes, aborting test"
         )
     for sd in ll_storagedomains.getDCStorages(datacenter, False):
+        if sd.get_status() in exclude_states:
+            continue
         LOGGER.info(
             "Waiting up to %s seconds for sd %s to be active",
             SD_STATUS_OK_TIMEOUT, sd.get_name()

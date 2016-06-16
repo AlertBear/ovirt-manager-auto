@@ -69,17 +69,13 @@ def setup_module():
         )
         # We want to destroy the domains so we will be able to restore the
         # data on them
-        # TODO: WA for bug https://bugzilla.redhat.com/show_bug.cgi?id=1302780
-        # 1) We are formatting the domain (format='false' => format='true')
-        #    Change back to 'false' when bug is fixed
         if not ll_sd.removeStorageDomain(
             positive=True, storagedomain=sd, host=config.HOST_FOR_MOUNT,
-            format='true'
+            format='false'
         ):
             raise exceptions.StorageDomainException(
                 "Failed to remove and format storage domain '%s'" % sd
             )
-        # TODO END
 
     if not ll_dc.addDataCenter(
         True, name=config.DATACENTER_ISCSI_CONNECTIONS,
@@ -136,80 +132,47 @@ def teardown_module():
         test_failed = True
     helpers.logout_from_all_iscsi_targets()
 
-    # TODO: WA for bug https://bugzilla.redhat.com/show_bug.cgi?id=1302780
-    # Add iSCSI domains back
-    # 1) Remove block1 when bug is fixed
-    # 2) Uncomment block2 when bug is fixed
-
-    # TODO: block1
-    logger.info("Adding iscsi storage domains back")
-    iscsi_sds = [sd['name'] for sd in config.DC['storage_domains']
-                 if sd['storage_type'] == config.STORAGE_TYPE_ISCSI]
-    for name, lun, target, address in zip(
-            iscsi_sds, config.LUNS, config.LUN_TARGETS, config.LUN_ADDRESSES
-    ):
-        hl_sd.addISCSIDataDomain(
-            config.HOST_FOR_MOUNT, name, config.DATA_CENTER_NAME,
-            lun, address, target, override_luns=True, login_all=True
-        )
-    # TODO: block1 END
-
-    # TODO: block2
-    # logger.info("Importing iscsi storage domains back")
-    # # Importing all iscsi domains using the address and target of one of them
-    # imported = hl_sd.importBlockStorageDomain(
-    #     config.HOST_FOR_MOUNT, config.LUN_ADDRESSES[0],
-    #     config.LUN_TARGETS[0]
-    # )
-    # if not imported:
-    #     logger.error("Failed to import iSCSI domains back")
-    #     test_failed = True
-    # if imported:
-    #     register_failed = False
-    #     for sd in ISCSI_SDS:
-    #         hl_sd.attach_and_activate_domain(config.DATA_CENTER_NAME, sd)
-    #         unregistered_vms = ll_sd.get_unregistered_vms(sd)
-    #         if unregistered_vms:
-    #             for vm in unregistered_vms:
-    #                 if not ll_sd.register_object(
-    #                     vm, cluster=config.CLUSTER_NAME
-    #                 ):
-    #                     logger.error(
-    #                         "Failed to register vm %s from imported domain "
-    #                         "%s", vm, sd
-    #                     )
-    #                     register_failed = True
-    #     if register_failed:
-    #         raise errors.TearDownException(
-    #             "TearDown failed to register all vms from imported domain"
-    #         )
-    # TODO: block2 END
-
-    # TODO: WA for bug https://bugzilla.redhat.com/show_bug.cgi?id=1302780
-    # Copying template disk to the new iSCSI domains and create 2 vms
-    # Delete this block when fix
-
+    logger.info("Importing iscsi storage domains back")
+    # Importing all iscsi domains using the address and target of one of them
+    imported = hl_sd.importBlockStorageDomain(
+        config.HOSTS[0], config.LUN_ADDRESSES[0],
+        config.LUN_TARGETS[0]
+    )
+    if not imported:
+        logger.error("Failed to import iSCSI domains back")
+    for sd in ISCSI_SDS:
+        hl_sd.attach_and_activate_domain(config.DATA_CENTER_NAME, sd)
+    hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
     template_name = config.TEMPLATE_NAME[0]
     disk = ll_templates.getTemplateDisks(template_name)[0].get_alias()
-    for sd in iscsi_sds:
-        logger.info(
-            "Copying disk %s for template %s to sd %s", disk, template_name, sd
-        )
-        if not ll_templates.copyTemplateDisk(template_name, disk, sd):
-            logger.error(
-                "Failed to copy template disk to imported iSCSI domain %s", sd
+    if imported:
+        register_failed = False
+        for sd in ISCSI_SDS:
+            logger.info(
+                "Copying disk %s for template %s to sd %s",
+                disk, template_name, sd
             )
-        ll_templates.wait_for_template_disks_state(template_name)
-
-    for vm in config.ISCSI_VMS:
-        vm_args = config.create_vm_args.copy()
-        vm_args['storageDomainName'] = iscsi_sds[0]
-        vm_args['vmName'] = vm
-        if not storage_helpers.create_vm_or_clone(**vm_args):
-            raise exceptions.VMException(
-                'Unable to create vm %s for test' % vm
+            if not ll_templates.copyTemplateDisk(template_name, disk, sd):
+                logger.error(
+                    "Failed to copy template disk to imported iSCSI domain %s",
+                    sd
+                )
+            ll_templates.wait_for_template_disks_state(template_name)
+            unregistered_vms = ll_sd.get_unregistered_vms(sd)
+            if unregistered_vms:
+                for vm in unregistered_vms:
+                    if not ll_sd.register_object(
+                        vm, cluster=config.CLUSTER_NAME
+                    ):
+                        logger.error(
+                            "Failed to register vm %s from imported domain "
+                            "%s", vm, sd
+                        )
+                        register_failed = True
+        if register_failed:
+            raise errors.TearDownException(
+                "TearDown failed to register all vms from imported domain"
             )
-    # TODO END - Delete this block when fixed
 
     if test_failed:
         raise errors.TearDownException("TearDown failed")
@@ -1509,7 +1472,6 @@ class TestCase5241(TestCase):
 
 
 @attr(tier=2)
-@bz({'1340164': {}})
 class TestCase5249(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -1547,7 +1509,8 @@ class TestCase5249(TestCase):
         self.assertTrue(
             ll_sd.addStorageDomain(
                 True, name=sd_name_2, host=config.HOST_FOR_MOUNT,
-                type=config.TYPE_DATA, storage_type=config.STORAGE_TYPE_ISCSI,
+                type=config.TYPE_DATA,
+                storage_type=config.STORAGE_TYPE_ISCSI,
                 override_luns=True, lun=config.CONNECTIONS[1]['luns'][0],
                 **(config.CONNECTIONS[1])
             ), "Failed to create storage domain '%s'" % sd_name_2
@@ -1578,7 +1541,8 @@ class TestCase5249(TestCase):
         self.assertTrue(
             ll_sd.addStorageDomain(
                 True, name=sd_name_3, host=config.HOST_FOR_MOUNT,
-                type=config.TYPE_DATA, storage_type=config.STORAGE_TYPE_ISCSI,
+                type=config.TYPE_DATA,
+                storage_type=config.STORAGE_TYPE_ISCSI,
                 override_luns=True, lun=config.CONNECTIONS[0]['luns'][1],
                 **(config.CONNECTIONS[0])
             ), "Failed to create storage domain '%s'" % sd_name_3

@@ -54,6 +54,7 @@ RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
 
 StorageDomain = getDS('StorageDomain')
 IscsiDetails = getDS('IscsiDetails')
+iscsi_targetsType = getDS('iscsi_targetsType')
 Host = getDS('Host')
 HostStorage = getDS('HostStorage')
 LogicalUnit = getDS('LogicalUnit')
