@@ -45,7 +45,7 @@ class DirectLogin(TestCase):
         user_upn = user = self.USER
         if self.DOMAIN:
             user_upn = '%s@%s' % (self.USER, self.DOMAIN)
-        users.addUser(
+        users.addExternalUser(
             True,
             user_name=user,
             domain=self.conf['authz_name'],
