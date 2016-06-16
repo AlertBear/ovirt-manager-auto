@@ -8,6 +8,7 @@ import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.unittest_lib as u_libs
 import config as sla_config
 import pytest
 import rhevmtests.helpers as rhevm_helpers
@@ -31,9 +32,11 @@ def start_vms(request):
         """
         1) Stop VM's
         """
+        u_libs.testflow.teardown("Stop VM's %s", vms_to_start)
         ll_vms.stop_vms_safely(vms_list=vms_to_start)
     request.addfinalizer(fin)
 
+    u_libs.testflow.setup("Start VM's %s", vms_to_start)
     ll_vms.start_vms(
         vm_list=vms_to_start,
         wait_for_ip=wait_for_vms_ip,
@@ -64,6 +67,7 @@ def run_once_vms(request):
         """
         1) Stop VM's
         """
+        u_libs.testflow.teardown("Stop VM's %s", vms_to_run.keys())
         ll_vms.stop_vms_safely(vms_list=vms_to_run.keys())
     request.addfinalizer(fin)
 
@@ -74,6 +78,7 @@ def run_once_vms(request):
             run_once_params[
                 sla_config.VM_RUN_ONCE_HOST
             ] = sla_config.HOSTS[host]
+    u_libs.testflow.setup("Run once VM's %s", vms_to_run.keys())
     ll_vms.run_vms_once(vms=temp_vms_to_run.keys(), **temp_vms_to_run)
 
 
@@ -122,6 +127,7 @@ def activate_hosts(request):
             sla_config.HOSTS[i] for i in hosts_to_activate_indexes
         ]
         for host_to_activate in hosts_to_activate:
+            u_libs.testflow.teardown("Activate the host %s", host_to_activate)
             hl_hosts.activate_host_if_not_up(host=host_to_activate)
     request.addfinalizer(fin)
 
@@ -288,7 +294,9 @@ def choose_specific_host_as_spm(request):
     """
     host_as_spm = request.node.module.host_as_spm
 
-    logger.info("Wait until all async tasks will be gone from the engine")
+    u_libs.testflow.setup(
+        "Wait until all async tasks will be gone from the engine"
+    )
     try:
         test_utils.wait_for_tasks(
             vdc=sla_config.VDC_HOST,
@@ -298,6 +306,7 @@ def choose_specific_host_as_spm(request):
     except apis_exceptions.APITimeout:
         logger.error("Engine has async tasks that still running")
         return False
+    u_libs.testflow.setup("Choose the host %s as SPM", host_as_spm)
     assert ll_hosts.select_host_as_spm(
         positive=True,
         host=sla_config.HOSTS[host_as_spm],
