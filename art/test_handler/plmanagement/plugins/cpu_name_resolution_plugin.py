@@ -130,7 +130,7 @@ class AutoCpuNameResolution(Component):
 
         self.cpus_model_mapping = dict()
         for cpu in cpus:
-            name = cpu.get_id()
+            name = cpu.get_type()
             level = cpu.get_level()
             model_name = 'model_'
             if 'Intel' in name:

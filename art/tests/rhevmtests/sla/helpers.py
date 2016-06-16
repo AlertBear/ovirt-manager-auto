@@ -202,7 +202,7 @@ def wait_for_hosts_state_in_cluster(
             count = 0
             for host in sample:
                 if host.get_cluster().get_id() == cluster_obj.get_id():
-                    if host.get_status().get_state().lower() == state:
+                    if host.get_status().lower() == state:
                         count += 1
             if (count == num_of_hosts) == (not negative):
                 return True

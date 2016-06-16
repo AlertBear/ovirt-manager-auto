@@ -746,7 +746,7 @@ class Balloon(MOM):
 
     def setUp(self):
         if (
-            ll_hosts.getHostState(config.HOSTS[1]) ==
+            ll_hosts.get_host_status(config.HOSTS[1]) ==
             config.HOST_NONOPERATIONAL
         ):
             logger.info("Activate host %s.", config.HOSTS[1])

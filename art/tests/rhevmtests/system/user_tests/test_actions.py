@@ -28,7 +28,7 @@ def setup_module():
         cluster=config.CLUSTER_NAME[0],
         network=config.MGMT_BRIDGE,
         storageDomainName=config.MASTER_STORAGE,
-        size=config.GB,
+        provisioned_size=config.GB,
     )
     assert vms.createVm(
         True,
@@ -36,7 +36,7 @@ def setup_module():
         cluster=config.CLUSTER_NAME[0],
         network=config.MGMT_BRIDGE,
         storageDomainName=config.MASTER_STORAGE,
-        size=config.GB,
+        provisioned_size=config.GB,
         start='true'
     )
     assert templates.createTemplate(

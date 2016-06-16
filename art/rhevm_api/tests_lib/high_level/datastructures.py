@@ -129,8 +129,10 @@ class BaseClass(object):
 
 
 # name must be the same, otherwise validator fails
-class Storage(data_structures.Storage, BaseClass):
-    member_data_items_ = copy.copy(data_structures.Storage.member_data_items_)
+class HostStorage(data_structures.HostStorage, BaseClass):
+    member_data_items_ = copy.copy(
+        data_structures.HostStorage.member_data_items_
+    )
     member_data_items_['nfs_timeo'] = data_structures.MemberSpec_(
         'nfs_timeo', 'xs:string', 0)
     member_data_items_['nfs_retrans'] = data_structures.MemberSpec_(
@@ -151,7 +153,7 @@ class Storage(data_structures.Storage, BaseClass):
             self, outfile, level, namespace_='', name_='Storage',
             fromsubclass_=False, pretty_print=True
     ):
-        super(data_structures.Storage, self).exportChildren(
+        super(data_structures.HostStorage, self).exportChildren(
             outfile, level, namespace_, name_, True)
         BaseClass.exportChildren(
             self, outfile, level, namespace_, name_, True)
@@ -169,7 +171,7 @@ class Storage(data_structures.Storage, BaseClass):
         BaseClass._export_object(self, outfile, level, member_name)
 
     def exportLiteralChildren(self, outfile, level, name_):
-        super(data_structures.Storage, self).exportLiteralChildren(
+        super(data_structures.HostStorage, self).exportLiteralChildren(
             outfile, level, name_)
         BaseClass.exportLiteralChildren(self, outfile, level, name_)
 
@@ -184,7 +186,7 @@ class Storage(data_structures.Storage, BaseClass):
 
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         BaseClass.buildChildren(self, child_, node, nodeName_, fromsubclass_)
-        super(data_structures.Storage, self).buildChildren(
+        super(data_structures.HostStorage, self).buildChildren(
             child_, node, nodeName_, True)
 
 
@@ -207,7 +209,7 @@ class StorageConnection(data_structures.StorageConnection, BaseClass):
             self, member, outfile, level, namespace_, entity_name)
 
     def exportChildren(
-            self, outfile, level, namespace_='', name_='Storage',
+            self, outfile, level, namespace_='', name_='HostStorage',
             fromsubclass_=False, pretty_print=True
     ):
         super(data_structures.StorageConnection, self).exportChildren(

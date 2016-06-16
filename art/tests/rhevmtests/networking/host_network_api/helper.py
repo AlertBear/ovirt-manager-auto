@@ -8,6 +8,7 @@ helper file for Host Network API
 import logging
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.low_level.events as ll_events
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.utils.test_utils as test_utils
 import rhevmtests.networking.config as conf
@@ -110,9 +111,12 @@ def manage_ip_and_refresh_capabilities(
     if set_ip:
         ip = int_ip if not ip else ip
         set_interface_ip(ip=ip, netmask=netmask, interface=interface)
-    host_obj = ll_hosts.HOST_API.find(conf.HOST_0_NAME)
-    refresh_href = "{0};force".format(host_obj.get_href())
-    ll_hosts.HOST_API.get(href=refresh_href)
+
+    last_event = ll_events.get_max_event_id(query="")
+    logger.info("Refresh capabilities for %s", conf.HOST_0_NAME)
+    ll_hosts.refresh_host_capabilities(
+        host=conf.HOST_0_NAME, start_event_id=last_event
+    )
 
 
 def remove_interface_ip(ip, interface):

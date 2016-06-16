@@ -55,8 +55,9 @@ RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
 StorageDomain = getDS('StorageDomain')
 IscsiDetails = getDS('IscsiDetails')
 Host = getDS('Host')
-Storage = getDS('Storage')
+HostStorage = getDS('HostStorage')
 LogicalUnit = getDS('LogicalUnit')
+LogicalUnits = getDS('LogicalUnits')
 DataCenter = getDS('DataCenter')
 Cluster = getDS('Cluster')
 Disk = getDS('Disk')
@@ -120,16 +121,16 @@ def _prepareStorageDomainObject(positive, **kwargs):
         sd.set_storage_format(storage_format)
 
     if 'storage_connection' in kwargs:
-        storage = Storage()
+        storage = HostStorage()
         storage.id = kwargs.pop('storage_connection')
         sd.set_storage(storage)
     elif storage_type == ENUMS['storage_type_local']:
-        sd.set_storage(Storage(
+        sd.set_storage(HostStorage(
             type_=storage_type, path=kwargs.pop('path', None)))
     elif storage_type == ENUMS['storage_type_nfs']:
         sd.set_format(kwargs.pop('format', None))
         sd.set_storage(
-            Storage(
+            HostStorage(
                 type_=storage_type, path=kwargs.pop('path', None),
                 address=kwargs.pop('address', None),
                 nfs_version=kwargs.pop('nfs_version', None),
@@ -146,24 +147,25 @@ def _prepareStorageDomainObject(positive, **kwargs):
         logical_unit = LogicalUnit(
             id=lun, address=lun_address, target=lun_target, port=lun_port)
         sd.set_storage(
-            Storage(
+            HostStorage(
                 type_=storage_type,
-                logical_unit=[logical_unit],
+                logical_units=LogicalUnits(logical_unit=[logical_unit]),
                 override_luns=kwargs.pop('override_luns', None)
             )
         )
     elif storage_type == ENUMS['storage_type_fcp']:
         logical_unit = LogicalUnit(id=kwargs.pop('lun', None))
         sd.set_storage(
-            Storage(
-                type_=storage_type, logical_unit=[logical_unit],
+            HostStorage(
+                type_=storage_type,
+                logical_unit=LogicalUnits(logical_unit=[logical_unit]),
                 override_luns=kwargs.pop('override_luns', None)
             )
         )
     elif (storage_type == ENUMS['storage_type_posixfs'] or
           storage_type == ENUMS['storage_type_gluster']):
         sd.set_storage(
-            Storage(
+            HostStorage(
                 type_=storage_type, path=kwargs.pop('path', None),
                 address=kwargs.pop('address', None),
                 vfs_type=kwargs.pop('vfs_type', None),
@@ -606,10 +608,11 @@ def importStorageDomain(positive, type, storage_type, address, path, host,
             util.logger.warn(warn_msg, address, path)
 
     util.logger.info("Importing domain from %s:%s", address, path)
-    sdStorage = Storage(type_=storage_type, address=address, path=path,
-                        nfs_version=nfs_version, nfs_retrans=nfs_retrans,
-                        nfs_timeo=nfs_timeo, vfs_type=vfs_type,
-                        )
+    sdStorage = HostStorage(
+        type_=storage_type, address=address, path=path,
+        nfs_version=nfs_version, nfs_retrans=nfs_retrans,
+        nfs_timeo=nfs_timeo, vfs_type=vfs_type,
+    )
     h = Host(name=host)
 
     sd = StorageDomain(type_=type, host=h, storage=sdStorage)
@@ -708,7 +711,7 @@ def waitForStorageDomainStatus(
                 deactivateStorageDomain(
                     positive, dataCenterName, storageDomainName
                 )
-        if sd_object.get_status().get_state() == expectedStatus:
+        if sd_object.get_status() == expectedStatus:
             return positive
     return not positive
 
@@ -917,7 +920,8 @@ def getDomainAddress(positive, storageDomain):
         if storageDomainObject.get_storage().get_type() == 'iscsi':
             # Return the address of the first LUN of the domain
             return positive, {'address': storageDomainObject.get_storage(
-            ).get_volume_group().get_logical_unit()[0].get_address()}
+            ).get_volume_group().get_logical_units(
+            ).get_logical_unit()[0].get_address()}
         return positive, {
             'address': storageDomainObject.get_storage().get_address()}
 
@@ -1394,7 +1398,7 @@ def is_storage_domain_active(datacenter, domain):
         sd_object = getDCStorage(datacenter, domain)
     except EntityNotFound:
         return False
-    state = sd_object.get_status().get_state()
+    state = sd_object.get_status()
     util.logger.info('Domain %s in dc %s is %s', domain, datacenter, state)
     return state == ACTIVE_DOMAIN
 
@@ -1854,7 +1858,7 @@ def getStorageDomainNamesForType(datacenter_name, storage_type):
         False otherwise
         :rtype: bool
         """
-        state = storage_domain_object.get_status().get_state()
+        state = storage_domain_object.get_status()
         sd_type = storage_domain_object.get_type()
         _storage_type = storage_domain_object.get_storage().get_type()
 
@@ -2147,7 +2151,7 @@ def wait_storage_domain_status_is_unchanged(
         for sd_object in TimeoutingSampler(
             timeout, sleep, getDCStorage, data_center_name, storage_domain_name
         ):
-            current_status = sd_object.get_status().get_state()
+            current_status = sd_object.get_status()
             if current_status != status:
                 util.logger.error(
                     "Storage domain %s changed to status %s",

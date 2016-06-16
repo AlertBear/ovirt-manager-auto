@@ -89,7 +89,7 @@ class TestSriovImportExport01(helper.TestSriovBase):
         if not ll_vms.createVm(
             positive=True, vmName=cls.vm, vmDescription="",
             cluster=cls.cluster, storageDomainName=cls.sd_name,
-            size=conf.VM_DISK_SIZE
+            provisioned_size=conf.VM_DISK_SIZE
         ):
             raise conf.NET_EXCEPTION()
 
@@ -163,7 +163,7 @@ class TestSriovImportExport01(helper.TestSriovBase):
         if not ll_vms.createVm(
             positive=True, vmName=self.vm_from_template, vmDescription="",
             cluster=self.cluster, storageDomainName=self.sd_name,
-            size=conf.VM_DISK_SIZE,
+            provisioned_size=conf.VM_DISK_SIZE,
             template=self.import_template_name
         ):
             raise conf.NET_EXCEPTION()

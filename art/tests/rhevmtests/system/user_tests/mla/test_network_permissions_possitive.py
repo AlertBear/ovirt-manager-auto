@@ -226,7 +226,7 @@ class PositiveNetworkPermissions231826(NetworkingPossitive):
         assert vms.createVm(
             True, VM_NAME, '', cluster=config.CLUSTER_NAME[0],
             storageDomainName=config.MASTER_STORAGE,
-            size=config.GB, network=config.MGMT_BRIDGE
+            provisioned_size=config.GB, network=config.MGMT_BRIDGE
         )
         assert mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME)
         assert networks.add_network(
@@ -591,7 +591,7 @@ class PositiveNetworkPermissions236408(NetworkingPossitive):
         assert vms.createVm(
             True, VM_NAME, '', cluster=config.CLUSTER_NAME[0],
             storageDomainName=config.MASTER_STORAGE,
-            size=config.GB, network=config.MGMT_BRIDGE
+            provisioned_size=config.GB, network=config.MGMT_BRIDGE
         )
         assert networks.add_network(
             True, name=config.NETWORK_NAME1, data_center=config.DC_NAME[0]
@@ -650,7 +650,7 @@ class PositiveNetworkPermissions236409(NetworkingPossitive):
         assert vms.createVm(
             True, VM_NAME, '', cluster=config.CLUSTER_NAME[0],
             storageDomainName=config.MASTER_STORAGE,
-            size=config.GB, network=config.MGMT_BRIDGE
+            provisioned_size=config.GB, network=config.MGMT_BRIDGE
         )
         assert vms.addNic(
             True, VM_NAME, name=NIC_NAME, network=config.NETWORK_NAME1,
@@ -851,8 +851,8 @@ class PositiveNetworkPermissions320610(NetworkingPossitive):
         )
         vms.createVm(
             True, VM_NAME, '', cluster=config.CLUSTER_NAME[0],
-            storageDomainName=config.MASTER_STORAGE, size=config.GB,
-            network=config.MGMT_BRIDGE
+            storageDomainName=config.MASTER_STORAGE,
+            provisioned_size=config.GB, network=config.MGMT_BRIDGE
         )
         mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME)
 

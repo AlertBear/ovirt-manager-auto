@@ -12,7 +12,6 @@ import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import rhevmtests.networking.config as conf
 import helper
 import rhevmtests.networking.helper as net_helper
-from rhevmtests import networking
 from rhevmtests.networking.fixtures import (
     NetworkFixtures, network_cleanup_fixture
 )  # flake8: noqa
@@ -34,24 +33,6 @@ class ArbitraryVlanDeviceName(NetworkFixtures):
         self.vlan_network_1 = conf.VLAN_NETWORKS[0]
         self.network_name_1 = conf.NETWORKS[0]
         self.real_vln_id = conf.VLAN_ID[0]
-
-    def disable_sasl_on_libvirt(self):
-        """
-        Setting passwordless ssh and then disabling sasl in libvirt
-        """
-        return net_helper.set_libvirt_sasl_status(
-            engine_resource=conf.ENGINE_HOST,
-            host_resource=conf.VDS_0_HOST,
-        )
-
-    def enable_sasl_on_libvirt(self):
-        """
-        Enabling sasl in libvirt
-        """
-        net_helper.set_libvirt_sasl_status(
-            engine_resource=conf.ENGINE_HOST,
-            host_resource=conf.VDS_0_HOST, sasl=True
-        )
 
     def create_vlans_on_host(self, nic=1, vlan_id=None, vlan_name=None):
         """
@@ -81,15 +62,7 @@ def avdn_prepare_setup(request, network_cleanup_fixture):
     Prepare setup
     """
     avdn = ArbitraryVlanDeviceName()
-
-    def fin():
-        """
-        Finalizer for enable sasl on libvirt
-        """
-        avdn.enable_sasl_on_libvirt()
-    request.addfinalizer(fin)
-
-    assert avdn.disable_sasl_on_libvirt()
+    assert net_helper.set_virsh_sasl_password(vds_resource=avdn.vds_0_host)
 
 
 @pytest.fixture(scope="class")

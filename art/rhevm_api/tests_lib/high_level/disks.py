@@ -76,7 +76,6 @@ def add_new_disk(sd_name, size, block, shared=False, **kwargs):
             'bootable': False,
             'shareable': shared,
             'active': True,
-            'size': size,
         }
     )
 

@@ -206,7 +206,7 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
         disk_size = int(domain.available) - self.left_space
         logger.info("Disk size: %s", disk_size)
         if not ll_disks.addDisk(
-            True, alias=self.big_disk_name, size=disk_size,
+            True, alias=self.big_disk_name, provisioned_size=disk_size,
             storagedomain=self.sd, format=config.RAW_DISK,
             interface=config.INTERFACE_VIRTIO, sparse=False
         ):

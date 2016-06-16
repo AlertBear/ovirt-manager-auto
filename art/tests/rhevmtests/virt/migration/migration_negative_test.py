@@ -302,7 +302,7 @@ class TestVMMigrateOptionsCase1(TestCase):
             placement_affinity=cls.affinity,
             nic=config.NIC_NAME[0],
             storageDomainName=cls.storage_domain,
-            size=config.DISK_SIZE,
+            provisioned_size=config.DISK_SIZE,
             network=config.MGMT_BRIDGE,
             display_type=config.VM_DISPLAY_TYPE
         ):

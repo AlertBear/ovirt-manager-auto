@@ -56,7 +56,7 @@ def add_disk_to_machine(vm_name, interface, format_, sparse, storage_domain,
     """
     start = False
     vm_obj = VM_API.find(vm_name)
-    if vm_obj.status.state == ENUMS['vm_state_up']:
+    if vm_obj.get_status() == ENUMS['vm_state_up']:
         start = True
         LOGGER.info("Shutting down vm %s to add disk", vm_name)
         if not vms.shutdownVm(True, vm_name):
@@ -70,7 +70,7 @@ def add_disk_to_machine(vm_name, interface, format_, sparse, storage_domain,
         raise errors.VMException("addDisk to vm %s failed" % vm_name)
 
     vm_obj = VM_API.find(vm_name)
-    if start and vm_obj.status.state == ENUMS['vm_state_down'] and \
+    if start and vm_obj.get_status == ENUMS['vm_state_down'] and \
             not vms.startVm(True, vm_name, wait_for_ip=True):
         raise errors.VMException("startVm of vm %s failed" % vm_name)
 
@@ -83,7 +83,7 @@ def shutdown_vm_if_up(vm_name):
     """
     vm_obj = VM_API.find(vm_name)
     if (
-        vm_obj.status.state == ENUMS['vm_state_up'] and
+        vm_obj.get_status() == ENUMS['vm_state_up'] and
         not vms.shutdownVm(True, vm_name)
     ):
         raise errors.VMException("Shutdown of vm %s failed" % vm_name)

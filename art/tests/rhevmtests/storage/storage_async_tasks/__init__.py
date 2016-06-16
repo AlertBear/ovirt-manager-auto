@@ -38,7 +38,8 @@ def setup_package():
     assert vms.createVm(
         True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
         nic=config.NIC_NAME[0], storageDomainName=storage_domain_name,
-        size=config.VM_DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
+        provisioned_size=config.VM_DISK_SIZE,
+        diskType=config.DISK_TYPE_SYSTEM,
         volumeType=True, volumeFormat=config.COW_DISK,
         diskInterface=config.INTERFACE_VIRTIO, memory=config.GB,
         cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
@@ -53,7 +54,7 @@ def setup_package():
     for i in range(config.NUMBER_OF_DISKS - 1):
         disk_name = "%s_disk_%s" % (config.TESTNAME, i)
         assert disks.addDisk(
-            True, alias=disk_name, size=config.GB,
+            True, alias=disk_name, provisioned_size=config.GB,
             storagedomain=storage_domain_name,
             format=config.ENUMS['format_cow'],
             interface=config.INTERFACE_VIRTIO)

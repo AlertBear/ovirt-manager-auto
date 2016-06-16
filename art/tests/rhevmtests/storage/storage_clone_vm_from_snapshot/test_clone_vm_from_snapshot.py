@@ -54,7 +54,7 @@ class BaseTestCase(TestCase):
         Add disk with alias 'disk_alias' to vm
         """
         assert addDisk(
-            True, alias=disk_alias, size=DISK_SIZE,
+            True, alias=disk_alias, provisioned_size=DISK_SIZE,
             storagedomain=self.storage_domain_0,
             sparse=False, interface=config.VIRTIO_SCSI,
             format=config.RAW_DISK

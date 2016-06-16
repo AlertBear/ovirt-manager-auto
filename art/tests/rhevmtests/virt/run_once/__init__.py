@@ -34,7 +34,7 @@ def setup_package():
             vmDescription="run once vm",
             cluster=config.CLUSTER_NAME[0],
             storageDomainName=config.STORAGE_NAME[0],
-            size=2 * config.GB, nic=config.NIC_NAME[0],
+            provisioned_size=2 * config.GB, nic=config.NIC_NAME[0],
             memory=config.GB,
             network=config.MGMT_BRIDGE,
             os_type=config.VM_OS_TYPE,

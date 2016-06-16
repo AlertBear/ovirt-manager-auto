@@ -228,7 +228,7 @@ class LogCollectorRegressionBz1058894(LogCollectorTestCaseBase):
         LOGGER.info('Adding VM to SD: %s' % storage_domain)
         assert llvms.createVm(
             True, self.vm_name, 'description does not matter',
-            cluster=self.cluster, size=DISK_SIZE, nic='nic0',
+            cluster=self.cluster, provisioned_size=DISK_SIZE, nic='nic0',
             storageDomainName=storage_domain)
         assert llvms.startVm(True, self.vm_name)
 

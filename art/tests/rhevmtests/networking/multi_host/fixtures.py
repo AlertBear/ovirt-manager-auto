@@ -62,7 +62,7 @@ class MultiHost(NetworkFixtures):
 
 
 @pytest.fixture(scope="module")
-def host_network_qos_prepare_setup(request, network_cleanup_fixture):
+def multi_host_prepare_setup(request, network_cleanup_fixture):
     """
     Prepare setup
     """
@@ -103,7 +103,7 @@ def host_network_qos_prepare_setup(request, network_cleanup_fixture):
 
 
 @pytest.fixture(scope="class")
-def teardown_all_cases(request, host_network_qos_prepare_setup):
+def teardown_all_cases(request, multi_host_prepare_setup):
     """
     Restore host interfaces MTU and remove unneeded networks
     """

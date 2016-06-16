@@ -94,15 +94,15 @@ def get_host_list():
     return hostUtil.get(absLink=False)
 
 
-def getHostState(host):
+def get_host_status(host):
     """
-    Description: Returns a host's state
+    Description: Returns a host's status
     Author: cmestreg
     Parameters:
         * host - host to check
-    Return: Returns the host's states [str] or raises EntityNotFound
+    Return: Returns the host's status [str] or raises EntityNotFound
     """
-    return HOST_API.find(host).get_status().get_state()
+    return HOST_API.find(host).get_status()
 
 
 def get_host_type(host_name):
@@ -170,7 +170,7 @@ def isHostUp(positive, host):
     :return: True if host is in state "up", False otherwise
     :rtype: bool
     """
-    host_status = getHostState(host)
+    host_status = get_host_status(host)
 
     return (host_status == ENUMS['host_state_up']) == positive
 
@@ -231,13 +231,13 @@ def waitForHostsStates(
                     logger.info(
                         "Check if host %s has state %s", host.name, states
                     )
-                    if host.status.state in stop_states:
+                    if host.get_status() in stop_states:
                         logger.error(
-                            "Host %s state: %s", host.name, host.status.state
+                            "Host %s state: %s", host.name, host.get_status()
                         )
                         return False
 
-                    elif host.status.state == states:
+                    elif host.get_status() == states:
                         logger.info(
                             "Host %s has state %s", host.name, states
                         )
@@ -340,8 +340,7 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
             return False
 
     if osType.lower().find('hypervisor') == -1 or rhel_like:
-        host = Host(name=name, cluster=hostCl, address=host_address,
-                    reboot_after_installation=reboot, **kwargs)
+        host = Host(name=name, cluster=hostCl, address=host_address, **kwargs)
 
         host, status = HOST_API.create(host, positive)
 
@@ -413,7 +412,7 @@ def updateHost(positive, host, **kwargs):
 
     if 'storage_manager_priority' in kwargs:
         new_priority = kwargs.pop('storage_manager_priority')
-        host_upd.set_spm(data_st.SPM(new_priority))
+        host_upd.set_spm(data_st.Spm(new_priority))
 
     pm_enabled = kwargs.get('pm')
     if pm_enabled is not None:
@@ -525,7 +524,7 @@ def isHostInMaintenance(positive, host):
     Return: positive if host is up, False otherwise
     """
     try:
-        host_status = getHostState(host)
+        host_status = get_host_status(host)
     except EntityNotFound:
         return False
 
@@ -554,7 +553,8 @@ def deactivateHost(
     """
     host_obj = HOST_API.find(host)
     sampler = TimeoutingSampler(
-        timeout, 1, lambda x: x.get_storage_manager().get_valueOf_(), host_obj)
+        timeout, 1, lambda x: x.get_spm().status, host_obj
+    )
 
     logger.info("Deactivate host %s", host)
     for sample in sampler:
@@ -566,8 +566,8 @@ def deactivateHost(
             # state so we may want to wait
             # for the final one. If it didn't, we certainly can
             # return immediately.
-            host_state = host_obj.get_status().get_state()
-            get_host_state_again = HOST_API.find(host).get_status().get_state()
+            host_state = host_obj.get_status()
+            get_host_state_again = HOST_API.find(host).get_status()
             state_changed = host_state != get_host_state_again
             if state_changed:
                 test_host_status = HOST_API.waitForElemStatus(
@@ -731,7 +731,9 @@ def fenceHost(positive, host, fence_type, timeout=500):
     # this is meant to differentiate between fencing a host in maintenance
     # and fencing a host in down state. since 3.4 fencing a host in maintenance
     # will result with the host staying in maintenance and not up state.
-    host_in_maintenance = getHostState(host) == ENUMS['host_state_maintenance']
+    host_in_maintenance = (
+        get_host_status(host) == ENUMS['host_state_maintenance']
+    )
     status = bool(
         HOST_API.syncAction(
             host_obj, "fence", positive, fence_type=fence_type.upper()
@@ -772,10 +774,10 @@ def _prepareHostNicObject(**kwargs):
         kwargs['name'] = nic_obj.get_name()
         add = False
     else:
-        nic_obj = data_st.HostNIC()
+        nic_obj = data_st.HostNic()
 
     if 'vlan' in kwargs:
-        nic_obj.set_vlan(data_st.VLAN(id=kwargs.get('vlan')))
+        nic_obj.set_vlan(data_st.Vlan(id=kwargs.get('vlan')))
         name = '{0}.{1}'.format(kwargs.get('name'), kwargs.get('vlan'))
         kwargs.update([('name', name)])
 
@@ -799,7 +801,7 @@ def _prepareHostNicObject(**kwargs):
     netmask = kwargs.get('netmask')
     gateway = kwargs.get('gateway')
     if (address or netmask or gateway) is not None:
-        ip_obj = data_st.IP() if add else nic_obj.get_ip()
+        ip_obj = data_st.Ip() if add else nic_obj.get_ip()
         if 'address' in kwargs:
             ip_obj.set_address(kwargs.get('address'))
         if 'netmask' in kwargs:
@@ -814,9 +816,9 @@ def _prepareHostNicObject(**kwargs):
 
     if slave_list:
         bond_obj = data_st.Bonding()
-        slaves = data_st.Slaves()
+        slaves = data_st.HostNics()
         for nic in slave_list:
-            slaves.add_host_nic(data_st.HostNIC(name=nic.strip()))
+            slaves.add_host_nic(data_st.HostNic(name=nic.strip()))
 
         bond_obj.set_slaves(slaves)
 
@@ -1082,31 +1084,36 @@ def removeTagFromHost(positive, host, tag):
 
 def checkHostSpmStatus(positive, hostName):
     """
-    Description: The function checkHostSpmStatus checking Storage Pool Manager
-                 (SPM) status of the host.
-    Parameters:
-    * hostName - the host name
-    Returns: 1) True when the host is SPM and positive also True,
-                otherwise return False.
-             2) True when host is not SPM and positive equal to False,
-                otherwise return False.
-    """
-    attribute = 'storage_manager'
-    hostObj = HOST_API.find(hostName)
+    The function checkHostSpmStatus checking Storage Pool Manager (SPM)
+        status of the host.
 
-    if not hasattr(hostObj, attribute):
-        HOST_API.logger.error("Element host %s doesn't have attribute %s",
-                              hostName, attribute)
+    Args:
+        positive (bool): Expected results
+        hostName (str): Host name
+
+    Returns:
+        bool: True when the host is SPM status == positive, otherwise return
+            False.
+    """
+    attribute = 'spm'
+    host_object = HOST_API.find(hostName)
+
+    if not hasattr(host_object, attribute):
+        HOST_API.logger.error(
+            "Element host %s doesn't have attribute %s", hostName, attribute
+        )
         return False
 
-    spmStatus = hostObj.get_storage_manager().get_valueOf_()
-    HOST_API.logger.info("checkHostSpmStatus - SPM Status of host %s is: %s",
-                         hostName, spmStatus)
+    spm_status = host_object.get_spm().get_status()
+    HOST_API.logger.info(
+        "checkHostSpmStatus - SPM Status of host %s is: %s", hostName,
+        spm_status
+    )
 
     # due to differences between the return types of java and python sdk
     # checks for spmStatus in a set with different possible return values
     # as a workaround
-    return (spmStatus in ('true', True, 'True')) == positive
+    return (spm_status in ('true', True, 'True', 'spm')) == positive
 
 
 def returnSPMHost(hosts):
@@ -1150,7 +1157,7 @@ def getAnyNonSPMHost(hosts, expected_states=None, cluster_name=None):
         HOST_API.logger.info('Filtering host list for hosts in states %s',
                              expected_states)
         hosts = [host for host in hosts
-                 if host.get_status().get_state() in expected_states]
+                 if host.get_status() in expected_states]
         HOST_API.logger.info('New hosts list is %s',
                              [host.get_name() for host in hosts])
 
@@ -1527,7 +1534,7 @@ def waitForHostNicState(host, nic, state, interval=1, attempts=1):
     """
     regex = re.compile(state, re.I)
     while attempts:
-        res, out = getHostNicAttr(host, nic, 'status.state')
+        res, out = getHostNicAttr(host, nic, 'status')
         if res and regex.match(out['attrValue']):
             return True
         time.sleep(interval)
@@ -2090,7 +2097,7 @@ def get_cluster_hosts(cluster_name, host_status=ENUMS['host_state_up']):
     )
     if elm_status:
         return [host.get_name() for host in hosts
-                if host.get_status().get_state() == host_status]
+                if host.get_status() == host_status]
     return []
 
 

@@ -8,7 +8,7 @@ Fixtures for misc
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-from rhevmtests.networking.fixtures import NetworkFixtures  # flake8: noqa
+from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="class")

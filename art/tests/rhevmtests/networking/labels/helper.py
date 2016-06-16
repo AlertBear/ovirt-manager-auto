@@ -16,7 +16,7 @@ logger = logging.getLogger("Labels_Helper")
 def add_label_and_check_network_on_nic(
     positive, label, network_on_nic=True, add_net_to_label=True,
     networks=list(), host_nic_dict=None, vlan_nic=None, nic_list=list(),
-    attach_to__host=True
+    attach_to_host=True
 ):
     """
     Adding label to network or host and checking if network resides on Host NIC
@@ -33,7 +33,7 @@ def add_label_and_check_network_on_nic(
             interfaces as a value for that key.
         vlan_nic (str): Build the name for tagged interface or bond.
         nic_list (list): List of NICs.
-        attach_to__host: True if need to attach NIC to host,
+        attach_to_host: True if need to attach NIC to host,
             False if NIC already attached to host.
 
     Returns:
@@ -41,7 +41,7 @@ def add_label_and_check_network_on_nic(
     """
 
     lb_net = networks if add_net_to_label else list()
-    nic_host = host_nic_dict if attach_to__host else None
+    nic_host = host_nic_dict if attach_to_host else None
     res = hl_networks.create_and_attach_label(
         label=label, networks=lb_net, host_nic_dict=nic_host
     )

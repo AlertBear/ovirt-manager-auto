@@ -213,3 +213,6 @@ DATACENTER_NETWORKS_VERIFY_NET_LIST = [
 DATACENTER_NETWORKS_DC_NAMES = [DC_0, "DataCenter_Network_DC2"]
 DC_0_NET_LIST = None  # Filled in test
 DC_1_NET_LIST = None  # Filled in test
+
+# Network Filter
+VDSM_NO_MAC_SPOOFING = "vdsm-no-mac-spoofing"

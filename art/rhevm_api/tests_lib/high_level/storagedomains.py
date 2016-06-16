@@ -140,7 +140,7 @@ def importBlockStorageDomain(host, lun_address, lun_target):
         # id[4:-2] ==> removes id=" and ">
         sd_id = str(id[4:-2])
 
-        storage_object = ll_sd.Storage()
+        storage_object = ll_sd.HostStorage()
         storage_object.set_type(ENUMS['storage_type_iscsi'])
 
         sd = ll_sd.StorageDomain(id=sd_id)
@@ -771,18 +771,18 @@ def create_nfs_domain_with_options(
     **Returns**: nothing, raise an exception in case of an error
     """
     logger.info("Adding storage domain")
-    old_storage = ll_sd.Storage
+    old_storage = ll_sd.HostStorage
     if not positive:  # in positive tests we won't pass incorrect values
-        ll_sd.Storage = datastructures.Storage
+        ll_sd.HostStorage = datastructures.HostStorage
     if not ll_sd.addStorageDomain(
             positive, name=name, type=sd_type, host=host, address=address,
             storage_type=ENUMS['storage_type_nfs'], path=path,
             nfs_version=version, nfs_retrans=retrans, nfs_timeo=timeo,
             mount_options=mount_options):
-        ll_sd.Storage = old_storage  # just in case...
+        ll_sd.HostStorage = old_storage  # just in case...
         raise errors.StorageDomainException(
             "Cannot add storage domain %s" % name)
-    ll_sd.Storage = old_storage
+    ll_sd.HostStorage = old_storage
 
     if datacenter is not None and positive:
         logger.info("Attaching storage domain")

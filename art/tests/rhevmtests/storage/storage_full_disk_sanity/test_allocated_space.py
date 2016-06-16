@@ -445,7 +445,7 @@ class TestCase11541(BaseCase):
                 'vmDescription': vm_name,
                 'cluster': config.CLUSTER_NAME,
                 'storageDomainName': self.domains[0],
-                'size': VM_DISK_SIZE,
+                'provisioned_size': VM_DISK_SIZE,
                 'volumeType': is_thin_provision,
                 'volumeFormat': disk_format,
                 'display_type': config.DISPLAY_TYPE,

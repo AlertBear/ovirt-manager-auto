@@ -65,7 +65,7 @@ class Inventory(object):
                     {
                         'name': host.name,
                         'address': host.address,
-                        'status': host.status.state
+                        'status': host.get_status()
                     }
                 )
         return data
@@ -83,7 +83,7 @@ class Inventory(object):
             data.append(
                 {
                     'name': vm.name,
-                    'status': vm.status.state,
+                    'status': vm.get_status(),
                     'os': vm.os.type_,
                     'memory': vm.memory / MB
                 }
@@ -164,7 +164,7 @@ class Inventory(object):
                 current_clusters = []
                 data.append({
                     'name': current_data_center.name,
-                    'status': current_data_center.status.state,
+                    'status': current_data_center.get_status(),
                     'compatibility_version': "%s.%s" % (
                         current_data_center.version.major,
                         current_data_center.version.minor,
@@ -245,7 +245,7 @@ class Inventory(object):
                     data.append(
                         {
                             'name': template.name,
-                            'status': template.status.state,
+                            'status': template.get_status(),
                             'cluster': cluster_id,
                         }
                     )
@@ -266,7 +266,7 @@ class Inventory(object):
         data_center = ll_dc.get_sd_datacenter(storage_domain)
         if data_center:
             sd_obj = ll_sd.getDCStorage(data_center.name, storage_domain)
-            return sd_obj.get_status().get_state()
+            return sd_obj.get_status()
         return STORAGE_DOMAIN_STATUS_INACTIVE
 
     def extract_data_centers_info(self, data_centers):

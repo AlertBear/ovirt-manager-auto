@@ -25,7 +25,6 @@ COLLECTION = 'tags'
 util = get_api(ELEMENT, COLLECTION)
 
 Tag = getDS('Tag')
-TagParent = getDS('TagParent')
 
 
 def _prepareTagObject(**kwargs):
@@ -40,7 +39,7 @@ def _prepareTagObject(**kwargs):
 
     if 'parent' in kwargs:
         parent = util.find(kwargs.pop('parent'))
-        tag.set_parent(TagParent(tag=parent))
+        tag.set_parent(parent)
 
     return tag
 

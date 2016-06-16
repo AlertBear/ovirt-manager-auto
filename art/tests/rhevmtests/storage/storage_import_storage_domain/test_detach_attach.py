@@ -157,7 +157,7 @@ class BasicEnvironment(BaseTestCase):
         ):
             domain_obj = ll_sd.get_storage_domain_obj(sd_name)
             try:
-                if domain_obj.get_status().get_state() == config.SD_UNATTACHED:
+                if domain_obj.get_status() == config.SD_UNATTACHED:
                     return True
             except AttributeError:
                 logger.info(

@@ -54,10 +54,10 @@ CLUSTER_API = get_api('cluster', 'clusters')
 
 Template = getDS('Template')
 Cluster = getDS('Cluster')
-CPU = getDS('CPU')
+CPU = getDS('Cpu')
 CpuTopology = getDS('CpuTopology')
 StorageDomain = getDS('StorageDomain')
-VM = getDS('VM')
+VM = getDS('Vm')
 SAMPLER_TIMEOUT = 120
 SAMPLER_SLEEP = 5
 
@@ -105,7 +105,9 @@ def _prepareTemplateObject(**kwargs):
 
     boot = kwargs.pop('boot', None)
     if boot:
-        templ.set_os(data_st.Boot(dev=boot))
+        templ.set_os(
+            data_st.Boot(devices=data_st.devicesType(device=boot))
+        )
 
     storagedomain = kwargs.pop('storagedomain', None)
     if storagedomain:
@@ -128,7 +130,7 @@ def _prepareTemplateObject(**kwargs):
 
     virtio_scsi = kwargs.pop('virtio_scsi', None)
     if virtio_scsi is not None:
-        virtio_scsi_obj = data_st.VirtIO_SCSI(enabled=virtio_scsi)
+        virtio_scsi_obj = data_st.VirtioScsi(enabled=virtio_scsi)
         templ.set_virtio_scsi(virtio_scsi_obj)
 
     return templ
@@ -307,7 +309,7 @@ def searchForTemplate(positive, query_key, query_val, key_name, **kwargs):
 
 def _prepareNicObj(**kwargs):
 
-    nic_obj = data_st.NIC()
+    nic_obj = data_st.Nic()
     vnic_profile_obj = data_st.VnicProfile()
 
     if 'name' in kwargs:
@@ -330,9 +332,6 @@ def _prepareNicObj(**kwargs):
                 cl_obj.get_name()
             )
             nic_obj.set_vnic_profile(vnic_profile_obj)
-
-    if 'active' in kwargs:
-        nic_obj.set_active(kwargs.get('active'))
 
     return nic_obj
 
@@ -510,7 +509,6 @@ def updateTemplateNic(positive, template, nic, **kwargs):
        * network - network that nic depends on
        * interface - nic type. available types: virtio, rtl8139 and e1000
                     (for 2.2 also rtl8139_virtio)
-       * active - Boolean attribute which present nic hostplug state
     Return: status (True if nic was updated properly, False otherwise)
     '''
     templ_obj = TEMPLATE_API.find(template)
@@ -807,11 +805,11 @@ def get_template_state(template_name):
 
     :param template_name: Get the state of the template name
     :type template_name: str
-    :return: Template state (illegal, locked, ok)
+    :return: Template status (illegal, locked, ok)
     :rtype: str
     """
     template = TEMPLATE_API.find(template_name)
-    return template.get_status().get_state()
+    return template.get_status()
 
 
 def waitForTemplatesStates(names, state=ENUMS['template_state_ok'],
@@ -832,7 +830,7 @@ def waitForTemplatesStates(names, state=ENUMS['template_state_ok'],
         """
         templates = [TEMPLATE_API.find(name) for name in template_names]
         return [templ for templ in templates if
-                (templ.get_status().get_state() != state)]
+                (templ.get_status() != state)]
 
     names = split(names)
     sampler = TimeoutingSampler(
@@ -860,7 +858,7 @@ def wait_for_template_disks_state(template, state=ENUMS['disk_state_ok'],
         if not DISKS_API.waitForElemStatus(disk, state, timeout):
             raise exceptions.DiskException(
                 "Timeout, disk %s is still in status %s insted of desired %s"
-                % (disk.alias, disk.get_status().get_state(), state))
+                % (disk.alias, disk.get_status(), state))
 
 
 def waitForTemplatesGone(positive, templates, timeout=600, samplingPeriod=10):

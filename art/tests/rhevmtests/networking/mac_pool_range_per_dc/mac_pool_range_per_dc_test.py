@@ -29,6 +29,7 @@ logger = logging.getLogger("MAC_Pool_Range_Per_DC_Cases")
 
 
 @attr(tier=2)
+@bz({"1344284": {}})
 class TestMacPoolRange01(NetworkTest):
     """
     Try to use old configuration with engine-config
@@ -59,6 +60,7 @@ class TestMacPoolRange01(NetworkTest):
 
 
 @attr(tier=2)
+@bz({"1344284": {}})
 @pytest.mark.usefixtures(fixture_mac_pool_range_case_02.__name__)
 class TestMacPoolRange02(NetworkTest):
     """
@@ -139,6 +141,7 @@ class TestMacPoolRange02(NetworkTest):
 
 
 @attr(tier=2)
+@bz({"1344284": {}})
 @pytest.mark.usefixtures(fixture_mac_pool_range_case_03.__name__)
 class TestMacPoolRange03(NetworkTest):
     """
@@ -347,6 +350,7 @@ class TestMacPoolRange03(NetworkTest):
 
 
 @attr(tier=2)
+@bz({"1344284": {}})
 @pytest.mark.usefixtures(fixture_mac_pool_range_case_04.__name__)
 class TestMacPoolRange04(NetworkTest):
     """
@@ -419,6 +423,7 @@ class TestMacPoolRange04(NetworkTest):
 
 
 @attr(tier=2)
+@bz({"1344284": {}})
 @pytest.mark.usefixtures(fixture_mac_pool_range_case_05.__name__)
 class TestMacPoolRange05(NetworkTest):
     """
@@ -497,6 +502,7 @@ class TestMacPoolRange05(NetworkTest):
 
 
 @attr(tier=2)
+@bz({"1344284": {}})
 @pytest.mark.usefixtures(mac_pool_range_06_fixture.__name__)
 class TestMacPoolRange06(NetworkTest):
     """
@@ -630,6 +636,7 @@ class TestMacPoolRange06(NetworkTest):
 
 
 @attr(tier=2)
+@bz({"1344284": {}})
 @pytest.mark.usefixtures(fixture_mac_pool_range_case_07.__name__)
 class NoTestMacPoolRange07(NetworkTest):
     """
@@ -671,6 +678,7 @@ class NoTestMacPoolRange07(NetworkTest):
 
 
 @attr(tier=2)
+@bz({"1344284": {}})
 @pytest.mark.usefixtures(mac_pool_range_08_fixture.__name__)
 class TestMacPoolRange08(NetworkTest):
     """
@@ -716,6 +724,7 @@ class TestMacPoolRange08(NetworkTest):
 
 
 @attr(tier=2)
+@bz({"1344284": {}})
 @pytest.mark.usefixtures(fixture_mac_pool_range_case_09.__name__)
 class TestMacPoolRange09(NetworkTest):
     """

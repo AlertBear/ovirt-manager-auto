@@ -75,7 +75,7 @@ def setup_package():
         if not ll_vms.createVm(
             positive=True, vmName=vm_name, vmDescription="",
             cluster=conf.CLUSTER_NAME[0],
-            storageDomainName=conf.STORAGE_NAME[0], size=conf.GB,
+            storageDomainName=conf.STORAGE_NAME[0], provisioned_size=conf.GB,
             nic=conf.NIC_NAME[0], network=conf.MGMT_BRIDGE,
             **vm_params
         ):

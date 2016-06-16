@@ -151,7 +151,7 @@ class CheckVmAfterSoftFencing(SoftFencing):
                             vmDescription="Test VM",
                             cluster=config.CLUSTER_NAME[0],
                             storageDomainName=config.STORAGE_NAME[0],
-                            size=DISK_SIZE, nic='nic1',
+                            provisioned_size=DISK_SIZE, nic='nic1',
                             diskInterface=ENUMS['interface_virtio'],
                             placement_host=config.host_with_pm,
                             placement_affinity=PINNED,

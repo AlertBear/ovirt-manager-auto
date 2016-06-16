@@ -27,7 +27,7 @@ disk_args = {
     'storagedomain': None,
     'interface': INTERFACE_VIRTIO,
     'format': DISK_FORMAT_COW,
-    'size': DISK_SIZE
+    'provisioned_size': DISK_SIZE
 }
 
 MAIN_HOOK_DIR = "/usr/libexec/vdsm/hooks/"

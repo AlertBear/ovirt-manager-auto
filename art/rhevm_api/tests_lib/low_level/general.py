@@ -162,7 +162,7 @@ def checkSummary(positive, domain):
 
     vms = vmUtil.get(absLink=False)
     sumVmsAct = getAll.get_summary().get_vms().active
-    vms = filter(lambda x: x.status.state == 'up', vms)
+    vms = filter(lambda x: x.get_status() == 'up', vms)
     util.logger.info('Comparing active vms number')
     if not validator.compareCollectionSize(vms, sumVmsAct, util.logger):
         status = False
@@ -175,7 +175,7 @@ def checkSummary(positive, domain):
 
     hosts = hostUtil.get(absLink=False)
     sumHostsAct = getAll.get_summary().get_hosts().active
-    hosts = filter(lambda x: x.get_status().get_state() == 'up', hosts)
+    hosts = filter(lambda x: x.get_status() == 'up', hosts)
     util.logger.info('Comparing active hosts number')
     if not validator.compareCollectionSize(hosts, sumHostsAct, util.logger):
         status = False
@@ -215,7 +215,7 @@ def checkSummary(positive, domain):
             get_href=False)
         for dcSd in dcStorages:
             try:
-                if dcSd.status.state == 'active':
+                if dcSd.get_status() == 'active':
                     sdActive.append(dcSd)
             except AttributeError:
                 pass

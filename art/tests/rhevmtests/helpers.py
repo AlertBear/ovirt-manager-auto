@@ -8,7 +8,7 @@ import functools
 import logging
 import os
 from rrmngmnt import ssh
-from rhevmtests import config
+import config
 from art.rhevm_api.resources import User, Host, storage
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (

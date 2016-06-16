@@ -622,7 +622,7 @@ class RestUtil(APIUtil):
 
         if positive:
             if resp_action and not validator.compareAsyncActionStatus(
-                    async, resp_action.status.state, self.logger):
+                    async, resp_action.status, self.logger):
                 return None
 
         else:
@@ -737,7 +737,7 @@ class RestUtil(APIUtil):
             if hasattr(restElement, 'snapshot_status'):
                 elemStat = restElement.snapshot_status.lower()
             elif hasattr(restElement, 'status'):
-                elemStat = restElement.status.state.lower()
+                elemStat = restElement.status.lower()
             else:
                 self.logger.error("Element %s doesn't have attribute status",
                                   self.element_name)

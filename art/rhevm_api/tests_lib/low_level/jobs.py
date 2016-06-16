@@ -34,7 +34,7 @@ def check_recent_job(positive, description, last_jobs_num=None,
 
     job_status = job_status.lower()
     jobs = filter(lambda j: (description in j.get_description() and
-                             j.get_status().get_state().lower() == job_status),
+                             j.get_status().lower() == job_status),
                   jobs)
     last_job = max(jobs, key=lambda j: j.get_start_time())
 
@@ -64,7 +64,7 @@ def get_active_jobs(job_descriptions=None):
 
     jobs = filter(
         lambda job: (
-            job.get_status().get_state() == ENUMS['job_started']
+            job.get_status() == ENUMS['job_started']
         ), jobs
     )
 

@@ -127,8 +127,7 @@ def get_attachment_sync_status(attachment):
     :return: True if network is synced else False
     :rtype: bool
     """
-    reported = attachment.get_reported_configurations()
-    return reported.get_in_sync()
+    return attachment.in_sync
 
 
 def get_attachment_reported_configurations(attachment):
@@ -219,7 +218,7 @@ def prepare_network_attachment_obj(host_name, **kwargs):
             try:
                 host_nic = ll_hosts.get_host_nic(host_name, nic)
             except exceptions.EntityNotFound:
-                host_nic = data_st.HostNIC()
+                host_nic = data_st.HostNic()
                 host_nic.set_name(nic)
         else:
             host_nic = ll_hosts.get_host_nic(host_name, nic)
@@ -247,8 +246,8 @@ def prepare_bond_attachment_obj(host_name, **kwargs):
     :type host_name: str
     :param kwargs: BOND kwargs
     :type kwargs: dict
-    :return: HostNIC
-    :rtype: HostNIC object
+    :return: HostNic
+    :rtype: HostNic object
     """
     slave_list = kwargs.get(SLAVES)
     nic_name = kwargs.get(NIC)
@@ -260,10 +259,10 @@ def prepare_bond_attachment_obj(host_name, **kwargs):
         options = bond_obj.get_options()
 
     else:
-        host_nic_bond_obj = data_st.HostNIC()
+        host_nic_bond_obj = data_st.HostNic()
         bond_obj = data_st.Bonding()
         options = data_st.Options()
-        slaves = data_st.Slaves()
+        slaves = data_st.HostNics()
 
     if nic_name:
         host_nic_bond_obj.set_name(nic_name)
@@ -275,7 +274,7 @@ def prepare_bond_attachment_obj(host_name, **kwargs):
                 nic_id = ll_hosts.get_host_nic(host_name, nic).get_id()
                 if nic_id in slaves_nics_ids:
                     continue
-            slaves.add_host_nic(data_st.HostNIC(name=nic.strip()))
+            slaves.add_host_nic(data_st.HostNic(name=nic.strip()))
         bond_obj.set_slaves(slaves)
 
     value = kwargs.get(MODE) if kwargs.get(MODE) else "4"
@@ -307,7 +306,7 @@ def prepare_remove_for_setupnetworks(host_name, dict_to_remove):
     """
     removed_bonds = data_st.HostNics()
     removed_network_attachments = data_st.NetworkAttachments()
-    removed_labels = data_st.Labels()
+    removed_labels = data_st.NetworkLabels()
     for k in dict_to_remove.keys():
         if k == NETWORKS:
             attach = get_networks_attachments(
@@ -328,7 +327,7 @@ def prepare_remove_for_setupnetworks(host_name, dict_to_remove):
                 host_nics=host_nics, labels_id=labels_list
             )
             for label_to_remove in label_objs:
-                removed_labels.add_label(label_to_remove)
+                removed_labels.add_network_label(label_to_remove)
 
     return removed_bonds, removed_network_attachments, removed_labels
 
@@ -376,18 +375,18 @@ def prepare_add_for_setupnetworks(
                 label_obj = create_host_nic_label_object(
                     host_name=host_name, nic=host_nic, label=label
                 )
-                labels.add_label(label_obj)
+                labels.add_network_label(label_obj)
 
     return network_attachments, bonds, labels
 
 
 def prepare_ip_object(network_attachment, ip_dict):
     """
-    Prepare IP object for NetworkAttachment
+    Prepare Ip object for NetworkAttachment
 
     :param network_attachment: NetworkAttachment object
     :type network_attachment: NetworkAttachment
-    :param ip_dict: Dict with IP params
+    :param ip_dict: Dict with Ip params
     :type ip_dict: dict
     :return: NetworkAttachment object
     :rtype: NetworkAttachment
@@ -395,7 +394,7 @@ def prepare_ip_object(network_attachment, ip_dict):
     for value in ip_dict.values():
         ip_address_assignments = data_st.IpAddressAssignments()
         ip_address_assignment = data_st.IpAddressAssignment()
-        ip = data_st.IP()
+        ip = data_st.Ip()
         for k, v in value.iteritems():
             if k == "boot_protocol":
                 ip_address_assignment.set_assignment_method(v)

@@ -249,7 +249,7 @@ class BaseTestBlockingNodes(BaseGlusterMount):
 
         status = ll_disks.addDisk(
             disk_operation_positive, alias=self.disk_alias,
-            size=config.DISK_SIZE, interface=config.VIRTIO,
+            provisioned_size=config.DISK_SIZE, interface=config.VIRTIO,
             sparse=True, format=config.COW_DISK, storagedomain=self.domain_name
         )
         raise_exception = False
@@ -286,7 +286,7 @@ class BaseTestBlockingNodes(BaseGlusterMount):
                 self.assertTrue(
                     False, "Storage domain %s is in status %s, expected "
                     "status is %s" % (
-                        self.domain_name, domain_obj.get_status().get_state(),
+                        self.domain_name, domain_obj.get_status(),
                         config.SD_INACTIVE
                     )
                 )

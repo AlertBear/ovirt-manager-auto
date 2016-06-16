@@ -329,7 +329,7 @@ class TestCase5818(BasicEnvironment):
 
         self.assertTrue(
             ll_disks.addDisk(
-                True, alias=self.disk_alias, size=config.GB,
+                True, alias=self.disk_alias, provisioned_size=config.GB,
                 interface=config.VIRTIO, sparse=False, format=config.RAW_DISK,
                 storagedomain=domain_name
             ), "Failed to add disk '%s'" % self.disk_alias
@@ -505,7 +505,7 @@ class TestCase14812(BasicEnvironment):
         )
         self.assertTrue(
             ll_disks.addDisk(
-                True, alias=self.disk_alias, size=config.GB,
+                True, alias=self.disk_alias, provisioned_size=config.GB,
                 interface=config.VIRTIO, sparse=False, format=config.RAW_DISK,
                 storagedomain=self.storage_domain
             ), "Failed to add disk '%s'" % self.disk_alias

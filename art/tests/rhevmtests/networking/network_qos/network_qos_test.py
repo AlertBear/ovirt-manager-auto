@@ -240,6 +240,7 @@ class TestNetQOSCase02(TestCase):
         logger.info(
             "Start vm %s on host %s", config.VM_NAME_1, config.HOST
         )
+
         if not ll_vms.startVm(
             positive=True, vm=config.VM_NAME_1, placement_host=config.HOST
         ):

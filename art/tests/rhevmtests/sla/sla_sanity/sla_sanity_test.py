@@ -32,7 +32,7 @@ HOST_PASSTHROUGH = "host_passthrough"
 VM_BASIC_PARAMETERS = {
     "cluster": conf.CLUSTER_NAME[0],
     "storageDomainName": conf.STORAGE_NAME[0],
-    "size": conf.GB, "nic": conf.NIC_NAME[0],
+    "provisioned_size": conf.GB, "nic": conf.NIC_NAME[0],
     "network": conf.MGMT_BRIDGE,
     "display_type": conf.VM_DISPLAY_TYPE,
     "type": conf.VM_TYPE_SERVER

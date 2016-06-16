@@ -18,19 +18,12 @@ from rhevmtests.networking.fixtures import (
 )  # flake8: noqa
 
 
-class RequiredNetwork(NetworkFixtures):
-    """
-    Fixtures for labels
-    """
-    pass
-
-
 @pytest.fixture(scope="module")
 def requird_network_prepare_setup(request, network_cleanup_fixture):
     """
     prepare setup
     """
-    required_network = RequiredNetwork()
+    required_network = NetworkFixtures()
 
     def fin2():
         """
@@ -52,7 +45,6 @@ def requird_network_prepare_setup(request, network_cleanup_fixture):
         networks_dict=required_conf.NETS_DICT, dc=required_network.dc_0,
         cluster=required_network.cluster_0
     )
-
     assert helper.deactivate_hosts()
 
 
@@ -62,7 +54,7 @@ def all_classes_teardown(request, requird_network_prepare_setup):
     Teardown fixture for all cases
     """
     net = request.node.cls.net
-    required_network = RequiredNetwork()
+    required_network = NetworkFixtures()
 
     def fin3():
         """
@@ -104,7 +96,7 @@ def case_02_fixture(request, all_classes_teardown):
     Fixture for case02:
     Attach required non-VM network to host
     """
-    required_network = RequiredNetwork()
+    required_network = NetworkFixtures()
     net = request.node.cls.net
 
     local_dict = {
@@ -112,7 +104,6 @@ def case_02_fixture(request, all_classes_teardown):
             "nic": 1,
         }
     }
-
     assert hl_networks.createAndAttachNetworkSN(
         host=required_network.vds_0_host, network_dict=local_dict,
         auto_nics=[0]
@@ -124,7 +115,7 @@ def case_03_fixture(request, all_classes_teardown):
     """
     Attach required network over BOND.
     """
-    required_network = RequiredNetwork()
+    required_network = NetworkFixtures()
     net = request.node.cls.net
     bond = request.node.cls.bond
     vlan = request.node.cls.vlan
@@ -139,7 +130,6 @@ def case_03_fixture(request, all_classes_teardown):
             "vlan_id": vlan
         }
     }
-
     assert hl_networks.createAndAttachNetworkSN(
         host=required_network.vds_0_host, network_dict=local_dict,
         auto_nics=[0]

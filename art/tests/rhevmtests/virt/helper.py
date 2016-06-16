@@ -600,7 +600,7 @@ def create_base_vm(
         if not ll_vms.addDisk(
             True,
             vm=vm_name,
-            size=config.GB,
+            provisioned_size=config.GB,
             storagedomain=storage_domain,
             type=disk_type,
             format=config.DISK_FORMAT_COW,

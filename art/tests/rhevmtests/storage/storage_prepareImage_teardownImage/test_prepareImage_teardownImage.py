@@ -213,7 +213,8 @@ class BasicEnvironment(BaseTestCase):
                                                        self.storage_domain)
             self.disk_aliases.append(self.disk_alias)
             self.assertTrue(addDisk(True, alias=self.disk_alias,
-                                    size=disk_size, sparse=disk_sparse,
+                                    provisioned_size=disk_size,
+                                    sparse=disk_sparse,
                                     storagedomain=self.storage_domain,
                                     format=disk_format,
                                     interface=config.VIRTIO,

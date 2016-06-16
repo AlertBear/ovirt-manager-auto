@@ -86,7 +86,8 @@ class MacPool(NetworkFixtures):
         """
         assert ll_vms.createVm(
             positive=True, vmName=self.mp_vm, cluster=self.mac_pool_cl,
-            storageDomainName=mac_pool_conf.MP_STORAGE, size=conf.VM_DISK_SIZE
+            storageDomainName=mac_pool_conf.MP_STORAGE,
+            provisioned_size=conf.VM_DISK_SIZE,
         )
 
     def create_template(self):

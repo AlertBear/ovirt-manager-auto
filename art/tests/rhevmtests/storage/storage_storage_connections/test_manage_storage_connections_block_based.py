@@ -1383,7 +1383,7 @@ class TestCase5241(TestCase):
             vm_args_copy = config.create_vm_args.copy()
             vm_args_copy['cluster'] = config.CLUSTER_ISCSI_CONNECTIONS
             vm_args_copy['installation'] = False
-            vm_args_copy['size'] = config.GB
+            vm_args_copy['provisioned_size'] = config.GB
             vm_args_copy['storageDomainName'] = self.sd_name
             vm_args_copy['vmName'] = vm_name
             vm_args_copy['vmDescription'] = vm_name

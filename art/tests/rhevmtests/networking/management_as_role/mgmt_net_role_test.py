@@ -8,6 +8,8 @@ Several DCs, several clusters with/without the host will be created
 
 import logging
 
+import pytest
+
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
@@ -17,7 +19,7 @@ import helper
 from art.core_api import apis_exceptions
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest, attr
-from fixtures import *  # flake8: noqa
+from fixtures import prepare_setup_case_08
 
 logger = logging.getLogger("MGMT_Net_Role_Cases")
 
@@ -550,7 +552,7 @@ class TestMGMTNetRole07(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures("prepare_setup_case_08")
+@pytest.mark.usefixtures(prepare_setup_case_08.__name__)
 @pytest.mark.skipif(conf.PPC_ARCH, reason=conf.PPC_SKIP_MESSAGE)
 class TestMGMTNetRole08(NetworkTest):
     """

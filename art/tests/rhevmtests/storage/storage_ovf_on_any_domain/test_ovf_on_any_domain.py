@@ -360,11 +360,12 @@ class BasicEnvironment(BaseTestCase):
         lun_id = config.EXTEND_LUN[0] if raw_lun else None
         self.assertTrue(
             ll_disks.addDisk(
-                True, alias=disk_alias, size=config.DISK_SIZE, sparse=sparse,
-                storagedomain=storage_domain, format=disk_format,
-                interface=config.VIRTIO, wipe_after_delete=False,
-                bootable=bootable, shareable=shareable,
-                lun_address=lun_address, lun_target=lun_target, lun_id=lun_id,
+                True, alias=disk_alias, provisioned_size=config.DISK_SIZE,
+                sparse=sparse, storagedomain=storage_domain,
+                format=disk_format, interface=config.VIRTIO,
+                wipe_after_delete=False, bootable=bootable,
+                shareable=shareable, lun_address=lun_address,
+                lun_target=lun_target, lun_id=lun_id,
                 type_=config.STORAGE_TYPE_ISCSI
             ), "Failed to add disk %s" % disk_alias
         )

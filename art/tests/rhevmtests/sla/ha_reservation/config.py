@@ -15,7 +15,7 @@ GENERAL_VM_PARAMS = {
 
 INSTALL_VM_PARAMS = {
     'storageDomainName': STORAGE_NAME[0],
-    'size': DISK_SIZE,
+    'provisioned_size': DISK_SIZE,
     'nic': NIC_NAME[0],
     'network': MGMT_BRIDGE,
     'installation': False

@@ -147,8 +147,6 @@ def _prepareDiskObject(**kwargs):
     :type interface: str
     :param format: raw or cow
     :type format: str
-    :param size: Size of the disk
-    :type size: int
     :param sparse: True if disk should be sparse, False otherwise
     :type sparse: bool
     :param bootable: True if disk should be marked as bootable, False otherwise
@@ -209,7 +207,7 @@ def _prepareDiskObject(**kwargs):
         disk = data_st.Disk(**kwargs)
 
     if storage_connection is not None:
-        storage = data_st.Storage()
+        storage = data_st.HostStorage()
         storage.id = storage_connection
         disk.set_lun_storage(storage)
 
@@ -234,8 +232,13 @@ def _prepareDiskObject(**kwargs):
             direct_lun.set_username(lun_creds[0])
             direct_lun.set_password(lun_creds[1])
 
-        disk.set_lun_storage(data_st.Storage(logical_unit=[direct_lun],
-                                             type_=type_))
+    logical_units = data_st.LogicalUnits(logical_unit=[direct_lun])
+    disk.set_lun_storage(
+        data_st.HostStorage(
+            logical_unit=logical_units,
+            type_=type_
+        )
+    )
 
     # id
     disk_id = kwargs.pop('id', None)
@@ -315,7 +318,6 @@ def updateDisk(positive, **kwargs):
         * provisioned_size - size of the disk
         * interface - IDE or virtio
         * format - raw or cow
-        * size - size of the disk
         * sparse - True or False whether disk should be sparse
         * bootable - True or False whether disk should be bootable
         * shareable - True or False whether disk should be sharable
@@ -446,7 +448,7 @@ def wait_for_disks_status(disks, key='name', status=ENUMS['disk_state_ok'],
 
     logger.info("Waiting for status %s on disks %s", status, disks_list)
     sampler = TimeoutingSampler(timeout, sleep, DISKS_API.get, absLink=False)
-    is_incorrect_state = lambda d, s: (d.get_status().get_state() != s)
+    is_incorrect_state = lambda d, s: (d.get_status() != s)  # flake8: noqa
     try:
         for sample in sampler:
             disks_in_wrong_status = []
@@ -605,7 +607,7 @@ def do_disk_action(
         ):
             for target_disk in sample:
                 if disk.get_id() == target_disk.get_id() and (
-                        disk.status.state == ENUMS['disk_state_ok']
+                        disk.get_status() == ENUMS['disk_state_ok']
                 ):
                     return True
     return True
@@ -751,8 +753,7 @@ def get_other_storage_domain(
     )
     for sd in STORAGE_DOMAIN_API.getElemFromLink(dc, get_href=False):
         if sd.get_id() != disk_sd_id and (
-            sd.get_status().get_state() ==
-            ENUMS['storage_domain_state_active']) and (
+            sd.get_status() == ENUMS['storage_domain_state_active']) and (
             sd.get_type() == ENUMS['storage_dom_type_data']
         ):
             sd_type = sd.get_storage().get_type()

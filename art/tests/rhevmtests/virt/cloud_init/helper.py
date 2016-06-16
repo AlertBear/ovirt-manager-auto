@@ -8,7 +8,7 @@ import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import rhevmtests.helpers as helpers
 import config
 
-NIC_CONFIGURATION = data_struct.GuestNicConfiguration(
+NIC_CONFIGURATION = data_struct.NicConfiguration(
     name=config.CLOUD_INIT_NIC_NAME, ip=None, boot_protocol='dhcp',
     on_boot=True
 )
@@ -28,7 +28,7 @@ initialization_params = {
     'timezone': config.NEW_ZEALAND_TZ,
     'dns_servers': config.DNS_SERVER,
     'dns_search': config.DNS_SEARCH,
-    'nic_configurations': data_struct.GuestNicsConfiguration(
+    'nic_configurations': data_struct.NicConfigurations(
         nic_configuration=[NIC_CONFIGURATION]
     ),
     'custom_script': CUSTOM_SCRIPT
@@ -42,7 +42,7 @@ updated_initialization_params = {
     'timezone': config.MEXICO_TZ,
     'dns_servers': config.DNS_SERVER,
     'dns_search': config.DNS_SEARCH,
-    'nic_configurations': data_struct.GuestNicsConfiguration(
+    'nic_configurations': data_struct.NicConfigurations(
         nic_configuration=[NIC_CONFIGURATION]
     ),
     'custom_script': CUSTOM_SCRIPT

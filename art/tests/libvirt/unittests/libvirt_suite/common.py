@@ -39,7 +39,7 @@ NUM_PACKETS = 1000
 
 def install_vm(vm_name, vm_description, disk_interface,
                sparse=True, volume_format=config.COW_DISK,
-               nic=config.HOST_NICS[0], size=config.DISK_SIZE,
+               nic=config.HOST_NICS[0], provisioned_size=config.DISK_SIZE,
                disk_type=config.DISK_TYPE_SYSTEM,
                vm_type=config.VM_TYPE_DESKTOP,
                display_type=config.DISPLAY_TYPE,
@@ -60,7 +60,8 @@ def install_vm(vm_name, vm_description, disk_interface,
     """
     LOGGER.info("Creating VM %s" % vm_name)
     return vms.createVm(True, vm_name, vm_description, cluster=cluster,
-                        nic=nic, storageDomainName=sd_name, size=size,
+                        nic=nic, storageDomainName=sd_name,
+                        provisioned_size=provisioned_size,
                         diskType=disk_type, volumeType=sparse,
                         volumeFormat=volume_format,
                         diskInterface=disk_interface, memory=memory,

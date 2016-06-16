@@ -30,7 +30,7 @@ def setUpModule():
     )
     vms.createVm(
         True, config.VM_NAME, '', cluster=config.CLUSTER_NAME[0],
-        storageDomainName=config.MASTER_STORAGE, size=config.GB,
+        storageDomainName=config.MASTER_STORAGE, provisioned_size=config.GB,
         network=config.MGMT_BRIDGE
     )
     templates.createTemplate(

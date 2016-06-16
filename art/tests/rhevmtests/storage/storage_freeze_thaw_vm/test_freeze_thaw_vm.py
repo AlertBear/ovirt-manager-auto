@@ -226,7 +226,7 @@ class TestCase14713(BaseTestCase):
         )
         if not ll_disks.addDisk(
             True, alias=self.disk_alias,
-            size=10 * config.GB, interface=config.VIRTIO,
+            provisioned_size=10 * config.GB, interface=config.VIRTIO,
             sparse=True, format=config.COW_DISK,
             storagedomain=self.storage_domain
         ):

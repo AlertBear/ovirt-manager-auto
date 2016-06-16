@@ -85,7 +85,7 @@ def import_export_prepare_setup(request, network_cleanup_fixture):
     assert ll_vms.createVm(
         positive=True, vmName=ieex.ie_vm, vmDescription="",
         cluster=ieex.cluster_0, storageDomainName=im_ex_conf.SD_NAME,
-        size=conf.VM_DISK_SIZE
+        provisioned_size=conf.VM_DISK_SIZE
     )
 
     assert hl_networks.createAndAttachNetworkSN(

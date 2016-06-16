@@ -30,8 +30,9 @@ NET_API = test_utils.get_api("network", "networks")
 CL_API = test_utils.get_api("cluster", "clusters")
 DC_API = test_utils.get_api("data_center", "datacenters")
 VNIC_PROFILE_API = test_utils.get_api('vnic_profile', 'vnicprofiles')
-LABEL_API = test_utils.get_api('label', 'labels')
+LABEL_API = test_utils.get_api('network_label', 'network_labels')
 HOST_NICS_API = test_utils.get_api('host_nic', 'host_nics')
+NF_API = test_utils.get_api("networkfilter", "networkfilters")
 PROC_NET_DIR = "/proc/net"
 NETWORK_NAME = "NET"
 ETHTOOL_OFFLOAD = ("tcp-segmentation-offload", "udp-fragmentation-offload")
@@ -65,10 +66,10 @@ def _prepareNetworkObject(**kwargs):
     for k in ['address', 'netmask', 'gateway']:
         if k in kwargs:
             ip[k] = kwargs.get(k)
-    ip and net.set_ip(apis_utils.data_st.IP(**ip))
+    ip and net.set_ip(apis_utils.data_st.Ip(**ip))
 
     if 'vlan_id' in kwargs:
-        net.set_vlan(apis_utils.data_st.VLAN(id=kwargs.get('vlan_id')))
+        net.set_vlan(apis_utils.data_st.Vlan(id=kwargs.get('vlan_id')))
 
     if 'usages' in kwargs:
         usages = kwargs.get('usages')
@@ -430,27 +431,26 @@ def check_ip_rule(vds_resource, subnet):
 
 def update_vnic_profile(name, network, **kwargs):
     """
-    Description: Update VNIC profile with provided parameters in kwargs
+    Update VNIC profile with provided parameters in kwargs
 
-    :param name: Name of vnic profile
-    :type name: str
-    :param network: Network name used by profile to be updated
-    :type network: str
-    :param kwargs: kwargs for vnic profile
-        :param cluster: Name of cluster in which the network is located
-        :type cluster: str
-        :param data_center: Name of the data center in which the network is
-        located
-        :type data_center: str
-        :param port_mirroring: Enable or disable port mirroring for profile
-        :type port_mirroring: bool
-        :param custom_properties: Custom properties for the profile
-        :type custom_properties: str
-        :param description: Description of vnic profile
-        :type description: str
-        :param pass_through: Enable or disable pass through mode
-        :type pass_through: bool
-    :return: True, if adding vnic profile was success, otherwise False
+    Args:
+        name (str): Name of vnic profile
+        network (str): Network name used by profile to be updated
+        kwargs (dict): kwargs for vnic profile
+
+    Keyword Args:
+        cluster (str): Name of cluster in which the network is located
+        data_center (str): Name of the data center in which the network is
+            located
+        port_mirroring (bool): Enable or disable port mirroring for profile
+        custom_properties (str): Custom properties for the profile
+        description (str): Description of vnic profile
+        pass_through (bool): Enable or disable pass through mode
+        network_filter (str): Network filter name to use. ('None') to update
+            vNIC profile with no network_filter
+
+    Returns:
+        bool: True, if adding vnic profile was success, otherwise False
     """
     log_info, log_error = ll.general.get_log_msg(
         action="update", obj_type="vNIC profile", obj_name=name, **kwargs
@@ -532,14 +532,14 @@ def get_vnic_profile_obj(name, network, cluster=None, data_center=None):
 
 
 def get_vnic_profile_attr(
-    name, network, cluster=None, data_center=None, attr_list=list()
+    name, network=None, cluster=None, data_center=None, attr_list=list()
 ):
     """
     Finds the VNIC profile object.
 
     Args:
         name (str): Name of the VNIC profile to find.
-        network (str: )Name of the network used by the VNIC profile.
+        network (str): Name of the network used by the VNIC profile.
         cluster (str): Name of the cluster in which the network is located.
         data_center (str): Name of the data center in which the network is
             located.
@@ -562,8 +562,8 @@ def get_vnic_profile_attr(
     for arg in attr_list:
         if arg == "network_obj":
             arg = "network"
-        attr_dict[arg] = getattr(vnic_profile_obj, arg)
-
+        arg_val = getattr(vnic_profile_obj, arg)
+        attr_dict[arg] = arg_val.name if hasattr(arg_val, 'name') else arg_val
     return attr_dict
 
 
@@ -650,7 +650,7 @@ def is_vnic_profile_exist(vnic_profile_name):
         "Searching for vNIC profile %s among all the profile on setup",
         vnic_profile_name
     )
-    all_profiles = VNIC_PROFILE_API.get(absLink=False)
+    all_profiles = get_vnic_profile_objects()
     for profile in all_profiles:
         if profile.get_name() == vnic_profile_name:
             return True
@@ -929,7 +929,7 @@ def getVnicProfileFromNetwork(
     :rtype: VnicProfile
     """
     network_obj = find_network(network, data_center, cluster).id
-    all_vnic_profiles = VNIC_PROFILE_API.get(absLink=False)
+    all_vnic_profiles = get_vnic_profile_objects()
     logger.info("Get vNIC profile object from %s", network)
     for vnic_profile_obj in all_vnic_profiles:
         if vnic_profile_obj.name == vnic_profile:
@@ -972,7 +972,7 @@ def create_label(label):
         *  *label* - label id to create label object
     **Return**: label object with provided id
     """
-    label_obj = apis_utils.data_st.Label()
+    label_obj = apis_utils.data_st.NetworkLabel()
     label_obj.set_id(label)
     return label_obj
 
@@ -1017,14 +1017,14 @@ def add_label(**kwargs):
                     network, data_center=datacenter, cluster=cluster
                 )
                 labels_href = NET_API.getElemFromLink(
-                    entity_obj, "labels", "label", get_href=True
+                    entity_obj, "networklabels", "networklabel", get_href=True
                 )
                 logger.info(
                     "Add label %s to network %s", label_obj.id, network
                 )
                 if not LABEL_API.create(
                     entity=label_obj, positive=True, collection=labels_href,
-                    coll_elm_name="label"
+                    coll_elm_name="network_label"
                 )[1]:
                     logger.error(
                         "Can't add label %s to the network %s", label_obj.id,
@@ -1036,7 +1036,8 @@ def add_label(**kwargs):
                 for nic in host_nic_dict.get(host):
                     entity_obj = ll.hosts.get_host_nic(host=host, nic=nic)
                     labels_href = HOST_NICS_API.getElemFromLink(
-                        entity_obj, "labels", "label", get_href=True
+                        entity_obj, "networklabels", "networklabel",
+                        get_href=True
                     )
                     logger.info(
                         "Add label %s to the NIC %s on Host %s",
@@ -1044,7 +1045,7 @@ def add_label(**kwargs):
                     )
                     if not LABEL_API.create(
                         entity=label_obj, positive=True,
-                        collection=labels_href, coll_elm_name="label"
+                        collection=labels_href, coll_elm_name="network_label"
                     )[1]:
                         logger.error(
                             "Can't add label %s to the NIC %s on Host %s",
@@ -1101,7 +1102,7 @@ def get_label_objects(**kwargs):
                 for nic in host_nic_dict.get(host):
                     entity_obj = ll.hosts.get_host_nic(host=host, nic=nic)
                     label_obj = HOST_NICS_API.getElemFromLink(
-                        entity_obj, "labels", "label"
+                        entity_obj, "networklabels", "network_label"
                     )
                     label_list.extend(label_obj)
         if networks:
@@ -1111,7 +1112,7 @@ def get_label_objects(**kwargs):
                     cluster=kwargs.get("cluster")
                 )
                 label_obj = NET_API.getElemFromLink(
-                    entity_obj, "labels", "label"
+                    entity_obj, "networklabels", "network_label"
                 )
                 label_list.extend(label_obj)
 
@@ -1330,8 +1331,9 @@ def update_qos_on_vnic_profile(datacenter, qos_name, vnic_profile_name,
 def get_vnic_profile_objects():
     """
     Get all vnic profiles objects from engine
-    :return: List of vnic objects
-    :rtype: list
+
+    Returns
+        list: List of vnic profiles objects
     """
     return VNIC_PROFILE_API.get(absLink=False)
 
@@ -1385,12 +1387,14 @@ def get_host_nic_labels(nic):
     """
     Get host NIC labels
 
-    :param nic: HostNIC object
+    :param nic: HostNic object
     :type nic: HostNic
     :return: List of host NIC labels
     :rtype: list
     """
-    return ll.hosts.HOST_NICS_API.getElemFromLink(nic, "labels", "label")
+    return ll.hosts.HOST_NICS_API.getElemFromLink(
+        nic, "networklabels", "network_label"
+    )
 
 
 def get_host_nic_label_objs_by_id(host_nics, labels_id):
@@ -1420,12 +1424,12 @@ def prepare_qos_on_net(qos_dict):
     :param qos_dict: QoS values to add
     :type qos_dict: dict
     :return: Qos object
-    :rtype: data_st.QoS()
+    :rtype: data_st.Qos()
     """
     # if we want to update qos to be unlimited need to send empty qos_dict,
     # otherwise update network with the QoS, given in the qos_dict
     if not qos_dict:
-        qos_obj = apis_utils.data_st.QoS()
+        qos_obj = apis_utils.data_st.Qos()
     else:
         qos_name = qos_dict.pop("qos_name")
         datacenter = qos_dict.pop("datacenter")
@@ -1464,26 +1468,24 @@ def _prepare_vnic_profile_object(kwargs):
     """
     Prepare vnic profile object for create or update
 
-    :param kwargs: kwargs for vnic profile
-        :param name: Name of vnic profile
-        :type name: str
-        :param network: Network name to be used by profile
-        :type network: str
-        :param cluster: Name of cluster in which the network is located
-        :type cluster: str
-        :param data_center: Name of the data center in which the network is
-        located
-        :type data_center: str
-        :param port_mirroring: Enable or disable port mirroring for profile
-        :type port_mirroring: bool
-        :param custom_properties: Custom properties for the profile
-        :type custom_properties: str
-        :param description: Description of vnic profile
-        :type description: str
-        :param pass_through: Enable or disable pass through mode
-        :type pass_through: bool
-    :return: vnic profile object
-    :rtype: VnicProfile
+    Args:
+        kwargs (dict): Params for vNIC profile object
+
+    Keyword Args:
+        name (str): Name of vnic profile
+        network (str): Network name to be used by profile
+        cluster (str): Name of cluster in which the network is located
+        data_center (str): Name of the data center in which the network is
+            located
+        port_mirroring (bool): Enable or disable port mirroring for profile
+        custom_properties (str): Custom properties for the profile
+        description (str): Description of vnic profile
+        pass_through (bool): Enable or disable pass through mode
+        network_filter (str): Network filter name to use. ('None') to set
+            vNIC profile with no network_filter
+
+    Returns:
+        VnicProfile: vNIC profile object
     """
     name = kwargs.get("name")
     port_mirroring = kwargs.get("port_mirroring")
@@ -1495,6 +1497,7 @@ def _prepare_vnic_profile_object(kwargs):
     pass_through = kwargs.get("pass_through")
     data_center = kwargs.get("data_center")
     cluster = kwargs.get("cluster")
+    network_filter = kwargs.get("network_filter")
 
     vnic_profile_obj = apis_utils.data_st.VnicProfile()
 
@@ -1536,4 +1539,24 @@ def _prepare_vnic_profile_object(kwargs):
         vp_pass_through.set_mode(mode)
         vnic_profile_obj.set_pass_through(vp_pass_through)
 
+    if network_filter:
+        if network_filter == "None":
+            network_filter_object = apis_utils.data_st.NetworkFilter()
+        else:
+            network_filters = get_supported_network_filters()
+            network_filter_object = network_filters.get(network_filter)
+        vnic_profile_obj.set_network_filter(network_filter_object)
+
     return vnic_profile_obj
+
+
+def get_supported_network_filters():
+    """
+    Get all supported network filters from engine
+
+    Returns:
+        dict: Dict with NetworkFilter name as key and NetworkFilter object
+            as value
+    """
+    network_filters = NF_API.get(absLink=False)
+    return dict((i.name, i) for i in network_filters.get_network_filter())

@@ -359,7 +359,7 @@ def get_vms_in_pool_by_states(vmpool, states):
     pool_vms = get_vms_in_pool(vm_pool_object)
     found_pool_vms = list()
     for vm in pool_vms:
-        if vm.get_status().get_state() in states:
+        if vm.get_status() in states:
             found_pool_vms.append(vm)
     return found_pool_vms
 

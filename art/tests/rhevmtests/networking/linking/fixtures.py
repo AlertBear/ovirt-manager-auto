@@ -17,19 +17,12 @@ from rhevmtests.networking.fixtures import (
 )  # flake8: noqa
 
 
-class Linking(NetworkFixtures):
-    """
-    Linking class
-    """
-    pass
-
-
 @pytest.fixture(scope="module")
 def prepare_setup_linking(request, network_cleanup_fixture):
     """
     Prepare setup
     """
-    linking = Linking()
+    linking = NetworkFixtures()
 
     def fin2():
         """
@@ -60,7 +53,7 @@ def teardown_all_cases_linking(request, prepare_setup_linking):
     """
     Teardown for all cases
     """
-    linking = Linking()
+    linking = NetworkFixtures()
     nic_list = request.node.cls.nic_list
     vm = request.node.cls.vm
 
@@ -115,7 +108,7 @@ def fixture_case_03(request, teardown_all_cases_linking):
     """
     Fixture for case03
     """
-    linking = Linking()
+    linking = NetworkFixtures()
     vm = request.node.cls.vm
     net = request.node.cls.net
     nic1 = request.node.cls.nic1
@@ -148,7 +141,7 @@ def fixture_case_04(request, teardown_all_cases_linking):
     """
     Fixture for case04
     """
-    linking = Linking()
+    linking = NetworkFixtures()
     vm = request.node.cls.vm
     net = request.node.cls.net
     nic1 = request.node.cls.nic1
@@ -193,7 +186,7 @@ def fixture_case_06(request, teardown_all_cases_linking):
     """
     Fixture for case06
     """
-    linking = Linking()
+    linking = NetworkFixtures()
     vm = request.node.cls.vm
     nic1 = request.node.cls.nic1
     net1 = request.node.cls.net1

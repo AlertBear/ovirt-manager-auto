@@ -65,8 +65,8 @@ def teardown_module(module):
     2) Release hosts CPU
     """
     for host_name in conf.HOSTS[:3]:
-        logger.info("Check if host %s has state down", host_name)
-        host_status = ll_hosts.getHostState(host_name) == conf.HOST_DOWN
+        logger.info("Check if host %s status is down", host_name)
+        host_status = ll_hosts.get_host_status(host_name) == conf.HOST_DOWN
         if host_status:
             logger.info(
                 "Wait %d seconds between fence operations",
@@ -174,18 +174,18 @@ class PowerSavingWithPM(u_lib.SlaTest):
         )
 
     @classmethod
-    def _check_host_status(cls, host, state):
+    def _check_host_status(cls, host, status):
         """
         Check that given host in given state
 
         :param host: host name
         :type host: str
-        :param state: host state
-        :type state: str
+        :param status: host status
+        :type status: str
         :return: True, if host is in correct state, otherwise False
         :rtype: bool
         """
-        return ll_hosts.getHostState(host).lower() == state
+        return ll_hosts.get_host_status(host).lower() == status
 
     @classmethod
     def _policy_control_flag(cls, host_name, flag):
@@ -379,10 +379,10 @@ class TestStartHostWhenNoReservedHostLeft(PowerSavingWithPM):
         logger.info("Wait until one host turned off")
         self.assertTrue(
             self._check_hosts_num_with_status(1, conf.HOST_DOWN),
-            "Still no host in state DOWN"
+            "Still no host in status DOWN"
         )
-        logger.info("Check what host have state DOWN")
-        host_status = ll_hosts.getHostState(conf.HOSTS[1]) == conf.HOST_UP
+        logger.info("Check what host has status DOWN")
+        host_status = ll_hosts.get_host_status(conf.HOSTS[1]) == conf.HOST_UP
         host_up = conf.HOSTS[1] if host_status else conf.HOSTS[2]
         additional_vm = None
         for vm_name, vm_params in self.vm_host_d.iteritems():

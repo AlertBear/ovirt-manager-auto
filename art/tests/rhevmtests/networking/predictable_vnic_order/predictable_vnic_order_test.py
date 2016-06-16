@@ -12,7 +12,7 @@ import pytest
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import helper
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import fixture_case01
 
@@ -28,7 +28,6 @@ class TestPredictableVnicOrder01(NetworkTest):
     __test__ = True
 
     @polarion("RHEVM3-4095")
-    @bz({"1340648": {}})
     def test_check_vnics_order_vm(self):
         """
         Get vNICs names and MACs before start VM

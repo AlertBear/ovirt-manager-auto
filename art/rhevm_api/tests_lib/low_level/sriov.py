@@ -173,7 +173,7 @@ class SriovNicVF(SriovNic):
         Get the PF of the VF
 
         Returns:
-            HostNIC: PF NIC object
+            HostNic: PF NIC object
         """
         logger.info("Get PF for %s", self.nic_name)
         return self.nic_obj.get_physical_function()
@@ -203,7 +203,7 @@ class SriovNicPF(SriovNic):
 
     def _update_nic_obj(self):
         """
-        Update HostNIC object if HostNIC had changed
+        Update HostNic object if HostNic had changed
         """
         if self.update_nic:
             self.nic_obj = ll_hosts.get_host_nic(

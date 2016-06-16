@@ -70,9 +70,11 @@ class TestCase11628(TestCase):
         disk_name, disk_size = "disk_%s_1" % self.polarion_test_case, GB
 
         assert disks.addDisk(
-            True, alias=disk_name, shareable=False, bootable=False,
-            size=disk_size, storagedomain=self.storage_domain, sparse=False,
-            format=config.RAW_DISK, interface=config.INTERFACE_IDE)
+            True, alias=disk_name, shareable=False,
+            bootable=False, provisioned_size=disk_size,
+            storagedomain=self.storage_domain, sparse=False,
+            format=config.RAW_DISK, interface=config.INTERFACE_IDE
+        )
 
         assert disks.wait_for_disks_status(disk_name)
 

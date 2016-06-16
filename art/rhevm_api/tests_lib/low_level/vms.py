@@ -220,9 +220,9 @@ def _prepareVmObject(**kwargs):
     add = kwargs.pop("add", False)
     description = kwargs.pop("description", None)
     if description is None or description == "":
-        vm = data_st.VM(name=kwargs.pop("name", None))
+        vm = data_st.Vm(name=kwargs.pop("name", None))
     else:
-        vm = data_st.VM(name=kwargs.pop("name", None), description=description)
+        vm = data_st.Vm(name=kwargs.pop("name", None), description=description)
 
     # snapshot
     snapshot_name = kwargs.pop("snapshot", None)
@@ -271,11 +271,11 @@ def _prepareVmObject(**kwargs):
     vcpu_pinning = kwargs.pop("vcpu_pinning", None)
     cpu_mode = kwargs.pop("cpu_mode", None)
     if (
-        cpu_socket or cpu_cores
-        or vcpu_pinning is not None
-        or cpu_mode is not None
+            cpu_socket or cpu_cores or
+            vcpu_pinning is not None or
+            cpu_mode is not None
     ):
-        cpu = data_st.CPU()
+        cpu = data_st.Cpu()
         if cpu_socket or cpu_cores:
             cpu.set_topology(
                 topology=data_st.CpuTopology(
@@ -287,12 +287,14 @@ def _prepareVmObject(**kwargs):
         elif vcpu_pinning:
             cpu.set_cpu_tune(
                 data_st.CpuTune(
-                    [
-                        data_st.VCpuPin(
-                            elm.keys()[0],
-                            elm.values()[0]
-                        ) for elm in vcpu_pinning
-                    ]
+                    data_st.VcpuPins(
+                        vcpu_pin=[
+                            data_st.VcpuPin(
+                                elm.keys()[0],
+                                elm.values()[0]
+                            ) for elm in vcpu_pinning
+                        ]
+                    )
                 )
             )
         if cpu_mode is not None and cpu_mode == "":
@@ -320,7 +322,13 @@ def _prepareVmObject(**kwargs):
     if boot_seq:
         if isinstance(boot_seq, basestring):
             boot_seq = boot_seq.split()
-        os_type.set_boot([data_st.Boot(dev=boot_dev) for boot_dev in boot_seq])
+        os_type.set_boot(
+            boot=data_st.Boot(
+                devices=data_st.devicesType(
+                    device=boot_seq
+                )
+            )
+        )
         apply_os = True
     if apply_os:
         vm.set_os(os_type)
@@ -379,7 +387,7 @@ def _prepareVmObject(**kwargs):
             "placement_host_any_host_in_cluster"
         ]:
             aff_host = HOST_API.find(placement_host)
-            placement_policy.set_host(data_st.Host(id=aff_host.id))
+            placement_policy.set_hosts(data_st.Hosts(host=[aff_host]))
         if placement_hosts:
             hosts = [
                 data_st.Host(id=HOST_API.find(host).get_id())
@@ -446,7 +454,12 @@ def _prepareVmObject(**kwargs):
         vm.set_initialization(initialization)
 
     # timezone
-    vm.timezone = kwargs.pop("timezone", None)
+    time_zone = kwargs.pop("time_zone", None)
+    time_zone_offset = kwargs.pop("time_zone_offset", None)
+    if time_zone is not None or time_zone_offset is not None:
+        vm.set_time_zone(data_st.TimeZone(
+            name=time_zone, utc_offset=time_zone_offset)
+        )
 
     # cpu_profile
     cpu_profile_id = kwargs.pop("cpu_profile_id", None)
@@ -456,7 +469,7 @@ def _prepareVmObject(**kwargs):
     # virtio_scsi
     virtio_scsi = kwargs.pop("virtio_scsi", None)
     if virtio_scsi is not None:
-        vm.set_virtio_scsi(data_st.VirtIO_SCSI(enabled=virtio_scsi))
+        vm.set_virtio_scsi(data_st.VirtioScsi(enabled=virtio_scsi))
 
     # numa mode
     numa_mode = kwargs.pop("numa_mode", None)
@@ -715,8 +728,10 @@ def updateVm(positive, vm, **kwargs):
     :type watchdog_model: str
     :param watchdog_action: action of watchdog card
     :type watchdog_action: str
-    :param timezone: set to timezone out of product possible timezones
-    :type timezone: str
+    :param time_zone: set to timezone out of product possible timezones
+    :type time_zone: str
+    :param time_zone_offset: set to utc_offset out of product possible offsets
+    :type time_zone_offset: str
     :param compare: disable or enable validation for update
     :type compare: bool
     :param cpu_profile_id: cpu profile id
@@ -775,7 +790,7 @@ def removeVm(positive, vm, **kwargs):
         body = data_st.Action(force=True)
 
     vm_obj = VM_API.find(vm)
-    vm_status = vm_obj.get_status().get_state().lower()
+    vm_status = vm_obj.get_status().lower()
     stop_vm = kwargs.pop('stopVM', 'false')
     if str(stop_vm).lower() == 'true' and vm_status != ENUMS['vm_state_down']:
         if not stopVm(positive, vm):
@@ -809,7 +824,7 @@ def removeVmAsynch(positive, tasksQ, resultsQ, stopVmBool=False):
     status = False
     try:
         vmObj = VM_API.find(vm)
-        if stopVmBool and vmObj.status.state.lower() != 'down':
+        if stopVmBool and vmObj.get_status().lower() != 'down':
             if not stopVm(positive, vm):
                 logger.error("failed to stop vm %s before async removal", vm)
                 return
@@ -1159,7 +1174,7 @@ def detachVm(positive, vm):
     log_info, log_error = ll_general.get_log_msg(
         action="detach", obj_type=VM, obj_name=vm, positive=positive
     )
-    expectedStatus = vmObj.get_status().get_state()
+    expectedStatus = vmObj.get_status()
 
     status = bool(VM_API.syncAction(vmObj, "detach", positive))
     logger.info(log_info)
@@ -1240,13 +1255,12 @@ def _getVmFirstDiskByName(vm, diskName, idx=0):
     return found[idx]
 
 
-def addDisk(positive, vm, size, wait=True, storagedomain=None,
+def addDisk(positive, vm, provisioned_size, wait=True, storagedomain=None,
             timeout=VM_IMAGE_OPT_TIMEOUT, **kwargs):
     '''
     Description: add disk to vm
     Parameters:
         * vm - vm name
-        * size - disk size
         * wait - wait until finish if True or exit without waiting
         * storagedomain - storage domain name(relevant only for the first disk)
         * timeout - waiting timeout
@@ -1268,7 +1282,8 @@ def addDisk(positive, vm, size, wait=True, storagedomain=None,
     Return: status (True if disk was added properly, False otherwise)
     '''
     vmObj = VM_API.find(vm)
-    disk = data_st.Disk(size=size, format=ENUMS['format_cow'],
+    disk = data_st.Disk(provisioned_size=provisioned_size,
+                        format=ENUMS['format_cow'],
                         interface=ENUMS['interface_ide'], sparse=True,
                         alias=kwargs.pop('alias', None),
                         description=kwargs.pop('description', None),
@@ -1424,7 +1439,7 @@ def checkVmHasCdromAttached(positive, vmName):
 
 
 def _prepareNicObj(**kwargs):
-    nic_obj = data_st.NIC()
+    nic_obj = data_st.Nic()
     vnic_profile_obj = data_st.VnicProfile()
 
     if 'name' in kwargs:
@@ -1434,10 +1449,7 @@ def _prepareNicObj(**kwargs):
         nic_obj.set_interface(kwargs.get('interface'))
 
     if 'mac_address' in kwargs:
-        nic_obj.set_mac(data_st.MAC(address=kwargs.get('mac_address')))
-
-    if 'active' in kwargs:
-        nic_obj.set_active(kwargs.get('active'))
+        nic_obj.set_mac(data_st.Mac(address=kwargs.get('mac_address')))
 
     if 'plugged' in kwargs:
         nic_obj.set_plugged(str(kwargs.get('plugged')).lower())
@@ -1520,7 +1532,7 @@ def addNic(positive, vm, **kwargs):
     """
     nic_name = kwargs.get("name")
     vm_obj = VM_API.find(vm)
-    expected_status = vm_obj.get_status().get_state()
+    expected_status = vm_obj.get_status()
 
     nic_obj = _prepareNicObj(vm=vm, **kwargs)
     nics_coll = get_vm_nics(vm)
@@ -1561,7 +1573,7 @@ def updateVmDisk(positive, vm, disk, **kwargs):
     :type bootable: bool
     :param shareable: Specifies whether the disk should be shareable
     :type shareable: bool
-    :param size: New disk size in bytes
+    :param provisioned_size: New disk provisioned_size in bytes
     :type size: int
     :param quota: The disk's quote in bytes
     :type quota: str
@@ -1631,7 +1643,7 @@ def removeNic(positive, vm, nic):
     )
     vm_obj = VM_API.find(vm)
     nic_obj = get_vm_nic(vm, nic)
-    expected_status = vm_obj.get_status().get_state()
+    expected_status = vm_obj.get_status()
 
     logger.info(log_info)
     status = NIC_API.delete(nic_obj, positive)
@@ -1979,7 +1991,7 @@ def runVmOnce(
     # TODO Consider merging this method with the startVm.
     vm_obj = VM_API.find(vm)
     action_params = {}
-    vm_for_action = data_st.VM()
+    vm_for_action = data_st.Vm()
     if display_type:
         vm_for_action.set_display(data_st.Display(type_=display_type))
 
@@ -1990,8 +2002,8 @@ def runVmOnce(
         if initialization:
             vm_for_action.set_initialization(initialization)
     if cdrom_image:
-        cdrom = data_st.CdRom()
-        vm_cdroms = data_st.CdRoms()
+        cdrom = data_st.Cdrom()
+        vm_cdroms = data_st.Cdroms()
         cdrom.set_file(data_st.File(id=cdrom_image))
         vm_cdroms.add_cdrom(cdrom)
         vm_for_action.set_cdroms(vm_cdroms)
@@ -2005,14 +2017,24 @@ def runVmOnce(
 
     if boot_dev:
         os_type = data_st.OperatingSystem()
-        for dev in boot_dev.split(","):
-            os_type.add_boot(data_st.Boot(dev=dev))
+        os_type.set_boot(
+            boot=data_st.Boot(
+                devices=data_st.devicesType(
+                    device=boot_dev.split(",")
+                )
+            )
+        )
         vm_for_action.set_os(os_type)
 
     if host:
-        host_obj = HOST_API.find(host)
-        placement_policy = data_st.VmPlacementPolicy(host=host_obj)
-        vm_for_action.set_placement_policy(placement_policy)
+        vm_policy = data_st.VmPlacementPolicy()
+        vm_hosts = data_st.Hosts()
+        vm_hosts.add_host(HOST_API.find(host))
+        vm_policy.set_hosts(vm_hosts)
+        vm_for_action.set_placement_policy(vm_policy)
+        # host_obj = HOST_API.find(host)
+        # placement_policy = data_st.VmPlacementPolicy(hosts=host_obj)
+        # vm_for_action.set_placement_policy(placement_policy)
 
     if domainName:
         domain = data_st.Domain()
@@ -2260,7 +2282,7 @@ def exportVm(
     """
     vm_obj = VM_API.find(vm)
     sd = data_st.StorageDomain(name=storagedomain)
-    expected_status = vm_obj.status.state
+    expected_status = vm_obj.get_status()
     action_params = dict(
         storage_domain=sd, exclusive=exclusive,
         discard_snapshots=discard_snapshots
@@ -2309,7 +2331,7 @@ def importVm(
     )
     vm_obj = VM_API.find(vm, collection=sd_vms)
 
-    expected_status = vm_obj.get_status().get_state()
+    expected_status = vm_obj.get_status()
     expected_name = vm_obj.get_name()
 
     sd = data_st.StorageDomain(name=import_storagedomain)
@@ -2325,7 +2347,7 @@ def importVm(
     if opts['engine'] in ('cli', 'sdk'):
         action_name = 'import_vm'
 
-    new_vm = data_st.VM()
+    new_vm = data_st.Vm()
     if name:
         new_vm.set_name(name)
         clone = True
@@ -2364,7 +2386,7 @@ def moveVm(positive, vm, storagedomain, wait=True):
     Return: status (True if vm was moved properly, False otherwise)
     '''
     vmObj = VM_API.find(vm)
-    expectedStatus = vmObj.status.state
+    expectedStatus = vmObj.get_status()
     storageDomainId = STORAGE_DOMAIN_API.find(storagedomain).id
     sd = data_st.StorageDomain(id=storageDomainId)
 
@@ -2398,7 +2420,7 @@ def changeCDWhileRunning(vm_name, cdrom_image):
             False otherwise)
     '''
     cdroms = getCdRomsObjList(vm_name)
-    newCdrom = data_st.CdRom()
+    newCdrom = data_st.Cdrom()
     newCdrom.set_file(data_st.File(id=cdrom_image))
 
     cdrom, status = CDROM_API.update(cdroms[0], newCdrom, True, current=True)
@@ -2415,7 +2437,7 @@ def attach_cdrom_vm(positive, vm_name, cdrom_image):
     Returns: True in case of success/False otherwise
     """
     cdroms = getCdRomsObjList(vm_name)
-    newCdrom = data_st.CdRom()
+    newCdrom = data_st.Cdrom()
     newCdrom.set_file(data_st.File(id=cdrom_image))
 
     cdrom, status = CDROM_API.update(cdroms[0], newCdrom, positive)
@@ -2432,7 +2454,7 @@ def eject_cdrom_vm(vm_name):
     :rtype bool
     """
     cdroms = getCdRomsObjList(vm_name)
-    newCdrom = data_st.CdRom()
+    newCdrom = data_st.Cdrom()
     # Eject action is done through setting the File property to empty
     newCdrom.set_file(data_st.File())
 
@@ -2661,7 +2683,8 @@ def checkVmStatistics(positive, vm):
 
 def createVm(
     positive, vmName, vmDescription=None, cluster='Default', nic=None,
-    nicType=None, mac_address=None, storageDomainName=None, size=None,
+    nicType=None, mac_address=None, storageDomainName=None,
+    provisioned_size=None,
     diskType=ENUMS['disk_type_data'], volumeType='true',
     volumeFormat=ENUMS['format_cow'], diskActive=True,
     diskInterface=ENUMS['interface_virtio'], bootable='true',
@@ -2694,8 +2717,8 @@ def createVm(
     :type nic: str
     :param storageDomainName: storage domain name
     :type storageDomainName: str
-    :param size: size of disk (in bytes)
-    :type size: int
+    :param provisioned_size: size of disk (in bytes)
+    :type provisioned_size: int
     :param diskType: disk type (SYSTEM, DATA)
     :type diskType: str
     :param volumeType: true means sparse (thin provision),
@@ -2821,8 +2844,8 @@ def createVm(
 
     if template == "Blank" and storageDomainName and templateUuid is None:
         if not addDisk(
-            positive, vm=vmName, size=size, type=diskType,
-            storagedomain=storageDomainName, sparse=volumeType,
+            positive, vm=vmName, provisioned_size=provisioned_size,
+            type=diskType, storagedomain=storageDomainName, sparse=volumeType,
             interface=diskInterface, format=volumeFormat,
             bootable=bootable, quota=disk_quota,
             wipe_after_delete=wipe_after_delete, active=diskActive
@@ -3338,19 +3361,35 @@ def get_vm_nic_linked(vm, nic='nic1', positive=True):
     return True
 
 
-def getVmNicNetwork(vm, nic='nic1'):
-    '''
-    Check if NIC contains network
-    **Author**: gcheresh
-    **Parameters**:
-        *  *vm* - vm name
-        *  *nic* - nic name
-    **Returns**: True if NIC contains non-empty network object
-                or False for Empty network object
-    '''
-    nic_obj = get_vm_nic(vm, nic)
+def is_vm_nic_have_profile(vm, nic='nic1'):
+    """
+    Check if vNIC contains vnic profile
 
-    return bool(nic_obj.get_network())
+    Args:
+        vm (str): VM name
+        nic (str): vNIC name
+
+    Returns:
+        bool: True if NIC contains non-empty network object or False for
+            Empty network object
+    """
+    nic_obj = get_vm_nic(vm, nic)
+    return bool(nic_obj.get_vnic_profile())
+
+
+def get_vm_nic_vnic_profile(vm, nic):
+    """
+    Get vNIC vNIC_profile object
+
+    Args:
+        vm (str): VM name
+        nic (str): vNIC name
+
+    Returns:
+        VnicProfile: vVnicProfile object if vNIC have one else None
+    """
+    nic_obj = get_vm_nic(vm, nic)
+    return nic_obj.get_vnic_profile()
 
 
 def check_vm_nic_profile(vm, vnic_profile_name="", nic='nic1'):
@@ -3450,7 +3489,7 @@ def checkVmState(positive, vmName, state, host=None):
              False otherwise
     '''
     vmObj = VM_API.find(vmName)
-    general_check = True if vmObj.get_status().get_state() == state else False
+    general_check = True if vmObj.get_status() == state else False
     if host:
         hostObj = HOST_API.find(host)
         return positive == (vmObj.host.id == hostObj.id and general_check)
@@ -3514,14 +3553,12 @@ def waitForVmsDisks(vm, disks_status=ENUMS['disk_state_ok'], timeout=600,
     start_time = time.time()
     disks_to_wait = [disk for disk in
                      DISKS_API.getElemFromLink(vm, get_href=False)
-                     if disk.get_status() is not None and
-                     disk.get_status().get_state() != disks_status]
+                     if disk.get_status() != disks_status]
     while disks_to_wait and time.time() - start_time < timeout:
         time.sleep(sleep)
         disks_to_wait = [disk for disk in
                          DISKS_API.getElemFromLink(vm, get_href=False)
-                         if disk.get_status() is not None and
-                         disk.get_status().get_state() != disks_status]
+                         if disk.get_status() != disks_status]
 
     return False if disks_to_wait else True
 
@@ -3654,7 +3691,7 @@ def migrateVmsSimultaneously(positive, vm_name, range_low, range_high, hosts,
         # Wait for all migrated VMs are UP.
         def vmsUp(state):
             StateResults = (
-                VM_API.find(vm.name).status.state.lower() == state
+                VM_API.find(vm.name).get_status().lower() == state
                 for vm in vmsObjs)
             return reduce(and_, StateResults)
 
@@ -3732,7 +3769,7 @@ def move_vm_disk(
     if wait:
         for disk in TimeoutingSampler(timeout, sleep, getVmDisk, vm_name,
                                       disk_name):
-            if disk.status.state == ENUMS['disk_state_ok']:
+            if disk.get_status() == ENUMS['disk_state_ok']:
                 return
 
 
@@ -3756,7 +3793,7 @@ def wait_for_vm_states(
     sampler = TimeoutingSampler(timeout, sleep, VM_API.find, vm_name)
     logger.info("Wait for %s to be in states: %s", vm_name, states)
     for vm in sampler:
-        vm_state = vm.status.state
+        vm_state = vm.get_status()
         logger.info("Current %s state is: %s", vm_name, vm_state)
         if vm_state in states:
             logger.info("%s states is %s", vm_name, vm_state)
@@ -3784,7 +3821,7 @@ def start_vms(
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for machine in vm_list:
             vm_obj = VM_API.find(machine)
-            if vm_obj.get_status().get_state() == ENUMS['vm_state_down']:
+            if vm_obj.get_status() == ENUMS['vm_state_down']:
                 logger.info("Starting vm %s", machine)
                 results.append(
                     executor.submit(
@@ -4168,7 +4205,7 @@ def get_vm_state(vm_name):
     Return: state of vm
     """
     vm_obj = VM_API.find(vm_name)
-    return vm_obj.get_status().get_state()
+    return vm_obj.get_status()
 
 
 def is_vm_run_on_host(vm_name, host_name, **kwargs):
@@ -4363,7 +4400,7 @@ def get_vm_boot_sequence(vm_name):
     """
     vm_obj = get_vm_obj(vm_name)
     boots = vm_obj.get_os().get_boot()
-    return [boot.get_dev() for boot in boots]
+    return boots.get_devices().get_device()
 
 
 def remove_all_vms_from_cluster(cluster_name, skip=[], wait=False):
@@ -4743,7 +4780,7 @@ def live_migrate_vm(vm_name, timeout=VM_IMAGE_OPT_TIMEOUT*2, wait=True,
     """
     logger.info("Start Live Migrating vm %s disks", vm_name)
     vm_obj = VM_API.find(vm_name)
-    if vm_obj.get_status().get_state() == ENUMS['vm_state_down']:
+    if vm_obj.get_status() == ENUMS['vm_state_down']:
         logger.warning("Storage live migrating vm %s is not in up status",
                        vm_name)
         if ensure_on:
@@ -5175,7 +5212,7 @@ def run_vms_once(vms, max_workers=None, **kwargs):
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for vm_name in vms:
             vm_obj = VM_API.find(vm_name)
-            if vm_obj.get_status().get_state() == ENUMS['vm_state_down']:
+            if vm_obj.get_status() == ENUMS['vm_state_down']:
                 logger.info("Starting vm %s", vm_name)
                 results.append(
                     executor.submit(
@@ -5397,7 +5434,7 @@ def __prepare_numa_node_object(
         v_numa_node_obj.set_numa_node_pins(numa_node_pins_obj)
 
     if cores:
-        cpu_obj = data_st.CPU()
+        cpu_obj = data_st.Cpu()
         cores_obj = data_st.Cores()
         for core in cores:
             core_obj = data_st.Core(index=core)

@@ -766,7 +766,6 @@ class TestNetLabels06(NetworkTest):
         6) Check that network is not attached to Host NIC
         7) Check that network doesn't exist in DC
         """
-
         testflow.step(
             "Remove labeled network %s from cluster %s",
             self.net_1, self.cl_1
@@ -806,12 +805,12 @@ class TestNetLabels06(NetworkTest):
             "reattaching it to the Cluster %s", self.net_1, self.cl_1
         )
 
-        self.assertTrue(
-            ll_networks.check_network_on_nic(
-                network=self.net_1, host=conf.HOST_0_NAME,
-                nic=conf.HOST_0_NICS[1]
-            )
+        sample = apis_utils.TimeoutingSampler(
+            timeout=conf.SAMPLER_TIMEOUT, sleep=1,
+            func=ll_networks.check_network_on_nic,
+            network=self.net_1, host=conf.HOST_0_NAME, nic=conf.HOST_0_NICS[1]
         )
+        assert sample.waitForFuncStatus(result=True)
 
         testflow.step(
             "Remove network %s from the DC %s", self.net_1, self.dc_1
@@ -1038,7 +1037,7 @@ class TestNetLabels09(NetworkTest):
                     positive=positive, network_on_nic=network_on_nic,
                     label=self.label_1, networks=[net], host_nic_dict={
                         conf.HOST_0_NAME: [conf.HOST_0_NICS[1]]
-                    }, attach_to__host=False, nic_list=[conf.HOST_0_NICS[1]]
+                    }, attach_to_host=False, nic_list=[conf.HOST_0_NICS[1]]
                 )
             )
 
@@ -1066,6 +1065,6 @@ class TestNetLabels09(NetworkTest):
                     positive=positive, network_on_nic=network_on_nic,
                     label=self.label_2, networks=[net], host_nic_dict={
                         conf.HOST_0_NAME: [conf.HOST_0_NICS[2]]
-                    }, attach_to__host=False, nic_list=[conf.HOST_0_NICS[2]]
+                    }, attach_to_host=False, nic_list=[conf.HOST_0_NICS[2]]
                 )
             )

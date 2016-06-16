@@ -212,7 +212,7 @@ def activate_host_if_not_up(host):
     Returns:
         bool: True if host was activated properly False otherwise
     """
-    if not ll_hosts.getHostState(host) == ENUMS["host_state_up"]:
+    if not ll_hosts.get_host_status(host) == ENUMS["host_state_up"]:
         LOGGER.info(
             "Host %s status is %s. activating", host, ENUMS["host_state_up"]
         )

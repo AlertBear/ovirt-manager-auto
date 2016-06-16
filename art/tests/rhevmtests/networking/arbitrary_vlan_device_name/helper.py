@@ -5,13 +5,13 @@
 Helper for ArbitraryVlanDeviceName job
 """
 import logging
-from random import randint
 
 import libvirt
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import rhevmtests.networking.config as conf
+import rhevmtests.networking.helper as net_helper
 from art.rhevm_api.tests_lib.low_level import events
 
 logger = logging.getLogger("ArbitraryVlanDeviceName_Helper")
@@ -31,7 +31,13 @@ def job_tear_down():
     remove_vlan_and_refresh_capabilities(
         host_obj=host_obj, vlan_name=vlans_to_remove
     )
-    virsh_delete_bridges(host_obj=host_obj, bridges=conf.BRIDGE_NAMES)
+    for br in conf.BRIDGE_NAMES:
+        if net_helper.virsh_is_network_exists(
+            vds_resource=conf.VDS_0_HOST, network=br
+        ):
+            net_helper.virsh_delete_network(
+                vds_resource=conf.VDS_0_HOST, network=br
+            )
 
     for bridge in conf.BRIDGE_NAMES:
         logger.info("Checking if %s exists on %s", bridge, host_name)
@@ -99,63 +105,6 @@ def host_delete_vlan(host_obj, vlan_name):
         )
         return False
     return True
-
-
-def virsh_add_bridge(host_obj, bridge):
-    """
-    Add bridge to virsh via xml file
-
-    :param host_obj: resources.VDS object
-    :type host_obj: VDS
-    :param bridge: Bridge name
-    :type bridge: str
-    :return: True/False
-    :rtype: bool
-    """
-    host_ip = host_obj.ip
-    libvirt_conn = get_libvirt_connection(host_ip)
-
-    rand_uuid = randint(1000, 9999)
-    vdsm_bridge_name = "vdsm-{0}".format(bridge)
-    vdsm_bridge_line = "<name>{0}</name>".format(vdsm_bridge_name)
-    bridge_name_line = "<bridge name='{0}'/>".format(bridge)
-    uuid_line = "<uuid>a2de77bc-{0}-4ec5-a37a-f8f2dbdf91c9</uuid>".format(
-        str(rand_uuid)
-    )
-    xml_str = ("<network>{0}{1}<forward mode='bridge'/>{2}</network>".format(
-        vdsm_bridge_line, uuid_line, bridge_name_line))
-    try:
-        libvirt_conn.networkCreateXML(xml_str)
-    except libvirt.libvirtError as e:
-        logger.error("Failed to add network to libvirt from XML. ERR: %s", e)
-        return False
-
-    if not get_bridge_from_virsh(host_obj, bridge):
-        logger.error("%s not found among libvirt networks", vdsm_bridge_name)
-        return False
-
-    return True
-
-
-def virsh_delete_bridges(host_obj, bridges, undefine=False):
-    """
-    Delete bridge to virsh via xml file
-
-    :param host_obj: resources.VDS object
-    :type host_obj: VDS
-    :param bridges: Bridge name
-    :type bridges: list
-    :param undefine: Flag if undefine bridge is needed
-    :type undefine: bool
-    """
-    bridges = filter(
-        None, [get_bridge_from_virsh(host_obj, b) for b in bridges]
-    )
-    for br in bridges:
-        logger.info("Deleting %s from virsh", br.name())
-        br.destroy()
-        if undefine:
-            br.undefine()
 
 
 def get_libvirt_connection(host):
@@ -233,7 +182,9 @@ def add_bridge_on_host_and_virsh(host_obj, bridge, network):
             return False
 
         logger.info("Adding %s to %s via virsh", br, host_name)
-        if not virsh_add_bridge(host_obj=host_obj, bridge=br):
+        if not net_helper.virsh_add_network(
+            vds_resource=conf.VDS_0_HOST, network=br
+        ):
             return False
 
     refresh_capabilities(host=host_name)
@@ -252,7 +203,9 @@ def delete_bridge_on_host_and_virsh(host_obj, bridge):
     """
     host_name = ll_hosts.get_host_name_from_engine(host_obj)
     logger.info("Delete %s on %s", bridge, host_name)
-    virsh_delete_bridges(host_obj=host_obj, bridges=[bridge])
+    net_helper.virsh_delete_network(
+        vds_resource=conf.VDS_0_HOST, network=bridge
+    )
     logger.info("Delete %s on %s", bridge, host_name)
     if not host_obj.network.delete_bridge(bridge=bridge):
         raise conf.NET_EXCEPTION(
@@ -345,25 +298,3 @@ def is_interface_on_host(host_obj, interface):
     if rc:
         return False
     return True
-
-
-def get_bridge_from_virsh(host_obj, bridge):
-    """
-    Check if bridge exist in virsh
-
-    :param host_obj: resources.VDS object
-    :type host_obj: VDS
-    :param bridge: Bridge name
-    :type bridge: str
-    :return: Network if found else None
-    :rtype: object
-    """
-    host_ip = host_obj.ip
-    vdsm_bridge_name = "vdsm-{0}".format(bridge)
-    libvirt_connection = get_libvirt_connection(host_ip)
-    all_bridges = libvirt_connection.listAllNetworks(0)
-    try:
-        return [i for i in all_bridges if vdsm_bridge_name == i.name()][0]
-    except IndexError:
-        logger.warning("%s not found in virsh", bridge)
-        return None

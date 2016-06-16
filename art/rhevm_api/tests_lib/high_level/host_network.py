@@ -245,8 +245,8 @@ def setup_networks(host_name, **kwargs):
     removed_bonds = data_st.HostNics()
     network_attachments = data_st.NetworkAttachments()
     removed_network_attachments = data_st.NetworkAttachments()
-    labels = data_st.Labels()
-    removed_labels = data_st.Labels()
+    labels = data_st.NetworkLabels()
+    removed_labels = data_st.NetworkLabels()
     synchronized_network_attachments = data_st.NetworkAttachments()
     host = ll_hosts.HOST_API.find(host_name)
 
@@ -346,19 +346,22 @@ def clean_host_interfaces(host_name):
             [i.get_id() for i in ll_networks.get_host_nic_labels(nic=nic)]
         )
 
-    kwargs = {
-        "remove": {
-            NETWORKS: networks,
-            BONDS: bonds,
-            LABELS: labels
-        }
-    }
     if not ll_host_network.remove_unmanaged_networks(host_name):
         return False
-    res = setup_networks(host_name, **kwargs)
-    if not res:
-        logger.error("Failed to clean %s interfaces", host_name)
-    return res
+
+    if networks + bonds + labels:
+        kwargs = {
+            "remove": {
+                NETWORKS: networks,
+                BONDS: bonds,
+                LABELS: labels
+            }
+        }
+        res = setup_networks(host_name, **kwargs)
+        if not res:
+            logger.error("Failed to clean %s interfaces", host_name)
+            return False
+    return True
 
 
 def get_attached_networks_names_from_host_nic(host_name, nic):

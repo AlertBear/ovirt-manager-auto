@@ -65,8 +65,10 @@ class TestCase11627(TestCase):
 
         assert disks.addDisk(
             True, alias=disk_name, shareable=False, bootable=False,
-            size=disk_size, storagedomain=self.storage_domain, sparse=False,
-            format=config.RAW_DISK, interface=config.INTERFACE_IDE)
+            provisioned_size=disk_size, storagedomain=self.storage_domain,
+            sparse=False, format=config.RAW_DISK,
+            interface=config.INTERFACE_IDE
+        )
 
         assert disks.wait_for_disks_status(disk_name)
 

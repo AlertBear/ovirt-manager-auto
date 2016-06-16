@@ -226,6 +226,7 @@ class HTTPProxy(object):
                                           response['reason']))
         for s in response['link'].split(','):
             self.__parse_link(s, links)
+        links['capabilities'] = '%scapabilities' % self.opts['uri']
         return links
 
 

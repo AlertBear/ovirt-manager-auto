@@ -36,7 +36,7 @@ disk_kwargs = {
     "interface": config.DISK_INTERFACE_VIRTIO,
     "alias": '',
     "format": config.DISK_FORMAT_RAW,
-    "size": config.DISK_SIZE,
+    "provisioned_size": config.DISK_SIZE,
     "bootable": False,
     "storagedomain": '',
     "shareable": False,

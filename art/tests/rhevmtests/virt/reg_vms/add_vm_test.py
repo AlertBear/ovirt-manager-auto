@@ -131,7 +131,7 @@ class AddVm(VirtTest):
         vm_parameters = self.vm_parameters.copy()
         vm_parameters['name'] = self.vm_name
         vm_parameters['disk_type'] = config.DISK_TYPE_DATA
-        vm_parameters['size'] = config.TWO_GB
+        vm_parameters['provisioned_size'] = config.TWO_GB
         vm_parameters['format'] = config.DISK_FORMAT_COW
         vm_parameters['interface'] = config.INTERFACE_VIRTIO
 
@@ -197,7 +197,7 @@ class AddVm(VirtTest):
         vm_parameters['name'] = self.vm_name
         vm_parameters['storagedomain'] = self.master_domain
         vm_parameters['disk_type'] = config.DISK_TYPE_DATA
-        vm_parameters['size'] = config.TWO_GB
+        vm_parameters['provisioned_size'] = config.TWO_GB
         vm_parameters['interface'] = config.INTERFACE_VIRTIO
         self.assertTrue(
             ll_vms.addVm(True, **vm_parameters)

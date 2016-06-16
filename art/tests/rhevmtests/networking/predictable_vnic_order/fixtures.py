@@ -16,20 +16,13 @@ from rhevmtests.networking.fixtures import (
 )  # flake8: noqa
 
 
-class PredictableVnicOrder(NetworkFixtures):
-    """
-    Fixtures for predictable_vnic_order
-    """
-    pass
-
-
 @pytest.fixture(scope="module")
 def prepare_setup_predictable_vnic_order(request, network_cleanup_fixture):
     """
     Seal the VM
     Remove all vNICs from the VM
     """
-    predictable_vnic_order = PredictableVnicOrder()
+    predictable_vnic_order = NetworkFixtures()
 
     def fin():
         """
@@ -55,7 +48,7 @@ def fixture_case01(request, prepare_setup_predictable_vnic_order):
     Add 4 vNICs to the VM
     Reorder the vNICs
     """
-    predictable_vnic_order = PredictableVnicOrder()
+    predictable_vnic_order = NetworkFixtures()
 
     def fin2():
         """

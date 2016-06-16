@@ -38,7 +38,7 @@ def initializer_module(request):
                 "Trying to deactivate and remove the host %s in case there "
                 "was a problem with the test's finalizer function", host_ip,
             )
-            if ll_hosts.getHostState(host_ip) == config.HOST_UP:
+            if ll_hosts.get_host_status(host_ip) == config.HOST_UP:
                 ll_hosts.deactivateHost(True, host_ip)
             ll_hosts.removeHost(True, host_ip)
         except EntityNotFound:
@@ -149,7 +149,7 @@ class TestCase4831(helpers.TestCaseNFSOptions):
                     )
             try:
                 logger.info("Removing host %s", self.host_for_dc)
-                if ll_hosts.getHostState(self.host_for_dc) == config.HOST_UP:
+                if ll_hosts.isHostUp(True, self.host_for_dc):
                     ll_hosts.deactivateHost(True, self.host_for_dc)
                 ll_hosts.waitForSPM(config.DATA_CENTER_NAME, 600, 30)
                 ll_hosts.removeHost(True, self.host_for_dc)
@@ -211,14 +211,14 @@ class TestCase4831(helpers.TestCaseNFSOptions):
 
         self.assertTrue(
             ll_disks.addDisk(
-                True, alias=self.disk_1, size=config.DISK_SIZE,
+                True, alias=self.disk_1, provisioned_size=config.DISK_SIZE,
                 storagedomain=self.sd_1, format=config.RAW_DISK,
                 interface=config.INTERFACE_VIRTIO, bootable=True
             )
         )
 
         self.assertTrue(ll_disks.addDisk(
-            True, alias=self.disk_2, size=config.DISK_SIZE,
+            True, alias=self.disk_2, provisioned_size=config.DISK_SIZE,
             storagedomain=self.sd_1, format=config.RAW_DISK,
             interface=config.INTERFACE_VIRTIO, bootable=True)
         )

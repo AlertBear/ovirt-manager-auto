@@ -101,15 +101,18 @@ def addDataCenter(positive, **kwargs):
         bool: True if data center was added properly, False otherwise
     """
     dc_name = kwargs.get("name", "")
+    local = kwargs.pop("local", False)
     log_info, log_error = ll_general.get_log_msg(
         action="Add", obj_name=dc_name, obj_type="datacenter",
         positive=positive, **kwargs
     )
     logger.info(log_info)
     major_version, minor_version = kwargs.pop('version').split(".")
-    dc_version = Version(major=major_version, minor=minor_version)
+    dc_version = Version(major=int(major_version), minor=int(minor_version))
+    if kwargs.get("storage_type"):
+        kwargs.pop("storage_type")
 
-    dc = DataCenter(version=dc_version, **kwargs)
+    dc = DataCenter(version=dc_version, local=local, **kwargs)
 
     dc, status = util.create(dc, positive)
     if positive:
@@ -275,10 +278,10 @@ def waitForDataCenterState(name, state=ENUMS['data_center_state_up'],
     return util.waitForQuery(query, timeout=timeout, sleep=sleep)
 
 
-def wait_for_datacenter_state_api(name, state=ENUMS['data_center_state_up'],
+def wait_for_datacenter_state_api(name, status=ENUMS['data_center_state_up'],
                                   timeout=DATA_CENTER_INIT_TIMEOUT, sleep=10):
     """
-    Description: Waits for state of datacenter using API polling. It's similar
+    Description: Waits for status of datacenter using API polling. It's similar
                  to function waitForDataCenterState. which uses search engine
     Parameters:
         * name - Name of datacenter
@@ -288,15 +291,15 @@ def wait_for_datacenter_state_api(name, state=ENUMS['data_center_state_up'],
     """
     dc_obj = util.find(name)
     start_t = time.time()
-    while dc_obj.status.state != state and time.time() - start_t < timeout:
+    while dc_obj.get_status() != status and time.time() - start_t < timeout:
         time.sleep(sleep)
         dc_obj = util.find(name)
         util.logger.debug(
-            "State of %s datacenter is %s", name, dc_obj.status.state)
-    if dc_obj.status.state != state:
+            "State of %s datacenter is %s", name, dc_obj.get_status())
+    if dc_obj.get_status() != status:
         raise exceptions.DataCenterException(
             "Waiting for %s dc's state timed out. Final state is still %s, "
-            "but expected was %s" % (name, dc_obj.status.state, state))
+            "but expected was %s" % (name, dc_obj.get_status(), status))
 
 
 def checkSupportedVersions(name):
@@ -387,7 +390,7 @@ def prepare_qos_obj(**kwargs):
     :return: QoS object or raise exceptions
     """
     exclude_kwargs = ["new_name"]
-    qos_obj = data_st.QoS()
+    qos_obj = data_st.Qos()
     for key, val in kwargs.iteritems():
         if hasattr(qos_obj, key):
             setattr(qos_obj, key, val)
@@ -439,7 +442,7 @@ def add_qos_to_datacenter(datacenter, qos_name, qos_type, **kwargs):
     )
     qos_obj = prepare_qos_obj(**kwargs)
     dc = get_data_center(datacenter)
-    qoss_coll = data_st.QoSs()
+    qoss_coll = data_st.Qoss()
     qoss_coll.set_qos(qos_obj)
 
     qoss_dc_coll_href = util.getElemFromLink(

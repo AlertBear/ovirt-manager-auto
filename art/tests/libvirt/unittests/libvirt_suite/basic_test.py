@@ -245,16 +245,16 @@ class TestDisconnectHostFromStorageDomain(BaseTestCase):
 
         LOGGER.info("Validating that host is up")
         host_obj = HOST_API.find(self.host)
-        self.assertTrue(host_obj.status.state == ht_state)
+        self.assertTrue(host_obj.get_status() == ht_state)
 
         LOGGER.info("Validate master domain %s is UP", sd_name)
         sd_obj = ll_sds.getDCStorage(dc_name, sd_name)
-        self.assertTrue(sd_obj.status.state == sd_state)
+        self.assertTrue(sd_obj.get_status() == sd_state)
 
         LOGGER.info("Validate that DC is UP")
         dc_obj = DC_API.find(dc_name)
-        LOGGER.info("DC is %s", dc_obj.status.state)
-        self.assertTrue(dc_obj.status.state == dc_state)
+        LOGGER.info("DC is %s", dc_obj.get_status())
+        self.assertTrue(dc_obj.get_status() == dc_state)
 
     def test_disconnect_host_from_storage(self):
         """

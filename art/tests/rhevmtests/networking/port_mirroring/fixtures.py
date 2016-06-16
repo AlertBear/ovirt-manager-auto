@@ -11,6 +11,8 @@ import pytest
 import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.general as ll_general
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as conf
 import helper
 import rhevmtests.networking.helper as net_help
@@ -250,8 +252,15 @@ def case04_fixture(request, port_mirroring_prepare_setup):
         """
         Disable port mirroring on VM NIC
         """
-        if ll_vms.getVmNicPortMirroring(
-            positive=True, vm=conf.VM_NAME[1], nic=conf.NIC_NAME[1]
+        vm_nic_vnic_profile = ll_vms.get_vm_nic_vnic_profile(
+            vm=conf.VM_NAME[1], nic=conf.NIC_NAME[1]
+        )
+        vnic_profile_name = ll_general.get_object_name_by_id(
+            ll_networks.VNIC_PROFILE_API, vm_nic_vnic_profile.id
+        )
+        if filter(
+            lambda x: x.name == vnic_profile_name and x.port_mirroring,
+            ll_networks.get_vnic_profile_objects()
         ):
             helper.set_port_mirroring(
                 vm=conf.VM_NAME[1], nic=conf.NIC_NAME[1],

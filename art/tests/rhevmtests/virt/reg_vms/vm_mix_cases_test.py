@@ -147,7 +147,7 @@ class TestMixCases(VirtTest):
             ll_vms.addDisk(
                 True,
                 vm=self.vm_name,
-                size=config.GB,
+                provisioned_size=config.GB,
                 storagedomain=self.master_domain,
                 type=config.DISK_TYPE_DATA,
                 format=config.DISK_FORMAT_RAW,
@@ -169,7 +169,7 @@ class TestMixCases(VirtTest):
         self.assertTrue(ll_vms.addDisk(
             True,
             vm=self.vm_name,
-            size=config.GB,
+            provisioned_size=config.GB,
             storagedomain=self.master_domain,
             type=config.DISK_TYPE_DATA,
             format=config.DISK_FORMAT_COW,
@@ -191,7 +191,7 @@ class TestMixCases(VirtTest):
             ll_vms.addDisk(
                 True,
                 vm=self.vm_name,
-                size=config.GB,
+                provisioned_size=config.GB,
                 storagedomain=self.master_domain,
                 type=config.DISK_TYPE_DATA,
                 format=config.DISK_FORMAT_COW,
@@ -222,7 +222,7 @@ class TestMixCases(VirtTest):
                 result = ll_vms.addDisk(
                     True,
                     vm=self.vm_name,
-                    size=config.GB,
+                    provisioned_size=config.GB,
                     storagedomain=self.master_domain,
                     type=config.DISK_TYPE_DATA,
                     format=disk_format,

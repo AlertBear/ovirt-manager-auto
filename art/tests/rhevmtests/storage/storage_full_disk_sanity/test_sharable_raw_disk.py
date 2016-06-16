@@ -65,8 +65,8 @@ class TestCase11513(TestCase):
         self.assertTrue(
             ll_disks.addDisk(
                 True, alias=self.disk_name, provisioned_size=config.GB,
-                size=config.GB, interface=config.VIRTIO_SCSI,
-                format=config.RAW_DISK, storagedomain=self.storage_domain,
+                interface=config.VIRTIO_SCSI, format=config.RAW_DISK,
+                storagedomain=self.storage_domain,
                 shareable=True, sparse=False
             )
         )
@@ -159,7 +159,7 @@ class TestCase11624(TestCase):
         logger.info("Creating disk %s", self.disk_name)
         assert ll_disks.addDisk(
             True, alias=self.disk_name, shareable=True, bootable=False,
-            size=self.disk_size, storagedomain=storage_domain,
+            provisioned_size=self.disk_size, storagedomain=storage_domain,
             format=config.RAW_DISK, interface=config.VIRTIO_SCSI,
             sparse=False
         )

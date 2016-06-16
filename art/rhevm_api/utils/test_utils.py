@@ -265,13 +265,18 @@ def validateElementStatus(positive, element, collection, elementName,
             util.logger.error(msg.format(element, attribute))
             return False
 
-    expectedStatuses = [status.strip().upper() for status in expectedStatus.split(',')]
-    result = elementObj.get_status().get_state().upper() in expectedStatuses
+    expectedStatuses = [
+        status.strip().upper() for status in expectedStatus.split(',')
+        ]
+    result = elementObj.get_status().upper() in expectedStatuses
 
     if not result:
         MSG = "Status of element {0} is \'{1}\' expected statuses are {2}"
-        util.logger.warning(MSG.format(elementName,
-            elementObj.get_status().get_state().upper(), expectedStatuses))
+        util.logger.warning(
+            MSG.format(
+                elementName, elementObj.get_status().upper(), expectedStatuses
+            )
+        )
 
     return result
 

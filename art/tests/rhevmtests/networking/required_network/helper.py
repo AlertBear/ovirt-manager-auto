@@ -25,9 +25,7 @@ def deactivate_hosts(host=None):
             host.
     """
     host = host if host else conf.HOST_0_NAME
-    if not ll_hosts.checkHostSpmStatus(
-        positive=True, hostName=host
-    ):
+    if not ll_hosts.checkHostSpmStatus(positive=True, hostName=host):
         if not ll_hosts.select_host_as_spm(
             positive=True, host=host, data_center=conf.DC_0
         ):

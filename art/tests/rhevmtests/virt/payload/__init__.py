@@ -41,7 +41,7 @@ def setup_package():
         vmDescription="Payload Test",
         cluster=config.CLUSTER_NAME[0],
         storageDomainName=config.STORAGE_NAME[0],
-        size=DISK_SIZE,
+        provisioned_size=DISK_SIZE,
         nic=config.NIC_NAME[0],
         network=config.MGMT_BRIDGE,
         display_type=config.DISPLAY_TYPE,

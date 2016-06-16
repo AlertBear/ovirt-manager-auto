@@ -39,7 +39,7 @@ class UpdateVm(VirtTest):
             ll_vms.updateVm(
                 positive=True,
                 vm=self.vm_name,
-                timezone=config.WIN_TZ,
+                time_zone=config.WIN_TZ,
                 os_type=config.WIN_2008
             )
         )
@@ -56,7 +56,7 @@ class UpdateVm(VirtTest):
             ll_vms.updateVm(
                 positive=True,
                 vm=self.vm_name,
-                timezone=config.WIN_TZ,
+                time_zone=config.WIN_TZ,
                 os_type=config.WIN_7
             )
         )
@@ -73,7 +73,7 @@ class UpdateVm(VirtTest):
             ll_vms.updateVm(
                 positive=True,
                 vm=self.vm_name,
-                timezone=config.RHEL_TZ,
+                time_zone=config.RHEL_TZ,
                 os_type=config.RHEL6_64
             )
         )

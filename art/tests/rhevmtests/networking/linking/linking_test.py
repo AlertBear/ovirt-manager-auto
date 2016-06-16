@@ -37,7 +37,7 @@ class TestLinkedCase01(NetworkTest):
     vm = conf.VM_1
     nic1 = conf.NIC_NAME[1]
     nic_list = [nic1]
-    net = linking_conf.NETS[1][0]
+    net = linking_conf.NET_1
 
     @polarion("RHEVM3-3817")
     def test_check_default_values(self):
@@ -68,7 +68,7 @@ class TestLinkedCase02(NetworkTest):
     vm = conf.VM_1
     plug_values = [True, True]
     link_values = [True, False]
-    net_list = linking_conf.NETS[1]
+    net_list = linking_conf.NET_LIST
     nic_list = conf.NIC_NAME[1:3]
     int_type_list = [conf.NIC_TYPE_RTL8139, conf.NIC_TYPE_E1000]
 
@@ -117,7 +117,9 @@ class TestLinkedCase02(NetworkTest):
             )
 
         for nic in self.nic_list:
-            self.assertTrue(ll_vms.getVmNicNetwork(vm=self.vm, nic=nic))
+            self.assertTrue(ll_vms.is_vm_nic_have_profile(
+                vm=self.vm, nic=nic)
+            )
             self.assertTrue(
                 ll_vms.get_vm_nic_plugged(vm=self.vm, nic=nic, positive=False)
             )
@@ -135,7 +137,7 @@ class TestLinkedCase03(NetworkTest):
     vm = conf.VM_1
     nic1 = conf.NIC_NAME[1]
     nic_list = [nic1]
-    net = conf.NETWORKS[0]
+    net = linking_conf.NET_5
 
     @polarion("RHEVM3-3833")
     def test_check_start_vm(self):
@@ -156,7 +158,7 @@ class TestLinkedCase04(NetworkTest):
     vm = conf.VM_NAME[0]
     nic1 = conf.NIC_NAME[1]
     nic_list = [nic1]
-    net = linking_conf.NETS[1][0]
+    net = linking_conf.NET_1
     vprofile = "pm_linking"
 
     @polarion("RHEVM3-3823")
@@ -194,7 +196,7 @@ class TestLinkedCase05(NetworkTest):
     nic1 = conf.NIC_NAME[1]
     nic2 = conf.NIC_NAME[2]
     nic_list = [nic1, nic2]
-    net = linking_conf.NETS[1][0]
+    net = linking_conf.NET_1
     plug_states = [True, False]
     nic_names = ["vnic2", "vnic3"]
 
@@ -241,7 +243,9 @@ class TestLinkedCase05(NetworkTest):
             )
 
         for nic_name in self.nic_names:
-            self.assertTrue(ll_vms.getVmNicNetwork(vm=self.vm, nic=nic_name))
+            self.assertTrue(ll_vms.is_vm_nic_have_profile(
+                vm=self.vm, nic=nic_name)
+            )
             self.assertFalse(
                 ll_vms.get_vm_nic_plugged(vm=self.vm, nic=nic_name)
             )
@@ -265,8 +269,8 @@ class TestLinkedCase06(NetworkTest):
     __test__ = True
     vm = conf.VM_1
     nic1 = conf.NIC_NAME[1]
-    net1 = linking_conf.NETS[1][0]
-    net2 = linking_conf.NETS[1][1]
+    net1 = linking_conf.NET_1
+    net2 = linking_conf.NET_2
     nic_list = [nic1]
     vprofile = "pm_7_linking"
     name = "vnic2"

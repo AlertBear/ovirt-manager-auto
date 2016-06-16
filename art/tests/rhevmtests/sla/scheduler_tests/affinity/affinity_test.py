@@ -846,7 +846,7 @@ class TestFailedToStartHAVmUnderHardNegativeAffinity(MigrateVm):
             vmDescription='Affinity VM',
             cluster=conf.CLUSTER_NAME[0],
             storageDomainName=conf.STORAGE_NAME[0],
-            size=conf.DISK_SIZE, nic=conf.NIC_NAME[0],
+            provisioned_size=conf.DISK_SIZE, nic=conf.NIC_NAME[0],
             display_type=conf.VM_DISPLAY_TYPE,
             type=conf.VM_TYPE_SERVER,
             network=conf.MGMT_BRIDGE,

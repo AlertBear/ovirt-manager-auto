@@ -18,7 +18,8 @@ def setup_package():
         assert vms.createVm(
             True, config.HOOKS_VM_NAME, '', cluster=config.CLUSTER_NAME[0],
             nic='nic1', storageDomainName=storage_domain,
-            size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
+            provisioned_size=config.DISK_SIZE,
+            diskType=config.DISK_TYPE_SYSTEM,
             diskInterface=config.DISK_INTERFACE, memory=config.GB,
             cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
             nicType=config.NIC_TYPE_VIRTIO,

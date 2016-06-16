@@ -4184,6 +4184,9 @@ def generateClasses(wrt, prefix, element, delayed, nameSpacesDef=''):
     if not element.isExplicitDefine():
         logging.debug("Not an explicit define, returning.")
         if element.isComplex() and element.getName() != element.getType():
+            if element.getType() == 'ApiSummaryItem':
+                return
+
             MappingTypes[element.getName()] = element.getType()
         return
     # If this element is an extension (has a base) and the base has
@@ -4195,6 +4198,7 @@ def generateClasses(wrt, prefix, element, delayed, nameSpacesDef=''):
             return
     if element.getName() in AlreadyGenerated:
         return
+
     AlreadyGenerated.append(element.getName())
     if element.getMixedExtensionError():
         err_msg('*** Element %s extension chain contains mixed and '

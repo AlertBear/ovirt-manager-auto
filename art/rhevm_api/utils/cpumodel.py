@@ -50,10 +50,10 @@ class CpuModelDenominator(object):
                 "%s.%s" % (v.get_major(), v.get_minor()), {
                     "cpus": [
                         {
-                            'cpu': c.get_id(),
+                            'cpu': c.get_type(),
                             'level': c.get_level(),
-                            'model': self._id_to_model(c.get_id()),
-                            'vendor': self._id_to_vendor(c.get_id()),
+                            'model': self._id_to_model(c.get_type()),
+                            'vendor': self._id_to_vendor(c.get_type()),
                         } for c in v.get_cpus().get_cpu()
                     ],
                     'current': v.get_current(),

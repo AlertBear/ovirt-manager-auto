@@ -263,8 +263,8 @@ class TestCase11679(BasicEnvironmentSetUp):
         super(TestCase11679, self).setUp()
         logger.info("Adding disk to vm %s", self.vm_name)
         if not ll_vms.addDisk(
-            True, vm=self.vm_name, size=3 * config.GB, wait='True',
-            storagedomain=self.storage_domains[0],
+            True, vm=self.vm_name, provisioned_size=3 * config.GB,
+            wait='True', storagedomain=self.storage_domains[0],
             type=config.DISK_TYPE_DATA, interface=config.INTERFACE_VIRTIO,
             format=config.DISK_FORMAT_COW, sparse='true'
         ):
@@ -475,8 +475,8 @@ class TestCase11665(BaseTestCase):
             alias = "disk_%s_%d" % (self.polarion_test_case, index)
             logger.info("Adding disk %s to vm %s", alias, self.vm_name)
             assert ll_vms.addDisk(
-                True, vm=self.vm_name, size=3 * config.GB, wait='True',
-                storagedomain=self.storage_domains[1],
+                True, vm=self.vm_name, provisioned_size=3 * config.GB,
+                wait='True', storagedomain=self.storage_domains[1],
                 type=config.DISK_TYPE_DATA,
                 interface=config.VIRTIO, format=config.COW_DISK,
                 sparse='true', alias=alias
@@ -566,7 +566,7 @@ class TestCase11674(BaseTestCase):
         self.disk_name = "disk_%s" % self.polarion_test_case
         logger.info("Adding disk %s to vm %s", self.disk_name, self.vm_name)
         if not ll_vms.addDisk(
-            True, vm=self.vm_name, size=3 * config.GB, wait=True,
+            True, vm=self.vm_name, provisioned_size=3 * config.GB, wait=True,
             storagedomain=self.storage_domains[0], type=config.DISK_TYPE_DATA,
             interface=config.VIRTIO, format=config.COW_DISK,
             sparse='true', alias=self.disk_name

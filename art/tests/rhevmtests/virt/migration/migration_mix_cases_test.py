@@ -224,7 +224,7 @@ class TestMigrationMixCase3(common.VirtTest):
             if not ll_vm.addDisk(
                 positive=True,
                 vm=self.vm_name,
-                size=config.GB,
+                provisioned_size=config.GB,
                 storagedomain=master_domain,
                 interface=self.disk_interfaces,
                 format=self.cow_disk

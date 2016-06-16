@@ -138,7 +138,7 @@ def create_disks_from_requested_permutations(
     :type interfaces: list
     :param size: The disk size (in bytes) to create, uses config.DISK_SIZE as a
     default
-    :type size: str
+    :type size: int
     :param shared: Specifies whether the disks to be created are shareable
     :type shared: bool
     :param wait: Specifies whether to wait for each disk to be created
@@ -178,7 +178,7 @@ def create_disks_from_requested_permutations(
         disk_aliases.append(disk_alias)
         assert ll_disks.addDisk(
             True, alias=disk_alias, description=disk_description,
-            size=size, interface=disk_permutation['interface'],
+            provisioned_size=size, interface=disk_permutation['interface'],
             sparse=disk_permutation['sparse'],
             format=disk_permutation['format'],
             storagedomain=domain_to_use, bootable=False, shareable=shared
@@ -673,7 +673,6 @@ def add_new_disk(
         'bootable': False,
         'shareable': shared,
         'active': True,
-        'size': disk_size,
         # Custom arguments - change for each disk
         'format': permutation['format'],
         'interface': permutation['interface'],
@@ -982,8 +981,10 @@ def verify_lun_not_in_use(lun_id):
     luns = []
     for sd in ll_sd.get_storagedomain_objects():
         if sd.get_storage().get_type() in config.BLOCK_TYPES:
-            luns += sd.get_storage().get_volume_group().get_logical_unit()
-
+            luns += (
+                sd.get_storage().get_volume_group()
+                .get_logical_units().get_logical_unit()
+                )
     lun_ids = [lun.get_id() for lun in luns]
     return lun_id not in lun_ids
 

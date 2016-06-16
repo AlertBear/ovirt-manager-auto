@@ -23,7 +23,7 @@ from cStringIO import StringIO
 from art.core_api.apis_utils import data_st_validate as ds
 from art.generateDS.generateds_config import NameTable
 
-ATTR_IGNORE_LIST = ['href', 'link', 'rel']
+ATTR_IGNORE_LIST = ['href', 'link', 'rel', 'build_']
 
 VALS_IGNORE_DICT = {
     'usage': ['vm'],
@@ -31,7 +31,7 @@ VALS_IGNORE_DICT = {
 
 DS_CLASS_MAPPER = {
     'clusternetwork': 'Network',
-    'vmcdrom': 'CdRom',
+    'vmcdrom': 'Cdrom',
     'rolepermits': 'Permits',
     'hostnicstatistics': 'Statistics',
     'diskstatistics': 'Statistics',

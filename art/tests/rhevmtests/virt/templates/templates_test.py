@@ -783,7 +783,8 @@ class VMBoot(BaseTemplateVMClass):
         # Check default boot device
         blank_temp = TEMP_API.find(BLANK)
         if blank_temp is not None:
-            cls.default_boot = blank_temp.get_os().get_boot()[0].get_dev()
+            cls.default_boot = blank_temp.get_os().get_boot(
+                ).get_devices().get_device()[0]
         logger.info("Default boot device is %s", cls.default_boot)
         cap = CAP_API.get(absLink=False)
         version = config.COMP_VERSION.split('.')
@@ -804,7 +805,7 @@ class VMBoot(BaseTemplateVMClass):
         template_obj = TEMP_API.find(self.template_name)
         self.assertTrue(template_obj is not None, "Error finding template!")
         logger.info("Expected boot device is %s", self.vm_parameters['boot'])
-        boot = template_obj.get_os().get_boot()[0].get_dev()
+        boot = template_obj.get_os().get_boot().get_devices().get_device()[0]
         logger.info("Actual boot device is %s", boot)
         self.assertEqual(
             boot, self.vm_parameters['boot'],
@@ -822,7 +823,7 @@ class VMBoot(BaseTemplateVMClass):
         vm_obj = VM_API.find(self.copy_vm)
         self.assertTrue(vm_obj is not None, "Error finding cloned VM!")
         logger.info("Expected boot device is %s", self.vm_parameters['boot'])
-        boot = vm_obj.get_os().get_boot()[0].get_dev()
+        boot = vm_obj.get_os().get_boot().get_devices().get_device()[0]
         logger.info("Actual boot device is %s", boot)
         self.assertEqual(
             boot, self.vm_parameters['boot'],

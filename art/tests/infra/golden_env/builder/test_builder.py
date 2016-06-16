@@ -321,7 +321,7 @@ class CreateDC(TestCase):
         assert ll_vms.createVm(
             True, vm_name, vm_description, cluster=cl_name,
             nic='nic1', storageDomainName=storage_domain_name,
-            size=vm['disk_size'], diskType=vm['disk_type'],
+            provisioned_size=vm['disk_size'], diskType=vm['disk_type'],
             volumeType=sparse, volumeFormat=volume_format,
             diskInterface=disk_interface, memory=vm['memory'],
             cpu_socket=vm['cpu_socket'], cpu_cores=vm['cpu_cores'],

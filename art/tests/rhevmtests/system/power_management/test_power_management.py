@@ -50,7 +50,7 @@ def _create_vm(vm_name, highly_available):
                         cluster=config.CLUSTER_NAME[0],
                         type=config.VM_TYPE, highly_available=highly_available,
                         placement_affinity=config.MIGRATABLE,
-                        placement_host=HOST_WITH_PM, size=SIZE,
+                        placement_host=HOST_WITH_PM, provisioned_size=SIZE,
                         volumeFormat=config.FORMAT, storageDomainName=sd_name,
                         nic=NIC, network=config.MGMT_BRIDGE, start='true'):
             raise VMException("cannot create vm with high availability"

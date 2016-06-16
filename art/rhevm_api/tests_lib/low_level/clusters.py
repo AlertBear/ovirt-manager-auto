@@ -25,7 +25,7 @@ import art.rhevm_api.tests_lib.low_level.general as ll_general
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.test_handler.exceptions as exceptions
 from art.core_api.apis_exceptions import EntityNotFound
-from art.core_api.apis_utils import getDS
+from art.core_api.apis_utils import getDS, data_st
 from art.rhevm_api.tests_lib.low_level.hosts import(
     activateHost, deactivateHost,
 )
@@ -49,8 +49,8 @@ MemoryPolicy = getDS('MemoryPolicy')
 SchedulingPolicyThresholds = getDS('SchedulingPolicyThresholds')
 SchedulingPolicy = getDS('SchedulingPolicy')
 ErrorHandling = getDS('ErrorHandling')
-CPU = getDS('CPU')
-KSM = getDS('KSM')
+CPU = getDS('Cpu')
+KSM = getDS('Ksm')
 CLUSTER_API = get_api('cluster', 'clusters')
 AFFINITY_API = get_api('affinity_group', 'affinity_groups')
 CPU_PROFILE_API = get_api('cpu_profile', 'cpu_profiles')
@@ -80,12 +80,13 @@ def _prepareClusterObject(**kwargs):
 
     if 'version' in kwargs:
         majorV, minorV = kwargs.pop('version').split(".")
-        clVersion = Version(major=majorV, minor=minorV)
+        clVersion = Version(major=int(majorV), minor=int(minorV))
         cl.set_version(clVersion)
 
     if 'cpu' in kwargs:
-        clCPU = CPU(id=kwargs.pop('cpu'))
-        cl.set_cpu(clCPU)
+        cpu = data_st.Cpu()
+        cpu.set_type(kwargs.pop('cpu'))
+        cl.set_cpu(cpu)
 
     if 'data_center' in kwargs:
         clDC = dcUtil.find(kwargs.pop('data_center'))
@@ -456,7 +457,7 @@ def connectClusterToDataCenter(positive, cluster, datacenter):
 
     # Deactivate all "UP" hosts, which are connected to cluster
     hosts = filter(lambda hostObj: hostObj.get_cluster().get_id() == clId and
-                   hostObj.get_status().get_state() == "up", hostObjList)
+                   hostObj.get_status() == "up", hostObjList)
     for hostObj in hosts:
         if not deactivateHost(positive, hostObj.get_name()):
             util.logger.error('deactivateHost Failed')

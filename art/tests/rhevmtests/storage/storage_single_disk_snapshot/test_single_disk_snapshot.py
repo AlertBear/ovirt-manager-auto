@@ -76,7 +76,7 @@ class BasicEnvironment(BaseTestCase):
         logger.info("DISKS: %s", self.disks_names)
         for disk_name in self.disks_names:
             ll_disks.addDisk(
-                True, alias=disk_name, size=config.GB,
+                True, alias=disk_name, provisioned_size=config.GB,
                 storagedomain=self.storage_domain, format=config.COW_DISK,
                 interface=config.INTERFACE_VIRTIO, sparse=True,
             )

@@ -106,7 +106,7 @@ def bond_fault():
         try:
             return "up" == ll_hosts.get_host_nic(
                 conf.HOSTS[0], conf.BOND_0
-            ).status.state
+            ).get_status()
         except AttributeError:
             return False
 

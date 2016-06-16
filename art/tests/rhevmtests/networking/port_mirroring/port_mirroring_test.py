@@ -18,7 +18,7 @@ import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
 from art.core_api import apis_utils
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.unittest_lib import NetworkTest
 from art.unittest_lib import attr
 from fixtures import (
@@ -35,7 +35,6 @@ VM_NAME = conf.VM_NAME
 
 
 @attr(tier=2)
-@bz({"1342054": {}})
 @pytest.mark.usefixtures(port_mirroring_prepare_setup.__name__)
 @pytest.mark.skipif(
     conf.NOT_4_NICS_HOSTS, reason=conf.NOT_4_NICS_HOST_SKIP_MSG

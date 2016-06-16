@@ -32,7 +32,7 @@ BASE_KWARGS = {
     "interface": config.VIRTIO_SCSI,
     "alias": "direct_lun_disk",
     "format": config.COW_DISK,
-    "size": config.DISK_SIZE,
+    "provisioned_size": config.DISK_SIZE,
     "bootable": False,
     "type_": ISCSI,
 }

@@ -44,7 +44,7 @@ class UpgradeSanityInstrumentation(TestCase):
         assert ll_vms.createVm(
             True, cfg.VM_NAME, 'desc.',
             cluster=cfg.CLUSTER_NAME,
-            size=cfg.DISK_SIZE,
+            provisioned_size=cfg.DISK_SIZE,
             nic=cfg.NIC_NAME,
             os_type=cfg.OS_TYPE,
             storageDomainName=masterDomain['masterDomain'],
