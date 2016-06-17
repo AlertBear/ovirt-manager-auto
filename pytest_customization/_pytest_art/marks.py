@@ -211,11 +211,11 @@ class JunitExtension(object):
 
     def pytest_artconf_ready(self, config):
         self.global_properties['polarion-custom-plannedin'] = (
-            'RHEVM ' +
-            config.ART_CONFIG['DEFAULT']['VERSION']
+            'RHEVM_' +
+            config.ART_CONFIG['DEFAULT']['VERSION'].replace(".", "_")
         )
         self.global_properties['polarion-custom-arch'] = (
-            config.ART_CONFIG['PARAMETERS']['arch']
+            config.ART_CONFIG['PARAMETERS']['arch'].replace("_", "")
         )
 
     def pytest_sessionstart(self, session):
