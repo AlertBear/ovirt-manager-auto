@@ -309,16 +309,18 @@ def rx_tx_stat_vm_case01(request, rx_tx_stat_vm_prepare_setup):
         (helper.get_vm_resource(rx_tx_stat_vm.vm_1), conf.VM_IPS[1])
     ]
 
-    network_helper.send_icmp_sampler(
-        host_resource=vms_ips[0][0], dst=vms_ips[1][1]
-    )
+    nic_state_attempts = 10
     while not all([int(conf.NIC_STAT[x]) > 1000 for x in conf.STAT_KEYS]):
         helper.send_icmp(vms_ips)
         conf.NIC_STAT = hl_networks.get_nic_statistics(
             nic=rx_tx_stat_vm.vm_nic_1, vm=rx_tx_stat_vm.vm_1,
             keys=conf.STAT_KEYS
         )
+        nic_state_attempts -= 1
         assert conf.NIC_STAT, err_msg
+
+        if nic_state_attempts == 0:
+            assert False, "Timeout waiting for get NIC stats > 1000"
 
     conf.TOTAL_RX = conf.NIC_STAT["data.total.rx"]
     conf.TOTAL_TX = conf.NIC_STAT["data.total.tx"]
