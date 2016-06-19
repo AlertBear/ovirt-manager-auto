@@ -546,6 +546,7 @@ class TestSanity06(TestSanityCaseBase):
 
 
 @attr(tier=1)
+@bz({"1344284": {}})
 class TestSanity07(NetworkTest):
     """
     1. Create a new DC and check it was created with updated Default
