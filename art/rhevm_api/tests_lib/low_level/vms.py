@@ -2898,14 +2898,20 @@ def waitForIP(
     """
     #  import is done here to avoid loop
     import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+    vm_id = None
     vm_host = get_vm_host(vm_name=vm)
     if not vm_host:
         return False, {'ip': None}
 
     host_ip = ll_hosts.get_host_ip_from_engine(host=vm_host)
     vds_resource = resources.VDS(ip=host_ip, root_password=vm_password)
-    out = vds_resource.vds_client("list")
-    vm_id = out['vmList'][0]['vmId']
+    out = vds_resource.vds_client("list", ["table"])
+    for vm_info in out["vmList"]:
+        if vm_info["vmName"] == vm:
+            vm_id = vm_info["vmId"]
+    if not vm_id:
+        logger.error("Vm id for VM %s not found on VDSM %s", vm, vm_host)
+        return False, {'ip': None}
 
     def _get_ip(vm, vds_resource, vm_id):
         """
