@@ -94,7 +94,6 @@ def teardown_package():
        3. Remove additional data center and cluster
        4. Update cluster over commit to 200%
     """
-    logger.info("Teardown...")
     # update clusters over commit back to 200%
     logger.info("For all clusters update over commit back to '200%'")
     for cluster_name in [config.CLUSTER_NAME[0], config.CLUSTER_NAME[1]]:
@@ -125,7 +124,7 @@ def teardown_package():
             config.CLUSTER_NAME[0], skip=config.VM_NAME
         ):
             logger.error("Failed to remove VM: %s", config.MIGRATION_VM)
-    if not ll_vms.stop_vms_safely([config.VM_NAME]):
-        raise exceptions.VMException()
+    if not ll_vms.stop_vms_safely([config.MIGRATION_VM]):
+        logger.error("Failed to stop VM: %s", config.MIGRATION_VM)
     logger.info("Set inactive hosts to the active state")
     virt_helper.set_host_status(activate=True)
