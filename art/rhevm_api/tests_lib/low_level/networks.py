@@ -1174,25 +1174,32 @@ def check_bridge_opts(vds_resource, bridge_name, opts, value):
     """
     Checks the bridge_opts of specific network bridge
 
-    :param vds_resource: VDS resource
-    :type vds_resource: resources.VDS
-    :param bridge_name: name of the bridge with specific opts
-    :type bridge_name: str
-    :param opts: opts name to check
-    :type opts: str
-    :param value: value of opts to compare to
-    :type value: str
-    :return: True if the value for bridge_opts is equal to the value
-             provided, False otherwise
-    :rtype: bool
+    Args:
+        vds_resource (VDS): VDS resource
+        bridge_name (str): name of the bridge with specific opts
+        opts (str): opts name to check
+        value (str): value of opts to compare to
+
+    Returns:
+        bool: True if the value for bridge_opts is equal to the value
+            provided, False otherwise
     """
     bridge_file = os.path.join(
         test_utils.SYS_CLASS_NET_DIR, bridge_name, 'bridge', opts
     )
     rc, out, _ = vds_resource.run_command(["cat", bridge_file])
+    logger.info(
+        "Check if bridge %s opts %s have value %s", bridge_name, opts, value
+    )
     if rc:
+        logger.error("Bridge %s not found", bridge_name)
         return False
-    return out.strip() == value
+    res = out.strip() == value
+    if not res:
+        logger.error(
+            "Bridge %s opts %s doesn't have value %s", bridge_name, opts, value
+        )
+    return True
 
 
 def check_bond_mode(vds_resource, interface, mode):
@@ -1222,48 +1229,57 @@ def check_ethtool_opts(vds_resource, nic, opts, value):
     """
     Checks the ethtool_opts of specific network interface
 
-    :param vds_resource: VDS resource
-    :type vds_resource: resources.VDS
-    :param nic: NIC name with specific ethtool opts configured
-    :type nic: str
-    :param opts: ethtool_opts name to check
-    :type opts: str
-    :param value: value of ethtool_opts to compare to
-    :type value: str
-    :return: True if the value for ethtool_opts is equal to the value
-             provided, False otherwise
-    :rtype: bool
+    Args:
+        vds_resource (VDS): VDS resource
+        nic (str): NIC name with specific ethtool opts configured
+        opts (str): ethtool_opts name to check
+        value (str): value of ethtool_opts to compare to
+
+    Returns:
+     bool: True if the value for ethtool_opts is equal to the value
+        provided, False otherwise
     """
-    cmd = []
     if opts in ("tx-checksumming", "rx-checksumming"):
         cmd = [ETHTOOL_CMD, "-k", nic]
     else:
         logger.error("Not implemented for opts %s" % opts)
         return False
+
+    logger.info("Check ethtool params %s for NIC %s", opts, nic)
     rc, out, _ = vds_resource.run_command(cmd)
     if rc:
         return False
+
     for line in out.splitlines():
         if opts in line:
             return line.split(":")[1].lstrip() == value
+    logger.error("ethtool params %s not found for NIC %s", opts, nic)
     return False
 
 
-def check_bridge_file_exist(vds_resource, bridge_name):
+def check_bridge_file_exist(positive, vds_resource, bridge_name):
     """
     Checks if the bridge file exists for specific network
 
-    :param vds_resource: VDS resource
-    :type vds_resource: resources.VDS
-    :param bridge_name: name of the bridge file to check if exists
-    :type bridge_name: str
-    :return: True if the bridge_name file exists, False otherwise
-    :rtype: bool
+    Args:
+        positive (bool): Expected results
+        vds_resource (VDS): VDS resource
+        bridge_name (str): name of the bridge file to check if exists
+
+    Returns:
+        bool: True if the bridge_name file exists, False otherwise
     """
+    log_info = "exists" if positive else "doesn't exists"
+    log_error = "exists" if not positive else "doesn't exists"
     bridge_file = os.path.join(
         test_utils.SYS_CLASS_NET_DIR, bridge_name, 'bridge'
     )
-    return vds_resource.fs.exists(bridge_file)
+    logger.info("Check if bridge %s %s", bridge_file, log_info)
+    res = vds_resource.fs.exists(bridge_file)
+    if not res == positive:
+        logger.error("Bridge %s %s", bridge_name, log_error)
+        return False
+    return True
 
 
 def create_properties(**kwargs):

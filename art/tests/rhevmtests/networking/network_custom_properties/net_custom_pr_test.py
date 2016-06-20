@@ -6,184 +6,90 @@ It will cover scenarios for VM/non-VM networks.
 """
 
 import logging
-from art import unittest_lib
+
+import pytest
+
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-from rhevmtests.networking import config
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import config as custom_prop_conf
+import rhevmtests.networking.config as conf
+from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.unittest_lib import attr, testflow, NetworkTest
+from fixtures import attach_networks_to_host
 
 logger = logging.getLogger("Network_Custom_Properties_Cases")
-HOST_NICS = None  # filled in setup module
-
-# #######################################################################
-
-# #######################################################################
-#                             Test Cases                               #
-########################################################################
 
 
-def setup_module():
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_networks_to_host.__name__)
+class TestNetCustPrCase01(NetworkTest):
     """
-    Obtain Host Nics
-    """
-    global HOST_NICS
-    HOST_NICS = config.VDS_HOSTS[0].nics
-
-
-@unittest_lib.attr(tier=2)
-class TestNCPCaseBase(unittest_lib.NetworkTest):
-    """
-    base class which provides teardown class method for each test case
-    """
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup.
-        """
-        logger.info("Starting teardown")
-        if not hl_networks.remove_net_from_setup(
-            host=config.HOSTS[0], data_center=config.DC_NAME[0], all_net=True,
-            mgmt_network=config.MGMT_BRIDGE
-        ):
-            logger.error("Cannot remove networks from setup")
-
-
-class TestNetCustPrCase01(TestNCPCaseBase):
-    """
-    Verify bridge_opts doesn't exist for the non-VM network
     Verify bridge_opts exists for VM network
+    Verify bridge_opts doesn't exist for the non-VM network
+    Verify bridge_opts exists for VM VLAN network over BOND
+    Verify bridge_opts doesn't exist for the non-VM VLAN network over BOND
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical VM and non-VM networks on DC/Cluster/Host
-        """
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": 1,
-                "required": "false"
-            },
-            config.NETWORKS[1]: {
-                "nic": 2,
-                "usages": "",
-                "required": "false"
-            }
-        }
-        logger.info(
-            "Create networks %s and %s on DC, Cluster, Host",
-            config.NETWORKS[0], config.NETWORKS[1]
-        )
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot create and attach networks %s and %s" %
-                (config.NETWORKS[0], config.NETWORKS[1])
-            )
+    clear_custom_properties = False
+    net_1 = custom_prop_conf.NETS[1][0]
+    net_2 = custom_prop_conf.NETS[1][1]
+    net_3 = custom_prop_conf.NETS[1][2]
+    net_4 = custom_prop_conf.NETS[1][3]
+    bond_1 = "bond10"
+    net_nic_list = [(net_1, 1), (net_2, 2), (net_3, bond_1), (net_4, bond_1)]
+    ethtool_properties = None
+    bridge_opts_properties = None
+    ethtool_checksums = None
+    slaves = False
 
     @polarion("RHEVM3-4178")
     def test_check_bridge_opts_exist(self):
         """
-        Check bridge_opts exists for VM network only
+        Verify bridge_opts exists for VM network
+        Verify bridge_opts doesn't exist for the non-VM network
         """
-        logger.info(
-            "Check that bridge_opts exists for VM network %s and doesn't "
-            "exist for non-VM network %s", config.NETWORKS[0],
-            config.NETWORKS[1]
+        testflow.step(
+            "Check that bridge_opts exists for VM network %s", self.net_1
         )
-        if not ll_networks.check_bridge_file_exist(
-            config.VDS_HOSTS[0], config.NETWORKS[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Bridge_opts doesn't exists for VM network %s " %
-                config.NETWORKS[0]
-            )
-
-        if ll_networks.check_bridge_file_exist(
-            config.VDS_HOSTS[0], config.NETWORKS[1]
-        ):
-            raise config.NET_EXCEPTION(
-                "Bridge_opts does exist for VM network %s but shouldn't" %
-                config.NETWORKS[1]
-            )
-
-
-class TestNetCustPrCase02(TestNCPCaseBase):
-    """
-    Verify bridge_opts doesn't exist for the VLAN non-VM network over bond
-    Verify bridge_opts exists for VLAN VM network over bond
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical VM and non-VM networks on DC/Cluster and Host Bond
-        """
-        local_dict = {
-            None: {
-                "nic": config.BOND[0], "mode": 1,
-                "slaves": [2, 3]
-            },
-            config.VLAN_NETWORKS[0]: {
-                "nic": config.BOND[0],
-                "required": "false",
-                "vlan_id": config.VLAN_ID[0]
-            },
-            config.VLAN_NETWORKS[1]: {
-                "nic": config.BOND[0],
-                "usages": "",
-                "required": "false",
-                "vlan_id": config.VLAN_ID[1]}
-        }
-        logger.info(
-            "Create networks %s and %s on DC, Cluster and Host Bond",
-            config.NETWORKS[0], config.NETWORKS[1]
+        assert ll_networks.check_bridge_file_exist(
+            positive=True, vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1
         )
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot create and attach networks %s and %s" %
-                (config.NETWORKS[0], config.NETWORKS[1])
+        testflow.step(
+            "Check that bridge_opts doesn't exists for non-VM network %s",
+            self.net_2
             )
+        assert ll_networks.check_bridge_file_exist(
+            positive=False, vds_resource=conf.VDS_0_HOST,
+            bridge_name=self.net_2
+        )
 
     @polarion("RHEVM3-4179")
     def test_check_bridge_opts_exist_bond(self):
         """
-        Check bridge_opts exists for VLAN VM network only over Bond
+        Verify bridge_opts exists for VM VLAN network over BOND
+        Verify bridge_opts doesn't exist for the non-VM VLAN network over BOND
         """
-        logger.info(
-            "Check that bridge_opts exists for VLAN VM network %s and doesn't "
-            "exist for VLAN non-VM network %s over bond",
-            config.NETWORKS[0], config.NETWORKS[1]
+        testflow.step(
+            "Check that bridge_opts exists for VLAN VM network %s over BOND",
+            self.net_3
         )
-        if not ll_networks.check_bridge_file_exist(
-            config.VDS_HOSTS[0], config.VLAN_NETWORKS[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Bridge_opts doesn't exists for VM network %s " %
-                config.NETWORKS[0]
-            )
-
-        if ll_networks.check_bridge_file_exist(
-            config.VDS_HOSTS[0], config.VLAN_NETWORKS[1]
-        ):
-            raise config.NET_EXCEPTION(
-                "Bridge_opts does exist for VM network %s but shouldn't" %
-                config.NETWORKS[1]
-            )
+        assert ll_networks.check_bridge_file_exist(
+            positive=True, vds_resource=conf.VDS_0_HOST, bridge_name=self.net_3
+        )
+        testflow.step(
+            "Check that bridge_opts doesn't exists for non-VM VLAN network "
+            "%s over BOND",
+            self.net_4
+        )
+        assert ll_networks.check_bridge_file_exist(
+            positive=False, vds_resource=conf.VDS_0_HOST,
+            bridge_name=self.net_4
+        )
 
 
-class TestNetCustPrCase03(TestNCPCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_networks_to_host.__name__)
+class TestNetCustPrCase02(NetworkTest):
     """
     Configure bridge_opts with non-default value
     Verify bridge_opts were updated
@@ -191,33 +97,17 @@ class TestNetCustPrCase03(TestNCPCaseBase):
     Verify bridge_opts were updated with the default value
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical VM network on DC/Cluster/Host with bridge_opts having
-        non-default value for priority field
-        """
-        network_param_dict = {
-            "nic": 1,
-            "required": "false",
-            "properties": {
-                "bridge_opts": config.PRIORITY
-            }
-        }
-        local_dict = {config.NETWORKS[0]: network_param_dict}
-        logger.info(
-            "Create logical VM network %s on DC/Cluster/Host with bridge_opts"
-            " having non-default value for priority field", config.NETWORKS[0]
-        )
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
+    slaves = False
+    clear_custom_properties = False
+    ethtool_properties = None
+    ethtool_checksums = None
+    bridge_opts_properties = {"bridge_opts": conf.PRIORITY}
+    net_1 = custom_prop_conf.NETS[2][0]
+    net_nic_list = [(net_1, 1)]
+    priority_opts = conf.KEY1
+    priority_value = conf.BRIDGE_OPTS.get(priority_opts)[1]
+    priority_default = conf.DEFAULT_PRIORITY
+    priority_default_value = conf.BRIDGE_OPTS.get(conf.KEY1)[0]
 
     @polarion("RHEVM3-4180")
     def test_update_bridge_opts(self):
@@ -226,51 +116,44 @@ class TestNetCustPrCase03(TestNCPCaseBase):
         2) Update bridge_opts with the default value
         3) Verify bridge_opts have updated default value for priority opts
         """
-        logger.info(
-            "Check that bridge_opts parameter for priority  have an updated "
-            "non-default value "
+        testflow.step(
+            "Check that bridge_opts parameter %s have been updated "
+            "to %s", self.priority_opts, self.priority_value
         )
-        if not ll_networks.check_bridge_opts(
-            config.VDS_HOSTS[0], config.NETWORKS[0], config.KEY1,
-            config.BRIDGE_OPTS.get(config.KEY1)[1]
-        ):
-            raise config.NET_EXCEPTION(
-                "Priority value of bridge_opts was not updated correctly"
-            )
-
-        logger.info(
-            "Update bridge_opts for priority with the default parameter "
+        assert ll_networks.check_bridge_opts(
+            vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
+            opts=self.priority_opts, value=self.priority_value
         )
-
+        testflow.step(
+            "Update bridge_opts %s with %s", self.priority_opts,
+            self.priority_default
+        )
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
-                        "bridge_opts": config.DEFAULT_PRIORITY
+                        "bridge_opts": conf.DEFAULT_PRIORITY
                     }
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
+        )
+        testflow.step(
+            "Check that bridge_opts %s has beed updated to %s",
+            self.priority_opts, self.priority_default
+        )
+        assert ll_networks.check_bridge_opts(
+            vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
+            opts=conf.KEY1, value=self.priority_default_value
         )
 
-        logger.info(
-            "Check that bridge_opts parameter has an updated default value "
-        )
-        if not ll_networks.check_bridge_opts(
-            config.VDS_HOSTS[0], config.NETWORKS[0], config.KEY1,
-            config.BRIDGE_OPTS.get(config.KEY1)[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Priority value of bridge opts was not updated correctly"
-            )
 
-
-class TestNetCustPrCase04(TestNCPCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_networks_to_host.__name__)
+class TestNetCustPrCase03(NetworkTest):
     """
     Configure bridge_opts with non-default value
     Verify bridge_opts was updated
@@ -280,151 +163,84 @@ class TestNetCustPrCase04(TestNCPCaseBase):
     Verify bridge_opts were updated accordingly
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical VM and network on DC/Cluster/Host with bridge_opts
-        having non-default value for priority field
-        """
-        network_param_dict = {
-            "nic": 1,
-            "required": "false",
-            "properties": {
-                "bridge_opts": config.PRIORITY
-            }
-        }
-        local_dict = {
-            config.NETWORKS[0]: network_param_dict
-        }
-        logger.info(
-            "Create logical VM network %s on DC/Cluster/Host with bridge_opts"
-            " having non-default value for priority field", config.NETWORKS[0]
-        )
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
+    slaves = False
+    clear_custom_properties = False
+    bond_1 = "bond30"
+    ethtool_properties = None
+    ethtool_checksums = None
+    bridge_opts_properties = {"bridge_opts": conf.PRIORITY}
+    net_1 = custom_prop_conf.NETS[3][0]
+    net_2 = custom_prop_conf.NETS[3][1]
+    net_nic_list = [(net_1, 1), (net_2, bond_1)]
+    querier_opts = conf.KEY2
+    default_bridge_opts = " ".join(
+        [conf.DEFAULT_PRIORITY, conf.DEFAULT_MULT_QUERIER]
+    )
+    non_default_bridge_opts = " ".join(
+        [conf.PRIORITY, conf.MULT_QUERIER]
+    )
 
     @polarion("RHEVM3-4181")
     def test_check_several_bridge_opts_exist_nic(self):
         """
         1) Update bridge_opts with additional parameter (multicast_querier)
         2) Verify bridge_opts have updated value for Priority and
-        multicast_querier
+            multicast_querier
         3) Update bridge_opts with the default value for both keys
         4) Verify bridge_opts have updated default value
         """
-        default_bridge_opts = " ".join(
-            [config.DEFAULT_PRIORITY, config.DEFAULT_MULT_QUERIER]
+        testflow.step(
+            "Update bridge_opts %s with %s", self.querier_opts,
+            self.non_default_bridge_opts
         )
-        non_default_bridge_opts = " ".join(
-            [config.PRIORITY, config.MULT_QUERIER]
-        )
-
-        logger.info(
-            "Update bridge_opts with additional parameter for multicast_"
-            "querier"
-        )
-
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
-                        "bridge_opts": non_default_bridge_opts
+                        "bridge_opts": self.non_default_bridge_opts
                     }
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
-
-        logger.info("Check that bridge_opts parameter has an updated value ")
-        for key, value in config.BRIDGE_OPTS.iteritems():
-            if not ll_networks.check_bridge_opts(
-                config.VDS_HOSTS[0], config.NETWORKS[0], key, value[1]
-            ):
-                raise config.NET_EXCEPTION(
-                    "Value of bridge opts key %s was not updated correctly "
-                    "with value %s" % (key, value[1])
-                )
-
+        testflow.step(
+            "Check that bridge_opts parameter %s have been updated "
+            "to %s", self.querier_opts, self.non_default_bridge_opts
+        )
+        for key, value in conf.BRIDGE_OPTS.iteritems():
+            assert ll_networks.check_bridge_opts(
+                vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
+                opts=key, value=value[1]
+            )
+        testflow.step(
+            "Update bridge_opts %s with %s", self.querier_opts,
+            self.default_bridge_opts
+        )
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
-                        "bridge_opts": default_bridge_opts
+                        "bridge_opts": self.default_bridge_opts
                     }
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
+        )
+        testflow.step(
+            "Check that bridge_opts parameter %s have been updated "
+            "to %s", self.querier_opts, self.default_bridge_opts
+        )
+        for key, value in conf.BRIDGE_OPTS.items():
+            assert ll_networks.check_bridge_opts(
+                vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
+                opts=key, value=value[0]
             )
-        )
-
-        logger.info(
-            "Check that bridge_opts parameter has an updated default value"
-        )
-        for key, value in config.BRIDGE_OPTS.items():
-            if not ll_networks.check_bridge_opts(
-                config.VDS_HOSTS[0], config.NETWORKS[0], key, value[0]
-            ):
-                raise config.NET_EXCEPTION(
-                    "Priority value of bridge opts key %s was not updated "
-                    "correctly with value %s" % (key, value[0])
-                )
-
-
-class TestNetCustPrCase05(TestNCPCaseBase):
-    """
-    Configure bridge_opts with non-default value over bond
-    Verify bridge_opts were updated
-    Update the network with additional bridge_opts key: value pair
-    Verify bridge_opts were updated with both values
-    Update both values of bridge_opts with the default values
-    Verify bridge_opts were updated accordingly
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical VM network on DC, Cluster and Host bond with bridge_opts
-         having non-default value for priority field
-        """
-        network_param_dict = {
-            "nic": config.BOND[0],
-            "slaves": [2, 3],
-            "required": "false",
-            "properties": {
-                "bridge_opts": config.PRIORITY
-            }
-        }
-        local_dict = {
-            config.NETWORKS[0]: network_param_dict
-        }
-        logger.info(
-            "Create logical VM network %s on DC/Cluster/Host bond with "
-            "bridge_opts having non-default value for priority field",
-            config.NETWORKS[0]
-        )
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
-        ):
-            raise config.NET_EXCEPTION("Cannot create and attach network")
 
     @polarion("RHEVM3-4182")
     def test_check_several_bridge_opts_exist_bond(self):
@@ -435,74 +251,63 @@ class TestNetCustPrCase05(TestNCPCaseBase):
         3) Update bridge_opts with the default value for both keys
         4) Verify bridge_opts have updated default value
         """
-        default_bridge_opts = " ".join(
-            [config.DEFAULT_PRIORITY, config.DEFAULT_MULT_QUERIER]
+        testflow.step(
+            "Update bridge_opts %s with %s over BOND", self.querier_opts,
+            self.non_default_bridge_opts
         )
-        non_default_bridge_opts = " ".join(
-            [config.PRIORITY, config.MULT_QUERIER]
-        )
-
-        logger.info(
-            "Update bridge_opts with additional parameter for multicast_"
-            "querier"
-        )
-
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_2,
                     "properties": {
-                        "bridge_opts": non_default_bridge_opts
+                        "bridge_opts": self.non_default_bridge_opts
                     }
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
-
-        logger.info("Check that bridge_opts parameter has an updated value ")
-        for key, value in config.BRIDGE_OPTS.iteritems():
-            if not ll_networks.check_bridge_opts(
-                config.VDS_HOSTS[0], config.NETWORKS[0], key, value[1]
-            ):
-                raise config.NET_EXCEPTION(
-                    "Value of bridge opts key %s was not updated correctly "
-                    "with value %s" % (key, value[1])
-                )
-
+        testflow.step(
+            "Check that bridge_opts parameter %s have been updated "
+            "to %s over BOND", self.querier_opts, self.non_default_bridge_opts
+        )
+        for key, value in conf.BRIDGE_OPTS.iteritems():
+            assert ll_networks.check_bridge_opts(
+                vds_resource=conf.VDS_0_HOST, bridge_name=self.net_2,
+                opts=key, value=value[1]
+            )
+        testflow.step(
+            "Update bridge_opts %s with %s over BOND", self.querier_opts,
+            self.default_bridge_opts
+        )
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_2,
                     "properties": {
-                        "bridge_opts": default_bridge_opts
+                        "bridge_opts": self.default_bridge_opts
                     }
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
+        )
+        testflow.step(
+            "Check that bridge_opts parameter %s have been updated "
+            "to %s over BOND", self.querier_opts, self.default_bridge_opts
+        )
+        for key, value in conf.BRIDGE_OPTS.items():
+            assert ll_networks.check_bridge_opts(
+                vds_resource=conf.VDS_0_HOST, bridge_name=self.net_2,
+                opts=key, value=value[0]
             )
-        )
-
-        logger.info(
-            "Check that bridge_opts parameter has an updated default value"
-        )
-        for key, value in config.BRIDGE_OPTS.iteritems():
-            if not ll_networks.check_bridge_opts(
-                config.VDS_HOSTS[0], config.NETWORKS[0], key, value[0]
-            ):
-                raise config.NET_EXCEPTION(
-                    "Value of bridge opts key %s was not updated correctly "
-                    "with value %s" % (key, value[0])
-                )
 
 
-class TestNetCustPrCase06(TestNCPCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_networks_to_host.__name__)
+class TestNetCustPrCase04(NetworkTest):
     """
     Configure bridge_opts with non-default value for VLAN network over NIC
     Configure bridge_opts with non-default value for network over bond
@@ -513,49 +318,19 @@ class TestNetCustPrCase06(TestNCPCaseBase):
     values)
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create 2 logical VM networks on DC, Cluster and Host when the
-        untagged one is attached to the bond and tagged one is attached to
-        the host interface (bridge_opts is configured for both)
-        """
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": config.BOND[0],
-                "slaves": [2, 3],
-                "required": "false",
-                "properties": {
-                    "bridge_opts": config.PRIORITY
-                    }
-                },
-            config.VLAN_NETWORKS[0]: {
-                "nic": 1,
-                'vlan_id': config.VLAN_ID[0],
-                "required": "false",
-                "properties": {
-                    "bridge_opts": config.PRIORITY
-                }
-            }
-        }
-        logger.info(
-            "Create 2 logical VM networks on DC, Cluster and Host when"
-            " the untagged %s is attached to the bond %s and tagged "
-            "%s is attached to the host interface %s"
-            "(bridge_opts is configured for both)",
-            config.NETWORKS[0], config.BOND[0],
-            config.VLAN_NETWORKS[0], HOST_NICS[1]
-        )
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0, 1]
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot create and attach networks %s and %s" %
-                (config.NETWORKS[0], config.VLAN_NETWORKS[0])
-            )
+    slaves = False
+    clear_custom_properties = False
+    bond_1 = "bond40"
+    ethtool_properties = None
+    ethtool_checksums = None
+    bridge_opts_properties = {"bridge_opts": conf.PRIORITY}
+    priority_opts = conf.KEY1
+    priority_value = conf.BRIDGE_OPTS.get(priority_opts)[1]
+    priority_default = conf.DEFAULT_PRIORITY
+    priority_default_value = conf.BRIDGE_OPTS.get(conf.KEY1)[0]
+    net_1 = custom_prop_conf.NETS[4][0]
+    net_2 = custom_prop_conf.NETS[4][1]
+    net_nic_list = [(net_1, bond_1), (net_2, 1)]
 
     @polarion("RHEVM3-4183")
     def test_check_reattach_network(self):
@@ -565,64 +340,55 @@ class TestNetCustPrCase06(TestNCPCaseBase):
         3) Reattach networks to the Host again
         4) Verify bridge_opts have updated default value
         """
-        logger.info("Check that bridge_opts parameter has an updated value ")
-        for network in (config.NETWORKS[0], config.VLAN_NETWORKS[0]):
-            if not ll_networks.check_bridge_opts(
-                config.VDS_HOSTS[0], network, config.KEY1,
-                config.BRIDGE_OPTS.get(config.KEY1)[1]
-            ):
-                raise config.NET_EXCEPTION(
-                    "Priority value of bridge opts key was not updated "
-                    "correctly with value %s" %
-                    config.BRIDGE_OPTS.get(config.KEY1)[1]
-                )
-        logger.info(
-            "Detach networks %s and %s from Host", config.NETWORKS[0],
-            config.VLAN_NETWORKS[0]
+        testflow.step(
+            "Check that bridge_opts parameter %s have been updated "
+            "to %s", self.priority_opts, self.priority_value
         )
-        if not hl_networks.createAndAttachNetworkSN(
-            host=config.VDS_HOSTS[0], network_dict={}, auto_nics=[0]
-        ):
-            raise config.NET_EXCEPTION("Cannot detach networks from setup")
-
-        logger.info(
-            "Reattach networks %s and %s to Host", config.NETWORKS[0],
-            config.VLAN_NETWORKS[0]
+        for network in self.net_1, self.net_2:
+            assert ll_networks.check_bridge_opts(
+                vds_resource=conf.VDS_0_HOST, bridge_name=network,
+                opts=self.priority_opts, value=self.priority_value
+            )
+        testflow.step(
+            "Detach networks %s and %s from Host", self.net_1, self.net_2
         )
-        local_dict = {
-            config.NETWORKS[0]: {
-                "nic": config.BOND[0],
-                "slaves": [2, 3],
-                "required": "false"
-            },
-            config.VLAN_NETWORKS[0]: {
-                "nic": 1,
-                "vlan_id": config.VLAN_ID[0],
-                "required": "false"
+        assert hl_host_network.clean_host_interfaces(
+            host_name=conf.HOST_0_NAME
+        )
+        testflow.step(
+            "Reattach networks %s and %s to Host", self.net_1, self.net_2
+        )
+        network_host_api_dict = {
+            "add": {
+                "1": {
+                    "network": self.net_1,
+                    "nic": conf.VDS_0_HOST.nics[1]
+                },
+                "2": {
+                    "slaves": conf.VDS_0_HOST.nics[-2:],
+                    "network": self.net_2,
+                    "nic": self.bond_1
+                }
             }
         }
-
-        if not hl_networks.createAndAttachNetworkSN(
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0, 1]
-        ):
-            raise config.NET_EXCEPTION("Cannot create and attach network")
-
-        logger.info(
-            "Check that bridge_opts parameter has an updated default value"
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
-        for network in (config.NETWORKS[0], config.VLAN_NETWORKS[0]):
-            if not ll_networks.check_bridge_opts(
-                config.VDS_HOSTS[0], network, config.KEY1,
-                config.BRIDGE_OPTS.get(config.KEY1)[0]
-            ):
-                raise config.NET_EXCEPTION(
-                    "Value of bridge opts key was not updated correctly "
-                    "with value %s" % config.BRIDGE_OPTS.get(config.KEY1)[0]
-                )
+        testflow.step(
+            "Check that bridge_opts %s has been updated to %s",
+            self.priority_opts, self.priority_default
+        )
+        for network in self.net_1, self.net_2:
+            assert ll_networks.check_bridge_opts(
+                vds_resource=conf.VDS_0_HOST, bridge_name=network,
+                opts=self.priority_opts, value=self.priority_default
+            )
 
 
-class TestNetCustPrCase07(TestNCPCaseBase):
+@attr(tier=2)
+@pytest.mark.incremental
+@pytest.mark.usefixtures(attach_networks_to_host.__name__)
+class TestNetCustPrCase05(NetworkTest):
     """
     Configure ethtool with non-default value
     Verify ethtool_opts were updated
@@ -630,139 +396,59 @@ class TestNetCustPrCase07(TestNCPCaseBase):
     Verify ethtool_opts were updated with the default value
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical VLAN VM network on DC/Cluster/Host with ethtool_opts
-        having non-default value for tx_checksum field
-        """
-        prop_dict = {
-            "ethtool_opts": config.TX_CHECKSUM.format(
-                nic=HOST_NICS[1], state="off")
-        }
-        network_param_dict = {
-            "nic": 1, "required": "false",
-            "vlan_id": config.VLAN_ID[0],
-            "properties": prop_dict
-        }
-
-        local_dict = {
-            config.VLAN_NETWORKS[0]: network_param_dict
-        }
-        logger.info(
-            "Create logical VLAN VM network %s on DC/Cluster/Host "
-            "with ethtool_opts having non-default value for "
-            "tx_checksum field", config.VLAN_NETWORKS[0]
-        )
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0, 1]
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
-            )
+    slaves = False
+    clear_custom_properties = False
+    bridge_opts_properties = None
+    ethtool_properties = {"ethtool_opts": "off"}
+    ethtool_checksums = [conf.TX_CHECKSUM]
+    net_1 = custom_prop_conf.NETS[5][0]
+    net_2 = custom_prop_conf.NETS[5][1]
+    net_nic_list = [(net_1, 1), (net_2, 2)]
 
     @polarion("RHEVM3-4187")
-    def test_update_ethtool_opts(self):
+    def test_01_update_ethtool_opts(self):
         """
         1) Verify ethtool_opts have updated value for tx_checksum opts
         2) Update ethtool_opts with the default value
         3) Verify ethtool_opts have updated default value for tx_checksum opts
         """
-        logger.info(
+        testflow.step(
             "Check that ethtool_opts parameter for tx_checksum have "
-            "an updated non-default value"
+            "been updated to off"
         )
-        if not ll_networks.check_ethtool_opts(
-            config.VDS_HOSTS[0], HOST_NICS[1], "tx-checksumming", "off"
-        ):
-            raise config.NET_EXCEPTION(
-                "tx-checksum value of ethtool_opts was not updated "
-                "correctly with non-default value"
-            )
+        assert ll_networks.check_ethtool_opts(
+            vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[1],
+            opts="tx-checksumming", value="off"
+        )
 
-        logger.info(
+        testflow.step(
             "Update ethtool_opts for tx_checksum with the default parameter"
         )
-
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.VLAN_NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
-                        "ethtool_opts": config.TX_CHECKSUM.format(
-                            nic=HOST_NICS[1], state="on"
+                        "ethtool_opts": conf.TX_CHECKSUM.format(
+                            nic=conf.HOST_0_NICS[1], state="on"
                         )
                     }
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
-
-        logger.info(
+        testflow.step(
             "Check that ethtool_opts parameter has an updated default value"
         )
-        if not ll_networks.check_ethtool_opts(
-            config.VDS_HOSTS[0], HOST_NICS[1], "tx-checksumming", "on"
-        ):
-            raise config.NET_EXCEPTION(
-                "tx-checksum value of ethtool_opts was not updated correctly "
-                "with default value"
-            )
-
-
-class TestNetCustPrCase08(TestNCPCaseBase):
-    """
-    Configure ethtool_opts with non-default value
-    Verify ethtool_opts was updated
-    Update the NIC with additional ethtool_opts value
-    Verify ethtool_opts were updated with both values
-    Update both values of ethtool_opts with the default values
-    Verify ethtool_opts were updated accordingly
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical non-VM and network on DC/Cluster/Host with
-        ethtool_opts having non-default value for tx_checksum field
-        """
-        prop_dict = {
-            "ethtool_opts": config.TX_CHECKSUM.format(
-                nic=HOST_NICS[1], state="off"
-            )
-        }
-        network_param_dict = {
-            "nic": 1, "required": "false",
-            "usages": "",
-            "properties": prop_dict
-        }
-        local_dict = {
-            config.NETWORKS[0]: network_param_dict
-        }
-        logger.info(
-            "Create logical non-VM and network %s on DC/Cluster/Host "
-            "with ethtool_opts having non - default value for "
-            "tx_checksum field", config.NETWORKS[0]
+        assert ll_networks.check_ethtool_opts(
+            vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[1],
+            opts="tx-checksumming", value="on"
         )
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
 
     @polarion("RHEVM3-4188")
-    def test_check_several_ethtool_opts_exist_nic(self):
+    def test_02_check_several_ethtool_opts_exist_nic_vlan(self):
         """
         1) Update ethtool_opts with additional parameter (rx checksum)
         2) Verify ethtool_opts have updated value for tx and rx checksum
@@ -770,241 +456,194 @@ class TestNetCustPrCase08(TestNCPCaseBase):
         4) Verify ethtool_opts have updated default value
         """
         default_ethtool_opts = " ".join(
-            [config.TX_CHECKSUM.format(
-                nic=HOST_NICS[1], state="on"
-            ), config.RX_CHECKSUM.format(
-                nic=HOST_NICS[1], state="on"
+            [conf.TX_CHECKSUM.format(
+                nic=conf.HOST_0_NICS[1], state="on"
+            ), conf.RX_CHECKSUM.format(
+                nic=conf.HOST_0_NICS[1], state="on"
             )]
         )
         non_default_ethtool_opts = " ".join(
-            [config.TX_CHECKSUM.format(
-                nic=HOST_NICS[1], state="off"
-            ), config.RX_CHECKSUM.format(
-                nic=HOST_NICS[1], state="off"
+            [conf.TX_CHECKSUM.format(
+                nic=conf.HOST_0_NICS[1], state="off"
+            ), conf.RX_CHECKSUM.format(
+                nic=conf.HOST_0_NICS[1], state="off"
             )]
         )
-
-        logger.info(
+        testflow.step(
             "Update ethtool_opts with additional parameters"
         )
-
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
                         "ethtool_opts": non_default_ethtool_opts
                     }
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
-
-        logger.info("Check that ethtool_opts parameter has an updated value ")
-        for prop in ("rx-checksumming", "tx-checksumming"):
-            if not ll_networks.check_ethtool_opts(
-                config.VDS_HOSTS[0], HOST_NICS[1], prop, "off"
-            ):
-                raise config.NET_EXCEPTION(
-                    "tx-checksum value of ethtool_opts was not updated "
-                    "correctly with non-default value"
-                )
-
-        logger.info(
+        testflow.step("Check that ethtool_opts parameter has an updated value")
+        for prop in "rx-checksumming", "tx-checksumming":
+            assert ll_networks.check_ethtool_opts(
+                vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[1],
+                opts=prop, value="off"
+            )
+        testflow.step(
             "Update ethtool_opts with the default parameters for both "
             "rx and tx checksum values"
         )
-
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
                         "ethtool_opts": default_ethtool_opts
                     }
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
-
-        logger.info(
+        testflow.step(
             "Check that ethtool_opts parameters have an updated default value"
             " for rx and tx checksum"
         )
-        for prop in ("rx-checksumming", "tx-checksumming"):
-            if not ll_networks.check_ethtool_opts(
-                config.VDS_HOSTS[0], HOST_NICS[1], prop, "on"
-            ):
-                raise config.NET_EXCEPTION(
-                    "tx-checksum and autoneg values of ethtool_opts were not "
-                    "updated correctly with default value"
-                )
-
-
-class TestNetCustPrCase09(TestNCPCaseBase):
-    """
-    Configure ethtool with non-default value for the NIC with network
-    Verify ethtool_opts were updated
-    Remove network from Host NIC
-    Reattach network to the Host NIC
-    Verify ethtool_opts has the non-default value for the NIC with network
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical VM network on DC/Cluster/Host with ethtool_opts
-        having non-default value for tx_checksum field
-        """
-        prop_dict = {
-            "ethtool_opts": config.TX_CHECKSUM.format(
-                nic=HOST_NICS[1], state="off"
-            )
-        }
-        network_param_dict = {
-            "nic": 1,
-            "required": "false",
-            "properties": prop_dict
-        }
-
-        local_dict = {
-            config.NETWORKS[0]: network_param_dict
-        }
-        logger.info(
-            "Create logical VM network %s on DC/Cluster/Host with "
-            "ethtool_opts having non-default value for tx_checksum field",
-            config.NETWORKS[0]
-        )
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
+        for prop in "rx-checksumming", "tx-checksumming":
+            assert ll_networks.check_ethtool_opts(
+                vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[1],
+                opts=prop, value="on"
             )
 
-        logger.info(
-            "Check that ethtool_opts parameter for tx_checksum have an "
-            "updated non-default value"
+    @polarion("RHEVM3-4188")
+    def test_03_check_several_ethtool_opts_exist_nic_non_vm(self):
+        """
+        1) Update ethtool_opts with additional parameter (rx checksum)
+        2) Verify ethtool_opts have updated value for tx and rx checksum
+        3) Update ethtool_opts with the default value for both keys
+        4) Verify ethtool_opts have updated default value
+        """
+        default_ethtool_opts = " ".join(
+            [conf.TX_CHECKSUM.format(
+                nic=conf.HOST_0_NICS[2], state="on"
+            ), conf.RX_CHECKSUM.format(
+                nic=conf.HOST_0_NICS[2], state="on"
+            )]
         )
-        if not ll_networks.check_ethtool_opts(
-            config.VDS_HOSTS[0], HOST_NICS[1], "tx-checksumming", "off"
-        ):
-            raise config.NET_EXCEPTION(
-                "tx-checksum value of ethtool_opts was not updated correctly"
+        non_default_ethtool_opts = " ".join(
+            [conf.TX_CHECKSUM.format(
+                nic=conf.HOST_0_NICS[2], state="off"
+            ), conf.RX_CHECKSUM.format(
+                nic=conf.HOST_0_NICS[2], state="off"
+            )]
+        )
+
+        testflow.step(
+            "Update ethtool_opts with additional parameters"
+        )
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": self.net_2,
+                    "properties": {
+                        "ethtool_opts": non_default_ethtool_opts
+                    }
+                }
+            }
+        }
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
+        )
+        testflow.step(
+            "Check that ethtool_opts parameter has an updated value "
+        )
+        for prop in "rx-checksumming", "tx-checksumming":
+            assert ll_networks.check_ethtool_opts(
+                vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[2],
+                opts=prop, value="off"
+            )
+        testflow.step(
+            "Update ethtool_opts with the default parameters for both "
+            "rx and tx checksum values"
+        )
+        network_host_api_dict = {
+            "update": {
+                "1": {
+                    "network": self.net_2,
+                    "properties": {
+                        "ethtool_opts": default_ethtool_opts
+                    }
+                }
+            }
+        }
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
+        )
+        testflow.step(
+            "Check that ethtool_opts parameters have an updated default value"
+            " for rx and tx checksum"
+        )
+        for prop in "rx-checksumming", "tx-checksumming":
+            assert ll_networks.check_ethtool_opts(
+                vds_resource=conf.VDS_HOSTS[0], nic=conf.HOST_0_NICS[2],
+                opts=prop, value="on"
             )
 
     @polarion("RHEVM3-4191")
-    def test_reattach_network(self):
+    def test_04_reattach_network(self):
         """
         1) Detach the network from the Host NIC
         2) Verify ethtool_opts has non default value on the NIC
         3) Reattach network to the same NIC
         3) Verify ethtool_opts has non default value on the NIC
         """
-        logger.info("Remove network %s from the Host NIC", config.NETWORKS[0])
-        if not hl_networks.createAndAttachNetworkSN(
-            host=config.VDS_HOSTS[0], network_dict={}, auto_nics=[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't remove network %s from the Host NIC" %
-                config.NETWORKS[0]
-            )
-
-        logger.info(
+        testflow.step("Remove network %s from the Host NIC", self.net_2)
+        network_host_api_dict = {
+            "remove": {
+                "networks": [self.net_2],
+            }
+        }
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
+        )
+        testflow.step(
             "Check that ethtool_opts parameter has an updated non-default "
             "value after removing network"
         )
-        if not ll_networks.check_ethtool_opts(
-            config.VDS_HOSTS[0], HOST_NICS[1], "tx-checksumming", "off"
-        ):
-            raise config.NET_EXCEPTION(
-                "tx-checksum value of ethtool_has default value, "
-                "but shouldn't"
-            )
-
-        logger.info(
-            "Reattach the network %s to the same Host NIC", config.NETWORKS[0]
+        assert ll_networks.check_ethtool_opts(
+            vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[2],
+            opts="tx-checksumming", value="on"
         )
-        network_param_dict = {
-            "nic": 1,
-            "required": "false"
-        }
-        local_dict = {
-            config.NETWORKS[0]: network_param_dict
-        }
-        if not hl_networks.createAndAttachNetworkSN(
-            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
-
-        logger.info(
-            "Check that ethtool_opts parameter has non-default value after "
-            "reattaching new network"
+        testflow.step(
+            "Reattach the network %s to the same Host NIC", self.net_2
         )
-        if not ll_networks.check_ethtool_opts(
-            config.VDS_HOSTS[0], HOST_NICS[1], "tx-checksumming", "off"
-        ):
-            raise config.NET_EXCEPTION(
-                "tx-checksum value of ethtool_has default value, "
-                "but shouldn't"
-            )
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Update ethtool with the default values and remove networks from the
-        setup.
-        """
-        def_ethtool_opts = config.TX_CHECKSUM.format(
-            nic=HOST_NICS[1], state="on"
-        )
-
-        logger.info(
-            "Update ethtool_opts with the default parameters for checksum "
-            "value "
-        )
-
         network_host_api_dict = {
-            "update": {
+            "add": {
                 "1": {
-                    "network": config.NETWORKS[0],
-                    "properties": {
-                        "ethtool_opts": def_ethtool_opts
-                    }
+                    "network": self.net_2,
+                    "nic": conf.HOST_0_NICS[2]
                 }
             }
         }
-        hl_host_network.setup_networks(
-            host_name=config.HOSTS[0], **network_host_api_dict
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
+        )
+        testflow.step(
+            "Check that ethtool_opts parameter has non-default value after "
+            "reattaching new network"
+        )
+        assert ll_networks.check_ethtool_opts(
+            vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[2],
+            opts="tx-checksumming", value="on"
         )
 
-        logger.info(
-            "Check that ethtool_opts parameters have an updated default value"
-            " for checksum"
-        )
-        if not ll_networks.check_ethtool_opts(
-            config.VDS_HOSTS[0], HOST_NICS[1], "tx-checksumming", "on"
-        ):
-            logger.error(
-                "tx-checksum value of ethtool_opts was not updated correctly"
-                " with default value"
-            )
-        super(TestNetCustPrCase09, cls).teardown_class()
 
-
-class TestNetCustPrCase10(TestNCPCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_networks_to_host.__name__)
+class TestNetCustPrCase06(NetworkTest):
     """
     Configure ethtool and bridge opts with non-default value
     Verify ethtool and bridge_opts were updated with non-default values
@@ -1012,42 +651,13 @@ class TestNetCustPrCase10(TestNCPCaseBase):
     Verify ethtool and bridge_opts were updated with the default value
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical VM network on DC/Cluster/Host with ethtool_opts
-        and bridge_opts having non-default values
-        """
-
-        prop_dict = {
-            "ethtool_opts": config.TX_CHECKSUM.format(
-                nic=HOST_NICS[1], state="off"
-            ),
-            "bridge_opts": config.PRIORITY
-        }
-        network_param_dict = {
-            "nic": 1,
-            "required": "false",
-            "properties": prop_dict
-        }
-
-        local_dict = {
-            config.NETWORKS[0]: network_param_dict
-        }
-        logger.info(
-            "Create logical VM network %s on DC/Cluster/Host with  "
-            "ethtool_opts and bridge_opts having non-default values",
-            config.NETWORKS[0]
-        )
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
+    slaves = False
+    clear_custom_properties = False
+    bridge_opts_properties = {"bridge_opts": conf.PRIORITY}
+    ethtool_properties = {"ethtool_opts": "off"}
+    ethtool_checksums = [conf.TX_CHECKSUM]
+    net_1 = custom_prop_conf.NETS[6][0]
+    net_nic_list = [(net_1, 1)]
 
     @polarion("RHEVM3-4192")
     def test_update_ethtool_bridge_opts(self):
@@ -1056,80 +666,63 @@ class TestNetCustPrCase10(TestNCPCaseBase):
         2) Update ethtool and bridge_opts with the default value
         3) Verify ethtool_and bridge opts have been updated with default values
         """
-        logger.info(
+        testflow.step(
             "Check that ethtool_opts parameter for tx_checksum have an "
             "updated non-default value "
         )
-        if not ll_networks.check_ethtool_opts(
-            config.VDS_HOSTS[0], HOST_NICS[1], "tx-checksumming", "off"
-        ):
-            raise config.NET_EXCEPTION(
-                "tx-checksum value of ethtool_opts was not updated correctly "
-                "with non-default value"
-            )
+        assert ll_networks.check_ethtool_opts(
+            vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[1],
+            opts="tx-checksumming", value="off"
+        )
 
-        logger.info(
-            "Check that bridge_opts parameter for priority  have an updated "
+        testflow.step(
+            "Check that bridge_opts parameter for priority have an updated "
             "non-default value "
         )
-        if not ll_networks.check_bridge_opts(
-            config.VDS_HOSTS[0], config.NETWORKS[0], config.KEY1,
-            config.BRIDGE_OPTS.get(config.KEY1)[1]
-        ):
-            raise config.NET_EXCEPTION(
-                "Priority value of bridge_opts was not updated correctly "
-                "with non-default value"
-            )
+        assert ll_networks.check_bridge_opts(
+            vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
+            opts=conf.KEY1, value=conf.BRIDGE_OPTS.get(conf.KEY1)[1]
+        )
 
-        logger.info(
+        testflow.step(
             "Update ethtool_opts for tx_checksum and bridge_opts for "
             "priority with the default parameters "
         )
-
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
-                        "ethtool_opts": config.TX_CHECKSUM.format(
-                            nic=HOST_NICS[1], state="on"
+                        "ethtool_opts": conf.TX_CHECKSUM.format(
+                            nic=conf.HOST_0_NICS[1], state="on"
                         ),
-                        "bridge_opts": config.DEFAULT_PRIORITY
+                        "bridge_opts": conf.DEFAULT_PRIORITY
                     }
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOSTS[0], **network_host_api_dict
         )
-
-        logger.info(
+        testflow.step(
             "Check that ethtool_opts parameter has an updated default value"
         )
-        if not ll_networks.check_ethtool_opts(
-            config.VDS_HOSTS[0], HOST_NICS[1], "tx-checksumming", "on"
-        ):
-            raise config.NET_EXCEPTION(
-                "tx-checksum value of ethtool_opts was not updated correctly "
-                "with default value"
-            )
-
-        logger.info(
+        assert ll_networks.check_ethtool_opts(
+            vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[1],
+            opts="tx-checksumming", value="on"
+        )
+        testflow.step(
             "Check that bridge_opts parameter has an updated default value"
         )
-        if not ll_networks.check_bridge_opts(
-            config.VDS_HOSTS[0], config.NETWORKS[0], config.KEY1,
-            config.BRIDGE_OPTS.get(config.KEY1)[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Priority value of bridge opts was not updated correctly "
-                "with default value"
-            )
+        assert ll_networks.check_bridge_opts(
+            vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
+            opts=conf.KEY1, value=conf.BRIDGE_OPTS.get(conf.KEY1)[0]
+        )
 
 
-class TestNetCustPrCase11(TestNCPCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_networks_to_host.__name__)
+class TestNetCustPrCase07(NetworkTest):
     """
     Create a network without ethtool or bridge opts configured
     Configure ethtool and bridge opts with non-default value
@@ -1138,32 +731,13 @@ class TestNetCustPrCase11(TestNCPCaseBase):
     Verify ethtool and bridge_opts were updated with the default value
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical VM network on DC/Cluster/Host
-        """
-        network_param_dict = {
-            "nic": 1,
-            "required": "false"
-        }
-
-        local_dict = {
-            config.NETWORKS[0]: network_param_dict
-        }
-        logger.info(
-            "Create logical VM network %s on DC/Cluster/Host",
-            config.NETWORKS[0]
-        )
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
+    slaves = False
+    clear_custom_properties = False
+    bridge_opts_properties = None
+    ethtool_properties = None
+    ethtool_checksums = None
+    net_1 = custom_prop_conf.NETS[7][0]
+    net_nic_list = [(net_1, 1)]
 
     @polarion("RHEVM3-4193")
     def test_update_bridge_ethtool_opts(self):
@@ -1174,104 +748,82 @@ class TestNetCustPrCase11(TestNCPCaseBase):
         3) Update ethtool and bridge_opts with the default value
         4) Verify ethtool_and bridge opts have been updated with default values
         """
-        logger.info(
+        testflow.step(
             "Update ethtool and bridge opts for tx_checksum and priority "
             "appropriately with the default parameters"
         )
-
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
-                        "ethtool_opts": config.TX_CHECKSUM.format(
-                            nic=HOST_NICS[1], state="off"
+                        "ethtool_opts": conf.TX_CHECKSUM.format(
+                            nic=conf.HOST_0_NICS[1], state="off"
                         ),
-                        "bridge_opts": config.PRIORITY
+                        "bridge_opts": conf.PRIORITY
                     }
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
 
-        logger.info(
+        testflow.step(
             "Check that ethtool_opts parameter for tx_checksum have an "
             "updated non-default value "
         )
-        if not ll_networks.check_ethtool_opts(
-            config.VDS_HOSTS[0], HOST_NICS[1], "tx-checksumming", "off"
-        ):
-            raise config.NET_EXCEPTION(
-                "tx-checksum value of ethtool_opts was not updated correctly "
-                "with non-default value"
-            )
-
-        logger.info(
+        assert ll_networks.check_ethtool_opts(
+            vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[1],
+            opts="tx-checksumming", value="off"
+        )
+        testflow.step(
             "Check that bridge_opts parameter for priority  have an updated "
             "non-default value"
         )
-        if not ll_networks.check_bridge_opts(
-            config.VDS_HOSTS[0], config.NETWORKS[0], config.KEY1,
-            config.BRIDGE_OPTS.get(config.KEY1)[1]
-        ):
-            raise config.NET_EXCEPTION(
-                "Priority value of bridge_opts was not updated correctly "
-                "with non-default value"
-            )
-
-        logger.info(
+        assert ll_networks.check_bridge_opts(
+            vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
+            opts=conf.KEY1, value=conf.BRIDGE_OPTS.get(conf.KEY1)[1]
+        )
+        testflow.step(
             "Update ethtool and bridge opts for tx_checksum and priority "
             "appropriately with the default parameters"
         )
-
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
-                        "ethtool_opts": config.TX_CHECKSUM.format(
-                            nic=HOST_NICS[1], state="on"
+                        "ethtool_opts": conf.TX_CHECKSUM.format(
+                            nic=conf.HOST_0_NICS[1], state="on"
                         ),
-                        "bridge_opts": config.DEFAULT_PRIORITY
+                        "bridge_opts": conf.DEFAULT_PRIORITY
                     }
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOSTS[0], **network_host_api_dict
         )
-
-        logger.info(
+        testflow.step(
             "Check that ethtool_opts parameter has an updated default value"
         )
-        if not ll_networks.check_ethtool_opts(
-            config.VDS_HOSTS[0], HOST_NICS[1], "tx-checksumming", "on"
-        ):
-            raise config.NET_EXCEPTION(
-                "tx-checksum value of ethtool_opts was not updated correctly "
-                "with default value"
-            )
-
-        logger.info(
+        assert ll_networks.check_ethtool_opts(
+            vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[1],
+            opts="tx-checksumming", value="on"
+        )
+        testflow.step(
             "Check that bridge_opts parameter has an updated default value"
         )
-        if not ll_networks.check_bridge_opts(
-            config.VDS_HOSTS[0], config.NETWORKS[0], config.KEY1,
-            config.BRIDGE_OPTS.get(config.KEY1)[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Priority value of bridge opts was not updated correctly "
-                "with default value"
-            )
+        assert ll_networks.check_bridge_opts(
+            vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
+            opts=conf.KEY1, value=conf.BRIDGE_OPTS.get(conf.KEY1)[0]
+        )
 
 
-class TestNetCustPrCase12(TestNCPCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_networks_to_host.__name__)
+class TestNetCustPrCase08(NetworkTest):
     """
     Configure several ethtool_opts  with non-default value for the NIC with
      attached Network (different key:value)
@@ -1281,28 +833,13 @@ class TestNetCustPrCase12(TestNCPCaseBase):
     Test on the Host that bridge_opts values were updated correctly
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical VM network on DC/Cluster/Host
-        """
-        network_param_dict = {
-            "nic": 1,
-            "required": "false"
-        }
-        local_dict = {
-            config.NETWORKS[0]: network_param_dict
-        }
-        logger.info("Attach network %s to DC/Cluste/Host", config.NETWORKS[0])
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
+    slaves = False
+    clear_custom_properties = False
+    bridge_opts_properties = None
+    ethtool_properties = None
+    ethtool_checksums = None
+    net_1 = custom_prop_conf.NETS[7][0]
+    net_nic_list = [(net_1, 1)]
 
     @polarion("RHEVM3-4194")
     def test_check_several_bridge_ethtool_opts_exist(self):
@@ -1315,29 +852,27 @@ class TestNetCustPrCase12(TestNCPCaseBase):
         4) Test on the Host that bridge_opts values were updated correctly
         """
         default_ethtool_opts = " ".join(
-            [config.TX_CHECKSUM.format(nic=HOST_NICS[1], state="on"),
-             config.RX_CHECKSUM.format(nic=HOST_NICS[1], state="on")]
+            [conf.TX_CHECKSUM.format(nic=conf.HOST_0_NICS[1], state="on"),
+             conf.RX_CHECKSUM.format(nic=conf.HOST_0_NICS[1], state="on")]
         )
         non_default_ethtool_opts = " ".join(
-            [config.TX_CHECKSUM.format(nic=HOST_NICS[1], state="off"),
-             config.RX_CHECKSUM.format(nic=HOST_NICS[1], state="off")]
+            [conf.TX_CHECKSUM.format(nic=conf.HOST_0_NICS[1], state="off"),
+             conf.RX_CHECKSUM.format(nic=conf.HOST_0_NICS[1], state="off")]
         )
         default_bridge_opts = " ".join(
-            [config.DEFAULT_PRIORITY, config.DEFAULT_MULT_QUERIER]
+            [conf.DEFAULT_PRIORITY, conf.DEFAULT_MULT_QUERIER]
         )
         non_default_bridge_opts = " ".join(
-            [config.PRIORITY, config.MULT_QUERIER]
+            [conf.PRIORITY, conf.MULT_QUERIER]
         )
-
-        logger.info(
+        testflow.step(
             "Update ethtool_opts with non-default parameters for tx checksum "
             "and rx checksum and priority and querier of bridge opts"
         )
-
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
                         "ethtool_opts": non_default_ethtool_opts,
                         "bridge_opts": non_default_bridge_opts
@@ -1345,40 +880,29 @@ class TestNetCustPrCase12(TestNCPCaseBase):
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOSTS[0], **network_host_api_dict
         )
-
-        logger.info("Check that ethtool_opts parameter has an updated value ")
-        for prop in ("rx-checksumming", "tx-checksumming"):
-            if not ll_networks.check_ethtool_opts(
-                config.VDS_HOSTS[0], HOST_NICS[1], prop, "off"
-            ):
-                raise config.NET_EXCEPTION(
-                    "tx-checksum value of ethtool_opts was not updated "
-                    "correctly with non-default value"
-                )
-        logger.info("Check that bridge_opts parameter has an updated value ")
-        for key, value in config.BRIDGE_OPTS.iteritems():
-            if not ll_networks.check_bridge_opts(
-                config.VDS_HOSTS[0], config.NETWORKS[0], key, value[1]
-            ):
-                raise config.NET_EXCEPTION(
-                    "Value of bridge opts key %s was not updated correctly "
-                    "with value %s" % (key, value[1])
-                )
-
-        logger.info(
+        testflow.step("Check that ethtool_opts parameter has an updated value")
+        for prop in "rx-checksumming", "tx-checksumming":
+            assert ll_networks.check_ethtool_opts(
+                vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[1],
+                opts=prop, value="off"
+            )
+        testflow.step("Check that bridge_opts parameter has an updated value ")
+        for key, value in conf.BRIDGE_OPTS.iteritems():
+            assert ll_networks.check_bridge_opts(
+                vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
+                opts=key, value=value[1]
+            )
+        testflow.step(
             "Update ethtool_opts with default parameters for tx checksum and "
             "rx checksum and priority and querier of bridge opts"
         )
-
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
                         "ethtool_opts": default_ethtool_opts,
                         "bridge_opts": default_bridge_opts
@@ -1386,39 +910,31 @@ class TestNetCustPrCase12(TestNCPCaseBase):
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOSTS[0], **network_host_api_dict
         )
-
-        logger.info(
+        testflow.step(
             "Check that ethtool_opts parameters have an updated default "
             "value for rx and tx checksum"
         )
-        for prop in ("tx-checksumming", "rx-checksumming"):
-            if not ll_networks.check_ethtool_opts(
-                config.VDS_HOSTS[0], HOST_NICS[1], prop, "on"
-            ):
-                raise config.NET_EXCEPTION(
-                    "tx-checksum and autoneg values of ethtool_opts were not "
-                    "updated correctly with default value"
-                )
-
-        logger.info(
+        for prop in "tx-checksumming", "rx-checksumming":
+            assert ll_networks.check_ethtool_opts(
+                vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[1],
+                opts=prop, value="on"
+            )
+        testflow.step(
             "Check that bridge_opts parameter has an updated default value"
         )
-        for key, value in config.BRIDGE_OPTS.items():
-            if not ll_networks.check_bridge_opts(
-                config.VDS_HOSTS[0], config.NETWORKS[0], key, value[0]
-            ):
-                raise config.NET_EXCEPTION(
-                    "Priority value of bridge opts key %s was not updated "
-                    "correctly with value %s" % (key, value[0])
-                )
+        for key, value in conf.BRIDGE_OPTS.items():
+            assert ll_networks.check_bridge_opts(
+                vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1, opts=key,
+                value=value[0]
+            )
 
 
-class TestNetCustPrCase13(TestNCPCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_networks_to_host.__name__)
+class TestNetCustPrCase09(NetworkTest):
     """
     Create several ethtool and bridge opts while adding network to the Host
     Configure several ethtool_opts  with non-default value for the NIC with
@@ -1429,44 +945,16 @@ class TestNetCustPrCase13(TestNCPCaseBase):
     Test on the Host that bridge_opts values were updated correctly
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical VM network on DC/Cluster/Host with several ethtool
-        and bridge opts configured
-        """
-        default_ethtool_opts = " ".join(
-            [config.TX_CHECKSUM.format(nic=HOST_NICS[1], state="on"),
-             config.RX_CHECKSUM.format(nic=HOST_NICS[1], state="on")]
-        )
-        default_bridge_opts = " ".join(
-            [config.DEFAULT_PRIORITY, config.DEFAULT_MULT_QUERIER]
-        )
-        prop_dict = {
-            "ethtool_opts": default_ethtool_opts,
-            "bridge_opts": default_bridge_opts
-        }
-        network_param_dict = {
-            "nic": 1,
-            "required": "false",
-            "properties": prop_dict
-        }
-        local_dict = {
-            config.NETWORKS[0]: network_param_dict
-        }
-        logger.info(
-            "Create network %s with ethtool and bridge opts",
-            config.NETWORKS[0]
-        )
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot create and attach network %s" % config.NETWORKS[0]
-            )
+    slaves = False
+    clear_custom_properties = True
+    default_bridge_opts = " ".join(
+        [conf.DEFAULT_PRIORITY, conf.DEFAULT_MULT_QUERIER]
+    )
+    bridge_opts_properties = {"bridge_opts": default_bridge_opts}
+    ethtool_checksums = [conf.TX_CHECKSUM, conf.RX_CHECKSUM]
+    ethtool_properties = {"ethtool_opts": "on"}
+    net_1 = custom_prop_conf.NETS[9][0]
+    net_nic_list = [(net_1, 1)]
 
     @polarion("RHEVM3-4195")
     def test_check_several_bridge_ethtool_opts_exist(self):
@@ -1479,7 +967,7 @@ class TestNetCustPrCase13(TestNCPCaseBase):
         for the ethtool_opts
         4) Test for the network on the the Host that the bridge values were
         updated correctlydefault_bridge_opts = " ".join(
-            [config.DEFAULT_PRIORITY, config.DEFAULT_MULT_QUERIER]
+            [conf.DEFAULT_PRIORITY, conf.DEFAULT_MULT_QUERIER]
         )
         5) Update  ethtool_opts with the default values for configured values.
         6) Update  bridge_opts with the default values for configured values.
@@ -1489,29 +977,27 @@ class TestNetCustPrCase13(TestNCPCaseBase):
 
         """
         default_ethtool_opts = " ".join(
-            [config.TX_CHECKSUM.format(nic=HOST_NICS[1], state="on"),
-             config.RX_CHECKSUM.format(nic=HOST_NICS[1], state="on")]
+            [conf.TX_CHECKSUM.format(nic=conf.HOST_0_NICS[1], state="on"),
+             conf.RX_CHECKSUM.format(nic=conf.HOST_0_NICS[1], state="on")]
         )
         non_default_ethtool_opts = " ".join(
-            [config.TX_CHECKSUM.format(nic=HOST_NICS[1], state="off"),
-             config.RX_CHECKSUM.format(nic=HOST_NICS[1], state="off")]
+            [conf.TX_CHECKSUM.format(nic=conf.HOST_0_NICS[1], state="off"),
+             conf.RX_CHECKSUM.format(nic=conf.HOST_0_NICS[1], state="off")]
         )
         default_bridge_opts = " ".join(
-            [config.DEFAULT_PRIORITY, config.DEFAULT_MULT_QUERIER]
+            [conf.DEFAULT_PRIORITY, conf.DEFAULT_MULT_QUERIER]
         )
         non_default_bridge_opts = " ".join(
-            [config.PRIORITY, config.MULT_QUERIER]
+            [conf.PRIORITY, conf.MULT_QUERIER]
         )
-
-        logger.info(
+        testflow.step(
             "Update ethtool_opts with non-default parameters for tx, "
             "rx checksum and priority and querier of bridge opts"
         )
-
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
                         "ethtool_opts": non_default_ethtool_opts,
                         "bridge_opts": non_default_bridge_opts
@@ -1519,44 +1005,33 @@ class TestNetCustPrCase13(TestNCPCaseBase):
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
-
-        logger.info(
+        testflow.step(
             "Check that ethtool_opts parameter has an updated value "
         )
         for prop in ("rx-checksumming", "tx-checksumming"):
-            if not ll_networks.check_ethtool_opts(
-                config.VDS_HOSTS[0], HOST_NICS[1], prop, "off"
-            ):
-                raise config.NET_EXCEPTION(
-                    "tx-checksum value of ethtool_opts was not updated "
-                    "correctly with non-default value"
-                )
-        logger.info(
+            assert ll_networks.check_ethtool_opts(
+                vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[1],
+                opts=prop, value="off"
+            )
+        testflow.step(
             "Check that bridge_opts parameter has an updated value "
         )
-        for key, value in config.BRIDGE_OPTS.iteritems():
-            if not ll_networks.check_bridge_opts(
-                config.VDS_HOSTS[0], config.NETWORKS[0], key, value[1]
-            ):
-                raise config.NET_EXCEPTION(
-                    "Value of bridge opts key %s was not updated correctly "
-                    "with value %s" % (key, value[1])
-                )
-
-        logger.info(
+        for key, value in conf.BRIDGE_OPTS.iteritems():
+            assert ll_networks.check_bridge_opts(
+                vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1, opts=key,
+                value=value[1]
+            )
+        testflow.step(
             "Update ethtool_opts with default parameters for tx, rx checksum "
             "and priority and querier of bridge opts"
         )
-
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
                         "ethtool_opts": default_ethtool_opts,
                         "bridge_opts": default_bridge_opts
@@ -1564,62 +1039,31 @@ class TestNetCustPrCase13(TestNCPCaseBase):
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
-
-        logger.info(
+        testflow.step(
             "Check that ethtool_opts parameters have an updated default "
             "value for rx and tx checksum"
         )
-        for prop in ("rx-checksumming", "tx-checksumming"):
-            if not ll_networks.check_ethtool_opts(
-                config.VDS_HOSTS[0], HOST_NICS[1], prop, "on"
-            ):
-                raise config.NET_EXCEPTION(
-                    "tx and rx checksum values of ethtool_opts were not "
-                    "updated correctly with default value"
-                )
-        logger.info(
+        for prop in "rx-checksumming", "tx-checksumming":
+            assert ll_networks.check_ethtool_opts(
+                vds_resource=conf.VDS_0_HOST, nic=conf.HOST_0_NICS[1],
+                opts=prop, value="on"
+            )
+        testflow.step(
             "Check that bridge_opts parameter has an updated default value"
         )
-        for key, value in config.BRIDGE_OPTS.items():
-            if not ll_networks.check_bridge_opts(
-                config.VDS_HOSTS[0], config.NETWORKS[0], key, value[0]
-            ):
-                raise config.NET_EXCEPTION(
-                    "Priority value of bridge opts key %s was not updated "
-                    "correctly with value %s" % (key, value[0])
-                )
-
-    def tearDown(self):
-        """
-        Removing custom properties from host NIC
-        """
-        logger.info("Update ethtool_opts and bridge_opts to None (clear)")
-
-        network_host_api_dict = {
-            "update": {
-                "1": {
-                    "network": config.NETWORKS[0],
-                    "properties": {
-                        "ethtool_opts": None,
-                        "bridge_opts": None
-                    }
-                }
-            }
-        }
-        hl_host_network.setup_networks(
-            host_name=config.HOSTS[0], **network_host_api_dict
-        )
-
-        super(TestNetCustPrCase13, self).tearDown()
+        for key, value in conf.BRIDGE_OPTS.items():
+            assert ll_networks.check_bridge_opts(
+                vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1, opts=key,
+                value=value[0]
+            )
 
 
-@bz({"1340454": {}})
-class TestNetCustPrCase14(TestNCPCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_networks_to_host.__name__)
+class TestNetCustPrCase10(NetworkTest):
     """
     Configure ethtool with non-default value over bond
     Verify ethtool_opts were updated for each slave of the bond
@@ -1628,34 +1072,14 @@ class TestNetCustPrCase14(TestNCPCaseBase):
     of the bond
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical VM network on DC/Cluster/Host
-        """
-        network_param_dict = {
-            "nic": config.BOND[0],
-            "slaves": [2, 3],
-            "required": "false"
-        }
-
-        local_dict = {
-            config.NETWORKS[0]: network_param_dict
-        }
-        logger.info(
-            "Create logical VM network %s on DC/Cluster/Host bond",
-            config.NETWORKS[0]
-        )
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot create and attach network %s to bond %s" %
-                (config.NETWORKS[0], config.BOND[0])
-            )
+    clear_custom_properties = False
+    bridge_opts_properties = None
+    ethtool_properties = None
+    ethtool_checksums = None
+    bond = "bond100"
+    net_1 = custom_prop_conf.NETS[10][0]
+    net_nic_list = [(net_1, bond)]
+    slaves = True
 
     @polarion("RHEVM3-4190")
     def test_update_ethtool_opts_bond(self):
@@ -1667,80 +1091,66 @@ class TestNetCustPrCase14(TestNCPCaseBase):
         3) Verify ethtool_opts have updated default value for tx_checksum
         opts for each slave of the bond
         """
-        logger.info(
+        testflow.step(
             "Update ethtool_opts for tx_checksum with the non-default "
             "parameter "
         )
-
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
-                        "ethtool_opts": config.TX_CHECKSUM.format(
+                        "ethtool_opts": conf.TX_CHECKSUM.format(
                             nic="*", state="off"
                         )
                     }
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
-
-        logger.info(
+        testflow.step(
             "Check that ethtool_opts parameter for tx_checksum have an "
             "updated non-default value for both slaves"
         )
-        for interface in (HOST_NICS[2], HOST_NICS[3]):
-            if not ll_networks.check_ethtool_opts(
-                config.VDS_HOSTS[0], interface, "tx-checksumming", "off"
-            ):
-                raise config.NET_EXCEPTION(
-                    "tx-checksum value of ethtool_opts was not updated "
-                    "correctly with non-default value"
-                )
-
-        logger.info(
+        for interface in conf.HOST_0_NICS[2], conf.HOST_0_NICS[3]:
+            assert ll_networks.check_ethtool_opts(
+                vds_resource=conf.VDS_0_HOST, nic=interface,
+                opts="tx-checksumming", value="off"
+            )
+        testflow.step(
             "Update ethtool_opts for tx_checksum with the default parameter"
         )
-
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
-                        "ethtool_opts": config.TX_CHECKSUM.format(
+                        "ethtool_opts": conf.TX_CHECKSUM.format(
                             nic="*", state="on"
                         )
                     }
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
-
-        logger.info(
+        testflow.step(
             "Check that ethtool_opts parameter has an updated default "
             "value for both slaves of the bond "
         )
-        for interface in (HOST_NICS[2], HOST_NICS[3]):
-            if not ll_networks.check_ethtool_opts(
-                config.VDS_HOSTS[0], interface, "tx-checksumming", "on"
-            ):
-                raise config.NET_EXCEPTION(
-                    "tx-checksum value of ethtool_opts was not updated "
-                    "correctly with default value"
-                )
+        for interface in conf.HOST_0_NICS[2], conf.HOST_0_NICS[3]:
+            assert ll_networks.check_ethtool_opts(
+                vds_resource=conf.VDS_0_HOST, nic=interface,
+                opts="tx-checksumming", value="on"
+            )
 
 
-@bz({"1340454": {}})
-class TestNetCustPrCase15(TestNCPCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_networks_to_host.__name__)
+class TestNetCustPrCase11(NetworkTest):
     """
     Configure ethtool_opts with non-default value
     Verify ethtool_opts was updated
@@ -1750,34 +1160,14 @@ class TestNetCustPrCase15(TestNCPCaseBase):
     Verify ethtool_opts were updated accordingly
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical VM network on DC/Cluster and Host Bond
-        """
-        network_param_dict = {
-            "nic": config.BOND[0],
-            "slaves": [2, 3],
-            "required": "false"
-        }
-
-        local_dict = {
-            config.NETWORKS[0]: network_param_dict
-        }
-        logger.info(
-            "Create logical VM network %s on DC/Cluster/Host bond",
-            config.NETWORKS[0]
-        )
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot create and attach network %s to bond %s" %
-                (config.NETWORKS[0], config.BOND[0])
-            )
+    clear_custom_properties = False
+    bridge_opts_properties = None
+    ethtool_properties = None
+    ethtool_checksums = None
+    bond = "bond110"
+    net_1 = custom_prop_conf.NETS[11][0]
+    net_nic_list = [(net_1, bond)]
+    slaves = True
 
     @polarion("RHEVM3-4189")
     def test_check_several_ethtool_opts_exist_bond(self):
@@ -1789,86 +1179,69 @@ class TestNetCustPrCase15(TestNCPCaseBase):
         3) Update ethtool_opts with the default value for both keys
         4) Verify ethtool_opts have updated default value
         """
-        logger.info(
+        testflow.step(
             "Update ethtool_opts for tx_checksum with the non-default "
             "parameter "
         )
-
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
-                        "ethtool_opts": config.TX_CHECKSUM.format(
+                        "ethtool_opts": conf.TX_CHECKSUM.format(
                             nic="*", state="off"
                         )
                     }
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
-
-        logger.info(
+        testflow.step(
             "Check that ethtool_opts parameter for tx_checksum have an "
             "updated non-default value for both slaves"
         )
-        for interface in (HOST_NICS[2], HOST_NICS[3]):
-            if not ll_networks.check_ethtool_opts(
-                config.VDS_HOSTS[0], interface, "tx-checksumming", "off"
-            ):
-                raise config.NET_EXCEPTION(
-                    "tx-checksum value of ethtool_opts was not updated "
-                    "correctly with non-default value"
-                )
-
+        for interface in conf.HOST_0_NICS[2], conf.HOST_0_NICS[3]:
+            assert ll_networks.check_ethtool_opts(
+                conf.VDS_0_HOST, interface, "tx-checksumming", "off"
+            )
         default_ethtool_opts = " ".join(
-            [config.TX_CHECKSUM.format(nic="*", state="on"),
-             config.RX_CHECKSUM.format(nic="*", state="on")]
+            [conf.TX_CHECKSUM.format(nic="*", state="on"),
+             conf.RX_CHECKSUM.format(nic="*", state="on")]
         )
         non_default_ethtool_opts = " ".join(
-            [config.TX_CHECKSUM.format(nic="*", state="off"),
-             config.RX_CHECKSUM.format(nic="*", state="off")]
+            [conf.TX_CHECKSUM.format(nic="*", state="off"),
+             conf.RX_CHECKSUM.format(nic="*", state="off")]
         )
 
-        logger.info(
+        testflow.step(
             "Update ethtool_opts with additional parameter for rx checksum"
         )
 
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
                         "ethtool_opts": non_default_ethtool_opts
                     }
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
-
-        logger.info(
+        testflow.step(
             "Check that ethtool_opts parameter has an updated value "
             "for rx_checksum and tx_checksum for both slaves of the bond"
         )
-        for prop in ("rx-checksumming", "tx-checksumming"):
-            for interface in (HOST_NICS[2], HOST_NICS[3]):
-                if not ll_networks.check_ethtool_opts(
-                    config.VDS_HOSTS[0], interface, prop, "off"
-                ):
-                    raise config.NET_EXCEPTION(
-                        "tx-checksum value of ethtool_opts was not updated "
-                        "correctly with non-default value"
-                    )
-
-        logger.info(
+        for prop in "rx-checksumming", "tx-checksumming":
+            for interface in (conf.HOST_0_NICS[2], conf.HOST_0_NICS[3]):
+                assert ll_networks.check_ethtool_opts(
+                    conf.VDS_0_HOST, interface, prop, "off"
+                )
+        testflow.step(
             "Update ethtool_opts with the default parameters for both "
             "rx and tx checksum values for Bond "
         )
@@ -1876,37 +1249,30 @@ class TestNetCustPrCase15(TestNCPCaseBase):
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
                         "ethtool_opts": default_ethtool_opts
                     }
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
-
-        logger.info(
+        testflow.step(
             "Check that ethtool_opts parameters have an updated default value "
             "for rx and tx checksum"
         )
-        for prop in ("rx-checksumming", "tx-checksumming"):
-            for interface in (HOST_NICS[2], HOST_NICS[3]):
-                if not ll_networks.check_ethtool_opts(
-                    config.VDS_HOSTS[0], interface, prop, "on"
-                ):
-                    raise config.NET_EXCEPTION(
-                        "tx and rx checksum and values of ethtool_opts were "
-                        "not updated correctly with default value for "
-                        "both slaves of the bond"
-                    )
+        for prop in "rx-checksumming", "tx-checksumming":
+            for interface in (conf.HOST_0_NICS[2], conf.HOST_0_NICS[3]):
+                assert ll_networks.check_ethtool_opts(
+                    conf.VDS_0_HOST, interface, prop, "on"
+                )
 
 
-@bz({"1340454": {}})
-class TestNetCustPrCase16(TestNCPCaseBase):
+@attr(tier=2)
+@pytest.mark.usefixtures(attach_networks_to_host.__name__)
+class TestNetCustPrCase12(NetworkTest):
     """
     Configure ethtool and bridge opts with non-default value over Bond
     Verify ethtool and bridge_opts were updated with non-default values
@@ -1914,43 +1280,14 @@ class TestNetCustPrCase16(TestNCPCaseBase):
     Verify ethtool and bridge_opts were updated with the default value
     """
     __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical VM network on DC/Cluster/Host Bond with ethtool_opts
-        and bridge_opts having non-default values
-        """
-        prop_dict = {
-            "ethtool_opts": config.TX_CHECKSUM.format(
-                nic="*", state="off"
-            ),
-            "bridge_opts": config.PRIORITY
-        }
-        network_param_dict = {
-            "nic": config.BOND[0],
-            "slaves": [2, 3],
-            "required": "false",
-            "properties": prop_dict
-        }
-
-        local_dict = {
-            config.NETWORKS[0]: network_param_dict
-        }
-        logger.info(
-            "Create logical VM network %s on DC/Cluster/Host with "
-            "ethtool_opts and bridge_opts having non-default "
-            "values over Bond", config.NETWORKS[0]
-        )
-        if not hl_networks.createAndAttachNetworkSN(
-            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS[0], network_dict=local_dict,
-            auto_nics=[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Cannot create and attach network %s over Bond %s" %
-                (config.NETWORKS[0], config.BOND[0])
-            )
+    clear_custom_properties = False
+    bridge_opts_properties = {"bridge_opts": conf.PRIORITY}
+    ethtool_properties = {"ethtool_opts": "off"}
+    ethtool_checksums = [conf.TX_CHECKSUM]
+    bond = "bond110"
+    net_1 = custom_prop_conf.NETS[11][0]
+    net_nic_list = [(net_1, bond)]
+    slaves = True
 
     @polarion("RHEVM3-4196")
     def test_update_ethtool_bridge_opts_bond(self):
@@ -1959,78 +1296,57 @@ class TestNetCustPrCase16(TestNCPCaseBase):
         2) Update ethtool and bridge_opts with the default value over Bond
         3) Verify ethtool_and bridge opts have been updated with default values
         """
-
-        logger.info(
+        testflow.step(
             "Check that ethtool_opts parameter for tx_checksum have an "
             "updated non-default value for every slave of the Bond"
         )
-        for interface in (HOST_NICS[2], HOST_NICS[3]):
-            if not ll_networks.check_ethtool_opts(
-                config.VDS_HOSTS[0], interface, "tx-checksumming", "off"
-            ):
-                raise config.NET_EXCEPTION(
-                    "tx-checksum value of ethtool_opts was"
-                    " not updated correctly with non-default value for Bond "
-                    "slaves"
-                )
-
-        logger.info(
+        for interface in conf.HOST_0_NICS[2], conf.HOST_0_NICS[3]:
+            assert ll_networks.check_ethtool_opts(
+                vds_resource=conf.VDS_0_HOST, nic=interface,
+                opts="tx-checksumming", value="off"
+            )
+        testflow.step(
             "Check that bridge_opts parameter for priority  have an updated "
             "non-default value "
         )
-        if not ll_networks.check_bridge_opts(
-            config.VDS_HOSTS[0], config.NETWORKS[0], config.KEY1,
-            config.BRIDGE_OPTS.get(config.KEY1)[1]
-        ):
-            raise config.NET_EXCEPTION(
-                "Priority value of bridge_opts was not updated correctly "
-                "with non-default value"
-            )
-
-        logger.info(
+        assert ll_networks.check_bridge_opts(
+            vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
+            opts=conf.KEY1, value=conf.BRIDGE_OPTS.get(conf.KEY1)[1]
+        )
+        testflow.step(
             "Update ethtool_opts for tx_checksum and bridge_opts for "
             "priority with the default parameters ")
 
         network_host_api_dict = {
             "update": {
                 "1": {
-                    "network": config.NETWORKS[0],
+                    "network": self.net_1,
                     "properties": {
-                        "ethtool_opts": config.TX_CHECKSUM.format(
+                        "ethtool_opts": conf.TX_CHECKSUM.format(
                             nic="*", state="on"
                         ),
-                        "bridge_opts": config.DEFAULT_PRIORITY
+                        "bridge_opts": conf.DEFAULT_PRIORITY
                     }
                 }
             }
         }
-        self.assertTrue(
-            hl_host_network.setup_networks(
-                host_name=config.HOSTS[0], **network_host_api_dict
-            )
+        assert hl_host_network.setup_networks(
+            host_name=conf.HOST_0_NAME, **network_host_api_dict
         )
-
-        logger.info(
+        testflow.step(
             "Check that ethtool_opts parameter has an updated default value "
             "for both slaves of the Bond"
         )
-        for interface in (HOST_NICS[2], HOST_NICS[3]):
-            if not ll_networks.check_ethtool_opts(
-                config.VDS_HOSTS[0], interface, "tx-checksumming", "on"
-            ):
-                raise config.NET_EXCEPTION(
-                    "tx-checksum value of ethtool_opts was not updated "
-                    "correctly with default value for Bond Slaves"
-                )
+        for interface in conf.HOST_0_NICS[2], conf.HOST_0_NICS[3]:
+            assert ll_networks.check_ethtool_opts(
+                vds_resource=conf.VDS_0_HOST, nic=interface,
+                opts="tx-checksumming", value="on"
+            )
 
-        logger.info(
+        testflow.step(
             "Check that bridge_opts parameter has an updated default value"
         )
-        if not ll_networks.check_bridge_opts(
-            config.VDS_HOSTS[0], config.NETWORKS[0], config.KEY1,
-            config.BRIDGE_OPTS.get(config.KEY1)[0]
-        ):
-            raise config.NET_EXCEPTION(
-                "Priority value of bridge opts was not updated correctly "
-                "with default value"
-            )
+        assert ll_networks.check_bridge_opts(
+            vds_resource=conf.VDS_0_HOST, bridge_name=self.net_1,
+            opts=conf.KEY1, value=conf.BRIDGE_OPTS.get(conf.KEY1)[0]
+        )

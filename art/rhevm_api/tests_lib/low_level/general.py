@@ -376,8 +376,5 @@ def prepare_kwargs_for_log(**kwargs):
     for k, v in kwargs.iteritems():
         if v is None:
             continue
-        try:
-            new_kwargs[k] = v.name
-        except AttributeError:
-            new_kwargs[k] = v
+        new_kwargs[k] = v.name if hasattr(v, 'name') else v
     return new_kwargs
