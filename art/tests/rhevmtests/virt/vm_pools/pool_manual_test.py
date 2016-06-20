@@ -13,7 +13,7 @@ from rhevmtests.virt.vm_pools import (
 )
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 import rhevmtests.helpers as gen_helper
 import rhevmtests.virt.helper as virt_helper
 from art.test_handler import exceptions
@@ -38,6 +38,7 @@ class TestManualPoolCannotRecycleVm(base.VmPoolWithUser):
     max_vms_per_user = 2
     users = [config.USER, config.VDC_ADMIN_USER]
 
+    @bz({'1342795': {}})
     @polarion("RHEVM-9874")
     def test_manual_pool_cannot_recycle_vm(self):
         helpers.allocate_vms_as_user(True, self.pool_name, config.USER, 0, 2)
@@ -72,6 +73,7 @@ class TestManualPoolRememberUser(base.VmPoolWithUser):
     pool_type = 'manual'
     users = [config.USER, config.VDC_ADMIN_USER]
 
+    @bz({'1342795': {}})
     @polarion("RHEVM-9876")
     def test_manual_pool_remember_user(self):
         vms = {self.users[0]: '', self.users[1]: ''}
@@ -123,6 +125,7 @@ class TestManualPoolRecycleVm(base.VmPoolWithUser):
     pool_size = 1
     users = [config.USER, config.VDC_ADMIN_USER]
 
+    @bz({'1339308': {}})
     def test_manual_pool_recycle_vm(self):
         helpers.allocate_vms_as_user(True, self.pool_name, config.USER, 0, 1)
         stopped_vm = base.ll_vmpools.get_vms_in_pool_by_name(self.pool_name)[0]

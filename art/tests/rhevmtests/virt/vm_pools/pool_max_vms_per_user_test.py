@@ -14,7 +14,7 @@ from rhevmtests.virt.vm_pools import (
 )
 import art.rhevm_api.tests_lib.high_level.vmpools as hl_vmpools
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr
 
 logger = logging.getLogger("virt.vm_pools.max_vms_per_user")
@@ -147,6 +147,7 @@ class TestMaxVmsPerUserAsUser(base.VmPoolWithUser):
     max_vms_per_user = 1
     updated_max_vms_per_user = 2
 
+    @bz({'1342795': {}})
     @polarion("RHEVM-14383")
     def test_max_vms_per_user_as_user(self):
         """
