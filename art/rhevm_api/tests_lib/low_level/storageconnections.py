@@ -147,12 +147,9 @@ def remove_storage_connection(conn_id, host=None):
     """
     conn_obj = api.find(conn_id, attribute='id')
     LOGGER.debug("Removing connection %s", conn_id)
-    body = apis_utils.data_st.Action()
     if host:
-        host_obj = hostApi.find(host)
-        host = Host(id=host_obj.get_id())
-        body.set_host(host)
-    return api.delete(conn_obj, True, body=body, element_name='action')
+        conn_obj.href += ";host=%s" % host
+    return api.delete(conn_obj, True)
 
 
 def remove_all_storage_connections():
