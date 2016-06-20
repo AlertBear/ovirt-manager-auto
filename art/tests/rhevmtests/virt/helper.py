@@ -167,6 +167,14 @@ def set_host_status(activate=False):
     host_state = "active" if activate else "maintenance"
     func = "activateHost" if activate else "deactivateHost"
     if not activate:
+        test_utils.wait_for_tasks(
+            vdc=config.VDC_HOST, vdc_password=config.VDC_ROOT_PASSWORD,
+            datacenter=config.DC_NAME[0]
+        )
+        vds_resource = resources.VDS(
+            ll_hosts.get_host_ip_from_engine(config.HOSTS[0]), config.HOSTS_PW
+        )
+        test_utils.wait_for_vds_tasks(vds_resource)
         ll_hosts.select_host_as_spm(
             positive=True,
             host=config.HOSTS[0],
