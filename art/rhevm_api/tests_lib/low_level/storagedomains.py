@@ -525,7 +525,7 @@ def teardownStorageDomain(positive, storagedomain, host):
 
 
 def removeStorageDomain(positive, storagedomain, host, format='false',
-                        destroy=False):
+                        destroy=False, force=False):
     """
     remove storage domain
 
@@ -543,22 +543,22 @@ def removeStorageDomain(positive, storagedomain, host, format='false',
     :rtype: bool
     """
     util.logger.info("Removing storage domain %s", storagedomain)
-    format_bool = format.lower() == "true"
 
     storDomObj = get_storage_domain_obj(storagedomain)
     hostObj = hostUtil.find(host)
 
     stHost = Host(id=hostObj.get_id())
+    storDomObj.href += ";host=%s" % stHost.get_name()
 
-    st = StorageDomain(host=stHost)
     if destroy:
-        st.set_destroy(True)
+        storDomObj.href += ";destroy=true"
 
-    st.set_format('false')
-    if format_bool:
-        st.set_format('true')
+    if force:
+        storDomObj.href += ";force=true"
 
-    return util.delete(storDomObj, positive, st)
+    storDomObj.href += ";format=%s" % format
+
+    return util.delete(storDomObj, positive)
 
 
 def cleanExportDomainMetadata(address, path):
