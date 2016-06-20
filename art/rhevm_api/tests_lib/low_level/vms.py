@@ -783,19 +783,17 @@ def removeVm(positive, vm, **kwargs):
     Returns:
         bool: True if VM was removed properly, False otherwise
     """
-    body = None
+    vm_obj = VM_API.find(vm)
     force = kwargs.pop('force', None)
     if force:
-        body = data_st.Action(force=True)
-
-    vm_obj = VM_API.find(vm)
-    vm_status = vm_obj.get_status()
+        vm_obj.href += ';force=true'
+    vm_status = vm_obj.get_status().lower()
     stop_vm = kwargs.pop('stopVM', 'false')
     if str(stop_vm).lower() == 'true' and vm_status != ENUMS['vm_state_down']:
         if not stopVm(positive, vm):
             return False
     logger.info("Remove VM %s", vm)
-    status = VM_API.delete(vm_obj, positive, body=body, element_name='action')
+    status = VM_API.delete(vm_obj, positive)
 
     if not status:
         logger.error("Failed to remove VM %s", vm)
