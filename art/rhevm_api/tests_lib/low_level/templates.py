@@ -1031,13 +1031,19 @@ def get_template_obj(template_name, all_content=False):
     :param all_content: Specifies whether the entire content for the Template
     should be retrieved, False is the default
     :type all_content: bool
-    :returns: The Template object for the input template_name
-    :rtype: Template object
+    :returns: The Template object for the input template_name or None in case
+    the template is not found
+    :rtype: Template object or None
     """
     template_name_query = "name=%s" % template_name
     # Retrieve the entire object content only in the case where this is
     # requested
+    query_args = {}
     if all_content:
-        return TEMPLATE_API.query(template_name_query,
-                                  all_content=all_content)[0]
-    return TEMPLATE_API.query(template_name_query)[0]
+        query_args = {'all_content': all_content}
+    response = TEMPLATE_API.query(
+        template_name_query, **query_args
+    )
+    if len(response) > 0:
+        return response[0]
+    return None

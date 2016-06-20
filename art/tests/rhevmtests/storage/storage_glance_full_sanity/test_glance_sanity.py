@@ -214,6 +214,37 @@ class TestCase5734(BasicEnvironment):
 
 
 @attr(tier=2)
+class TestCase10689(BasicEnvironment):
+    """
+    RHEVM3-10689 - Override template name when importing an image from glance
+    """
+    __test__ = True
+    test_case = '10689'
+
+    @polarion("RHEVM3-10689")
+    def test_override_template_name(self):
+        """
+        Test flow:
+        - Import an image from Glance to RHEV as a template, using a new name
+        -> Template should be imported with the new name
+        """
+        # Ensure there's no template with the same name in the system
+        self.assertFalse(
+            bool(ll_templates.get_template_obj(self.new_template_name)),
+            "Template with name %s exists already in the environment"
+            % self.new_template_name
+        )
+        self.basic_flow_import_image_as_template(
+            self.new_template_name, True, self.storage_domain,
+            self.new_disk_alias
+        )
+        self.assertTrue(
+            ll_templates.get_template_obj(self.new_template_name),
+            "Template with name %s does not exist" % self.new_template_name
+        )
+
+
+@attr(tier=2)
 class TestCase5735(BasicEnvironment):
     """
     Import multiple disks as templates
