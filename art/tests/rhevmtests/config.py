@@ -577,3 +577,14 @@ NO_EXTRA_BOND_MODE_SUPPORT_SKIP_MSG = SKIP_MSG_PREFIX % (
 
 # used for tests that are not adjusted to GE or tests that we don't want to run
 DO_NOT_RUN = 17
+
+# WGT
+WIN2008R2_64B = opts['elements_conf']['Win2008R2_64b']
+WIN2012R2_64B = opts['elements_conf']['Win2012R2_64b']
+WIN2012_64B = opts['elements_conf']['Win2012_64b']
+WIN7_32B = opts['elements_conf']['Win7_32b']
+WIN7_64B = opts['elements_conf']['Win7_64b']
+WIN8_1_32B = opts['elements_conf']['Win8_1_32b']
+WIN8_1_64B = opts['elements_conf']['Win8_1_64b']
+WIN8_32B = opts['elements_conf']['Win8_32b']
+WIN8_64B = opts['elements_conf']['Win8_64b']

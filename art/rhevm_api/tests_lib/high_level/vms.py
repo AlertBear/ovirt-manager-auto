@@ -800,6 +800,7 @@ def create_windows_vm(
     agent_url,
     glance_domain=None,
     storage_name=None,
+    use_sysprep=True,
     **vm_kwargs
 ):
     """
@@ -817,6 +818,8 @@ def create_windows_vm(
     :type storage_name: str
     :param vm_kwargs: kwargs to createVm method
     :type vm_kwargs: dictionary
+    :param use_sysprep: True if sysprep should be used, False otheriwse
+    :type use_sysprep: boolean
     :return: Tuple with status and failure message
     :rtype: tuple
     """
@@ -862,19 +865,15 @@ def create_windows_vm(
     if not vms.createVm(**vm_kwargs):
         return False, "Failed to create vm '%s'" % vm_name
 
-    if not vms.addNic(
-        positive=True,
-        vm=vm_name,
-        name='virtioNIC',
-        network=vm_kwargs.get('network'),
-        interface=ENUMS['nic_type_virtio'],
-    ):
-        return False, "Failed to add nic to vm '%s'" % vm_name
-
     if not disks.attachDisk(True, disk_name, vm_name):
         return False, "Failed to attach disk to vm '%s'" % vm_name
 
-    if not vms.startVm(True, vm_name, wait_for_status=ENUMS["vm_state_up"]):
+    if not vms.runVmOnce(
+        positive=True,
+        vm=vm_name,
+        use_sysprep=use_sysprep,
+        wait_for_state=ENUMS["vm_state_up"],
+    ):
         return False, "Failed to start vm '%s'" % vm_name
 
     # Reset vm
@@ -910,6 +909,7 @@ def create_windows_vm(
             False,
             "RHEV Tools installation completed with code: '%s'" % status_code
         )
+    vms.wait_for_vm_states(vm_name, states=[ENUMS['vm_state_up']])
     LOGGER.info("RHEV Tools installation completed successfully")
     return True, "Vm '%s' successfully created" % vm_name
 
