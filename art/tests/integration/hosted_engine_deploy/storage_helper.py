@@ -2,8 +2,10 @@
 Help to create storage for HE tests
 """
 import logging
-import config as conf
+import time
+
 import art.test_handler.exceptions as errors
+import config as conf
 import storageapi.storageErrors as strg_errors
 from storageapi.storageManagerWrapper import StorageManagerWrapper
 
@@ -166,6 +168,7 @@ class ISCSIStorage(StorageForHostedEngine):
         self.hosts_initiators = []
         self.lun_id = None
         self.target_name = None
+        self.host_group = "{0}_{1}".format(self.name, int(time.time()))
 
     @classmethod
     def _get_host_initiator(cls, vds_resource):
@@ -195,24 +198,19 @@ class ISCSIStorage(StorageForHostedEngine):
         :type host_initiator: str
         """
         try:
-            old_hg = self.manager.getInitiatorHostGroups(host_initiator)
-            if old_hg:
-                if old_hg != self.name:
-                    logger.info(
-                        "Initiator is %s already exist in hostgroup %s",
-                        host_initiator, old_hg
-                    )
+            old_hgs = self.manager.getInitiatorHostGroups(host_initiator)
+            if old_hgs:
+                for old_hg in old_hgs:
                     logger.info(
                         "Remove initiator %s from old hostgroup %s",
                         host_initiator, old_hg
                     )
-                else:
-                    return
+                    self.manager.unmapInitiator(old_hg, host_initiator)
             logger.info(
                 "Add initiator %s to new host group %s",
-                host_initiator, self.name
+                host_initiator, self.host_group
             )
-            self.manager.mapInitiators(self.name, host_initiator)
+            self.manager.mapInitiators(self.host_group, host_initiator)
         except strg_errors.StorageAPIGeneralException as err:
             raise errors.HostedEngineException(str(err))
 
@@ -234,9 +232,11 @@ class ISCSIStorage(StorageForHostedEngine):
                 "Lun and Target Name of ISCSI storage: %s, %s",
                 self.lun_id, self.target_name
             )
-            logger.info("Map host group %s to lun %s", self.name, self.lun_id)
+            logger.info(
+                "Map host group %s to lun %s", self.host_group, self.lun_id
+            )
             self.manager.mapLunToHostGroup(
-                name=self.name, lunGuid=self.lun_id
+                name=self.host_group, lunGuid=self.lun_id
             )
         except strg_errors.StorageAPIGeneralException as err:
             raise errors.HostedEngineException(str(err))
@@ -266,13 +266,13 @@ class ISCSIStorage(StorageForHostedEngine):
                 for initiator in self.hosts_initiators:
                     logger.info(
                         "Remove initiator %s from host group %s",
-                        initiator, self.name
+                        initiator, self.host_group
                     )
                     self.manager.unmapInitiator(
-                        self.name, initiator
+                        self.host_group, initiator
                     )
                 self.manager.unmapLun(
-                    self.lun_id, self.name
+                    self.lun_id, self.host_group
                 )
                 lun_serial = self.manager.getLun(self.lun_id)["serial"]
                 self.manager.removeLun(lun_serial)

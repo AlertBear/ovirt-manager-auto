@@ -120,7 +120,6 @@ class OtopiParser(object):
         event_dictionary[
             "ovehosted_bridge_if"
         ] = vds_resource.get_network().find_int_by_ip(vds_resource.ip)
-        event_dictionary[
-            "HOST_FIRST_HOST_ROOT_PASSWORD"
-        ] = conf.HOSTS_PW
+        event_dictionary["HOST_FIRST_HOST_ROOT_PASSWORD"] = conf.HOSTS_PW
+        event_dictionary["OVEHOSTED_FORCE_CREATEVG"] = "Force"
         return event_dictionary

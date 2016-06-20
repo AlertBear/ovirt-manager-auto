@@ -236,3 +236,5 @@ RHEVH_FLAG = VDS_HOSTS[0].get_os_info()["dist"] == RHEVH
 
 # Engine health page constant
 ENGINE_HEALTH_PAGE_URL = "http://%s/ovirt-engine/services/health" % VM_FQDN
+
+RHEV_MOUNT_POINT = "/rhev/data-center/mnt/"

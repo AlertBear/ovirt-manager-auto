@@ -3,16 +3,15 @@ Base classes for HE deployment
 """
 import copy
 import logging
-from rrmngmnt.power_manager import SSH_TYPE
 
-import config as conf
-import storage_helper
-import otopi_parser_helper
-import art.unittest_lib as test_libs
+import art.core_api.apis_exceptions as core_errors
 import art.core_api.apis_utils as utils
 import art.test_handler.exceptions as errors
+import art.unittest_lib as test_libs
+import config as conf
+import otopi_parser_helper
+import storage_helper
 from concurrent.futures import ThreadPoolExecutor
-import art.core_api.apis_exceptions as core_errors
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +68,12 @@ class BaseDeploy(test_libs.IntegrationTest):
         1) Clean hosts from HE deployment
         2) Clean storage after test
         """
+        logger.info("%s: Enable global maintenance", conf.VDS_HOSTS[0])
+        conf.VDS_HOSTS[0].run_command(
+            command=[
+                conf.HOSTED_ENGINE_CMD, "--set-maintenance", "--mode=global"
+            ]
+        )
         results = []
         with ThreadPoolExecutor(max_workers=len(conf.VDS_HOSTS)) as executor:
             for vds_resource in conf.VDS_HOSTS:
@@ -152,26 +157,26 @@ class BaseDeploy(test_libs.IntegrationTest):
 
         :param vds_resource: vds resource
         :type vds_resource: VDS
-
         """
-        if not vds_resource.package_manager.remove(
-            conf.HOSTED_ENGINE_HA_PACKAGE
-        ):
+        logger.info("%s: Poweroff HE VM", vds_resource)
+        vds_resource.run_command(
+            command=[conf.HOSTED_ENGINE_CMD, "--vm-poweroff"]
+        )
+        logger.info(
+            "%s: Stop %s service", vds_resource, conf.OVIRT_HA_AGENT_SERVICE
+        )
+        if not vds_resource.service(
+            name=conf.OVIRT_HA_AGENT_SERVICE, timeout=120
+        ).stop():
             logger.error(
-                "Failed to remove HE packages from %s", vds_resource
+                "%s: Failed to stop %s service",
+                vds_resource, conf.OVIRT_HA_AGENT_SERVICE
             )
-        if not vds_resource.fs.rmdir("/etc/ovirt-hosted-engine*"):
-            logger.error(
-                "Failed to remove HE configuration directories from %s",
-                vds_resource
-            )
-        vds_resource.add_power_manager(pm_type=SSH_TYPE)
-        logger.info("Reboot %s", vds_resource)
-        vds_resource.get_power_manager().restart()
-        for is_connective in (False, True):
-            vds_resource.executor().wait_for_connectivity_state(
-                positive=is_connective
-            )
+        logger.info(
+            "%s: Unmount all storages from %s",
+            vds_resource, conf.RHEV_MOUNT_POINT
+        )
+        vds_resource.nfs.umount(mount_point="%s*" % conf.RHEV_MOUNT_POINT)
 
     @classmethod
     def __create_answer_file_on_resource(
@@ -315,9 +320,9 @@ class BaseDeployOverISCSI(BaseDeploy):
         3) Update answer file with correct values
         """
         super(BaseDeployOverISCSI, cls).setup_class()
-        cls.storage_api.create_storage()
         for vds_resource in conf.VDS_HOSTS:
             cls.storage_api.add_host_to_hostgroup(vds_resource)
+        cls.storage_api.create_storage()
         iscsi_params_d = copy.deepcopy(conf.ISCSI_SPECIFIC_PARAMETERS)
         cls.answer_file_d[conf.ANSWER_SECTION_OVEHOSTED_STORAGE].update(
             iscsi_params_d
