@@ -378,7 +378,7 @@ def _prepareVmObject(**kwargs):
     # placement policy: placement_affinity & placement_host
     affinity = kwargs.pop("placement_affinity", None)
     placement_host = kwargs.pop("placement_host", None)
-    placement_hosts = kwargs.pop("placement_hosts", None)
+    placement_hosts = kwargs.pop("placement_hosts", [])
     if placement_host or affinity or placement_hosts:
         placement_policy = data_st.VmPlacementPolicy()
         if affinity:
@@ -386,8 +386,7 @@ def _prepareVmObject(**kwargs):
         if placement_host and placement_host != ENUMS[
             "placement_host_any_host_in_cluster"
         ]:
-            aff_host = HOST_API.find(placement_host)
-            placement_policy.set_hosts(data_st.Hosts(host=[aff_host]))
+            placement_hosts.append(placement_host)
         if placement_hosts:
             hosts = [
                 data_st.Host(id=HOST_API.find(host).get_id())
