@@ -182,8 +182,6 @@ def remove_datacenter(positive, datacenter, force=False):
     Returns:
         bool: True if data center was removed properly, False otherwise
     """
-    body = None
-    element_name = None
     log_info, log_error = ll_general.get_log_msg(
         action="Remove", obj_type="datacenter", obj_name=datacenter,
         positive=positive
@@ -191,12 +189,9 @@ def remove_datacenter(positive, datacenter, force=False):
     logger.info(log_info)
     dc = util.find(datacenter)
     if force:
-        action_obj = data_st.Action()
-        action_obj.set_force(True)
-        body = action_obj
-        element_name = "action"
+        dc.href += ";force=true"
 
-    res = util.delete(dc, positive, body=body, element_name=element_name)
+    res = util.delete(dc, positive)
     if not res:
         logger.error(log_error)
     return res
