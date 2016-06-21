@@ -5,7 +5,6 @@ Storage/3_2_Storage_Disk_Image_Format
 """
 from concurrent.futures import ThreadPoolExecutor
 import logging
-
 import config
 from art.test_handler.tools import polarion  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import (
@@ -338,8 +337,19 @@ class TestCase11619(BaseTestDiskImageVms):
             disk_id=self.disk_prealloc, target_domain=self.domain_1,
             timeout=MOVE_DISK_TIMEOUT
         )
+        ll_vms.wait_for_disks_status(
+            [self.disk_thin, self.disk_prealloc], key='id',
+            timeout=MOVE_DISK_TIMEOUT
+        )
         ll_jobs.wait_for_jobs([ENUMS['job_move_or_copy_disk']])
-        self.check_disks({self.vm_prealloc: True})
+        ll_jobs.wait_for_jobs([ENUMS['job_remove_snapshot']])
+        ll_vms.wait_for_vm_snapshots(
+            self.vm_prealloc, ENUMS['snapshot_state_ok']
+        )
+        ll_vms.wait_for_vm_snapshots(
+            self.vm_thin, ENUMS['snapshot_state_ok']
+        )
+        self.check_disks({self.vm_prealloc: False})
 
 
 class ExportVms(BaseTestDiskImageVms):
