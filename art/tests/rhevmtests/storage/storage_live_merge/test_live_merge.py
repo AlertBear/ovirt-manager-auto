@@ -6,6 +6,8 @@ Storage/3_5_Storage_Live_Merge
 import logging
 import os
 import shlex
+from multiprocessing import Process, Queue
+from time import sleep
 
 import config
 from art.core_api.apis_exceptions import APITimeout
@@ -32,6 +34,7 @@ VM_NAMES = dict()
 CMD_CREATE_FILE = 'touch %s/test_file_%s'
 TEST_FILE_TEMPLATE = 'test_file_%s'
 SNAPSHOT_DESCRIPTION_TEMPLATE = 'snapshot_%s_%s_%s'
+DD_SIZE = 900 * config.MB
 ISCSI = config.STORAGE_TYPE_ISCSI
 DISK_NAMES = dict()
 MOUNT_POINTS = dict()
@@ -251,7 +254,7 @@ class BasicEnvironment(BaseTestCase):
                 )
 
     def live_delete_snapshot_with_verification(
-            self, vm_name, snapshot_description
+            self, vm_name, snapshot_description, running_io_op=False
     ):
         if ll_vms.get_vm_state(vm_name) == config.VM_DOWN:
             ll_vms.startVm(True, vm_name, config.VM_UP, wait_for_ip=True)
@@ -265,10 +268,30 @@ class BasicEnvironment(BaseTestCase):
         )
         logger.info("Before live merge: %s volumes", initial_vol_count)
 
+        disk_object = ll_vms.getVmDisk(
+            vm_name, disk_id=DISK_NAMES[self.storage][0]
+        )
+
+        def f(q):
+            q.put(
+                storage_helpers.perform_dd_to_disk(
+                    vm_name=vm_name, disk_alias=disk_object.get_alias(),
+                    size=DD_SIZE
+                )
+            )
+        if running_io_op:
+            q = Queue()
+            p = Process(target=f, args=(q,))
+            p.start()
+            sleep(5)
         if not ll_vms.removeSnapshot(True, vm_name, snapshot_description):
             exceptions.VMException(
                 "Failed to live delete snapshot %s" % snapshot_description
             )
+        if running_io_op:
+            p.join()
+            rc, output = q.get()
+            self.assertTrue(rc, "dd command failed: %s" % output)
 
         current_vol_count = storage_helpers.get_disks_volume_count(
             snapshot_disks
@@ -323,6 +346,28 @@ class TestCase6038(BasicEnvironment):
         )
         self.verify_snapshot_files(
             self.snapshot_list[2], [TEST_FILE_TEMPLATE % i for i in xrange(3)]
+        )
+
+
+@attr(tier=1)
+class TestCase6052(BasicEnvironment):
+    """
+    Basic live delete and merge of snapshots with continuous I/O
+
+    https://polarion.engineering.redhat.com/polarion/#/project
+    /RHEVM3/workitem?id=RHEVM3-6052
+    """
+    __test__ = True
+    test_case = '6052'
+    # Bugzilla history:
+    # 1302215: Live merge operation fails noting Failed child command status
+    # for step 'DESTROY_IMAGE_CHECK'
+
+    @polarion("RHEVM3-6052")
+    def test_basic_live_deletion_with_io(self):
+        self.basic_flow()
+        self.live_delete_snapshot_with_verification(
+            self.vm_name, self.snapshot_list[0], running_io_op=True
         )
 
 
