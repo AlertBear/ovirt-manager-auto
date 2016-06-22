@@ -20,6 +20,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.core_api.apis_exceptions import EngineTypeError
 from rhevmtests import config
+import rhevmtests.sla.config as sla_conf
 
 logger = logging.getLogger(__name__)
 
@@ -202,30 +203,31 @@ class TestCaseCluster(TestCase):
         allowed values- 100/150/200% (in the UI), but all positive in API
         """
         cluster = ll_cluster.get_cluster_object(self.cluster_name)
-        old_ovrcmt = cluster.get_memory_policy().get_overcommit().get_percent()
+        old_over_commit_obj = cluster.get_memory_policy().get_over_commit()
+        old_over_commit_val = old_over_commit_obj.get_percent()
         logger.info('Update cluster - memory overcommit')
         status = ll_cluster.updateCluster(
             positive=True, cluster=self.cluster_name,
-            data_center=self.dc_name, mem_ovrcmt_prc='77'
+            data_center=self.dc_name, mem_ovrcmt_prc=77
         )
         self.assertTrue(status, 'Update cluster memory overcommit')
         logger.info('Check cluster - memory overcommit')
-        status = ll_cluster.checkClusterParams(
-            positive=True, cluster=self.cluster_name, mem_ovrcmt_prc='77'
+        status = ll_cluster.check_cluster_params(
+            positive=True, cluster=self.cluster_name, over_commit=77
         )
         self.assertTrue(status, 'Check cluster - memory overcommit')
 
         logger.info('Revert cluster memory overcommit update')
         status = ll_cluster.updateCluster(
             positive=True, cluster=self.cluster_name,
-            data_center=self.dc_name, mem_ovrcmt_prc=old_ovrcmt
+            data_center=self.dc_name, mem_ovrcmt_prc=old_over_commit_val
         )
         self.assertTrue(status, 'Revert cluster memory overcommit')
 
         logger.info('Check cluster - revert memory overcommit')
-        status = ll_cluster.checkClusterParams(
+        status = ll_cluster.check_cluster_params(
             positive=True, cluster=self.cluster_name,
-            mem_ovrcmt_prc=old_ovrcmt
+            over_commit=old_over_commit_val
         )
         self.assertTrue(status, 'Check cluster - Revert memory overcommit')
 
@@ -238,23 +240,24 @@ class TestCaseCluster(TestCase):
         should fail - only positive numbers are allowed
         """
         cluster = ll_cluster.get_cluster_object(self.cluster_name)
-        old_ovrcmt = cluster.get_memory_policy().get_overcommit().get_percent()
+        old_over_commit_obj = cluster.get_memory_policy().get_over_commit()
+        old_over_commit_val = old_over_commit_obj.get_percent()
         logger.info('Update cluster - memory overcommit')
         status = ll_cluster.updateCluster(
             positive=False, cluster=self.cluster_name,
-            data_center=self.dc_name, mem_ovrcmt_prc='-7'
+            data_center=self.dc_name, mem_ovrcmt_prc=-7
         )
         self.assertTrue(status, 'Update cluster memory overcommit')
         logger.info('Check cluster - memory overcommit')
-        status = ll_cluster.checkClusterParams(
+        status = ll_cluster.check_cluster_params(
             positive=False, cluster=self.cluster_name,
-            mem_ovrcmt_prc=old_ovrcmt
+            over_commit=old_over_commit_val
         )
 
         self.assertTrue(status, 'Check cluster - memory overcommit')
 
     @attr(tier=2)
-    @bz({'1315657': {'engine': ['cli']}})
+    @bz({'1316456': {}, '1315657': {'engine': ['cli']}})
     def test_update_cluster_high_threshold_out_of_range(self):
         """
         Negative - verify update cluster functionality
@@ -263,10 +266,16 @@ class TestCaseCluster(TestCase):
         """
         logger.info('Update cluster - high threshold out of range')
         update_status = ll_cluster.updateCluster(
-            positive=False, cluster=self.cluster_name, cpu=config.CPU_NAME,
+            positive=False,
+            cluster=self.cluster_name,
+            cpu=config.CPU_NAME,
             data_center=self.dc_name,
-            scheduling_policy=config.ENUMS['scheduling_policy_power_saving'],
-            thrhld_low='21', thrhld_high='110', duration='240'
+            scheduling_policy=sla_conf.POLICY_POWER_SAVING,
+            properties={
+                sla_conf.LOW_UTILIZATION: 21,
+                sla_conf.HIGH_UTILIZATION: 110,
+                sla_conf.OVER_COMMITMENT_DURATION: 240
+            }
         )
         self.assertTrue(
             update_status, 'Update cluster - high threshold out of range'
@@ -277,7 +286,7 @@ class TestCaseCluster(TestCase):
         )
 
     @attr(tier=2)
-    @bz({'1315657': {'engine': ['cli']}})
+    @bz({'1316456': {}, '1315657': {'engine': ['cli']}})
     def test_update_cluster_low_threshold_out_of_range(self):
         """
         Negative - verify update cluster functionality
@@ -286,10 +295,16 @@ class TestCaseCluster(TestCase):
         """
         logger.info('Update cluster - low threshold out of range')
         update_status = ll_cluster.updateCluster(
-            positive=False, cluster=self.cluster_name, cpu=config.CPU_NAME,
+            positive=False,
+            cluster=self.cluster_name,
+            cpu=config.CPU_NAME,
             data_center=self.dc_name,
-            scheduling_policy=config.ENUMS['scheduling_policy_power_saving'],
-            thrhld_low='-1', thrhld_high='60', duration='240'
+            scheduling_policy=sla_conf.POLICY_POWER_SAVING,
+            properties={
+                sla_conf.LOW_UTILIZATION: -1,
+                sla_conf.HIGH_UTILIZATION: 60,
+                sla_conf.OVER_COMMITMENT_DURATION: 240
+            }
         )
         self.assertTrue(
             update_status, 'Update cluster - low threshold out of range'
@@ -299,7 +314,7 @@ class TestCaseCluster(TestCase):
             'Revert cluster - low threshold out of range'
         )
 
-    @bz({'1315657': {'engine': ['cli']}})
+    @bz({'1316456': {}, '1315657': {'engine': ['cli']}})
     @attr(tier=1)
     def test_update_cluster_thresholds_power_saving(self):
         """
@@ -307,26 +322,33 @@ class TestCaseCluster(TestCase):
         update the cluster with specific thresholds relevant to power_saving
         """
         logger.info('Update cluster - power_saving thresholds')
+        properties = {
+            sla_conf.LOW_UTILIZATION: 21,
+            sla_conf.HIGH_UTILIZATION: 61,
+            sla_conf.OVER_COMMITMENT_DURATION: 240
+        }
         update_status = ll_cluster.updateCluster(
-            positive=True, cluster=self.cluster_name,
+            positive=True,
+            cluster=self.cluster_name,
             data_center=self.dc_name,
-            scheduling_policy=config.ENUMS['scheduling_policy_power_saving'],
-            thrhld_low='21', thrhld_high='61', duration='240'
+            scheduling_policy=sla_conf.POLICY_POWER_SAVING,
+            properties=properties
         )
         self.assertTrue(
             update_status, 'Update cluster - power_saving thresholds'
         )
         logger.info('Check cluster - power_saving thresholds')
-        check_status = ll_cluster.checkClusterParams(
-            positive=True, cluster=self.cluster_name,
-            scheduling_policy=config.ENUMS['scheduling_policy_power_saving'],
-            thrhld_low='21', thrhld_high='61', duration='240'
+        check_status = ll_cluster.check_cluster_params(
+            positive=True,
+            cluster=self.cluster_name,
+            scheduling_policy=sla_conf.POLICY_POWER_SAVING,
+            properties=properties
         )
         self.assertTrue(
             check_status, 'Check cluster - power_saving thresholds'
         )
 
-    @bz({'1315657': {'engine': ['cli']}})
+    @bz({'1316456': {}, '1315657': {'engine': ['cli']}})
     @attr(tier=1)
     def test_update_cluster_threshold_evenly_distributed(self):
         """
@@ -334,26 +356,31 @@ class TestCaseCluster(TestCase):
         update cluster with specific thresholds relevant to evenly_distributed
         """
         logger.info('Update cluster - evenly_distributed thresholds')
-        even_distribute = config.ENUMS['scheduling_policy_evenly_distributed']
+        properties = {
+            sla_conf.HIGH_UTILIZATION: 61,
+            sla_conf.OVER_COMMITMENT_DURATION: 240
+        }
         status = ll_cluster.updateCluster(
-            positive=True, cluster=self.cluster_name,
+            positive=True,
+            cluster=self.cluster_name,
             data_center=self.dc_name,
-            scheduling_policy=even_distribute,
-            thrhld_high='61', duration='240'
+            scheduling_policy=sla_conf.POLICY_EVEN_DISTRIBUTION,
+            properties=properties
         )
         self.assertTrue(status,
                         'Update cluster - evenly_distributed threshold')
         logger.info('Check cluster - evenly_distributed threshold')
-        status = ll_cluster.checkClusterParams(
-            positive=True, cluster=self.cluster_name,
-            scheduling_policy=even_distribute,
-            thrhld_high='61', duration='240'
+        status = ll_cluster.check_cluster_params(
+            positive=True,
+            cluster=self.cluster_name,
+            scheduling_policy=sla_conf.POLICY_EVEN_DISTRIBUTION,
+            properties=properties
         )
         self.assertTrue(
             status, 'Check cluster - evenly_distributed threshold'
         )
 
-    @bz({'1315657': {'engine': ['cli']}})
+    @bz({'1316456': {}, '1315657': {'engine': ['cli']}})
     @attr(tier=1)
     def test_update_cluster_scheduling_policy(self):
         """
@@ -363,17 +390,22 @@ class TestCaseCluster(TestCase):
         """
 
         logger.info('Update cluster - scheduling policy')
+        properties = {
+            sla_conf.LOW_UTILIZATION: 20
+        }
         update_status = ll_cluster.updateCluster(
-            positive=True, cluster=self.cluster_name,
-            scheduling_policy=config.ENUMS['scheduling_policy_power_saving'],
-            thrhld_low='20'
+            positive=True,
+            cluster=self.cluster_name,
+            scheduling_policy=sla_conf.POLICY_POWER_SAVING,
+            properties=properties
         )
 
         logger.info('Check cluster - scheduling policy')
-        check_status = ll_cluster.checkClusterParams(
-            positive=True, cluster=self.cluster_name,
-            scheduling_policy=config.ENUMS['scheduling_policy_power_saving'],
-            thrhld_low='20'
+        check_status = ll_cluster.check_cluster_params(
+            positive=True,
+            cluster=self.cluster_name,
+            scheduling_policy=sla_conf.POLICY_POWER_SAVING,
+            properties=properties
         )
 
         self.assertTrue(update_status, 'Update cluster - scheduling policy')
@@ -382,7 +414,7 @@ class TestCaseCluster(TestCase):
             self.set_thresholds_to_default(), 'Restore - scheduling policy'
         )
 
-    @bz({'1315657': {'engine': ['cli']}})
+    @bz({'1316456': {}, '1315657': {'engine': ['cli']}})
     @attr(tier=2)
     def test_update_cluster_bad_threshold_range(self):
         """
@@ -391,9 +423,13 @@ class TestCaseCluster(TestCase):
         """
         logger.info('Update cluster - bad threshold range')
         update_status = ll_cluster.updateCluster(
-            positive=False, cluster=self.cluster_name,
-            scheduling_policy=config.ENUMS['scheduling_policy_power_saving'],
-            thrhld_low='60', thrhld_high='20'
+            positive=False,
+            cluster=self.cluster_name,
+            scheduling_policy=sla_conf.POLICY_POWER_SAVING,
+            properties={
+                sla_conf.LOW_UTILIZATION: 60,
+                sla_conf.HIGH_UTILIZATION: 20
+            }
         )
         self.assertTrue(update_status, 'Update cluster - bad threshold range')
         self.assertTrue(

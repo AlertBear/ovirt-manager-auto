@@ -17,7 +17,7 @@ import art.unittest_lib as u_libs
 import config as conf
 import rhevmtests.helpers as rhevm_helper
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,7 @@ def setup_module(module):
 ########################################################################
 
 
+@bz({'1316456': {}})
 @u_libs.attr(tier=2)
 class EvenVmCountDistribution(u_libs.SlaTest):
     """

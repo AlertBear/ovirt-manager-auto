@@ -171,6 +171,7 @@ class QuotaTestCRUD(BaseQuotaClass):
     """
     __test__ = True
 
+    @bz({"1348559": {}})
     @polarion("RHEVM3-9375")
     def test_a_create_quota(self):
         """
@@ -191,6 +192,7 @@ class QuotaTestCRUD(BaseQuotaClass):
             )
         )
 
+    @bz({"1348559": {}})
     @polarion("RHEVM3-9390")
     def test_b_update_quota(self):
         """
@@ -218,6 +220,7 @@ class QuotaTestCRUD(BaseQuotaClass):
             )
         )
 
+    @bz({"1348559": {}})
     @polarion("RHEVM3-9391")
     def test_c_delete_quota(self):
         """

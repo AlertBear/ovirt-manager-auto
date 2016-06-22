@@ -287,8 +287,8 @@ def _prepareVmObject(**kwargs):
                     data_st.VcpuPins(
                         vcpu_pin=[
                             data_st.VcpuPin(
-                                elm.keys()[0],
-                                elm.values()[0]
+                                vcpu=int(elm.keys()[0]),
+                                cpu_set=elm.values()[0]
                             ) for elm in vcpu_pinning
                         ]
                     )
@@ -4461,7 +4461,7 @@ def prepare_watchdog_obj(**kwargs):
     Returns:
         WatchDog: New WatchDog instance
     """
-    return ll_general.prepare_ds_object("WatchDog", **kwargs)
+    return ll_general.prepare_ds_object("Watchdog", **kwargs)
 
 
 def get_watchdog_collection(vm_name):

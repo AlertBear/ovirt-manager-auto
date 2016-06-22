@@ -12,7 +12,7 @@ import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.unittest_lib as u_libs
 import rhevmtests.sla.config as sla_conf
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from rhevmtests.sla.fixtures import (
     run_once_vms,
     activate_hosts
@@ -44,6 +44,7 @@ def setup_default_policies(request):
     )
 
 
+@bz({'1316456': {}})
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     setup_default_policies.__name__,
@@ -74,6 +75,7 @@ class TestPowerSavingBalanceModule1(u_libs.SlaTest):
         )
 
 
+@bz({'1316456': {}})
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     setup_default_policies.__name__,
@@ -108,6 +110,7 @@ class TestPowerSavingBalanceModule2(u_libs.SlaTest):
         )
 
 
+@bz({'1316456': {}})
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     setup_default_policies.__name__,
@@ -139,6 +142,7 @@ class TestPowerSavingBalanceModule3(u_libs.SlaTest):
         )
 
 
+@bz({'1316456': {}})
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     setup_default_policies.__name__,
@@ -174,6 +178,7 @@ class TestPowerSavingWeightModule1(u_libs.SlaTest):
         )
 
 
+@bz({'1316456': {}})
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     setup_default_policies.__name__,
@@ -204,6 +209,7 @@ class TestEvenDistributedBalanceModule1(u_libs.SlaTest):
         )
 
 
+@bz({'1316456': {}})
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     setup_default_policies.__name__,
@@ -238,6 +244,7 @@ class TestEvenDistributedBalanceModule2(u_libs.SlaTest):
         )
 
 
+@bz({'1316456': {}})
 @u_libs.attr(tier=2)
 @pytest.mark.usefixtures(
     setup_default_policies.__name__,
@@ -273,6 +280,7 @@ class TestEvenDistributedWeightModule1(u_libs.SlaTest):
         )
 
 
+@bz({'1316456': {}})
 @u_libs.attr(tier=1)
 @pytest.mark.usefixtures(update_cluster_policy_to_none.__name__)
 class TestCheckClusterPoliciesParameters(u_libs.SlaTest):

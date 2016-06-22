@@ -59,6 +59,11 @@ VM_API = get_api('vm', 'vms')
 CLUSTER_NAME = "cluster"
 AFFINITY_GROUP_NAME = "affinity group"
 
+# Scheduler policy properties
+OVER_COMMITMENT_DURATION = "CpuOverCommitDurationMinutes"
+HIGH_UTILIZATION = "HighUtilization"
+LOW_UTILIZATION = "LowUtilization"
+
 logger = logging.getLogger(__name__)
 
 
@@ -111,8 +116,10 @@ def _prepareClusterObject(**kwargs):
                 enabled=kwargs.pop('transparent_hugepages')
             )
 
-        memoryPolicy = MemoryPolicy(overcommit=overcommit,
-                                    transparent_hugepages=transparentHugepages)
+        memoryPolicy = MemoryPolicy(
+            over_commit=overcommit,
+            transparent_hugepages=transparentHugepages
+        )
 
         cl.set_memory_policy(memoryPolicy)
 
@@ -122,10 +129,6 @@ def _prepareClusterObject(**kwargs):
             scheduling_policy_name=scheduling_policy
         )
         properties = None
-        thresholds = None
-        threshold_low = kwargs.get('thrhld_low')
-        threshold_high = kwargs.get('thrhld_high')
-        threshold_dur = kwargs.get('duration')
         if 'properties' in kwargs:
             properties = getDS('Properties')()
             for name, value in kwargs.get('properties').iteritems():
@@ -133,15 +136,8 @@ def _prepareClusterObject(**kwargs):
                     getDS('Property')(name=name, value=value)
                 )
 
-        # If at least one threshold tag parameter is set.
-        if max(threshold_low, threshold_high, threshold_dur) is not None:
-            thresholds = SchedulingPolicyThresholds(
-                high=threshold_high, duration=threshold_dur, low=threshold_low
-            )
-
         scheduling_policy = SchedulingPolicy(
             id=scheduling_policy_id,
-            thresholds=thresholds,
             properties=properties
         )
 
@@ -197,12 +193,6 @@ def addCluster(positive, **kwargs):
         mem_ovrcmt_prc (str): The percentage of host memory allowed
             Recommended values include 100 (None), 150 (Server Load) and 200
             (Desktop Load)
-        thrhld_high (str): The highest CPU usage percentage the host can have
-            before being considered overloaded
-        thrhld_low (str): The lowest CPU usage percentage the host can have
-            before being considered underutilized.
-        duration (int): The number of seconds the host needs to be overloaded
-            before the scheduler starts and moves the load to another host
         scheduling_policy (str): VM scheduling mode for hosts in the cluster
             (evenly_distributed, power_saving)
         properties (str): Properties of scheduling policy
@@ -245,12 +235,6 @@ def updateCluster(positive, cluster, **kwargs):
         gluster_support (bool): Gluster support
         virt_support (bool): Virt support
         mem_ovrcmt_prc (int): Cluster memory overcommitment
-        thrhld_high (int): The highest CPU usage percentage the host can have
-            before being considered overloaded
-        thrhld_low (int): The lowest CPU usage percentage the host can have
-            before being considered underutilized.
-        duration (int): The number of seconds the host needs to be overloaded
-            before the scheduler starts and moves the load to another host
         scheduling_policy (str): Cluster scheduling policy
         properties (dict): Scheduling policy properties
         transparent_hugepages (booL): Defines the availability of
@@ -477,77 +461,74 @@ def connectClusterToDataCenter(positive, cluster, datacenter):
     return True
 
 
-def checkClusterParams(positive, cluster, thrhld_low=None, thrhld_high=None,
-                       duration=None, scheduling_policy=None,
-                       mem_ovrcmt_prc=None, mem_trnspt_hp=None,
-                       gluster_support=None, virt_support=None):
+def check_cluster_params(positive, cluster, **kwargs):
+    """
 
-    cl = util.find(cluster)
+    Args:
+        positive (bool): Wait for positive or negative behaviour
+        cluster (str): Cluster name
 
-    ERROR = "%s of %s has wrong value, expected: %s, actual: %s."
+    Keyword Args:
+        scheduling_policy (str): Scheduling policy name
+        properties (dict): Scheduling policy properties
+        over_commit (int): Memory over commitment
+    Returns:
+
+    """
+    cluster_obj = util.find(cluster)
+
+    error_msg = "%s of %s has wrong value, expected: %s, actual: %s."
     status = True
 
-    try:
-        # Check the scheduling policy thresholds and duration if requested:
-        if max(thrhld_low, thrhld_high, duration, scheduling_policy) \
-                is not None:
-            clspth = cl.get_scheduling_policy().get_thresholds()
-            if (None is not thrhld_low) and \
-                    (clspth.get_low() != int(thrhld_low)):
-                status = False
-                util.logger.error(ERROR % ("Thresholds low", cl.get_name(),
-                                           thrhld_low, clspth.get_low()))
-
-            if (None is not thrhld_high) and \
-                    (clspth.get_high() != int(thrhld_high)):
-                status = False
-                util.logger.error(ERROR % ("Thresholds high", cl.get_name(),
-                                           thrhld_high, clspth.get_high()))
-
-            if (None is not duration) and \
-                    (clspth.get_duration() != int(duration)):
-                status = False
-                util.logger.error(ERROR % ("Duration", cl.get_name(), duration,
-                                           clspth.get_duration()))
-
-            # Check the scheduling_policy strategy if requested:
-            if (None is not scheduling_policy) and \
-                    (cl.get_scheduling_policy().get_policy() !=
-                     scheduling_policy):
-                status = False
-                util.logger.error(ERROR % ("Scheduling policy", cl.get_name(),
-                                           scheduling_policy,
-                                           cl.get_scheduling_policy().
-                                           get_policy()))
-
-        # Check the memory policy if requested:
-        if (None is not mem_ovrcmt_prc) \
-                and (cl.get_memory_policy().get_overcommit().get_percent()
-                     != int(mem_ovrcmt_prc)):
+    # Check the scheduling policy properties
+    scheduling_policy_obj = cluster_obj.get_scheduling_policy()
+    scheduling_policy = kwargs.get("scheduling_policy")
+    if scheduling_policy:
+        if scheduling_policy_obj.get_name() != scheduling_policy:
             status = False
-            util.logger.error(ERROR % ("Memory overcommit percent",
-                                       cl.get_name(), mem_ovrcmt_prc,
-                                       cl.get_memory_policy().
-                                       get_overcommit().get_percent()))
+            util.logger.error(
+                error_msg % (
+                    "Scheduling policy",
+                    cluster_obj.get_name(),
+                    scheduling_policy,
+                    scheduling_policy_obj.get_name()
+                )
+            )
+    properties = kwargs.get("properties")
+    if properties:
+        properties_obj = scheduling_policy_obj.get_properties()
+        for property_name in (
+            LOW_UTILIZATION, HIGH_UTILIZATION, OVER_COMMITMENT_DURATION
+        ):
+            if property_name in properties:
+                for property_obj in properties_obj:
+                    if property_obj.get_name() == property_name:
+                        property_val = property_obj.get_value().get_datum()
+                        if property_val != properties[property_name]:
+                            status = False
+                            util.logger.error(
+                                error_msg % (
+                                    property_name,
+                                    cluster_obj.get_name(),
+                                    properties[property_name],
+                                    property_val
+                                )
+                            )
 
-        # Check gluster support policy if requested:
-        if (None is not gluster_support)\
-                and (cl.get_gluster_service() != gluster_support):
+    # Check the cluster memory over commitment
+    over_commit = kwargs.get("over_commit")
+    if over_commit:
+        over_commit_obj = cluster_obj.get_memory_policy().get_over_commit()
+        if over_commit_obj.get_percent() != over_commit:
             status = False
-            util.logger.error(ERROR % ("Gluster support", cl.get_name(),
-                                       gluster_support,
-                                       cl.get_gluster_service()))
+            util.logger.error(
+                error_msg % (
+                    "Memory overcommit percent",
+                    cluster_obj.get_name(), over_commit,
+                    over_commit_obj.get_percent()
+                )
+            )
 
-        # Check virt support policy if requested:
-        if (None is not virt_support)\
-                and (cl.get_virt_service() != virt_support):
-            status = False
-            util.logger.error(ERROR % ("Virt support", cl.get_name(),
-                                       virt_support, cl.get_virt_service()))
-
-    except AttributeError as e:
-        util.logger.error("checkClusterParams: %s" % str(e))
-        return not positive
     return status == positive
 
 
@@ -735,7 +716,7 @@ def populate_affinity_with_vms(affinity_name, cluster_name, vms):
     )
     for vm in vms:
         vm_id = VM_API.find(vm).get_id()
-        vm_id_obj = getDS('VM')(id=vm_id)
+        vm_id_obj = getDS('Vm')(id=vm_id)
         logger.info("Add VM %s to affinity group %s", vm, affinity_name)
         out, status = VM_API.create(
             vm_id_obj, True, async=True, collection=affinity_vms_obj

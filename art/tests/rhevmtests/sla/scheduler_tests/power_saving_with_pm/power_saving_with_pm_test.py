@@ -19,7 +19,7 @@ import art.unittest_lib as u_lib
 import rhevmtests.helpers as rhevm_helper
 import rhevmtests.sla.config as conf
 import rhevmtests.sla.helpers as sla_helpers
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +89,7 @@ def teardown_module(module):
 ########################################################################
 
 
+@bz({'1316456': {}})
 @u_lib.attr(tier=4)
 class PowerSavingWithPM(u_lib.SlaTest):
     """

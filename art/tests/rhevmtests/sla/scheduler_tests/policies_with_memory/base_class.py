@@ -8,12 +8,14 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as errors
 import art.unittest_lib as libs
 import config as conf
+from art.test_handler.tools import bz
 from rhevmtests.sla import helpers
 
 logger = logging.getLogger(__name__)
 
 
 @libs.attr(tier=2)
+@bz({'1316456': {}})
 class BaseTestPolicyWithMemory(libs.SlaTest):
     """
     Base class for scheduler tests with memory load
