@@ -790,7 +790,7 @@ def removeVm(positive, vm, **kwargs):
         body = data_st.Action(force=True)
 
     vm_obj = VM_API.find(vm)
-    vm_status = vm_obj.get_status().lower()
+    vm_status = vm_obj.get_status()
     stop_vm = kwargs.pop('stopVM', 'false')
     if str(stop_vm).lower() == 'true' and vm_status != ENUMS['vm_state_down']:
         if not stopVm(positive, vm):
@@ -824,7 +824,7 @@ def removeVmAsynch(positive, tasksQ, resultsQ, stopVmBool=False):
     status = False
     try:
         vmObj = VM_API.find(vm)
-        if stopVmBool and vmObj.get_status().lower() != 'down':
+        if stopVmBool and vmObj.get_status() != 'down':
             if not stopVm(positive, vm):
                 logger.error("failed to stop vm %s before async removal", vm)
                 return
@@ -3691,7 +3691,7 @@ def migrateVmsSimultaneously(positive, vm_name, range_low, range_high, hosts,
         # Wait for all migrated VMs are UP.
         def vmsUp(state):
             StateResults = (
-                VM_API.find(vm.name).get_status().lower() == state
+                VM_API.find(vm.name).get_status() == state
                 for vm in vmsObjs)
             return reduce(and_, StateResults)
 

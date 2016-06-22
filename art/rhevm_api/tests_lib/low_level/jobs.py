@@ -34,8 +34,7 @@ def check_recent_job(positive, description, last_jobs_num=None,
 
     job_status = job_status.lower()
     jobs = filter(lambda j: (description in j.get_description() and
-                             j.get_status().lower() == job_status),
-                  jobs)
+                             j.get_status() == job_status), jobs)
     last_job = max(jobs, key=lambda j: j.get_start_time())
 
     if last_job:
