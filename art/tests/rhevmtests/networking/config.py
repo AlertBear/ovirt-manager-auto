@@ -39,6 +39,7 @@ VM_0 = VM_NAME[0]
 VM_1 = VM_NAME[1]
 VM_NIC_0 = NIC_NAME[0]
 VM_NIC_1 = NIC_NAME[1]
+VM_NIC_2 = NIC_NAME[2]
 HOST_0_NICS = None  # Filled in test
 VDS_0_HOST = None  # Filled in test
 HOST_0_NAME = None  # Filled in test

@@ -5,11 +5,13 @@
 Helper functions for network QoS job
 """
 
-import config
 import logging
 import xml.etree.ElementTree
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
+import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import config as qos_conf
+import rhevmtests.networking.config as conf
 
 logger = logging.getLogger("Network_VNIC_QoS_Helper")
 
@@ -50,13 +52,13 @@ class QosCalculator(object):
         """
         if self.inbound_dict:
             self.inbound_dict["average"] = str(
-                self.inbound_dict["average"]
-                * config.M_K_CONVERTER / config.BITS_BYTES
+                self.inbound_dict["average"] *
+                qos_conf.M_K_CONVERTER / qos_conf.BITS_BYTES
             )
         if self.outbound_dict:
             self.outbound_dict["average"] = str(
                 self.outbound_dict["average"] *
-                config.M_K_CONVERTER / config.BITS_BYTES
+                qos_conf.M_K_CONVERTER / qos_conf.BITS_BYTES
             )
 
     def _calculate_peak(self):
@@ -66,12 +68,12 @@ class QosCalculator(object):
         if self.inbound_dict:
             self.inbound_dict["peak"] = str(
                 self.inbound_dict["peak"] *
-                config.M_K_CONVERTER / config.BITS_BYTES
+                qos_conf.M_K_CONVERTER / qos_conf.BITS_BYTES
             )
         if self.outbound_dict:
             self.outbound_dict["peak"] = str(
                 self.outbound_dict["peak"] *
-                config.M_K_CONVERTER / config.BITS_BYTES
+                qos_conf.M_K_CONVERTER / qos_conf.BITS_BYTES
             )
 
     def _calculate_burst(self):
@@ -80,11 +82,11 @@ class QosCalculator(object):
         """
         if self.inbound_dict:
             self.inbound_dict["burst"] = str(
-                self.inbound_dict["burst"] * config.M_K_CONVERTER
+                self.inbound_dict["burst"] * qos_conf.M_K_CONVERTER
             )
         if self.outbound_dict:
             self.outbound_dict["burst"] = str(
-                self.outbound_dict["burst"] * config.M_K_CONVERTER
+                self.outbound_dict["burst"] * qos_conf.M_K_CONVERTER
             )
 
     def update_qos_for_libvirt(self):
@@ -140,7 +142,7 @@ def build_dict(inbound_dict, outbound_dict, vm, nic):
     qos_obj = QosCalculator(inbound_dict, outbound_dict)
     rc, mac_dict = ll_vms.getVmMacAddress(True, vm=vm, nic=nic)
     if not rc:
-        raise config.NET_EXCEPTION("Failed to get MAC address")
+        return {}
     mac = mac_dict["macAddress"]
     return {mac: qos_obj}
 
@@ -192,66 +194,37 @@ def compare_qos(host_obj, vm_name, **kwargs):
     return True
 
 
-def add_qos_profile_to_nic(
-    qos_name, vnic_profile_name, nic=config.NIC_NAME_1, update_libvirt=True
-):
+def add_qos_profile_to_nic(qos_name, vnic_profile_name, nic=conf.VM_NIC_1):
     """
     Creates VNIC profile for mgmt network
     Updates the VNIC profile with specific QoS
     Add VNIC profile to VM NIC
-    :param qos_name: name of qos to be updated on VNIC profile
-    :type qos_name: str
-    :param vnic_profile_name: vnic profile to update the NIC with
-    :type vnic_profile_name: str
-    :param nic: nic to update the vnic profile on
-    :type nic: str
-    :param update_libvirt: updates the libvirt value without restart VM
-    :type update_libvirt: bool
-    :return: True/False
-    :rtype: bool
+
+    Args:
+        qos_name (str): name of qos to be updated on VNIC profile
+        vnic_profile_name (str): vnic profile to update the NIC with
+        nic (str): nic to update the vnic profile on
+
+    Returns:
+        bool: True/False
     """
-    logger.info(
-        "Add VNIC Profile %s for mgmt network", config.MGMT_BRIDGE
-    )
     if not ll_networks.add_vnic_profile(
-        positive=True, name=vnic_profile_name, data_center=config.DC_NAME,
-        network=config.MGMT_BRIDGE
+        positive=True, name=vnic_profile_name, data_center=conf.DC_0,
+        network=conf.MGMT_BRIDGE
     ):
-        raise config.NET_EXCEPTION(
-            "Couldn't create VNIC Profile %s for mgmt network"
-            % config.MGMT_BRIDGE
-        )
+        return False
 
-    if update_libvirt:
-        logger.info(
-            "Update VNIC profile %s with QoS %s", vnic_profile_name, qos_name
-        )
-        if not ll_networks.update_qos_on_vnic_profile(
-            datacenter=config.DC_NAME, qos_name=qos_name,
-            vnic_profile_name=vnic_profile_name,
-            network_name=config.MGMT_BRIDGE
-        ):
-                raise config.NET_EXCEPTION(
-                    "Couldn't update Network QoS on VNIC profile "
-                )
+    if not ll_networks.update_qos_on_vnic_profile(
+        datacenter=conf.DC_0, qos_name=qos_name,
+        vnic_profile_name=vnic_profile_name,
+        network_name=conf.MGMT_BRIDGE
+    ):
+        return False
 
-    logger.info(
-        "Add VNIC Profile %s to VM %s",
-        vnic_profile_name, config.VM_NAME_0
-    )
     if not ll_vms.addNic(
-        True, config.VM_NAME_0, name=nic, network=config.MGMT_BRIDGE,
+        positive=True, vm=conf.VM_0, name=nic, network=conf.MGMT_BRIDGE,
         vnic_profile=vnic_profile_name
     ):
-        raise config.NET_EXCEPTION(
-            "Couldn't add VNIC with QoS to VM %s" % config.VM_NAME_0
-        )
-    if not update_libvirt:
-        if not ll_networks.update_qos_on_vnic_profile(
-            datacenter=config.DC_NAME, qos_name=qos_name,
-            vnic_profile_name=vnic_profile_name,
-            network_name=config.MGMT_BRIDGE
-        ):
-            raise config.NET_EXCEPTION(
-                "Couldn't update Network QoS on VNIC profile "
-            )
+        return False
+
+    return True
