@@ -266,7 +266,7 @@ class BasicEnvironment(BaseTestCase):
         self.teardown_exception()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4572(BasicEnvironment):
     """
     Basic flow - get device name

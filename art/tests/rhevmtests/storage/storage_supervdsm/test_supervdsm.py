@@ -108,7 +108,7 @@ class SuperVDSMTestBase(TestCase):
         self.machine.enableServiceSupport()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6269(SuperVDSMTestBase):
     """
     supervdsm test case, sanity

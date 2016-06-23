@@ -150,7 +150,7 @@ class BaseClassEditDescription(BasicEnvironment):
             ll_disks.detachDisk(True, disk_alias, self.vm1_name)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11500(BaseClassEditDescription):
     """
     Edit Disk description for a machine on a block domain
@@ -177,7 +177,7 @@ class TestCase11500(BaseClassEditDescription):
         self.basic_positive_flow()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11501(BaseClassEditDescription):
     """
     Edit Disk description for a machine on a file domain

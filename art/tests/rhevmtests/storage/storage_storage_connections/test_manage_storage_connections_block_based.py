@@ -303,7 +303,7 @@ class TestCase(StorageTest):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5243(TestCase):
     """
     https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/
@@ -1527,7 +1527,7 @@ class TestCase5241(TestCase):
         TestCase.teardown_exception()
 
 
-@attr(tier=1)
+@attr(tier=2)
 @bz({'1340164': {}})
 class TestCase5249(TestCase):
     """

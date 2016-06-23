@@ -163,7 +163,7 @@ class TestCase4829(helpers.TestCaseNFSOptions):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 @bz({'1340164': {}})
 @pytest.mark.usefixtures("initializer_TestCaseNFSOptions")
 class TestCase4826(helpers.TestCaseNFSOptions):

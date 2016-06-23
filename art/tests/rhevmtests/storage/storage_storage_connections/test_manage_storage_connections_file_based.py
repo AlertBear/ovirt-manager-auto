@@ -323,7 +323,7 @@ class TestCaseISO(TestCasePosix):
         )[1]
 
 
-@attr(tier=1)
+@attr(tier=2)
 @bz({'1340164': {}})
 class TestCase5250(TestCaseNFSAndGlusterFS):
     """

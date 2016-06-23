@@ -252,7 +252,7 @@ class TestCase11834(TestCase):
         self._verify_data_on_vm(self.data_for_vm)
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11586(TestCase):
     """
     storage vm sanity test, creates 2 snapshots and removes them.
@@ -373,7 +373,7 @@ class TestCase11586(TestCase):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase11830(TestCase):
     """
     Create 2 VMs from template at once.

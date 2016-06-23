@@ -172,7 +172,7 @@ class DefaultSnapshotEnvironment(DefaultEnvironment):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase4906(DefaultEnvironment):
     """
     Attach a read-only disk to vm and try to write to the disk

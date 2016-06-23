@@ -185,7 +185,7 @@ class BasicEnvironment(BaseTestCase):
             )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase5734(BasicEnvironment):
     """
     Import a glance image as a template, then create a VM from this template
