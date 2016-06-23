@@ -4293,6 +4293,7 @@ def delete_snapshot_disks(vm, snapshot, disk_id=None, wait=True):
             )
         results.append(status)
     if wait:
+        wait_for_jobs([ENUMS['job_remove_snapshots_disk']])
         wait_for_disks_status(
             [disk.get_disk().get_id() for disk in snapshot_disks], 'id'
         )

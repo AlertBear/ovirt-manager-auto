@@ -372,6 +372,49 @@ class TestCase6052(BasicEnvironment):
 
 
 @attr(tier=2)
+class TestCase16287(BasicEnvironment):
+    """
+    Basic live delete and merge of a single snapshot's disk
+
+    https://polarion.engineering.redhat.com/polarion/#/project
+    /RHEVM/workitem?id=RHEVM3-16287
+    """
+    __test__ = True
+    test_case = '16287'
+
+    def setUp(self):
+        self.snapshot_description = storage_helpers.create_unique_object_name(
+            self.test_case, config.OBJECT_TYPE_SNAPSHOT
+        )
+        super(TestCase16287, self).setUp()
+
+    @polarion("RHEVM3-6038")
+    def test_basic_live_deletion_of_snapshots_disk(self):
+        self.perform_snapshot_operation(self.snapshot_description)
+        snapshot_disks_before = ll_vms.get_snapshot_disks(
+            self.vm_name, self.snapshot_description
+        )
+        disk_ids_before = [disk.get_id() for disk in snapshot_disks_before]
+        vm_disk = ll_vms.getVmDisks(self.vm_name)[-1]
+        self.assertTrue(
+            vm_disk.get_id() in disk_ids_before,
+            "Disk %s is not part of the snapshot's disks" % vm_disk.get_alias()
+        )
+        self.assertTrue(ll_vms.delete_snapshot_disks(
+            self.vm_name, self.snapshot_description, vm_disk.get_id()
+        ), "Failed to remove snapshots disk %s" % vm_disk.get_alias())
+        ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
+        snapshot_disks_after = ll_vms.get_snapshot_disks(
+            self.vm_name, self.snapshot_description
+        )
+        disk_ids_after = [disk.get_id() for disk in snapshot_disks_after]
+        self.assertTrue(
+            vm_disk.get_id() not in disk_ids_after,
+            "Disk %s is part of the snapshot's disks" % vm_disk.get_alias()
+        )
+
+
+@attr(tier=2)
 class TestCase12215(BasicEnvironment):
     """
     Deleting all snapshots
