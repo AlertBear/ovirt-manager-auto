@@ -234,10 +234,7 @@ def _prepareDiskObject(**kwargs):
 
         logical_units = data_st.LogicalUnits(logical_unit=[direct_lun])
         disk.set_lun_storage(
-            data_st.HostStorage(
-                logical_unit=logical_units,
-                type_=type_
-            )
+            data_st.HostStorage(logical_units=logical_units, type_=type_)
         )
 
     # id

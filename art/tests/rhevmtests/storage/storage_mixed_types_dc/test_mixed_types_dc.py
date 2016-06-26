@@ -362,7 +362,7 @@ class TestCase4563(IscsiNfsSD):
             assert ll_vms.cloneVmFromTemplate(
                 True, vm_name, self.template_name, self.cluster_name,
                 timeout=CLONE_FROM_TEMPLATE_TIMEOUT,
-                storagedomain=storagedomain, clone='true'
+                storagedomain=storagedomain, clone=True
             )
             self.vms_to_remove.append(vm_name)
 
@@ -876,7 +876,7 @@ class TestCase4551(IscsiNfsSD):
         logger.info("Cloning vm from template with thin privisioning")
         assert ll_vms.cloneVmFromTemplate(
             True, self.vm_cloned_name, self.template_name,
-            self.cluster_name, storagedomain=self.nfs, clone='false',
+            self.cluster_name, storagedomain=self.nfs, clone=False,
         )
         self.vms_to_remove.append(self.vm_cloned_name)
 

@@ -265,7 +265,7 @@ class RestUtil(APIUtil):
                expected_neg_status=NEGATIVE_CODES_CREATE,
                expectedEntity=None, incrementBy=1,
                async=False, collection=None,
-               coll_elm_name=None, current=None, compare=True):
+               coll_elm_name=None, current=None, compare=True, operations=[]):
         '''
         Description: implements POST method and verify the response
         Author: edolinin
@@ -285,6 +285,8 @@ class RestUtil(APIUtil):
                              from self.element_name
            * compare - True by default and run compareElements,
                        otherwise compareElements doesn't run
+           * operations - List of operations to concatenate to the href in
+             the POST call (e.g. ['collapse_snapshots', 'clone=true'])
         Return: POST response (None on parse error.),
                 status (True if POST test succeeded, False otherwise.)
         '''
@@ -305,6 +307,8 @@ class RestUtil(APIUtil):
         entity = validator.dump_entity(entity, coll_elm_name)
 
         post_url = self.buildUrl(href, current)
+        if operations:
+            post_url += ';' + ';'.join(operations)
         self.logger.debug(
             "CREATE request content is --  url:%(uri)s body:%(body)s ",
             {'uri': post_url, 'body': entity})

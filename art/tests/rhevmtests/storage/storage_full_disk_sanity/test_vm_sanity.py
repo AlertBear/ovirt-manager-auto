@@ -98,7 +98,7 @@ class TestCase4710(TestCase):
             vms.cloneVmFromTemplate(
                 True, name=vm_name, cluster=config.CLUSTER_NAME,
                 vol_sparse=sparse, vol_format=vol_format,
-                template=template_name, clone='true', timeout=900),
+                template=template_name, clone=True, timeout=900),
             "cloning vm %s from template %s failed" % (vm_name, template_name))
         self.vm_names.append(vm_name)
         LOGGER.info("Validating disk type and format")

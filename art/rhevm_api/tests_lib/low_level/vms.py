@@ -406,13 +406,6 @@ def _prepareVmObject(**kwargs):
     if domain_name:
         vm.set_domain(data_st.Domain(name=domain_name))
 
-    # disk_clone
-    disk_clone = kwargs.pop("disk_clone", None)
-    if disk_clone and disk_clone.lower() == "true":
-        disk_array = data_st.Disks()
-        disk_array.set_clone(disk_clone)
-        vm.set_disks(disk_array)
-
     # quota
     quota_id = kwargs.pop("quota", None)
     if quota_id == '':
@@ -439,13 +432,6 @@ def _prepareVmObject(**kwargs):
     protected = kwargs.pop("protected", None)
     if protected is not None:
         vm.set_delete_protected(protected)
-
-    # copy_permissions
-    copy_permissions = kwargs.pop("copy_permissions", None)
-    if copy_permissions:
-        perms = data_st.Permissions()
-        perms.set_clone(True)
-        vm.set_permissions(perms)
 
     # initialization
     initialization = kwargs.pop("initialization", None)
@@ -630,10 +616,20 @@ def addVm(positive, wait=True, **kwargs):
         action="add", obj_type="vm", obj_name=kwargs.get('name'),
         positive=positive, **kwargs
     )
+    operations = []
+    # disk_clone
+    disk_clone = kwargs.pop("disk_clone", None)
+    if disk_clone and disk_clone.lower() == "true":
+        operations.append('clone=true')
+    # copy_permissions
+    copy_permissions = kwargs.pop("copy_permissions", None)
+    if copy_permissions:
+        operations.append('clone_permissions')
+
     logger.info(log_info)
     if False in [positive, wait]:
         vm_obj, status = VM_API.create(
-            vm_obj, positive, expectedEntity=expected_vm
+            vm_obj, positive, expectedEntity=expected_vm, operations=operations
         )
         if not status:
             logging.error(log_error)
@@ -2488,7 +2484,7 @@ def remove_cdrom_vm(positive, vm_name):
 
 
 def _createVmForClone(
-    name, template=None, cluster=None, clone=None, vol_sparse=None,
+    name, template=None, cluster=None, vol_sparse=None,
     vol_format=None, storagedomain=None, snapshot=None, vm_name=None,
     **kwargs
 ):
@@ -2500,7 +2496,6 @@ def _createVmForClone(
        * template - template name
        * name - vm name
        * cluster - cluster name
-       * clone - true/false - if true, template disk will be copied
        * vol_sparse - true/false - convert VM disk to sparse/preallocated
        * vol_format - COW/RAW - convert VM disk format
        * storagedomain - storage domain to clone the VM disk
@@ -2528,8 +2523,6 @@ def _createVmForClone(
                          "must be set")
 
     diskArray = data_st.Disks()
-    diskArray.set_clone(clone.lower())
-
     disks = DISKS_API.getElemFromLink(disks_from, link_name='disks',
                                       attr='disk', get_href=False)
     for dsk in disks:
@@ -2575,24 +2568,25 @@ def cloneVmFromTemplate(positive, name, template, cluster,
        * template - template name
        * cluster - cluster name
        * timeout - action timeout (depends on disk size or system load
-       * clone - true/false - if true, template disk will be copied
+       * clone - True/False - if True, template disk will be copied
        * vol_sparse - True/False - convert VM disk to sparse/preallocated
        * vol_format - COW/RAW - convert VM disk format
     Return: status (True if vm was cloned properly, False otherwise)
     '''
-    clone = str(clone).lower()
-    # don't even try to use deepcopy, it will fail
-    expectedVm = _createVmForClone(name, template, cluster, clone, vol_sparse,
+    expectedVm = _createVmForClone(name, template, cluster, vol_sparse,
                                    vol_format, storagedomain,
                                    **kwargs)
-    newVm = _createVmForClone(name, template, cluster, clone, vol_sparse,
+    newVm = _createVmForClone(name, template, cluster, vol_sparse,
                               vol_format, storagedomain,
                               **kwargs)
-
-    if clone == 'true':
+    operations = []
+    if clone:
+        operations = ['clone=true']
         expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
-    vm, status = VM_API.create(newVm, positive, expectedEntity=expectedVm,
-                               async=(not wait), compare=wait)
+    vm, status = VM_API.create(
+        newVm, positive, expectedEntity=expectedVm, async=(not wait),
+        compare=wait, operations=operations
+    )
     if positive and status and wait:
         return VM_API.waitForElemStatus(vm, "DOWN", timeout)
     return status
@@ -2616,20 +2610,20 @@ def cloneVmFromSnapshot(positive, name, cluster, vm, snapshot,
        * compare - True if need validator to work
     Return: True if vm was cloned properly, False otherwise
     '''
-    # don't even try to use deepcopy, it will fail
     expectedVm = _createVmForClone(
-        name, cluster=cluster, clone="true", vol_sparse=sparse,
+        name, cluster=cluster, vol_sparse=sparse,
         vol_format=vol_format, storagedomain=storagedomain, snapshot=snapshot,
         vm_name=vm, **kwargs)
     newVm = _createVmForClone(
-        name, cluster=cluster, clone="true", vol_sparse=sparse,
+        name, cluster=cluster, vol_sparse=sparse,
         vol_format=vol_format, storagedomain=storagedomain, snapshot=snapshot,
         vm_name=vm, **kwargs)
 
+    operations = ['clone=true']
     expectedVm.set_snapshots(None)
     expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
     vm, status = VM_API.create(newVm, positive, expectedEntity=expectedVm,
-                               compare=compare)
+                               compare=compare, operations=operations)
     if positive and status and wait:
         return VM_API.waitForElemStatus(vm, "DOWN", timeout)
     return status
