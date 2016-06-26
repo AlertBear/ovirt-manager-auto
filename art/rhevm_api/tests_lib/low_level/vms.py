@@ -1294,6 +1294,10 @@ def addDisk(positive, vm, provisioned_size, wait=True, storagedomain=None,
                         description=kwargs.pop('description', None),
                         active=kwargs.get('active', True))
 
+    log_info, log_error = ll_general.get_log_msg(
+        action="Add", obj_type="disk", obj_name=disk, positive=positive,
+        extra_txt="provisioned size: %d" % provisioned_size, **kwargs
+    )
     # replace disk params from kwargs
     for param_name in ADD_DISK_KWARGS:
         param_val = kwargs.pop(param_name, None)
@@ -1341,13 +1345,15 @@ def addDisk(positive, vm, provisioned_size, wait=True, storagedomain=None,
     )
 
     disks = get_disk_attachments(vm, get_href=True)
-    logger.info("Adding disk to vm %s", vm)
+    logger.info(log_info)
     new_disk, status = DISK_ATTACHMENTS_API.create(
         disk_attachment_obj, positive, collection=disks
     )
     if status and positive and wait:
         disk = DISKS_API.find(new_disk.get_id(), attribute='id')
         return DISKS_API.waitForElemStatus(disk, "OK", timeout)
+    if not status:
+        logger.error(log_error)
     return status
 
 
@@ -1382,6 +1388,11 @@ def removeDisk(positive, vm, disk=None, wait=True, disk_id=None):
         return None
     disk_obj = does_disk_exist(getVmDisks(vm))
     if disk_obj:
+        log_info, log_error = ll_general.get_log_msg(
+            action="Remove", obj_type="disk", obj_name=disk, positive=positive,
+            extra_txt="disk id %s" % disk_obj.get_id()
+        )
+        logger.info(log_info)
         status = VM_API.delete(disk_obj, positive)
     else:
         logger.error("Disk %s not found in vm %s", disk, vm)
@@ -1394,6 +1405,8 @@ def removeDisk(positive, vm, disk=None, wait=True, disk_id=None):
         ):
             if not disk_obj:
                 return True
+    if not status:
+        logger.error(log_error)
     return status
 
 
@@ -1959,79 +1972,65 @@ def removeSnapshot(
 
 
 def runVmOnce(
-    positive, vm, pause=None, display_type=None, stateless=None,
-    cdrom_image=None, floppy_image=None, boot_dev=None, host=None,
-    domainName=None, user_name=None, password=None,
-    wait_for_state=ENUMS['vm_state_powering_up'],
-    use_cloud_init=False, initialization=None,
-    use_sysprep=False,
+    positive, vm, wait_for_state=ENUMS['vm_state_powering_up'], pause=False,
+    use_cloud_init=False, use_sysprep=False, **kwargs
 ):
     """
     Run once vm with specific parameters
 
-    :param positive: if run must succeed or not
-    :type positive: bool
-    :param vm: vm name to run
-    :type vm: str
-    :param pause: if vm must started in pause state
-    :type pause: str
-    :param display_type: display type of vm
-    :type display_type: str
-    :param stateless: if vm must be stateless
-    :type stateless: bool
-    :param cdrom_image: cdrom image to attach
-    :type cdrom_image: str
-    :param floppy_image: floppy image to attach
-    :type floppy_image: str
-    :param boot_dev: boot vm from device
-    :type boot_dev: str
-    :param host: run vm on host
-    :type host: str
-    :param domainName: vm domain
-    :type domainName: str
-    :param user_name: domain user name
-    :type user_name: str
-    :param password: domain password name
-    :type password: str
-    :param wait_for_state: wait for specific vm state after run
-    :type wait_for_state:
-    :param use_cloud_init: If to use cloud init
-    :type use_cloud_init: bool
-    :param initialization: Initialization obj for cloud init
-    :type initialization: initialization
-    :param use_sysprep: True if sysprep should be used, False otherwise
-    :type use_sysprep: boolean
-    :return: True, if positive and action succeed
-    or negative and action failed, otherwise False
-    :rtype: bool
+    Args:
+        positive (bool): if run must succeed or not
+        vm (str): vm name to run
+        wait_for_state (str): wait for specific vm state after run
+        pause (bool): if vm must started in pause state
+        use_cloud_init (bool): If to use cloud
+        use_sysprep (bool): True if sysprep should be used, False otherwise
+
+    Keyword arguments:
+        display_type (str): display type of vm
+        stateless (bool): if vm must be stateless
+        cdrom_image (str): cdrom image to attach
+        floppy_image (str): floppy image to attach
+        boot_dev (str): boot vm from device
+        host (str): run vm on host
+        domainName (str): vm domain
+        user_name (str): domain user name
+        password (str): domain password name
+        initialization (Initialization): Initialization obj for cloud init
+
+
+    Returns
+        bool: True, if positive and action succeed or negative and action
+        failed, otherwise False
     """
     # TODO Consider merging this method with the startVm.
     vm_obj = VM_API.find(vm)
     action_params = {}
     vm_for_action = data_st.Vm()
+    display_type = kwargs.get("display_type")
     if display_type:
         vm_for_action.set_display(data_st.Display(type_=display_type))
-
-    if None is not stateless:
+    stateless = kwargs.get("stateless")
+    if stateless is not None:
         vm_for_action.set_stateless(stateless)
-    if use_cloud_init:
-        action_params['use_cloud_init'] = 'true'
-        if initialization:
-            vm_for_action.set_initialization(initialization)
+    initialization = kwargs.get("initialization")
+    if initialization:
+        vm_for_action.set_initialization(initialization)
+    cdrom_image = kwargs.get("cdrom_image")
     if cdrom_image:
         cdrom = data_st.Cdrom()
         vm_cdroms = data_st.Cdroms()
         cdrom.set_file(data_st.File(id=cdrom_image))
         vm_cdroms.add_cdrom(cdrom)
         vm_for_action.set_cdroms(vm_cdroms)
-
+    floppy_image = kwargs.get("floppy_image")
     if floppy_image:
         floppy = data_st.Floppy()
         floppies = data_st.Floppies()
         floppy.set_file(data_st.File(id=floppy_image))
         floppies.add_floppy(floppy)
         vm_for_action.set_floppies(floppies)
-
+    boot_dev = kwargs.get("boot_dev")
     if boot_dev:
         os_type = data_st.OperatingSystem()
         os_type.set_boot(
@@ -2042,36 +2041,33 @@ def runVmOnce(
             )
         )
         vm_for_action.set_os(os_type)
-
+    host = kwargs.get("host")
     if host:
         vm_policy = data_st.VmPlacementPolicy()
         vm_hosts = data_st.Hosts()
         vm_hosts.add_host(HOST_API.find(host))
         vm_policy.set_hosts(vm_hosts)
         vm_for_action.set_placement_policy(vm_policy)
-        # host_obj = HOST_API.find(host)
-        # placement_policy = data_st.VmPlacementPolicy(hosts=host_obj)
-        # vm_for_action.set_placement_policy(placement_policy)
-
-    if domainName:
-        domain = data_st.Domain()
-        domain.set_name(domainName)
-
-        if user_name and password is not None:
-            domain.set_user(
-                data_st.User(user_name=user_name, password=password)
-            )
-        vm_for_action.set_domain(domain)
 
     action_params["vm"] = vm_for_action
     action_params['use_sysprep'] = use_sysprep
-    if pause and pause.lower() == 'true':
+    action_params['use_cloud_init'] = use_cloud_init
+    if pause:
         wait_for_state = ENUMS['vm_state_paused']
         action_params["pause"] = pause
+
+    action_params_txt = ll_general.prepare_kwargs_for_log(**action_params)
+    log_info, log_error = ll_general.get_log_msg(
+        action="run_once", obj_type="vm", obj_name=vm, positive=positive,
+        extra_txt="action parameters: %s" % action_params_txt, **kwargs
+        )
+    logger.info(log_info)
     status = bool(
         VM_API.syncAction(vm_obj, 'start', positive, **action_params)
     )
-    if status and positive:
+    if not status:
+        logger.error(log_error)
+    elif positive:
         return VM_API.waitForElemStatus(
             vm_obj, wait_for_state, VM_ACTION_TIMEOUT
         )

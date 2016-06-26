@@ -16,12 +16,16 @@ SHARED_ISO_DOMAIN_ADDRESS = ISO_DOMAIN_ADDRESS
 SHARED_ISO_DOMAIN_PATH = ISO_DOMAIN_PATH
 SHARED_ISO_DOMAIN_NAME = ISO_DOMAIN_NAME
 # Run once parameters
-X86_IMAGE_1 = 'en_windows_7_enterprise_x86_dvd_x15-70745.iso'
-X86_IMAGE_2 = 'en_windows_7_enterprise_x64.iso'
-PPC_IMAGE_1 = 'RHEL-6.6-20140926.0-Server-ppc64-dvd1.iso'
-CDROM_IMAGE_1 = PPC_IMAGE_1 if PPC_ARCH else X86_IMAGE_1
-CDROM_IMAGE_2 = PPC_IMAGE_1 if PPC_ARCH else X86_IMAGE_2
-FLOPPY_IMAGE = 'win2k3.vfd'
+CD_PATTERN = r"ppc.*.iso" if PPC_ARCH else r"windows[-_][0-9].*.iso"
+FLOPPY_PATTERN = r".*.vfd"
+CDROM_IMAGE_1 = None
+CDROM_IMAGE_2 = None
+FLOPPY_IMAGE = None
+ISO_ERROR = "couldn't find an image to use for this test on iso domain: %s"
+RUN_ONCE_VM_PARAMS = {
+    "stateless": False,
+    "highly_available": False,
+}
 
 # Storage names
 storage_name = PARAMETERS.get('storage_name', '%s_%d' % (STORAGE_TYPE, 0))

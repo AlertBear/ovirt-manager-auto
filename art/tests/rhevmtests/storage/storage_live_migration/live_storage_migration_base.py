@@ -273,7 +273,7 @@ class TestCase5990(BaseTestCase):
             - VM has running qemu process so LSM should succeed
         """
         logger.info("Running vm in paused state")
-        ll_vms.runVmOnce(True, self.vm_name, pause='true')
+        ll_vms.runVmOnce(True, self.vm_name, pause=True)
         ll_vms.waitForVMState(self.vm_name, config.VM_PAUSED)
         ll_vms.live_migrate_vm(
             self.vm_name, same_type=config.MIGRATE_SAME_TYPE

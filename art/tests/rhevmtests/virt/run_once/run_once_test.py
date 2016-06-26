@@ -1,47 +1,20 @@
 """
-Virt test
+Virt test - run once
 """
-
-import logging
+import helper
 import pytest
-
-from art.unittest_lib import VirtTest as TestCase
-from art.test_handler.tools import polarion, bz
-from art.unittest_lib import attr
-from rhevmtests.virt import config
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.test_handler.exceptions as errors
-logger = logging.getLogger(__name__)
+from art.unittest_lib import common, attr
+from art.test_handler.tools import polarion
+from fixtures import (
+    base_setup_fixture, image_provider_fixture, remove_vm_disk_fixture,
+    remove_vm_nic_fixture
+)
+from rhevmtests.virt import config
+from _pytest_art.testlogger import TestFlowInterface
 
-########################################################################
-#                            Functions                                 #
-########################################################################
+testflow = TestFlowInterface
 
-
-def run_once_with_boot_dev(boot_device):
-    """
-    run once with chosen boot device
-
-    :param boot_device: boot device
-    :type boot_device: str
-    :return: True, if succeeded to run once with boot device
-    :rtype: bool
-    """
-    logger.info("Run once vm %s boot from %s", config.VM_RUN_ONCE, boot_device)
-    if not ll_vms.runVmOnce(
-            True, config.VM_RUN_ONCE,
-            cdrom_image=config.CDROM_IMAGE_1,
-            boot_dev=boot_device
-    ):
-        logger.info(
-            "Failed to run once vm %s to boot from %s",
-            config.VM_RUN_ONCE, boot_device
-        )
-        return False
-    boot_list = ll_vms.get_vm_boot_sequence(config.VM_RUN_ONCE)
-    if boot_list[0] == boot_device:
-        logger.info("Succeeded to run once with %s", boot_device)
-        return True
 
 ########################################################################
 #                            classes                                   #
@@ -49,69 +22,86 @@ def run_once_with_boot_dev(boot_device):
 
 
 @attr(tier=2)
-class TestRunVmOnce(TestCase):
+class TestRunVmOnce(common.VirtTest):
     """
     Run once
     """
     __test__ = True
 
     @polarion("RHEVM3-9809")
+    @pytest.mark.usefixtures(
+        base_setup_fixture.__name__, image_provider_fixture.__name__
+    )
+    @pytest.mark.images_marker(config.CDROM_IMAGE_1)
     def test_boot_from_cd(self):
         """
         Run once VM boot from CD
         """
+        testflow.step("Run once vm - boot from cdrom")
         self.assertTrue(
-            run_once_with_boot_dev(config.ENUMS['boot_sequence_cdrom'])
+            helper.run_once_with_boot_dev(
+                config.ENUMS['boot_sequence_cdrom'], config.CDROM_IMAGE_1
+            )
         )
 
+    @attr(tier=1)
     @polarion("RHEVM3-9808")
+    @pytest.mark.usefixtures(base_setup_fixture.__name__)
     def test_boot_from_network(self):
         """
         Run once VM boot from Network
         """
+        testflow.step("Run once vm - boot from network")
         self.assertTrue(
-            run_once_with_boot_dev(config.ENUMS['boot_sequence_network'])
+            helper.run_once_with_boot_dev(
+                config.ENUMS['boot_sequence_network']
+            )
         )
 
     @polarion("RHEVM3-9803")
+    @pytest.mark.usefixtures(base_setup_fixture.__name__)
     def test_start_in_pause_mode(self):
         """
         Run once VM in paused mode
         """
-        logger.info("Run once vm %s in pause mode", config.VM_RUN_ONCE)
-        if not ll_vms.runVmOnce(True, config.VM_RUN_ONCE, pause='true'):
-            raise errors.VMException(
-                "Failed to run VM %s in pause mode", config.VM_RUN_ONCE
-            )
-        logger.info("Check that vm started in pause mode")
+        testflow.step("Run once vm %s in pause mode", config.VM_RUN_ONCE)
+        self.assertTrue(
+            ll_vms.runVmOnce(True, config.VM_RUN_ONCE, pause=True)
+        )
+        testflow.step("Check that vm started in pause mode")
         self.assertTrue(
             ll_vms.get_vm_state(config.VM_RUN_ONCE) ==
             config.VM_PAUSED
         )
 
     @polarion("RHEVM3-12353")
+    @pytest.mark.usefixtures(
+        base_setup_fixture.__name__, image_provider_fixture.__name__
+    )
+    @pytest.mark.images_marker(config.CDROM_IMAGE_1, config.CDROM_IMAGE_2)
     def test_run_once_vm_with_pause_and_change_cd(self):
         """
         Run once VM with "Start in paused" enables, and when VM in pause mode,
         change VM cd
         """
-        logger.info(
+        testflow.step(
             "Run once vm %s in pause mode with attached cd", config.VM_RUN_ONCE
         )
-        if not ll_vms.runVmOnce(
+        self.assertTrue(
+            ll_vms.runVmOnce(
                 True, config.VM_RUN_ONCE,
                 cdrom_image=config.CDROM_IMAGE_1,
-                pause='true'
-        ):
-            raise errors.VMException("Failed to run vm")
-        logger.info("Check if vm state is paused")
+                pause=True
+            )
+        )
+        testflow.step("Check if vm state is paused")
         self.assertTrue(
             ll_vms.waitForVMState(
                 config.VM_RUN_ONCE,
                 state=config.ENUMS['vm_state_paused']
             )
         )
-        logger.info("Change vm %s cd", config.VM_RUN_ONCE)
+        testflow.step("Change vm %s cd", config.VM_RUN_ONCE)
         self.assertTrue(
             ll_vms.changeCDWhileRunning(
                 config.VM_RUN_ONCE,
@@ -121,11 +111,15 @@ class TestRunVmOnce(TestCase):
 
     @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
     @polarion("RHEVM3-9794")
-    def test_run_once_vm_with_attached_floppy(self):
+    @pytest.mark.usefixtures(
+        base_setup_fixture.__name__, image_provider_fixture.__name__
+    )
+    @pytest.mark.images_marker(config.FLOPPY_IMAGE)
+    def test_run_once_vm_with_attached_floppy(self):  # add validation
         """
         Run once VM with attached floppy
         """
-        logger.info(
+        testflow.step(
             "Run once vm %s with attached floppy %s",
             config.VM_RUN_ONCE, config.FLOPPY_IMAGE
         )
@@ -133,227 +127,90 @@ class TestRunVmOnce(TestCase):
             ll_vms.runVmOnce(
                 True, config.VM_RUN_ONCE,
                 floppy_image=config.FLOPPY_IMAGE,
-                pause='true'
+                pause=True
             )
         )
 
     @polarion("RHEVM3-9800")
-    def test_run_once_with_specific_host(self):
+    @pytest.mark.usefixtures(base_setup_fixture.__name__)
+    def test_run_once_with_specific_host(self):  # add validation
         """
         Run once VM on specific host
         """
-        logger.info(
+        testflow.step(
             "Run once vm %s on specific host %s",
             config.VM_RUN_ONCE, config.HOSTS[0]
         )
         self.assertTrue(
-            ll_vms.runVmOnce(True, config.VM_RUN_ONCE, host=config.HOSTS[1])
+            ll_vms.runVmOnce(True, config.VM_RUN_ONCE, host=config.HOSTS[0])
         )
-
-    @polarion("RHEVM3-9810")
-    def test_run_once_with_administrator(self):
-        """
-        Run once VM as administrator
-        """
-        logger.info("Run once vm with administrator password and org name")
-        self.assertTrue(
-            ll_vms.runVmOnce(
-                True, config.VM_RUN_ONCE,
-                host=config.HOSTS[0],
-                user_name=config.VDC_ADMIN_USER,
-                password=config.VDC_PASSWORD
-            )
-        )
-
-    @bz({'1117783': {}})
-    @polarion("RHEVM3-12352")
-    def test_run_once_vm_with_specific_domain(self):
-        """
-        Run once vm with specific domain
-        """
-        logger.info(
-            "Run once vm %s with domain %s",
-            self.vm_name, config.VDC_ADMIN_DOMAIN
-        )
-        if not ll_vms.runVmOnce(
-                True, self.vm_name,
-                domainName=config.VDC_ADMIN_DOMAIN,
-                user_name=config.VDC_ADMIN_USER,
-                password=config.VDC_PASSWORD
-        ):
-            raise errors.VMException("Failed to run vm")
-        vm_obj = ll_vms.get_vm_obj(self.vm_name)
-        logger.info("Check if vm domain is correct")
-        self.assertTrue(vm_obj.get_domain() == config.VDC_ADMIN_DOMAIN)
-
-    def tearDown(self):
-        """
-        stop VM if the Vm is Running
-        """
-        if (
-            ll_vms.get_vm_state(config.VM_RUN_ONCE) !=
-            config.ENUMS['vm_state_down']
-        ):
-            logger.info("Stop %s vm", config.VM_RUN_ONCE)
-            if not ll_vms.stopVm(True, config.VM_RUN_ONCE):
-                raise errors.VMException(
-                    "Failed to stop vm %s", config.VM_RUN_ONCE
-                )
-
-
-########################################################################
-
-
-@attr(tier=2)
-@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
-class TestRunVmOnceStatelessNoDisk(TestCase):
-    """
-    Test run once VM without disk in stateless mode
-    """
-
-    __test__ = True
-
-    def setUp(self):
-        """
-        remove disk from VM and set VM as stateless
-        """
-
-        logger.info("set VM as stateless")
-        if not ll_vms.updateVm(True, config.VM_RUN_ONCE, stateless=True):
-            raise errors.VMException(
-                "Failed to update VM %s to be stateless" % config.VM_RUN_ONCE
-            )
-        logger.info("remove disk from VM %s", config.VM_RUN_ONCE)
-        disk = ll_vms.getVmDisks(config.VM_RUN_ONCE)[0].name
-        if not ll_vms.removeDisk(True, config.VM_RUN_ONCE, disk):
-            raise errors.VMException(
-                "Failed tp remove CD from vm %s", config.VM_RUN_ONCE
-            )
 
     @polarion("RHEVM3-9781")
+    @pytest.mark.usefixtures(
+        image_provider_fixture.__name__, remove_vm_disk_fixture.__name__,
+        base_setup_fixture.__name__
+    )
+    @pytest.mark.images_marker(config.CDROM_IMAGE_1)
     def test_run_once_stateless_no_disk(self):
         """
-        run once VM without disk in stateless mode
+        Negative - run once VM without disk in stateless mode
         """
-        logger.info("run once VM %s without disk", config.VM_RUN_ONCE)
-        self.assertTrue(
-            run_once_with_boot_dev(config.ENUMS['boot_sequence_cdrom'])
-        )
-
-    def tearDown(self):
-        """
-        stop Vm if the vm is running and add Disk
-        """
-        logger.info("Stop %s VM", config.VM_RUN_ONCE)
-        if not ll_vms.stopVm(True, config.VM_RUN_ONCE):
-            raise errors.VMException(
-                "Failed to stop vm %s", config.VM_RUN_ONCE
-            )
-        logger.info("add disk to %s VM", config.VM_RUN_ONCE)
-        if not ll_vms.addDisk(
-            True, config.VM_RUN_ONCE, 2 * config.GB,
-            storagedomain=config.STORAGE_NAME[0]
-        ):
-            raise errors.VMException(
-                "Can't return disk to vm %s", config.VM_RUN_ONCE
-            )
-        if not ll_vms.updateVm(True, config.VM_RUN_ONCE, stateless=False):
-            raise errors.VMException(
-                "Failed to set VM %s as stateless", config.VM_RUN_ONCE
-            )
-
-########################################################################
-
-
-@attr(tier=2)
-class TestNegativeBootFromNetwork(TestCase):
-    """
-    Test run once, negative test that boot from network
-    """
-
-    __test__ = True
-
-    def setUp(self):
-        """
-        remove nic from vm
-        """
-        logger.info("Remove nic from %s", config.VM_RUN_ONCE)
-        if not ll_vms.removeNic(True, config.VM_RUN_ONCE, config.NIC_NAME[0]):
-            raise errors.VMException(
-                "Failed to remove %s from %s" %
-                (config.NIC_NAME[0], config.VM_RUN_ONCE)
-            )
-
-    @polarion("RHEVM3-9805")
-    def test_negative_boot_from_network(self):
-        """
-        negative test - run once VM without nic to boot from network
-        """
-        self.assertFalse(
-            run_once_with_boot_dev(config.ENUMS['boot_sequence_network'])
-        )
-
-    def tearDown(self):
-        """
-        stop vm if the vm is running and add nic
-        """
-        logger.info("Stop %s vm", config.VM_RUN_ONCE)
-        if not ll_vms.stopVm(True, config.VM_RUN_ONCE):
-            raise errors.VMException(
-                "Failed to stop vm %s", config.VM_RUN_ONCE
-            )
-        logger.info("add nic to %s", config.VM_RUN_ONCE)
-        if not ll_vms.addNic(
-                True, config.VM_RUN_ONCE,
-                name=config.NIC_NAME[0], network=config.MGMT_BRIDGE
-        ):
-            raise errors.VMException(
-                "Failed to add nic to %s" % config.VM_RUN_ONCE
-            )
-########################################################################
-
-
-@attr(tier=2)
-class TesNegativeHAStatelessVM(TestCase):
-    """
-    Test run once, negative test that run once HA VM in stateless mode
-    """
-
-    __test__ = True
-
-    def setUp(self):
-        """
-        change vm to HA
-        """
-        logger.info("change vm to HA")
-        if not ll_vms.updateVm(
-                True, config.VM_RUN_ONCE, highly_available=True
-        ):
-            raise errors.VMException("Failed to set VM as highly available")
-
-    @polarion("RHEVM3-9783")
-    def test_negative_HA_and_stateless(self):
-        """
-        Nagtive test - run once HA VM in stateless mode
-        """
-
+        testflow.step("run once VM %s without disk", config.VM_RUN_ONCE)
         self.assertFalse(
             ll_vms.runVmOnce(True, config.VM_RUN_ONCE, stateless=True)
         )
 
-    def tearDown(self):
+    @polarion("RHEVM3-9805")
+    @pytest.mark.usefixtures(
+        remove_vm_nic_fixture.__name__, base_setup_fixture.__name__
+    )
+    def test_negative_boot_from_network(self):
         """
-        stop vm and set vm as not highly available
+        negative test - run once VM without nic to boot from network
         """
-        logger.info("Stop %s vm", config.VM_RUN_ONCE)
-        if not ll_vms.stopVm(True, config.VM_RUN_ONCE):
-            raise errors.VMException(
-                "Failed to stop vm %s", config.VM_RUN_ONCE
+        testflow.step(
+            "run once VM %s without nic, boot from network", config.VM_RUN_ONCE
+        )
+        self.assertFalse(
+            helper.run_once_with_boot_dev(
+                config.ENUMS['boot_sequence_network']
             )
-        if not ll_vms.updateVm(
-                True, config.VM_RUN_ONCE, highly_available=False
-        ):
-            raise errors.VMException(
-                "Failed to set VM %s as not highly available"
-                % config.VM_RUN_ONCE
+        )
+
+    @polarion("RHEVM3-9783")
+    @pytest.mark.usefixtures(base_setup_fixture.__name__)
+    @pytest.mark.args_marker(highly_available=True)
+    def test_negative_HA_and_stateless(self):
+        """
+        Nagtive test - run once HA VM in stateless mode
+        """
+        testflow.step("run once HA VM %s as stateless vm", config.VM_RUN_ONCE)
+        self.assertFalse(
+            ll_vms.runVmOnce(True, config.VM_RUN_ONCE, stateless=True)
+        )
+
+    @polarion("RHEVM3-9796")
+    @pytest.mark.usefixtures(
+        base_setup_fixture.__name__, image_provider_fixture.__name__
+    )
+    @pytest.mark.images_marker(config.CDROM_IMAGE_1, config.CDROM_IMAGE_2)
+    def test_run_once_vm_with_cd_and_change_cd(self):
+        """
+        Run once VM with a certain cd and when VM is up change VM cd
+        """
+        testflow.step(
+            "Run once vm %s with attached cd", config.VM_RUN_ONCE
+        )
+        self.assertTrue(
+            ll_vms.runVmOnce(
+                True, config.VM_RUN_ONCE,
+                cdrom_image=config.CDROM_IMAGE_1,
             )
+        )
+        testflow.step("Change vm %s cd", config.VM_RUN_ONCE)
+        self.assertTrue(
+            ll_vms.changeCDWhileRunning(
+                config.VM_RUN_ONCE,
+                config.CDROM_IMAGE_2
+            )
+        )

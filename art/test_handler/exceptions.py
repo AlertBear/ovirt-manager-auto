@@ -132,6 +132,10 @@ class UserException(RHEVMEntityException):
     pass
 
 
+class IsoDomainException(RHEVMEntityException):
+    pass
+
+
 def formatExcInfo():
     ei = sys.exc_info()
     einfo = traceback.format_exception(*ei)

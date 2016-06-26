@@ -23,7 +23,6 @@ from rrmngmnt.user import User
 
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 from art.core_api.apis_utils import getDS, TimeoutingSampler
-from art.core_api.validator import compareCollectionSize
 from art.rhevm_api.tests_lib.low_level.disks import (
     getStorageDomainDisks,
     deleteDisk,
@@ -1023,20 +1022,17 @@ def findMasterStorageDomain(positive, datacenter):
     return False, {'masterDomain': ' '}
 
 
-def getStorageDomainFiles(positive, storagedomain, files_count):
-    '''
-     Description: fetch files in iso storage domain and compare to expected
-     Author: edolinin
-     Parameters:
-        * storagedomain - name of storage domain
-        * files_count - expected number of files
-     Return: status (True if number of files is correct, False otherwise)
-     '''
+def get_iso_domain_files(iso_domain_name):
+    """
+     Description: fetch files in iso storage domain
 
-    storDomObj = get_storage_domain_obj(storagedomain)
-    storFiles = util.getElemFromLink(storDomObj, 'files', attr='file',
-                                     get_href=True)
-    return compareCollectionSize(storFiles, files_count, util.logger)
+     :param iso_domain_name: name of storage domain to look for file in
+     :type iso_domain_name: str
+     :return: a list of files objects under given storage domain
+     :rtype: list
+     """
+    iso_domain_object = get_storage_domain_obj(iso_domain_name)
+    return util.getElemFromLink(iso_domain_object, 'files', attr='file')
 
 
 def getStorageDomainFile(positive, storagedomain, file):
