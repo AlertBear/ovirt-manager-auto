@@ -48,7 +48,7 @@ def teardown_module():
     sla.sla_cleanup()
 
 
-@attr(tier=1)
+@attr(tier=2)
 class BaseCpuShares(TestCase):
     """
     Base class for CPU shares
@@ -253,6 +253,7 @@ class TestCustomShare(BaseCpuShares):
         )
 
 
+@attr(tier=1)
 class TestPredefinedValues(BaseCpuShares):
     """
     Check that 4 vms that have the different CPU share values

@@ -90,6 +90,7 @@ def load_resource_cpu(resource, load):
         num_of_cpus
     )
     script_path = os.path.join(LOAD_SCRIPT_DIR, LOAD_SCRIPT_NAME)
+
     resource.fs.create_script(script_body, script_path)
     cmd = [
         "sh", script_path, "&>", "/tmp/OUT1", "&", "echo", "$!"
