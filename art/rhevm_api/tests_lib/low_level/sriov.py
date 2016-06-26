@@ -13,7 +13,9 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 
-PF_LABEL_API = test_utils.get_api("label", "virtualfunctionallowedlabels")
+PF_LABEL_API = test_utils.get_api(
+    "network_label", "virtualfunctionallowedlabels"
+)
 PF_NETWORK_API = test_utils.get_api(
     "network", "virtualfunctionallowednetworks"
 )
@@ -433,7 +435,7 @@ class SriovNicPF(SriovNic):
         logger.info("Add label to allowed labels for %s", self.nic_name)
         self.update_nic = PF_LABEL_API.create(
             entity=label_obj, positive=True, collection=self.vf_label_href,
-            coll_elm_name="label", async=True
+            coll_elm_name="network_label", async=True
         )
         return self._update_nic_obj()
 
@@ -513,5 +515,5 @@ class SriovNicPF(SriovNic):
         logger.info("Get all allowed labels objects for %s", self.nic_name)
         return ll_networks.HOST_NICS_API.getElemFromLink(
             elm=self.nic_obj, link_name=self.vf_allowed_labels_api,
-            attr="label"
+            attr="network_label"
         )
