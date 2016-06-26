@@ -597,6 +597,8 @@ class RestUtil(APIUtil):
         actionBody = validator.dump_entity(self.makeAction(async, 10,
                                                            **params),
                                            'action')
+        if params.get('operations'):
+            actionHref += ';' + ';'.join(params['operations'])
 
         self.logger.debug(
             "Action request content is --  url:%(uri)s body:%(body)s ",

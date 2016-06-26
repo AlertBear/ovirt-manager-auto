@@ -2333,7 +2333,8 @@ def importVm(
     action_params = {
         'storage_domain': sd,
         'cluster': cl,
-        'async': async
+        'async': async,
+        'operations': [],
     }
 
     action_name = 'import'
@@ -2351,8 +2352,7 @@ def importVm(
         collapse = True
 
     if collapse:
-        new_vm.snapshots = data_st.Snapshots()
-        new_vm.snapshots.collapse_snapshots = True
+        action_params['operations'].append('collapse_snapshots')
         action_params['vm'] = new_vm
 
     logger.info("Import VM %s into cluster %s", vm, cluster)

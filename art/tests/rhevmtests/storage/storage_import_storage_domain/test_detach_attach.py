@@ -1018,7 +1018,7 @@ class TestCase5201(BaseCaseInitializeDataCenter):
         ISCSI in opts['storages'] or NFS in opts['storages'] or
         GLUSTER in opts['storages'] or POSIX in opts['storages']
     )
-    polarion_test_case = '5297'
+    polarion_test_case = '5201'
     remove_param = {'format': 'false'}
     detach = True
 

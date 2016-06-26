@@ -252,7 +252,7 @@ create_vm_args = {
     'cluster': CLUSTER_NAME,
     'nic': NIC_NAME[0],
     'nicType': NIC_TYPE_VIRTIO,
-    'size': VM_DISK_SIZE,
+    'provisioned_size': VM_DISK_SIZE,
     'diskInterface': INTERFACE_VIRTIO,
     'volumeFormat': DISK_FORMAT_COW,
     'volumeType': True,  # sparse
