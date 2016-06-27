@@ -150,27 +150,27 @@ EXT_DC_0 = "mgmt_role_ext_dc"
 EXTRA_CLUSTER_0 = "mgmt_role_ext_cl"
 
 # bridgeless
-VLAN_IDS = [str(i) for i in xrange(2, 4)]
-NETS = global_helper.generate_object_names(
+BRIDGELESS_VLAN_IDS = [str(i) for i in xrange(2, 4)]
+BRIDGELESS_NETS = global_helper.generate_object_names(
     num_of_cases=4, num_of_objects=3, prefix="br"
 )
 
 BRIDGELESS_NET_DICT = {
-    NETS[1][0]: {
+    BRIDGELESS_NETS[1][0]: {
         "required": "false",
         "usages": ""
     },
-    NETS[2][0]: {
-        "vlan_id": VLAN_IDS[0],
+    BRIDGELESS_NETS[2][0]: {
+        "vlan_id": BRIDGELESS_VLAN_IDS[0],
         "required": "false",
         "usages": ""
     },
-    NETS[3][0]: {
-        "vlan_id": VLAN_IDS[1],
+    BRIDGELESS_NETS[3][0]: {
+        "vlan_id": BRIDGELESS_VLAN_IDS[1],
         "required": "false",
         "usages": ""
     },
-    NETS[4][0]: {
+    BRIDGELESS_NETS[4][0]: {
         "required": "false",
         "usages": ""
     }
