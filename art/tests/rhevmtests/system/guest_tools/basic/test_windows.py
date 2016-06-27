@@ -10,12 +10,11 @@ import sys
 from unittest2 import SkipTest
 from art.rhevm_api.tests_lib.low_level import vms, disks, storagedomains
 from art.rhevm_api.utils import test_utils as utils
-from art.test_handler.tools import bz  # pylint: disable=E0611
+from art.test_handler.tools import bz
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 from art.unittest_lib.windows import WindowsGuest
 from functools import wraps
 from rhevmtests.system.guest_tools import config
-
 
 LOGGER = logging.getLogger(__name__)
 VM_API = utils.get_api('vm', 'vms')
@@ -271,20 +270,6 @@ class Windows(TestCase):
         """ Check service spice agent """
         self._checkService('vdservice')
 
-    def test_guest_info(self):
-        """ Check guest info (ip/fqdn) are reported """
-        vm = VM_API.find(self.diskName)
-        guest_info = vm.get_guest_info()
-        self.assertTrue(
-            self.machine.ip in [
-                ip.get_address() for ip in guest_info.get_ips().get_ip() if ip
-            ],
-            "Ip %s not found in guest info" % self.machine.ip
-        )
-        self.assertTrue(
-            guest_info.get_fqdn() and len(guest_info.get_fqdn()) > 0
-        )
-
     def test_guest_applications(self):
         """ Check guest applications are reported """
         vm = VM_API.find(self.diskName)
@@ -460,7 +445,6 @@ class Windows7_64bit(WindowsDesktop):
         'test_checkServiceSpiceAgent': 'RHEVM3-13377',
         'test_checkServiceQemuGAVssProvider': 'RHEVM3-13378',
         'test_guest_applications': 'RHEVM3-14437',
-        'test_guest_info': 'RHEVM3-14438',
         'test_guest_timezone': 'RHEVM3-14439',
         'test_guest_os': 'RHEVM3-14440',
     }
@@ -502,7 +486,6 @@ class Windows7_32b(WindowsDesktop):
         'test_checkServiceSpiceAgent': 'RHEVM3-13301',
         'test_checkServiceQemuGAVssProvider': 'RHEVM3-13302',
         'test_guest_applications': 'RHEVM3-14425',
-        'test_guest_info': 'RHEVM3-14426',
         'test_guest_timezone': 'RHEVM3-14427',
         'test_guest_os': 'RHEVM3-14428',
     }
@@ -579,7 +562,6 @@ class Windows8_1_64bit(WindowsDesktop):
         'test_checkServiceSpiceAgent': 'RHEVM3-13251',
         'test_checkServiceQemuGAVssProvider': 'RHEVM3-13252',
         'test_guest_applications': 'RHEVM3-14417',
-        'test_guest_info': 'RHEVM3-14418',
         'test_guest_timezone': 'RHEVM3-14419',
         'test_guest_os': 'RHEVM3-14420',
     }
@@ -625,7 +607,6 @@ class Windows8_1_32b(WindowsDesktop):
         'test_checkServiceSpiceAgent': 'RHEVM3-13201',
         'test_checkServiceQemuGAVssProvider': 'RHEVM3-13202',
         'test_guest_applications': 'RHEVM3-14409',
-        'test_guest_info': 'RHEVM3-14410',
         'test_guest_timezone': 'RHEVM3-14411',
         'test_guest_os': 'RHEVM3-14412',
     }
@@ -676,7 +657,6 @@ class Windows2008_64b(WindowsServer):
         'test_checkServiceSpiceAgent': 'RHEVM3-13276',
         'test_checkServiceQemuGAVssProvider': 'RHEVM3-13277',
         'test_guest_applications': 'RHEVM3-14421',
-        'test_guest_info': 'RHEVM3-14422',
         'test_guest_timezone': 'RHEVM3-14423',
         'test_guest_os': 'RHEVM3-14424',
     }
@@ -718,7 +698,6 @@ class Windows2008R2_64b(WindowsServer):
         'test_checkServiceSpiceAgent': 'RHEVM3-13326',
         'test_checkServiceQemuGAVssProvider': 'RHEVM3-13327',
         'test_guest_applications': 'RHEVM3-14429',
-        'test_guest_info': 'RHEVM3-14430',
         'test_guest_timezone': 'RHEVM3-14431',
         'test_guest_os': 'RHEVM3-14432',
     }
@@ -760,7 +739,6 @@ class Windows2012_64b(WindowsServer):
         'test_checkServiceSpiceAgent': 'RHEVM3-13352',
         'test_checkServiceQemuGAVssProvider': 'RHEVM3-13353',
         'test_guest_applications': 'RHEVM3-14433',
-        'test_guest_info': 'RHEVM3-14434',
         'test_guest_timezone': 'RHEVM3-14435',
         'test_guest_os': 'RHEVM3-14436',
     }
@@ -802,7 +780,6 @@ class Windows2012R2_64b(WindowsServer):
         'test_checkServiceSpiceAgent': 'RHEVM3-13176',
         'test_checkServiceQemuGAVssProvider': 'RHEVM3-13177',
         'test_guest_applications': 'RHEVM3-14405',
-        'test_guest_info': 'RHEVM3-14406',
         'test_guest_timezone': 'RHEVM3-14407',
         'test_guest_os': 'RHEVM3-14408',
     }
@@ -844,7 +821,6 @@ class Windows10_64b(WindowsDesktop):
         'test_checkServiceSpiceAgent': 'RHEVM3-13226',
         'test_checkServiceQemuGAVssProvider': 'RHEVM3-13227',
         'test_guest_applications': 'RHEVM3-14413',
-        'test_guest_info': 'RHEVM3-14414',
         'test_guest_timezone': 'RHEVM3-14415',
         'test_guest_os': 'RHEVM3-14416',
     }

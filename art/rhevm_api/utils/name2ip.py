@@ -124,28 +124,49 @@ class LookUpVMIpByName(LookUpIpByEntityName):
     """
     entity = 'vms'
 
-    def __init__(self, target_var, source_var, cache_exp=60*10, nic=0):
+    def __init__(
+        self, target_var='vm_ip', source_var='vm_name', cache_exp=60*10, nic=0
+    ):
         super(LookUpVMIpByName, self).__init__(
             target_var, source_var, cache_exp,
         )
         self.nic = nic
 
     def get_ip(self, src_val):
-        ip = self._get_ip_from_agent(src_val)
+        ip = self._get_ip_from_vm(src_val)
+        ip = ip[0] if ip else None
         if ip is None:
             ip = self._get_ip_from_mac(src_val)
         return ip
 
-    def _get_ip_from_agent(self, vm_name):
-        guest_info = VM_API.find(vm_name).get_guest_info()
-        if guest_info is not None:
-            return guest_info.get_ips().get_ip()[self.nic].get_address()
+    def _get_ip_from_vm(self, vm_name, ip_version='v4'):
+        ip_list = list()
+        import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+        nics = ll_vms.get_vm_nics_obj(vm_name)
+        if not nics:
+            logger.error('The nics object of vm_name: %s is empty', vm_name)
+            return ip_list
+        for nic in nics:
+            reported_devices = nic.get_reported_devices()
+            if not reported_devices:
+                continue
+            reported_devices = reported_devices.get_reported_device()
+            for reported_device in reported_devices:
+                ips = reported_device.get_ips()
+                if not ips:
+                    continue
+                ips = ips.get_ip()
+                for ip in ips:
+                    if ip.get_version() == ip_version:
+                        ip_list.append(ip.get_address())
+        logger.info(
+            'The vm %s ip addresses %s are: %s', vm_name, ip_version, ip_list
+        )
+        return ip_list
 
     def _get_ip_from_mac(self, vm_name):
-        vm = VM_API.find(vm_name)
-        if vm is None:
-            return None
-        nics = NIC_API.getElemFromLink(vm, get_href=False)
+        import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+        nics = ll_vms.get_vm_nics_obj(vm_name)
         if not nics:
             return None
         nic = nics[self.nic]

@@ -7,6 +7,7 @@ import logging
 import sys
 
 from art.core_api.apis_utils import TimeoutingSampler
+from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.high_level import vms as hl_vms
 from art.rhevm_api.tests_lib.low_level import (
@@ -96,17 +97,14 @@ class Windows(TestCase):
     def teardown_class(cls):
         assert ll_vms.removeVm(positive=True, vm=cls.vm_name, stopVM='true')
 
-    def test_guest_info(self):
-        """ Check guest info (ip/fqdn) are reported """
+    def test_vm_ip_fqdn_info(self):
+        """ Check vm ip/fqdn are reported """
         vm = ll_vms.get_vm(self.vm_name)
-        guest_info = vm.get_guest_info()
         self.assertTrue(
-            len(guest_info.get_ips().get_ip()) > 0,
+            len(LookUpVMIpByName()._get_ip_from_vm(self.vm_name)) > 0,
             "No ip found in guest info"
         )
-        self.assertTrue(
-            guest_info.get_fqdn() and len(guest_info.get_fqdn()) > 0
-        )
+        self.assertTrue(vm.get_fqdn() and len(vm.get_fqdn()) > 0)
 
     def test_guest_applications(self):
         """ Check guest applications are reported """
@@ -184,7 +182,7 @@ class Win2008R2_CI_64b(Windows):
     os_type = config.ENUMS['windows2008r2x64']
     polarion_map = {
         'test_guest_applications': 'RHEVM3-14429',
-        'test_guest_info': 'RHEVM3-14430',
+        'test_vm_ip_fqdn_info': 'RHEVM3-14430',
         'test_guest_timezone': 'RHEVM3-14431',
         'test_guest_os': 'RHEVM3-14432',
     }
@@ -203,7 +201,7 @@ class Win2008R2_CI_core_64b(Windows):
     os_type = config.ENUMS['windows2008r2x64']
     polarion_map = {
         'test_guest_applications': 'RHEVM-14780',
-        'test_guest_info': 'RHEVM-14781',
+        'test_vm_ip_fqdn_info': 'RHEVM-14781',
         'test_guest_timezone': 'RHEVM-14782',
         'test_guest_os': 'RHEVM-14783',
     }
@@ -228,7 +226,7 @@ class Win2012R2_CI_64b(Windows):
     os_type = config.ENUMS['windows2012r2x64']
     polarion_map = {
         'test_guest_applications': 'RHEVM3-14405',
-        'test_guest_info': 'RHEVM3-14406',
+        'test_vm_ip_fqdn_info': 'RHEVM3-14406',
         'test_guest_timezone': 'RHEVM3-14407',
         'test_guest_os': 'RHEVM3-14408',
     }
@@ -247,7 +245,7 @@ class Win2012R2_CI_core_64b(Windows):
     os_type = config.ENUMS['windows2012r2x64']
     polarion_map = {
         'test_guest_applications': 'RHEVM3-14769',
-        'test_guest_info': 'RHEVM3-14770',
+        'test_vm_ip_fqdn_info': 'RHEVM3-14770',
         'test_guest_timezone': 'RHEVM3-14771',
         'test_guest_os': 'RHEVM3-14772',
     }
@@ -266,7 +264,7 @@ class Win2012_CI_64b(Windows):
     os_type = config.ENUMS['windows2012x64']
     polarion_map = {
         'test_guest_applications': 'RHEVM3-14433',
-        'test_guest_info': 'RHEVM3-14434',
+        'test_vm_ip_fqdn_info': 'RHEVM3-14434',
         'test_guest_timezone': 'RHEVM3-14435',
         'test_guest_os': 'RHEVM3-14436',
     }
@@ -285,7 +283,7 @@ class Win2012_CI_core_64b(Windows):
     os_type = config.ENUMS['windows2012x64']
     polarion_map = {
         'test_guest_applications': 'RHEVM-14784',
-        'test_guest_info': 'RHEVM-14785',
+        'test_vm_ip_fqdn_info': 'RHEVM-14785',
         'test_guest_timezone': 'RHEVM-14786',
         'test_guest_os': 'RHEVM-14787',
     }
@@ -304,7 +302,7 @@ class Win7_CI_32b(Windows):
     os_type = config.ENUMS['windows7']
     polarion_map = {
         'test_guest_applications': 'RHEVM3-14425',
-        'test_guest_info': 'RHEVM3-14426',
+        'test_vm_ip_fqdn_info': 'RHEVM3-14426',
         'test_guest_timezone': 'RHEVM3-14427',
         'test_guest_os': 'RHEVM3-14428',
     }
@@ -323,7 +321,7 @@ class Win7_CI_64b(Windows):
     os_type = config.ENUMS['windows7x64']
     polarion_map = {
         'test_guest_applications': 'RHEVM3-14437',
-        'test_guest_info': 'RHEVM3-14438',
+        'test_vm_ip_fqdn_info': 'RHEVM3-14438',
         'test_guest_timezone': 'RHEVM3-14439',
         'test_guest_os': 'RHEVM3-14440',
     }
@@ -343,7 +341,7 @@ class Win8_1_CI_32b(Windows):
     os_type = config.ENUMS['windows8']
     polarion_map = {
         'test_guest_applications': 'RHEVM3-14409',
-        'test_guest_info': 'RHEVM3-14410',
+        'test_vm_ip_fqdn_info': 'RHEVM3-14410',
         'test_guest_timezone': 'RHEVM3-14411',
         'test_guest_os': 'RHEVM3-14412',
     }
@@ -363,7 +361,7 @@ class Win8_1_CI_64b(Windows):
     os_type = config.ENUMS['windows8x64']
     polarion_map = {
         'test_guest_applications': 'RHEVM3-14417',
-        'test_guest_info': 'RHEVM3-14418',
+        'test_vm_ip_fqdn_info': 'RHEVM3-14418',
         'test_guest_timezone': 'RHEVM3-14419',
         'test_guest_os': 'RHEVM3-14420',
     }
@@ -382,7 +380,7 @@ class Win8_CI_32b(Windows):
     os_type = config.ENUMS['windows8']
     polarion_map = {
         'test_guest_applications': 'RHEVM-14792',
-        'test_guest_info': 'RHEVM-14793',
+        'test_vm_ip_fqdn_info': 'RHEVM-14793',
         'test_guest_timezone': 'RHEVM-14794',
         'test_guest_os': 'RHEVM-14795',
     }
@@ -401,7 +399,7 @@ class Win8_CI_64b(Windows):
     os_type = config.ENUMS['windows8x64']
     polarion_map = {
         'test_guest_applications': 'RHEVM-14788',
-        'test_guest_info': 'RHEVM-14789',
+        'test_vm_ip_fqdn_info': 'RHEVM-14789',
         'test_guest_timezone': 'RHEVM-14790',
         'test_guest_os': 'RHEVM-14791',
     }

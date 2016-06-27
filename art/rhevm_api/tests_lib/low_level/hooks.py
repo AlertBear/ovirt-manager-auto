@@ -20,8 +20,6 @@
 import os
 import tempfile
 import logging
-import art.test_handler.exceptions as errors
-from art.rhevm_api.utils.test_utils import get_api
 from utilities.machine import Machine
 
 logger = logging.getLogger("art.ll_lib.hooks")
@@ -61,34 +59,6 @@ def checkForFileExistenceAndContent(positive, ip, password, filename,
             return False
 
     return positive
-
-
-def checkForFileExistenceAndContentOnVm(vmName, password, filename,
-                                        content=None, user='root'):
-    '''
-    Checks for file existence and content on given virtual Machine
-    Author: jvorcak
-    Parameters:
-       * vmName - name of the virtual Machine
-       * filename - file name
-       * content - content of the remote file
-       * user - username for accessing vm
-       * password - password for accessing vm
-    '''
-    vm_api = get_api('vm', 'vms')
-    vm = vm_api.find(vmName)
-
-    if not vm.guest_info or not vm.guest_info.ips:
-        logger.error("Can't find ip address of the vm, make sure that "
-                     "rhev-agent is running")
-        return False
-
-    try:
-        ip = vm.guest_info.get_ips().get_ip()[0].get_address()
-    except errors.VMException as err:
-        logger.error("Cannot retrieve IP address from VM: %s", err)
-    return checkForFileExistenceAndContent(ip, password,
-                                           filename, content, user)
 
 
 def createOneLineShellScript(ip, password, scriptName, command,
