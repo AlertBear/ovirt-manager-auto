@@ -46,8 +46,10 @@ def get_max_event_id(query):
     if query not empty return id of last event with given query,
     if no events founded return None
     """
+    logger.info("Getting MAX event ID")
     events = util.query(query) if query else util.get(absLink=False)
     if not events:
+        logger.error("Event ID not found")
         return None
     return max(int(event.get_id()) for event in events)
 

@@ -2065,12 +2065,14 @@ def refresh_host_capabilities(host, start_event_id):
     code = [606, 607]
     query = "type={0} OR type={1}".format(code[0], code[1])
     HOST_API.syncAction(entity=host_obj, action="refresh", positive=True)
-
+    logger.info("Refresh capabilities for %s", host)
     for event in EVENT_API.query(query):
         if int(event.get_id()) < int(start_event_id):
             return False
         if event.get_code() in code:
             return True if event.get_code() == code[0] else False
+
+    logger.error("Failed to refresh capabilities for: %s", host)
     return False
 
 

@@ -6,8 +6,6 @@ Helper for ArbitraryVlanDeviceName job
 """
 import logging
 
-import libvirt
-
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import rhevmtests.networking.config as conf
@@ -21,7 +19,7 @@ def job_tear_down():
     """
     tear_down for ArbitraryVlanDeviceName job
     """
-    host_obj = conf.VDS_HOSTS[0]
+    host_obj = conf.VDS_0_HOST
     host_name = ll_hosts.get_host_name_from_engine(host_obj)
     vlans_to_remove = [
         v for v in conf.VLAN_NAMES if is_interface_on_host(
@@ -50,9 +48,7 @@ def job_tear_down():
                     "Failed to delete BRIDGE: %s on %s", bridge, host_name
                 )
 
-    logger.info("Cleaning host interfaces")
-    if not hl_host_network.clean_host_interfaces(host_name=conf.HOSTS[0]):
-        logger.error("Clean host interfaces failed")
+    hl_host_network.clean_host_interfaces(host_name=conf.HOST_0_NAME)
 
 
 def host_add_vlan(host_obj, vlan_id, vlan_name, nic):
@@ -75,14 +71,7 @@ def host_add_vlan(host_obj, vlan_id, vlan_name, nic):
         "ip", "link", "add", "dev", vlan_name, "link", interface, "name",
         vlan_name, "type", "vlan", "id", vlan_id
     ]
-    host_exec = host_obj.executor()
-    rc, out, err = host_exec.run_cmd(cmd)
-    if rc:
-        logger.error(
-            "Failed to create %s. err: %s. out: %s", vlan_name, err, out
-        )
-        return False
-    return True
+    return not host_obj.run_command(cmd)[0]
 
 
 def host_delete_vlan(host_obj, vlan_name):
@@ -97,51 +86,7 @@ def host_delete_vlan(host_obj, vlan_name):
     :rtype: bool
     """
     cmd = ["ip", "link", "delete", "dev", vlan_name]
-    host_exec = host_obj.executor()
-    rc, out, err = host_exec.run_cmd(cmd)
-    if rc:
-        logger.error(
-            "Failed to delete %s. err: %s. out: %s", vlan_name, err, out
-        )
-        return False
-    return True
-
-
-def get_libvirt_connection(host):
-    """
-    Create libvirt connection to host
-    :param host: Host IP or FQDN
-    :type host: str
-    :return: libvirt connection object
-    :rtype: object
-    """
-    remote_uri = "qemu+ssh://root@{0}/system".format(host)
-    return libvirt.open(remote_uri)
-
-
-def detach_nic_from_bridge(host_obj, bridge, nic):
-    """
-    Detach NIC from bridge
-
-    :param host_obj: resources.VDS object
-    :type host_obj: VDS
-    :param bridge: Bridge name
-    :type bridge: str
-    :param nic: NIC name
-    :type nic: str
-    :return: True/False
-    :rtype: bool
-    """
-    cmd = ["brctl", "delif", bridge, nic]
-    host_exec = host_obj.executor()
-    rc, out, err = host_exec.run_cmd(cmd)
-    if rc:
-        logger.error(
-            "Failed to detach %s from %s. err: %s. out: %s", nic,  bridge,
-            err, out
-        )
-        return False
-    return True
+    return not host_obj.run_command(cmd)[0]
 
 
 def check_if_nic_in_host_nics(nic, host):
@@ -157,9 +102,7 @@ def check_if_nic_in_host_nics(nic, host):
     """
     logger.info("Check that %s exists on %s via engine", nic, host)
     host_nics = ll_hosts.get_host_nics_list(host=host)
-    if nic not in [i.name for i in host_nics]:
-        return False
-    return True
+    return nic in [i.name for i in host_nics]
 
 
 def add_bridge_on_host_and_virsh(host_obj, bridge, network):
@@ -187,30 +130,7 @@ def add_bridge_on_host_and_virsh(host_obj, bridge, network):
         ):
             return False
 
-    refresh_capabilities(host=host_name)
-    return True
-
-
-def delete_bridge_on_host_and_virsh(host_obj, bridge):
-    """
-    Delete bridge on host and delete the bridge on virsh as well
-
-    :param host_obj: resources.VDS object
-    :type host_obj: VDS
-    :param bridge: Bridge name
-    :type bridge: str
-    :return: raise NetworkException on error
-    """
-    host_name = ll_hosts.get_host_name_from_engine(host_obj)
-    logger.info("Delete %s on %s", bridge, host_name)
-    net_helper.virsh_delete_network(
-        vds_resource=conf.VDS_0_HOST, network=bridge
-    )
-    logger.info("Delete %s on %s", bridge, host_name)
-    if not host_obj.network.delete_bridge(bridge=bridge):
-        raise conf.NET_EXCEPTION(
-            "Failed to delete %s on %s" % (bridge, host_name)
-        )
+    return refresh_capabilities(host=host_name)
 
 
 def add_vlans_to_host(host_obj, vlan_id, vlan_name, nic):
@@ -256,9 +176,7 @@ def remove_vlan_and_refresh_capabilities(host_obj, vlan_name):
         logger.info("Removing %s from %s", vlan, host_name)
         if not host_delete_vlan(host_obj=host_obj, vlan_name=vlan):
             return False
-    if not refresh_capabilities(host=host_name):
-        return False
-    return True
+    return refresh_capabilities(host=host_name)
 
 
 def refresh_capabilities(host):
@@ -270,15 +188,10 @@ def refresh_capabilities(host):
     :return: True/False
     :rtype: bool
     """
-    logger.info("Getting MAX event ID")
     last_event = events.get_max_event_id(query="")
-    logger.info("Refresh capabilities for %s", host)
-    if not ll_hosts.refresh_host_capabilities(
+    return ll_hosts.refresh_host_capabilities(
         host=host, start_event_id=last_event
-    ):
-        logger.error("Failed to refresh capabilities for: %s" % host)
-        return False
-    return True
+    )
 
 
 def is_interface_on_host(host_obj, interface):
@@ -292,9 +205,5 @@ def is_interface_on_host(host_obj, interface):
     :return: True/False
     :rtype: bool
     """
-    host_exec = host_obj.executor()
     cmd = ["ip", "a", "s", interface]
-    rc, out, err = host_exec.run_cmd(cmd)
-    if rc:
-        return False
-    return True
+    return not host_obj.run_command(cmd)[0]

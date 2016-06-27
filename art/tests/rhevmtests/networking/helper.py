@@ -757,7 +757,6 @@ def virsh_delete_network(vds_resource, network):
                 "cmd_undefine = 'virsh net-undefine vdsm-%s'\n" % network
             )
             resource_file.write("for cmd in [cmd_undefine, cmd_destroy]:\n")
-            resource_file.write("    sleep(5)\n")
             resource_file.write("    pe = pexpect.spawn(cmd)\n")
             resource_file.write("    %s('.*name:')\n" % PE_EXPECT)
             resource_file.write("    %s('%s')\n" % (PE_SENDLINE, VIRSH_USER))
