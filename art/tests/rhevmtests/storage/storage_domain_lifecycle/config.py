@@ -5,7 +5,7 @@ from rhevmtests.storage.config import *  # flake8: noqa
 
 TESTNAME = "domain_lifecycle"
 
-DC_VERSIONS = VERSION[-2:]
+DC_VERSIONS = COMP_VERSION_4_0[:]
 DC_UPGRADE_VERSIONS = [COMPATIBILITY_VERSION]
 LIFECYCLE_VM = "%s_vm" % TESTNAME
 
