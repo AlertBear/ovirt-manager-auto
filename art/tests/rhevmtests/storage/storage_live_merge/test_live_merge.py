@@ -388,7 +388,7 @@ class TestCase16287(BasicEnvironment):
         )
         super(TestCase16287, self).setUp()
 
-    @polarion("RHEVM3-6038")
+    @polarion("RHEVM3-16287")
     def test_basic_live_deletion_of_snapshots_disk(self):
         self.perform_snapshot_operation(self.snapshot_description)
         snapshot_disks_before = ll_vms.get_snapshot_disks(
