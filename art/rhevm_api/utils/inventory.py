@@ -218,7 +218,7 @@ class Inventory(object):
                     {
                         'name': cluster.name,
                         'cpu_name':
-                            "" if cluster.cpu is None else cluster.cpu.id,
+                            "" if cluster.cpu is None else cluster.cpu.type_,
                         'compatibility_version': "%s.%s" % (
                             str(cluster.version.major),
                             str(cluster.version.minor)
