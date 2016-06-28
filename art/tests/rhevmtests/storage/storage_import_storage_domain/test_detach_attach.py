@@ -362,33 +362,6 @@ class CommonSetUp(BasicEnvironment):
         )
 
 
-@attr(tier=1)
-@bz({'1340164': {}})
-class TestCase11861(BasicEnvironment):
-    """
-    Detach/Attach a new Domain
-    https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/
-    workitem?id=RHEVM3-11861
-    """
-    __test__ = True
-    polarion_test_case = '11861'
-
-    @polarion("RHEVM3-11861")
-    def test_detach_attach_new_domain(self):
-        """
-        - Detach a domain and then re-attach it
-        """
-        self._secure_deactivate_detach_storage_domain(
-            config.DATA_CENTER_NAME, self.non_master
-        )
-
-        logger.info("Attaching storage domain %s", self.non_master)
-        hl_sd.attach_and_activate_domain(
-            config.DATA_CENTER_NAME, self.non_master
-        )
-        ll_jobs.wait_for_jobs([config.JOB_ACTIVATE_DOMAIN])
-
-
 @attr(tier=2)
 class DomainImportWithTemplate(BasicEnvironment):
     """
@@ -584,13 +557,13 @@ class TestCase5300(BasicEnvironment):
     """
     __test__ = True
     polarion_test_case = '5300'
-    cloned_vm = 'cloned_vm'
 
     def setUp(self):
         """
         Add snapshot to the vm
         """
         self.snap_desc = 'snap_%s' % self.polarion_test_case
+        self.cloned_vm = 'cloned_vm_%s' % self.polarion_test_case
         self.previewed = False
         super(TestCase5300, self).setUp()
         self.create_vm()
@@ -1112,6 +1085,7 @@ class TestCase12207(BaseCaseInitializeDataCenter):
     detach = False
 
     @polarion("RHEVM3-12207")
+    @bz({'1350966': {}})
     def test_initialize_dc_with_destroyed_domain(self):
         """
         - Configure 2 DCs: DC1 with 2 storage domains
@@ -1335,33 +1309,18 @@ class BaseTestCase5192(BasicEnvironment):
         super(BaseTestCase5192, self).tearDown()
 
 
-class TestCase5192_3_1(BaseTestCase5192):
+class TestCase5192_3_6(BaseTestCase5192):
     """
-    Attach storage domain from 3.1 version into 3.5 data center
-    """
-    __test__ = True
-    dc_version = "3.1"
-
-
-class TestCase5192_3_2(BaseTestCase5192):
-    """
-    Attach storage domain from 3.2 version into 3.5 data center
+    Attach storage domain from 3.6 version into 4.0 data center
     """
     __test__ = True
-    dc_version = "3.2"
+    dc_version = "3.6"
 
 
-class TestCase5192_3_3(BaseTestCase5192):
-    """
-    Attach storage domain from 3.3 version into 3.5 data center
-    """
-    __test__ = True
-    dc_version = "3.3"
-
-
+# Bugzilla history:
 # BZ1328071: Unexpected flow when importing a domain with a template with
 # multiple disks on different domains
-@bz({'1328071': {}})
+@bz({'1351145': {}})
 class TestCase5200(DomainImportWithTemplate):
     """
     Create vm from a template with two disks, one on a block domain
@@ -1419,6 +1378,8 @@ class TestCase5200(DomainImportWithTemplate):
         self.new_vm_from_imported_domain_template()
 
 
+@attr(tier=1)
+@bz({'1351145': {}})
 class TestCase5297(DomainImportWithTemplate):
     """
     Create vm from a template from an imported data domain
