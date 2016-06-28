@@ -25,7 +25,7 @@ import art.rhevm_api.tests_lib.low_level.general as ll_general
 from art.test_handler.settings import opts
 import art.core_api.apis_exceptions as exceptions
 
-ELEMENT = 'vmpool'
+ELEMENT = 'vm_pool'
 COLLECTION = 'vmpools'
 ENUMS = opts['elements_conf']['RHEVM Enums']
 UTIL = test_utils.get_api(ELEMENT, COLLECTION)
@@ -202,9 +202,11 @@ def get_vms_in_pool(vm_pool):
     """
     vms_in_pool = list()
     for vm in VM_UTIL.get(absLink=False):
-        if not hasattr(vm, "vmpool"):
+        if not hasattr(vm, "vm_pool"):
             continue
-        if vm.get_vmpool() and (vm.get_vmpool().get_id() == vm_pool.get_id()):
+        if vm.get_vm_pool() and (
+            vm.get_vm_pool().get_id() == vm_pool.get_id()
+        ):
             vms_in_pool.append(vm)
     return vms_in_pool
 
