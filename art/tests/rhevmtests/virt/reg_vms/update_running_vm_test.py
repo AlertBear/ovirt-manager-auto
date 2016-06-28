@@ -131,9 +131,10 @@ class UpdateRunningVm(VirtTest):
             vm_obj.get_placement_policy().get_affinity(),
             parameters['placement_affinity']
         )
+        host_obj = vm_obj.get_placement_policy().get_hosts().get_host()[0]
         self._check_vm_parameter(
             'placement_host',
-            str(vm_obj.get_placement_policy().get_host().get_id()),
+            str(host_obj.get_id()),
             str(host_id)
         )
 
