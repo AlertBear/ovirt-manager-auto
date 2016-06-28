@@ -15,7 +15,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import bz, polarion
 from art.unittest_lib import attr, StorageTest as BaseTestCase
 from rhevmtests.storage import helpers as storage_helpers
 
@@ -227,6 +227,7 @@ class TestCase11503(BasicEnvironment):
         ll_vms.waitForVMState(self.vm2_name, config.VM_DOWN)
 
     @polarion("RHEVM3-11503")
+    @bz({'1350708': {}})
     def test_verify_disk_description_edit_works_across_hot_plug(self):
         """
         1. Add VM with a disk, run the VM and add a description while the VM
