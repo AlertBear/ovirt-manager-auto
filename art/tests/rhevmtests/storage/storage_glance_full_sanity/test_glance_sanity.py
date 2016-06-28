@@ -13,7 +13,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms
 )
 from art.test_handler import exceptions as errors
-from art.test_handler.tools import polarion
+from art.test_handler.tools import bz, polarion
 from art.unittest_lib import attr, StorageTest as BaseTestCase
 from rhevmtests.storage import config, helpers as storage_helpers
 
@@ -176,6 +176,7 @@ class BasicEnvironment(BaseTestCase):
         ll_jobs.wait_for_jobs([config.JOB_ADD_VM_FROM_TEMPLATE])
         self.vms_to_remove.append(self.vm_name)
         self.add_nic_to_vm(self.vm_name)
+        ll_vms.wait_for_vm_states(self.vm_name, [config.VM_DOWN])
         if start_vm:
             self.assertTrue(
                 ll_vms.startVm(True, self.vm_name, wait_for_ip=True),
@@ -495,6 +496,7 @@ class TestCase5746(BasicEnvironment):
     test_case = '5746'
 
     @polarion("RHEVM3-5746")
+    @bz({'1349594': {}})
     def test_Change_disk_interface(self):
         """
         - Import an image from glance domain as template
@@ -611,9 +613,9 @@ class TestCase10696(BasicEnvironment):
     Import a glance image as template
     """
     __test__ = True
-    test_case = '2'
+    test_case = '10696'
     template_name = 'glance_template_10696'
-    disk_alias = 'glance_image_10697'
+    disk_alias = 'glance_image_10696'
 
     @polarion("RHEVM3-10696")
     def test_import_glance_image_as_template(self):
@@ -669,6 +671,9 @@ class TestCase10697(BasicEnvironment):
 
     def tearDown(self):
         super(TestCase10697, self).tearDown()
+        if not ll_disks.wait_for_disks_status([self.disk_id], 'id'):
+            logger.error("Disk %s is not it state OK")
+            BaseTestCase.test_failed = True
         if not ll_disks.deleteDisk(True, disk_id=self.disk_id):
             BaseTestCase.test_failed = True
         BaseTestCase.teardown_exception()
