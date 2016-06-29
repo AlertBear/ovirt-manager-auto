@@ -2539,6 +2539,7 @@ def update_fence_agent(host_name, agent_address, **kwargs):
     old_agent_obj = get_fence_agent_by_address(
         host_name=host_name, agent_address=agent_address
     )
+    kwargs['type_'] = kwargs.pop('agent_type', None)
     new_agent_obj = __prepare_fence_agent_object(**kwargs)
     logger.info(log_info)
     status = AGENT_API.update(old_agent_obj, new_agent_obj, True)[1]
