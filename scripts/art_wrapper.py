@@ -98,8 +98,3 @@ def art(path_to_config):
     settings.ART_CONFIG["PARAMETERS"]["vds"] = ["1.1.1.1"] * 4
     settings.ART_CONFIG["RUN"]["engine"] = VDC
     settings.ART_CONFIG["PARAMETERS"]["disk_size"] = "1000"
-    bz = [
-        i for i in settings.plmanager.configurables if i.name == "Bugzilla"
-    ]
-    if bz:
-        settings.plmanager.disable_component(bz[0])

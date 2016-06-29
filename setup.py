@@ -21,8 +21,6 @@ SUB_MODULES = [
     'art.core_api',
     'art.test_handler',
     'art.test_handler.handler_lib',
-    'art.test_handler.plmanagement',
-    'art.test_handler.plmanagement.interfaces',
     'art.generateDS',  # WILL be replaced by deps
 ]
 
@@ -44,9 +42,6 @@ DATA_FILES = common.expand_paths(TEST_DATA_PATH, *DATA_FILES)
 PY_MODULES = [
     'art.__main__', 'art.__init__', 'art.run',
     'art.generateIds',
-    'art.test_handler.plmanagement.plugins.results_collector_plugin',
-    # FIXME: don't like these default plugins
-    'art.test_handler.plmanagement.plugins.resources_plugin',
 ]
 
 

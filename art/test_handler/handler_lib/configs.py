@@ -22,13 +22,12 @@ A module containing functionality for validation of configuration
 """
 import os
 import logging
-import collections
-from copy import copy
-from utilities.validation_lib import ValidationFuncs, ConfigValidator,\
-        ConfigLoader
-from configobj import ConfigObj, flatten_errors, get_extra_values,\
-                      ConfigObjError
-from validate import Validator, ValidateError, VdtTypeError
+from utilities.validation_lib import (
+    ValidationFuncs,
+    ConfigValidator,
+    ConfigLoader,
+)
+from validate import ValidateError, VdtTypeError
 from art.test_handler import find_config_file
 import art
 
@@ -88,24 +87,17 @@ class ARTConfigValidator(ConfigValidator):
     _parameters = 'PARAMETERS'
     _test_conf_spec = 'test_conf_specs'
 
-    def __init__(self, conf, spec, plmngmnt):
+    def __init__(self, conf, spec):
         funcs = ARTValidationFuncs()
-        super(ARTConfigValidator, self).__init__(conf, spec, funcs,
-                True)
+        super(ARTConfigValidator, self).__init__(
+            conf, spec, funcs, True,
+        )
         self.funcs['section_exists'] = self.checkSectionExistence
-        self.plmngmnt = plmngmnt
 
     def prepareSpec(self):
         spec = super(ARTConfigValidator, self).prepareSpec()
-        self.__loadSpecFromPlugins(spec)
         self.__loadSpecFromFiles(spec)
         return spec
-
-    def __loadSpecFromPlugins(self, spec):
-        for entry in self.plmngmnt.conf_validators:
-            plspec = ConfigObj(_inspec=True, list_values=False)
-            entry.config_spec(plspec, self.funcs)
-            spec.merge(plspec)
 
     def __loadSpecFromFiles(self, spec):
         conf = self.prepareConf()
@@ -124,5 +116,6 @@ class ARTConfigValidator(ConfigValidator):
     def checkSectionExistence(self, value, section):
         if section in self.conf:
             return True
-        raise ValidateError("Section %s doesn't exist in config file"\
-                            % section)
+        raise ValidateError(
+            "Section %s doesn't exist in config file" % section
+        )

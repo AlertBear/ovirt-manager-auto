@@ -20,9 +20,7 @@ product xsd file (xml schema documents) that describes the structure of
 all possible xml requests and responses. You can run your REST API
 requests easily with ART and validate them automatically. Your tests'
 results are generated in xml and junit formats for easy integration with
-other tools. Because ART is plugin-based, you can add new features and
-functionality by extending one of the existing plugins or by writing
-your own.
+other tools.
 
 ART structure
 -------------
@@ -76,10 +74,6 @@ Features
 
 -   Supports parallel runs from the same configuration file or from
     different ones.
-
--   Supports plugin management for adding new functionality to main
-    engine (Test Runner). Based on Trac Component Architecture:
-    http://trac.edgewall.org/wiki/TracDev/ComponentArchitecture
 
 System Requirements
 -------------------
@@ -372,9 +366,7 @@ http://www.voidspace.org.uk/python/configobj3.html#configspec
 
 You can define Configspec files for any sections or parameters. You can
 use basic ConfigObj validation functions or functions from
-`art/test_handler/handler_lib/configs.py`. Each plugin can define its
-own spec file by stating the required parameters in the dedicated
-configuration section.
+`art/test_handler/handler_lib/configs.py`.
 
 By default ART uses the `art/conf/main.spec` file to validate your
 configuration. If you would like to add more spec files for this
@@ -384,18 +376,6 @@ example::
 
     [PARAMETERS]
     test_conf_specs = conf/specs/rhevm_params.spec,
-
-Example of definition of spec file in plugin::
-
-    def config_spec(self, spec, val_funcs):
-        section_spec = spec.get(PLUGIN_SECTION, {})
-        section_spec['user'] = "string(default='%s')" % DEFAULT_USER
-        section_spec['password'] = "string(default='%s')" % DEFAULT_PASSWD
-        section_spec['enabled'] = 'boolean(default=%s)' % DEFAULT_STATE
-        section_spec['url'] = "is_url_alive(default='%s')" % DEFAULT_URL
-        section_spec[PRODUCT] = "option('%s', '%s', default='%s')" % \
-                (RHEVM_PRODUCT, OVIRT_PRODUCT, RHEVM_PRODUCT)
-        spec[PLUGIN_SECTION] = section_spec
 
 .. note::
 
@@ -834,16 +814,6 @@ nodes depend on the parameters set in the *REPORT* section of your
 
 -   all test cases attributes you used in your input file (test_name,
     parameters, positive, etc.)
-
-You can also generate reports in xunit format by enabling
-*xunit_results_formater_plugin* ::
-
-    python run.py -conf=<config_path> --rf-x-unit
-
-By default xunit report will be stored at `results/xunit_output.xml`.
-You can change the default location by setting a new path::
-
-    python run.py -conf=<config_path> --rf-x-unit=<xunit_results_path>
 
 RHEVM Lib
 =========

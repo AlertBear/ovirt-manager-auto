@@ -33,7 +33,6 @@ from configobj import ConfigObj
 
 from art.test_handler.handler_lib.configs import ARTConfigValidator, \
     ConfigLoader
-from art.test_handler.plmanagement.manager import PluginManager
 from art.test_handler import find_config_file
 import logging
 
@@ -41,7 +40,6 @@ ART_CONFIG = {}
 opts = {}
 ART_CONFIG = ConfigObj()
 """ A options global for all REST tests. """
-plmanager = None
 RC_RANGE = [2, 9]
 
 
@@ -55,13 +53,6 @@ class CmdLineError(ValueError):
     Raised when there was something wrong with the command line arg.
     '''
     pass
-
-
-def initPlmanager():
-    global plmanager
-    if plmanager is None:
-        plmanager = PluginManager()
-    return plmanager
 
 
 def populateOptsFromArgv(argv):
@@ -104,8 +95,6 @@ def populateOptsFromArgv(argv):
                         default=[],
                         help='modify the option in config',
                         dest='redefs')
-
-    plmanager.configurables.add_options(parser)
 
     args = parser.parse_args(argv[1:])
 
@@ -169,7 +158,7 @@ def readTestRunOpts(path, redefs):
     conf = ConfigLoader(find_config_file(confFileCopyName), raise_errors=True)
     spec = ConfigLoader(find_config_file(opts['confSpec']), raise_errors=True,
                         _inspec=True)
-    validator = ARTConfigValidator(conf.load(), spec.load(), initPlmanager())
+    validator = ARTConfigValidator(conf.load(), spec.load())
 
     ART_CONFIG.update(validator())
     config = ART_CONFIG

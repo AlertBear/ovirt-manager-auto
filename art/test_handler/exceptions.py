@@ -1,6 +1,5 @@
 import sys
 import traceback
-from art.test_handler.plmanagement import PluginError
 
 
 class VitalTestFailed(Exception):
@@ -155,7 +154,7 @@ class ResourceError(RHEVMEntityException):
     pass
 
 
-class CanNotFindIP(ResourceError, PluginError):
+class CanNotFindIP(ResourceError):
     pass
 
 

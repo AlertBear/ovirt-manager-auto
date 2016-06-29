@@ -13,7 +13,7 @@ from _pytest_art.marks import (
 )
 from _pytest_art.testlogger import TestFlowInterface
 from art.test_handler.exceptions import TearDownException
-from art.test_handler.settings import plmanager, opts, ART_CONFIG
+from art.test_handler.settings import opts, ART_CONFIG
 
 logger = logging.getLogger(__name__)
 testflow = TestFlowInterface
@@ -25,30 +25,6 @@ GLUSTERFS = opts['elements_conf']['RHEVM Enums']['storage_type_gluster']
 FCP = opts['elements_conf']['RHEVM Enums']['storage_type_fcp']
 STORAGE_TYPE = ART_CONFIG['PARAMETERS'].get('storage_type', None)
 NOT_APPLICABLE = 'N/A'
-
-try:
-    BZ_PLUGIN = [pl for pl in plmanager.configurables
-                 if pl.name == "Bugzilla"][0]
-except IndexError:
-    class FakeBZPlugin(object):
-
-        def is_state(self, *args):
-            """
-            Set all BZs as solved if BZ plugin is not available
-            """
-            return True
-
-    BZ_PLUGIN = FakeBZPlugin()
-
-
-def is_bz_state(bz_id):
-    """
-    Description: Decides if bz given by bz_id is in one of states given by
-    const_list (CLOSED, VERIFIED) by default or taken from config file
-    Parameters:
-        * bz_id - BZ number
-    """
-    return BZ_PLUGIN.is_state(bz_id)
 
 
 class BaseTestCase(TestCase):
