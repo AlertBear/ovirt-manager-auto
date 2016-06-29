@@ -373,7 +373,7 @@ def _prepareVmObject(**kwargs):
     # placement policy: placement_affinity & placement_host
     affinity = kwargs.pop("placement_affinity", None)
     placement_host = kwargs.pop("placement_host", None)
-    placement_hosts = kwargs.pop("placement_hosts", [])
+    placement_hosts = kwargs.pop("placement_hosts", None) or []
     if placement_host or affinity or placement_hosts:
         placement_policy = data_st.VmPlacementPolicy()
         if affinity:
