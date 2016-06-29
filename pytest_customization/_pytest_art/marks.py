@@ -21,8 +21,10 @@ __all__ = [
     "polarion",
     "pytest_addoption",
     "pytest_configure",
+    "timeout",
 ]
 
+MIN = 60
 
 # Polarion decorator
 polarion = pytest.mark.polarion
@@ -50,6 +52,7 @@ tier1 = pytest.mark.tier1
 tier2 = pytest.mark.tier2
 tier3 = pytest.mark.tier3
 tier4 = pytest.mark.tier4
+timeout = pytest.mark.timeout
 
 
 def pytest_addoption(parser):
@@ -141,10 +144,23 @@ class AttribDecorator(object):
         except Exception:
             return False
 
+    def set_tiers_timeout(self, items):
+        """
+        Set timeout to all tiers
+        """
+        for index, item in enumerate(items[:]):
+            item_attr = item.get_marker('attr')
+            if not item_attr or item.get_marker('timeout'):
+                continue
+            item_tier = item_attr.kwargs.get("tier")
+            if item_tier:
+                items[index].add_marker(timeout(MIN*60*item_tier))
+
     def pytest_collection_modifyitems(self, session, config, items):
         for item in items[:]:
             if not self._matches(item):
                 items.remove(item)
+        self.set_tiers_timeout(items)
 
 
 class JunitExtension(object):

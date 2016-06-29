@@ -12,6 +12,7 @@ from art.unittest_lib.common import (
     attr,
     testflow,
 )
+from _pytest_art.marks import timeout
 
 __all__ = [
     'BaseTestCase',
@@ -23,4 +24,5 @@ __all__ = [
     'IntegrationTest',
     'attr',
     'testflow',
+    'timeout',
 ]

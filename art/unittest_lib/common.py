@@ -2,8 +2,8 @@ import logging
 
 from unittest2 import TestCase
 
-from _pytest_art.marks import attr
 from _pytest_art.marks import (
+    attr,
     network,
     sla,
     storage,
