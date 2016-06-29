@@ -23,6 +23,7 @@ from art.core_api.apis_exceptions import EntityNotFound, APITimeout
 from art.core_api.apis_utils import data_st, TimeoutingSampler
 from art.rhevm_api.data_struct.data_structures import Disk, Fault
 from art.rhevm_api.tests_lib.low_level.datacenters import get_sd_datacenter
+from art.rhevm_api.tests_lib.low_level.general import prepare_ds_object
 from art.rhevm_api.utils.test_utils import get_api, waitUntilGone, split
 from art.test_handler.settings import opts
 
@@ -861,3 +862,19 @@ def get_all_disks():
         list: List objects
     """
     return DISKS_API.get(absLink=False)
+
+def prepare_disk_attachment_object(disk_id, **kwargs):
+    """
+    Creates a disk attachment object
+
+    :param disk_id: ID of the disk
+    :type disk_id: str
+    :param interface: Interface of the disk
+    :type interface: str
+    :param bootable: True if disk should be marked as bootable, False otherwise
+    :type bootable: bool
+    :return: DiskAttahcment object
+    :rtype: data_st.DiskAtachment
+    """
+    disk_obj = prepare_ds_object("Disk", id=disk_id)
+    return prepare_ds_object("DiskAttachment", disk=disk_obj, **kwargs)

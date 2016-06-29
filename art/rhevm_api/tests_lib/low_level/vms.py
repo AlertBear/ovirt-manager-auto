@@ -33,7 +33,7 @@ from art.rhevm_api.tests_lib.high_level.disks import delete_disks
 from art.rhevm_api.tests_lib.low_level.disks import (
     _prepareDiskObject, getVmDisk, getObjDisks, get_other_storage_domain,
     wait_for_disks_status, get_disk_storage_domain_name, get_disk_obj,
-    deleteDisk,
+    deleteDisk, prepare_disk_attachment_object,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.networks import get_vnic_profile_obj
@@ -104,6 +104,7 @@ WATCHDOG_API = get_api('watchdog', 'watchdogs')
 CAP_API = get_api('version', 'capabilities')
 NUMA_NODE_API = get_api("vm_numa_node", "vm_numa_nodes")
 HOST_DEVICE_API = get_api("host_device", "host_devices")
+DISK_ATTACHMENTS = get_api("disk_attachment", "diskattachments")
 
 Snapshots = getDS('Snapshots')
 NUMA_NODE_LINK = "numanodes"
@@ -5844,7 +5845,7 @@ def get_all_vms():
     return VM_API.get(absLink=False)
 
 
-def get_vm_disk_attachments(vm, disk=None, attr='id'):
+def get_vm_disk_attachments(vm, disk=None, attr='id', href=False):
     """
     Return disk attachments list of objects or the specific disk attachment
     object in case disk is specified
@@ -5857,15 +5858,22 @@ def get_vm_disk_attachments(vm, disk=None, attr='id'):
     :type: str
     :returns: List of disk attachment objects or a list of a single disk
     attachment object if disk parameter is specified
+    :param href: True if function should return the href to the objects,
+    False if it should return list of DiskAttachment objects
+    :type href: bool
     :rtype: list
     """
-
     vm_obj = VM_API.find(vm)
     disk_list = VM_API.getElemFromLink(
         vm_obj, link_name='diskattachments', attr='disk_attachment',
-        get_href=False
+        get_href=href
     )
     if disk:
+        if href:
+            logger.error(
+                "Specify either href, disk parameter or none of them"
+            )
+            return None
         disk_id = get_disk_obj(disk).get_id() if attr == 'name' else disk
         return [
             disk_attach for disk_attach in disk_list if
@@ -5890,3 +5898,69 @@ def is_bootable_disk(vm, disk, attr='id'):
     vm_disks = get_vm_disk_attachments(vm, disk, attr)
     if vm_disks:
         return vm_disks[0].get_bootable()
+
+
+# This method doesn't work until BZ1350226 is fixed
+def update_disk_attachment(
+    positive, disk_id, vm_name, interface=None, bootable=None
+):
+    """
+    Update a disk's disk attachment parameters
+
+    :param positive: Specifies whether the update call should succeed
+    :type positive: bool
+    :param disk_id: ID of the disk
+    :type disk_id: str
+    :param vm_name: Name of the vm where disk is attached
+    :type vm_name: str
+    :param interface: Interface to change the disk attachment to
+    :type interface: str
+    :param bootable: True if the disk should be marked as bootable, False
+    otherwise
+    :type bootable: bool
+    :return: Status of the operation's result dependent on positive value
+    :rtype: bool
+    :raises: EntityNotFound if the disk is not attached to the vm
+    """
+    new_disk_attachment_obj = prepare_disk_attachment_object(
+        disk_id, interface=interface, bootable=bootable
+    )
+    disk_attachment_obj = get_vm_disk_attachments(vm_name, disk_id)
+    if not disk_attachment_obj:
+        raise EntityNotFound(
+            "No disk with id %s found attached to vm %s" % (disk_id, vm_name)
+        )
+    disk_attachment_obj = disk_attachment_obj[0]
+    _new_disk_attachment_obj, status = DISK_ATTACHMENTS.update(
+        disk_attachment_obj, new_disk_attachment_obj, positive
+    )
+    return status
+
+
+# TODO: This should be the function to use from 4.0 onwards, change
+# attachDisk to use this function after verifying tier1/tier2
+def attach_disk_vm(positive, disk_id, vm_name, interface=None, bootable=None):
+    """
+    Attach a disk to a VM through diskattachments collection
+
+    :param positive: Specifies whether the attach call should succeed
+    :type positive: bool
+    :param disk_id: ID of the disk
+    :type disk_id: str
+    :param vm_name: Name of the vm to attach the disk
+    :type vm_name: str
+    :param interface: Interface to which attach the disk to the vm
+    :type interface: str
+    :param bootable: True if disk should be marked as bootable, False otherwise
+    :type bootable: bool
+    :return: Status of the operation's result dependent on positive value
+    :rtype: bool
+    """
+    disk_attachment_obj = prepare_disk_attachment_object(
+        disk_id, interface=interface, bootable=bootable
+    )
+    vm_disk_attachments = get_vm_disk_attachments(vm_name, href=True)
+    _response, status = DISK_ATTACHMENTS.create(
+        disk_attachment_obj, positive, collection=vm_disk_attachments
+    )
+    return status
