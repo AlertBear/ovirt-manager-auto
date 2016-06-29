@@ -86,6 +86,7 @@ def setup_package():
         )
 
     # set best cpu family model for all hosts
+    # TODO remove the comments below when capabilities issue would fix
     # cpu_model = helpers.determine_best_cpu_model(
     #     config.VDS_HOSTS,
     #     config.COMP_VERSION,

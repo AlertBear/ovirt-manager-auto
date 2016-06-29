@@ -29,11 +29,14 @@ userUtil = get_api('user', 'users')
 sdUtil = get_api('storage_domain', 'storagedomains')
 dcUtil = get_api('data_center', 'datacenters')
 permitUtil = get_api('permit', 'capabilities')
-try:
-    versionCaps = permitUtil.get(absLink=False)
-except KeyError:
-    util.logger.warn("Can't get list of permissions from capabilities")
-    pass
+
+# TODO remove the comments below when capabilities issue would fix
+versionCaps = None
+# try:
+#     versionCaps = permitUtil.get(absLink=False)
+# except KeyError:
+#     util.logger.warn("Can't get list of permissions from capabilities")
+#     pass
 
 
 VM = getDS('VM')
