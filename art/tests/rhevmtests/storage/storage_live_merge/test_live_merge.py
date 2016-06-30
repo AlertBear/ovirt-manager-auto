@@ -755,6 +755,16 @@ class TestCase6062(BasicEnvironment):
         migrated
         """
         ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
+        disks = [d.get_id() for d in ll_vms.getVmDisks(self.vm_name)]
+        ll_disks.wait_for_disks_status(disks, key='id')
+        try:
+            ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
+        except APITimeout:
+            logger.error(
+                "Snapshots failed to reach OK state on VM '%s'", self.vm_name
+            )
+            BaseTestCase.test_failed = True
+
         try:
             ll_vms.wait_for_vm_snapshots(self.vm_name, config.SNAPSHOT_OK)
         except APITimeout:
@@ -763,6 +773,7 @@ class TestCase6062(BasicEnvironment):
             )
             BaseTestCase.test_failed = True
         ll_jobs.wait_for_jobs([config.JOB_LIVE_MIGRATE_DISK])
+        ll_jobs.wait_for_jobs([config.JOB_REMOVE_SNAPSHOT])
         if not ll_vms.waitForVmsDisks(self.vm_name):
             logger.error(
                 "Disks in VM '%s' failed to reach state 'OK'", self.vm_name
