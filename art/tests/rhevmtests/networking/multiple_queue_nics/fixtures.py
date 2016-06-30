@@ -10,13 +10,11 @@ import pytest
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.networking.config as conf
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, network_cleanup_fixture
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="class")
-def update_vnic_profile(request, network_cleanup_fixture):
+def update_vnic_profile(request,):
     """
     Fixture for config and update queue value on vNIC profile for exiting
     network (vNIC CustomProperties).
