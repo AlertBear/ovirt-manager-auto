@@ -2920,51 +2920,59 @@ def waitForIP(
     """
     #  import is done here to avoid loop
     import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-    vm_id = None
     vm_host = get_vm_host(vm_name=vm)
     if not vm_host:
+        logger.error("Vm %s is not running", vm)
         return False, {'ip': None}
 
     host_ip = ll_hosts.get_host_ip_from_engine(host=vm_host)
     vds_resource = resources.VDS(ip=host_ip, root_password=vm_password)
-    out = vds_resource.vds_client("list", ["table"])
-    for vm_info in out["vmList"]:
-        if vm_info["vmName"] == vm:
-            vm_id = vm_info["vmId"]
-    if not vm_id:
-        logger.error("Vm id for VM %s not found on VDSM %s", vm, vm_host)
-        return False, {'ip': None}
 
-    def _get_ip(vm, vds_resource, vm_id):
+    def _get_ip(vm, vds_resource):
         """
         Get VM IP using vdsClient command on VDSM
 
         Args:
             vm (str): VM name
             vds_resource (VDS): VDSM resource
-            vm_id (str): VM id in VDSM
 
         Returns:
             str or list: IP or list of IPs depend on get_all_ips param
         """
-        vm_out = vds_resource.vds_client('getVmStats', [vm_id])
-        try:
-            vm_ips = vm_out['statsList'][0]['netIfaces'][0]['inet']
-            ip = vm_ips if get_all_ips else vm_ips[0]
-            ping_ip = ip[0] if isinstance(ip, list) else ip
-            logger.info("Send ICMP to %s", ping_ip)
-            if not vds_resource.network.send_icmp(dst=ping_ip):
-                return None
-
-        except (KeyError, IndexError):
+        out = vds_resource.vds_client("list")
+        vms_ids = out.get("items")
+        vm_ips = list()
+        if not vms_ids:
             return None
 
-        VM_API.logger.debug("Got IP %s for %s", ip, vm)
-        return ip
+        for vm_id in vms_ids:
+            vm_info = vds_resource.vds_client("getVmStats", [vm_id])
+            if not vm_info:
+                return None
+
+            vm_info = vm_info.get("items")[0]
+            vm_name = vm_info.get("vmName")
+            if vm_name == vm:
+                vm_interfaces = vm_info.get("netIfaces")
+                if not vm_interfaces:
+                    return None
+
+                for vm_interface in vm_interfaces:
+                    vm_ips.extend(vm_interface.get("inet"))
+
+                if not vm_ips:
+                    return None
+
+                ip = vm_ips if get_all_ips else vm_ips[0]
+                ping_ip = ip[0] if isinstance(ip, list) else ip
+                logger.info("Send ICMP to %s", ping_ip)
+                if not vds_resource.network.send_icmp(dst=ping_ip):
+                    return None
+                return ip
 
     try:
         for ip in TimeoutingSampler(
-            timeout, sleep, _get_ip, vm, vds_resource, vm_id
+            timeout, sleep, _get_ip, vm, vds_resource
         ):
             if ip:
                 return True, {'ip': ip}

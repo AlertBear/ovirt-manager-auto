@@ -97,8 +97,12 @@ class VDS(Host):
         cmd_args = " ".join(args)
         args_txt = "'{0}'".format(cmd_args) if cmd_args else ""
         command = (
-            'python -c "from vdsm import vdscli;'
-            'print vdscli.connect().{0}({1})"'.format(cmd, args_txt)
+            "python -c 'from vdsm import jsonrpcvdscli;"
+            "from vdsm.config import config;"
+            "requestQueues = config.get(\"addresses\",\"request_queues\");"
+            "requestQueue = requestQueues.split(\",\")[0];"
+            "conn = jsonrpcvdscli.connect(requestQueue);"
+            "print conn.{0}(\"{1}\")'".format(cmd, args_txt)
         )
         rc, out, err = self.executor().run_cmd(shlex.split(command))
         if rc:

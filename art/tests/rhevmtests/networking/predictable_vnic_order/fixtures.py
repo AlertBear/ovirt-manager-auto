@@ -11,18 +11,16 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, network_cleanup_fixture
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="module")
-def prepare_setup_predictable_vnic_order(request, network_cleanup_fixture):
+def prepare_setup_predictable_vnic_order(request):
     """
     Seal the VM
     Remove all vNICs from the VM
     """
-    predictable_vnic_order = NetworkFixtures()
+    NetworkFixtures()
 
     def fin():
         """
@@ -48,7 +46,7 @@ def fixture_case01(request, prepare_setup_predictable_vnic_order):
     Add 4 vNICs to the VM
     Reorder the vNICs
     """
-    predictable_vnic_order = NetworkFixtures()
+    NetworkFixtures()
 
     def fin2():
         """

@@ -8,6 +8,7 @@ import logging
 
 import rhevmtests.networking.config as net_conf
 from art.core_api import apis_utils
+import rhevmtests.networking.helper as network_helper
 
 logger = logging.getLogger("Network_Host_QoS_Helper")
 
@@ -31,15 +32,15 @@ def cmp_qos_with_vdscaps(net, qos_dict, host=None):
     logger.info("Compare vdsClient QoS values with %s", qos_dict)
     vds_caps_qos_dict = {}
     sample = apis_utils.TimeoutingSampler(
-        timeout=net_conf.SAMPLER_TIMEOUT, sleep=1, func=check_net_on_vdscaps,
-        net=net
+        timeout=net_conf.SAMPLER_TIMEOUT, sleep=1,
+        func=network_helper.is_network_in_vds_caps, host_resource=host,
+        network=net
     )
     if not sample.waitForFuncStatus(result=True):
-        logger.error("Network %s doesn't exist in vdsCaps", net)
         return False
 
     vds_caps_out = host.vds_client("getVdsCapabilities")
-    qos = vds_caps_out["info"]["networks"][net]["hostQos"]["out"]
+    qos = vds_caps_out.get("networks").get(net).get("hostQos").get("out")
     for key in ("rt", "ul", "ls"):
         vds_caps_qos_dict[key] = qos[key]["m2"]
 
@@ -49,30 +50,5 @@ def cmp_qos_with_vdscaps(net, qos_dict, host=None):
             "Values in VdsCaps are %s, should be %s", qos_dict,
             vds_caps_qos_dict
         )
-        return False
-    return True
-
-
-def check_net_on_vdscaps(net, host=None):
-    """
-    Check if network exists on VdsCaps
-
-    :param net: Network name
-    :type net: str
-    :param host: Host resource network resides on
-    :type host: Resource.VDS
-    :return: True if network exists on vdsCaps otherwise False
-    :rtype: bool
-    """
-    if host is None:
-        host = net_conf.VDS_HOSTS[0]
-    vds_caps_out = host.vds_client("getVdsCapabilities")
-    logger.info("%s", vds_caps_out["info"]["networks"])
-    net_dict = vds_caps_out["info"]["networks"].get(net)
-    if not net_dict:
-        logger.error("%s is missing in vdsCaps", net)
-        return False
-    if not net_dict.get("hostQos"):
-        logger.error("Host network QoS is missing for %s", net)
         return False
     return True
