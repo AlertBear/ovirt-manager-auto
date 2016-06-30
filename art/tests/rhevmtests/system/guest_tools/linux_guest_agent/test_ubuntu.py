@@ -3,7 +3,7 @@ Ubuntu guest agent test
 '''
 import logging
 
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 
 from rhevmtests.system.guest_tools.linux_guest_agent import common
 from rhevmtests.system.guest_tools.linux_guest_agent import config

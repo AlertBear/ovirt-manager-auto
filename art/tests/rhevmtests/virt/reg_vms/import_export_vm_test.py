@@ -13,7 +13,7 @@ from art.unittest_lib import VirtTest, testflow
 from art.unittest_lib import attr
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from rhevmtests.virt.reg_vms.fixtures import (
     test_snapshot_and_import_export_fixture
 )

@@ -3,7 +3,7 @@ Sanity test of guest agent of rhel 7 64b
 """
 import shlex
 
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 
 from rhevmtests.system.guest_tools.linux_guest_agent import config
 from rhevmtests.system.guest_tools.linux_guest_agent import common

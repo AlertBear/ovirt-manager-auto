@@ -9,7 +9,7 @@ import logging
 import pytest
 
 from art.unittest_lib.common import attr, VirtTest
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 import art.test_handler.exceptions as errors
 import rhevmtests.helpers as global_helper
 from art.rhevm_api.utils.test_utils import getStat

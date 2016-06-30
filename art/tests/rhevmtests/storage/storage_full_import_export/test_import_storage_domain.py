@@ -14,7 +14,7 @@ from art.rhevm_api.tests_lib.high_level import (
 )
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.test_handler.settings import opts
 from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest as TestCase

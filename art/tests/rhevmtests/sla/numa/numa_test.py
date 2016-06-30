@@ -8,7 +8,7 @@ import pytest
 import config as conf
 import art.unittest_lib as u_libs
 from art.unittest_lib import attr
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 import rhevmtests.helpers as global_helpers
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms

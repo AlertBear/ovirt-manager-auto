@@ -7,7 +7,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.unittest_lib as u_libs
 import config as conf
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from rhevmtests.sla.fixtures import (
     run_once_vms,
     start_vms

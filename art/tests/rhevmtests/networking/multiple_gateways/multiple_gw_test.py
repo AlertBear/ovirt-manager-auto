@@ -17,7 +17,7 @@ import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as multiple_gw_conf
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest as TestCase
 from art.unittest_lib import attr, testflow
 from fixtures import attach_networks_to_host, teardown_all_cases

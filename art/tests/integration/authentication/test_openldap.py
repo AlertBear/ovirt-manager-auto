@@ -15,7 +15,7 @@ from nose.tools import istest
 from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 from test_base import connectionTest
 
 LOGGER = logging.getLogger(__name__)

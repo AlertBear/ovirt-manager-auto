@@ -1,6 +1,6 @@
 from rhevm_utils import base
 from utilities.rhevm_tools.config import ConfigUtility
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr
 
 CONFIG_TEST_PLAN = 3727

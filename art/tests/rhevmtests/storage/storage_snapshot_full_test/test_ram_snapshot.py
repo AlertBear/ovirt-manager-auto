@@ -9,7 +9,7 @@ from helpers import is_pid_running_on_vm, start_cat_process_on_vm
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
     jobs as ll_jobs,

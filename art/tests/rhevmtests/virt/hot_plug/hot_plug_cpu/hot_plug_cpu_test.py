@@ -9,7 +9,7 @@ Hot Plug CPU - Testing
 - Negative test: check hot unplug while cores are pinned
 """
 import pytest
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import VirtTest as TestCase
 from art.unittest_lib.common import attr
 from rhevmtests import helpers

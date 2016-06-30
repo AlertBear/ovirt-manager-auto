@@ -6,7 +6,7 @@ import art.rhevm_api.tests_lib.low_level.vms as llvms
 
 from art.test_handler.exceptions import VMException
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr
 from rhevm_utils import base, unittest_conf
 from utilities.rhevm_tools.log_collector import LogCollectorUtility

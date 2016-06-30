@@ -6,7 +6,7 @@
 import pytest
 import logging
 from art.unittest_lib import attr, VirtTest, testflow
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from rhevmtests.virt.reg_vms.fixtures import add_vm_fixture

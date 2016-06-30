@@ -20,7 +20,7 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
 )
 from art.rhevm_api.utils.log_listener import watch_logs
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr, StorageTest
 
 from multiprocessing import Process, Queue

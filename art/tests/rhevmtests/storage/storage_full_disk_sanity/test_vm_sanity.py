@@ -10,7 +10,7 @@ from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
 from art.rhevm_api.tests_lib.low_level import vms, templates, storagedomains
 from art.rhevm_api.utils import log_listener
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 import rhevmtests.storage.helpers as helpers
 
 LOGGER = logging.getLogger(__name__)

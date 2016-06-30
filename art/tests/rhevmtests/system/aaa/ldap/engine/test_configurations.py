@@ -7,7 +7,7 @@ import logging
 
 from rhevmtests.system.aaa.ldap import common, config
 from art.rhevm_api.tests_lib.low_level import mla
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
 

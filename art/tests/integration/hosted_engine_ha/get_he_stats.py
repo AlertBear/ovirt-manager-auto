@@ -1,4 +1,4 @@
-import ovirt_hosted_engine_ha.client.client as ha_cl  # pylint: disable=E0611
+import ovirt_hosted_engine_ha.client.client as ha_cl
 
 if __name__ == "__main__":
     he_client = ha_cl.HAClient()

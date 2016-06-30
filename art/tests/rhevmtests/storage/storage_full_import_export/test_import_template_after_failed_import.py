@@ -16,7 +16,7 @@ from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 import rhevmtests.storage.helpers as helpers
 
 LOGGER = logging.getLogger(__name__)

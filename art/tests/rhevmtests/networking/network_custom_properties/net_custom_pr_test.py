@@ -13,7 +13,7 @@ import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as custom_prop_conf
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr, testflow, NetworkTest
 from fixtures import attach_networks_to_host
 

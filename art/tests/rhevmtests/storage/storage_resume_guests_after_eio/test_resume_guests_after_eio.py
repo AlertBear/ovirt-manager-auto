@@ -11,7 +11,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.utils import storage_api
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr, StorageTest as TestCase
 from rhevmtests.storage import helpers as storage_helpers
 

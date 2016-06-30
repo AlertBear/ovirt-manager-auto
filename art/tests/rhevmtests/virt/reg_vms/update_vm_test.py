@@ -6,7 +6,7 @@
 
 import logging
 import pytest
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as errors
 from art.unittest_lib import attr, VirtTest, testflow

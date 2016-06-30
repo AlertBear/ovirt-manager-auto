@@ -19,7 +19,7 @@ from art.rhevm_api.utils.storage_api import (
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest as TestCase
 from rhevmtests import helpers as rhevm_helpers

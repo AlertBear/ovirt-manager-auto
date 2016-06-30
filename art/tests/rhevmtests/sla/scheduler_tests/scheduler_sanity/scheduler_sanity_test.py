@@ -15,7 +15,7 @@ import art.rhevm_api.tests_lib.low_level.scheduling_policies as ll_sch
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as errors
 import rhevmtests.sla.config as conf
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import SlaTest as TestCase
 from art.unittest_lib import attr
 

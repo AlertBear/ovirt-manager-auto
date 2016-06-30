@@ -12,7 +12,7 @@ import pytest
 from unittest2 import SkipTest
 import art.unittest_lib as u_lib
 import rhevmtests.sla.config as conf
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.sla as ll_sla

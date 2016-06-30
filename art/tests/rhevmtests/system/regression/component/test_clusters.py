@@ -8,7 +8,7 @@ test clusters
 
 import logging
 
-from art.test_handler.tools import bz  # pylint: disable=E0611
+from art.test_handler.tools import bz
 from art.unittest_lib import (
     CoreSystemTest as TestCase,
     attr,

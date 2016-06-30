@@ -15,7 +15,7 @@ import pytest
 
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import fixture_case_01, fixture_case_02, fixture_case_03
 

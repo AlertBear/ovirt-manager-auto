@@ -3,7 +3,7 @@ from os.path import relpath
 from sys import modules
 
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.test_handler.settings import ART_CONFIG as config
 
 from utilities.rhevm_tools.manage_domains import ManageDomainsUtility

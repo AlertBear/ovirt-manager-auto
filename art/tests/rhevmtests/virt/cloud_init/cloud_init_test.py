@@ -9,7 +9,7 @@ import logging
 import pytest
 import config
 import helper
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import common
 import art.rhevm_api.data_struct.data_structures as data_struct
 import art.test_handler.exceptions as errors

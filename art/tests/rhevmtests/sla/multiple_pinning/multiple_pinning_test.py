@@ -5,7 +5,7 @@ import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 import art.unittest_lib as u_libs
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.helpers as sla_helpers
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 from fixtures import *  # flake8: noqa
 
 logger = logging.getLogger(__name__)

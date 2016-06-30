@@ -10,7 +10,7 @@ import shlex
 from art.rhevm_api.tests_lib.low_level import disks, jobs, storagedomains, vms
 from art.test_handler import exceptions
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr, StorageTest as BaseTestCase
 from rhevmtests.storage import helpers
 from utilities.machine import LINUX, Machine

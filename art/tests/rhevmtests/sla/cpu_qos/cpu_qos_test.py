@@ -13,7 +13,7 @@ from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_datacenter,
     templates as ll_templates
 )
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import SlaTest as TestCase, attr
 from rhevmtests import helpers
 from rhevmtests.sla.cpu_qos import config

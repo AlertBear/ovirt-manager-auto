@@ -8,7 +8,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.unittest_lib as u_libs
 import rhevmtests.sla.config as sla_conf
 import rhevmtests.sla.helpers as sla_helpers
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 
 
 @pytest.fixture(scope="class", autouse=True)

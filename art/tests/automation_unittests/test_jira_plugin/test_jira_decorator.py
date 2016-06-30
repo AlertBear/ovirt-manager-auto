@@ -1,6 +1,6 @@
 import logging
 
-from art.test_handler.tools import jira  # pylint: disable=E0611
+from art.test_handler.tools import jira
 
 from art.unittest_lib import BaseTestCase as TestCase
 from automation_unittests.verify_results import VerifyUnittestResults

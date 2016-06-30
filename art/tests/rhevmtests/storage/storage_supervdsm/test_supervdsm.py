@@ -14,7 +14,7 @@ from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import hosts
 
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 
 from utilities.machine import LINUX, Machine
 

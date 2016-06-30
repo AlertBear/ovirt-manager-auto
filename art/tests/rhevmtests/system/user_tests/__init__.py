@@ -1,7 +1,7 @@
 from art.rhevm_api.utils.enginecli import EngineCLI
 from art.rhevm_api.tests_lib.low_level import mla as ll_mla
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
-from art.test_handler.tools import bz  # pylint: disable=E0611
+from art.test_handler.tools import bz
 from rhevmtests.system.user_tests import (
     config,
     test_user,

@@ -9,7 +9,7 @@ from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import vms
 from art.test_handler.settings import opts
 import live_storage_migration_base as basePlan
-from art.test_handler.tools import bz  # pylint: disable=E0611
+from art.test_handler.tools import bz
 
 logger = logging.getLogger(__name__)
 ISCSI = config.STORAGE_TYPE_ISCSI

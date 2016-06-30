@@ -11,7 +11,7 @@ import pytest
 from art.test_handler.exceptions import VMException
 from rhevmtests.virt import config
 from art.unittest_lib import VirtTest as TestCase
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms

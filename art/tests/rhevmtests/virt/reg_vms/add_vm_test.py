@@ -8,7 +8,7 @@ import pytest
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config
 import rhevmtests.virt.helper as helper
-from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
+from art.test_handler.tools import bz, polarion
 from art.unittest_lib import attr, VirtTest, testflow
 from rhevmtests.virt.reg_vms.fixtures import (
     basic_teardown_fixture

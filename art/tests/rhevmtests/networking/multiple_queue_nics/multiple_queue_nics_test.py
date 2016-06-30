@@ -16,7 +16,7 @@ from art.test_handler.exceptions import NetworkException
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 from rhevmtests.networking import config
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 
 logger = logging.getLogger("Multiple_Queues_Nics_Cases")
 HOST_NAME0 = None  # Fill in setup_module

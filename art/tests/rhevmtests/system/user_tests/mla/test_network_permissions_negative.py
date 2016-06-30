@@ -11,7 +11,7 @@ import logging
 from rhevmtests.system.user_tests.mla import config, common
 from rhevmtests.system.user_tests.mla.roles import role
 from art.unittest_lib import attr, CoreSystemTest as TestCase
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.tests_lib.low_level import (mla, networks, users, vms,
                                                templates)

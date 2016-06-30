@@ -8,7 +8,7 @@ from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_datacenters
 from art.rhevm_api.tests_lib.low_level import hosts, clusters, storagedomains
 from art.rhevm_api.utils.test_utils import wait_for_tasks
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 
 logger = logging.getLogger(__name__)
 

@@ -16,7 +16,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as mac_pool_conf
 import helper
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import bz, polarion  # pylint: disable=E0611
+from art.test_handler.tools import bz, polarion
 from art.unittest_lib import attr, testflow, NetworkTest
 from fixtures import (
     fixture_mac_pool_range_case_02, fixture_mac_pool_range_case_03,

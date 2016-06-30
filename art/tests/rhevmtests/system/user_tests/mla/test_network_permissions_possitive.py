@@ -11,7 +11,7 @@ import logging
 from rhevmtests.system.user_tests.mla import config, common
 from rhevmtests.system.user_tests.mla.roles import role
 from art.unittest_lib import attr
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 from art.core_api.apis_exceptions import EntityNotFound
 from test_network_permissions_negative import (
     ignoreAllExceptions, loginAsUser, loginAsAdmin, NetworkingNegative

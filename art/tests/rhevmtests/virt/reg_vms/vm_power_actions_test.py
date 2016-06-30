@@ -7,7 +7,7 @@
 import logging
 import time
 import pytest
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr, VirtTest, testflow
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.helpers as helper

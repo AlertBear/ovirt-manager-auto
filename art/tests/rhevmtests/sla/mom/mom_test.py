@@ -20,7 +20,7 @@ import config
 import logging
 import art.test_handler.exceptions as errors
 from art.test_handler import find_test_file
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters

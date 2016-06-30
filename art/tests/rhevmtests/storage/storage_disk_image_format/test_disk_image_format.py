@@ -6,7 +6,7 @@ Storage/3_2_Storage_Disk_Image_Format
 from concurrent.futures import ThreadPoolExecutor
 import logging
 import config
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     jobs as ll_jobs,

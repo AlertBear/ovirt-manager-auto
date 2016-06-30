@@ -9,7 +9,7 @@ import base
 import unittest_conf
 from utilities.rhevm_tools.setup import SetupUtility
 
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 
 logger = logging.getLogger(__name__)
 

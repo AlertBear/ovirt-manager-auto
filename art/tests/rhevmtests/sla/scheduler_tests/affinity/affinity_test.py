@@ -14,7 +14,7 @@ import art.test_handler.exceptions as errors
 import rhevmtests.helpers as rhevm_helpers
 import rhevmtests.sla.config as conf
 from art.rhevm_api.utils import test_utils
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import SlaTest as TestCase
 from art.unittest_lib import attr
 

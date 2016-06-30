@@ -6,7 +6,7 @@ Checks host deployment, updating and authentication methods
 from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.core_api.apis_exceptions import EntityNotFound
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import (
     attr,
     CoreSystemTest as TestCase,

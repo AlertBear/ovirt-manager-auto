@@ -14,7 +14,7 @@ from art.rhevm_api.utils import test_utils
 import rhevmtests.helpers as global_helper
 import art.unittest_lib.network as lib_network
 from art.unittest_lib import attr, NetworkTest
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 import rhevmtests.networking.helper as network_helper
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts

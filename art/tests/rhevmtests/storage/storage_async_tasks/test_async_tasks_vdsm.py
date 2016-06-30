@@ -5,7 +5,7 @@ from art.unittest_lib import StorageTest as TestCase, attr
 import time
 from threading import Thread
 from art.rhevm_api.utils import log_listener
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.low_level.vms import (
     validateSnapshot, removeSnapshot,
     addSnapshot, startVm, stop_vms_safely, waitForVMState, waitForVmsGone,

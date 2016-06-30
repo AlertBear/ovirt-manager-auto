@@ -4,7 +4,7 @@ Clone Vm From Snapshot
 import config
 import logging
 from art.unittest_lib.common import attr, StorageTest as TestCase
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     jobs as ll_jobs,

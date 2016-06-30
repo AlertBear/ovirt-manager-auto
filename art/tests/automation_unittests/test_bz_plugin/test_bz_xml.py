@@ -10,7 +10,7 @@ from nose.tools import istest
 
 from utilities.issuesdb import IssuesDB
 
-from art.test_handler.tools import bz as bzd  # pylint: disable=E0611
+from art.test_handler.tools import bz as bzd
 from art.test_handler.settings import initPlmanager
 
 from art.unittest_lib import BaseTestCase as TestCase

@@ -5,7 +5,7 @@ from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
 from art.rhevm_api.tests_lib.low_level.hosts import waitForSPM
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 from art.rhevm_api.tests_lib.low_level import hosts
 import art.rhevm_api.utils.storage_api as st_api
 

@@ -17,7 +17,7 @@ import art.unittest_lib as u_libs
 import config as conf
 import rhevmtests.helpers as rhevm_helper
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 
 logger = logging.getLogger(__name__)
 

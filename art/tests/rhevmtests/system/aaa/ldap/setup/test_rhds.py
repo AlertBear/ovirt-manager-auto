@@ -1,4 +1,4 @@
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 
 from rhevmtests.system.aaa.ldap.setup import base
 

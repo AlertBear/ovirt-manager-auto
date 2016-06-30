@@ -8,7 +8,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import base_class as base_c
 import config as conf
 import rhevmtests.sla.scheduler_tests.helpers as sch_helpers
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 
 logger = logging.getLogger(__name__)
 

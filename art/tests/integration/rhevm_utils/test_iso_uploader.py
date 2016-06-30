@@ -3,7 +3,7 @@ import sys
 from rhevm_utils import base, unittest_conf
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sds
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sds
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr
 from utilities.rhevm_tools.iso_uploader import ISOUploadUtility
 

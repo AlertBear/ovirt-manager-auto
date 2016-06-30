@@ -6,7 +6,7 @@ from base import RHEVMUtilsTestCase
 from utilities.rhevm_tools.cleanup import CleanUpUtility
 import os
 import logging
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 import unittest_conf
 
 logger = logging.getLogger(__name__)

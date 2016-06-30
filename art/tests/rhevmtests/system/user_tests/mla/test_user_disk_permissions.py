@@ -15,7 +15,7 @@ from rhevmtests.system.user_tests.mla import config, common
 from rhevmtests.system.user_tests.mla.roles import role
 from art.unittest_lib import attr, CoreSystemTest as TestCase
 
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 from art.rhevm_api.tests_lib.high_level import storagedomains
 from art.rhevm_api.tests_lib.high_level import disks as h_disks
 from art.rhevm_api.tests_lib.low_level import users, vms, disks, mla

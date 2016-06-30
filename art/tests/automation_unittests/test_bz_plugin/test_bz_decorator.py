@@ -7,7 +7,7 @@ Created on Aug 20, 2014
 import logging
 
 from nose.tools import istest
-from art.test_handler.tools import bz as bzd  # pylint: disable=E0611
+from art.test_handler.tools import bz as bzd
 
 from art.unittest_lib import BaseTestCase as TestCase
 from automation_unittests.verify_results import VerifyUnittestResults

@@ -17,7 +17,7 @@ import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import config as conf
 import helper
 from art.core_api import apis_exceptions
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, attr
 from fixtures import prepare_setup_case_08
 

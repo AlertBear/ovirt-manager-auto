@@ -19,7 +19,7 @@ import config as io_conf
 import helper
 import rhevmtests.networking.config as conf
 import rhevmtests.networking.helper as network_helper
-from art.test_handler.tools import polarion, bz  # pylint: disable=E0611
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import NetworkTest, attr, testflow
 from fixtures import(
     case_09_fixture, all_classes_teardown

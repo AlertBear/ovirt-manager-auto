@@ -16,7 +16,7 @@ import art.rhevm_api.tests_lib.low_level.datacenters as dcs
 from art.rhevm_api.utils.test_utils import get_api
 import art.test_handler.exceptions as errors
 from art.test_handler.settings import opts
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from random import choice
 from rhevmtests.virt import config
 from art.unittest_lib import attr

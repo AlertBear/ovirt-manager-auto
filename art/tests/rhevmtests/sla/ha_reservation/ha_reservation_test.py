@@ -11,7 +11,7 @@ Tests covers:
 
 import logging
 from time import sleep
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import SlaTest as TestCase, attr
 import art.test_handler.exceptions as errors
 from rhevmtests.sla.ha_reservation import config

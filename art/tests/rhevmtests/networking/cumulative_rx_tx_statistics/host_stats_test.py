@@ -12,7 +12,7 @@ import pytest
 
 import helper
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import rx_tx_stat_host_case02, rx_tx_stat_host_setup_class
 

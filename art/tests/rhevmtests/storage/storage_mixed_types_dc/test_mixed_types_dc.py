@@ -21,7 +21,7 @@ from art.rhevm_api.utils import test_utils
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 import rhevmtests.storage.helpers as storage_helpers
 from art.test_handler.settings import opts
 

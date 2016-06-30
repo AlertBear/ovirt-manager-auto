@@ -9,7 +9,7 @@ __test__ = True
 from art.rhevm_api.tests_lib.low_level import hooks, vms, networks
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils import test_utils
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from utilities.enum import Enum
 from art.unittest_lib import attr
 from art.unittest_lib import CoreSystemTest as TestCase

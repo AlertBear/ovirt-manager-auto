@@ -23,7 +23,7 @@ from rhevmtests.storage import helpers as storage_helpers
 from art.unittest_lib import StorageTest as BaseTestCase
 from art.unittest_lib import attr
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from utilities.machine import Machine, LINUX
 
 logger = logging.getLogger(__name__)

@@ -13,7 +13,7 @@ import config as conf
 import helper
 import rhevmtests.networking.config as net_conf
 import rhevmtests.networking.helper as network_helper
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import (
     sync_case_01, sync_case_02, sync_case_03, sync_case_04, sync_case_05,

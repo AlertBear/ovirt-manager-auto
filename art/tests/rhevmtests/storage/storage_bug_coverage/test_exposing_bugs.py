@@ -18,7 +18,7 @@ from art.rhevm_api.tests_lib.low_level import (
     templates as ll_templates,
     vms as ll_vms,
 )
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 import art.test_handler.exceptions as exceptions
 from rhevmtests.storage import helpers as storage_helpers
 from utilities.machine import Machine

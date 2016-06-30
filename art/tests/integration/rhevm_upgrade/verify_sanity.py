@@ -7,7 +7,7 @@ import logging
 from art.rhevm_api.tests_lib.high_level.datacenters import clean_datacenter
 from art.rhevm_api.tests_lib.low_level.vms import removeVm, checkVMConnectivity
 from art.test_handler.exceptions import VMException
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import CoreSystemTest as TestCase
 from art.unittest_lib import attr
 from art.rhevm_api.utils.test_utils import get_api

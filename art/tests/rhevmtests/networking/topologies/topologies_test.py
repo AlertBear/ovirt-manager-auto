@@ -13,7 +13,7 @@ import pytest
 import config as topologies_conf
 import helper
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import attach_network_and_update_vnic, attach_bond
 

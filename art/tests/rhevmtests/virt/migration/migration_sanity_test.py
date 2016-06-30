@@ -9,7 +9,7 @@ import pytest
 import logging
 from art.unittest_lib import common
 from art.test_handler import exceptions
-from art.test_handler.tools import polarion  # pylint: disable=E0611
+from art.test_handler.tools import polarion
 import art.unittest_lib.network as network_lib
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
