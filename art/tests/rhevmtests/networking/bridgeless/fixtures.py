@@ -9,13 +9,11 @@ import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import rhevmtests.networking.config as conf
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, network_cleanup_fixture
-)  # flake8: noqa
+from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="class")
-def case_01_fixture(request, network_cleanup_fixture):
+def case_01_fixture(request):
     """
     Prepare setup
     """

@@ -8,8 +8,6 @@ Bridgeless (Non-VM) Network will be tested for untagged, tagged,
 bond scenarios.
 """
 
-import logging
-
 import pytest
 
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
@@ -17,8 +15,6 @@ import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion
 from art.unittest_lib import attr, NetworkTest, testflow
 from fixtures import case_01_fixture
-
-logger = logging.getLogger("Bridgeless_Networks_Cases")
 
 
 @attr(tier=2)
