@@ -349,7 +349,7 @@ class TestCase6038(BasicEnvironment):
         )
 
 
-@attr(tier=1)
+@attr(tier=2)
 class TestCase6052(BasicEnvironment):
     """
     Basic live delete and merge of snapshots with continuous I/O
