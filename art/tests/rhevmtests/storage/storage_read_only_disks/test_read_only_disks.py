@@ -36,9 +36,23 @@ DISK_NAMES = helpers.DISK_NAMES
 READ_ONLY = 'Read-only'
 NOT_PERMITTED = 'Operation not permitted'
 
-not_bootable = lambda d: (not d.get_bootable()) and (d.get_active())
 ISCSI = config.STORAGE_TYPE_ISCSI
 NFS = config.STORAGE_TYPE_NFS
+
+
+def not_bootable(vm_name):
+    """
+    Get the vm's disks except the bootable disk
+
+    :param vm_name: Name of vm
+    :type vm_name: str
+    :return: List of disk objects
+    :rtype: list
+    """
+    return [
+        disk for disk in ll_vms.getVmDisks(vm_name) if not
+        ll_vms.is_bootable_disk(vm_name, disk.get_id()) and disk.get_active()
+    ]
 
 
 class BaseTestCase(TestCase):
@@ -94,7 +108,7 @@ class BaseTestCase(TestCase):
         :raises: DiskException
         """
         snap_disks = ll_vms.get_snapshot_disks(vm_name, snapshot)
-        ro_vm_disks = filter(not_bootable, ll_vms.getVmDisks(vm_name))
+        ro_vm_disks = not_bootable(vm_name)
         for ro_disk in ro_vm_disks:
             logger.info(
                 "Check that read-only disk %s is part of the snapshot",
@@ -357,11 +371,8 @@ class TestCase4909(DefaultEnvironment):
         - Check that the disk is still read-only for the second VM
         """
         self.prepare_disks_for_vm(read_only=True, vm_name=self.test_vm_name)
-        ro_vm_disks = filter(
-            not_bootable, ll_vms.getVmDisks(self.test_vm_name)
-        )
-
-        rw_vm_disks = filter(not_bootable, ll_vms.getVmDisks(self.vm_name))
+        ro_vm_disks = not_bootable(self.test_vm_name)
+        rw_vm_disks = not_bootable(self.vm_name)
 
         for ro_disk, rw_disk in zip(ro_vm_disks, rw_vm_disks):
             logger.info(
@@ -378,10 +389,8 @@ class TestCase4909(DefaultEnvironment):
         assert ll_vms.addSnapshot(
             True, self.vm_name, self.snapshot_description
         )
-        ro_vm_disks = filter(
-            not_bootable, ll_vms.getVmDisks(self.test_vm_name)
-        )
-        rw_vm_disks = filter(not_bootable, ll_vms.getVmDisks(self.vm_name))
+        ro_vm_disks = not_bootable(self.test_vm_name)
+        rw_vm_disks = not_bootable(self.vm_name)
 
         for ro_disk, rw_disk in zip(ro_vm_disks, rw_vm_disks):
             logger.info(
@@ -627,7 +636,7 @@ class TestCase4914(DefaultEnvironment):
         self.prepare_disks_for_vm(read_only=True)
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=False)
         assert ll_vms.waitForVMState(self.vm_name)
-        vm_disks = filter(not_bootable, ll_vms.getVmDisks(self.vm_name))
+        vm_disks = not_bootable(self.vm_name)
         for ro_disk in vm_disks:
             logger.info(
                 'check if disk %s is visible as read-only to vm %s'
@@ -642,7 +651,7 @@ class TestCase4914(DefaultEnvironment):
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=False)
         assert ll_vms.waitForVMState(self.vm_name)
         self.is_migrated = ll_vms.migrateVm(True, self.vm_name)
-        vm_disks = filter(not_bootable, ll_vms.getVmDisks(self.vm_name))
+        vm_disks = not_bootable(self.vm_name)
         for ro_disk in vm_disks:
             logger.info(
                 'check if disk %s is still visible as read-only to vm %s'
@@ -1064,7 +1073,7 @@ class TestCase4922(DefaultEnvironment):
 
         self.assertTrue(status, "Failed to clone vm from snapshot")
         ll_vms.start_vms([self.cloned_vm_name], 1, wait_for_ip=True)
-        ro_vm_disks = filter(not_bootable, ll_vms.getVmDisks(self.vm_name))
+        ro_vm_disks = not_bootable(self.vm_name)
         for disk in ro_vm_disks:
             state, out = storage_helpers.perform_dd_to_disk(
                 self.cloned_vm_name, disk.get_alias(),
@@ -1144,8 +1153,10 @@ class TestCase4923(DefaultEnvironment):
         ll_vms.start_vms(self.cloned_vms, 2, wait_for_ip=True)
         for vm in self.cloned_vms:
             cloned_vm_disks = ll_vms.getVmDisks(vm)
-            cloned_vm_disks = [disk for disk in cloned_vm_disks if
-                               (not disk.get_bootable())]
+            cloned_vm_disks = [
+                disk for disk in cloned_vm_disks if not
+                ll_vms.is_bootable_disk(vm, disk.get_id())
+            ]
 
             for disk in cloned_vm_disks:
                 logger.info(
@@ -1215,7 +1226,7 @@ class TestCase4924(DefaultEnvironment):
           while disk is unplugged and read-only
         """
         self.prepare_disks_for_vm(read_only=True)
-        ro_vm_disks = filter(not_bootable, ll_vms.getVmDisks(self.vm_name))
+        ro_vm_disks = not_bootable(self.vm_name)
         logger.info("VM disks: %s", [d.get_alias() for d in ro_vm_disks])
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
         for disk in ro_vm_disks:
@@ -1284,7 +1295,7 @@ class TestCase4925(DefaultEnvironment):
         """
         assert self.prepare_disks_for_vm(read_only=True)
 
-        ro_vm_disks = filter(not_bootable, ll_vms.getVmDisks(self.vm_name))
+        ro_vm_disks = not_bootable(self.vm_name)
         logger.info("VM disks: %s", [d.get_alias() for d in ro_vm_disks])
 
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=False)
@@ -1363,7 +1374,10 @@ class TestCase4926(DefaultEnvironment):
         assert self.prepare_disks_for_vm(read_only=True)
 
         vm_disks = ll_vms.getVmDisks(self.vm_name)
-        ro_vm_disks = [d for d in vm_disks if (not d.get_bootable())]
+        ro_vm_disks = [
+            disk for disk in vm_disks if not
+            ll_vms.is_bootable_disk(self.vm_name, disk.get_id())
+        ]
 
         logger.info("VM disks: %s", [d.get_alias() for d in ro_vm_disks])
 
@@ -1407,7 +1421,11 @@ class TestCase4930(DefaultEnvironment):
         logger.info("qemu process killed")
         ll_vms.start_vms([self.vm_name], 1, wait_for_ip=True)
         ro_vm_disks = ll_vms.getVmDisks(self.vm_name)
-        ro_vm_disks = [d for d in ro_vm_disks if (not d.get_bootable())]
+        ro_vm_disks = [
+            d for d in ro_vm_disks if not ll_vms.is_bootable_disk(
+                self.vm_name, d.get_id()
+            )
+        ]
         logger.info("VM disks: %s", [d.get_alias() for d in ro_vm_disks])
         for disk in ro_vm_disks:
             state, out = storage_helpers.perform_dd_to_disk(

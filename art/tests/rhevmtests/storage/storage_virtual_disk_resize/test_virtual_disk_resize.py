@@ -234,8 +234,10 @@ class BasicResize(BaseClass):
         ll_hosts.waitForHostsStates(True, self.host)
 
         disks_objs = ll_vms.getVmDisks(self.vm_name)
-        disk_obj = [disk_obj for disk_obj in disks_objs if
-                    (not disk_obj.get_bootable())][0]
+        disk_obj = [
+            disk_obj for disk_obj in disks_objs if not
+            ll_vms.is_bootable_disk(self.vm_name, disk_obj.get_id())
+        ][0]
         datacenter_obj = ll_dcs.get_data_center(config.DATA_CENTER_NAME)
 
         logger.info("Getting volume size")
@@ -400,7 +402,8 @@ class TestCase5060(DisksPermutationEnvironment):
         ll_vms.waitForVMState(self.vm_name)
         vm_disks = ll_vms.getVmDisks(self.vm_name)
         disks_sizes = [
-            disk.get_size() for disk in vm_disks if (not disk.get_bootable())
+            disk.get_size() for disk in vm_disks if not
+            ll_vms.is_bootable_disk(self.vm_name, disk.get_id())
         ]
         for size in disks_sizes:
             self.assertTrue(
@@ -740,8 +743,10 @@ class TestCase5071(BasicResize):
         logger.info("Getting volume size")
 
         disks_objs = ll_vms.getVmDisks(self.vm_name)
-        disk_obj = [disk_obj for disk_obj in disks_objs if
-                    (not disk_obj.get_bootable())][0]
+        disk_obj = [
+            disk_obj for disk_obj in disks_objs if not
+            ll_vms.is_bootable_disk(self.vm_name, disk_obj.get_id())
+        ][0]
         datacenter_obj = ll_dcs.get_data_center(config.DATA_CENTER_NAME)
 
         lv_size = helpers.get_volume_size(

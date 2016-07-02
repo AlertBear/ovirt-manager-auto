@@ -144,7 +144,7 @@ class TestCase11909(TestCase):
         """
         disks = ll_vms.getVmDisks(self.vm_name)
         assert len(disks) == 1
-        assert disks[0].get_bootable()
+        assert ll_vms.is_bootable_disk(self.vm_name, disks[0].get_id())
 
         # Could add a non bootable disk
         logger.info("Adding a new non bootable disk works")
@@ -156,7 +156,10 @@ class TestCase11909(TestCase):
 
         disks = ll_vms.getVmDisks(self.vm_name)
         assert len(disks) == self.expected_disk_number
-        assert False in [disk.get_bootable() for disk in disks]
+        assert False in [
+            ll_vms.is_bootable_disk(self.vm_name, disk.get_id()) for disk in
+            disks
+        ]
 
         logger.info("Adding a second bootable disk to vm %s should fail",
                     self.vm_name)

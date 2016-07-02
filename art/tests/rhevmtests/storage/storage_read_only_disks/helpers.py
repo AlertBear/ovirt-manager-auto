@@ -19,8 +19,6 @@ DISK_NAMES = dict()  # dictionary with storage type as key
 READ_ONLY = 'Read-only'
 NOT_PERMITTED = 'Operation not permitted'
 
-not_bootable = lambda disk: not disk.get_bootable() and disk.get_active()
-
 
 def write_on_vms_ro_disks(vm_name, storage_type, imported_vm=False):
     """
@@ -31,7 +29,10 @@ def write_on_vms_ro_disks(vm_name, storage_type, imported_vm=False):
         * storage_type - storage domain type
         * imported_vm - True if the vm is imported
     """
-    vm_disks = filter(not_bootable, ll_vms.getVmDisks(vm_name))
+    vm_disks = [
+        disk for disk in ll_vms.getVmDisks(vm_name) if not
+        ll_vms.is_bootable_disk(vm_name, disk.get_id()) and disk.get_active()
+    ]
     if imported_vm:
         global DISK_NAMES
         DISK_NAMES[storage_type] = [disk.get_alias() for disk in vm_disks]

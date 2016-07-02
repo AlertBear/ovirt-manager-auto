@@ -174,8 +174,10 @@ class TestCase5116(CommonUsage):
             alias=config.DISK_ALIAS
         )
 
-        self.disk_id = [d.get_id() for d in ll_vms.getVmDisks(self.vm_name) if
-                        not d.get_bootable()][0]
+        self.disk_id = [
+            d.get_id() for d in ll_vms.getVmDisks(self.vm_name) if not
+            ll_vms.is_bootable_disk(self.vm, d.get_id())
+        ][0]
 
         assert ll_vms.updateVmDisk(
             True, self.vm_name, config.DISK_ALIAS, disk_id=self.disk_id,

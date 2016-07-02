@@ -32,7 +32,8 @@ from art.core_api.apis_utils import data_st, TimeoutingSampler, getDS
 from art.rhevm_api.tests_lib.high_level.disks import delete_disks
 from art.rhevm_api.tests_lib.low_level.disks import (
     _prepareDiskObject, getVmDisk, getObjDisks, get_other_storage_domain,
-    wait_for_disks_status, get_disk_storage_domain_name,
+    wait_for_disks_status, get_disk_storage_domain_name, get_disk_obj,
+    deleteDisk,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.networks import get_vnic_profile_obj
@@ -1326,7 +1327,7 @@ def addDisk(positive, vm, provisioned_size, wait=True, storagedomain=None,
 
 def removeDisk(positive, vm, disk=None, wait=True, disk_id=None):
     """
-    Remove disk from vm
+    Detach disk from vm and remove it
 
     __Author__ = 'ratamir'
     :param positive: Determines whether the case is positive or negative
@@ -1340,7 +1341,8 @@ def removeDisk(positive, vm, disk=None, wait=True, disk_id=None):
     :type wait: bool
     :param disk_id: ID of the disk that should be removed
     :type disk_id: str
-    :return: True if disk was removed successfully, False otherwise
+    :return: True if disk was detached and removed successfully,
+    False otherwise
     :rtype: bool
     """
     def does_disk_exist(disk_list):
@@ -1354,7 +1356,9 @@ def removeDisk(positive, vm, disk=None, wait=True, disk_id=None):
         return None
     disk_obj = does_disk_exist(getVmDisks(vm))
     if disk_obj:
-        status = VM_API.delete(disk_obj, positive)
+        status = VM_API.delete(disk_obj, positive) and deleteDisk(
+            positive=positive, disk_id=disk_obj.get_id()
+        )
     else:
         logger.error("Disk %s not found in vm %s", disk, vm)
         return False
@@ -4845,8 +4849,10 @@ def get_vm_bootable_disk(vm):
     Return: name of the bootable disk or None if no boot disk exist
     """
     vm_disks = getVmDisks(vm)
-    boot_disk = [d for d in vm_disks if d.get_bootable()][0].get_alias()
-    return boot_disk
+    boot_disk = [d for d in vm_disks if is_bootable_disk(vm, d.get_id())]
+    if boot_disk:
+        return boot_disk[0].get_alias()
+    return None
 
 
 def verify_write_operation_to_disk(vm_name, user_name, password,
@@ -5824,3 +5830,51 @@ def get_all_vms():
         list: VM objects
     """
     return VM_API.get(absLink=False)
+
+
+def get_vm_disk_attachments(vm, disk=None, attr='id'):
+    """
+    Return disk attachments list of objects or the specific disk attachment
+    object in case disk is specified
+
+    :param vm: Name of vm
+    :type : str
+    :param disk: Disk name or ID
+    :type : str
+    :param attr: Attribute to identify the disk, 'id' or 'name'
+    :type: str
+    :returns: List of disk attachment objects or a list of a single disk
+    attachment object if disk parameter is specified
+    :rtype: list
+    """
+
+    vm_obj = VM_API.find(vm)
+    disk_list = VM_API.getElemFromLink(
+        vm_obj, link_name='diskattachments', attr='disk_attachment',
+        get_href=False
+    )
+    if disk:
+        disk_id = get_disk_obj(disk).get_id() if attr == 'name' else disk
+        return [
+            disk_attach for disk_attach in disk_list if
+            disk_attach.get_id() == disk_id
+        ]
+    return disk_list
+
+
+def is_bootable_disk(vm, disk, attr='id'):
+    """
+    Gets the disk bootable flag
+
+    :param vm: Name of vm
+    :type : str
+    :param disk: Disk name or ID
+    :type : str
+    :param attr: Attribute to identify the disk, 'id' or 'name'
+    :type: str
+    :return: True in case the disk is bootable, False otherwise
+    :rtype: bool
+    """
+    vm_disks = get_vm_disk_attachments(vm, disk, attr)
+    if vm_disks:
+        return vm_disks[0].get_bootable()

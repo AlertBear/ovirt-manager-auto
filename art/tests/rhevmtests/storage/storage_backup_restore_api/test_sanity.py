@@ -769,7 +769,9 @@ class TestCase6169(BaseTestCase):
 
         disk_objects = ll_vms.getVmDisks(self.backup_vm)
         disk_to_detach = [
-            d.get_alias() for d in disk_objects if not d.get_bootable()
+            d.get_alias() for d in disk_objects if not ll_vms.is_bootable_disk(
+                self.backup_vm, d.get_id()
+            )
         ][0]
         self.assertTrue(
             ll_disks.detachDisk(

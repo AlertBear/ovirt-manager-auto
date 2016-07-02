@@ -404,21 +404,21 @@ def attachDisk(
     return DISKS_API.create(updated_disk, positive, collection=vm_disks)[1]
 
 
-def detachDisk(positive, alias, vmName, detach=True):
+def detachDisk(positive, alias, vmName):
     """
-    Description: Detach disk from VM
-    Parameters:
-        * alias - disk to detach
-        * vmName - vm from which disk will be detached
-    Author: jlibosva
-    Return: Status of the operation dependent on positive value
-    Exceptions: EntityNotFound when disk is not found
-    """
-    diskObj = getVmDisk(vmName, alias)
-    body = data_st.Action(detach=detach)
+    Detach disk from VM
 
-    return DISKS_API.delete(
-        diskObj, positive, body=body, element_name='action')
+    :param positive: Specifies whether the detach disk call should succeed
+    (positive=True) or fail (positive=False)
+    :type positive: bool
+    :param alias: Disk to detach
+    :type alias: str
+    :param vmName: VM from which disk will be detached
+    :type vmName: str
+    :returns: True/False of the operation dependent on positive value
+    """
+    disk_object = getVmDisk(vmName, alias)
+    return DISKS_API.delete(disk_object, positive, element_name='action')
 
 
 def wait_for_disks_status(disks, key='name', status=ENUMS['disk_state_ok'],

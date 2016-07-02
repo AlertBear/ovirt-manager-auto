@@ -728,7 +728,8 @@ class TestCase6062(BasicEnvironment):
         self.basic_flow()
         vm_disks = ll_vms.getVmDisks(self.vm_name)
         vm_disk_aliases = [
-            disk.get_alias() for disk in vm_disks if not disk.get_bootable()
+            disk.get_alias() for disk in vm_disks if not
+            ll_vms.is_bootable_disk(self.vm_name, disk.get_id())
         ]
         self.disk_to_migrate = vm_disk_aliases[0]
         target_sd = ll_disks.get_other_storage_domain(

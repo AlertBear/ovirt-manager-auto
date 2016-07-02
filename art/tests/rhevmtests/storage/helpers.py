@@ -223,8 +223,10 @@ def perform_dd_to_disk(
     ).util(LINUX)
     vm_disks = ll_vms.getVmDisks(vm_name)
     boot_disk = [
-        disk.get_id() for disk in vm_disks if disk.get_bootable()
-        ][0]
+        disk.get_id() for disk in vm_disks if ll_vms.is_bootable_disk(
+            vm_name, disk.get_id()
+        )
+    ][0]
     boot_device = ll_vms.get_vm_disk_logical_name(
         vm_name, boot_disk, key='id'
     )

@@ -725,7 +725,7 @@ class TestCase6231(BasePlugDiskTest):
             logger.info("Adding 2 disks to VM %s", vm_name)
             disk_args = {
                 'positive': True,
-                'size': 1 * config.GB,
+                'provisioned_size': 1 * config.GB,
                 'sparse': True,
                 'wipe_after_delete': self.storage in config.BLOCK_TYPES,
                 'storagedomain': self.storage_domain,
@@ -759,18 +759,22 @@ class TestCase6231(BasePlugDiskTest):
     def test_activate_deactivate_disk(self):
         """ Activate an already attached disk on a running VM """
         for vm in self.vm_names:
-            inactive_disks = [disk for disk in ll_vms.getVmDisks(vm)
-                              if not disk.get_bootable() and
-                              not disk.get_active()]
+            inactive_disks = [
+                disk for disk in ll_vms.getVmDisks(vm) if not
+                ll_vms.is_bootable_disk(vm, disk.get_id()) and not
+                disk.get_active()
+            ]
             disk_name = inactive_disks[0].get_name()
             logger.info("Activating disk %s on VM %s", disk_name, vm)
             status = ll_vms.activateVmDisk(True, vm, disk_name)
             logger.info("Finished activating disk %s", disk_name)
             self.assertTrue(status)
 
-            active_disks = [disk for disk in ll_vms.getVmDisks(vm)
-                            if not disk.get_bootable() and
-                            disk.get_active()]
+            active_disks = [
+                disk for disk in ll_vms.getVmDisks(vm) if not
+                ll_vms.is_bootable_disk(vm, disk.get_id()) and
+                disk.get_active()
+            ]
             disk_name = active_disks[0].get_name()
             logger.info("Deactivating disk %s on VM %s", disk_name, vm)
             status = ll_vms.deactivateVmDisk(True, vm, disk_name)
@@ -977,9 +981,11 @@ class TestCase6230(TestCase):
             )
 
         for vm in self.vm_names:
-            active_disks = [disk for disk in ll_vms.getVmDisks(vm)
-                            if not disk.get_bootable() and
-                            disk.get_active()]
+            active_disks = [
+                disk for disk in ll_vms.getVmDisks(vm) if not
+                ll_vms.is_bootable_disk(vm, disk.get_id()) and
+                disk.get_active()
+            ]
             if len(active_disks) > 0:
                 disk_name = active_disks[0].get_name()
                 logger.info("Deactivating disk %s on VM %s", disk_name, vm)
@@ -992,9 +998,11 @@ class TestCase6230(TestCase):
         )
 
         for vm in self.vm_names:
-            inactive_disks = [disk for disk in ll_vms.getVmDisks(vm)
-                              if not disk.get_bootable() and
-                              not disk.get_active()]
+            inactive_disks = [
+                disk for disk in ll_vms.getVmDisks(vm) if not
+                ll_vms.is_bootable_disk(vm, disk.get_id()) and not
+                disk.get_active()
+            ]
             if len(inactive_disks) > 0:
                 for disk in inactive_disks:
                     disk_name = disk.get_name()

@@ -545,10 +545,7 @@ def removeStorageDomain(positive, storagedomain, host, format='false',
     util.logger.info("Removing storage domain %s", storagedomain)
 
     storDomObj = get_storage_domain_obj(storagedomain)
-    hostObj = hostUtil.find(host)
-
-    stHost = Host(id=hostObj.get_id())
-    storDomObj.href += ";host=%s" % stHost.get_name()
+    storDomObj.href += ";host=%s" % host
 
     if destroy:
         storDomObj.href += ";destroy=true"
