@@ -5,7 +5,6 @@
 Testing network host QoS feature.
 Create, update and remove tests will be done for network host QoS feature
 """
-import logging
 
 import pytest
 
@@ -23,8 +22,6 @@ from fixtures import (
     fixture_case_09, fixture_case_10, fixture_case_11
 )
 
-logger = logging.getLogger("Network_Host_QoS_Tests")
-
 
 @attr(tier=2)
 @pytest.mark.usefixtures(fixture_case_01.__name__)
@@ -40,7 +37,7 @@ class TestHostNetQOSCase01(NetworkTest):
     @bz({"1329224": {}})
     def test_01_remove_anonymous_qos_for_network_on_host_nic(self):
         """
-        Negative: Remove QoS from the first network
+        Remove QoS from the first network
         """
         network_host_api_dict_1 = {
             "update": {
@@ -53,10 +50,9 @@ class TestHostNetQOSCase01(NetworkTest):
         }
 
         testflow.step(
-            "Negative: Try to remove QoS from %s on %s",
-            self.nets[0], net_conf.HOST_0_NICS[1]
+            "Remove QoS from %s on %s", self.nets[0], net_conf.HOST_0_NICS[1]
         )
-        self.assertFalse(
+        self.assertTrue(
             hl_host_network.setup_networks(
                 host_name=net_conf.HOST_0_NAME, **network_host_api_dict_1
             )
@@ -71,11 +67,6 @@ class TestHostNetQOSCase01(NetworkTest):
         network_host_api_dict_2 = {
             "update": {
                 "1": {
-                    "network": self.nets[0],
-                    "nic": net_conf.HOST_0_NICS[1],
-                    "qos": {"type_": conf.HOST_NET_QOS_TYPE}
-                },
-                "2": {
                     "network": self.nets[1],
                     "nic": net_conf.HOST_0_NICS[1],
                     "qos": {"type_": conf.HOST_NET_QOS_TYPE}
@@ -83,9 +74,7 @@ class TestHostNetQOSCase01(NetworkTest):
             }
         }
 
-        testflow.step(
-            "Positive: Remove QoS from both networks on the same NIC"
-        )
+        testflow.step("Positive: Remove QoS from network")
         self.assertTrue(
             hl_host_network.setup_networks(
                 host_name=net_conf.HOST_0_NAME, **network_host_api_dict_2
