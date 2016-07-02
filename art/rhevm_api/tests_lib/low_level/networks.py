@@ -550,6 +550,7 @@ def get_vnic_profile_attr(
             custom_properties
             network_obj
             name
+            network_filter
 
     Returns:
         dict: Returns the dictionary of VNIC profile attributes
@@ -562,8 +563,21 @@ def get_vnic_profile_attr(
     for arg in attr_list:
         if arg == "network_obj":
             arg = "network"
+
         arg_val = getattr(vnic_profile_obj, arg)
-        attr_dict[arg] = arg_val.name if hasattr(arg_val, 'name') else arg_val
+        if arg == "network_filter":
+            if hasattr(arg_val, "id"):
+                network_filter_id = getattr(arg_val, "id")
+
+                all_network_filters = get_supported_network_filters()
+                network_filter_name = [
+                    x for x, y in all_network_filters.iteritems() if y.id ==
+                    network_filter_id
+                ]
+                if network_filter_name:
+                    arg_val = network_filter_name[0]
+
+        attr_dict[arg] = arg_val.name if hasattr(arg_val, "name") else arg_val
     return attr_dict
 
 

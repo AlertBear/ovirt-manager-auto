@@ -6,20 +6,19 @@ Fixtures for network filter
 """
 
 import pytest
-from rhevmtests import networking
+
+import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as nf_conf
 import rhevmtests.networking.config as conf
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-from rhevmtests.networking.fixtures import (
-    NetworkFixtures, network_cleanup_fixture
-)  # flake8: noqa
+from rhevmtests import networking
+from rhevmtests.networking.fixtures import NetworkFixtures
 
 
 @pytest.fixture(scope="module")
-def network_filter_prepare_setup(request, network_cleanup_fixture):
+def network_filter_prepare_setup(request):
     """
     Prepare setup
     """
@@ -41,85 +40,7 @@ def network_filter_prepare_setup(request, network_cleanup_fixture):
 
 
 @pytest.fixture(scope="class")
-def case_03_fixture(request, network_filter_prepare_setup):
-    """
-    Start VM
-    """
-    network_filter = NetworkFixtures()
-    vm = request.node.cls.vm
-    net = request.node.cls.net
-    nic1 = request.node.cls.nic1
-
-    def fin4():
-        """
-        Clean host interfaces
-        """
-        hl_host_network.clean_host_interfaces(
-            host_name=network_filter.host_0_name
-        )
-    request.addfinalizer(fin4)
-
-    def fin3():
-        """
-        Update vNIC profile with default network filter
-        """
-        ll_networks.update_vnic_profile(
-            name=net, network=net, network_filter=conf.VDSM_NO_MAC_SPOOFING
-        )
-    request.addfinalizer(fin3)
-
-    def fin2():
-        """
-        Remove vNIC from VM
-        """
-        ll_vms.removeNic(positive=True, vm=vm, nic=nic1)
-    request.addfinalizer(fin2)
-
-    def fin1():
-        """
-        Stop VM
-        """
-        network_filter.stop_vm(positive=True, vm=vm)
-    request.addfinalizer(fin1)
-
-    sn_dict = {
-        "add": {
-            "1": {
-                "network": net,
-                "nic": network_filter.host_0_nics[1]
-            }
-        }
-    }
-    assert hl_host_network.setup_networks(
-        host_name=network_filter.host_0_name, **sn_dict
-    )
-    assert network_filter.run_vm_once_specific_host(
-        vm=vm, host=network_filter.host_0_name,
-        wait_for_up_status=True
-    )
-
-
-@pytest.fixture(scope="class")
-def case_04_fixture(request, network_filter_prepare_setup):
-    """
-    Add NIC to VM
-    """
-    vm = request.node.cls.vm
-    nic = request.node.cls.nic1
-    net = request.node.cls.net
-
-    def fin():
-        """
-        Remove NIC from VM
-        """
-        ll_vms.removeNic(positive=True, vm=vm, nic=nic)
-    request.addfinalizer(fin)
-
-    assert ll_vms.addNic(positive=True, vm=vm, name=nic, network=net)
-
-
-@pytest.fixture(scope="class")
-def case_05_fixture(request, network_cleanup_fixture):
+def remove_vnic_profiles(request):
     """
     Remove vNIC profiles
     """
@@ -133,7 +54,7 @@ def case_05_fixture(request, network_cleanup_fixture):
 
 
 @pytest.fixture(scope="class")
-def case_06_fixture(request, network_cleanup_fixture):
+def create_dc_cluster(request):
     """
     Create old version(3.6) of DC/Cluster
     """
@@ -151,3 +72,101 @@ def case_06_fixture(request, network_cleanup_fixture):
         datacenter=ext_dc, cluster=ext_cl, storage_type=conf.STORAGE_TYPE,
         version=conf.COMP_VERSION_4_0[0], cpu=conf.CPU_NAME
     )
+
+
+@pytest.fixture(scope="class")
+def attach_network_to_host(request):
+    """
+    Attach network to host NIC
+    """
+    network_filter = NetworkFixtures()
+    net = request.node.cls.net
+
+    def fin():
+        """
+        Clean host interfaces
+        """
+        hl_host_network.clean_host_interfaces(
+            host_name=network_filter.host_0_name
+        )
+    request.addfinalizer(fin)
+
+    sn_dict = {
+        "add": {
+            "1": {
+                "network": net,
+                "nic": network_filter.host_0_nics[1]
+            }
+        }
+    }
+    assert hl_host_network.setup_networks(
+        host_name=network_filter.host_0_name, **sn_dict
+    )
+
+
+@pytest.fixture(scope="class")
+def start_vm(request):
+    """
+    Start VM
+    """
+    network_filter = NetworkFixtures()
+    vm = request.node.cls.vm
+
+    def fin1():
+        """
+        Stop VM
+        """
+        network_filter.stop_vm(positive=True, vm=vm)
+    request.addfinalizer(fin1)
+
+    assert network_filter.run_vm_once_specific_host(
+        vm=vm, host=network_filter.host_0_name,
+        wait_for_up_status=True
+    )
+
+
+@pytest.fixture(scope="class")
+def restore_vnic_profile_filter(request):
+    """
+    Restore vNIC profile network filter
+    """
+    NetworkFixtures()
+    net = request.node.cls.net
+
+    def fin():
+        """
+        Update vNIC profile with default network filter
+        """
+        ll_networks.update_vnic_profile(
+            name=net, network=net, network_filter=conf.VDSM_NO_MAC_SPOOFING
+        )
+        request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="class")
+def remove_vnic_from_vm(request):
+    """
+    Remove vNIC from VM
+    """
+    NetworkFixtures()
+    vm = request.node.cls.vm
+    nic1 = request.node.cls.nic1
+
+    def fin():
+        """
+        Remove vNIC from VM
+        """
+        ll_vms.removeNic(positive=True, vm=vm, nic=nic1)
+    request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="class")
+def add_vnic_to_vm(request):
+    """
+    Add vNIC to VM
+    """
+    NetworkFixtures()
+    vm = request.node.cls.vm
+    nic1 = request.node.cls.nic1
+    net = request.node.cls.net
+    assert ll_vms.addNic(positive=True, vm=vm, name=nic1, network=net)

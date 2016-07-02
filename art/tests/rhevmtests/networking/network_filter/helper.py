@@ -26,7 +26,6 @@ def add_update_vnic_profile_and_check_filter(
         bool: True if add/update succeed and filter applied, False otherwise
     """
     before_nf_res = None
-    nf_attr_dict = None
     if action == "add":
         if not ll_networks.add_vnic_profile(
             positive=True, name=vnic_profile, network=conf.MGMT_BRIDGE,
@@ -41,7 +40,7 @@ def add_update_vnic_profile_and_check_filter(
                 attr_list=[nf_conf.NETWORK_FILTER_STR], data_center=datacenter
             )
 
-        before_nf_res = nf_attr_dict[nf_conf.NETWORK_FILTER_STR]
+            before_nf_res = nf_attr_dict[nf_conf.NETWORK_FILTER_STR]
         if not ll_networks.update_vnic_profile(
             positive=True, name=vnic_profile, network=conf.MGMT_BRIDGE,
             data_center=datacenter, network_filter=network_filter

@@ -16,11 +16,12 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as nf_conf
 import helper
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, testflow, attr
 from fixtures import (
-    network_filter_prepare_setup, case_03_fixture, case_04_fixture,
-    case_05_fixture, case_06_fixture
+    network_filter_prepare_setup, attach_network_to_host, start_vm,
+    restore_vnic_profile_filter, create_dc_cluster, add_vnic_to_vm,
+    remove_vnic_from_vm, remove_vnic_profiles
 )
 
 
@@ -92,7 +93,12 @@ class TestNetworkFilterCase02(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(case_03_fixture.__name__)
+@pytest.mark.usefixtures(
+    restore_vnic_profile_filter.__name__,
+    remove_vnic_from_vm.__name__,
+    start_vm.__name__,
+    attach_network_to_host.__name__,
+)
 class TestNetworkFilterCase03(NetworkTest):
     """
     Check that Network Filter is enabled for via dumpxml
@@ -173,7 +179,7 @@ class TestNetworkFilterCase03(NetworkTest):
 
 
 @attr(tier=2)
-@pytest.mark.usefixtures(case_04_fixture.__name__)
+@pytest.mark.usefixtures(add_vnic_to_vm.__name__)
 class TestNetworkFilterCase04(NetworkTest):
     """
     Remove network filter from vNIC profile while profile attach to stopped VM
@@ -199,8 +205,7 @@ class TestNetworkFilterCase04(NetworkTest):
 
 
 @attr(tier=2)
-@bz({"1347931": {}})
-@pytest.mark.usefixtures(case_05_fixture.__name__)
+@pytest.mark.usefixtures(remove_vnic_profiles.__name__)
 class TestNetworkFilterCase05(NetworkTest):
     """
     Create new vNIC profile with custom network_filter, no network
@@ -261,8 +266,7 @@ class TestNetworkFilterCase05(NetworkTest):
 
 
 @attr(tier=2)
-@bz({"1347931": {}})
-@pytest.mark.usefixtures(case_06_fixture.__name__)
+@pytest.mark.usefixtures(create_dc_cluster.__name__)
 class TestNetworkFilterCase06(NetworkTest):
     """
     Create and update vNIC profile network filter on old datacenter
