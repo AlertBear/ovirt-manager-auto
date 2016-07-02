@@ -21,7 +21,7 @@ from art.unittest_lib import attr, testflow, NetworkTest
 from fixtures import (
     fixture_mac_pool_range_case_02, fixture_mac_pool_range_case_03,
     fixture_mac_pool_range_case_04, fixture_mac_pool_range_case_05,
-    fixture_mac_pool_range_case_07, fixture_mac_pool_range_case_09,
+    fixture_mac_pool_range_case_09,
     mac_pool_range_06_fixture, mac_pool_range_08_fixture
 )
 
@@ -636,45 +636,25 @@ class TestMacPoolRange06(NetworkTest):
 
 
 @attr(tier=2)
-@bz({"1344284": {}})
-@pytest.mark.usefixtures(fixture_mac_pool_range_case_07.__name__)
-class NoTestMacPoolRange07(NetworkTest):
+@bz({"1219383": {}})
+class TestMacPoolRange07(NetworkTest):
     """
     Combine MAC pool range of Unicast and multicast MAC's
     Check that when having a combined range of multicast and unicast
     addresses the new VNICs will be created with unicast addresses only
     """
-    __test__ = False
+    __test__ = True
     mac_pool_ranges = [("00:ff:ff:ff:ff:ff", "02:00:00:00:00:01")]
     pool_0 = mac_pool_conf.MAC_POOL_NAME_0
-    dc = conf.DC_0
-    nic_1 = mac_pool_conf.NIC_NAME_1
-    nic_2 = mac_pool_conf.NIC_NAME_2
-    nic_3 = mac_pool_conf.NIC_NAME_3
-    vm = conf.VM_0
-    def_mac_pool = conf.DEFAULT_MAC_POOL
 
     @polarion("RHEVM3-6454")
-    @bz({"1219383": {"engine": ["rest", "sdk", "java"]}})
-    def multicast_unicast_mix(self):
+    def test_big_range(self):
         """
-        Add 2 VNICs to VM
-        Negative: Try to add 3rd VNIC and fail as all the available MACs
-        in the MAC pool are multicast MACs
+        Try to add big range
         """
-        testflow.step("Add 2 VNICs to VM")
-        for i in range(2):
-            self.assertTrue(
-                ll_vms.addNic(
-                    positive=True, vm=self.vm, name=conf.NIC_NAME[i + 1]
-                )
-            )
-        testflow.step(
-            "Negative: Try to add 3rd VNIC and fail as all the available MACs"
-        )
-        self.assertTrue(
-            ll_vms.addNic(positive=False, vm=self.vm, name=self.nic_3)
-        )
+        testflow.step("Add MAC range with  2^31 addresses")
+        assert not ll_mac_pool.create_mac_pool(
+            name=self.pool_0, ranges=self.mac_pool_ranges)
 
 
 @attr(tier=2)

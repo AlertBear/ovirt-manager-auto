@@ -128,7 +128,7 @@ def _prepareStorageDomainObject(positive, **kwargs):
         sd.set_storage(HostStorage(
             type_=storage_type, path=kwargs.pop('path', None)))
     elif storage_type == ENUMS['storage_type_nfs']:
-        sd.set_format(kwargs.pop('format', None))
+        sd.set_storage_format(kwargs.pop('format', None))
         sd.set_storage(
             HostStorage(
                 type_=storage_type, path=kwargs.pop('path', None),

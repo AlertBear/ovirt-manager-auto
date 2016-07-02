@@ -125,7 +125,9 @@ class MacPool(NetworkFixtures):
         """
         Remove DC
         """
-        ll_datacenters.remove_datacenter(positive=True, datacenter=self.ext_dc)
+        ll_datacenters.remove_datacenter(
+            positive=True, datacenter=self.ext_dc, force=True
+        )
 
     def remove_storage(self):
         """
@@ -396,13 +398,16 @@ def mac_pool_prepare_setup(request, network_cleanup_fixture):
     @networking.ignore_exception
     def fin6():
         """
-        Finalizer for remove clister
+        Finalizer for remove cluster
         """
         ps.remove_cluster()
     request.addfinalizer(fin6)
 
     @networking.ignore_exception
     def fin5():
+        """
+        Move host to original cluster
+        """
         ps.move_host_to_original_cluster()
     request.addfinalizer(fin5)
 
@@ -416,6 +421,9 @@ def mac_pool_prepare_setup(request, network_cleanup_fixture):
 
     @networking.ignore_exception
     def fin3():
+        """
+        Remove datacenter
+        """
         ps.remove_dc()
     request.addfinalizer(fin3)
 
@@ -482,7 +490,7 @@ def mac_pool_range_06_fixture(request, mac_pool_prepare_setup):
 @pytest.fixture(scope="class")
 def mac_pool_range_08_fixture(request, mac_pool_prepare_setup):
     """
-    Setup and teardown for TestMacPoolRange07
+    Setup and teardown for TestMacPoolRange08
 
     Create MAC pool -> Remove MAC pool
     Update DCs MAC pools -> Update DCs MAC pool to default
@@ -687,51 +695,6 @@ def fixture_mac_pool_range_case_05(request, mac_pool_prepare_setup):
         assert ll_vms.addNic(
             positive=True, vm=vm, name=conf.NIC_NAME[i + 1]
         )
-
-
-@pytest.fixture(scope="class")
-def fixture_mac_pool_range_case_07(request, mac_pool_prepare_setup):
-    """
-    Create a new MAC pool with range having multicast and unicast MACs
-    Update DC with a new MAC pool
-    """
-    ps = MacPool()
-    vm = request.node.cls.vm
-    nic_1 = request.node.cls.nic_1
-    nic_2 = request.node.cls.nic_2
-    pool_0 = request.node.cls.pool_0
-    mac_pool_ranges = request.node.cls.mac_pool_ranges
-
-    def fin3():
-        """
-        Remove MAC pool
-        """
-        ll_mac_pool.remove_mac_pool(mac_pool_name=pool_0)
-    request.addfinalizer(fin3)
-
-    def fin2():
-        """
-        Update MACpool in DC
-        """
-        ll_dc.update_datacenter(
-            positive=True, datacenter=ps.dc_0,
-            mac_pool=ll_mac_pool.get_mac_pool(pool_name=ps.def_mac_pool)
-        )
-    request.addfinalizer(fin2)
-
-    def fin1():
-        """
-        Remove vNICs from VM
-        """
-        for nic in (nic_1, nic_2):
-            ll_vms.removeNic(positive=True, vm=vm, nic=nic)
-    request.addfinalizer(fin1)
-
-    assert ll_mac_pool.create_mac_pool(name=pool_0, ranges=mac_pool_ranges)
-    assert ll_dc.update_datacenter(
-        positive=True, datacenter=ps.dc_0,
-        mac_pool=ll_mac_pool.get_mac_pool(pool_name=pool_0)
-    )
 
 
 @pytest.fixture(scope="class")
